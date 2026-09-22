@@ -77,6 +77,7 @@ export function ContextAssignmentPopover({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
+        /* sizing: fixed — fixed assignment-form panel with a fixed sectionHeight tree, not a single content-sized value */
         align={align}
         side={side}
         className={cn("w-[560px] max-w-[92vw] p-0", contentClassName)}

@@ -241,6 +241,7 @@ export function RunControlsMenu({
       <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
 
       <PopoverContent
+        /* sizing: fixed — fixed fullscreen/compact run-controls panel layout, not a single content-sized value */
         align={align}
         side={side}
         sideOffset={8}

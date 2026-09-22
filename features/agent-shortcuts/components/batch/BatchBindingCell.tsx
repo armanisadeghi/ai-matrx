@@ -349,6 +349,7 @@ export function InlineBindingEditor({
           </button>
         </PopoverTrigger>
         <PopoverContent
+          /* sizing: fixed — fixed advanced-binding editor panel toggling between two known widths, not a single content-sized value */
           align="end"
           className={cn("p-0", advancedContent ? "w-[26rem]" : "w-80")}
         >

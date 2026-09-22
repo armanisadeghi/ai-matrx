@@ -1228,6 +1228,7 @@ export const ProTextarea = React.forwardRef<
                     />
                   </PopoverTrigger>
                   <PopoverContent
+                    /* sizing: fixed — fixed multi-mode menu (menu/stats/agent-action panels), not a single content-sized value */
                     align="end"
                     side="bottom"
                     sideOffset={6}

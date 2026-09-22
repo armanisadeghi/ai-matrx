@@ -250,6 +250,7 @@ function PillPopover({
         </button>
       </PopoverTrigger>
       <PopoverContent
+        /* sizing: fixed — fixed enum picker (language/format/hosts), toggles between two known widths, never free text */
         align={align}
         className={cn("p-1.5", wide ? "w-64" : "w-60")}
       >

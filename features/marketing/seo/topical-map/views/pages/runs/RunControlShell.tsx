@@ -91,7 +91,8 @@ export function RunControlShell({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className={contentClassName ?? "w-[28rem] p-3 text-xs"}
+        sizing="content"
+        className={contentClassName ?? "p-3 text-xs"}
       >
         <div className="space-y-3">
           {children}

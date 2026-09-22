@@ -67,6 +67,7 @@ export function SettingPill({
         </button>
       </PopoverTrigger>
       <PopoverContent
+        /* sizing: fixed — caller-controlled `width` prop sizes arbitrary section content, not a single content-sized value */
         align="start"
         className={cn("p-0 overflow-hidden rounded-xl", width)}
       >

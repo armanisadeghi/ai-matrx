@@ -120,10 +120,8 @@ export function EntityTypeCombobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className={cn(
-          "w-[min(36rem,calc(100vw-1.5rem))] p-0",
-          contentClassName,
-        )}
+        sizing="content"
+        className={cn("p-0", contentClassName)}
         align="start"
       >
         <Command

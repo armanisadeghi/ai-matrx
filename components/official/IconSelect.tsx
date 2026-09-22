@@ -59,28 +59,36 @@ export interface IconSelectProps {
 const triggerBaseClassName =
   "h-7 w-7 px-0 bg-gray-200 dark:bg-gray-900 border-none justify-center focus:outline-none focus:ring-0";
 
-function IconSelectTrigger({
-  icon,
-  triggerClassName,
-  disabled,
-  ariaLabel,
-}: Pick<
-  IconSelectProps,
-  "icon" | "triggerClassName" | "disabled" | "ariaLabel"
->) {
+// forwardRef + a `...rest` spread are load-bearing, not style: `PopoverTrigger
+// asChild` (Radix `Slot`) clones its onClick/aria-expanded/data-state/ref onto
+// THIS component's returned element. Without both, Slot's clone lands on a
+// component that throws them away, and the popover can never open — found
+// while proving `sizing="content"` on the searchable branch below (POPOVER-EXPR,
+// 2026-09-23): the trigger rendered, but no click, in the app or headless,
+// ever opened it.
+const IconSelectTrigger = React.forwardRef<
+  HTMLButtonElement,
+  Pick<IconSelectProps, "icon" | "triggerClassName" | "disabled" | "ariaLabel"> &
+    React.ButtonHTMLAttributes<HTMLButtonElement>
+>(function IconSelectTrigger(
+  { icon, triggerClassName, disabled, ariaLabel, className, ...rest },
+  ref,
+) {
   return (
     <Button
+      ref={ref}
       type="button"
       variant="ghost"
       size="icon"
       aria-label={ariaLabel}
       disabled={disabled}
-      className={cn(triggerBaseClassName, triggerClassName)}
+      className={cn(triggerBaseClassName, triggerClassName, className)}
+      {...rest}
     >
       {icon}
     </Button>
   );
-}
+});
 
 /**
  * IconSelect - A simple icon-only select component based on the NavigationSelectIcon
@@ -116,7 +124,8 @@ const IconSelect = ({
           />
         </PopoverTrigger>
         <PopoverContent
-          className={cn("w-64 p-0", contentClassName)}
+          sizing="content"
+          className={cn("p-0", contentClassName)}
           align="start"
         >
           <Command>

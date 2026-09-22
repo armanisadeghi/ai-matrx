@@ -204,7 +204,11 @@ export function FillDownButton({
           {label ? <span>{label}</span> : null}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className={cn(width, "space-y-2 p-3")}>
+      <PopoverContent
+        /* sizing: fixed — caller-controlled `width` prop sizes a fixed apply-value editor, not a single content-sized value */
+        align="start"
+        className={cn(width, "space-y-2 p-3")}
+      >
         <p className="text-[11px] leading-relaxed text-muted-foreground">
           {limits}
         </p>

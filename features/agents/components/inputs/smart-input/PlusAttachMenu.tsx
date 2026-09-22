@@ -249,6 +249,7 @@ export function PlusAttachMenu({
       <Popover open={open} onOpenChange={handleOpenChange} modal={false}>
         <PopoverTrigger asChild>{trigger}</PopoverTrigger>
         <PopoverContent
+          /* sizing: fixed — fixed multi-pane attach menu (menu/overrides/resource-picker sub-views), not a single content-sized value */
           align={align}
           side={side}
           sideOffset={8}
