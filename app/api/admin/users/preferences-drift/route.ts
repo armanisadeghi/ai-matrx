@@ -9,6 +9,7 @@
 // pg_cron job runs — this is the manual "heal now" path.
 
 import { NextResponse } from "next/server";
+import { readAllRows } from "@ai-matrx/data/db";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 
@@ -32,25 +33,38 @@ export async function GET() {
 
   const admin = createAdminClient();
 
-  const [{ data: rows, error: rowsErr }, { count, error: countErr }] =
-    await Promise.all([
-      admin.schema("users").rpc("user_preferences_drift_report"),
+  let rows;
+  let countResult;
+  try {
+    [rows, countResult] = await Promise.all([
+      readAllRows(
+        ({ from, to }) =>
+          admin
+            .schema("users")
+            .rpc("user_preferences_drift_report", undefined, { count: "exact" })
+            .order("user_id")
+            .order("organization_id")
+            .range(from, to),
+        { label: "users.user_preferences_drift_report" },
+      ),
       admin
         .schema("users")
         .from("user_preferences")
         .select("*", { count: "exact", head: true })
         .is("deleted_at", null),
     ]);
-
-  if (rowsErr) return NextResponse.json({ error: rowsErr.message }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Preferences drift report failed";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+  const { count, error: countErr } = countResult;
   if (countErr)
     return NextResponse.json({ error: countErr.message }, { status: 500 });
 
-  const drifted = rows ?? [];
   return NextResponse.json({
     total: count ?? 0,
-    drifted: drifted.length,
-    rows: drifted,
+    drifted: rows.length,
+    rows,
   });
 }
 
