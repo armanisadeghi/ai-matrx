@@ -50,12 +50,21 @@ export const contextMatchConfigSchema = z
     },
   );
 
+export const eventConfigSchema = z.object({
+  type: z.literal("event"),
+  entity_type: z.string().min(1, "Pick what kind of change"),
+  actions: z.array(z.string().min(1)).optional(),
+  table_id: z.string().uuid().optional(),
+  changed_fields: z.array(z.string().min(1)).max(50).optional(),
+});
+
 export const triggerConfigSchema = z.discriminatedUnion("type", [
   oneShotConfigSchema,
   intervalConfigSchema,
   heartbeatConfigSchema,
   cronConfigSchema,
   contextMatchConfigSchema,
+  eventConfigSchema,
 ]);
 
 export const surfaceSchema = z.enum(SURFACE_VALUES as readonly [string, ...string[]]);

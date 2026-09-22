@@ -18,11 +18,19 @@ function NewScheduleContent() {
   const searchParams = useSearchParams();
   const agentId = searchParams.get("agentId");
   const prompt = searchParams.get("prompt");
+  // A data table's "when a row changes, run…" door: `?trigger=event&tableId=<uuid>`.
+  const trigger = searchParams.get("trigger");
+  const tableId = searchParams.get("tableId");
+  const initialTrigger =
+    trigger === "event"
+      ? { type: "event" as const, entity_type: "user_table_row", ...(tableId ? { table_id: tableId } : {}) }
+      : null;
 
   return (
     <ScheduleForm
       initialAgentId={agentId || null}
       initialPrompt={prompt || undefined}
+      initialTrigger={initialTrigger}
     />
   );
 }

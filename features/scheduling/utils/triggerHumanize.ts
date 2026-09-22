@@ -7,6 +7,7 @@ import cronstrue from "cronstrue";
 import { format, formatDistanceToNowStrict } from "date-fns";
 import type {
   ContextMatchConfig,
+  EventConfig,
   CronConfig,
   HeartbeatConfig,
   IntervalConfig,
@@ -83,8 +84,20 @@ export function humanizeTrigger(
       return parts.length ? `When ${parts.join(" ")}` : "On page match";
     }
 
-    case "event":
-      return "On event";
+    case "event": {
+      const c = config as Partial<EventConfig>;
+      if (c.entity_type === "user_table_row") {
+        const what =
+          !c.actions || c.actions.length === 0
+            ? "changes"
+            : c.actions
+                .map((a) => a.replace(/^row\./, ""))
+                .map((a) => ({ created: "is added", updated: "changes", archived: "is archived", restored: "is restored", deleted: "is deleted" })[a] ?? a)
+                .join(" or ");
+        return `When a table row ${what}${c.changed_fields?.length ? ` (${c.changed_fields.join(", ")})` : ""}`;
+      }
+      return c.entity_type ? `When ${c.entity_type.replace(/_/g, " ")} ${c.actions?.join("/") ?? "changes"}` : "On event";
+    }
     case "manual":
       return "Manual only";
     case "dependency":

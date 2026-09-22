@@ -27,13 +27,28 @@ export type ContextMatchConfig = {
   url_pattern?: string;
   hostname?: string;
 };
+/**
+ * Fires from the platform event spine (platform.activity_log) — matched in
+ * the database by `scheduler.sch_match_event`. v1 producer: data-table row
+ * changes (`entity_type: "user_table_row"`, actions `row.*`).
+ */
+export type EventConfig = {
+  entity_type: string;
+  /** Any of; absent = every action of that entity type. */
+  actions?: string[];
+  /** Only events whose metadata.table_id equals this. */
+  table_id?: string;
+  /** Only `row.updated` events where one of these columns changed. */
+  changed_fields?: string[];
+};
 
 export type TriggerConfig =
   | ({ type: "one-shot" } & OneShotConfig)
   | ({ type: "interval" } & IntervalConfig)
   | ({ type: "cron" } & CronConfig)
   | ({ type: "heartbeat" } & HeartbeatConfig)
-  | ({ type: "context-match" } & ContextMatchConfig);
+  | ({ type: "context-match" } & ContextMatchConfig)
+  | ({ type: "event" } & EventConfig);
 
 // ── Surfaces ───────────────────────────────────────────────────────────────
 

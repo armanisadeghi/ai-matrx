@@ -211,7 +211,6 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Current work / known gaps
 
-- **`event` trigger producer exists (2026-09-22, data-tables lane):** every user-data-table row change now writes a `platform.activity_log` event (`entity_type user_table_row`, actions `row.created|updated|archived|restored|deleted`, metadata `table_id`, `changed_fields`). `TriggerConfig` still has no `event` shape and no scanner reads the spine — that is the next step for this feature; see `features/data-tables/FEATURE.md` change log 2026-09-22.
 
 - **Templates DB backing** — UI stubbed; `sch_template` table not
   built yet.
@@ -221,6 +220,8 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   errors yet.
 
 ## Change log
+
+- `2026-09-22` — **The `event` trigger is live: a schedule runs when a data-table row changes.** Arman: "ALWAYS stick to the things the system already does and plug into them." Consumer of the platform event spine (`platform.activity_log`; producer for tables: `migrations/udt_row_change_events.sql`). DB: `migrations/sch_event_trigger_matcher.sql` — `scheduler.sch_match_event()`, an AFTER INSERT trigger on the spine that, for every enabled `event` trigger of the SAME organization whose `config` matches (`entity_type` required; `actions` any-of; `table_id`; `changed_fields` any-of on `row.updated`), inserts ONE queued `sch_run` (the exact row `sch_enqueue_manual_run` writes, `trigger_id` set, the event under `metadata.event`) and stamps `last_fired_at`; a task with an active run is skipped (the partial unique index would refuse it; the matcher never lets a hot table error the spine write); a run's own `sch_run` lifecycle event never re-fires its task; a partial index makes the per-spine-write probe an index hit. Every online scanner then claims the run through the protocol it already has — no new executor. Server: `runner.variables_for_run` merges `run.metadata.event` into the agent's variables as `event` (the run's event wins over a task variable of that name) — `packages/matrx-scheduler/tests/test_event_variables.py`. FE: `EventConfig` in `types.ts` + the `event` arm of `TriggerConfig`; `eventConfigSchema`; `triggerHumanize` ("When a table row changes (status)"); the **Table change** chip in `constants/triggerTypes.ts`; `components/form/triggers/EventForm.tsx` (table picker over `listUserTables`, the five row actions, optional changed columns); `ScheduleForm` `initialTrigger` + `/schedules/new?trigger=event&tableId=…` (the data table's Actions-header menu carries "When a row changes, run an agent…", prompt prefilled). Proven in a rolled-back transaction on the test table: a change to a non-watched column → 0 runs; the watched column → 1 queued run carrying `action row.updated`, `changed_fields ["capital"]`; a second change while queued → still 1; `last_fired_at` set. Not yet: other producers (files, forms, CRM) only need an option in `EventForm`; the runs list does not yet show the event that started a run.
 
 - **2026-09-15** — Scanner Health now waits for explicit organization
   admission before its first status poll and refreshes immediately when the

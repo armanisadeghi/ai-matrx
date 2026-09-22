@@ -37,6 +37,7 @@ import type {
   AgendaTask,
   CreateAgentTaskInput,
   Surface,
+  EventConfig,
   TriggerConfig,
   TriggerType,
 } from "../../types";
@@ -49,6 +50,7 @@ import { IntervalForm } from "./triggers/IntervalForm";
 import { CronForm } from "./triggers/CronForm";
 import { HeartbeatForm } from "./triggers/HeartbeatForm";
 import { ContextMatchForm } from "./triggers/ContextMatchForm";
+import { EventForm } from "./triggers/EventForm";
 import { VariablesEditor } from "./VariablesEditor";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -74,6 +76,7 @@ function makeDefault(
   task?: AgendaTask,
   initialAgentId?: string | null,
   initialPrompt?: string,
+  initialTrigger?: TriggerConfig | null,
 ): FormState {
   if (task) {
     const t = task.triggers[0];
@@ -107,8 +110,10 @@ function makeDefault(
     maxRuntimeSeconds: 600,
     maxConcurrent: 1,
     expiresAt: "",
-    triggerType: "interval",
-    triggerConfig: { every_seconds: 3600 },
+    triggerType: initialTrigger?.type ?? "interval",
+    triggerConfig: initialTrigger
+      ? (Object.fromEntries(Object.entries(initialTrigger).filter(([k]) => k !== "type")) as Record<string, unknown>)
+      : { every_seconds: 3600 },
   };
 }
 
@@ -137,16 +142,18 @@ interface Props {
    */
   initialAgentId?: string | null;
   initialPrompt?: string;
+  /** Prefilled trigger for create mode — e.g. a data table's "when a row changes, run…" door. */
+  initialTrigger?: TriggerConfig | null;
 }
 
-export function ScheduleForm({ task, initialAgentId, initialPrompt }: Props) {
+export function ScheduleForm({ task, initialAgentId, initialPrompt, initialTrigger }: Props) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [pending, startTransition] = useTransition();
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState<FormState>(() =>
-    makeDefault(task, initialAgentId, initialPrompt),
+    makeDefault(task, initialAgentId, initialPrompt, initialTrigger),
   );
   // VariablesEditor intentionally owns incomplete key/value rows while the
   // human types (an empty key cannot live in the canonical object yet). An
@@ -548,6 +555,13 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt }: Props) {
                 error={errors["trigger.every_seconds"] ?? errors.trigger}
               />
             )}
+            {form.triggerType === "event" && (
+              <EventForm
+                value={form.triggerConfig as Partial<EventConfig>}
+                onChange={(v) => setTrigger("event", v)}
+                error={errors["trigger.entity_type"] ?? errors.trigger}
+              />
+            )}
             {form.triggerType === "context-match" && (
               <ContextMatchForm
                 value={
@@ -810,6 +824,8 @@ function defaultsFor(type: TriggerType): Record<string, unknown> {
       return { every_seconds: 60 };
     case "context-match":
       return {};
+    case "event":
+      return { entity_type: "user_table_row" };
     default:
       return {};
   }
@@ -844,6 +860,17 @@ function buildTriggerConfig(
       };
       if (!c.kind && !c.url_pattern && !c.hostname) return null;
       return { type, ...c };
+    }
+    case "event": {
+      const c = config as Partial<EventConfig>;
+      if (!c.entity_type) return null;
+      return {
+        type,
+        entity_type: c.entity_type,
+        ...(c.actions && c.actions.length > 0 ? { actions: c.actions } : {}),
+        ...(c.table_id ? { table_id: c.table_id } : {}),
+        ...(c.changed_fields && c.changed_fields.length > 0 ? { changed_fields: c.changed_fields } : {}),
+      };
     }
     default:
       return null;

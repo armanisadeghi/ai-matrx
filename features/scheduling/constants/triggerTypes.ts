@@ -3,7 +3,7 @@
 // Trigger-type picker config. Order matters — used directly in the create
 // form for the type-picker row of chips.
 
-import { Calendar, Clock, Heart, Target, Zap } from "lucide-react";
+import { Calendar, Clock, Heart, Table2, Target, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { TriggerType } from "../types";
 
@@ -45,6 +45,14 @@ export const TRIGGER_TYPES: readonly TriggerTypeMeta[] = [
     description:
       "Run every N seconds — all runs append to the same conversation (memory across pulses).",
     icon: Heart,
+    available: true,
+  },
+  {
+    type: "event",
+    label: "Table change",
+    description:
+      "Fires when a row in one of your data tables is added, changed, archived or deleted.",
+    icon: Table2,
     available: true,
   },
   {
