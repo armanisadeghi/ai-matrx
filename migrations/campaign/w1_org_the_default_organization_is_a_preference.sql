@@ -72,7 +72,7 @@
 -- lookup expressed as `ADD CONSTRAINT` inside a `not exists` predicate is not available to an
 -- allow-listed file, so the constraint is added with a name the second apply collides on —
 -- which is why the second apply is run with `--reapply` and the catalogue read back identical
--- at both ends. The two functions are plain `create or replace function`, NOT `CREATE OR REPLACE`: the
+-- at both ends. The two functions are plain `CREATE FUNCTION`, NOT `CREATE OR REPLACE`: the
 -- allow-list cannot prove a replacement is of a function that does not yet exist, so it
 -- refuses every `CREATE OR REPLACE` carrying no `-- based-on:` line — a line a NEW function
 -- cannot have. Measured on this very file: `--judge-only` returned `not-additive` at both
@@ -208,6 +208,6 @@ $fn$;
 comment on function iam._default_organization_is_a_membership() is
   'REC-44 guard. Behind custom/signup_provisioning_guard. Refuses a users.user_preferences.default_organization_id that is not an active organization membership of that same person (Doctrine 5.2 item 3).';
 
-create trigger default_organization_is_a_membership
+create or replace trigger default_organization_is_a_membership
   before insert or update of default_organization_id, user_id on users.user_preferences
   for each row execute function iam._default_organization_is_a_membership();

@@ -241,14 +241,14 @@ begin
 end;
 $$;
 
-create trigger custom_record_organization_wall
+create or replace trigger custom_record_organization_wall
   before insert or update on custom.record
   for each row execute function custom._organization_wall_guard();
 
-create trigger custom_external_link_organization_wall
+create or replace trigger custom_external_link_organization_wall
   before insert or update on custom.external_link
   for each row execute function custom._organization_wall_guard();
 
-create trigger custom_external_source_organization_wall
+create or replace trigger custom_external_source_organization_wall
   before insert or update on custom.external_source
   for each row execute function custom._organization_wall_guard();

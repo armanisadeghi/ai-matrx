@@ -70,19 +70,19 @@ set statement_timeout = '300s';
 comment on trigger trg_associations_reachability on platform.associations is
   'Live platform trigger, untouched by W1-REL. Recorded here only so this file states, beside the three triggers it adds, which trigger on this table it does not change. The campaign knob that holds W1-REL''s additions off is custom/associations_guard.';
 
-create trigger trg_associations_zzz_touch_row
+create or replace trigger trg_associations_zzz_touch_row
   before insert or update on platform.associations
   for each row
   when (platform.relations_are_on(new.organization_id))
   execute function platform._touch_row();
 
-create trigger trg_associations_zzz_version_capture
+create or replace trigger trg_associations_zzz_version_capture
   after insert or update on platform.associations
   for each row
   when (platform.relations_are_on(new.organization_id))
   execute function platform._version_capture('agent_surface_binding');
 
-create trigger trg_associations_zzz_version_capture_delete
+create or replace trigger trg_associations_zzz_version_capture_delete
   after delete on platform.associations
   for each row
   when (platform.relations_are_on(old.organization_id))

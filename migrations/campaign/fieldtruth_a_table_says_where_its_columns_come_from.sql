@@ -59,7 +59,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- The keys that belong to the platform rather than to any Table.
 -- ─────────────────────────────────────────────────────────────────────────────────────────
-create or replace function custom.record_platform_keys()
+CREATE OR REPLACE FUNCTION custom.record_platform_keys()
  RETURNS text[]
  LANGUAGE sql
  IMMUTABLE PARALLEL SAFE
@@ -77,7 +77,7 @@ COMMENT ON FUNCTION custom.record_platform_keys() IS
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- Where a Table's columns come from: `code`, `free_form`, or `fields`.
 -- ─────────────────────────────────────────────────────────────────────────────────────────
-create or replace function custom.table_column_source(p_organization_id uuid, p_table_id uuid)
+CREATE OR REPLACE FUNCTION custom.table_column_source(p_organization_id uuid, p_table_id uuid)
  RETURNS text
  LANGUAGE plpgsql
  STABLE
@@ -126,7 +126,7 @@ COMMENT ON FUNCTION custom.table_column_source(uuid, uuid) IS
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- The keys of a document that no Field of its Table accounts for.
 -- ─────────────────────────────────────────────────────────────────────────────────────────
-create or replace function custom.undeclared_keys(p_organization_id uuid, p_table_id uuid, p_data jsonb)
+CREATE OR REPLACE FUNCTION custom.undeclared_keys(p_organization_id uuid, p_table_id uuid, p_data jsonb)
  RETURNS text[]
  LANGUAGE sql
  STABLE
@@ -158,7 +158,7 @@ COMMENT ON FUNCTION custom.undeclared_keys(uuid, uuid, jsonb) IS
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- A Table may only say one of the two words.
 -- ─────────────────────────────────────────────────────────────────────────────────────────
-create or replace function custom._table_columns_word_guard()
+CREATE OR REPLACE FUNCTION custom._table_columns_word_guard()
  RETURNS trigger
  LANGUAGE plpgsql
  SET search_path TO 'pg_catalog'
@@ -181,7 +181,7 @@ begin
 end;
 $function$;
 
-CREATE TRIGGER zzz_table_columns_word
+CREATE OR REPLACE TRIGGER zzz_table_columns_word
   BEFORE INSERT OR UPDATE ON custom.record
   FOR EACH ROW EXECUTE FUNCTION custom._table_columns_word_guard();
 

@@ -42,7 +42,7 @@
 -- REC-1 (a Table declares its fields) · REC-51 (a validation trigger enforces the field
 -- definitions on write).
 
-create or replace function custom._undeclared_key_guard()
+CREATE OR REPLACE FUNCTION custom._undeclared_key_guard()
  RETURNS trigger
  LANGUAGE plpgsql
  SET search_path TO 'pg_catalog'
@@ -120,6 +120,6 @@ $function$;
 
 -- After custom_record_zz_derived_fields (which writes `_derived`) and after the choice-word
 -- and containment guards, so a document is judged in the shape it will actually be stored in.
-CREATE TRIGGER zzzz_a_undeclared_key_guard
+CREATE OR REPLACE TRIGGER zzzz_a_undeclared_key_guard
   BEFORE INSERT OR UPDATE ON custom.record
   FOR EACH ROW EXECUTE FUNCTION custom._undeclared_key_guard();

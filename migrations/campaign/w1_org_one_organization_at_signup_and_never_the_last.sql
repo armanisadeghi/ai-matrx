@@ -86,7 +86,7 @@
 -- lane's report under "awaiting the attended step".
 --
 -- IDEMPOTENCE (rule 27): the replaced trigger body is a `CREATE OR REPLACE FUNCTION` carrying
--- its `-- based-on:` line; the two new functions are plain `create or replace function` (the allow-list
+-- its `-- based-on:` line; the two new functions are plain `CREATE FUNCTION` (the allow-list
 -- refuses a `CREATE OR REPLACE` that declares no `-- based-on:`, which a new function cannot
 -- have), so a second consecutive apply is refused by the DATABASE (42723) having changed
 -- nothing, as are the two new triggers (42710).
@@ -349,10 +349,10 @@ $fn$;
 comment on function iam._guard_last_organization_membership() is
   'REC-46 / Doctrine 5.2 item 2, the membership half. Behind custom/signup_provisioning_guard. Refuses a delete or a deactivation that would leave a person belonging to NO organization, whether they are leaving or being removed. Reads iam.is_last_organization(uuid,uuid), the same function the live organization-delete guard reads, and carries the same service-role and platform-admin exemptions.';
 
-create trigger guard_last_organization_membership_delete
+create or replace trigger guard_last_organization_membership_delete
   before delete on iam.memberships
   for each row execute function iam._guard_last_organization_membership();
 
-create trigger guard_last_organization_membership_update
+create or replace trigger guard_last_organization_membership_update
   before update on iam.memberships
   for each row execute function iam._guard_last_organization_membership();

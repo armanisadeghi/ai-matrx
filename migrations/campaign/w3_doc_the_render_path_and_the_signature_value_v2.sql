@@ -284,7 +284,7 @@ begin
 end;
 $$;
 
-create trigger doc_signature_immutable
+create or replace trigger doc_signature_immutable
   before update or delete on custom.doc_signature
   for each row execute function custom._doc_signature_immutable();
 
@@ -311,7 +311,7 @@ begin
 end;
 $$;
 
-create trigger doc_render_immutable
+create or replace trigger doc_render_immutable
   before update on custom.doc_render
   for each row execute function custom._doc_render_immutable();
 

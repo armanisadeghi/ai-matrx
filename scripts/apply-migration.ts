@@ -510,9 +510,11 @@ async function beginClean(client: pg.Client): Promise<void> {
 async function ledgerRow(
   client: pg.Client,
   filename: string,
-): Promise<{ checksum: string; applied_at: string } | null> {
-  const out = await client.query<{ checksum: string; applied_at: string }>(
-    `select checksum, applied_at::text as applied_at from public._schema_migrations
+): Promise<{ checksum: string; applied_at: string; chair_step: string | null } | null> {
+  const out = await client.query<{ checksum: string; applied_at: string; chair_step: string | null }>(
+    `select checksum, applied_at::text as applied_at,
+            (to_jsonb(m) ->> 'chair_step') as chair_step
+       from public._schema_migrations m
        where source = $1 and filename = $2`,
     [SOURCE, filename],
   );
@@ -2148,54 +2150,148 @@ function judgeOnly(paths: readonly string[]): number {
  *   4. `--amend-idempotent --self-test` proves the predicate RED then GREEN with no database.
  */
 
-/** The one normalisation. Everything else about the bytes must be identical. */
-export function normaliseIdempotent(sql: string): string {
-  return sql
-    .replace(/\bcreate\s+function\b/gi, "create or replace function")
-    .replace(/\bcreate\s+trigger\b/gi, "create or replace trigger")
-    // VIEWS TOO (lane INVERSE-GUARD, 2026-09-22). The same class one object-kind over: an
-    // inverse that leaves `custom.carrying_edges` standing — because it neuters the rule rows
-    // instead of demolishing the projection over them — makes its up-file's bare `CREATE VIEW`
-    // collide on re-apply. `CREATE OR REPLACE VIEW` is the same statement to a database that
-    // does not have the view, and stricter where it does (it refuses a changed column shape).
-    .replace(/\bcreate\s+view\b/gi, "create or replace view");
+/**
+ * THE TRANSFORM, AS A SQL SCAN AND NOT A REGEX.
+ *
+ * 🚨 WHY THIS IS NOT A `String.replace` (VERIFY-AMEND, 2026-09-21, verdict DOES NOT HOLD).
+ * The first version of this was three whole-file case-insensitive regexes. A regex has no idea
+ * what a SQL statement is, so it rewrote the same words inside `--` comments, inside
+ * `using hint = '…'` message literals a person reads, inside plpgsql `cmd.command_tag = '…'`
+ * comparisons, and inside `CREATE EVENT TRIGGER … WHEN TAG IN ('CREATE FUNCTION', …)`. Postgres
+ * VALIDATES event-trigger filter values, so
+ * `open_census_a_closed_schema_closes_itself.sql` stopped being applicable at all — and the
+ * production ledger had already been moved onto those bytes, certifying as "what ran" a file
+ * Postgres refuses. Three `w0_sync_*` files lost their DDL-guard arms the same way: they still
+ * compile and never fire, which is worse.
+ *
+ * And the predicate could not see ANY of it, because it normalised BOTH sides with this same
+ * function — a check that transforms the thing it is checking can only ever confirm it.
+ *
+ * So: this walks the text, skipping `--` comments, `/* *\/` comments, single-quoted strings and
+ * dollar-quoted bodies, and rewrites `CREATE FUNCTION|TRIGGER|VIEW` ONLY where it begins a
+ * top-level statement. It inserts ` OR REPLACE` and changes nothing else — not one other byte,
+ * not the case of the keyword (the old regex lower-cased `CREATE FUNCTION` to
+ * `create or replace function`, which is 28 more files of gratuitous diff).
+ */
+export function rewriteBareCreates(sql: string): { out: string; changed: number } {
+  let out = "";
+  let changed = 0;
+  let i = 0;
+  /** The last character that was actual SQL — a statement head may only follow `;` or nothing. */
+  let lastSignificant = "";
+  const n = sql.length;
+
+  while (i < n) {
+    const two = sql.slice(i, i + 2);
+
+    if (two === "--") {
+      const j = sql.indexOf("\n", i);
+      const end = j === -1 ? n : j;
+      out += sql.slice(i, end);
+      i = end;
+      continue;
+    }
+    if (two === "/*") {
+      let depth = 1;
+      let j = i + 2;
+      while (j < n && depth > 0) {
+        if (sql.slice(j, j + 2) === "/*") { depth++; j += 2; continue; }
+        if (sql.slice(j, j + 2) === "*/") { depth--; j += 2; continue; }
+        j++;
+      }
+      out += sql.slice(i, j);
+      i = j;
+      continue;
+    }
+    if (sql[i] === "'") {
+      let j = i + 1;
+      while (j < n) {
+        if (sql[j] === "'" && sql[j + 1] === "'") { j += 2; continue; }
+        if (sql[j] === "'") { j++; break; }
+        j++;
+      }
+      out += sql.slice(i, j);
+      i = j;
+      lastSignificant = "'";
+      continue;
+    }
+    if (sql[i] === '"') {
+      let j = i + 1;
+      while (j < n && sql[j] !== '"') j++;
+      j++;
+      out += sql.slice(i, j);
+      i = j;
+      lastSignificant = '"';
+      continue;
+    }
+    const dollar = /^\$([A-Za-z_][A-Za-z0-9_]*)?\$/.exec(sql.slice(i, i + 64));
+    if (dollar) {
+      const tag = dollar[0];
+      const close = sql.indexOf(tag, i + tag.length);
+      const j = close === -1 ? n : close + tag.length;
+      out += sql.slice(i, j);
+      i = j;
+      lastSignificant = "$";
+      continue;
+    }
+
+    // A statement head: `create` in plain SQL, preceded by `;` or by nothing at all.
+    if ((sql[i] === "c" || sql[i] === "C") && (lastSignificant === "" || lastSignificant === ";")) {
+      const m = /^(create)(\s+)(function|trigger|view)\b/i.exec(sql.slice(i, i + 64));
+      if (m) {
+        const orReplace = m[1] === m[1]!.toUpperCase() ? " OR REPLACE" : " or replace";
+        out += m[1] + orReplace + m[2] + m[3];
+        i += m[0].length;
+        changed++;
+        lastSignificant = "e";
+        continue;
+      }
+    }
+
+    const ch = sql[i]!;
+    out += ch;
+    if (!/\s/.test(ch)) lastSignificant = ch;
+    i++;
+  }
+
+  return { out, changed };
 }
 
 export interface AmendVerdict {
   readonly ok: boolean;
-  /** Why not, with the first line that differs, when it is refused. */
   readonly why?: string;
-  /** How many creates were made idempotent — zero is itself a refusal. */
   readonly changed: number;
 }
 
-/** Step 2, as a pure function so the self-test can drive it without a database. */
+/**
+ * THE PROOF, AND IT IS ONE-SIDED ON PURPOSE. `transform(the bytes that actually ran)` must equal
+ * the current file BYTE FOR BYTE. The current side is never normalised, never touched: if the
+ * file carries so much as a changed comment or a re-cased keyword that this transform would not
+ * itself have produced, the comparison fails and the amendment is refused.
+ */
 export function onlyIdempotencyDiffers(ledgered: string, current: string): AmendVerdict {
   if (ledgered === current) {
     return { ok: false, changed: 0, why: "the bytes are identical — there is nothing to amend." };
   }
-  const a = normaliseIdempotent(ledgered);
-  const b = normaliseIdempotent(current);
-  if (a !== b) {
-    const al = a.split("\n");
-    const bl = b.split("\n");
+  const { out, changed } = rewriteBareCreates(ledgered);
+  if (out !== current) {
+    const al = out.split("\n");
+    const bl = current.split("\n");
     let i = 0;
     while (i < al.length && i < bl.length && al[i] === bl[i]) i++;
     return {
       ok: false,
       changed: 0,
       why:
-        `the bytes differ by more than idempotency. First difference at line ${i + 1}:\n` +
-        `    ledgered: ${(al[i] ?? "<end of file>").slice(0, 160)}\n` +
-        `    current:  ${(bl[i] ?? "<end of file>").slice(0, 160)}`,
+        `the current file is NOT what making the ledgered bytes idempotent produces. This mode may ` +
+        `only ever cover a change the database cannot tell apart from what it already ran, and the ` +
+        `file carries something else. First difference at line ${i + 1}:\n` +
+        `    making the applied bytes idempotent gives: ${(al[i] ?? "<end of file>").slice(0, 160)}\n` +
+        `    the file on disk says:                     ${(bl[i] ?? "<end of file>").slice(0, 160)}`,
     };
   }
-  const BARE = /\bcreate\s+function\b|\bcreate\s+trigger\b|\bcreate\s+view\b/gi;
-  const before = (ledgered.match(BARE) ?? []).length;
-  const after = (current.match(BARE) ?? []).length;
-  const changed = before - after;
   if (changed <= 0) {
-    return { ok: false, changed: 0, why: "no bare CREATE FUNCTION/TRIGGER was made idempotent." };
+    return { ok: false, changed: 0, why: "no bare CREATE FUNCTION/TRIGGER/VIEW statement was made idempotent." };
   }
   return { ok: true, changed };
 }
@@ -2230,48 +2326,199 @@ function ledgeredBytesFromGit(path: string, wantChecksum: string): { bytes: stri
   return null;
 }
 
-/** Step 4: RED then GREEN, with no database and no fixture file on disk. */
+/**
+ * THE FOUR FILES THIS MODE BROKE, pinned by the commit that carried the damage
+ * (`a482b925a3` — `origin/main` as VERIFY-AMEND found it). Their damaged bytes must be REFUSED
+ * against the bytes that actually ran, forever. This is the regression proof for the class: it
+ * is not a fixture someone can quietly loosen, it is the real incident.
+ */
+const DAMAGED_BY_THIS_MODE = "a482b925a3d4b175768f0a1aa889134b1e896273";
+const DAMAGED_FILES = [
+  "migrations/campaign/open_census_a_closed_schema_closes_itself.sql",
+  "migrations/campaign/w0_sync_provisioner_and_shape_guard.sql",
+  "migrations/campaign/w0_sync_provisioner_bodies_byte_exact.sql",
+  "migrations/campaign/w0_sync_ruling_schema_functions.sql",
+];
+
+/** Step 4: RED then GREEN, with no database. */
 function amendSelfTest(): number {
+  let failed = 0;
+  const red = (name: string, ledgered: string, current: string): void => {
+    const v = onlyIdempotencyDiffers(ledgered, current);
+    if (v.ok) {
+      console.error(`${TAG.fail}SELF-TEST FAILED — ${name} was ACCEPTED. It must be refused.`);
+      failed++;
+      return;
+    }
+    console.log(`${TAG.ok}self-test RED — ${name} is refused.`);
+  };
+
   const base =
-    "-- a lane\nset lock_timeout = '5s';\n" +
-    "create function custom.f(a uuid) returns int language sql as $$ select 1 $$;\n" +
+    "-- a lane that CREATE FUNCTION is mentioned in\nset lock_timeout = '5s';\n" +
+    "CREATE FUNCTION custom.f(a uuid) returns int language sql as $$ select 1 $$;\n" +
     "create trigger t after insert on custom.record execute function custom.f();\n" +
-    "create view custom.v as select 1 as n;\n";
+    "create view custom.v as select 1 as n;\n" +
+    "create event trigger e on ddl_command_end\n" +
+    "  when tag in ('CREATE FUNCTION', 'CREATE PROCEDURE')\n" +
+    "  execute function custom.f();\n" +
+    "create function custom.g() returns event_trigger language plpgsql as $b$\n" +
+    "begin\n" +
+    "  if cmd.command_tag = 'CREATE FUNCTION' then return; end if;\n" +
+    "end $b$;\n";
 
-  // RED — a file that ALSO changes something else is refused.
-  const sneaky = normaliseIdempotent(base).replace("select 1", "select 2");
-  const red = onlyIdempotencyDiffers(base, sneaky);
-  if (red.ok) {
+  const good = rewriteBareCreates(base).out;
+
+  // E — the verifier's case: ONLY an event-trigger WHEN TAG IN literal moved. It breaks the file
+  // (Postgres validates filter values) and the old predicate took it.
+  red("a WHEN TAG IN literal", base, base.replace("when tag in ('CREATE FUNCTION'", "when tag in ('create or replace function'"));
+  // F — ONLY a plpgsql command_tag comparison moved. It compiles and silently never fires.
+  red("a plpgsql command_tag comparison", base, base.replace("cmd.command_tag = 'CREATE FUNCTION'", "cmd.command_tag = 'create or replace function'"));
+  // A comment is a byte too.
+  red("a comment", base, base.replace("mentioned in", "mentioned in, twice"));
+  // Case-folding the keyword is not this transform's output either.
+  red("a re-cased keyword", base, good.replace("CREATE OR REPLACE FUNCTION", "create or replace function"));
+  // The original arms.
+  red("a changed function body", base, good.replace("select 1", "select 2"));
+  red("identical bytes", base, base);
+  red("a trailing newline", base, good + "\n");
+
+  // THE INCIDENT ITSELF: the four files this mode damaged must be refused against what ran.
+  for (const path of DAMAGED_FILES) {
+    let damaged: string;
+    try {
+      damaged = execFileSync("git", ["show", `${DAMAGED_BY_THIS_MODE}:${path}`], {
+        cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024,
+      });
+    } catch {
+      console.error(
+        `${TAG.fail}SELF-TEST FAILED — cannot read the damaged bytes of ${path} at ` +
+          `${DAMAGED_BY_THIS_MODE.slice(0, 10)}. The regression proof for this mode's own incident ` +
+          `is unavailable, so it is not proven.`,
+      );
+      failed++;
+      continue;
+    }
+    // The bytes that actually ran: the parent state of the damage for that path.
+    let applied: string;
+    try {
+      const prior = execFileSync("git", ["log", "--format=%H", "-2", DAMAGED_BY_THIS_MODE, "--", path], {
+        cwd: ROOT, encoding: "utf8", maxBuffer: 16 * 1024 * 1024,
+      }).split("\n").filter(Boolean);
+      const parent = execFileSync("git", ["rev-parse", `${prior[0]}^`], { cwd: ROOT, encoding: "utf8" }).trim();
+      applied = execFileSync("git", ["show", `${parent}:${path}`], {
+        cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024,
+      });
+    } catch {
+      console.error(`${TAG.fail}SELF-TEST FAILED — cannot read the pre-damage bytes of ${path}.`);
+      failed++;
+      continue;
+    }
+    const v = onlyIdempotencyDiffers(applied, damaged);
+    if (v.ok) {
+      console.error(
+        `${TAG.fail}SELF-TEST FAILED — the damaged bytes of ${basename(path)} were ACCEPTED. This is ` +
+          `the exact file that ended up ledgered onto bytes Postgres refuses.`,
+      );
+      failed++;
+    } else {
+      console.log(`${TAG.ok}self-test RED — the real incident: ${basename(path)}'s damaged bytes are refused.`);
+    }
+  }
+
+  // GREEN — and only the statement heads count.
+  const v = onlyIdempotencyDiffers(base, good);
+  if (!v.ok || v.changed !== 4) {
     console.error(
-      `${TAG.fail}SELF-TEST FAILED — a file whose body ALSO changed was accepted. This mode would ` +
-        `then move a ledger checksum onto bytes the database never ran, which is the exact lie ` +
-        `the ledger exists to prevent.`,
+      `${TAG.fail}SELF-TEST FAILED — the idempotency-only amendment was refused ` +
+        `(${v.why?.split("\n")[0] ?? "no reason"}) or counted ${v.changed} instead of 4.`,
     );
-    return 1;
-  }
-  console.log(`${TAG.ok}self-test RED — a change beyond idempotency is refused: ${red.why?.split("\n")[0]}`);
-
-  // RED 2 — an unchanged file is refused (nothing to amend is not an amendment).
-  if (onlyIdempotencyDiffers(base, base).ok) {
-    console.error(`${TAG.fail}SELF-TEST FAILED — identical bytes were accepted as an amendment.`);
-    return 1;
-  }
-  console.log(`${TAG.ok}self-test RED — identical bytes are refused: there is nothing to amend.`);
-
-  // GREEN — only the two idempotency rewrites.
-  const good = onlyIdempotencyDiffers(base, normaliseIdempotent(base));
-  if (!good.ok || good.changed !== 3) {
-    console.error(
-      `${TAG.fail}SELF-TEST FAILED — the idempotency-only amendment was refused (${good.why ?? "no reason"}) ` +
-        `or counted ${good.changed} instead of 3.`,
+    failed++;
+  } else {
+    console.log(
+      `${TAG.ok}self-test GREEN — 4 statement heads made idempotent (CREATE FUNCTION, trigger, view, ` +
+        `function), and the event-trigger literal, the command_tag comparison and the comment that ` +
+        `all say the same words are untouched.`,
     );
+  }
+
+  if (failed) {
+    console.error(`${TAG.fail}${failed} self-test arm(s) failed. This mode is NOT safe to run.`);
     return 1;
   }
-  console.log(
-    `${TAG.ok}self-test GREEN — CREATE FUNCTION, CREATE TRIGGER and CREATE VIEW made idempotent, ` +
-      `3 creates, accepted.`,
-  );
   return 0;
+}
+
+/**
+ * THE REVERSE MOVE, and it can only ever undo THIS mode's own mistake.
+ *
+ * `--amend-idempotent --restore-ledger <file>` puts a row's checksum back to the value the row
+ * ITSELF records as the bytes that ran, and it is permitted only when both of these hold:
+ *   - `chair_step` carries this mode's note, `amend-idempotent: was <sha>`; and
+ *   - the file on disk hashes to exactly that `<sha>`.
+ * So it cannot invent history, cannot reach a row this mode never touched, and cannot be used to
+ * re-stamp a file: it restores a checksum the ledger already claims, over bytes that match it.
+ *
+ * It exists because `open_census_a_closed_schema_closes_itself.sql` should never have been edited
+ * at all — its only "CREATE FUNCTION" occurrences were an event-trigger `WHEN TAG IN` literal and
+ * a comment, so the correct file IS the applied file, and there is nothing to amend forward to.
+ */
+async function restoreLedger(path: string, target: Target): Promise<number> {
+  const filename = basename(path);
+  if (!existsSync(path)) {
+    console.error(`${TAG.fail}${path} does not exist.`);
+    return 1;
+  }
+  const current = readFileSync(path, "utf8");
+  const env = loadDbEnv();
+  if ("missing" in env) {
+    console.error(`${TAG.fail}missing ${env.missing.join(", ")} — cannot read the ledger.`);
+    return 1;
+  }
+  assertConfiguredHostMatchesTarget(env, target, loadBranchRef(ROOT, undefined));
+  const client = await connectDirect(env, "db:apply --restore-ledger");
+  try {
+    const row = await ledgerRow(client, filename);
+    if (!row) {
+      console.error(`${TAG.fail}${filename} has no ledger row at --target ${target}.`);
+      return 1;
+    }
+    const note = /amend-idempotent: was ([0-9a-f]{64})/.exec(row.chair_step ?? "");
+    if (!note) {
+      console.error(
+        `${TAG.fail}REFUSED — ${filename}'s ledger row carries no amend-idempotent note, so this mode ` +
+          `never touched it and has nothing to put back. A checksum is not restored on a guess.`,
+      );
+      return 1;
+    }
+    const applied = note[1]!;
+    const now = sha256(current);
+    if (now !== applied) {
+      console.error(
+        `${TAG.fail}REFUSED — the file on disk hashes to ${now.slice(0, 12)}, and the row says the ` +
+          `bytes that ran hash to ${applied.slice(0, 12)}. Restore the file first; this mode moves a ` +
+          `checksum onto bytes that match it, never the other way round.`,
+      );
+      return 1;
+    }
+    await client.query(
+      `update public._schema_migrations set checksum = $1, chair_step = $2
+        where source = $3 and filename = $4`,
+      [
+        applied,
+        `amend-idempotent REVERSED 2026-09-22: a bad amendment had written ${row.checksum}; the file ` +
+          `is back to the bytes that ran and the checksum with it. Nothing was ever executed.`,
+        SOURCE,
+        filename,
+      ],
+    );
+    console.log(
+      `${TAG.ok}${filename} — ledger RESTORED at --target ${target}: ${row.checksum.slice(0, 12)} -> ` +
+        `${applied.slice(0, 12)}, which is the SHA-256 of the file on disk. Nothing was executed.`,
+    );
+    return 0;
+  } finally {
+    await client.end().catch(() => {});
+  }
 }
 
 async function amendIdempotent(path: string, target: Target, statementTimeout: string): Promise<number> {
@@ -2302,11 +2549,33 @@ async function amendIdempotent(path: string, target: Target, statementTimeout: s
       );
       return 1;
     }
-    const found = ledgeredBytesFromGit(rel, row.checksum);
+    // 🚨 FOLLOW THIS MODE'S OWN NOTE TRAIL BACK TO THE BYTES THAT RAN (VERIFY-AMEND repair,
+    // 2026-09-22). If a previous amendment moved this row, the checksum in the ledger is no
+    // longer the checksum of anything the database executed — it is what that amendment wrote.
+    // The row records what it was, so the baseline is that, not the current value. Without this
+    // a bad amendment can never be undone: the tool would compare against its own mistake.
+    const priorNote = /amend-idempotent: was ([0-9a-f]{64})/.exec(row.chair_step ?? "");
+    // A row amended TWICE only records the last step, so the note can point at another
+    // amendment's output rather than at what ran. `--applied-checksum <sha>` names the true
+    // one explicitly; it proves nothing by itself — the byte-for-byte comparison below still
+    // has to hold against THAT blob — it only says which history to compare against.
+    const explicit = process.argv.find((a) => a.startsWith("--applied-checksum="));
+    const appliedChecksum = explicit
+      ? explicit.slice("--applied-checksum=".length).trim()
+      : priorNote
+        ? priorNote[1]!
+        : row.checksum;
+    if (priorNote) {
+      console.log(
+        `${TAG.warn}this row was amended before: the ledger holds ${row.checksum.slice(0, 12)}, but the ` +
+          `bytes that ACTUALLY ran hash to ${appliedChecksum.slice(0, 12)}. Judging against those.`,
+      );
+    }
+    const found = ledgeredBytesFromGit(rel, appliedChecksum);
     if (!found) {
       console.error(
-        `${TAG.fail}REFUSED — no commit touching ${rel} carries bytes hashing to the ledgered ` +
-          `checksum ${row.checksum}. The bytes that ran are not in this history, so nothing here can ` +
+        `${TAG.fail}REFUSED — no commit touching ${rel} carries bytes hashing to ` +
+          `${appliedChecksum}. The bytes that ran are not in this history, so nothing here can ` +
           `prove what changed. Do not amend; investigate.`,
       );
       return 1;
@@ -2323,8 +2592,9 @@ async function amendIdempotent(path: string, target: Target, statementTimeout: s
     }
 
     const newChecksum = sha256(current);
-    const note = `amend-idempotent: was ${row.checksum} (${found.commit.slice(0, 12)}), ` +
-      `${verdict.changed} create(s) made idempotent, nothing executed`;
+    const note = `amend-idempotent: was ${appliedChecksum} (${found.commit.slice(0, 12)}), ` +
+      `${verdict.changed} create(s) made idempotent, nothing executed` +
+      (priorNote ? ` [repaired over a bad amendment that had written ${row.checksum.slice(0, 12)}]` : ``);
     await client.query(`alter table public._schema_migrations add column if not exists chair_step text`);
     await client.query(
       `update public._schema_migrations set checksum = $1, chair_step = $2
@@ -2383,6 +2653,16 @@ async function main(): Promise<number> {
   }
   if (argv.includes("--amend-idempotent")) {
     if (argv.includes("--self-test")) return amendSelfTest();
+    if (argv.includes("--restore-ledger")) {
+      const j = argv.indexOf("--restore-ledger");
+      const f = argv.slice(j + 1).find((a) => !a.startsWith("--")) ??
+        argv.slice(argv.indexOf("--amend-idempotent") + 1).find((a) => !a.startsWith("--"));
+      if (!f) {
+        console.error(`${TAG.fail}--restore-ledger needs a file.`);
+        return 1;
+      }
+      return restoreLedger(resolve(ROOT, f), parseTargetFlag(argv));
+    }
     const i = argv.indexOf("--amend-idempotent");
     const given = argv.slice(i + 1).find((a) => !a.startsWith("--"));
     if (!given) {

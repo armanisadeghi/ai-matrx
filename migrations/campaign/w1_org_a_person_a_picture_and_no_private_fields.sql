@@ -163,6 +163,6 @@ $function$;
 comment on function platform._doctrine_field_shape_guard() is
   'REC-30 / REC-31 / REC-39, enforced where a value gets declared. Behind custom/entity_custom_fields_guard: OFF returns NEW untouched, ON refuses a scalar field that names a person (REC-30, remedy user_reference), a scalar field that names a picture (REC-31, remedy file) and any field that belongs to one member of an organization (REC-39, remedy: the Person''s own table). A field already typed user_reference / entity_reference / file is the right answer and is never refused. The words are data: platform.doctrine_shape_vocabulary().';
 
-create trigger _doctrine_field_shape_guard
+create or replace trigger _doctrine_field_shape_guard
   before insert or update on platform.custom_field_definition
   for each row execute function platform._doctrine_field_shape_guard();

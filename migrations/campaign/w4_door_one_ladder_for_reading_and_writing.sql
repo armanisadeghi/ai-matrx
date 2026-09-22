@@ -164,7 +164,7 @@ COMMENT ON FUNCTION custom.has_visibility(uuid, text, uuid, public.permission_le
 -- The level form of the SAME question: the highest rung the one function admits. This is
 -- what field masking asks, so a field''s sensitivity masks WITHIN a record the ladder has
 -- already said is readable, rather than being a second ladder of its own.
-create or replace function custom.effective_level(
+CREATE OR REPLACE FUNCTION custom.effective_level(
   p_user_id         uuid,
   p_organization_id uuid,
   p_id              uuid,
@@ -237,7 +237,7 @@ $function$;
 -- ---------------------------------------------------------------------------------------
 -- THE CLASS, AS A QUERY.
 -- ---------------------------------------------------------------------------------------
-create or replace function custom.doors_not_on_one_ladder()
+CREATE OR REPLACE FUNCTION custom.doors_not_on_one_ladder()
 RETURNS TABLE(function_name text, identity_args text, why text)
   LANGUAGE sql
   STABLE

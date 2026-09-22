@@ -269,7 +269,7 @@ $function$
 
 ;
 
-create or replace function custom.refusals_claiming_a_level_never_asked()
+CREATE OR REPLACE FUNCTION custom.refusals_claiming_a_level_never_asked()
  RETURNS TABLE(function_name text, identity_args text, why text)
  LANGUAGE sql
  STABLE

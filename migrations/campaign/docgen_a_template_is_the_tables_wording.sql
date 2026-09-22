@@ -49,7 +49,7 @@
 -- `{{field:<a word>}}` — the shape a model writes when it has not been given the ids, and
 -- the shape a person writes by hand. It is NEVER a merge (REC-68 keeps the id), so naming
 -- it is the only way to refuse it.
-create or replace function custom.doc_name_token_pattern()
+CREATE OR REPLACE FUNCTION custom.doc_name_token_pattern()
  RETURNS text
  LANGUAGE sql
  IMMUTABLE PARALLEL SAFE
@@ -58,7 +58,7 @@ AS $function$
   select '\{\{field:([A-Za-z][A-Za-z0-9 _.:-]{0,63})\}\}';
 $function$;
 
-create or replace function custom.doc_name_tokens(p_body text)
+CREATE OR REPLACE FUNCTION custom.doc_name_tokens(p_body text)
  RETURNS TABLE(ordinal integer, raw text)
  LANGUAGE sql
  IMMUTABLE PARALLEL SAFE
@@ -517,7 +517,7 @@ $function$;
 
 -- ───────────────────────────────────────────────────── 2. the letterhead ──
 
-create or replace function custom.doc_letterhead(p_organization_id uuid)
+CREATE OR REPLACE FUNCTION custom.doc_letterhead(p_organization_id uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
  STABLE

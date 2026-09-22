@@ -507,7 +507,7 @@ begin
 end;
 $fn$;
 
-create trigger _iam_one_owner_guard
+create or replace trigger _iam_one_owner_guard
   before insert or update of role on iam.memberships
   for each row execute function iam._one_owner_guard();
 
@@ -551,7 +551,7 @@ begin
 end;
 $fn$;
 
-create trigger _iam_per_table_grant_guard
+create or replace trigger _iam_per_table_grant_guard
   before insert or update of resource_type, resource_id on iam.permissions
   for each row execute function iam._per_table_grant_guard();
 
@@ -622,7 +622,7 @@ begin
 end;
 $fn$;
 
-create trigger _iam_world_lane_is_an_act
+create or replace trigger _iam_world_lane_is_an_act
   before insert or update on iam.content_lane
   for each row execute function iam._world_lane_is_an_act();
 

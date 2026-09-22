@@ -679,6 +679,6 @@ comment on function custom._promoted_field_cap_guard() is
 -- whose header names production (JUDGMENT.md §4), which is why every sibling in this campaign
 -- creates its trigger this way and leaves the dropping to the inverse. Re-application is
 -- rule 27's down-then-up, never an up on top of an up.
-create trigger zz_promoted_field_cap
+create or replace trigger zz_promoted_field_cap
   before insert or update on custom.record
   for each row execute function custom._promoted_field_cap_guard();

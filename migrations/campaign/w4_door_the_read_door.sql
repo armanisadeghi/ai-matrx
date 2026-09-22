@@ -319,7 +319,7 @@ begin
 end;
 $fn$;
 
-create trigger custom_record_field_write_door
+create or replace trigger custom_record_field_write_door
   before insert or update of data on custom.record
   for each row execute function custom._field_write_door();
 

@@ -105,8 +105,8 @@
 -- rule 4's fourth exception and nothing else: its body returns NEW untouched unless
 -- `custom/entity_custom_fields_guard` resolves true, which it does nowhere.
 --
--- IDEMPOTENCE, STATED HONESTLY. §6b.2's allow-list admits `create or replace view`, `CREATE TRIGGER`
--- and `create or replace function` and refuses `CREATE OR REPLACE` of a view or a trigger, and
+-- IDEMPOTENCE, STATED HONESTLY. §6b.2's allow-list admits `CREATE VIEW`, `CREATE TRIGGER`
+-- and `CREATE FUNCTION` and refuses `CREATE OR REPLACE` of a view or a trigger, and
 -- PostgreSQL has no `IF NOT EXISTS` for any of the three. So a second consecutive apply of
 -- these bytes is refused BY THE DATABASE (42P07 / 42710 / 42723) and changes nothing,
 -- exactly as `W1-STORE`'s, `W1-PROV`'s and `W1-TABLE`'s files do. Rule 27's loop is up →
@@ -489,7 +489,7 @@ $fn_fguard$;
 comment on function custom._field_shape_guard() is
   'FLD-1, FLD-2, FLD-3, FLD-5, FLD-7, FLD-9, FLD-12, FLD-13 and FLD-N-1: everything a field DEFINITION must declare, refused in the user''s own words and always by the field''s own name. The kernel `Field` row is exempt (REC-27: the kernel is defined in code, not data).';
 
-create trigger custom_record_field_shape_guard
+create or replace trigger custom_record_field_shape_guard
   before insert or update on custom.record
   for each row execute function custom._field_shape_guard();
 
@@ -571,7 +571,7 @@ $fn_mfguard$;
 comment on function custom._merge_field_shape_guard() is
   'DYN-2: a merge field declares exactly one source, exactly one semantic type and any number of modifiers, and no combination is ever its own type. The three axes are refused separately, so a caller learns which one it got wrong.';
 
-create trigger custom_record_merge_field_shape_guard
+create or replace trigger custom_record_merge_field_shape_guard
   before insert or update on custom.record
   for each row execute function custom._merge_field_shape_guard();
 
@@ -846,7 +846,7 @@ $fn_rfv$;
 comment on function custom._record_field_validation() is
   'REC-51 on the store: every write of a record is checked against the field definitions that APPLY to it (FLD-10), and refused by the field''s own name. T8''s retype moves a Value that stopped applying into data -> _retired with its reason - a STAND-IN for History, announced here with W3-HIST as the remedy, never a silent drop and never a coercion.';
 
-create trigger custom_record_field_validation
+create or replace trigger custom_record_field_validation
   before insert or update on custom.record
   for each row execute function custom._record_field_validation();
 
@@ -964,7 +964,7 @@ $fn_fdw$;
 comment on function custom._field_definition_write() is
   'FLD-8 / REC-51: writing a field DEFINITION through custom.field. It assembles the view''s columns back into the one stored document and writes custom.record, so custom._field_shape_guard fires on exactly the same bytes whichever way the definition arrives - the projection is a surface, never a second store with its own rules.';
 
-create trigger custom_field_definition_validation
+create or replace trigger custom_field_definition_validation
   instead of insert or update or delete on custom.field
   for each row execute function custom._field_definition_write();
 

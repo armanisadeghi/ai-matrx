@@ -103,15 +103,15 @@ begin
 end;
 $$;
 
-create trigger custom_record_store_door
+create or replace trigger custom_record_store_door
   before delete on custom.record
   for each row execute function custom._store_door();
 
-create trigger custom_external_link_store_door_delete
+create or replace trigger custom_external_link_store_door_delete
   before delete on custom.external_link
   for each row execute function custom._store_door();
 
-create trigger custom_external_source_store_door_delete
+create or replace trigger custom_external_source_store_door_delete
   before delete on custom.external_source
   for each row execute function custom._store_door();
 

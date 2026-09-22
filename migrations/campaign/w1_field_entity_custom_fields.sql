@@ -106,7 +106,7 @@ $fn_ecfg$;
 comment on function custom._entity_custom_fields_guard() is
   'REC-51 on a standard table''s custom_fields column. OFF is byte-for-byte the old behaviour: the knob is read first and NEW is returned untouched. The table token arrives as a trigger argument, so the one body serves every table custom.custom_fields_tables() lists.';
 
-create trigger custom_fields_validation
+create or replace trigger custom_fields_validation
   before insert or update of custom_fields on crm.party
   for each row execute function custom._entity_custom_fields_guard('party');
 

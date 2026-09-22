@@ -102,7 +102,7 @@
 -- schema `custom` is revoked from PUBLIC, anon, authenticated and service_role and is absent
 -- from `pgrst.db_schemas`. Nothing in this file is in `iam` or `platform`.
 --
--- IDEMPOTENCE, STATED HONESTLY. §6b.2's allow-list admits `create or replace function` and
+-- IDEMPOTENCE, STATED HONESTLY. §6b.2's allow-list admits `CREATE FUNCTION` and
 -- `CREATE TRIGGER` and refuses `CREATE OR REPLACE` of a trigger, and PostgreSQL has no
 -- `IF NOT EXISTS` for either. A second consecutive apply of these bytes is refused BY THE
 -- DATABASE (42723 / 42710) and changes nothing — the same honesty W1-STORE, W1-TABLE,
@@ -396,7 +396,7 @@ $fn_parity_guard$;
 comment on function custom._field_type_parity_guard() is
   'FLD-11: the thirteen parity types as declarations that can FAIL. A name nobody ships, a declaration that contradicts itself, a lookup with no relation to read through, a rollup with no aggregate, a formula with no expression, an attachment that would delete its record with its file, a url/email/phone with no pattern Rule and a percent with no range are each refused BY THE FIELD''S OWN NAME. It reads custom/system_enabled at its door and nowhere else: the switch decides who may write, never which check runs.';
 
-create trigger custom_record_field_type_parity_guard
+create or replace trigger custom_record_field_type_parity_guard
   before insert or update on custom.record
   for each row execute function custom._field_type_parity_guard();
 
@@ -707,7 +707,7 @@ comment on function custom._derived_fields() is
 -- The name is deliberate and ugly for a reason that is not taste: triggers fire in NAME
 -- order, and this one must run AFTER `custom_record_rule_uses`, whose compute use may
 -- produce a Value a formula field then reads.
-create trigger custom_record_zz_derived_fields
+create or replace trigger custom_record_zz_derived_fields
   before insert or update on custom.record
   for each row execute function custom._derived_fields();
 

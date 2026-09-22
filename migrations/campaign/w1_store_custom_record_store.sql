@@ -156,9 +156,9 @@ alter table custom.record_p15 enable row level security;
 -- REC-60's machinery. `_version_capture` is deliberately NOT attached: the registry will
 -- carry `is_versioned = false` for this token, `history.row_versions` is held OFF by
 -- `custom/row_versions_guard`, and the certifier SKIPs the check for an unversioned row.
-create trigger _stamp_actor before insert or update on custom.record
+create or replace trigger _stamp_actor before insert or update on custom.record
   for each row execute function platform._stamp_actor();
-create trigger _touch_row before insert or update on custom.record
+create or replace trigger _touch_row before insert or update on custom.record
   for each row execute function platform._touch_row();
 
 -- ── the one write door ─────────────────────────────────────────────────────────

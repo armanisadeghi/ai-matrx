@@ -96,7 +96,7 @@
 --
 -- IDEMPOTENCE, STATED HONESTLY, exactly as `W1-RULE` states it: §6b.2's allow-list refuses
 -- `CREATE OR REPLACE TRIGGER` and PostgreSQL has no `IF NOT EXISTS` for `CREATE TRIGGER` or
--- `create or replace function`, so a second consecutive apply of these bytes is refused BY THE DATABASE
+-- `CREATE FUNCTION`, so a second consecutive apply of these bytes is refused BY THE DATABASE
 -- (42723 / 42710) and changes nothing. Rule 27's loop is up -> inverse -> `--reapply`. Every
 -- seeded ROW is `on conflict do nothing`.
 --
@@ -813,7 +813,7 @@ comment on function custom._rule_topology_guard() is
 -- Postgres fires BEFORE ROW triggers in name order, `_t` sorts between `_s` and `_u`, and
 -- the order is load-bearing - a Rule whose shape is wrong is refused in the shape guard's
 -- own words before this guard tries to read an expression it cannot trust.
-create trigger custom_record_rule_topology_guard
+create or replace trigger custom_record_rule_topology_guard
   before insert or update on custom.record
   for each row execute function custom._rule_topology_guard();
 

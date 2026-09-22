@@ -206,7 +206,7 @@ $fn$;
 comment on function history.record_capture() is
   'HIS-1 / HIS-7: the campaign store''s append-only capture. Every data_class — record, table, field, rule, merge_field, kernel — lands in history.row_versions, so structural change and Value change share one store and there is no second mechanism.';
 
-create trigger zzz_history_capture
+create or replace trigger zzz_history_capture
   after insert or update or delete on custom.record
   for each row execute function history.record_capture();
 

@@ -202,6 +202,6 @@ comment on function platform.enforce_relation_edge() is
 -- `CREATE OR REPLACE TRIGGER`, never a DROP-then-CREATE: a DROP is refused by the additive
 -- allow-list in any file that names production (§6b.2's floor), and re-running this file has to
 -- be idempotent (rule 27). It also leaves no window in which the contract is absent.
-create trigger trg_associations_zzz_relation_contract
+create or replace trigger trg_associations_zzz_relation_contract
   before insert or update on platform.associations
   for each row execute function platform.enforce_relation_edge();

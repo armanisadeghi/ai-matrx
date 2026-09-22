@@ -155,7 +155,7 @@ $fn$;
 comment on function custom.io_record_changed() is
   'CUT-N-2 / DOOR-13: writes ONE custom.io_outbox row per record change, in the same transaction as the record. Reads custom.assert_store_door like every other door. Publishes nothing — custom.io_outbox_announce does that, from the outbox row.';
 
-create trigger io_record_changed
+create or replace trigger io_record_changed
   after insert or update or delete on custom.record
   for each row execute function custom.io_record_changed();
 
@@ -185,7 +185,7 @@ $fn$;
 comment on function custom.io_outbox_announce() is
   'DOOR-13: the ONE publisher on this database. Raised from the outbox row so the durable event and the signal can never disagree. The payload is a pointer, because pg_notify stops at 8000 bytes and a record does not.';
 
-create trigger io_outbox_announce
+create or replace trigger io_outbox_announce
   after insert on custom.io_outbox
   for each row execute function custom.io_outbox_announce();
 

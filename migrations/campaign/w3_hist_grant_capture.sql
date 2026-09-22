@@ -76,6 +76,6 @@ $fn$;
 comment on function history.grant_capture() is
   'VIS-16: the grant half of the replay. iam.permissions carried no version capture at all before this, so "who could see R on date D" had nothing to read. Inert — never raising — while custom/row_versions_guard is off, and history.capture_window is what keeps that silence honest.';
 
-create trigger zzz_history_grant_capture
+create or replace trigger zzz_history_grant_capture
   after insert or update or delete on iam.permissions
   for each row execute function history.grant_capture();

@@ -103,8 +103,8 @@
 -- Every trigger this file creates is on a table IN schema `custom` — it puts no trigger on
 -- any live table anywhere else.
 --
--- IDEMPOTENCE, STATED HONESTLY. §6b.2's allow-list admits `create or replace view`, `CREATE TRIGGER`
--- and `create or replace function` and refuses `CREATE OR REPLACE` of a view or a trigger, and
+-- IDEMPOTENCE, STATED HONESTLY. §6b.2's allow-list admits `CREATE VIEW`, `CREATE TRIGGER`
+-- and `CREATE FUNCTION` and refuses `CREATE OR REPLACE` of a view or a trigger, and
 -- PostgreSQL has no `IF NOT EXISTS` for any of the three. So a second consecutive apply of
 -- these bytes is refused BY THE DATABASE (42P07 / 42710 / 42723) and changes nothing,
 -- exactly as `W1-STORE`'s, `W1-PROV`'s, `W1-TABLE`'s and `W1-FIELD`'s files do. Rule 27's
@@ -710,7 +710,7 @@ $fn_rguard$;
 comment on function custom._rule_shape_guard() is
   'REC-15, REC-17 and FLD-9: everything a Rule must declare, refused in the user''s own words. The REC-17 half is the load-bearing one: every Field reference in the expression is walked at SAVE time and has to be an id of a live Field of the scope Table, and a name-shaped reference is refused — so a Rule that breaks REC-17 cannot be stored at all, never mind evaluated. The kernel `Rule` row is exempt (REC-27: the kernel is defined in code, not data).';
 
-create trigger custom_record_rule_shape_guard
+create or replace trigger custom_record_rule_shape_guard
   before insert or update on custom.record
   for each row execute function custom._rule_shape_guard();
 
@@ -803,7 +803,7 @@ $fn_rdw$;
 comment on function custom._rule_definition_write() is
   'REC-15: writing a Rule through custom.rule. It assembles the view''s columns back into the one stored document and writes custom.record, so custom._rule_shape_guard fires on exactly the same bytes whichever way the Rule arrives — the projection is a surface, never a second store with its own rules. It deliberately does NOT set version: REC-19''s counter is platform._touch_row''s, and one writer is the whole point.';
 
-create trigger custom_rule_definition_validation
+create or replace trigger custom_rule_definition_validation
   instead of insert or update or delete on custom.rule
   for each row execute function custom._rule_definition_write();
 
@@ -931,7 +931,7 @@ $fn_rru$;
 comment on function custom._record_rule_uses() is
   'REC-15 and REC-19 on the store: every write of a record asks the Rules of its Table, in declared order, for the two uses this lane wires. VALIDATE refuses the write in the Rule''s own words. COMPUTE writes the answer into data -> _computed -> <field key> WITH the rule id and THE VERSION THAT PRODUCED IT — a STAND-IN for History, announced here with W3-HIST as the remedy, which stamps its row from these keys. FLD-10''s type field selects which Rules apply exactly as it selects which Fields do.';
 
-create trigger custom_record_rule_uses
+create or replace trigger custom_record_rule_uses
   before insert or update on custom.record
   for each row execute function custom._record_rule_uses();
 

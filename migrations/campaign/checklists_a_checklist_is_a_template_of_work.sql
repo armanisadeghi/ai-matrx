@@ -1107,7 +1107,7 @@ begin
 end
 $$;
 
-create trigger zz_ckl_step_guard
+create or replace trigger zz_ckl_step_guard
   before update on custom.record
   for each row execute function custom._checklist_step_guard();
 
@@ -1210,7 +1210,7 @@ begin
 end
 $$;
 
-create trigger zz_ckl_watch
+create or replace trigger zz_ckl_watch
   after insert or update on custom.record
   for each row execute function custom._checklist_watch();
 

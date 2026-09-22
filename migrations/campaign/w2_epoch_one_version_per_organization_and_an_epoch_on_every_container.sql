@@ -239,7 +239,7 @@ comment on function custom.trg_associations_bump_visibility() is
   'whose role is one of the new store''s carrying roles, so it is inert for every association the '
   'platform writes today.';
 
-create trigger zz_w2_epoch_bump
+create or replace trigger zz_w2_epoch_bump
   after insert or update or delete on platform.associations
   for each row
   execute function custom.trg_associations_bump_visibility();

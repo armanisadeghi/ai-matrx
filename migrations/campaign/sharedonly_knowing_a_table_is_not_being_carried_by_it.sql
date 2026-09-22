@@ -44,7 +44,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- 1. THE LADDER'S FIRST THREE ARMS, UNDER THEIR OWN NAME.
 -- ─────────────────────────────────────────────────────────────────────────────────────────
-create or replace function custom.reaches_directly(p_user_id uuid, p_type text, p_id uuid, p_required public.permission_level DEFAULT 'viewer'::public.permission_level)
+CREATE OR REPLACE FUNCTION custom.reaches_directly(p_user_id uuid, p_type text, p_id uuid, p_required public.permission_level DEFAULT 'viewer'::public.permission_level)
  RETURNS boolean
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER

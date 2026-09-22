@@ -33,7 +33,7 @@
 --
 -- THE INVERSE is migrations/inverse/leakt10_one_function_answers_whether_a_table_carries_down.sql.
 
-create or replace function custom.table_carries_its_rows(p_user_id uuid, p_table_id uuid, p_required permission_level DEFAULT 'viewer'::permission_level)
+CREATE OR REPLACE FUNCTION custom.table_carries_its_rows(p_user_id uuid, p_table_id uuid, p_required permission_level DEFAULT 'viewer'::permission_level)
  RETURNS boolean
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER

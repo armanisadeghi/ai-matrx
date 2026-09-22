@@ -508,7 +508,7 @@ begin
 end
 $$;
 
-create trigger zz_workdoors_approval_guard
+create or replace trigger zz_workdoors_approval_guard
   before insert or update on custom.record
   for each row execute function custom._workdoors_approval_guard();
 

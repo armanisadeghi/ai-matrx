@@ -37,7 +37,7 @@
 --
 -- CREATE, not CREATE OR REPLACE: this function is new, and a file that names
 -- production is judged by an allow-list in which a REPLACE must declare the body it saw.
-create or replace function custom._store_on_for_a_new_organization()
+CREATE OR REPLACE FUNCTION custom._store_on_for_a_new_organization()
  RETURNS trigger
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -58,7 +58,7 @@ end;
 $function$;
 
 -- No DROP first: this trigger does not exist yet, and nothing on production is dropped.
-CREATE TRIGGER zz_store_on_for_a_new_organization
+CREATE OR REPLACE TRIGGER zz_store_on_for_a_new_organization
   AFTER INSERT ON iam.organizations
   FOR EACH ROW EXECUTE FUNCTION custom._store_on_for_a_new_organization();
 

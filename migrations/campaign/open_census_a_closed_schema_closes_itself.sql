@@ -15,7 +15,7 @@
 -- was a sentence, not a posture, and 31 functions were reachable by a signed-in person by
 -- accident:
 --
---   custom  — 10, every one of them through Postgres's own default. `create or replace function`
+--   custom  — 10, every one of them through Postgres's own default. `CREATE FUNCTION`
 --             grants EXECUTE to PUBLIC, `authenticated` holds USAGE on the schema (the
 --             opening pass grants it as "a consequence of there being a door"), and the
 --             two birth guards both stand down: `platform.enforce_definer_client_grants`
@@ -52,7 +52,7 @@
 --      lane loses EXECUTE from PUBLIC, `anon` and `authenticated`, and says so in
 --      `platform.ddl_guard_log`. One implementation; `custom.reopen_declared_doors()`
 --      becomes a wrapper over it so the two can never drift.
---   3. The event trigger that runs it stops being REVOKE-only. `create or replace function`,
+--   3. The event trigger that runs it stops being REVOKE-only. `CREATE FUNCTION`,
 --      `CREATE PROCEDURE`, `ALTER FUNCTION` and `GRANT` now run the same pass, so a
 --      function born in a closed schema is closed in the statement that created it —
 --      which is the class `delete_cascade_closure` belongs to.
@@ -257,7 +257,7 @@ $function$;
 drop event trigger if exists platform_reopen_declared_doors;
 create event trigger platform_reopen_declared_doors
   on ddl_command_end
-  when tag in ('REVOKE', 'GRANT', 'create or replace function', 'CREATE PROCEDURE', 'ALTER FUNCTION')
+  when tag in ('REVOKE', 'GRANT', 'CREATE FUNCTION', 'CREATE PROCEDURE', 'ALTER FUNCTION')
   execute function platform._reopen_declared_doors_after_revoke();
 
 -- ─────────────────────────────────────────────────────────────────────────────

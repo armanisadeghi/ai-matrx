@@ -26,7 +26,7 @@
 --
 -- REC-1 (a Table declares its fields) · REC-51.
 
-create or replace function custom._claimed_column_guard()
+CREATE OR REPLACE FUNCTION custom._claimed_column_guard()
  RETURNS trigger
  LANGUAGE plpgsql
  SET search_path TO 'pg_catalog'

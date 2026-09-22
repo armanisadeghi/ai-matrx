@@ -137,7 +137,7 @@ begin
 end;
 $function$;
 
-create trigger custom_record_choice_words
+create or replace trigger custom_record_choice_words
   before insert or update on custom.record
   for each row execute function custom._resolve_choice_words();
 
@@ -208,6 +208,6 @@ begin
 end;
 $function$;
 
-create trigger zzzz_unique_rule_holds
+create or replace trigger zzzz_unique_rule_holds
   before insert or update on custom.record
   for each row execute function custom._unique_rule_holds();

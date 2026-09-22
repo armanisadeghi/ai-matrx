@@ -186,7 +186,7 @@ comment on function custom.io_outbox_broadcast_stmt() is
 
 -- `zzz_` so it fires last, after everything else the outbox row sets off — the store's own
 -- ordering convention, the same one `zzz_history_capture_s_*` uses on `custom.record`.
-create trigger zzz_io_outbox_broadcast_s
+create or replace trigger zzz_io_outbox_broadcast_s
   after insert on custom.io_outbox
   referencing new table as new_rows
   for each statement

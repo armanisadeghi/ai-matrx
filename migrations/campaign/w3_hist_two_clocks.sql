@@ -198,7 +198,7 @@ $fn$;
 comment on function custom._dated_values_guard() is
   'HIS-5 and HIS-6: the world clock''s integrity. Periods are ordered, half-open and non-overlapping (MariaDB''s WITHOUT OVERLAPS, which HIS-6''s own proof cites), and a period on a Field that did not declare the `dated` modifier is refused by the field''s own name.';
 
-create trigger custom_record_dated_values_guard
+create or replace trigger custom_record_dated_values_guard
   before insert or update on custom.record
   for each row execute function custom._dated_values_guard();
 
@@ -374,7 +374,7 @@ $fn$;
 comment on function custom._merge_field_temporal_guard() is
   'DYN-19: a merge field that behaves temporally declares live, as-of or snapshot, and an as-of names WHICH CLOCK — world or recorded. A temporal block on a non-temporal merge field, and a moment named by a mode that never reads one, are both refused by name.';
 
-create trigger custom_record_merge_field_temporal_guard
+create or replace trigger custom_record_merge_field_temporal_guard
   before insert or update on custom.record
   for each row execute function custom._merge_field_temporal_guard();
 

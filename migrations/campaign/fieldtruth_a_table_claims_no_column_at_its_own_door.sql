@@ -35,7 +35,7 @@
 --
 -- REC-1 / REC-51.
 
-create or replace function custom.assert_columns_are_defined(p_organization_id uuid, p_record_id uuid, p_patch jsonb)
+CREATE OR REPLACE FUNCTION custom.assert_columns_are_defined(p_organization_id uuid, p_record_id uuid, p_patch jsonb)
  RETURNS void
  LANGUAGE plpgsql
  SECURITY DEFINER

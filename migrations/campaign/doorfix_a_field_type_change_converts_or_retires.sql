@@ -258,7 +258,7 @@ begin
 end;
 $function$;
 
-create trigger custom_record_field_type_converts_values
+create or replace trigger custom_record_field_type_converts_values
   after update on custom.record
   for each row
   execute function custom._field_type_converts_values();

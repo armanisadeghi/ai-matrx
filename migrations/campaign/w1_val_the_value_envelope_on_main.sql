@@ -528,7 +528,7 @@ $$;
 comment on function custom._value_envelope() is
   'VAL-1..VAL-8 on the write path: resolve and refuse the actor, strip the write-only declaration, intern the provenance, stamp the author and the time, recompute every version from the OLD row, then raise the envelope law''s own sentence. Named with a leading underscore because triggers fire in name order and this must run after platform._stamp_actor and before every custom_record_* guard.';
 
-create trigger _value_envelope
+create or replace trigger _value_envelope
   before insert or update on custom.record
   for each row execute function custom._value_envelope();
 
@@ -904,4 +904,4 @@ comment on function custom._record_field_validation() is
 -- ── the validation trigger, put back on custom.record ────────────────────────
 -- Dropped above only so `custom._record_field_validation()` could be dropped with it; this
 -- is `pg_get_triggerdef` of the live trigger, read from the main database before the drop.
-CREATE TRIGGER custom_record_field_validation BEFORE INSERT OR UPDATE ON custom.record FOR EACH ROW EXECUTE FUNCTION custom._record_field_validation();
+CREATE OR REPLACE TRIGGER custom_record_field_validation BEFORE INSERT OR UPDATE ON custom.record FOR EACH ROW EXECUTE FUNCTION custom._record_field_validation();

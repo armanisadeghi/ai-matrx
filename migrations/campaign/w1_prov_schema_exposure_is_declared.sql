@@ -16,7 +16,7 @@
 --     than trusting the apply — schema `custom` re-opened on the very next provision, exactly as
 --     it had in RED.
 --   `w1_prov_provisioner_honours_schema_exposure.sql` (18:07:44Z, reversed 18:11:19Z) was
---     complete and correct in behaviour, and failed rule 27: `create or replace function` is not idempotent,
+--     complete and correct in behaviour, and failed rule 27: `create function` is not idempotent,
 --     so the second apply of the same bytes raised 42723. The GREEN probe passed on it — an
 --     exit that stopped at "it works" would have shipped a file that cannot be re-applied. Its
 --     other defect was a `%L` inside a `RAISE NOTICE`, which understands `%` and nothing else:
@@ -1379,7 +1379,7 @@ begin
 
   -- ---- views -----------------------------------------------------------
   for v_item in select value from jsonb_array_elements(n->'views') loop
-    execute format('create or replace view %I.%I with (security_invoker = %s) as %s',
+    execute format('create view %I.%I with (security_invoker = %s) as %s',
       v_schema, v_item->>'name',
       case when coalesce((v_item->>'security_invoker')::boolean, true) then 'true' else 'false' end,
       v_item->>'definition');
@@ -1398,7 +1398,7 @@ begin
   -- lane B). An entry WITHOUT one declares a door for a function that already exists.
   for v_item in select value from jsonb_array_elements(n->'functions') loop
     if v_item ? 'body' then
-      execute format('create or replace function %I.%I(%s) returns %s language %s %s set search_path to %L as $provision_body$%s$provision_body$',
+      execute format('create function %I.%I(%s) returns %s language %s %s set search_path to %L as $provision_body$%s$provision_body$',
         v_schema, v_item->>'name', coalesce(v_item->>'args',''), v_item->>'returns',
         coalesce(v_item->>'language','plpgsql'),
         case when lower(coalesce(v_item->>'security','invoker')) = 'definer' then 'security definer' else 'security invoker' end,

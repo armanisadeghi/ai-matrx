@@ -23,7 +23,7 @@
 -- is a view, a trigger, a function or one knob row.
 --
 -- THE NAME IS QUOTED, AND IT HAS TO BE. `table` is a fully reserved word in PostgreSQL:
--- `create or replace view custom.table` is a syntax error even though the name is schema-qualified.
+-- `create view custom.table` is a syntax error even though the name is schema-qualified.
 -- Every reference in this file and in its inverse is `custom."table"`.
 --
 -- WHAT EACH LAW BECOMES, IN THE ORDER THE CONTRACT STATES THEM
@@ -85,7 +85,7 @@
 -- would refuse.
 --
 -- IDEMPOTENCE, STATED HONESTLY RATHER THAN CLAIMED. §6b.2's additive allow-list admits
--- `create or replace view` and `CREATE TRIGGER` and REFUSES `CREATE OR REPLACE VIEW`, `CREATE OR
+-- `CREATE VIEW` and `CREATE TRIGGER` and REFUSES `CREATE OR REPLACE VIEW`, `CREATE OR
 -- REPLACE TRIGGER` and every `DO` block by name, and PostgreSQL has no `IF NOT EXISTS` for
 -- a view, a trigger or a function. So a second consecutive apply of these bytes is refused
 -- BY THE DATABASE (42P07 / 42710 / 42723) and changes nothing, exactly as `W1-STORE`'s and
@@ -357,7 +357,7 @@ $fn_cguard$;
 comment on function custom._containment_guard() is
   'REC-7, REC-8 and REC-N-4, raised by this trigger and by nothing else: zero or one parent; no container inside itself ("this would put it inside itself"); and a chain no longer than custom.containment_depth_ceiling, refused in the user''s own words and never quoting a number the organization did not set.';
 
-create trigger custom_record_containment_guard
+create or replace trigger custom_record_containment_guard
   before insert or update on custom.record
   for each row execute function custom._containment_guard();
 
@@ -499,7 +499,7 @@ $fn_tguard$;
 comment on function custom._table_shape_guard() is
   'REC-1, REC-2, REC-11, REC-66 and REC-N-17: everything a Table must declare, refused in the user''s own words. The kernel''s nine are exempt (REC-27: defined in code, not data) and the view supplies their defaults.';
 
-create trigger custom_record_table_shape_guard
+create or replace trigger custom_record_table_shape_guard
   before insert or update on custom.record
   for each row execute function custom._table_shape_guard();
 

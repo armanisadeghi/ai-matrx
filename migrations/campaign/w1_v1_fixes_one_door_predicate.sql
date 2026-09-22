@@ -144,11 +144,11 @@ $fn_sd$;
 comment on function custom._store_door() is
   'The custom-data store door as a trigger: one call to custom.assert_store_door, naming the table it fired on. Bound to the tables in schema custom that carry no door of their own.';
 
-create trigger custom_external_link_store_door
+create or replace trigger custom_external_link_store_door
   before insert or update on custom.external_link
   for each row execute function custom._store_door();
 
-create trigger custom_external_source_store_door
+create or replace trigger custom_external_source_store_door
   before insert or update on custom.external_source
   for each row execute function custom._store_door();
 

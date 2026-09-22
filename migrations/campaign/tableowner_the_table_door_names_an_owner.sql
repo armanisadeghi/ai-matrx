@@ -63,7 +63,7 @@ comment on function custom._table_owner_stamp() is
   'so the Owner rung of the one ladder is never empty. Fires only when platform._stamp_actor '
   'found nobody. An organization with no members leaves the row ownerless, which is the truth.';
 
-create trigger zz0_table_owner
+create or replace trigger zz0_table_owner
   before insert on custom.record
   for each row
   when (new.data_class = 'table' and new.created_by is null)
