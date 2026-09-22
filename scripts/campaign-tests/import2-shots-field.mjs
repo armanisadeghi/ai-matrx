@@ -39,14 +39,15 @@ await shot("7-the-summary-as-the-office-first-wrote-it", "ticket number first, t
 // A peer lane is turning these organizations' record stores off and on all night; this waits
 // for the switch rather than flipping it, because it is not this lane's switch.
 let error = null;
-for (let tries = 0; tries < 40; tries += 1) {
+for (let tries = 0; tries < 120; tries += 1) {
   ({ error } = await client.schema("custom").rpc("field_update", {
     p_organization_id: ORG, p_field_id: FIELD,
     p_patch: { expr: { op: "concat", args: [{ field: SERVICE }, { const: " · " }, { field: JOB }] } },
   }));
   if (!error) break;
   if (error.code !== "42501") break;
-  await new Promise((r) => setTimeout(r, 8000));
+  if (tries % 10 === 0) console.log(`  waiting for the record store switch (attempt ${tries + 1}): ${error.code}`);
+  await new Promise((r) => setTimeout(r, 5000));
 }
 if (error) { console.error("field_update refused:", error.code, error.message); process.exit(1); }
 console.log("  the formula was changed through custom.field_update, with nothing but expr in the patch");

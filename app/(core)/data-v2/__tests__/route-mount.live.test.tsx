@@ -159,6 +159,24 @@ jest.mock("next/navigation", () => ({
   useSearchParams: () => routeQuery,
   usePathname: () => "/data-v2",
 }));
+// The table route's "ask an agent for a form" button launches a MANDATE
+// through the platform's agent launcher. That launcher lives on the real redux
+// store (`useAppStore`, `conversationFocus`, the execution slices) and is
+// proved by its own suite; it is not the store binding this file exists to
+// prove, and pulling it in is what made the third test die first on
+// "useAppStore is not a function" and then on a selector reading
+// `conversationFocus` off an empty state. Replaced at the hook, so the page
+// still renders its real button and every records door is still called for
+// real.
+jest.mock("@/features/agents/hooks/useAgentLauncher", () => ({
+  useAgentLauncher: () => ({
+    launchMandate: jest.fn(),
+    launchAgent: jest.fn(),
+    launchShortcut: jest.fn(),
+    launchChat: jest.fn(),
+    close: jest.fn(),
+  }),
+}));
 // Page chrome is the platform's and is proved by its own tests; it drags the
 // whole shell (and its own store reads) into jsdom for nothing here.
 jest.mock("@/features/shell/components/header/PageHeader", () => ({
