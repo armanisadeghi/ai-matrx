@@ -1382,6 +1382,9 @@ export const toolRendererRegistry: ToolRegistry = {
     resultsLabel: "Query Result",
     InlineComponent: SqlInline,
     OverlayComponent: SqlInline,
+    // Database output is process detail, not the answer. Keep its preview
+    // behind the transcript line until the person explicitly opens it.
+    displayMode: "never-open",
     keepExpandedOnStream: true,
     getHeaderSubtitle: (entry) =>
       summarizeSql({
@@ -1403,6 +1406,9 @@ export const toolRendererRegistry: ToolRegistry = {
     resultsLabel: "Query Result",
     InlineComponent: SqlInline,
     OverlayComponent: SqlInline,
+    // Keep database output collapsed until explicitly opened (same tool family
+    // as `sql`, even though this backend uses the `db_query` name).
+    displayMode: "never-open",
     keepExpandedOnStream: true,
     getHeaderSubtitle: (entry) =>
       summarizeSql({
@@ -1424,6 +1430,8 @@ export const toolRendererRegistry: ToolRegistry = {
     resultsLabel: "Schema",
     InlineComponent: DbSchemaInline,
     OverlayComponent: DbSchemaInline,
+    // Schema reads are likewise technical process detail, not a deliverable.
+    displayMode: "never-open",
     keepExpandedOnStream: true,
     getHeaderSubtitle: (entry) => {
       const table = getArg<string>(entry, "table");
