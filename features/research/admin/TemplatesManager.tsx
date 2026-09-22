@@ -409,7 +409,14 @@ export function TemplatesManager() {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  // SINGLE-EXPAND, because that is the contract @ai-matrx/design-system
+  // actually ships. `expandedIds`/`onExpandedIdsChange` exist in the package's
+  // SOURCE (aidream 437b25bdbe, "support multiple expanded details") but the
+  // published 0.34.0 — which is `latest`, and what CI and Vercel install —
+  // carries neither the type nor the runtime for them. So this table's
+  // chevrons did nothing in every deployed build, and CI was right to be red.
+  // Multi-expand returns here the moment a design-system release carries it.
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [builtinNames, setBuiltinNames] = useState<Record<string, string>>({});
 
   const [editingTemplate, setEditingTemplate] =
@@ -832,29 +839,19 @@ export function TemplatesManager() {
                 filter: false,
                 width: 44,
                 cell: (template) =>
-                  expandedIds.has(template.id) ? (
+                  expandedId === template.id ? (
                     <ChevronLeftTapButton
                       ariaLabel={`Collapse ${template.name} configuration`}
                       tooltip={`Collapse ${template.name} configuration`}
                       variant="transparent"
-                      onClick={() =>
-                        setExpandedIds((previous) => {
-                          const next = new Set(previous);
-                          next.delete(template.id);
-                          return next;
-                        })
-                      }
+                      onClick={() => setExpandedId(null)}
                     />
                   ) : (
                     <ChevronRightTapButton
                       ariaLabel={`Expand ${template.name} configuration`}
                       tooltip={`Expand ${template.name} configuration`}
                       variant="transparent"
-                      onClick={() =>
-                        setExpandedIds((previous) =>
-                          new Set(previous).add(template.id),
-                        )
-                      }
+                      onClick={() => setExpandedId(template.id)}
                     />
                   ),
               },
@@ -873,8 +870,8 @@ export function TemplatesManager() {
               add: { onAdd: openCreate },
             }}
             expandedDetail={{
-              expandedIds,
-              onExpandedIdsChange: setExpandedIds,
+              expandedId,
+              onExpandedIdChange: setExpandedId,
               render: (template) => (
                 <TemplateConfiguration
                   template={template}
