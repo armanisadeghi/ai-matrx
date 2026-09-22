@@ -596,6 +596,12 @@
       "reason": "Same resolver-cache-TTL pattern as matrx_graph.knobs, an internal cache freshness constant, not the retry policy itself."
     },
     {
+      "file": "aidream/packages/matrx-records/matrx_records/knobs.py",
+      "name": "KNOB_CACHE_TTL_SECONDS",
+      "kind": "resolver-cache",
+      "reason": "Same resolver-cache-TTL pattern as matrx_graph.knobs and matrx_seo.knobs: how long this reader trusts a resolved store read size before asking platform.knob_resolve again. It cannot itself be a knob — it is the freshness of the knob read — and the sizes it caches (records/store.read_default_limit, store.read_max_limit) are the tunable values."
+    },
+    {
       "file": "aidream/packages/matrx-records/matrx_records/merge/declaration.py",
       "name": "MAX_REFERENCE_HOPS",
       "kind": "protocol",
