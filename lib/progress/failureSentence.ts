@@ -56,6 +56,88 @@ import { DEFAULT_FAILURE_REMEDY } from "./honestSummary";
 const PARENTHESISED_CLASS =
   /\s*\((?:[A-Za-z_][A-Za-z0-9_]*\.)*[A-Za-z_][A-Za-z0-9_]*(?:Error|Exception|Failure)\)/g;
 
+/**
+ * 🚨 A MACHINE TOKEN STANDING INSIDE OTHERWISE GOOD ENGLISH — cold walk 20,
+ * defect B (2026-09-22, production v0.4.2135 AND v0.4.2139).
+ *
+ * Ten rows of `/acquisition`'s WHAT HAPPENED column read, verbatim:
+ *
+ *   YouTube would not answer what captions this video has — it asked the
+ *   server to prove it is not a robot (LOGIN_REQUIRED). YouTube said: "Sign in
+ *   to confirm you're not a bot". … YouTube could not be reached to ask what
+ *   captions this video has (ProxyError), so nothing is known about them yet.
+ *
+ * `LOGIN_REQUIRED` is YouTube's own `playabilityStatus.status` enum and
+ * `ProxyError` is `type(exc).__name__`, both interpolated straight into the
+ * sentence by `aidream/services/media_catalog/adapters/youtube_adapter.py`.
+ * Everything around them is excellent: the prose names the provider's own
+ * words, refuses to claim the video has no captions, and the adjacent column
+ * says exactly what to do. The tokens add nothing a person can use.
+ *
+ * Why nothing caught it: `BARE_CLASS` is anchored `^…$`, so it only sees a
+ * class name that IS the whole string, and no `MACHINE_SHAPES` entry matches
+ * an identifier sitting in parentheses mid-prose. `PARENTHESISED_CLASS` does
+ * strip `(ProxyError)` — but only in `humanFailureSentence`/`personSentence`,
+ * which this path never calls — and it would still miss `(LOGIN_REQUIRED)`,
+ * which carries no `Error` suffix.
+ *
+ * So the rule is: LIFT, don't nuke. A sentence whose only fault is a
+ * parenthesised identifier keeps every word the server wrote; the identifier
+ * moves to the muted detail line. Replacing it with a generic system-error
+ * sentence would throw away four clauses of genuinely good writing to remove
+ * one word.
+ */
+const PARENTHESISED_MACHINE_TOKEN = new RegExp(
+  "\\s*\\(" +
+    "(?:" +
+    // A SCREAMING_SNAKE provider constant. The underscore is what makes this
+    // safe: an English parenthetical is never `LOGIN_REQUIRED`, and `(HOA)`,
+    // `(USA)`, `(PDF)` carry no underscore and are left alone.
+    "[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+" +
+    "|" +
+    // An exception / failure class, dotted or not, by its suffix. Same
+    // anchoring principle as PARENTHESISED_CLASS: prose that merely says
+    // "error" is a real reason and is never touched.
+    "(?:[A-Za-z_][A-Za-z0-9_]*\\.)*[A-Za-z_][A-Za-z0-9_]*" +
+    "(?:Error|Exception|Failure|Timeout|Refused|Denied)" +
+    ")" +
+    "\\)",
+  "g",
+);
+
+/** A sentence with its embedded machine tokens taken out, and what they were. */
+export interface LiftedSentence {
+  /** The prose, word for word, minus the parenthesised identifiers. */
+  text: string;
+  /** The tokens that were lifted out, in the order they stood. */
+  tokens: string[];
+}
+
+/**
+ * Take every parenthesised machine identifier out of a sentence and hand it
+ * back separately. Exported so a guard can assert it over the real stored rows
+ * and so the aidream repair script's expectations can be read against it.
+ */
+export function liftEmbeddedMachineTokens(
+  raw: string | null | undefined,
+): LiftedSentence {
+  const value = (raw ?? "").trim();
+  if (!value) return { text: "", tokens: [] };
+  const tokens =
+    value
+      .match(new RegExp(PARENTHESISED_MACHINE_TOKEN.source, "g"))
+      ?.map((match) => match.trim().replace(/^\(|\)$/g, "")) ?? [];
+  if (tokens.length === 0) return { text: value, tokens: [] };
+  const text = value
+    .replace(new RegExp(PARENTHESISED_MACHINE_TOKEN.source, "g"), "")
+    // The regex eats the space BEFORE the parenthesis, so "robot (X)." closes
+    // as "robot." and "has (X), so" as "has, so" with nothing to tidy. This
+    // only catches a sentence that had a space on both sides.
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return { text, tokens };
+}
+
 /** The same token standing ALONE as the whole message. */
 const BARE_CLASS =
   /^(?:[A-Za-z_][A-Za-z0-9_]*\.)*[A-Za-z_][A-Za-z0-9_]*(?:Error|Exception|Failure)\.?$/;
@@ -340,7 +422,15 @@ export function personFacingSentence(
 ): ProviderErrorSentence {
   const value = (raw ?? "").trim();
   if (!value) return { text: "It refused without saying why." };
-  if (!namesMachineText(value)) return { text: value };
+  if (!namesMachineText(value)) {
+    // WALK 20 DEFECT B — the sentence is good English carrying a parenthesised
+    // identifier. Lift the identifier into the detail and keep every word.
+    const lifted = liftEmbeddedMachineTokens(value);
+    if (lifted.tokens.length > 0 && lifted.text) {
+      return { text: lifted.text, detail: value };
+    }
+    return { text: value };
+  }
   return {
     text: remedy ? `${SYSTEM_ERROR_SENTENCE} ${remedy}` : SYSTEM_ERROR_SENTENCE,
     detail: value,
