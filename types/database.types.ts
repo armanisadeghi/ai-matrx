@@ -64886,6 +64886,9 @@ export type Database = {
           audit_class_reason: string | null
           base_tier: number
           category: string | null
+          client_anonymous_excluded_columns: string[] | null
+          client_anonymous_public_read: boolean
+          client_anonymous_public_read_reason: string | null
           client_excluded_columns: string[] | null
           client_read_only: boolean
           component_anon_read_via_public_parent: boolean
@@ -64943,6 +64946,9 @@ export type Database = {
           audit_class_reason?: string | null
           base_tier?: number
           category?: string | null
+          client_anonymous_excluded_columns?: string[] | null
+          client_anonymous_public_read?: boolean
+          client_anonymous_public_read_reason?: string | null
           client_excluded_columns?: string[] | null
           client_read_only?: boolean
           component_anon_read_via_public_parent?: boolean
@@ -65004,6 +65010,9 @@ export type Database = {
           audit_class_reason?: string | null
           base_tier?: number
           category?: string | null
+          client_anonymous_excluded_columns?: string[] | null
+          client_anonymous_public_read?: boolean
+          client_anonymous_public_read_reason?: string | null
           client_excluded_columns?: string[] | null
           client_read_only?: boolean
           component_anon_read_via_public_parent?: boolean
@@ -69998,6 +70007,18 @@ export type Database = {
       assist_production_allowed: {
         Args: { p_source_key: string }
         Returns: boolean
+      }
+      assoc_unset: {
+        Args: {
+          p_role?: string
+          p_source_id: string
+          p_source_type: string
+          p_target_id: string
+          p_target_type: string
+          p_via_id?: string
+          p_via_type?: string
+        }
+        Returns: number
       }
       attach_soft_delete_cascade: {
         Args: { p_schema: string; p_table: string }
