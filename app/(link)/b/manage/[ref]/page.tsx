@@ -12,6 +12,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { PublicLinkNotice } from "@/components/public-link/PublicLinkNotice";
 import { managedBooking } from "@/features/booking/service";
 
 import { ManageBooking } from "./ManageBooking";
@@ -34,6 +35,14 @@ export default async function ManageBookingPage({
   const { ref } = await params;
   const booking = await managedBooking(ref);
   if (!booking) notFound();
+
+  // THE STORE IS SWITCHED OFF (STORE-OFF, 2026-09-22). This is the worst place in
+  // the product to answer 404: the person holding this link HAS an appointment and
+  // was mailed the address at the moment it was confirmed, so "nothing here" told
+  // them their booking had evaporated. The store's own sentence instead.
+  if (booking.state === "unavailable") {
+    return <PublicLinkNotice title={booking.title} message={booking.message} />;
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center px-5 pb-safe pt-8 matrx-touch-targets">

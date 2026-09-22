@@ -101,7 +101,8 @@ export interface PublicBooking {
   honeypot_key: string | null;
   availability: BookingAvailability;
   slots: BookingSlot[];
-  state: "open" | "closed" | "full";
+  /** `unavailable` is STORE-OFF's — published, but the organization's store is switched off. */
+  state: "open" | "closed" | "full" | "unavailable";
   message: string | null;
 }
 
@@ -235,7 +236,8 @@ export interface ManagedBooking {
   status: string;
   slots: BookingSlot[];
   availability: BookingAvailability;
-  state: "booked" | "cancelled" | "held";
+  /** `unavailable` is STORE-OFF's — a real appointment whose organization switched the store off. */
+  state: "booked" | "cancelled" | "held" | "unavailable";
   message: string | null;
 }
 

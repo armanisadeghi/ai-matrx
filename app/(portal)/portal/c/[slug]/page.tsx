@@ -29,6 +29,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { PublicLinkNotice } from "@/components/public-link/PublicLinkNotice";
 import { PortalSignInForm } from "@/features/portals/PortalSignInForm";
 import { PortalSignOutButton } from "@/features/portals/PortalSignOutButton";
 import {
@@ -71,6 +72,20 @@ export default async function ClientPortalPage({
   // not opened its external lane" are all `null`, and all 404.
   const portal = await portalPublic(slug);
   if (!portal) notFound();
+
+  // THE STORE IS SWITCHED OFF (STORE-OFF, 2026-09-22), AND THIS WAS THE LONGEST
+  // WALK INTO A WALL IN THE PRODUCT. `custom.portal_public` was the one public
+  // reader that never asked the store's own switch — it asks the external LANE —
+  // so a real client of a store-off organization was shown the sign-in panel,
+  // typed her email, got a magic link, clicked it, came back signed in, and only
+  // then met `custom.assert_store_door`'s 42501: a sentence written for the owner
+  // of the store, about writes, shown to somebody's customer. Asked once, here,
+  // before the panel, in the store's own words.
+  // NOT inside `Shell`: the notice IS the whole screen and carries its own
+  // full-height `<main>`, and a host frame either IS the chrome or has none.
+  if (portal.state === "unavailable") {
+    return <PublicLinkNotice title={portal.title} message={portal.message} />;
+  }
 
   const viewer = await portalViewer();
   if (!viewer) {

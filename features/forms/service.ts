@@ -20,10 +20,15 @@ import "server-only";
 // WHAT THE PUBLIC READ CAN AND CANNOT SEE. `custom.form_public` answers the
 // form's own words and the Field definitions of exactly the keys it exposes. It
 // reads NO record of the table it writes into — not one row, not a count, not an
-// id. A form that does not exist, one that was never published, and one in an
-// organization whose store is switched off all answer with ZERO ROWS, so the
-// link cannot be used to learn that anything is there. That is the 404, and it
-// is `iam.resolve_publish_binding`'s own precedent.
+// id. A form that does not exist and one that was never published answer with ZERO
+// ROWS, so the link cannot be used to learn that anything is there. That is the
+// 404, and it is `iam.resolve_publish_binding`'s own precedent.
+//
+// A PUBLISHED form whose organization has switched the record store OFF is NOT
+// one of those, and STORE-OFF (2026-09-22) stopped it pretending to be: the
+// holder of that link was GIVEN it by the organization, so there is nothing left
+// to hide and a 404 only made the organization's own switch look like our product
+// losing their page. It answers `state: "unavailable"` and the store's sentence.
 
 import { cache } from "react";
 
@@ -80,7 +85,12 @@ export interface PublicForm {
   /** The exposed Fields as the store holds them, each with its own id. */
   fields: Array<Record<string, unknown>>;
   honeypot_key: string | null;
-  state: "open" | "closed" | "full";
+  /**
+   * `unavailable` is STORE-OFF's: the form is published and the link is real, but its
+   * organization has switched the record store off, so the door answers a sentence naming
+   * that instead of the zero rows it used to (which the page turned into a 404).
+   */
+  state: "open" | "closed" | "full" | "unavailable";
   message: string | null;
 }
 

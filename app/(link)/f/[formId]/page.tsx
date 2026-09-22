@@ -16,14 +16,22 @@
 // never holds a key to the record store. The only client code on this page is
 // the runner itself, which takes answers and posts them to a route handler.
 //
-// 404 IS THE ANSWER TO THREE DIFFERENT QUESTIONS, on purpose: a form that never
-// existed, one that was never published, and one in an organization whose store
-// is switched off all resolve to nothing. Telling them apart would let a link be
-// used to learn that something is there.
+// 404 IS THE ANSWER TO TWO DIFFERENT QUESTIONS, on purpose: a form that never
+// existed and one that was never published both resolve to nothing. Telling them
+// apart would let a link be used to learn that something is there.
+//
+// IT USED TO BE THREE, AND THE THIRD WAS A DEFECT (STORE-OFF, 2026-09-22): a
+// PUBLISHED form in an organization that has switched its record store off also
+// answered nothing, so the owner published it, was handed a URL, sent it to her
+// customers, and every one of them saw a page that said nothing was there. She
+// gave them this address; there is nothing left to hide. The store now answers
+// `state: "unavailable"` and says whose switch it is, and the branch below —
+// which was already the right shape for closed and full — prints it.
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { PublicLinkNotice } from "@/components/public-link/PublicLinkNotice";
 import { publicForm } from "@/features/forms/service";
 
 import { PublicFormRunner } from "./PublicFormRunner";
@@ -62,17 +70,13 @@ export default async function PublicFormPage({
   const form = await publicForm(formId);
   if (!form) notFound();
 
-  // CLOSED AND FULL ARE NOT ERRORS, and they are not 404s either: the link is
-  // real and the person following it deserves a sentence rather than a dead
-  // end. The words are the STORE's (`custom.form_public.message`), so the page
-  // and the door can never say different things.
+  // CLOSED, FULL AND SWITCHED OFF ARE NOT ERRORS, and they are not 404s either:
+  // the link is real and the person following it deserves a sentence rather than
+  // a dead end. The words are the STORE's (`custom.form_public.message`), so the
+  // page and the door can never say different things, and the shape is the one
+  // every public link in this product uses for a refusal.
   if (form.state !== "open") {
-    return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center px-5 py-12 text-center">
-        <h1 className="text-xl font-medium">{form.title}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{form.message}</p>
-      </main>
-    );
+    return <PublicLinkNotice title={form.title} message={form.message} />;
   }
 
   return (

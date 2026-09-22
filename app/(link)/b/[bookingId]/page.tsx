@@ -22,13 +22,17 @@
 // which is a display concern and nothing else.
 //
 // 404 IS THE ANSWER TO FOUR DIFFERENT QUESTIONS, on purpose: a page that never
-// existed, one never published, one that is a plain form rather than a booking
-// page, and one in an organization whose store is switched off all resolve to
-// nothing. Telling them apart would let a link be used to learn something is there.
+// existed, one never published, and one that is a plain form rather than a
+// booking page all resolve to nothing. Telling them apart would let a link be
+// used to learn something is there. A page in an organization whose store is
+// switched OFF used to be a fourth, and STORE-OFF (2026-09-22) took it out of
+// that set: the person holding this link was sent it by the business whose
+// calendar it is, so the door names the switch instead of disappearing.
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { PublicLinkNotice } from "@/components/public-link/PublicLinkNotice";
 import { publicBooking } from "@/features/booking/service";
 
 import { BookingPicker } from "./BookingPicker";
@@ -66,16 +70,14 @@ export default async function PublicBookingPage({
   const page = await publicBooking(bookingId);
   if (!page) notFound();
 
-  // CLOSED AND FULL ARE NOT ERRORS, and they are not 404s either: the link is
-  // real and the person following it deserves a sentence rather than a dead end.
-  // The words are the STORE's, so the page and the door can never disagree.
+  // CLOSED, FULL AND SWITCHED OFF ARE NOT ERRORS, and they are not 404s either:
+  // the link is real and the person following it deserves a sentence rather than
+  // a dead end. The words are the STORE's, so the page and the door can never
+  // disagree. `unavailable` is STORE-OFF's (2026-09-22): a booking page whose
+  // organization has switched the record store off used to 404 at the customer
+  // who was sent it.
   if (page.state !== "open") {
-    return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center px-5 py-12 text-center">
-        <h1 className="text-xl font-medium">{page.title}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{page.message}</p>
-      </main>
-    );
+    return <PublicLinkNotice title={page.title} message={page.message} />;
   }
 
   return (

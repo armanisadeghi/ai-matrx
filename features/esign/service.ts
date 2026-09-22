@@ -50,6 +50,8 @@ function storeDoors(): StoreCaller {
 
 /** Every state a signature request can be in. The STORE derives it; nothing here does. */
 export type SignRequestState =
+  /** STORE-OFF: found, real, and its organization has switched the record store off. */
+  | "unavailable"
   | "sent"
   | "viewed"
   | "signed"

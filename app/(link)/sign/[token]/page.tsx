@@ -28,6 +28,8 @@ import type { Metadata } from "next";
 
 import { publicSignRequest } from "@/features/esign/service";
 
+import { PublicLinkNotice } from "@/components/public-link/PublicLinkNotice";
+
 import { SignRunner } from "./SignRunner";
 
 // A signing link is answered now, by whoever holds it; its state moves and
@@ -50,16 +52,19 @@ export default async function PublicSignPage({
   const { token } = await params;
   const request = await publicSignRequest(token, null);
 
+  // THE STORE'S WORDS, VERBATIM. The page and the door can never say different
+  // things because there is only one sentence.
+  //
+  // `unavailable` is STORE-OFF's (2026-09-22) and it replaced something worse than
+  // a 404: this door used to call `custom.assert_store_door`, which RAISES 42501,
+  // and the service turns a refused door into a thrown Error — so a signer opening
+  // a link from their own email got an HTTP 500 off an organization's own switch.
   if (!request.found || !request.signable) {
     return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center px-5 py-12 text-center">
-        <h1 className="text-xl font-medium">
-          {request.found && request.state === "signed" ? "Already signed" : "Signature request"}
-        </h1>
-        {/* THE STORE'S WORDS, VERBATIM. The page and the door can never say
-            different things because there is only one sentence. */}
-        <p className="mt-2 text-sm text-muted-foreground">{request.message}</p>
-      </main>
+      <PublicLinkNotice
+        title={request.found && request.state === "signed" ? "Already signed" : "Signature request"}
+        message={request.message}
+      />
     );
   }
 

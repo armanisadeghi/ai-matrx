@@ -104,7 +104,15 @@ export interface PortalPublic {
   title: string;
   organization: string;
   sign_in_method: string;
-  state: "open";
+  /**
+   * `unavailable` is STORE-OFF's. `custom.portal_public` was the one sibling that never
+   * asked the store's switch at all — it asks the external LANE — so a portal in a
+   * store-off organization drew its sign-in panel, took a real client through a real magic
+   * link, and only then met `assert_store_door`'s 42501, a sentence written for the owner.
+   */
+  state: "open" | "unavailable";
+  /** Only present with `unavailable`: the store's own sentence. */
+  message?: string | null;
 }
 
 /**
