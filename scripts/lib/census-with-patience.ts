@@ -9,6 +9,7 @@
  * One census row. The callers name their own row shape; this module only carries rows from
  * the query to the caller, so it is generic rather than a second definition of `Row`.
  */
+import { formatDurationMs } from "@ai-matrx/kit/format";
 export type CensusRow = Record<string, unknown>;
 
 /**
@@ -68,7 +69,7 @@ export async function censusWithPatience<R = CensusRow>(
         };
       }
       console.log(
-        `[INFO] ${label} hit 55P03 (lock timeout) on attempt ${attempt + 1}; waiting ${wait / 1000}s and asking again.`,
+        `[INFO] ${label} hit 55P03 (lock timeout) on attempt ${attempt + 1}; waiting ${formatDurationMs(wait, { style: "compact" })} and asking again.`,
       );
       await new Promise((resolve) => setTimeout(resolve, wait));
     }

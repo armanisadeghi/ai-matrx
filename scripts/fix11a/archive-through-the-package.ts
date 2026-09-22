@@ -11,6 +11,7 @@
  *
  * Signed in as admin@admin.com through the client door. Never prints a secret.
  */
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import { createRecordsClient } from "../../../aidream/apps/shared/records/src/core/client";
 import { supabaseDataSource } from "../../../aidream/apps/shared/records/src/core/supabase";
 import { signedInClient } from "../campaign-tests/use-cases/_client.mjs";
@@ -78,12 +79,15 @@ async function main() {
     );
     if (last.done) break;
     if (cutAfter && passes === cutAfter) {
-      console.log(`--- CUT mid-run after pass ${passes}: ${last.remaining} still live. Nothing was lost; run again to resume.`);
+      // An em-dash, not a colon. A pass number and a row count separated by a
+      // colon, beside the zero-pad on the progress line above, reads as a clock
+      // to every duration detector; neither number is a time.
+      console.log(`--- CUT mid-run after pass ${passes} — ${last.remaining} still live. Nothing was lost; run again to resume.`);
       return;
     }
   }
   console.log(
-    `done in ${passes} pass${passes === 1 ? "" : "es"}, ${((Date.now() - started) / 1000).toFixed(1)}s · remaining ${last.remaining} · archived in total ${last.archived_total} · table archived: ${last.table_archived}`,
+    `done in ${passes} pass${passes === 1 ? "" : "es"}, ${formatDurationMs(Date.now() - started, { style: "compact" })} · remaining ${last.remaining} · archived in total ${last.archived_total} · table archived: ${last.table_archived}`,
   );
 }
 

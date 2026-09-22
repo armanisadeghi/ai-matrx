@@ -26,6 +26,7 @@
 // Run: node scripts/realtime-proof/scheduler-channel.mjs      (env loaded; prints no credential)
 
 import { createClient } from "@supabase/supabase-js";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -140,7 +141,9 @@ async function main() {
         delivered = Date.now() - t0;
         const payload = hit.frame?.payload ?? hit.frame;
         const carried = JSON.stringify(payload).includes(label);
-        ok(`the change DELIVERED ${delivered} ms after the write, on this person's own feed`);
+        ok(
+          `the change DELIVERED ${formatDurationMs(delivered, { style: "compact" })} after the write, on this person's own feed`,
+        );
         if (carried)
           ok("the frame carries the row realtime.broadcast_changes put on it (the schedule's own name)");
         else bad("a frame arrived but it does not carry the row that was written");

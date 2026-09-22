@@ -37,6 +37,7 @@
  *   pnpm check:store-doors-decide --exhaustive  # census 13 CALLS every door, every row
  */
 
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
 import { censusWithPatience } from "./lib/census-with-patience";
 import { exitAfterDrain } from "./lib/exit-after-drain";
@@ -761,7 +762,7 @@ async function main(): Promise<void> {
   const exhaustive = process.argv.includes("--exhaustive");
   /** Wall-clock per census, so a guard that starts to crawl says so before it dies. */
   const started = Date.now();
-  const since = (mark: number) => `${((Date.now() - mark) / 1000).toFixed(1)} s`;
+  const since = (mark: number) => formatDurationMs(Date.now() - mark, { style: "compact" });
 
   const env = loadDbEnv();
   if ("missing" in env) {

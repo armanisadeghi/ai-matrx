@@ -122,6 +122,7 @@
  */
 
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -205,8 +206,11 @@ const BUDGET_MS = (() => {
 })();
 /** SQLSTATEs that mean "another session held it", never "this door is wrong". */
 const CONTENTION_SQLSTATES = new Set(["55P03", "57014", "40P01", "40001"]);
-/** "25-minute" / "1500ms" — a budget under a minute must not print as "0-minute". */
-const BUDGET_WORD = BUDGET_MS >= 60_000 ? `${Math.round(BUDGET_MS / 60_000)}-minute` : `${BUDGET_MS}ms`;
+/** "25 min" / "1.5s" — a budget under a minute must not print as "0 min". */
+const BUDGET_WORD =
+  BUDGET_MS >= 60_000
+    ? formatDurationMs(BUDGET_MS, { style: "coarse" })
+    : formatDurationMs(BUDGET_MS, { style: "compact" });
 
 // ─── credentials ─────────────────────────────────────────────────────────────
 

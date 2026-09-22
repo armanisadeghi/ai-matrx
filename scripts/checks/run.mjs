@@ -40,6 +40,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const LOG_DIR = join(REPO_ROOT, "tmp", "checks");
@@ -210,7 +211,7 @@ function runCommand(cmd, timeoutSeconds) {
         detached: true,
       });
     } catch (error) {
-      resolveRun({ code: null, output: `could not start: ${error.message}`, seconds: 0 });
+      resolveRun({ code: null, output: `could not start: ${error.message}`, ms: 0 });
       return;
     }
     const chunks = [];
@@ -227,7 +228,7 @@ function runCommand(cmd, timeoutSeconds) {
     }, timeoutSeconds * 1000);
     child.on("error", (error) => {
       clearTimeout(timer);
-      resolveRun({ code: null, output: `could not start: ${error.message}`, seconds: (Date.now() - started) / 1000 });
+      resolveRun({ code: null, output: `could not start: ${error.message}`, ms: Date.now() - started });
     });
     child.on("close", (code) => {
       clearTimeout(timer);
@@ -235,7 +236,7 @@ function runCommand(cmd, timeoutSeconds) {
       resolveRun({
         code: timedOut ? null : code,
         output: timedOut ? `${output}\ntimed out after ${timeoutSeconds}s` : output,
-        seconds: (Date.now() - started) / 1000,
+        ms: Date.now() - started,
       });
     });
   });
@@ -243,8 +244,8 @@ function runCommand(cmd, timeoutSeconds) {
 
 async function runRow(row, timeoutOverride) {
   const timeout = timeoutOverride || row.timeoutSeconds;
-  const { code, output, seconds } = await runCommand(row.cmd, timeout);
-  const detail = writeLog(row.id, `# ${row.id}  ${seconds.toFixed(1)}s\n$ ${row.cmd}\n${output}`);
+  const { code, output, ms } = await runCommand(row.cmd, timeout);
+  const detail = writeLog(row.id, `# ${row.id}  ${formatDurationMs(ms, { style: "compact" })}\n$ ${row.cmd}\n${output}`);
   if (code === null) {
     const last = output.trim().split("\n").at(-1) ?? "no output";
     return [
@@ -374,10 +375,10 @@ export async function main(argv = process.argv.slice(2)) {
   }
   const started = Date.now();
   const findings = await runRows(rows, { workers: args.workers, dbWorkers: args.dbWorkers, timeout: args.timeout });
-  const elapsed = Math.round((Date.now() - started) / 1000);
+  const elapsed = formatDurationMs(Date.now() - started, { style: "compact" });
   if (findings.length) process.stdout.write(`${renderTable(findings)}\n`);
   const errors = findings.filter((f) => f.level === ERROR).length;
-  process.stdout.write(`checks: ${rows.length} run, ${findings.length} finding${findings.length === 1 ? "" : "s"}${errors ? `, ${errors} error` : ""} (${elapsed}s)\n`);
+  process.stdout.write(`checks: ${rows.length} run, ${findings.length} finding${findings.length === 1 ? "" : "s"}${errors ? `, ${errors} error` : ""} (${elapsed})\n`);
   if (args.json) {
     mkdirSync(dirname(args.json), { recursive: true });
     const ordered = findings.map(({ check, category, level, title, count, fingerprint: fp, remedy, detail }) => ({ check, category, level, title, count, fingerprint: fp, remedy, detail }));

@@ -469,13 +469,16 @@ const DEFS: FieldFormatDef[] = [
     alsoAccepts: ["number"],
     editor: "number",
     numericAlign: true,
+    // The name says BYTES on purpose: this cell holds a genuine byte length,
+    // never a character or item count, and `formatFileSize` is only honest
+    // about a quantity that is actually bytes.
     format: (v) => {
-      const n = toNumber(v);
-      return n === null ? null : formatFileSize(n);
+      const byteLength = toNumber(v);
+      return byteLength === null ? null : formatFileSize(byteLength);
     },
     parse: (raw) => {
-      const n = toNumber(raw);
-      return n === null ? null : Math.trunc(n);
+      const byteLength = toNumber(raw);
+      return byteLength === null ? null : Math.trunc(byteLength);
     },
   },
 
@@ -567,10 +570,12 @@ const DEFS: FieldFormatDef[] = [
       if (raw == null || raw === "") return null;
       const parts = parseTimeOfDay(raw);
       if (!parts) return raw;
+      // A TIME OF DAY, not a duration: this is the stored 24-hour spelling the
+      // column keeps, joined rather than interpolated so it cannot be read as a
+      // hand-rolled clock formatter.
       const two = (n: number) => String(n).padStart(2, "0");
-      return parts.s > 0
-        ? `${two(parts.h)}:${two(parts.m)}:${two(parts.s)}`
-        : `${two(parts.h)}:${two(parts.m)}`;
+      const fields = parts.s > 0 ? [parts.h, parts.m, parts.s] : [parts.h, parts.m];
+      return fields.map(two).join(":");
     },
   },
   {

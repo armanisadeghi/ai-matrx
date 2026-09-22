@@ -11,6 +11,7 @@
  * first for the port, the Turbopack cache and the install lock — the harness
  * that exists for that reason is `pnpm preview:start`.
  */
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import { execFileSync } from "node:child_process";
 
 const CANDIDATES = ["http://localhost:3001", "http://localhost:3000"];
@@ -62,7 +63,7 @@ export function resolveBaseURL(): string | null {
 export function noAppSentence(): string {
     const declared = process.env.MATRX_SANDBOX_BASE_URL;
     const where = declared
-        ? `The origin named in MATRX_SANDBOX_BASE_URL (${declared}) never answered GET /kind-sandbox\nwithin ${WAIT_MS / 1000}s.`
+        ? `The origin named in MATRX_SANDBOX_BASE_URL (${declared}) never answered GET /kind-sandbox\nwithin ${formatDurationMs(WAIT_MS, { style: "compact" })}.`
         : `No app is answering GET /kind-sandbox on ${CANDIDATES.join(" or ")}.`;
     return (
         `${where}\n` +

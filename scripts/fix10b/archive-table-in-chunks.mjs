@@ -7,6 +7,7 @@
 //   node scripts/fix10b/archive-table-in-chunks.mjs <organization_id> <table_id> [chunk] [--keep-table] [--report-only] [--cut-after N]
 //
 // Signed in as admin@admin.com through the client door; never prints a secret.
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import { signedInClient } from "../campaign-tests/use-cases/_client.mjs";
 
 const [org, table, chunkArg] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
@@ -52,4 +53,4 @@ while (!last.done) {
     process.exit(0);
   }
 }
-console.log(`done in ${passes} pass${passes === 1 ? "" : "es"}, ${((Date.now() - started) / 1000).toFixed(1)}s · remaining ${last.remaining} · archived in total ${last.archived_total} · table archived: ${last.table_archived}`);
+console.log(`done in ${passes} pass${passes === 1 ? "" : "es"}, ${formatDurationMs(Date.now() - started, { style: "compact" })} · remaining ${last.remaining} · archived in total ${last.archived_total} · table archived: ${last.table_archived}`);

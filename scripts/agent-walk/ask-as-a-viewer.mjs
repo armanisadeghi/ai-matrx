@@ -14,6 +14,7 @@
  *
  *   node scripts/agent-walk/ask-as-a-viewer.mjs
  */
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import { readFileSync, existsSync } from "node:fs";
 
 const SERVER = process.env.MATRX_SERVER ?? "https://server.app.matrxserver.com";
@@ -68,7 +69,7 @@ const answered = await fetch(`${SERVER}/ai/mandates/${MANDATE}`, {
 });
 
 const body = await answered.text();
-console.log("HTTP", answered.status, `in ${((Date.now() - started) / 1000).toFixed(1)}s`);
+console.log("HTTP", answered.status, `in ${formatDurationMs(Date.now() - started, { style: "compact" })}`);
 console.log("----- WHAT THE AGENT SAID -----");
 // NDJSON: print the text the person would read, and every tool call if any.
 const said = [];
