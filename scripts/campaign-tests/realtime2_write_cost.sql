@@ -71,6 +71,17 @@
 -- which the preamble prints as "this is NOT a pass", rather than reporting a query that has not
 -- regressed as a failure. Do not answer a skip here by raising the ceiling: the ceiling is the
 -- assertion.
+--
+-- SUITES-TIDY-2, 2026-09-22 — EXAMINED FOR A SPLIT AND DELIBERATELY NOT SPLIT. Its sister file
+-- `writeperf3_parity.sql` was converted in this change to gate only its timed writes, so that
+-- its refusal parity keeps asserting on the clone. This file has no such half. It is a
+-- wall-clock A/B and nothing else: four alternated runs of 20 + 1,000 + 5,000 writes whose only
+-- output is a pair of means. Every clause in it is a measurement, and the header above already
+-- records that this instrument's noise floor on a shared database is about +/-50% against a 3%
+-- question — so a clause kept running on smaller compute would produce a number that is worse
+-- than no number. The declaration stays at FILE level and this suite is honestly scored SKIP on
+-- anything smaller than production. The real answer is counted, not timed, in
+-- `scripts/campaign-tests/realtime2_write_cost_direct.sql`.
 \set requires 'function:platform.memo_clear|compute:shared_buffers:524288'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip

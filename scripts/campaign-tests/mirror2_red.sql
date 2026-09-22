@@ -17,19 +17,28 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'mirror2_red.sql'
--- SUITES-TIDY 2026-09-22 — THE SIZE-AWARE CEILING. This suite measures a real query against
--- production's real row counts under a ceiling in SECONDS. The nightly dev clone is production's
--- data on SMALLER COMPUTE (measured 2026-09-22: shared_buffers 2 GB against production's 4 GB,
--- effective_cache_size 6 GB against 12 GB, 2 parallel workers against 4), so a ceiling that is
--- honest on production is a false alarm here — and on the clone this suite was killed by that
--- ceiling. It now DECLARES the compute it needs and SKIPS BY NAME on anything smaller, which the
--- preamble prints as "this is NOT a pass", rather than reporting a query that has not regressed
--- as a failure. Do not answer a skip here by raising the ceiling: the ceiling is the assertion.
-\set requires 'function:iam.record_visible_in_org|compute:shared_buffers:524288'
+-- SUITES-TIDY-2 2026-09-22 — ONE CLAUSE IS SIZE-AWARE, NOT THE WHOLE FILE. This file used to
+-- declare `compute:shared_buffers:524288` at FILE level, so on the nightly dev clone (production's
+-- data on smaller compute — measured 2026-09-22: shared_buffers 2 GB against production's 4 GB,
+-- effective_cache_size 6 GB against 12 GB, 2 parallel workers against 4) the preamble printed
+-- SKIPPED and NOTHING here asserted: the two inverses were never executed, so nothing proved the
+-- guards can fail at all. Exactly ONE clause needs production's compute — clause 3, the timed
+-- whole-database bound (`iam.accessible_entity_ids`) under a 60-second ceiling — so exactly that
+-- clause is gated now, the red tally it feeds drops to 4 of 4 when it does not run, and the file
+-- emits a top-level SKIPPED line the sweep's judge reads. Clauses 1, 2, 4 and 5 run on the clone.
+-- Do not answer a skip here by raising the ceiling: the ceiling is the assertion.
+\set requires 'function:iam.record_visible_in_org'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
 \endif
+
+-- SUITES-TIDY-2 2026-09-22 — the size probe for clause 3 only (see the header). It drives the
+-- top-level SKIPPED line; the DO blocks below ask pg_settings themselves, because psql does not
+-- interpolate variables inside a dollar-quoted block.
+select case when (select setting::numeric from pg_settings where name = 'shared_buffers') >= 524288
+            then 'false' else 'true' end as mirror2_red_small_server
+\gset
 
 begin;
 set local statement_timeout = '60s';
@@ -87,6 +96,7 @@ declare
   c_dana_j constant text := '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}';
   c_org    constant uuid := '4352d061-ec13-4761-ae32-9c9bd52e7de3';
   v_reds   integer := 0;
+  v_want   integer := 5;
   v_qual   text;
   v_n      integer;
   v_t0     timestamptz;
@@ -114,6 +124,14 @@ begin
   -- 3 — AND IT COSTS WHAT IT COST BEFORE. Asked from the SEAT, through the bound the policy is
   -- back to, over the same organization the green clause timed.
   perform set_config('request.jwt.claims', c_dana_j, true);
+  -- SUITES-TIDY-2 2026-09-22 — THIS is the clause that needs production's compute:
+  -- `iam.accessible_entity_ids` here is the WHOLE-DATABASE bound, run under the 60-second
+  -- ceiling, and the ceiling is the assertion. When it does not run, the tally this file
+  -- demands drops from 5 to 4 — a red twin must never demand a red it deliberately skipped.
+  if (select setting::numeric from pg_settings where name = 'shared_buffers') < 524288 then
+    v_want := v_want - 1;
+    raise notice '3: NOT MEASURED — the timed whole-database bound needs compute:shared_buffers:524288 and this server is smaller. No cost was compared.';
+  else
   v_t0 := clock_timestamp();
   select count(*) into v_n from custom.record r
    where r.organization_id = c_org and r.deleted_at is null
@@ -127,8 +145,10 @@ begin
     raise exception '3: NOT RED — the whole-database bound cost % ms, against % ms bounded.',
       v_ms, current_setting('mirror2.green_ms', true);
   end if;
+  end if;
 
   perform set_config('mirror2.reds', v_reds::text, true);
+  perform set_config('mirror2.want', v_want::text, true);
   raise notice '--- executing the second inverse ---';
 end;
 $t$;
@@ -138,6 +158,7 @@ $t$;
 do $t$
 declare
   v_reds integer := current_setting('mirror2.reds', true)::integer;
+  v_want integer := current_setting('mirror2.want', true)::integer;
   v_n    integer;
 begin
   -- 4 — the memo and its fence are gone.
@@ -163,9 +184,9 @@ begin
     raise exception '5: NOT RED — the door row survived the inverse.';
   end if;
 
-  raise notice 'MIRROR-2: % of 5 blocks are RED. ROLLBACK next.', v_reds;
-  if v_reds <> 5 then
-    raise exception 'MIRROR-2 red twin: only % of 5 blocks went red.', v_reds;
+  raise notice 'MIRROR-2: % of % blocks are RED. ROLLBACK next.', v_reds, v_want;
+  if v_reds <> v_want then
+    raise exception 'MIRROR-2 red twin: only % of % blocks went red.', v_reds, v_want;
   end if;
 end;
 $t$;
@@ -180,3 +201,8 @@ select (select count(*) from custom.mirror_asks_the_whole_database()) as policie
          where d.schema_name='iam' and d.function_name='record_visible_in_org') as door_rows,
        (select (p.qual ~ 'record_visible_in_org') from pg_policies p
          where p.schemaname='custom' and p.tablename='record' and p.policyname='std_select') as mirror_asks_one_organization;
+
+\if :mirror2_red_small_server
+\echo 'SKIPPED: mirror2_red.sql clause 3 (the timed whole-database bound) asserted nothing. This database does not have: compute:shared_buffers:524288'
+\echo 'SKIPPED: clause 3 is the only one gated. Clause 1 (the policy is back to the whole-database bound), clause 2 (the census names it again), clause 4 (the memo, its fence and the census are gone) and clause 5 (the signed-in door is withdrawn) DID run and DID go red, and the rollback verification below ran. This is NOT a pass.'
+\endif

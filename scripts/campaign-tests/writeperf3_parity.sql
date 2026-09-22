@@ -45,19 +45,36 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'writeperf3_parity.sql'
--- SUITES-TIDY 2026-09-22 — THE SIZE-AWARE CEILING. This suite measures a real query against
--- production's real row counts under a ceiling in SECONDS. The nightly dev clone is production's
--- data on SMALLER COMPUTE (measured 2026-09-22: shared_buffers 2 GB against production's 4 GB,
--- effective_cache_size 6 GB against 12 GB, 2 parallel workers against 4), so a ceiling that is
--- honest on production is a false alarm here — and on the clone this suite was killed by that
--- ceiling. It now DECLARES the compute it needs and SKIPS BY NAME on anything smaller, which the
--- preamble prints as "this is NOT a pass", rather than reporting a query that has not regressed
--- as a failure. Do not answer a skip here by raising the ceiling: the ceiling is the assertion.
-\set requires 'grant:authenticated:custom.person_kernel_id|compute:shared_buffers:524288'
+-- SUITES-TIDY 2026-09-22 — THE SIZE-AWARE CEILING. Steps 1 and 2 are the heavy ones: 2,000 rows
+-- through `custom.record_write_many` plus 200 through `custom.record_write`, both timed in
+-- milliseconds per row, and then a four-way projection of every one of those 2,000 records. The
+-- nightly dev clone is production's data on SMALLER COMPUTE (measured 2026-09-22: shared_buffers
+-- 2 GB against production's 4 GB, effective_cache_size 6 GB against 12 GB, 2 parallel workers
+-- against 4), so a number measured here is not production's number.
+--
+-- SUITES-TIDY-2, 2026-09-22 — THIS FILE NO LONGER SKIPS WHOLE. `compute:shared_buffers:524288`
+-- was declared at FILE level, so on the clone the most valuable thing in this file asserted
+-- NOTHING: step 3's REFUSAL PARITY — a hundred deliberately invalid manifest lines refused twice
+-- each, both ways, in both halves, with every SQLSTATE, MESSAGE, DETAIL and HINT hashed and
+-- compared across the inverses. Those 400 refusals are a correctness assertion, not a
+-- measurement, and they are the same refusals on any size of machine. So the compute gate now
+-- sits on the TIMED WRITES AND THE PROJECTION ALONE, inside `pg_temp.run`, and everything else —
+-- the seat proof, the fixture, the six field declarations, the 400 refusals and the parity
+-- comparison — runs on the clone. The ceiling is the assertion: never raise it to answer a skip.
+\set requires 'grant:authenticated:custom.person_kernel_id'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
 \endif
+
+-- THE SIZE PROBE (SUITES-TIDY-2, 2026-09-22). Read once, before anything opens: it drives the
+-- top-level SKIPPED line the sweep's judge greps for. The gate inside `pg_temp.run` asks
+-- pg_settings the same question directly, because a psql variable cannot reach inside a
+-- dollar-quoted function body.
+select case when (select setting::numeric from pg_settings where name = 'shared_buffers') >= 524288
+            then 'false' else 'true' end as wp3par_small_server
+\gset
+
 begin;
 set local statement_timeout = 0;
 set local idle_in_transaction_session_timeout = 0;
@@ -161,77 +178,90 @@ begin
   perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Coordinator','key','coordinator','type','member'));
   perform custom.field_declare(v_org, v_tbl, jsonb_build_object('label','Carrier','key','carrier','type','relation','relation_target', v_acct::text));
 
-  -- ============ 1. TWO THOUSAND ROWS, FOUR STATEMENTS OF FIVE HUNDRED ============
-  t0 := clock_timestamp();
-  for b in 0..3 loop
-    select array_agg(pg_temp.manifest(g.i, v_home, v_accts) order by g.i)
-      into v_docs from generate_series(b * 500 + 1, b * 500 + 500) g(i);
-    v_ids := v_ids || custom.record_write_many(v_org, v_tbl, v_docs);
-  end loop;
-  t1 := clock_timestamp();
-  insert into wp3_ms values (p_half, '2000 rows, 4 statements of 500, custom.record_write_many',
-                             round((extract(epoch from (t1-t0))*1000/2000)::numeric, 3));
+  -- ============ 1 AND 2 — THE TIMED WRITES AND THE PROJECTION, THE SIZE-AWARE PART ============
+  -- SUITES-TIDY-2, 2026-09-22: these two steps are the only ones in this file whose answer is a
+  -- NUMBER OF MILLISECONDS, and the only ones that write 2,200 records. They are gated on the
+  -- compute the ceiling was measured on; step 3's refusals below are a correctness assertion and
+  -- run everywhere. `\if` cannot reach inside this dollar-quoted body, so the probe is asked of
+  -- pg_settings here directly — it is the same question the top-level SKIPPED line answers.
+  if (select setting::numeric from pg_settings where name = 'shared_buffers') >= 524288 then
+    -- ============ 1. TWO THOUSAND ROWS, FOUR STATEMENTS OF FIVE HUNDRED ============
+    t0 := clock_timestamp();
+    for b in 0..3 loop
+      select array_agg(pg_temp.manifest(g.i, v_home, v_accts) order by g.i)
+        into v_docs from generate_series(b * 500 + 1, b * 500 + 500) g(i);
+      v_ids := v_ids || custom.record_write_many(v_org, v_tbl, v_docs);
+    end loop;
+    t1 := clock_timestamp();
+    insert into wp3_ms values (p_half, '2000 rows, 4 statements of 500, custom.record_write_many',
+                               round((extract(epoch from (t1-t0))*1000/2000)::numeric, 3));
 
-  -- The same shape one row at a time, which is the door `custom.io_import_rows` uses today.
-  t0 := clock_timestamp();
-  for i in 2001..2200 loop
-    perform custom.record_write(v_org, v_tbl, pg_temp.manifest(i, v_home, v_accts));
-  end loop;
-  t1 := clock_timestamp();
-  insert into wp3_ms values (p_half, '200 rows, one custom.record_write per row',
-                             round((extract(epoch from (t1-t0))*1000/200)::numeric, 3));
+    -- The same shape one row at a time, which is the door `custom.io_import_rows` uses today.
+    t0 := clock_timestamp();
+    for i in 2001..2200 loop
+      perform custom.record_write(v_org, v_tbl, pg_temp.manifest(i, v_home, v_accts));
+    end loop;
+    t1 := clock_timestamp();
+    insert into wp3_ms values (p_half, '200 rows, one custom.record_write per row',
+                               round((extract(epoch from (t1-t0))*1000/200)::numeric, 3));
 
-  -- ============ 2. THE PROJECTION — everything anybody can read ============
-  insert into wp3_shot
-  select p_half, 'envelope', i.ord, pg_temp.canon(custom.read_record(v_org, i.id, true))
-    from unnest(v_ids) with ordinality i(id, ord);
+    -- ============ 2. THE PROJECTION — everything anybody can read ============
+    insert into wp3_shot
+    select p_half, 'envelope', i.ord, pg_temp.canon(custom.read_record(v_org, i.id, true))
+      from unnest(v_ids) with ordinality i(id, ord);
 
-  -- OUT OF THE SEAT FOR THE THREE CATALOGUE PROJECTIONS, AND SAYING SO (SEAT-RECIPE step 4).
-  -- `history.row_versions`, `custom.io_outbox` and `platform.associations` are not client
-  -- tables and no door hands back a whole version row, an outbox row or an edge; the ENVELOPE
-  -- above — the thing a person actually reads — was taken through `custom.read_record` from
-  -- the seat. No product clause is asserted while out.
-  perform set_config('role', v_boss, true);
+    -- OUT OF THE SEAT FOR THE THREE CATALOGUE PROJECTIONS, AND SAYING SO (SEAT-RECIPE step 4).
+    -- `history.row_versions`, `custom.io_outbox` and `platform.associations` are not client
+    -- tables and no door hands back a whole version row, an outbox row or an edge; the ENVELOPE
+    -- above — the thing a person actually reads — was taken through `custom.read_record` from
+    -- the seat. No product clause is asserted while out.
+    perform set_config('role', v_boss, true);
 
-  -- THE HISTORY, in write order, with the field keys of the payload kept and the ids dropped.
-  insert into wp3_shot (half, kind, ord, payload)
-  select p_half, 'history', t.ord,
-         coalesce((select string_agg(h.operation || '/' || h.version || '/' ||
-                                     coalesce(h.actor_tier, '-') || '/' ||
-                                     coalesce(h.operation_name, '-') || '/' ||
-                                     pg_temp.canon(h.row_data -> 'data'), ';' order by h.version)
-                     from history.row_versions h
-                    where h.entity_type = 'custom.record'
-                      and h.organization_id = v_org
-                      and h.row_id = t.id), '(no history row)')
-    from unnest(v_ids) with ordinality as t(id, ord);
+    -- THE HISTORY, in write order, with the field keys of the payload kept and the ids dropped.
+    insert into wp3_shot (half, kind, ord, payload)
+    select p_half, 'history', t.ord,
+           coalesce((select string_agg(h.operation || '/' || h.version || '/' ||
+                                       coalesce(h.actor_tier, '-') || '/' ||
+                                       coalesce(h.operation_name, '-') || '/' ||
+                                       pg_temp.canon(h.row_data -> 'data'), ';' order by h.version)
+                       from history.row_versions h
+                      where h.entity_type = 'custom.record'
+                        and h.organization_id = v_org
+                        and h.row_id = t.id), '(no history row)')
+      from unnest(v_ids) with ordinality as t(id, ord);
 
-  -- THE OUTBOX, in write order. changed_field_ids is resolved to the FIELD KEYS it names.
-  insert into wp3_shot (half, kind, ord, payload)
-  select p_half, 'outbox', t.ord,
-         coalesce((select string_agg(o.event_key || '/' || o.operation || '/' ||
-                                     coalesce((select string_agg(f.data ->> 'key', ',' order by f.data ->> 'key')
-                                                 from jsonb_array_elements_text(o.changed_field_ids) fid
-                                                 join custom.record f
-                                                   on f.organization_id = v_org and f.id = fid::uuid), '-') || '/' ||
-                                     pg_temp.canon(o.actor), ';' order by o.created_at, o.id)
-                     from custom.io_outbox o
-                    where o.organization_id = v_org and o.record_id = t.id), '(no outbox row)')
-    from unnest(v_ids) with ordinality as t(id, ord);
+    -- THE OUTBOX, in write order. changed_field_ids is resolved to the FIELD KEYS it names.
+    insert into wp3_shot (half, kind, ord, payload)
+    select p_half, 'outbox', t.ord,
+           coalesce((select string_agg(o.event_key || '/' || o.operation || '/' ||
+                                       coalesce((select string_agg(f.data ->> 'key', ',' order by f.data ->> 'key')
+                                                   from jsonb_array_elements_text(o.changed_field_ids) fid
+                                                   join custom.record f
+                                                     on f.organization_id = v_org and f.id = fid::uuid), '-') || '/' ||
+                                       pg_temp.canon(o.actor), ';' order by o.created_at, o.id)
+                       from custom.io_outbox o
+                      where o.organization_id = v_org and o.record_id = t.id), '(no outbox row)')
+      from unnest(v_ids) with ordinality as t(id, ord);
 
-  insert into wp3_shot
-  select p_half, 'edges', i.ord,
-         pg_temp.canon(coalesce((select jsonb_agg(jsonb_build_object(
-                          'role', a.role, 'position', a."position",
-                          'field', (select f.data ->> 'key' from custom.record f
-                                     where f.id = a.relation_field_id and f.organization_id = v_org))
-                          order by a.role, a."position")
-                       from platform.associations a
-                      where a.source_id = i.id and a.source_type = 'record'
-                        and a.deleted_at is null), '[]'::jsonb))
-    from unnest(v_ids) with ordinality i(id, ord);
+    insert into wp3_shot
+    select p_half, 'edges', i.ord,
+           pg_temp.canon(coalesce((select jsonb_agg(jsonb_build_object(
+                            'role', a.role, 'position', a."position",
+                            'field', (select f.data ->> 'key' from custom.record f
+                                       where f.id = a.relation_field_id and f.organization_id = v_org))
+                            order by a.role, a."position")
+                         from platform.associations a
+                        where a.source_id = i.id and a.source_type = 'record'
+                          and a.deleted_at is null), '[]'::jsonb))
+      from unnest(v_ids) with ordinality i(id, ord);
 
-  perform set_config('role', 'authenticated', true);
+    perform set_config('role', 'authenticated', true);
+  else
+    raise notice 'half %: STEPS 1 AND 2 NOT MEASURED — the 2,000-row timed write, the 200 single '
+      'writes and the envelope/history/outbox/edges projection did not run, because this server '
+      'is smaller than the one the ms-per-row ceiling was measured on '
+      '(compute:shared_buffers:524288). The 400 refusals below DID run.', p_half;
+  end if;
 
   -- ============ 3. THE HUNDRED REFUSALS, BOTH WAYS ============
   for i in 1..100 loop
@@ -286,7 +316,7 @@ select pg_temp.run('B');
 \echo ''
 do $t$
 declare
-  r record; v_bad int := 0; v_tot int := 0;
+  r record; v_bad int := 0; v_tot int := 0; v_kinds text := '';
 begin
   for r in
     select a.kind,
@@ -302,11 +332,17 @@ begin
       rpad(r.kind, 16), r.rows_compared, r.disagreeing, left(r.hash_a, 8), left(r.hash_b, 8);
     v_tot := v_tot + r.rows_compared;
     v_bad := v_bad + r.disagreeing;
+    -- SUITES-TIDY-2, 2026-09-22: the kinds are named from what was actually compared, never from
+    -- a fixed sentence, so a run where steps 1 and 2 were not measured cannot claim their parity.
+    v_kinds := v_kinds || case when v_kinds = '' then '' else ', ' end || r.kind;
   end loop;
+  if v_tot = 0 then
+    raise exception 'PARITY PROVED NOTHING: not one answer was compared between the two halves';
+  end if;
   if v_bad > 0 then
     raise exception 'PARITY FAILED: % of % answers disagree', v_bad, v_tot;
   end if;
-  raise notice 'PARITY: % ANSWERS, ALL IDENTICAL — envelope, history, outbox, edges and 400 refusals', v_tot;
+  raise notice 'PARITY: % ANSWERS, ALL IDENTICAL — %', v_tot, v_kinds;
 end;
 $t$;
 
@@ -316,3 +352,11 @@ select half, what, ms,
   from wp3_ms order by what, half;
 
 rollback;
+
+-- THE LINE THE SWEEP'S JUDGE READS (SUITES-TIDY-2, 2026-09-22). It must be a psql \echo at
+-- column 0 — a `raise notice` is not read. It is printed only on a server smaller than the one
+-- the ms-per-row ceiling was measured on, and it names exactly what did not assert.
+\if :wp3par_small_server
+\echo 'SKIPPED: writeperf3_parity.sql steps 1 and 2 — the 2,000-row timed write through custom.record_write_many, the 200 single custom.record_write calls, and the envelope/history/outbox/edges projection of all 2,000 records — asserted nothing. This database does not have: compute:shared_buffers:524288'
+\echo 'SKIPPED: what DID run and assert on both halves, across the real bytes of all four inverses: the seat proof, the fixture and its six field declarations, step 3 REFUSAL PARITY (100 invalid manifest lines refused twice each, batched and solo, 400 refusals in all, every SQLSTATE/MESSAGE/DETAIL/HINT hashed and compared) and the step 5 comparison. This is NOT a pass.'
+\endif

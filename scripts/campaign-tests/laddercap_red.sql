@@ -25,15 +25,25 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'laddercap_red.sql'
--- SUITES-TIDY 2026-09-22 — THE SIZE-AWARE CEILING. This suite measures a real query against
--- production's real row counts under a ceiling in SECONDS. The nightly dev clone is production's
--- data on SMALLER COMPUTE (measured 2026-09-22: shared_buffers 2 GB against production's 4 GB,
--- effective_cache_size 6 GB against 12 GB, 2 parallel workers against 4), so a ceiling that is
--- honest on production is a false alarm here — and on the clone this suite was killed by that
--- ceiling. It now DECLARES the compute it needs and SKIPS BY NAME on anything smaller, which the
--- preamble prints as "this is NOT a pass", rather than reporting a query that has not regressed
--- as a failure. Do not answer a skip here by raising the ceiling: the ceiling is the assertion.
-\set requires 'relation:custom.io_outbox|compute:shared_buffers:524288'
+-- SUITES-TIDY 2026-09-22 — THE SIZE-AWARE CEILING. This suite carries two whole-database
+-- censuses — `iam.member_level_overreach()` in BLOCK 3 and
+-- `custom.levels_raised_by_a_less_specific_rung()` in ROLLBACK VERIFIED and in TEARDOWN — and
+-- the nightly dev clone is production's data on SMALLER COMPUTE (measured 2026-09-22:
+-- shared_buffers 2 GB against production's 4 GB, effective_cache_size 6 GB against 12 GB, 2
+-- parallel workers against 4). It was given `compute:shared_buffers:524288` at FILE level, so on
+-- the clone the whole suite — every RED block, the rollback verification and the teardown —
+-- asserted nothing.
+--
+-- SUITES-TIDY-2, 2026-09-22 — MEASURED, NOT ASSUMED. On the clone the two censuses cost 18.9 s
+-- and 8.4 s against the 60-second `statement_timeout` each block sets, and the WHOLE FILE runs
+-- green end to end in 79.5 s, inside the sweep's 180-second cap. Nothing here is a
+-- milliseconds-per-row measurement: every assertion in this file is a COUNT or a catalogue
+-- answer, and a count is the same count on a smaller machine. So the compute declaration is
+-- removed rather than pushed down to a clause — gating a census that finishes in 18.9 s of a
+-- 60-second budget would be inventing a skip and losing real coverage. The 60-second timeout is
+-- the guard this file has always had and must never be raised to answer a slow run: a census
+-- that cannot finish inside it has regressed, and that is the assertion.
+\set requires 'relation:custom.io_outbox'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit

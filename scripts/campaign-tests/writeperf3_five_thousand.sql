@@ -40,6 +40,15 @@
 -- pass". The sweep's reap was hardened in the same change so a cap can no longer poison a
 -- neighbour at all; this declaration is the other half, because a suite that cannot finish
 -- inside its own cap is not measuring anything either way.
+--
+-- SUITES-TIDY-2, 2026-09-22 — EXAMINED FOR A SPLIT AND DELIBERATELY NOT SPLIT. Its sister file
+-- `writeperf3_parity.sql` was converted in this change to gate only its timed writes, so that
+-- its 400 refusals keep asserting on the clone. This file has no such half: its entire body is
+-- `pg_temp.five_thousand()` called twice — 5,000 rows each side of the inverses — and its one
+-- assertion is that the two halves did the same work, which cannot be made without doing the
+-- work. Gating the write would leave nothing behind it. So the declaration stays at FILE level
+-- and this suite is honestly scored SKIP on anything smaller than production. The ceiling is the
+-- assertion and must never be raised to answer a skip.
 \set requires 'grant:authenticated:custom.person_kernel_id|compute:shared_buffers:524288'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip

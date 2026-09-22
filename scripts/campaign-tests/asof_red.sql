@@ -41,20 +41,31 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'asof_red.sql'
--- SUITES-TIDY 2026-09-22 — THE SIZE-AWARE CEILING. This suite measures a real query against
--- production's real row counts under a ceiling in SECONDS. The nightly dev clone is production's
--- data on SMALLER COMPUTE (measured 2026-09-22: shared_buffers 2 GB against production's 4 GB,
--- effective_cache_size 6 GB against 12 GB, 2 parallel workers against 4), so a ceiling that is
--- honest on production is a false alarm here — and on the clone this suite was killed by its own
--- statement_timeout. It now DECLARES the compute it needs and SKIPS BY NAME on anything smaller,
--- which the preamble prints as "this is NOT a pass", rather than reporting a query that has not
--- regressed as a failure. Do not answer a skip here by raising the ceiling: the ceiling is the
--- assertion.
-\set requires 'row:platform.feature_knob:feature = \'custom\' and key = \'member_default_visibility\'|compute:shared_buffers:524288'
+-- SUITES-TIDY-2 2026-09-22 — ONE CLAUSE IS SIZE-AWARE, NOT THE WHOLE FILE. This file used to
+-- declare `compute:shared_buffers:524288` at FILE level, so on the nightly dev clone (production's
+-- data on smaller compute — measured 2026-09-22: shared_buffers 2 GB against production's 4 GB,
+-- effective_cache_size 6 GB against 12 GB, 2 parallel workers against 4) the preamble printed
+-- SKIPPED and NOTHING here asserted: not the seat proof, not the four negative access clauses,
+-- not REDs 2, 3 or 4. What actually needs production's compute is RED 1 AND THE TEN-THOUSAND
+-- RECORD FIXTURE IT IS SIZED ON: measured on the clone 2026-09-22, `custom.record_write` costs
+-- 21.06 ms a record there, so the fixture loop alone wants ~211 s against the file's own 60-second
+-- ceiling and was killed by it before PART 0's successor line. So the fixture loop and RED 1's two
+-- timed clauses are gated, and nothing else is: PART 0, N1-N4, RED 2/2b, RED 3/3b, RED 4/4b and
+-- the rollback verification all run on the clone against a two-record fixture.
+-- Do not answer a skip here by raising the ceiling, or by shrinking the fixture RED 1's 50 ms
+-- floor is sized on: the ceiling is the assertion.
+\set requires 'row:platform.feature_knob:feature = \'custom\' and key = \'member_default_visibility\''
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
 \endif
+
+-- SUITES-TIDY-2 2026-09-22 — the size probe for the fixture loop and RED 1 only (see the header).
+-- It drives the top-level SKIPPED line and the `\if` around RED 1's timed block; the DO blocks
+-- ask pg_settings themselves, because psql does not interpolate inside a dollar-quoted block.
+select case when (select setting::numeric from pg_settings where name = 'shared_buffers') >= 524288
+            then 'false' else 'true' end as asof_small_server
+\gset
 
 begin;
 set local statement_timeout = '60s';
@@ -88,6 +99,7 @@ declare
   i         integer;
   t0        timestamptz;
   v_new     numeric;
+  v_built   integer;
 begin
   perform set_config('request.jwt.claims', c_admin_j, true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
@@ -155,17 +167,28 @@ begin
   perform set_config('role', 'authenticated', true);
 
   -- TEN THOUSAND RECORDS, every one through the write door.
-  for i in 1..c_n loop
-    v_rec := custom.record_write(v_org, v_tbl, jsonb_build_object('name', 'Deal ' || i));
-  end loop;
+  -- SUITES-TIDY-2 2026-09-22 — THIS is the step that needs production's compute. It is sized so
+  -- RED 1's 50 ms floor is cleared with room to spare (see c_n above), and on the nightly clone
+  -- `custom.record_write` costs 21.06 ms a record, so this loop alone wants ~211 s against the
+  -- 60-second ceiling at the top of this file. Only the loop is gated: the ONE shared record
+  -- below, which every access clause in this file is about, is written either way.
+  if (select setting::numeric from pg_settings where name = 'shared_buffers') < 524288 then
+    v_built := 0;
+    raise notice 'FIXTURE: NOT BUILT — the %-record fixture RED 1 is sized on needs compute:shared_buffers:524288 and this server is smaller. RED 1 below is gated with it; every other clause runs against the two records this suite still writes.', c_n;
+  else
+    for i in 1..c_n loop
+      v_rec := custom.record_write(v_org, v_tbl, jsonb_build_object('name', 'Deal ' || i));
+    end loop;
+    v_built := c_n;
+  end if;
   v_shared := custom.record_write(v_org, v_tbl, jsonb_build_object('name','The shared one'));
   perform custom.share_grant(v_org, v_shared, 'person', c_dana, 'viewer'::public.permission_level);
 
-  perform set_config('zz.org',      v_org::text,      true);
-  perform set_config('zz.rec',      v_rec::text,      true);
-  perform set_config('zz.contract', v_contract::text, true);
-  perform set_config('zz.shared',   v_shared::text,   true);
-  perform set_config('zz.n',        (c_n + 2)::text,  true);
+  perform set_config('zz.org',      v_org::text,             true);
+  perform set_config('zz.rec',      coalesce(v_rec, v_contract)::text, true);
+  perform set_config('zz.contract', v_contract::text,        true);
+  perform set_config('zz.shared',   v_shared::text,          true);
+  perform set_config('zz.n',        (v_built + 2)::text,     true);
 
   -- ── THE NEGATIVE CLAUSES, AS A REAL SECOND PERSON, while every body is still the NEW one.
   -- `test@test.com` is a member of this organization who was shared exactly one record. The old
@@ -202,13 +225,18 @@ begin
   end if;
   raise notice 'NEGATIVE PASSED — test@test.com is refused the record, the audit answer and the diff, and reads the one record she was given through both read doors.';
 
-  -- ── RED 1's GREEN SIDE, from the seat: the door as it is today.
+  -- ── RED 1's GREEN SIDE, from the seat: the door as it is today. Gated with the fixture it is
+  -- measured over — timing the door over two records says nothing about walking ten thousand.
   perform set_config('request.jwt.claims', c_admin_j, true);
-  t0 := clock_timestamp();
-  for i in 1..5 loop perform custom.query_can_see(v_org, v_rec, 'viewer'); end loop;
-  v_new := extract(epoch from (clock_timestamp() - t0)) * 1000 / 5;
-  raise notice 'RED 1 baseline — the STORE-ASOF door answers one record in % ms over % live records.',
-    round(v_new, 3), c_n + 2;
+  if v_built = 0 then
+    raise notice 'RED 1 baseline: NOT MEASURED — the fixture it times over was not built on this server (compute:shared_buffers:524288).';
+  else
+    t0 := clock_timestamp();
+    for i in 1..5 loop perform custom.query_can_see(v_org, v_rec, 'viewer'); end loop;
+    v_new := extract(epoch from (clock_timestamp() - t0)) * 1000 / 5;
+    raise notice 'RED 1 baseline — the STORE-ASOF door answers one record in % ms over % live records.',
+      round(v_new, 3), v_built + 2;
+  end if;
 
   -- OUT OF THE SEAT for the four DDL breaks below. They are `create or replace` on the store's
   -- own doors: an operator step by definition, and they assert nothing.
@@ -231,6 +259,15 @@ select exists (select 1 from custom.query_visible_ids(p_organization_id, null, p
 end;
 $fn$;
 
+-- SUITES-TIDY-2 2026-09-22 — the `create or replace` above always runs (it proves the inverse is
+-- valid SQL against the live catalogue, and RED 2b's chain calls the body it restores). Only the
+-- TIMED block below is gated, because its clause is "50 ms over ten thousand live records" and
+-- this server could not build ten thousand.
+\if :asof_small_server
+do $t$ begin
+  raise notice 'RED 1: NOT MEASURED — the pre-STORE-ASOF door was restored, but the ten-thousand-record fixture its 50 ms floor is sized on needs compute:shared_buffers:524288 and this server is smaller. Nothing was timed and nothing was asserted about how deep the old door walks.';
+end $t$;
+\else
 do $t$
 declare
   v_org uuid := current_setting('zz.org')::uuid;
@@ -266,6 +303,7 @@ begin
   raise notice 'RED 1 is RED — from the seat `authenticated`, the pre-STORE-ASOF door answers ONE record in % ms by walking all % of them.', round(v_old, 3), n;
   perform set_config('role', v_boss, true);
 end $t$;
+\endif
 
 -- ══════════════ RED 2 — T6: the two clocks answer for each other
 do $t$
@@ -539,7 +577,13 @@ begin
   perform set_config('role', v_boss, true);
 end $t$;
 
-do $t$ begin raise notice '5 of 5 blocks are RED, every clause asked from the seat `authenticated`.'; end $t$;
+do $t$ begin
+  if (select setting::numeric from pg_settings where name = 'shared_buffers') < 524288 then
+    raise notice '4 of 4 blocks that could run are RED (RED 2, 2b, 3, 3b, 4 and 4b), every clause asked from the seat `authenticated`. RED 1 did not run on this server.';
+  else
+    raise notice '5 of 5 blocks are RED, every clause asked from the seat `authenticated`.';
+  end if;
+end $t$;
 rollback;
 
 do $t$
@@ -565,3 +609,8 @@ begin
   end if;
   raise notice 'ROLLBACK VERIFIED — every restored body is gone, the STORE-ASOF bodies are live, and the throwaway organization left nothing behind.';
 end $t$;
+
+\if :asof_small_server
+\echo 'SKIPPED: asof_red.sql RED 1 (the one-record question walking the whole organization, and the ten-thousand-record fixture its 50 ms floor is sized on) asserted nothing. This database does not have: compute:shared_buffers:524288'
+\echo 'SKIPPED: RED 1 and its fixture loop are the only ones gated. PART 0 (the seat proof), N1-N4 (a plain member is refused the record, the audit answer and the cutover diff, and still reads the one record she was given through both read doors), RED 2 and 2b (the two clocks answer for each other), RED 3 and 3b (the share filed under no organization, and the audit answer with no interval), RED 4 and 4b (the diff that excuses depth by a literal) and the rollback verification DID run and DID assert. This is NOT a pass.'
+\endif

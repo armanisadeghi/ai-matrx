@@ -22,16 +22,17 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'mirror2_green.sql'
--- SUITES-TIDY 2026-09-22 — THE SIZE-AWARE CEILING. This suite measures a real query against
--- production's real row counts under a ceiling in SECONDS. The nightly dev clone is production's
--- data on SMALLER COMPUTE (measured 2026-09-22: shared_buffers 2 GB against production's 4 GB,
--- effective_cache_size 6 GB against 12 GB, 2 parallel workers against 4), so a ceiling that is
--- honest on production is a false alarm here — and on the clone this suite was killed by its own
--- statement_timeout. It now DECLARES the compute it needs and SKIPS BY NAME on anything smaller,
--- which the preamble prints as "this is NOT a pass", rather than reporting a query that has not
--- regressed as a failure. Do not answer a skip here by raising the ceiling: the ceiling is the
--- assertion.
-\set requires 'row:platform.feature_knob:feature = \'custom\' and key = \'member_default_visibility\'|compute:shared_buffers:524288'
+-- SUITES-TIDY-2 2026-09-22 — ONE CLAUSE IS SIZE-AWARE, NOT THE WHOLE FILE. This file used to
+-- declare `compute:shared_buffers:524288` at FILE level, so on the nightly dev clone (production's
+-- data on smaller compute — measured 2026-09-22: shared_buffers 2 GB against production's 4 GB,
+-- effective_cache_size 6 GB against 12 GB, 2 parallel workers against 4) the preamble printed
+-- SKIPPED and NOTHING here asserted: not the seat proof, not the product doors, not the policy
+-- text, not the fence. Exactly ONE clause needs production's compute — 2b, which evaluates
+-- `iam.accessible_entity_ids('record', …)` over the WHOLE DATABASE under a 60-second ceiling —
+-- so exactly that clause is gated now, it says out loud when it did not measure, and the file
+-- emits a top-level SKIPPED line the sweep's judge reads. Everything else runs on the clone.
+-- Do not answer a skip here by raising the ceiling: the ceiling is the assertion.
+\set requires 'row:platform.feature_knob:feature = \'custom\' and key = \'member_default_visibility\''
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
@@ -50,6 +51,11 @@
   \echo '[RED-SUITES] no -v seat=… given; running the admin seat. The other seat is -v seat=dana.'
 \endif
 \timing off
+
+-- SUITES-TIDY-2 2026-09-22 — the size probe for clause 2b only (see the header).
+select case when (select setting::numeric from pg_settings where name = 'shared_buffers') >= 524288
+            then 'false' else 'true' end as mirror2_green_small_server
+\gset
 
 begin;
 set local statement_timeout = '60s';
@@ -212,6 +218,15 @@ begin
   -- both sides still answer for that person — `iam.record_visible_in_org` and
   -- `iam.accessible_entity_ids` both read `auth.uid()` and neither takes a principal. The organization-bounded memo and the whole-database set name exactly
   -- the same rows of this organization for this seat, in ONE snapshot.
+  -- SUITES-TIDY-2 2026-09-22 — THIS is the clause that needs production's compute: the second
+  -- half computes `iam.accessible_entity_ids` over EVERY organization on the database under the
+  -- 60-second ceiling. The comparison IS the assertion, so both halves stand or fall together;
+  -- neither a `\if` NOR a psql variable can reach inside a dollar-quoted DO block (psql does
+  -- not interpolate there at all), so the block asks pg_settings itself, exactly as the teardown
+  -- of sharedonly_green.sql does. The top-level `\gset` probe below drives the SKIPPED line.
+  if (select setting::numeric from pg_settings where name = 'shared_buffers') < 524288 then
+    raise notice '2b: NOT MEASURED — the whole-database set (iam.accessible_entity_ids) needs compute:shared_buffers:524288 and this server is smaller. No memo/whole-database comparison was made.';
+  else
   select array_agg(r.id order by r.id) into v_memo
     from custom.record r
    where r.organization_id = v_org and r.deleted_at is null
@@ -227,6 +242,7 @@ begin
   end if;
   raise notice '2b: the memo and the whole-database set name the same % row(s) for % in this organization.',
     coalesce(array_length(v_memo,1),0), v_seat;
+  end if;
 
   perform set_config('role', 'authenticated', true);
 
@@ -255,8 +271,17 @@ begin
       current_setting('mirror2.e1', true);
   end if;
   raise notice '2c(ii): a new client statement gets a new epoch — nothing the memo holds survives a statement.';
-  raise notice 'MIRROR-2 GREEN (seat %): ALL PARTS PASSED.', v_seat;
+  if (select setting::numeric from pg_settings where name = 'shared_buffers') < 524288 then
+    raise notice 'MIRROR-2 GREEN (seat %): every clause PASSED except 2b, which did not measure on this server.', v_seat;
+  else
+    raise notice 'MIRROR-2 GREEN (seat %): ALL PARTS PASSED.', v_seat;
+  end if;
 end;
 $t2$;
 
 rollback;
+
+\if :mirror2_green_small_server
+\echo 'SKIPPED: mirror2_green.sql clause 2b (the organization-bounded memo against the whole-database set) asserted nothing. This database does not have: compute:shared_buffers:524288'
+\echo 'SKIPPED: clause 2b is the only one gated. PART 0 (the seat proof), PART 1 (1a/1b for the admin seat, 1c/1d/1e for the dana seat), 2a and 2d (the policy text and the whole-database-policy census) and 2c(i)/2c(ii) (the statement fence) DID run and DID assert. This is NOT a pass.'
+\endif

@@ -19,20 +19,29 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'mirrorperf_red.sql'
--- SUITES-TIDY 2026-09-22 — THE SIZE-AWARE CEILING. This suite measures a real query against
--- production's real row counts under a ceiling in SECONDS. The nightly dev clone is production's
--- data on SMALLER COMPUTE (measured 2026-09-22: shared_buffers 2 GB against production's 4 GB,
--- effective_cache_size 6 GB against 12 GB, 2 parallel workers against 4), so a ceiling that is
--- honest on production is a false alarm here — and on the clone this suite was killed by its own
--- statement_timeout. It now DECLARES the compute it needs and SKIPS BY NAME on anything smaller,
--- which the preamble prints as "this is NOT a pass", rather than reporting a query that has not
--- regressed as a failure. Do not answer a skip here by raising the ceiling: the ceiling is the
--- assertion.
-\set requires 'function:custom.visible_record_ids|function:custom.record_table|compute:shared_buffers:524288'
+-- SUITES-TIDY-2 2026-09-22 — ONE CLAUSE IS SIZE-AWARE, NOT THE WHOLE FILE. This file used to
+-- declare `compute:shared_buffers:524288` at FILE level, so on the nightly dev clone (production's
+-- data on smaller compute — measured 2026-09-22: shared_buffers 2 GB against production's 4 GB,
+-- effective_cache_size 6 GB against 12 GB, 2 parallel workers against 4) the preamble printed
+-- SKIPPED and NOTHING here asserted: the three inverses were never executed, so the two catalogue
+-- reds and the seat red proved nothing either. Exactly ONE clause needs production's compute —
+-- RED 3, the wall-clock bench of `custom.visible_record_ids` over EVERY record on the database
+-- (three readings each side, under a 60-second ceiling) — so exactly that clause is gated now,
+-- together with the GREEN baseline it is a ratio against, and the file emits a top-level SKIPPED
+-- line the sweep's judge reads. GREEN 0b and REDs 1, 2 and 4 run on the clone.
+-- Do not answer a skip here by raising the ceiling: the ceiling is the assertion.
+\set requires 'function:custom.visible_record_ids|function:custom.record_table'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
 \endif
+
+-- SUITES-TIDY-2 2026-09-22 — the size probe for the GREEN baseline and RED 3 only (see the
+-- header). It drives the top-level SKIPPED line; the DO blocks below ask pg_settings themselves,
+-- because psql does not interpolate variables inside a dollar-quoted block.
+select case when (select setting::numeric from pg_settings where name = 'shared_buffers') >= 524288
+            then 'false' else 'true' end as mirrorperf_small_server
+\gset
 
 begin;
 set local statement_timeout = '60s';
@@ -100,6 +109,12 @@ begin
   -- baseline read makes the baseline look slow and the red half then looks like no difference
   -- at all — which is what happened: 15446 ms against 13196 ms, a real 17% gap reported as
   -- "not a difference". The median of three throws that away on both sides.
+  -- SUITES-TIDY-2 2026-09-22 — the baseline half of RED 3, gated on the same compute RED 3 is:
+  -- `custom.visible_record_ids` walks EVERY record on the database, three times, under the
+  -- 60-second ceiling. Nothing else in this file is gated.
+  if (select setting::numeric from pg_settings where name = 'shared_buffers') < 524288 then
+    raise notice 'GREEN: NOT MEASURED — the whole-database bench needs compute:shared_buffers:524288 and this server is smaller. RED 3 below is gated with it.';
+  else
   for i in 1..3 loop
     t0 := clock_timestamp();
     select count(*) into v_n from custom.visible_record_ids(c_dana, 'viewer'::public.permission_level);
@@ -112,6 +127,7 @@ begin
     (greatest((select max(x) - min(x) from unnest(v_runs) x), 1))::text, true);
   raise notice 'GREEN: the landed set form names % ids in % ms (median of 3: %).',
     v_n, v_new_ms, array_to_string(v_runs, ', ');
+  end if;
 
   raise notice '--- executing migrations/inverse/mirrorperf_*_down.sql for real ---';
 end;
@@ -140,6 +156,7 @@ declare
   v_new_ms numeric;
   v_n      integer;
   v_reds   integer := 0;
+  v_want   integer := 4;
 begin
   -------------------------------------------------------------------------------------------
   -- RED 1 — CENSUS 1 NAMES THE DOOR AGAIN. The guard's own query, not a paraphrase: a
@@ -181,6 +198,10 @@ begin
   -- number would go green on a loaded database for the wrong reason and red on an empty one for
   -- the wrong reason.
   -------------------------------------------------------------------------------------------
+  if (select setting::numeric from pg_settings where name = 'shared_buffers') < 524288 then
+    v_want := v_want - 1;
+    raise notice 'RED 3: NOT MEASURED — the per-row ladder against the set form is a wall-clock bench over EVERY record on the database and needs compute:shared_buffers:524288; this server is smaller. No ratio was compared.';
+  else
   for i in 1..3 loop
     t0 := clock_timestamp();
     select count(*) into v_n from custom.visible_record_ids(c_dana, 'viewer'::public.permission_level);
@@ -209,6 +230,7 @@ begin
   v_reds := v_reds + 1;
   raise notice 'RED 3 IS RED — the restored per-row body names % ids in % ms (median of 3: %) against the landed set form''s % ms for the same person, same level, same connection (x%).',
     v_n, v_old_ms, array_to_string(v_runs, ', '), v_new_ms, round(v_old_ms / nullif(v_new_ms, 0), 2);
+  end if;
 
   -------------------------------------------------------------------------------------------
   -- RED 4 — FROM THE SEAT: THE `v_found` FORM ANSWERS ABOUT A RECORD THAT DOES NOT EXIST.
@@ -226,7 +248,10 @@ begin
   raise notice 'RED 4 IS RED — from the same seat, the restored door hands back NULL for an id that is in no organization, instead of the 02000 GREEN 0b got.';
   perform set_config('role', v_boss, true);
 
-  raise notice 'MIRROR-PERF: % of 4 blocks are RED. ROLLBACK next.', v_reds;
+  raise notice 'MIRROR-PERF: % of % blocks are RED. ROLLBACK next.', v_reds, v_want;
+  if v_reds <> v_want then
+    raise exception 'MIRROR-PERF red twin: only % of % blocks went red.', v_reds, v_want;
+  end if;
 end;
 $t$;
 
@@ -240,3 +265,8 @@ select p.proname,
  where p.pronamespace = 'custom'::regnamespace
    and p.proname in ('visible_record_ids', 'record_table')
  order by 1;
+
+\if :mirrorperf_small_server
+\echo 'SKIPPED: mirrorperf_red.sql RED 3 (the wall-clock bench of the per-row ladder against the set form) asserted nothing, and neither did the GREEN baseline it is a ratio against. This database does not have: compute:shared_buffers:524288'
+\echo 'SKIPPED: RED 3 and its baseline are the only ones gated. GREEN 0b (from the seat, an id in no organization is refused with 02000), RED 1 (census 1 names custom.record_table again), RED 2 (the set form is back to the per-row ladder) and RED 4 (from the seat, the restored door hands back NULL for an invented id) DID run and DID go red, and the rollback verification below ran. This is NOT a pass.'
+\endif
