@@ -196,6 +196,8 @@ import { adminDatabaseManifest } from "./admin-database.manifest";
 import { adminAiModelsManifest } from "./admin-ai-models.manifest";
 import { adminToolRegistryManifest } from "./admin-tool-registry.manifest";
 import { adminUsersManifest } from "./admin-users.manifest";
+import { adminLimitsManifest } from "./admin-limits.manifest";
+import { commerceLabelBatchManifest } from "./commerce-label-batch.manifest";
 import { adminFeedbackManifest } from "./admin-feedback.manifest";
 import { adminEmailManifest } from "./admin-email.manifest";
 import { adminAgentReviewManifest } from "./admin-agent-review.manifest";
@@ -428,6 +430,8 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   adminAiModelsManifest,
   adminToolRegistryManifest,
   adminUsersManifest,
+  adminLimitsManifest,
+  commerceLabelBatchManifest,
   adminFeedbackManifest,
   adminEmailManifest,
   adminAgentReviewManifest,

@@ -45,6 +45,14 @@ import {
 } from "@ai-matrx/print/react";
 import { useScopedKnobs } from "@/lib/scoped-config/useScopedKnobs";
 import { toast } from "@/lib/toast";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  COMMERCE_LABEL_BATCH_SURFACE_NAME,
+  createCommerceLabelBatchScope,
+} from "@/features/surfaces/manifests/commerce-label-batch.manifest";
 
 import { labelUrlForCode } from "../codes";
 import {
@@ -67,6 +75,81 @@ function stateTone(state: string): string {
       : "border-border text-muted-foreground";
 }
 
+const codeColumns: MatrxColumnDef<LabelCode>[] = [
+  {
+    id: "position",
+    header: "#",
+    accessorFn: (row) => row.createdAt,
+    cell: (_row, index) => (
+      <span className="tabular-nums text-muted-foreground">{index + 1}</span>
+    ),
+    sortable: false,
+    filter: false,
+    width: 64,
+  },
+  {
+    id: "value",
+    header: "Code",
+    accessorKey: "value",
+    cell: (row) => <span className="font-mono text-xs">{row.value}</span>,
+    frozen: true,
+    width: 180,
+  },
+  {
+    id: "state",
+    header: "State",
+    accessorKey: "state",
+    filter: "select",
+    filterOptions: ["available", "assigned", "void"].map((value) => ({
+      value,
+      label: value,
+    })),
+    cell: (row) => (
+      <span
+        className={
+          row.state === "available"
+            ? "text-primary"
+            : row.state === "assigned"
+              ? "text-foreground"
+              : "text-muted-foreground line-through"
+        }
+      >
+        {row.state}
+      </span>
+    ),
+  },
+  {
+    id: "asset_id",
+    header: "Item",
+    accessorKey: "assetId",
+    cell: (row) =>
+      row.assetId ? (
+        <a
+          href={`/commerce/intake/assets/${row.assetId}`}
+          className="text-primary underline-offset-2 hover:underline"
+        >
+          Open item
+        </a>
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      ),
+    mobileHidden: true,
+  },
+  {
+    id: "identifier_id",
+    header: "Identifier ID",
+    accessorKey: "identifierId",
+    hidden: true,
+    cellKind: "uuid",
+  },
+  {
+    id: "void_reason",
+    header: "Void reason",
+    accessorKey: "voidReason",
+    hidden: true,
+  },
+];
+
 export function LabelBatchDetail({
   batchId,
   organizationId,
@@ -81,6 +164,10 @@ export function LabelBatchDetail({
   const [pageIndex, setPageIndex] = useState(0);
   const [pendingVoid, setPendingVoid] = useState(false);
   const [voiding, setVoiding] = useState(false);
+  const codesTable = useTableUrlState({
+    tableId: `commerce-label-codes-${batchId}`,
+    defaultPageSize: 25,
+  });
 
   const { knobs } = useScopedKnobs({
     organizationId,
@@ -216,222 +303,206 @@ export function LabelBatchDetail({
   const pageCount = Math.max(1, Math.ceil(printable.length / perPage));
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 pb-safe">
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card p-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h2 className="truncate text-sm font-semibold">
-              {batch.purpose || "Label batch"}
-            </h2>
-            <Badge
-              variant="outline"
-              className={`py-0 text-[10px] ${stateTone(batch.state)}`}
-            >
-              {formatBatchState(batch.state)}
-            </Badge>
+    <SurfaceRuntimeProvider
+      surfaceName={COMMERCE_LABEL_BATCH_SURFACE_NAME}
+      getScope={() =>
+        createCommerceLabelBatchScope({
+          batch_id: batch.id,
+          label_batch: batch,
+          label_codes: codes,
+          codes_loaded_count: codes.length,
+          codes_table_query: codesTable.state,
+        })
+      }
+    >
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 pb-safe">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card p-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h2 className="truncate text-sm font-semibold">
+                {batch.purpose || "Label batch"}
+              </h2>
+              <Badge
+                variant="outline"
+                className={`py-0 text-[10px] ${stateTone(batch.state)}`}
+              >
+                {formatBatchState(batch.state)}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {template.name} · {codes.length} codes — {available} available ·{" "}
+              {assigned} assigned · {voided} voided
+              {batch.codePrefix ? ` · prefix ${batch.codePrefix}` : ""}
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            {template.name} · {codes.length} codes — {available} available ·{" "}
-            {assigned} assigned · {voided} voided
-            {batch.codePrefix ? ` · prefix ${batch.codePrefix}` : ""}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            className="h-9"
-            disabled={printable.length === 0}
-            onClick={() => {
-              if (certificationRefusal()) return;
-              void stampPrinted();
-              void triggerPrint();
-            }}
-          >
-            <Printer className="mr-1.5 h-4 w-4" />
-            Print
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9"
-            disabled={printable.length === 0}
-            onClick={() => {
-              void stampPrinted();
-              void downloadLabelsPdf(
-                printData,
-                template.id,
-                { ecLevel },
-                `labels-${batch.id.slice(0, 8)}.pdf`,
-              ).catch((err: unknown) => {
-                console.error("[commerce-labels] pdf failed", err);
-                toast.error("Could not build the PDF.");
-              });
-            }}
-          >
-            <Download className="mr-1.5 h-4 w-4" />
-            PDF
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9"
-            onClick={() => printCalibrationSheet(template)}
-          >
-            <Ruler className="mr-1.5 h-4 w-4" />
-            Calibration
-          </Button>
-          {available > 0 && batch.state !== "void" && (
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              className="h-9"
+              disabled={printable.length === 0}
+              onClick={() => {
+                if (certificationRefusal()) return;
+                void stampPrinted();
+                void triggerPrint();
+              }}
+            >
+              <Printer className="mr-1.5 h-4 w-4" />
+              Print
+            </Button>
             <Button
               variant="outline"
               size="sm"
-              className="h-9 text-destructive"
-              onClick={() => setPendingVoid(true)}
+              className="h-9"
+              disabled={printable.length === 0}
+              onClick={() => {
+                void stampPrinted();
+                void downloadLabelsPdf(
+                  printData,
+                  template.id,
+                  { ecLevel },
+                  `labels-${batch.id.slice(0, 8)}.pdf`,
+                ).catch((err: unknown) => {
+                  console.error("[commerce-labels] pdf failed", err);
+                  toast.error("Could not build the PDF.");
+                });
+              }}
             >
-              <Ban className="mr-1.5 h-4 w-4" />
-              Void remaining
+              <Download className="mr-1.5 h-4 w-4" />
+              PDF
             </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Printer certification for this stock — warn or refuse, never silent */}
-      <PrinterCertificationNotice
-        gate={gate}
-        organizationId={organizationId}
-        stockName={template.name}
-        className="rounded-xl border border-border bg-card p-3"
-      />
-
-      {/* Sheet preview (exact proportions; the printer's geometry brain) */}
-      {printable.length > 0 && (
-        <div className="rounded-xl border border-border bg-card p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-medium text-muted-foreground">
-              Sheet preview — {template.name}
-            </p>
-            {pageCount > 1 && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
-                  disabled={pageIndex === 0}
-                  onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="tabular-nums">
-                  {pageIndex + 1}/{pageCount}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
-                  disabled={pageIndex >= pageCount - 1}
-                  onClick={() =>
-                    setPageIndex((p) => Math.min(pageCount - 1, p + 1))
-                  }
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9"
+              onClick={() => printCalibrationSheet(template)}
+            >
+              <Ruler className="mr-1.5 h-4 w-4" />
+              Calibration
+            </Button>
+            {available > 0 && batch.state !== "void" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 text-destructive"
+                onClick={() => setPendingVoid(true)}
+              >
+                <Ban className="mr-1.5 h-4 w-4" />
+                Void remaining
+              </Button>
             )}
           </div>
-          <LabelSheetPreview
-            template={template}
-            labels={printable.map((c) => ({
-              qrValue: labelUrlForCode(c.value),
-              caption: c.value,
-            }))}
-            ecLevel={ecLevel}
-            pageIndex={pageIndex}
-          />
         </div>
-      )}
 
-      {/* Codes — every identity opens (no dead ends): assigned → its asset */}
-      <div className="overflow-x-auto rounded-xl border border-border bg-card">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs text-muted-foreground">
-              <th className="px-3 py-2 font-medium">#</th>
-              <th className="px-3 py-2 font-medium">Code</th>
-              <th className="px-3 py-2 font-medium">State</th>
-              <th className="px-3 py-2 font-medium">Item</th>
-            </tr>
-          </thead>
-          <tbody>
-            {codes.map((c, i) => (
-              <tr key={c.id} className="border-b border-border/50 last:border-0">
-                <td className="px-3 py-1.5 tabular-nums text-muted-foreground">
-                  {i + 1}
-                </td>
-                <td className="px-3 py-1.5 font-mono text-xs">{c.value}</td>
-                <td className="px-3 py-1.5">
-                  <span
-                    className={
-                      c.state === "available"
-                        ? "text-primary"
-                        : c.state === "assigned"
-                          ? "text-foreground"
-                          : "text-muted-foreground line-through"
+        {/* Printer certification for this stock — warn or refuse, never silent */}
+        <PrinterCertificationNotice
+          gate={gate}
+          organizationId={organizationId}
+          stockName={template.name}
+          className="rounded-xl border border-border bg-card p-3"
+        />
+
+        {/* Sheet preview (exact proportions; the printer's geometry brain) */}
+        {printable.length > 0 && (
+          <div className="rounded-xl border border-border bg-card p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">
+                Sheet preview — {template.name}
+              </p>
+              {pageCount > 1 && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    disabled={pageIndex === 0}
+                    onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="tabular-nums">
+                    {pageIndex + 1}/{pageCount}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    disabled={pageIndex >= pageCount - 1}
+                    onClick={() =>
+                      setPageIndex((p) => Math.min(pageCount - 1, p + 1))
                     }
                   >
-                    {c.state}
-                  </span>
-                </td>
-                <td className="px-3 py-1.5">
-                  {c.assetId ? (
-                    <Link
-                      href={`/commerce/intake/assets/${c.assetId}`}
-                      className="text-primary underline-offset-2 hover:underline"
-                    >
-                      Open item
-                    </Link>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+            <LabelSheetPreview
+              template={template}
+              labels={printable.map((c) => ({
+                qrValue: labelUrlForCode(c.value),
+                caption: c.value,
+              }))}
+              ecLevel={ecLevel}
+              pageIndex={pageIndex}
+            />
+          </div>
+        )}
+
+        <MatrxDataTable<LabelCode>
+          data={codes}
+          columns={codeColumns}
+          getRowId={(row) => row.id}
+          tableId={`commerce/labels/${batch.id}/codes`}
+          pageSize={25}
+          query={{
+            mode: "controlled-local",
+            state: codesTable.state,
+            onStateChange: codesTable.onStateChange,
+          }}
+          toolbar={{ title: "Codes", search: true }}
+          coverage={{
+            noun: "label code",
+            total: codes.length,
+            answeredBy: "client",
+          }}
+          emptyState={{ title: "No codes in this batch" }}
+        />
+
+        <PrintOptionsDialog
+          printer={orgPrinter}
+          data={printData}
+          open={open}
+          onOpenChange={setOpen}
+          onPrinted={notifyPrintOutcome}
+        />
+
+        <ConfirmDialog
+          open={pendingVoid}
+          onOpenChange={setPendingVoid}
+          title="Void the remaining codes?"
+          description={`${available} unassigned code${available === 1 ? "" : "s"} will be voided — scanning one will be refused. Codes already on items keep working.`}
+          confirmLabel="Void remaining"
+          variant="destructive"
+          busy={voiding}
+          onConfirm={async () => {
+            setVoiding(true);
+            try {
+              const ids = codes
+                .filter((c) => c.state === "available")
+                .map((c) => c.id);
+              const n = await voidCodes(ids, "voided from batch detail");
+              toast.success(`Voided ${n} codes.`);
+              setPendingVoid(false);
+              setReloadNonce((x) => x + 1);
+            } catch (err) {
+              console.error("[commerce-labels] void failed", err);
+              toast.error("Could not void the codes.");
+            } finally {
+              setVoiding(false);
+            }
+          }}
+        />
       </div>
-
-      <PrintOptionsDialog
-        printer={orgPrinter}
-        data={printData}
-        open={open}
-        onOpenChange={setOpen}
-        onPrinted={notifyPrintOutcome}
-      />
-
-      <ConfirmDialog
-        open={pendingVoid}
-        onOpenChange={setPendingVoid}
-        title="Void the remaining codes?"
-        description={`${available} unassigned code${available === 1 ? "" : "s"} will be voided — scanning one will be refused. Codes already on items keep working.`}
-        confirmLabel="Void remaining"
-        variant="destructive"
-        busy={voiding}
-        onConfirm={async () => {
-          setVoiding(true);
-          try {
-            const ids = codes
-              .filter((c) => c.state === "available")
-              .map((c) => c.id);
-            const n = await voidCodes(ids, "voided from batch detail");
-            toast.success(`Voided ${n} codes.`);
-            setPendingVoid(false);
-            setReloadNonce((x) => x + 1);
-          } catch (err) {
-            console.error("[commerce-labels] void failed", err);
-            toast.error("Could not void the codes.");
-          } finally {
-            setVoiding(false);
-          }
-        }}
-      />
-    </div>
+    </SurfaceRuntimeProvider>
   );
 }

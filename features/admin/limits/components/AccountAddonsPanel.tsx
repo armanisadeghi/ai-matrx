@@ -21,7 +21,7 @@
 //     labelled in words wherever the number appears.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, ChevronDown, Plus, RefreshCw } from "lucide-react";
+import { Check, ChevronDown, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +41,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { TableCell, TableRow } from "@/components/ui/table";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   Select,
@@ -50,14 +51,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Input,
   Popover,
   PopoverContent,
@@ -66,6 +59,14 @@ import {
 } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_LIMITS_SURFACE_NAME,
+  createAdminLimitsScope,
+} from "@/features/surfaces/manifests/admin-limits.manifest";
 import {
   fetchAccountAddons,
   fetchCapabilities,
@@ -112,6 +113,159 @@ type PlanContext =
   | { kind: "no_plan" }
   | { kind: "unreadable"; reason: string };
 
+type AddonTableRow = {
+  addon: AccountAddon;
+  org?: OrganizationOption;
+  capabilityDef?: Capability;
+  planContext: PlanContext;
+  status: "in_effect" | "starts_later" | "expired";
+  now: Date;
+};
+const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
+  {
+    id: "organization",
+    header: "Organization",
+    accessorFn: (row) => row.org?.name ?? row.addon.organization_id,
+    cell: (row) => (
+      <div>
+        <EntityRef
+          token="organization"
+          id={row.addon.organization_id}
+          name={row.org?.name ?? null}
+          openInNewTab
+        />
+        <p className="font-mono text-xs text-muted-foreground">
+          {row.org
+            ? `${row.org.slug}${row.org.is_personal ? " · personal" : ""}`
+            : "not among readable organizations"}
+        </p>
+      </div>
+    ),
+    frozen: true,
+    width: 240,
+  },
+  {
+    id: "organization_slug",
+    header: "Organization slug",
+    accessorFn: (row) => row.org?.slug ?? "",
+    hidden: true,
+  },
+  {
+    id: "capability",
+    header: "Capability",
+    accessorFn: (row) => row.addon.capability,
+    cell: (row) => (
+      <div>
+        <span className="font-mono text-xs">{row.addon.capability}</span>
+        {row.capabilityDef ? (
+          <EnforcementBadge enforced={row.capabilityDef.enforced} />
+        ) : (
+          <Badge variant="outline" className="ml-1 text-xs">
+            not in billing.capability
+          </Badge>
+        )}
+        <p className="text-xs text-muted-foreground">
+          {row.addon.period ?? row.capabilityDef?.period ?? ""}
+        </p>
+      </div>
+    ),
+  },
+  {
+    id: "addon_value",
+    header: "Add-on gives",
+    accessorFn: (row) => row.addon.limit_value,
+    cell: (row) => (
+      <div className="text-right">
+        <p>{limitToHuman(row.addon.capability, row.addon.limit_value)}</p>
+        {isPoints(row.addon.capability) && (
+          <p className="text-xs text-muted-foreground">
+            {pointsToUsdLabel(row.addon.limit_value, row.addon.period)}
+          </p>
+        )}
+      </div>
+    ),
+    align: "right",
+  },
+  {
+    id: "plan",
+    header: "Plan gives",
+    accessorFn: (row) =>
+      row.planContext.kind === "known"
+        ? row.planContext.plan.name
+        : row.planContext.kind,
+    cell: (row) => (
+      <span>
+        {row.planContext.kind === "known"
+          ? `${limitToHuman(row.addon.capability, row.planContext.limit?.limit_value ?? null)} · ${row.planContext.plan.name}`
+          : row.planContext.kind === "no_plan"
+            ? "no plan assigned"
+            : "unreadable"}
+      </span>
+    ),
+    mobileHidden: true,
+  },
+  {
+    id: "status",
+    header: "Status",
+    accessorKey: "status",
+    filter: "select",
+    filterOptions: [
+      { value: "in_effect", label: "In effect" },
+      { value: "starts_later", label: "Starts later" },
+      { value: "expired", label: "Expired" },
+    ],
+    cell: (row) => (
+      <Badge
+        variant={row.status === "in_effect" ? "default" : "outline"}
+        className={
+          row.status === "expired" ? "border-destructive text-destructive" : ""
+        }
+      >
+        {row.status.replace("_", " ")}
+      </Badge>
+    ),
+  },
+  {
+    id: "effective_from",
+    header: "From",
+    accessorFn: (row) => row.addon.effective_from,
+    cell: (row) => formatDate(row.addon.effective_from),
+    filter: "date",
+    mobileHidden: true,
+  },
+  {
+    id: "expires_at",
+    header: "Until",
+    accessorFn: (row) => row.addon.expires_at,
+    cell: (row) => formatDate(row.addon.expires_at),
+    filter: "date",
+    mobileHidden: true,
+  },
+  {
+    id: "source",
+    header: "Source",
+    accessorFn: (row) => row.addon.source,
+    cell: (row) => (
+      <div>
+        <p>{row.addon.source}</p>
+        <p className="font-mono text-[10px] text-muted-foreground">
+          {row.addon.granted_by ? `by ${row.addon.granted_by}` : ""}
+        </p>
+      </div>
+    ),
+    mobileHidden: true,
+  },
+  {
+    id: "note",
+    header: "Note",
+    accessorFn: (row) => row.addon.note ?? "",
+    cell: (row) => (
+      <span title={row.addon.note ?? undefined}>{row.addon.note ?? "—"}</span>
+    ),
+    mobileHidden: true,
+  },
+];
+
 export function AccountAddonsPanel() {
   const [addons, setAddons] = useState<AccountAddon[]>([]);
   const [orgs, setOrgs] = useState<OrganizationOption[]>([]);
@@ -126,26 +280,36 @@ export function AccountAddonsPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [grantOpen, setGrantOpen] = useState(false);
+  const addonsTable = useTableUrlState({
+    tableId: "account-addons",
+    defaultPageSize: 25,
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [addonRows, orgRows, planRows, limitRows, capRows, assignmentResult] =
-        await Promise.all([
-          fetchAccountAddons(),
-          fetchOrganizationOptions(),
-          fetchPlans(),
-          fetchPlanLimits(),
-          fetchCapabilities(),
-          fetchOrgPlanAssignments().then(
-            (rows) => ({ rows, error: null as string | null }),
-            (err: unknown) => ({
-              rows: [] as OrgPlanAssignment[],
-              error: err instanceof Error ? err.message : String(err),
-            }),
-          ),
-        ]);
+      const [
+        addonRows,
+        orgRows,
+        planRows,
+        limitRows,
+        capRows,
+        assignmentResult,
+      ] = await Promise.all([
+        fetchAccountAddons(),
+        fetchOrganizationOptions(),
+        fetchPlans(),
+        fetchPlanLimits(),
+        fetchCapabilities(),
+        fetchOrgPlanAssignments().then(
+          (rows) => ({ rows, error: null as string | null }),
+          (err: unknown) => ({
+            rows: [] as OrgPlanAssignment[],
+            error: err instanceof Error ? err.message : String(err),
+          }),
+        ),
+      ]);
       setAddons(addonRows);
       setOrgs(orgRows);
       setPlans(planRows);
@@ -198,7 +362,8 @@ export function AccountAddonsPanel() {
       if (!plan) return { kind: "no_plan" };
       const limit =
         planLimits.find(
-          (row) => row.plan_id === plan.plan_key && row.capability === capability,
+          (row) =>
+            row.plan_id === plan.plan_key && row.capability === capability,
         ) ?? null;
       return { kind: "known", plan, limit };
     },
@@ -236,106 +401,122 @@ export function AccountAddonsPanel() {
 
   const now = new Date();
   const liveCount = addons.filter((row) => addonIsInEffect(row, now)).length;
+  const addonRows: AddonTableRow[] = addons.map((addon) => {
+    const startsLater =
+      new Date(addon.effective_from).getTime() > now.getTime();
+    const inEffect = addonIsInEffect(addon, now);
+    return {
+      addon,
+      org: orgById.get(addon.organization_id),
+      capabilityDef: capabilityByName.get(addon.capability),
+      planContext: planContextFor(addon.organization_id, addon.capability),
+      status: inEffect ? "in_effect" : startsLater ? "starts_later" : "expired",
+      now,
+    };
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="max-w-2xl rounded-lg border border-border bg-muted/40 p-4 text-sm">
-          <p className="font-medium">An add-on only ever raises an allowance.</p>
-          <p className="mt-1 text-muted-foreground">
-            The plan grid says what every account on that plan gets. An add-on
-            lifts one org above its plan for one capability — more points, more
-            provider spend — for as long as it is in effect. It can never lower
-            anything. A lower, self-imposed ceiling is a{" "}
-            <strong>guardrail</strong>, and the org or the person sets that on
-            their own settings page, not here.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => void load()}>
-            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-            Refresh
-          </Button>
-          <Button size="sm" onClick={() => setGrantOpen(true)}>
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Grant an add-on
-          </Button>
-        </div>
-      </div>
-
-      {assignmentsError && (
-        <p className="text-xs text-warning">
-          Could not read which plan each org is on (
-          <span className="font-mono">billing.org_plan_list</span> refused:{" "}
-          {assignmentsError}). The add-on values below are real; the
-          &ldquo;plan gives&rdquo; column cannot be filled in for this session.
-        </p>
-      )}
-
-      {addons.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border p-8 text-center">
-          <p className="text-sm font-medium">No add-ons have been granted yet.</p>
-          <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-            Every org is on exactly what its plan includes. When one account
-            needs more of a single capability than its plan gives — a customer
-            who paid for extra AI points, a pilot that needs more provider
-            spend — grant it here and it shows up in this list with who granted
-            it, why, and until when. Expired grants stay in the list, marked
-            expired.
-          </p>
-          <Button className="mt-4" size="sm" onClick={() => setGrantOpen(true)}>
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Grant the first add-on
-          </Button>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">
-            {addons.length} {addons.length === 1 ? "add-on" : "add-ons"},{" "}
-            {liveCount} in effect right now.
-          </p>
-          <div className="overflow-x-auto rounded-md border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Organization</TableHead>
-                  <TableHead>Capability</TableHead>
-                  <TableHead className="text-right">Add-on gives</TableHead>
-                  <TableHead className="text-right">Plan gives</TableHead>
-                  <TableHead className="text-right">Raises by</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>From</TableHead>
-                  <TableHead>Until</TableHead>
-                  <TableHead>Source</TableHead>
-                  <TableHead>Note</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {addons.map((row) => (
-                  <AddonRow
-                    key={row.id}
-                    addon={row}
-                    org={orgById.get(row.organization_id)}
-                    capability={capabilityByName.get(row.capability)}
-                    planContext={planContextFor(row.organization_id, row.capability)}
-                    now={now}
-                  />
-                ))}
-              </TableBody>
-            </Table>
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_LIMITS_SURFACE_NAME}
+      getScope={() =>
+        createAdminLimitsScope({
+          addons_loaded: addonRows,
+          addons_loaded_count: addonRows.length,
+          addons_table_query: addonsTable.state,
+        })
+      }
+    >
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="max-w-2xl rounded-lg border border-border bg-muted/40 p-4 text-sm">
+            <p className="font-medium">
+              An add-on only ever raises an allowance.
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              The plan grid says what every account on that plan gets. An add-on
+              lifts one org above its plan for one capability — more points,
+              more provider spend — for as long as it is in effect. It can never
+              lower anything. A lower, self-imposed ceiling is a{" "}
+              <strong>guardrail</strong>, and the org or the person sets that on
+              their own settings page, not here.
+            </p>
           </div>
         </div>
-      )}
 
-      <GrantAddonDialog
-        open={grantOpen}
-        onOpenChange={setGrantOpen}
-        orgs={orgs}
-        capabilities={grantableCapabilities}
-        planContextFor={planContextFor}
-        onGranted={load}
-      />
-    </div>
+        {assignmentsError && (
+          <p className="text-xs text-warning">
+            Could not read which plan each org is on (
+            <span className="font-mono">billing.org_plan_list</span> refused:{" "}
+            {assignmentsError}). The add-on values below are real; the
+            &ldquo;plan gives&rdquo; column cannot be filled in for this
+            session.
+          </p>
+        )}
+
+        {addons.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border p-8 text-center">
+            <p className="text-sm font-medium">
+              No add-ons have been granted yet.
+            </p>
+            <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
+              Every org is on exactly what its plan includes. When one account
+              needs more of a single capability than its plan gives — a customer
+              who paid for extra AI points, a pilot that needs more provider
+              spend — grant it here and it shows up in this list with who
+              granted it, why, and until when. Expired grants stay in the list,
+              marked expired.
+            </p>
+            <Button
+              className="mt-4"
+              size="sm"
+              onClick={() => setGrantOpen(true)}
+            >
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              Grant the first add-on
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              {addons.length} {addons.length === 1 ? "add-on" : "add-ons"},{" "}
+              {liveCount} in effect right now.
+            </p>
+            <MatrxDataTable<AddonTableRow>
+              data={addonRows}
+              columns={addonColumns}
+              getRowId={(row) => row.addon.id}
+              tableId="administration/limits/addons"
+              pageSize={25}
+              query={{
+                mode: "controlled-local",
+                state: addonsTable.state,
+                onStateChange: addonsTable.onStateChange,
+              }}
+              toolbar={{
+                title: "Account add-ons",
+                search: true,
+                refresh: { onRefresh: load },
+                add: { onAdd: () => setGrantOpen(true) },
+              }}
+              coverage={{
+                noun: "account add-on",
+                total: addonRows.length,
+                answeredBy: "client",
+              }}
+            />
+          </div>
+        )}
+
+        <GrantAddonDialog
+          open={grantOpen}
+          onOpenChange={setGrantOpen}
+          orgs={orgs}
+          capabilities={grantableCapabilities}
+          planContextFor={planContextFor}
+          onGranted={load}
+        />
+      </div>
+    </SurfaceRuntimeProvider>
   );
 }
 
@@ -438,7 +619,9 @@ function AddonRow({
                 ? limitToHuman(addon.capability, planLimitValue ?? null)
                 : "not included"}
             </p>
-            <p className="text-xs text-muted-foreground">{planContext.plan.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {planContext.plan.name}
+            </p>
           </>
         ) : planContext.kind === "no_plan" ? (
           <span className="text-xs">no plan assigned</span>
@@ -459,16 +642,17 @@ function AddonRow({
             starts {formatDate(addon.effective_from)}
           </Badge>
         ) : (
-          <Badge variant="outline" className="border-destructive text-xs text-destructive">
+          <Badge
+            variant="outline"
+            className="border-destructive text-xs text-destructive"
+          >
             expired
           </Badge>
         )}
         {inEffect && capability && !capability.enforced && (
           <p className="mt-1 text-xs text-warning">counted, not enforced</p>
         )}
-        {expired && (
-          <p className="mt-1 text-xs">no longer raises anything</p>
-        )}
+        {expired && <p className="mt-1 text-xs">no longer raises anything</p>}
       </TableCell>
       <TableCell className="whitespace-nowrap text-xs">
         {formatDate(addon.effective_from)}
@@ -560,7 +744,9 @@ function GrantAddonDialog({
         return;
       }
       if (parsed.getTime() <= Date.now()) {
-        toast.error("The expiry is in the past — that add-on would never be in effect");
+        toast.error(
+          "The expiry is in the past — that add-on would never be in effect",
+        );
         return;
       }
       expiresIso = parsed.toISOString();
@@ -634,7 +820,10 @@ function GrantAddonDialog({
                   <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+              <PopoverContent
+                className="w-[var(--radix-popover-trigger-width)] p-0"
+                align="start"
+              >
                 <Command>
                   <CommandInput placeholder="Name or slug…" />
                   <CommandList className="max-h-64">
@@ -715,7 +904,9 @@ function GrantAddonDialog({
               )}
             </Label>
             <div className="flex items-center gap-2">
-              {money && <span className="text-sm text-muted-foreground">$</span>}
+              {money && (
+                <span className="text-sm text-muted-foreground">$</span>
+              )}
               <Input
                 id="addon-limit"
                 placeholder="blank = unlimited"
@@ -793,7 +984,10 @@ function GrantAddonDialog({
           >
             Cancel
           </Button>
-          <Button onClick={() => void submit()} disabled={submitting || !orgId || !cap}>
+          <Button
+            onClick={() => void submit()}
+            disabled={submitting || !orgId || !cap}
+          >
             {submitting ? "Granting…" : "Grant add-on"}
           </Button>
         </DialogFooter>

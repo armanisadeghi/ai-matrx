@@ -219,6 +219,8 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/content-extractor", surface: "matrx-user/extractor-chunker" },
   { prefix: "/pdf-widgets", surface: "matrx-user/pdf-extractor" },
 
+  { prefix: "/commerce/labels", surface: "matrx-user/commerce-label-batch" },
+
   // Admin routes — prefer matrx-admin/* when on the admin section.
   // Specific admin surfaces BEFORE the /administration catch-all.
   {
@@ -283,6 +285,7 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
     prefix: "/administration/users/agent-review",
     surface: "matrx-admin/agent-review",
   },
+  { prefix: "/administration/users/limits", surface: "matrx-admin/limits" },
   { prefix: "/administration/users", surface: "matrx-admin/users" },
   {
     prefix: "/administration/chat/cx-dashboard",
@@ -304,8 +307,14 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
     prefix: "/administration/ui/official-components",
     surface: "matrx-admin/official-components",
   },
-  { prefix: "/administration/applications/sync", surface: "matrx-admin/sync-fleet" },
-  { prefix: "/administration/compute/proof-runs", surface: "matrx-admin/proof-runs" },
+  {
+    prefix: "/administration/applications/sync",
+    surface: "matrx-admin/sync-fleet",
+  },
+  {
+    prefix: "/administration/compute/proof-runs",
+    surface: "matrx-admin/proof-runs",
+  },
   {
     prefix: "/administration/applications",
     surface: "matrx-admin/applications",

@@ -174,15 +174,21 @@ export async function setPlanLimit(
 
 export async function fetchAccountAddons(): Promise<AccountAddon[]> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .schema("billing")
-    .from("account_addon")
-    .select(
-      "id, organization_id, capability, period, limit_value, source, note, granted_by, effective_from, expires_at, created_at",
-    )
-    .order("effective_from", { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as AccountAddon[];
+  return readAllRows<AccountAddon>(
+    ({ from, to }) =>
+      supabase
+        .schema("billing")
+        .from("account_addon")
+        .select(
+          "id, organization_id, capability, period, limit_value, source, note, granted_by, effective_from, expires_at, created_at",
+          { count: "exact" },
+        )
+        .order("effective_from", { ascending: false })
+        .order("id", { ascending: false })
+        .range(from, to)
+        .returns<AccountAddon[]>(),
+    { label: "billing.account_addon (limits admin)" },
+  );
 }
 
 /**
