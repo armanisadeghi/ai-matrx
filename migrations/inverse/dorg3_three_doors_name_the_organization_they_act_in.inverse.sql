@@ -1,3 +1,11 @@
+-- ground-standing-ok: c — SIGNUP-DOOR, 2026-09-22. Clause (c) is CORRECT here and it is the
+-- point of the file. `public.create_personal_organization` is a trigger body that NO trigger
+-- runs — being attached to nothing is exactly the defect DEFAULT-ORG-3 closed ("an orphaned
+-- second signup door"), so its inverse necessarily restores an inert body. The red twin beside
+-- it does not claim the body FIRES; it asserts that the creation shape is back in the live
+-- catalogue while nothing runs it, which is what `pg_get_functiondef` answers and what the
+-- no-default-organization census reads. SIGNUP-DOOR closed the last sibling of this class,
+-- `public.handle_new_dm_user`, the same way and its inverse carries the same line.
 -- DEFAULT-ORG-3 inverse -- puts the three doors BACK to answering "which organization?"
 -- with the caller's own personal workspace.
 --

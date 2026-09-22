@@ -1,3 +1,12 @@
+-- ground-standing-ok: d — SIGNUP-DOOR, 2026-09-22, when the standing-trigger census made the
+-- static arm sharp enough to reach this file. Clause (d) names `platform.schema_is_doors_only`
+-- as adopted by `iam.apply_table_grants`, which POLICY-LOCK later rewrote. It is not adopted:
+-- the DO blocks BELOW remove that very call — `v_doors_only := platform.schema_is_doors_only(p_schema);`
+-- — from every live body by anchor surgery on `pg_get_functiondef`, and only then is the
+-- function dropped. The dependency the guard sees is one this file deletes on its way past, in
+-- dynamic SQL a reader without a database cannot follow. Order is the whole design of the file
+-- and it is stated in the header: "The column is dropped LAST, after both functions have
+-- stopped reading it."
 -- lane: DOORS-ONLY-4
 -- chair-step: genuinely non-additive, and that is what an inverse is. It DROPs
 -- platform.schema_is_doors_only(text), DELETEs the two declaration rows the campaign file

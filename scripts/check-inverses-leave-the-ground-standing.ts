@@ -74,12 +74,34 @@
  * `schema.name` and ignores overloads (an inverse that drops ONE overload of a name another
  * body calls is reported as if it dropped the name — conservative in the right direction, and
  * the live arm resolves the real signature). It sees schema-qualified calls only, which is what
- * this repository writes everywhere. And a trigger whose creating file the tree no longer
- * carries is invisible to the static arm — that is exactly what `--live` is for.
+ * this repository writes everywhere.
+ *
+ * THE BLINDNESS THAT USED TO BE THE THIRD LIMIT, AND HOW IT WAS CLOSED (lane SIGNUP-DOOR,
+ * 2026-09-22, on DEFAULT-ORG-4's finding).
+ * -----------------------------------------------------------------------------------------
+ * "A trigger whose creating file the tree no longer carries is invisible to the static arm"
+ * used to be written here as a known limit with `--live` as the answer. It is not an answer:
+ * `--live` needs a database, so the RELEASE GATE — the arm that actually stops a bad inverse —
+ * was the blind one. DEFAULT-ORG-4 measured the cost: `public.ctx_projects_add_creator_membership`
+ * IS live, run by `trg_ctx_projects_add_creator_membership` on `workspace.projects`, and the
+ * static arm could not see it, because nothing under `migrations/` creates that trigger. Its
+ * inverse had to write `-- ground-standing-ok: c` for a clause that was simply wrong about the
+ * world. A guard that is wrong about the world teaches lanes to acknowledge it away.
+ *
+ * So the static arm now reads a RECORDED CENSUS of every standing trigger in every non-system
+ * schema — `scripts/ground-standing-trigger-census.json`, 6,758 triggers over 65 schemas at the
+ * time of writing, including `workspace.*`, `hr.*`, `seo.*` and every other schema the campaign
+ * writes — and merges it into the tree as one synthetic file. It is regenerated from the main
+ * database with `--record-census`, and a missing, unreadable or implausibly small census is a
+ * REFUSAL, never a fallback: an unmeasured census would silently restore the blindness.
+ *
+ * What the census immediately found, invisible to every previous run: `w1_field_definitions_and_validation_down.sql`
+ * and `w1_rule_object_and_uses_down.sql` each detach their triggers on `custom.record` and then
+ * drop a function that a trigger on `custom.field` / `custom.rule` still executes.
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
@@ -87,6 +109,71 @@ const ROOT = resolve(__dirname, "..");
 const MIGRATIONS = resolve(ROOT, "migrations");
 const INVERSE_DIR = resolve(MIGRATIONS, "inverse");
 const CAMPAIGN_DIR = resolve(MIGRATIONS, "campaign");
+const CENSUS_FILE = resolve(ROOT, "scripts", "ground-standing-trigger-census.json");
+
+/**
+ * THE RECORDED STANDING-TRIGGER CENSUS, as one synthetic file the tree can parse.
+ *
+ * Every row is `schema.table|trigger_name|schema.function`, read off `pg_trigger` on the main
+ * database over every schema except `pg_catalog` and `information_schema` — which is a superset
+ * of both lists the campaign could have been narrowed to (the runner's `REVOKE_PROTECTED_SCHEMAS`
+ * and the doors-only register), and needs no maintenance when a new schema is provisioned.
+ *
+ * `tgparentid = 0`, so a trigger is counted ONCE, on the relation it was DECLARED on. The record
+ * store is hash-partitioned sixteen ways and Postgres records a child row per partition; a file
+ * that writes `drop trigger ... on custom.record` detaches all sixteen, and counting the children
+ * would have accused eighteen correct inverses of leaving `custom.record_p00` attached.
+ *
+ * The census is the LOWER bound on what is attached, never the upper one: the tree's own
+ * `CREATE TRIGGER`s are merged in beside it, so a trigger a campaign file creates and the
+ * recording predates is still seen.
+ */
+export interface TriggerCensus {
+  readonly recordedAt: string;
+  readonly schemas: readonly string[];
+  readonly rows: readonly string[];
+}
+
+/** The floor below which a census is not a census. The recording had 6,758 rows over 65
+ * schemas; anything under a thousand is a truncated file or a failed query, and a guard that
+ * accepts one has quietly gone blind again. */
+const CENSUS_FLOOR = 1000;
+
+export function loadTriggerCensus(): TriggerCensus | { missing: string } {
+  if (!existsSync(CENSUS_FILE)) {
+    return { missing: `${CENSUS_FILE} does not exist. Record it: pnpm check:inverses-leave-the-ground-standing:record-census` };
+  }
+  let parsed: { recorded_at?: string; schemas?: string[]; triggers?: string[] };
+  try {
+    parsed = JSON.parse(readFileSync(CENSUS_FILE, "utf8")) as typeof parsed;
+  } catch (e) {
+    return { missing: `${CENSUS_FILE} is not readable JSON: ${(e as Error).message}` };
+  }
+  const rows = parsed.triggers ?? [];
+  if (rows.length < CENSUS_FLOOR) {
+    return {
+      missing:
+        `${CENSUS_FILE} carries ${rows.length} trigger(s), under the floor of ${CENSUS_FLOOR}. ` +
+        `A truncated census is how this guard went blind in the first place. Re-record it.`,
+    };
+  }
+  const bad = rows.find((r) => r.split("|").length !== 3);
+  if (bad) return { missing: `${CENSUS_FILE} carries a malformed row: ${bad}` };
+  return { recordedAt: parsed.recorded_at ?? "(unstated)", schemas: parsed.schemas ?? [], rows };
+}
+
+/** The census as SQL the same parser reads, so there is exactly ONE trigger parser. */
+export function censusAsFacts(census: TriggerCensus): FileFacts {
+  return parseSql(
+    "census:standing-triggers",
+    census.rows
+      .map((r) => {
+        const [tbl, trig, fn] = r.split("|");
+        return `create trigger ${trig} after insert on ${tbl} execute function ${fn}();`;
+      })
+      .join("\n"),
+  );
+}
 
 /* ------------------------------------------------------------------ parsing */
 
@@ -117,6 +204,8 @@ export interface FileFacts {
   readonly dropsTriggers: Set<string>;
   /** `schema.table` of every table this file DROPs. */
   readonly dropsTables: Set<string>;
+  /** Every relation this file DROPs, tables AND views: a trigger goes with its relation. */
+  readonly dropsRelations: Set<string>;
   /** `schema.table.column` of every column this file DROPs. */
   readonly dropsColumns: Set<string>;
   /** Triggers this file CREATEs. */
@@ -131,6 +220,30 @@ export interface FileFacts {
   }>;
   /** Every `schema.name` token that appears anywhere outside a comment. */
   readonly mentions: Set<string>;
+}
+
+/**
+ * A NAME INSIDE A REFUSAL SENTENCE IS NOT A DEPENDENCY (lane SIGNUP-DOOR, 2026-09-22).
+ *
+ * DEFAULT-ORG-3 retired `public.create_personal_organization` by replacing its body with one
+ * that RAISES, and the message names the live path: "…through public._provision_new_user_personal_org,
+ * which routes to iam.provision_signup_organization…". Read as a dependency, that sentence made
+ * W1-ORG's inverse look like it was demolishing something DORG-3's body needs, and clause (d)
+ * said so — about a body that does nothing but raise. A retirement sentence that names its
+ * successor is the behaviour this whole campaign asks for; a guard must not punish it.
+ *
+ * So a single-quoted literal is blanked before touches are read — UNLESS it begins with a SQL
+ * command word, because that is dynamic SQL (`execute 'drop trigger ... on ' || r`) and there
+ * the names are real dependencies. Calls are untouched: prose does not write `schema.name(`.
+ */
+function proseLiteralsBlanked(body: string): string {
+  return body.replace(/'((?:[^']|'')*)'/g, (whole, inner: string) =>
+    /^\s*(?:create|drop|alter|select|insert|update|delete|grant|revoke|comment|do|execute|refresh|truncate|set|with|call|listen|notify)\b/i.test(
+      inner,
+    )
+      ? whole
+      : " ".repeat(whole.length),
+  );
 }
 
 export function parseSql(file: string, raw: string): FileFacts {
@@ -153,6 +266,23 @@ export function parseSql(file: string, raw: string): FileFacts {
     new RegExp(`drop\\s+(?:foreign\\s+)?table\\s+(?:if\\s+exists\\s+)?(${QUALIFIED})`, "gi"),
   )) {
     dropsTables.add(unquote(m[1]!));
+  }
+
+  // EVERY RELATION THIS FILE DROPS, tables and VIEWS alike — used for one thing only: a trigger
+  // goes with the relation it sits on. Half the record store's front doors are views with
+  // INSTEAD OF triggers, and `w1_field_definitions_and_validation_down.sql` detaches
+  // `custom_field_definition_validation` by dropping the `custom.field` VIEW, saying so in its
+  // own comment. Kept SEPARATE from `dropsTables` on purpose: a view this lane created is not an
+  // object clause (d) should be asking who adopted, and folding views into `gone` turned one
+  // false accusation into three (lane SIGNUP-DOOR, 2026-09-22).
+  const dropsRelations = new Set<string>(dropsTables);
+  for (const m of sql.matchAll(
+    new RegExp(
+      `drop\\s+(?:materialized\\s+)?view\\s+(?:if\\s+exists\\s+)?(${QUALIFIED})`,
+      "gi",
+    ),
+  )) {
+    dropsRelations.add(unquote(m[1]!));
   }
 
   const dropsColumns = new Set<string>();
@@ -211,7 +341,7 @@ export function parseSql(file: string, raw: string): FileFacts {
       if (q !== name) calls.add(q);
     }
     const touches = new Set<string>();
-    for (const c of body.matchAll(new RegExp(`(${QUALIFIED})(\\s*\\.\\s*"?${ID}"?)?`, "gi"))) {
+    for (const c of proseLiteralsBlanked(body).matchAll(new RegExp(`(${QUALIFIED})(\\s*\\.\\s*"?${ID}"?)?`, "gi"))) {
       const q = unquote(c[0]!);
       if (q !== name && !calls.has(q)) touches.add(q);
     }
@@ -232,6 +362,7 @@ export function parseSql(file: string, raw: string): FileFacts {
     dropsFunctions,
     dropsTriggers,
     dropsTables,
+    dropsRelations,
     dropsColumns,
     createsTriggers,
     createsFunctions,
@@ -469,7 +600,15 @@ export function judgeFile(
   /** A dependency this same file also removes is not a dependency. */
   const alsoRemovedHere = (dependent: string): boolean => {
     const trig = dependent.match(/^trigger (\S+)$/);
-    if (trig) return [...facts.dropsTriggers].some((k) => k.endsWith(`::${trig[1]}`));
+    if (trig) {
+      if ([...facts.dropsTriggers].some((k) => k.endsWith(`::${trig[1]}`))) return true;
+      // A trigger whose RELATION this file drops is removed just as surely as one it names —
+      // and since the census reports triggers on views, this is how an inverse that drops the
+      // `custom.field` view takes `custom_field_definition_validation` with it.
+      return [...tree.liveTriggers.values()].some(
+        (t) => t.name === trig[1] && facts.dropsRelations.has(t.table),
+      );
+    }
     return gone.has(dependent) || facts.createsFunctions.has(dependent);
   };
 
@@ -479,8 +618,18 @@ export function judgeFile(
     const hits: string[] = [];
     for (const [key, trig] of tree.liveTriggers) {
       if (facts.dropsTriggers.has(key)) continue;
-      if (!afterCalls.has(trig.fn) && !tree.calls.has(trig.fn)) continue; // its body went with it
-      if (gone.has(trig.fn)) continue; // the trigger's own body is gone: (c)'s business, not (a)'s
+      if (facts.dropsRelations.has(trig.table)) continue; // the relation goes, and its triggers with it
+      if (!afterCalls.has(trig.fn) && !tree.calls.has(trig.fn) && !gone.has(trig.fn)) continue;
+      // 🚨 THE HOLE THIS LINE USED TO BE (lane SIGNUP-DOOR, 2026-09-22). It read
+      //     `if (gone.has(trig.fn)) continue; // the trigger's own body is gone: (c)'s business`
+      // and it was wrong in the worst direction. Clause (c) is about a body NOTHING runs; this
+      // loop is over triggers that DO run it. So an inverse that drops a function a live trigger
+      // executes DIRECTLY — the most destructive shape there is, the table explodes on the next
+      // write — was handed to a clause that by construction could never report it, and fell
+      // through both. A planted inverse dropping public.ctx_projects_add_creator_membership,
+      // which trg_ctx_projects_add_creator_membership on workspace.projects executes, went
+      // completely unreported. Detachment is already handled above (`facts.dropsTriggers`), so a
+      // file that takes the trigger off first is still silent.
       const reached = reachFrom(trig.fn, afterCalls, afterTouches, TRIGGER_DEPTH);
       const broken = [...gone].filter((g) => reached.has(g));
       if (!broken.length) continue;
@@ -624,8 +773,28 @@ export function judgeFile(
  * the runner's own self-test shows this refusal going RED without writing a file into a shared
  * checkout.
  */
-export function judgeOneInverse(base: string, raw?: string): Finding[] {
+/**
+ * THE ONE TREE EVERY ARM JUDGES AGAINST: the applied files PLUS the recorded standing-trigger
+ * census. Both the release gate and `pnpm db:apply`'s inverse ground gate call this, so a
+ * trigger one of them can see is a trigger the other can see. A census that cannot be read is
+ * a refusal — the previous behaviour, "no census, judge anyway", is the blindness itself.
+ */
+export function buildAppliedTree(): { tree: Tree; applied: string[]; census: TriggerCensus } {
   const applied = [...sqlFilesIn(MIGRATIONS), ...sqlFilesIn(CAMPAIGN_DIR)];
+  const census = loadTriggerCensus();
+  if ("missing" in census) {
+    throw new Error(
+      `the standing-trigger census is UNREADABLE, so this guard cannot say what is attached: ` +
+        `${census.missing}`,
+    );
+  }
+  const facts = applied.map((f) => parseSql(f, readFileSync(f, "utf8")));
+  facts.push(censusAsFacts(census));
+  return { tree: buildTreeFromFacts(facts), applied, census };
+}
+
+export function judgeOneInverse(base: string, raw?: string): Finding[] {
+  const { tree, applied } = buildAppliedTree();
   const inverses = sqlFilesIn(INVERSE_DIR);
   if (applied.length < 100 || inverses.length < 50) {
     throw new Error(
@@ -634,7 +803,6 @@ export function judgeOneInverse(base: string, raw?: string): Finding[] {
         `than no answer.`,
     );
   }
-  const tree = buildTree(applied);
 
   // The family graph, built from every sibling's stem, exactly as `judge` builds it.
   const byFamily = new Map<string, Map<string, string>>();
@@ -722,6 +890,11 @@ async function liveArm(inverses: string[]): Promise<number> {
          join pg_proc p on p.oid = t.tgfoid
          join pg_namespace pn on pn.oid = p.pronamespace
         where not t.tgisinternal
+          -- Counted ONCE, on the relation it was DECLARED on. custom.record is hash-partitioned
+          -- sixteen ways and pg_trigger carries a child row per partition; a drop trigger on
+          -- custom.record detaches all sixteen, so counting the children accused eighteen
+          -- correct inverses of leaving custom.record_p00 attached (SIGNUP-DOOR, 2026-09-22).
+          and t.tgparentid = 0
           and n.nspname not in ('pg_catalog','information_schema')`,
     );
     const defs = await db.query<{ name: string; def: string; rettrig: boolean }>(
@@ -778,6 +951,89 @@ async function liveArm(inverses: string[]): Promise<number> {
       `[ OK ] live clauses (a) and (c) - ${red} finding(s), baseline ${LIVE_BASELINE}. Clauses (b) ` +
         `and (d) are static-only: pg_proc records no filename, so it cannot say which lane a body ` +
         `belongs to.`,
+    );
+    return 0;
+  } finally {
+    await db.end();
+  }
+}
+
+/* ------------------------------------------------------- recording the census */
+
+/**
+ * `--record-census` — re-read every standing trigger off the MAIN database and rewrite
+ * `scripts/ground-standing-trigger-census.json`. Read-only against the database: one SELECT,
+ * no DDL, no transaction that outlives it.
+ *
+ * It REFUSES to shrink the file silently. A re-recording with fewer triggers than the one on
+ * disk prints the schemas that lost rows and requires `--allow-shrink`, because "the census got
+ * smaller" is either a real retirement (say so) or a failed query (never write it down).
+ */
+async function recordCensus(allowShrink: boolean): Promise<number> {
+  const { loadDbEnv, connectDirect } = await import("./lib/direct-db");
+  const env = loadDbEnv();
+  if ("missing" in env) {
+    console.error(`[FAIL] cannot record the census - missing ${env.missing.join(", ")}.`);
+    return 1;
+  }
+  console.log(`[INFO] recording from ${env.host}/${env.database} (connection from ${env.from}).`);
+  const db = await connectDirect(env, "check:inverses-leave-the-ground-standing --record-census");
+  try {
+    const q = await db.query<{ row: string }>(
+      `select n.nspname || '.' || c.relname || '|' || t.tgname || '|' ||
+              pn.nspname || '.' || p.proname as row
+         from pg_trigger t
+         join pg_class c on c.oid = t.tgrelid
+         join pg_namespace n on n.oid = c.relnamespace
+         join pg_proc p on p.oid = t.tgfoid
+         join pg_namespace pn on pn.oid = p.pronamespace
+        where not t.tgisinternal
+          and t.tgparentid = 0
+          and n.nspname not in ('pg_catalog','information_schema')
+        order by 1`,
+    );
+    const rows = q.rows.map((r) => r.row).sort();
+    if (rows.length < CENSUS_FLOOR) {
+      console.error(
+        `[FAIL] the catalogue answered ${rows.length} trigger(s), under the floor of ` +
+          `${CENSUS_FLOOR}. Refusing to write a census that small over a real one.`,
+      );
+      return 1;
+    }
+    const before = loadTriggerCensus();
+    if (!("missing" in before) && rows.length < before.rows.length && !allowShrink) {
+      const goneBy = new Map<string, number>();
+      const now = new Set(rows);
+      for (const r of before.rows) {
+        if (now.has(r)) continue;
+        const schema = r.split(".")[0]!;
+        goneBy.set(schema, (goneBy.get(schema) ?? 0) + 1);
+      }
+      console.error(
+        `[FAIL] the new census is SMALLER (${rows.length} vs ${before.rows.length}). Triggers no ` +
+          `longer standing, by schema: ${[...goneBy].map(([k, v]) => `${k}:${v}`).join(", ")}. If ` +
+          `that is a real retirement, re-run with --allow-shrink and say so in the commit.`,
+      );
+      return 1;
+    }
+    const schemas = [...new Set(rows.map((r) => r.split(".")[0]!))].sort();
+    const existing = existsSync(CENSUS_FILE)
+      ? (JSON.parse(readFileSync(CENSUS_FILE, "utf8")) as { _readme?: string })
+      : {};
+    const out = {
+      _readme: existing._readme ?? "",
+      recorded_at: new Date().toISOString(),
+      recorded_by: process.env.MATRX_LANE ?? "(unstated lane)",
+      source:
+        `${env.host}/${env.database} — pg_trigger join pg_class join pg_namespace join pg_proc, ` +
+        `tgisinternal = false, every schema except pg_catalog and information_schema`,
+      schemas,
+      triggers: rows,
+    };
+    writeFileSync(CENSUS_FILE, JSON.stringify(out, null, 1) + "\n");
+    console.log(
+      `[ OK ] census recorded - ${rows.length} standing trigger(s) over ${schemas.length} ` +
+        `schema(s), written to ${CENSUS_FILE.replace(ROOT + "/", "")}.`,
     );
     return 0;
   } finally {
@@ -842,7 +1098,24 @@ function main(): void {
   const selfTest = process.argv.includes("--self-test");
   const live = process.argv.includes("--live");
 
-  const applied = [...sqlFilesIn(MIGRATIONS), ...sqlFilesIn(CAMPAIGN_DIR)];
+  if (process.argv.includes("--record-census")) {
+    recordCensus(process.argv.includes("--allow-shrink"))
+      .then((code) => exitAfterDrain(code))
+      .catch((e: Error) => {
+        console.error(`[FAIL] the census could not be recorded: ${e.message}`);
+        exitAfterDrain(1);
+      });
+    return;
+  }
+
+  let built: { tree: Tree; applied: string[]; census: TriggerCensus };
+  try {
+    built = buildAppliedTree();
+  } catch (e) {
+    console.error(`[FAIL] ${(e as Error).message}`);
+    exitAfterDrain(1);
+  }
+  const { tree, applied, census: triggerCensus } = built;
   if (applied.length < 100) {
     console.error(
       `[FAIL] only ${applied.length} applied migration(s) found under ${MIGRATIONS}. Either the ` +
@@ -855,8 +1128,11 @@ function main(): void {
     console.error(`[FAIL] only ${inverses.length} inverse file(s) under ${INVERSE_DIR}. Refusing to pass.`);
     exitAfterDrain(1);
   }
-
-  const tree = buildTree(applied);
+  console.log(
+    `[INFO] standing-trigger census: ${triggerCensus.rows.length} trigger(s) over ` +
+      `${triggerCensus.schemas.length} schema(s), recorded ${triggerCensus.recordedAt}. The static ` +
+      `arm sees every schema the campaign writes, not only the ones migrations/ still creates.`,
+  );
   const { findings, census } = judge(inverses, tree);
 
   console.log(
@@ -908,6 +1184,45 @@ function main(): void {
     console.log(
       `[ OK ] self-test - all ${RECORDED.length} recorded instances go RED on their own pre-fix ` +
         `bytes: ${named.join(" · ")}`,
+    );
+
+    // ── THE CENSUS'S OWN RED PROOF ───────────────────────────────────────────────────────
+    // A PLANTED inverse that drops `public.ctx_projects_add_creator_membership` — the body
+    // `trg_ctx_projects_add_creator_membership` on `workspace.projects` executes on every
+    // project insert. Nothing under `migrations/` creates that trigger, so the tree ALONE
+    // cannot see it; the census can. The proof is both directions: RED with the census, and
+    // SILENT without it. If the second half ever goes red too, the census is no longer what
+    // is doing the work and this clause is measuring nothing.
+    const planted = [
+      "-- lane: SELF-TEST (planted, never applied)",
+      "drop function if exists public.ctx_projects_add_creator_membership();",
+    ].join("\n");
+    const plantedFacts = parseSql(resolve(INVERSE_DIR, "selftest_planted_workspace_trigger_down.sql"), planted);
+    const withCensus = judgeFile("selftest_planted_workspace_trigger_down.sql", plantedFacts, planted, tree, new Map());
+    const blindTree = buildTreeFromFacts(applied.map((f) => parseSql(f, readFileSync(f, "utf8"))));
+    const withoutCensus = judgeFile("selftest_planted_workspace_trigger_down.sql", plantedFacts, planted, blindTree, new Map());
+    const censusSaw = withCensus.some((x) => /workspace\.projects/.test(x.what));
+    if (!censusSaw) {
+      console.error(
+        `[FAIL] SELF-TEST: the planted inverse drops public.ctx_projects_add_creator_membership, ` +
+          `which trg_ctx_projects_add_creator_membership on workspace.projects executes, and this ` +
+          `guard did NOT name that trigger. The standing-trigger census is not reaching the ` +
+          `static arm — which is the exact blindness it was added to close.`,
+      );
+      exitAfterDrain(1);
+    }
+    if (withoutCensus.some((x) => /workspace\.projects/.test(x.what))) {
+      console.error(
+        `[FAIL] SELF-TEST: the tree found the workspace.projects trigger WITHOUT the census. ` +
+          `Then the census is not what closes the blindness and this clause proves nothing — ` +
+          `re-read what changed before trusting either half.`,
+      );
+      exitAfterDrain(1);
+    }
+    console.log(
+      `[ OK ] self-test (census) - a planted inverse dropping public.ctx_projects_add_creator_membership ` +
+        `is named through trg_ctx_projects_add_creator_membership on workspace.projects WITH the ` +
+        `census (${withCensus.map((x) => x.clause).join("/")}) and is invisible WITHOUT it.`,
     );
   }
 

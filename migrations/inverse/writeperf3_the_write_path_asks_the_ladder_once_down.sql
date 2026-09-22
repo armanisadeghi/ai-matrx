@@ -19,7 +19,7 @@
 -- touches, `platform.associations` and `custom.record`, are taken LAST, in the same order the
 -- readers take them.
 --
--- ground-standing-ok: c — `platform.memo_clear_stmt` and `platform.memo_clear_on_structure`
+-- ground-standing-ok: a, c, d — `platform.memo_clear_stmt` and `platform.memo_clear_on_structure`
 -- look like bodies no trigger runs, and they are not. WRITE-PERF-3's up-file creates
 -- `zz_memo_clear_i` / `_u` / `_d` over them DYNAMICALLY, with `execute 'create trigger ...'`
 -- across every table `platform.memo_reach_tables()` names, so no static `create trigger`
@@ -28,6 +28,17 @@
 -- deadlock-safe order the header explains, BEFORE the two bodies are dropped. The `--live` arm
 -- reads `pg_trigger` and sees both the triggers and the detach; the static arm cannot, and
 -- this line is that answer rather than an excuse.
+--
+-- CLAUSES (a) AND (d) WERE ADDED TO THE SAME LINE BY SIGNUP-DOOR, 2026-09-22, and only after
+-- measuring the claim rather than repeating it. With the standing-trigger census the static arm
+-- can finally SEE `zz_memo_clear_i/_u/_d` — on `custom.portal`, `custom.portal_principal` and
+-- the rest — and it says this file drops their bodies while leaving them attached. The set the
+-- DO block sweeps and the set that is actually attached were compared on the main database
+-- that day, both directions:
+--     attached but not in platform.memo_reach_tables()  -> (none)
+--     in platform.memo_reach_tables() but not attached  -> (none)
+-- They are the same set, so the sweep detaches every one of them before the drops. If those two
+-- ever stop being empty, this acknowledgement is wrong and the guard is right.
 do $do$
 declare r text; v_order text[];
 begin

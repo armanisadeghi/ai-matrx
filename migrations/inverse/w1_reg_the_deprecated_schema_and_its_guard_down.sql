@@ -1,3 +1,11 @@
+-- ground-standing-ok: a — SIGNUP-DOOR, 2026-09-22. The census now shows what this file was
+-- already written to survive: `platform._deprecated_write_guard()` IS attached somewhere other
+-- than `content_ir.kind_instance` — measured today, `_deprecated_write_guard` on
+-- `workbench.schema_templates`, put there by another lane. This file does not leave that trigger
+-- standing over a dropped body; it REFUSES to run at all. The DO block below raises
+-- "the write guard is still attached to %" before a single DROP executes, and tells the operator
+-- to remove that lane's guard through that lane's own inverse first. Stopping is stronger than
+-- detaching: detaching would silently take a peer's guard off `workbench.schema_templates`.
 -- chair-step: this drops the deprecated schema's guard, its one verb and the schema itself, and deletes the deprecation rows the up-file wrote — no additive judgement admits any of that; it exists so the branch can be put back exactly as W1-REG found it
 --
 -- THE INVERSE of `migrations/campaign/w1_reg_the_deprecated_schema_and_its_guard.sql`.
