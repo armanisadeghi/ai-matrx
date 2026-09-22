@@ -43,28 +43,18 @@ import { readAssociationPages } from "./readAssociationPages";
 // went with the probe: every error reaching it now is a real one, and must be
 // captured.
 
-/**
- * The supabase client, narrowed to the package's structural dataSource
- * contract. The thin wrapper exists because handing tsc the FULL generated
- * `SupabaseClient<Database>` generic against the port's `DemandedRpcName`
- * union blows the instantiation-depth budget (TS2589) — the runtime object
- * is the client itself, untouched.
- */
-// One deliberate unknown-cast at this boundary: relating the client's huge
-// overloaded generics to the port type directly is what triggers TS2589, so
-// we detach from the generated generics first. The methods are bound to keep
-// supabase-js `this` semantics.
-const client = supabase as unknown as {
-  rpc: AssociationsDataSource["rpc"];
-  from: NonNullable<AssociationsDataSource["from"]>;
-  schema: NonNullable<AssociationsDataSource["schema"]>;
-};
+// `from` and `schema` are GONE from this port since @ai-matrx/associations 0.10.0, and
+// deliberately: entity-row create/rename was their only reader, and it now goes through
+// `public.entity_row_create` / `entity_row_rename` like every other write — so a table
+// surface on this data source was a seam a future write would quietly reach for, on a
+// schema that is no longer client-writable at all (chair ruling, VERIFIER-8 HIGH-3). This
+// seam declares `rpc` and nothing else, which is now the whole port.
 export const associationsDataSource: AssociationsDataSource = {
   rpc: (fn, args) => {
     if (fn === "assoc_for_entity" || fn === "assoc_for_sources" || fn === "assoc_for_targets" || fn === "assoc_members_visible") {
       return readAssociationPages(fn, args);
     }
-    const call = client.rpc(fn, args);
+    const call = supabase.rpc(fn, args);
     if (fn !== "cmt_add") return call;
     // The cmt_add tap (W6 comments adoption): EVERY comment post — the
     // package CommentThread composer, the store service, any host caller —
