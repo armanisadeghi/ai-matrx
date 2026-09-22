@@ -173,22 +173,25 @@ export async function setPlanLimit(
 // ---------------------------------------------------------------------------
 
 export async function fetchAccountAddons(): Promise<AccountAddon[]> {
-  const supabase = createClient();
-  return readAllRows<AccountAddon>(
-    ({ from, to }) =>
-      supabase
-        .schema("billing")
-        .from("account_addon")
-        .select(
-          "id, organization_id, capability, period, limit_value, source, note, granted_by, effective_from, expires_at, created_at",
-          { count: "exact" },
-        )
-        .order("effective_from", { ascending: false })
-        .order("id", { ascending: false })
-        .range(from, to)
-        .returns<AccountAddon[]>(),
-    { label: "billing.account_addon (limits admin)" },
-  );
+  // THROUGH THE DOOR, NOT THE STAFF LANE (DD-137b staff door, 2026-09-22).
+  // `billing.account_addon` resolves `private`, and its only client read was a
+  // standing `platform_admin_all` lane — precisely what §3.5 says must not
+  // exist. The lane is closed; this read goes through
+  // /api/admin/limits/account-addons, which gates on requireAdmin() and then
+  // uses the admin client, the same door
+  // features/admin/shared-knowledge/server.ts already uses for the reads
+  // client-side RLS deliberately hides from an admin's own session. Writes are
+  // untouched: an add-on is still granted through `billing.addon_grant`.
+  const res = await fetch("/api/admin/limits/account-addons", {
+    cache: "no-store",
+  });
+  const body = (await res.json()) as { addons?: AccountAddon[]; error?: string };
+  if (!res.ok) {
+    throw new Error(
+      body.error ?? `Could not load the add-on register (HTTP ${res.status}).`,
+    );
+  }
+  return body.addons ?? [];
 }
 
 /**
