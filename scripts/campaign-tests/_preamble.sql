@@ -36,7 +36,11 @@
 --     relation:<schema>.<name>            a table, view, matview or sequence
 --     type:<schema>.<name>                a type or domain
 --     function:<schema>.<name>            a function or procedure by name (any signature)
---     exec:<schema>.<name>                the above AND EXECUTE on it for the connected role
+--     exec:<schema>.<name>                the above AND EXECUTE on it for the CONNECTED role
+--     grant:<role>:<schema>.<name>        the above AND EXECUTE on it for <role> — this is the
+--                                         one that matters: a suite takes a member's seat
+--                                         (`authenticated`), and the branch is missing hundreds
+--                                         of the EXECUTE grants production gives that role
 --     column:<schema>.<table>.<column>    a column
 --     schema:<name>                       a schema
 --     row:<schema>.<table>:<predicate>    at least one row matching the predicate,
@@ -121,6 +125,19 @@ begin
         where n.nspname = split_part(v_arg, '.', 1)
           and p.proname = split_part(v_arg, '.', 2)
           and (v_kind = 'function' or has_function_privilege(current_user, p.oid, 'EXECUTE')));
+    elsif v_kind = 'grant' then
+      -- grant:<role>:<schema>.<name>
+      v_pred := split_part(v_arg, ':', 1);                      -- the role
+      v_rel  := substr(v_arg, length(v_pred) + 2);              -- schema.name
+      if not exists (select 1 from pg_roles where rolname = v_pred) then
+        v_ok := false;
+      else
+        v_ok := exists (
+          select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+          where n.nspname = split_part(v_rel, '.', 1)
+            and p.proname = split_part(v_rel, '.', 2)
+            and has_function_privilege(v_pred, p.oid, 'EXECUTE'));
+      end if;
     elsif v_kind = 'column' then
       v_ok := exists (
         select 1 from information_schema.columns
