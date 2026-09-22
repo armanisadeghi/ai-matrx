@@ -476,6 +476,24 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- 2026-09-22 — Claude (Opus): **Two Rulebooks with one name are told apart, and
+  the sentence that says so survives the navigation** (jobs-bar cold-walk-21,
+  defect D). The card and row views of `/masterwork/all` add a distinguishing
+  line to lookalike rows through the shared `lib/entity-list/lookalikes`
+  primitive (`browse/lookalikeRulebooks.ts` says what a Rulebook's
+  distinguishing facts are: when it was started, and what it was built from); a
+  table cell cannot see its neighbours, so the **Created** column stops being
+  hidden by default. And the duplicate-name sentence raised at creation — which
+  shipped on 2026-09-21 and the walk still read as "nothing" — no longer gets
+  sonner's four seconds against an immediate `router.push` into the new
+  Rulebook: it stays until she dismisses it. Guard:
+  `browse/__tests__/two-rulebooks-with-one-name-are-told-apart.test.tsx`.
+- 2026-09-22 — Claude (Opus): **Run the Bench's three empty boxes no longer
+  print fifteen zeros over a $85.90 price** (jobs-bar cold-walk-21, defect B).
+  Fixed at the class, in `components/text/PlainTextMetricsBar` — no statistics
+  for a field with no text, anywhere — because walk 20 had deleted
+  `enableTextStats` from ONE consumer and the Bench (which opted in on
+  2026-09-15, 87ab138341) kept printing them.
 - 2026-09-21 — Claude (Opus): **A shortened rule id still reads as the rule, and
   "Rule id:" is never a label an Expert sees** (jobs-bar cold-walk-19, defect B).
   The walk's finished deliverable printed nine raw hyphenated ids inside 11,630

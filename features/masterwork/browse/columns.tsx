@@ -189,9 +189,16 @@ export const RULEBOOK_COLUMNS: EntityColumnSpec<RulebookListRow>[] = [
     },
   },
   {
+    // 🚨 SHOWN BY DEFAULT since cold walk 21 (defect D). Two Rulebooks may
+    // carry one name — that is the ruling, not a bug — and on the table view a
+    // cell cannot see its neighbours, so there is no per-row note to add the
+    // way the card and row views do (`../lookalikeRulebooks.ts`). The creation
+    // moment is the column that separates twins in every case, so it stops
+    // being an opt-in: the walk read three rows all saying
+    // "walk21-Repaint or Recoat Verdict" with nothing on any of them to say
+    // which was which. A person who does not want it still hides it.
     id: "created_at",
     label: "Created",
-    defaultHidden: true,
     column: {
       id: "created_at",
       accessorKey: "created_at",

@@ -428,6 +428,16 @@ how that savior page gets built.
 
 ## Change log
 
+- `2026-09-22` — Claude (Opus): **No two rows in a list are indistinguishable**
+  (jobs-bar cold-walk-21, defect D). New `lookalikes.ts`: given the rows a view
+  is about to render, it returns a short distinguishing note ONLY for the rows
+  whose name reads the same as another's — built from the creation moment
+  (escalating to the minute when twins share a day) plus one caller-supplied
+  detail when that detail separates every twin, and nothing at all when a twin
+  carries no distinguishing fact. Duplicate names stay allowed (Notion/Linear);
+  the list does the telling apart. First consumer: `/masterwork/all`, which had
+  shown three rows all reading one name with nothing to separate them. Guard:
+  `__tests__/no-two-rows-read-alike.test.ts`.
 - `2026-09-20` — Claude (Opus): **Cancel no longer throws the selection away
   and then claims the work was done** (jobs-bar cold-walk-13, Friction). A bulk
   action whose verb is a DIALOG resolves with nothing when the person cancels,

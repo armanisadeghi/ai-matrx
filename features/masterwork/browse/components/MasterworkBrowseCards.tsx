@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { cleanMarkdownPreview } from "@/utils/markdown-processors/clean-markdown-to-text";
 import type { Masterwork, RulebookListRow } from "../../types";
+import { rulebookLookalikeNotes } from "../lookalikeRulebooks";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
 
 interface Props {
@@ -97,6 +98,8 @@ export function MasterworkBrowseCards({
   // One open disclosure at a time — the card grid stays readable, and the
   // control is on the card whose archived systems it reveals.
   const [openArchived, setOpenArchived] = useState<string | null>(null);
+  // NO TWO CARDS READ ALIKE (cold walk 21, defect D).
+  const lookalike = rulebookLookalikeNotes(rows);
   return (
     <div
       className={cn(
@@ -133,6 +136,11 @@ export function MasterworkBrowseCards({
                     {row.name}
                   </span>
                 )}
+                {lookalike.has(row.id) ? (
+                  <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                    {lookalike.get(row.id)}
+                  </span>
+                ) : null}
                 <div className="mt-1 flex flex-wrap items-center gap-1.5">
                   <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
                     {row.rule_count} {row.rule_count === 1 ? "rule" : "rules"}

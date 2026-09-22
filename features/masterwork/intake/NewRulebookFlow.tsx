@@ -685,14 +685,25 @@ export function NewRulebookFlow() {
       // we refuse nothing — but the walk ended with three rows reading
       // "walk20-Zone Failure Verdict" and no word anywhere about how that
       // happened. Allowing it is the ruling; saying it is the other half.
+      // 🚨 AND IT MUST STILL BE THERE WHEN SHE ARRIVES (cold walk 21, defect
+      // D). The sentence above shipped on 2026-09-21 and the walk still read
+      // "nothing" — because it was raised on /masterwork/new with sonner's
+      // four-second default and the very next statement navigates to the new
+      // Rulebook, where the person is reading a page that is still painting.
+      // A fact she may have MEANT something else by does not get four seconds:
+      // it stays until she dismisses it (the app Toaster renders a close
+      // button, and `recordToast` keeps it alive only while the URL still
+      // names this Rulebook, so it cannot follow her anywhere else). An
+      // ordinary start is still an ordinary four-second courtesy.
       recordToast.success(
         { type: "rulebook", id: rulebook.id, title: rulebook.name },
         `"${rulebook.name}" started`,
-        {
-          description: rulebook.nameAlreadyInUse
-            ? `You already have a Rulebook called "${rulebook.name}". This is a second one — rename either from its own page. ${approach.costTimeShape}`
-            : approach.costTimeShape,
-        },
+        rulebook.nameAlreadyInUse
+          ? {
+              description: `You already have a Rulebook called "${rulebook.name}". This one is separate — rename either from its own page. ${approach.costTimeShape}`,
+              duration: Infinity,
+            }
+          : { description: approach.costTimeShape },
       );
       startTransition(() => router.push(href));
     } catch (err) {

@@ -206,6 +206,20 @@ export function PlainTextMetricsBar({
   const stats = computePlainTextMetrics(text);
   const [containerRef, density] = useMetricsBarDensity(reserveRightSpace);
 
+  // 🚨 NO STATISTICS FOR A FIELD WITH NO TEXT — EVER (the class behind the
+  // "fifteen zeros" defect, cold walks 19 and 21). An empty box measured
+  // itself and printed `0 chars 0 whitespace 0 words 0 lines 0 paragraphs`
+  // — five facts about nothing, and on the Bench dialog three of those bars
+  // sat directly above "Expect this to cost up to about $85.90". Counting
+  // helps while someone writes; before the first character it is noise on a
+  // screen where a non-technical Expert is deciding whether to spend money.
+  // Gated HERE, at the one primitive every stats bar renders through
+  // (ProTextFieldStatsBar -> every `enableTextStats` ProTextarea, the notes
+  // footer, the fullscreen markdown editor), so no consumer can reopen it by
+  // passing the prop. Walk 20 fixed ONE consumer by deleting its prop; that
+  // left the class open and the Bench kept printing zeros.
+  if (text.length === 0) return null;
+
   const barClassName = cn(
     "flex min-w-0 shrink-0 items-center border-t border-border bg-muted/30 text-muted-foreground font-mono tabular-nums",
     compact ? "min-h-7 px-2 py-1 text-[10px]" : "min-h-8 px-4 py-1.5 text-xs",

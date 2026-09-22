@@ -12,6 +12,7 @@ import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { cn } from "@/lib/utils";
 import type { Masterwork, RulebookListRow } from "../../types";
+import { rulebookLookalikeNotes } from "../lookalikeRulebooks";
 
 interface Props {
   rows: RulebookListRow[];
@@ -51,6 +52,9 @@ export function MasterworkBrowseRows({
   masterworksBy,
   archivedBy,
 }: Props) {
+  // NO TWO ROWS READ ALIKE (cold walk 21, defect D). Duplicate names are
+  // allowed; an unreadable list is not.
+  const lookalike = rulebookLookalikeNotes(rows);
   return (
     <div className="divide-y divide-border rounded-lg border border-border bg-card">
       {rows.map((row) => {
@@ -83,6 +87,14 @@ export function MasterworkBrowseRows({
               {density === "comfortable" && row.description ? (
                 <span className="hidden truncate text-xs text-muted-foreground sm:block">
                   {row.description}
+                </span>
+              ) : null}
+              {/* Only on the rows that share their name with another row here
+                  — and at EVERY density and width, because a compact phone
+                  list is exactly where three identical names are unreadable. */}
+              {lookalike.has(row.id) ? (
+                <span className="block truncate text-xs text-muted-foreground">
+                  {lookalike.get(row.id)}
                 </span>
               ) : null}
               {/* Mobile: the counts sit UNDER the name instead of squeezing it

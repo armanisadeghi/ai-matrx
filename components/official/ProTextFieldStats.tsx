@@ -96,6 +96,13 @@ export function ProTextFieldStatsPanel({
         ) : null}
       </div>
 
+      {text.length === 0 ? (
+        // Same law as the pinned bar: no statistics for a field with no text.
+        // Five zeros are five facts about nothing; this says the true thing.
+        <p className="px-3 py-2.5 text-xs text-muted-foreground">
+          Nothing typed here yet — the counts start with the first character.
+        </p>
+      ) : (
       <dl className="grid gap-2 px-3 py-2.5">
         {TEXTAREA_METRICS.map((key) => (
           <div
@@ -109,6 +116,7 @@ export function ProTextFieldStatsPanel({
           </div>
         ))}
       </dl>
+      )}
 
       {onBack ? (
         <div className="border-t border-border px-3 py-2">
