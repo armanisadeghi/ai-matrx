@@ -63,10 +63,10 @@ await sleep(12000);
 
 // 1. A ticket that is in the grid right now — chosen from the screen, never invented.
 const ticket = await page.evaluate(() => {
-  const cell = [...document.querySelectorAll("*")]
-    .map((n) => (n.childElementCount === 0 ? (n.textContent ?? "").trim() : ""))
-    .find((t) => /^RPC-T1-\d+$/.test(t));
-  return cell ?? null;
+  // The grid virtualises its rows, so the ticket number is read off the page's
+  // own text rather than off a leaf element that may not exist as its own node.
+  const m = (document.body.textContent ?? "").match(/RPC-T1-\d+/);
+  return m ? m[0] : null;
 });
 if (!ticket) { fail("no RPC-T1-* ticket visible in the grid — nothing to archive"); }
 else ok(`the grid shows dispatch ticket ${ticket}`);
