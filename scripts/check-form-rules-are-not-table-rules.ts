@@ -32,6 +32,7 @@
  */
 
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 /** The two uses `custom._record_rule_uses` enforces on every write to the scoped table. */
 const ENFORCED_ON_WRITE = ["validate", "compute"];
@@ -81,7 +82,7 @@ async function main() {
     console.error(
       `[FAIL] no database credentials (${env.missing.join(", ")} — looked in ${env.looked.join(", ")}). Unmeasured is not passed.`,
     );
-    process.exit(1);
+    exitAfterDrain(1);
   }
   const selfTest = process.argv.includes("--self-test");
   const client = await connectDirect(env, "check:form-rules-are-not-table-rules");
@@ -106,7 +107,7 @@ async function main() {
           console.error(
             "[FAIL] self-test: there is no live form with an accept Rule on this database, so the census has nothing to be proven against. Unmeasured is not passed.",
           );
-          process.exit(1);
+          exitAfterDrain(1);
         }
         const { organization_id, rule_id } = victim.rows[0];
         await client.query(
@@ -121,7 +122,7 @@ async function main() {
           console.error(
             "[FAIL] self-test: the old shape was put back on a live form and the census found NOTHING. It is not looking at the thing it is supposed to police.",
           );
-          process.exit(1);
+          exitAfterDrain(1);
         }
         console.log(
           `[OK] self-test: the census went RED on ${red.rows.length} form(s) the moment the old shape was put back — ${say(red.rows)[0]}`,
@@ -134,10 +135,10 @@ async function main() {
         console.error(
           `[FAIL] self-test: after the rollback the census still names ${green.rows.length} form(s) — the self-test's own write did not go away, or the tree is genuinely red.`,
         );
-        process.exit(1);
+        exitAfterDrain(1);
       }
       console.log("[OK] self-test: rolled back, and the census is green again. Nothing it wrote survives.");
-      process.exit(0);
+      exitAfterDrain(0);
     }
 
     const rows = ((await client.query(CENSUS)) as { rows: Row[] }).rows;
@@ -147,7 +148,7 @@ async function main() {
       console.error(
         "  A form's accept Rule declares `uses: ['membership']` — it says which submissions the form admits. Move them: scripts/fix11a/move_form_accept_rules_to_membership.sql",
       );
-      process.exit(1);
+      exitAfterDrain(1);
     }
     console.log("[OK] no live form's accept Rule is enforced on the table's writes: publishing a form does not make its questions compulsory for every record.");
   } finally {

@@ -37,6 +37,7 @@
 import { mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join, relative } from "path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = join(__dirname, "..");
 const SCRIPTS = join(ROOT, "scripts");
@@ -158,25 +159,25 @@ function main() {
       console.error(
         `[FAIL] self-test: the census did NOT flag a proof that hardcodes its restore on a live crew. It saw ${seen.length} thing(s) in ${dir}. This guard cannot go red, so it proves nothing.`,
       );
-      process.exit(1);
+      exitAfterDrain(1);
     }
     if (wrong.length !== 0) {
       console.error(
         `[FAIL] self-test: the census flagged the proof that DOES borrow the switch — ${wrong.join("; ")}. A guard that refuses the correct shape teaches people to switch it off.`,
       );
-      process.exit(1);
+      exitAfterDrain(1);
     }
     console.log(
       `[OK] self-test: RED on the hardcoded restore, GREEN on the borrowed one (fixtures in ${dir}). The guard can still fail.`,
     );
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
   const bad = offences();
   if (bad.length > 0) {
     console.error("[FAIL] a proof flips a live organization's record-store switch without borrowing it:");
     for (const line of bad) console.error("  - " + line);
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log("[OK] every script that flips a live organization's record-store switch borrows it first: locked, read, and restored from a trap.");
 }

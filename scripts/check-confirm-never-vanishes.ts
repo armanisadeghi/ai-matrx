@@ -36,6 +36,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import ts from "typescript";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = join(__dirname, "..");
 const PRIMITIVE = "components/dialogs/confirm/ConfirmDialogHost.tsx";
@@ -161,20 +162,20 @@ function main(): void {
     writeFileSync(join(dir, "planted.tsx"), planted);
     if (planted === live) {
       console.error("[FAIL] self-test: could not plant the 2026-09-22 throwing primitive — the shape this guard reads has moved. Fix the guard, do not skip it.");
-      process.exit(1);
+      exitAfterDrain(1);
     }
     const red = judgePrimitive(planted);
     const green = judgePrimitive(live);
     if (red.ok) {
       console.error(`[FAIL] self-test: the guard passed the THROWING primitive (planted at ${join(dir, "planted.tsx")}). It cannot go red, so it proves nothing.`);
-      process.exit(1);
+      exitAfterDrain(1);
     }
     if (!green.ok) {
       console.error(`[FAIL] self-test: the guard failed the LIVE primitive, which announces and answers false — ${green.why.join("; ")}. A guard that refuses the correct shape teaches people to switch it off.`);
-      process.exit(1);
+      exitAfterDrain(1);
     }
     console.log(`[OK] self-test: RED on the throwing primitive, GREEN on the announcing one (planted in ${dir}). The guard can still fail.`);
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
   const verdict = judgePrimitive(readFileSync(join(ROOT, PRIMITIVE), "utf8"));
@@ -184,7 +185,7 @@ function main(): void {
     for (const line of verdict.why) console.error("  - " + line);
     console.error(`  …and ${floating.length} confirm() call site(s) in this repo are floating promises that would swallow it, e.g.`);
     for (const site of floating.slice(0, 5)) console.error("      " + site);
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log(`[OK] a confirm that cannot be shown announces itself with a remedy and answers false, so none of the ${floating.length} floating confirm() call site(s) can go silently dead.`);
 }

@@ -44,6 +44,7 @@
 import { existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join, relative, resolve } from "path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = join(__dirname, "..");
 
@@ -202,18 +203,18 @@ function main() {
       console.error(
         `[FAIL] self-test: the census did NOT flag the screen that deletes a whole table in one call. It saw ${seen.length} thing(s) in ${dir}. This guard cannot go red, so it proves nothing.`,
       );
-      process.exit(1);
+      exitAfterDrain(1);
     }
     if (wrong.length !== 0) {
       console.error(
         `[FAIL] self-test: the census flagged code that is correct — ${wrong.join("; ")}. A guard that refuses the chunked door, or an ordinary one-record delete, teaches people to switch it off.`,
       );
-      process.exit(1);
+      exitAfterDrain(1);
     }
     console.log(
       `[OK] self-test: RED on the screen that deleted a whole table in one call, GREEN on the chunked replacement, a one-record delete and a creation that rolls itself back (fixtures in ${dir}). The guard can still fail.`,
     );
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
   const missing = CLIENT_TREES.filter((t) => !existsSync(t));
@@ -221,7 +222,7 @@ function main() {
   if (bad.length > 0) {
     console.error("[FAIL] client code gets rid of a whole table in one unbounded call:");
     for (const line of bad) console.error("  - " + line);
-    process.exit(1);
+    exitAfterDrain(1);
   }
   for (const tree of missing) {
     console.warn(

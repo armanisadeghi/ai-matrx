@@ -30,6 +30,7 @@
  */
 
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const TRIGGER = `
   select count(*)::int as n
@@ -66,7 +67,7 @@ async function main() {
     console.error(
       `[FAIL] no database credentials (${env.missing.join(", ")} — looked in ${env.looked.join(", ")}). Unmeasured is not passed.`,
     );
-    process.exit(1);
+    exitAfterDrain(1);
   }
   const selfTest = process.argv.includes("--self-test");
   const client = await connectDirect(env, "check:one-switch-two-halves");
@@ -91,7 +92,7 @@ async function main() {
           console.error(
             "[FAIL] self-test: no organization has decided its record-store switch on this database, so the census has nothing to be proven against. Unmeasured is not passed.",
           );
-          process.exit(1);
+          exitAfterDrain(1);
         }
         const v = victim.rows[0];
         await client.query(
@@ -104,7 +105,7 @@ async function main() {
           console.error(
             "[FAIL] self-test: with the trigger dropped, one half of a live organization's switch was moved and the census found NOTHING. It is not looking at the thing it is supposed to police.",
           );
-          process.exit(1);
+          exitAfterDrain(1);
         }
         console.log(`[OK] self-test: trigger dropped, one half moved, census RED — ${say(red[0])}`);
       } finally {
@@ -116,24 +117,24 @@ async function main() {
         console.error(
           `[FAIL] self-test: after the rollback the census names ${green.length} organization(s) and the trigger count is ${back}. Its own write did not go away, or the tree is genuinely red.`,
         );
-        process.exit(1);
+        exitAfterDrain(1);
       }
       console.log("[OK] self-test: rolled back — the trigger is back and every organization's halves agree.");
-      process.exit(0);
+      exitAfterDrain(0);
     }
 
     if (trigger !== 1) {
       console.error(
         "[FAIL] platform.knob_override carries no store_switch_halves_follow_each_other_tg, so any direct write can turn an organization's store on and leave the server's own half saying the opposite. Apply migrations/campaign/fix11a_the_two_halves_of_the_one_switch_cannot_drift.sql.",
       );
-      process.exit(1);
+      exitAfterDrain(1);
     }
     const rows = ((await client.query(CENSUS)) as { rows: Row[] }).rows;
     if (rows.length > 0) {
       console.error(`[FAIL] ${rows.length} organization(s) hold two halves of one switch that disagree:`);
       for (const r of rows) console.error("  - " + say(r));
       console.error("  Settle them: scripts/fix11a/mirror_the_code_half_onto_every_organization.sql");
-      process.exit(1);
+      exitAfterDrain(1);
     }
     console.log(
       "[OK] the record store is one switch: the trigger is on platform.knob_override and no organization holds two halves that disagree.",
