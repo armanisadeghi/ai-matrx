@@ -389,6 +389,20 @@ export function TemplateRowActions({
   );
 }
 
+/**
+ * Toggle one template's inline configuration, leaving every other open one
+ * open — that is the whole point of the multi-expand arm. The table owns no
+ * state here: it is handed a NEW set every time, never a mutated one.
+ */
+export function toggleResearchTemplateExpanded(
+  open: ReadonlySet<string>,
+  id: string,
+): Set<string> {
+  const next = new Set(open);
+  if (!next.delete(id)) next.add(id);
+  return next;
+}
+
 export function TemplatesManager() {
   const dispatch = useAppDispatch();
   const [templates, setTemplates] = useState<ResearchTemplate[]>([]);
@@ -409,14 +423,15 @@ export function TemplatesManager() {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  // SINGLE-EXPAND, because that is the contract @ai-matrx/design-system
-  // actually ships. `expandedIds`/`onExpandedIdsChange` exist in the package's
-  // SOURCE (aidream 437b25bdbe, "support multiple expanded details") but the
-  // published 0.34.0 — which is `latest`, and what CI and Vercel install —
-  // carries neither the type nor the runtime for them. So this table's
-  // chevrons did nothing in every deployed build, and CI was right to be red.
-  // Multi-expand returns here the moment a design-system release carries it.
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  // MULTI-EXPAND. `expandedIds`/`onExpandedIdsChange` are the contract the
+  // PUBLISHED @ai-matrx/design-system carries from 0.35.0 onward, so several
+  // templates' configurations can be read side by side. (0.34.0 shipped only
+  // the single-expand arm; this table was pinned back to it until 0.35.0
+  // reached the registry, and `pnpm check:matrx-dist-integrity` is what keeps
+  // the installed package honest about which arm is really there.)
+  const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(
+    () => new Set<string>(),
+  );
   const [builtinNames, setBuiltinNames] = useState<Record<string, string>>({});
 
   const [editingTemplate, setEditingTemplate] =
@@ -839,19 +854,33 @@ export function TemplatesManager() {
                 filter: false,
                 width: 44,
                 cell: (template) =>
-                  expandedId === template.id ? (
+                  expandedIds.has(template.id) ? (
                     <ChevronLeftTapButton
                       ariaLabel={`Collapse ${template.name} configuration`}
                       tooltip={`Collapse ${template.name} configuration`}
                       variant="transparent"
-                      onClick={() => setExpandedId(null)}
+                      onClick={() =>
+                        setExpandedIds(
+                          toggleResearchTemplateExpanded(
+                            expandedIds,
+                            template.id,
+                          ),
+                        )
+                      }
                     />
                   ) : (
                     <ChevronRightTapButton
                       ariaLabel={`Expand ${template.name} configuration`}
                       tooltip={`Expand ${template.name} configuration`}
                       variant="transparent"
-                      onClick={() => setExpandedId(template.id)}
+                      onClick={() =>
+                        setExpandedIds(
+                          toggleResearchTemplateExpanded(
+                            expandedIds,
+                            template.id,
+                          ),
+                        )
+                      }
                     />
                   ),
               },
@@ -870,8 +899,8 @@ export function TemplatesManager() {
               add: { onAdd: openCreate },
             }}
             expandedDetail={{
-              expandedId,
-              onExpandedIdChange: setExpandedId,
+              expandedIds,
+              onExpandedIdsChange: setExpandedIds,
               render: (template) => (
                 <TemplateConfiguration
                   template={template}

@@ -8,6 +8,7 @@ import {
   RESEARCH_TEMPLATES_COVERAGE,
   researchTemplateWiringCount,
   TemplateRowActions,
+  toggleResearchTemplateExpanded,
 } from "./TemplatesManager";
 
 const template: ResearchTemplate = {
@@ -91,5 +92,26 @@ describe("TemplatesManager canonical table contract", () => {
 
     expect(markup).toContain('aria-label="Edit Scientific Research"');
     expect(markup).toContain('aria-label="Delete Scientific Research"');
+  });
+});
+
+describe("research templates expand several configurations at once", () => {
+  it("opening a second template leaves the first one open", () => {
+    const first = toggleResearchTemplateExpanded(new Set<string>(), "template-1");
+    const both = toggleResearchTemplateExpanded(first, "template-2");
+    expect([...both].sort()).toEqual(["template-1", "template-2"]);
+  });
+
+  it("collapsing one template leaves its neighbours open", () => {
+    const open = new Set(["template-1", "template-2", "template-3"]);
+    const next = toggleResearchTemplateExpanded(open, "template-2");
+    expect([...next].sort()).toEqual(["template-1", "template-3"]);
+  });
+
+  it("never mutates the set the table handed it", () => {
+    const open = new Set(["template-1"]);
+    const next = toggleResearchTemplateExpanded(open, "template-2");
+    expect([...open]).toEqual(["template-1"]);
+    expect(next).not.toBe(open);
   });
 });
