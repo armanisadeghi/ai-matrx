@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { AgentAppRef } from "@/features/agent-apps/components/AgentAppRef";
 import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
   createAdminAgentAppsScope,
@@ -195,11 +195,10 @@ export function RateLimitsClient() {
       frozen: true,
       cell: (row) => (
         <span className="flex min-w-0 items-center gap-2">
-          <EntityRef
-            token="app"
-            id={row.app_id}
+          <AgentAppRef
+            appId={row.app_id}
             name={row.app_name ?? row.app_id}
-            showIcon={false}
+            slug={row.app_slug ?? undefined}
           />
         </span>
       ),
@@ -366,7 +365,7 @@ export function RateLimitsClient() {
             state: query,
             onStateChange: setQuery,
           }}
-          coverage={{ noun: "rate limit", answeredBy: "client" }}
+          coverage={{ noun: "rate limit", answeredBy: "client", total: rateLimits.length }}
           toolbar={{
             title: "Rate limits",
             search: true,

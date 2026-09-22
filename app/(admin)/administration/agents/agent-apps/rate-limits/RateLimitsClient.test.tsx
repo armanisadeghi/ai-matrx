@@ -98,6 +98,7 @@ describe("RateLimitsClient canonical table contract", () => {
     expect(tableProps.coverage).toEqual({
       noun: "rate limit",
       answeredBy: "client",
+      total: 1,
     });
     expect(tableProps.toolbar?.facets).toEqual(
       expect.arrayContaining([
