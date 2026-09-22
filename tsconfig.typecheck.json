@@ -30,6 +30,8 @@
     "_dev",
     ".claude",
     ".wt",
+    // Local integration/type-sync clones live here; they are separate checkouts, not shipped source.
+    "work",
     ".matrx",
     ".coldwalk*",
     "out",

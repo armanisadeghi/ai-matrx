@@ -21,7 +21,6 @@ import {
   apiPost,
   buildPath,
 } from "@/lib/api/typed-client";
-import { getJson } from "@/lib/python-client";
 import {
   DEFAULT_PURPOSE_FILTER,
   PROMOTE_NEEDS_CONNECTION,
@@ -253,21 +252,13 @@ export async function setSendingPolicy(
  * Server-only facts for the production bring-up checklist — deployment config,
  * vendor-key presence (booleans, never values), gmail.readonly state.
  *
- * Uses the raw client because the generated spec does not carry this route yet
- * (see the BringUpReadiness note in types.ts); switch to `apiGet` when it does.
+ * The response type and route come from the generated backend contract.
  */
 export async function getBringUpReadiness(
   organizationId?: string,
 ): Promise<BringUpReadiness> {
-  const query = new URLSearchParams({
-    // A saved Vault key or deployment setting must turn the checklist green
-    // immediately. The server also sends Cache-Control: no-store; the unique
-    // URL evicts any stale negative cached before that header was deployed.
-    readiness_check: Date.now().toString(),
+  const { data } = await apiGet("/sending-identities/bring-up-readiness", {
+    query: organizationId ? { organization_id: organizationId } : undefined,
   });
-  if (organizationId) query.set("organization_id", organizationId);
-  const { data } = await getJson<BringUpReadiness>(
-    `/sending-identities/bring-up-readiness?${query.toString()}`,
-  );
   return data;
 }

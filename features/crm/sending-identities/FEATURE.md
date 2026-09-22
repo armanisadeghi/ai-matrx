@@ -1,6 +1,6 @@
 # Sending mailboxes — the frontend of THE RIGHT TO SEND
 
-> **Status:** live · **Updated:** 2026-08-17 · Routes `/crm/sending-identities`,
+> **Status:** live · **Updated:** 2026-09-22 · Routes `/crm/sending-identities`,
 > `/crm/sending-identities/[identityId]`
 
 The surface where a user connects the mailbox their outreach is sent from, proves
@@ -120,8 +120,9 @@ registers TWO checklists, both mounted by
   The reply-pipe confirmation moved persistence keys in the split, so an
   operator re-ticks it once.
 
-Both read `GET /sending-identities/bring-up-readiness` (hand-typed shape in
-types.ts until the generated spec carries it).
+Both read `GET /sending-identities/bring-up-readiness`. Its response shape is
+generated from the current backend OpenAPI contract and aliased by
+`BringUpReadiness` in `types.ts`.
 
 Traps: the readiness endpoint on a server that predates it falls into
 `/{identity_id}` and answers 400 — the checks map ANY readiness failure to
@@ -169,3 +170,6 @@ DB.
   Client half: `features/crm/sending-identities/purpose.ts`, measured against the
   server's models, route default and promotion rule by
   `purpose-is-the-servers.test.ts`. No screen was seen.
+- 2026-09-22 — Readiness fields and identity purpose/promotion fields now come
+  from the generated OpenAPI types. The operator Gmail Pub/Sub checklist uses
+  authenticated OIDC delivery settings and the typed readiness endpoint.

@@ -10,37 +10,11 @@
 
 import type { components } from "@/types/python-generated/api-types";
 
-/**
- * 🚨 THE PURPOSE FIELDS ARE DECLARED HERE, NOT GENERATED — and only as OPTIONAL.
- *
- * `crm.sending_identity.purpose` is live (aidream lane B-20, migration 0876) and
- * lane B-26 put it on the read side: `purpose` + `purpose_note` on the identity
- * views, `recorded_for_audit` + `promotion_note` on a connectable mailbox. The
- * committed OpenAPI contract in this repo predates all four and `pnpm sync-types`
- * cannot run in this container (the two exact failures are in
- * `features/crm/gmail/reviewed-send-contract.ts`'s header), and a generated file
- * is NEVER hand-edited.
- *
- * Optional, not required, because a stale deployment answers without them and
- * `./purpose.ts` renders the audit state ONLY when the server says so — never on
- * a guess about what a personal address looks like. The moment `pnpm sync-types`
- * runs, these intersections are deleted; until then
- * `./purpose-is-the-servers.test.ts` measures every one of them against the
- * server's own models and FAILS on a rename.
- */
-type WithPurpose = { purpose?: string | null; purpose_note?: string | null };
-type WithPromotion = {
-  recorded_for_audit?: boolean;
-  promotion_note?: string | null;
-};
-
-export type SendingIdentityView =
-  components["schemas"]["SendingIdentityView"] & WithPurpose;
-export type SendingIdentityDetail =
-  components["schemas"]["SendingIdentityDetail"] & WithPurpose;
+/** Sending-identity shapes come directly from the generated backend contract. */
+export type SendingIdentityView = components["schemas"]["SendingIdentityView"];
+export type SendingIdentityDetail = components["schemas"]["SendingIdentityDetail"];
 export type SendingRefusal = components["schemas"]["SendingRefusal"];
-export type ConnectableMailbox =
-  components["schemas"]["ConnectableMailbox"] & WithPromotion;
+export type ConnectableMailbox = components["schemas"]["ConnectableMailbox"];
 export type CheckRecord = components["schemas"]["CheckRecord"];
 export type CheckReport = components["schemas"]["CheckReport"];
 export type SendingEventRecord = components["schemas"]["SendingEventRecord"];
