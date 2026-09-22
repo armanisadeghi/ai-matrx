@@ -95,6 +95,10 @@ declare
   v_per_t uuid; v_f_own uuid;
   v_co_t uuid; v_ca uuid; v_cb uuid;
   v_doc jsonb; v_n integer; v_red integer := 0; v_caught text; v_t2_red boolean := false; v_t8_red boolean := true;
+  -- SUITES-TIDY 2026-09-22: BLOCK 4 reads `v_boss` and nothing declared it, so this suite died
+  -- with `column "v_boss" does not exist` before reaching the defect it derives. It is the
+  -- connected role, captured before any seat is taken, exactly as every other suite here does it.
+  v_boss text := current_user;
 begin
   perform set_config('app.actor_system', 'campaign-test/storet_red', true);
   perform set_config('request.jwt.claims', c_admin_j, true);

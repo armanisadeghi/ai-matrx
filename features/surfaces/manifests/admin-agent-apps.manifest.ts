@@ -443,7 +443,8 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     name: "executions_app_id",
     label: "Executions app scope",
-    description: "App UUID from ?app= when the console is scoped to one app. Absent when showing all apps.",
+    description:
+      "App UUID from ?app= when the console is scoped to one app. Absent when showing all apps.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
@@ -453,7 +454,8 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     name: "executions_table_query",
     label: "Executions table query",
-    description: "Complete canonical table search, column-filter, sort, and pagination state for the Executions tab.",
+    description:
+      "Complete canonical table search, column-filter, sort, and pagination state for the Executions tab.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 500,
@@ -497,7 +499,8 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     name: "errors_table_query",
     label: "Errors table query",
-    description: "Complete canonical table search, column-filter, sort, and pagination state for the Errors tab.",
+    description:
+      "Complete canonical table search, column-filter, sort, and pagination state for the Errors tab.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 500,
@@ -705,7 +708,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "category_icon",
     label: "Category icon",
     description:
-      "Stages the icon of the category open in the categories editor. Value: the exact PascalCase name of a lucide-react icon, e.g. \"PenTool\", \"Lightbulb\", \"Zap\" — it is validated against the real icon registry and an unknown name is rejected rather than saved as a broken icon. Pass an empty string to clear it back to the default tag icon. Requires a category to be selected. This is a draft: the preview swatch beside the input updates at once and the admin still presses Save.",
+      'Stages the icon of the category open in the categories editor. Value: the exact PascalCase name of a lucide-react icon, e.g. "PenTool", "Lightbulb", "Zap" — it is validated against the real icon registry and an unknown name is rejected rather than saved as a broken icon. Pass an empty string to clear it back to the default tag icon. Requires a category to be selected. This is a draft: the preview swatch beside the input updates at once and the admin still presses Save.',
     valueType: "string",
     updatesValue: "selected_category",
     mode: "draft",

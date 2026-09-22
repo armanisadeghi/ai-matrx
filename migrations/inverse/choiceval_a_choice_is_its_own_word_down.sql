@@ -395,7 +395,13 @@ $function$
 -- restored IN FULL by the four bodies above — the live catalogue's own bytes from 2026-09-20
 -- 06:35Z, none of which calls a choice helper. The three helpers stay standing and nothing on
 -- the choice path reads them any more, which is precisely the defect.
-drop function if exists custom.choice_synonyms(uuid, uuid, text);
-drop function if exists custom.choice_words(jsonb);
-drop function if exists custom.choice_key_for(uuid, uuid, text, uuid);
-drop function if exists custom.choice_slug(text);
+-- GATES-2, 2026-09-22: the four `drop function` lines that stood here are GONE, and the
+-- paragraph above is why. It already said "The three helpers stay standing and nothing on the
+-- choice path reads them any more, which is precisely the defect" -- and then dropped them
+-- anyway, which is the disagreement `check:inverses-leave-the-ground-standing` clause (a)
+-- names: `custom.choice_synonyms` is reached from `custom._record_field_validation` and the
+-- other `custom.record` store-door triggers, all of them still attached after this file runs.
+-- A dropped body under an attached trigger is not a defect put back, it is a broken table.
+-- The defect IS restored, in full, by the four bodies above: they are the live catalogue's own
+-- pre-lane bytes and none of them calls a choice helper, so the choice words stop being read.
+-- The helpers standing and unreachable is exactly what the header describes.

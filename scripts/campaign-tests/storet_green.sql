@@ -337,9 +337,14 @@ begin
   end;
   -- 6d. A FORMULA'S DEPENDENCY IS KEPT, so REC-18 can fire for a column a person made.
   v_f_w := custom.field_declare(v_open, v_per_t, jsonb_build_object('label','Serial','plain','text'));
+  -- SUITES-TIDY 2026-09-22: the formula used to name its column 'serial' — by NAME. REC-17
+  -- now refuses that at the shape guard: "a worked-out column points at a Field BY ITS ID …
+  -- a name changes and the column would stop resolving, so the store never accepts one."
+  -- The declaration names the field's id, which is what the guard asks for and what makes
+  -- 6d's dependency real rather than a string that happens to match.
   v_f_calc := custom.field_declare(v_open, v_per_t, jsonb_build_object(
-    'label','Shouty','parity_type','formula','depends_on', jsonb_build_array('serial'),
-    'expr', jsonb_build_object('node','field','field','serial')));
+    'label','Shouty','parity_type','formula','depends_on', jsonb_build_array(v_f_w::text),
+    'expr', jsonb_build_object('node','field','field', v_f_w::text)));
   select count(*) into v_n from custom.field_dependants(v_open, v_f_w) d
    where d.dependant_id = v_f_calc;
   if v_n = 0 then

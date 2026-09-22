@@ -47,8 +47,14 @@ begin
 end;
 $order$;
 
-drop function if exists custom.pin_agent_cells(jsonb, jsonb, text[]);
-drop function if exists custom.carry_unchanged_value_stamps(jsonb, jsonb);
+-- GATES-2, 2026-09-22: these two `drop function` lines are GONE (clause d). The ordering
+-- guard above is still correct and still runs -- it is what puts `custom._value_envelope`
+-- back to the body that asks for neither function. What changed underneath this file is that
+-- WRITE-PERF-4 re-created `custom._value_envelope` from its own source
+-- (writeperf4_the_field_set_is_read_once_per_row.sql) and ADOPTED both helpers there, so a
+-- body outside this lane now calls them on the live path. Restoring a defect is not the same
+-- as breaking the platform: the behaviour is neutered by the restored envelope body above,
+-- and the two helpers are left standing for the body that adopted them.
 
 CREATE OR REPLACE FUNCTION custom.value_envelope_keys()
  RETURNS text[]

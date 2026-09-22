@@ -209,6 +209,14 @@ export function createAddonTableRow(
     now,
   };
 }
+
+function sameAddonIds(left: readonly string[], right: readonly string[]): boolean {
+  return (
+    left.length === right.length &&
+    left.every((id, index) => id === right[index])
+  );
+}
+
 const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
   {
     id: "organization",
@@ -488,9 +496,7 @@ export function AccountAddonsPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [grantOpen, setGrantOpen] = useState(false);
-  const [processedAddonRows, setProcessedAddonRows] = useState<AddonTableRow[]>(
-    [],
-  );
+  const [processedAddonIds, setProcessedAddonIds] = useState<string[]>([]);
   const addonsTable = useTableUrlState({
     tableId: "account-addons",
     defaultPageSize: 25,
@@ -590,6 +596,27 @@ export function AccountAddonsPanel() {
     [capabilities, planLimits],
   );
 
+  // A table view is derived data. Keep its source identity stable so receiving
+  // the same view cannot feed a fresh array back into the table on every render.
+  const now = useMemo(() => new Date(), [addons]);
+  const addonRows = useMemo(
+    () =>
+      addons.map((addon) =>
+        createAddonTableRow(
+          addon,
+          orgById.get(addon.organization_id),
+          capabilityByName.get(addon.capability),
+          planContextFor(addon.organization_id, addon.capability),
+          now,
+        ),
+      ),
+    [addons, capabilityByName, now, orgById, planContextFor],
+  );
+  const processedAddonRows = useMemo(() => {
+    const visibleIds = new Set(processedAddonIds);
+    return addonRows.filter((row) => visibleIds.has(row.addon.id));
+  }, [addonRows, processedAddonIds]);
+
   if (loading) {
     return (
       <div className="space-y-3">
@@ -610,17 +637,9 @@ export function AccountAddonsPanel() {
     );
   }
 
-  const now = new Date();
-  const liveCount = addons.filter((row) => addonIsInEffect(row, now)).length;
-  const addonRows = addons.map((addon) =>
-    createAddonTableRow(
-      addon,
-      orgById.get(addon.organization_id),
-      capabilityByName.get(addon.capability),
-      planContextFor(addon.organization_id, addon.capability),
-      now,
-    ),
-  );
+  const liveCount = addonRows.filter(
+    (row) => row.status === "in_effect",
+  ).length;
 
   return (
     <SurfaceRuntimeProvider
@@ -707,7 +726,12 @@ export function AccountAddonsPanel() {
                 refresh: { onRefresh: load },
                 add: { onAdd: () => setGrantOpen(true) },
               }}
-              onViewChange={setProcessedAddonRows}
+              onViewChange={(rows) => {
+                const nextIds = rows.map((row) => row.addon.id);
+                setProcessedAddonIds((currentIds) =>
+                  sameAddonIds(currentIds, nextIds) ? currentIds : nextIds,
+                );
+              }}
               coverage={{
                 noun: "account add-on",
                 total: addonRows.length,

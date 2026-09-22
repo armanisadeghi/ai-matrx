@@ -602,6 +602,57 @@ export function judgeFile(
   return out;
 }
 
+/**
+ * THE SAME JUDGEMENT, FOR ONE FILE, FROM ANOTHER PROCESS'S POINT OF VIEW — this is what
+ * `pnpm db:apply` calls before it ledgers anything under `migrations/inverse/`.
+ *
+ * WHY THE RUNNER AND NOT ONLY THE RELEASE GATE (GATES-2, 2026-09-22, on VERIFIER-12's finding).
+ * This guard's baseline is ZERO, so the class is closed the moment a lane re-runs it — but
+ * inverses are being written faster than any lane re-runs anything. Between 2026-09-21 and
+ * 2026-09-22 the red population turned over COMPLETELY twice: FIX-11B closed the pair
+ * VERIFIER-11 recorded and reported 0/0/0/0, and by the next sweep it was red again on two
+ * files neither lane had seen — FIX-10B's `a_table_is_archived_in_chunks_and_survives_a_cut_down.sql`
+ * (clause a, three `_store_door` triggers over `custom.table_archive`) and STORE-TAILS-2's
+ * `reldisp_a_relation_says_which_words_it_shows_down.sql` (clause d, `custom._words_for`, which
+ * `custom.field_words` had adopted). A ratchet that is only read at release time is a ratchet
+ * the writer never meets. Read at APPLY time, the author meets it in the same minute they write
+ * the file, and a defective inverse cannot be ledgered at all.
+ *
+ * The judgement is not re-implemented here and never will be: the full applied tree and the
+ * full family graph are built exactly as the release arm builds them, and the findings are then
+ * narrowed to the named file. `raw` lets a caller judge bytes that are not on disk, which is how
+ * the runner's own self-test shows this refusal going RED without writing a file into a shared
+ * checkout.
+ */
+export function judgeOneInverse(base: string, raw?: string): Finding[] {
+  const applied = [...sqlFilesIn(MIGRATIONS), ...sqlFilesIn(CAMPAIGN_DIR)];
+  const inverses = sqlFilesIn(INVERSE_DIR);
+  if (applied.length < 100 || inverses.length < 50) {
+    throw new Error(
+      `inverse ground gate refuses to answer: only ${applied.length} applied file(s) and ` +
+        `${inverses.length} inverse file(s) found. A green answer from the wrong tree is worse ` +
+        `than no answer.`,
+    );
+  }
+  const tree = buildTree(applied);
+
+  // The family graph, built from every sibling's stem, exactly as `judge` builds it.
+  const byFamily = new Map<string, Map<string, string>>();
+  for (const file of inverses) {
+    const b = file.split("/").pop()!;
+    const facts = b === base && raw !== undefined ? parseSql(file, raw) : parseSql(file, readFileSync(file, "utf8"));
+    const fam = family(b);
+    if (!byFamily.has(fam)) byFamily.set(fam, new Map());
+    const bag = byFamily.get(fam)!;
+    for (const fn of facts.dropsFunctions) if (!bag.has(fn)) bag.set(fn, b);
+  }
+
+  const path = resolve(INVERSE_DIR, base);
+  const bytes = raw ?? (existsSync(path) ? readFileSync(path, "utf8") : null);
+  if (bytes === null) return [];
+  return judgeFile(base, parseSql(path, bytes), bytes, tree, byFamily.get(family(base)) ?? new Map());
+}
+
 export function judge(
   inverseFiles: string[],
   tree: Tree,
@@ -908,4 +959,7 @@ function main(): void {
   exitAfterDrain(0);
 }
 
-main();
+/** Only when this file IS the command. `pnpm db:apply` imports `judgeOneInverse` from here. */
+if (/check-inverses-leave-the-ground-standing\.(ts|js|mjs|cjs)$/.test(process.argv[1] ?? "")) {
+  main();
+}

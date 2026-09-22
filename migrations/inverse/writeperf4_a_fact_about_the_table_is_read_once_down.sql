@@ -1340,7 +1340,14 @@ drop function if exists platform.relation_name(oid);
 drop function if exists custom.table_work_kind(uuid,uuid);
 drop function if exists custom.table_unique_rule_fields(uuid,uuid);
 drop function if exists custom.table_is_options_table(uuid,uuid);
-drop function if exists platform.memo_k_get(text);
-drop function if exists platform.memo_k_put(text,text);
+-- GATES-2, 2026-09-22: `platform.memo_k_get(text)` and `platform.memo_k_put(text,text)` are
+-- NO LONGER DROPPED here (clause a). Three triggers this file leaves attached to
+-- `custom.record` -- `custom_record_field_validation`, `custom_record_zz_derived_fields` and
+-- `_value_envelope` -- reach both of them, so dropping them turns the next insert into the
+-- record store into an error before the red twin asks its first question, and it also takes
+-- the ground out from under the sibling inverse
+-- `writeperf4_the_field_set_is_read_once_per_row_down.sql`, whose restored body calls them
+-- (clause b). The memo store standing with nothing on the wave's path reading it is the
+-- defect put back; a broken `custom.record` is not.
 drop function if exists platform.memo_k_drop(text);
 drop function if exists platform.memo_k_stamp();
