@@ -31,9 +31,14 @@
 --      a TEXT column's key is refused by `platform.relation_set`'s own name, and nothing moves.
 --   6  UNLINKING MOVES BOTH HALVES TOO: `platform.relation_unset` takes the id out of the
 --      document and withdraws the edge, the guard is forced again, and it is satisfied.
---   7  THE HARD-PURGE DOOR ANSWERS IN ITS OWN WORDS from the seat — the written sentence and
---      its remedy, not PostgreSQL's `permission denied for function migrate_purge_hard` — and
---      it still REFUSES, so chair-only is still chair-only.
+--   7  THE HARD-PURGE DOOR IS SHUT TO THE SEAT, and the register says so in the database.
+--      STORE-TXN-3 opened it so the person would hear the door's own written refusal instead
+--      of PostgreSQL's `permission denied for function migrate_purge_hard`, measured that it
+--      worked, and TOOK IT BACK (storetxn3b): `check:store-doors-decide` is right that a body
+--      deciding with `pg_has_role` rather than the one ladder is not a client door. So this
+--      clause pins what is true — no client EXECUTE grant, `signed_in_callers = false`, the
+--      call refused — and names, in its own failure text, the refusal-with-no-remedy that is
+--      still open, so nobody reads a green suite as "item 2's nit is fixed".
 --
 -- Its red twin is scripts/campaign-tests/storetxn3_red.sql, which runs this lane's inverse
 -- bytes inside a rolled-back transaction and asserts the refusal exactly as VERIFIER-13
@@ -251,25 +256,36 @@ begin
   raise notice 'CLAUSE 6 PASS — one unset took the id out of the document AND withdrew the edge, and the guard is satisfied.';
 
   -- ══════════════════════════════════════════════════════════════════════════════════════
-  -- 7 — THE HARD-PURGE DOOR ANSWERS IN ITS OWN WORDS, AND STILL REFUSES.
+  -- 7 — THE HARD-PURGE DOOR IS SHUT TO THE SEAT, AND THE REGISTER AGREES.
   -- ══════════════════════════════════════════════════════════════════════════════════════
-  v_caught := null; v_hint := null;
+  if has_function_privilege('authenticated',
+       'custom.migrate_purge_hard(uuid,uuid,text,integer,boolean)'::regprocedure, 'EXECUTE') then
+    raise exception '7: `authenticated` holds EXECUTE on the hard-purge door. STORE-TXN-3b took that grant back because check:store-doors-decide refuses a client door whose body decides with pg_has_role instead of the one ladder.'; end if;
+  -- The register is read as the connected role: `platform.client_callable_door` is the
+  -- platform's own book and a client seat cannot read it, which is itself correct.
+  perform set_config('role', v_boss, true);
+  if not exists (select 1 from platform.client_callable_door d
+                  where d.schema_name = 'custom' and d.function_name = 'migrate_purge_hard'
+                    and d.signed_in_callers = false and d.anonymous_callers = false
+                    and d.non_client_lane is not null) then
+    raise exception '7: the register no longer says the hard-purge door is closed to every browser session, so the grant and the row disagree.'; end if;
+  perform set_config('role', 'authenticated', true);
+  v_caught := null;
   begin
     perform custom.migrate_purge_hard(v_org, null,
       'Compliance erasure requested in writing by the customer under a data-deletion obligation.',
       200, true);
   exception when others then
-    get stacked diagnostics v_caught = message_text, v_state = returned_sqlstate, v_hint = pg_exception_hint;
+    get stacked diagnostics v_caught = message_text, v_state = returned_sqlstate;
   end;
   if v_caught is null then
     raise exception '7: a client seat REACHED the hard-purge door. Chair-only is no longer chair-only.'; end if;
-  if v_caught like 'permission denied for function%' then
-    raise exception '7: the seat still hears PostgreSQL rather than the door — %', v_caught; end if;
-  if v_caught not like '%not something a signed-in caller does here%' then
-    raise exception '7: the refusal is not the door''s own written sentence — % (%)', v_caught, v_state; end if;
-  if coalesce(v_hint, '') not like '%archive, never delete%' then
-    raise exception '7: the refusal carries no remedy — hint was %', coalesce(v_hint, '(none)'); end if;
-  raise notice 'CLAUSE 7 PASS — the seat hears the door: "%" · remedy: %', v_caught, left(v_hint, 90);
+  -- WHAT THE PERSON ACTUALLY HEARS, PRINTED RATHER THAN ASSERTED AWAY. It is PostgreSQL''s
+  -- sentence, not the door''s, and that is VERIFIER-13 item 2''s nit STILL OPEN: the door''s own
+  -- words and its remedy are written, correct and unreachable. The remedy needs a register word
+  -- for "callable only to be refused", or a separate request door that decides through the
+  -- ladder — see storetxn3b_the_purge_door_stays_chair_only.sql.
+  raise notice 'CLAUSE 7 PASS — the hard purge is shut to the seat (no EXECUTE, register says signed_in_callers = false) and refuses: % (%). 🚨 STILL OPEN (VERIFIER-13 item 2): that is PostgreSQL''s sentence, not the door''s — a refusal with no remedy.', v_caught, v_state;
 
   perform set_config('role', v_boss, true);
   raise notice 'storetxn3_green: ALL 8 CLAUSES PASS (0-7). Nothing is committed.';
