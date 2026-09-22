@@ -70911,7 +70911,18 @@ export type Database = {
       memo_b_seat: { Args: never; Returns: string }
       memo_ceiling: { Args: never; Returns: number }
       memo_clear: { Args: never; Returns: undefined }
+      memo_col_flags: {
+        Args: { p_names: string[]; p_relid: unknown }
+        Returns: string
+      }
       memo_get: { Args: { p_key: string }; Returns: string }
+      memo_k_drop: { Args: { p_key: string }; Returns: undefined }
+      memo_k_get: { Args: { p_key: string }; Returns: string }
+      memo_k_put: {
+        Args: { p_key: string; p_value: string }
+        Returns: undefined
+      }
+      memo_k_stamp: { Args: never; Returns: string }
       memo_put: { Args: { p_key: string; p_value: string }; Returns: undefined }
       memo_reach_exempt: {
         Args: never
@@ -71305,6 +71316,7 @@ export type Database = {
         }
         Returns: string
       }
+      relation_name: { Args: { p_relid: unknown }; Returns: string }
       relation_on_delete: {
         Args: { p_organization_id: string; p_record_id: string }
         Returns: Json
