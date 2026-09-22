@@ -63,12 +63,9 @@ export default function UnifiedDataTableRoute({
    * It is passed RAW: a word this build has no view for is something the person
    * must be told about, and `TablePage` says it. The route does not parse and
    * it does not substitute.
-   */
+  */
   const activeView = searchParams.get("view");
-  /**
-   * WHICH FIELD THE BOARD'S COLUMNS ARE, when a dashboard number sent them here.
-   * Written by `openRecords` below and read by nothing else.
-   */
+  /** Which field the board's columns are, when a dashboard number sent them here. */
   const activeGroupField = searchParams.get("group");
   /** The number they clicked, so the board can say where they came from. */
   const cameFrom = searchParams.get("from");
@@ -135,20 +132,13 @@ export default function UnifiedDataTableRoute({
    *
    * 🚨 AND WHAT IT HONESTLY DOES. The record store has NO door that returns the
    * rows behind an aggregate filter — `custom.read_records` takes no filter, and
-   * `custom.record_aggregate` answers groups and counts, never ids (its
-   * `agg_value_sql('id')` reads the DOCUMENT's `id` key, which a record does not
-   * carry). So a click cannot promise a narrowed list without a new door. What it
-   * CAN do, with the doors that exist, is open this table's BOARD with its
-   * columns set to the very field the chart grouped by: the column the person
-   * clicked is right there, every card in it is a real record, and `TablePage`
-   * says in plain words that this is every record grouped that way rather than
-   * only the ones the number counted.
+   * `custom.record_aggregate` answers groups and counts, never ids. So a click
+   * cannot promise a narrowed list without a new door. What it CAN do is open
+   * this table's board with its columns set to the field the chart grouped by,
+   * while `TablePage` says plainly that this is every record grouped that way.
    */
   const onOpenRecordsFromANumber = useCallback(
     (ask: OpenRecordsAsk) => {
-      // The chart's own filter keys are the fields it grouped by, plus whatever
-      // the block itself was narrowed to. A BUCKET key (`created_at_month`) is
-      // not a Field and cannot be a board column, so it is never chosen.
       const BUCKETS = /_(day|week|month|quarter|year)$/;
       const groupable = Object.keys(ask.filter ?? {}).filter((key) => !BUCKETS.test(key));
       const next = new URLSearchParams();
