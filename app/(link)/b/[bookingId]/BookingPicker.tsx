@@ -20,7 +20,7 @@
 // button. The only thing this file adds is the VISITOR'S TIMEZONE, which is a
 // display concern: the same instant, said the way the person reads a clock.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { coerceTypedAnswer, fieldKindFor, type Field, type FieldKind } from "@ai-matrx/records";
 
@@ -87,10 +87,28 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
     return byKey;
   }, [page.fields]);
 
-  // The visitor's own clock. `timeZone` is left to the browser on purpose: a
-  // page that named the ORGANIZATION's zone would be telling somebody in another
-  // country a time they then have to convert themselves.
-  const days = useMemo(() => groupByDay(slots), [slots]);
+  // ── WHICH CLOCK, AND WHEN — the fix for React #418 on every booking page.
+  //
+  // These times were formatted with the BROWSER's zone from the first render,
+  // which on a server-rendered page is not a browser at all: Next formats them
+  // in the server's zone (UTC on our hosting) and the browser then formats the
+  // same instants in the visitor's. Every booking page on production logged a
+  // recoverable hydration error for that reason, and — worse than the log — the
+  // FIRST PAINT a stranger saw showed the appointment times in UTC before
+  // hydration silently corrected them. A booking page whose first paint says
+  // 17:00 and whose second says 09:00 is a page that lied for a moment about the
+  // one fact it exists to state.
+  //
+  // So the first paint is the ORGANIZATION's own zone — the store's
+  // `page.timezone`, identical on the server and in the browser, so there is
+  // nothing to mismatch — and the visitor's own zone takes over once the page is
+  // hydrated. Neither moment is a guess: the zone in force is printed beside the
+  // day, so the screen always says which clock it is showing.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const organizationZone = page.availability?.timezone ?? "UTC";
+  const zone = hydrated ? visitorZone() || organizationZone : organizationZone;
+  const days = useMemo(() => groupByDay(slots, zone), [slots, zone]);
 
   async function refresh() {
     const answer = await fetch(`/api/bookings/${page.form_id}/hold`, { method: "GET" })
@@ -195,7 +213,7 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
       <section className="mt-6 flex flex-col gap-3">
         <h2 className="text-base font-medium">{thanks?.title ?? "You're booked"}</h2>
         <p className="text-sm text-muted-foreground">
-          {whenText(stage.slot.at)} — {thanks?.body ?? "We have sent a confirmation."}
+          {whenText(stage.slot.at, zone)} — {thanks?.body ?? "We have sent a confirmation."}
         </p>
         {stage.ref ? (
           // THE LINK IS SHOWN, NOT ONLY EMAILED. An email can be lost and a
@@ -226,9 +244,9 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
     return (
       <section className="mt-6 flex flex-col gap-4">
         <header className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
-          <span className="font-medium">{whenText(stage.slot.at)}</span>
+          <span className="font-medium">{whenText(stage.slot.at, zone)}</span>
           <span className="text-muted-foreground">
-            held for you{stage.expiresAt ? ` until ${clockText(stage.expiresAt)}` : ""}
+            held for you{stage.expiresAt ? ` until ${clockText(stage.expiresAt, zone)}` : ""}
           </span>
           <button
             type="button"
@@ -345,7 +363,7 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
                   {slot.taken ? (
                     // A TAKEN TIME IS NOT A DEAD BUTTON: it is not a button.
                     <span className="inline-flex h-11 items-center rounded border border-dashed px-3 text-sm text-muted-foreground">
-                      {clockText(slot.at)} · taken
+                      {clockText(slot.at, zone)} · taken
                     </span>
                   ) : (
                     <button
@@ -356,7 +374,7 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
                     >
                       {stage.kind === "holding" && stage.slotKey === slot.key
                         ? "Holding…"
-                        : clockText(slot.at)}
+                        : clockText(slot.at, zone)}
                     </button>
                   )}
                 </li>
@@ -370,7 +388,7 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
 }
 
 /** The visitor's own timezone, named once so the page says it rather than implying it. */
-function zoneText(): string {
+function visitorZone(): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
   } catch {
@@ -378,15 +396,15 @@ function zoneText(): string {
   }
 }
 
-function groupByDay(slots: BookingSlot[]): Array<[string, BookingSlot[]]> {
+function groupByDay(slots: BookingSlot[], zone: string): Array<[string, BookingSlot[]]> {
   const out = new Map<string, BookingSlot[]>();
   for (const slot of slots) {
     const day = new Date(slot.at).toLocaleDateString(undefined, {
       weekday: "long",
       day: "numeric",
       month: "long",
+      ...(zone ? { timeZone: zone } : {}),
     });
-    const zone = zoneText();
     const key = zone ? `${day} · ${zone}` : day;
     const bucket = out.get(key);
     if (bucket) bucket.push(slot);
@@ -395,17 +413,22 @@ function groupByDay(slots: BookingSlot[]): Array<[string, BookingSlot[]]> {
   return [...out.entries()];
 }
 
-function clockText(at: string): string {
-  return new Date(at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+function clockText(at: string, zone?: string): string {
+  return new Date(at).toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+    ...(zone ? { timeZone: zone } : {}),
+  });
 }
 
-function whenText(at: string): string {
+function whenText(at: string, zone?: string): string {
   return new Date(at).toLocaleString(undefined, {
     weekday: "long",
     day: "numeric",
     month: "long",
     hour: "numeric",
     minute: "2-digit",
+    ...(zone ? { timeZone: zone } : {}),
   });
 }
 

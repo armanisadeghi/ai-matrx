@@ -15,7 +15,7 @@
 // A cancelled appointment is KEPT and marked, never deleted, so the page can
 // still say honestly what happened rather than 404ing on its own link.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { BookingSlot, ManagedBooking as Managed } from "@/features/booking/service";
 
@@ -38,7 +38,23 @@ export function ManageBooking({ booking }: { booking: Managed }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
 
-  const days = useMemo(() => groupByDay(slots.filter((s) => !s.taken || s.mine)), [slots]);
+  // WHICH CLOCK, AND WHEN. Same fix and same reason as the booking page's own
+  // BookingPicker: formatting with the browser's zone from the first render
+  // means the SERVER formats these instants in the server's zone (UTC on our
+  // hosting), so a person opening their own appointment saw the wrong time for
+  // one paint and React logged a recoverable hydration error (#418). The first
+  // paint is now the ORGANIZATION's zone — identical on both sides, nothing to
+  // mismatch — and the visitor's own zone takes over once hydrated. The zone in
+  // force is printed beside the day either way, so the screen never lies about
+  // which clock it is showing.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const organizationZone = booking.availability?.timezone ?? "UTC";
+  const zone = hydrated ? visitorZone() || organizationZone : organizationZone;
+  const days = useMemo(
+    () => groupByDay(slots.filter((s) => !s.taken || s.mine), zone),
+    [slots, zone],
+  );
 
   async function move(slot: BookingSlot) {
     setBusy(slot.key);
@@ -107,7 +123,7 @@ export function ManageBooking({ booking }: { booking: Managed }) {
     <section className="mt-6 flex flex-col gap-5">
       <div className="flex flex-col gap-1">
         <span className="text-sm text-muted-foreground">Your appointment</span>
-        <span className="text-base font-medium">{at ? whenText(at) : "—"}</span>
+        <span className="text-base font-medium">{at ? whenText(at, zone) : "—"}</span>
       </div>
 
       {note ? <p className="rounded border px-3 py-2 text-sm">{note}</p> : null}
@@ -115,7 +131,7 @@ export function ManageBooking({ booking }: { booking: Managed }) {
       {confirmingCancel ? (
         <div className="flex flex-col gap-3 rounded border border-destructive px-3 py-3">
           <p className="text-sm">
-            Cancelling gives up {at ? whenText(at) : "this time"} and puts it back on offer. You would
+            Cancelling gives up {at ? whenText(at, zone) : "this time"} and puts it back on offer. You would
             have to book again, and the time may be gone.
           </p>
           <div className="flex gap-2">
@@ -161,7 +177,7 @@ export function ManageBooking({ booking }: { booking: Managed }) {
                   <li key={slot.key}>
                     {slot.mine ? (
                       <span className="inline-flex h-11 items-center rounded border border-primary px-3 text-sm">
-                        {clockText(slot.at)} · yours
+                        {clockText(slot.at, zone)} · yours
                       </span>
                     ) : (
                       <button
@@ -170,7 +186,7 @@ export function ManageBooking({ booking }: { booking: Managed }) {
                         disabled={busy !== null}
                         onClick={() => void move(slot)}
                       >
-                        {busy === slot.key ? "Moving…" : clockText(slot.at)}
+                        {busy === slot.key ? "Moving…" : clockText(slot.at, zone)}
                       </button>
                     )}
                   </li>
@@ -184,7 +200,7 @@ export function ManageBooking({ booking }: { booking: Managed }) {
   );
 }
 
-function zoneText(): string {
+function visitorZone(): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
   } catch {
@@ -192,15 +208,15 @@ function zoneText(): string {
   }
 }
 
-function groupByDay(slots: BookingSlot[]): Array<[string, BookingSlot[]]> {
+function groupByDay(slots: BookingSlot[], zone: string): Array<[string, BookingSlot[]]> {
   const out = new Map<string, BookingSlot[]>();
   for (const slot of slots) {
     const day = new Date(slot.at).toLocaleDateString(undefined, {
       weekday: "long",
       day: "numeric",
       month: "long",
+      ...(zone ? { timeZone: zone } : {}),
     });
-    const zone = zoneText();
     const key = zone ? `${day} · ${zone}` : day;
     const bucket = out.get(key);
     if (bucket) bucket.push(slot);
@@ -209,16 +225,21 @@ function groupByDay(slots: BookingSlot[]): Array<[string, BookingSlot[]]> {
   return [...out.entries()];
 }
 
-function clockText(at: string): string {
-  return new Date(at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+function clockText(at: string, zone?: string): string {
+  return new Date(at).toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+    ...(zone ? { timeZone: zone } : {}),
+  });
 }
 
-function whenText(at: string): string {
+function whenText(at: string, zone?: string): string {
   return new Date(at).toLocaleString(undefined, {
     weekday: "long",
     day: "numeric",
     month: "long",
     hour: "numeric",
     minute: "2-digit",
+    ...(zone ? { timeZone: zone } : {}),
   });
 }
