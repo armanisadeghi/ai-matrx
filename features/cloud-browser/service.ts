@@ -208,7 +208,10 @@ function actionActor(value: string): ActionActor {
     return value;
   throw new Error(`Unknown browser action actor: ${value}`);
 }
-function actionResultClass(value: string): ActionResultClass {
+/** Exported for its guard: a word the server writes and this cannot parse takes
+ *  the whole timeline down, and the vocabulary grows (aidream migration 0999
+ *  added `unknown`). */
+export function actionResultClass(value: string): ActionResultClass {
   if (
     value === "ok" ||
     value === "failed" ||
