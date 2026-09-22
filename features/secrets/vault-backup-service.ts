@@ -4,23 +4,24 @@ import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 import { createClient } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 
+import type { components } from "@/types/python-generated/api-types";
+
 import type { VaultExpectedActor } from "./vault-service";
 
 export const MAX_BACKUP_UPLOAD_BYTES = 66 * 1024 * 1024;
 const RESTORE_RUN_KEY = "matrx:vault-backup-restore:v1";
 
-export interface VaultBackupRecordSummary {
-  source_item_id: string;
-  display_name: string;
-  field_count: number;
-  attachment_count: number;
-}
-export interface VaultBackupOmission {
-  component: string;
-  reason: string;
-  count: number | null;
-  source_item_id?: string | null;
-}
+/**
+ * THE GENERATED CONTRACT IS THE AUTHORITY (check:generated-contracts,
+ * 2026-09-22). These four shapes are what the Python vault-backup endpoints
+ * actually send; they were hand-copied here, so a field the server renamed or
+ * made nullable would have gone on type-checking against a mirror that no
+ * longer matched the wire. Aliased now — regenerate with `pnpm sync-types` and
+ * every caller moves with the server.
+ */
+export type VaultBackupRecordSummary =
+  components["schemas"]["VaultBackupRecordSummary"];
+export type VaultBackupOmission = components["schemas"]["VaultBackupOmission"];
 export interface VaultBackupSummary {
   records: VaultBackupRecordSummary[];
   omissions: VaultBackupOmission[];
@@ -38,20 +39,10 @@ export interface VaultBackupRestorePreview extends VaultBackupSummary {
   organization_id: string;
   quarantined: boolean;
 }
-export interface VaultBackupRestoreRecordResult {
-  source_item_id: string;
-  item_id: string | null;
-  status: "created" | "replayed" | "refused" | "retryable_failure";
-  reason?: "alias_conflict" | null;
-}
-export interface VaultBackupRestoreResult {
-  restore_run_id: string;
-  results: VaultBackupRestoreRecordResult[];
-  created: number;
-  replayed: number;
-  refused: number;
-  retryable_failure: number;
-}
+export type VaultBackupRestoreRecordResult =
+  components["schemas"]["VaultBackupRestoreRecordResult"];
+export type VaultBackupRestoreResult =
+  components["schemas"]["VaultBackupRestoreResult"];
 
 export type VaultBackupErrorCode =
   | "recent_auth_required"

@@ -31,6 +31,8 @@
  * through the one `requireOrganizationContext` kernel.
  */
 
+import type { components } from "@/types/python-generated/api-types";
+
 import { BackendClient } from "@/lib/api/backend-client";
 import { BackendApiError } from "@/lib/api/errors";
 import { resolveBaseUrl } from "@/lib/python-client";
@@ -45,20 +47,17 @@ import {
 // header for the failure that put them there.
 export { PERSONAL_STAFF_MANDATE_KEY, STAFF_DOOR_PATH, STAFF_WEB_CHANNEL };
 
-/** The door's 200 body, byte-for-byte `StaffThread` in `door.py`. */
-export interface StaffThread {
-  conversation_id: string;
-  mandate_key: string;
-  agent_id: string;
-  agent_version_id: string | null;
-  /** The Holder's name. `null` means SHOW NO NAME — never a hardcoded one. */
-  agent_name: string | null;
-  holder_provenance: string;
-  is_new: boolean;
-  sandbox_instance_id: string | null;
-  /** Present exactly when `sandbox_instance_id` is null. One plain sentence. */
-  sandbox_note: string | null;
-}
+/**
+ * The door's 200 body — ALIASED to the generated contract, not copied from it
+ * (check:generated-contracts, 2026-09-22). This was a hand-written mirror whose
+ * own comment said "byte-for-byte `StaffThread` in `door.py`", which is exactly
+ * the shape that goes on type-checking after door.py renames a field. The
+ * generated declaration carries door.py's own field descriptions, including
+ * that `agent_name: null` means SHOW NO NAME rather than a hardcoded one, and
+ * that `sandbox_note` is present exactly when `sandbox_instance_id` is null.
+ * Regenerate with `pnpm sync-types`.
+ */
+export type StaffThread = components["schemas"]["StaffThread"];
 
 /**
  * The refusals the door itself names, each with a sentence written for a
