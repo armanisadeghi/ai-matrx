@@ -47381,6 +47381,75 @@ export interface components {
             /** Change Mode */
             change_mode?: ("apply" | "ask" | "propose") | null;
         };
+        /** AuthorMapResult */
+        AuthorMapResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "map.author";
+            /** Map Id */
+            map_id: string;
+            /** Brand Id */
+            brand_id: string;
+            /** Source Kind */
+            source_kind: string;
+            /** Source Reference */
+            source_reference?: string | null;
+            /** Change Mode */
+            change_mode: string;
+            /** Applied */
+            applied: boolean;
+            /** Created */
+            created?: string[];
+            /** Updated */
+            updated?: string[];
+            /** Unchanged */
+            unchanged?: string[];
+            /** Dry Run */
+            dry_run?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Proposal */
+            proposal?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Summary
+             * @default
+             */
+            summary?: string;
+            /**
+             * Coverage Notes
+             * @default
+             */
+            coverage_notes?: string;
+            /** Research Topic Id */
+            research_topic_id?: string | null;
+            /**
+             * Research Started
+             * @default false
+             */
+            research_started?: boolean;
+            /** Research Keywords */
+            research_keywords?: string[];
+            /**
+             * Research Run Started
+             * @default false
+             */
+            research_run_started?: boolean;
+            /**
+             * Research Run Note
+             * @default
+             */
+            research_run_note?: string;
+            /** Geography Branches Refused */
+            geography_branches_refused?: {
+                [key: string]: string;
+            }[];
+            /** Notes */
+            notes?: string[];
+        };
         /**
          * AuthorityAnswer
          * @description One human answer to ONE of the questions the judge answered.
@@ -74473,6 +74542,33 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /**
+         * GeographyBranch
+         * @description A topic of this map that is a PLACE — the fault this pass exists to find.
+         */
+        GeographyBranch: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Reason */
+            reason: string;
+            /**
+             * Pages
+             * @default 0
+             */
+            pages?: number;
+            /**
+             * Pages With No Other Topic
+             * @default 0
+             */
+            pages_with_no_other_topic?: number;
+            /**
+             * Retired
+             * @default false
+             */
+            retired?: boolean;
+        };
         /** GetConversationResponse */
         GetConversationResponse: {
             conversation: components["schemas"]["ConversationRecord"];
@@ -87173,6 +87269,178 @@ export interface components {
             dry_run?: boolean;
         };
         /**
+         * MapPagesResult
+         * @description What one pass actually did. Every field is measured, never assumed.
+         */
+        MapPagesResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "map.pages";
+            /** Site Id */
+            site_id: string;
+            /** Map Id */
+            map_id: string;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+            /**
+             * Scanned
+             * @default 0
+             */
+            scanned?: number;
+            /**
+             * Refreshed
+             * @default false
+             */
+            refreshed?: boolean;
+            /**
+             * Skipped Planned
+             * @default 0
+             */
+            skipped_planned?: number;
+            /**
+             * Skipped Missing
+             * @default 0
+             */
+            skipped_missing?: number;
+            /**
+             * Batches
+             * @default 0
+             */
+            batches?: number;
+            /**
+             * Claimed
+             * @default 0
+             */
+            claimed?: number;
+            /**
+             * Mapped
+             * @default 0
+             */
+            mapped?: number;
+            /**
+             * Edges Written
+             * @default 0
+             */
+            edges_written?: number;
+            /**
+             * No Topic
+             * @default 0
+             */
+            no_topic?: number;
+            /**
+             * Kept Existing
+             * @default 0
+             */
+            kept_existing?: number;
+            /**
+             * Dropped Low Confidence
+             * @default 0
+             */
+            dropped_low_confidence?: number;
+            /**
+             * Dropped Unknown Slug
+             * @default 0
+             */
+            dropped_unknown_slug?: number;
+            /**
+             * Dropped Geography Topic
+             * @default 0
+             */
+            dropped_geography_topic?: number;
+            /**
+             * Reasons Normalized Uncrawled
+             * @default 0
+             */
+            reasons_normalized_uncrawled?: number;
+            /**
+             * Returned To Queue
+             * @default 0
+             */
+            returned_to_queue?: number;
+            /**
+             * Quarantined
+             * @default 0
+             */
+            quarantined?: number;
+            /**
+             * Failed Batches
+             * @default 0
+             */
+            failed_batches?: number;
+            /**
+             * Queue Pending
+             * @default 0
+             */
+            queue_pending?: number;
+            /**
+             * Queue Done
+             * @default 0
+             */
+            queue_done?: number;
+            /**
+             * Queue No Topic
+             * @default 0
+             */
+            queue_no_topic?: number;
+            /**
+             * Queue Failed
+             * @default 0
+             */
+            queue_failed?: number;
+            /**
+             * Placed By Human
+             * @default 0
+             */
+            placed_by_human?: number;
+            /**
+             * Pending Clicks
+             * @default 0
+             */
+            pending_clicks?: number;
+            /**
+             * Ceiling Reached
+             * @default false
+             */
+            ceiling_reached?: boolean;
+            /**
+             * Daily Ceiling
+             * @default 0
+             */
+            daily_ceiling?: number;
+            /**
+             * Mapped Today
+             * @default 0
+             */
+            mapped_today?: number;
+            /**
+             * Stopped On Repeated Failure
+             * @default false
+             */
+            stopped_on_repeated_failure?: boolean;
+            /**
+             * Consecutive Failures
+             * @default 0
+             */
+            consecutive_failures?: number;
+            /** Wanted Topics */
+            wanted_topics?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Examples */
+            examples?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Notes */
+            notes?: string[];
+            /** Error */
+            error?: string | null;
+        };
+        /**
          * MapRegionsRequest
          * @description The one body `POST /seo/sites/{site_id}/map/regions` takes.
          */
@@ -87231,6 +87499,120 @@ export interface components {
              * @default false
              */
             dry_run?: boolean;
+        };
+        /**
+         * MapRegionsResult
+         * @description What one pass actually did. Every number is measured, never assumed.
+         */
+        MapRegionsResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "map.regions";
+            /** Site Id */
+            site_id: string;
+            /** Brand Id */
+            brand_id: string;
+            /** Map Id */
+            map_id: string;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+            /**
+             * Pages Scanned
+             * @default 0
+             */
+            pages_scanned?: number;
+            /**
+             * Pages With A Place
+             * @default 0
+             */
+            pages_with_a_place?: number;
+            /**
+             * Values Before
+             * @default 0
+             */
+            values_before?: number;
+            /** Values Created */
+            values_created?: string[];
+            /** Values Existing */
+            values_existing?: string[];
+            /** Values Held Back */
+            values_held_back?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Plan */
+            plan?: components["schemas"]["RegionValuePlan"][];
+            /**
+             * Pages With Region Before
+             * @default 0
+             */
+            pages_with_region_before?: number;
+            /**
+             * Pages Bound
+             * @default 0
+             */
+            pages_bound?: number;
+            /**
+             * Pages Kept Existing
+             * @default 0
+             */
+            pages_kept_existing?: number;
+            /**
+             * Pages Already Correct
+             * @default 0
+             */
+            pages_already_correct?: number;
+            /**
+             * Pages Without A Place
+             * @default 0
+             */
+            pages_without_a_place?: number;
+            /**
+             * Pages With Region After
+             * @default 0
+             */
+            pages_with_region_after?: number;
+            /** Geography Branches */
+            geography_branches?: components["schemas"]["GeographyBranch"][];
+            /**
+             * Pages Recovered From Geography
+             * @default 0
+             */
+            pages_recovered_from_geography?: number;
+            /**
+             * Pages Left Without Topic
+             * @default 0
+             */
+            pages_left_without_topic?: number;
+            /** Examples Left Without Topic */
+            examples_left_without_topic?: string[];
+            /**
+             * Ceiling Reached
+             * @default false
+             */
+            ceiling_reached?: boolean;
+            /**
+             * Daily Ceiling
+             * @default 0
+             */
+            daily_ceiling?: number;
+            /**
+             * Bound Today
+             * @default 0
+             */
+            bound_today?: number;
+            /** Examples */
+            examples?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Notes */
+            notes?: string[];
+            /** Error */
+            error?: string | null;
         };
         /** MappingIssue */
         MappingIssue: {
@@ -101455,6 +101837,188 @@ export interface components {
             dry_run?: boolean;
         };
         /**
+         * ProposeIntentsResult
+         * @description What one pass actually did. Every field is measured, never assumed.
+         */
+        ProposeIntentsResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "map.intents";
+            /** Site Id */
+            site_id: string;
+            /** Map Id */
+            map_id: string;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+            /**
+             * Scanned
+             * @default 0
+             */
+            scanned?: number;
+            /**
+             * Refreshed
+             * @default false
+             */
+            refreshed?: boolean;
+            /**
+             * Skipped No Topic
+             * @default 0
+             */
+            skipped_no_topic?: number;
+            /**
+             * Batches
+             * @default 0
+             */
+            batches?: number;
+            /**
+             * Topics Touched
+             * @default 0
+             */
+            topics_touched?: number;
+            /**
+             * Claimed
+             * @default 0
+             */
+            claimed?: number;
+            /**
+             * Proposed
+             * @default 0
+             */
+            proposed?: number;
+            /**
+             * Returned To Queue
+             * @default 0
+             */
+            returned_to_queue?: number;
+            /**
+             * Held By Human
+             * @default 0
+             */
+            held_by_human?: number;
+            /**
+             * Quarantined
+             * @default 0
+             */
+            quarantined?: number;
+            /**
+             * Failed Batches
+             * @default 0
+             */
+            failed_batches?: number;
+            /**
+             * Downgraded Low Confidence
+             * @default 0
+             */
+            downgraded_low_confidence?: number;
+            /**
+             * Downgraded Traffic Or Links
+             * @default 0
+             */
+            downgraded_traffic_or_links?: number;
+            /**
+             * Downgraded Unknown Destination
+             * @default 0
+             */
+            downgraded_unknown_destination?: number;
+            /**
+             * Downgraded Self Destination
+             * @default 0
+             */
+            downgraded_self_destination?: number;
+            /**
+             * Rendition Retargeted
+             * @default 0
+             */
+            rendition_retargeted?: number;
+            /**
+             * Dropped Unknown Slug
+             * @default 0
+             */
+            dropped_unknown_slug?: number;
+            /**
+             * Dropped Locked
+             * @default 0
+             */
+            dropped_locked?: number;
+            /**
+             * Kept Existing
+             * @default 0
+             */
+            kept_existing?: number;
+            /** By Disposition */
+            by_disposition?: {
+                [key: string]: number;
+            };
+            /**
+             * Queue Pending
+             * @default 0
+             */
+            queue_pending?: number;
+            /**
+             * Queue Done
+             * @default 0
+             */
+            queue_done?: number;
+            /**
+             * Queue Held
+             * @default 0
+             */
+            queue_held?: number;
+            /**
+             * Queue Failed
+             * @default 0
+             */
+            queue_failed?: number;
+            /**
+             * Topics Pending
+             * @default 0
+             */
+            topics_pending?: number;
+            /**
+             * Pending Clicks
+             * @default 0
+             */
+            pending_clicks?: number;
+            /**
+             * Ceiling Reached
+             * @default false
+             */
+            ceiling_reached?: boolean;
+            /**
+             * Daily Ceiling
+             * @default 0
+             */
+            daily_ceiling?: number;
+            /**
+             * Proposed Today
+             * @default 0
+             */
+            proposed_today?: number;
+            /**
+             * Stopped On Repeated Failure
+             * @default false
+             */
+            stopped_on_repeated_failure?: boolean;
+            /**
+             * Consecutive Failures
+             * @default 0
+             */
+            consecutive_failures?: number;
+            /** Examples */
+            examples?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Notes */
+            notes?: string[];
+            /** Error */
+            error?: string | null;
+        };
+        /**
          * ProposedWriteResponse
          * @description What a write door answers when the organization requires a review first.
          *
@@ -104531,6 +105095,37 @@ export interface components {
              * @default []
              */
             notes?: string[];
+        };
+        /**
+         * RegionValuePlan
+         * @description One region facet value this pass would create or already found.
+         */
+        RegionValuePlan: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Parent Slug */
+            parent_slug?: string | null;
+            /**
+             * Pages
+             * @default 0
+             */
+            pages?: number;
+            /**
+             * Evidence
+             * @default pages
+             */
+            evidence?: string;
+            /** Ref Type */
+            ref_type?: string | null;
+            /** Ref Id */
+            ref_id?: string | null;
+            /**
+             * Existed
+             * @default false
+             */
+            existed?: boolean;
         };
         /** RegisterDeviceRequest */
         RegisterDeviceRequest: {
@@ -110969,7 +111564,7 @@ export interface components {
             } | null;
             receipt?: components["schemas"]["CollectionReceipt"] | null;
             /** Result */
-            result?: (components["schemas"]["AiVisibilityResult"] | components["schemas"]["BackfillPassResult"] | components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["CompetitorAutopsyResult"] | components["schemas"]["FindingFixResult"] | components["schemas"]["KeywordClassifyResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["SiteStrategyResult"] | components["schemas"]["TopicAssignResult"] | components["schemas"]["NewsroomSyncResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["SourceRequestEvaluateResult"] | components["schemas"]["SourceRequestIngestResult"] | components["schemas"]["StoryAngleGenerateResult"] | components["schemas"]["StructuredDataValidateResult"] | components["schemas"]["PlacementPassResult"]) | {
+            result?: (components["schemas"]["AiVisibilityResult"] | components["schemas"]["BackfillPassResult"] | components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["CompetitorAutopsyResult"] | components["schemas"]["FindingFixResult"] | components["schemas"]["KeywordClassifyResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["SiteStrategyResult"] | components["schemas"]["TopicAssignResult"] | components["schemas"]["AuthorMapResult"] | components["schemas"]["MapPagesResult"] | components["schemas"]["MapRegionsResult"] | components["schemas"]["NewsroomSyncResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ProposeIntentsResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["SourceRequestEvaluateResult"] | components["schemas"]["SourceRequestIngestResult"] | components["schemas"]["StoryAngleGenerateResult"] | components["schemas"]["StructuredDataValidateResult"] | components["schemas"]["PlacementPassResult"]) | {
                 [key: string]: unknown;
             } | null;
         };

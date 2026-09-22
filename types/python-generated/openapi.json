@@ -107540,6 +107540,152 @@
         "title": "AuthorMapRequest",
         "description": "The one body `POST /seo/brands/{brand_id}/map/author` takes.\n\nExactly one source kind per call. Every field that belongs to another source\nkind is refused rather than ignored — a body that silently drops the thing the\nperson chose is the \"screen that lies\" defect."
       },
+      "AuthorMapResult": {
+        "properties": {
+          "result_kind": {
+            "type": "string",
+            "const": "map.author",
+            "title": "Result Kind",
+            "default": "map.author"
+          },
+          "map_id": {
+            "type": "string",
+            "title": "Map Id"
+          },
+          "brand_id": {
+            "type": "string",
+            "title": "Brand Id"
+          },
+          "source_kind": {
+            "type": "string",
+            "title": "Source Kind"
+          },
+          "source_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Reference"
+          },
+          "change_mode": {
+            "type": "string",
+            "title": "Change Mode"
+          },
+          "applied": {
+            "type": "boolean",
+            "title": "Applied"
+          },
+          "created": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Created"
+          },
+          "updated": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Updated"
+          },
+          "unchanged": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unchanged"
+          },
+          "dry_run": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Dry Run"
+          },
+          "proposal": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Proposal"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "default": ""
+          },
+          "coverage_notes": {
+            "type": "string",
+            "title": "Coverage Notes",
+            "default": ""
+          },
+          "research_topic_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Research Topic Id"
+          },
+          "research_started": {
+            "type": "boolean",
+            "title": "Research Started",
+            "default": false
+          },
+          "research_keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Research Keywords"
+          },
+          "research_run_started": {
+            "type": "boolean",
+            "title": "Research Run Started",
+            "default": false
+          },
+          "research_run_note": {
+            "type": "string",
+            "title": "Research Run Note",
+            "default": ""
+          },
+          "geography_branches_refused": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Geography Branches Refused"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "map_id",
+          "brand_id",
+          "source_kind",
+          "change_mode",
+          "applied"
+        ],
+        "title": "AuthorMapResult"
+      },
       "AuthorityAnswer": {
         "properties": {
           "question": {
@@ -170789,6 +170935,46 @@
         ],
         "title": "GeniallyServiceStatus"
       },
+      "GeographyBranch": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "pages": {
+            "type": "integer",
+            "title": "Pages",
+            "default": 0
+          },
+          "pages_with_no_other_topic": {
+            "type": "integer",
+            "title": "Pages With No Other Topic",
+            "default": 0
+          },
+          "retired": {
+            "type": "boolean",
+            "title": "Retired",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "reason"
+        ],
+        "title": "GeographyBranch",
+        "description": "A topic of this map that is a PLACE — the fault this pass exists to find."
+      },
       "GetConversationResponse": {
         "properties": {
           "conversation": {
@@ -199068,6 +199254,215 @@
         "title": "MapPagesRequest",
         "description": "The one body `POST /seo/sites/{site_id}/map/pages` takes."
       },
+      "MapPagesResult": {
+        "properties": {
+          "result_kind": {
+            "type": "string",
+            "const": "map.pages",
+            "title": "Result Kind",
+            "default": "map.pages"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "map_id": {
+            "type": "string",
+            "title": "Map Id"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          },
+          "scanned": {
+            "type": "integer",
+            "title": "Scanned",
+            "default": 0
+          },
+          "refreshed": {
+            "type": "boolean",
+            "title": "Refreshed",
+            "default": false
+          },
+          "skipped_planned": {
+            "type": "integer",
+            "title": "Skipped Planned",
+            "default": 0
+          },
+          "skipped_missing": {
+            "type": "integer",
+            "title": "Skipped Missing",
+            "default": 0
+          },
+          "batches": {
+            "type": "integer",
+            "title": "Batches",
+            "default": 0
+          },
+          "claimed": {
+            "type": "integer",
+            "title": "Claimed",
+            "default": 0
+          },
+          "mapped": {
+            "type": "integer",
+            "title": "Mapped",
+            "default": 0
+          },
+          "edges_written": {
+            "type": "integer",
+            "title": "Edges Written",
+            "default": 0
+          },
+          "no_topic": {
+            "type": "integer",
+            "title": "No Topic",
+            "default": 0
+          },
+          "kept_existing": {
+            "type": "integer",
+            "title": "Kept Existing",
+            "default": 0
+          },
+          "dropped_low_confidence": {
+            "type": "integer",
+            "title": "Dropped Low Confidence",
+            "default": 0
+          },
+          "dropped_unknown_slug": {
+            "type": "integer",
+            "title": "Dropped Unknown Slug",
+            "default": 0
+          },
+          "dropped_geography_topic": {
+            "type": "integer",
+            "title": "Dropped Geography Topic",
+            "default": 0
+          },
+          "reasons_normalized_uncrawled": {
+            "type": "integer",
+            "title": "Reasons Normalized Uncrawled",
+            "default": 0
+          },
+          "returned_to_queue": {
+            "type": "integer",
+            "title": "Returned To Queue",
+            "default": 0
+          },
+          "quarantined": {
+            "type": "integer",
+            "title": "Quarantined",
+            "default": 0
+          },
+          "failed_batches": {
+            "type": "integer",
+            "title": "Failed Batches",
+            "default": 0
+          },
+          "queue_pending": {
+            "type": "integer",
+            "title": "Queue Pending",
+            "default": 0
+          },
+          "queue_done": {
+            "type": "integer",
+            "title": "Queue Done",
+            "default": 0
+          },
+          "queue_no_topic": {
+            "type": "integer",
+            "title": "Queue No Topic",
+            "default": 0
+          },
+          "queue_failed": {
+            "type": "integer",
+            "title": "Queue Failed",
+            "default": 0
+          },
+          "placed_by_human": {
+            "type": "integer",
+            "title": "Placed By Human",
+            "default": 0
+          },
+          "pending_clicks": {
+            "type": "integer",
+            "title": "Pending Clicks",
+            "default": 0
+          },
+          "ceiling_reached": {
+            "type": "boolean",
+            "title": "Ceiling Reached",
+            "default": false
+          },
+          "daily_ceiling": {
+            "type": "integer",
+            "title": "Daily Ceiling",
+            "default": 0
+          },
+          "mapped_today": {
+            "type": "integer",
+            "title": "Mapped Today",
+            "default": 0
+          },
+          "stopped_on_repeated_failure": {
+            "type": "boolean",
+            "title": "Stopped On Repeated Failure",
+            "default": false
+          },
+          "consecutive_failures": {
+            "type": "integer",
+            "title": "Consecutive Failures",
+            "default": 0
+          },
+          "wanted_topics": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Wanted Topics"
+          },
+          "examples": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Examples"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "map_id"
+        ],
+        "title": "MapPagesResult",
+        "description": "What one pass actually did. Every field is measured, never assumed."
+      },
       "MapRegionsRequest": {
         "properties": {
           "organization_id": {
@@ -199196,6 +199591,185 @@
         "type": "object",
         "title": "MapRegionsRequest",
         "description": "The one body `POST /seo/sites/{site_id}/map/regions` takes."
+      },
+      "MapRegionsResult": {
+        "properties": {
+          "result_kind": {
+            "type": "string",
+            "const": "map.regions",
+            "title": "Result Kind",
+            "default": "map.regions"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "brand_id": {
+            "type": "string",
+            "title": "Brand Id"
+          },
+          "map_id": {
+            "type": "string",
+            "title": "Map Id"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          },
+          "pages_scanned": {
+            "type": "integer",
+            "title": "Pages Scanned",
+            "default": 0
+          },
+          "pages_with_a_place": {
+            "type": "integer",
+            "title": "Pages With A Place",
+            "default": 0
+          },
+          "values_before": {
+            "type": "integer",
+            "title": "Values Before",
+            "default": 0
+          },
+          "values_created": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Values Created"
+          },
+          "values_existing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Values Existing"
+          },
+          "values_held_back": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Values Held Back"
+          },
+          "plan": {
+            "items": {
+              "$ref": "#/components/schemas/RegionValuePlan"
+            },
+            "type": "array",
+            "title": "Plan"
+          },
+          "pages_with_region_before": {
+            "type": "integer",
+            "title": "Pages With Region Before",
+            "default": 0
+          },
+          "pages_bound": {
+            "type": "integer",
+            "title": "Pages Bound",
+            "default": 0
+          },
+          "pages_kept_existing": {
+            "type": "integer",
+            "title": "Pages Kept Existing",
+            "default": 0
+          },
+          "pages_already_correct": {
+            "type": "integer",
+            "title": "Pages Already Correct",
+            "default": 0
+          },
+          "pages_without_a_place": {
+            "type": "integer",
+            "title": "Pages Without A Place",
+            "default": 0
+          },
+          "pages_with_region_after": {
+            "type": "integer",
+            "title": "Pages With Region After",
+            "default": 0
+          },
+          "geography_branches": {
+            "items": {
+              "$ref": "#/components/schemas/GeographyBranch"
+            },
+            "type": "array",
+            "title": "Geography Branches"
+          },
+          "pages_recovered_from_geography": {
+            "type": "integer",
+            "title": "Pages Recovered From Geography",
+            "default": 0
+          },
+          "pages_left_without_topic": {
+            "type": "integer",
+            "title": "Pages Left Without Topic",
+            "default": 0
+          },
+          "examples_left_without_topic": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Examples Left Without Topic"
+          },
+          "ceiling_reached": {
+            "type": "boolean",
+            "title": "Ceiling Reached",
+            "default": false
+          },
+          "daily_ceiling": {
+            "type": "integer",
+            "title": "Daily Ceiling",
+            "default": 0
+          },
+          "bound_today": {
+            "type": "integer",
+            "title": "Bound Today",
+            "default": 0
+          },
+          "examples": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Examples"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "brand_id",
+          "map_id"
+        ],
+        "title": "MapRegionsResult",
+        "description": "What one pass actually did. Every number is measured, never assumed."
       },
       "MappingIssue": {
         "properties": {
@@ -229817,6 +230391,222 @@
         "title": "ProposeIntentsRequest",
         "description": "The one body `POST /seo/sites/{site_id}/map/intents` takes."
       },
+      "ProposeIntentsResult": {
+        "properties": {
+          "result_kind": {
+            "type": "string",
+            "const": "map.intents",
+            "title": "Result Kind",
+            "default": "map.intents"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "map_id": {
+            "type": "string",
+            "title": "Map Id"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          },
+          "scanned": {
+            "type": "integer",
+            "title": "Scanned",
+            "default": 0
+          },
+          "refreshed": {
+            "type": "boolean",
+            "title": "Refreshed",
+            "default": false
+          },
+          "skipped_no_topic": {
+            "type": "integer",
+            "title": "Skipped No Topic",
+            "default": 0
+          },
+          "batches": {
+            "type": "integer",
+            "title": "Batches",
+            "default": 0
+          },
+          "topics_touched": {
+            "type": "integer",
+            "title": "Topics Touched",
+            "default": 0
+          },
+          "claimed": {
+            "type": "integer",
+            "title": "Claimed",
+            "default": 0
+          },
+          "proposed": {
+            "type": "integer",
+            "title": "Proposed",
+            "default": 0
+          },
+          "returned_to_queue": {
+            "type": "integer",
+            "title": "Returned To Queue",
+            "default": 0
+          },
+          "held_by_human": {
+            "type": "integer",
+            "title": "Held By Human",
+            "default": 0
+          },
+          "quarantined": {
+            "type": "integer",
+            "title": "Quarantined",
+            "default": 0
+          },
+          "failed_batches": {
+            "type": "integer",
+            "title": "Failed Batches",
+            "default": 0
+          },
+          "downgraded_low_confidence": {
+            "type": "integer",
+            "title": "Downgraded Low Confidence",
+            "default": 0
+          },
+          "downgraded_traffic_or_links": {
+            "type": "integer",
+            "title": "Downgraded Traffic Or Links",
+            "default": 0
+          },
+          "downgraded_unknown_destination": {
+            "type": "integer",
+            "title": "Downgraded Unknown Destination",
+            "default": 0
+          },
+          "downgraded_self_destination": {
+            "type": "integer",
+            "title": "Downgraded Self Destination",
+            "default": 0
+          },
+          "rendition_retargeted": {
+            "type": "integer",
+            "title": "Rendition Retargeted",
+            "default": 0
+          },
+          "dropped_unknown_slug": {
+            "type": "integer",
+            "title": "Dropped Unknown Slug",
+            "default": 0
+          },
+          "dropped_locked": {
+            "type": "integer",
+            "title": "Dropped Locked",
+            "default": 0
+          },
+          "kept_existing": {
+            "type": "integer",
+            "title": "Kept Existing",
+            "default": 0
+          },
+          "by_disposition": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By Disposition"
+          },
+          "queue_pending": {
+            "type": "integer",
+            "title": "Queue Pending",
+            "default": 0
+          },
+          "queue_done": {
+            "type": "integer",
+            "title": "Queue Done",
+            "default": 0
+          },
+          "queue_held": {
+            "type": "integer",
+            "title": "Queue Held",
+            "default": 0
+          },
+          "queue_failed": {
+            "type": "integer",
+            "title": "Queue Failed",
+            "default": 0
+          },
+          "topics_pending": {
+            "type": "integer",
+            "title": "Topics Pending",
+            "default": 0
+          },
+          "pending_clicks": {
+            "type": "integer",
+            "title": "Pending Clicks",
+            "default": 0
+          },
+          "ceiling_reached": {
+            "type": "boolean",
+            "title": "Ceiling Reached",
+            "default": false
+          },
+          "daily_ceiling": {
+            "type": "integer",
+            "title": "Daily Ceiling",
+            "default": 0
+          },
+          "proposed_today": {
+            "type": "integer",
+            "title": "Proposed Today",
+            "default": 0
+          },
+          "stopped_on_repeated_failure": {
+            "type": "boolean",
+            "title": "Stopped On Repeated Failure",
+            "default": false
+          },
+          "consecutive_failures": {
+            "type": "integer",
+            "title": "Consecutive Failures",
+            "default": 0
+          },
+          "examples": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Examples"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "map_id"
+        ],
+        "title": "ProposeIntentsResult",
+        "description": "What one pass actually did. Every field is measured, never assumed."
+      },
       "ProposedWriteResponse": {
         "properties": {
           "proposed": {
@@ -236786,6 +237576,74 @@
           "extraction_kind"
         ],
         "title": "RegionExtractResponse"
+      },
+      "RegionValuePlan": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "parent_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Slug"
+          },
+          "pages": {
+            "type": "integer",
+            "title": "Pages",
+            "default": 0
+          },
+          "evidence": {
+            "type": "string",
+            "title": "Evidence",
+            "default": "pages"
+          },
+          "ref_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ref Type"
+          },
+          "ref_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ref Id"
+          },
+          "existed": {
+            "type": "boolean",
+            "title": "Existed",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "name"
+        ],
+        "title": "RegionValuePlan",
+        "description": "One region facet value this pass would create or already found."
       },
       "RegisterDeviceRequest": {
         "properties": {
@@ -252146,6 +253004,15 @@
                     "$ref": "#/components/schemas/TopicAssignResult"
                   },
                   {
+                    "$ref": "#/components/schemas/AuthorMapResult"
+                  },
+                  {
+                    "$ref": "#/components/schemas/MapPagesResult"
+                  },
+                  {
+                    "$ref": "#/components/schemas/MapRegionsResult"
+                  },
+                  {
                     "$ref": "#/components/schemas/NewsroomSyncResult"
                   },
                   {
@@ -252156,6 +253023,9 @@
                   },
                   {
                     "$ref": "#/components/schemas/PageAuditResult"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ProposeIntentsResult"
                   },
                   {
                     "$ref": "#/components/schemas/ReputationRunResult"
@@ -252193,6 +253063,10 @@
                     "keywords.relationship_research": "#/components/schemas/KeywordResearchResult",
                     "keywords.topic_placement": "#/components/schemas/PlacementPassResult",
                     "keywords.volume_refresh": "#/components/schemas/KeywordVolumeRefreshResult",
+                    "map.author": "#/components/schemas/AuthorMapResult",
+                    "map.intents": "#/components/schemas/ProposeIntentsResult",
+                    "map.pages": "#/components/schemas/MapPagesResult",
+                    "map.regions": "#/components/schemas/MapRegionsResult",
                     "pages.analyze": "#/components/schemas/PageAnalysisResult",
                     "pages.map_keywords": "#/components/schemas/PageKeywordMapResult",
                     "press.newsroom.sync": "#/components/schemas/NewsroomSyncResult",
