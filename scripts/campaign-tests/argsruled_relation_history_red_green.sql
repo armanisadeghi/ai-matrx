@@ -32,6 +32,19 @@
 \quit
 \endif
 begin;
+
+-- ── THE RECORD-STORE SWITCH, BORROWED (SUITES-TIDY 2026-09-22) ──────────────────────────────
+-- The fixture below needs `history.row_versions` to carry versions of the association it makes,
+-- and the capture trigger on platform.associations is gated
+-- `WHEN (platform.relations_are_on(new.organization_id))` — which reads this organization's
+-- record-store switch. That switch is OFF for Rincon, correctly: the store is opt-in per
+-- organization (STORE-OFF / FIX-11A). So the fixture made no history rows and the suite
+-- reported "nothing to measure". The switch is borrowed inside this transaction only and goes
+-- with the ROLLBACK at the foot of the file; the platform default is untouched.
+-- Rincon Plumbing Co
+\set store_org '6069a466-1445-42df-a64e-cf37ecdc1b99'
+\i scripts/campaign-tests/_borrow_store_switch.sql
+
 set local lock_timeout = '15s';
 set local statement_timeout = '120s';
 do $t$

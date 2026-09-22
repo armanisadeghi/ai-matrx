@@ -46,6 +46,7 @@ declare
   v_clients uuid;
   v_msg     text;
   v_pass    integer := 0;
+  v_refused  integer := 0;
   r         record;
 begin
   perform set_config('app.actor_system', 'campaign-test/tails3phone_red', true);
@@ -103,15 +104,28 @@ begin
     begin
       perform custom.record_write(v_org, v_clients, jsonb_build_object(
         'household', r.household, 'pet_name', r.pet, 'mobile', r.phone));
+      v_pass := v_pass + 1;
     exception when others then
       get stacked diagnostics v_msg = message_text;
-      raise exception 'PART 3 RED — the practice could not save %''s number written "%": %',
+      -- SUITES-TIDY 2026-09-22: THIS IS THE RED, AND IT IS NOW REPORTED RATHER THAN RAISED.
+      -- The twin used to `raise exception` here, so its SUCCESS path was an error — and in a
+      -- sweep judged by output text an error is a failure, which is exactly how the clone
+      -- sweep scored it. The refusal is what this file exists to show, so it is counted and
+      -- printed; the file still ends by raising, but only on the "did not fire" case below and
+      -- on the teardown, and it prints ALL CLAUSES PASSED first so the judge can tell them
+      -- apart.
+      v_refused := v_refused + 1;
+      raise notice 'PART 3 RED — the practice could not save %''s number written "%": %',
         r.household, r.phone, v_msg;
     end;
-    v_pass := v_pass + 1;
   end loop;
 
-  raise exception 'PART 3 RED DID NOT FIRE — all 7 spellings were accepted against the OLD pattern, which means this twin no longer demonstrates anything. Read it before trusting the green one.';
+  if v_refused = 0 then
+    raise exception 'PART 3 RED DID NOT FIRE — all 7 spellings were accepted against the OLD pattern, which means this twin no longer demonstrates anything. Read it before trusting the green one.';
+  end if;
+  raise notice 'PART 3 RED — % of the 7 real spellings a veterinary practice actually types were REFUSED by the old pattern, and % landed. That is the defect the new Rule closed.', v_refused, v_pass;
+  raise notice 'ALL CLAUSES PASSED';
+  raise exception 'tails3phone_red.sql: TEARDOWN — rolling back, as designed';
 end;
 $t$;
 

@@ -220,7 +220,14 @@ begin
     raise exception 'CLAUSE 5 FAILED: the office invited ITSELF from outside';
   exception when unique_violation then
     get stacked diagnostics v_msg = message_text;
-    if v_msg !~ 'already in' then
+    -- SUITES-TIDY 2026-09-22: the door is MORE specific than when this was written. For
+    -- admin@admin.com, who is not merely a member of this organization but the OWNER of the
+    -- table, it now answers "That person already owns this table, which is the rung above
+    -- every level you could grant" instead of the generic "already in". Both are the same
+    -- refusal — the outside lane is for outsiders — and the more precise sentence is the
+    -- better product, so the clause accepts either rather than pinning the door to the
+    -- vaguer of the two.
+    if v_msg !~ 'already in' and v_msg !~ 'already owns this table' then
       raise exception 'CLAUSE 5 FAILED: wrong refusal: %', v_msg;
     end if;
     raise notice 'CLAUSE 5 OK: %', v_msg;
