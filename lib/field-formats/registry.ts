@@ -839,7 +839,35 @@ const DEFS: FieldFormatDef[] = [
     editor: "select",
     rich: true,
     optionKeys: ["relation_target", "relation_max", "on_delete", "display"],
-    format: (v, o) => FIELD_FORMATS.choice.format(v, o),
+    // IT DOES NOT DELEGATE TO `choice`, AND THAT IS THE WHOLE POINT.
+    // `choice.format` deliberately returns the RAW VALUE when no options have
+    // resolved yet — a structured list still loading should not make every cell
+    // look off-list. For a label column that is right: the raw value IS the
+    // label. For an identifier column it is the defect §3.3 names, and it is
+    // how the first cut of this wave put four raw uuids on a real grid: the
+    // fallback arm never ran, because returning the uuid counted as SUCCESS.
+    //
+    // Here, a value that did not resolve to words is a MISMATCH — `null` — so
+    // the renderer's three-state arm owns it and shows the amber fallback with
+    // the id marked as an identifier, or the withheld sentence. The id never
+    // reaches the eye as if it were the cell's contents.
+    format: (v, options) => {
+      const list = toList(v);
+      const values =
+        list !== null ? list : v == null ? [] : [v];
+      if (values.length === 0) return "";
+      const words: string[] = [];
+      for (const entry of values) {
+        const text = toText(entry);
+        if (text === null) return null;
+        const trimmed = text.trim();
+        if (trimmed === "") continue;
+        const match = findChoice(options.choices, trimmed);
+        if (!match) return null;   // nothing resolved it — never print the id
+        words.push(match.label ?? match.value);
+      }
+      return words.length === 0 ? "" : words.join(", ");
+    },
     parse: (raw) => FIELD_FORMATS.choice.parse(raw, {}),
   },
   {
