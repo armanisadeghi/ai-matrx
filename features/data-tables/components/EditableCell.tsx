@@ -40,6 +40,9 @@ import {
 } from "react";
 import { Loader2 } from "lucide-react";
 
+import type { RecordsError } from "@ai-matrx/records";
+import { RefusalNotice } from "@ai-matrx/records-ui";
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@ai-matrx/design-system";
 import { Textarea } from "@/components/ui/textarea";
@@ -144,6 +147,24 @@ export function EditableCell({
 }: Props) {
   const [draft, setDraft] = useState<unknown>(value);
   const [saving, setSaving] = useState(false);
+  /**
+   * 🚨 THE STORE REFUSED THIS CELL AND THE SCREEN SAID NOTHING (lane FIX-15,
+   * measured on production 2026-09-22, build 93970125f9).
+   *
+   * Typing a customer's NAME into a relation column — an id column — is refused by
+   * `custom.udt_upsert_cell` with a good three-part sentence: what happened, what the
+   * column actually is, and what to do instead. All the person got was a destructive
+   * toast carrying one third of it, which then timed out; the rejected text stayed in
+   * the cell until the page was reloaded, so the screen showed a value the store had
+   * never accepted. That is "nothing fails silently" and "a screen never lies", both.
+   *
+   * The refusal now lands ON THE CELL, through the SAME `RefusalNotice` the unified
+   * grid uses — one formatter, so the store's own words reach the person and the
+   * machine identity never does — and the cell goes straight back to the value the
+   * store actually holds. It stays until the person dismisses it or edits the cell
+   * again; nothing about it is on a timer.
+   */
+  const [refusal, setRefusal] = useState<RecordsError | null>(null);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
   // Sync draft with prop when value changes from upstream (e.g. realtime).
@@ -164,12 +185,17 @@ export function EditableCell({
   // the stored value otherwise.
   const wasEditing = useRef(false);
   useEffect(() => {
-    if (editing && !wasEditing.current) setDraft(seed ?? value);
+    // Opening the editor again is the person answering the refusal; the notice goes.
+    if (editing && !wasEditing.current) {
+      setDraft(seed ?? value);
+      setRefusal(null);
+    }
     wasEditing.current = editing;
   }, [editing, seed, value]);
 
   const cancelEdit = useCallback(() => {
     setDraft(value);
+    setRefusal(null);
     onEndEdit?.();
   }, [onEndEdit, value]);
 
@@ -213,6 +239,11 @@ export function EditableCell({
         existingValues,
       });
       if (!verdict.ok) {
+        // A rule the person can still fix keeps the editor OPEN, holding what they
+        // typed, so the toast is the right surface for it: the value they are being
+        // told about is right there in front of them, still editable. A STORE
+        // refusal is the other case — it closes the editor and puts the stored value
+        // back, so its sentence has to stay on the cell. See `refusal` above.
         toast({
           title: `${fieldDisplayName}: ${verdict.reason}`,
           description: "The cell was not saved. Correct it, or press Escape to discard.",
@@ -232,14 +263,24 @@ export function EditableCell({
     setSaving(false);
 
     if (isServiceFailure(result)) {
-      toast({
-        title: `Could not update ${fieldDisplayName}`,
-        description: result.error,
-        variant: "destructive",
-      });
-      // Stay in edit mode so the user can correct or cancel.
+      // THE STORE'S OWN SENTENCE, ON THE CELL — never a toast that times out, and
+      // never a cell left wearing text the store refused. `refusal` is the whole
+      // three-part answer (`service.ts`'s `refused()`); `error` is the fallback for
+      // a failure that never reached the store.
+      setRefusal(
+        result.refusal ?? {
+          code: "internal",
+          message: result.error,
+        },
+      );
+      // BACK TO WHAT IS ACTUALLY STORED. Leaving the rejected text on screen is the
+      // screen lying about what the table holds — a reader who scrolled past would
+      // have believed it until the next reload.
+      setDraft(value);
+      onEndEdit?.();
       return;
     }
+    setRefusal(null);
 
     // Prior value FIRST — this is the whole basis of undo.
     onRecordEdit?.(value, normalized);
@@ -365,6 +406,33 @@ export function EditableCell({
             <Loader2 className="size-3 animate-spin text-muted-foreground" />
           </div>
         )}
+        {/* THE REFUSAL, ON THE CELL IT IS ABOUT. Drawn over the rows below rather
+            than inside the cell's own height, because a cell in a grid has no room
+            for three lines and a row that grew by 60px would shove the whole table
+            down. It sits until it is dismissed — a refusal on a timer is a refusal
+            nobody read. */}
+        {refusal ? (
+          <div
+            data-matrx-cell-refusal=""
+            className="absolute left-0 top-full z-50 mt-1 w-[22rem] max-w-[80vw]"
+            onClick={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+          >
+            <RefusalNotice
+              error={refusal}
+              className="bg-background shadow-lg"
+              actions={
+                <button
+                  type="button"
+                  className="mt-1 rounded border px-2 py-0.5 text-xs hover:bg-muted"
+                  onClick={() => setRefusal(null)}
+                >
+                  Dismiss
+                </button>
+              }
+            />
+          </div>
+        ) : null}
       </div>
     );
   }

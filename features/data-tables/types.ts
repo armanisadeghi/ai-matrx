@@ -5,6 +5,7 @@
  * (`types/database.types.ts`). Do not define ad-hoc shapes for `udt_*`
  * tables/columns elsewhere — extend this file.
  */
+import type { RecordsError } from "@ai-matrx/records";
 import type { Database } from "@/types/database.types";
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
 
@@ -227,7 +228,22 @@ export type ServiceOk<T> = { success: true; data: T };
  * deleted when it is one route along is a screen lying.
  */
 export type ServiceErrCode = "dataset_not_here";
-export type ServiceErr = { success: false; error: string; code?: ServiceErrCode };
+/**
+ * THE STORE'S OWN REFUSAL, kept whole (lane FIX-15, 2026-09-23).
+ *
+ * `error` is `PostgrestError.message` and nothing else, so a refusal written as
+ * three parts — what happened, what the column is, what to do instead — reached
+ * the screen as one third of itself, and the other two thirds (DETAIL and HINT)
+ * were thrown away in this envelope. On production a name typed into a relation
+ * column was refused by `custom.udt_upsert_cell` with a perfectly good sentence
+ * and the person saw nothing usable.
+ *
+ * `refusal` carries the whole thing in the shape every Matrx screen already
+ * knows how to draw (`RefusalNotice` / `RefusalLine` from `@ai-matrx/records-ui`,
+ * which run it through `plainWords` so no machine identity is ever printed at a
+ * person). `error` stays exactly what it was for the callers that print a line.
+ */
+export type ServiceErr = { success: false; error: string; code?: ServiceErrCode; refusal?: RecordsError };
 export type ServiceResult<T> = ServiceOk<T> | ServiceErr;
 
 /**
