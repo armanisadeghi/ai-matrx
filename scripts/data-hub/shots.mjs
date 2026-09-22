@@ -54,6 +54,8 @@ const flag = (name, fallback) => {
 };
 
 const ORIGIN = flag("origin", "http://127.0.0.1:3001");
+/** Run one seat instead of all four, by a substring of its label. */
+const ONLY = flag("only", null);
 const OUT = resolve(flag("out", "scripts/data-hub/shots"));
 mkdirSync(OUT, { recursive: true });
 
@@ -125,6 +127,7 @@ async function shoot(page, name) {
  * that already worked — which is exactly what happened on the first run.
  */
 async function tryWalk(context, label, options) {
+  if (ONLY && !label.includes(ONLY)) return null;
   try {
     return await walk(context, label, options);
   } catch (error) {
@@ -143,8 +146,23 @@ async function walk(context, label, { email, password, organization, slug, shots
   say(`${label}: signed in as ${who}${already === email ? " (already)" : ""}`);
   if (who !== email) throw new Error(`${label}: expected ${email}, the app says ${who}`);
 
-  if (slug) await setOrganizationBySlug(page, organization, slug);
-  else await setOrganization(page, organization);
+  // PICKING AN ORGANIZATION RELOADS THE APP, and an `evaluate` that started a
+  // moment before the reload throws "execution context was destroyed". It is not
+  // a failure of the picker — the member seat, which belongs to twenty
+  // organizations, hit it on two runs while the admin seat never did. Try twice.
+  let picked = false;
+  for (let attempt = 0; attempt < 2 && !picked; attempt += 1) {
+    try {
+      if (slug) await setOrganizationBySlug(page, organization, slug);
+      else await setOrganization(page, organization);
+      picked = true;
+    } catch (error) {
+      const why = error instanceof Error ? error.message.split("\n")[0] : String(error);
+      if (attempt === 1) throw error;
+      say(`${label}: the organization picker threw (${why}) — settling and trying once more`);
+      await sleep(4000);
+    }
+  }
   say(`${label}: organization set to ${organization}${slug ? ` (${slug})` : ""}`);
 
   await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
