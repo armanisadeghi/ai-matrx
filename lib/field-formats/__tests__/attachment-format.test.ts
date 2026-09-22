@@ -9,10 +9,10 @@ describe("attachment format", () => {
     expect(def.rich).toBe(true);
   });
   it("parses a list of ids from an array, a JSON string or a comma list", () => {
-    expect(def.parse?.(["a", " b ", ""])).toEqual(["a", "b"]);
-    expect(def.parse?.('["a","b"]')).toEqual(["a", "b"]);
-    expect(def.parse?.("a, b")).toEqual(["a", "b"]);
-    expect(def.parse?.("")).toBeNull();
+    expect(def.parse?.(["a", " b ", ""], {})).toEqual(["a", "b"]);
+    expect(def.parse?.('["a","b"]', {})).toEqual(["a", "b"]);
+    expect(def.parse?.("a, b", {})).toEqual(["a", "b"]);
+    expect(def.parse?.("", {})).toBeNull();
   });
   it("names the count as text, never the ids", () => {
     expect(formatFieldValue(["a"], { id: "attachment" }, "array").text).toBe("1 file");
