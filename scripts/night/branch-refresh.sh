@@ -316,14 +316,76 @@ EXTS="$("$PSQL" "$BRANCH_DSN" -qAtF'|' -c \
    where extnamespace::regnamespace::text = any(array['${(j:',':)DROP_SET}'])" 2>&1)"
 say "  extensions to recreate: ${EXTS:-(none)}"
 
-say "dropping ${#DROP_SET[@]} schema(s), CASCADE, in ONE statement so cross-schema dependencies cannot order us wrong"
-DROPOUT="$("$PSQL" "$BRANCH_DSN" -v ON_ERROR_STOP=1 -qAt \
-  -c "drop schema if exists ${(j:, :)DROP_SET} cascade" 2>&1)"
-if print -r -- "$DROPOUT" | grep -qE 'ERROR|FATAL'; then
-  say "REFUSED: the drop failed — $(print -r -- "$DROPOUT" | head -1). The branch is mid-refresh; re-run the job."
-  exit 78
-fi
-say "  dropped."
+# 🚨 THE DROP IS BATCHED AND ITERATED, BECAUSE ONE STATEMENT CANNOT HOLD THE LOCKS.
+# The first cut dropped all 64 schemas in ONE `DROP SCHEMA … CASCADE` "so cross-schema
+# dependencies cannot order us wrong". At this estate's size that transaction needs a lock per
+# object and dies on `ERROR: out of shared memory / HINT: You might need to increase
+# "max_locks_per_transaction"` (measured 2026-09-22 13:36:33Z) — leaving the branch untouched but
+# unrefreshed, every night, silently, the moment the estate crossed the threshold.
+#
+# Batching does not reintroduce the ordering problem: CASCADE already reaches across schemas, and
+# this loop runs to a FIXED POINT — it re-reads which of the drop set still exist after every pass
+# and keeps going until none do. A pass that removes nothing is a refusal that NAMES what is left,
+# never a silent partial drop.
+#
+# The explicit lock_timeout is here because the database asked for one: the branch carries
+# `ddl_lock_timeout_guard`, which bounds an unqualified DROP SCHEMA's wait to TWO SECONDS ("set an
+# explicit nonzero lock_timeout before DDL to choose a different bound"). Two seconds is a
+# production read budget; sixty is the deliberate bound for the disposable rehearsal branch.
+# ONE SCHEMA PER TRANSACTION, and the reason is a measured number. The branch runs
+# `max_locks_per_transaction = 64` with `max_connections = 60`, so the WHOLE cluster has roughly
+# 3,840 lock slots; a DROP SCHEMA CASCADE takes one per relation it reaches, and the branch's
+# largest schemas hold 925 (`hr`), 563 (`seo`) and 543 (`custom`) relations. Eight schemas in one
+# transaction therefore blew the lock table every time (`out of shared memory`, 13:47Z), while one
+# at a time fits with room to spare. The parameter is not ours to raise on a Supabase branch.
+DROP_BATCH=1
+
+# THE DOORS COME OUT FIRST, BECAUSE A PLATFORM GUARD IS DOING ITS JOB. `provision_shape_guard`
+# fires at ddl_command_end and refuses any transaction that reaches COMMIT with a
+# `platform.client_callable_door` row naming a function the catalog no longer holds — which is
+# every statement of a teardown. The answer is NOT to disable a platform guard: it is to remove
+# the rows it is protecting, in the right order. The table is in SEED_TABLES and is reloaded
+# verbatim from the clone a few steps below, so this is a move, not a loss.
+say "emptying platform.client_callable_door ($("$PSQL" "$BRANCH_DSN" -qAt -c 'select count(*) from platform.client_callable_door' 2>&1) rows) so provision_shape_guard has nothing to protect mid-teardown; the clone's copy is reloaded below"
+DOUT="$("$PSQL" "$BRANCH_DSN" -qAt -c "truncate table platform.client_callable_door cascade" 2>&1)"
+print -r -- "$DOUT" | grep -qE 'ERROR:|FATAL:' && say "  could not empty it — $(print -r -- "$DOUT" | grep -m1 -E 'ERROR:|FATAL:'); the drop will very likely refuse"
+
+say "dropping ${#DROP_SET[@]} schema(s), CASCADE, one per transaction, iterated to a fixed point"
+typeset -a REMAIN; REMAIN=("${DROP_SET[@]}")
+DROP_PASS=0
+while [ ${#REMAIN[@]} -gt 0 ]; do
+  DROP_PASS=$((DROP_PASS+1))
+  if [ $DROP_PASS -gt 12 ]; then
+    say "REFUSED: after $((DROP_PASS-1)) passes ${#REMAIN[@]} schema(s) still exist: ${(j:, :)REMAIN}"
+    say "  The branch is mid-refresh; re-run the job. Nothing else was attempted."
+    exit 78
+  fi
+  BEFORE=${#REMAIN[@]}
+  for ((i=1; i<=${#REMAIN[@]}; i+=DROP_BATCH)); do
+    typeset -a CHUNK; CHUNK=("${(@)REMAIN[i,i+DROP_BATCH-1]}")
+    DROPOUT="$("$PSQL" "$BRANCH_DSN" -qAt \
+      -c "set lock_timeout = '60s'" \
+      -c "drop schema if exists ${(j:, :)CHUNK} cascade" 2>&1)"
+    if print -r -- "$DROPOUT" | grep -qE 'ERROR:|FATAL:'; then
+      say "  pass $DROP_PASS, batch ${(j:,:)CHUNK}: $(print -r -- "$DROPOUT" | grep -m1 -E 'ERROR:|FATAL:')"
+    fi
+  done
+  # Re-read the truth from the catalog rather than trusting the statements above.
+  STILL="$("$PSQL" "$BRANCH_DSN" -qAt -c \
+    "select nspname from pg_namespace where nspname = any(array['${(j:',':)DROP_SET}']) order by 1" 2>&1)"
+  if print -r -- "$STILL" | grep -qE 'ERROR:|FATAL:'; then
+    say "REFUSED: could not re-read the schema list after pass $DROP_PASS — $(print -r -- "$STILL" | head -1). Nothing else attempted."
+    exit 78
+  fi
+  REMAIN=("${(@f)STILL}"); [ "$REMAIN[1]" = "" ] && REMAIN=()
+  say "  pass $DROP_PASS: ${#REMAIN[@]} of ${#DROP_SET[@]} schema(s) still present"
+  if [ ${#REMAIN[@]} -gt 0 ] && [ ${#REMAIN[@]} -eq $BEFORE ]; then
+    say "REFUSED: pass $DROP_PASS removed nothing and ${#REMAIN[@]} schema(s) remain: ${(j:, :)REMAIN}"
+    say "  The branch is mid-refresh; re-run the job. Nothing else was attempted."
+    exit 78
+  fi
+done
+say "  dropped: all ${#DROP_SET[@]} schema(s) gone, confirmed from the catalog in $DROP_PASS pass(es)."
 
 # THE PURGE, HERE AND NOT LATER. `delete from auth.users` cascades into every dependent the
 # campaign schemas declare; the rehearsal died on `iam.memberships.user_id` NOT NULL for exactly
