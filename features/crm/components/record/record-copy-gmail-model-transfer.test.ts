@@ -96,9 +96,7 @@ describe("CRM Activity model-transfer boundary", () => {
       body: "Historical restricted Gmail body",
     }),
   ])("refuses a Gmail-derived row payload", (row) => {
-    const view = buildInteractionCopyView(row);
-
-    expect(() => interactionAgentPayload(parent, row, view)).toThrow(
+    expect(() => interactionAgentPayload(parent, row)).toThrow(
       "Gmail-derived activity",
     );
   });
@@ -117,10 +115,7 @@ describe("CRM Activity model-transfer boundary", () => {
       body: "Known-safe CRM note",
     });
 
-    const payload = interactionsAgentPayload(parent, [
-      buildInteractionCopyView(gmail),
-      buildInteractionCopyView(crmNote),
-    ]);
+    const payload = interactionsAgentPayload(parent, [gmail, crmNote]);
 
     expect(payload.attributes).toMatchObject({ count: 1 });
     expect(JSON.stringify(payload)).toContain("Known-safe CRM note");
@@ -136,11 +131,7 @@ describe("CRM Activity model-transfer boundary", () => {
       body: "Known-safe organization-authored email",
     });
 
-    const payload = interactionAgentPayload(
-      parent,
-      outbound,
-      buildInteractionCopyView(outbound),
-    );
+    const payload = interactionAgentPayload(parent, outbound);
 
     expect(JSON.stringify(payload)).toContain(
       "Known-safe organization-authored email",

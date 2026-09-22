@@ -235,7 +235,8 @@ export function createCrmChaseboxScope(values: {
     grounded_on: string[];
     answering_label: string | null;
     thread_message_count: number | null;
-    model_transfer_allowed: boolean;
+    model_transfer_provenance: string | null;
+    source_providers: string[];
   };
   draft_approved?: boolean;
 }): SurfaceScopePayload {
@@ -255,7 +256,16 @@ export function createCrmChaseboxScope(values: {
       (item) => item.queue !== "fresh_replies",
     ),
   };
-  if (!draft_reply || draft_reply.model_transfer_allowed) {
+  const verifiedNonGmailReply =
+    draft_reply?.model_transfer_provenance === "full_thread_checked_v1" &&
+    draft_reply.source_providers.length > 0 &&
+    draft_reply.source_providers.every(
+      (provider) =>
+        provider.trim().length > 0 &&
+        provider !== "google_workspace" &&
+        provider !== "unknown",
+    );
+  if (!draft_reply || verifiedNonGmailReply) {
     safeScope.draft_subject = draft_subject;
     safeScope.draft_body = draft_body;
     safeScope.draft_personalization = draft_personalization;

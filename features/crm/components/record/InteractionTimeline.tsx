@@ -281,7 +281,7 @@ export function InteractionTimeline({
                 formatInteractionsCopy(copyParent, interactionCopyViews)
               }
               agent={() =>
-                interactionsAgentPayload(copyParent, interactionCopyViews)
+                interactionsAgentPayload(copyParent, interactions)
               }
               json={() => interactionCopyViews}
               aiVariants={[
@@ -292,7 +292,7 @@ export function InteractionTimeline({
                   build: () =>
                     interactionsAgentPayload(
                       copyParent,
-                      interactionCopyViews,
+                      interactions,
                       false,
                     ),
                 },
@@ -495,7 +495,7 @@ export function InteractionTimeline({
                       label={`${copyView.subject} activity`}
                       human={() => formatInteractionCopy(copyView)}
                       agent={() =>
-                        interactionAgentPayload(copyParent, row, copyView)
+                        interactionAgentPayload(copyParent, row)
                       }
                       json={() => copyView}
                     />

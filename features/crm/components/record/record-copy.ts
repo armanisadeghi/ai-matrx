@@ -319,13 +319,13 @@ export function formatInteractionCopy(view: InteractionCopyView): string {
 export function interactionAgentPayload(
   parent: CrmRecordCopyParent,
   row: InteractionRow,
-  view: InteractionCopyView,
 ): AgentPayloadInput {
-  if (view.model_transfer_restricted || isGmailDerivedInteraction(row)) {
+  if (isGmailDerivedInteraction(row)) {
     throw new Error(
       "Gmail-derived activity cannot be sent to the configured model provider.",
     );
   }
+  const view = buildInteractionCopyView(row);
   const { model_transfer_restricted: _restricted, ...safeView } = view;
   return {
     kind: "crm-record-activity-item",
@@ -359,11 +359,13 @@ export function formatInteractionsCopy(
 
 export function interactionsAgentPayload(
   parent: CrmRecordCopyParent,
-  views: InteractionCopyView[],
+  rows: InteractionRow[],
   includeBodies = true,
 ): AgentPayloadInput {
-  const safeViews = views.filter((view) => !view.model_transfer_restricted);
-  if (safeViews.length === 0 && views.length > 0) {
+  const safeViews = rows
+    .filter((row) => !isGmailDerivedInteraction(row))
+    .map(buildInteractionCopyView);
+  if (safeViews.length === 0 && rows.length > 0) {
     throw new Error(
       "Gmail-derived activity cannot be sent to the configured model provider.",
     );

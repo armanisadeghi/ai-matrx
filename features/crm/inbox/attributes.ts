@@ -255,8 +255,10 @@ export interface ReplyProvenance {
   threadHash: string | null;
   version: string | null;
   generatedAt: string | null;
-  /** Server receipt: source resolved and was not Gmail-derived. */
-  modelTransferAllowed: boolean;
+  /** Full-thread provenance issued by the current reply writer. */
+  modelTransferProvenance: string | null;
+  /** Canonical providers observed on every inbound message in that thread. */
+  sourceProviders: string[];
 }
 
 /** Human-readable intents. An unknown intent renders as its raw name rather than
@@ -279,6 +281,15 @@ export function readReplyProvenance(attributes: unknown): ReplyProvenance | null
   const block = readObject(readObject(attributes, "outreach_single_send"), "reply");
   if (!block) return null;
   const count = block.thread_message_count;
+  const rawSourceProviders = block.source_providers;
+  const sourceProviders =
+    Array.isArray(rawSourceProviders) &&
+    rawSourceProviders.every(
+      (provider): provider is string =>
+        typeof provider === "string" && provider.trim().length > 0,
+    )
+      ? rawSourceProviders
+      : [];
   return {
     intent: readString(block, "intent"),
     groundedOn: Array.isArray(block.grounded_on)
@@ -292,7 +303,8 @@ export function readReplyProvenance(attributes: unknown): ReplyProvenance | null
     threadHash: readString(block, "thread_hash"),
     version: readString(block, "version"),
     generatedAt: readString(block, "generated_at"),
-    modelTransferAllowed: block.model_transfer_allowed === true,
+    modelTransferProvenance: readString(block, "model_transfer_provenance"),
+    sourceProviders,
   };
 }
 
