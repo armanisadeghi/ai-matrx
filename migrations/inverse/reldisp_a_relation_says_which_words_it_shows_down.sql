@@ -1,12 +1,30 @@
 -- INVERSE of migrations/campaign/reldisp_a_relation_says_which_words_it_shows.sql
 -- lane RELATION-DISPLAY · generated from the live catalogue immediately before the apply,
 -- so these are the VERBATIM bytes that were there. The red twin executes this file.
--- It puts the four replaced bodies back and removes the five functions this lane added.
+-- It puts the four replaced bodies back, removes the two client doors this lane opened and the
+-- one private helper nothing else took up.
+--
+-- WHICH OF THIS LANE'S BODIES STAY STANDING, AND WHY (the ground-standing rule, clause (d)).
+-- Three of the five functions this lane added stopped being this lane's the moment a later
+-- migration adopted them, and an inverse that demolished them would break the platform rather
+-- than put a defect back:
+--   · `custom._words_for`        — `custom.field_words` calls it
+--     (migrations/campaign/storetails2_a_joined_column_prints_the_words_a_person_reads.sql).
+--   · `custom._display_spec_for` — `custom.field_patch` and the column door call it
+--     (migrations/campaign/import2_a_field_patch_is_stored_or_refused_by_name.sql,
+--      migrations/campaign/redsuites2_the_column_door_applies_the_delete_rule.sql); it is also
+--     what `custom._words_for` itself asks, so it could not go while that one stands.
+--   · `custom._with_display`     — three bodies in
+--     migrations/campaign/fix10b_f6_the_store_names_every_kind_a_column_can_be.sql return it.
+-- So the behaviour is NEUTERED, not demolished: the two CLIENT doors go, the door rows go, and
+-- the four bodies this lane replaced are restored verbatim — after which no client and no
+-- restored body reaches relation display at all, which is exactly the world before this lane.
+-- The three private resolvers stay standing for the migrations that adopted them, reachable by
+-- nobody else.
 
 drop function if exists custom.relation_words_many(uuid, uuid, uuid[]);
 drop function if exists custom.relation_words(uuid, uuid, text);
 drop function if exists custom._display_of_field(uuid, uuid);
-drop function if exists custom._with_display(uuid, jsonb, jsonb);
 delete from platform.client_callable_door where schema_name='custom' and function_name in ('relation_words','relation_words_many');
 
 CREATE OR REPLACE FUNCTION custom._field_document_for(p_organization_id uuid, p_table_id uuid, p_spec jsonb)
@@ -816,6 +834,6 @@ end;
 $function$
 ;
 
--- _words_for and _display_spec_for are removed LAST: the four bodies above must be back first.
-drop function if exists custom._words_for(uuid, uuid, jsonb, text, integer);
-drop function if exists custom._display_spec_for(uuid, uuid, jsonb);
+-- `custom._words_for`, `custom._display_spec_for` and `custom._with_display` are deliberately
+-- NOT dropped here — see the header: later migrations adopted all three, and the four bodies
+-- restored above reach none of them.
