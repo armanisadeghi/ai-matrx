@@ -1131,7 +1131,12 @@ export const PUBLIC_WRITE_POLICIES_OF_RECORD: ReadonlyArray<PublicWritePolicyOfR
   { relation: "files.webhooks", policy: "cld_webhooks_owner_all", cmd: "*", reason: "Webhook owner. Predicate: is_platform_admin() or owner_id = auth.uid()." },
   { relation: "pdf.pdf_redaction_key_escrow", policy: "pdf_redaction_key_escrow_insert", cmd: "a", reason: "Escrow owner. Predicate: is_platform_admin() or owner_id = auth.uid()." },
   { relation: "pdf.pdf_redaction_key_escrow", policy: "pdf_redaction_key_escrow_update", cmd: "w", reason: "Escrow owner. Predicate: is_platform_admin() or owner_id = auth.uid()." },
-  { relation: "platform.org_context_ledger", policy: "platform_admin_only", cmd: "*", reason: "Platform-operator organization context audit. USING and WITH CHECK both require is_platform_admin(), which rejects a NULL auth.uid(); anon also holds no write grant." },
+  // platform.org_context_ledger :: platform_admin_only was REMOVED by DOORS-ONLY-5 (2026-09-22).
+  // It was FOR ALL, permissive, and granted to PUBLIC — so it reached `anon` as well as
+  // `authenticated`, which is why that one table contributed SIX triples to the doors-only
+  // census and not three. It is replaced by `platform_admin_only_select`, the same predicate
+  // FOR SELECT, so the platform-operator READ is unchanged and the write lane is gone. There is
+  // no row here any more because there is no PUBLIC write policy on that relation any more.
   { relation: "users.feedback_comments", policy: "Users can comment on own feedback", cmd: "a", reason: "Author of the parent feedback row. Predicate: is_platform_admin() or feedback_id in (the caller own user_feedback)." },
   { relation: "users.user_analysis_preferences", policy: "user_analysis_preferences_delete", cmd: "d", reason: "The user themselves. Predicate: is_platform_admin() or user_id = auth.uid()." },
   { relation: "users.user_analysis_preferences", policy: "user_analysis_preferences_insert", cmd: "a", reason: "The user themselves. Predicate: is_platform_admin() or user_id = auth.uid()." },
