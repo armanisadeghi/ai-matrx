@@ -12,7 +12,7 @@
 -- NOT be the inverse: the forward file is a REPLACE and declares the body it is based on, so leg
 -- 3 of rule 27 has to find that exact body live.
 --
--- based-on: custom.record_write_graph(uuid, uuid, jsonb, jsonb, jsonb) 96894e437c3fc81feb5b2ed02eef182444235d363139873d20887db8b752d6df
+-- based-on: custom.record_write_graph(uuid, uuid, jsonb, jsonb, jsonb) 14e18c8df6cacdc60e5b3ea47a755086dac5e7d1ec192b78a81d57fc29e4a786
 
 create or replace function custom.record_write_graph(p_organization_id uuid,
                                                      p_table_id uuid,

@@ -27,13 +27,18 @@
 -- places for two doors to drift. The graph is the same graph; only the parent differs, and only
 -- in whether it has to be minted first.
 --
--- THE SHAPE SAYS WHICH, AND NOTHING HAS TO BE FLAGGED. `p_parent` is a jsonb OBJECT to mint the
--- parent (every existing caller, unchanged) or a jsonb STRING holding the id of the record that
--- already stands. This is deliberately NOT a reserved key inside the document: a record's own
--- `id` is an ordinary FIELD of an ordinary document — repointed relations keep the legacy row's
--- id as a field, which is why `matrx_records.server.flatten` carries both — so a door that read
--- `p_parent ->> 'id'` as a reference would have silently stopped minting for every kind whose
--- rows carry an id of their own.
+-- HOW THE TWO ARE TOLD APART: `_record_id`, AN ENVELOPE KEY, NOT A FIELD. `p_parent` is still
+-- one jsonb object. Carrying `_record_id` makes it a REFERENCE to the parent that already
+-- stands; carrying anything else makes it the document to mint. The store already reserves the
+-- leading underscore for exactly this — `_op_id`, `_actor`, `_on_behalf_of` are envelope keys
+-- the doors lift off, and `custom.undeclared_keys` exempts `_`-prefixed keys from the
+-- undeclared-key guard by name — so this adds a word to a vocabulary that exists rather than a
+-- convention of its own. It is deliberately NOT `id`: a record's own `id` is an ORDINARY FIELD
+-- of an ordinary document (repointed relations keep the legacy row's id as a field, which is why
+-- `matrx_records.server.flatten` carries both), so a door that read `p_parent ->> 'id'` as a
+-- reference would have silently stopped minting for every kind whose rows carry an id of their
+-- own. A reference that also carries real document keys is REFUSED rather than guessed at: it
+-- means the caller thinks it is doing both, and only one of them can happen.
 --
 -- THE SAME LADDER, ASKED ABOUT THE PARENT. Giving a record lines IS changing it, so the
 -- existing-parent arm asks `custom.assert_client_may_change` at the EDITOR rung on that record —
@@ -99,28 +104,32 @@ begin
     raise exception 'custom.record_write_graph: organization_id is required - the store is keyed (organization_id, id)'
       using errcode = '22004';
   end if;
-  -- A PARENT IS EITHER THE DOCUMENT TO MINT OR THE ID OF THE ONE THAT IS ALREADY THERE, and
-  -- the SHAPE says which: a document is a jsonb OBJECT, an existing parent is a jsonb STRING
-  -- holding its record id. Nothing has to be flagged and nothing can be confused, which is why
-  -- it is the shape and not a reserved key inside the document: a record's own `id` is an
-  -- ordinary FIELD of an ordinary document — `matrx_records.server.flatten` carries it beside
-  -- the record's id precisely because repointed relations keep the legacy row's id as a field —
-  -- so a door that read `p_parent ->> 'id'` as "hang this on that" would silently stop minting
-  -- for every kind whose rows carry an id of their own.
+  -- A PARENT IS EITHER THE DOCUMENT TO MINT OR A REFERENCE TO THE ONE THAT IS ALREADY THERE,
+  -- and `_record_id` says which. It is an ENVELOPE key, in the family the store already
+  -- reserves (`_op_id`, `_actor`, `_on_behalf_of`; `custom.undeclared_keys` exempts every
+  -- `_`-prefixed key), and never `id`, which is an ordinary FIELD of an ordinary document.
   v_kind := coalesce(jsonb_typeof(p_parent), 'null');
-  if v_kind not in ('object', 'string') then
-    raise exception 'custom.record_write_graph: a graph is a PARENT and everything that belongs to it, and no parent was handed in (got %)', v_kind
+  if v_kind <> 'object' then
+    raise exception 'custom.record_write_graph: a graph is a PARENT and everything that belongs to it, and no parent document was handed in (got %)', v_kind
       using errcode = '22004',
-            hint = 'NOTHING WAS WRITTEN. To MINT the parent, hand it in as one jsonb object, exactly as custom.record_write takes it. To hang these lines on a parent that ALREADY exists, hand its record id in as a jsonb string.';
+            hint = 'NOTHING WAS WRITTEN. To MINT the parent, hand it in as one jsonb object, exactly as custom.record_write takes it. To hang these lines on a parent that ALREADY stands, hand in {"_record_id": "<uuid>"}.';
   end if;
-  v_existing := v_kind = 'string';
+  v_existing := nullif(p_parent ->> '_record_id', '') is not null;
   if v_existing then
+    -- A REFERENCE IS NOT A DOCUMENT. A caller that handed in both thinks it is minting AND
+    -- repairing, and only one of those can happen — so it is told, rather than having one half
+    -- of its intention silently dropped.
+    if exists (select 1 from jsonb_object_keys(p_parent) k where left(k, 1) <> '_') then
+      raise exception 'custom.record_write_graph: the parent names an existing record (_record_id) and also carries the document keys %', (select string_agg(k, ', ' order by k) from jsonb_object_keys(p_parent) k where left(k, 1) <> '_')
+        using errcode = '22023',
+              hint = 'NOTHING WAS WRITTEN. `_record_id` says "hang these lines on the parent that already stands", so there is no document to write and those keys would be thrown away. Either drop them, or drop `_record_id` and mint a new parent from the whole document.';
+    end if;
     begin
-      v_parent_id := (p_parent #>> '{}')::uuid;
+      v_parent_id := (p_parent ->> '_record_id')::uuid;
     exception when others then
-      raise exception 'custom.record_write_graph: the parent was named as %, which is not a record id', p_parent #>> '{}'
+      raise exception 'custom.record_write_graph: _record_id is %, which is not a record id', left(p_parent ->> '_record_id', 64)
         using errcode = '22004',
-              hint = 'NOTHING WAS WRITTEN. A jsonb string in this position is the id of the record these lines belong to; a jsonb object is a document to mint.';
+              hint = 'NOTHING WAS WRITTEN. `_record_id` is the id of the record these lines belong to; leave the key out entirely to mint a new parent from this document.';
     end;
   else
     v_parent_id := gen_random_uuid();
@@ -141,7 +150,7 @@ begin
      and coalesce(jsonb_array_length(coalesce(p_edges, '[]'::jsonb)), 0) = 0 then
     raise exception 'custom.record_write_graph: names the existing parent % and nothing to hang on it', v_parent_id
       using errcode = '22004',
-            hint = 'NOTHING WAS WRITTEN, and nothing was going to be. This arm exists to give a parent that already stands the lines it never got; a call with no children and no edges would open a transaction, take the parent''s locks and change nothing, which reads to its caller exactly like a graph that landed.';
+            hint = 'NOTHING WAS WRITTEN, and nothing was going to be. The `_record_id` arm exists to give a parent that already stands the lines it never got; a call with no children and no edges would open a transaction, take the parent''s locks and change nothing, which reads to its caller exactly like a graph that landed.';
   end if;
 
   -- THE SWITCH, THEN THE ORGANIZATION, THEN THE TABLE — the same two predicates
@@ -382,7 +391,7 @@ end
 $function$;
 
 comment on function custom.record_write_graph(uuid, uuid, jsonb, jsonb, jsonb) is
-  'STORE-TXN: the store''s ALL-OR-NOTHING door. Writes a parent record, the edges it stands on and every row that belongs to it in ONE transaction, by calling custom.record_write_many, platform.relation_set and public.assoc_add — no second validator, no raw insert, no actor argument. STORE-TXN-2: p_parent is a jsonb OBJECT to mint that parent, or a jsonb STRING holding the id of a parent that ALREADY stands, in which case only the children and their edges are written and the editor rung is asked about that record first. Any single refusal refuses the whole graph by name and nothing is written.';
+  'STORE-TXN: the store''s ALL-OR-NOTHING door. Writes a parent record, the edges it stands on and every row that belongs to it in ONE transaction, by calling custom.record_write_many, platform.relation_set and public.assoc_add — no second validator, no raw insert, no actor argument. STORE-TXN-2: p_parent carrying the envelope key _record_id is a REFERENCE to a parent that ALREADY stands — only the children and their edges are written, and the editor rung is asked about that record first; without it the document is minted as the parent, as before. Any single refusal refuses the whole graph by name and nothing is written.';
 
 -- THE DECLARATION FOLLOWS THE BODY. `platform.client_callable_door` is what
 -- `check:store-doors-decide` reads to say how each argument of a client door is decided, and
@@ -398,10 +407,10 @@ update platform.client_callable_door
          '{arguments,p_parent}',
          jsonb_build_object(
            'type', 'jsonb', 'position', 3, 'optional', false, 'entity', 'custom_record',
-           'check', 'TWO READINGS, TOLD APART BY THE SHAPE. A jsonb OBJECT is the parent DOCUMENT to mint: it carries no identifier this door reads and none that reaches an access decision, and it is stored verbatim as one jsonb object (REC-36) through custom.record_write_many. A jsonb STRING is the id of a parent that ALREADY exists, and it IS then an identifier reaching an access decision: this body looks the row up in custom.record under arg1 with deleted_at is null, and asks custom.assert_client_may_change(arg1, that id, editor, record) — the editor rung on that record itself — BEFORE one child is written; platform.relation_set asks the same predicate again per field afterwards and its answer governs. The one key that is never stored is _op_id, which custom._take_op_id lifts off; on the existing-parent arm it is read off the first child instead and copied onto every child, because one graph is one client operation.',
+           'check', 'TWO READINGS, TOLD APART BY THE ENVELOPE KEY _record_id. WITHOUT it this is the parent DOCUMENT to mint: it carries no identifier this door reads and none that reaches an access decision, and it is stored verbatim as one jsonb object (REC-36) through custom.record_write_many. WITH it the object is a REFERENCE to a parent that already stands (and carrying any non-underscore key beside it is refused 22023, never guessed at), and _record_id IS then an identifier reaching an access decision: this body looks the row up in custom.record under arg1 with deleted_at is null, and asks custom.assert_client_may_change(arg1, that id, editor, record) — the editor rung on that record itself — BEFORE one child is written; platform.relation_set asks the same predicate again per field afterwards and its answer governs. The keys that are never stored are the envelope: _op_id, which custom._take_op_id lifts off, and _record_id, which never reaches a write at all. On the reference arm the op id is read off the first child instead and copied onto every child, because one graph is one client operation.',
            'foreign', jsonb_build_object('sqlstate', '42501', 'same_as_invented', true),
            'null_rule', jsonb_build_object('sqlstate', '22004'),
            'verified', '2026-09-22 lane STORE-TXN-2 — read from this body: the lookup, the assert, its argument position, and that both precede every write',
-           'entity_reason', 'On the existing-parent reading it is a custom.record id — the parent these lines belong to. A record that is not in this organization, one that was archived and one that never existed answer with the SAME sqlstate 42501 and the same sentence as a row the caller may not write, so an id named here can neither reach nor reveal anything the caller could not already reach.'))
+           'entity_reason', 'On the _record_id reading it is a custom.record id — the parent these lines belong to. A record that is not in this organization, one that was archived and one that never existed answer with the SAME sqlstate 42501 and the same sentence as a row the caller may not write, so an id named here can neither reach nor reveal anything the caller could not already reach.'))
  where schema_name = 'custom'
    and function_name = 'record_write_graph';
