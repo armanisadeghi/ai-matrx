@@ -130,7 +130,7 @@ export function FormulaExpressionEditor({
           <span className="truncate">{expression || "Write the formula…"}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent /* sizing: fixed — fixed-shape panel wider than the sizing="content" 28rem ceiling */ align="start" className="w-[min(36rem,calc(100vw-2rem))] space-y-3">
+      <PopoverContent /* sizing: fixed — fixed-shape panel wider than the content-sizing 28rem ceiling */ align="start" className="w-[min(36rem,calc(100vw-2rem))] space-y-3">
         <div className="space-y-1.5">
           <Label htmlFor="formula-expression" className="text-xs">
             Formula

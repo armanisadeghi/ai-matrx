@@ -625,7 +625,8 @@
     "check:inverses-leave-the-ground-standing:record-census": "tsx scripts/check-inverses-leave-the-ground-standing.ts --record-census",
     "check:amend-idempotent:self-test": "tsx scripts/apply-migration.ts --amend-idempotent --self-test",
     "check:udt-label-census": "tsx scripts/check-udt-label-census.ts",
-    "check:udt-label-census:self-test": "tsx scripts/check-udt-label-census.ts --self-test"
+    "check:udt-label-census:self-test": "tsx scripts/check-udt-label-census.ts --self-test",
+    "check:popover-sizing": "jest scripts/__tests__/popover-sizing-guard.test.ts --no-coverage"
   },
   "dependencies": {
     "@ai-matrx/agents": "latest",

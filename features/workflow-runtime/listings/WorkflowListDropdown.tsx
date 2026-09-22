@@ -346,7 +346,7 @@ export function WorkflowListDropdown({
     <Popover open={open} onOpenChange={handleOpen} modal={false}>
       {wrapTrigger(PopoverTrigger)}
       <PopoverContent
-        /* sizing: fixed — fixed-shape panel wider than the sizing="content" 28rem ceiling */
+        /* sizing: fixed — fixed-shape panel wider than the content-sizing 28rem ceiling */
         side={contentSide}
         align="start"
         sideOffset={4}

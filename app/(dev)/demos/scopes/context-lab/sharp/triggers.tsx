@@ -261,7 +261,7 @@ export function BreadcrumbDemo({ data }: { data: PickerData }) {
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent /* sizing: fixed — fixed-shape panel wider than the sizing="content" 28rem ceiling */ align="start" className="w-[min(680px,92vw)] p-0">
+      <PopoverContent /* sizing: fixed — fixed-shape panel wider than the content-sizing 28rem ceiling */ align="start" className="w-[min(680px,92vw)] p-0">
         <MillerColumns
           data={data}
           sel={sel}

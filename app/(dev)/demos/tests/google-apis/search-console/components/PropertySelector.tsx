@@ -124,7 +124,7 @@ export function PropertySelector({ token, selectedProperty, onSelectProperty }: 
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
             </PopoverTrigger>
-            <PopoverContent /* sizing: fixed — fixed-shape panel wider than the sizing="content" 28rem ceiling */ className="w-[500px] p-0" align="start">
+            <PopoverContent /* sizing: fixed — fixed-shape panel wider than the content-sizing 28rem ceiling */ className="w-[500px] p-0" align="start">
                 <Command>
                     <CommandInput placeholder="Search properties..." />
                     <CommandList>
