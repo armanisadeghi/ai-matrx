@@ -218,7 +218,7 @@ export function ProjectsOverview() {
   }, [toast]);
 
   useEffect(() => {
-    void loadData();
+    void Promise.resolve().then(loadData);
   }, [loadData]);
 
   const rows: ResearchProjectTableRow[] = configs.map((config) => ({
