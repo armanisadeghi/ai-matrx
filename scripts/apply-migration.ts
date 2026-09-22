@@ -2203,9 +2203,20 @@ export function rewriteBareCreates(sql: string): { out: string; changed: number 
       i = j;
       continue;
     }
-    if (sql[i] === "'") {
-      let j = i + 1;
+    // AN E'' STRING TAKES BACKSLASH ESCAPES, so `E'a\'; create function …'` is still ONE string
+    // and the `create` inside it is not a statement head. Without this the scanner would close
+    // the literal at `\'`, rewrite inside it, and then miss the real head that follows.
+    // (VERIFY-AMEND second pass, 2026-09-22. Unreachable today — there is no E'' string under
+    // migrations/ — which is exactly why it is worth closing before one is written.)
+    const isEString =
+      (sql[i] === "E" || sql[i] === "e") &&
+      sql[i + 1] === "'" &&
+      !/[A-Za-z0-9_$]/.test(sql[i - 1] ?? "");
+    if (isEString || sql[i] === "'") {
+      const start = isEString ? i + 1 : i;
+      let j = start + 1;
       while (j < n) {
+        if (isEString && sql[j] === "\\") { j += 2; continue; }
         if (sql[j] === "'" && sql[j + 1] === "'") { j += 2; continue; }
         if (sql[j] === "'") { j++; break; }
         j++;
@@ -2424,6 +2435,26 @@ function amendSelfTest(): number {
       console.log(`${TAG.ok}self-test RED — the real incident: ${basename(path)}'s damaged bytes are refused.`);
     }
   }
+
+  // THE E'' HOLE (VERIFY-AMEND second pass). The escape makes the whole thing ONE string, so
+  // the `create function` inside it is not a statement head — and the REAL head after it is.
+  const estr =
+    "select E'a\\'; create function custom.not_a_head() returns int language sql as $$ select 1 $$;';\n" +
+    "create function custom.real_head() returns int language sql as $$ select 1 $$;\n";
+  const estrOut = rewriteBareCreates(estr);
+  if (estrOut.changed !== 1 || !estrOut.out.includes("create or replace function custom.real_head")) {
+    console.error(
+      `${TAG.fail}SELF-TEST FAILED — an E'' string with a backslash escape was mis-scanned: ` +
+        `${estrOut.changed} head(s) rewritten, expected exactly 1 (the one AFTER the string).`,
+    );
+    failed++;
+  } else if (estrOut.out.includes("create or replace function custom.not_a_head")) {
+    console.error(`${TAG.fail}SELF-TEST FAILED — the transform reached inside an E'' string.`);
+    failed++;
+  } else {
+    console.log(`${TAG.ok}self-test GREEN — an E'' backslash escape keeps its string whole; only the real head after it is rewritten.`);
+  }
+  red("a change inside an E'' string", estr, estr.replace("; create function custom.not_a_head", "; create or replace function custom.not_a_head"));
 
   // GREEN — and only the statement heads count.
   const v = onlyIdempotencyDiffers(base, good);

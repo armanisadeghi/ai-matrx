@@ -721,6 +721,84 @@ async function main(): Promise<number> {
     else if (!checksumMatches(localSql.get(f) ?? "", recorded) && !driftOk.has(f)) drifted.push(f);
   }
 
+  // ── THE CAMPAIGN DIRECTORY, WHICH NOTHING HAS EVER SCANNED ────────────────
+  // `listSql(MIGRATIONS_DIR)` is non-recursive, so `migrations/campaign/` — 743 ledgered files,
+  // the whole unified-data build — was invisible to this check, to every release path and to CI.
+  // VERIFY-AMEND found that gap while checking an amendment that had moved 152 of those very
+  // rows: the one directory being edited was the one directory nothing watched.
+  //
+  // SHRINK-ONLY BASELINE, and it is NAMED rather than counted, so a new drift is visible the day
+  // it appears and a fixed one must be struck off. A name that STOPS drifting fails this check
+  // too — a baseline allowed to rot is a permission slip.
+  //
+  // FOUR, not the six a plain `sha256` finds. `checksumMatches` is this repo's canonical
+  // comparison and hashes the bytes BOTH ways the two runners do, and under it
+  // `readperf_the_class_finds_its_row_without_a_scan.sql` and
+  // `readperf_the_page_scan_has_its_indexes.sql` agree with what ran. VERIFY-AMEND counted six
+  // with a plain hash; the difference is the comparison, not the files, and this arm uses the
+  // same one the rest of the check uses so a campaign file is judged exactly like any other.
+  // None of the four is from the idempotency sweep: three are untouched older files, and
+  // redsuites2's drift predates it (a lane's own `alter index` schema-qualification fix).
+  const CAMPAIGN_DRIFT_BASELINE = [
+    "argsruled_the_second_id_lives_in_the_same_organization.sql",
+    "capture_a_sheet_a_crew_fills_on_a_phone.sql",
+    "invitedelivery_the_invitation_reaches_the_person.sql",
+    "redsuites2_a_new_organizations_first_migration_verb.sql",
+  ];
+  let campaignBlocking = 0;
+  {
+    const campaignDir = resolve(MIGRATIONS_DIR, "campaign");
+    const campaignFiles = existsSync(campaignDir) ? listSql(campaignDir) : [];
+    const campaignDrifted: string[] = [];
+    const campaignUnverifiable: string[] = [];
+    let campaignLedgered = 0;
+    for (const f of campaignFiles) {
+      const recorded = ledger.get(f);
+      if (recorded === undefined) continue; // never applied: not this arm's business
+      campaignLedgered++;
+      const sql = readFileSync(resolve(campaignDir, f), "utf8");
+      if (!SHA256_RE.test(recorded)) campaignUnverifiable.push(f);
+      else if (!checksumMatches(sql, recorded) && !driftOk.has(f)) campaignDrifted.push(f);
+    }
+    const baseline = new Set(CAMPAIGN_DRIFT_BASELINE);
+    const fresh = campaignDrifted.filter((f) => !baseline.has(f));
+    const healed = CAMPAIGN_DRIFT_BASELINE.filter((f) => !campaignDrifted.includes(f));
+    console.log();
+    console.log(
+      `${TAG.info}CAMPAIGN LEDGER — ${campaignLedgered} of ${campaignFiles.length} file(s) in ` +
+        `migrations/campaign/ are ledgered; ${campaignDrifted.length} drifted ` +
+        `(baseline ${CAMPAIGN_DRIFT_BASELINE.length}), ${campaignUnverifiable.length} unverifiable.`,
+    );
+    if (fresh.length) {
+      campaignBlocking = fresh.length;
+      console.log(
+        `${TAG.fail}CAMPAIGN LEDGER DRIFT — ${fresh.length} NEW drifted campaign file(s): recorded as ` +
+          `applied, but the bytes changed since. ${strict ? "(--strict: blocking)" : "(non-blocking)"}`,
+      );
+      for (const f of fresh) console.log(`  ${C.white}- migrations/campaign/${f}${C.reset} ${C.yellow}[DRIFTED]${C.reset}`);
+      console.log(
+        `  ${C.dim}A campaign file's bytes are frozen history like any other. If the only change is ` +
+          `CREATE FUNCTION/TRIGGER/VIEW -> CREATE OR REPLACE, move the ledger with ` +
+          `pnpm db:apply --amend-idempotent <file> --target production, which executes nothing. ` +
+          `Anything else means the file and what ran have genuinely parted company.${C.reset}`,
+      );
+    }
+    if (healed.length) {
+      campaignBlocking += healed.length;
+      console.log(
+        `${TAG.fail}CAMPAIGN DRIFT BASELINE IS STALE — ${healed.length} name(s) in it no longer drift [${healed.join(", ")}]. ` +
+          `Remove them from CAMPAIGN_DRIFT_BASELINE in this file so the list cannot rot into a ` +
+          `permission slip: ${healed.join(", ")}`,
+      );
+    }
+    if (!fresh.length && !healed.length) {
+      console.log(
+        `${TAG.info}Campaign ledger — the ${CAMPAIGN_DRIFT_BASELINE.length} known drifted file(s) and ` +
+          `no others. Nothing new parted company with what ran.`,
+      );
+    }
+  }
+
   // ── DD-220: unapplied files that would overwrite a live function body ──────
   let basedOnBlocking = 0;
   {
@@ -829,7 +907,7 @@ async function main(): Promise<number> {
   if (campaignInSweptDir.length) return 1;
 
   if (pending.length === 0 && drifted.length === 0 && unverifiable.length === 0)
-    return (actionable.length || selfLedgering.length || dd137b13Errors.length || basedOnBlocking) &&
+    return (actionable.length || selfLedgering.length || dd137b13Errors.length || basedOnBlocking || campaignBlocking) &&
       strict
       ? 1
       : 0;
@@ -919,7 +997,7 @@ async function main(): Promise<number> {
     actionable.length ||
     selfLedgering.length ||
     dd137b13Errors.length ||
-    basedOnBlocking) && strict
+    basedOnBlocking || campaignBlocking) && strict
     ? 1
     : 0;
 }
