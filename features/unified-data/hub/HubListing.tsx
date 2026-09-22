@@ -110,12 +110,13 @@ export function HubListing({
   const count = state.phase === "read" ? state.items.length : null;
 
   return (
-    <section className="rounded-lg border border-border bg-card">
+    <section data-hub-listing={capability.id} className="rounded-lg border border-border bg-card">
       {/* ONE ROW OF HEADER. The name, the count, the sentence, and the way open. */}
       <button
         type="button"
         onClick={() => onOpenChange(!open)}
         aria-expanded={open}
+        data-hub-listing-toggle={capability.id}
         className="flex w-full items-baseline gap-2 px-3 py-2 text-left"
       >
         <ChevronDown

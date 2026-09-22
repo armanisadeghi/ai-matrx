@@ -215,7 +215,7 @@ export function OrganizationHub({ organizationId, dataSource }: OrganizationHubP
   }, [filtered]);
 
   return (
-    <div className="space-y-4">
+    <div data-hub-root className="space-y-4">
       {/* START HERE — the walkthrough, and the three newest things, which are read
           off the same doors as everything below rather than written down here. */}
       <section className="rounded-lg border border-border bg-card">
@@ -261,6 +261,7 @@ export function OrganizationHub({ organizationId, dataSource }: OrganizationHubP
         <span className="text-xs text-muted-foreground">Show</span>
         <button
           type="button"
+          data-hub-lane="everything"
           onClick={() => setLane(null)}
           className={cn(
             "rounded-full border px-2.5 py-1 text-xs transition-colors",
@@ -275,6 +276,7 @@ export function OrganizationHub({ organizationId, dataSource }: OrganizationHubP
           <button
             key={candidate}
             type="button"
+            data-hub-lane={candidate}
             onClick={() => setLane(candidate)}
             className={cn(
               "rounded-full border px-2.5 py-1 text-xs transition-colors",
@@ -301,7 +303,7 @@ export function OrganizationHub({ organizationId, dataSource }: OrganizationHubP
 
       {/* ARCHIVED ITEMS — one click where you already are, closed by default,
           and the way back is on the row (the archived-items law, 2026-09-09). */}
-      <section className="rounded-lg border border-border bg-card p-3">
+      <section data-hub-archive className="rounded-lg border border-border bg-card p-3">
         <ArchivedDisclosure noun="tables" count={archivedTables?.length}>
           {archiveTrouble ? (
             <p className="py-2 text-xs text-destructive">
