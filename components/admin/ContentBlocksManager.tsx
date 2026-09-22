@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { catWriteArgs, categoryRow } from "@/lib/db/category-door";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -828,28 +829,31 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
         : color;
 
       // Insert into platform.categories (dimension: shortcut)
-      const { data, error } = await supabase
-        .schema("platform")
-        .from("categories")
-        .insert([
+      // THE DOOR. `platform` is not a client-writable schema (chair ruling, VERIFIER-8
+      // HIGH-3); `cat_write` stamps created_by from auth.uid() and carries the dimension
+      // as a wall.
+      const { data, error } = await supabase.rpc(
+        "cat_write",
+        catWriteArgs(
+          "shortcut",
           {
-            dimension: "shortcut",
-            placement_type: "content-block",
-            parent_id: parentCategoryId,
             name: label,
             icon: iconName,
             color: finalColor,
+            parentId: parentCategoryId,
             position: maxSortOrder + 1,
+            placementType: "content-block",
             metadata: { is_active: true, legacy_table: "shortcut_categories" },
-            // Global platform-library category → system org.
+          },
+          {
+            // Global platform-library category -> system org.
             // org-fallback-deliberate: the block category is the same global platform
             //   library as the block above it; the surface lives in the admin-gated
             //   (admin) route group
-            organization_id: await resolveSystemOrgId(),
+            organizationId: await resolveSystemOrgId(),
           },
-        ])
-        .select()
-        .single();
+        ),
+      );
 
       if (error) {
         console.error("Supabase error details:", error);
@@ -870,7 +874,8 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
       });
 
       await loadData();
-      return data.id; // Return UUID
+      // The door returns the whole row as jsonb; this surface wants only its id.
+      return categoryRow<{ id: string }>(data)?.id ?? null; // Return UUID
     } catch (error: unknown) {
       console.error("Error creating category - full error:", error);
       return null;
@@ -895,18 +900,40 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
       if ("placement_type" in updates)
         remapped.placement_type = updates.placement_type;
       if ("is_active" in updates) metaUpdates.is_active = updates.is_active;
-      if (Object.keys(metaUpdates).length > 0) {
-        // Merge into metadata jsonb via jsonb_set equivalent: pass metadata patch
-        remapped.metadata = metaUpdates;
-      }
-      const { error } = await supabase
-        .schema("platform")
-        .from("categories")
-        .update(remapped)
-        .eq("dimension", "shortcut")
-        .eq("id", categoryId);
+
+      // 🚨 THIS IS WHERE A BLOCK CATEGORY LOST ITS `legacy_table`. The comment above
+      // this write said "merge into metadata jsonb via jsonb_set equivalent" and then
+      // assigned `remapped.metadata = metaUpdates` — which is not a merge at all:
+      // supabase-js sends the whole column, so toggling `is_active` REPLACED the jsonb
+      // with `{ is_active }` and wiped `legacy_table` and everything else in it. Every
+      // sibling categories writer read-modify-wrote to avoid exactly that. `cat_write`
+      // merges the patch inside the database, so the bug is not possible any more
+      // rather than merely not written today.
+      const { data, error } = await supabase.rpc(
+        "cat_write",
+        catWriteArgs(
+          "shortcut",
+          {
+            name: remapped.name,
+            icon: remapped.icon,
+            color: remapped.color,
+            position: remapped.position,
+            parentId: remapped.parent_id,
+            placementType: remapped.placement_type,
+            ...(Object.keys(metaUpdates).length === 0
+              ? {}
+              : { metadata: metaUpdates }),
+          },
+          { id: categoryId },
+        ),
+      );
 
       if (error) throw error;
+      if (!data) {
+        throw new Error(
+          "That category is no longer in the block library. Reload the page.",
+        );
+      }
 
       toast({
         title: "Success",
@@ -980,14 +1007,22 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
           // Deactivate instead of delete
           await handleUpdateCategory(item.id, { is_active: false });
         } else {
-          const { error } = await supabase
-            .schema("platform")
-            .from("categories")
-            .delete()
-            .eq("dimension", "shortcut")
-            .eq("id", item.id);
+          // 🚨 SOFT, NOW. This was a HARD `.delete()` — and more than thirty tables
+          // carry a foreign key to platform.categories, `agent.shortcut.category_id`
+          // among them with ON DELETE CASCADE, so destroying an empty-looking category
+          // could still take rows with it. The branch above already deactivates a
+          // category that has children; this one now archives instead of destroying.
+          const { data, error } = await supabase.rpc("cat_archive", {
+            p_dimension: "shortcut",
+            p_category_id: item.id,
+          });
 
           if (error) throw error;
+          if (!data) {
+            throw new Error(
+              "That category is no longer in the block library. Reload the page.",
+            );
+          }
 
           toast({
             title: "Success",

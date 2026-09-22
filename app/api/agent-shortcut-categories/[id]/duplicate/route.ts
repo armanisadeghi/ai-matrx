@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { catWriteArgs, categoryRow } from "@/lib/db/category-door";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { toGlobalOwnershipWire } from "@/lib/organizations/globalOwnership";
@@ -7,6 +8,7 @@ import {
   coerceLegacyCategoryIsActive,
   platformCategoryToLegacyRow,
   PLATFORM_CATEGORY_SELECT,
+  type PlatformCategorySelectRow,
 } from "../../_lib/categoryRow";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
@@ -185,7 +187,6 @@ export async function POST(
       parent_id: nextParentCategoryId,
       position: nextSortOrder ?? null,
       organization_id: copyOrganizationId,
-      created_by: user.id,
       metadata: {
         ...((source.metadata as Record<string, unknown> | null) ?? {}),
         description: source.description ?? null,
@@ -198,12 +199,25 @@ export async function POST(
       },
     };
 
-    const { data, error } = await supabase
-      .schema("platform")
-      .from("categories")
-      .insert(insertPayload)
-      .select(PLATFORM_CATEGORY_SELECT)
-      .single();
+    // THE DOOR. `created_by` is stamped from auth.uid() inside it, so a duplicate is
+    // authored by whoever pressed the button rather than by whatever id the payload
+    // carried.
+    const { data, error } = await supabase.rpc(
+      "cat_write",
+      catWriteArgs(
+        "shortcut",
+        {
+          name: insertPayload.name,
+          icon: insertPayload.icon,
+          color: insertPayload.color,
+          placementType: insertPayload.placement_type,
+          position: insertPayload.position,
+          parentId: insertPayload.parent_id,
+          metadata: insertPayload.metadata,
+        },
+        { organizationId: insertPayload.organization_id },
+      ),
+    );
 
     if (error) {
       console.error("Error duplicating shortcut category:", error);
@@ -222,7 +236,7 @@ export async function POST(
       {
         // A system-org row IS global — lib/organizations/globalOwnership.ts.
         data: toGlobalOwnershipWire(
-          coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(data)),
+          coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(categoryRow<PlatformCategorySelectRow>(data)!)),
           await resolveSystemOrgId(supabase),
         ),
       },

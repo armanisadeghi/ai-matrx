@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { catWriteArgs, categoryRow } from "@/lib/db/category-door";
 import { NextRequest, NextResponse } from "next/server";
 import type { Database } from "@/types/database.types";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
@@ -7,6 +8,7 @@ import {
   coerceLegacyCategoryIsActive,
   platformCategoryToLegacyRow,
   PLATFORM_CATEGORY_SELECT,
+  type PlatformCategorySelectRow,
 } from "../_lib/categoryRow";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
@@ -58,7 +60,7 @@ export async function GET(
     return NextResponse.json({
       // A system-org row IS global — see lib/organizations/globalOwnership.ts.
       data: toGlobalOwnershipWire(
-        coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(data)),
+        coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(categoryRow<PlatformCategorySelectRow>(data)!)),
         await resolveSystemOrgId(supabase),
       ),
     });
@@ -153,30 +155,30 @@ export async function PATCH(
       );
     }
 
-    if (Object.keys(metadataUpdates).length > 0) {
-      const { data: existing } = await supabase
-        .schema("platform")
-        .from("categories")
-        .select("metadata")
-        .is("deleted_at", null)
-        .eq("dimension", "shortcut")
-        .eq("id", id)
-        .maybeSingle();
-
-      topLevel.metadata = {
-        ...(existing?.metadata as Record<string, unknown> | null ?? {}),
-        ...metadataUpdates,
-      };
-    }
-
-    const { data, error } = await supabase
-      .schema("platform")
-      .from("categories")
-      .update(topLevel)
-      .eq("dimension", "shortcut")
-      .eq("id", id)
-      .select(PLATFORM_CATEGORY_SELECT)
-      .maybeSingle();
+    // THE DOOR, and it deletes the read-modify-write above with it: `cat_write` MERGES
+    // the metadata patch inside the database, so the round trip that read the column in
+    // order not to wipe it is gone — and with it the window where a sibling key written
+    // between the read and the write was lost. The door also resolves the row by
+    // (id, dimension) TOGETHER, which is what the hand-written `.eq("dimension", …)`
+    // beside every one of these filters was standing in for.
+    const { data, error } = await supabase.rpc(
+      "cat_write",
+      catWriteArgs(
+        "shortcut",
+        {
+          name: topLevel.name,
+          icon: topLevel.icon,
+          color: topLevel.color,
+          placementType: topLevel.placement_type,
+          position: topLevel.position,
+          parentId: topLevel.parent_id,
+          ...(Object.keys(metadataUpdates).length === 0
+            ? {}
+            : { metadata: metadataUpdates }),
+        },
+        { id },
+      ),
+    );
 
     if (error) {
       console.error("Error updating shortcut category:", error);
@@ -200,7 +202,7 @@ export async function PATCH(
     return NextResponse.json({
       // A system-org row IS global — see lib/organizations/globalOwnership.ts.
       data: toGlobalOwnershipWire(
-        coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(data)),
+        coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(categoryRow<PlatformCategorySelectRow>(data)!)),
         await resolveSystemOrgId(supabase),
       ),
     });
@@ -232,12 +234,15 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { error, count } = await supabase
-      .schema("platform")
-      .from("categories")
-      .delete({ count: "exact" })
-      .eq("dimension", "shortcut")
-      .eq("id", id);
+    // 🚨 SOFT, NOW. This was a HARD `.delete()` on a table more than thirty tables carry
+    // a foreign key to — `agent.shortcut.category_id` among them, ON DELETE CASCADE — so
+    // removing a category took every shortcut filed under it with it. `cat_archive`
+    // soft-deletes, like `cat_delete` and every sibling writer already did.
+    const { data: archived, error } = await supabase.rpc("cat_archive", {
+      p_dimension: "shortcut",
+      p_category_id: id,
+    });
+    const count = archived ? 1 : 0;
 
     if (error) {
       console.error("Error deleting shortcut category:", error);

@@ -20,6 +20,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import { catWriteArgs, categoryRow } from "@/lib/db/category-door";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 import { callApi } from "@/lib/api/call-api";
@@ -52,6 +53,7 @@ import {
   draftToPatchBody,
   platformCategoryToSklRow,
   PLATFORM_SKILL_CATEGORY_SELECT,
+  type PlatformCategorySelectRow,
   supabaseRowToCategoryRow,
   supabaseRowToSkillRow,
   wireToCategoryRow,
@@ -578,7 +580,6 @@ export const createCategoryThunk = createAsyncThunk<
     color: draft.color ?? null,
     parent_id: draft.parentCategoryId ?? null,
     position: draft.sortOrder ?? 0,
-    created_by: userId,
     organization_id: organizationId,
     metadata: {
       category_key: draft.categoryKey,
@@ -587,14 +588,28 @@ export const createCategoryThunk = createAsyncThunk<
       legacy_table: "skill.category",
     },
   };
-  const { data, error } = await supabase
-    .schema("platform")
-    .from("categories")
-    .insert(insertPayload)
-    .select(PLATFORM_SKILL_CATEGORY_SELECT)
-    .single();
+  // THE DOOR. `platform` is not a client-writable schema (chair ruling, VERIFIER-8
+  // HIGH-3): `cat_write` stamps created_by from auth.uid() and takes the dimension as
+  // a wall rather than as a column somebody has to remember to filter on.
+  const { data, error } = await supabase.rpc(
+    "cat_write",
+    catWriteArgs(
+      "skill",
+      {
+        name: insertPayload.name,
+        slug: insertPayload.slug,
+        icon: insertPayload.icon,
+        color: insertPayload.color,
+        parentId: insertPayload.parent_id,
+        position: insertPayload.position,
+        metadata: insertPayload.metadata,
+      },
+      { organizationId: insertPayload.organization_id },
+    ),
+  );
   if (error) throw operationFailed("create this category", error);
-  const row = supabaseRowToCategoryRow(platformCategoryToSklRow(data));
+  if (!data) throw new Error("That category could not be created. Reload and try again.");
+  const row = supabaseRowToCategoryRow(platformCategoryToSklRow(categoryRow<PlatformCategorySelectRow>(data)!));
   dispatch(skillsActions.categoryUpserted(row));
   return row;
 });
@@ -680,36 +695,40 @@ export const updateCategoryThunk = createAsyncThunk<
   if (patch.sortOrder !== undefined) topLevel.position = patch.sortOrder;
   if (patch.isActive !== undefined) metadataPatch.is_active = patch.isActive;
 
-  // Merge metadata patch if any metadata fields changed. supabase-js UPDATE
-  // replaces the whole jsonb column, so we must provide the full merged object.
-  // `cached.metadata` (populated from the select's `metadata` column) is the
-  // base; we merge the changed fields on top. Falls back to {} if the row wasn't
-  // in the slice cache yet (first write after a page load won't wipe anything
-  // because the DB still holds the real metadata — the worst case is a race).
-  const updateBody: Database["platform"]["Tables"]["categories"]["Update"] = {
-    ...topLevel,
-  };
-  if (Object.keys(metadataPatch).length > 0) {
-    const existingMeta: Record<string, unknown> = cached?.metadata ?? {};
-    updateBody.metadata = { ...existingMeta, ...metadataPatch };
-  }
-
-  if (Object.keys(updateBody).length === 0) {
+  // 🚨 THE RACE IN THE COMMENT THAT USED TO BE HERE IS GONE. supabase-js UPDATE
+  // replaces the whole jsonb column, so this had to send the FULL merged object built
+  // from the slice cache — and said so out loud: "the worst case is a race". It was a
+  // real one: anything written to this row's metadata between the cache being filled
+  // and this write was overwritten with a stale copy. `cat_write` merges the patch
+  // INSIDE the database, so only the keys that actually changed are sent and nothing
+  // else on the column can be lost.
+  if (Object.keys(topLevel).length === 0 && Object.keys(metadataPatch).length === 0) {
     // Nothing to update — return the cached row.
     if (cached) return cached;
     throw new Error("Empty patch and no cached row to return.");
   }
 
-  const { data, error } = await supabase
-    .schema("platform")
-    .from("categories")
-    .update(updateBody)
-    .eq("id", id)
-    .eq("dimension", "skill")
-    .select(PLATFORM_SKILL_CATEGORY_SELECT)
-    .single();
+  const { data, error } = await supabase.rpc(
+    "cat_write",
+    catWriteArgs(
+      "skill",
+      {
+        name: topLevel.name,
+        slug: topLevel.slug,
+        icon: topLevel.icon,
+        color: topLevel.color,
+        parentId: topLevel.parent_id,
+        position: topLevel.position,
+        ...(Object.keys(metadataPatch).length === 0
+          ? {}
+          : { metadata: metadataPatch }),
+      },
+      { id },
+    ),
+  );
   if (error) throw operationFailed("save this category", error);
-  const row = supabaseRowToCategoryRow(platformCategoryToSklRow(data));
+  if (!data) throw new Error("That category is no longer available. Reload the list.");
+  const row = supabaseRowToCategoryRow(platformCategoryToSklRow(categoryRow<PlatformCategorySelectRow>(data)!));
   dispatch(skillsActions.categoryUpserted(row));
   // Silence unused-var lint for userId — it's documented as the
   // ownership hint even when not interpolated.
@@ -742,15 +761,14 @@ export const deleteCategoryThunk = createAsyncThunk<
   } else {
     // Supabase direct soft-delete via platform.categories (dimension='skill').
     // is_active moved to metadata; merge false into the existing metadata jsonb.
-    const cachedCat = state.skills.categories.byId[id];
-    const existingMeta: Record<string, unknown> = cachedCat?.metadata ?? {};
-    const { error } = await supabase
-      .schema("platform")
-      .from("categories")
-      .update({ metadata: { ...existingMeta, is_active: false } })
-      .eq("id", id)
-      .eq("dimension", "skill");
+    // Only the key that changed: the door merges, so the cached copy of the rest of
+    // the column is no longer read, sent, or able to go stale.
+    const { data, error } = await supabase.rpc(
+      "cat_write",
+      catWriteArgs("skill", { metadata: { is_active: false } }, { id }),
+    );
     if (error) throw operationFailed("delete this category", error);
+    if (!data) throw new Error("That category is no longer available. Reload the list.");
   }
 
   dispatch(skillsActions.categoryRemoved(id));

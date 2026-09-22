@@ -1,0 +1,92 @@
+-- chair-step: `platform` and `iam` are REVOKE-protected schemas
+-- (scripts/lib/migration-target.ts REVOKE_PROTECTED_SCHEMAS), so withdrawing a client write
+-- privilege in either of them is never an ordinary migration. This file is the chair's, and it
+-- is HEADER-LESS on purpose.
+--
+-- lane: DOORS-ONLY-5
+--
+-- WITHDRAW `authenticated`'s WRITE PRIVILEGES ON `platform.categories`.
+--
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- WHY THIS ONE IS A CHAIR STEP WHEN THE OTHER TWO WERE NOT
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- DOORS-ONLY-4 taught `iam.apply_table_grants` that a schema DECLARED doors-only in
+-- `platform.schema_client_exposure` takes the read-only client grant and has its write grants
+-- withdrawn BY NAME, asserting the privilege is gone before it returns. So the last step of a
+-- cutover — delete the table's `platform.doors_only_pending_cutover` row, re-run the canonical
+-- route — IS the revoke. That is how `platform.saved_view` and `platform.rulebook` each cost
+-- ZERO residual triples this session, and why this lane's first chair-step file
+-- (`chairstep_doorsonly5_revoke_client_writes.sql`) is a deliberate no-op.
+--
+-- 🚨 `iam.apply_rls` REFUSES `platform.categories` BY NAME, so that route does not exist here.
+-- DD-249 / R12: the table holds **355 rows marked `visibility = 'public'`** and grants `anon`
+-- SELECT (as thirteen COLUMN grants — read live, see the census below), while its class
+-- `organization` emits no anonymous lane. The generator refuses rather than silently dropping
+-- the `pub_read` lane those readers are using. Which of the three legal fixes that takes is an
+-- access-semantics decision about who may read 355 rows — not a lane's to take in passing, and
+-- not this file's either. **This file does not touch it.**
+--
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- WITHDRAWING THIS CANNOT TAKE AWAY A PATH ANYBODY IS USING
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- The path is already shut. `doorsonly5_platform_categories_is_never_client_written.sql` landed
+-- three named RESTRICTIVE policies — `categories_client_insert_refused`,
+-- `categories_client_update_refused`, `categories_client_delete_refused` — and every one of the
+-- thirteen client write call sites moved to `public.cat_write` / `public.cat_archive` in the
+-- same commit. The seated suite ran 8/8 before the closure and 11/11 after, from
+-- `admin@admin.com`'s own seat, including the signed-out read still answering its 355 rows.
+--
+-- What this file changes is that the SURFACE stops being declared: the guard's RESIDUAL tier
+-- exists because a grant nobody uses is a grant the next policy regeneration makes live again.
+--
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- THE GRANT CENSUS, READ LIVE 2026-09-22 — and the thing a table-level revoke alone would miss
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- `information_schema.role_table_grants` for `platform.categories`:
+--
+--   authenticated  SELECT, INSERT, UPDATE, DELETE     ← table-level
+--   anon           (no table grant at all)
+--
+-- `pg_attribute.attacl` — the COLUMN grants, which `REVOKE … ON TABLE` does NOT remove and
+-- which `has_any_column_privilege` (what the guard asks) still sees:
+--
+--   anon = SELECT on thirteen columns: id, dimension, name, slug, parent_id, color, icon,
+--          position, created_at, updated_at, deleted_at, placement_type, visibility
+--   authenticated = NONE
+--
+-- 🚨 So the DOORS-ONLY-3 hazard — "a table-level-only revoke leaves the finding exactly where it
+-- was, because `iam.apply_table_grants` withholds an excluded column by granting the OTHERS
+-- individually" — **does not apply to this table**, measured rather than assumed: the only
+-- column ACLs here belong to `anon`, they are SELECT, and they are the DD-249 / R12 read lane.
+-- A blanket `REVOKE ALL … FROM anon` would destroy it, which is why this file names the role
+-- and the three privileges and nothing else.
+--
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- WHAT IS DELIBERATELY NOT HERE
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+--   SELECT, for either role — reads stay exactly as they are, under RLS. That is the ruling.
+--   `service_role` — untouched. It covers every server lane and the three feedback-route writes
+--     that correctly use `createAdminClient()`.
+--   `public.cat_create` / `cat_update` / `cat_reparent` / `cat_delete` — untouched. They are the
+--     demanded RPC surface of the published `@ai-matrx/associations`, they ARE doors, and
+--     retiring them is a package wave with its own census.
+--   The permissive `std_insert` / `std_update` / `std_delete` policies — they are GENERATED
+--     names that `iam.apply_rls` re-creates on every run, so dropping them here would be a
+--     temporary edit undone by the next regeneration (DOORS-ONLY-3 §5). They come off when
+--     DD-249 / R12 is settled and this table can take the canonical route again; the named
+--     restrictive refusals AND the withdrawn grant hold the line until then. The guard will
+--     therefore still count this table's triples as RESIDUAL after this file runs, and that is
+--     honest rather than a failure.
+--
+-- AFTER RUNNING IT: `pnpm check:doors-only-schemas` (the three `platform.categories` triples
+-- should report the grant as withdrawn), and re-run
+-- `psql -v closed=1 -f scripts/campaign-tests/doorsonly5_categories_doors_work_from_a_seat.sql`
+-- — 11/11, with clause 8b flipping from "zero rows" to "refused 42501 outright" and clause 9
+-- still answering 355 rows. Re-running the seat probe after the apply is the discipline that
+-- caught DOORS-ONLY-4's eleven-minute outage.
+--
+-- Inverse: migrations/inverse/chairstep_doorsonly5_revoke_categories_client_writes.inverse.sql
+
+set local lock_timeout = '2s';
+
+revoke insert, update, delete on table platform.categories from authenticated;

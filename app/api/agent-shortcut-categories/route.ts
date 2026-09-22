@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { catWriteArgs, categoryRow } from "@/lib/db/category-door";
 import { NextRequest, NextResponse } from "next/server";
 import { applyScopeToInsertPayload } from "../_lib/apply-scope-to-insert";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
@@ -7,6 +8,7 @@ import {
   coerceLegacyCategoryIsActive,
   platformCategoryToLegacyRow,
   PLATFORM_CATEGORY_SELECT,
+  type PlatformCategorySelectRow,
 } from "./_lib/categoryRow";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
@@ -170,7 +172,6 @@ export async function POST(request: NextRequest) {
       // the writer's PERSONAL organization. The kernel above has already
       // refused the request when it could not name one, so this is a string.
       organization_id: scoped.organization_id as string,
-      created_by: user.id,
       metadata: {
         description: body.description ?? null,
         is_active: body.is_active !== undefined ? body.is_active : true,
@@ -182,12 +183,26 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    const { data, error } = await supabase
-      .schema("platform")
-      .from("categories")
-      .insert(insertPayload as never)
-      .select(PLATFORM_CATEGORY_SELECT)
-      .single();
+    // THE DOOR. `platform` is not a client-writable schema (chair ruling, VERIFIER-8
+    // HIGH-3) and this route writes as the PERSON, not as service_role, so it goes
+    // through `cat_write` like every other client. The door stamps `created_by` from
+    // auth.uid() and takes the dimension as a wall rather than a column.
+    const { data, error } = await supabase.rpc(
+      "cat_write",
+      catWriteArgs(
+        "shortcut",
+        {
+          name: insertPayload.name,
+          icon: insertPayload.icon,
+          color: insertPayload.color,
+          placementType: insertPayload.placement_type,
+          position: insertPayload.position,
+          parentId: insertPayload.parent_id,
+          metadata: insertPayload.metadata,
+        },
+        { organizationId: insertPayload.organization_id },
+      ),
+    );
 
     if (error) {
       console.error("Error creating shortcut category:", error);
@@ -205,7 +220,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         data: toGlobalOwnershipWire(
-          coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(data)),
+          coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(categoryRow<PlatformCategorySelectRow>(data)!)),
           await resolveSystemOrgId(supabase),
         ),
       },

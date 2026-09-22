@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/client";
+import { catWriteArgs, categoryRow } from "@/lib/db/category-door";
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
@@ -151,6 +152,24 @@ export interface AgentAppRateLimitRow {
   app_slug?: string;
 }
 
+/**
+ * A door answers with the WHOLE row; this list's shape is a projection of four of its
+ * columns, with `description` reached through metadata. Written once here rather than
+ * at each door call site.
+ */
+function categoryRowFromDoor(row: unknown): AgentAppCategoryRow {
+  const r = (isJsonObject(row) ? row : {}) as Record<string, unknown>;
+  const metadata = isJsonObject(r.metadata) ? r.metadata : {};
+  return {
+    id: String(r.id),
+    name: typeof r.name === "string" ? r.name : "",
+    sort_order: typeof r.position === "number" ? r.position : 0,
+    icon: typeof r.icon === "string" ? r.icon : null,
+    description:
+      typeof metadata.description === "string" ? metadata.description : null,
+  } as AgentAppCategoryRow;
+}
+
 export async function fetchAgentAppCategories(): Promise<
   AgentAppCategoryRow[]
 > {
@@ -176,14 +195,14 @@ export async function createAgentAppCategory(
   //   row every organization sees; the only callers are the admin-gated (admin)
   //   surfaces
   const organizationId = await resolveSystemOrgId(supabase);
-  const { data, error } = await supabase
-    .schema("platform").from("categories")
-    .insert([
+  // THE DOOR. `platform` is not a client-writable schema (chair ruling, VERIFIER-8
+  // HIGH-3); `cat_write` stamps created_by from auth.uid() and carries the dimension
+  // as a wall rather than a column each caller filters on by hand.
+  const { data, error } = await supabase.rpc(
+    "cat_write",
+    catWriteArgs(
+      "app",
       {
-        // platform.categories requires an owning org; agent-app categories are
-        // platform-wide, so they belong to the Matrx System tenant.
-        organization_id: organizationId,
-        dimension: "app",
         name: input.name,
         slug: input.name
           ?.toLowerCase()
@@ -198,13 +217,14 @@ export async function createAgentAppCategory(
           legacy_table: "app.category",
         },
       },
-    ])
-    .select<string, AgentAppCategoryRow>(
-      "id, name, sort_order:position, icon, description:metadata->>description",
-    )
-    .single();
+      // platform.categories requires an owning org; agent-app categories are
+      // platform-wide, so they belong to the Matrx System tenant.
+      { organizationId },
+    ),
+  );
   if (error) throw error;
-  return data;
+  if (!data) throw new Error("That category could not be created. Reload and try again.");
+  return categoryRowFromDoor(data);
 }
 
 export async function updateAgentAppCategory(
@@ -215,43 +235,41 @@ export async function updateAgentAppCategory(
   if (input.name !== undefined) patch.name = input.name;
   if (input.icon !== undefined) patch.icon = input.icon;
   if (input.sort_order !== undefined) patch.position = input.sort_order;
-  // description lives in metadata; merge atomically so legacy_id/legacy_table
-  // and any other existing metadata keys are not wiped by a partial update.
-  if (input.description !== undefined) {
-    const { data: current, error: readError } = await supabase
-      .schema("platform").from("categories")
-      .select("metadata")
-      .is("deleted_at", null)
-      .eq("id", input.id)
-      .eq("dimension", "app")
-      .single();
-    if (readError) throw readError;
-    patch.metadata = {
-      ...(isJsonObject(current.metadata) ? current.metadata : {}),
-      description: input.description,
-    };
-  }
-  const { data, error } = await supabase
-    .schema("platform").from("categories")
-    .update(patch)
-    .eq("id", input.id)
-    .eq("dimension", "app")
-    .select<string, AgentAppCategoryRow>(
-      "id, name, sort_order:position, icon, description:metadata->>description",
-    )
-    .single();
+  // description lives in metadata. The read-modify-write that used to be here — a
+  // round trip taken ONLY so a partial update would not wipe legacy_id/legacy_table —
+  // is gone: `cat_write` merges the patch inside the database, so only the key that
+  // changed is sent and nothing else on the column can be lost.
+  const { data, error } = await supabase.rpc(
+    "cat_write",
+    catWriteArgs(
+      "app",
+      {
+        name: patch.name,
+        icon: patch.icon,
+        position: patch.position,
+        ...(input.description === undefined
+          ? {}
+          : { metadata: { description: input.description } }),
+      },
+      { id: input.id },
+    ),
+  );
   if (error) throw error;
-  return data;
+  if (!data) throw new Error("That category is no longer available. Reload the list.");
+  return categoryRowFromDoor(data);
 }
 
 export async function deleteAgentAppCategory(id: string): Promise<void> {
   const supabase = getClient();
-  const { error } = await supabase
-    .schema("platform").from("categories")
-    .delete()
-    .eq("id", id)
-    .eq("dimension", "app");
+  // 🚨 SOFT, NOW. This was a HARD `.delete()` on a table more than thirty tables carry
+  // a foreign key to, several of them ON DELETE SET NULL — so destroying an agent-app
+  // category silently NULLed a live column on every row that named it.
+  const { data, error } = await supabase.rpc("cat_archive", {
+    p_dimension: "app",
+    p_category_id: id,
+  });
   if (error) throw error;
+  if (!data) throw new Error("That category is no longer available. Reload the list.");
 }
 
 export async function fetchAgentAppsAdmin(filters?: {
