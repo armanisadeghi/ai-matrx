@@ -102,6 +102,14 @@ export function columnRuleRefusal(args: {
   fieldDisplayName: string;
   reason: string;
   rules?: ValidationRules | null;
+  /**
+   * What to do now, when the default is not true of this surface. The default
+   * names the two doors an open editor has; the CSV import wizard has neither —
+   * there is no editor holding the text, there is a mapping and a file — so it
+   * says what a person can actually do there instead. A remedy that names an
+   * action the screen does not offer is the same defect as no remedy at all.
+   */
+  remedy?: string;
 }): ColumnRuleRefusal {
   const reason = args.reason.trim();
   // The same judge `RefusalNotice` will apply, asked BEFORE the sentence is
@@ -117,7 +125,7 @@ export function columnRuleRefusal(args: {
       message: sentence,
       // The formatter prefers the door's own hint over its code table, and this
       // IS the door — the column's rule is what refused the value.
-      hint: REMEDY,
+      hint: args.remedy?.trim() || REMEDY,
     } as RecordsError,
     rules: args.rules ? describeValidationRules(args.rules) : [],
     reasonWasReshaped,

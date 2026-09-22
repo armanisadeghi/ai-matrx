@@ -616,6 +616,24 @@ export default function ImportTableModal({
                     Toggle columns on/off to include or exclude them. Data types
                     are auto-detected but can be changed.
                   </p>
+                  {/*
+                    🚨 SAY WHAT IS TRUE ABOUT THE RULES (lane REFUSAL-SWEEP,
+                    2026-09-23). This wizard CREATES the table, so there are no
+                    column rules yet for it to check these values against — which
+                    is a different thing from having checked and found nothing,
+                    and the screen used to say neither. Importing INTO a table
+                    that already has rules is the Paste Rows wizard on the table
+                    itself, and that one now asks the rules before it writes.
+                  */}
+                  <p
+                    className="text-xs text-muted-foreground"
+                    data-matrx-import-no-rules-yet=""
+                  >
+                    These columns are being created by this import, so they carry
+                    no validation rules yet and nothing here has been checked
+                    against any. You can add rules per column once the table
+                    exists.
+                  </p>
                 </div>
 
                 {/* Data preview */}

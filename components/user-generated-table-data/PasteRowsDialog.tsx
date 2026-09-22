@@ -20,6 +20,11 @@ import {
   isServiceFailure,
   type BulkInsertOp,
 } from "@/features/data-tables/types";
+import {
+  checkImportAgainstColumnRules,
+  type ImportRuleCheck,
+} from "@/features/data-tables/import-rule-check";
+import { FieldRuleRefusal } from "@/features/data-tables/components/FieldRuleRefusal";
 
 interface PasteRowsField {
   id: string;
@@ -27,6 +32,14 @@ interface PasteRowsField {
   display_name: string;
   data_type: string;
   is_required: boolean;
+  /**
+   * The column's own rules and its declared format — read BEFORE the import, not
+   * discovered from the store's refusal afterwards. Both arrive on the table
+   * config row this dialog is already handed; until lane REFUSAL-SWEEP they were
+   * simply not declared here, which is the whole reason the wizard never asked.
+   */
+  validation_rules?: unknown;
+  metadata?: unknown;
 }
 
 interface PasteRowsDialogProps {
@@ -60,6 +73,13 @@ export default function PasteRowsDialog({
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
   const [columnMappings, setColumnMappings] = useState<PasteColumnMapping[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  /**
+   * Columns the person has taken out of this import, by dataset field name. The
+   * refusal notice offers it: fixing a whole column of a file is often not worth
+   * it, and leaving the column out is a real answer the wizard used to make
+   * impossible (the mapping was automatic and unchangeable).
+   */
+  const [droppedFields, setDroppedFields] = useState<string[]>([]);
 
   const resetAll = () => {
     setStage("paste");
@@ -67,6 +87,7 @@ export default function PasteRowsDialog({
     setParseError(null);
     setParsedRows([]);
     setColumnMappings([]);
+    setDroppedFields([]);
     setSubmitting(false);
   };
 
@@ -107,6 +128,7 @@ export default function PasteRowsDialog({
 
         setParsedRows(rows);
         setColumnMappings(mappings);
+        setDroppedFields([]);
         setStage("preview");
       },
       error: (err: Error) => {
@@ -126,18 +148,69 @@ export default function PasteRowsDialog({
 
   const matchedCount = columnMappings.filter((m) => m.matchedField).length;
 
+  /**
+   * 🚨 THE COLUMN'S RULES, ASKED BEFORE THE WRITE (lane REFUSAL-SWEEP, 2026-09-23).
+   *
+   * This dialog used to hand every mapped value straight to `bulkWrite` and let
+   * the STORE answer — row by row, after the round trip, in an envelope that
+   * reached the person as one destructive toast naming nothing. The same judge
+   * every other surface uses now runs over the mapped rows HERE, and the
+   * refusals are on screen, per column, before the import button does anything.
+   */
+  const activeColumns = columnMappings
+    .filter(
+      (m) =>
+        m.matchedField !== null &&
+        !droppedFields.includes(m.matchedField.field_name),
+    )
+    .map((m) => ({
+      sourceHeader: m.pasteHeader,
+      field: m.matchedField as PasteRowsField,
+    }));
+
+  const ruleCheck: ImportRuleCheck = checkImportAgainstColumnRules({
+    rows: parsedRows,
+    columns: activeColumns,
+  });
+
+  /**
+   * A column whose rules could not be read has had NOTHING checked, so importing
+   * it would be importing as if the column were unconstrained — which is exactly
+   * the lie this lane exists to remove. It blocks its own import until the person
+   * leaves it out; every other refusal only costs the rows that fail.
+   */
+  const uncheckedColumns = ruleCheck.verdicts.filter((v) => v.rulesUnreadable);
+  const refusedRowIndexes = new Set(ruleCheck.failingRowIndexes);
+  const importableRowCount =
+    uncheckedColumns.length > 0 ? 0 : ruleCheck.passingRowCount;
+  const importIsBlocked = activeColumns.length === 0 || importableRowCount === 0;
+
+  const dropColumn = (fieldName: string) =>
+    setDroppedFields((prev) =>
+      prev.includes(fieldName) ? prev : [...prev, fieldName],
+    );
+  const restoreColumn = (fieldName: string) =>
+    setDroppedFields((prev) => prev.filter((name) => name !== fieldName));
+
   const handleConfirm = async () => {
     if (parsedRows.length === 0) return;
+    // Nothing is written while a column's rules are unread or unmet: the button
+    // that gets here is only reachable once the refusals have been answered by
+    // dropping the column or by accepting that the refused rows are left out.
+    if (importIsBlocked) return;
 
-    const operations: BulkInsertOp[] = parsedRows.map((row) => {
-      const data: Record<string, unknown> = {};
-      for (const mapping of columnMappings) {
-        if (!mapping.matchedField) continue;
-        const value = row[mapping.pasteHeader];
-        data[mapping.matchedField.field_name] = value;
-      }
-      return { op: "insert", data };
-    });
+    const operations: BulkInsertOp[] = parsedRows
+      // THE REFUSED ROWS ARE LEFT OUT, EXPLICITLY. The person has read which
+      // column refused them and how many there were; this is the choice they
+      // made, not a silent drop.
+      .filter((_row, index) => !refusedRowIndexes.has(index))
+      .map((row) => {
+        const data: Record<string, unknown> = {};
+        for (const { sourceHeader, field } of activeColumns) {
+          data[field.field_name] = row[sourceHeader];
+        }
+        return { op: "insert", data };
+      });
 
     try {
       setSubmitting(true);
@@ -150,9 +223,14 @@ export default function PasteRowsDialog({
         });
         return;
       }
+      const leftOut = parsedRows.length - operations.length;
       toast({
         title: "Rows pasted",
-        description: `Pasted ${operations.length} row${operations.length === 1 ? "" : "s"}`,
+        description:
+          `Pasted ${operations.length} row${operations.length === 1 ? "" : "s"}` +
+          (leftOut > 0
+            ? `. ${leftOut} row${leftOut === 1 ? " was" : "s were"} left out because a column refused ${leftOut === 1 ? "its" : "their"} value.`
+            : ""),
         variant: "success",
       });
       onSuccess();
@@ -226,9 +304,31 @@ export default function PasteRowsDialog({
                       </span>
                       <span className="text-muted-foreground">→</span>
                       {m.matchedField ? (
-                        <span className="truncate">
-                          {m.matchedField.display_name}
-                        </span>
+                        droppedFields.includes(m.matchedField.field_name) ? (
+                          <span className="flex items-center gap-2 truncate">
+                            <span className="truncate line-through text-muted-foreground">
+                              {m.matchedField.display_name}
+                            </span>
+                            <button
+                              type="button"
+                              data-matrx-import-restore-column={
+                                m.matchedField.field_name
+                              }
+                              className="rounded border border-border px-2 py-0.5 text-xs hover:bg-muted"
+                              onClick={() =>
+                                restoreColumn(
+                                  (m.matchedField as PasteRowsField).field_name,
+                                )
+                              }
+                            >
+                              Put it back
+                            </button>
+                          </span>
+                        ) : (
+                          <span className="truncate">
+                            {m.matchedField.display_name}
+                          </span>
+                        )
                       ) : (
                         <span className="text-muted-foreground italic">
                           (skipped — no matching column)
@@ -252,6 +352,48 @@ export default function PasteRowsDialog({
                   ))}
                 </div>
               </div>
+
+              {/*
+                🚨 THE REFUSALS, BEFORE THE WRITE — never a report afterwards.
+                One notice per refused column, through the ONE primitive
+                (`columnRuleRefusal` → `<FieldRuleRefusal>`), so a value this
+                wizard refuses and a value the grid refuses are the same object
+                on screen. Each carries how many of the parsed rows fail it and
+                the door out that costs nothing: leave the column out.
+              */}
+              {ruleCheck.verdicts.length > 0 && (
+                <div className="space-y-2" data-matrx-import-refusals="">
+                  <Label>
+                    {ruleCheck.verdicts.length === 1
+                      ? "1 column refuses what you pasted"
+                      : `${ruleCheck.verdicts.length} columns refuse what you pasted`}
+                  </Label>
+                  <div className="space-y-3">
+                    {ruleCheck.verdicts.map((verdict) => (
+                      <div
+                        key={verdict.fieldName}
+                        className="space-y-1"
+                        data-matrx-import-refusal={verdict.fieldName}
+                      >
+                        <FieldRuleRefusal refusal={verdict.refusal} />
+                        <p className="text-xs text-muted-foreground">
+                          {verdict.rulesUnreadable
+                            ? `${verdict.fieldDisplayName} is mapped from "${verdict.sourceHeader}". Nothing has been checked against its rules, so it cannot be imported until you leave it out.`
+                            : `${verdict.failingRowCount} of the ${verdict.checkedRowCount} row${verdict.checkedRowCount === 1 ? "" : "s"} you pasted fail this — they are mapped from "${verdict.sourceHeader}".`}
+                        </p>
+                        <button
+                          type="button"
+                          data-matrx-import-drop-column={verdict.fieldName}
+                          className="rounded border border-border px-2 py-0.5 text-xs hover:bg-muted"
+                          onClick={() => dropColumn(verdict.fieldName)}
+                        >
+                          Leave {verdict.fieldDisplayName} out of this import
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Preview of first 5 parsed rows */}
               <div className="space-y-2">
@@ -299,8 +441,9 @@ export default function PasteRowsDialog({
                   </table>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {parsedRows.length} row{parsedRows.length === 1 ? "" : "s"}{" "}
-                  ready to paste.
+                  {ruleCheck.verdicts.length === 0
+                    ? `${parsedRows.length} row${parsedRows.length === 1 ? "" : "s"} ready to paste.`
+                    : `${importableRowCount} of ${parsedRows.length} row${parsedRows.length === 1 ? "" : "s"} pass every column's rules.`}
                 </p>
               </div>
             </div>
@@ -335,20 +478,46 @@ export default function PasteRowsDialog({
               Parse
             </Button>
           ) : (
-            <Button
-              type="button"
-              onClick={handleConfirm}
-              disabled={submitting || matchedCount === 0}
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Pasting...
-                </>
-              ) : (
-                `Paste ${parsedRows.length} Row${parsedRows.length === 1 ? "" : "s"}`
+            /*
+              🚨 A SCREEN NEVER LIES AND A BUTTON IS NEVER DEAD. When a column
+              refuses everything, the button says what is true — that there is
+              nothing left to import and why — rather than sitting there greyed
+              out with its old label, or worse, importing rows the store is about
+              to refuse one at a time.
+            */
+            <div className="flex flex-col items-end gap-1">
+              <Button
+                type="button"
+                onClick={handleConfirm}
+                disabled={submitting || matchedCount === 0 || importIsBlocked}
+                data-matrx-import-confirm=""
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Pasting...
+                  </>
+                ) : importIsBlocked ? (
+                  "Nothing here can be imported yet"
+                ) : ruleCheck.verdicts.length > 0 ? (
+                  `Paste the ${importableRowCount} Row${importableRowCount === 1 ? "" : "s"} That Pass`
+                ) : (
+                  `Paste ${parsedRows.length} Row${parsedRows.length === 1 ? "" : "s"}`
+                )}
+              </Button>
+              {importIsBlocked && !submitting && (
+                <p
+                  className="text-xs text-muted-foreground text-right max-w-[22rem]"
+                  data-matrx-import-blocked-reason=""
+                >
+                  {activeColumns.length === 0
+                    ? "Every column has been left out, so there is nothing to write. Put one back, or go back and paste again."
+                    : uncheckedColumns.length > 0
+                      ? `${uncheckedColumns.map((v) => v.fieldDisplayName).join(", ")} carries rules this screen could not read, so nothing was checked against them. Leave that column out and the rest can be imported.`
+                      : "Every row you pasted breaks a column's rules. Fix them in the file and paste again, or leave the refusing column out."}
+                </p>
               )}
-            </Button>
+            </div>
           )}
         </DialogFooter>
       </DialogContent>
