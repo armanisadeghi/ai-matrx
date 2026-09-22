@@ -160,12 +160,17 @@ SYSTEM_ORG_SQL="select * from iam.organizations where is_system is true"
 # An optional third argument is SQL run against the staged rows BEFORE they are inserted — the one
 # legitimate edit is re-pointing an authorship column at an identity that exists on this branch,
 # because the source's `created_by` names a production user the purge deliberately removed.
-seed_load() {  # seed_load <schema.table> <tsv file> [<fixup sql on _seed_stage>] -> "loaded=N refused=M first=…"
-  local t="$1" f="$2" fix="${3:-}" out
+# A fourth argument is a PRELUDE emitted before the \\copy — whole statements and psql
+# metacommands of its own, so a loader can stage a second file it needs (the door's type-name
+# sidecar is the one that exists). It is written literally, so each line carries its own
+# terminator; nothing is appended to it.
+seed_load() {  # seed_load <schema.table> <tsv> [<fixup sql on _seed_stage>] [<prelude>] -> "loaded=N refused=M first=…"
+  local t="$1" f="$2" fix="${3:-}" pre="${4:-}" out
   out="$("$PSQL" "$BRANCH_DSN" -qAt 2>&1 <<SQL
 begin;
 create temp table _seed_stage (like $t including defaults) on commit drop;
 create temp table _seed_done (c tid primary key) on commit drop;
+${pre}
 \\copy _seed_stage from '$f'
 ${fix:+$fix;}
 -- 🚨 IMMEDIATE, so a per-row handler can actually see the refusal. platform.client_callable_door
@@ -497,6 +502,35 @@ for t in "${SEED_TABLES[@]}"; do
 done
 say "seed tables read: ${#SEED_OK[@]} of ${#SEED_TABLES[@]}"
 
+# ── THE DOOR'S TYPE OIDs, READ BY NAME ───────────────────────────────────────
+# 🚨 `platform.client_callable_door.identity_argtypes` IS AN `oid[]`, AND AN OID IS NOT PORTABLE.
+# A restored database assigns fresh OIDs to every user-defined type, so a verbatim copy of this
+# column names the SOURCE's `permission_level`, `visibility`, `custom.record` … and the branch's
+# `door_identity_is_the_catalogs` trigger (DD-223) correctly answers "the identity_argtypes on
+# this row name no live function". Measured 2026-09-22: 43 of the 50 rows refused every run were
+# exactly this, and the 1,685 that landed were the doors whose arguments are all BUILT-IN types,
+# whose OIDs are fixed by Postgres and therefore happened to match.
+#
+# So the OIDs are carried across BY NAME: the source reports each row's argument types as
+# `schema.typename`, and the branch resolves them back to its own OIDs before the insert. The
+# guard is not touched — it is SATISFIED, with the identity it was always meant to check.
+#
+# `regclass` / `regprocedure` columns (platform.entity_types.table_ref, version_store_ref,
+# platform.realtime_topic_prefix.admits_fn) need no such help: COPY renders those by NAME
+# already. A BARE `oid` or `oid[]` column is the unportable shape, and the loop below names any
+# other one that turns up in the seed set so this is never rediscovered by a silent refusal.
+DOOR_TYPES="$WORK/door_argtypes.tsv"
+DOUT2="$("$PSQL" "${SRC[@]}" -qAt -c "\copy (select d.id::text, coalesce((select string_agg(t.typnamespace::regnamespace::text||'.'||quote_ident(t.typname), ',' order by o.ord) from unnest(d.identity_argtypes) with ordinality o(x, ord) left join pg_type t on t.oid = o.x), '') from platform.client_callable_door d where d.identity_argtypes is not null and array_length(d.identity_argtypes,1) > 0) to '$DOOR_TYPES'" 2>&1)"
+if [ -s "$DOOR_TYPES" ] && ! print -r -- "$DOUT2" | grep -qE 'ERROR|FATAL'; then
+  say "  door identity_argtypes, read as type NAMES: $(wc -l < "$DOOR_TYPES" | tr -d ' ') row(s) — OIDs are not portable and are translated on the branch"
+else
+  say "  door identity_argtypes NOT READ — $(print -r -- "$DOUT2" | head -1). The door load will refuse every row whose arguments include a user-defined type."
+  DOOR_TYPES=""
+fi
+# Any OTHER bare oid/oid[] column in the seed set has the same defect and no translation here.
+OIDCOLS="$("$PSQL" "${SRC[@]}" -qAt -c "select n.nspname||'.'||c.relname||'.'||a.attname from pg_attribute a join pg_class c on c.oid=a.attrelid join pg_namespace n on n.oid=c.relnamespace where c.relkind='r' and a.attnum>0 and not a.attisdropped and format_type(a.atttypid,a.atttypmod) in ('oid','oid[]') and n.nspname||'.'||c.relname = any(array['${(j:',':)SEED_TABLES}'])" 2>/dev/null | grep -v 'client_callable_door.identity_argtypes')"
+[ -n "$OIDCOLS" ] && say "  🚨 other bare oid column(s) in the seed set, which this job does NOT translate: $(print -r -- "$OIDCOLS" | tr '\n' ' ')"
+
 # The lookup/registry set, read from the same source in the same window.
 typeset -a LOOKUP_OK
 LOOKUPS="$("$PSQL" "${SRC[@]}" -qAt -c "$LOOKUP_DERIVE_SQL" 2>/dev/null)"
@@ -541,6 +575,22 @@ else
 fi
 
 say "─── (2) the runner ledger, read from the source ───"
+# 🚨 THE GUARD'S OWN EXEMPTION TABLE COMES FIRST. `_schema_migrations_slot_guard` refuses a file
+# whose number slot is already held by a different applied migration — and the source's own ledger
+# holds 202 such pairs, grandfathered because they were written before the guard existed. The
+# platform authors built the escape hatch themselves: `public._schema_migration_slot_grandfather`
+# lists, per (source, slot), the FILENAMES that legitimately share it, and the guard consults it by
+# name. That table is in `public`, so the `platform`-scoped lookup derivation never picked it up
+# and the branch's copy was EMPTY — which is the whole of the 202. Seeded first, 202 refusals go to
+# zero with the guard fully armed (measured on the branch, 2026-09-22).
+GRANDFATHER="$WORK/slot_grandfather.tsv"
+GFOUT="$("$PSQL" "${SRC[@]}" -qAt -c "\copy (select * from public._schema_migration_slot_grandfather) to '$GRANDFATHER'" 2>&1)"
+if [ -f "$GRANDFATHER" ] && ! print -r -- "$GFOUT" | grep -qE 'ERROR|FATAL'; then
+  say "  public._schema_migration_slot_grandfather: $(wc -l < "$GRANDFATHER" | tr -d ' ') rows (the slot guard's own exemption list)"
+else
+  say "  the slot-grandfather list NOT READ — $(print -r -- "$GFOUT" | head -1). ~202 ledger rows will be refused on legitimate historical slot collisions."
+  GRANDFATHER=""
+fi
 LEDGER="$WORK/ledger.tsv"
 LOUT="$("$PSQL" "${SRC[@]}" -qAt -c "\copy (select * from public._schema_migrations) to '$LEDGER'" 2>&1)"
 if print -r -- "$LOUT" | grep -qE 'ERROR|FATAL'; then
@@ -699,6 +749,11 @@ fi
 
 if [ -n "$LEDGER" ] && [ "$REHEARSE" != "1" ]; then
   say "re-seeding the runner ledger from the source, so '--target branch' judges 'already applied' correctly"
+  # THE EXEMPTION LIST FIRST, OR 202 ROWS ARE REFUSED ON HISTORY THE SOURCE ITSELF RECORDS.
+  if [ -n "$GRANDFATHER" ]; then
+    "$PSQL" "$BRANCH_DSN" -qAt -c "truncate table public._schema_migration_slot_grandfather" >/dev/null 2>&1
+    say "  slot grandfather: $(seed_load public._schema_migration_slot_grandfather "$GRANDFATHER"); branch now holds $("$PSQL" "$BRANCH_DSN" -qAt -c 'select count(*) from public._schema_migration_slot_grandfather' 2>&1) rows"
+  fi
   # 🚨 ROW BY ROW, because the ledger carries a trigger that RAISES. `_schema_migrations_slot_guard`
   # refuses a file whose migration NUMBER is already held by a different filename, and the clone's
   # own ledger contains such a pair (`aidream/0002_cld_files_realtime.sql` vs
@@ -707,6 +762,15 @@ if [ -n "$LEDGER" ] && [ "$REHEARSE" != "1" ]; then
   # their first reason printed; a ledger missing a handful of collided rows is a usable ledger, an
   # empty one is not.
   say "  ledger: $(seed_load public._schema_migrations "$LEDGER"); branch now holds $("$PSQL" "$BRANCH_DSN" -qAt -c 'select count(*) from public._schema_migrations' 2>&1) rows"
+  # WHAT IS LEFT, NAMED. After the grandfather list the only refusals are the rows the ledger's
+  # checksum guard calls permanently unverifiable — a checksum that is not a SHA-256 hex digest,
+  # written before 2026-08-29, for which the guard deliberately offers NO exemption and this job
+  # deliberately offers no workaround. Measured on the branch 2026-09-22: 255 refused -> 43, all 43
+  # of this one shape. Those 43 migrations will be judged UNAPPLIED by `--target branch`.
+  BADSUM="$("$PSQL" "$SRC_DSN" -qAt -c "select count(*) from public._schema_migrations where checksum !~ '^[0-9a-f]{64}\$'" 2>&1)"
+  say "  of the source's rows, $BADSUM carry a checksum that is not a SHA-256 digest; the ledger's own"
+  say "    checksum guard refuses those and offers no exemption, so they cannot be seeded and"
+  say "    '--target branch' will judge those migrations unapplied. That is the source's history, not a copy defect."
 else
   say "ledger re-seed skipped ($([ "$REHEARSE" = 1 ] && print -n 'rehearsal — the branch ledger is not rewritten' || print -n 'the ledger could not be read'))"
 fi
@@ -783,8 +847,29 @@ for t in "${SEED_OK[@]}"; do
   f="$WORK/seed_${t//./_}.tsv"
   o="$("$PSQL" "$BRANCH_DSN" -qAt -c "truncate table $t cascade" 2>&1)"
   if print -r -- "$o" | grep -qE 'ERROR:|FATAL:'; then say "  $t: could not empty it — $(print -r -- "$o" | grep -m1 -E 'ERROR:|FATAL:'); skipping"; continue; fi
-  say "  $t: $(seed_load "$t" "$f")  -> $("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) rows on the branch"
+  PRE="" FIX=""
+  if [ "$t" = "platform.client_callable_door" ] && [ -n "$DOOR_TYPES" ]; then
+    # Re-point every row's identity_argtypes at THIS database's OIDs for the same type NAMES.
+    # A row naming a type the branch does not have is left alone and refused by the guard with
+    # its own message, which is the honest outcome: the branch really is missing that type.
+    PRE="create temp table _door_types (id uuid, names text) on commit drop;
+\\copy _door_types from '$DOOR_TYPES'"
+    FIX="update _seed_stage s set identity_argtypes = x.oids from _door_types m, lateral (select array_agg(to_regtype(n)::oid order by ord) as oids, count(*) filter (where to_regtype(n) is null) as unresolved from unnest(string_to_array(m.names, ',')) with ordinality u(n, ord)) x where m.id = s.id and x.unresolved = 0"
+  fi
+  say "  $t: $(seed_load "$t" "$f" "$FIX" "$PRE")  -> $("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) rows on the branch"
 done
+# WHAT THE DOOR TABLE STILL REFUSES, AND WHY IT IS NOT A COPY DEFECT. After the OID translation the
+# residue measured on 2026-09-22 was 9 of 1,735: two rows naming functions this branch does not hold
+# (campaign_watch.consumer_access_diff — `campaign_watch` is deliberately never dumped, its lock
+# lives there; and one function the dump had not yet caught up with), and SEVEN rows that the
+# SOURCE'S OWN GUARD would refuse if they were re-inserted there: SECURITY DEFINER functions opened
+# to clients that take an id and reach no access decision (public.fork_shared_quiz,
+# fork_shared_flashcard_set, fork_shared_conversation, hr_wf_for_target, record_guest_execution,
+# dict_resolve, web.assert_crawl_artifact_file_reused). Their bodies are byte-identical on the
+# clone, so they are grandfathered rows that predate the guard — the `seo.keyword_value_map` class
+# the guard's own message cites. They are named individually below so nobody reads them as noise.
+DOORMISS="$("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from platform.client_callable_door" 2>&1)"
+say "  doors on the branch: $DOORMISS (source has $("$PSQL" "$SRC_DSN" -qAt -c 'select count(*) from platform.client_callable_door' 2>&1)); a residue here is a SOURCE row that the source's own guards would refuse, not a copy defect — see the note above this line in the job."
 
 # The derived lookup/registry tables, after the curated five (feature_knob and taxonomy_node are
 # what several of them key on). Each is emptied first: `\copy`-style appends die on their own
