@@ -1,0 +1,187 @@
+// features/unified-data/hub/doors.ts — LANE DATA-HUB
+//
+// THE FIVE STORE DOORS THE HUB CALLS THAT `@ai-matrx/records`' CLIENT DOES NOT
+// CARRY YET, AND NOTHING ELSE.
+//
+// Three of them are this lane's own (`custom.pipelines`, `custom.shares_outside`,
+// `custom.hub_changed_by`, applied to the live store on 2026-09-22); two are
+// older doors the installed client 0.54.0 predates (`custom.table_kernel_id`,
+// `custom.table_share_outside_for_me`). Every one of them goes through the
+// package's OWN data seam — `recordsDataSource(...).rpc(fn, args, { schema })` —
+// so the schema is said out loud and this file holds no table read, no raw
+// `.from()`, and no second way into the store. When the next `@ai-matrx/records`
+// release carries these as client methods, this file is deleted and the calls
+// move; nothing else in the hub changes, because everything above it takes the
+// ROWS and not the transport.
+//
+// A door that answers an error hands the error back verbatim. Nothing here
+// invents an empty array: "there is nothing" and "the call did not happen" are
+// different sentences, and the hub prints whichever one is true.
+
+import type { RecordsDataSource } from "@ai-matrx/records";
+
+import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
+
+export interface DoorFailure {
+  /** The store's own words. Never rewritten, never swallowed. */
+  message: string;
+  hint?: string | undefined;
+}
+
+export type DoorAnswer<T> = { ok: true; data: T } | { ok: false; error: DoorFailure };
+
+/**
+ * THE SWITCH, READ ONCE PER ORGANIZATION AND CHECKED ON EVERY CALL THAT READS
+ * ONE ORGANIZATION'S STORE.
+ *
+ * The hub's own component reads it too, and the page above that is already
+ * behind it — this is the layer that cannot be walked past, because it is
+ * inside the only file that can send these three doors at all. Asking per call
+ * would be an extra round trip per row on the page, so the answer is held for
+ * the lifetime of the tab, keyed by organization; the switch is one
+ * organization's decision, set once, on a screen that reloads the app.
+ *
+ * `off` and `could not check` are different sentences and both are returned as
+ * a refusal, never as an empty list.
+ */
+const switchAnswers = new Map<string, Promise<{ on: boolean; why: string }>>();
+
+function storeIsOpen(organizationId: string): Promise<{ on: boolean; why: string }> {
+  const held = switchAnswers.get(organizationId);
+  if (held) return held;
+  const asked = UNIFIED_DATA_CAMPAIGN.check(organizationId).then((answer) => ({
+    on: answer.state === "on",
+    why:
+      answer.state === "unavailable"
+        ? `The record store's switch could not be read, so nothing was read — this is not an answer about the organization. ${answer.cause}`
+        : "This organization does not keep its data in the record store, so nothing was read.",
+  }));
+  switchAnswers.set(organizationId, asked);
+  return asked;
+}
+
+async function call<T>(
+  dataSource: RecordsDataSource,
+  fn: string,
+  args: Record<string, unknown>,
+  organizationId?: string,
+): Promise<DoorAnswer<T>> {
+  if (organizationId) {
+    const gate = await storeIsOpen(organizationId);
+    if (!gate.on) return { ok: false, error: { message: gate.why } };
+  }
+  const answered = await dataSource.rpc(fn, args, { schema: "custom" });
+  if (answered.error) {
+    return {
+      ok: false,
+      error: {
+        message: answered.error.message ?? `custom.${fn} did not answer.`,
+        hint: answered.error.hint ?? undefined,
+      },
+    };
+  }
+  return { ok: true, data: (answered.data ?? []) as T };
+}
+
+/** REC-27's Table kernel. Every Table of an organization is a record in it. */
+export function tableKernelId(dataSource: RecordsDataSource): Promise<DoorAnswer<string>> {
+  return call<string>(dataSource, "table_kernel_id", {});
+}
+
+export interface PipelineRow {
+  table_id: string;
+  table_name: string;
+  stage_field: string | null;
+  stage_label: string | null;
+  stages: number;
+  rules: number;
+  /** The store's own refusal when a declared board cannot be drawn. Never hidden. */
+  broken: string | null;
+  updated_at: string | null;
+  updated_by: string | null;
+}
+
+/** Every board in this organization, across the Tables this person can open. */
+export function pipelines(
+  dataSource: RecordsDataSource,
+  organizationId: string,
+): Promise<DoorAnswer<PipelineRow[]>> {
+  return call<PipelineRow[]>(dataSource, "pipelines", { p_organization_id: organizationId }, organizationId);
+}
+
+export interface ShareOutsideRow {
+  invitation_id: string;
+  table_id: string;
+  table_name: string;
+  email: string;
+  level: string;
+  level_label: string;
+  status: string;
+  joined: boolean;
+  expired: boolean;
+  invited_at: string | null;
+  expires_at: string | null;
+  say: string;
+}
+
+/** Everyone outside this organization who has been given one of its tables. */
+export function sharesOutside(
+  dataSource: RecordsDataSource,
+  organizationId: string,
+): Promise<DoorAnswer<ShareOutsideRow[]>> {
+  return call<ShareOutsideRow[]>(
+    dataSource,
+    "shares_outside",
+    { p_organization_id: organizationId },
+    organizationId,
+  );
+}
+
+export interface ShareInboundRow {
+  invitation_id: string;
+  organization_id: string;
+  organization: string;
+  table_id: string;
+  table_name: string;
+  level: string;
+  level_label: string;
+  expires_at: string | null;
+}
+
+/** What somebody ELSE's organization has shared with the person signed in. */
+export function sharedWithMe(
+  dataSource: RecordsDataSource,
+): Promise<DoorAnswer<ShareInboundRow[]>> {
+  return call<ShareInboundRow[]>(dataSource, "table_share_outside_for_me", {});
+}
+
+/** The three kinds `custom.hub_changed_by` knows. Closed, and it refuses a fourth. */
+export type ChangedByKind = "structure" | "form" | "portal";
+
+export interface ChangedByRow {
+  id: string;
+  at: string | null;
+  who: string | null;
+}
+
+/**
+ * WHO LAST TOUCHED EACH OF THESE — one call for a whole page of the hub.
+ *
+ * Asking per item would be one round trip per row, which is the fan-out the
+ * whole hub exists to remove. The store bounds what it will answer: structural
+ * objects only, never a person's business record.
+ */
+export function changedBy(
+  dataSource: RecordsDataSource,
+  organizationId: string,
+  kind: ChangedByKind,
+  ids: readonly string[],
+): Promise<DoorAnswer<ChangedByRow[]>> {
+  if (ids.length === 0) return Promise.resolve({ ok: true, data: [] });
+  return call<ChangedByRow[]>(
+    dataSource,
+    "hub_changed_by",
+    { p_organization_id: organizationId, p_kind: kind, p_ids: ids.slice(0, 500) },
+    organizationId,
+  );
+}

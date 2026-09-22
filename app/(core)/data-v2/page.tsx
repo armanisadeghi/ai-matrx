@@ -13,10 +13,12 @@
 // here, which is what the unified data ramp screen sets, once, for everybody.
 // The per-person `custom.code_paths_enabled` half is gone (lane NAV-FIX).
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ActionInbox, RecordsMount, TablesHome, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { ActionInbox, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+
+import { OrganizationHub } from "@/features/unified-data/hub/OrganizationHub";
 
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
@@ -58,6 +60,14 @@ export default function UnifiedDataPage() {
     }));
   }, [organizationId]);
 
+  /**
+   * THE ONE DATA SEAM, built once and handed to BOTH the mount and the hub.
+   * The hub reads three doors this installed client predates and so calls them
+   * through this seam by name; building a second one here would mean two
+   * supabase clients on one page and two ideas of who is signed in.
+   */
+  const dataSource = useMemo(() => recordsDataSource(createClient()), []);
+
   return (
     <>
       <PageHeader>
@@ -76,7 +86,7 @@ export default function UnifiedDataPage() {
           <RecordsMount
             letTheStoreDecideRights
             config={{
-              dataSource: recordsDataSource(createClient()),
+              dataSource,
               actor: personActor(userId),
               organizationId: organizationId!,
               // LIVE UPDATES. The grid's "Not live: this host bound no realtime port" banner
@@ -105,34 +115,12 @@ export default function UnifiedDataPage() {
               className="mb-4 max-h-64"
               onOpenRecord={(recordId, tableId) => router.push(`/data-v2/${tableId}?record=${recordId}`)}
             />
-            {/* THE ONE PLACE THAT SHOWS THE WHOLE STORE. Everything on this
-                page is one corner of it; /data-v2/try-everything puts the rest
-                — sharing, relations, forms, approvals, the agent, history,
-                dashboards, documents, notifications — in front of the same
-                person in the same organization, and says plainly which of them
-                are not finished. */}
-            <Link
-              href="/data-v2/try-everything"
-              className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm transition-colors hover:bg-muted/50"
-            >
-              <span className="font-medium text-foreground">Try everything</span>
-              <span className="min-w-0 flex-1 truncate text-muted-foreground">
-                every part of the record store on one page, with the unfinished parts named
-              </span>
-            </Link>
-            <TablesHome
-              // records-ui 0.16.1's `onOpenTable` carries the table only; the
-              // dashboard rides as an optional second argument so this stays
-              // assignable now and reads the dashboard the moment the package
-              // sends one.
-              onOpenTable={(tableId: string, dashboardId?: string | null) =>
-                router.push(
-                  dashboardId
-                    ? `/data-v2/${tableId}?dashboard=${dashboardId}`
-                    : `/data-v2/${tableId}`,
-                )
-              }
-            />
+            {/* THE ORGANIZATION'S HUB — every capability the record store has, each
+                read through the ONE door that answers for the whole organization,
+                with the lanes as filters and the tables list inside it. This is
+                /data-v2's landing; there is deliberately no second route family
+                for it. Lane DATA-HUB, 2026-09-22. */}
+            <OrganizationHub organizationId={organizationId!} dataSource={dataSource} />
           </RecordsMount>
         )}
       </div>

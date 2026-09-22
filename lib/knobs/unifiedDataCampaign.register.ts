@@ -195,6 +195,30 @@ export const CAMPAIGN_STORE_TABLES: readonly string[] = [
  */
 export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
   {
+    id: "data-hub-doors",
+    file: "features/unified-data/hub/doors.ts",
+    kind: "runtime",
+    why:
+      "Lane DATA-HUB — the five store doors the organization hub calls that the installed " +
+      "@ai-matrx/records client does not carry yet: this lane's own custom.pipelines, " +
+      "custom.shares_outside and custom.hub_changed_by, plus custom.table_kernel_id and " +
+      "custom.table_share_outside_for_me. It reads the switch ITSELF with " +
+      "UNIFIED_DATA_CAMPAIGN.check, once per organization, and refuses every call that reads " +
+      "one organization's store while it is off — so the gate cannot be walked past by a host " +
+      "that forgot its own. Every call goes through the package's own data seam with the " +
+      "schema said out loud; there is no table read here.",
+  },
+  {
+    id: "data-hub-organization-hub",
+    file: "features/unified-data/hub/OrganizationHub.tsx",
+    kind: "runtime",
+    why:
+      "Lane DATA-HUB — /data-v2's landing: the organization's front door for the record store. " +
+      "It is mounted INSIDE RecordsMount on app/(core)/data-v2/page.tsx, which is already behind " +
+      "UNIFIED_DATA_CAMPAIGN's one per-organization switch, so with the store off this component " +
+      "never renders and the honest switch notice stays in its place.",
+  },
+  {
     id: "records-realtime-port",
     file: "features/unified-data/realtime/recordsRealtimePort.ts",
     kind: "runtime",
