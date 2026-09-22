@@ -45,6 +45,7 @@ import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPref
 // binding ever attached). Importing here guarantees registration before this
 // consumer runs. See features/.../client-capabilities/register-all.ts.
 import "../client-capabilities/register-all";
+import { surfacePatchContractLine } from "@/features/surfaces/runtime/surface-write-patch";
 import { detectActiveSurface } from "@/features/surfaces/utils/route-to-surface";
 import { selectCreatorSettings } from "@/lib/redux/preferences/creatorDebugSlice";
 import { isWarRoomToolName } from "@/features/agents/war-room-tools/tools/names";
@@ -211,7 +212,11 @@ async function buildSurfaceWriteInlineSpec(
     const contract = target.valueKind
       ? ` [kind=${target.valueKind}${contracts.has(target.valueKind) ? ` ${contracts.get(target.valueKind)}` : ""}]`
       : "";
-    return `- ${target.name} (type=${target.valueType}, ${landing}, ${applied})${contract}: ${target.description}`;
+    // A patchable target says so ON ITS OWN LINE. The shape is explained once
+    // in the description above; per-target it only needs the flag, because a
+    // model scanning for "can I edit this in place?" reads the target line.
+    const patch = target.patchable ? " [patchable]" : "";
+    return `- ${target.name} (type=${target.valueType}, ${landing}, ${applied})${contract}${patch}: ${target.description}`;
   });
 
   return {
@@ -226,7 +231,11 @@ async function buildSurfaceWriteInlineSpec(
       "normal outcome (respect it, do not retry). A target marked " +
       "[kind=<slug> {...}] has a REGISTERED value contract: send exactly that " +
       "shape — a value that fails it is refused before the user is even " +
-      "asked. Available targets right now:\n" +
+      "asked.\n\n" +
+      (writable.some(({ target }) => target.patchable)
+        ? `${surfacePatchContractLine()}\n\n`
+        : "") +
+      "Available targets right now:\n" +
       lines.join("\n"),
     input_schema: {
       type: "object",

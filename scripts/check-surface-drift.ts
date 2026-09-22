@@ -181,6 +181,7 @@ async function main() {
       valueType: string;
       valueKind?: string;
       updatesValue?: string;
+      patchable?: boolean;
       mode: string;
       group?: string;
       sortOrder?: number;
@@ -447,6 +448,23 @@ async function main() {
       if (w.updatesValue && !seenValues.has(w.updatesValue)) {
         errors.push(
           `Surface "${m.surfaceName}" write target "${w.name}" updatesValue "${w.updatesValue}" which is not a declared value.`,
+        );
+      }
+      // A PATCHABLE TARGET MUST HAVE A READ TWIN. An anchored edit is applied
+      // against the current text read from `updatesValue`; with no read twin
+      // there is nothing to anchor into, and the seam would refuse every
+      // patch at runtime. Catch it here, where the author can see it, rather
+      // than as a puzzling refusal in front of a user.
+      if (w.patchable && !w.updatesValue) {
+        errors.push(
+          `Surface "${m.surfaceName}" write target "${w.name}" is patchable but declares no updatesValue — an anchored edit has nothing to read.`,
+        );
+      }
+      // Patching a boolean or a number is nonsense: the anchor vocabulary is
+      // about text, and re-sending the whole value costs nothing.
+      if (w.patchable && w.valueType !== "string" && w.valueType !== "document") {
+        errors.push(
+          `Surface "${m.surfaceName}" write target "${w.name}" is patchable but valueType is "${w.valueType}" (patching is for "string" | "document").`,
         );
       }
       if (w.group && !groupKeys.has(w.group)) {

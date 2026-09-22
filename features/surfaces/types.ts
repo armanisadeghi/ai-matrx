@@ -295,6 +295,29 @@ export interface SurfaceWriteTarget {
    */
   approvalComparison?: "text-replacement";
   /**
+   * This target accepts an ANCHORED EDIT as well as a whole value.
+   *
+   * A patchable target still takes a plain string exactly as before —
+   * patchability only ADDS the option of sending
+   * `{command, old_str, new_str}` (the backend `ctx_patch` vocabulary, safe
+   * subset) instead of re-transmitting the entire text to change part of it.
+   * The patch is resolved against the CURRENT value at the seam
+   * (`resolveSurfaceWritePatch`), so the value contract, the approval card
+   * and the page's own handler all still see one finished string, and the
+   * handler needs no changes to gain this.
+   *
+   * Declare it on long free-text targets (a system prompt, a document body,
+   * a description someone actually writes paragraphs into). Pointless on a
+   * short field — re-sending a name costs nothing and an anchor into eight
+   * words is more fragile than the string it replaces.
+   *
+   * REQUIRES `updatesValue`: the patch is applied to the current text read
+   * from that declared SurfaceValue, and there is nothing to anchor against
+   * without it. A patchable target with no read twin is a manifest defect
+   * (`pnpm check:surface-drift` fails on it).
+   */
+  patchable?: boolean;
+  /**
    * Where the write lands:
    * - `"draft"`  — staged into the page's editor/draft state; the USER still
    *   reviews and saves. The preferred default (additive, reversible).
