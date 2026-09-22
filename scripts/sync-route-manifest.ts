@@ -19,11 +19,18 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import dotenv from "dotenv";
 import { getAdminSupabaseClient } from "../utils/supabase/getScriptClient";
 import type { RouteManifest } from "../lib/route-manifest/generate";
 
 const REPO_ROOT = path.resolve(__dirname, "..");
 const MANIFEST = path.join(REPO_ROOT, "lib", "route-manifest", "manifest.generated.json");
+
+// Release gates launch scripts directly rather than through Next, so Next's
+// automatic `.env.local` loading is not present. Load the repository env here
+// before the admin client validates its required settings.
+dotenv.config({ path: path.join(REPO_ROOT, ".env.local"), quiet: true });
+dotenv.config({ path: path.join(REPO_ROOT, ".env"), quiet: true });
 
 function headSha(): string {
   try {
