@@ -311,10 +311,14 @@ const PrivacyPolicyPage = () => {
           Google Workspace content is used only to provide or improve the
           user-facing feature you request. It is not sold, used for advertising,
           used to determine creditworthiness, or used to train or fine-tune a
-          generalized AI model. If you explicitly ask an AI Matrx agent to
-          reason over selected Workspace content, the content needed for that
-          request may be sent to the model provider configured for that agent
-          solely to return your requested result, as described in Section 3.1.
+          generalized AI model. When you run an agent from a CRM record, its
+          recorded interactions may be included in the agent context, including
+          subjects and body text from matched outreach replies and Gmail
+          messages sent from that record. This context may be sent to the model
+          provider configured for that agent solely to answer your request. An
+          on-demand Gmail search or message view is not automatically sent to an
+          agent. Other Workspace content you choose to give an agent may also
+          be sent for that request, as described in Section 3.1.
         </p>
         <p>
           The use of information received from Google Workspace APIs will adhere
@@ -615,9 +619,11 @@ const PrivacyPolicyPage = () => {
             Workspace connection control in AI Matrx to revoke Google
             authorization and remove the saved server-side credential and
             selected-file references. This does not delete any CRM interactions
-            previously saved from matched outreach replies; request their
-            deletion separately or request account deletion. You can also revoke
-            AI Matrx from your Google Account permissions.
+            previously saved from matched outreach replies. To request deletion
+            of those CRM copies, contact{" "}
+            <a href="mailto:support@aimatrx.com">support@aimatrx.com</a>, or
+            request account deletion. You can also revoke AI Matrx from your
+            Google Account permissions.
           </li>
           <li>
             <strong>Disconnect Amazon.</strong> Use the Amazon connection
