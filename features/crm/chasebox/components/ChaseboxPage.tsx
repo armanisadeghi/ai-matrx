@@ -183,8 +183,6 @@ export function ChaseboxPage() {
           draft_body: reviewedDraft?.body ?? undefined,
           draft_personalization: reviewedDraft?.personalization ?? undefined,
           draft_reply: reviewedDraft?.reply ?? undefined,
-          draft_reply_source_interactions:
-            reviewedDraft?.reply_source_interactions ?? undefined,
           draft_approved: reviewedDraft?.approved ?? undefined,
         })
       }

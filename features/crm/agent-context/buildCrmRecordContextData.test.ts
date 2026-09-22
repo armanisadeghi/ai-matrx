@@ -66,7 +66,7 @@ function interaction(overrides: Partial<InteractionRow>): InteractionRow {
 }
 
 describe("CRM record model-transfer boundary", () => {
-  it("removes canonically marked Gmail content and its derived last-touch time", () => {
+  it("keeps only opaque IDs for every interaction", () => {
     const dentalCall = interaction({
       id: "44444444-4444-4444-8444-444444444444",
       body: "Harbor Dental confirmed the intake review by phone.",
@@ -76,106 +76,57 @@ describe("CRM record model-transfer boundary", () => {
     });
     const gmailReply = interaction({
       id: "55555555-5555-4555-8555-555555555555",
+      attributes: {
+        outreach_inbound: {
+          label: "interested",
+          evidence: "They asked for a walkthrough.",
+        },
+      },
       body: "Restricted Gmail reply body",
       channel_code: "email",
       direction: "inbound",
-      occurred_at: "2026-09-22T11:00:00+00:00",
       provider: "google_workspace",
-      provider_interaction_id: "gmail-message-842",
+      subject: "Restricted Gmail subject",
     });
 
     const context = buildModelSafeInteractionContext([dentalCall, gmailReply]);
 
-    expect(context.interactions).toEqual([dentalCall]);
-    expect(context.lastTouchAt).toBe("2026-09-22T10:00:00+00:00");
-    expect(JSON.stringify(context)).not.toContain(
-      "Restricted Gmail reply body",
-    );
-  });
-
-  it("also removes Gmail rows created before the canonical provider stamp", () => {
-    const earlierGmailReply = interaction({
-      id: "66666666-6666-4666-8666-666666666666",
-      attributes: { outreach_inbound: { label: "interested" } },
-      body: "Earlier restricted Gmail reply",
-      channel_code: "email",
-      direction: "inbound",
-      occurred_at: "2026-09-21T16:00:00+00:00",
-    });
-
-    expect(buildModelSafeInteractionContext([earlierGmailReply])).toEqual({
-      interactions: [],
+    expect(context).toEqual({
+      interactions: [
+        { id: "44444444-4444-4444-8444-444444444444" },
+        { id: "55555555-5555-4555-8555-555555555555" },
+      ],
       lastTouchAt: undefined,
     });
+    expect(JSON.stringify(context)).not.toContain("intake review");
+    expect(JSON.stringify(context)).not.toContain("Restricted Gmail");
+    expect(JSON.stringify(context)).not.toContain("walkthrough");
   });
 
-  it.each(["gmail", "google_workspace", "unverified_mail_provider"])(
-    "removes inbound email from restricted or unverified provider %s",
-    (provider) => {
-      const restricted = interaction({
-        channel_code: "email",
-        direction: "inbound",
-        provider,
-        subject: "Restricted intake subject",
-        body: "Restricted intake response",
+  it.each([
+    { direction: "outbound", channel_code: "note" },
+    { direction: "outbound", channel_code: "phone" },
+  ] as const)(
+    "strips content after Gmail provenance is relabeled as $direction/$channel_code",
+    ({ direction, channel_code }) => {
+      const relabeledGmail = interaction({
+        id: "66666666-6666-4666-8666-666666666666",
+        attributes: {},
+        body: "Relabeled Gmail body",
+        channel_code,
+        direction,
+        provider: "microsoft_365",
+        subject: "Relabeled Gmail subject",
       });
 
-      expect(buildModelSafeInteractionContext([restricted])).toEqual({
-        interactions: [],
+      const context = buildModelSafeInteractionContext([relabeledGmail]);
+
+      expect(context).toEqual({
+        interactions: [{ id: "66666666-6666-4666-8666-666666666666" }],
         lastTouchAt: undefined,
       });
+      expect(JSON.stringify(context)).not.toContain("Relabeled Gmail");
+      expect(JSON.stringify(context)).not.toContain("microsoft_365");
     },
   );
-
-  it("keeps organization-authored mail delivered through Google Workspace", () => {
-    const outboundEmail = interaction({
-      id: "77777777-7777-4777-8777-777777777777",
-      body: "Harbor Dental intake walkthrough details.",
-      channel_code: "email",
-      direction: "outbound",
-      occurred_at: "2026-09-22T12:00:00+00:00",
-      provider: "google_workspace",
-    });
-
-    expect(buildModelSafeInteractionContext([outboundEmail])).toEqual({
-      interactions: [outboundEmail],
-      lastTouchAt: "2026-09-22T12:00:00+00:00",
-    });
-  });
-
-  it("removes ambiguous inbound email while keeping inbound calls and known non-Gmail mail", () => {
-    const ambiguousEmail = interaction({
-      id: "88888888-8888-4888-8888-888888888888",
-      channel_code: "email",
-      direction: "inbound",
-      provider: null,
-      attributes: {},
-      body: "Ambiguous inbound email body",
-    });
-    const inboundCall = interaction({
-      id: "99999999-9999-4999-8999-999999999999",
-      channel_code: "phone",
-      direction: "inbound",
-      provider: null,
-      body: "Harbor Dental called about intake scheduling.",
-    });
-    const outlookEmail = interaction({
-      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-      channel_code: "email",
-      direction: "inbound",
-      provider: "microsoft_365",
-      body: "Known non-Gmail inbound email.",
-    });
-
-    const context = buildModelSafeInteractionContext([
-      ambiguousEmail,
-      inboundCall,
-      outlookEmail,
-    ]);
-
-    expect(context.interactions).toEqual([inboundCall, outlookEmail]);
-    expect(JSON.stringify(context)).not.toContain(
-      "Ambiguous inbound email body",
-    );
-  });
 });

@@ -23916,6 +23916,7 @@ export type Database = {
         }
         Returns: string
       }
+      erase_interaction: { Args: { p_interaction_id: string }; Returns: Json }
       evaluate_outreach_list_quality: {
         Args: { p_list_id: string }
         Returns: Json

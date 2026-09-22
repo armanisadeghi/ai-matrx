@@ -1,7 +1,7 @@
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import type { PlatformComment as Comment } from "@ai-matrx/associations";
 import {
-  isGmailDerivedInteraction,
+  buildModelSafeInteractionReference,
   readInboundClassification,
 } from "@/features/crm/inbox/attributes";
 import { MEDIUM_BLOCK_LABELS, mediumBlocks } from "@/features/crm/reachability";
@@ -290,9 +290,6 @@ export function buildInteractionCopyView(row: InteractionRow) {
     body: row.body,
     classification: classification?.rawLabel ?? null,
     classification_evidence: classification?.evidence ?? null,
-    // Kept beside the local copy view so every Activity → agent serializer
-    // uses the same source decision. Clipboard formatting remains local.
-    model_transfer_restricted: isGmailDerivedInteraction(row),
   };
 }
 
@@ -320,24 +317,16 @@ export function interactionAgentPayload(
   parent: CrmRecordCopyParent,
   row: InteractionRow,
 ): AgentPayloadInput {
-  if (isGmailDerivedInteraction(row)) {
-    throw new Error(
-      "Gmail-derived activity cannot be sent to the configured model provider.",
-    );
-  }
-  const view = buildInteractionCopyView(row);
-  const { model_transfer_restricted: _restricted, ...safeView } = view;
+  const safeReference = buildModelSafeInteractionReference(row);
   return {
     kind: "crm-record-activity-item",
     location: "CRM record — Activity",
     description: `One activity item visible on ${parent.label}.`,
-    data: safeView,
-    summary: formatInteractionCopy(view),
+    data: safeReference,
+    summary: `Activity item — ${parent.label}\nInteraction ID: ${row.id}`,
     attributes: {
       record_id: parent.id,
       interaction_id: row.id,
-      channel: view.channel,
-      direction: view.direction,
     },
     context: { ...parentContext(parent), interaction_id: row.id },
   };
@@ -360,34 +349,22 @@ export function formatInteractionsCopy(
 export function interactionsAgentPayload(
   parent: CrmRecordCopyParent,
   rows: InteractionRow[],
-  includeBodies = true,
+  _includeBodies = true,
 ): AgentPayloadInput {
-  const safeViews = rows
-    .filter((row) => !isGmailDerivedInteraction(row))
-    .map(buildInteractionCopyView);
-  if (safeViews.length === 0 && rows.length > 0) {
-    throw new Error(
-      "Gmail-derived activity cannot be sent to the configured model provider.",
-    );
-  }
-  const data = includeBodies
-    ? safeViews.map(
-        ({ model_transfer_restricted: _restricted, ...view }) => view,
-      )
-    : safeViews.map(({ model_transfer_restricted: _restricted, ...view }) => ({
-        ...view,
-        body: null,
-      }));
+  const data = rows.map(buildModelSafeInteractionReference);
   return {
     kind: "crm-record-activity",
     location: "CRM record — Activity",
-    description: `${includeBodies ? "All visible activity details" : "An activity overview"} for ${parent.label}.`,
+    description: `Opaque references for the activity visible on ${parent.label}.`,
     data,
-    summary: formatInteractionsCopy(parent, safeViews, includeBodies),
+    summary: [
+      `Activity — ${parent.label}`,
+      ...data.map((row) => `Interaction ID: ${row.id}`),
+    ].join("\n"),
     attributes: {
       record_id: parent.id,
-      count: safeViews.length,
-      includes_bodies: includeBodies,
+      count: data.length,
+      includes_bodies: false,
     },
     context: parentContext(parent),
   };

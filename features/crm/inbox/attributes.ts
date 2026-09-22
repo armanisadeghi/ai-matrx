@@ -39,8 +39,6 @@
 import { isJsonObject } from "@/types/json";
 import type { InteractionRow } from "../types";
 
-const VERIFIED_NON_GMAIL_INBOUND_EMAIL_PROVIDERS = new Set(["microsoft_365"]);
-
 /**
  * The classifier's verdict on an inbound reply. Closed set, mirrored from the
  * ingester's contract — anything else renders as "other" rather than as a raw
@@ -89,36 +87,22 @@ function readString(source: Record<string, unknown> | null, key: string): string
   return typeof value === "string" && value.trim() ? value : null;
 }
 
+/** The only interaction fields allowed to cross a model-provider boundary. */
+export type ModelSafeInteractionReference = Pick<InteractionRow, "id">;
+
 /**
- * Whether an interaction contains data obtained from Gmail.
+ * Reduce an interaction to its opaque identifier before model transfer.
  *
- * New rows carry the canonical `provider` column. Rows created before that
- * source stamp are still identifiable by the Gmail ingester's one
- * `attributes.outreach_inbound` block. Direction is part of the predicate so
- * an outbound message merely delivered through Google Workspace remains
- * ordinary organization-authored CRM content. An inbound email with neither
- * a verified non-Gmail provider is ambiguous and fails closed. The allowlist
- * is intentionally explicit so aliases such as `gmail` and future providers
- * cannot silently become safe; calls, notes, and outbound organization content
- * remain available.
+ * Every row field that could classify provenance (`provider`, `attributes`,
+ * `direction`, and `channel_code`) is editor-writable. None can prove that the
+ * subject, body, classification, or evidence did not originate in Gmail. Keep
+ * human-facing copy local and expose only this non-content reference until the
+ * server supplies immutable provenance.
  */
-export function isGmailDerivedInteraction(
-  interaction: Pick<
-    InteractionRow,
-    "attributes" | "channel_code" | "direction" | "provider"
-  >,
-): boolean {
-  if (
-    interaction.direction !== "inbound" ||
-    interaction.channel_code !== "email"
-  ) {
-    return false;
-  }
-  const provider = interaction.provider?.trim().toLowerCase() ?? "";
-  return (
-    readObject(interaction.attributes, "outreach_inbound") !== null ||
-    !VERIFIED_NON_GMAIL_INBOUND_EMAIL_PROVIDERS.has(provider)
-  );
+export function buildModelSafeInteractionReference(
+  interaction: Pick<InteractionRow, "id">,
+): ModelSafeInteractionReference {
+  return { id: interaction.id };
 }
 
 /** The classifier block, whichever of the two accepted paths it arrived on. */

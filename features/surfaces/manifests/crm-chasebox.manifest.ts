@@ -24,24 +24,8 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
 } from "@/features/surfaces/types";
-import { isGmailDerivedInteraction } from "@/features/crm/inbox/attributes";
-import type { InteractionRow } from "@/features/crm/types";
 
 export const CRM_CHASEBOX_SURFACE_NAME = "matrx-user/crm-chasebox";
-
-export function isReplyThreadModelSafe(
-  interactions: InteractionRow[],
-  sourceInteractionId: string | null,
-): boolean {
-  if (!sourceInteractionId) return false;
-  const inboundEmails = interactions.filter(
-    (row) => row.direction === "inbound" && row.channel_code === "email",
-  );
-  return (
-    inboundEmails.some((row) => row.id === sourceInteractionId) &&
-    inboundEmails.every((row) => !isGmailDerivedInteraction(row))
-  );
-}
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -251,9 +235,7 @@ export function createCrmChaseboxScope(values: {
     grounded_on: string[];
     answering_label: string | null;
     thread_message_count: number | null;
-    replying_to_interaction_id: string | null;
   };
-  draft_reply_source_interactions?: InteractionRow[];
   draft_approved?: boolean;
 }): SurfaceScopePayload {
   const {
@@ -261,7 +243,6 @@ export function createCrmChaseboxScope(values: {
     draft_body,
     draft_personalization,
     draft_reply,
-    draft_reply_source_interactions,
     draft_approved,
     ...base
   } = values;
@@ -273,19 +254,15 @@ export function createCrmChaseboxScope(values: {
       (item) => item.queue !== "fresh_replies",
     ),
   };
-  const verifiedNonGmailReply = Boolean(
-    draft_reply &&
-      isReplyThreadModelSafe(
-        draft_reply_source_interactions ?? [],
-        draft_reply.replying_to_interaction_id,
-      ),
-  );
-  if (!draft_reply || verifiedNonGmailReply) {
-    safeScope.draft_subject = draft_subject;
-    safeScope.draft_body = draft_body;
-    safeScope.draft_personalization = draft_personalization;
-    safeScope.draft_reply = draft_reply;
-    safeScope.draft_approved = draft_approved;
-  }
+  // Every draft classifier and provenance field available here is writable by
+  // an authenticated editor. Omitting a reply marker therefore cannot prove a
+  // draft is a first touch. Human review keeps the full draft locally, while
+  // model scope excludes every open-draft field until the server supplies an
+  // authoritative decision over current and tombstoned history.
+  void draft_subject;
+  void draft_body;
+  void draft_personalization;
+  void draft_reply;
+  void draft_approved;
   return safeScope as SurfaceScopePayload;
 }

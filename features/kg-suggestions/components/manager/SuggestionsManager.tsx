@@ -18,6 +18,8 @@ import { toast } from "@/lib/toast";
 import {
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Lightbulb,
   Network,
@@ -45,6 +47,7 @@ import {
   useSourcePreviewController,
 } from "@/features/kg-suggestions/components/source-preview/SourcePreviewContext";
 import { SourcePreviewPanel } from "@/features/kg-suggestions/components/source-preview/SourcePreviewPanel";
+import { SuggestionsFilterBar } from "./SuggestionsFilterBar";
 import { SuggestionsTable } from "./SuggestionsTable";
 
 export function SuggestionsManager() {
@@ -230,7 +233,35 @@ export function SuggestionsManager() {
 
   // ── Main area (the "little stuff": field fills + plain links) ────────────
   let mainArea: React.ReactNode;
-  if (loading && rows.length === 0 && !hasHeavy) {
+  if (!isMobile) {
+    mainArea = (
+      <>
+        {error ? (
+          <div role="alert" className="px-3 py-2 text-sm text-destructive">
+            Couldn&apos;t load suggestions: {error}
+          </div>
+        ) : null}
+        <SuggestionsTable
+          rows={rows}
+          total={total}
+          loading={loading}
+          refresh={refresh}
+          query={query}
+          patchQuery={patchQuery}
+          expandedId={expandedId}
+          onExpandedIdChange={setExpandedId}
+          selected={selected}
+          onSelectedChange={setSelected}
+          sourceTitles={sourceTitles}
+          accept={accept}
+          reject={reject}
+          defer={defer}
+          star={star}
+          restore={restore}
+        />
+      </>
+    );
+  } else if (loading && rows.length === 0 && !hasHeavy) {
     mainArea = (
       <div className="space-y-2 p-3">
         {Array.from({ length: 8 }).map((_, i) => (
@@ -253,7 +284,7 @@ export function SuggestionsManager() {
           : "No suggestions match these filters."}
       </div>
     );
-  } else if (isMobile) {
+  } else {
     mainArea = (
       <div className="space-y-2 p-3 pb-safe">
         {rows.map((row) => (
@@ -266,27 +297,6 @@ export function SuggestionsManager() {
           />
         ))}
       </div>
-    );
-  } else {
-    mainArea = (
-      <SuggestionsTable
-        rows={rows}
-        total={total}
-        loading={loading}
-        refresh={refresh}
-        query={query}
-        patchQuery={patchQuery}
-        expandedId={expandedId}
-        onExpandedIdChange={setExpandedId}
-        selected={selected}
-        onSelectedChange={setSelected}
-        sourceTitles={sourceTitles}
-        accept={accept}
-        reject={reject}
-        defer={defer}
-        star={star}
-        restore={restore}
-      />
     );
   }
 
@@ -416,24 +426,41 @@ export function SuggestionsManager() {
               <Star className="h-3 w-3 text-amber-500" />
               {starredCount} starred
             </span>
-            <button
-              type="button"
-              onClick={refresh}
-              className="ml-auto inline-flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-accent hover:text-foreground transition-colors"
-            >
-              <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} />
-              Refresh
-            </button>
+            {isMobile ? (
+              <button
+                type="button"
+                onClick={refresh}
+                className="ml-auto inline-flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-accent hover:text-foreground transition-colors"
+              >
+                <RefreshCw
+                  className={cn("h-3 w-3", loading && "animate-spin")}
+                />
+                Refresh
+              </button>
+            ) : null}
           </div>
 
           {/* Scroll body — heavy hitters lead; the table owns the vertical scroll so
           its header stays sticky. On mobile everything shares one scroll area. */}
           {isMobile ? (
-            <div className="flex-1 min-h-0 overflow-auto">
-              {heavySection}
-              {mainArea}
-              {lowQualitySection}
-            </div>
+            <>
+              <SuggestionsFilterBar
+                query={query}
+                patchQuery={patchQuery}
+                rows={rows}
+              />
+              <div className="flex-1 min-h-0 overflow-auto">
+                {heavySection}
+                {mainArea}
+                {lowQualitySection}
+              </div>
+              <MobileSuggestionsPagination
+                page={query.page ?? 0}
+                pageSize={query.pageSize ?? 50}
+                total={total}
+                patchQuery={patchQuery}
+              />
+            </>
           ) : (
             <div className="flex min-h-0 flex-1 flex-col">
               {hasHeavy ? (
@@ -464,3 +491,45 @@ function sumStats(
 }
 
 export default SuggestionsManager;
+
+function MobileSuggestionsPagination({
+  page,
+  pageSize,
+  total,
+  patchQuery,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  patchQuery: (patch: Partial<KgSuggestionsQuery>) => void;
+}) {
+  const from = total === 0 ? 0 : page * pageSize + 1;
+  const to = Math.min(total, (page + 1) * pageSize);
+  return (
+    <div className="flex items-center justify-between border-t border-border px-3 py-1.5 pb-safe text-[11px] text-muted-foreground">
+      <span className="tabular-nums">
+        {from}–{to} of {total}
+      </span>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          disabled={page === 0}
+          onClick={() => patchQuery({ page: page - 1 })}
+          className="inline-flex items-center gap-0.5 rounded px-2 py-1 transition-colors hover:bg-accent disabled:opacity-40"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+          Prev
+        </button>
+        <button
+          type="button"
+          disabled={(page + 1) * pageSize >= total}
+          onClick={() => patchQuery({ page: page + 1 })}
+          className="inline-flex items-center gap-0.5 rounded px-2 py-1 transition-colors hover:bg-accent disabled:opacity-40"
+        >
+          Next
+          <ChevronRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
