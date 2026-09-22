@@ -205,7 +205,18 @@ const DECLARED_LADDER_CENSUS = (rungs: string[]) => `
  * FUNCTION` gives them PUBLIC EXECUTE by default, and both DDL guards exempt them for the
  * same reason.
  */
-const INVOKER_DOOR_CENSUS = (exempt: boolean) => `
+/**
+ * `pretendGranted` exists for the RED half only. SUITES-TIDY-2, 2026-09-22: the old red half
+ * simply dropped the trigger exemption and expected schema `custom`'s 31 INVOKER trigger
+ * bodies to appear. They cannot appear any more — census 8's closed-schema rule has taken
+ * `authenticated`'s EXECUTE back off every one of them, so the grant filter empties the
+ * census before the exemption matters, and the self-test failed for the store being TIGHTER.
+ * An inversion that can no longer go red is not a proof, so the red half now also pretends
+ * the grant is still there. That still exercises the part of the census that is a real
+ * question — does this body reach `custom.record`, or a function of this schema the caller
+ * may not execute — against real bodies.
+ */
+const INVOKER_DOOR_CENSUS = (exempt: boolean, pretendGranted = false) => `
   select p.proname::text as function_name, pg_get_function_identity_arguments(p.oid) as identity_args,
          'a client may execute it and it is SECURITY INVOKER, so it runs with the CALLER''s '
          'privileges - and it reaches ' ||
@@ -224,7 +235,7 @@ const INVOKER_DOOR_CENSUS = (exempt: boolean) => `
    where p.pronamespace = 'custom'::regnamespace
      and not p.prosecdef
      ${exempt ? `and p.prorettype not in ('pg_catalog.trigger'::regtype, 'pg_catalog.event_trigger'::regtype)` : ""}
-     and has_function_privilege('authenticated', p.oid, 'EXECUTE')
+     and ${pretendGranted ? "true" : "has_function_privilege('authenticated', p.oid, 'EXECUTE')"}
      -- THE REAL QUESTION, NOT A PROXY FOR IT (lane ENTITY-FIELDS, 2026-09-20). This used to
      -- read \`custom.record|custom.assert_|assert_client_may|has_visibility\`, which is the
      -- shape the defect happened to have rather than the thing that makes it a defect. It
@@ -474,6 +485,20 @@ const LIST_DOOR_CENSUS = (
  */
 const REFUSAL_CENSUS = `select function_name, identity_args, why
    from custom.refusals_claiming_a_level_never_asked()`;
+
+/**
+ * CENSUS 17 — A REFUSAL NAMES THE DOOR THE PERSON CALLED.
+ *
+ * `custom.portals` was a one-line wrapper over `custom.list_portals`, and the organization
+ * wall it borrowed lives inside the delegate, which names ITSELF. So a person who called
+ * `custom.portals` was refused with "…so custom.list_portals has nothing to do there" — a
+ * function she never called and cannot execute. The censuses above ask whether a door
+ * DECIDES; this one asks whether it decides UNDER ITS OWN NAME, which is a different
+ * question and the one that produced the defect. Its body, its exemptions and the reason
+ * for each live in `custom.doors_refusing_in_another_doors_name()` (SUITES-TIDY-2).
+ */
+const DOOR_NAME_CENSUS = `select function_name, identity_args, why
+   from custom.doors_refusing_in_another_doors_name()`;
 
 const T10_ORG = "2ef10000-0000-4a00-8a00-0000000000e1";
 const T10_PRETEND = "a_home_of_a_table_is_the_whole_table";
@@ -938,17 +963,18 @@ async function main(): Promise<void> {
       // CENSUS 11, THE RED HALF. With trigger functions no longer exempt, every SECURITY
       // INVOKER trigger body in this schema that touches the store must be named. An empty
       // answer would mean the query is not reading the catalogue it claims to.
-      const redInvoker = (await client.query<Row>(INVOKER_DOOR_CENSUS(false))).rows;
+      const redInvoker = (await client.query<Row>(INVOKER_DOOR_CENSUS(false, true))).rows;
       if (redInvoker.length === 0) {
         fail(
-          "SELF-TEST FAILED - with trigger functions no longer exempt, the SECURITY INVOKER " +
-            "census named nothing at all. Schema `custom` is full of INVOKER trigger bodies " +
-            "that touch custom.record, so an empty answer means it is not reading them.",
+          "SELF-TEST FAILED - with trigger functions no longer exempt and the grant filter " +
+            "pretended away, the SECURITY INVOKER census named nothing at all. Schema `custom` " +
+            "is full of INVOKER trigger bodies that touch custom.record, so an empty answer " +
+            "means it is not reading them.",
         );
       }
       console.log(
-        `[ OK ] self-test - without the trigger exemption the SECURITY INVOKER census names ` +
-          `${redInvoker.length} function(s). It can go red.`,
+        `[ OK ] self-test - without the trigger exemption, and with the grant pretended, the ` +
+          `SECURITY INVOKER census names ${redInvoker.length} function(s). It can go red.`,
       );
 
       // CENSUS 12, THE RED HALF. The two states this really was in, each of which must produce
@@ -1082,6 +1108,52 @@ async function main(): Promise<void> {
       console.log(
         "[ OK ] self-test - after ROLLBACK the recorded fingerprint and the live bodies agree again.",
       );
+
+      // CENSUS 17's RED HALF — the ACTUAL defect, put back inside a rolled-back
+      // transaction: `custom.portals` as the one-line wrapper it was before
+      // DOORS-DECIDE-3, borrowing its organization wall from `custom.list_portals`,
+      // which names itself. A person who called `custom.portals` was then refused with
+      // "…so custom.list_portals has nothing to do there". If this does not go red, the
+      // zero above is a zero about nothing.
+      await client.query("begin");
+      try {
+        await client.query("set local lock_timeout = '20s'");
+        await client.query(`
+          create or replace function custom.portals(p_organization_id uuid)
+           returns table(portal_id uuid, title text, slug text, client_table_id uuid,
+                         client_table text, is_active boolean, tables integer, invited integer,
+                         signed_in integer, sign_in_method text, opened_at timestamp with time zone)
+           language plpgsql stable security definer set search_path to 'pg_catalog'
+          as $planted$
+          begin
+            return query select * from custom.list_portals(p_organization_id, 'active');
+          end $planted$;`);
+        const wrapped = (await client.query<Row>(DOOR_NAME_CENSUS)).rows;
+        const named = wrapped.filter((r) => r.function_name === "portals");
+        if (named.length === 0) {
+          await client.query("rollback").catch(() => undefined);
+          fail(
+            "SELF-TEST FAILED - custom.portals was put back as the one-line wrapper that borrows " +
+              "its organization wall from custom.list_portals, and census 17 did not name it. Then " +
+              "the census is not reading the shape the defect lived in, and its zero above proves " +
+              "nothing about any other door.",
+          );
+        }
+        console.log(`[ OK ] self-test - ${named[0]!.function_name}: ${named[0]!.why}`);
+      } finally {
+        await client.query("rollback").catch(() => undefined);
+      }
+      const unwrapped = (await client.query<Row>(DOOR_NAME_CENSUS)).rows;
+      if (unwrapped.length !== 0) {
+        fail(
+          "SELF-TEST FAILED - the planted wrapper was rolled back and census 17 still names " +
+            `${unwrapped.length} door(s). Either the plant escaped its transaction (it must not) ` +
+            "or a door really is refusing in another door's name.",
+        );
+      }
+      console.log(
+        "[ OK ] self-test - after ROLLBACK every door refuses under the name it was called by.",
+      );
     }
 
     const callers = (await client.query<Row>(CALLER_CENSUS(DECIDERS))).rows;
@@ -1095,6 +1167,7 @@ async function main(): Promise<void> {
     const rendering = (await client.query<Row>(IDENTITY_RENDERING_CENSUS)).rows;
     const invokerDoors = (await client.query<Row>(INVOKER_DOOR_CENSUS(true))).rows;
     const refusals = (await client.query<Row>(REFUSAL_CENSUS)).rows;
+    const doorNames = (await client.query<Row>(DOOR_NAME_CENSUS)).rows;
 
     // CENSUS 12 — the three answers, live, in every organization that has said `shared_only`.
     // `mirror-admits-less` is a failure only when census 7 is non-empty, so the two are read
@@ -1246,6 +1319,10 @@ async function main(): Promise<void> {
       report(
         "doors that refuse by telling the caller they may read a record the door never asked about",
         refusals,
+      ),
+      report(
+        "doors whose refusal names a door the person never called",
+        doorNames,
       ),
       report(
         "functions the one ladder reaches that re-plan their body on every call",
