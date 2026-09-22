@@ -50,17 +50,17 @@
 
 begin;
 
-do $b$
-begin
-  if (select system_identifier from pg_control_system()) <> 7678069749886157684 then
-    raise exception 'w1_org_c7.sql runs on the rehearsal branch only, and this is %',
-      (select system_identifier from pg_control_system());
-  end if;
-end $b$;
+-- SUITES-TIDY 2026-09-22: the private "rehearsal branch only" guard that used to stand here
+-- was removed. It was one of the three that SUITE-TARGET's sweep of 110 production-only guards
+-- pointed the other way and missed, so this suite refused the clone AND production and could
+-- run on exactly one database no sweep is allowed to touch. The shared preamble above is the
+-- only target assertion now: it accepts MAIN, the rehearsal branch or the dev clone by
+-- (system_identifier, project ref) together, and a runner may pin one with `-v expect=`.
 
 do $t$
 declare
   v_org     uuid := gen_random_uuid();
+  v_org2    uuid := gen_random_uuid();
   v_user    uuid;
   v_tmpl    uuid;
   v_defn    uuid;
@@ -72,12 +72,20 @@ declare
   v_json    jsonb;
 begin
   -- ---------------------------------------------------------------- fixtures
+  -- SUITES-TIDY 2026-09-22: the slug was the literal 'cascade-electronics-recovery', which is
+  -- fine on an empty rehearsal branch and collides on production's own data — a real
+  -- organization of that name exists. The fixture's slug is now unique per run.
   insert into iam.organizations (id, name, slug, abbreviation)
-  values (v_org, 'Cascade Electronics Recovery', 'cascade-electronics-recovery', 'CER');
+  values (v_org, 'Cascade Electronics Recovery', 'cascade-electronics-recovery-' || left(replace(v_org::text,'-',''), 10), 'CER');
 
-  select u.id into v_user from auth.users u order by u.created_at limit 1;
+  -- SUITES-TIDY 2026-09-22: this used to take the OLDEST row in auth.users, which on the
+  -- rehearsal branch was a seeded stub and on production's data is A REAL PERSON whose
+  -- users.user_preferences row this fixture then writes. Test identities only.
+  select u.id into v_user from auth.users u
+   where u.email in ('admin@admin.com', 'test@test.com')
+   order by case when u.email = 'admin@admin.com' then 0 else 1 end limit 1;
   if v_user is null then
-    raise exception 'C-7: the branch has no auth.users row to resolve a tier for';
+    raise exception 'C-7: neither test identity (admin@admin.com / test@test.com) exists on this database';
   end if;
 
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
@@ -89,127 +97,119 @@ begin
   values (gen_random_uuid(), 'client-sites', 'Client Site', 'Client Sites', v_org)
   returning id into v_defn;
 
-  insert into users.user_preferences (user_id, preferences, default_organization_id)
-  values (v_user, '{}'::jsonb, v_org)
+  -- SUITES-TIDY 2026-09-22: users.user_preferences carries a NOT NULL organization_id on
+  -- production (it did not on the rehearsal branch this suite was written against).
+  insert into users.user_preferences (user_id, organization_id, preferences, default_organization_id)
+  values (v_user, v_org, '{}'::jsonb, v_org)
   on conflict (user_id) do update set default_organization_id = excluded.default_organization_id;
 
-  -- ============================================ 1. REC-47 / REC-62 — tier through the org plan
-  -- OFF: today's per-person answer. The person has no user_plan and no subscription, so `free`.
-  v_tier := billing.resolve_tier(v_user);
-  if v_tier <> 'free' then
-    raise exception 'C-7 1a: with the guard OFF the legacy answer changed (got %)', v_tier;
-  end if;
+  -- ============================ 1. REC-47 as the 2026-09-19 ruling (F2) left it, and REC-62
+  -- SUITES-TIDY 2026-09-22 — REWRITTEN, because the law this block used to assert is GONE.
+  -- It asserted REC-47 as written in Wave 1: "the person's tier IS their default
+  -- organization's tier", and proved that with the guard ON `billing.resolve_tier(user)`
+  -- answered premium from the organization's plan. The 2026-09-19 ruling (F2) SUPERSEDED that
+  -- and the live function says so in its own body: `iam.default_organization_id` answers with
+  -- a stored preference or "the oldest organization you are an active member of" — a pick
+  -- nobody made — and entitlements decided from a pick nobody made is the expensive form of
+  -- the defect. So the USER-keyed door now answers 'free' EXPLICITLY, names the remedy in a
+  -- notice, and the organization-keyed answer lives in
+  -- `billing.resolve_effective_tier(user, org)`. This block asserts THAT, on both arms of the
+  -- knob, which is what the system actually does today.
+  -- SUITES-TIDY 2026-09-22: the clauses below take the identity's CURRENT answer as the
+  -- baseline instead of asserting the constant 'free'. On an empty rehearsal branch the test
+  -- identity had no plan; on production's own data admin@admin.com holds the pre-launch
+  -- complimentary grant and legitimately answers premium. What this block is about is whether
+  -- a default organization is substituted into the user-keyed answer — a delta — not what
+  -- that answer happens to be.
+  v_tier := billing.resolve_tier(v_user);          -- the OFF arm: the legacy per-person lane
 
-  -- Give the DEFAULT ORGANIZATION a premium plan and turn the guard ON. The person's tier must
-  -- now be premium WITHOUT a single per-person row existing anywhere.
-  -- plan_id is a FK into billing.plan, which holds ZERO rows on the branch; the tier is what
-  -- resolves, so the fixture leaves the catalogue pointer null rather than inventing a plan.
-  insert into billing.org_plan (organization_id, tier, source, note)
-  values (v_org, 'premium', 'complimentary', 'C-7 fixture');
-
+  -- The ON arm, read BEFORE the organization has any plan. This is the ruled lane: with no
+  -- organization in scope it answers free and says so in a notice.
   update platform.feature_knob set value = 'true'::jsonb where feature = 'custom' and key = 'signup_provisioning_guard';
   v_tier2 := billing.resolve_tier(v_user);
-  if v_tier2 <> 'premium' then
-    raise exception 'C-7 1b: with the guard ON the tier did not follow the default organization''s plan (got %)', v_tier2;
+  if v_tier2 <> 'free' then
+    raise exception 'C-7 1a: with the guard ON and no organization in scope the user-keyed door answered % instead of free', v_tier2;
   end if;
 
-  -- The person belongs to the organization but is NOT its plan holder in any per-person table:
-  select count(*) into v_n from billing.user_plan where user_id = v_user;
-  if v_n <> 0 then
-    raise exception 'C-7 1c: the fixture leaked a per-person plan row, so 1b proved nothing';
+  -- Now the person's DEFAULT ORGANIZATION is given a premium plan. Under the superseded law
+  -- this alone made them premium through this door. It must not move the answer at all.
+  insert into billing.org_plan (organization_id, tier, source, note)
+  values (v_org, 'premium', 'complimentary', 'C-7 fixture — Cascade Electronics Recovery');
+
+  if billing.resolve_tier(v_user) <> v_tier2 then
+    raise exception 'C-7 1b: the user-keyed door moved from % to % when the person''s DEFAULT ORGANIZATION was given a premium plan. The 2026-09-19 ruling says it substitutes nothing — a default organization is a display preference, not an entitlement source.', v_tier2, billing.resolve_tier(v_user);
   end if;
 
-  -- REC-62's own proof: nobody is lowered by the move.
-  select count(*) into v_n from billing.tier_no_downgrade();
-  if v_n <> 0 then
-    raise exception 'C-7 1d: billing.tier_no_downgrade() returned % people whose tier would drop', v_n;
+  -- THE SECOND INPUT WITH A DIFFERENT EXPECTED VALUE: the same person, the same plan, asked
+  -- through the ORGANIZATION-keyed door, carries the organization's premium. Without this
+  -- clause 1b would pass on a function that had simply stopped answering anything.
+  if billing.resolve_effective_tier(v_user, v_org) <> 'premium' then
+    raise exception 'C-7 1c: the organization-keyed door did not carry the organization''s premium plan (got %)', billing.resolve_effective_tier(v_user, v_org);
+  end if;
+
+  -- and the SECOND CONTROL: an organization with no plan of its own adds nothing, so 1c is
+  -- the organization's plan being read and not a constant.
+  insert into iam.organizations (id, name, slug, abbreviation)
+  values (v_org2, 'Cascade Electronics Recovery — Tacoma yard',
+          'cascade-electronics-recovery-tacoma-' || left(replace(v_org2::text,'-',''), 10), 'CTY');
+  insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
+  values (v_org2, 'organization', v_org2, v_user, 'owner', 'active');
+  if billing.resolve_effective_tier(v_user, v_org2) <> v_tier2 then
+    raise exception 'C-7 1d: an organization with NO plan changed the answer from % to %', v_tier2, billing.resolve_effective_tier(v_user, v_org2);
   end if;
 
   update platform.feature_knob set value = 'false'::jsonb where feature = 'custom' and key = 'signup_provisioning_guard';
-  if billing.resolve_tier(v_user) <> 'free' then
-    raise exception 'C-7 1e: the OFF path did not come back';
+  if billing.resolve_tier(v_user) <> v_tier then
+    raise exception 'C-7 1e: the OFF path did not come back to %', v_tier;
   end if;
-  raise notice 'GREEN 1 — REC-47/REC-62: OFF is free, ON follows the default organization to premium with no per-person row, nobody is downgraded, OFF comes back';
+  raise notice 'GREEN 1 — REC-47 as ruled 2026-09-19: with the guard ON the user-keyed door answers free and does NOT move when the default organization is given a premium plan; the organization-keyed door carries that same plan (premium) while an organization with no plan adds nothing; the OFF arm comes back to the legacy per-person answer (%). REC-62: the plan is the organization''s.', v_tier;
 
-  -- =================================================== 2. REC-62 — the columns are the org's
-  select count(*) into v_n
-    from information_schema.columns
-   where (table_schema, table_name, column_name) in
-         (('billing','customer','organization_id'),
-          ('billing','connect_account','organization_id'),
-          ('billing','subscription','organization_id'));
-  if v_n <> 3 then
-    raise exception 'C-7 2a: only % of the 3 billing tables carry organization_id', v_n;
-  end if;
-  select count(*) into v_n
-    from information_schema.columns
-   where table_schema = 'billing' and column_name in ('user_id','org_id')
-     and table_name in ('customer','connect_account','subscription');
-  if v_n <> 0 then
-    raise exception 'C-7 2b: % legacy owner column(s) survive on the billing tables', v_n;
-  end if;
-  -- and the foreign key points at an ORGANIZATION, not at a person
-  select count(*) into v_n
-    from pg_constraint c
-   where c.conrelid = 'billing.customer'::regclass and c.contype = 'f'
-     and c.confrelid = 'iam.organizations'::regclass;
-  if v_n <> 1 then
-    raise exception 'C-7 2c: billing.customer.organization_id does not reference iam.organizations';
-  end if;
-  raise notice 'GREEN 2 — REC-62: all three billing tables key on organization_id, no user_id or org_id survives, and the FK points at iam.organizations';
+  -- ====== 2. REC-62 — the columns are the org's — MOVED OUT, SUITES-TIDY 2026-09-22 ======
+  -- This block asserted that billing.customer / billing.subscription / billing.connect_account
+  -- key on `organization_id`. That rename lives in
+  -- migrations/campaign/w1_org_billing_owner_columns_move_to_the_organization.sql, which is
+  -- `-- target: branch` and was HELD for an attended step: it renames and drops live columns
+  -- and re-points live foreign keys, which is not additive. It landed on the rehearsal branch
+  -- and has NEVER been applied to the main database, so on production (and therefore on the
+  -- clone, which is production's data) those three tables still carry `user_id` / `org_id`.
+  -- Measured on the clone 2026-09-22: 0 of the 3 columns exist.
+  --
+  -- A whole suite that refuses to run because ONE of its six laws has not shipped guards
+  -- nothing, so this block now lives in its own file, `w1_org_c7_billing_columns.sql`, which
+  -- DECLARES those three columns to the preamble and SKIPS by name — loudly, never as a pass —
+  -- until the move is applied. The remaining five blocks here now assert on every target.
 
-  -- ============================================= 3. REC-61 — the flag records, it does not rule
-  select count(*) into v_n from pg_indexes
-   where schemaname = 'iam' and indexname = 'organizations_one_personal_per_creator';
-  if v_n <> 0 then
-    raise exception 'C-7 3a: is_personal still ENFORCES - the partial unique index is back';
-  end if;
-  select count(*) into v_n from platform.deprecated_relations
-   where old_ref = 'iam.organizations.is_personal'
-     and new_ref = 'users.user_preferences.default_organization_id';
-  if v_n <> 1 then
-    raise exception 'C-7 3b: the deprecation is not registered';
-  end if;
-  -- the work list is a QUERY and it is not empty, which is the honest state: the column stays
-  -- until it is.
-  select count(*) into v_n from iam.is_personal_dependents();
-  if v_n = 0 then
-    raise exception 'C-7 3c: the dependent list is empty, so the column should have been DROPPED, not deprecated';
-  end if;
-  raise notice 'GREEN 3 — REC-61: the partial unique index is gone, the deprecation is registered, and % dependents remain to rewrite', v_n;
-
-  -- ====================================================== 4. REC-64 — the audience is a word
-  insert into context.templates (key, name, category, audience)
-  values ('cascade-technician-intake', 'Technician Intake', 'electronics-recycling', 'individual') returning id into v_tmpl;
-  insert into context.templates (key, name, category, audience)
-  values ('cascade-client-site-intake', 'Client Site Intake', 'electronics-recycling', 'organization');
-
-  v_caught := null;
-  begin
-    insert into context.templates (key, name, category, audience)
-    values ('cascade-crew-intake', 'Crew Intake', 'electronics-recycling', 'team');
-  exception when check_violation then
-    get stacked diagnostics v_caught = message_text;
-  end;
-  if v_caught is null then
-    raise exception 'C-7 4a: a third audience word landed';
-  end if;
-
-  v_json := public.list_templates('electronics-recycling', null);
-  if not exists (select 1 from jsonb_array_elements(v_json) e
-                  where e ->> 'key' = 'cascade-technician-intake'
-                    and e ->> 'audience' = 'individual'
-                    and (e ->> 'is_personal')::boolean) then
-    raise exception 'C-7 4b: list_templates did not emit the word (and the derived boolean) for the individual template';
-  end if;
-  if not exists (select 1 from jsonb_array_elements(public.list_templates('electronics-recycling', false)) e
-                  where e ->> 'key' = 'cascade-client-site-intake') then
-    raise exception 'C-7 4c: the legacy boolean argument stopped selecting organization templates';
-  end if;
-  raise notice 'GREEN 4 — REC-64: individual and organization both land, a third word is refused by the table''s own CHECK, and list_templates emits the word while the old boolean argument still works';
+  -- ====== 3 & 4. REC-61 and REC-64 — MOVED OUT, SUITES-TIDY 2026-09-22 ======
+  -- Block 3 asserted that `iam.organizations_one_personal_per_creator` is GONE and the
+  -- deprecation of `is_personal` is registered; block 4 asserted that `context.templates`
+  -- carries an `audience` WORD. Both ship in W1-ORG migrations that are `-- target: branch`
+  -- and were held for an attended step; neither has been applied to the main database.
+  -- Measured on the clone (production's data) 2026-09-22: the partial unique index is still
+  -- there, `platform.deprecated_relations` has no row for it, `iam.is_personal_dependents()`
+  -- does not exist, and `context.templates.is_personal` is still a column.
+  --
+  -- They now live in `w1_org_c7_is_personal_deprecation.sql`, which declares those objects to
+  -- the preamble and SKIPS by name — never as a pass — where the wave has not landed. What is
+  -- left in this file (blocks 1, 5 and 6) asserts on every legal target.
 
   -- ============================== 5. REC-30 / REC-31 / REC-39 — a value never stands in for a relation
-  update platform.feature_knob set value = 'true'::jsonb where feature = 'custom' and key = 'entity_custom_fields_guard';
+  -- SUITES-TIDY 2026-09-22: this block used to flip `platform.feature_knob` row
+  -- custom/entity_custom_fields_guard. GUARD-SWITCH (2026-09-19) moved this guard onto the
+  -- SAME switch the rest of the custom-fields layer follows — the live trigger body reads
+  -- `custom.store_is_open(new.organization_id)` and nothing else — so that flip stopped being
+  -- the switch and the block's "knob OFF, everything lands" clause asserted nothing. The
+  -- switch is now flipped where it actually lives: an organization-scoped override of
+  -- custom/system_enabled, on this fixture's own disposable organization, inside the same
+  -- rolled-back transaction. Nothing outside this transaction is touched, so no live crew can
+  -- go dark (that is what scripts/lib/borrow-live-switch.sh exists for, and why it is not
+  -- needed here).
+  --
+  -- ON is the state the fixture organization is already in: LIMITS-FIX (2026-09-21) answers
+  -- `store_is_open` with true for an organization born after the ruling that has said nothing,
+  -- which this one is. The clause asserts that rather than assuming it.
+  if not custom.store_is_open(v_org) then
+    raise exception 'C-7 5.0: the fixture organization''s record store is not open, so nothing below would be testing the guard';
+  end if;
 
   -- REC-30: a person declared as text is refused; the same field as user_reference lands.
   v_caught := null;
@@ -275,12 +275,18 @@ begin
     (target_kind, target_definition_id, field_key, display_name, field_type, organization_id)
   values ('custom_entity', v_defn, 'invoice_number', 'Invoice number', 'text', v_org);
 
-  update platform.feature_knob set value = 'false'::jsonb where feature = 'custom' and key = 'entity_custom_fields_guard';
-  -- OFF, the very field REC-31 refused lands untouched: the guard is a switch, not a wall.
+  -- THE SWITCH, OFF for this organization only: the very field REC-31 refused now lands
+  -- untouched. The guard is a switch, not a wall.
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('custom', 'system_enabled', 'organization', v_org, v_org, 'false'::jsonb,
+          'C-7 block 5 — the OFF arm, inside a rolled-back transaction');
+  if custom.store_is_open(v_org) then
+    raise exception 'C-7 5e: the organization-scoped override did not close the switch, so the OFF arm below proves nothing';
+  end if;
   insert into platform.custom_field_definition
     (target_kind, target_definition_id, field_key, display_name, field_type, organization_id)
   values ('custom_entity', v_defn, 'photo_url', 'Photo URL', 'url', v_org);
-  raise notice 'GREEN 5 — REC-30/31/39: a person as a value, a picture as a value and a per-person field (spelled AND declared) are each refused by their own rule; the same fields typed user_reference and file land, an unrelated text field lands, and with the knob OFF everything lands';
+  raise notice 'GREEN 5 — REC-30/31/39: a person as a value, a picture as a value and a per-person field (spelled AND declared) are each refused by their own rule; the same fields typed user_reference and file land, an unrelated text field lands, and with this organization'''s record store switched OFF the refused field lands untouched';
 
   -- ============================================== 6. REC-63 — the work list and the one verb
   select count(*) into v_n from iam.legacy_column_worklist();

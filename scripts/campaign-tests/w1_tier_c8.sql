@@ -66,11 +66,9 @@ declare
   v_json    jsonb;
   v_keys    text[];
 begin
-  -- ── 0. THIS FILE RUNS ON THE REHEARSAL BRANCH AND NOWHERE ELSE ───────────────
-  if (pg_control_system()).system_identifier <> 7678069749886157684 then
-    raise exception 'w1_tier_c8.sql refuses to run here: system_identifier is %, and this file may only run on the rehearsal branch (7678069749886157684)',
-                    (pg_control_system()).system_identifier;
-  end if;
+  -- ── 0. SUITES-TIDY 2026-09-22: the private "rehearsal branch only" guard that stood here
+  -- was removed — see the note in w1_org_c7.sql. The shared preamble above is the only target
+  -- assertion now.
 
   -- THE ORGANIZATION IS CHOSEN BY QUERY, and it is deliberately NOT a system org: every
   -- `iam.system_orgs` row with `global_readable` is visible to EVERY signed-in user by one arm

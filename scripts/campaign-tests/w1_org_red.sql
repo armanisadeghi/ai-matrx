@@ -8,9 +8,11 @@
 --   1. drop the trigger `_doctrine_field_shape_guard`  -> a picture lands as a URL string
 --      (REC-31), a person lands as an email string (REC-30) and a per-person field lands on a
 --      shared table (REC-39)
---   2. put `billing.resolve_tier`'s per-person body back -> the tier stops following the
---      person's default organization even with the guard ON (REC-47)
---   3. re-create `organizations_one_personal_per_creator` -> `is_personal` RULES again (REC-61)
+--   2. put the DEFAULT-ORGANIZATION SUBSTITUTION back into `billing.resolve_tier` -> the person
+--      is silently premium from an organization nobody picked (the 2026-09-19 ruling, F2;
+--      rewritten by SUITES-TIDY 2026-09-22 — see the block for why REC-47's old inverse is gone)
+--   3. MOVED OUT to `w1_org_red_is_personal_deprecation.sql` (REC-61) — the index it re-creates
+--      has never been dropped on the main database, so the block proved nothing there
 --   4. take the `keep` arm out of `iam.legacy_column_worklist()` -> the verb happily renames the
 --      personal variant's `user_id`, which is its table's access owner (REC-63)
 --
@@ -32,13 +34,9 @@
 
 begin;
 
-do $b$
-begin
-  if (select system_identifier from pg_control_system()) <> 7678069749886157684 then
-    raise exception 'w1_org_red.sql runs on the rehearsal branch only, and this is %',
-      (select system_identifier from pg_control_system());
-  end if;
-end $b$;
+-- SUITES-TIDY 2026-09-22: the private "rehearsal branch only" guard that used to stand here
+-- was removed — see the note in w1_org_c7.sql. The shared preamble above is the only target
+-- assertion now.
 
 update platform.feature_knob set value = 'true'::jsonb
  where feature = 'custom' and key in ('entity_custom_fields_guard', 'signup_provisioning_guard');
@@ -79,45 +77,53 @@ begin
   raise notice 'RED 1 — trigger dropped: a picture as a URL, a person as an email and a per-person field ALL land. The guard is what was stopping them.';
 
   -- ================================================================ RED 2: the tier resolution
+  -- SUITES-TIDY 2026-09-22 — REWRITTEN, AND RED 3 MOVED OUT.
+  --
+  -- RED 2 used to restore a per-person body of `billing.resolve_tier` and assert that the
+  -- person then LOST the premium their organization's plan was earning them, on the Wave 1
+  -- law REC-47 ("the person's tier IS their default organization's tier"). The 2026-09-19
+  -- ruling (F2) SUPERSEDED that law: the user-keyed door now answers free explicitly and
+  -- substitutes nothing, because `iam.default_organization_id` answers with "the oldest
+  -- organization you are an active member of" — a pick nobody made — and entitlements decided
+  -- from a pick nobody made is the expensive form of the defect. The old RED asserted the
+  -- inverse of a fix that no longer exists, and it could not even compile here: it named
+  -- `billing.subscription.organization_id`, a column the main database does not have.
+  --
+  -- The inverse of the LIVE fix is the other direction: put the default-organization
+  -- substitution BACK into the user-keyed door and show the person silently becomes premium
+  -- from an organization nobody chose. That is the defect the ruling closed, and it is what
+  -- this block now demonstrates.
   create or replace function billing.resolve_tier(p_user uuid)
   returns billing.tier language sql stable set search_path to 'billing', 'public'
   as $f$
     select billing.tier_max(
-      coalesce((select case when s.status = 'trialing' then 'trial'::billing.tier else 'premium'::billing.tier end
-                  from billing.subscription s
-                 where s.organization_id = iam.default_organization_id(p_user)
-                   and s.status in ('trialing','active','past_due')
-                 order by s.current_period_end desc nulls last limit 1), 'free'::billing.tier),
-      coalesce((select up.tier from billing.user_plan up
-                 where up.user_id = p_user and up.effective_from <= now()
-                   and (up.expires_at is null or up.expires_at > now())), 'free'::billing.tier));
+      billing._resolve_tier_legacy(p_user),
+      coalesce(billing.resolve_org_tier(iam.default_organization_id(p_user)), 'free'::billing.tier));
   $f$;
 
-  select u.id into v_user from auth.users u order by u.created_at limit 1;
+  -- A test identity, never the oldest row in auth.users — on production's data that is a real
+  -- person, and this block writes their users.user_preferences row.
+  select u.id into v_user from auth.users u
+   where u.email in ('admin@admin.com', 'test@test.com')
+   order by case when u.email = 'admin@admin.com' then 0 else 1 end limit 1;
+  if v_user is null then
+    raise exception 'RED 2: neither test identity (admin@admin.com / test@test.com) exists on this database';
+  end if;
+
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, v_user, 'owner', 'active');
-  insert into users.user_preferences (user_id, preferences, default_organization_id)
-  values (v_user, '{}'::jsonb, v_org)
+  insert into users.user_preferences (user_id, organization_id, preferences, default_organization_id)
+  values (v_user, v_org, '{}'::jsonb, v_org)
   on conflict (user_id) do update set default_organization_id = excluded.default_organization_id;
   insert into billing.org_plan (organization_id, tier, source, note)
-  values (v_org, 'premium', 'complimentary', 'RED fixture');
+  values (v_org, 'premium', 'complimentary', 'RED fixture — Cascade Electronics Recovery');
 
+  -- The knob is ON (set above), so the ruled lane is the one answering.
   v_tier := billing.resolve_tier(v_user);
-  if v_tier <> 'free' then
-    raise exception 'RED 2 IS NOT RED: the per-person body still answered % for a person whose only premium plan is their organization''s', v_tier;
+  if v_tier <> 'premium' then
+    raise exception 'RED 2 IS NOT RED: with the default-organization substitution put back the door answered % for a person whose ONLY premium plan belongs to an organization they never chose. Something else is refusing the substitution, so the ruling''s own words are not what is doing the work.', v_tier;
   end if;
-  raise notice 'RED 2 — the per-person body restored: the person''s organization holds a premium plan and resolve_tier answers free. The organization route is what was earning the premium.';
-
-  -- ============================================================ RED 3: the deprecated flag rules
-  create unique index organizations_one_personal_per_creator
-    on iam.organizations using btree (created_by)
-    where ((is_personal is true) and (created_by is not null));
-  select count(*) into v_n from pg_indexes
-   where schemaname = 'iam' and indexname = 'organizations_one_personal_per_creator';
-  if v_n <> 1 then
-    raise exception 'RED 3 IS NOT RED: the enforcement index could not be put back';
-  end if;
-  raise notice 'RED 3 — the partial unique index is back, so is_personal ENFORCES again and REC-61''s deprecation is undone by one statement.';
+  raise notice 'RED 2 — the default-organization substitution restored: the person is silently premium from an organization nobody picked. That substitution is exactly what the 2026-09-19 ruling removed.';
 
   -- ================================================== RED 4: the work list loses its `keep` arm
   create or replace function iam.legacy_column_worklist()
