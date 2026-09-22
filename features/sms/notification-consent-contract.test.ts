@@ -13,7 +13,14 @@ describe("SMS notification consent contract", () => {
     expect(route).toContain("consent_type: consentType");
     expect(route).toContain("consent_version: SMS_CONSENT_VERSION");
     expect(route).toContain("disclosure: SMS_CONSENT_DISCLOSURE");
-    expect(route).toContain('.rpc("record_verified_sms_phone"');
+    // The contact-graph writer moved BEHIND the one enrollment door on
+    // 2026-09-22: `communication.enroll_verified_phone_for_assistant` calls
+    // `record_verified_sms_phone` itself and then writes the two things it was
+    // missing — the assistant destination/program binding (text) and the CRM
+    // caller context in the enrollment's own organization (voice). The
+    // invariant this test protects is unchanged: verification writes the
+    // verified contact through a service-role-only RPC, never by hand.
+    expect(route).toContain('.rpc("enroll_verified_phone_for_assistant"');
     expect(route).toContain('p_source: "twilio_verify"');
   });
 
@@ -26,11 +33,47 @@ describe("SMS notification consent contract", () => {
       "if (!result.success)",
       providerCheck,
     );
-    const graphWrite = route.indexOf('.rpc("record_verified_sms_phone"');
+    const graphWrite = route.indexOf(
+      '.rpc("enroll_verified_phone_for_assistant"',
+    );
 
     expect(providerCheck).toBeGreaterThan(-1);
     expect(providerSuccessGuard).toBeGreaterThan(providerCheck);
     expect(graphWrite).toBeGreaterThan(providerSuccessGuard);
+  });
+
+  test("the enrollment doors never write the assistant binding by hand", () => {
+    // 🚨 ONE WRITER. The August backfill
+    // (`migrations/communications_p0_shared_assistant_binding.sql`) wrote
+    // `assistant_destination_id` / `assistant_program_key` once, and the verify
+    // route never wrote them at all — so everyone who enrolled afterwards was
+    // unreachable by text and nothing said so. The repair is a single door, and
+    // a second copy of it in a route is how that class comes back.
+    // Matched against CODE, not prose: both routes explain the defect in
+    // comments that name the two columns, and a test that cannot tell an
+    // explanation from a write would force the explanation out.
+    const code = (path: string) =>
+      source(path)
+        .split("\n")
+        .filter((line) => !line.trim().startsWith("//"))
+        .join("\n");
+
+    for (const path of [
+      "app/api/sms/verify/route.ts",
+      "app/api/sms/preferences/route.ts",
+    ]) {
+      expect(source(path)).toContain(
+        '.rpc("enroll_verified_phone_for_assistant"',
+      );
+      expect(code(path)).not.toContain("assistant_destination_id");
+      expect(code(path)).not.toContain("assistant_program_key");
+    }
+
+    // And the verify route no longer hand-writes the enrollment row it used to
+    // leave half-built.
+    expect(source("app/api/sms/verify/route.ts")).not.toContain(
+      'from("sms_notification_preferences")',
+    );
   });
 
   test("notification preferences require notification-purpose consent", () => {

@@ -21,6 +21,7 @@ import {
   resolveSmsInboundContext,
 } from "@/lib/sms/receive";
 import { isSmsCommandCandidate } from "@/lib/sms/identity";
+import { reportUnresolvedInboundSms } from "@/lib/sms/unresolvedInbound";
 
 const WEBHOOK_PATH = "/api/webhooks/twilio/sms";
 
@@ -65,6 +66,27 @@ export async function POST(request: Request) {
             receipt.providerEventKey,
           )
         : false;
+
+      // 🚨 A TEXT WE CANNOT PLACE LEAVES A TRACE AND GETS AN ANSWER.
+      //
+      // Until 2026-09-22 this branch wrote a `processing_notes` string onto the
+      // webhook-log row and returned empty TwiML. That is not a trace: the
+      // webhook log exists for provider idempotency, nothing watches it, and
+      // the person who texted us heard nothing. A verified person's first text
+      // vanished exactly this way on 2026-09-21 — no message row, no
+      // ops.system_error row, no reply (`lib/sms/unresolvedInbound.ts`).
+      //
+      // A policy keyword is EXCLUDED on purpose. A STOP from an unknown number
+      // is not a failure — it was just honored above, and the correct handling
+      // of an opt-out is emphatically not to text the person back.
+      if (!policyKeyword) {
+        await reportUnresolvedInboundSms({
+          payload,
+          context,
+          providerEventKey: receipt.providerEventKey,
+        });
+      }
+
       await completeInboundSmsReceipt(
         receipt.receiptId,
         null,

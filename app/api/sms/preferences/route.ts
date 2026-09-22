@@ -277,6 +277,55 @@ export async function PUT(request: NextRequest) {
     const actingOrganizationId =
       request.headers.get("X-Organization-Id")?.trim() || undefined;
     const organizationId = await ensureOrgIdServer(supabase, actingOrganizationId);
+
+    // 🚨 THIS IS AN ENROLLMENT DOOR TOO, SO IT GOES THROUGH THE ENROLLMENT DOOR.
+    //
+    // Turning SMS on here produces exactly the row the verify route used to
+    // produce — `{user_id, organization_id, phone_number, sms_enabled}` — and
+    // exactly the same way it was missing both halves of reachability: no
+    // assistant destination/program binding (so `lib/sms/receive.ts` cannot
+    // resolve an inbound text) and no CRM caller context in this organization
+    // (so `communication.resolve_voice_owner_call_context` cannot admit a
+    // call). A person who verified under one organization and then enabled SMS
+    // while acting in another would have moved their enrollment to a tenant
+    // where they are not reachable at all, silently.
+    //
+    // `communication.enroll_verified_phone_for_assistant` is idempotent, so
+    // calling it on every enable is free when nothing changed, and it is the
+    // ONLY writer of the binding — this route never touches those columns.
+    // It runs BEFORE the field update so the preference row the person is
+    // editing exists and is complete first.
+    if (effectiveEnabled && effectivePhone) {
+      const { data: enrollment, error: enrollmentError } = await adminSupabase
+        .schema("communication")
+        .rpc("enroll_verified_phone_for_assistant", {
+          p_user_id: user.id,
+          p_organization_id: organizationId,
+          p_phone_number: effectivePhone,
+          p_verified_at: new Date().toISOString(),
+          p_source: "twilio_verify",
+        });
+      if (enrollmentError) {
+        return NextResponse.json(
+          {
+            success: false,
+            msg: "SMS could not be enabled: the enrollment could not be completed",
+            error: enrollmentError.message,
+          },
+          { status: 500 },
+        );
+      }
+      const outcome = enrollment as { assistant_binding?: string; text_reachable?: boolean } | null;
+      if (outcome && outcome.text_reachable !== true) {
+        console.error(
+          `[sms-enrollment] ${user.id} enabled SMS on ${effectivePhone} but is NOT reachable by ` +
+            `text: ${outcome.assistant_binding ?? "unknown"}. Remedy: exactly one row in ` +
+            `communication.sms_phone_numbers must be is_active AND assistant_enabled with a ` +
+            `provider_account_id (Administration → SMS → Numbers).`,
+        );
+      }
+    }
+
     const { data, error } = await adminSupabase
       .schema("communication")
       .from("sms_notification_preferences")

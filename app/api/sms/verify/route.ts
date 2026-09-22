@@ -162,32 +162,6 @@ export async function POST(request: NextRequest) {
           verification_channel: "sms",
         };
 
-        // Twilio has proved possession of this number. Record that proof in
-        // the one contact graph the notification resolver reads. This RPC is
-        // service-role-only: ordinary clients cannot mark a number verified.
-        const { error: contactGraphError } = await adminSupabase
-          .schema("communication")
-          .rpc("record_verified_sms_phone", {
-            p_user_id: user.id,
-            p_phone_number: phoneNumber,
-            p_verified_at: consentRecordedAt,
-            p_source: "twilio_verify",
-          });
-
-        if (contactGraphError) {
-          console.error(
-            "Failed to record verified phone in CRM contact graph:",
-            contactGraphError,
-          );
-          return NextResponse.json(
-            {
-              success: false,
-              msg: "Phone verified, but the verified contact could not be recorded",
-            },
-            { status: 500 },
-          );
-        }
-
         // One verification accepts the public disclosure for both account
         // transactions and the separately gated notification lane. Persisting
         // both purpose rows keeps legacy account SMS consent from silently
@@ -222,37 +196,89 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const { error: preferencesError } = await adminSupabase
+        // 🚨 ONE DOOR, BECAUSE REACHABILITY IS ONE FACT.
+        //
+        // Until 2026-09-22 this route wrote two of the three rows a verified
+        // phone needs and stopped. It called
+        // `communication.record_verified_sms_phone` (the account + HR contact
+        // graph) and then upserted `{user_id, organization_id, phone_number,
+        // sms_enabled}` by hand. Both halves of reachability were missing:
+        //
+        //   TEXT  — `lib/sms/receive.ts` matches an inbound message on
+        //           `assistant_destination_id` + `assistant_program_key`, and
+        //           nothing here ever wrote them. The person's first text
+        //           produced no message row, no ops.system_error row and no
+        //           reply. NOBODY WHO VERIFIED SINCE THE AUGUST BACKFILL
+        //           (`communications_p0_shared_assistant_binding`) WAS
+        //           REACHABLE — measured live: test@test.com, 2026-09-21.
+        //
+        //   VOICE — `communication.resolve_voice_owner_call_context` needs a
+        //           claimed `crm.party` plus a verified phone medium and
+        //           contact point IN THE ORGANIZATION THIS ENROLLMENT NAMES.
+        //           `record_verified_sms_phone`'s party step is
+        //           `crm.ensure_user_party`, which was hardcoded to the AI
+        //           Matrx tenant, so the enrollment's own organization was
+        //           never among the parties it touched.
+        //
+        // They are not two features. Binding the text half alone is what made
+        // a peer's voice test go red on 2026-09-22: a text-bound number with
+        // no CRM caller context is a person who can be texted and cannot be
+        // called. `communication.enroll_verified_phone_for_assistant` writes
+        // all three together, idempotently, and is the ONLY writer of the
+        // binding — this route does not get a second copy of it.
+        const { data: enrollment, error: enrollmentError } = await adminSupabase
           .schema("communication")
-          .from("sms_notification_preferences")
-          .upsert(
-            {
-              user_id: user.id,
-              organization_id: organizationId,
-              phone_number: phoneNumber,
-              sms_enabled: true,
-            },
-            { onConflict: "user_id" },
-          );
+          .rpc("enroll_verified_phone_for_assistant", {
+            p_user_id: user.id,
+            p_organization_id: organizationId,
+            p_phone_number: phoneNumber,
+            p_verified_at: consentRecordedAt,
+            p_source: "twilio_verify",
+          });
 
-        if (preferencesError) {
+        if (enrollmentError) {
           console.error(
-            "Failed to enable verified SMS preferences:",
-            preferencesError,
+            "Failed to enroll the verified phone for the assistant:",
+            enrollmentError,
           );
           return NextResponse.json(
             {
               success: false,
-              msg: "Phone verified, but SMS preferences could not be enabled",
+              msg: "Phone verified, but the enrollment could not be completed",
             },
             { status: 500 },
+          );
+        }
+
+        // 🚨 NOTHING FAILS SILENTLY. The door can succeed and still leave the
+        // person unreachable by text — when the platform has no active
+        // assistant number, or more than one, it refuses to guess and says so
+        // by name. That is an operator gap, not this person's problem, so the
+        // verification stands and the gap is announced rather than swallowed.
+        const outcome = enrollment as {
+          assistant_binding?: string;
+          text_reachable?: boolean;
+          voice_reachable?: boolean;
+        } | null;
+        if (outcome && outcome.text_reachable !== true) {
+          console.error(
+            `[sms-enrollment] ${user.id} verified ${phoneNumber} but is NOT reachable by text: ` +
+              `${outcome.assistant_binding ?? "unknown"}. Remedy: exactly one row in ` +
+              `communication.sms_phone_numbers must be is_active AND assistant_enabled with a ` +
+              `provider_account_id (Administration → SMS → Numbers).`,
           );
         }
 
         return NextResponse.json({
           success: true,
           msg: "Phone number verified and SMS notifications enabled",
-          data: { status: result.status, phoneNumber },
+          data: {
+            status: result.status,
+            phoneNumber,
+            assistantBinding: outcome?.assistant_binding ?? null,
+            textReachable: outcome?.text_reachable ?? false,
+            voiceReachable: outcome?.voice_reachable ?? false,
+          },
         });
       }
 

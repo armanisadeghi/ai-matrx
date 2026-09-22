@@ -35,6 +35,8 @@ import type {
 } from "@/lib/sms/identity";
 import type { InboundSmsPayload } from "@/lib/sms/types";
 
+import { reportUnresolvedInboundSms } from "@/lib/sms/unresolvedInbound";
+
 import { POST } from "./route";
 
 jest.mock("@/lib/sms/receive", () => ({
@@ -49,6 +51,10 @@ jest.mock("@/lib/sms/receive", () => ({
   processInboundSms: jest.fn(),
   releaseInboundSmsReceipt: jest.fn(),
   resolveSmsInboundContext: jest.fn(),
+}));
+
+jest.mock("@/lib/sms/unresolvedInbound", () => ({
+  reportUnresolvedInboundSms: jest.fn(),
 }));
 
 const URL = "https://www.aimatrx.com/api/webhooks/twilio/sms";
@@ -166,6 +172,10 @@ describe("POST /api/webhooks/twilio/sms", () => {
     jest.mocked(resolveSmsInboundContext).mockResolvedValue(context);
     jest.mocked(isPhoneNumberOptedOut).mockResolvedValue(false);
     jest.mocked(honorUnresolvedSmsPolicyKeyword).mockResolvedValue(true);
+    jest.mocked(reportUnresolvedInboundSms).mockResolvedValue({
+      logged: true,
+      replied: true,
+    });
     jest.mocked(processInboundSms).mockResolvedValue({
       messageId: "11111111-1111-4111-8111-111111111111",
       conversationId: "22222222-2222-4222-8222-222222222222",
@@ -371,6 +381,56 @@ describe("POST /api/webhooks/twilio/sms", () => {
       aiProcessingStatus: "skipped",
       skipReason: "sms_command_offer_unverified",
       commandCandidate: true,
+    });
+  });
+
+  // 🚨 A TEXT WE CANNOT PLACE LEAVES A TRACE AND GETS AN ANSWER.
+  //
+  // These fail on the route as it stood before 2026-09-22, where the unresolved
+  // branch wrote a processing_notes string and returned empty TwiML. A verified
+  // person's first text vanished exactly that way on 2026-09-21: no message
+  // row, no ops.system_error row, no reply.
+  describe("an inbound text it cannot place", () => {
+    test("is reported, with the reason, when the sender has no binding", async () => {
+      jest.mocked(resolveSmsInboundContext).mockResolvedValue(unknownSender);
+
+      const response = await POST(signedRequest(twilioForm("hello there")));
+
+      expect(response.status).toBe(200);
+      expect(reportUnresolvedInboundSms).toHaveBeenCalledTimes(1);
+      expect(reportUnresolvedInboundSms).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: unknownSender,
+          providerEventKey: receipt.providerEventKey,
+        }),
+      );
+    });
+
+    test("is reported when the sender is bound to more than one person", async () => {
+      jest.mocked(resolveSmsInboundContext).mockResolvedValue(ambiguousSender);
+
+      await POST(signedRequest(twilioForm("hello there")));
+
+      expect(reportUnresolvedInboundSms).toHaveBeenCalledWith(
+        expect.objectContaining({ context: ambiguousSender }),
+      );
+    });
+
+    test("is never reported, and never answered, for a STOP", async () => {
+      // An opt-out is not a failure — it was just honored — and the one thing
+      // that must never follow a STOP is another text.
+      jest.mocked(resolveSmsInboundContext).mockResolvedValue(unknownSender);
+
+      await POST(signedRequest(twilioForm("STOP")));
+
+      expect(honorUnresolvedSmsPolicyKeyword).toHaveBeenCalledTimes(1);
+      expect(reportUnresolvedInboundSms).not.toHaveBeenCalled();
+    });
+
+    test("is never reported when the sender resolved normally", async () => {
+      await POST(signedRequest(twilioForm("hello there")));
+
+      expect(reportUnresolvedInboundSms).not.toHaveBeenCalled();
     });
   });
 

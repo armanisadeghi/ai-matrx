@@ -18300,6 +18300,16 @@ export type Database = {
         }
         Returns: string[]
       }
+      enroll_verified_phone_for_assistant: {
+        Args: {
+          p_organization_id: string
+          p_phone_number: string
+          p_source?: string
+          p_user_id: string
+          p_verified_at?: string
+        }
+        Returns: Json
+      }
       fail_voice_recording_custody_work: {
         Args: {
           p_canonical_file_id?: string
@@ -23825,6 +23835,15 @@ export type Database = {
       }
       ensure_user_party: {
         Args: { p_source?: string; p_user_id: string }
+        Returns: string
+      }
+      ensure_user_party_in_org: {
+        Args: {
+          p_organization_id: string
+          p_require_membership?: boolean
+          p_source?: string
+          p_user_id: string
+        }
         Returns: string
       }
       evaluate_outreach_list_quality: {
