@@ -13,6 +13,17 @@
 -- the `-- target: branch` header said a second way.
 -- w0_sync_provisioner_and_shape_guard — PRODUCTION'S PROVISIONER, ONTO THE REHEARSAL BRANCH.
 --
+-- DRIFT NOTE (W0-SHAPE, 2026-09-21, verified live): this file is SPENT — the guard it carries is
+-- already live, enabled and byte-identical on BOTH production and the branch (platform._provision_shape_guard()
+-- sha 5dd5fe25…, _provision_shape_guard_impl(jsonb) sha 2ed76ab0…, installed on production by
+-- aidream/0763_the_provisioner_proves_itself_and_the_guard_judges_by_effect.sql at 2026-09-17 07:20:29Z with
+-- 761 grandfather rows). It is NOT ledgered in production's public._schema_migrations and never was. Re-running it
+-- on the branch dies at the `insert into campaign_watch.w0_sync_door_hold select d.*` below with `INSERT has more
+-- expressions than target columns` — BRANCH drift, not a guard bug: the leftover hold table from an earlier run has
+-- 14 columns while platform.client_callable_door has since gained argument_rules and contract_probe (16), and
+-- `create table if not exists` never rebuilds it. Dropping that empty table would still not make the file apply:
+-- every `-- based-on:` sha above is stale against both databases. Read it as history; do not re-apply it.
+--
 -- WHY THIS FILE EXISTS, AND WHY IT IS NOT A REPLAYED MIGRATION
 -- -----------------------------------------------------------
 -- The rehearsal branch is a schema-only transplant whose `public._schema_migrations`
