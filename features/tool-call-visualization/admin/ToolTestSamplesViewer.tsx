@@ -767,10 +767,9 @@ export function ToolTestSamplesViewer({ toolName, toolId }: ToolTestSamplesViewe
                         refresh: { onRefresh: load },
                     }}
                     coverage={{
-                        noun: "test sample",
+                        noun: filter === "all" ? "test sample" : "matching test sample",
                         answeredBy: "client",
                         cap: 1000,
-                        loaded: samples.length,
                     }}
                     detail={{ enabled: false }}
                     window={{ enabled: false }}

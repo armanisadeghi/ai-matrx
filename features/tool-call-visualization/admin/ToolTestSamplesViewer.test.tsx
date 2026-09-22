@@ -60,7 +60,7 @@ const from = jest.fn(() => ({ select }));
 jest.mock("@ai-matrx/design-system/data-table", () => ({
   MatrxDataTable: (props: MatrxDataTableProps<ToolTestSample>) => {
     tableProps = props;
-    return null;
+    return <>{props.toolbar?.leading}</>;
   },
 }));
 
@@ -123,10 +123,34 @@ describe("ToolTestSamplesViewer", () => {
       noun: "test sample",
       answeredBy: "client",
       cap: 1000,
-      loaded: 1,
     });
     expect(tableProps.copy).toBe(false);
     expect(tableProps.detail?.enabled).toBe(false);
     expect(tableProps.window?.enabled).toBe(false);
+  });
+
+  it("describes an empty quick-filter view as matching samples", async () => {
+    await act(async () => {
+      root.render(<ToolTestSamplesViewer toolName="weather" toolId="tool-1" />);
+    });
+    await act(async () => {
+      jest.runOnlyPendingTimers();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const failure = Array.from(host.querySelectorAll("button")).find((button) =>
+      button.textContent?.startsWith("Failure"),
+    );
+    if (!failure) throw new Error("Failure quick filter did not render");
+    await act(async () => failure.click());
+
+    if (!tableProps) throw new Error("Test samples table did not render");
+    expect(tableProps.data).toEqual([]);
+    expect(tableProps.coverage).toEqual({
+      noun: "matching test sample",
+      answeredBy: "client",
+      cap: 1000,
+    });
   });
 });
