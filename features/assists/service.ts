@@ -97,6 +97,63 @@ function nowIso(): string {
 }
 
 /**
+ * THE ONE WRITE PATH FOR AN ASSIST ADDRESSED TO ME.
+ *
+ * Schema `platform` is doors-only: `authenticated` holds SELECT on
+ * `platform.assists` and no write privilege at all, so every `.update()` this
+ * service used to make answered `42501 permission denied for table assists`
+ * over PostgREST — a 403 and a console line on every page that mounts the
+ * capture ladder, swallowed (VERIFIER-10 F14, 2026-09-22). The door
+ * `platform.act_on_my_assists` is the sanctioned path: it derives the addressee
+ * from `auth.uid()` and every arm carries `user_id = <the caller>` in its own
+ * WHERE, so it can only ever touch rows addressed to the person calling it.
+ *
+ * It returns the ids it changed, because several callers report a count a
+ * person reads.
+ */
+async function actOnMyAssists(
+  verb:
+    | "accept"
+    | "dismiss"
+    | "snooze"
+    | "restore"
+    | "star"
+    | "viewed"
+    | "resolve"
+    | "set_metadata"
+    | "suppress_source"
+    | "unsuppress_source",
+  args: {
+    ids?: string[];
+    dedupeKeys?: string[];
+    sourceKey?: string;
+    until?: string | null;
+    note?: string;
+    flag?: boolean;
+    result?: Json;
+    metadata?: Json;
+  } = {},
+): Promise<{ ids: string[]; error: { message: string } | null }> {
+  const supabase = createClient();
+  const { data, error } = await supabase.schema("platform").rpc(
+    "act_on_my_assists",
+    {
+      p_verb: verb,
+      p_ids: args.ids ?? null,
+      p_dedupe_keys: args.dedupeKeys ?? null,
+      p_source_key: args.sourceKey ?? null,
+      p_until: args.until ?? null,
+      p_note: args.note ?? null,
+      p_flag: args.flag ?? null,
+      p_result: args.result ?? null,
+      p_metadata: args.metadata ?? null,
+    } as never,
+  );
+  if (error) return { ids: [], error };
+  return { ids: (data as string[] | null) ?? [], error: null };
+}
+
+/**
  * My ambient-eligible assists, highest priority first.
  *
  * The full ledger remains available through `queryAssists`. This narrow read
@@ -459,12 +516,7 @@ export async function fetchAssistStats(userId: string): Promise<AssistStats> {
  * the durable "never again"; snooze is "not now".
  */
 export async function snoozeAssist(id: string, until: string): Promise<void> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .schema("platform")
-    .from(TABLE)
-    .update({ suppressed_until: until })
-    .eq("id", id);
+  const { error } = await actOnMyAssists("snooze", { ids: [id], until });
   if (error) {
     throw new Error(`[assists] snooze failed: ${error.message}`);
   }
@@ -576,41 +628,30 @@ export async function suppressAssistSource(
   if (!record) {
     throw new Error("[assists] source suppression record was not writable");
   }
-  const { error: metadataError } = await supabase
-    .schema("platform")
-    .from(TABLE)
-    .update({
-      metadata: sourceSuppressionMetadata(
-        record.metadata,
-        suppressionReason,
-        nowIso(),
-        until,
-      ),
-    })
-    .eq("id", record.id)
-    .eq("user_id", userId);
+  const { error: metadataError } = await actOnMyAssists("set_metadata", {
+    ids: [record.id],
+    metadata: sourceSuppressionMetadata(
+      record.metadata,
+      suppressionReason,
+      nowIso(),
+      until,
+    ),
+  });
   if (metadataError) {
     throw new Error(
       `[assists] source suppression record failed: ${metadataError.message}`,
     );
   }
 
-  const { data, error } = await supabase
-    .schema("platform")
-    .from(TABLE)
-    .update({ suppressed_until: until })
-    .eq("user_id", userId)
-    .eq("source_key", sourceKey)
-    .eq("status", "pending")
-    .is("deleted_at", null)
-    .select("id");
+  const { ids, error } = await actOnMyAssists("suppress_source", {
+    sourceKey,
+    until,
+  });
   if (error) {
-    const rollback = await supabase
-      .schema("platform")
-      .from(TABLE)
-      .update({ metadata: record.metadata })
-      .eq("id", assistId)
-      .eq("user_id", userId);
+    const rollback = await actOnMyAssists("set_metadata", {
+      ids: [assistId],
+      metadata: record.metadata as Json,
+    });
     if (rollback.error) {
       console.error(
         `[assists] source suppression note rollback failed: ${rollback.error.message}`,
@@ -618,7 +659,7 @@ export async function suppressAssistSource(
     }
     throw new Error(`[assists] source suppression failed: ${error.message}`);
   }
-  const count = data?.length ?? 0;
+  const count = ids.length;
   if (count === 0) {
     throw new Error("[assists] source suppression changed no rows");
   }
@@ -635,19 +676,14 @@ export async function unsuppressAssistSource(
   sourceKey: string,
   until: string = SOURCE_SUPPRESSED_UNTIL,
 ): Promise<number> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .schema("platform")
-    .from(TABLE)
-    .update({ suppressed_until: null })
-    .eq("user_id", userId)
-    .eq("source_key", sourceKey)
-    .eq("suppressed_until", until)
-    .select("id");
+  const { ids, error } = await actOnMyAssists("unsuppress_source", {
+    sourceKey,
+    until,
+  });
   if (error) {
     throw new Error(`[assists] source unsuppression failed: ${error.message}`);
   }
-  return data?.length ?? 0;
+  return ids.length;
 }
 
 /**
@@ -656,20 +692,9 @@ export async function unsuppressAssistSource(
  * than pending-but-invisible.
  */
 export async function restoreAssist(id: string): Promise<void> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .schema("platform")
-    .from(TABLE)
-    .update({
-      status: "pending",
-      decided_at: null,
-      result: null,
-      suppressed_until: null,
-      // `assists_resolution_valid` makes status and resolved_at inseparable —
-      // leaving the timestamp behind would make the restore fail at the DB.
-      resolved_at: null,
-    })
-    .eq("id", id);
+  // `assists_resolution_valid` makes status and resolved_at inseparable — the
+  // door clears the timestamp with the status, in one statement.
+  const { error } = await actOnMyAssists("restore", { ids: [id] });
   if (error) {
     throw new Error(`[assists] restore failed: ${error.message}`);
   }
@@ -682,17 +707,11 @@ export async function restoreAssist(id: string): Promise<void> {
  */
 export async function bulkDismissAssists(ids: string[]): Promise<number> {
   if (ids.length === 0) return 0;
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .schema("platform")
-    .from(TABLE)
-    .update({ status: "dismissed", decided_at: nowIso() })
-    .in("id", ids)
-    .select("id");
+  const { ids: changed, error } = await actOnMyAssists("dismiss", { ids });
   if (error) {
     throw new Error(`[assists] bulk dismiss failed: ${error.message}`);
   }
-  return (data ?? []).length;
+  return changed.length;
 }
 
 /** Snooze many at once — the other half of the bulk bar. */
@@ -701,17 +720,14 @@ export async function bulkSnoozeAssists(
   until: string,
 ): Promise<number> {
   if (ids.length === 0) return 0;
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .schema("platform")
-    .from(TABLE)
-    .update({ suppressed_until: until })
-    .in("id", ids)
-    .select("id");
+  const { ids: changed, error } = await actOnMyAssists("snooze", {
+    ids,
+    until,
+  });
   if (error) {
     throw new Error(`[assists] bulk snooze failed: ${error.message}`);
   }
-  return (data ?? []).length;
+  return changed.length;
 }
 
 /**
@@ -728,18 +744,11 @@ export async function decideAssist(
   result?: Json,
   note?: string,
 ): Promise<void> {
-  const supabase = createClient();
   const trimmed = note?.trim();
-  const { error } = await supabase
-    .schema("platform")
-    .from(TABLE)
-    .update({
-      status,
-      decided_at: nowIso(),
-      result: result ?? null,
-      ...(trimmed ? { decision_note: trimmed } : {}),
-    })
-    .eq("id", id);
+  const { error } = await actOnMyAssists(
+    status === "accepted" ? "accept" : "dismiss",
+    { ids: [id], result: result ?? null, ...(trimmed ? { note: trimmed } : {}) },
+  );
   if (error) {
     throw new Error(`[assists] decide failed: ${error.message}`);
   }
@@ -750,12 +759,10 @@ export async function setAssistStarred(
   id: string,
   starred: boolean,
 ): Promise<void> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .schema("platform")
-    .from(TABLE)
-    .update({ is_starred: starred })
-    .eq("id", id);
+  const { error } = await actOnMyAssists("star", {
+    ids: [id],
+    flag: starred,
+  });
   if (error) {
     throw new Error(`[assists] star failed: ${error.message}`);
   }
@@ -767,13 +774,7 @@ export async function setAssistStarred(
  */
 export async function markAssistsViewed(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  const supabase = createClient();
-  const { error } = await supabase
-    .schema("platform")
-    .from(TABLE)
-    .update({ viewed_at: nowIso() })
-    .in("id", ids)
-    .is("viewed_at", null);
+  const { error } = await actOnMyAssists("viewed", { ids });
   if (error) {
     console.error(`[assists] viewed stamp failed: ${error.message}`);
   }
@@ -796,20 +797,11 @@ export async function resolveAssistsByDedupeKeys(
   keys: string[],
 ): Promise<number> {
   if (keys.length === 0) return 0;
-  const supabase = createClient();
-  const now = nowIso();
-  const { data, error } = await supabase
-    .schema("platform")
-    .from(TABLE)
-    // No `decided_at`: nobody decided. `resolved_at` carries the moment.
-    .update({ status: "resolved", resolved_at: now })
-    .in("dedupe_key", keys)
-    .eq("status", "pending")
-    .is("deleted_at", null)
-    .select("id");
+  // No `decided_at`: nobody decided. The door stamps `resolved_at` instead.
+  const { ids, error } = await actOnMyAssists("resolve", { dedupeKeys: keys });
   if (error) {
     console.error(`[assists] resolve failed: ${error.message}`);
     return 0;
   }
-  return (data ?? []).length;
+  return ids.length;
 }

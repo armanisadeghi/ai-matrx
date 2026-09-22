@@ -43311,6 +43311,8 @@ export interface components {
             variables?: {
                 [key: string]: unknown;
             } | null;
+            /** Per Turn Variables */
+            per_turn_variables?: string[] | null;
             /** Variable Resource Context */
             variable_resource_context?: {
                 [key: string]: components["schemas"]["ResourceContextPolicy"];

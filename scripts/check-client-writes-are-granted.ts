@@ -72,7 +72,35 @@ interface Write {
  * requiring one expression on one line.
  */
 const WRITE_CHAIN =
-  /\.schema\(\s*["'`]([a-z_][a-z0-9_]*)["'`]\s*\)[\s\S]{0,400}?\.from\(\s*["'`]([a-z_][a-z0-9_]*)["'`]\s*\)[\s\S]{0,400}?\.(insert|upsert|update|delete)\s*\(/g;
+  /\.schema\(\s*["'`]([a-z_][a-z0-9_]*)["'`]\s*\)[\s\S]{0,400}?\.from\(\s*(["'`]?)([A-Za-z_$][A-Za-z0-9_$]*)\2\s*\)[\s\S]{0,400}?\.(insert|upsert|update|delete)\s*\(/g;
+
+/**
+ * 🚨 `.from(TABLE)` IS A TABLE NAME, AND THE FIRST VERSION OF THIS GUARD COULD NOT SEE IT.
+ * (FIX-10A-ASSISTS, 2026-09-22 — measured, not predicted.)
+ *
+ * `features/assists/service.ts` opens with `const TABLE = "assists" as const;` and then
+ * writes `.schema("platform").from(TABLE).update(…)` ELEVEN times. The doors-only closure
+ * withdrew every write grant on `platform.assists` from `authenticated`, so all eleven
+ * became `42501` — and every `/data-v2/*` page load printed one of them (a 403 plus
+ * `[assists] resolve failed: permission denied for table assists`) into the console, which
+ * is exactly the class this guard exists to catch. It stayed green the whole time, because
+ * the old pattern required a QUOTED string inside `.from(...)` and this file passes a
+ * constant.
+ *
+ * So a bare identifier is now matched too, and resolved against the module's own
+ * string-literal constants. An identifier we cannot resolve is NOT a silent skip — the
+ * declaration a `const X = "…"` gives us is the only honest answer, and anything else is
+ * reported as UNRESOLVED so nobody mistakes "not understood" for "not an offender".
+ */
+export function tableConstants(source: string): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const m of source.matchAll(
+    /(?:const|let|var)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*(?::[^=]{0,80})?=\s*["'`]([a-z_][a-z0-9_]*)["'`]/g,
+  )) {
+    out.set(m[1], m[2]);
+  }
+  return out;
+}
 
 function* walk(dir: string): Generator<string> {
   let entries: string[];
@@ -90,6 +118,9 @@ function* walk(dir: string): Generator<string> {
   }
 }
 
+/** Every `.from(<identifier>)` this run could not resolve. Reported, never skipped. */
+const unresolved: string[] = [];
+
 function findWrites(extraFiles: { path: string; source: string }[] = []): Write[] {
   const found: Write[] = [];
   const sources: { path: string; source: string }[] = [...extraFiles];
@@ -102,10 +133,21 @@ function findWrites(extraFiles: { path: string; source: string }[] = []): Write[
     }
   }
   for (const { path, source } of sources) {
+    const constants = tableConstants(source);
     WRITE_CHAIN.lastIndex = 0;
     let match: RegExpExecArray | null;
     while ((match = WRITE_CHAIN.exec(source)) !== null) {
-      const [, schema, table, verb] = match;
+      const [, schema, quote, rawTable, verb] = match;
+      const table = quote ? rawTable : (constants.get(rawTable) ?? null);
+      if (table === null) {
+        unresolved.push(
+          `${relative(ROOT, path)}:${source.slice(0, match.index).split("\n").length} — ` +
+            `.schema("${schema}").from(${rawTable}).${verb}() names a table through the identifier ` +
+            `\`${rawTable}\`, which is not a string constant in this module. UNRESOLVED IS NOT PASSED: ` +
+            `name the table inline, or bind it to a module-level string constant.`,
+        );
+        continue;
+      }
       found.push({
         file: relative(ROOT, path),
         line: source.slice(0, match.index).split("\n").length,
@@ -143,6 +185,20 @@ async function main(): Promise<void> {
             '  .in("id", ids);',
           ].join("\n"),
         },
+        {
+          // THE SECOND SHAPE, from FIX-10A-ASSISTS (2026-09-22): the table named through a
+          // module constant. This is verbatim how `features/assists/service.ts` wrote all
+          // eleven of its writes, and the guard was blind to every one of them.
+          path: join(ROOT, "features/__planted__/plantedAliasWrite.ts"),
+          source: [
+            'const TABLE = "assists" as const;',
+            'await supabase',
+            '  .schema("platform")',
+            '  .from(TABLE)',
+            '  .update({ status: "resolved" })',
+            '  .in("dedupe_key", keys);',
+          ].join("\n"),
+        },
       ]
     : [];
 
@@ -152,6 +208,25 @@ async function main(): Promise<void> {
     fail(
       "SELF-TEST FAILED: the planted `platform.acquisition_block` UPDATE was not detected.\n" +
         "This checker can no longer see the shape it exists to catch.",
+    );
+  }
+
+  if (
+    selfTest &&
+    !writes.some((w) => w.table === "assists" && w.schema === "platform")
+  ) {
+    fail(
+      "SELF-TEST FAILED: the planted `.schema(\"platform\").from(TABLE).update()` was not\n" +
+        "resolved to `platform.assists`. A table named through a module constant is still a\n" +
+        "table, and eleven real writes hid behind exactly that shape until 2026-09-22.",
+    );
+  }
+
+  if (unresolved.length > 0) {
+    fail(
+      `${unresolved.length} client write(s) name their table through an identifier this\n` +
+        `checker cannot resolve. UNMEASURED IS NOT PASSED:\n\n` +
+        unresolved.map((u) => `  ${u}`).join("\n"),
     );
   }
 

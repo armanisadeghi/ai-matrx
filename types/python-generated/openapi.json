@@ -98673,6 +98673,20 @@
             ],
             "title": "Variables"
           },
+          "per_turn_variables": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Turn Variables"
+          },
           "variable_resource_context": {
             "anyOf": [
               {

@@ -69827,6 +69827,20 @@ export type Database = {
           token: string
         }[]
       }
+      act_on_my_assists: {
+        Args: {
+          p_dedupe_keys?: string[]
+          p_flag?: boolean
+          p_ids?: string[]
+          p_metadata?: Json
+          p_note?: string
+          p_result?: Json
+          p_source_key?: string
+          p_until?: string
+          p_verb: string
+        }
+        Returns: string[]
+      }
       action_link_carries_its_organization: {
         Args: { p_action: Json; p_organization_id: string }
         Returns: Json
