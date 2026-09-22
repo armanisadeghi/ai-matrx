@@ -3797,6 +3797,10 @@ const UserTableViewer = ({
           setShowAddColumnModal(show);
         }}
         setShowAddRowModal={setShowAddRowModal}
+        // The SAME map the grid's cells are handed — one resolution of the
+        // relation words for the whole screen, so the row modal cannot show a
+        // different name (or a raw id) from the cell it was opened from.
+        relationChoices={relationChoices}
         sampleRow={displayRows[0] ?? null}
         rows={displayRows}
         addColumnInsertAtOrder={pendingColumnInsert?.order}

@@ -23,6 +23,8 @@ import {
   formatHasOwnInput,
 } from '@/features/data-tables/components/FormatAwareInput';
 import { resolveFieldFormat } from '@/lib/field-formats/format';
+import { withResolvedChoices } from '@/lib/field-formats/choices';
+import type { FieldChoice } from '@/lib/field-formats/types';
 import { isComputedColumn } from '@/features/data-tables/formulas';
 import {
   describeValidationRules,
@@ -38,9 +40,17 @@ interface AddRowModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  /**
+   * THE WORDS EVERY `relation` CELL READS, keyed by machine field name — the
+   * same `{ value: <record id>, label: <words> }` list the grid's own picker
+   * offers, resolved ONCE for the table by `UserTableViewer` through the ONE
+   * resolver (`features/data-tables/relation-words` + `-client`) and passed
+   * down. A new row picks from exactly what an existing row's cell picks from.
+   */
+  relationChoices?: ReadonlyMap<string, FieldChoice[]>;
 }
 
-export default function AddRowModal({ tableId, isOpen, onClose, onSuccess }: AddRowModalProps) {
+export default function AddRowModal({ tableId, isOpen, onClose, onSuccess, relationChoices }: AddRowModalProps) {
   const [fields, setFields] = useState<TableField[]>([]);
   const [rowData, setRowData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
@@ -222,7 +232,14 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess }: Add
       );
     }
 
-    const fieldFormat = resolveFieldFormat(field.data_type, field.metadata);
+    // A `relation` column's options — record ids with the words the store
+    // resolved for them — fold into the format here, the same seam the grid
+    // uses before handing a cell to `EditableCell`, so the ONE picker serves
+    // both surfaces with nothing added to it.
+    const fieldFormat = withResolvedChoices(
+      resolveFieldFormat(field.data_type, field.metadata),
+      relationChoices?.get(field.field_name) ?? [],
+    );
     if (formatHasOwnInput(fieldFormat)) {
       return (
         <FormatAwareInput

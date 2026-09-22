@@ -47,6 +47,10 @@ import {
   useFieldChoices,
 } from "@/lib/field-formats/choices";
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
+import {
+  unresolvedRelationText,
+  unresolvedRelationTitle,
+} from "@/lib/field-formats/relation";
 import { cn } from "@/utils/cn";
 
 export type ChoiceInputProps = {
@@ -132,6 +136,25 @@ export function ChoiceInput({
    */
   const offList = selected.filter((s) => !byValue.has(s.toLowerCase()));
 
+  /**
+   * WHAT A STORED VALUE READS AS ON THE TRIGGER AND ON ITS CHIP.
+   *
+   * For an ordinary choice column the stored value IS the words, so an off-list
+   * value shows itself. For an IDENTIFIER column (`relation`) it is a record id,
+   * and an id the resolver could not turn into words must read as the same amber
+   * identifier the grid cell shows — never the bare uuid printed as if it were
+   * the cell's contents. The three states live in one place
+   * (`lib/field-formats/relation`) and this picker asks it rather than inventing
+   * a fourth rendering; the grid cell and both row modals draw through this one
+   * component, so they cannot disagree.
+   */
+  const isRelation = format?.id === "relation";
+  const readsAs = (raw: string): string => {
+    const choice = byValue.get(raw.toLowerCase());
+    if (choice) return choice.label ?? choice.value;
+    return isRelation ? unresolvedRelationText(raw) : raw;
+  };
+
   const trimmedQuery = query.trim();
   const canAddOther =
     allowOther &&
@@ -174,7 +197,7 @@ export function ChoiceInput({
       ? "Select…"
       : multiple
         ? `${selected.length} selected`
-        : (byValue.get(selected[0].toLowerCase())?.label ?? selected[0]);
+        : readsAs(selected[0]);
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
@@ -320,11 +343,13 @@ export function ChoiceInput({
                 )}
                 title={
                   isOffList
-                    ? "Not one of this column's options — still saved."
+                    ? isRelation
+                      ? unresolvedRelationTitle(item)
+                      : "Not one of this column's options — still saved."
                     : (choice?.help ?? undefined)
                 }
               >
-                {choice?.label ?? item}
+                {readsAs(item)}
                 <button
                   type="button"
                   aria-label={`Remove ${item}`}

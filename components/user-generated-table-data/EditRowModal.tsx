@@ -40,6 +40,8 @@ import {
   formatHasOwnInput,
 } from "@/features/data-tables/components/FormatAwareInput";
 import { resolveFieldFormat } from "@/lib/field-formats/format";
+import { withResolvedChoices } from "@/lib/field-formats/choices";
+import type { FieldChoice } from "@/lib/field-formats/types";
 import { isComputedColumn } from "@/features/data-tables/formulas";
 import {
   describeValidationRules,
@@ -76,6 +78,24 @@ interface EditRowModalProps {
   onSuccess: () => void;
   cleanCellValue?: (text: string) => string;
   isCellValueDirty?: (text: string) => boolean;
+  /**
+   * THE WORDS EVERY `relation` CELL READS, keyed by machine field name —
+   * `{ value: <the stored record id>, label: <the words> }`, exactly what the
+   * grid is handed.
+   *
+   * It comes from the ONE resolver (`features/data-tables/relation-words` +
+   * `-client`), resolved ONCE for the whole table by `UserTableViewer` and
+   * passed down, so this form and the grid cell two clicks away cannot offer
+   * different names or resolve a different set of ids. Folded into the column's
+   * format below, which is the same seam the grid uses
+   * (`withResolvedChoices`), so the ONE picker (`ChoiceInput`) serves both with
+   * nothing added to it.
+   *
+   * Absent (an older caller, or a table with no relation column) is not a
+   * failure: the picker then has no options and the cell falls to the amber
+   * identifier rendering, never to a raw uuid.
+   */
+  relationChoices?: ReadonlyMap<string, FieldChoice[]>;
 }
 
 export default function EditRowModal({
@@ -88,6 +108,7 @@ export default function EditRowModal({
   onSuccess,
   cleanCellValue,
   isCellValueDirty,
+  relationChoices,
 }: EditRowModalProps) {
   const [rowData, setRowData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
@@ -256,7 +277,14 @@ export default function EditRowModal({
       );
     }
 
-    const fieldFormat = resolveFieldFormat(field.data_type, field.metadata);
+    // A `relation` column's options are the record ids on this table with the
+    // words the store resolved for them. Folded in HERE, the same way the grid
+    // folds them before handing a cell to `EditableCell`, so `FormatAwareInput`
+    // and `ChoiceInput` need to know nothing about relations.
+    const fieldFormat = withResolvedChoices(
+      resolveFieldFormat(field.data_type, field.metadata),
+      relationChoices?.get(field.field_name) ?? [],
+    );
     if (formatHasOwnInput(fieldFormat)) {
       return (
         <FormatAwareInput

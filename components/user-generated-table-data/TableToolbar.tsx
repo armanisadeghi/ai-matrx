@@ -34,6 +34,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import type { FieldChoice } from "@/lib/field-formats/types";
 
 /** A single full-width, 44px-tall row inside the mobile actions drawer. */
 function MobileActionRow({
@@ -99,6 +100,13 @@ interface TableToolbarProps {
   setShowDeleteModal: (show: boolean) => void;
   setShowAddColumnModal: (show: boolean) => void;
   setShowAddRowModal: (show: boolean) => void;
+  /**
+   * THE WORDS EVERY `relation` CELL READS, keyed by machine field name.
+   * Resolved ONCE for the whole table by `UserTableViewer` through the ONE
+   * resolver and handed straight to both row modals, so the row form and the
+   * grid cell offer the same names and resolve the same ids.
+   */
+  relationChoices?: ReadonlyMap<string, FieldChoice[]>;
   /** One loaded row for the row-label example in Table settings. */
   sampleRow?: { data: Record<string, unknown> } | null;
   /** The rows on screen, for the Actions tab of Table settings. */
@@ -174,6 +182,7 @@ export default function TableToolbar({
   setShowDeleteModal,
   setShowAddColumnModal,
   setShowAddRowModal,
+  relationChoices,
   sampleRow,
   rows,
   setShowTableConfigModal,
@@ -502,6 +511,7 @@ export default function TableToolbar({
           />
           <AddRowModal
             tableId={tableId}
+            relationChoices={relationChoices}
             isOpen={showAddRowModal}
             onClose={() => setShowAddRowModal(false)}
             onSuccess={() => loadTableData()}
@@ -518,6 +528,7 @@ export default function TableToolbar({
             rowId={selectedRowId}
             rowData={selectedRowData}
             fields={fields}
+            relationChoices={relationChoices}
             isOpen={showEditModal}
             onClose={() => setShowEditModal(false)}
             onSuccess={onEditSuccess}
