@@ -370,6 +370,11 @@ if $STRICT; then
         # rows against the UNAPPLIED corpus, and is the half that can be shown going red
         # on a bare re-emit. scripts/lib/function-contract-corpus.ts carries the doctrine.
         "Function contracts survive a re-emit (self-test)|pnpm check:hr-punch-write-path:self-test"
+        # The ground-standing ratchet is now read by `pnpm db:apply` itself, before it ledgers
+        # anything under migrations/inverse/ (GATES-2, 2026-09-22): the red population turned over
+        # three times in twelve hours, so a ratchet only read here is one the writer never meets.
+        # This is that gate's RED-then-GREEN half. No database, no file written.
+        "Inverse ground gate refuses before it ledgers (self-test)|pnpm check:migration-ground-gate:self-test"
         # PARTITION RUNWAY stays ADVISORY even in strict mode. It is the only
         # gate whose subject is the CALENDAR, not the code: a release that has
         # nothing to do with history.row_versions must not be blocked because a

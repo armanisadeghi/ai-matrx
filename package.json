@@ -198,6 +198,7 @@
     "check:branch-schema-drift": "tsx scripts/check-branch-schema-drift.ts",
     "check:branch-schema-drift:self-test": "tsx scripts/check-branch-schema-drift.ts --self-test",
     "db:apply:self-test": "tsx scripts/apply-migration.ts --self-test",
+    "check:migration-ground-gate:self-test": "tsx scripts/apply-migration.ts --ground-gate-self-test",
     "check:canonical-ratchets": "tsx scripts/canonical-ratchets/check-all.ts",
     "check:org-null": "tsx scripts/canonical-ratchets/check-org-null.ts",
     "check:org-null:strict": "tsx scripts/canonical-ratchets/check-org-null.ts --strict",

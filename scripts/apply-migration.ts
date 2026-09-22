@@ -75,6 +75,8 @@
  *   pnpm db:apply migrations/foo.sql --reapply  re-execute a file whose ledger
  *                                               row holds a DIFFERENT checksum
  *   pnpm db:apply migrations/foo.sql --statement-timeout=30min   raise the budget
+ *   pnpm db:apply --ground-gate-self-test       prove the inverse ground gate RED then GREEN
+ *                                               (no database, no file written)
  *   pnpm db:apply --self-test                   prove RED then GREEN against the
  *                                               real DB in a throwaway schema
  *
@@ -167,6 +169,7 @@ import {
 import { confirmChairStep } from "./lib/chair-step";
 import { basedOnCheck, findReplaceOccurrences, type Query } from "./migration-based-on";
 import { judgeTexts as judgeKernelPairing } from "./check-kernel-rerecord-pairing";
+import { judgeOneInverse } from "./check-inverses-leave-the-ground-standing";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const MIGRATIONS_DIR = resolve(ROOT, "migrations");
@@ -826,6 +829,67 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   // exists, at every target, and it is not softened by --dry-run or --reapply. `--pair`
   // is the sibling-file form the guard has always accepted (a re-record in a file applied
   // in the same command sequence); the file it names is read and judged, not taken on trust.
+  // ── THE GROUND-STANDING RATCHET, READ AT APPLY TIME ────────────────────────
+  //
+  // GATES-2, 2026-09-22, on VERIFIER-12's finding. `check:inverses-leave-the-ground-standing`
+  // has a ZERO baseline, so the class is closed the moment a lane re-runs it — and inverses are
+  // being written faster than any lane re-runs anything. The red population turned over
+  // COMPLETELY three times in about twelve hours: FIX-11B closed VERIFIER-11's pair and reported
+  // 0/0/0/0; the next sweep was red on FIX-10B's `table_archive` inverse and STORE-TAILS-2's
+  // `field_words` one; those were closed, and within the hour it was red again on CHOICE-VAL's
+  // `choice_synonyms`, ENRICH's `pin_agent_cells` and WRITE-PERF-4's `memo_k_get`/`memo_k_put`.
+  // Every one of them had been ledgered before anybody looked. A ratchet only read at release
+  // time is a ratchet the writer never meets.
+  //
+  // So it is read HERE, on the file about to run, before a connection exists — the same place
+  // and the same rules as the kernel-pairing judgement above: at every target, not softened by
+  // --dry-run or --reapply. It fires on a file under `migrations/inverse/`, and on an up-file
+  // that SHIPS one (a sibling `<stem>_down.sql`), because that is the moment its author is
+  // holding both halves. The judgement is not re-implemented: `judgeOneInverse` builds the same
+  // applied tree and the same family graph the release arm builds and narrows the findings to
+  // this file. Its own RED-then-GREEN proof is `pnpm check:migration-ground-gate:self-test`.
+  {
+    const inverseDirPath = resolve(MIGRATIONS_DIR, INVERSE_DIRNAME);
+    const isInverse = !relative(inverseDirPath, path).startsWith("..");
+    const stem = filename.replace(/\.sql$/, "");
+    const sibling = resolve(inverseDirPath, `${stem}_down.sql`);
+    const judged: Array<{ base: string; raw: string | undefined }> = isInverse
+      ? [{ base: filename, raw: sql }]
+      : existsSync(sibling)
+        ? [{ base: `${stem}_down.sql`, raw: undefined }]
+        : [];
+
+    for (const { base, raw } of judged) {
+      let findings;
+      try {
+        findings = judgeOneInverse(base, raw);
+      } catch (err) {
+        console.error(
+          `${TAG.fail}the inverse ground gate could not answer for ${base}: ` +
+            `${err instanceof Error ? err.message : String(err)}. An unmeasured ratchet is not a pass.`,
+        );
+        return 1;
+      }
+      if (findings.length > 0) {
+        console.error(
+          `${TAG.fail}${base} ${C.bold}takes the ground out from under the platform${C.reset} — ` +
+            `${findings.length} finding(s). Nothing was applied and no ledger row was written.`,
+        );
+        for (const f of findings) console.error(`  (${f.clause}) ${f.what}`);
+        console.error(
+          `  ${C.dim}An inverse puts a DEFECT back; it may not break the platform doing it. ` +
+            `(a) detach the trigger before you drop the body it runs; (b) restore the callee or ` +
+            `say which sibling is meant to run; (c) point the file at the body a live trigger ` +
+            `actually calls; (d) leave the object standing and neuter the behaviour instead. ` +
+            `A file that has looked at a clause and handled it says so in its own bytes: ` +
+            `\`-- ground-standing-ok: <clauses>\`. Refused at every target; --dry-run and ` +
+            `--reapply do not soften it.${C.reset}`,
+        );
+        return 1;
+      }
+    }
+  }
+
   {
     const paired: Record<string, string> = { [filename]: sql };
     for (const raw of opts.pairedWith ?? []) {
@@ -1716,6 +1780,62 @@ async function selfTest(statementTimeout: string): Promise<number> {
 // runs on EVERY path, and cleanup is ASSERTED against the branch the way aidream's
 // half already asserted its own.
 const TARGET_SELFTEST_SCRATCH_RE = /^zz_db_apply_target_selftest_[0-9a-f]{12}\.sql$/;
+
+/**
+ * `pnpm db:apply --ground-gate-self-test` — the RED-then-GREEN proof for the ground-standing
+ * ratchet this runner now reads before it ledgers anything under `migrations/inverse/`.
+ *
+ * IT TOUCHES NO DATABASE AND WRITES NO FILE. It judges BYTES: a real inverse from the tree,
+ * first with a `drop function` line for a body a live `custom.record` trigger reaches spliced
+ * into it — which must be REFUSED — and then exactly as it stands on disk, which must be clean.
+ * The bytes never reach the shared checkout, which is deliberate: a self-test that drops a file
+ * into `migrations/inverse/` on a checkout a dozen sessions are committing from is one sweep
+ * away from shipping its own fixture.
+ */
+async function groundGateSelfTest(): Promise<number> {
+  const victim = "writeperf4_a_fact_about_the_table_is_read_once_down.sql";
+  const path = resolve(MIGRATIONS_DIR, INVERSE_DIRNAME, victim);
+  if (!existsSync(path)) {
+    console.error(
+      `${TAG.fail}--ground-gate-self-test: ${victim} is not in the tree any more. Point this at ` +
+        `another inverse that leaves a custom.record store-door trigger attached, or the proof is gone.`,
+    );
+    return 1;
+  }
+  const clean = readFileSync(path, "utf8");
+
+  // THE RED HALF. `platform.memo_k_get` is reached by three triggers this file leaves attached
+  // to custom.record; dropping it is exactly the (a) instance GATES-2 removed from these bytes.
+  const poisoned = `${clean}\ndrop function if exists platform.memo_k_get(text);\n`;
+  const red = judgeOneInverse(victim, poisoned);
+  if (red.length === 0) {
+    console.error(
+      `${TAG.fail}--ground-gate-self-test RED HALF FAILED: a \`drop function\` on a body three live ` +
+        `custom.record triggers reach was judged clean. The runner would ledger it. The gate is blind.`,
+    );
+    return 1;
+  }
+  console.log(
+    `${C.bold}ground gate RED${C.reset} ${C.dim}— ${red.length} finding(s) on the poisoned bytes: ` +
+      `${red.map((f) => `(${f.clause})`).join(" ")}${C.reset}`,
+  );
+
+  // THE GREEN HALF — the same file, as it actually stands.
+  const green = judgeOneInverse(victim, clean);
+  if (green.length > 0) {
+    console.error(
+      `${TAG.fail}--ground-gate-self-test GREEN HALF FAILED: ${victim} as it stands is judged ` +
+        `${green.length} finding(s) — ${green.map((f) => `(${f.clause}) ${f.what}`).join("; ")}`,
+    );
+    return 1;
+  }
+  console.log(`${C.bold}ground gate GREEN${C.reset} ${C.dim}— the same file, as it stands, is clean${C.reset}`);
+  console.log(
+    `${TAG.ok}the inverse ground gate refuses a defective inverse BEFORE it is ledgered, and ` +
+      `passes the file it was spliced from.`,
+  );
+  return 0;
+}
 
 async function targetSelfTest(statementTimeout: string): Promise<number> {
   const { spawnSync } = await import("node:child_process");
@@ -2710,6 +2830,7 @@ async function main(): Promise<number> {
     return amendIdempotent(resolve(ROOT, given), parseTargetFlag(argv), statementTimeout);
   }
 
+  if (argv.includes("--ground-gate-self-test")) return groundGateSelfTest();
   if (argv.includes("--target-self-test")) return targetSelfTest(statementTimeout);
   if (argv.includes("--self-test")) return selfTest(statementTimeout);
 
