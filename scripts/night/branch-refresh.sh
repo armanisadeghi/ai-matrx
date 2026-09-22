@@ -373,6 +373,114 @@ fi
 unset PGPASSWORD   # the dump is done; nothing after this point needs it
 
 # ─────────────────────────────────────────────────────────────────────────────
+# (1b) THE ROLES THE DUMP NAMES — created on the branch BEFORE the restore.
+#
+# 🚨 ROLES ARE CLUSTER-LEVEL AND A SCHEMA DUMP DOES NOT CARRY THEM. Measured on the first live
+# run (2026-09-22): the restore produced 885 ERROR lines and every single one of them was
+# `role "svc_seo" does not exist` (580) or `role "cli_login_postgres" does not exist` (305) —
+# a GRANT naming a role this branch had never heard of. `pg_dump` emits the GRANT and assumes
+# the role is already there, exactly as `pg_dumpall --globals-only` would have created it.
+#
+# THE FIX IS THE CLASS, NOT THE TWO NAMES. The set is DERIVED from the source catalog every
+# night — every non-`pg_` role the clone has and the branch lacks — so a role somebody adds next
+# month is created the first night it appears instead of producing a few hundred silent failures.
+# The branch's own list is re-read afterwards and a role the dump names that still does not exist
+# is a REFUSAL, here, before anything has been dropped.
+#
+# WHAT IS AND IS NOT COPIED:
+#   · NOLOGIN, ALWAYS. No password is read from the source and none is set here; a login role
+#     with no password is a role nothing can connect as, which is what a rehearsal branch wants.
+#     If a job ever genuinely needs to log in as one, give it a branch-only password from the
+#     branch env — never from the source, and never written into this file or the log.
+#   · INHERIT / NOINHERIT, BYPASSRLS and CREATEROLE are mirrored from the source's catalog.
+#   · SUPERUSER, REPLICATION and CREATEDB are NOT mirrored: the branch connects as `postgres`,
+#     which is not a superuser on a Supabase branch and cannot grant them. The log names any
+#     role that carried one so the difference is stated rather than hidden.
+#   · Memberships are mirrored where the branch is allowed to grant them. `grant "postgres" to
+#     "cli_login_postgres"` is refused on the branch (`only roles with the ADMIN option on role
+#     "postgres" may grant this role`) and that refusal is harmless — a NOLOGIN role that exists
+#     only to be the grantee of an EXECUTE does not need to inherit anything — so it is logged,
+#     never fatal.
+#   · OWNERSHIP IS NOT RESTORED, because the dump carries `--no-owner` on purpose. On the clone
+#     `svc_seo` owns the `seo` schema and 29 of its relations; on the branch `postgres` owns
+#     them. Every EXPLICIT grant crosses (measured: 30 relation ACL entries on both sides after
+#     this step); the owner-implicit entries do not, and that is the intended difference.
+# ─────────────────────────────────────────────────────────────────────────────
+say "─── (1b) roles: creating any the dump names that this branch lacks ───"
+SRC_ROLES="$("$PSQL" "${SRC[@]}" -qAtF'|' -c \
+  "select rolname, rolinherit, rolbypassrls, rolcreaterole, rolcanlogin, rolsuper, rolreplication, rolcreatedb
+     from pg_roles where rolname !~ '^pg_' order by 1" 2>&1)"
+if print -r -- "$SRC_ROLES" | grep -qE 'ERROR|FATAL'; then
+  say "REFUSED: could not read the source role catalog: $(print -r -- "$SRC_ROLES" | head -1). Nothing written anywhere."
+  exit 78
+fi
+BRANCH_ROLES="$("$PSQL" "$BRANCH_DSN" -qAt -c "select rolname from pg_roles where rolname !~ '^pg_'" 2>&1)"
+if print -r -- "$BRANCH_ROLES" | grep -qE 'ERROR|FATAL'; then
+  say "REFUSED: could not read the branch role catalog: $(print -r -- "$BRANCH_ROLES" | head -1). Nothing written anywhere."
+  exit 78
+fi
+typeset -a ROLES_MADE ROLES_FAILED
+ROLES_MADE=(); ROLES_FAILED=()
+print -r -- "$SRC_ROLES" | while IFS='|' read -r rn rinh rbyp rcrr rlog rsup rrep rcdb; do
+  [ -n "$rn" ] || continue
+  [[ $'\n'"$BRANCH_ROLES"$'\n' == *$'\n'"$rn"$'\n'* ]] && continue
+  named=0; grep -q "\"$rn\"" "$DUMP" && named=1
+  opts="nologin"
+  [ "$rinh" = "t" ] && opts="$opts inherit" || opts="$opts noinherit"
+  [ "$rbyp" = "t" ] && opts="$opts bypassrls"
+  [ "$rcrr" = "t" ] && opts="$opts createrole"
+  o="$("$PSQL" "$BRANCH_DSN" -qAt -c "create role \"$rn\" with $opts" 2>&1)"
+  if print -r -- "$o" | grep -qE 'ERROR:|FATAL:'; then
+    say "  $rn: NOT CREATED — $(print -r -- "$o" | grep -m1 -E 'ERROR:|FATAL:')"
+    print -r -- "$rn" >> "$WORK/roles.failed"
+  else
+    say "  $rn: created [$opts]$([ "$rlog" = t ] && print -n ' (LOGIN on the source, deliberately NOLOGIN here)')$([ "$rsup$rrep$rcdb" != "fff" ] && print -n ' (source also carries superuser/replication/createdb, which this branch cannot grant)')$([ $named = 1 ] && print -n ' — named by the dump' || print -n ' — not named by the dump, created for completeness')"
+    print -r -- "$rn" >> "$WORK/roles.made"
+  fi
+done
+[ -f "$WORK/roles.made" ]   && ROLES_MADE=("${(@f)$(cat "$WORK/roles.made")}")
+[ -f "$WORK/roles.failed" ] && ROLES_FAILED=("${(@f)$(cat "$WORK/roles.failed")}")
+if [ ${#ROLES_MADE[@]} -eq 0 ] && [ ${#ROLES_FAILED[@]} -eq 0 ]; then
+  say "  the branch already has every role the source does; nothing to create."
+fi
+# Memberships, mirrored where the branch may grant them. Never fatal.
+if [ ${#ROLES_MADE[@]} -gt 0 ]; then
+  MEMS="$("$PSQL" "${SRC[@]}" -qAtF'|' -c \
+    "select g.rolname, m.rolname from pg_auth_members am
+       join pg_roles m on m.oid = am.member join pg_roles g on g.oid = am.roleid
+      where (m.rolname = any(array['${(j:',':)ROLES_MADE}']) or g.rolname = any(array['${(j:',':)ROLES_MADE}']))
+        and g.rolname !~ '^pg_' and m.rolname !~ '^pg_'" 2>&1 | sort -u)"
+  print -r -- "$MEMS" | while IFS='|' read -r grp mem; do
+    [ -n "$grp" ] && [ -n "$mem" ] || continue
+    o="$("$PSQL" "$BRANCH_DSN" -qAt -c "grant \"$grp\" to \"$mem\"" 2>&1)"
+    if print -r -- "$o" | grep -qE 'ERROR:|FATAL:'; then
+      say "  membership $mem -> $grp NOT mirrored (harmless for a NOLOGIN grantee): $(print -r -- "$o" | grep -m1 -E 'ERROR:|FATAL:' | cut -c1-120)"
+    else
+      say "  membership $mem -> $grp mirrored"
+    fi
+  done
+fi
+# THE CHECK THAT MAKES THIS A GUARD AND NOT A HOPE: re-read the branch's own catalog and refuse
+# if the dump still names a role that does not exist. Nothing has been dropped at this point.
+BRANCH_ROLES="$("$PSQL" "$BRANCH_DSN" -qAt -c "select rolname from pg_roles where rolname !~ '^pg_'" 2>&1)"
+typeset -a ROLES_STILL_MISSING; ROLES_STILL_MISSING=()
+print -r -- "$SRC_ROLES" | cut -d'|' -f1 | while read -r rn; do
+  [ -n "$rn" ] || continue
+  [[ $'\n'"$BRANCH_ROLES"$'\n' == *$'\n'"$rn"$'\n'* ]] && continue
+  grep -q "\"$rn\"" "$DUMP" && print -r -- "$rn" >> "$WORK/roles.missing"
+done
+[ -f "$WORK/roles.missing" ] && ROLES_STILL_MISSING=("${(@f)$(cat "$WORK/roles.missing")}")
+if [ ${#ROLES_STILL_MISSING[@]} -gt 0 ]; then
+  say "REFUSED: the dump names ${#ROLES_STILL_MISSING[@]} role(s) this branch still does not have:"
+  say "  ${(j:, :)ROLES_STILL_MISSING}"
+  say "  Restoring now would fail every GRANT naming them — 885 such failures on 2026-09-22 —"
+  say "  and the branch would come out of the refresh without those privileges. Nothing was"
+  say "  dropped and nothing was written anywhere. Nothing done."
+  exit 78
+fi
+say "  every role the dump names exists on the branch."
+
+# ─────────────────────────────────────────────────────────────────────────────
 # (2) THE CURATED SEED — read in the same window, from the same source.
 #     Platform configuration is copied verbatim; people are never copied.
 # ─────────────────────────────────────────────────────────────────────────────
