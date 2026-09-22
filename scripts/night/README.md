@@ -7,12 +7,25 @@
 > jobs were left loaded (branch-only writes). The way suites come back is against the nightly clone:
 > `common-docs/projects/database-workload-safety/DEV-CLONE-AND-BACKUP.md`. Re-arm only on Arman's word.
 >
-> 🚨 **Identity trap (measured 2026-09-22):** a Supabase DATA branch (`with_data: true`) is a physical
-> restore and reports the **same `pg_control_system().system_identifier` as production**. Your
-> `night_assert_target`, which keys on that identifier, cannot distinguish such a clone from
-> production. It is fine for your schema-only branch (different identifier) but must assert on the
-> connection user `postgres.<ref>` or the host before it is ever pointed at the nightly clone
-> (`common-docs/operations/clone/CURRENT.md`).
+> 🚨 **Identity trap (measured 2026-09-22) — CLOSED the same day.** A Supabase DATA branch
+> (`with_data: true`) is a physical restore and reports the **same
+> `pg_control_system().system_identifier` as production**, so a `night_assert_target` keyed on that
+> number alone could not tell the nightly clone from production, in either direction.
+> `night_assert_target` now identifies a target by **(system identifier, project ref) together** —
+> the project ref comes from the CONNECTION (`postgres.<ref>` at the pooler, `db.<ref>.supabase.co`
+> direct), read back from libpq — and takes a third target, `clone`, whose pair is read from the
+> checked-in `common-docs/operations/clone/CLONE-REF` the way `branch` reads BRANCH-REF. An
+> unreadable reference file is a refusal, never a fallback. The same change landed in
+> `scripts/campaign-tests/_preamble.sql`, which now accepts MAIN, the rehearsal branch **or** the
+> dev clone, and takes an optional `\set expect 'main|branch|clone'`.
+> Proven RED then GREEN on live databases: production presented as the clone → refused; the clone
+> presented as production → refused; the clone presented as the branch → refused; CLONE-REF
+> unreadable → refused; each of the three accepted as itself.
+>
+> **The suite sweep is back, against the clone:** [`clone-suite-sweep.sh`](./clone-suite-sweep.sh).
+> It has no production mode and no way to acquire one — `night_assert_target clone` is the only
+> target it ever asks for. It is NOT a one-shot: no plist, no window guard (the clone is where
+> heavy work belongs) and no branch `build_lock`.
 >
 > 🚨 **2026-09-22 ~00:10 PT (same session, on Arman's word):** `com.aimatrx.night.branch-refresh-nightly`
 > (daily 01:05) and the one-shot `com.aimatrx.night-sweep.branch-refresh` (2026-09-23 01:05) were also
