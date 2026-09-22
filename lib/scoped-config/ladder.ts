@@ -114,6 +114,7 @@ const RUNG_NAMES: Record<string, string> = {
   location: "the location",
   table: "the table",
   agent: "the agent",
+  rulebook: "the Rulebook",
   user: "you",
   device: "this device",
 };

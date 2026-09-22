@@ -21,6 +21,18 @@ export type KnobScopeKindName =
   | "table"
   /** DD-131: precedence 60, keyed by an `agent.definition` row. */
   | "agent"
+  /**
+   * Precedence 70, keyed by a `platform.rulebook` row — one Rulebook, the
+   * subject of the work, so a Masterwork setting can be answered for THAT
+   * Rulebook without every Rulebook in the organization inheriting it. It sits
+   * BELOW `user` on purpose: a person's standing preference beats a value the
+   * system measured onto one Rulebook. The rung has been live in
+   * `platform.knob_scope_kind` and carried by 22 `rulebook` knob keys while
+   * this union had no word for it, so `resolveKnobLadder` could not type it and
+   * the universal settings pane rendered the raw slug — check:settings-ladder-ui
+   * UNNAMED_RUNG, closed here.
+   */
+  | "rulebook"
   | "user"
   /** USD-9: precedence 110, below `user`; keyed by a device / instance id. */
   | "device";
