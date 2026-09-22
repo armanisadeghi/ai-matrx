@@ -157,9 +157,18 @@ set local statement_timeout = '60s';
 select set_config('request.jwt.claims', '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
 set local role authenticated;
 -- THE EXACT STATEMENT that raised `42501 permission denied for table record` for every record
--- share anybody ever attempted, until this lane. The RLS policy has always allowed it.
-insert into iam.permissions (resource_type, resource_id, granted_to_user_id, permission_level, created_by)
-values ('record', :REC, :SAM, 'viewer', :ADMIN);
+-- share anybody ever attempted, until this lane.
+-- SUITES-TIDY 2026-09-22 — THROUGH THE DOOR, BECAUSE THE TABLE IS CLOSED NOW.
+-- This was a direct INSERT into iam.permissions from the member's seat. DOORS-ONLY-5 dropped
+-- the "Users can … permissions for own resources" trio by name and `authenticated` holds SELECT
+-- on iam.permissions and nothing else — measured on production and on the clone alike — so
+-- Postgres answered `42501 permission denied for table permissions` before any policy was
+-- consulted. `custom.share_grant` is the record store's own share door — the one the Share dialog
+-- calls for a record — so the clause is now testing the path a person actually has.
+-- (`iam.fn_grant_resource_permission` is the FILE side of the same closure and refuses
+-- resource_type 'record' by name; a record is shared through the store's door, not that one.)
+select custom.share_grant(:ORG::uuid, :REC::uuid, 'user', :SAM::uuid, 'viewer'::public.permission_level)
+\g (tuples_only=on format=unaligned) /dev/null
 reset role;
 do $t$
 declare v_n int;

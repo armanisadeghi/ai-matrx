@@ -190,6 +190,30 @@ begin
   --   2a the delete is refused, raw, exactly as bug 8500bd65 reported it;
   --   2b the clear empties it; 2c the SAME delete then succeeds.
   -- ════════════════════════════════════════════════════════════════════════════
+  -- ── DOORS-ONLY CLOSED THE CLIENT'S DELETE ON iam.organizations ─────────────────────────
+  -- SUITES-TIDY 2026-09-22. DOORS-ONLY-5 dropped `org_insert/update/delete_policy` by name and
+  -- `authenticated` holds SELECT on iam.organizations and nothing else — measured on production
+  -- and on the clone alike — so 2a and 2d were answered `42501 permission denied for table
+  -- organizations` before the foreign key they are about was ever reached. The clauses are
+  -- about the FK `record_organization_id_fkey`, which is the TABLE's own fact, so they run as
+  -- the role that owns the table. What is asserted FROM THE SEAT is 2.0 immediately below:
+  -- a person cannot delete an organization at all any more, and `iam.organization_archive` is
+  -- the door they have instead.
+  begin
+    delete from iam.organizations o where o.id = v_orgB;
+    raise exception '2.0 FAILED — a person deleted an organization directly; DOORS-ONLY closed that lane';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlerrm like '%2.0 FAILED%' then raise; end if;
+      raise exception '2.0 FAILED — the direct delete was refused for the wrong reason: % / %', sqlstate, sqlerrm;
+  end;
+  if not has_function_privilege('authenticated', 'iam.organization_archive(uuid,text,text)', 'EXECUTE') then
+    raise exception '2.0 FAILED — the table is closed to a person and iam.organization_archive, the door that replaces it, is not granted to them either';
+  end if;
+  raise notice '2.0 PASSED — iam.organizations is closed to the seat; iam.organization_archive is the door a person has. 2a-2d below run as the role that owns the table, because the foreign key they are about is the table''s own fact.';
+  perform set_config('role', v_boss, true);
+
   begin
     delete from iam.organizations o where o.id = v_orgB;
     raise exception '2a: an organization holding records was deleted with no complaint, so this suite is not reproducing the bug at all';
@@ -246,12 +270,16 @@ begin
   end if;
   raise notice '2c PASSED — "%"', v_res ->> 'sentence';
 
-  -- 2d THE SAME DELETE THAT WAS REFUSED IN 2a.
+  -- 2d THE SAME DELETE THAT WAS REFUSED IN 2a. (The role is re-asserted here because the
+  -- doors called in 2b/2c are SECURITY DEFINER and leave the session role where they found it
+  -- only for their own duration — see 2.0 for why this clause is not a client clause.)
+  perform set_config('role', v_boss, true);
   delete from iam.organizations o where o.id = v_orgB;
   if exists (select 1 from iam.organizations o where o.id = v_orgB) then
     raise exception '2d: the organization is still here after the delete the RLS policy allows';
   end if;
   raise notice '2d PASSED — the same delete that was refused in 2a now removes the organization.';
+  perform set_config('role', 'authenticated', true);
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 3 — THE DEFAULT ARM RETIRES AND DESTROYS NOTHING (REC-23), AND THE
@@ -408,7 +436,7 @@ begin
   end if;
   raise notice '6b PASSED — a record retired seconds ago is left exactly where it is.';
 
-  raise notice 'ALL PARTS PASSED (1a what it holds, 1b an empty one, 2a the raw refusal, 2b the date, 2c the window runs out, 2d the delete, 3a-3c retire and undo, 4a-4c who may, 5 the census, 6a-6b the purge) — every clause from the seat `authenticated`.';
+  raise notice 'ALL PARTS PASSED (1a what it holds, 1b an empty one, 2a the raw refusal, 2b the date, 2c the window runs out, 2d the delete, 3a-3c retire and undo, 4a-4c who may, 5 the census, 6a-6b the purge) — every clause from the seat `authenticated` except 2a-2d, which are about the TABLE''s foreign key and say so at 2.0.';
 end;
 $t$;
 

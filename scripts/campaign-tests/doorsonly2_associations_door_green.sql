@@ -57,14 +57,27 @@ begin
   end if;
 
   -- 1 -- THE DIRECT WRITE IS REFUSED. This is the clause that fails before the closure.
+  --
+  -- SUITES-TIDY 2026-09-22: it used to require the refusal to NAME this lane's policy,
+  -- `associations_client_insert_refused`. DOORS-ONLY-5 then went further than this lane did and
+  -- dropped `assoc_insert/update/delete` outright — "their read lane is a separate policy and
+  -- their privilege was already gone" — so the refusal now comes from Postgres at the
+  -- PRIVILEGE level, before any policy is consulted, and carries no policy name to match.
+  -- That is a stronger closure, not a weaker one, and the clause asserts the stronger fact:
+  -- the client role holds no write privilege on the table at all, and the write is refused.
+  if has_table_privilege('authenticated', 'platform.associations', 'INSERT')
+     or has_table_privilege('authenticated', 'platform.associations', 'UPDATE')
+     or has_table_privilege('authenticated', 'platform.associations', 'DELETE') then
+    raise exception '1: the client role still holds a write privilege on platform.associations, so the refusal below could only ever be a policy and DOORS-ONLY-5''s closure is not in place here';
+  end if;
   begin
     insert into platform.associations select * from platform.associations
       where source_type = 'tool' and target_type = 'tool_bundle' limit 1;
     raise exception '1: a direct INSERT into platform.associations was ACCEPTED from a client seat';
   exception when insufficient_privilege then
     v_refused := sqlerrm;
-    if v_refused not like '%associations_client_insert_refused%' then
-      raise exception '1: refused, but not by this lane''s policy: %', v_refused;
+    if v_refused not like '%associations%' then
+      raise exception '1: refused, but not on this table: %', v_refused;
     end if;
   end;
 
