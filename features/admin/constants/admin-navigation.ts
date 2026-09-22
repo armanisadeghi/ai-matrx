@@ -197,7 +197,9 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         iconName: "Activity",
         destinations: [
           destination("/administration/agents/reports/agent-drift"),
-          destination("/administration/agents/hindsight"),
+          destination("/administration/agents/hindsight", [
+            "/administration/agents/hindsight/recipes/[id]",
+          ]),
         ],
       },
     ],
@@ -488,7 +490,10 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
       {
         name: "Windowing",
         iconName: "PanelTop",
-        destinations: [destination("/administration/ui/persistence-test")],
+        destinations: [
+          destination("/administration/ui/persistence-test"),
+          destination("/administration/ui/lite-window"),
+        ],
       },
     ],
   },

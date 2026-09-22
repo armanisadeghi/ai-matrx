@@ -1556,6 +1556,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/utilities/utils/text-cleaner",
       },
       {
+        title: "Lite Window",
+        description:
+          "The lightweight window panel in practice \u2014 the admin-build copy of the /demos/lite-window examples, for reviewing behaviour where it actually ships.",
+        iconName: "PanelTop",
+        link: "/administration/ui/lite-window",
+        isNew: true,
+      },
+      {
         title: "Window Persistence Tester",
         description:
           "Diagnostic loop for the local workspace cache, Redux overlays, window geometry, and preservation context side-by-side.",
