@@ -14,3 +14,17 @@ export async function withBuildLockCleanup<T>(
     await release();
   }
 }
+
+/**
+ * Share one in-flight cleanup with every caller.
+ *
+ * Signals can arrive while the normal `finally` is releasing rows. A later caller
+ * must await that same release before it is safe to exit the process.
+ */
+export function onceAsync<T>(work: () => Promise<T>): () => Promise<T> {
+  let promise: Promise<T> | null = null;
+  return () => {
+    promise ??= work();
+    return promise;
+  };
+}

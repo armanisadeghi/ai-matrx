@@ -82,7 +82,7 @@ import { basename, dirname, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { connectDirect } from "./lib/direct-db";
-import { withBuildLockCleanup } from "./lib/build-lock-cleanup";
+import { onceAsync, withBuildLockCleanup } from "./lib/build-lock-cleanup";
 import {
   cloneRefOverride,
   loadCloneDbEnv,
@@ -736,12 +736,7 @@ async function main(): Promise<number> {
   // armed BEFORE the first insert: a row taken by a process that dies waiting for the next
   // one is still this process's row to release.
   const acquired: LockFamily[] = [];
-  let releasing = false;
-  const releaseOnce = async () => {
-    if (releasing) return;
-    releasing = true;
-    await releaseBuildLocks(env, acquired, heldBy);
-  };
+  const releaseOnce = onceAsync(() => releaseBuildLocks(env, acquired, heldBy));
   const onSignal = (sig: NodeJS.Signals) => {
     void (async () => {
       console.error(
