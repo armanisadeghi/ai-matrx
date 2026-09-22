@@ -118,7 +118,7 @@ export function DisplayModePicker({
           <span className="truncate text-foreground">{meta.label}</span>
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[22rem] p-1">
+      <PopoverContent sizing="content" align="start" className="p-1">
         <div className="max-h-80 overflow-y-auto">
           {DISPLAY_MODE_ORDER.map((mode) => {
             const m = RESULT_DISPLAY_META[mode];

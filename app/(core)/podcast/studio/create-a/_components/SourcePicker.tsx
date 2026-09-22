@@ -39,7 +39,7 @@ export function SourcePicker({
           <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-72 p-1.5">
+      <PopoverContent sizing="content" align="end" className="p-1.5">
         <p className="px-2 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           Start from
         </p>

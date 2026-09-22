@@ -146,7 +146,7 @@ function SaveSamplePopover({
           <Save className="h-3 w-3" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-3" align="end">
+      <PopoverContent sizing="content" className="p-3" align="end">
         <div className="space-y-3">
           <p className="text-xs font-semibold">Save Test Sample</p>
 

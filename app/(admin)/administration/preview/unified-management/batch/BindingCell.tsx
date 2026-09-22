@@ -168,7 +168,7 @@ export function BindingCell({
             <meta.icon className={cn("h-3.5 w-3.5", meta.tone)} />
           </button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-56 p-1">
+        <PopoverContent sizing="content" align="start" className="p-1">
           <p className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">
             {placeLabel}
           </p>

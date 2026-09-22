@@ -424,7 +424,7 @@ function FillButton({
           <ArrowDownToLine className="h-3.5 w-3.5" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-80 space-y-2 p-3">
+      <PopoverContent sizing="content" align="start" className="space-y-2 p-3">
         <p className="text-[11px] text-muted-foreground">{caveat}</p>
         {render(value, setValue)}
         <Button

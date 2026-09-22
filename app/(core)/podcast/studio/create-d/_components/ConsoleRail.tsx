@@ -208,7 +208,7 @@ function LanguagePicker({
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-0" align="start">
+      <PopoverContent sizing="content" className="p-0" align="start">
         <ScrollArea className="max-h-72">
           <div className="p-1">
             {languages.map((l) => {
@@ -282,7 +282,7 @@ function ShowPicker({
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-1" align="start">
+      <PopoverContent sizing="content" className="p-1" align="start">
         <button
           type="button"
           onClick={() => {

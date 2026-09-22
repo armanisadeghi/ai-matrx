@@ -86,7 +86,7 @@ export default function DenseContextLabPage() {
   const treePop = (trigger: React.ReactElement) => (
     <Popover>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent align="start" className="w-[min(92vw,300px)] p-0">
+      <PopoverContent sizing="content" align="start" className="p-0">
         <ContextTree
           data={data}
           selection={sel}
@@ -185,7 +185,7 @@ export default function DenseContextLabPage() {
                 />
               </div>
             </PopoverAnchor>
-            <PopoverContent align="start" className="w-[min(92vw,300px)] p-0">
+            <PopoverContent sizing="content" align="start" className="p-0">
               <ContextTree
                 data={data}
                 selection={sel}
@@ -260,8 +260,9 @@ export default function DenseContextLabPage() {
                   <BreadcrumbTrigger selection={singleSel} data={data} />
                 </PopoverTrigger>
                 <PopoverContent
+                  sizing="content"
                   align="start"
-                  className="w-[min(92vw,300px)] p-0"
+                  className="p-0"
                 >
                   <ContextTree
                     data={data}

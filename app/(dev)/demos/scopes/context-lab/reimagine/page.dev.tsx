@@ -165,7 +165,7 @@ function TriggerCard({
               {render({ nodes: engine.nodes, onClick: () => {} })}
             </span>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-auto p-0">
+          <PopoverContent /* sizing: fixed — content already decides its own width; no fixed box to remove */ align="start" className="w-auto p-0">
             <QuickPick
               engine={engine}
               mode="assignment"

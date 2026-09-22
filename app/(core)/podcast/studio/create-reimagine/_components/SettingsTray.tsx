@@ -74,7 +74,7 @@ function Pill({
           <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/60" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-72 p-1.5">
+      <PopoverContent sizing="content" align="start" className="p-1.5">
         {children}
       </PopoverContent>
     </Popover>

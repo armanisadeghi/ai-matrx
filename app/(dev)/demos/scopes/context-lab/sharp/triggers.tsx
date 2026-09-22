@@ -123,7 +123,7 @@ export function CommandChipDemo({ data }: { data: PickerData }) {
           </kbd>
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[340px] p-0">
+      <PopoverContent sizing="content" align="start" className="p-0">
         <QuickPick
           data={data}
           sel={sel}
@@ -158,7 +158,7 @@ export function PaletteInputDemo({ data }: { data: PickerData }) {
           </span>
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[340px] p-0">
+      <PopoverContent sizing="content" align="start" className="p-0">
         <QuickPick
           data={data}
           sel={sel}
@@ -209,7 +209,7 @@ export function TapTargetDemo({ data }: { data: PickerData }) {
             onClick={sel.clear}
           />
         </TapTargetButtonGroup>
-        <PopoverContent align="start" className="w-[360px] p-0">
+        <PopoverContent sizing="content" align="start" className="p-0">
           <CompactTree
             data={data}
             sel={sel}
@@ -261,7 +261,7 @@ export function BreadcrumbDemo({ data }: { data: PickerData }) {
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[min(680px,92vw)] p-0">
+      <PopoverContent /* sizing: fixed — fixed-shape panel wider than the sizing="content" 28rem ceiling */ align="start" className="w-[min(680px,92vw)] p-0">
         <MillerColumns
           data={data}
           sel={sel}
@@ -342,7 +342,7 @@ export function ChipRailDemo({ data }: { data: PickerData }) {
             Context
           </button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-[340px] p-0">
+        <PopoverContent sizing="content" align="end" className="p-0">
           <OrgRail
             data={data}
             sel={sel}
@@ -384,7 +384,7 @@ function AssignRow({
             {sel.count > 0 ? sel.count : "—"}
           </button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-[320px] p-0">
+        <PopoverContent sizing="content" align="end" className="p-0">
           <QuickPick
             data={data}
             sel={sel}
@@ -454,7 +454,7 @@ export function SlotLinkDemo({ data }: { data: PickerData }) {
             {result ? "Re-file…" : "File it…"}
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-[340px] p-0">
+        <PopoverContent sizing="content" align="end" className="p-0">
           <JumpAssign
             data={data}
             autoFocus

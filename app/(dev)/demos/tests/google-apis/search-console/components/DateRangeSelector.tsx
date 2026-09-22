@@ -50,7 +50,7 @@ export function DateRangeSelector({ startDate, endDate, onChange }: DateRangeSel
                     {formatDateRange()}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-56 p-3 bg-textured border-gray-200 dark:border-gray-700">
+            <PopoverContent sizing="content" className="p-3 bg-textured border-gray-200 dark:border-gray-700">
                 <div className="space-y-2">
                     <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
                         Quick Select

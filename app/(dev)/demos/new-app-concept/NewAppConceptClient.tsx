@@ -351,8 +351,9 @@ export function NewAppConceptClient() {
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
+                  sizing="content"
                   align="start"
-                  className="w-80 rounded-xl border-border bg-popover p-3 shadow-xl"
+                  className="rounded-xl border-border bg-popover p-3 shadow-xl"
                 >
                   <label
                     htmlFor="concept-topic"
@@ -393,8 +394,9 @@ export function NewAppConceptClient() {
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
+                  sizing="content"
                   align="start"
-                  className="w-64 rounded-xl border-border bg-popover p-1.5 shadow-xl"
+                  className="rounded-xl border-border bg-popover p-1.5 shadow-xl"
                 >
                   <div className="px-2 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                     Format
@@ -442,8 +444,9 @@ export function NewAppConceptClient() {
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
+                  sizing="content"
                   align="start"
-                  className="w-72 rounded-xl border-border bg-popover p-1.5 shadow-xl"
+                  className="rounded-xl border-border bg-popover p-1.5 shadow-xl"
                 >
                   <div className="px-2 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                     Agent
