@@ -79,6 +79,15 @@ describe("resolveSurfaceWritePatch — the happy paths", () => {
     expect(out.next).toBe(`${PROMPT}\n\n## Escalation\n- Ask before deleting anything.`);
   });
 
+  it("appends the first text without a leading separator", () => {
+    const out = resolveSurfaceWritePatch("", {
+      command: "append",
+      new_str: "first",
+    });
+
+    expect(out.ok && out.next).toBe("first");
+  });
+
   it("honours an explicit separator", () => {
     const out = resolveSurfaceWritePatch("one", {
       command: "append",
@@ -94,6 +103,15 @@ describe("resolveSurfaceWritePatch — the happy paths", () => {
       new_str: "header",
     });
     expect(out.ok && out.next).toBe("header\n\nbody");
+  });
+
+  it("prepends the first text without a trailing separator", () => {
+    const out = resolveSurfaceWritePatch("", {
+      command: "prepend",
+      new_str: "first",
+    });
+
+    expect(out.ok && out.next).toBe("first");
   });
 
   it("overwrites — the escape hatch that is still a patch on the wire", () => {

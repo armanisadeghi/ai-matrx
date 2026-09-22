@@ -226,11 +226,15 @@ export function resolveSurfaceWritePatch(
       if (typeof newStr !== "string") {
         return refuse('An "append" patch needs new_str.');
       }
-      const next = base + separator + newStr;
+      // There is no boundary to separate when the current value is empty.
+      // Keeping the default blank-line join here would turn the first content
+      // into a value that begins with two invisible newline bytes.
+      const join = base.length === 0 ? "" : separator;
+      const next = base + join + newStr;
       return {
         ok: true,
         next,
-        matchedRange: { start: base.length + separator.length, end: next.length },
+        matchedRange: { start: base.length + join.length, end: next.length },
         summary: "appended to the end",
       };
     }
@@ -239,7 +243,8 @@ export function resolveSurfaceWritePatch(
       if (typeof newStr !== "string") {
         return refuse('A "prepend" patch needs new_str.');
       }
-      const next = newStr + separator + base;
+      const join = base.length === 0 ? "" : separator;
+      const next = newStr + join + base;
       return {
         ok: true,
         next,
