@@ -356,6 +356,12 @@ begin
   end if;
 
   raise notice 'ALL PARTS PASSED';
+  -- SUITES-TIDY 2026-09-22: THE OPT-IN LINE. This suite ends by RAISING to force its own
+  -- rollback, and in output text a raise is indistinguishable from a failure — the clone sweep
+  -- of 2026-09-22 scored it FAIL for exactly that. The sweep's judge now forgives a teardown
+  -- raise, but ONLY for a suite that printed these exact words first, so that a suite which
+  -- died halfway can never be forgiven its exit. Do not reword this line.
+  raise notice 'ALL CLAUSES PASSED';
   raise exception 'talkrec_green.sql: rolling back, as designed';
 end;
 $t$;

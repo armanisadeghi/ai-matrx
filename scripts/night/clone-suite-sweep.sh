@@ -33,6 +33,14 @@
 # answers a missing dependency with `SKIPPED: … this is NOT a pass`, and scoring that as a pass is
 # how 9 of 14 "passes" were counted on the branch on 2026-09-21.
 #
+# TWO MORE VERDICTS, ADDED BY SUITES-TIDY 2026-09-22:
+#   RETIRED — the file printed `RETIRED:` and asserted nothing. It is neither a pass nor a
+#     failure and is counted on its own line, so a retirement can never be read as coverage.
+#   a DELIBERATE TEARDOWN RAISE scored PASS — but only when the suite printed its own
+#     all-clauses-passed line FIRST and the raise says it is a teardown. Both halves are
+#     required: a verdict resting on the raise's wording alone would score a badly edited suite
+#     green for saying the right words on its way out.
+#
 #   ./scripts/night/clone-suite-sweep.sh [<log path>]
 # ─────────────────────────────────────────────────────────────────────────────
 source /Users/armanisadeghi/code/matrx-frontend/scripts/night/lib-night.sh
@@ -84,7 +92,7 @@ sweep_reap() {  # sweep_reap <application_name>
 cd "$FRONTEND" || exit 78
 TSV="${LOG%.log}.tsv"
 : > "$TSV"
-RAN=0 PASS=0 FAIL=0 SKIPPED_BY_SUITE=0 TIMEOUT=0
+RAN=0 PASS=0 FAIL=0 SKIPPED_BY_SUITE=0 TIMEOUT=0 RETIRED_N=0
 typeset -a FILES
 FILES=("${(@f)$(ls "$SUITES"/*.sql | grep -v '/_')}")
 TOTAL=${#FILES[@]}
@@ -108,13 +116,32 @@ for f in "${FILES[@]}"; do
   else
     line="$(grep -m1 -E 'ERROR:|FATAL:' "$out")"
     skipline="$(grep -m1 -E '^SKIPPED:' "$out")"
-    if [ -n "$line" ]; then verdict=FAIL; sentence="${line#psql:*: }"
+    retline="$(grep -m1 -E '^RETIRED:' "$out")"
+    passline="$(grep -m1 -F 'ALL CLAUSES PASSED' "$out")"
+    if [ -n "$retline" ]; then verdict=RETIRED; sentence="$retline"
+    elif [ -n "$line" ]; then
+      # 🚨 A DELIBERATE TEARDOWN RAISE IS NOT A FAILURE — BUT ONLY WHEN THE SUITE SAID SO FIRST.
+      # Several suites end by RAISING to force their own ROLLBACK, and in output text a raise is
+      # indistinguishable from a failure: the clone sweep of 2026-09-22 scored portal_green,
+      # portal_red and talkrec_green FAIL for exactly that. A verdict may not rest on the raise's
+      # wording alone, because a real failure could be worded the same way by accident or by a
+      # suite that was edited badly. So BOTH must hold, and the first half is a LITERAL, not a
+      # family of phrasings: the suite printed the exact words ALL CLAUSES PASSED before the
+      # raise, and the raise says it is a teardown. Anything else is FAIL. A suite that ends in
+      # a deliberate raise therefore has to OPT IN by printing that line — which is the point:
+      # only a suite that got to the end of its own clauses may be forgiven its exit.
+      if [ -n "$passline" ] && print -r -- "$line" | grep -qiE 'TEARDOWN|rolling back, as designed|ROLLBACK VERIFIED'; then
+        verdict=PASS; sentence="teardown raise after ${passline}"
+      else
+        verdict=FAIL; sentence="${line#psql:*: }"
+      fi
     elif [ -n "$skipline" ]; then verdict=SKIP; sentence="$skipline"
     else verdict=PASS; sentence=""; fi
   fi
   case "$verdict" in
     PASS)    PASS=$((PASS+1)) ;;
     SKIP)    SKIPPED_BY_SUITE=$((SKIPPED_BY_SUITE+1)) ;;
+    RETIRED) RETIRED_N=$((RETIRED_N+1)) ;;
     TIMEOUT) TIMEOUT=$((TIMEOUT+1)); FAIL=$((FAIL+1)) ;;
     *)       FAIL=$((FAIL+1)) ;;
   esac
@@ -123,7 +150,7 @@ for f in "${FILES[@]}"; do
 done
 
 say "───────── SWEEP RESULT (DEV CLONE) ─────────"
-say "found $TOTAL · ran $RAN · PASS $PASS · SKIP $SKIPPED_BY_SUITE (the suite said its dependency is absent — NOT a pass) · FAIL $FAIL (of which TIMEOUT $TIMEOUT)"
+say "found $TOTAL · ran $RAN · PASS $PASS · SKIP $SKIPPED_BY_SUITE (the suite said its dependency is absent — NOT a pass) · RETIRED $RETIRED_N (the suite asserts nothing and says why in its header) · FAIL $FAIL (of which TIMEOUT $TIMEOUT)"
 say "elapsed $(( ($(date +%s) - START) / 60 )) minutes"
 say "per-suite table: $TSV"
 exit 0
