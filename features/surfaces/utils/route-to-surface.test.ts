@@ -541,3 +541,14 @@ describe("Images family (studio tools)", () => {
     );
   });
 });
+
+describe("commerce label routes", () => {
+  it("gives only an exact batch detail route the label-batch surface", () => {
+    expect(surfaceFromPathname("/commerce/labels")).toBeNull();
+    expect(surfaceFromPathname("/commerce/labels/")).toBeNull();
+    expect(surfaceFromPathname("/commerce/labels/batch-123")).toBe(
+      "matrx-user/commerce-label-batch",
+    );
+    expect(surfaceFromPathname("/commerce/labels/batch-123/print")).toBeNull();
+  });
+});

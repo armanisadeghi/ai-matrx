@@ -75,13 +75,17 @@ function stateTone(state: string): string {
       : "border-border text-muted-foreground";
 }
 
-const codeColumns: MatrxColumnDef<LabelCode>[] = [
+type LabelCodeTableRow = LabelCode & { sourcePosition: number };
+
+const codeColumns: MatrxColumnDef<LabelCodeTableRow>[] = [
   {
     id: "position",
     header: "#",
-    accessorFn: (row) => row.createdAt,
-    cell: (_row, index) => (
-      <span className="tabular-nums text-muted-foreground">{index + 1}</span>
+    accessorFn: (row) => row.sourcePosition,
+    cell: (row) => (
+      <span className="tabular-nums text-muted-foreground">
+        {row.sourcePosition}
+      </span>
     ),
     sortable: false,
     filter: false,
@@ -181,31 +185,34 @@ export function LabelBatchDetail({
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    void (async () => {
-      try {
-        const loaded = await loadLabelBatch(batchId);
-        if (cancelled) return;
-        if (!loaded) {
-          setBatch(null);
-          setCodes([]);
-          return;
+    const timer = window.setTimeout(() => {
+      setLoading(true);
+      void (async () => {
+        try {
+          const loaded = await loadLabelBatch(batchId);
+          if (cancelled) return;
+          if (!loaded) {
+            setBatch(null);
+            setCodes([]);
+            return;
+          }
+          const loadedCodes = await listBatchCodes(loaded.id);
+          if (cancelled) return;
+          const reconciled = await reconcileBatchState(loaded, loadedCodes);
+          if (cancelled) return;
+          setBatch(reconciled);
+          setCodes(loadedCodes);
+        } catch (err) {
+          console.error("[commerce-labels] batch load failed", err);
+          toast.error("Could not load the batch.");
+        } finally {
+          if (!cancelled) setLoading(false);
         }
-        const loadedCodes = await listBatchCodes(loaded.id);
-        if (cancelled) return;
-        const reconciled = await reconcileBatchState(loaded, loadedCodes);
-        if (cancelled) return;
-        setBatch(reconciled);
-        setCodes(loadedCodes);
-      } catch (err) {
-        console.error("[commerce-labels] batch load failed", err);
-        toast.error("Could not load the batch.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+      })();
+    }, 0);
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
   }, [batchId, reloadNonce]);
 
@@ -301,6 +308,10 @@ export function LabelBatchDetail({
   const assigned = codes.filter((c) => c.state === "assigned").length;
   const voided = codes.filter((c) => c.state === "void").length;
   const printable = codes.filter((c) => c.state !== "void");
+  const codeTableRows = codes.map((code, index) => ({
+    ...code,
+    sourcePosition: index + 1,
+  }));
   const pageCount = Math.max(1, Math.ceil(printable.length / perPage));
 
   return (
@@ -451,8 +462,8 @@ export function LabelBatchDetail({
           </div>
         )}
 
-        <MatrxDataTable<LabelCode>
-          data={codes}
+        <MatrxDataTable<LabelCodeTableRow>
+          data={codeTableRows}
           columns={codeColumns}
           getRowId={(row) => row.id}
           tableId={`commerce/labels/${batch.id}/codes`}
@@ -470,7 +481,12 @@ export function LabelBatchDetail({
               label: "Refresh codes",
             },
           }}
-          onViewChange={setProcessedCodes}
+          onViewChange={(rows) =>
+            setProcessedCodes(
+              rows.map(({ sourcePosition: _sourcePosition, ...code }) => code),
+            )
+          }
+          window={{ title: (row) => row.value }}
           coverage={{
             noun: "label code",
             total: codes.length,

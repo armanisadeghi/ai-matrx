@@ -219,8 +219,6 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/content-extractor", surface: "matrx-user/extractor-chunker" },
   { prefix: "/pdf-widgets", surface: "matrx-user/pdf-extractor" },
 
-  { prefix: "/commerce/labels", surface: "matrx-user/commerce-label-batch" },
-
   // Admin routes — prefer matrx-admin/* when on the admin section.
   // Specific admin surfaces BEFORE the /administration catch-all.
   {
@@ -727,6 +725,12 @@ export function surfaceFromPathname(
     )
   ) {
     return "matrx-user/crm-record";
+  }
+
+  // The label hub is a batch list and cannot emit one batch's scope. Only an
+  // exact dynamic batch detail route owns the label-batch surface.
+  if (/^\/commerce\/labels\/[^/]+\/?$/.test(stripped)) {
+    return "matrx-user/commerce-label-batch";
   }
 
   const marketing = resolveMarketingSurface(stripped);

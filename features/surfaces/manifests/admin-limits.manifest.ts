@@ -13,12 +13,34 @@ const values: SurfaceValue[] = [
   {
     name: "addons_loaded",
     label: "Loaded account add-ons",
-    description: "Complete RLS-visible account-add-on rows currently loaded.",
+    description:
+      "Complete decorated account-add-on rows currently loaded, including their resolved plan allowance and raise calculation.",
     valueType: "array",
     alwaysAvailable: true,
     autoContext: false,
     group: "addons",
     sortOrder: 100,
+    typicalCharCount: 120,
+  },
+  {
+    name: "processed_addons",
+    label: "Filtered account add-ons",
+    description: "Decorated rows matching the current canonical table view.",
+    valueType: "array",
+    alwaysAvailable: true,
+    autoContext: false,
+    group: "addons",
+    sortOrder: 115,
+    typicalCharCount: 120,
+  },
+  {
+    name: "processed_addons_count",
+    label: "Filtered add-ons",
+    description: "Count of decorated rows matching the current canonical table view.",
+    valueType: "number",
+    alwaysAvailable: true,
+    group: "addons",
+    sortOrder: 118,
     typicalCharCount: 120,
   },
   {
@@ -56,6 +78,8 @@ export const adminLimitsManifest: SurfaceManifest = {
 export function createAdminLimitsScope(values: {
   addons_loaded: unknown[];
   addons_loaded_count: number;
+  processed_addons: unknown[];
+  processed_addons_count: number;
   addons_table_query: object;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;

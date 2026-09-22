@@ -107,7 +107,7 @@ function formatDate(iso: string | null): string {
 }
 
 /** What the plan's row says for this org + capability, or why we cannot say. */
-type PlanContext =
+export type PlanContext =
   | { kind: "known"; plan: Plan; limit: PlanLimit | null }
   | { kind: "no_plan" }
   | { kind: "unreadable"; reason: string };
@@ -118,8 +118,97 @@ type AddonTableRow = {
   capabilityDef?: Capability;
   planContext: PlanContext;
   status: "in_effect" | "starts_later" | "expired";
+  addonAllowanceState: "numeric" | "unlimited";
+  planAllowanceState:
+    | "numeric"
+    | "unlimited"
+    | "not_included"
+    | "no_plan"
+    | "unreadable";
+  raiseState:
+    | "positive"
+    | "to_unlimited"
+    | "from_nothing"
+    | "already_unlimited"
+    | "no_raise"
+    | "no_plan"
+    | "unreadable";
+  raiseAmount: number | null;
+  raiseLabel: string;
   now: Date;
 };
+
+function planAllowanceState(
+  planContext: PlanContext,
+): AddonTableRow["planAllowanceState"] {
+  if (planContext.kind === "no_plan") return "no_plan";
+  if (planContext.kind === "unreadable") return "unreadable";
+  if (planContext.limit === null) return "not_included";
+  return planContext.limit.limit_value === null ? "unlimited" : "numeric";
+}
+
+export function createAddonTableRow(
+  addon: AccountAddon,
+  org: OrganizationOption | undefined,
+  capabilityDef: Capability | undefined,
+  planContext: PlanContext,
+  now: Date,
+): AddonTableRow {
+  const startsLater = new Date(addon.effective_from).getTime() > now.getTime();
+  const inEffect = addonIsInEffect(addon, now);
+  const allowanceState = planAllowanceState(planContext);
+  const planLimit =
+    planContext.kind === "known" ? planContext.limit?.limit_value : undefined;
+  let raiseState: AddonTableRow["raiseState"];
+  let raiseAmount: number | null = null;
+  let raiseLabel: string;
+
+  if (planContext.kind === "no_plan") {
+    raiseState = "no_plan";
+    raiseLabel = "no plan assigned";
+  } else if (planContext.kind === "unreadable") {
+    raiseState = "unreadable";
+    raiseLabel = "unreadable";
+  } else if (addon.limit_value === null) {
+    raiseState = "to_unlimited";
+    raiseLabel = "to unlimited";
+  } else if (allowanceState === "not_included" || planLimit === 0) {
+    raiseState = "from_nothing";
+    raiseAmount = addon.limit_value;
+    raiseLabel = "from nothing (+" + limitToHuman(addon.capability, addon.limit_value) + ")";
+  } else if (allowanceState === "unlimited" || planLimit === null) {
+    raiseState = "already_unlimited";
+    raiseLabel = "plan is already unlimited";
+  } else {
+    const delta = addon.limit_value - (planLimit ?? 0);
+    raiseAmount = delta;
+    raiseState = delta > 0 ? "positive" : "no_raise";
+    raiseLabel =
+      delta > 0
+        ? "+" + limitToHuman(addon.capability, delta)
+        : "no raise (" + limitToHuman(addon.capability, delta) + ")";
+  }
+
+  if (startsLater) {
+    raiseLabel = "not effective yet (" + raiseLabel + ")";
+  } else if (!inEffect) {
+    raiseLabel = "no longer raises anything (" + raiseLabel + ")";
+  }
+
+  return {
+    addon,
+    org,
+    capabilityDef,
+    planContext,
+    status: inEffect ? "in_effect" : startsLater ? "starts_later" : "expired",
+    addonAllowanceState: addon.limit_value === null ? "unlimited" : "numeric",
+    planAllowanceState: allowanceState,
+    raiseState,
+    raiseAmount,
+    raiseLabel,
+    now,
+  };
+}
 const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
   {
     id: "organization",
@@ -133,11 +222,11 @@ const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
           name={row.org?.name ?? null}
           openInNewTab
         />
-        <p className="font-mono text-xs text-muted-foreground">
-          {row.org
-            ? `${row.org.slug}${row.org.is_personal ? " · personal" : ""}`
-            : "not among readable organizations"}
-        </p>
+       <p className="font-mono text-xs text-muted-foreground">
+         {row.org
+           ? `${row.org.slug}${row.org.is_personal ? " · personal" : ""}`
+           : "not among readable organizations"}
+       </p>
       </div>
     ),
     frozen: true,
@@ -150,29 +239,61 @@ const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
     hidden: true,
   },
   {
+    id: "personal_organization",
+    header: "Personal organization",
+    accessorFn: (row) => row.org?.is_personal ?? false,
+    filter: "boolean",
+    hidden: true,
+  },
+  {
     id: "capability",
     header: "Capability",
     accessorFn: (row) => row.addon.capability,
     cell: (row) => (
       <div>
         <span className="font-mono text-xs">{row.addon.capability}</span>
-        {row.capabilityDef ? (
-          <EnforcementBadge enforced={row.capabilityDef.enforced} />
-        ) : (
+        {!row.capabilityDef && (
           <Badge variant="outline" className="ml-1 text-xs">
             not in billing.capability
           </Badge>
         )}
-        <p className="text-xs text-muted-foreground">
-          {row.addon.period ?? row.capabilityDef?.period ?? ""}
-        </p>
       </div>
     ),
+  },
+  {
+    id: "period",
+    header: "Period",
+    accessorFn: (row) => row.addon.period ?? row.capabilityDef?.period ?? "",
+    hidden: true,
+  },
+  {
+    id: "enforcement",
+    header: "Enforcement",
+    accessorFn: (row) =>
+      row.capabilityDef
+        ? row.capabilityDef.enforced
+          ? "enforced"
+          : "tracked"
+        : "unknown",
+    filter: "select",
+    filterOptions: [
+      { value: "enforced", label: "Enforced" },
+      { value: "tracked", label: "Tracked, not enforced" },
+      { value: "unknown", label: "Unknown" },
+    ],
+    cell: (row) =>
+      row.capabilityDef ? (
+        <EnforcementBadge enforced={row.capabilityDef.enforced} />
+      ) : (
+        "unknown"
+      ),
+    hidden: true,
   },
   {
     id: "addon_value",
     header: "Add-on gives",
     accessorFn: (row) => row.addon.limit_value,
+    filter: "number",
     cell: (row) => (
       <div className="text-right">
         <p>{limitToHuman(row.addon.capability, row.addon.limit_value)}</p>
@@ -186,22 +307,88 @@ const addonColumns: MatrxColumnDef<AddonTableRow>[] = [
     align: "right",
   },
   {
-    id: "plan",
+    id: "addon_allowance_state",
+    header: "Add-on allowance",
+    accessorKey: "addonAllowanceState",
+    filter: "select",
+    filterOptions: [
+      { value: "numeric", label: "Numeric" },
+      { value: "unlimited", label: "Unlimited" },
+    ],
+    hidden: true,
+  },
+  {
+    id: "plan_gives",
     header: "Plan gives",
     accessorFn: (row) =>
-      row.planContext.kind === "known"
-        ? row.planContext.plan.name
-        : row.planContext.kind,
-    cell: (row) => (
-      <span>
-        {row.planContext.kind === "known"
-          ? `${limitToHuman(row.addon.capability, row.planContext.limit?.limit_value ?? null)} · ${row.planContext.plan.name}`
-          : row.planContext.kind === "no_plan"
+      row.planAllowanceState === "numeric" && row.planContext.kind === "known"
+        ? row.planContext.limit?.limit_value
+        : undefined,
+    filter: "number",
+    cell: (row) => {
+      if (
+        row.planAllowanceState === "numeric" &&
+        row.planContext.kind === "known"
+      ) {
+        return limitToHuman(
+          row.addon.capability,
+          row.planContext.limit?.limit_value ?? 0,
+        );
+      }
+      return row.planAllowanceState === "unlimited"
+        ? "unlimited"
+        : row.planAllowanceState === "not_included"
+          ? "not included"
+          : row.planAllowanceState === "no_plan"
             ? "no plan assigned"
-            : "unreadable"}
-      </span>
-    ),
+            : "unreadable";
+    },
     mobileHidden: true,
+  },
+  {
+    id: "plan_allowance_state",
+    header: "Plan allowance",
+    accessorKey: "planAllowanceState",
+    filter: "select",
+    filterOptions: [
+      { value: "numeric", label: "Numeric" },
+      { value: "unlimited", label: "Unlimited" },
+      { value: "not_included", label: "Not included" },
+      { value: "no_plan", label: "No plan" },
+      { value: "unreadable", label: "Unreadable" },
+    ],
+    hidden: true,
+  },
+  {
+    id: "plan_name",
+    header: "Plan",
+    accessorFn: (row) =>
+      row.planContext.kind === "known" ? row.planContext.plan.name : "",
+    hidden: true,
+  },
+  {
+    id: "raises_by",
+    header: "Raises by",
+    accessorFn: (row) => row.raiseAmount,
+    filter: "number",
+    cell: (row) => row.raiseLabel,
+    align: "right",
+  },
+  {
+    id: "raise_state",
+    header: "Raise state",
+    accessorKey: "raiseState",
+    filter: "select",
+    filterOptions: [
+      { value: "positive", label: "Positive" },
+      { value: "to_unlimited", label: "To unlimited" },
+      { value: "from_nothing", label: "From nothing" },
+      { value: "already_unlimited", label: "Already unlimited" },
+      { value: "no_raise", label: "No raise" },
+      { value: "no_plan", label: "No plan" },
+      { value: "unreadable", label: "Unreadable" },
+    ],
+    hidden: true,
   },
   {
     id: "status",
@@ -279,6 +466,9 @@ export function AccountAddonsPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [grantOpen, setGrantOpen] = useState(false);
+  const [processedAddonRows, setProcessedAddonRows] = useState<AddonTableRow[]>(
+    [],
+  );
   const addonsTable = useTableUrlState({
     tableId: "account-addons",
     defaultPageSize: 25,
@@ -400,19 +590,15 @@ export function AccountAddonsPanel() {
 
   const now = new Date();
   const liveCount = addons.filter((row) => addonIsInEffect(row, now)).length;
-  const addonRows: AddonTableRow[] = addons.map((addon) => {
-    const startsLater =
-      new Date(addon.effective_from).getTime() > now.getTime();
-    const inEffect = addonIsInEffect(addon, now);
-    return {
+  const addonRows = addons.map((addon) =>
+    createAddonTableRow(
       addon,
-      org: orgById.get(addon.organization_id),
-      capabilityDef: capabilityByName.get(addon.capability),
-      planContext: planContextFor(addon.organization_id, addon.capability),
-      status: inEffect ? "in_effect" : startsLater ? "starts_later" : "expired",
+      orgById.get(addon.organization_id),
+      capabilityByName.get(addon.capability),
+      planContextFor(addon.organization_id, addon.capability),
       now,
-    };
-  });
+    ),
+  );
 
   return (
     <SurfaceRuntimeProvider
@@ -421,6 +607,8 @@ export function AccountAddonsPanel() {
         createAdminLimitsScope({
           addons_loaded: addonRows,
           addons_loaded_count: addonRows.length,
+          processed_addons: processedAddonRows,
+          processed_addons_count: processedAddonRows.length,
           addons_table_query: addonsTable.state,
         })
       }
@@ -497,6 +685,7 @@ export function AccountAddonsPanel() {
                 refresh: { onRefresh: load },
                 add: { onAdd: () => setGrantOpen(true) },
               }}
+              onViewChange={setProcessedAddonRows}
               coverage={{
                 noun: "account add-on",
                 total: addonRows.length,
