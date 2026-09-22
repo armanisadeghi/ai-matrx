@@ -92,7 +92,7 @@ declare
   v_proj_t uuid; v_note_t uuid; v_proj uuid; v_note uuid;
   v_wid_t uuid; v_f_code uuid; v_a uuid; v_b uuid;
   v_sh_t uuid; v_f_kind uuid; v_s1 uuid;
-  v_per_t uuid; v_f_own uuid;
+  v_per_t uuid; v_f_own uuid; v_f_ser uuid;
   v_co_t uuid; v_ca uuid; v_cb uuid;
   v_doc jsonb; v_n integer; v_red integer := 0; v_caught text; v_t2_red boolean := false; v_t8_red boolean := true;
   -- SUITES-TIDY 2026-09-22: BLOCK 4 reads `v_boss` and nothing declared it, so this suite died
@@ -269,30 +269,47 @@ begin
     'label_plural','Equipment items','title_field','aname','display','page','weight','light','ordered',false,
     'row_order','sorted','default_sort','[]'::jsonb,'agent_writable',true,'retention_days',365,
     'fields', jsonb_build_array(jsonb_build_object('name','aname')),'parent_id',v_h2::text));
-  v_f_own := custom.field_declare(v_open, v_per_t, jsonb_build_object(
-    'label','Owner','parity_type','member','on_target_delete','restrict'));
-  perform custom.field_declare(v_open, v_per_t, jsonb_build_object('label','Serial','plain','text'));
-  perform custom.field_declare(v_open, v_per_t, jsonb_build_object(
-    'label','Shouty','parity_type','formula','depends_on', jsonb_build_array('serial'),
-    'expr', jsonb_build_object('node','field','field','serial')));
-  select f.data ->> 'on_target_delete' into v_caught
-    from custom.applicable_fields(v_open, v_per_t, null) f where f.data ->> 'key' = 'owner';
-  select count(*) into v_n
-    from custom.applicable_fields(v_open, v_per_t, null) f
-   where f.data ->> 'key' = 'shouty'
-     and jsonb_array_length(coalesce(f.data -> 'depends_on', '[]'::jsonb)) > 0;
-  if coalesce(v_caught,'') <> 'restrict' or v_n <> 0 then
-    if coalesce(v_caught,'') <> 'restrict' then
-      v_red := v_red + 1;
-      raise notice 'BLOCK 4 RED — T7: the caller asked for `restrict` and the door wrote %', coalesce(v_caught,'nothing');
+  -- SUITES-TIDY 2026-09-22: THE DEFECT IS NOW REFUSED OUTRIGHT, WHICH IS A STRONGER CLOSE.
+  -- With the caller's `on_target_delete` thrown away by the planted door, a live shape guard
+  -- added after this suite refuses the declaration by name — "the relation field Owner has to
+  -- say what happens to it when the thing it points at is deleted" — so the column cannot even
+  -- be created. Before, the door silently wrote the wrong word and the clause read it back.
+  -- Either shape is RED for T7: the caller's word does not survive the door. The refusal is
+  -- caught and counted rather than allowed to kill the suite, and the read-back clauses still
+  -- run when the declaration does land.
+  begin
+    v_f_own := custom.field_declare(v_open, v_per_t, jsonb_build_object(
+      'label','Owner','parity_type','member','on_target_delete','restrict'));
+    perform custom.field_declare(v_open, v_per_t, jsonb_build_object('label','Serial','plain','text'));
+    select f.id into v_f_ser
+      from custom.applicable_fields(v_open, v_per_t, null) f where f.data ->> 'key' = 'serial';
+    -- REC-17: a worked-out column points at a Field BY ITS ID, never by a name.
+    perform custom.field_declare(v_open, v_per_t, jsonb_build_object(
+      'label','Shouty','parity_type','formula','depends_on', jsonb_build_array(v_f_ser::text),
+      'expr', jsonb_build_object('node','field','field', v_f_ser::text)));
+    select f.data ->> 'on_target_delete' into v_caught
+      from custom.applicable_fields(v_open, v_per_t, null) f where f.data ->> 'key' = 'owner';
+    select count(*) into v_n
+      from custom.applicable_fields(v_open, v_per_t, null) f
+     where f.data ->> 'key' = 'shouty'
+       and jsonb_array_length(coalesce(f.data -> 'depends_on', '[]'::jsonb)) > 0;
+    if coalesce(v_caught,'') <> 'restrict' or v_n <> 0 then
+      if coalesce(v_caught,'') <> 'restrict' then
+        v_red := v_red + 1;
+        raise notice 'BLOCK 4 RED — T7: the caller asked for `restrict` and the door wrote %', coalesce(v_caught,'nothing');
+      end if;
+      if v_n = 0 then
+        v_red := v_red + 1;
+        raise notice 'BLOCK 4 RED — T7: the caller''s depends_on was thrown away, so nothing can ever depend on a column';
+      end if;
+    else
+      raise notice 'BLOCK 4 is GREEN — the old declaring door kept both words';
     end if;
-    if v_n = 0 then
-      v_red := v_red + 1;
-      raise notice 'BLOCK 4 RED — T7: the caller''s depends_on was thrown away, so nothing can ever depend on a column';
-    end if;
-  else
-    raise notice 'BLOCK 4 is GREEN — the old declaring door kept both words';
-  end if;
+  exception when others then
+    get stacked diagnostics v_caught = message_text;
+    v_red := v_red + 1;
+    raise notice 'BLOCK 4 RED — T7: with the declaring door throwing the caller''s words away the column could not be created at all: "%". A live shape guard refuses the result by name, which is the same defect caught one step earlier.', v_caught;
+  end;
 
   -- ══════ BLOCK 5 — T11: the walk cannot see a carrying link ════════════════════════════
   select count(*) into v_n from custom.query_rollup(v_open, array[v_ca], null, null, 33, 'viewer');
