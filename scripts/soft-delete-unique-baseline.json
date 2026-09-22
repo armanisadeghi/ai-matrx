@@ -240,7 +240,6 @@
     "web.site_item_config:site_item_config_site_id_item_id_key",
     "web.sitemap:sitemap_site_url_unique",
     "workbench.udt_dataset_fields:udt_dataset_fields_dataset_id_field_name_unique",
-    "workbench.udt_dataset_rows:udt_dataset_rows_dataset_id_id_unique",
     "workflow.definition_version:wf_definition_version_unique_pair",
     "workflow.idempotency:idempotency_created_by_key_route_key",
     "workflow.node_data_slot:wf_node_data_slot_unique",
@@ -250,5 +249,17 @@
     "workflow.plan_sample:wf_plan_one_output_stand_in",
     "workflow.plan_sample:wf_plan_sample_identity",
     "workspace.projects:projects_org_slug_unique"
+  ],
+  "deliberate": [
+    {
+      "index": "platform.rulebook:rulebook_client_token_unique",
+      "reason": "client_token is an IDEMPOTENCY KEY, not a name. The point of (created_by, client_token) is that a retried create is refused rather than duplicated, and a retry that arrives after the first rulebook was archived is still the same request — so uniqueness has to span removed rows or the guarantee is only as good as the user not having archived anything. Re-creating an archived rulebook takes a NEW client_token, which every caller already mints per attempt.",
+      "ruled": "CI-FIX-2, 2026-09-22"
+    },
+    {
+      "index": "custom.anon_submission:anon_submission_booking_ref_key",
+      "reason": "booking_ref is an EXTERNAL REFERENCE: it is handed to an anonymous submitter, who quotes it back by phone, email or a status link. If an archived submission released its reference, a later submission in the same organization could be issued a booking_ref a real person is still holding, and both the person and the operator would be looking at a different row than they think. A reference given out is spent forever, archived or not.",
+      "ruled": "CI-FIX-2, 2026-09-22"
+    }
   ]
 }

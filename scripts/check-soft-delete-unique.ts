@@ -133,7 +133,39 @@ interface Baseline {
   readonly why: string;
   readonly frozen_at: string;
   readonly indexes: string[];
+  /**
+   * 🚨 THE RULING LIST (CI-FIX-2, 2026-09-22). The header has always sanctioned
+   * one escape from the ratchet — "if it genuinely must count removed rows, say
+   * so in its own migration and bring the ruling here BY HAND, with the reason"
+   * — but the file had nowhere to put the reason, so the only way to take that
+   * escape was to drop the key into `indexes` where it became indistinguishable
+   * from the 248 entries a person has yet to read. That is silencing, not
+   * ruling.
+   *
+   * `deliberate` is that escape made LOUDER than the thing it excuses:
+   *   • every entry carries a reason, and a reason under 40 characters is
+   *     REFUSED — the run fails naming the entry, so "ok" is not a ruling;
+   *   • every entry is PRINTED on every run, green, with its sentence, so a
+   *     ruling can never go quiet the way a census line does;
+   *   • `--update-baseline` never writes here and still refuses to add to
+   *     `indexes`, so the only way in is a person typing the sentence;
+   *   • an entry whose index is no longer live is reported as stale and must be
+   *     removed, exactly like a census entry.
+   */
+  readonly deliberate?: readonly DeliberateRuling[];
 }
+
+interface DeliberateRuling {
+  /** `schema.table:index_name`, the same key shape as `indexes`. */
+  readonly index: string;
+  /** Why this index must stay unique across removed rows. */
+  readonly reason: string;
+  /** Who ruled, and when. */
+  readonly ruled: string;
+}
+
+/** A ruling with no real sentence is not a ruling. */
+const MIN_RULING_CHARS = 40;
 
 function loadEnv(): { url: string; key: string } | null {
   let url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -286,13 +318,43 @@ async function main(): Promise<number> {
     return STRICT ? 1 : 0;
   }
 
-  const known = new Set(baseline.indexes);
+  const rulings = baseline.deliberate ?? [];
+  const ruledKeys = new Set(rulings.map((r) => r.index));
+  const known = new Set([...baseline.indexes, ...ruledKeys]);
   const fresh = live.filter((r) => !known.has(r.key));
   const fixed = baseline.indexes.filter((k) => !liveKeys.includes(k));
 
+  // A ruling with no sentence, or one nobody signed, is refused BY NAME — and
+  // so is a ruling for an index that is no longer there.
+  const badRulings: string[] = [];
+  for (const r of rulings) {
+    if (!r.reason || r.reason.trim().length < MIN_RULING_CHARS) {
+      badRulings.push(
+        `${r.index} — the ruling has no reason (under ${MIN_RULING_CHARS} characters). Say why this index must stay unique across removed rows, or give it \`WHERE deleted_at IS NULL\`.`,
+      );
+    }
+    if (!r.ruled || !r.ruled.trim()) {
+      badRulings.push(`${r.index} — the ruling is unsigned; name who ruled and when.`);
+    }
+    if (!liveKeys.includes(r.index)) {
+      badRulings.push(
+        `${r.index} — ruled deliberate but no longer live; remove the ruling.`,
+      );
+    }
+  }
+
   console.log(
-    `${C.dim}       ${live.length} live · ${baseline.indexes.length} in the frozen census (${baseline.frozen_at}) · ${fixed.length} since fixed${C.reset}`,
+    `${C.dim}       ${live.length} live · ${baseline.indexes.length} in the frozen census (${baseline.frozen_at}) · ${rulings.length} ruled deliberate · ${fixed.length} since fixed${C.reset}`,
   );
+
+  // EVERY ruling, EVERY run. The escape is louder than the census it leaves.
+  for (const r of rulings) {
+    console.log(`  ${TAG.ok}RULED ${r.index} ${C.dim}(${r.ruled})${C.reset}`);
+    console.log(`        ${C.dim}${r.reason}${C.reset}`);
+  }
+  for (const b of badRulings) {
+    console.log(`  ${TAG.fail}RULING REFUSED ${b}`);
+  }
 
   for (const r of fresh) {
     console.log(`  ${TAG.fail}NEW  ${r.key} ${C.dim}(${r.token})${C.reset}`);
@@ -305,6 +367,19 @@ async function main(): Promise<number> {
   }
 
   console.log("");
+  if (badRulings.length) {
+    console.log(
+      `${TAG.fail}${C.bold}${C.red}${badRulings.length} ruling(s) in ${BASELINE} are not rulings.${C.reset}`,
+    );
+    console.log(
+      `  ${C.dim}An entry under \`deliberate\` buys an index out of the ratchet, so it costs a${C.reset}`,
+    );
+    console.log(
+      `  ${C.dim}real sentence and a signature. Write one, or give the index the predicate.${C.reset}`,
+    );
+    console.log("");
+    if (!fresh.length) return STRICT ? 1 : 0;
+  }
   if (!fresh.length) {
     console.log(
       `${TAG.ok}No new unique index counts soft-deleted rows.`,

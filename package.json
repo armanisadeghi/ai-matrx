@@ -288,6 +288,8 @@
     "check:hr-punch-write-path": "tsx scripts/check-hr-punch-write-path.ts",
     "check:hr-punch-write-path:strict": "tsx scripts/check-hr-punch-write-path.ts --strict",
     "check:hr-punch-write-path:self-test": "tsx scripts/check-hr-punch-write-path.ts --self-test",
+    "check:hr-punch-write-path:live": "tsx scripts/check-hr-punch-write-path.ts --strict --arm live",
+    "check:hr-punch-write-path:corpus": "tsx scripts/check-hr-punch-write-path.ts --strict --arm corpus",
     "check:release-gates": "bash scripts/run-release-gates.sh",
     "check:release-gates:advisory": "bash scripts/run-release-gates.sh --advisory",
     "check:release-gates:strict": "bash scripts/run-release-gates.sh --strict",

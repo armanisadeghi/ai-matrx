@@ -94,6 +94,44 @@ const STRICT = process.argv.includes("--strict");
 const SELF_TEST = process.argv.includes("--self-test");
 
 /**
+ * 🚨 TWO ARMS, TWO CREDENTIALS, TWO JOBS (CI-FIX-2, 2026-09-22).
+ *
+ * This gate has always had two independent arms, and until today they shared
+ * one exit code:
+ *
+ *   LIVE   — `rpc/hr_punch_write_path_conformance()` over the Supabase REST
+ *            transport. Needs NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SECRET_KEY.
+ *   CORPUS — `hr.function_contract` × `public._schema_migrations` over a
+ *            DIRECT Postgres connection. Needs SUPABASE_MATRIX_USER /
+ *            _PASSWORD / _HOST / _PORT / _DATABASE_NAME.
+ *
+ * CI has the first set and not the second. So every push printed
+ * "39/39 conformance checks passed" and then exited 1 — the live arm measured
+ * and passed, the corpus arm could not be measured at all, and the run went
+ * red for a reason NO code change could fix. That is the permanently-red job
+ * `secrets-preflight` exists to abolish: a gate that cannot reach its
+ * dependency reports SKIPPED, grey, with the missing secret named — never red,
+ * and never green.
+ *
+ * `--arm live` / `--arm corpus` let each arm be its OWN job with its OWN
+ * `if:` on the secret it needs. Neither arm is weakened: inside its own job an
+ * unmeasured arm is still a hard failure, because there the credential is
+ * present by construction. `--arm both` (the default) is the local run, where
+ * both credential sets normally exist.
+ */
+type Arm = "live" | "corpus" | "both";
+const ARM: Arm = ((): Arm => {
+  const i = process.argv.indexOf("--arm");
+  if (i < 0) return "both";
+  const v = process.argv[i + 1];
+  if (v === "live" || v === "corpus" || v === "both") return v;
+  console.error(
+    `check-hr-punch-write-path: --arm expects live|corpus|both, got ${JSON.stringify(v)}`,
+  );
+  process.exit(2);
+})();
+
+/**
  * The checks the deployed function is contracted to return. A row that
  * stops being returned is a silent hole in the write path's coverage, so the
  * absence of a key is itself a finding — see the header.
@@ -597,6 +635,27 @@ async function selfTest(): Promise<never> {
 async function main(): Promise<void> {
   if (SELF_TEST) await selfTest();
 
+  // ── CORPUS-ONLY RUN — its own job, its own credential. ──────────────────
+  if (ARM === "corpus") {
+    const only = await fetchLiveContracts();
+    if ("failure" in only) {
+      // In this job the direct-Postgres credential is present by construction
+      // (the job does not run without it), so an unmeasured corpus arm here is
+      // a real defect, not a missing secret. It stays a hard failure.
+      unmeasured(
+        only.failure,
+        "hr.function_contract × public._schema_migrations over a direct Postgres connection.",
+      );
+    }
+    const contractsOnly = only as Exclude<typeof only, { failure: string }>;
+    const verdictOnly = findContractGaps(
+      readCorpus(contractsOnly.applied),
+      contractsOnly.contracts,
+    );
+    printCorpus(verdictOnly);
+    exitAfterDrain(verdictOnly.gaps.length > 0 && STRICT ? 1 : 0);
+  }
+
   const { rows, failure } = await fetchConformance();
 
   if (failure) {
@@ -621,9 +680,22 @@ async function main(): Promise<void> {
 
   const failed = returned.filter((r) => !r.ok);
 
-  const corpus = await fetchLiveContracts();
   let corpusGaps = 0;
-  if ("failure" in corpus) {
+  // `--arm live` does not touch the corpus arm at all: that arm belongs to the
+  // hr-punch-corpus job, which skips honestly when its own secret is absent.
+  // Reporting it here as UNMEASURED-and-therefore-red is what made this job
+  // permanently red on a repository that only holds the REST credential.
+  const corpus =
+    ARM === "live"
+      ? ({ failure: "not this arm" } as const)
+      : await fetchLiveContracts();
+  if (ARM === "live") {
+    console.log(
+      `${TAG.info}the pre-apply corpus arm is NOT RUN here — it is the separate ` +
+        `hr-punch-corpus job, which needs SUPABASE_MATRIX_USER / _PASSWORD / _HOST / ` +
+        `_PORT / _DATABASE_NAME and SKIPS by name without them.`,
+    );
+  } else if ("failure" in corpus) {
     console.log(
       `${TAG.warn}the pre-apply corpus arm is UNMEASURED: ${corpus.failure} ` +
         `${C.dim}(the live clause above still ran)${C.reset}`,

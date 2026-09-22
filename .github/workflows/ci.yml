@@ -84,6 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       supabase: ${{ steps.probe.outputs.supabase }}
+      direct_postgres: ${{ steps.probe.outputs.direct_postgres }}
       aidream_repo: ${{ steps.probe.outputs.aidream_repo }}
       matrx_local_repo: ${{ steps.probe.outputs.matrx_local_repo }}
     steps:
@@ -94,6 +95,11 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           AIDREAM_REPO_TOKEN: ${{ secrets.AIDREAM_REPO_TOKEN }}
           MATRX_LOCAL_REPO_TOKEN: ${{ secrets.MATRX_LOCAL_REPO_TOKEN }}
+          SUPABASE_MATRIX_USER: ${{ secrets.SUPABASE_MATRIX_USER }}
+          SUPABASE_MATRIX_PASSWORD: ${{ secrets.SUPABASE_MATRIX_PASSWORD }}
+          SUPABASE_MATRIX_HOST: ${{ secrets.SUPABASE_MATRIX_HOST }}
+          SUPABASE_MATRIX_PORT: ${{ secrets.SUPABASE_MATRIX_PORT }}
+          SUPABASE_MATRIX_DATABASE_NAME: ${{ secrets.SUPABASE_MATRIX_DATABASE_NAME }}
         run: |
           if [ -n "$SUPABASE_SECRET_KEY" ] && [ -n "$NEXT_PUBLIC_SUPABASE_URL" ]; then
             echo "supabase=true" >> "$GITHUB_OUTPUT"
@@ -101,6 +107,22 @@ jobs:
           else
             echo "supabase=false" >> "$GITHUB_OUTPUT"
             echo "::warning title=UNMEASURED — the live Supabase gates did NOT run::NEXT_PUBLIC_SUPABASE_URL and/or SUPABASE_SECRET_KEY are not configured for this repository, so four gates are SKIPPED, not passed: generated kind types may be stale against content_ir.kind_definition; a client-direct insert path into hr.punch may exist unnoticed; the BEFORE INSERT trigger on public._schema_migrations may be dropped or disabled; and soft-deleting a parent may again leave its bindings, treatments, exemplars and notes alive underneath it. Nothing was checked — that is NOT a pass. Fix: add the NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY repository secrets."
+          fi
+          # The DIRECT Postgres credential is a DIFFERENT secret from the REST one
+          # above, and this repository has never held it. Until 2026-09-22 the
+          # hr-punch job ran BOTH arms and exited 1 the moment the corpus arm
+          # could not connect -- so a job that had just printed "39/39
+          # conformance checks passed" went red on every single push, for a
+          # reason no code change could fix. The arms are now two jobs, and this
+          # probe is what lets the corpus one SKIP by name instead.
+          if [ -n "$SUPABASE_MATRIX_USER" ] && [ -n "$SUPABASE_MATRIX_PASSWORD" ] \
+            && [ -n "$SUPABASE_MATRIX_HOST" ] && [ -n "$SUPABASE_MATRIX_PORT" ] \
+            && [ -n "$SUPABASE_MATRIX_DATABASE_NAME" ]; then
+            echo "direct_postgres=true" >> "$GITHUB_OUTPUT"
+            echo "measured: the direct-Postgres gates (the HR pre-apply function-contract corpus)"
+          else
+            echo "direct_postgres=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=UNMEASURED — the HR pre-apply function-contract corpus did NOT run::The direct-Postgres credential is not configured for this repository, so the corpus arm of the HR punch write-path gate is SKIPPED, not passed. It reads hr.function_contract against public._schema_migrations over a direct connection — the REST key the other gates use cannot reach either table — so an UNAPPLIED migration that re-creates a contracted function while dropping one of its required tokens (a pinned search_path, a ladder assertion) will land unnoticed. Nothing was checked; that is NOT a pass. Fix: add all five repository secrets SUPABASE_MATRIX_USER, SUPABASE_MATRIX_PASSWORD, SUPABASE_MATRIX_HOST, SUPABASE_MATRIX_PORT and SUPABASE_MATRIX_DATABASE_NAME."
           fi
           if [ -n "$AIDREAM_REPO_TOKEN" ]; then
             echo "aidream_repo=true" >> "$GITHUB_OUTPUT"
@@ -523,7 +545,45 @@ jobs:
       # with an UNMEASURED warning on the run) instead of turning it red on
       # every push for a reason no code change can fix.
       - name: No client-direct insert path into hr.punch
-        run: pnpm check:hr-punch-write-path:strict
+        run: pnpm check:hr-punch-write-path:live
+
+  # ---------------------------------------------------------------------------
+  # hr-punch-corpus — the OTHER arm of the same gate, split out on 2026-09-22
+  # (CI-FIX-2) because it needs a DIFFERENT credential and this repository does
+  # not hold it. It reads `hr.function_contract` against
+  # `public._schema_migrations` over a DIRECT Postgres connection, to catch an
+  # UNAPPLIED migration that re-creates a contracted function while dropping one
+  # of its required tokens.
+  #
+  # Sharing one exit code with the live arm is what made `hr-punch` red on 100%
+  # of runs while printing "39/39 conformance checks passed" one line above the
+  # failure: the live arm measured and passed, the corpus arm could not be
+  # measured, and the job reported the second. Neither arm is weakened by the
+  # split — inside THIS job the credential is present by construction, so an
+  # unreachable database here is still a hard failure, exactly as before.
+  # ---------------------------------------------------------------------------
+  hr-punch-corpus:
+    name: HR pre-apply function-contract corpus (SKIPPED without the direct-Postgres secret)
+    runs-on: ubuntu-latest
+    needs: secrets-preflight
+    if: needs.secrets-preflight.outputs.direct_postgres == 'true'
+    env:
+      SUPABASE_MATRIX_USER: ${{ secrets.SUPABASE_MATRIX_USER }}
+      SUPABASE_MATRIX_PASSWORD: ${{ secrets.SUPABASE_MATRIX_PASSWORD }}
+      SUPABASE_MATRIX_HOST: ${{ secrets.SUPABASE_MATRIX_HOST }}
+      SUPABASE_MATRIX_PORT: ${{ secrets.SUPABASE_MATRIX_PORT }}
+      SUPABASE_MATRIX_DATABASE_NAME: ${{ secrets.SUPABASE_MATRIX_DATABASE_NAME }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: An unapplied migration never drops a contracted token
+        run: pnpm check:hr-punch-write-path:corpus
 
   # ---------------------------------------------------------------------------
   # hr-guards — five HR gates that existed and RAN NOWHERE. Every one of them was
