@@ -237,7 +237,7 @@ export const AGENT_APP_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
   {
     id: "executions",
     header: "Runs",
-    accessorFn: (app) => app.total_executions ?? 0,
+    accessorKey: "total_executions",
     filter: "number",
     width: 100,
     className: "text-right tabular-nums",
@@ -254,7 +254,7 @@ export const AGENT_APP_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
   {
     id: "users",
     header: "Users",
-    accessorFn: (app) => app.unique_users_count ?? 0,
+    accessorKey: "unique_users_count",
     filter: "number",
     width: 80,
     className: "text-right tabular-nums",
@@ -274,7 +274,7 @@ export const AGENT_APP_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
   {
     id: "cost",
     header: "Cost",
-    accessorFn: (app) => app.total_cost ?? 0,
+    accessorKey: "total_cost",
     filter: "number",
     width: 90,
     className: "text-right tabular-nums",
@@ -394,6 +394,7 @@ export default function AgentAppsAdminListPage() {
       apps_list_total_count: apps.length,
       apps_list_filtered_count: visibleApps.length,
       apps_list_filters: agentAppsScopeFilters(tableQuery.state),
+      apps_list_table_query: { ...tableQuery.state },
       apps_list_sort: {
         field: tableQuery.state.sort?.id ?? "",
         direction: tableQuery.state.sort?.direction ?? "desc",
