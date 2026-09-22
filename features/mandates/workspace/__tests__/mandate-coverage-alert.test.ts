@@ -79,6 +79,48 @@ describe("mandateCoverageAlertVerdict", () => {
     expect(verdict.offerFix).toBe(true);
   });
 
+  it("🚨 NEVER says 'missing' when the Holder tab's own door resolves a Holder (2026-09-22)", () => {
+    // The server's coverage report only counts an org/user binding as an
+    // assignment (`aidream/services/mandates/coverage.py` `_ASSIGNING_
+    // PRINCIPALS`) — a mandate bound only at the GLOBAL rung, with no
+    // `default_holder_id` on its own definition, still comes back `red`.
+    // But `resolvedHolderForBannerOf` reads the SAME door the Holder tab
+    // renders and sees the live global binding. The banner must say so
+    // precisely, never repeat "Holder missing" while the tab below it names
+    // an assigned agent.
+    const verdict = mandateCoverageAlertVerdict({
+      row: RED_ROW,
+      loading: false,
+      error: null,
+      resolvedHolder: {
+        holderName: "Triage Decision Agent",
+        scopePhrase: "every user on the platform",
+      },
+    });
+    expect(verdict.kind).toBe("state");
+    if (verdict.kind !== "state") throw new Error("unreachable");
+    // The whole point: never the word the tab already contradicts.
+    expect(verdict.title.toLowerCase()).not.toContain("missing");
+    expect(verdict.detail.toLowerCase()).not.toContain("holder missing");
+    expect(verdict.detail).toContain("Triage Decision Agent");
+    expect(verdict.detail).toContain("every user on the platform");
+    expect(verdict.detail).toContain("no platform default Holder");
+    expect(verdict.offerFix).toBe(true);
+  });
+
+  it("still says 'Holder missing' when nothing actually resolves — the genuine case", () => {
+    const verdict = mandateCoverageAlertVerdict({
+      row: RED_ROW,
+      loading: false,
+      error: null,
+      resolvedHolder: null,
+    });
+    expect(verdict.kind).toBe("state");
+    if (verdict.kind !== "state") throw new Error("unreachable");
+    expect(verdict.bucket).toBe("red");
+    expect(verdict.title).toBe(RED_TITLE);
+  });
+
   it("names the leader whose Holder is carrying an orange Mandate", () => {
     const verdict = mandateCoverageAlertVerdict({
       row: {

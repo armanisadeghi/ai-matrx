@@ -80,7 +80,12 @@ import { formatVariableDisplayName } from "@/features/agents/utils/variable-util
 import { Section } from "./Section";
 import { EffectiveConfigLayers } from "../components/EffectiveConfigLayers";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
-import { systemRungHealth, type SystemRungHealth } from "./system-rung-health";
+import {
+  systemRungHealth,
+  homeScopePhrase,
+  type SystemRungHealth,
+  type SystemRungFacts,
+} from "./system-rung-health";
 import { MandateCoverageAlert } from "./MandateCoverageAlert";
 import { MandateProvenancePanel } from "./MandateProvenancePanel";
 import {
@@ -560,6 +565,13 @@ function OneMandateWorkspace({
           className="mb-4"
           mandateKey={data.mandate.mandate_key}
           onAssignHolder={() => setActiveTab("holder")}
+          resolvedHolder={resolvedHolderForBannerOf(
+            perspective,
+            data,
+            ladder,
+            nameOfOrg,
+            resolution,
+          )}
         />
         <MandateAlchemyCaptureProvider>
         <Tabs
@@ -789,11 +801,26 @@ function OneMandateWorkspace({
  * half comes from the mandate's HOME (F3), never from a hardcoded "every user
  * on the platform".
  */
-export function systemRungHealthOf(
+/**
+ * THE FACTS THE SYSTEM RUNG DOOR ANSWERS WITH — extracted so the Holder tab
+ * (`systemRungHealthOf` below) and the page-level coverage banner
+ * (`MandateCoverageAlert`) read the SAME resolution rather than two. The
+ * banner used to trust ONLY the registry-wide `/mandates/coverage/states`
+ * report, which classifies a `global` binding as unassigned (it only counts
+ * `org`/`user` bindings — `aidream/services/mandates/coverage.py`
+ * `_ASSIGNING_PRINCIPALS`) while THIS door — the one the Holder tab already
+ * renders — sees the live global binding and names its agent. A mandate
+ * bound only at the global rung with no `default_holder_id` on its own
+ * definition then showed "Holder missing" at the top of the page and an
+ * assigned agent one scroll down: two answers to "does this job have a
+ * Holder" on one screen. See `mandateCoverageAlertVerdict` in
+ * `./MandateCoverageAlert.tsx` for where this now overrides that word.
+ */
+export function systemRungFactsOf(
   data: MandateWorkspaceData,
   ladder: ReturnType<typeof useMandateLadder>,
   nameOfOrg: (id: string) => string | null,
-): SystemRungHealth {
+): SystemRungFacts {
   const home = data.mandate.organization_id ?? null;
   const scope = {
     systemHomed:
@@ -814,7 +841,7 @@ export function systemRungHealthOf(
       ? (globalBinding as { holder_type?: string | null }).holder_type
       : data.mandate.default_holder_type) === "workflow";
 
-  return systemRungHealth({
+  return {
     status: ladder.loading
       ? "reading"
       : ladder.error || !row
@@ -826,7 +853,55 @@ export function systemRungHealthOf(
     holderIsWorkflow,
     holderSet: holderId !== null || holderIsWorkflow,
     home: scope,
-  });
+  };
+}
+
+export function systemRungHealthOf(
+  data: MandateWorkspaceData,
+  ladder: ReturnType<typeof useMandateLadder>,
+  nameOfOrg: (id: string) => string | null,
+): SystemRungHealth {
+  return systemRungHealth(systemRungFactsOf(data, ladder, nameOfOrg));
+}
+
+/**
+ * The Holder this Mandate actually resolves to RIGHT NOW, read off the same
+ * door the Holder tab renders — `null` only when nothing answers (the
+ * genuine "Holder missing" case) or the door has not finished reading. Feeds
+ * `MandateCoverageAlert` so the banner can never contradict the tab below it.
+ */
+export function resolvedHolderForBannerOf(
+  perspective: WorkspacePerspective,
+  data: MandateWorkspaceData,
+  ladder: ReturnType<typeof useMandateLadder>,
+  nameOfOrg: (id: string) => string | null,
+  resolution: FulfillmentView | null,
+): { holderName: string; scopePhrase: string } | null {
+  if (perspective === "system") {
+    const facts = systemRungFactsOf(data, ladder, nameOfOrg);
+    if (facts.status !== "read") return null;
+    if (facts.droppedCode || facts.droppedReason) return null;
+    if (!facts.holderSet) return null;
+    return {
+      holderName: facts.holderIsWorkflow
+        ? "A workflow"
+        : (facts.holderName ?? "The assigned agent"),
+      scopePhrase: homeScopePhrase(facts.home),
+    };
+  }
+  if (
+    resolution &&
+    !resolution.loading &&
+    !resolution.refusal &&
+    resolution.agentId
+  ) {
+    return {
+      holderName: resolution.agent?.name ?? "The assigned agent",
+      scopePhrase:
+        resolution.rung === "org" ? "this organization" : "this account",
+    };
+  }
+  return null;
 }
 
 /** The two rungs that decide for everybody, ordered by which one answers now. */

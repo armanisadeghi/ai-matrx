@@ -18,12 +18,28 @@
 // So the same verdict the list wears rides at the TOP of the page, above the
 // tabs, on every host.
 //
-// ONE CLASSIFICATION, THE SERVER'S. This never inspects a holder, a binding or
-// a pin — it reads `GET /mandates/coverage/states`, which is
-// `aidream/services/mandates/coverage.py::compute_mandate_coverage` and nothing
-// else, and prints that report's own `reason` verbatim. A second client-side
-// rule beside the server's is the failure class the whole coverage feature was
-// built to avoid (see ../coverage.ts).
+// ONE CLASSIFICATION, THE SERVER'S — for the WORDS "Assigned" / "Running on
+// fallback" / "Holder missing" (green/orange/red). This never invents its own
+// verdict on a holder, a binding or a pin — it reads `GET
+// /mandates/coverage/states` (`aidream/services/mandates/coverage.py::
+// compute_mandate_coverage`) and prints that report's own `reason` verbatim.
+//
+// 🚨 BUT A SCREEN NEVER LIES, EVEN WHEN THE LIE IS THE SERVER'S (2026-09-22).
+// `compute_mandate_coverage` counts only an `org`/`user` binding as an
+// explicit assignment (`_ASSIGNING_PRINCIPALS`) — a `global` binding, which
+// the Holder tab below this banner reads and names, does not count there. A
+// Mandate bound only at the global rung with no `default_holder_id` on its
+// own definition landed on `red` / "Holder missing" from the server while the
+// tab one scroll down showed an assigned agent and its mapping — one page,
+// two answers. `resolvedHolder` carries the SAME door the tab reads
+// (`systemRungFactsOf` / the resolved verdict — see
+// `resolvedHolderForBannerOf` in `../workspace/MandateWorkspace.tsx`), and
+// when it names a Holder the server's `red` said was missing, the banner
+// says so precisely — "Bound … ; no platform default Holder" — rather than
+// repeat a word the rest of the page already contradicts. The server's
+// verdict is still the only source for orange/green and for the true
+// "nothing is bound anywhere" red; this only ever SOFTENS an incorrect
+// `red`, never invents a `red`/`orange` of its own.
 //
 // HONEST STATES ONLY:
 //   green    nothing is drawn. A banner on 382 healthy Mandates is noise.
@@ -70,10 +86,18 @@ export type MandateCoverageAlertVerdict =
  */
 export const RED_TITLE = RED_WORD;
 
+/** The same door the Holder tab reads — see `resolvedHolderForBannerOf`. */
+export interface ResolvedHolderForBanner {
+  holderName: string;
+  scopePhrase: string;
+}
+
 export function mandateCoverageAlertVerdict(args: {
   row: MandateCoverageStateRow | null | undefined;
   loading: boolean;
   error: string | null;
+  /** `null`/omitted when nothing actually resolves — the genuine "missing" case. */
+  resolvedHolder?: ResolvedHolderForBanner | null;
 }): MandateCoverageAlertVerdict {
   if (args.error) {
     return {
@@ -91,6 +115,19 @@ export function mandateCoverageAlertVerdict(args: {
   if (args.row.state === "green") return { kind: "silent" };
 
   if (args.row.state === "red") {
+    // THE BANNER MUST NEVER CONTRADICT THE TAB BELOW IT. The server counts
+    // only an org/user binding as an assignment; a global binding (or any
+    // rung this door resolves) is real and the tab already shows it. Say
+    // THAT, precisely, instead of "Holder missing".
+    if (args.resolvedHolder) {
+      return {
+        kind: "state",
+        bucket: "orange",
+        title: "Bound, but no platform default Holder",
+        detail: `Bound to ${args.resolvedHolder.holderName} for ${args.resolvedHolder.scopePhrase}; no platform default Holder is set on this Mandate's own definition.`,
+        offerFix: true,
+      };
+    }
     return {
       kind: "state",
       bucket: "red",
@@ -115,6 +152,7 @@ export function MandateCoverageAlert({
   mandateKey,
   onAssignHolder,
   className,
+  resolvedHolder,
 }: {
   mandateKey: string;
   /**
@@ -124,6 +162,12 @@ export function MandateCoverageAlert({
    */
   onAssignHolder?: () => void;
   className?: string;
+  /**
+   * The SAME resolution the Holder tab below this banner renders — see
+   * `resolvedHolderForBannerOf` in `../workspace/MandateWorkspace.tsx`. Never
+   * computed here; passed down so the two never disagree.
+   */
+  resolvedHolder?: ResolvedHolderForBanner | null;
 }) {
   // The registry-wide report: this page is about ONE Mandate whose owner may be
   // any organization, so scoping the report to the viewer's active org would
@@ -133,6 +177,7 @@ export function MandateCoverageAlert({
     row: states.get(mandateKey),
     loading,
     error,
+    resolvedHolder,
   });
 
   if (verdict.kind === "silent") return null;
