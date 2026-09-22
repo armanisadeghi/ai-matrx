@@ -155,9 +155,16 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess }: Add
       // looked like a dead button. The summary goes in the always-visible
       // banner the required-field refusal already uses.
       const broken = fields.filter((field) => nextErrors[field.field_name]);
+      // 🚨 A NOTICE NEVER SAYS THE SAME THING TWICE (lane VALIDATION-REFUSAL,
+      // 2026-09-23, measured on the modal at 375 wide). This banner used to repeat
+      // the single refusal's whole sentence, which now also appears verbatim in the
+      // notice beside the field — so a person read "Must be at most 8 characters
+      // (this is 19)" twice, four lines apart. The banner's ONE job is to be visible
+      // from the Save button and say WHERE to look; the notice below says what and
+      // what to do.
       setError(
         broken.length === 1
-          ? `${broken[0].display_name}: ${nextErrors[broken[0].field_name]!.reason}`
+          ? `${broken[0].display_name} needs fixing — the reason is beside it below.`
           : `These columns need fixing: ${broken
               .map((field) => field.display_name)
               .join(", ")}`,
