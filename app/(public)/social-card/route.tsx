@@ -12,7 +12,7 @@ const CARD_SIZE = { width: 1200, height: 630 };
 function Motif({ motif, accent }: { motif: string; accent: string }) {
   if (motif === "grid") {
     return (
-      <div style={{ display: "flex", position: "absolute", inset: 0, opacity: 0.18, backgroundImage: `linear-gradient(${accent}55 1px, transparent 1px), linear-gradient(90deg, ${accent}55 1px, transparent 1px)`, backgroundSize: "72px 72px", transform: "perspective(500px) rotateX(58deg) scale(1.45)", transformOrigin: "bottom" }} />
+      <div style={{ display: "flex", position: "absolute", inset: 0, opacity: 0.18, backgroundImage: `linear-gradient(${accent}55 1px, transparent 1px), linear-gradient(90deg, ${accent}55 1px, transparent 1px)`, backgroundSize: "72px 72px", transform: "rotate(-8deg) scale(1.45)", transformOrigin: "bottom" }} />
     );
   }
   if (motif === "rays") {
