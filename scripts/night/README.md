@@ -6,6 +6,13 @@
 > night's lock incident; Arman ruled that nothing of that kind runs tonight. The two branch-refresh
 > jobs were left loaded (branch-only writes). The way suites come back is against the nightly clone:
 > `common-docs/projects/database-workload-safety/DEV-CLONE-AND-BACKUP.md`. Re-arm only on Arman's word.
+>
+> 🚨 **Identity trap (measured 2026-09-22):** a Supabase DATA branch (`with_data: true`) is a physical
+> restore and reports the **same `pg_control_system().system_identifier` as production**. Your
+> `night_assert_target`, which keys on that identifier, cannot distinguish such a clone from
+> production. It is fine for your schema-only branch (different identifier) but must assert on the
+> connection user `postgres.<ref>` or the host before it is ever pointed at the nightly clone
+> (`common-docs/operations/clone/CURRENT.md`).
 
 
 A night job is a **one-shot**: it fires once, on a calendar time, from a launchd user agent, and
