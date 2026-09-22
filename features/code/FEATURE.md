@@ -2,7 +2,7 @@
 
 **Status:** `active` — incremental enhancement (resource pills + error inspection + unified context menu in flight)
 **Tier:** `1`
-**Last updated:** `2026-09-13`
+**Last updated:** `2026-09-22`
 
 > The standalone, VSCode-style code workspace mounted at [`/code`](<../../app/(core)/code/page.tsx>). Distinct from [`features/code-editor/`](../code-editor/FEATURE.md), which is the **embedded** editor surface used by the agent builder, prompt-app editor, notes, and friends. The two share the `vsc_*` UI-context contract; everything else is independent.
 
@@ -185,7 +185,7 @@ The management list exposes stored template/tier, resources, heartbeat, expiry, 
 - **2026-09-17** — **A failed edit-history flush is no longer silent.** `markWriteError` lands in a slice NOTHING renders, so the history for a file the person just changed could fail to write with no screen saying so — and since 2026-09-17 `ensureOrgId` throws the organization refusal through the same catch. The flush loop now presents that refusal with its remedy before recording the write error.
 
 - `2026-09-13` — Shared sandbox proxy responses now remove stale `content-encoding` after Node fetch decodes upstream bytes. A loopback regression covers gzip, zstd, plain binary, SSE, non-2xx status, custom headers, and compressed request forwarding through the actual `forwardToOrchestrator` boundary.
-- `2026-09-15` — Access-token minting keeps its bounded retry deadline through both upstream headers and body parsing. A stalled orchestrator body now aborts and returns the established recoverable 502 route response instead of allowing the serverless function to time out; authoritative 4xx responses remain non-retried.
+- `2026-09-22` — Access-token minting shares a 6.75-second total deadline across requests, response bodies, and retry backoff, allowing healthy connection hooks longer than two seconds without increasing the former total budget. At most three attempts retry transient failures; exhausted deadlines return the established recoverable 502, and authoritative 4xx responses remain non-retried.
 - `2026-09-15` — Every token-mint retry owns its response/body pair; a later timeout or connection failure cannot return stale transient-body data as a malformed successful mint.
 - `2026-09-12` — Replaced both bespoke `/sandbox` tables with the shared package table, exposing runtime configuration, timestamps and storage inline, with searchable columns, lifecycle selection and responsive cards. Complete-list reads exhaust pagination, refuse incomplete snapshots and isolate project changes before rendering. Desktop and phone checks passed with eight real active records, including search, refresh retention, empty history, navigation, sticky headers, column dragging and row JSON clipboard bytes. Six hook tests, scoped lint and the full frontend type check pass. Installed design-system 0.18.8 passed owner and independent browser review, including hydration, label dragging, truthful keyboard instructions and the unified export menu. CSV export includes the seven visible data columns and eight real rows. This adapter fetches the complete source up front and pages locally; physical-scroll server fetching, multi-page live data and lifecycle mutations are not certified by this pass.
 

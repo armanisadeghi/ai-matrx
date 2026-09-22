@@ -10,11 +10,13 @@ import { getClaimsUser } from "@/utils/supabase/resolveUser";
 const TRANSIENT_UPSTREAM_STATUSES = new Set([502, 503, 504]);
 const TOKEN_MINT_MAX_ATTEMPTS = 3;
 const TOKEN_MINT_RETRY_MS = 250;
-// Keep all three attempts comfortably inside the serverless handler budget.
-// Without an abortable per-attempt deadline, a black-holed orchestrator socket
+// Share the previous total budget (3 * 2s + 250ms + 500ms) across attempts.
+// Healthy token mints include connection hooks and can take more than 2s;
+// aborting them early only starts overlapping work on the orchestrator.
+// Without an abortable deadline, a black-holed orchestrator socket
 // makes Vercel terminate this route with FUNCTION_INVOCATION_TIMEOUT, which
 // prevents the caller's existing retry/recovery path from running.
-const TOKEN_MINT_ATTEMPT_TIMEOUT_MS = 2_000;
+const TOKEN_MINT_TIMEOUT_MS = 6_750;
 
 /**
  * What this module actually needs from `fetch`: a string URL and an init.
@@ -42,18 +44,21 @@ export async function mintAccessTokenWithRetry<T = Response>(
   {
     request = fetch,
     wait = sleep,
-    attemptTimeoutMs = TOKEN_MINT_ATTEMPT_TIMEOUT_MS,
+    timeoutMs = TOKEN_MINT_TIMEOUT_MS,
     consume = async (response: Response) => response as T,
   }: {
     request?: FetchLike;
     wait?: (milliseconds: number) => Promise<void>;
-    attemptTimeoutMs?: number;
+    timeoutMs?: number;
     consume?: ResponseConsumer<T>;
   } = {},
 ): Promise<{ response: Response; body: T }> {
   let lastError: unknown;
+  const deadline = performance.now() + timeoutMs;
 
   for (let attempt = 1; attempt <= TOKEN_MINT_MAX_ATTEMPTS; attempt += 1) {
+    const remainingMs = deadline - performance.now();
+    if (remainingMs <= 0) break;
     // Response and body are one atomic attempt result. Do not let a later
     // timeout pair fresh headers with a previous transient response body.
     let response: Response | undefined;
@@ -61,7 +66,7 @@ export async function mintAccessTokenWithRetry<T = Response>(
     const controller = new AbortController();
     const timeout = setTimeout(
       () => controller.abort(),
-      attemptTimeoutMs,
+      remainingMs,
     );
     try {
       response = await request(url, { ...init, signal: controller.signal });
@@ -74,6 +79,9 @@ export async function mintAccessTokenWithRetry<T = Response>(
       }
     } catch (error) {
       lastError = error;
+      // This request consumed the shared budget. Retrying cannot help and
+      // would extend the route beyond its original serverless allowance.
+      if (controller.signal.aborted) break;
       // A 4xx is authoritative. If its body cannot be consumed in time, do
       // not turn it into a retry storm; surface the route's recoverable 502.
       if (response && response.status >= 400 && response.status < 500) break;
@@ -86,7 +94,12 @@ export async function mintAccessTokenWithRetry<T = Response>(
     }
 
     if (attempt < TOKEN_MINT_MAX_ATTEMPTS) {
-      await wait(TOKEN_MINT_RETRY_MS * attempt);
+      const retryDelayMs = TOKEN_MINT_RETRY_MS * attempt;
+      if (deadline - performance.now() <= retryDelayMs) {
+        if (response && body !== undefined) return { response, body };
+        break;
+      }
+      await wait(retryDelayMs);
     }
   }
 
