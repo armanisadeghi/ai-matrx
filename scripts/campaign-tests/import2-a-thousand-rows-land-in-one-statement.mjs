@@ -37,7 +37,7 @@ const ORG = "6069a466-1445-42df-a64e-cf37ecdc1b99"; // Rincon Plumbing Co
 const HOME = "7e56a871-971e-4122-9652-145b0d14efe1"; // the home its dispatch tables live in
 const KEEP = process.argv.includes("--keep");
 const BASELINE = process.argv.includes("--baseline");
-const BATCH = 250;
+const BATCH = 250;   // only the fallback if the door forgets to say; the door opens the run
 const CEILING_MS = 3000;
 
 const { client } = await signedInClient();
@@ -176,7 +176,8 @@ console.log(`run ${opened.import_id}: ${opened.message}`);
 const times = [];
 let landed = 0, refused = 0, dupes = 0, seen = 0, madeInWrite = 0, toldPerCall = null;
 const refusalReasons = [];
-let at = 0, n = 0, take = BATCH;
+let at = 0, n = 0, take = opened.rows_per_call ?? BATCH;
+console.log(`  the door opens the run at ${opened.rows_per_call} rows a call`);
 while (at < rows.length) {
   const r = await timed("io_import_rows", {
     p_organization_id: ORG, p_import_id: opened.import_id,
@@ -207,9 +208,9 @@ const worst = Math.max(...times.map((t) => t.ms));
 const total = times.reduce((a, b) => a + b.ms, 0);
 console.log(`  batches: ${times.map((t) => `${t.rows}r/${t.ms}ms`).join(" · ")}   worst ${worst} ms   total ${total} ms   ${(total / rows.length).toFixed(2)} ms/row`);
 
-check(toldPerCall !== null, "the door says how many rows it can comfortably take in one call", `rows_per_call ${toldPerCall}`);
-check(worstFirst < 5000, `the first call — the client's own guess of ${BATCH} rows — is nowhere near the ~8 s ceiling`, `${worstFirst} ms`);
-check(worstRest < CEILING_MS, `every call AFTER the first, sized by the door's own answer, finishes under ${CEILING_MS} ms`, `worst ${worstRest} ms`);
+check(toldPerCall !== null, "and each call says how many rows the NEXT one should carry, from what it just measured", `rows_per_call ${toldPerCall}`);
+check(opened.rows_per_call > 0, "the run opens with a batch size the DOOR chose, not the screen", `${opened.rows_per_call} rows a call`);
+check(worst < CEILING_MS, `every writing call — sized throughout by the door's own measurement — finishes under ${CEILING_MS} ms`, `worst ${worst} ms`);
 check(seen === 1000, "every row of the file was seen", `${seen} seen`);
 check(landed === 1000 - BAD_AT.length, "every good row landed",
       `${landed} landed · ${dupes} already here · ${refused} refused`);
@@ -340,4 +341,4 @@ if (failures.length) {
   console.error(`\nRED — ${failures.length} assertion(s) failed:\n  ${failures.join("\n  ")}`);
   process.exit(1);
 }
-console.log(`\nGREEN — 1,000 rows landed: the columns were their own ${declareMs} ms step, the first call ${worstFirst} ms, every call after it under ${CEILING_MS} ms (worst ${worstRest} ms), and the bad rows refused by name.`);
+console.log(`\nGREEN — 1,000 rows landed: the columns were their own ${declareMs} ms step, every writing call under ${CEILING_MS} ms (worst ${worst} ms), and the bad rows refused by name.`);
