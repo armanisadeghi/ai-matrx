@@ -4,6 +4,7 @@ import type { FindingEffectiveness } from "../types";
 import {
   effectivenessDuration,
   effectivenessPercent,
+  FINDING_EFFECTIVENESS_COVERAGE,
   FINDING_EFFECTIVENESS_COLUMNS,
 } from "./FindingEffectivenessPanel";
 
@@ -41,6 +42,13 @@ function column(id: string) {
 }
 
 describe("FindingEffectivenessPanel canonical columns", () => {
+  it("discloses that the aggregate endpoint does not provide a coverage receipt", () => {
+    expect(FINDING_EFFECTIVENESS_COVERAGE).toEqual({
+      noun: "unit/lever aggregate",
+      answeredBy: "client",
+    });
+  });
+
   it("keeps no signal distinct from a measured zero", () => {
     expect(effectivenessPercent(null)).toBe("—");
     expect(effectivenessPercent(0)).toBe("0%");
@@ -54,6 +62,18 @@ describe("FindingEffectivenessPanel canonical columns", () => {
     expect(
       renderToStaticMarkup(<>{cost.cell?.(measuredZeroRow, 0)}</>),
     ).toContain("+$0.0000");
+  });
+
+  it("keeps long unit names inside their column and exposes the full name", () => {
+    const unit = column("unit");
+    const name = "Pleasure and Pain Principle Motivation";
+    const markup = renderToStaticMarkup(
+      <>{unit.cell?.({ ...measuredZeroRow, unit_display_name: name }, 0)}</>,
+    );
+
+    expect(markup).toContain("w-full max-w-full min-w-0");
+    expect(markup).toContain("min-w-0 truncate");
+    expect(markup).toContain(`title=\"${name}\"`);
   });
 
   it("makes every numeric audit value independently sortable and filterable", () => {

@@ -27,6 +27,12 @@ import type { FindingEffectiveness, UnitToken } from "../types";
 import { hasSignal } from "../types";
 import { KIND_COLOR, KIND_ICON, LEVER_LABEL } from "./tokens";
 
+/** The endpoint supplies rows but no total or cap receipt. */
+export const FINDING_EFFECTIVENESS_COVERAGE = {
+  noun: "unit/lever aggregate",
+  answeredBy: "client" as const,
+};
+
 export function effectivenessPercent(value: number | null | undefined): string {
   return hasSignal(value) ? `${Math.round(value * 100)}%` : "—";
 }
@@ -131,6 +137,7 @@ export function FindingEffectivenessPanel({
             }}
             copy={false}
             detail={{ enabled: false }}
+            coverage={FINDING_EFFECTIVENESS_COVERAGE}
             cellClassName={(row, columnId) =>
               hasSignal(row.revert_rate) &&
               row.revert_rate > 0 &&
@@ -158,8 +165,9 @@ export const FINDING_EFFECTIVENESS_COLUMNS: MatrxColumnDef<FindingEffectiveness>
       width: 240,
       cell: (row) => {
         const Icon = KIND_ICON[row.unit_token];
+        const unitName = row.unit_display_name ?? row.unit_id ?? "—";
         return (
-          <span className="inline-flex min-w-0 items-center gap-1.5">
+          <span className="flex w-full max-w-full min-w-0 items-center gap-1.5">
             <span
               className={cn(
                 "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded",
@@ -168,8 +176,8 @@ export const FINDING_EFFECTIVENESS_COLUMNS: MatrxColumnDef<FindingEffectiveness>
             >
               <Icon className="h-3 w-3" />
             </span>
-            <span className="truncate">
-              {row.unit_display_name ?? row.unit_id ?? "—"}
+            <span className="min-w-0 truncate" title={unitName}>
+              {unitName}
             </span>
           </span>
         );
