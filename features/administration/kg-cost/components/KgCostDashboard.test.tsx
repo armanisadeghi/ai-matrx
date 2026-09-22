@@ -59,11 +59,11 @@ describe("KgCostDashboard canonical tables", () => {
   it("keeps all four bounded dashboard grids canonical and honestly scoped", () => {
     act(() => root.render(<KgCostDashboard />));
 
-    for (const id of [
-      "administration/kg-cost/by-source-kind",
-      "administration/kg-cost/recent-runs",
-      "administration/kg-cost/organizations",
-      "administration/kg-cost/pending-batches",
+    for (const [id, title] of [
+      ["administration/kg-cost/by-source-kind", "By source kind"],
+      ["administration/kg-cost/recent-runs", "Recent runs"],
+      ["administration/kg-cost/organizations", "Organizations"],
+      ["administration/kg-cost/pending-batches", "In-flight batches"],
     ]) {
       const props = table(id);
       expect(props.density).toBe("condensed");
@@ -71,6 +71,7 @@ describe("KgCostDashboard canonical tables", () => {
       expect(props.hidePagination).toBe(true);
       expect(props.pageSize).toBe(0);
       expect(props.toolbar?.search).toBe(true);
+      expect(props.toolbar?.title).toBe(title);
       expect(props.detail).toEqual({ enabled: false });
       expect(props.window).toEqual({ enabled: false });
       expect(props.coverage).toMatchObject({ answeredBy: "client" });
@@ -108,6 +109,7 @@ describe("KgCostDashboard canonical tables", () => {
     const runColumns = table("administration/kg-cost/recent-runs").columns;
     expect(runColumns.map((column) => column.accessorKey)).toEqual(
       expect.arrayContaining([
+        "source_kind",
         "chunks_written",
         "chunks_reused",
         "cost_is_exact",
@@ -121,6 +123,9 @@ describe("KgCostDashboard canonical tables", () => {
       runColumns.find((column) => column.accessorKey === "cost_is_exact")
         ?.filter,
     ).toBe("boolean");
+    expect(runColumns.find((column) => column.id === "source_id")?.filter).toBe(
+      "text",
+    );
   });
 
   it("preserves the organization and batch inspectors as row-open actions", () => {

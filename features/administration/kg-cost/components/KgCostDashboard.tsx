@@ -376,7 +376,11 @@ function OrgLeaderboard({
       pageSize={0}
       hidePagination
       copy={false}
-      toolbar={{ search: true, searchPlaceholder: "Search organizations…" }}
+      toolbar={{
+        title: "Organizations",
+        search: true,
+        searchPlaceholder: "Search organizations…",
+      }}
       detail={{ enabled: false }}
       window={{ enabled: false }}
       coverage={{ noun: "organization", answeredBy: "client" }}
@@ -498,7 +502,19 @@ function PendingBatchesTable({
       pageSize={0}
       hidePagination
       copy={false}
-      toolbar={{ search: true, searchPlaceholder: "Search in-flight batches…" }}
+      toolbar={{
+        title: "In-flight batches",
+        search: true,
+        searchPlaceholder: "Search in-flight batches…",
+        actions: (
+          <AppLink
+            href="/administration/knowledge/batch"
+            className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Per-item batch view
+          </AppLink>
+        ),
+      }}
       detail={{ enabled: false }}
       window={{ enabled: false }}
       coverage={{ noun: "batch", answeredBy: "client" }}
@@ -1270,7 +1286,11 @@ function BySourceKindTable({
       pageSize={0}
       hidePagination
       copy={false}
-      toolbar={{ search: true, searchPlaceholder: "Search source kinds…" }}
+      toolbar={{
+        title: "By source kind",
+        search: true,
+        searchPlaceholder: "Search source kinds…",
+      }}
       detail={{ enabled: false }}
       window={{ enabled: false }}
       coverage={{ noun: "source kind", answeredBy: "client" }}
@@ -1300,28 +1320,32 @@ function RecentRunsTable({
       ),
     },
     {
-      id: "source",
-      header: "Source",
-      accessorFn: (row) =>
-        row.source_id ? `${row.source_kind} ${row.source_id}` : row.source_kind,
+      accessorKey: "source_kind",
+      header: "Kind",
+      filter: "select",
+      width: 130,
+      cell: (row) => <span className="font-mono text-xs">{row.source_kind}</span>,
+    },
+    {
+      id: "source_id",
+      header: "Source ID",
+      accessorFn: (row) => row.source_id || "—",
       filter: "text",
-      width: 260,
+      width: 140,
       cell: (row) => (
         <span className="font-mono text-xs">
           {row.source_id ? (
-            <>
-              {row.source_kind}:{" "}
-              <EntityRef
-                token={row.source_kind}
-                id={row.source_id}
-                name={row.source_id}
-                showIcon={false}
-                openInNewTab
-                wrap
-              />
-            </>
+            <EntityRef
+              token={row.source_kind}
+              id={row.source_id}
+              name={row.source_id}
+              showIcon={false}
+              openInNewTab
+            >
+              <span className="whitespace-nowrap">{row.source_id.slice(0, 8)}…</span>
+            </EntityRef>
           ) : (
-            row.source_kind
+            "—"
           )}
         </span>
       ),
@@ -1492,7 +1516,11 @@ function RecentRunsTable({
       pageSize={0}
       hidePagination
       copy={false}
-      toolbar={{ search: true, searchPlaceholder: "Search recent runs…" }}
+      toolbar={{
+        title: "Recent runs",
+        search: true,
+        searchPlaceholder: "Search recent runs…",
+      }}
       detail={{ enabled: false }}
       window={{ enabled: false }}
       coverage={{ noun: "run", answeredBy: "client" }}
@@ -1636,12 +1664,10 @@ function UnitEconomicsSection() {
       </div>
 
       <div className="mt-4">
-        <h3 className="mb-2 text-sm font-semibold">By source kind</h3>
         <BySourceKindTable rows={data?.by_source_kind ?? []} loading={loading} />
       </div>
 
       <div className="mt-4">
-        <h3 className="mb-2 text-sm font-semibold">Recent runs</h3>
         <RecentRunsTable rows={data?.recent_runs ?? []} loading={loading} />
       </div>
     </section>
@@ -1754,7 +1780,6 @@ export function KgCostDashboard() {
           <UnitEconomicsSection />
 
           <section>
-            <h2 className="mb-3 text-sm font-semibold">Organizations</h2>
             <OrgLeaderboard
               orgs={orgs}
               loading={orgsLoading}
@@ -1763,15 +1788,6 @@ export function KgCostDashboard() {
           </section>
 
           <section>
-            <div className="mb-3 flex items-baseline justify-between gap-2">
-              <h2 className="text-sm font-semibold">In-flight batches</h2>
-              <AppLink
-                href="/administration/knowledge/batch"
-                className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-              >
-                Per-item batch view
-              </AppLink>
-            </div>
             <PendingBatchesTable
               batches={batches}
               loading={batchesLoading}
