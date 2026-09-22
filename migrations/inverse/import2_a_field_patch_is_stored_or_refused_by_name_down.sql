@@ -5,7 +5,7 @@
 -- catalogue) — the one that accepts a patch carrying `expr`, reports success and stores
 -- nothing. Run to prove the lane's suite goes RED; the up file is re-applied after it.
 --
--- based-on: FILLED-IN-AFTER-THE-UP-FILE-LANDS
+-- based-on: custom.field_update(uuid, uuid, jsonb) 24626bbd2605e2f05e91363bb00bb99f37a7795890dd5de1a392317bf7b91bca
 
 CREATE OR REPLACE FUNCTION custom.field_update(p_organization_id uuid, p_field_id uuid, p_patch jsonb)
  RETURNS uuid

@@ -1,3 +1,7 @@
+-- additive: yes
+--
+-- chair-step: it DROPS custom.io_import_declare_columns and custom._io_declare_unmapped, REVOKES the client grant on the first, and DELETEs their platform.client_callable_door rows — which is the whole point of an inverse of a file that added them.
+--
 -- IMPORT-2 — THE INVERSE of import2_a_batch_of_imported_rows_is_one_statement.sql.
 --
 -- It puts back the EXACT body `custom.io_import_rows` carried before this lane (FIX-10B's,
@@ -5,7 +9,7 @@
 -- catalogue), and takes away the two objects the lane added and the client grant on the one
 -- that had one. Run to prove the lane's suite goes RED; the up file is re-applied after it.
 --
--- based-on: custom.io_import_rows(uuid, uuid, jsonb, jsonb) 4bad11b40caa2f5de5eb2e2a2e6d9d0bb50e9d14c5cbb2e33a8ff6b4a9d0f2f1
+-- based-on: custom.io_import_rows(uuid, uuid, jsonb, jsonb) 5c64f5bb79ff4aa170c414e89b213fb6b4385e17cf273beb2c5b4442878ce251
 
 CREATE OR REPLACE FUNCTION custom.io_import_rows(p_organization_id uuid, p_import_id uuid, p_rows jsonb, p_mapping jsonb DEFAULT '{}'::jsonb)
  RETURNS jsonb
@@ -373,5 +377,8 @@ $function$
 revoke execute on function custom.io_import_declare_columns(uuid, uuid, jsonb, jsonb) from authenticated;
 drop function if exists custom.io_import_declare_columns(uuid, uuid, jsonb, jsonb);
 drop function if exists custom._io_declare_unmapped(uuid, uuid, jsonb, jsonb);
+-- A DOOR FOLLOWS ITS FUNCTION: both rows go, or provision_shape_guard refuses the commit
+-- (it did, the first time this inverse was run).
 delete from platform.client_callable_door
- where schema_name = 'custom' and function_name = 'io_import_declare_columns';
+ where schema_name = 'custom'
+   and function_name in ('io_import_declare_columns', '_io_declare_unmapped');
