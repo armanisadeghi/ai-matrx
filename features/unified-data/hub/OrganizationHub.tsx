@@ -268,8 +268,9 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
                       they set in the same size and flow, so "Jobs" followed by
                       "Tables" read as one name — "Jobs Tables" (VERIFIER-14 §4).
                       The middot is the one the rows already use between facts. */}
-                  <span className="ml-1.5 text-xs text-muted-foreground">
-                    <span aria-hidden>·</span> {item.capability}
+                  <span className="text-xs text-muted-foreground">
+                    {" · "}
+                    {item.capability}
                   </span>
                 </li>
               ))}

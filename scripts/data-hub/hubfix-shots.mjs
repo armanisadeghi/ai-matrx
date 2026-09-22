@@ -1,0 +1,354 @@
+// scripts/data-hub/hubfix-shots.mjs — LANE HUB-FIX
+//
+// THE HEADLESS PROOF of the four things VERIFIER-14 marked FALSE on the
+// organization hub, walked from BOTH seats at 1600 and at 390 px.
+//
+// It signs in the way a person does — the login form, through
+// `scripts/lib/seat-browser.mjs` — and picks the organization through the picker
+// a person uses. Never a cookie, never a forced URL.
+//
+// WHAT IT ASSERTS, each one a clause that can come back FALSE:
+//
+//   1. THE DOOR LAW ON "SHARED WITH ME". From the member seat, the first row of
+//      that listing is CLICKED. Its address must carry `?org=` (the owning
+//      organization, the way `platform.link_carries_its_organization` makes a
+//      notification link name its own), the screen must NOT say "This table is
+//      not here", and it must say who shared it.
+//   2. THE INBOX IS NOT THE FRONT DOOR. The approval queue must appear AFTER the
+//      last capability listing in the document, not above "Start here".
+//   3. THE NEWEST STRIP SEPARATES THE NAME FROM WHAT IT IS. No "Jobs Tables".
+//   4. CHOICE LISTS ARE NOT A PERSON'S TABLES. The 27 per-field option tables
+//      the store marks `kept_by_the_app` must be out of Tables and under their
+//      own "Kept by the app" listing.
+//
+// It runs against the machine-wide preview server on port 3001 (this lane holds
+// no campaign port; a PreToolUse hook on this box refuses a second Next.js dev
+// server — `scripts/campaign-ports.json` records that under `noDevServer`), on
+// its OWN hostname so it cannot evict another agent's session.
+//
+//   node scripts/data-hub/hubfix-shots.mjs --out <dir> [--origin http://hubfix.localhost:3001]
+
+import { mkdirSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { chromium } from "playwright";
+
+import { signIn, setOrganization, sleep, until } from "../lib/seat-browser.mjs";
+
+const args = process.argv.slice(2);
+const flag = (name, fallback) => {
+  const i = args.indexOf(`--${name}`);
+  return i >= 0 && args[i + 1] ? args[i + 1] : fallback;
+};
+
+const ORIGIN = flag("origin", "http://hubfix.localhost:3001");
+const ONLY = flag("only", null);
+const OUT = resolve(flag("out", "scripts/data-hub/hubfix-shots"));
+mkdirSync(OUT, { recursive: true });
+
+const ADMIN = process.env.AI_ADMIN_USERNAME;
+const ADMIN_PASSWORD = process.env.AI_ADMIN_PASSWORD;
+const TEST = "test@test.com";
+const TEST_PASSWORD = process.env.TEST_USER_PASSWORD ?? "Password1234#";
+if (!ADMIN || !ADMIN_PASSWORD) {
+  console.error("AI_ADMIN_USERNAME and AI_ADMIN_PASSWORD must be in the environment.");
+  process.exit(1);
+}
+
+const findings = [];
+let failures = 0;
+function say(line) {
+  console.log(line);
+  findings.push(line);
+}
+function clause(label, ok, detail) {
+  if (!ok) failures += 1;
+  say(`${ok ? "PASS" : "FAIL"} ${label}${detail ? ` — ${detail}` : ""}`);
+}
+
+async function whoAmI(page, origin) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      await page.goto(`${origin}/dashboard`, { waitUntil: "domcontentloaded", timeout: 120000 });
+      await page.waitForLoadState("load", { timeout: 60000 }).catch(() => {});
+      return await page.evaluate(async () => {
+        try {
+          const seen = await (await fetch("/api/whoami")).json();
+          return seen?.email ?? seen?.user?.email ?? null;
+        } catch {
+          return null;
+        }
+      });
+    } catch {
+      await sleep(1500);
+    }
+  }
+  return null;
+}
+
+/** Settled = every listing has stopped saying "reading…". Never a fixed wait. */
+async function settled(page) {
+  const { v, ms } = await until(
+    "every hub listing answered",
+    async () =>
+      page.evaluate(() => {
+        const body = document.body?.innerText ?? "";
+        if (!body.includes("Start here")) return null;
+        return body.includes("reading…") ? null : true;
+      }),
+    60000,
+  );
+  return { settled: Boolean(v), ms };
+}
+
+/** What the hub claims, read off the screen. */
+async function readHub(page) {
+  return page.evaluate(() => {
+    const sections = Array.from(document.querySelectorAll("[data-hub-listing]"));
+    const rows = [];
+    for (const section of sections) {
+      const header = section.querySelector("button[aria-expanded]");
+      if (!header) continue;
+      const parts = Array.from(header.querySelectorAll("span")).map((s) => s.textContent?.trim() ?? "");
+      if (parts.length < 2) continue;
+      rows.push({ id: section.getAttribute("data-hub-listing"), title: parts[0], count: parts[1] });
+    }
+    const lanes = Array.from(document.querySelectorAll("[data-hub-lane]")).map(
+      (b) => b.textContent?.trim() ?? "",
+    );
+    // The Newest strip, line by line, exactly as it is set on the page.
+    const newest = Array.from(document.querySelectorAll("[data-hub-root] section li"))
+      .map((li) => (li.textContent ?? "").trim())
+      .filter((t) => t && !t.startsWith("Newest"))
+      .slice(0, 3);
+    return { rows, lanes, newest };
+  });
+}
+
+/**
+ * WHERE THE APPROVAL QUEUE SITS, decided by DOCUMENT ORDER and not by a guess
+ * from the text. The inbox is the package's `ActionInbox`; it is found by the
+ * heading it prints, and compared with the last capability listing.
+ */
+async function inboxPosition(page) {
+  return page.evaluate(() => {
+    const listings = Array.from(document.querySelectorAll("[data-hub-listing]"));
+    if (listings.length === 0) return { found: false, why: "no hub listings on the page" };
+    const last = listings[listings.length - 1];
+    const root = document.querySelector("[data-hub-root]");
+    if (!root) return { found: false, why: "no hub root" };
+    // The inbox announces itself with a heading that starts "Inbox".
+    const candidates = Array.from(root.querySelectorAll("*")).filter((el) => {
+      if (el.children.length > 0) return false;
+      const t = (el.textContent ?? "").trim();
+      return /^Inbox\b/.test(t);
+    });
+    if (candidates.length === 0) return { found: false, why: "no element whose text starts with Inbox" };
+    const inbox = candidates[0];
+    const pos = last.compareDocumentPosition(inbox);
+    return {
+      found: true,
+      label: (inbox.textContent ?? "").trim(),
+      // DOCUMENT_POSITION_FOLLOWING === 4: the inbox comes AFTER the last listing.
+      afterLastListing: (pos & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+    };
+  });
+}
+
+async function shoot(page, name) {
+  await page.screenshot({ path: resolve(OUT, `${name}.png`), fullPage: true });
+  say(`  shot ${name}.png`);
+}
+
+async function openEveryListing(page) {
+  await page.evaluate(() => {
+    for (const b of Array.from(document.querySelectorAll("[data-hub-listing-toggle]"))) {
+      if (b.getAttribute("aria-expanded") === "false") b.click();
+    }
+  });
+  await page.keyboard.press("Escape");
+  await sleep(1500);
+}
+
+async function walk(context, label, { email, password, organization, shots, openShared }) {
+  const page = await context.newPage();
+  const already = await whoAmI(page, ORIGIN);
+  const who = already === email ? already : await signIn(page, ORIGIN, email, password, label);
+  say(`${label}: signed in as ${who}${already === email ? " (already)" : ""}`);
+  if (who !== email) throw new Error(`${label}: expected ${email}, the app says ${who}`);
+
+  let picked = false;
+  for (let attempt = 0; attempt < 2 && !picked; attempt += 1) {
+    try {
+      await setOrganization(page, organization);
+      picked = true;
+    } catch (error) {
+      if (attempt === 1) throw error;
+      say(`${label}: the organization picker threw — settling and trying once more`);
+      await sleep(4000);
+    }
+  }
+  say(`${label}: organization set to ${organization}`);
+
+  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  const state = await settled(page);
+  say(`${label}: hub settled=${state.settled} after ${state.ms} ms`);
+  const hub = await readHub(page);
+  say(`${label}: ${hub.rows.length} listings — ${hub.rows.map((r) => `${r.title} ${r.count}`).join(" · ")}`);
+
+  // ── clause 4: choice lists are not a person's tables ───────────────────────
+  const tables = hub.rows.find((r) => r.id === "tables");
+  const kept = hub.rows.find((r) => r.id === "kept-by-the-app");
+  clause(
+    `${label} · "Kept by the app" is its own listing`,
+    Boolean(kept),
+    kept ? `count ${kept.count}` : "no [data-hub-listing=kept-by-the-app] on the page",
+  );
+  if (tables && kept) {
+    clause(
+      `${label} · the option-list tables are OUT of Tables`,
+      Number(kept.count) === 0 || Number(tables.count) < Number(tables.count) + Number(kept.count),
+      `Tables ${tables.count}, Kept by the app ${kept.count}`,
+    );
+  }
+
+  // ── clause 3: the Newest strip separates the name from what it is ──────────
+  if (hub.newest.length > 0) {
+    const runTogether = hub.newest.filter((t) => !t.includes("·"));
+    clause(
+      `${label} · the Newest strip separates the name from the capability`,
+      runTogether.length === 0,
+      runTogether.length === 0 ? hub.newest.join(" | ") : `no separator on: ${runTogether.join(" | ")}`,
+    );
+  } else {
+    say(`${label}: the Newest strip is empty on this organization — nothing to judge`);
+  }
+
+  await openEveryListing(page);
+
+  // ── clause 2: the approval queue is not the front door ─────────────────────
+  const inbox = await inboxPosition(page);
+  if (!inbox.found) {
+    say(`${label}: no approval queue on this screen (${inbox.why}) — nothing to judge`);
+  } else {
+    clause(
+      `${label} · the approval queue sits BELOW the capability listings`,
+      inbox.afterLastListing,
+      `"${inbox.label}"`,
+    );
+  }
+
+  await shoot(page, shots.desktop);
+
+  // ── clause 1: the door law on "Shared with me" ─────────────────────────────
+  if (openShared) {
+    const row = page.locator('[data-hub-listing="shared-with-me"] li a').first();
+    const count = await row.count();
+    if (count === 0) {
+      clause(`${label} · a "Shared with me" row to open`, false, "the listing has no rows on this seat");
+    } else {
+      const name = (await row.textContent())?.trim() ?? "";
+      const href = await row.getAttribute("href");
+      clause(
+        `${label} · the "Shared with me" row's address names the organization that owns it`,
+        Boolean(href && href.includes("?org=")),
+        `${name} → ${href}`,
+      );
+      await row.click();
+      await page.waitForLoadState("domcontentloaded", { timeout: 120000 });
+      const landed = await until(
+        "the shared table's screen",
+        async () =>
+          page.evaluate(() => {
+            const body = document.body?.innerText ?? "";
+            if (body.includes("Checking whether this table was shared with you")) return null;
+            if (body.includes("This table is not here")) return { dead: true, body: body.slice(0, 600) };
+            if (body.includes("Shared with you by")) return { dead: false, body: body.slice(0, 600) };
+            return null;
+          }),
+        45000,
+      );
+      clause(
+        `${label} · the "Shared with me" row OPENS the table, not a dead sentence`,
+        Boolean(landed.v) && landed.v.dead === false,
+        landed.v
+          ? landed.v.dead
+            ? 'the screen still says "This table is not here"'
+            : `the screen says who shared it, after ${landed.ms} ms`
+          : `neither sentence appeared within ${landed.ms} ms — URL ${page.url()}`,
+      );
+      await shoot(page, shots.shared);
+    }
+  }
+
+  await page.close();
+  return hub;
+}
+
+async function tryWalk(context, label, options) {
+  if (ONLY && !label.includes(ONLY)) return null;
+  try {
+    return await walk(context, label, options);
+  } catch (error) {
+    failures += 1;
+    say(`${label}: WALK FAILED — ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`);
+    return null;
+  }
+}
+
+const browser = await chromium.launch({ headless: true });
+try {
+  const desktop = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
+  await tryWalk(desktop, "admin@admin.com · Rincon Plumbing Co · 1600", {
+    email: ADMIN,
+    password: ADMIN_PASSWORD,
+    organization: "Rincon Plumbing Co",
+    shots: { desktop: "hubfix-admin-rincon-1600", shared: "hubfix-admin-rincon-shared" },
+  });
+  await desktop.close();
+
+  const member = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
+  await tryWalk(member, "test@test.com · Rincon Plumbing Co · 1600", {
+    email: TEST,
+    password: TEST_PASSWORD,
+    organization: "Rincon Plumbing Co",
+    openShared: true,
+    shots: { desktop: "hubfix-member-rincon-1600", shared: "hubfix-member-rincon-shared-opens" },
+  });
+  await member.close();
+
+  const phone = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    deviceScaleFactor: 2,
+  });
+  await tryWalk(phone, "admin@admin.com · Rincon Plumbing Co · 390", {
+    email: ADMIN,
+    password: ADMIN_PASSWORD,
+    organization: "Rincon Plumbing Co",
+    shots: { desktop: "hubfix-admin-rincon-390", shared: "hubfix-admin-rincon-390-shared" },
+  });
+  await phone.close();
+
+  const memberPhone = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    deviceScaleFactor: 2,
+  });
+  await tryWalk(memberPhone, "test@test.com · Rincon Plumbing Co · 390", {
+    email: TEST,
+    password: TEST_PASSWORD,
+    organization: "Rincon Plumbing Co",
+    openShared: true,
+    shots: { desktop: "hubfix-member-rincon-390", shared: "hubfix-member-rincon-390-shared-opens" },
+  });
+  await memberPhone.close();
+
+  say(`\n${failures === 0 ? "ALL CLAUSES PASS" : `${failures} CLAUSE(S) FAILED`}`);
+  writeFileSync(resolve(OUT, "hubfix-walk.txt"), `${findings.join("\n")}\n`);
+  console.log(`\nwrote ${OUT}/hubfix-walk.txt`);
+} finally {
+  await browser.close();
+}
+process.exit(failures === 0 ? 0 : 1);

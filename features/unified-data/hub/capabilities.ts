@@ -439,7 +439,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
   {
     id: "shared-with-me",
     title: "Shared with me",
-    what: "Tables another organization has given the person signed in — theirs, not this organization's.",
+    what: "Tables another organization has offered the person signed in — open one and it is yours to see.",
     empty: "Nobody outside has shared a table with you.",
     door: "custom.table_share_outside_for_me",
     changedByKind: null,
@@ -455,20 +455,21 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
           tableName: share.organization,
           // It is not in any of THIS organization's lanes; it was shared to the person.
           lane: "community" as TableLane,
-          facts: [share.level_label, `from ${share.organization}`],
-          // 🚨 THE LINK CARRIES THE ORGANIZATION THAT OWNS THE TABLE.
-          // VERIFIER-14 item 2: every row in this listing opened
-          // `/data-v2/<table>` and landed on "This table is not here. This
-          // table is not in the organization you are working in" — which is
-          // honest and is still a named thing that does not open. The table is
-          // not in the organization you are working in BY DEFINITION here: the
-          // whole listing is what somebody ELSE's organization shared with you.
-          // So the address says whose it is, the way
-          // `platform.link_carries_its_organization` makes every notification
-          // link name its own organization, and the table route opens it in
-          // that organization's context without moving the person's own
-          // organization out from under them.
-          href: `/data-v2/${share.table_id}?org=${share.organization_id}`,
+          facts: [share.level_label, `from ${share.organization}`, "not accepted yet"],
+          // 🚨 THE ROW OPENS THE INVITATION, BECAUSE THAT IS WHAT THE ROW IS.
+          // VERIFIER-14 item 2: every row here opened `/data-v2/<table>` and
+          // landed on "This table is not here." Measured on the live store on
+          // 2026-09-23, the deeper reason: `custom.table_share_outside_for_me`
+          // answers `status = 'pending'` invitations ONLY, and the person had
+          // ZERO active grants — `custom.portal_admits` was false, so every
+          // door of that organization refused them and no address could have
+          // opened the table. The thing that exists is the INVITATION, and it
+          // already has its own screen: `/invitations/table/accept/<token>`
+          // names the table, the organization, what they will be able to do and
+          // who shared it, and the accept writes the grant and opens the table.
+          // Sending the row anywhere else would be a link to a thing that is
+          // not there yet.
+          href: `/invitations/table/accept/${share.token}`,
         })),
       };
     },

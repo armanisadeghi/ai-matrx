@@ -145,10 +145,27 @@ export interface ShareInboundRow {
   table_name: string;
   level: string;
   level_label: string;
+  /**
+   * 🚨 THE DOOR ANSWERS ONLY `status = 'pending'` INVITATIONS, and the token is
+   * how one is accepted. Measured on the live store, 2026-09-23: the three rows
+   * this listing showed `test@test.com` were invitations nobody had accepted —
+   * `iam.permissions` held ZERO active grants for that person on that
+   * organization — so `custom.portal_admits` was false, every door refused, and
+   * the row could not open the table however the address was written. What the
+   * row opens is the INVITATION's own screen.
+   */
+  token: string;
   expires_at: string | null;
 }
 
-/** What somebody ELSE's organization has shared with the person signed in. */
+/**
+ * WHAT SOMEBODY ELSE'S ORGANIZATION HAS OFFERED THE PERSON SIGNED IN.
+ *
+ * `custom.table_share_outside_for_me` returns PENDING invitations and nothing
+ * else — never an accepted share. Accepting one (`/invitations/table/accept/<token>`)
+ * writes the grant and takes the row off this list, which is why the listing
+ * shrinks after a person opens one.
+ */
 export function sharedWithMe(
   dataSource: RecordsDataSource,
 ): Promise<DoorAnswer<ShareInboundRow[]>> {
