@@ -101,7 +101,8 @@ export interface AgentAppExecutionRow {
   task_id: string;
   variables_provided: JsonObject;
   variables_used: JsonObject;
-  success: boolean;
+  success: boolean | null;
+  kind?: "visit" | "run" | null;
   error_type?: string | null;
   error_message?: string | null;
   execution_time_ms?: number | null;

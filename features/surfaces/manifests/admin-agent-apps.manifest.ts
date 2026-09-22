@@ -441,6 +441,26 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "executions",
   },
   {
+    name: "executions_app_id",
+    label: "Executions app scope",
+    description: "App UUID from ?app= when the console is scoped to one app. Absent when showing all apps.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 36,
+    sortOrder: 537,
+    group: "executions",
+  },
+  {
+    name: "executions_table_query",
+    label: "Executions table query",
+    description: "Complete canonical table search, column-filter, sort, and pagination state for the Executions tab.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 500,
+    sortOrder: 538,
+    group: "executions",
+  },
+  {
     name: "errors_rows",
     label: "Error rows",
     description:
@@ -472,6 +492,16 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 10,
     sortOrder: 560,
+    group: "executions",
+  },
+  {
+    name: "errors_table_query",
+    label: "Errors table query",
+    description: "Complete canonical table search, column-filter, sort, and pagination state for the Errors tab.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 500,
+    sortOrder: 565,
     group: "executions",
   },
   {
@@ -827,7 +857,8 @@ export interface AdminAgentAppCategoryRowSummary {
 }
 
 export interface AdminAgentAppExecutionRowSummary {
-  success: boolean;
+  /** null is an in-flight/aborted run or visit, not a failed run. */
+  success: boolean | null;
   app_name: string | null;
   app_slug: string | null;
   task_id: string;
@@ -917,9 +948,12 @@ export function createAdminAgentAppsScope(values: {
   executions_stats?: { total: number; success: number; failed: number };
   executions_app_filter?: string;
   executions_success_filter?: "all" | "success" | "failed";
+  executions_app_id?: string;
+  executions_table_query?: Record<string, unknown>;
   errors_rows?: AdminAgentAppErrorRowSummary[];
   errors_stats?: { total: number; resolved: number; unresolved: number };
   errors_resolved_filter?: "all" | "resolved" | "unresolved";
+  errors_table_query?: Record<string, unknown>;
   selected_error?: AdminAgentAppErrorRowSummary & {
     error_code?: string | null;
     variables_sent?: unknown;

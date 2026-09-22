@@ -7,6 +7,8 @@ import {
   ERRORS_COVERAGE,
   ERROR_COLUMNS,
   errorResolvedFilter,
+  errorSourceFilters,
+  executionSourceFilters,
   EXECUTIONS_COVERAGE,
   EXECUTION_COLUMNS,
   executionSuccessFilter,
@@ -65,10 +67,15 @@ describe("Agent-app execution canonical table contract", () => {
     expect(EXECUTION_COLUMNS.map((column) => column.id)).toEqual(
       expect.arrayContaining([
         "success",
+        "kind",
         "app",
+        "app-id",
+        "app-slug",
         "id",
         "task",
-        "identifier",
+        "user-id",
+        "fingerprint",
+        "ip-address",
         "tokens",
         "cost",
         "duration",
@@ -99,7 +106,7 @@ describe("Agent-app execution canonical table contract", () => {
     ).toBeNull();
     expect(
       ERROR_COLUMNS.find((column) => column.id === "app")?.accessorFn?.(error),
-    ).toContain("fact-checker");
+    ).toBe("Fact checker");
   });
 
   it("maps canonical boolean filters to the retained source filters", () => {

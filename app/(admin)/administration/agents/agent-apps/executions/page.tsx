@@ -1,13 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import {
-  Activity,
-  AlertCircle,
-  CheckCircle,
-  ExternalLink,
-  XCircle,
-} from "lucide-react";
+import { Suspense, useEffect, useEffectEvent, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Activity, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,7 +33,6 @@ import type {
 } from "@ai-matrx/design-system/data-table/types";
 import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import { formatCount, formatDurationMs, formatUsd } from "@ai-matrx/kit/format";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
@@ -56,6 +50,10 @@ import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
   createAdminAgentAppsScope,
 } from "@/features/surfaces/manifests/admin-agent-apps.manifest";
+import {
+  AgentAppRef,
+  agentAppExecutionsHref,
+} from "@/features/agent-apps/components/AgentAppRef";
 
 const LIMIT = 500;
 /** Both source calls order newest first and request only the newest 500; no total receipt exists. */
@@ -69,6 +67,26 @@ export const ERRORS_COVERAGE = {
   cap: LIMIT,
   answeredBy: "client" as const,
 };
+export function executionSourceFilters(
+  appId: string | null,
+  outcome: "all" | "success" | "failed",
+) {
+  return {
+    app_id: appId ?? undefined,
+    success: outcome === "all" ? undefined : outcome === "success",
+    limit: LIMIT,
+  };
+}
+export function errorSourceFilters(
+  appId: string | null,
+  resolved: "all" | "resolved" | "unresolved",
+) {
+  return {
+    app_id: appId ?? undefined,
+    resolved: resolved === "all" ? undefined : resolved === "resolved",
+    limit: LIMIT,
+  };
+}
 
 const ERROR_TYPE_LABELS: Record<string, string> = {
   missing_variable: "Missing Variable",
@@ -128,24 +146,15 @@ export function errorResolvedFilter(
     : "all";
 }
 
-const AppCell = ({ name, slug }: { name?: string; slug?: string }) => (
-  <div className="flex min-w-0 items-center gap-2">
-    <span className="truncate text-sm" title={name}>
-      {name ?? "—"}
-    </span>
-    {slug && (
-      <a
-        href={`/p/${slug}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="shrink-0 text-primary"
-        title={`Open ${name ?? slug}`}
-      >
-        <ExternalLink className="h-3 w-3" />
-      </a>
-    )}
-  </div>
-);
+const AppCell = ({
+  id,
+  name,
+  slug,
+}: {
+  id: string;
+  name?: string;
+  slug?: string;
+}) => <AgentAppRef appId={id} name={name} slug={slug} />;
 export const EXECUTION_COLUMNS: MatrxColumnDef<AgentAppExecutionRow>[] = [
   {
     id: "success",
@@ -154,26 +163,57 @@ export const EXECUTION_COLUMNS: MatrxColumnDef<AgentAppExecutionRow>[] = [
     filter: "boolean",
     width: 105,
     cell: (row) =>
-      row.success ? (
+      row.success === true ? (
         <Badge variant="outline" className="border-success/40 text-success">
           <CheckCircle className="mr-1 h-3 w-3" />
           OK
         </Badge>
-      ) : (
+      ) : row.success === false ? (
         <Badge variant="destructive">
           <XCircle className="mr-1 h-3 w-3" />
           Fail
         </Badge>
+      ) : (
+        <Badge variant="outline">Pending</Badge>
       ),
+  },
+  {
+    id: "kind",
+    header: "Kind",
+    accessorKey: "kind",
+    filter: "select",
+    filterOptions: [
+      { value: "visit", label: "Visit" },
+      { value: "run", label: "Run" },
+    ],
+    width: 90,
   },
   {
     id: "app",
     header: "App",
-    accessorFn: (row) =>
-      [row.app_name, row.app_slug, row.app_id].filter(Boolean).join(" "),
+    accessorFn: (row) => row.app_name ?? "",
     filter: "text",
     width: 190,
-    cell: (row) => <AppCell name={row.app_name} slug={row.app_slug} />,
+    cell: (row) => (
+      <AppCell id={row.app_id} name={row.app_name} slug={row.app_slug} />
+    ),
+  },
+  {
+    id: "app-id",
+    header: "App ID",
+    accessorKey: "app_id",
+    filter: "text",
+    hidden: true,
+    cell: (row) => (
+      <MatrxUuidCell value={row.app_id} label="Agent app ID" token="app" />
+    ),
+  },
+  {
+    id: "app-slug",
+    header: "App slug",
+    accessorFn: (row) => row.app_slug ?? "",
+    filter: "text",
+    hidden: true,
   },
   {
     id: "id",
@@ -191,33 +231,40 @@ export const EXECUTION_COLUMNS: MatrxColumnDef<AgentAppExecutionRow>[] = [
     filter: "text",
     width: 180,
     cell: (row) => (
-      <EntityRef
-        token="task"
-        id={row.task_id}
-        name={row.task_id}
-        showIcon={false}
+      <MatrxUuidCell
+        value={row.task_id}
+        label="Client correlation ID"
+        forbidden
       />
     ),
   },
   {
-    id: "identifier",
-    header: "Identifier",
-    accessorFn: (row) => row.user_id ?? row.fingerprint ?? row.ip_address ?? "",
+    id: "user-id",
+    header: "User ID",
+    accessorFn: (row) => row.user_id ?? "",
     filter: "text",
-    width: 170,
+    width: 150,
+    mobileHidden: true,
+    cell: (row) => <MatrxUuidCell value={row.user_id} label="User ID" />,
+  },
+  {
+    id: "fingerprint",
+    header: "Fingerprint",
+    accessorFn: (row) => row.fingerprint ?? "",
+    filter: "text",
+    width: 150,
     mobileHidden: true,
     cell: (row) => (
-      <code
-        className="block truncate text-[11px] text-muted-foreground"
-        title={row.user_id ?? row.fingerprint ?? row.ip_address ?? ""}
-      >
-        {row.user_id
-          ? `user:${row.user_id.slice(0, 8)}`
-          : row.fingerprint
-            ? `fp:${row.fingerprint.slice(0, 8)}`
-            : (row.ip_address ?? "—")}
-      </code>
+      <MatrxUuidCell value={row.fingerprint} label="Fingerprint" />
     ),
+  },
+  {
+    id: "ip-address",
+    header: "IP address",
+    accessorFn: (row) => row.ip_address ?? "",
+    filter: "text",
+    width: 130,
+    mobileHidden: true,
   },
   {
     id: "tokens",
@@ -287,6 +334,10 @@ export const ERROR_COLUMNS: MatrxColumnDef<AgentAppErrorRow>[] = [
     header: "Type",
     accessorKey: "error_type",
     filter: "select",
+    filterOptions: Object.entries(ERROR_TYPE_LABELS).map(([value, label]) => ({
+      value,
+      label,
+    })),
     width: 170,
     cell: (row) => (
       <Badge variant="outline" className="text-xs">
@@ -297,11 +348,29 @@ export const ERROR_COLUMNS: MatrxColumnDef<AgentAppErrorRow>[] = [
   {
     id: "app",
     header: "App",
-    accessorFn: (row) =>
-      [row.app_name, row.app_slug, row.app_id].filter(Boolean).join(" "),
+    accessorFn: (row) => row.app_name ?? "",
     filter: "text",
     width: 190,
-    cell: (row) => <AppCell name={row.app_name} slug={row.app_slug} />,
+    cell: (row) => (
+      <AppCell id={row.app_id} name={row.app_name} slug={row.app_slug} />
+    ),
+  },
+  {
+    id: "app-id",
+    header: "App ID",
+    accessorKey: "app_id",
+    filter: "text",
+    hidden: true,
+    cell: (row) => (
+      <MatrxUuidCell value={row.app_id} label="Agent app ID" token="app" />
+    ),
+  },
+  {
+    id: "app-slug",
+    header: "App slug",
+    accessorFn: (row) => row.app_slug ?? "",
+    filter: "text",
+    hidden: true,
   },
   {
     id: "id",
@@ -315,33 +384,17 @@ export const ERROR_COLUMNS: MatrxColumnDef<AgentAppErrorRow>[] = [
   {
     id: "message",
     header: "Message",
-    accessorFn: (row) => row.error_message ?? "",
+    accessorKey: "error_message",
     filter: "text",
     width: 330,
-    cell: (row) => (
-      <span
-        className="block truncate text-sm"
-        title={row.error_message ?? "No error message"}
-      >
-        {row.error_message ?? "No error message"}
-      </span>
-    ),
   },
   {
     id: "code",
     header: "Code",
-    accessorFn: (row) => row.error_code ?? "",
+    accessorKey: "error_code",
     filter: "text",
     width: 130,
     mobileHidden: true,
-    cell: (row) =>
-      row.error_code ? (
-        <code className="block truncate text-xs" title={row.error_code}>
-          {row.error_code}
-        </code>
-      ) : (
-        "—"
-      ),
   },
   {
     id: "execution",
@@ -393,9 +446,22 @@ function SurfaceScopeWhenActive({
 }
 
 export default function AgentAppsExecutionsAdminPage() {
-  const [activeTab, setActiveTab] = useState<"executions" | "errors">(
-    "executions",
+  return (
+    <Suspense>
+      <AgentAppsExecutionsContent />
+    </Suspense>
   );
+}
+
+function AgentAppsExecutionsContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const appId = searchParams.get("app");
+  const [activeTab, setActiveTab] = useState<"executions" | "errors">(
+    searchParams.get("tab") === "errors" ? "errors" : "executions",
+  );
+  const clearAppScope = () =>
+    router.replace("/administration/agents/agent-apps/executions");
   return (
     <TooltipProvider>
       <div className="flex h-full flex-col bg-textured">
@@ -418,18 +484,32 @@ export default function AgentAppsExecutionsAdminPage() {
               </TabsTrigger>
             </TabsList>
           </div>
-          <div className="min-h-0 flex-1">
+          <div className="min-h-0 flex-1 p-4">
+            {appId && (
+              <div className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+                <span className="min-w-0 truncate">
+                  Showing records for{" "}
+                  <AgentAppRef appId={appId} alwaysShowActions />
+                </span>
+                <Button size="sm" variant="outline" onClick={clearAppScope}>
+                  Show all apps
+                </Button>
+              </div>
+            )}
             <TabsContent
               value="executions"
               className="m-0 h-full data-[state=active]:flex data-[state=active]:flex-col"
             >
-              <ExecutionsTable active={activeTab === "executions"} />
+              <ExecutionsTable
+                active={activeTab === "executions"}
+                appId={appId}
+              />
             </TabsContent>
             <TabsContent
               value="errors"
               className="m-0 h-full data-[state=active]:flex data-[state=active]:flex-col"
             >
-              <ErrorsTable active={activeTab === "errors"} />
+              <ErrorsTable active={activeTab === "errors"} appId={appId} />
             </TabsContent>
           </div>
         </Tabs>
@@ -438,7 +518,13 @@ export default function AgentAppsExecutionsAdminPage() {
   );
 }
 
-function ExecutionsTable({ active }: { active: boolean }) {
+function ExecutionsTable({
+  active,
+  appId,
+}: {
+  active: boolean;
+  appId: string | null;
+}) {
   const { toast } = useToast();
   const [rows, setRows] = useState<AgentAppExecutionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -450,15 +536,14 @@ function ExecutionsTable({ active }: { active: boolean }) {
     defaultSort: { id: "created", direction: "desc" },
     defaultPageSize: 50,
   });
-  const outcome = executionSuccessFilter(tableQuery.state);
+  const [outcome, setOutcome] = useState<"all" | "success" | "failed">("all");
   const load = async () => {
     const retain = rows.length > 0;
     retain ? setRefreshing(true) : setLoading(true);
     try {
-      const data = await fetchAgentAppExecutions({
-        success: outcome === "all" ? undefined : outcome === "success",
-        limit: LIMIT,
-      });
+      const data = await fetchAgentAppExecutions(
+        executionSourceFilters(appId, outcome),
+      );
       setRows(data);
       setViewRows(data);
       setError(null);
@@ -472,13 +557,17 @@ function ExecutionsTable({ active }: { active: boolean }) {
       setRefreshing(false);
     }
   };
-  useEffect(() => {
+  const refreshSource = useEffectEvent(() => {
     void load();
-  }, [outcome]);
+  });
+  useEffect(() => {
+    const timer = window.setTimeout(refreshSource, 0);
+    return () => window.clearTimeout(timer);
+  }, [outcome, appId]);
   const stats = {
     total: rows.length,
-    success: rows.filter((row) => row.success).length,
-    failed: rows.filter((row) => !row.success).length,
+    success: rows.filter((row) => row.success === true).length,
+    failed: rows.filter((row) => row.success === false).length,
   };
   const scope = () =>
     createAdminAgentAppsScope({
@@ -500,6 +589,8 @@ function ExecutionsTable({ active }: { active: boolean }) {
       executions_stats: stats,
       executions_app_filter: filterText(tableQuery.state.columnFilters.app),
       executions_success_filter: outcome,
+      executions_app_id: appId ?? undefined,
+      executions_table_query: { ...tableQuery.state },
     });
   return (
     <SurfaceScopeWhenActive active={active} getScope={scope}>
@@ -535,6 +626,22 @@ function ExecutionsTable({ active }: { active: boolean }) {
             toolbar={{
               title: "Executions",
               search: true,
+              facets: [
+                {
+                  type: "button-group",
+                  id: "source-outcome",
+                  label: "Source outcome",
+                  value: outcome,
+                  defaultValue: "all",
+                  options: [
+                    { value: "all", label: "All" },
+                    { value: "success", label: "Success" },
+                    { value: "failed", label: "Failed" },
+                  ],
+                  onChange: (value) =>
+                    setOutcome(value as "all" | "success" | "failed"),
+                },
+              ],
               searchPlaceholder: "Search executions…",
               refresh: { onRefresh: load },
               actions: viewRows.length ? (
@@ -596,7 +703,13 @@ function ExecutionsTable({ active }: { active: boolean }) {
   );
 }
 
-function ErrorsTable({ active }: { active: boolean }) {
+function ErrorsTable({
+  active,
+  appId,
+}: {
+  active: boolean;
+  appId: string | null;
+}) {
   const { toast } = useToast();
   const [rows, setRows] = useState<AgentAppErrorRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -610,24 +723,18 @@ function ErrorsTable({ active }: { active: boolean }) {
     defaultSort: { id: "created", direction: "desc" },
     defaultPageSize: 50,
   });
-  const queryResolved = errorResolvedFilter(tableQuery.state);
-  const hasLoadedDefault = useRef(false);
-  // The legacy Errors tab opens on unresolved rows. Once a person clears the canonical status filter, all rows are requested.
-  const resolved =
-    queryResolved === "all" && !hasLoadedDefault.current
-      ? "unresolved"
-      : queryResolved;
+  const [resolved, setResolved] = useState<"all" | "resolved" | "unresolved">(
+    "unresolved",
+  );
   const load = async () => {
     const retain = rows.length > 0;
     retain ? setRefreshing(true) : setLoading(true);
     try {
-      const data = await fetchAgentAppErrors({
-        resolved: resolved === "all" ? undefined : resolved === "resolved",
-        limit: LIMIT,
-      });
+      const data = await fetchAgentAppErrors(
+        errorSourceFilters(appId, resolved),
+      );
       setRows(data);
       setViewRows(data);
-      hasLoadedDefault.current = true;
       setError(null);
     } catch (cause) {
       const message =
@@ -639,9 +746,13 @@ function ErrorsTable({ active }: { active: boolean }) {
       setRefreshing(false);
     }
   };
-  useEffect(() => {
+  const refreshSource = useEffectEvent(() => {
     void load();
-  }, [resolved]);
+  });
+  useEffect(() => {
+    const timer = window.setTimeout(refreshSource, 0);
+    return () => window.clearTimeout(timer);
+  }, [resolved, appId]);
   const stats = {
     total: rows.length,
     resolved: rows.filter((row) => row.resolved).length,
@@ -700,6 +811,8 @@ function ErrorsTable({ active }: { active: boolean }) {
       })),
       errors_stats: stats,
       errors_resolved_filter: resolved,
+      executions_app_id: appId ?? undefined,
+      errors_table_query: { ...tableQuery.state },
       selected_error: selected
         ? {
             resolved: selected.resolved,
@@ -749,6 +862,22 @@ function ErrorsTable({ active }: { active: boolean }) {
             toolbar={{
               title: "Errors",
               search: true,
+              facets: [
+                {
+                  type: "button-group",
+                  id: "source-status",
+                  label: "Source status",
+                  value: resolved,
+                  defaultValue: "unresolved",
+                  options: [
+                    { value: "all", label: "All" },
+                    { value: "unresolved", label: "Unresolved" },
+                    { value: "resolved", label: "Resolved" },
+                  ],
+                  onChange: (value) =>
+                    setResolved(value as "all" | "resolved" | "unresolved"),
+                },
+              ],
               searchPlaceholder: "Search errors…",
               refresh: { onRefresh: load },
               actions: viewRows.length ? (
@@ -944,8 +1073,26 @@ function ErrorDialog({
             <div>
               <Label>App</Label>
               <div className="mt-1">
-                <AppCell name={selected.app_name} slug={selected.app_slug} />
+                <AppCell
+                  id={selected.app_id}
+                  name={selected.app_name}
+                  slug={selected.app_slug}
+                />
               </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <a
+                className="text-sm text-primary hover:underline"
+                href={agentAppExecutionsHref(selected.app_id)}
+              >
+                All runs for this app
+              </a>
+              <a
+                className="text-sm text-primary hover:underline"
+                href={`${agentAppExecutionsHref(selected.app_id)}&tab=errors`}
+              >
+                All errors for this app
+              </a>
             </div>
             <div>
               <Label>Variables Sent</Label>
