@@ -36,6 +36,27 @@
  *   · a constant carrying a `KNOB MIRROR` comment within 6 lines above it —
  *     the documented posture for a value that mirrors a registry row for a
  *     synchronous render path. The comment is the contract.
+ *   · a constant DECLARED NOT AN OPINION in
+ *     `scripts/settings-hardcoded-classification.json`, with a kind and a
+ *     sentence saying what it is bounded BY — see below.
+ *
+ * 🚨 THE CLASSIFICATION IS NOT A SECOND BASELINE (SETTINGS-3, 2026-09-22).
+ * Law 6 says opinions become knobs. It does not say every number becomes one.
+ * A provider ceiling we do not own, a defensive cap so one bad payload cannot
+ * take the process down, the feel of a hover delay, a constant of an algorithm
+ * — no organization could hold a different view of any of them, and turning
+ * 228 of them into knobs would bury the settings that DO matter under settings
+ * that do not. So there are two files and they mean opposite things:
+ *   ALLOWLIST       values that ARE opinions and are not converted yet. Debt.
+ *                   Carries no argument, and shrinks as the campaign runs.
+ *   CLASSIFICATION  values that were READ and are not opinions at all. Carries
+ *                   a `kind` from a fixed vocabulary and a REASON of at least
+ *                   40 characters, or this guard fails LOUD on the file itself.
+ * A line belongs in exactly ONE of them; being in both is an error. Neither can
+ * be grown by running the guard — `--write` only ever REMOVES an entry whose
+ * constant no longer exists, so laundering a new constant into either takes a
+ * hand edit with a person behind it, and in the classification's case it takes
+ * a sentence that is either true or visibly nonsense to the next reader.
  *
  *   pnpm check:settings-hardcoded
  *   pnpm check:settings-hardcoded --json
@@ -60,6 +81,19 @@ import {
 
 const GUARD = "check:settings-hardcoded";
 const ALLOWLIST_FILE = join(ROOT, "scripts", "settings-hardcoded-allowlist.json");
+const CLASSIFICATION_FILE = join(ROOT, "scripts", "settings-hardcoded-classification.json");
+
+/** The only things a constant may be declared to be, INSTEAD of an opinion. */
+const CLASSIFICATION_KINDS = new Set([
+  "protocol",
+  "defensive-cap",
+  "ui-timing",
+  "algorithmic",
+  "resolver-cache",
+  "operational-timeout",
+]);
+/** Short enough to type, long enough that "not a knob" is not a sentence. */
+const MIN_CLASSIFICATION_REASON = 40;
 
 /**
  * The operational vocabulary — the LANE C brief's list, verbatim: a name that
@@ -94,6 +128,12 @@ interface AllowEntry {
   file: string;
   name: string;
   reason?: string;
+}
+interface ClassEntry {
+  file: string;
+  name: string;
+  kind: string;
+  reason: string;
 }
 
 function siteKey(s: { file: string; name: string }): string {
@@ -143,6 +183,48 @@ function main(): void {
     : [];
   const allowKeys = new Set(allow.map(siteKey));
 
+  // ── THE CLASSIFICATION ──────────────────────────────────────────────────
+  // Read BEFORE anything is graded, and graded itself: an entry with an unknown
+  // kind or a reason too short to be an argument is a baseline wearing a
+  // sentence, so the guard fails on the FILE rather than quietly honouring it.
+  const classification: ClassEntry[] = existsSync(CLASSIFICATION_FILE)
+    ? (JSON.parse(readFileSync(CLASSIFICATION_FILE, "utf8")).entries as ClassEntry[])
+    : [];
+  const malformed = classification.filter(
+    (c) =>
+      !c.file ||
+      !c.name ||
+      !CLASSIFICATION_KINDS.has(c.kind) ||
+      typeof c.reason !== "string" ||
+      c.reason.trim().length < MIN_CLASSIFICATION_REASON,
+  );
+  if (malformed.length > 0) {
+    console.log(
+      `\n${C.red}${C.bold}[LOUD] ${relative(ROOT, CLASSIFICATION_FILE)} holds ${malformed.length} entr${malformed.length === 1 ? "y" : "ies"} that declare nothing${C.reset}`,
+    );
+    console.log(
+      `${C.dim}A classification is an ARGUMENT that a constant is not an opinion. Without a kind from ${[...CLASSIFICATION_KINDS].join(" / ")} and a reason of at least ${MIN_CLASSIFICATION_REASON} characters it is a second baseline, which is the defect this guard exists to catch.${C.reset}\n`,
+    );
+    for (const c of malformed) {
+      console.log(`  ${C.cyan}${c.file}${C.reset}  ${C.bold}${c.name}${C.reset}  kind=${JSON.stringify(c.kind)} reason=${JSON.stringify((c.reason ?? "").slice(0, 60))}`);
+    }
+    exitAfterDrain(1);
+  }
+  const classKeys = new Set(classification.map(siteKey));
+  // A constant cannot be BOTH unconverted debt and not-an-opinion. Saying both
+  // is how one of the two files stops meaning anything.
+  const inBoth = [...classKeys].filter((k) => allowKeys.has(k));
+  if (inBoth.length > 0) {
+    console.log(
+      `\n${C.red}${C.bold}[LOUD] ${inBoth.length} constant(s) are in BOTH the allowlist and the classification${C.reset}`,
+    );
+    console.log(
+      `${C.dim}The allowlist means "this IS an opinion and has not been converted yet". The classification means "this is not an opinion at all". Both cannot be true; take it out of one.${C.reset}\n`,
+    );
+    for (const k of inBoth) console.log(`  ${C.cyan}${k}${C.reset}`);
+    exitAfterDrain(1);
+  }
+
   if (selfTest) {
     live.push({
       file: "SELF-TEST (not a real file)",
@@ -152,11 +234,23 @@ function main(): void {
     });
   }
 
-  const fresh = live.filter((s) => !allowKeys.has(siteKey(s)));
+  const fresh = live.filter((s) => !allowKeys.has(siteKey(s)) && !classKeys.has(siteKey(s)));
+  const declared = live.filter((s) => classKeys.has(siteKey(s)));
   const liveKeys = new Set(live.map(siteKey));
   const stale = allow.filter((a) => !liveKeys.has(siteKey(a)));
+  const staleClass = classification.filter((c) => !liveKeys.has(siteKey(c)));
 
   if (write) {
+    // SHRINK ONLY — the classification too. An entry whose constant is gone is
+    // dropped; one is never added, whatever a re-run finds.
+    if (staleClass.length > 0) {
+      const raw = JSON.parse(readFileSync(CLASSIFICATION_FILE, "utf8"));
+      raw.entries = classification.filter((c) => liveKeys.has(siteKey(c)));
+      writeFileSync(CLASSIFICATION_FILE, `${JSON.stringify(raw, null, 2)}\n`);
+      console.log(
+        `Ratcheted ${relative(ROOT, CLASSIFICATION_FILE)}: removed ${staleClass.length} entr${staleClass.length === 1 ? "y" : "ies"} whose constant no longer exists.`,
+      );
+    }
     // SHRINK ONLY. Entries still present survive; a NEW site is never recorded.
     const kept = allow.filter((a) => liveKeys.has(siteKey(a)));
     const seeding = !existsSync(ALLOWLIST_FILE);
@@ -194,13 +288,13 @@ function main(): void {
   }
 
   if (json) {
-    console.log(JSON.stringify({ live: live.length, allowlisted: allow.length, fresh, stale }, null, 2));
+    console.log(JSON.stringify({ live: live.length, allowlisted: allow.length, classified: declared.length, fresh, stale, staleClass }, null, 2));
     exitAfterDrain(fresh.length > 0 ? 1 : 0);
   }
 
   console.log(`\n${C.bold}${C.white}HARDCODED SETTINGS${C.reset} ${C.dim}(${GUARD})${C.reset}`);
   console.log(
-    `${C.dim}${live.length} knob-shaped constant(s) across ${files.length} files · ${allow.length} baselined · ${mirrors.length} declared KNOB MIRROR${C.reset}\n`,
+    `${C.dim}${live.length} knob-shaped constant(s) across ${files.length} files · ${allow.length} baselined · ${declared.length} declared NOT AN OPINION · ${mirrors.length} declared KNOB MIRROR${C.reset}\n`,
   );
 
   if (!existsSync(ALLOWLIST_FILE)) {
@@ -231,6 +325,26 @@ function main(): void {
     console.log(
       `  ${C.dim}\`KNOB MIRROR\` comment within ${KNOB_MIRROR_WINDOW} lines above it. Adding it to the allowlist is NOT a fix.${C.reset}`,
     );
+    console.log(
+      `  ${C.dim}A value NO organization could hold a different view of — a provider ceiling, a${C.reset}`,
+    );
+    console.log(
+      `  ${C.dim}defensive cap, a hover delay, a constant of the algorithm — is declared in${C.reset}`,
+    );
+    console.log(
+      `  ${C.dim}${relative(ROOT, CLASSIFICATION_FILE)} with its kind and the sentence saying${C.reset}`,
+    );
+    console.log(
+      `  ${C.dim}what bounds it. A sentence you cannot write means it is an opinion.${C.reset}`,
+    );
+  }
+
+  if (staleClass.length > 0) {
+    console.log(
+      `\n${C.green}${staleClass.length} classification entr${staleClass.length === 1 ? "y" : "ies"} no longer exist${C.reset} ${C.dim}— run --write to drop them.${C.reset}`,
+    );
+    for (const c of staleClass.slice(0, 20)) console.log(`  ${C.dim}${c.file}  ${c.name}${C.reset}`);
+    if (staleClass.length > 20) console.log(`  ${C.dim}… and ${staleClass.length - 20} more${C.reset}`);
   }
 
   if (stale.length > 0) {

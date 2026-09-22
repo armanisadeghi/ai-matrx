@@ -1,0 +1,1385 @@
+{
+  "_law": "A CLASSIFICATION IS NOT A BASELINE. Every entry here is a constant argued to be NOT AN OPINION — there is no organization that could sensibly hold a different view of it — and every entry carries the argument. The guard REFUSES an entry without a real reason or with an unknown kind, and it can never add one: only a person editing this file by hand can, and the only thing --write may do is REMOVE an entry whose constant no longer exists.",
+  "_why": "CLAUDE.md law 6 says opinions become knobs. It does NOT say every number becomes a knob. A provider ceiling we do not own, a defensive cap that exists so one bad payload cannot take the process down, the feel of a hover delay, and a constant of an algorithm are not choices an organization gets to make — turning them into knobs would put 228 controls in front of people that mean nothing to their business and bury the ones that do. scripts/settings-hardcoded-allowlist.json is the DEBT list: values that ARE opinions and have not been converted yet. This file is the opposite: values that were looked at and are not opinions at all. A line belongs in exactly one of them.",
+  "_kinds": {
+    "protocol": "A wire, transport or provider bound we do not own — a payload byte ceiling, a filename length a mail client accepts, a provider API maximum. Raising it would be refused by the thing on the other end.",
+    "defensive-cap": "A ceiling that exists so one runaway input cannot take a process, a browser tab or a sweep down. It is not how much of their data an organization may have; it is what one call may carry at once.",
+    "ui-timing": "Interaction feel — a hover delay, a typeahead window, an input debounce, a dwell. Owned by the design system so every surface feels the same, never by one customer.",
+    "algorithmic": "A constant of the algorithm itself — a recursion depth, a minimum number of rows for a method to mean anything, an epsilon, a scoring weight. Changing it changes what the code IS, not what the organization wants.",
+    "resolver-cache": "How long a resolved value is trusted inside one process before it is re-read. An implementation detail of the resolver, and in several cases of the knob resolver itself — which cannot be configured by a knob without asking the registry how often to ask the registry.",
+    "operational-timeout": "How long our own code waits on our own infrastructure before it gives up and says so. The organization feels the failure, never the number."
+  },
+  "_how": "pnpm check:settings-hardcoded --write removes entries whose constant is gone. To ADD one, edit this file by hand and write the sentence: say what the value is bounded BY, and why no organization could hold a different view of it. If you cannot write that sentence, it is an opinion — register it in platform.feature_knob and read it through the resolution API.",
+  "_classified": "2026-09-22",
+  "_classified_by": "SETTINGS-3 — each entry read against ~30 lines of its own surrounding source, never from its name.",
+  "entries": [
+    {
+      "file": "aidream/aidream/api/middleware/active_organization_cache.py",
+      "name": "MAX_ENTRIES",
+      "kind": "resolver-cache",
+      "reason": "Platform-locked map-size ceiling for an auth cache; comment says an authentication-path control is never a tenant preference."
+    },
+    {
+      "file": "aidream/aidream/api/routers/block_ledger.py",
+      "name": "MAX_BLOCKS_PER_CALL",
+      "kind": "defensive-cap",
+      "reason": "Defensive per-request ceiling stopping a scripted caller from turning one request into a thousand real fetches, not a business limit."
+    },
+    {
+      "file": "aidream/aidream/kinds/masterwork.py",
+      "name": "MAX_ANSWER_CLASSES",
+      "kind": "defensive-cap",
+      "reason": "Bounds how many answer classes one distilled move carries so it cannot swamp the payload; a structural safety bound, not an expert's taxonomy choice."
+    },
+    {
+      "file": "aidream/aidream/services/bring_your_export/adapters/document_folder.py",
+      "name": "MAX_CONFIDENCE",
+      "kind": "algorithmic",
+      "reason": "Detection-confidence ceiling enforcing 'a real format must always win'; an algorithmic invariant of the detector, not an org preference."
+    },
+    {
+      "file": "aidream/aidream/services/bring_your_export/adapters/tiktok_export.py",
+      "name": "MAX_DEPTH",
+      "kind": "algorithmic",
+      "reason": "Recursion/traversal depth bound for parsing nested export JSON, a structural parser constant."
+    },
+    {
+      "file": "aidream/aidream/services/bring_your_export/source.py",
+      "name": "PROBE_MEMBER_LIMIT",
+      "kind": "algorithmic",
+      "reason": "Bounds how many archive member names DETECTION scans to decide which adapter applies; a probe budget, not a data-retention or business setting."
+    },
+    {
+      "file": "aidream/aidream/services/bring_your_export/summarize.py",
+      "name": "COLLECT_LIMIT",
+      "kind": "defensive-cap",
+      "reason": "Internal working-set ceiling for the summary index accumulator pass, an algorithmic memory bound unrelated to org policy."
+    },
+    {
+      "file": "aidream/aidream/services/browser_session_health/live_wiring.py",
+      "name": "MAX_CONSECUTIVE_UNKNOWN_RELOGINS",
+      "kind": "algorithmic",
+      "reason": "Comment states explicitly this is a blast-radius floor on automated credential use, deliberately NOT a knob an organization should be able to raise."
+    },
+    {
+      "file": "aidream/aidream/services/capture_plan/reminders.py",
+      "name": "MAX_SESSIONS_PER_RECONCILE",
+      "kind": "defensive-cap",
+      "reason": "Comment explicitly labels it 'A DEFENSIVE CEILING on one reconcile, not a product limit', added after a real timeout incident."
+    },
+    {
+      "file": "aidream/aidream/services/cloud_browser/local_lifecycle.py",
+      "name": "AMBIGUOUS_INSERT_FENCE_MS",
+      "kind": "operational-timeout",
+      "reason": "A race-fencing window for ambiguous local insert receipts, an implementation-level concurrency detail."
+    },
+    {
+      "file": "aidream/aidream/services/cloud_browser/local_lifecycle.py",
+      "name": "CLEANUP_MS",
+      "kind": "operational-timeout",
+      "reason": "Internal cleanup-phase duration for the same lifecycle protocol."
+    },
+    {
+      "file": "aidream/aidream/services/cloud_browser/local_lifecycle.py",
+      "name": "LEARNING_RECONCILE_BATCH_SIZE",
+      "kind": "defensive-cap",
+      "reason": "Worker batch size for a reconcile pass, a concurrency implementation detail."
+    },
+    {
+      "file": "aidream/aidream/services/cloud_browser/local_lifecycle.py",
+      "name": "LEASE_MS",
+      "kind": "operational-timeout",
+      "reason": "Internal lease duration for the same local lifecycle protocol, not a tenant-facing behavior."
+    },
+    {
+      "file": "aidream/aidream/services/cloud_browser/local_lifecycle.py",
+      "name": "LIFECYCLE_GRANT_MS",
+      "kind": "operational-timeout",
+      "reason": "Internal grant duration for the local browser lifecycle protocol handshake, an engineering timing constant."
+    },
+    {
+      "file": "aidream/aidream/services/cloud_browser/local_lifecycle.py",
+      "name": "MAX_INSERT_RECEIPTS",
+      "kind": "defensive-cap",
+      "reason": "Bounds an in-memory receipts buffer, a concurrency/memory implementation detail."
+    },
+    {
+      "file": "aidream/aidream/services/cloud_browser/local_metadata.py",
+      "name": "MAX_APPROVAL_DURATION_MS",
+      "kind": "protocol",
+      "reason": "Protocol-level ceiling on one local approval grant's duration, part of the lifecycle contract validated on incoming metadata."
+    },
+    {
+      "file": "aidream/aidream/services/cloud_browser/local_metadata.py",
+      "name": "MAX_AUTHORIZATION_DURATION_MS",
+      "kind": "protocol",
+      "reason": "Same protocol family, bounding an authorization grant's duration."
+    },
+    {
+      "file": "aidream/aidream/services/cloud_browser/local_metadata.py",
+      "name": "MAX_DEPTH",
+      "kind": "algorithmic",
+      "reason": "Structural nesting-depth bound for parsing local command metadata."
+    },
+    {
+      "file": "aidream/aidream/services/cloud_browser/local_metadata.py",
+      "name": "MAX_EXECUTION_DURATION_MS",
+      "kind": "protocol",
+      "reason": "Protocol ceiling on one execution grant's duration."
+    },
+    {
+      "file": "aidream/aidream/services/cloud_browser/local_metadata.py",
+      "name": "MAX_LIFECYCLE_GRANT_DURATION_MS",
+      "kind": "protocol",
+      "reason": "Protocol ceiling mirroring LIFECYCLE_GRANT_MS, used to validate incoming metadata."
+    },
+    {
+      "file": "aidream/aidream/services/cloud_browser/manager.py",
+      "name": "IMMEDIATE_TAKEOVER_DRAIN_MS",
+      "kind": "operational-timeout",
+      "reason": "Measured engineering constant for how long an in-flight agent step drains before control transfers on takeover, tuned from a measured 9.3s regression, not a business setting."
+    },
+    {
+      "file": "aidream/aidream/services/coding_session_bridge/seeded_runtime.py",
+      "name": "CARRY_LIMIT",
+      "kind": "defensive-cap",
+      "reason": "Bounds how many turns a rebind moves inside one transaction to avoid holding a lock on the platform's hottest table; an engineering safety bound tied to a real timeout incident."
+    },
+    {
+      "file": "aidream/aidream/services/conversation_context/launcher_conversations.py",
+      "name": "MAX_LAUNCHER_CONVERSATIONS",
+      "kind": "defensive-cap",
+      "reason": "Comment states this is the width of a single probing query ('far past any observed use'), not a storage/business limit."
+    },
+    {
+      "file": "aidream/aidream/services/distillation/drip_question.py",
+      "name": "MAX_QUESTION_CHARS",
+      "kind": "protocol",
+      "reason": "Bounds the question so it fits one SMS-length text message answered on a phone; a transport-length constraint, not a business preference."
+    },
+    {
+      "file": "aidream/aidream/services/distillation/mail_parsers.py",
+      "name": "MAX_ARCHIVE_MEMBERS",
+      "kind": "defensive-cap",
+      "reason": "Parsing safety cap so a hostile or huge mailbox cannot take the API down; explicitly the same defensive discipline as chat_parsers."
+    },
+    {
+      "file": "aidream/aidream/services/distillation/mail_parsers.py",
+      "name": "MAX_BODY_CHARS",
+      "kind": "defensive-cap",
+      "reason": "Same defensive parsing-cap family, bounding one message body's characters during ingest."
+    },
+    {
+      "file": "aidream/aidream/services/distillation/mail_parsers.py",
+      "name": "MAX_MESSAGES_PER_THREAD",
+      "kind": "defensive-cap",
+      "reason": "Same defensive parsing-cap family, bounding one thread's message count during ingest."
+    },
+    {
+      "file": "aidream/aidream/services/distillation/mail_parsers.py",
+      "name": "MAX_THREADS",
+      "kind": "defensive-cap",
+      "reason": "Same defensive parsing-cap family as MAX_ARCHIVE_MEMBERS, bounding memory during mailbox parsing."
+    },
+    {
+      "file": "aidream/aidream/services/distillation/piece_clock.py",
+      "name": "MAX_PIECE_SECONDS",
+      "kind": "algorithmic",
+      "reason": "Ceiling around the same widenable knob, a sanity bound rather than the tunable setting."
+    },
+    {
+      "file": "aidream/aidream/services/distillation/piece_clock.py",
+      "name": "MIN_PIECE_SECONDS",
+      "kind": "algorithmic",
+      "reason": "Floor beneath which the actual widenable step-clock knob is refused because a healthy piece would die; a safety floor around the real knob, not the knob itself."
+    },
+    {
+      "file": "aidream/aidream/services/distillation/rulebook_writes.py",
+      "name": "CAS_RETRIES",
+      "kind": "algorithmic",
+      "reason": "Compare-and-swap retry count for a contended write's internal concurrency mechanism, an implementation detail of the write path."
+    },
+    {
+      "file": "aidream/aidream/services/google_sync/page_reconciliation.py",
+      "name": "HTML_SCAN_LIMIT",
+      "kind": "defensive-cap",
+      "reason": "Bytes of HTML scanned looking for a GTM tag in <head>; a defensive scan-size bound justified by where real tags live, not an org preference."
+    },
+    {
+      "file": "aidream/aidream/services/google_workspace/expert_signal.py",
+      "name": "COMMENT_PAGE_SIZE",
+      "kind": "protocol",
+      "reason": "Comment states 100 is the Google Drive API's own documented page maximum for comments, a vendor limit."
+    },
+    {
+      "file": "aidream/aidream/services/google_workspace/expert_signal.py",
+      "name": "MAX_COMMENT_PAGES",
+      "kind": "defensive-cap",
+      "reason": "Defensive ceiling so a pathological document cannot page forever; stops and reports rather than truncating silently."
+    },
+    {
+      "file": "aidream/aidream/services/google_workspace/expert_signal.py",
+      "name": "MAX_REVISION_PAGES",
+      "kind": "defensive-cap",
+      "reason": "Same defensive anti-infinite-loop ceiling, for revision paging."
+    },
+    {
+      "file": "aidream/aidream/services/google_workspace/expert_signal.py",
+      "name": "REVISION_PAGE_SIZE",
+      "kind": "protocol",
+      "reason": "Same vendor-documented Drive API page maximum, for revisions."
+    },
+    {
+      "file": "aidream/aidream/services/mandate_outcome/bench.py",
+      "name": "PENDING_LIMIT",
+      "kind": "defensive-cap",
+      "reason": "Comment: 'One pass never scans the world' — a bounded-pass safety limit for an internal calibration sweep, not a business setting."
+    },
+    {
+      "file": "aidream/aidream/services/masterworks/audition_elicitation.py",
+      "name": "MAX_CLASSIFIED_UTTERANCES",
+      "kind": "defensive-cap",
+      "reason": "Comment: a longer conversation is scored on its first turns and this is stated in the arm's note, never silently truncated — an internal scoring-harness bound."
+    },
+    {
+      "file": "aidream/aidream/services/masterworks/audition_elicitation.py",
+      "name": "MAX_JUDGE_TEXT_CHARS",
+      "kind": "defensive-cap",
+      "reason": "Text-size ceiling fed to the internal judge model during a benchmark, a defensive/cost bound on the evaluation harness."
+    },
+    {
+      "file": "aidream/aidream/services/masterworks/audition_elicitation.py",
+      "name": "MAX_VANILLA_OUTPUT_TOKENS",
+      "kind": "protocol",
+      "reason": "Model output-token ceiling for an internal audition benchmark run, an engineering budget for a scoring harness, not tenant-facing behavior."
+    },
+    {
+      "file": "aidream/aidream/services/masterworks/audition_unfolding.py",
+      "name": "MAX_JUDGE_TEXT_CHARS",
+      "kind": "defensive-cap",
+      "reason": "Same internal benchmark judge-text bound, a defensive/cost cap on the evaluation harness."
+    },
+    {
+      "file": "aidream/aidream/services/masterworks/audition_unfolding.py",
+      "name": "MAX_VANILLA_OUTPUT_TOKENS",
+      "kind": "protocol",
+      "reason": "Same internal benchmark-harness token budget as the elicitation module."
+    },
+    {
+      "file": "aidream/aidream/services/masterworks/audition_unfolding.py",
+      "name": "MAX_VANILLA_PROMPT_CHARS",
+      "kind": "protocol",
+      "reason": "Prompt-size ceiling for an internal benchmark harness run, an engineering budget not tenant behavior."
+    },
+    {
+      "file": "aidream/aidream/services/masterworks/rulebook_read.py",
+      "name": "MAX_GET_IDS",
+      "kind": "defensive-cap",
+      "reason": "Comment: ids cost a few tokens each and above this the caller is dumping the book rather than reading rules — an agent-tool wire-cost bound mirroring the authoring tool's bulk cap."
+    },
+    {
+      "file": "aidream/aidream/services/masterworks/rulebook_read.py",
+      "name": "MAX_QUERY_CHARS",
+      "kind": "defensive-cap",
+      "reason": "Free-text query ceiling stated to stop a paragraph-length input that 'matches nothing useful' — an input-sanity bound, not a business setting."
+    },
+    {
+      "file": "aidream/aidream/services/media_catalog/adapters/blog_adapter.py",
+      "name": "MAX_ARCHIVE_PAGES",
+      "kind": "defensive-cap",
+      "reason": "Comment: stops an infinite/trap-like archive walk and names the count rather than truncating silently — a defensive crawl-safety bound."
+    },
+    {
+      "file": "aidream/aidream/services/media_catalog/adapters/blog_adapter.py",
+      "name": "MAX_SITEMAP_DOCUMENTS",
+      "kind": "defensive-cap",
+      "reason": "Bounds how many sitemap documents the crawler walks, a defensive crawl-safety bound similar to MAX_ARCHIVE_PAGES."
+    },
+    {
+      "file": "aidream/aidream/services/media_catalog/adapters/blog_adapter.py",
+      "name": "MAX_SKIPPED_CHILDREN_COUNTED",
+      "kind": "defensive-cap",
+      "reason": "Bounds how many skipped sitemap children get an extra GET purely to count what's inside, a crawl-cost safety bound explicitly reported rather than silently wrong."
+    },
+    {
+      "file": "aidream/aidream/services/media_catalog/adapters/blog_adapter.py",
+      "name": "PAGE_SIZE",
+      "kind": "protocol",
+      "reason": "Internal HTTP page-fetch size for crawling a blog's archive/feed, a scraping implementation detail."
+    },
+    {
+      "file": "aidream/aidream/services/media_catalog/adapters/blog_adapter.py",
+      "name": "REQUEST_TIMEOUT",
+      "kind": "operational-timeout",
+      "reason": "HTTP request timeout for the media-catalog crawler, a network implementation constant."
+    },
+    {
+      "file": "aidream/aidream/services/media_catalog/adapters/podcast_adapter.py",
+      "name": "MAX_FEED_PAGES",
+      "kind": "defensive-cap",
+      "reason": "Comment: stops following rel=next pages before calling it a loop and raises with the count rather than looping forever — a defensive crawl-safety bound."
+    },
+    {
+      "file": "aidream/aidream/services/media_catalog/adapters/podcast_adapter.py",
+      "name": "PAGE_SIZE",
+      "kind": "protocol",
+      "reason": "Internal feed-fetch page size for the podcast crawler, a scraping implementation detail."
+    },
+    {
+      "file": "aidream/aidream/services/media_catalog/adapters/podcast_adapter.py",
+      "name": "REQUEST_TIMEOUT",
+      "kind": "operational-timeout",
+      "reason": "HTTP request timeout for the podcast crawler, a network implementation constant."
+    },
+    {
+      "file": "aidream/aidream/services/media_catalog/adapters/slides_adapter.py",
+      "name": "MAX_PROFILE_PAGES",
+      "kind": "defensive-cap",
+      "reason": "Defensive ceiling on how many profile pages the slides crawler walks, mirroring the other adapters' crawl-safety bounds."
+    },
+    {
+      "file": "aidream/aidream/services/media_catalog/adapters/slides_adapter.py",
+      "name": "PAGE_SIZE",
+      "kind": "protocol",
+      "reason": "Internal page-fetch size for the slides crawler, a scraping implementation detail."
+    },
+    {
+      "file": "aidream/aidream/services/media_catalog/adapters/slides_adapter.py",
+      "name": "REQUEST_TIMEOUT",
+      "kind": "operational-timeout",
+      "reason": "HTTP request timeout for the slides crawler, a network implementation constant."
+    },
+    {
+      "file": "aidream/aidream/services/media_catalog/runners.py",
+      "name": "MAX_KEPT_TURNS",
+      "kind": "defensive-cap",
+      "reason": "Comment: bounds structured turns kept from a transcript while the full flattened text is always kept too so nothing is lost — an internal representation bound, not a retention policy."
+    },
+    {
+      "file": "aidream/aidream/services/microsoft_integrations/bulk.py",
+      "name": "CALENDAR_PAGE_SIZE",
+      "kind": "protocol",
+      "reason": "Same vendor-documented Graph API page ceiling family."
+    },
+    {
+      "file": "aidream/aidream/services/microsoft_integrations/bulk.py",
+      "name": "CHAT_PAGE_SIZE",
+      "kind": "protocol",
+      "reason": "Same Graph API vendor page-size family, for chats."
+    },
+    {
+      "file": "aidream/aidream/services/microsoft_integrations/bulk.py",
+      "name": "DRIVE_PAGE_SIZE",
+      "kind": "protocol",
+      "reason": "Same Graph API vendor page-size family, for drive children."
+    },
+    {
+      "file": "aidream/aidream/services/microsoft_integrations/bulk.py",
+      "name": "MAIL_PAGE_SIZE",
+      "kind": "protocol",
+      "reason": "Comment states these numbers reflect real Microsoft Graph API page ceilings ('Graph silently clamps a larger ask'), a vendor limit."
+    },
+    {
+      "file": "aidream/aidream/services/notifications/staff_text.py",
+      "name": "MAX_MESSAGE_CHARS",
+      "kind": "protocol",
+      "reason": "Comment: caps the SMS body so the templated message plus prefix/link fits one SMS segment — a transport constraint (SMS segmenting), not a business choice."
+    },
+    {
+      "file": "aidream/aidream/services/personal_staff/roster.py",
+      "name": "MAX_ROSTER_ROWS",
+      "kind": "defensive-cap",
+      "reason": "Comment explicitly: 'A CAPS constant, not a knob... not a behavioural opinion an organization would ever want to set' — the tool's own result-size discipline."
+    },
+    {
+      "file": "aidream/aidream/services/personal_staff/turn_provision.py",
+      "name": "SPOKEN_SCAN_LIMIT",
+      "kind": "algorithmic",
+      "reason": "Comment: a bounded scan of the oldest assistant rows to answer whether the Chief 'ever spoke' at thread start; an algorithmic scan window, not a business setting."
+    },
+    {
+      "file": "aidream/aidream/services/question_desk/drainer.py",
+      "name": "MAX_ITEMS_PER_TICK",
+      "kind": "defensive-cap",
+      "reason": "Worker-tick batch size for the drainer's own claim loop, a concurrency/throughput implementation detail."
+    },
+    {
+      "file": "aidream/aidream/services/question_desk/follow_through.py",
+      "name": "CLAIM_LIMIT",
+      "kind": "defensive-cap",
+      "reason": "Same worker-tick claim-batch pattern for the follow-through sweep, a concurrency implementation detail."
+    },
+    {
+      "file": "aidream/aidream/services/question_desk/follow_through.py",
+      "name": "CLAIM_TTL_SECONDS",
+      "kind": "operational-timeout",
+      "reason": "How long an in_progress claim stamp is considered a crashed worker's and reclaimable, an internal lease/heartbeat timing."
+    },
+    {
+      "file": "aidream/aidream/services/residential_egress/protocol.py",
+      "name": "MAX_DATA_PAYLOAD",
+      "kind": "protocol",
+      "reason": "Comment: '<=64 KiB of payload per DATA frame (contract)' — an explicit wire-protocol limit."
+    },
+    {
+      "file": "aidream/aidream/services/residential_egress/router.py",
+      "name": "PAIRING_RATE_LIMIT",
+      "kind": "protocol",
+      "reason": "Comment: protects the anonymous pairing route itself before any DB work — an abuse/rate-limit gate on an anonymous endpoint, explicitly called a CAPS constant, not a knob."
+    },
+    {
+      "file": "aidream/aidream/services/runtime/lock_storm_alarm.py",
+      "name": "MAX_RELATIONS_NAMED",
+      "kind": "defensive-cap",
+      "reason": "Comment: 'Caps on what one row carries. Caps, never filters: the COUNTS stay complete, only the example lists stop growing' — a display-payload cap, not a business threshold."
+    },
+    {
+      "file": "aidream/aidream/services/runtime/lock_storm_alarm.py",
+      "name": "MAX_WAITERS_NAMED",
+      "kind": "defensive-cap",
+      "reason": "Same display-list cap family as MAX_RELATIONS_NAMED."
+    },
+    {
+      "file": "aidream/aidream/services/sandboxes/bridge_membership.py",
+      "name": "MAX_ENTRIES",
+      "kind": "resolver-cache",
+      "reason": "Same auth-cache size ceiling pattern as active_organization_cache.py, explicitly platform-locked, not a tenant preference."
+    },
+    {
+      "file": "aidream/aidream/services/seo/page_mapper.py",
+      "name": "MAX_HEADINGS",
+      "kind": "algorithmic",
+      "reason": "Comment: 'The first few carry the subject; the rest are navigation' — a heuristic bound on how much page structure feeds a summary, not an adjustable org preference."
+    },
+    {
+      "file": "aidream/aidream/services/tooling/deferred_work.py",
+      "name": "MIN_HEARTBEAT_SECONDS",
+      "kind": "algorithmic",
+      "reason": "Comment: 'Never beat faster than this, whatever the knob says' — an engineering floor under the real stale-claim knob, not the knob itself."
+    },
+    {
+      "file": "aidream/aidream/services/user_secrets/native_identities.py",
+      "name": "MAX_CURSOR_BYTES",
+      "kind": "protocol",
+      "reason": "Same wire-shape/protocol bound family, for a pagination cursor."
+    },
+    {
+      "file": "aidream/aidream/services/user_secrets/native_identities.py",
+      "name": "MAX_USER_BYTES",
+      "kind": "protocol",
+      "reason": "Byte-size bound on an opaque native-identity user field, a wire/storage-shape constant for the native secrets protocol."
+    },
+    {
+      "file": "aidream/aidream/services/user_secrets/native_identities.py",
+      "name": "SCAN_PAGE_SIZE",
+      "kind": "protocol",
+      "reason": "Internal scan page size alongside hard index/scan-candidate bounds for a native-secrets inventory scan, an implementation detail."
+    },
+    {
+      "file": "aidream/aidream/services/user_secrets/native_passwords.py",
+      "name": "MAX_NATIVE_RESPONSE_BYTES",
+      "kind": "protocol",
+      "reason": "Byte ceiling on a native password-manager response payload, a wire-protocol bound."
+    },
+    {
+      "file": "aidream/aidream/workers/inbox_dispatcher.py",
+      "name": "CLAIM_LIMIT",
+      "kind": "defensive-cap",
+      "reason": "Comment: 'A full batch means there is probably more, so the loop goes round again immediately' — a worker sweep batch size, a concurrency implementation detail."
+    },
+    {
+      "file": "aidream/aidream/workers/sms_stranded_inbound.py",
+      "name": "MAX_PER_SWEEP",
+      "kind": "defensive-cap",
+      "reason": "Comment: a hard ceiling so a systemic break does not file thousands of rows and send thousands of texts in one pass — an incident-prevention bound, not a business setting."
+    },
+    {
+      "file": "aidream/packages/matrx-ai/matrx_ai/decisions/kinds.py",
+      "name": "MAX_CHOICE_OPTIONS",
+      "kind": "protocol",
+      "reason": "Comment: 'Vendor limits, mirrored from the TypeSafe adapter' — a third-party provider API maximum."
+    },
+    {
+      "file": "aidream/packages/matrx-ai/matrx_ai/decisions/kinds.py",
+      "name": "MAX_SCORE_LEVELS",
+      "kind": "protocol",
+      "reason": "The TypeSafe provider refuses more than ten score levels, so this mirrors the vendor limit to refuse a question at authoring time instead of paying for a 422 on a round trip."
+    },
+    {
+      "file": "aidream/packages/matrx-ai/matrx_ai/decisions/kinds.py",
+      "name": "MIN_CHOICE_OPTIONS",
+      "kind": "protocol",
+      "reason": "Same vendor-limit mirror family, a minimum bound."
+    },
+    {
+      "file": "aidream/packages/matrx-ai/matrx_ai/decisions/kinds.py",
+      "name": "MIN_SCORE_LEVELS",
+      "kind": "protocol",
+      "reason": "Same vendor-limit mirror family, a minimum bound."
+    },
+    {
+      "file": "aidream/packages/matrx-ai/matrx_ai/orchestrator/change_claims.py",
+      "name": "CLAIM_TEXT_LIMIT",
+      "kind": "defensive-cap",
+      "reason": "Comment: bounds model text the change-claim detector inspects so a pasted artifact cannot swamp it — a defensive text-inspection cap."
+    },
+    {
+      "file": "aidream/packages/matrx-ai/matrx_ai/orchestrator/loop_guard.py",
+      "name": "MAX_TOOLS_IN_EVIDENCE",
+      "kind": "defensive-cap",
+      "reason": "Comment: 'A stuck loop is one or two broken tools; past this the list stops being a diagnosis' — a diagnostic-payload cap, not a business setting."
+    },
+    {
+      "file": "aidream/packages/matrx-ai/matrx_ai/orchestrator/subtree_budget.py",
+      "name": "MIN_SUBTREE_BUDGET_SECONDS",
+      "kind": "algorithmic",
+      "reason": "Comment: below this a run cannot complete even one provider call, so a caller asking for it made a mistake — an algorithmic validity floor, not an org preference."
+    },
+    {
+      "file": "aidream/packages/matrx-ai/matrx_ai/providers/typesafe/client.py",
+      "name": "DEFAULT_MAX_RETRIES",
+      "kind": "protocol",
+      "reason": "Default retry count for an HTTP provider client, an engineering resilience default."
+    },
+    {
+      "file": "aidream/packages/matrx-ai/matrx_ai/providers/typesafe/client.py",
+      "name": "MAX_CHOICE_OPTIONS",
+      "kind": "protocol",
+      "reason": "Comment: 'Vendor limits... a Choice takes at most 255 options' — a documented third-party API maximum."
+    },
+    {
+      "file": "aidream/packages/matrx-ai/matrx_ai/providers/typesafe/client.py",
+      "name": "MAX_SCORE_LEVELS",
+      "kind": "protocol",
+      "reason": "Same vendor-documented API maximum, for Score levels."
+    },
+    {
+      "file": "aidream/packages/matrx-graph/matrx_graph/failure.py",
+      "name": "TECHNICAL_TEXT_LIMIT",
+      "kind": "defensive-cap",
+      "reason": "Comment: ceiling on persisted/wired technical error text, 'room for a real reason, never room for a payload' — a defensive error-payload truncation cap."
+    },
+    {
+      "file": "aidream/packages/matrx-graph/matrx_graph/knobs.py",
+      "name": "KNOB_CACHE_TTL_SECONDS",
+      "kind": "resolver-cache",
+      "reason": "How long a resolved knob policy is cached before re-read — an internal resolver cache TTL, not the knob's own tunable value."
+    },
+    {
+      "file": "aidream/packages/matrx-graph/matrx_graph/knobs.py",
+      "name": "MAX_STEP_SECONDS",
+      "kind": "algorithmic",
+      "reason": "Ceiling around the same widenable knob, a sanity bound rather than the tunable value itself."
+    },
+    {
+      "file": "aidream/packages/matrx-graph/matrx_graph/knobs.py",
+      "name": "MIN_STEP_SECONDS",
+      "kind": "algorithmic",
+      "reason": "Floor beneath the actual widenable step-clock knob so it can never be tightened to zero, a sanity bound around the real setting."
+    },
+    {
+      "file": "aidream/packages/matrx-mandate-scan/matrx_mandate_scan/transport.py",
+      "name": "REFERENCE_CHUNK_SIZE",
+      "kind": "defensive-cap",
+      "reason": "Comment: measured ~0.5s per batch against the live DB, 16x under an 8s cap — a performance-tuned batch size for an internal scan-report writer, an implementation detail."
+    },
+    {
+      "file": "aidream/packages/matrx-orm/matrx_orm/core/rls_session.py",
+      "name": "DEFAULT_IDLE_IN_TRANSACTION_TIMEOUT_MS",
+      "kind": "operational-timeout",
+      "reason": "Comment: measured from a real incident where an idle transaction held locks and queued four backends; a DB-session safety timeout, not a tenant behavior."
+    },
+    {
+      "file": "aidream/packages/matrx-orm/matrx_orm/core/write_retry.py",
+      "name": "KNOB_CACHE_TTL_SECONDS",
+      "kind": "resolver-cache",
+      "reason": "Same resolver-cache-TTL pattern as matrx_graph.knobs, an internal cache freshness constant, not the retry policy itself."
+    },
+    {
+      "file": "aidream/packages/matrx-records/matrx_records/merge/declaration.py",
+      "name": "MAX_REFERENCE_HOPS",
+      "kind": "protocol",
+      "reason": "Comment: 'DYN-5 / Salesforce's published cap: a Reference traverses at most ten hops' — mirrors a documented third-party platform limit."
+    },
+    {
+      "file": "aidream/packages/matrx-records/matrx_records/movers/bags.py",
+      "name": "MIN_ROWS_FOR_A_FIELD",
+      "kind": "algorithmic",
+      "reason": "Comment: 'One row with a typo for a key is not a column; it is a typo' — an algorithmic noise-filter threshold for schema inference, not a business setting."
+    },
+    {
+      "file": "aidream/packages/matrx-records/matrx_records/store/client.py",
+      "name": "MAX_WRITE_BATCH",
+      "kind": "defensive-cap",
+      "reason": "Comment: the whole batch is one transaction, so a refusal on row 900 rolls back 899 good rows — a transactional-safety bound, not a business setting."
+    },
+    {
+      "file": "aidream/packages/matrx-scraper/matrx_scraper/ai_browser/readiness.py",
+      "name": "MIN_TARGET_PX",
+      "kind": "algorithmic",
+      "reason": "Comment: minimum clickable box size below which there is nothing to aim at — a geometric/algorithmic validity floor."
+    },
+    {
+      "file": "aidream/packages/matrx-scraper/matrx_scraper/ai_browser/readiness.py",
+      "name": "PROBE_TIMEOUT_MS",
+      "kind": "operational-timeout",
+      "reason": "Comment: 'A probe is not an action: it answers quickly and honestly rather than sitting on the page's full action timeout' — a UI-readiness probe timing, an engineering constant."
+    },
+    {
+      "file": "aidream/packages/matrx-utils/matrx_utils/error_text.py",
+      "name": "CLASSIFY_TEXT_LIMIT",
+      "kind": "defensive-cap",
+      "reason": "Comment: hard ceiling on text an error classifier may inspect, 'short enough that a payload... cannot dominate the match' — a defensive text-truncation cap."
+    },
+    {
+      "file": "aidream/packages/matrx-utils/matrx_utils/error_text.py",
+      "name": "CLIENT_ERROR_TEXT_LIMIT",
+      "kind": "defensive-cap",
+      "reason": "Comment: ceiling on a client-bound error string, generous but bounded — a defensive error-payload truncation cap, same family as TECHNICAL_TEXT_LIMIT."
+    },
+    {
+      "file": "aidream/packages/matrx-utils/matrx_utils/person_sentence.py",
+      "name": "DIAGNOSTIC_LIMIT",
+      "kind": "defensive-cap",
+      "reason": "Comment: how much raw text a diagnostic field keeps alongside the full log copy — a defensive truncation cap on an error-diagnostic field."
+    },
+    {
+      "file": "matrx-frontend/app/api/export/email-table/route.ts",
+      "name": "MAX_ATTACHMENT_FILENAME_LENGTH",
+      "kind": "protocol",
+      "reason": "Bounds an email attachment filename length so mail clients don't choke on it; not a business setting."
+    },
+    {
+      "file": "matrx-frontend/app/api/export/email-table/route.ts",
+      "name": "MAX_EMAIL_EXPORT_REQUEST_BYTES",
+      "kind": "defensive-cap",
+      "reason": "Protects the serverless handler from unbounded buffering of an untrusted request body; a defensive size cap, not a per-org limit."
+    },
+    {
+      "file": "matrx-frontend/app/api/sandbox/[id]/access-tokens/route.ts",
+      "name": "TOKEN_MINT_ATTEMPT_TIMEOUT_MS",
+      "kind": "operational-timeout",
+      "reason": "Keeps a retry attempt inside Vercel's serverless function invocation budget; a hosting-platform constraint, not tunable business behavior."
+    },
+    {
+      "file": "matrx-frontend/app/api/sign/[token]/route.ts",
+      "name": "MAX_IMAGE_CHARS",
+      "kind": "protocol",
+      "reason": "Bounds a base64 signature-image payload to a generous fixed ceiling well above any real drawing; a payload sanity check, not an org preference."
+    },
+    {
+      "file": "matrx-frontend/components/layout/AuthSessionWatcher.tsx",
+      "name": "EMPTY_COOKIE_CONFIRM_MS",
+      "kind": "ui-timing",
+      "reason": "Confirmation delay before acting on an apparently-empty auth cookie, to dodge a mid-rewrite race in @supabase/ssr; auth plumbing, not a business choice."
+    },
+    {
+      "file": "matrx-frontend/components/layout/authTabReconcile.ts",
+      "name": "ACTIVITY_RECHECK_THROTTLE_MS",
+      "kind": "ui-timing",
+      "reason": "Throttles mouse-move-driven re-checks so they don't firehose; interaction-feel plumbing."
+    },
+    {
+      "file": "matrx-frontend/components/layout/authTabReconcile.ts",
+      "name": "BLOCKED_RECHECK_INTERVAL_MS",
+      "kind": "ui-timing",
+      "reason": "Cookie re-read cadence while a blocking overlay is shown; a cheap local cookie parse, not a business-tunable setting."
+    },
+    {
+      "file": "matrx-frontend/components/layout/authTabReconcile.ts",
+      "name": "HIDDEN_TAB_RELOAD_JITTER_MS",
+      "kind": "ui-timing",
+      "reason": "Spreads background-tab reloads over a window so many tabs don't hit the server in the same second; a UX/load-shaping choice, not an org preference."
+    },
+    {
+      "file": "matrx-frontend/components/mardown-display/blocks/json/StructuredAgentAnswerBlock.tsx",
+      "name": "MIN_FALLBACK_PROSE_LENGTH",
+      "kind": "algorithmic",
+      "reason": "Heuristic length threshold deciding whether extracted text is substantial enough to show as a fallback answer; a parsing heuristic, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/components/mardown-display/blocks/result-kinds/result-kind-shared.tsx",
+      "name": "MAX_SUBSTANCE_DEPTH",
+      "kind": "algorithmic",
+      "reason": "Recursion-depth guard for detecting whether a nested JSON value carries real content; a structural safety bound against cyclic/pathological data."
+    },
+    {
+      "file": "matrx-frontend/components/official/topic-tree/TopicTree.tsx",
+      "name": "TOPIC_TREE_VIRTUALIZE_THRESHOLD",
+      "kind": "algorithmic",
+      "reason": "Row-count threshold for switching a tree to DOM virtualization so Cmd-F, print, and screen readers still see everything below it; a rendering-strategy constant."
+    },
+    {
+      "file": "matrx-frontend/components/official/topic-tree/TopicTreeRow.tsx",
+      "name": "TOPIC_TREE_HOVER_DELAY_MS",
+      "kind": "ui-timing",
+      "reason": "Hover-card open delay tuned for pointer feel, never fires on touch; interaction design, not org taste."
+    },
+    {
+      "file": "matrx-frontend/components/official/topic-tree/useTopicTreeKeyboard.ts",
+      "name": "TOPIC_TREE_TYPEAHEAD_MS",
+      "kind": "ui-timing",
+      "reason": "Type-ahead buffer window explicitly matched to Windows' own OS convention; not an org-tunable value."
+    },
+    {
+      "file": "matrx-frontend/features/admin/applications/packages/npmRegistry.ts",
+      "name": "SEARCH_PAGE_SIZE",
+      "kind": "defensive-cap",
+      "reason": "Page size for searching the public npm registry inside an internal admin packages tool; the data being paged is npm's, not an organization's own records."
+    },
+    {
+      "file": "matrx-frontend/features/agent-context/redux/hierarchyThunks.ts",
+      "name": "FULL_CONTEXT_REQUEST_TIMEOUT_MS",
+      "kind": "operational-timeout",
+      "reason": "How long the workspace-bootstrap RPC may hang before the UI offers a retry; a resilience timeout, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/features/agents/components/chat/sandbox-insight/SandboxCanvasBody.tsx",
+      "name": "STATUS_POLL_MS",
+      "kind": "ui-timing",
+      "reason": "How often an open sandbox status strip re-reads its own row while a person is looking at the pane; a UI freshness cadence, not an org preference."
+    },
+    {
+      "file": "matrx-frontend/features/agents/components/messages-display/transcript-integrity-report.ts",
+      "name": "PENDING_STALE_MS",
+      "kind": "algorithmic",
+      "reason": "Internal diagnostic threshold for flagging a transcript row as stuck in an integrity report; a debugging heuristic, not customer-facing behavior."
+    },
+    {
+      "file": "matrx-frontend/features/agents/components/samples/LoadFromLibraryDialog.tsx",
+      "name": "WATCH_INTERVAL_MS",
+      "kind": "ui-timing",
+      "reason": "How often a dialog polls for newly written rows after sending items to a library; a UI wait-loop cadence for one modal's own action."
+    },
+    {
+      "file": "matrx-frontend/features/agents/redux/execution-system/instance-user-input/composer-draft.middleware.ts",
+      "name": "WRITE_DEBOUNCE_MS",
+      "kind": "ui-timing",
+      "reason": "Debounce before persisting a draft composer's text locally; interaction-feel plumbing shared across several editors."
+    },
+    {
+      "file": "matrx-frontend/features/agents/redux/execution-system/messages/transcript-journal.ts",
+      "name": "MAX_CONVERSATIONS",
+      "kind": "defensive-cap",
+      "reason": "Bounds how many conversations' debug journals are kept in memory at once with LRU-style eviction; a diagnostics memory cap."
+    },
+    {
+      "file": "matrx-frontend/features/agents/redux/execution-system/messages/transcript-journal.ts",
+      "name": "MAX_EVENTS_PER_CONVERSATION",
+      "kind": "defensive-cap",
+      "reason": "Bounds an in-memory debug journal per conversation so it can't grow unbounded; a diagnostics buffer cap, never shown to a customer."
+    },
+    {
+      "file": "matrx-frontend/features/agents/redux/execution-system/thunks/follow-workflow-run-stream.ts",
+      "name": "RECONCILE_POLL_MS",
+      "kind": "operational-timeout",
+      "reason": "Backstop poll that reconciles a workflow run's row when its event stream goes silent without a terminal event; a measured engineering resilience fix, not an org setting."
+    },
+    {
+      "file": "matrx-frontend/features/agents/redux/execution-system/thunks/watch-desktop-delegation.thunk.ts",
+      "name": "FAST_WINDOW_MS",
+      "kind": "operational-timeout",
+      "reason": "How long the fast poll cadence holds before decaying to its ceiling; paired engineering constant with the decay ceiling, not an org preference."
+    },
+    {
+      "file": "matrx-frontend/features/agents/redux/execution-system/thunks/watch-desktop-delegation.thunk.ts",
+      "name": "MAX_POLL_MS",
+      "kind": "operational-timeout",
+      "reason": "Ceiling the poll cadence decays to once a delegated call is unlikely to be claimed; a measured fix to cut needless request volume, not a business knob."
+    },
+    {
+      "file": "matrx-frontend/features/ai-models/components/lab/ModelListDropdown.tsx",
+      "name": "HOVER_DELAY_MS",
+      "kind": "ui-timing",
+      "reason": "Tooltip hover delay tuned for readability without strobing while moving the mouse; interaction feel."
+    },
+    {
+      "file": "matrx-frontend/features/ai-work/conversations/artifacts/service.ts",
+      "name": "MAX_PAGES",
+      "kind": "defensive-cap",
+      "reason": "A runaway-loop guard set far past any observed real session size (biggest observed is 6,614 of a 50,000-artifact cap); a defensive bound, not a business limit."
+    },
+    {
+      "file": "matrx-frontend/features/ai-work/conversations/artifacts/service.ts",
+      "name": "PAGE_SIZE",
+      "kind": "protocol",
+      "reason": "Explicitly PostgREST's own db-max-rows ceiling on Matrx Main; a page can never exceed it regardless of preference."
+    },
+    {
+      "file": "matrx-frontend/features/canvas/hooks/useCanvasArtifactUrlState.ts",
+      "name": "CANVAS_AVAILABILITY_GRACE_MS",
+      "kind": "operational-timeout",
+      "reason": "How long to wait for an idle-deferred canvas UI module before announcing the drop; a code-splitting/load-timing constant."
+    },
+    {
+      "file": "matrx-frontend/features/canvas/revealMemory.ts",
+      "name": "MAX_REMEMBERED",
+      "kind": "defensive-cap",
+      "reason": "Caps how many auto-open/close decisions are kept in browser localStorage per namespace before pruning the oldest; a client storage bound, not business data."
+    },
+    {
+      "file": "matrx-frontend/features/canvas/tool-results/ToolResultCanvasOpener.tsx",
+      "name": "MAX_OFFERED",
+      "kind": "defensive-cap",
+      "reason": "How many tool-result records can sit in the canvas switcher at once; a UI display cap for readability, not a business data limit."
+    },
+    {
+      "file": "matrx-frontend/features/capture-ladder/needsYouAssist.ts",
+      "name": "MAX_NAMED_HOSTS",
+      "kind": "algorithmic",
+      "reason": "Caps how many hostnames are spelled out in a generated sentence before switching to 'and N more'; copy-generation cosmetics."
+    },
+    {
+      "file": "matrx-frontend/features/capture-ladder/useNeedsYou.ts",
+      "name": "POLL_INTERVAL_MS",
+      "kind": "operational-timeout",
+      "reason": "Backstop poll floor used only because the underlying table isn't realtime-published; explicitly the fallback that 'cannot lie', an engineering constant."
+    },
+    {
+      "file": "matrx-frontend/features/capture-ladder/useNeedsYou.ts",
+      "name": "REFETCH_DEBOUNCE_MS",
+      "kind": "ui-timing",
+      "reason": "Coalesces a burst of realtime row events into one re-read; debounce plumbing."
+    },
+    {
+      "file": "matrx-frontend/features/cloud-browser/components/CloudBrowserStartState.tsx",
+      "name": "CAPACITY_RETRY_MS",
+      "kind": "operational-timeout",
+      "reason": "How often a capacity-wait panel asks again while every cloud-browser slot is taken; a UI retry cadence, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/features/cloud-browser/components/CloudBrowserStartState.tsx",
+      "name": "STORM_RETRY_MS",
+      "kind": "operational-timeout",
+      "reason": "Faster retry used specifically because a burst refusal clears in seconds; paired UI retry constant with the capacity retry."
+    },
+    {
+      "file": "matrx-frontend/features/cloud-browser/components/ControllerBanner.tsx",
+      "name": "MORPH_GUARD_MS",
+      "kind": "ui-timing",
+      "reason": "Guards against a click landing on a button that just changed meaning under the cursor; a measured UX bug fix, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/features/code/adapters/SandboxFilesystemAdapter.ts",
+      "name": "WATCH_RECONNECT_MS",
+      "kind": "operational-timeout",
+      "reason": "Reconnect delay for a sandbox filesystem watch socket; transport plumbing."
+    },
+    {
+      "file": "matrx-frontend/features/connectors/ResourceAttachPicker.tsx",
+      "name": "LIVE_SEARCH_DEBOUNCE_MS",
+      "kind": "ui-timing",
+      "reason": "Debounce before a keystroke triggers a live provider search request; a standard input debounce."
+    },
+    {
+      "file": "matrx-frontend/features/data-tables/hooks/useGridSelection.ts",
+      "name": "NATIVE_CLIPBOARD_GRACE_MS",
+      "kind": "ui-timing",
+      "reason": "Grace window to let a native clipboard event claim a copy gesture before falling back to the async Clipboard API; browser-compat plumbing."
+    },
+    {
+      "file": "matrx-frontend/features/data-tables/table-view-url.ts",
+      "name": "MAX_COLUMN_WIDTH_PX",
+      "kind": "algorithmic",
+      "reason": "Layout ceiling on a dragged column width, described in the source as 'wider is a mistake'; a UI mechanics guard, not a business preference."
+    },
+    {
+      "file": "matrx-frontend/features/data-tables/table-view-url.ts",
+      "name": "MIN_COLUMN_WIDTH_PX",
+      "kind": "algorithmic",
+      "reason": "Layout floor below which a dragged column hides its own header menu; a UI mechanics constraint, not a business preference."
+    },
+    {
+      "file": "matrx-frontend/features/files/devices/useDevicesAndSync.ts",
+      "name": "POLL_INTERVAL_MS",
+      "kind": "operational-timeout",
+      "reason": "Degraded-mode poll cadence explicitly matched to the sync engine's own published cadence so two surfaces don't disagree; an engineering constant, not a business knob."
+    },
+    {
+      "file": "matrx-frontend/features/files/devices/useNow.ts",
+      "name": "TICK_MS",
+      "kind": "ui-timing",
+      "reason": "Clock tick interval powering relative-time labels like '4m ago'; a display refresh cadence, not business behavior."
+    },
+    {
+      "file": "matrx-frontend/features/files/redux/file-tree-timeout.ts",
+      "name": "FILE_TREE_LOAD_TIMEOUT_MS",
+      "kind": "operational-timeout",
+      "reason": "Abort boundary so a file-tree load never hangs forever; a resilience timeout shared by every gallery consumer."
+    },
+    {
+      "file": "matrx-frontend/features/flashcards/fast-fire/components/fastfire-initial-load.ts",
+      "name": "FASTFIRE_INITIAL_LOAD_TIMEOUT_MS",
+      "kind": "operational-timeout",
+      "reason": "Load-abort boundary for a code-split flashcards surface; a resilience timeout matching the platform's other load timeouts."
+    },
+    {
+      "file": "matrx-frontend/features/google-workspace/calendar/record.ts",
+      "name": "MAX_AGENDA_DAYS",
+      "kind": "protocol",
+      "reason": "Explicitly the aidream server's own enforced bound (CalendarRefreshRequest.days clamps to 1..31); asking for more could never be honoured regardless of preference."
+    },
+    {
+      "file": "matrx-frontend/features/google-workspace/calendar/record.ts",
+      "name": "MIN_AGENDA_DAYS",
+      "kind": "protocol",
+      "reason": "Paired lower bound of the same server-enforced calendar window as the 31-day maximum."
+    },
+    {
+      "file": "matrx-frontend/features/google-workspace/documents/knobs.ts",
+      "name": "KNOB_RESOLVE_GRACE_MS",
+      "kind": "operational-timeout",
+      "reason": "How long a caller waits for the settings ladder to resolve before falling back to the documented default; a UI resolution grace window, not itself a business setting."
+    },
+    {
+      "file": "matrx-frontend/features/mandates/admin/impact.ts",
+      "name": "IMPACT_AGENT_PAGE_SIZE",
+      "kind": "defensive-cap",
+      "reason": "Admin console page size kept safely under the server's own hard caps (max_agent_ids 500, max_principal_groups 64); pagination bounded by a real server limit, with any refusal shown verbatim."
+    },
+    {
+      "file": "matrx-frontend/features/mandates/admin/useAgentChangeReach.tsx",
+      "name": "AUTO_ADVANCE_TOAST_MS",
+      "kind": "ui-timing",
+      "reason": "Dwell time for the auto-advance toast; UI feedback timing."
+    },
+    {
+      "file": "matrx-frontend/features/mandates/admin/useAgentChangeReach.tsx",
+      "name": "REACH_TOAST_MS",
+      "kind": "ui-timing",
+      "reason": "How long an admin toast stays up after a mandate-reach action; UI dwell time."
+    },
+    {
+      "file": "matrx-frontend/features/mandates/seed.server.ts",
+      "name": "MANDATE_SEED_DEADLINE_MS",
+      "kind": "operational-timeout",
+      "reason": "Explicitly bounded well under the hosting function's own 15s timeout so a slow-but-alive database still seeds the page; a measured infra constant."
+    },
+    {
+      "file": "matrx-frontend/features/marketing/analytics/window.ts",
+      "name": "MAX_WINDOW_ROWS",
+      "kind": "defensive-cap",
+      "reason": "A defensive ceiling on in-memory analytics rows processed in one window; a runaway-guard scale number, not a business-facing data limit."
+    },
+    {
+      "file": "matrx-frontend/features/marketing/components/pages/AnalyzeAllPagesControl.tsx",
+      "name": "QUEUE_REFRESH_MS",
+      "kind": "operational-timeout",
+      "reason": "How often an admin page-analysis queue status control re-polls; a UI freshness cadence, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/features/marketing/seo/topical-map/views/GraphViewImpl.tsx",
+      "name": "PAGE_INTENT_LIMIT",
+      "kind": "protocol",
+      "reason": "Explicitly matches the server RPC's own clamp (seo.list_page_intents clamps to 1..1000); the rollup takes the maximum the server ever allows regardless of preference."
+    },
+    {
+      "file": "matrx-frontend/features/marketing/seo/topical-map/views/outline/OutlineToolbar.tsx",
+      "name": "OUTLINE_SEARCH_DEBOUNCE_MS",
+      "kind": "ui-timing",
+      "reason": "Debounce before filtering the topic-map tree on keystroke; a standard input debounce."
+    },
+    {
+      "file": "matrx-frontend/features/marketing/seo/topical-map/views/pages/bulk/BulkOutcome.tsx",
+      "name": "CLEAN_OUTCOME_DWELL_MS",
+      "kind": "ui-timing",
+      "reason": "How long a clean (nothing to read) bulk-outcome banner stays up before self-clearing; explicitly called 'a dwell time, not a taste' in the source."
+    },
+    {
+      "file": "matrx-frontend/features/marketing/seo/topical-map/views/pages/bulk/IntentTargetPicker.tsx",
+      "name": "PAGE_SEARCH_LIMIT",
+      "kind": "algorithmic",
+      "reason": "How many page hits a merge/redirect target picker's search shows at once; framed as enough to choose from and short enough to read, a picker-readability constant."
+    },
+    {
+      "file": "matrx-frontend/features/marketing/seo/topical-map/views/pages/bulk/IntentTargetPicker.tsx",
+      "name": "TOPIC_SEARCH_LIMIT",
+      "kind": "algorithmic",
+      "reason": "How many topic hits a picker's search shows at once; explicitly 'enough to choose from, short enough to read' — UI readability, not data completeness."
+    },
+    {
+      "file": "matrx-frontend/features/marketing/seo/topical-map/views/pages/runs/ProposeIntentsRunControl.tsx",
+      "name": "TOPIC_SEARCH_LIMIT",
+      "kind": "algorithmic",
+      "reason": "How many topics a run-control picker's search offers at once; same picker-readability reasoning as the sibling topic search limit."
+    },
+    {
+      "file": "matrx-frontend/features/marketing/seo/topical-map/views/table/TopicTable.tsx",
+      "name": "INTENTS_PAGE_LIMIT",
+      "kind": "protocol",
+      "reason": "Explicitly matches the server RPC's own clamp (seo.list_page_intents clamps to 1..1000); the table takes the maximum the server ever allows and states a partial read rather than truncating silently."
+    },
+    {
+      "file": "matrx-frontend/features/marketing/youtube/knobs.ts",
+      "name": "KNOB_RESOLVE_GRACE_MS",
+      "kind": "operational-timeout",
+      "reason": "How long a caller waits for the settings ladder to resolve before falling back to the documented default; the same resolution-grace pattern used elsewhere, not itself a business setting."
+    },
+    {
+      "file": "matrx-frontend/features/marketing/youtube/service.ts",
+      "name": "MAX_REFRESH_WINDOW_DAYS",
+      "kind": "protocol",
+      "reason": "Explicitly the YouTube provider's own ceiling (YouTubeRefreshRequest.validate_window caps a refresh at 90 days); nothing here could ask for more regardless of preference."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/capture-plan/planner.ts",
+      "name": "MIN_WEIGHT",
+      "kind": "algorithmic",
+      "reason": "Floor weight in an internal method-scoring algorithm for capture-plan scheduling; a scoring constant, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/capture-plan/service.ts",
+      "name": "MAX_ATTEMPTS",
+      "kind": "algorithmic",
+      "reason": "How many times an optimistic-concurrency write re-reads and re-applies before giving up; retry plumbing, not a business preference."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/components/detail/IngestTimelineDialog.tsx",
+      "name": "MIN_NARRATIVE_CHARS",
+      "kind": "algorithmic",
+      "reason": "Shortest narrative worth running the unfolding/ordering pass on; an algorithmic quality gate, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/components/detail/ShadowInboxDialog.tsx",
+      "name": "MAX_SELECTED",
+      "kind": "protocol",
+      "reason": "A client-side warning mirror of the server's own enforced cost cap on shadow-inbox selections; changing it locally would not change what the server accepts."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/components/masterworks/UnfoldingAuditionPanel.tsx",
+      "name": "MAX_DESKS",
+      "kind": "algorithmic",
+      "reason": "Fixes what 'the comparison' means (pairwise, two desks) as a product/UX concept, not a fetch limit an org would tune."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/drip/service.ts",
+      "name": "MAX_ATTEMPTS",
+      "kind": "algorithmic",
+      "reason": "How many times an optimistic-concurrency write re-reads and re-applies before giving up; the same retry plumbing pattern used elsewhere in this codebase."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/drive/DriveInterviewPage.tsx",
+      "name": "RECONNECT_BASE_MS",
+      "kind": "operational-timeout",
+      "reason": "Base delay before retrying a dropped voice-interview session; retry-backoff plumbing."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/drive/DriveInterviewPage.tsx",
+      "name": "RECONNECT_MAX_MS",
+      "kind": "operational-timeout",
+      "reason": "Ceiling on the same reconnect backoff as the base delay above; paired retry plumbing."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/drive/voiceCommands.ts",
+      "name": "MAX_COMMAND_WORDS",
+      "kind": "algorithmic",
+      "reason": "Longest an utterance may be and still match as a short voice command; a speech-matching heuristic, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/prediction/scoring.ts",
+      "name": "MAX_CONFIDENCE",
+      "kind": "algorithmic",
+      "reason": "Upper clamp on a Brier-score confidence value; the paired mathematical scoring bound."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/prediction/scoring.ts",
+      "name": "MIN_CONFIDENCE",
+      "kind": "algorithmic",
+      "reason": "Lower clamp on a Brier-score confidence value; a mathematical scoring bound, not a business preference."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/prediction/service.ts",
+      "name": "MAX_ATTEMPTS",
+      "kind": "algorithmic",
+      "reason": "How many times an optimistic-concurrency write re-reads and re-applies before giving up; the same retry plumbing pattern used elsewhere."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/record/openingRates.ts",
+      "name": "INTERVIEW_HISTORY_MS",
+      "kind": "ui-timing",
+      "reason": "Measured opening-promise duration for loading interview history, same measured family as its siblings."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/record/openingRates.ts",
+      "name": "INTERVIEW_OPENING_MS",
+      "kind": "ui-timing",
+      "reason": "Measured opening-promise duration for starting an interview, from the same production-measured family as the sibling opening-rate constants."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/record/openingRates.ts",
+      "name": "INTERVIEW_RESUME_MS",
+      "kind": "ui-timing",
+      "reason": "Measured opening-promise duration for resuming an interview, same measured family as its siblings."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/record/openingRates.ts",
+      "name": "NEW_RULEBOOK_OPENING_MS",
+      "kind": "ui-timing",
+      "reason": "Measured (not guessed) duration a 'starting' promise sentence holds before the UI switches to reporting elapsed time honestly; an engineering constant tied to real production timings."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/service.ts",
+      "name": "DUMP_URL_CAS_RETRIES",
+      "kind": "algorithmic",
+      "reason": "How many times a compare-and-swap write retries against a fresh row before surfacing a conflict; optimistic-concurrency plumbing, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/sitting/useDialogSitting.ts",
+      "name": "WRITE_DEBOUNCE_MS",
+      "kind": "ui-timing",
+      "reason": "Debounce before writing a dialog's in-progress sitting to storage; interaction-feel plumbing."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/sorting/cases.ts",
+      "name": "MAX_CASES",
+      "kind": "algorithmic",
+      "reason": "Bounds a quadratic pairwise-comparison sort at roughly the point a human stops sorting a pile by hand; an algorithmic/usability bound, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/features/masterwork/triad/TriadGamePage.tsx",
+      "name": "TRIAD_DEAL_USUAL_MS",
+      "kind": "ui-timing",
+      "reason": "Measured (not guessed) usual duration for dealing a round of cards, used only to phrase an honest waiting sentence; a production-measured engineering constant."
+    },
+    {
+      "file": "matrx-frontend/features/matrx-envelope/components/ProposedDirectivesZone.tsx",
+      "name": "RECEIPT_POLL_MS",
+      "kind": "operational-timeout",
+      "reason": "Thin client poll paired with the ALB-timeout-derived wait above; polling plumbing, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/features/matrx-envelope/components/ProposedDirectivesZone.tsx",
+      "name": "RECEIPT_WAIT_MS",
+      "kind": "protocol",
+      "reason": "Explicitly derived from the public load balancer's own 60s idle_timeout; an infra constraint, not a business preference."
+    },
+    {
+      "file": "matrx-frontend/features/notes/components/NoteDraftRecoveryBanner.tsx",
+      "name": "SAVED_BEFORE_CAPTURE_WINDOW_MS",
+      "kind": "algorithmic",
+      "reason": "Matches the autosave debounce plus a slow request's worst case, used only to decide whether a save is 'already the capture's own text'; a heuristic window, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/features/notes/hooks/useNewNoteOrganization.ts",
+      "name": "NEW_NOTE_ORGANIZATION_WAIT_MS",
+      "kind": "operational-timeout",
+      "reason": "How long a click waits for the organization-bootstrap state before refusing; a resilience timeout, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/features/notes/hooks/useNewNoteOrganization.ts",
+      "name": "WAIT_TICK_MS",
+      "kind": "ui-timing",
+      "reason": "Minimum spacing between store-change checks so the wait doesn't become a busy-loop; engineering plumbing."
+    },
+    {
+      "file": "matrx-frontend/features/notes/hooks/useNoteContentSearch.ts",
+      "name": "CONTENT_SEARCH_DEBOUNCE_MS",
+      "kind": "ui-timing",
+      "reason": "Debounce before a note-body search query leaves the browser; a standard input debounce."
+    },
+    {
+      "file": "matrx-frontend/features/notes/redux/autoSaveMiddleware.ts",
+      "name": "RETRY_BASE_DELAY_MS",
+      "kind": "algorithmic",
+      "reason": "Starting delay of an exponential retry/backoff loop for failed note autosaves; retry plumbing, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/features/notes/redux/autoSaveMiddleware.ts",
+      "name": "RETRY_MAX_DELAY_MS",
+      "kind": "algorithmic",
+      "reason": "Ceiling of the same exponential retry/backoff loop; paired retry plumbing."
+    },
+    {
+      "file": "matrx-frontend/features/notes/redux/realtimeMiddleware.ts",
+      "name": "ATTEMPT_POLL_MS",
+      "kind": "operational-timeout",
+      "reason": "Diagnostics poll used only to surface a realtime channel's own reconnect-attempt count while it is down; internal status plumbing."
+    },
+    {
+      "file": "matrx-frontend/features/notes/redux/thunks.ts",
+      "name": "LIST_SESSION_SETTLE_MS",
+      "kind": "operational-timeout",
+      "reason": "How long the first read after boot waits for the Supabase session to name the same user Redux already holds; a startup race-condition fix, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/features/notifications/useInbox.ts",
+      "name": "INBOX_PANEL_LIMIT",
+      "kind": "defensive-cap",
+      "reason": "How many notices the inbox panel shows before offering 'See all'; a display cap with the full list always reachable, not a data limit."
+    },
+    {
+      "file": "matrx-frontend/features/notifications/useInbox.ts",
+      "name": "INBOX_POLL_INTERVAL_MS",
+      "kind": "operational-timeout",
+      "reason": "How often the notification badge re-reads while the tab is open; a lightweight UI freshness cadence, not a costed or org-tunable cadence."
+    },
+    {
+      "file": "matrx-frontend/features/podcasts/generator/sourceReadiness.ts",
+      "name": "MIN_PODCAST_CONTENT_CHARS",
+      "kind": "protocol",
+      "reason": "A client mirror of the podcast generator's own server-side Gate 1 minimum-content check; refuses locally only what the server would deterministically reject anyway."
+    },
+    {
+      "file": "matrx-frontend/features/residential-egress/hooks/useHomeConnectionFocus.ts",
+      "name": "HIGHLIGHT_MS",
+      "kind": "ui-timing",
+      "reason": "How long a highlight ring stays up after a deep link points at a device row; a UI attention cue, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/features/residential-egress/hooks/useHomeConnections.ts",
+      "name": "POLL_INTERVAL_MS",
+      "kind": "operational-timeout",
+      "reason": "Degraded-mode poll cadence explicitly matched to its sibling devices surface so the two halves of one screen stay consistent; engineering, not a business knob."
+    },
+    {
+      "file": "matrx-frontend/features/scheduling/service/schedule-roster-timeout.ts",
+      "name": "SCHEDULE_ROSTER_LOAD_TIMEOUT_MS",
+      "kind": "operational-timeout",
+      "reason": "Abort boundary so a schedules roster load never hangs forever; a resilience timeout matching the platform's other load timeouts."
+    },
+    {
+      "file": "matrx-frontend/features/secrets/components/VaultPasswordGenerator.tsx",
+      "name": "TTL_MS",
+      "kind": "ui-timing",
+      "reason": "Short in-memory time-to-live for an unsaved generated password candidate before it is treated as stale; a security-hygiene default, not a configurable business setting."
+    },
+    {
+      "file": "matrx-frontend/features/source-library/hooks/useJob.ts",
+      "name": "LIVE_REREAD_INTERVAL_MS",
+      "kind": "operational-timeout",
+      "reason": "How often a running job's panel re-reads its durable rows while live; explicitly picked as the interval that reads as 'live' at low read cost, an engineering cadence."
+    },
+    {
+      "file": "matrx-frontend/features/unified-data/realtime/recordsRealtimePort.ts",
+      "name": "NUDGE_DEBOUNCE_MS",
+      "kind": "ui-timing",
+      "reason": "Coalesces a realtime notice burst into one re-read; debounce plumbing."
+    },
+    {
+      "file": "matrx-frontend/features/window-panels/detail/pageSeedHandoff.ts",
+      "name": "MAX_PENDING",
+      "kind": "defensive-cap",
+      "reason": "Bound on an in-memory navigation-handoff map so a tab navigating all day cannot grow it forever; a client memory cap."
+    },
+    {
+      "file": "matrx-frontend/features/window-panels/detail/pageSeedHandoff.ts",
+      "name": "SEED_TTL_MS",
+      "kind": "operational-timeout",
+      "reason": "How long an in-memory page-navigation name handoff stays usable for one client navigation; a short-lived transient cache TTL, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/features/window-panels/detail/singletonReplacement.ts",
+      "name": "UNDO_TOAST_MS",
+      "kind": "ui-timing",
+      "reason": "How long an 'Undo' offer stays up after a singleton panel replaced another record; UI dwell time."
+    },
+    {
+      "file": "matrx-frontend/hooks/useNow.ts",
+      "name": "TICK_MS",
+      "kind": "ui-timing",
+      "reason": "Clock tick interval powering every relative-time label on this surface; a display refresh cadence, not business behavior."
+    },
+    {
+      "file": "matrx-frontend/lib/detail/core/DetailBody.tsx",
+      "name": "SLOW_LOAD_NOTICE_MS",
+      "kind": "ui-timing",
+      "reason": "Patience threshold before a loading skeleton admits it is taking a while; explicitly documented in the source as 'a constant here and not a knob'."
+    },
+    {
+      "file": "matrx-frontend/lib/diagnostics/persistCapturedErrors.ts",
+      "name": "IDENTITY_RETRY_DELAY_MS",
+      "kind": "operational-timeout",
+      "reason": "Retry delay paired with the identity-settle budget above; resilience plumbing."
+    },
+    {
+      "file": "matrx-frontend/lib/diagnostics/persistCapturedErrors.ts",
+      "name": "IDENTITY_SETTLE_BUDGET_MS",
+      "kind": "operational-timeout",
+      "reason": "How long an error-capture flush waits for the browser to acquire any identity before giving up on recording; a boot-race resilience budget, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/lib/drafts/useTextDraft.ts",
+      "name": "WRITE_DEBOUNCE_MS",
+      "kind": "ui-timing",
+      "reason": "Debounce before mirroring a text field's draft into sessionStorage; the same interaction-feel pattern used by other editors in this codebase."
+    },
+    {
+      "file": "matrx-frontend/lib/entity-list/selection.ts",
+      "name": "BULK_RESOLVE_PAGE_SIZE",
+      "kind": "defensive-cap",
+      "reason": "Explicitly documented in the source as 'a transport batch, not a product limit (so not a knob)'; resolution always continues to the server's own real total regardless of this value."
+    },
+    {
+      "file": "matrx-frontend/lib/knobs/featureKnobs.ts",
+      "name": "DEFAULT_PAGE_SIZE",
+      "kind": "protocol",
+      "reason": "Explicitly matches PostgREST's own db-max-rows ceiling on Matrx Main, which this paging logic exists to page past."
+    },
+    {
+      "file": "matrx-frontend/lib/organizations/orgBootstrapGate.ts",
+      "name": "RESOLUTION_TIMEOUT_MS",
+      "kind": "operational-timeout",
+      "reason": "Bounded wait for the organization-bootstrap answer before a write refuses anyway, so a stuck promise can never hang forever; a resilience timeout."
+    },
+    {
+      "file": "matrx-frontend/lib/progress/estimateSentence.ts",
+      "name": "MINUTE_MS",
+      "kind": "algorithmic",
+      "reason": "A literal unit-conversion constant (milliseconds per minute) used to build a progress sentence; not a configurable behavior at all."
+    },
+    {
+      "file": "matrx-frontend/lib/sandbox/SandboxLifecycleController.tsx",
+      "name": "MAX_PENDING_POLLS",
+      "kind": "operational-timeout",
+      "reason": "Explicitly a computed backoff-schedule length (source comment: '1+2+4+8 then 19x15 seconds: five visible minutes'); an engineering-derived constant, not a knob."
+    },
+    {
+      "file": "matrx-frontend/lib/sandbox/SandboxLifecycleController.tsx",
+      "name": "MAX_TRANSPORT_FAILURES",
+      "kind": "algorithmic",
+      "reason": "How many consecutive sandbox-transport failures are tolerated before giving up; an engineering reliability threshold, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/lib/scoped-config/effectiveKnobs.ts",
+      "name": "MAX_RACE_RETRIES",
+      "kind": "algorithmic",
+      "reason": "How many times a knob read retries after losing a race with a concurrent write; a cache-consistency bug fix, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/lib/sync/persistence/idb.ts",
+      "name": "IDB_OPERATION_TIMEOUT_MS",
+      "kind": "operational-timeout",
+      "reason": "Timeout on a single IndexedDB operation so a blocked browser request can never hang sync forever; browser-storage plumbing."
+    },
+    {
+      "file": "matrx-frontend/providers/google-provider/googleIdentityReadiness.ts",
+      "name": "GOOGLE_IDENTITY_POLL_INTERVAL_MS",
+      "kind": "protocol",
+      "reason": "Paired poll-interval constant explicitly covered by the same 'not an organization knob' documentation as the readiness timeout beside it."
+    },
+    {
+      "file": "matrx-frontend/providers/google-provider/googleIdentityReadiness.ts",
+      "name": "GOOGLE_IDENTITY_READY_TIMEOUT_MS",
+      "kind": "protocol",
+      "reason": "Explicitly documented in the source as a CAPS constant and NOT an organization knob: a technical readiness limit on how long Google's third-party sign-in script can plausibly take to load."
+    },
+    {
+      "file": "matrx-frontend/utils/supabase/sessionBarrier.ts",
+      "name": "SESSION_ATTACH_BUDGET_MS",
+      "kind": "operational-timeout",
+      "reason": "How long a request may wait for the first auth report before proceeding anyway; a resilience budget, not a business setting."
+    },
+    {
+      "file": "matrx-frontend/utils/supabase/sessionBarrier.ts",
+      "name": "SESSION_RECOVERY_BUDGET_MS",
+      "kind": "operational-timeout",
+      "reason": "How long a refused request may wait for a session before giving up; paired resilience budget with the attach budget."
+    },
+    {
+      "file": "matrx-frontend/utils/supabase/sessionBarrier.ts",
+      "name": "WAIT_COOLDOWN_MS",
+      "kind": "operational-timeout",
+      "reason": "How long every other request skips the session wait after one wait already expired; a cooldown to avoid repeatedly paying the same budget, not a business setting."
+    }
+  ]
+}
