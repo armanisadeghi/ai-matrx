@@ -195,6 +195,19 @@ export const CAMPAIGN_STORE_TABLES: readonly string[] = [
  */
 export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
   {
+    id: "clone-parity-selftest",
+    file: "scripts/clone-parity-selftest.ts",
+    kind: "tooling",
+    why:
+      "Lane NIGHT's RED-then-GREEN proof of the clone-parity gate, shown on live databases: it " +
+      "plants a body on the clone, watches `pnpm db:rehearse --target clone` name the drift, puts " +
+      "it back and watches the gate go quiet. It imports `scripts/lib/migration-target` for that " +
+      "verdict and nothing else. A script a developer or CI runs, never served to a user, so it " +
+      "must not call the gate — gating it would silence the proof exactly when the campaign is " +
+      "off. Registered by lane DATA-HUB, which found `check:campaign-entry-points` exiting 1 on " +
+      "origin/main.",
+  },
+  {
     id: "data-hub-doors",
     file: "features/unified-data/hub/doors.ts",
     kind: "runtime",
