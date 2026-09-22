@@ -53,6 +53,7 @@ function filterFromExtensions(
 export default function CloudFilesPickerHostImpl() {
   // File picker state
   const [fileOpen, setFileOpen] = useState(false);
+  const [pickedCount, setPickedCount] = useState(0);
   const [fileOptions, setFileOptions] =
     useState<UseFilePickerOpenOptions | null>(null);
   const fileResolverRef = useRef<((r: string[] | null) => void) | null>(null);
@@ -123,6 +124,7 @@ export default function CloudFilesPickerHostImpl() {
   const handleFileClose = useCallback(() => {
     const picked = pickedFileIdsRef.current;
     pickedFileIdsRef.current = [];
+    setPickedCount(0);
     fileResolverRef.current?.(picked.length > 0 ? picked : null);
     fileResolverRef.current = null;
     setFileOpen(false);
@@ -137,11 +139,16 @@ export default function CloudFilesPickerHostImpl() {
       }
       if (!pickedFileIdsRef.current.includes(selection.fileId)) {
         pickedFileIdsRef.current.push(selection.fileId);
+        setPickedCount(pickedFileIdsRef.current.length);
       }
       return undefined;
     },
     [],
   );
+  const handleFileUnpick = useCallback((fileId: string) => {
+    pickedFileIdsRef.current = pickedFileIdsRef.current.filter((id) => id !== fileId);
+    setPickedCount(pickedFileIdsRef.current.length);
+  }, []);
 
   // Folder picker handlers
   const handleFolderOpenChange = useCallback((next: boolean) => {
@@ -182,9 +189,12 @@ export default function CloudFilesPickerHostImpl() {
           onPick={(selection) =>
             handleFilePick(selection, fileOptions.multi ?? false)
           }
+          multi={fileOptions.multi ?? false}
+          pickedCount={pickedCount}
+          onUnpick={handleFileUnpick}
         />
       ) : null,
-    [fileOpen, fileOptions, handleFileClose, handleFilePick],
+    [fileOpen, fileOptions, handleFileClose, handleFilePick, handleFileUnpick, pickedCount],
   );
 
   const folderPickerElement = useMemo(

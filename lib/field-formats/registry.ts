@@ -694,7 +694,10 @@ const DEFS: FieldFormatDef[] = [
     description: "Files from your Files, shown as chips",
     group: "Structured",
     base: "array",
-    alsoAccepts: ["json", "string"],
+    // Not `string`: on a text column it must appear under "Other kinds" so
+    // picking it retypes the column to a list, rather than storing a JSON
+    // string of ids in a text cell.
+    alsoAccepts: ["json"],
     editor: "attachment",
     rich: true,
     format: (v) => {

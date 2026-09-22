@@ -19,6 +19,8 @@
 "use client";
 
 import { useId } from "react";
+
+import { Button } from "@/components/ui/button";
 import { FolderOpen } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import {
@@ -51,6 +53,19 @@ export interface FilePickerWindowProps {
    * hosts can override that default when they need batch-specific wiring.
    */
   onUpload?: (files: UploadedFile[]) => void | Promise<void>;
+  /**
+   * Multi-pick: files are CHECKED (and unchecked through `onUnpick`), the
+   * count shows in a footer, and "Attach N files" closes the window — the
+   * host resolves the batch on close. Without it, until 2026-09-21, a
+   * multi-pick window looked exactly like a single-pick one: a click only
+   * toggled a highlight and there was no visible way to finish, so callers
+   * such as the data-table Attachment column failed silently.
+   */
+  multi?: boolean;
+  /** How many files are picked so far (multi only) — the host keeps the batch. */
+  pickedCount?: number;
+  /** A checked file was unchecked (multi only). */
+  onUnpick?: (fileId: string) => void;
   /** Header title. Default "Choose a file". */
   title?: string;
   /** Human-readable scope for the window id (debugging / tray labels). */
@@ -63,6 +78,9 @@ export function FilePickerWindow({
   onClose,
   onPick,
   onUpload,
+  multi = false,
+  pickedCount = 0,
+  onUnpick,
   title = "Choose a file",
   scopeId,
   initialFilter,
@@ -133,13 +151,31 @@ export function FilePickerWindow({
       // must not add padding or a competing scroll container.
       bodyClassName="p-0 overflow-hidden"
     >
-      <FilesResourcePicker
-        onBack={onClose}
-        onSelect={(selection) => void handleSelect(selection)}
-        initialFilter={initialFilter}
-        fillHost
-        topSlot={<InlineUploadArea onSelect={handleUpload} selectionMode="single" />}
-      />
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="min-h-0 flex-1">
+          <FilesResourcePicker
+            onBack={onClose}
+            onSelect={(selection) => void handleSelect(selection)}
+            onDeselect={multi ? (selection) => onUnpick?.(selection.fileId) : undefined}
+            selectionMode={multi ? "multiple" : "single"}
+            initialFilter={initialFilter}
+            fillHost
+            topSlot={<InlineUploadArea onSelect={handleUpload} selectionMode="single" />}
+          />
+        </div>
+        {multi && (
+          <div className="flex shrink-0 items-center justify-between gap-2 border-t bg-background px-3 py-2">
+            <span className="text-xs text-muted-foreground">
+              {pickedCount === 0
+                ? "Check the files to attach"
+                : `${pickedCount} file${pickedCount === 1 ? "" : "s"} selected`}
+            </span>
+            <Button type="button" size="sm" className="h-7 text-xs" disabled={pickedCount === 0} onClick={onClose}>
+              Attach {pickedCount > 0 ? pickedCount : ""} {pickedCount === 1 ? "file" : "files"}
+            </Button>
+          </div>
+        )}
+      </div>
     </WindowPanel>
   );
 }
