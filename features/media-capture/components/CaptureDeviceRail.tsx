@@ -85,10 +85,11 @@ function DeviceCapsule({
         </button>
       </PopoverTrigger>
       <PopoverContent
+        sizing="content"
         align="start"
         side="top"
         sideOffset={6}
-        className="w-60 p-1"
+        className="p-1"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         {children}

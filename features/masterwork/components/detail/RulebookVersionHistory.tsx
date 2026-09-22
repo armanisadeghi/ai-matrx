@@ -91,7 +91,7 @@ export function RulebookVersionHistory({
           </Badge>
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-80 p-0">
+      <PopoverContent sizing="content" align="start" className="p-0">
         <div className="flex items-center gap-1.5 border-b border-border px-3 py-2">
           <History className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-xs font-medium text-foreground">

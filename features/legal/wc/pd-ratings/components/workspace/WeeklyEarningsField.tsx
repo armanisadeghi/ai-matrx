@@ -132,7 +132,8 @@ function AwcHelper({ onApply }: { onApply: (weeklyEarnings: number) => void }) {
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-80 p-4"
+        sizing="content"
+        className="p-4"
         align="end"
       >
         <div className="space-y-4">

@@ -121,7 +121,8 @@ export function FastFireSetPicker({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[var(--radix-popover-trigger-width)] p-0"
+        sizing="content"
+        className="p-0"
         align="start"
       >
         <Command shouldFilter={false}>

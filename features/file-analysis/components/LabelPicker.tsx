@@ -142,7 +142,8 @@ export function LabelPicker({
         />
       </PopoverTrigger>
       <PopoverContent
-        className="w-[420px] max-w-[calc(100vw-1.5rem)] overflow-y-auto p-3"
+        sizing="content"
+        className="overflow-y-auto p-3"
         side="bottom"
         align="start"
         sideOffset={8}

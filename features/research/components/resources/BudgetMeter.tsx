@@ -210,7 +210,7 @@ export function BudgetMeter({
               </span>
             </button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-80 space-y-2">
+          <PopoverContent /* sizing: fixed — fixed known budget-kind labels, already truncates */ align="start" className="w-80 space-y-2">
             <div className="text-xs font-medium text-foreground">
               Dropped by the {formatTokens(budgetTokens ?? 0)} budget
             </div>

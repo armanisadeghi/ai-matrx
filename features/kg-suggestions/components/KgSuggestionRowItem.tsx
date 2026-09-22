@@ -928,7 +928,7 @@ function DeferControl({
             Defer + note
           </button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-64 p-2 space-y-2">
+        <PopoverContent sizing="content" align="end" className="p-2 space-y-2">
           <p className="text-[11px] text-muted-foreground">
             Snooze this and leave yourself a note for when it comes back.
           </p>

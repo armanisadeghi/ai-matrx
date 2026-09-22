@@ -90,9 +90,10 @@ export function AutonomyControl({ topicId, value, onSaved }: Props) {
         </button>
       </PopoverTrigger>
       <PopoverContent
+        sizing="content"
         align="end"
         sideOffset={6}
-        className="w-72 p-1 rounded-xl border border-border/60 bg-popover/95 backdrop-blur"
+        className="p-1 rounded-xl border border-border/60 bg-popover/95 backdrop-blur"
       >
         <div className="px-2 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
           Pipeline autonomy

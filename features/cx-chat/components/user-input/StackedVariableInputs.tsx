@@ -134,6 +134,7 @@ export function StackedVariableInputs({
                   </div>
                 </PopoverTrigger>
                 <PopoverContent
+                  /* sizing: fixed — fixed-shape panel wider than the sizing="content" 28rem ceiling */
                   className="w-[500px] max-h-[500px] p-3 border-border overflow-y-auto scrollbar-thin"
                   align="center"
                   side="top"

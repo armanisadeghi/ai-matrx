@@ -225,7 +225,8 @@ export function TemplateBrowserModal({
               </Button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-[200px] p-0"
+              sizing="content"
+              className="p-0"
               align="start"
               onWheel={(e) => e.stopPropagation()}
             >

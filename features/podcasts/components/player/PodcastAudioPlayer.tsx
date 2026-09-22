@@ -618,6 +618,7 @@ export function PodcastAudioPlayer({
               </button>
             </PopoverTrigger>
             <PopoverContent
+              /* sizing: fixed — playback-speed enum, fixed short labels */
               align="start"
               side="top"
               sideOffset={8}

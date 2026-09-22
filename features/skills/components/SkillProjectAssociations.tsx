@@ -126,7 +126,7 @@ export function SkillProjectAssociations({
                 Add project
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-72 p-2" align="start">
+            <PopoverContent sizing="content" className="p-2" align="start">
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

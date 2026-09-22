@@ -296,6 +296,7 @@ export function MessageInputBar({
           </button>
         </PopoverTrigger>
         <PopoverContent
+          /* sizing: fixed — content already decides its own width; no fixed box to remove */
           side="top"
           align="start"
           sideOffset={12}

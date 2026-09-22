@@ -125,7 +125,8 @@ export function OccupationCombobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[--radix-popover-trigger-width] p-0"
+        sizing="content"
+        className="p-0"
         align="start"
       >
         <Command

@@ -661,9 +661,10 @@ export function ConversationInput({
                 )}
               </PopoverTrigger>
               <PopoverContent
+                sizing="content"
                 side="top"
                 align="start"
-                className="w-56 p-0"
+                className="p-0"
                 onOpenAutoFocus={(e) => e.preventDefault()}
               >
                 <ResourcePickerMenu

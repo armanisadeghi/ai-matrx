@@ -190,7 +190,8 @@ function VoicePicker({
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[var(--radix-popover-trigger-width)] min-w-[260px] p-0"
+        sizing="content"
+        className="p-0"
         align="start"
       >
         <Command>

@@ -37,6 +37,7 @@ function SourceScopeFilterPopover({ filters }: { filters: FilterDef[] }) {
         />
       </PopoverTrigger>
       <PopoverContent
+        /* sizing: fixed — content already decides its own width; no fixed box to remove */
         align="start"
         className="w-auto max-w-[min(24rem,calc(100vw-2rem))] p-2"
       >

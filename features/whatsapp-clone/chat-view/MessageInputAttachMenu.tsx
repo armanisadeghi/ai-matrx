@@ -47,10 +47,11 @@ export function MessageInputAttachMenu({
         </button>
       </PopoverTrigger>
       <PopoverContent
+        sizing="content"
         side="top"
         align="start"
         sideOffset={12}
-        className="w-[260px] border-border bg-popover p-1 text-popover-foreground"
+        className="border-border bg-popover p-1 text-popover-foreground"
       >
         <div className="flex flex-col">
           {ITEMS.map((item) => (

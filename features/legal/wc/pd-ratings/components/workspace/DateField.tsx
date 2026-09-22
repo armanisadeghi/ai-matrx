@@ -205,7 +205,7 @@ export function DateField({
             <CalendarIcon className="h-4 w-4" />
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="end">
+        <PopoverContent /* sizing: fixed — content already decides its own width; no fixed box to remove */ className="w-auto p-0" align="end">
           <Calendar
             mode="single"
             selected={value}

@@ -84,7 +84,8 @@ export function ResourcePickerButton({
     <Popover open={isOpen} onOpenChange={setIsOpen} modal={false}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
-        className="w-80 p-0 border-border z-[200]"
+        sizing="content"
+        className="p-0 border-border z-[200]"
         align="start"
         side="top"
         sideOffset={8}

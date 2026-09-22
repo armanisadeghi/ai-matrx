@@ -398,7 +398,7 @@ export function EditAiToolbar({
             Adjust
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-72">
+        <PopoverContent sizing="content" align="start">
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
               Live values applied when you press Apply.
@@ -618,7 +618,7 @@ export function EditAiToolbar({
               ) : null}
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-80">
+          <PopoverContent sizing="content" align="end">
             <div className="space-y-3">
               <div className="space-y-1">
                 <Label className="text-xs text-foreground/80">

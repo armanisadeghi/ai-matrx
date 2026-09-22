@@ -118,9 +118,10 @@ function SignedInInboxButton() {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
+        sizing="content"
         align="end"
         side="bottom"
-        className="w-[380px] max-w-[92vw] p-0 bg-textured"
+        className="p-0 bg-textured"
       >
         {open && (
           <InboxPanel variant="compact" onNavigate={() => setOpen(false)} />

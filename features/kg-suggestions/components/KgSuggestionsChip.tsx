@@ -64,8 +64,9 @@ export function KgSuggestionsChip({
         </button>
       </PopoverTrigger>
       <PopoverContent
+        sizing="content"
         align="start"
-        className="w-80 p-0"
+        className="p-0"
         // Don't steal focus from the host editor on open.
         onOpenAutoFocus={(e) => e.preventDefault()}
       >

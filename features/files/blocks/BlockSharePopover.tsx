@@ -209,7 +209,8 @@ export function BlockSharePopover({
             <span className={cn("inline-flex", className)}>{children}</span>
           </PopoverTrigger>
           <PopoverContent
-            className="w-80 border-0 bg-transparent p-0 shadow-none"
+            sizing="content"
+            className="border-0 bg-transparent p-0 shadow-none"
             align="end"
             sideOffset={6}
           >

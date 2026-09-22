@@ -238,7 +238,7 @@ function GuideList({ guides, activeId, activeLabel, content, onJump, loading, er
               <ChevronDown className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
             </button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-[min(22rem,calc(100vw-2rem))] p-2">
+          <PopoverContent sizing="content" align="start" className="p-2">
             <label className="relative block"><Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden /><Input value={query} onChange={(event) => setQuery(event.target.value)} aria-label="Search study guides" placeholder="Search guides" className="h-8 pl-8 text-sm" /></label>
             <div className="mt-2 max-h-72 overflow-y-auto">
               {loading ? <div className="flex items-center gap-2 px-2 py-5 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" aria-hidden />Loading guides</div> : error ? <div className="px-2 py-4 text-sm text-muted-foreground"><p>{error}</p><Button size="sm" variant="outline" className="mt-2" onClick={onRetry}>Try again</Button></div> : visible.length ? visible.map((guide) => <Link key={guide.id} href={`/education/study-guides/${guide.id}`} onClick={() => setPickerOpen(false)} className={cn("mb-1 block rounded-md px-2.5 py-2 text-sm transition-colors", guide.id === activeId ? "bg-primary text-primary-foreground" : "hover:bg-accent")}><span className="line-clamp-2 font-medium">{guide.label || "Untitled guide"}</span></Link>) : <p className="px-2 py-5 text-sm text-muted-foreground">No study guides match that search.</p>}
@@ -314,7 +314,7 @@ function SelectionActions({ selection, guide, onSave, saving, error }: { selecti
       <Button size="sm" variant="ghost" className="w-full justify-start" disabled={saving} onClick={() => { void onSave("highlight").catch(() => {}); }}><Highlighter className="mr-2 h-3.5 w-3.5" aria-hidden />Highlight</Button>
       <Popover open={noteOpen} onOpenChange={setNoteOpen}>
         <PopoverTrigger asChild><Button size="sm" variant="ghost" className="w-full justify-start"><NotebookPen className="mr-2 h-3.5 w-3.5" aria-hidden />Save a note</Button></PopoverTrigger>
-        <PopoverContent className="w-72 p-3" align="start"><p className="text-sm font-medium">Save a note about this passage</p><textarea value={comment} className="mt-2 min-h-20 w-full rounded-md border border-input bg-background p-2 text-base" placeholder="What do you want to remember?" onChange={(event) => setComment(event.target.value)} /><Button className="mt-2 w-full" size="sm" disabled={saving} onClick={() => { void onSave("note", comment).then(() => { setComment(""); setNoteOpen(false); }).catch(() => {}); }}>Save note</Button></PopoverContent>
+        <PopoverContent sizing="content" className="p-3" align="start"><p className="text-sm font-medium">Save a note about this passage</p><textarea value={comment} className="mt-2 min-h-20 w-full rounded-md border border-input bg-background p-2 text-base" placeholder="What do you want to remember?" onChange={(event) => setComment(event.target.value)} /><Button className="mt-2 w-full" size="sm" disabled={saving} onClick={() => { void onSave("note", comment).then(() => { setComment(""); setNoteOpen(false); }).catch(() => {}); }}>Save note</Button></PopoverContent>
       </Popover>
       <div className="my-1 h-px bg-border" />
       <AskTutorButton seed={tutorSeed} label="I don't get this" variant="ghost" className="w-full justify-start" />

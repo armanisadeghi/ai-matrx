@@ -213,8 +213,8 @@ export function HrPersonDoor({
               </Button>
             </PopoverTrigger>
             <PopoverContent
+              sizing="content"
               align="start"
-              className="w-80 max-w-[calc(100vw-2rem)]"
               onClick={(event) => event.stopPropagation()}
             >
               <HrPersonSummary person={person} org={org} />

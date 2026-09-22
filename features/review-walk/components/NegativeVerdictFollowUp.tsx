@@ -131,7 +131,7 @@ export function NegativeVerdictFollowUp({
               <HelpCircle className="h-3.5 w-3.5" aria-hidden />
             </button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-80 space-y-3 text-xs">
+          <PopoverContent sizing="content" align="start" className="space-y-3 text-xs">
             <div>
               <div className="mb-1 flex items-center gap-1.5 font-semibold text-foreground">
                 <Stethoscope className="h-3.5 w-3.5" aria-hidden />

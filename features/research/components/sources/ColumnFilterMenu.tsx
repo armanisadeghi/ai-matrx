@@ -56,7 +56,7 @@ export function ColumnFilterMenu({
           <Filter className={cn("h-3 w-3", active && "fill-current")} />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-44 p-1">
+      <PopoverContent sizing="content" align="start" className="p-1">
         <button
           type="button"
           onClick={() => onSelect(null)}

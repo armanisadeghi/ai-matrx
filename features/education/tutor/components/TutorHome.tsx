@@ -54,7 +54,7 @@ export function TutorHome() {
                   Tutor style
                 </button>
               </PopoverTrigger>
-              <PopoverContent align="start" className="w-72">
+              <PopoverContent sizing="content" align="start">
                 <TutorSettingsPanel />
               </PopoverContent>
             </Popover>

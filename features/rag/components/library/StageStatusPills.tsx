@@ -249,7 +249,7 @@ function StagePill({
   return (
     <Popover>
       <PopoverTrigger asChild>{pillBody}</PopoverTrigger>
-      <PopoverContent side="bottom" align="start" className="w-[420px] p-0">
+      <PopoverContent sizing="content" side="bottom" align="start" className="p-0">
         <StageActionPanel
           def={def}
           status={status}

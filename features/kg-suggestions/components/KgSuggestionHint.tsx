@@ -115,8 +115,9 @@ export function KgSuggestionHint({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
+        sizing="content"
         align={align}
-        className="w-[26rem] max-w-[calc(100vw-2rem)] p-0"
+        className="p-0"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <div className="flex items-center gap-1.5 border-b border-border px-3 py-2">

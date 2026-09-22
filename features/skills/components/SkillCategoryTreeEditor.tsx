@@ -606,7 +606,7 @@ function ColorSwatchButton({
           style={{ backgroundColor: color ?? "transparent" }}
         />
       </PopoverTrigger>
-      <PopoverContent className="w-56 p-2" align="start">
+      <PopoverContent sizing="content" className="p-2" align="start">
         <div className="text-xs text-muted-foreground mb-1.5">Color</div>
         <div className="grid grid-cols-6 gap-1 mb-2">
           {COLOR_SWATCHES.map((c) => (
@@ -700,7 +700,7 @@ function IconNamePicker({
           {iconName || "icon"}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-2" align="end">
+      <PopoverContent sizing="content" className="p-2" align="end">
         <Label className="text-xs text-muted-foreground">
           Lucide icon name (e.g. <span className="font-mono">Brain</span>,{" "}
           <span className="font-mono">Folder</span>)
