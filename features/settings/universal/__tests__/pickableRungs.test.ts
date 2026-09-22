@@ -80,4 +80,22 @@ describe("pickableRungsFor inside a STRICT namespace (DD-203)", () => {
   it("still hides nothing when no key is given, even for HR-shaped rungs", () => {
     expect(pickableRungsFor(HR_RUNGS)).toEqual(["employer_profile", "pay_group", "location"]);
   });
+
+  /**
+   * SETTINGS-3, 2026-09-22. `rulebook` (precedence 70, `platform.rulebook`) went live in
+   * `platform.knob_scope_kind` on 2026-09-15 and 22 `masterwork.*` keys were registered
+   * against it, and `SUB_ORG_SCOPE_SOURCES` — the ONE list that decides which rungs the
+   * universal picker offers — never gained an entry, so `pickableRungsFor` could not return
+   * it and nobody could set a per-Rulebook value for any of them. Proven live as
+   * admin@admin.com the same day: with the rung offered, `knob_override_set` at the rulebook
+   * rung makes `knob_snapshot` answer `false` for that Rulebook while the organization still
+   * answers `true`. Delete the `rulebook` entry from SUB_ORG_SCOPE_SOURCES and this fails.
+   */
+  it("offers the Rulebook rung on a masterwork key — the whole point of the rung", () => {
+    const INTERVIEW_VOICE = "masterwork.interview.voice_default_on";
+    expect(KNOB_RUNG_CONSUMERS[INTERVIEW_VOICE]).toBeUndefined();
+    expect(pickableRungsFor(["organization", "user", "rulebook"], INTERVIEW_VOICE)).toEqual([
+      "rulebook",
+    ]);
+  });
 });

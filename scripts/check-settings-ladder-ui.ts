@@ -131,10 +131,20 @@ const HR_KNOB_ROW_FILE = join(ROOT, "features", "hr", "settings", "components", 
 const USER_DESTINATION_FILE = join(
   ROOT, "features", "settings", "route-shell", "SettingsRouteProvider.tsx",
 );
-/** Rungs keyed by a ROW — the ones a person reaches only through a picker. */
-const ROW_KEYED_RUNGS = new Set([
-  "employer_profile", "brand", "pay_group", "site", "location", "table", "agent",
-]);
+/**
+ * Rungs keyed by a ROW — the ones a person reaches only through a picker.
+ *
+ * 🚨 MEASURED FROM `platform.knob_scope_kind`, NEVER TYPED HERE (SETTINGS-3, 2026-09-22).
+ * A rung is row-keyed exactly when its registry row names a `scope_schema`/`scope_table`:
+ * `organization`, `user` and `device` carry none because the screen already knows which
+ * organization, which person and which browser it is standing in. This used to be a hand
+ * list of seven, and when `rulebook` was registered on 2026-09-15 the list did not grow —
+ * so its 22 keys fell through to the flat `addressed` arm, which asks whether the universal
+ * pane names the rung anywhere in its source rather than whether the PICKER offers it, and
+ * the remedy the gate printed was the wrong one. A hand list beside a registry is the
+ * declared-vs-observed failure this whole guard exists to end.
+ */
+let ROW_KEYED_RUNGS = new Set<string>();
 const MAPPING_REMEDY =
   "add the feature to the m(feature, dom, feat) mapping table in aidream/db/migrations/0631_feature_knob_taxonomy_mapping.sql and apply it live";
 
@@ -193,8 +203,8 @@ async function main(): Promise<void> {
   const rows = await loadRegistry(GUARD);
 
   // The rung registry — what knob_index can put in a scope_chain at all.
-  const kinds = await adminQuery<{ kind: string; precedence: number }>(
-    "select kind, precedence from platform.knob_scope_kind order by precedence",
+  const kinds = await adminQuery<{ kind: string; precedence: number; scope_table: string | null }>(
+    "select kind, precedence, scope_table from platform.knob_scope_kind order by precedence",
   );
   if (!kinds.rows || kinds.rows.length === 0) {
     unmeasured(
@@ -204,6 +214,7 @@ async function main(): Promise<void> {
     );
   }
   const registeredKinds = new Set(kinds.rows.map((k) => k.kind));
+  ROW_KEYED_RUNGS = new Set(kinds.rows.filter((k) => k.scope_table !== null).map((k) => k.kind));
 
   // The UI — read from disk, never assumed.
   const ui = readDirText(UNIVERSAL_DIR);

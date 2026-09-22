@@ -47,6 +47,18 @@ export const SUB_ORG_SCOPE_SOURCES = [
   // is real) and needed no change. Live-verified both ways from this repo.
   { kind: "table", noun: "Table" },
   { kind: "agent", noun: "Agent" },
+  // Precedence 70, `platform.rulebook` (`tenant_row`, so `platform.knob_scope_rows`
+  // already lists it with no new branch — the rows come back labelled by the Rulebook's
+  // own name). SETTINGS-3, 2026-09-22: the rung was live in `platform.knob_scope_kind`
+  // since 2026-09-15 and carried by 22 `masterwork.*` keys, and this list — the ONE place
+  // that decides which rungs the universal picker offers — had no entry for it, so
+  // `pickableRungsFor` could not return it and check:settings-ladder-ui measured 22
+  // UNADDRESSED_RUNG findings: an organization could register a per-Rulebook setting and
+  // nobody could set one. There is no per-knob screen and no new screen here: the
+  // organization configuration page already mounts <KnobRungOverrides /> for every key it
+  // renders, and it excludes only `hr.`, so the Masterwork keys were always on it — the
+  // picker simply had no Rulebook to offer.
+  { kind: "rulebook", noun: "Rulebook" },
 ] as const satisfies readonly {
   kind: SubOrgScopeKind;
   noun: string;
