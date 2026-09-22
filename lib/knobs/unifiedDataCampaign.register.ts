@@ -507,6 +507,12 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "Restores production's association graph onto the rehearsal branch. Branch-only tooling.",
     },
     {
+        id: "rehearse-comment-stripper-shared-test",
+        file: "scripts/__tests__/rehearse-comment-stripper-shared.test.ts",
+        kind: "tooling",
+        why: "Jest proof that pnpm db:rehearse and pnpm db:apply strip SQL comments with ONE shared function, so a statement the measure pass sees is the statement the apply sends. Imports migration-target for that function. No database, no credential; never part of a served request.",
+    },
+    {
         id: "migration-target-refusals-test",
         file: "scripts/__tests__/migration-target-refusals.test.ts",
         kind: "tooling",
