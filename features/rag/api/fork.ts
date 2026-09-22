@@ -17,10 +17,22 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
-export async function forkProcessedDocument(sourceId: string): Promise<string> {
+export async function forkProcessedDocument(
+  sourceId: string,
+  organizationId?: string | null,
+): Promise<string> {
+  // WHICH ORGANIZATION THE COPY LANDS IN IS A QUESTION ONLY THE PERSON CAN ANSWER.
+  // The source's organization is where the ORIGINAL lives (usually the library), and the
+  // RPC used to answer it with the caller's personal workspace — a workspace nobody
+  // chose (DEFAULT-ORG-4, 2026-09-22). `ensureOrgId` returns the active organization, or
+  // opens the picker and returns what the person selects; it never substitutes one. It
+  // throws `OrganizationSelectionCancelled` when they close it, which means "not now".
+  const orgId = await ensureOrgId(organizationId);
   const { data, error } = await supabase.rpc("fork_processed_document", {
     p_source_id: sourceId,
+    p_organization_id: orgId,
   });
   // The definer RPC refuses when the caller's grant doesn't reach the source.
   // The raw PostgREST text is captured by the client-wide proxy; the user gets

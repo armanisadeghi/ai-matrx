@@ -18,6 +18,7 @@ import type { PermissionLevel } from "./types";
 import { toDbPermissionLevel } from "./levels";
 import { isJsonObject } from "@/types/json";
 import { operationFailed } from "@/utils/errors";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 export interface ShareLink {
   id: string;
@@ -240,11 +241,20 @@ export async function forkSharedResource(
   resourceType: string,
   resourceId: string,
   shareToken?: string,
+  organizationId?: string | null,
 ): Promise<ForkResult> {
   try {
+    // WHERE THE COPY LANDS IS THE PERSON'S ANSWER, NOT OURS. The source's organization is
+    // where the ORIGINAL lives — often somebody else's workspace or a public library — so
+    // it cannot be reused for the copy, and until 2026-09-22 all three RPCs answered it
+    // with the caller's own personal workspace (DEFAULT-ORG-4). `ensureOrgId` returns the
+    // active organization, or opens the picker and returns what the person selects. It
+    // throws `OrganizationSelectionCancelled` when they close it — "not now", not an error.
+    const orgId = await ensureOrgId(organizationId);
     if (resourceType === "conversation") {
       const { data, error } = await supabase.rpc("fork_shared_conversation", {
         p_conversation_id: resourceId,
+        p_organization_id: orgId,
         p_token: shareToken ?? undefined,
       });
       if (error) return { success: false, error: error.message };
@@ -260,6 +270,7 @@ export async function forkSharedResource(
     if (resourceType === "fc_set") {
       const { data, error } = await supabase.rpc("fork_shared_flashcard_set", {
         p_set_id: resourceId,
+        p_organization_id: orgId,
         p_token: shareToken ?? undefined,
       });
       if (error) return { success: false, error: error.message };
@@ -271,6 +282,7 @@ export async function forkSharedResource(
     if (resourceType === "quiz_session") {
       const { data, error } = await supabase.rpc("fork_shared_quiz", {
         p_quiz_id: resourceId,
+        p_organization_id: orgId,
         p_token: shareToken ?? undefined,
       });
       if (error) return { success: false, error: error.message };

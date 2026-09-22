@@ -33,11 +33,26 @@ export const MATRX_SYSTEM_BOT_USER_ID =
 export async function findOrCreateDirectConversation(
   userA: string,
   userB: string,
+  organizationId: string,
 ): Promise<{ conversationId: string; organizationId: string }> {
+  // THE NOTIFICATION'S OWN RECORD NAMES THE ORGANIZATION. A DM about a task belongs where
+  // the task lives; a DM about a feedback item belongs where the feedback item lives.
+  // Until 2026-09-22 this omitted the argument and the RPC filed every notification
+  // conversation in the SENDER's personal workspace — which for the Matrx System bot meant
+  // a workspace belonging to a bot (DEFAULT-ORG-4).
+  if (!organizationId) {
+    throw new Error(
+      "A direct conversation needs the organization the message is about; none was given.",
+    );
+  }
   const supabase = createAdminClient();
   const { data: conversationId, error: rpcError } = await supabase.rpc(
     "dm_get_or_create_direct_conversation",
-    { p_user1_id: userA, p_user2_id: userB },
+    {
+      p_user1_id: userA,
+      p_user2_id: userB,
+      p_organization_id: organizationId,
+    },
   );
   if (rpcError) throw rpcError;
   if (!conversationId) {
@@ -67,6 +82,11 @@ export interface SendDmOptions {
   content: string;
   /** Optional action chips — `{ kind, payload }` per the message-action registry. */
   actionData?: { kind: string; payload: Record<string, unknown> };
+  /**
+   * The organization the thing this DM is ABOUT lives in — the task's, the feedback
+   * item's. Required: it used to be answered with the sender's personal workspace.
+   */
+  organizationId: string;
 }
 
 export interface SendDmResult {
@@ -83,7 +103,11 @@ export async function sendDm(options: SendDmOptions): Promise<SendDmResult> {
       return { ok: false, error: "self" };
     }
     const { conversationId, organizationId } =
-      await findOrCreateDirectConversation(senderId, options.recipientId);
+      await findOrCreateDirectConversation(
+        senderId,
+        options.recipientId,
+        options.organizationId,
+      );
     const supabase = createAdminClient();
     const { error } = await supabase
       .schema("communication")

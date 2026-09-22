@@ -58,12 +58,30 @@ export async function POST(request: Request) {
         : null) ||
       "Someone";
 
+    // THE TASK NAMES THE ORGANIZATION. A DM about a task belongs where the task lives; it
+    // used to be filed in the ASSIGNER's personal workspace (DEFAULT-ORG-4, 2026-09-22).
+    const { data: taskRow } = await supabase
+      .schema("workspace").from("tasks")
+      .select("organization_id")
+      .eq("id", taskId)
+      .single();
+    if (!taskRow?.organization_id) {
+      return NextResponse.json(
+        {
+          success: false,
+          msg: "We could not tell which organization that task belongs to, so no notification was sent.",
+        },
+        { status: 400 },
+      );
+    }
+
     // In-app DM (actionable: Open / Complete / Snooze) + email, in parallel.
     // Both best-effort; the assignment itself already succeeded.
     const [dmResult, result] = await Promise.all([
       sendDm({
         senderId: user.id,
         recipientId: assigneeId,
+        organizationId: taskRow.organization_id,
         content: `${assignerName} assigned you a task: ${taskTitle}`,
         actionData: {
           kind: "task_reminder",

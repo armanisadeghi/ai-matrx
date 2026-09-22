@@ -55119,6 +55119,14 @@ export type Database = {
         Args: { p_pref: string; p_schema: string; p_table: string }
         Returns: string
       }
+      _rls_emit_policies: {
+        Args: { p_create: string[]; p_drop: string[] }
+        Returns: undefined
+      }
+      _rls_plan_is: {
+        Args: { p_create: string[]; p_kept: string[]; p_tbl: string }
+        Returns: undefined
+      }
       access_arms_from_sources: {
         Args: {
           p_id: string
@@ -77979,22 +77987,45 @@ export type Database = {
       }
       fn_kg_cost_summary: { Args: never; Returns: Json }
       fn_kg_cost_unit_economics: { Args: { p_days?: number }; Returns: Json }
-      fork_processed_document: {
-        Args: { p_source_id: string }
-        Returns: string
-      }
-      fork_shared_conversation: {
-        Args: { p_conversation_id: string; p_token?: string }
-        Returns: Json
-      }
-      fork_shared_flashcard_set: {
-        Args: { p_set_id: string; p_token?: string }
-        Returns: Json
-      }
-      fork_shared_quiz: {
-        Args: { p_quiz_id: string; p_token?: string }
-        Returns: Json
-      }
+      fork_processed_document:
+        | { Args: { p_source_id: string }; Returns: string }
+        | {
+            Args: { p_organization_id: string; p_source_id: string }
+            Returns: string
+          }
+      fork_shared_conversation:
+        | {
+            Args: {
+              p_conversation_id: string
+              p_organization_id: string
+              p_token?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: { p_conversation_id: string; p_token?: string }
+            Returns: Json
+          }
+      fork_shared_flashcard_set:
+        | {
+            Args: {
+              p_organization_id: string
+              p_set_id: string
+              p_token?: string
+            }
+            Returns: Json
+          }
+        | { Args: { p_set_id: string; p_token?: string }; Returns: Json }
+      fork_shared_quiz:
+        | {
+            Args: {
+              p_organization_id: string
+              p_quiz_id: string
+              p_token?: string
+            }
+            Returns: Json
+          }
+        | { Args: { p_quiz_id: string; p_token?: string }; Returns: Json }
       game_finalize_result: {
         Args: { p_display_name?: string; p_session_id: string }
         Returns: Database["education"]["Tables"]["game_result"]["Row"]

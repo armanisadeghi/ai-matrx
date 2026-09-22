@@ -780,7 +780,12 @@ export interface SystemTaskInput {
   dueDate?: string | null;
   priority?: "low" | "medium" | "high" | null;
   assigneeId?: string | null;
-  organizationId?: string | null;
+  /**
+   * The organization whose work this task is — REQUIRED. Omitting it used to file the
+   * task in the caller's personal workspace, where their team could never see it
+   * (DEFAULT-ORG-4, 2026-09-22); the RPC now refuses with 23502 instead.
+   */
+  organizationId: string;
   projectId?: string | null;
   metadata?: Record<string, unknown>;
 }
@@ -800,7 +805,7 @@ export async function upsertSystemTask(
     p_due_date: input.dueDate ?? undefined,
     p_priority: input.priority ?? undefined,
     p_assignee_id: input.assigneeId ?? undefined,
-    p_organization_id: input.organizationId ?? undefined,
+    p_organization_id: input.organizationId,
     p_project_id: input.projectId ?? undefined,
     p_metadata: (input.metadata ?? {}) as Json,
   });
@@ -814,13 +819,14 @@ export async function upsertSystemTask(
 /** Resolve a system task when the underlying work no longer needs the user. */
 export async function resolveSystemTask(
   dedupeKey: string,
-  outcome: "completed" | "cancelled" | "dismissed" = "completed",
-  organizationId?: string | null,
+  outcome: "completed" | "cancelled" | "dismissed",
+  /** REQUIRED — a dedupe key only identifies a task WITHIN an organization. */
+  organizationId: string,
 ): Promise<boolean> {
   const { data, error } = await supabase.rpc("wsp_resolve_system_task", {
     p_dedupe_key: dedupeKey,
     p_outcome: outcome,
-    p_organization_id: organizationId ?? undefined,
+    p_organization_id: organizationId,
   });
   if (error) {
     console.error("resolveSystemTask failed:", error.message);

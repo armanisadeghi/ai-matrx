@@ -483,6 +483,12 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "`pnpm db:based-on` — prints the `-- based-on:` line for a function from the LIVE catalogue. It imports migration-target only to resolve `--based-on-target branch`, which picks WHICH database it measures; a hash taken from one database and checked against the other refuses when the bodies differ. Read-only, run by hand, never part of a served request.",
     },
     {
+        id: "rehearse-migration",
+        file: "scripts/rehearse-migration.ts",
+        kind: "tooling",
+        why: "`pnpm db:rehearse <file> --target clone` — rule 27 (up, inverse, up again) on the nightly dev clone, in one command. It imports migration-target only to resolve the clone's identity and refuse any other target, and every apply it performs is a spawned `pnpm db:apply`. Run by hand, never part of a served request. (Registered by DEFAULT-ORG-4, 2026-09-22: the guard was red on it, and a red guard nobody owns is a guard somebody deletes.)",
+    },
+    {
         id: "check-migrations",
         file: "scripts/check-migrations.ts",
         kind: "tooling",

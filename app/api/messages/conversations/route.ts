@@ -252,22 +252,39 @@ export async function POST(request: NextRequest) {
     // RPC (advisory-locked — no duplicate conversation under concurrency). The
     // cheap find pre-check only sets the `existing` flag / status for the
     // response; it is now race-harmless because the RPC create is atomic.
+    // THE ORGANIZATION THE REQUEST NAMED, for BOTH branches. The group branch below has
+    // read this header since 2026-09-17; the direct branch omitted it and let the RPC's
+    // DEFAULT apply, which meant a conversation between two colleagues was filed in the
+    // sender's own private workspace (DEFAULT-ORG-4, 2026-09-22). Every Matrx client sends
+    // it (`applyOrganizationContextHeader`).
+    const organizationId =
+      request.headers.get("X-Organization-Id")?.trim() ?? "";
+
     if (type === "direct" && participant_ids.length === 1) {
       const otherUserId = participant_ids[0];
+
+      if (organizationId.length === 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            msg: "No organization was named for this conversation, so nothing was created. Choose the organization you are working in and try again.",
+            code: "organization_context_required",
+          },
+          { status: 400 },
+        );
+      }
 
       const { data: preExistingId } = await supabase.rpc(
         "find_dm_direct_conversation",
         { p_user1_id: userId, p_user2_id: otherUserId },
       );
 
-      // `p_organization_id` is omitted — the RPC's SQL DEFAULT (NULL) applies;
-      // the generated arg type is `p_organization_id?: string` (optional, not
-      // nullable), so passing an explicit `null` is a type error.
       const { data: convId, error: convError } = await supabase.rpc(
         "dm_get_or_create_direct_conversation",
         {
           p_user1_id: userId,
           p_user2_id: otherUserId,
+          p_organization_id: organizationId,
         },
       );
       if (convError || !convId) {
@@ -311,8 +328,6 @@ export async function POST(request: NextRequest) {
     // the organization on `X-Organization-Id` (the header every Matrx client
     // carries), and with none the request is refused with the remedy.
     // common-docs/policies/context-is-carried-never-rebuilt.md
-    const organizationId =
-      request.headers.get("X-Organization-Id")?.trim() ?? "";
     if (organizationId.length === 0) {
       return NextResponse.json(
         {

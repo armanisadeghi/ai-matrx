@@ -95,7 +95,13 @@ export function DuplicateToEditButton({
         toast.error(result.error ?? "Couldn't save a copy");
         setBusy(false);
       }
-    } catch {
+    } catch (e) {
+      // The person closed the organization picker. That is an ANSWER — "not now" — so
+      // nothing happened and nothing is said (lib/organizations/personalOrg#ensureOrgId).
+      if (e instanceof Error && e.name === "OrganizationSelectionCancelled") {
+        setBusy(false);
+        return;
+      }
       toast.error("Couldn't save a copy");
       setBusy(false);
     }

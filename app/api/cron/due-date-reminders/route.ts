@@ -73,7 +73,7 @@ export async function GET(request: Request) {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const { data: tasks, error } = await workspaceDb(supabase)
       .from('tasks')
-      .select('id, title, created_by, due_date, assignee_id')
+      .select('id, title, created_by, due_date, assignee_id, organization_id')
       .is('deleted_at', null)
       .not('status', 'in', '(completed,cancelled,dismissed)')
       .not('due_date', 'is', null)
@@ -209,6 +209,9 @@ export async function GET(request: Request) {
             ? sendDm({
                 senderId: null,
                 recipientId: userId,
+                // The reminder is about THIS task, so it is filed where the task lives —
+                // not in the Matrx System bot's own workspace (DEFAULT-ORG-4).
+                organizationId: userTasks[0].organization_id,
                 content: `Task reminder — "${userTasks[0].title}" is ${urgencyLabel[userTasks[0].urgency]}.`,
                 actionData: {
                   kind: 'task_reminder',
@@ -222,6 +225,9 @@ export async function GET(request: Request) {
             : sendDm({
                 senderId: null,
                 recipientId: userId,
+                // A digest covers several tasks; it is filed where the first one lives,
+                // which is the organization whose work prompted the reminder run.
+                organizationId: userTasks[0].organization_id,
                 content: [
                   `You have ${userTasks.length} tasks needing attention:`,
                   ...userTasks

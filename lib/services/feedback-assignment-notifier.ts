@@ -131,7 +131,14 @@ export async function notifyFeedbackAssigned(
   // Fire DM and email in parallel — best effort.
   const dmContent = buildDmContent(feedback, assignerName, categoryName);
   const [dmResult, emailResult] = await Promise.allSettled([
-    sendDm({ senderId: assignerId, recipientId: newAssigneeId, content: dmContent }),
+    // The DM about a feedback item belongs where the feedback item lives, not in the
+    // assigner's private workspace (DEFAULT-ORG-4, 2026-09-22).
+    sendDm({
+      senderId: assignerId,
+      recipientId: newAssigneeId,
+      content: dmContent,
+      organizationId: feedback.organization_id ?? "",
+    }),
     sendFeedbackAssignmentEmail({
       assigneeId: newAssigneeId,
       assignerName,
