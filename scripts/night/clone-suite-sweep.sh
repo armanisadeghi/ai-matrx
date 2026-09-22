@@ -81,6 +81,28 @@ sweep_reap() {  # sweep_reap <application_name>
     "select count(*) from (select pg_terminate_backend(pid) from pg_stat_activity
        where application_name = '$1' and pid <> pg_backend_pid()) t" 2>&1)"
   say "  reaped server backends for $1: ${killed:-?}"
+  # 🚨 WAIT FOR THE BACKEND TO BE GONE, NOT FOR THE UNGRANTED-LOCK COUNT.
+  # SUITES-TIDY 2026-09-22: the first version waited for `pg_locks where not granted = 0`, and
+  # that is the WRONG condition — a terminated backend's own locks are GRANTED, and it keeps
+  # them for as long as its rollback takes. A 5,000-row write rolls back for longer than the
+  # next suite's 10-second lock_timeout, so the ungranted count is 0 immediately, the wait
+  # returns at once, and the next three suites die anyway. Measured twice: on 2026-09-22 the
+  # cap on `realtime2_write_cost` took `writeperf3_five_thousand`, `_green`, `_parity` and
+  # `_profile` down with it, and after that suite was given a compute declaration the cap moved
+  # to `writeperf3_five_thousand` and took `_green`, `_parity` and `_profile` down instead —
+  # the same three, from a different source. So this waits until NO backend carries that
+  # application_name any more, which is the fact that actually matters, and only then checks
+  # that nothing is stuck waiting.
+  for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
+    n="$("$PSQL" "$DSN" -qAt -c \
+      "select count(*) from pg_stat_activity where application_name = '$1' and pid <> pg_backend_pid()" 2>&1)"
+    [ "$n" = "0" ] && break
+    sleep 2
+  done
+  if [ "$n" != "0" ]; then
+    say "  WARNING: ${n:-?} backend(s) still carry $1 after 60s; the next suites may be scored unfairly"
+    return 0
+  fi
   for i in 1 2 3 4 5 6 7 8 9 10; do
     n="$("$PSQL" "$DSN" -qAt -c 'select count(*) from pg_locks where not granted' 2>&1)"
     [ "$n" = "0" ] && return 0

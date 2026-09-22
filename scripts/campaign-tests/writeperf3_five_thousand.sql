@@ -30,7 +30,17 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'writeperf3_five_thousand.sql'
-\set requires 'grant:authenticated:custom.person_kernel_id'
+-- SUITES-TIDY 2026-09-22 — THE SIZE-AWARE CEILING. This is a 5,000-row write measured against
+-- a wall-clock cap. On the nightly dev clone — production's data on SMALLER COMPUTE
+-- (shared_buffers 2 GB against production's 4 GB, effective_cache_size 6 GB against 12 GB, 2
+-- parallel workers against 4) — it takes 155s in isolation and hits the sweep's 180s cap, and a
+-- capped suite's backend rolls back for longer than the next suite's lock_timeout, so it takes
+-- its three alphabetical neighbours down with it every time. It now DECLARES the compute it
+-- needs and SKIPS BY NAME on anything smaller, which the preamble prints as "this is NOT a
+-- pass". The sweep's reap was hardened in the same change so a cap can no longer poison a
+-- neighbour at all; this declaration is the other half, because a suite that cannot finish
+-- inside its own cap is not measuring anything either way.
+\set requires 'grant:authenticated:custom.person_kernel_id|compute:shared_buffers:524288'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
