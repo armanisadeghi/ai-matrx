@@ -107,7 +107,7 @@ APPLY_N=$(grep -c '^APPLY' "$WORK/plan.tsv" 2>/dev/null || true); APPLY_N=${APPL
 REFUSE_N=$(grep -c '^REFUSE' "$WORK/plan.tsv" 2>/dev/null || true); REFUSE_N=${REFUSE_N:-0}
 say "delta: $APPLY_N file(s) to apply, $REFUSE_N refusal(s)"
 
-while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner selector reapply reason; do
+while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner selector reapply reason applied_at; do
   [ "$kind" = "REFUSE" ] || continue
   say "REFUSED (named, nothing applied for it): $source/$filename — $reason"
 done < "$WORK/plan.tsv"
@@ -118,7 +118,7 @@ if [ "$APPLY_N" -eq 0 ]; then
   exit 0
 fi
 
-while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner selector reapply reason; do
+while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner selector reapply reason applied_at; do
   [ "$kind" = "APPLY" ] || continue
   say "  $source/$filename [$runner${selector:+/$selector}] — $reason"
 done < "$WORK/plan.tsv"
@@ -128,17 +128,16 @@ if [ "$DRY_RUN" = "1" ]; then
   exit 0
 fi
 
-# ── apply, in production's own ledger order ──────────────────────────────────
-APPLIED=0; FAILED=0; FAILED_NAMES=()
-while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner selector reapply reason; do
-  [ "$kind" = "APPLY" ] || continue
-  local_rc=0
+# ── one file through its own runner ──────────────────────────────────────────
+# The ONLY apply path this job has. Output goes to $APPLY_OUT so a refusal can be read.
+APPLY_OUT="$WORK/apply.out"
+apply_one() {  # apply_one <source> <filename> <repo> <relpath> <runner> <selector> <reapply>
+  local source="$1" filename="$2" repo="$3" relpath="$4" runner="$5" selector="$6" reapply="$7"
+  local -a cmd
   if [ "$runner" = "frontend" ]; then
     cmd=(node node_modules/tsx/dist/cli.mjs scripts/apply-migration.ts "$relpath" --target clone)
     [ "$selector" = "campaign" ] && cmd+=(--source campaign --lane "$LANE")
     [ "$reapply" = "yes" ] && cmd+=(--reapply)
-    say "applying (frontend): $relpath"
-    ( cd "$repo" && "${cmd[@]}" ) || local_rc=$?
   else
     cmd=(uv run python db/apply_migrations.py --no-generate --target clone)
     if [ "$reapply" = "yes" ]; then cmd+=(--rerun "$filename"); else cmd+=(--only "$filename"); fi
@@ -146,22 +145,182 @@ while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner sele
       campaign|inverse) cmd+=(--source "$selector"); cmd+=(--lane "$LANE") ;;
       "") [ "$source" != "aidream" ] && cmd+=(--source "$source") ;;
     esac
-    say "applying (aidream): $relpath"
-    ( cd "$repo" && "${cmd[@]}" ) || local_rc=$?
+  fi
+  say "applying ($runner): $relpath$([ "$reapply" = yes ] && print -n ' (reapply)')"
+  ( cd "$repo" && "${cmd[@]}" ) 2>&1 | tee "$APPLY_OUT"
+  return ${pipestatus[1]}
+}
+
+# ── the body hash the clone actually holds, for one `schema.name(argtypes)` ──
+# Built exactly the way `pnpm db:based-on` and `migration-based-on.ts` build it, so the number
+# is comparable with what a `-- based-on:` line declares.
+body_hash_sql() {  # body_hash_sql <schema.name(argtypes)>
+  local sig="$1" q n a
+  q="${sig%%\(*}"; a="${sig#*\(}"; a="${a%\)}"
+  n="${q##*.}"; q="${q%.*}"
+  print -r -- "select encode(sha256(convert_to(pg_get_functiondef(p.oid), 'utf8')), 'hex')
+       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = '$q' and p.proname = '$n'
+        and coalesce((select string_agg(format_type(t, null), ', ' order by ord)
+                        from unnest(p.proargtypes) with ordinality as u(t, ord)), '') = '$a'"
+}
+
+clone_body_hash() {  # clone_body_hash <schema.name(argtypes)>
+  export PGPASSWORD="$CLONE_PW"
+  "$PSQL" "${CLONE_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c "$(body_hash_sql "$1")" 2>/dev/null | tr -d ' \r'
+}
+
+prod_body_hash() {  # prod_body_hash <schema.name(argtypes)> — SELECT-only, proven read-only
+  export PGPASSWORD="$P_PW"
+  night_readonly_psql "${PROD_ARGS[@]}" --sql "$(body_hash_sql "$1")" 2>/dev/null | tr -d ' \r'
+}
+
+# ── re-establish parity before giving up on a DD-220 refusal ─────────────────
+#
+# 🚨 CHAIR RULING 2026-09-22. The clone is the MIRROR; a rehearsal that leaves a body moved is
+# the defect, not this job. So a `-- based-on:` refusal is NOT skipped and NOT bypassed: the
+# file(s) that own the drifted body are found by (function name -> production's ledger -> the
+# file on origin/main, checksum-verified), re-applied at `--target clone --reapply` newest
+# first, and the catch-up retries the delta file only once the body hashes to what that file
+# DECLARES. If no ledgered production file reproduces it, this refuses by name. DD-220 itself
+# is never weakened — there is no flag here that does that, and there never may be.
+# Returns 0 = repaired, retry the file. 2 = the file is superseded on production, skip it.
+# 1 = neither; the refusal stands and is reported by name.
+repair_parity() {  # repair_parity <cutoff applied_at>  (reads $APPLY_OUT, $REPAIR_EXCLUDE)
+  local cutoff="$1" repaired=0 line sig want fn got
+  local -a decls
+  SUPERSEDED_ON_PRODUCTION=0
+  decls=("${(@f)$(grep -oE '\`[^`]+\` based on sha256 [0-9a-f]{64}' "$APPLY_OUT" 2>/dev/null)}")
+  [ -n "${decls[1]:-}" ] || return 1
+  for line in "${decls[@]}"; do
+    [ -n "$line" ] || continue
+    sig="${line#\`}"; sig="${sig%%\`*}"
+    want="${line##* }"
+    fn="${sig%%\(*}"
+    got="$(clone_body_hash "$sig")"
+    if [ "$got" = "$want" ]; then continue; fi
+    # 🚨 PARITY IS THE CRITERION, NOT THE FILE'S DECLARATION. Measured live 2026-09-22:
+    # `doorsdecide3_two_doors_ask_the_wall_in_their_own_body.sql` declares
+    # `custom.read_records_archived` at f3a603af…, and BOTH production and the clone hold
+    # 0c08c11f… — production ran that file at 07:58Z and something later replaced the body, so
+    # the declaration is stale against PRODUCTION too. The clone is already level; the file is
+    # HISTORY, exactly like an inverse production superseded, and carrying it would write an
+    # OLD body onto the clone — the opposite of the mirror. So: if the clone and production
+    # agree on this body, nothing is repaired and nothing is applied.
+    local prod_has; prod_has="$(prod_body_hash "$sig")"
+    if [ -n "$prod_has" ] && [ "$got" = "$prod_has" ]; then
+      say "  parity: the clone and PRODUCTION both hold $got for \`$sig\`; the file declares"
+      say "    $want, which production itself has moved past. Nothing is drifted, so this file"
+      say "    is SUPERSEDED history, not state. Not carried, and DD-220 is not touched."
+      SUPERSEDED_ON_PRODUCTION=1
+      continue
+    fi
+    say "  parity: the clone's \`$sig\` is ${got:-(absent)}, production holds ${prod_has:-(absent)},"
+    say "    and production's file declares $want. The clone has DRIFTED; repairing."
+    say "  parity: looking for the ledgered production file that owns that body."
+    /usr/bin/env python3 "$FRONTEND/scripts/night/clone-catchup-repair.py" \
+      "$WORK/production.tsv" "$fn" "$cutoff" "$REPAIR_EXCLUDE" > "$WORK/candidates.tsv" || return 1
+    local ck2 c_source c_file c_sum c_repo c_rel c_runner c_sel c_re c_why fixed=0
+    while IFS=$'\x1f' read -r ck2 c_source c_file c_sum c_repo c_rel c_runner c_sel c_re c_why; do
+      [ "$ck2" = "CANDIDATE" ] || continue
+      say "  parity: re-applying production's bytes of $c_source/$c_file to put \`$fn\` back."
+      apply_one "$c_source" "$c_file" "$c_repo" "$c_rel" "$c_runner" "$c_sel" yes >/dev/null 2>&1 || true
+      got="$(clone_body_hash "$sig")"
+      if [ "$got" = "$want" ]; then
+        say "  parity RE-ESTABLISHED for \`$sig\` by $c_file."
+        fixed=1; repaired=1; break
+      fi
+    done < "$WORK/candidates.tsv"
+    if [ "$fixed" != "1" ]; then
+      say "  parity REFUSED for \`$sig\`: no file production has ledgered reproduces that body"
+      say "    (clone ${got:-absent}, wanted $want). The catch-up will not bypass DD-220."
+      return 1
+    fi
+  done
+  [ "$repaired" = "1" ] && return 0
+  [ "$SUPERSEDED_ON_PRODUCTION" = "1" ] && return 2
+  return 1
+}
+
+
+# ── is the clone already level with production on everything this file writes? ──
+#
+# 🚨 THE SAME CRITERION, ONE STEP WIDER. A `-- based-on:` refusal names a signature; a plain
+# `create function` replayed onto a clone that already carries it answers 42723 and names
+# nothing. Both ask the same question — are the clone and production already level on the
+# bodies this file writes? — so both get the same answer. Measured live 2026-09-22:
+# `suitestidy2_a_refusal_names_the_door_the_person_called.sql` refused 42723 because a lane had
+# already rehearsed `custom.doors_refusing_in_another_doors_name` onto the clone; the body was
+# already production's, so there was nothing to carry and nothing to repair.
+already_level() {  # already_level <repo> <relpath> -> 0 when every body this file writes agrees
+  local repo="$1" relpath="$2" name any=0 c p
+  local -a names
+  names=("${(@f)$(/usr/bin/env python3 "$FRONTEND/scripts/night/clone-catchup-repair.py" \
+            --functions-written "$repo/$relpath" 2>/dev/null)}")
+  for name in "${names[@]}"; do
+    [ -n "$name" ] || continue
+    any=1
+    export PGPASSWORD="$CLONE_PW"
+    c="$("$PSQL" "${CLONE_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c "$(name_hashes_sql "$name")" 2>/dev/null)"
+    export PGPASSWORD="$P_PW"
+    p="$(night_readonly_psql "${PROD_ARGS[@]}" --sql "$(name_hashes_sql "$name")" 2>/dev/null)"
+    [ -n "$p" ] || return 1
+    [ "$c" = "$p" ] || return 1
+  done
+  [ "$any" = "1" ] || return 1
+  return 0
+}
+
+name_hashes_sql() {  # name_hashes_sql <schema.name> — every overload, signature + hash, ordered
+  local q="${1%.*}" n="${1##*.}"
+  print -r -- "select string_agg(sig || ' ' || h, '|' order by sig) from (
+       select n.nspname || '.' || p.proname || '(' || coalesce(
+                (select string_agg(format_type(t, null), ', ' order by ord)
+                   from unnest(p.proargtypes) with ordinality as u(t, ord)), '') || ')' as sig,
+              encode(sha256(convert_to(pg_get_functiondef(p.oid), 'utf8')), 'hex') as h
+         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = '$q' and p.proname = '$n' and p.prokind in ('f','p')) s"
+}
+
+# ── apply, in production's own ledger order ──────────────────────────────────
+APPLIED=0; FAILED=0; REPAIRED=0; SUPERSEDED=0; FAILED_NAMES=(); SUPERSEDED_NAMES=()
+while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner selector reapply reason applied_at; do
+  [ "$kind" = "APPLY" ] || continue
+  local_rc=0
+  apply_one "$source" "$filename" "$repo" "$relpath" "$runner" "$selector" "$reapply" || local_rc=$?
+
+  if [ $local_rc -ne 0 ] && ! grep -q 'based on sha256' "$APPLY_OUT" 2>/dev/null \
+     && already_level "$repo" "$relpath"; then
+    SUPERSEDED=$((SUPERSEDED+1))
+    SUPERSEDED_NAMES+=("$source/$filename (already level: every body it writes matches production)")
+    say "ALREADY LEVEL: $source/$filename did not land, and every function body it writes already"
+    say "  hashes identically on the clone and on production. Nothing to carry, nothing to repair."
+    continue
+  fi
+
+  if [ $local_rc -ne 0 ] && grep -q 'based on sha256' "$APPLY_OUT" 2>/dev/null; then
+    say "PARITY DRIFT on $source/$filename — the clone's bodies are not production's. Repairing."
+    REPAIR_EXCLUDE="$filename"
+    repair_parity "$applied_at"; parity_rc=$?
+    if [ $parity_rc -eq 0 ]; then
+      REPAIRED=$((REPAIRED+1))
+      local_rc=0
+      apply_one "$source" "$filename" "$repo" "$relpath" "$runner" "$selector" "$reapply" || local_rc=$?
+    elif [ $parity_rc -eq 2 ]; then
+      SUPERSEDED=$((SUPERSEDED+1))
+      SUPERSEDED_NAMES+=("$source/$filename")
+      say "SUPERSEDED: $source/$filename is not carried — production has moved past the body it"
+      say "  declares and the clone already holds production's. Nothing was applied for it."
+      continue
+    fi
   fi
 
   if [ $local_rc -ne 0 ]; then
     # 🚨 A REFUSAL IS NOT A CRASH, AND STOPPING ON ONE STRANDS THE CLONE HALF-CAUGHT-UP.
     # Both runners are transactional: a refused or failed file lands NOTHING and writes no
     # ledger row, so the clone is exactly where it was before that file was attempted and the
-    # next file is judged on its own merits — including its own prerequisites, loudly, if they
-    # are missing. Measured on the first two real runs (2026-09-22): stopping at the first
-    # refusal carried 1 of 65 files, then 17 of 55, and both refusals were the DD-220
-    # `-- based-on:` check correctly protecting a body a REHEARSAL had moved on the clone —
-    # the clone is production's snapshot PLUS whatever lanes rehearsed on it, so a production
-    # file written against production's body at that moment can legitimately disagree with it.
-    # That is the runner doing its job and must never be bypassed here; there is no flag in
-    # this job that softens it, and there never may be. So: name it, keep going, fail the run.
+    # next file is judged on its own merits. Measured on the first two real runs (2026-09-22):
+    # stopping at the first refusal carried 1 of 65 files, then 17 of 55.
     FAILED=$((FAILED+1))
     FAILED_NAMES+=("$source/$filename (exit $local_rc)")
     say "REFUSED/FAILED: $source/$filename exited $local_rc — nothing landed for it. Continuing"
@@ -180,8 +339,10 @@ while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner sele
     >/dev/null 2>&1 || say "  (note: could not mark the ledger row rehearsal_on=catchup)"
 done < "$WORK/plan.tsv"
 
+say "parity repairs made: $REPAIRED; superseded on production: $SUPERSEDED"
+for n in "${SUPERSEDED_NAMES[@]:-}"; do [ -n "$n" ] && say "  superseded, not carried: $n"; done
 for n in "${FAILED_NAMES[@]:-}"; do [ -n "$n" ] && say "  did not land: $n"; done
-say "clone-catchup done: $APPLIED applied, $FAILED failed, $REFUSE_N refused."
+say "clone-catchup done: $APPLIED applied, $REPAIRED parity repair(s), $SUPERSEDED superseded, $FAILED failed, $REFUSE_N refused."
 [ "$FAILED" -gt 0 ] && exit 70
 [ "$REFUSE_N" -gt 0 ] && exit 71
 exit 0

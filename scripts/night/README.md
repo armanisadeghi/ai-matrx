@@ -100,6 +100,29 @@
 > That is what earns the window exemption: `night_window_guard` grants it only once every database
 > the run can WRITE has been proven to be the clone. There is no flag here that removes the window.
 >
+> **PARITY IS THE CRITERION (chair ruling 2026-09-22).** The clone is the MIRROR; lanes may
+> rehearse on it only because rule 27's third leg returns it to production parity, so a rehearsal
+> that leaves a body moved is the defect, not the catch-up. Therefore:
+> - **`pnpm db:rehearse … --target clone` asserts parity on exit.** After leg 3 every function
+>   body the pair touches is hashed on the clone AND on production (SELECT-only, the server
+>   proving it refuses a write), and a difference is printed by name and exits non-zero. No flag
+>   skips it. Shown RED then GREEN by `pnpm check:clone-parity:self-test` (a body moved on the
+>   clone is named; a body absent is named; putting it back is silent).
+> - **The catch-up never bypasses DD-220.** On a `-- based-on:` refusal it compares the clone's
+>   body with PRODUCTION'S, and there are exactly three answers: they DIFFER → the clone drifted,
+>   so it finds the ledgered production file that owns that body (by the function name, on
+>   `origin/main`, checksum-verified), re-applies it at `--target clone --reapply` newest-first
+>   until the body hashes to what the delta file declares, then retries the file — and if no
+>   ledgered file reproduces it, refuses by name. They AGREE → production has moved past the body
+>   its own file declares, so the file is SUPERSEDED history, not state, and carrying it would
+>   write an OLD body onto the clone. A failure that is not a based-on refusal (a plain
+>   `create function` answering 42723 on a clone a lane already rehearsed onto) asks the same
+>   question one step wider: if every body the file writes already matches production, it is
+>   ALREADY LEVEL. Measured live the same day: `custom.portals` was drifted and was repaired from
+>   `orgcleanup_a_portal_is_archived_never_deleted.sql`; `custom.read_records_archived` was NOT
+>   drifted (clone and production both `0c08c11f…`, the file declaring `f3a603af…`) and was
+>   correctly not carried.
+>
 > **A refusal is not a crash.** Both runners are transactional, so a refused file lands nothing
 > and writes no ledger row; the job names it, continues with the rest of the delta and exits
 > nonzero listing every one. Stopping at the first refusal carried 1 of 65 files, then 17 of 55.
@@ -107,8 +130,9 @@
 > clone (the clone is production's snapshot PLUS whatever lanes rehearsed on it) and is never
 > bypassed by this job.
 >
-> **First real run, 2026-09-22 16:23–16:37Z:** delta 65 → **56 files applied**, 2 refused (both
-> DD-220), converging to 5 (3 of them churn lanes created on the clone during the run). Armed as
+> **Real runs, 2026-09-22 16:23–16:58Z:** delta 65 → **58 files applied**, 1 parity repair, 2
+> superseded/already-level, **0 failures, exit 0**, converging to a standing delta that is churn
+> lanes create on the clone while the job runs. Armed as
 > the one-shot `com.aimatrx.night-sweep.clone-catchup` (2026-09-23 01:45 PT, after
 > `clone_refresh_nightly` at 01:00) plus `com.aimatrx.night.clone-catchup-nightly` (daily 01:45),
 > **loaded but disabled** until the one-shot's log is clean — the same way branch-refresh is armed.

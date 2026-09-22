@@ -120,7 +120,28 @@ def inverse_base(filename: str) -> str | None:
     return None
 
 
+_TREE: dict[Path, set[str]] = {}
+
+
+def _tree(repo: Path) -> set[str]:
+    """Every path committed on origin/main, read ONCE per repo.
+
+    A `git show` per candidate path is a process per path: the first live repair run spent
+    ~100 seconds per function looking for the file that owns it, almost all of it in git.
+    """
+    if repo not in _TREE:
+        out = subprocess.run(
+            ["git", "-C", str(repo), "ls-tree", "-r", "--name-only", "origin/main"],
+            capture_output=True,
+            check=False,
+        )
+        _TREE[repo] = set(out.stdout.decode("utf-8", "replace").splitlines()) if out.returncode == 0 else set()
+    return _TREE[repo]
+
+
 def git_bytes(repo: Path, relpath: str) -> bytes | None:
+    if relpath not in _tree(repo):
+        return None
     try:
         out = subprocess.run(
             ["git", "-C", str(repo), "show", f"origin/main:{relpath}"],
@@ -356,7 +377,7 @@ def main() -> int:
         lines.append(
             SEP.join(
                 ["APPLY", r["source"], r["filename"], r["checksum"], str(repo), relpath,
-                 runner, selector, reapply, reason]
+                 runner, selector, reapply, reason, r["applied_at"]]
             )
         )
 

@@ -83,6 +83,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { connectDirect } from "./lib/direct-db";
+import { functionsTouched, openProductionReadOnly, parityDrift } from "./lib/clone-parity";
 import { onceAsync, withBuildLockCleanup } from "./lib/build-lock-cleanup";
 import {
   cloneRefOverride,
@@ -925,6 +926,72 @@ async function main(): Promise<number> {
     return 1;
   }
   console.log(`${TAG.ok}leg 3 - up re-applied on the clone ${C.dim}(${a3.ms} ms)${C.reset}`);
+
+  // -- the exit gate: the clone is a MIRROR, so leg 3 must have put it back ---
+  //
+  // 🚨 CHAIR RULING 2026-09-22 (lane CLONE-CATCHUP). Lanes may rehearse on the clone ONLY
+  // because rule 27's third leg returns it to production parity. A rehearsal that walks away
+  // with a function body moved is the defect — and it is not a theoretical one: it is why the
+  // nightly catch-up could not carry `doorsdecide3_two_doors_ask_the_wall_in_their_own_body.sql`
+  // and `suitestidy2_a_refusal_names_the_door_the_person_called.sql` over on 2026-09-22, since
+  // the runner's DD-220 check correctly refuses to write production's next body over a body
+  // somebody else moved. So leg 3 is not the end: every function body this pair touches is
+  // hashed on the clone AND on production (SELECT-only, the server proving it refuses a write),
+  // and a difference is printed BY NAME and exits non-zero. There is no flag that skips it.
+  {
+    const names = [...new Set([...functionsTouched(upSql), ...functionsTouched(downSql)])].sort();
+    if (names.length === 0) {
+      console.log(
+        `${TAG.info}parity: this pair replaces no function body, so there is nothing to compare.`,
+      );
+    } else {
+      let prod;
+      try {
+        prod = await openProductionReadOnly(cloneRef.parentRef);
+      } catch (err) {
+        console.error(
+          `${TAG.fail}parity check could not read production: ${(err as Error).message}\n` +
+            `  A rehearsal that cannot prove it left the clone level with production is not a ` +
+            `finished rehearsal. Refusing rather than passing unmeasured.`,
+        );
+        return 1;
+      }
+      const cloneClient = await connectDirect({ ...env }, "db:rehearse (parity, clone)");
+      try {
+        const drift = await parityDrift(
+          async (sql, params) => (await cloneClient.query(sql, params as never)).rows,
+          prod.q,
+          names,
+        );
+        if (drift.length) {
+          console.error(
+            `${TAG.fail}${drift.length} function body/bodies are NOT level with production after ` +
+              `leg 3. The clone is the MIRROR; a rehearsal that leaves it moved is the defect.`,
+          );
+          for (const d of drift) {
+            console.error(
+              `  ${C.red}- ${d.signature}: ${d.why}\n` +
+                `    clone      ${d.onClone ?? "(absent)"}\n` +
+                `    production ${d.onProduction ?? "(absent)"}${C.reset}`,
+            );
+          }
+          console.error(
+            `  Remedy: put the body back to production's — re-apply production's ledgered bytes ` +
+              `of the file that owns it at ${C.bold}--target clone --reapply${C.reset} — then ` +
+              `re-run this rehearsal. Do not leave the clone here.`,
+          );
+          return 1;
+        }
+        console.log(
+          `${TAG.ok}parity: ${names.length} function name(s) hash identically on the clone and on ` +
+            `production ${C.dim}(read-only, project ref ${cloneRef.parentRef})${C.reset}`,
+        );
+      } finally {
+        await cloneClient.end().catch(() => undefined);
+        await prod.client.end().catch(() => undefined);
+      }
+    }
+  }
 
   console.log(
     `\n${TAG.ok}${C.bold}rule 27 complete on the dev clone ${cloneRef.cloneRef}${C.reset} - ` +
