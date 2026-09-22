@@ -30,8 +30,6 @@ export interface InterviewQuestionsState {
   loading: boolean;
   /** The read's own failure, in its words. Never a silent empty list. */
   error: string | null;
-  /** The question read hit its cap — the interview on screen is short. */
-  truncated: boolean;
   /** Merge a row this tab just wrote (or re-read) into the held list. */
   applyRow: (row: DecisionQuestionRow) => void;
   reload: () => void;
@@ -43,7 +41,6 @@ export function useInterviewQuestions(
   const [questions, setQuestions] = useState<DecisionQuestionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [truncated, setTruncated] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
@@ -54,7 +51,6 @@ export function useInterviewQuestions(
         const result = await listQuestions(interviewId);
         if (!live) return;
         setQuestions(result.questions);
-        setTruncated(result.truncated);
         setError(null);
       } catch (readError) {
         if (!live) return;
@@ -110,7 +106,7 @@ export function useInterviewQuestions(
 
   const reload = useCallback(() => setReloadToken((token) => token + 1), []);
 
-  return { questions, loading, error, truncated, applyRow, reload };
+  return { questions, loading, error, applyRow, reload };
 }
 
 /** Version-monotonic merge. An older-or-equal payload is dropped. */

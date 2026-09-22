@@ -87,7 +87,6 @@ export function InterviewClient({
     questions,
     loading,
     error,
-    truncated,
     applyRow,
     reload,
   } = useInterviewQuestions(interviewId);
@@ -639,12 +638,6 @@ export function InterviewClient({
               </p>
             ) : null}
             <p>Answers save straight to the record.</p>
-            {truncated ? (
-              <p className="text-warning">
-                This interview holds more questions than one page can read. Some
-                are not shown.
-              </p>
-            ) : null}
           </div>
         }
       />

@@ -6,22 +6,21 @@
 // `data_class='private'`, granted to the filer and the respondent), so the
 // list holds nothing the reader is not already entitled to.
 
+import { readAllRows } from "@ai-matrx/data/db";
 import type { ArchiveFilterValue } from "@ai-matrx/design-system";
 import { supabase } from "@/utils/supabase/client";
-import type { DecisionInterviewRow, InterviewListRow } from "../types";
-import { LIST_CAP, db } from "./db";
+import type {
+  DecisionInterviewRow,
+  DecisionQuestionRow,
+  InterviewListRow,
+} from "../types";
+import { db } from "./db";
 
 /** A failure a screen must SAY, never swallow. */
 export class QuestionDeskReadError extends Error {}
 
 export interface InterviewListResult {
   rows: InterviewListRow[];
-  /**
-   * True when the question read hit the cap, so the counts on screen are a
-   * floor rather than a total. The list SAYS so — it never prints a number it
-   * knows may be short.
-   */
-  countsTruncated: boolean;
 }
 
 /**
@@ -35,41 +34,39 @@ export interface InterviewListResult {
 export async function listInterviews(
   archived: ArchiveFilterValue,
 ): Promise<InterviewListResult> {
-  let query = db()
-    .from("decision_interview")
-    .select("*")
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false })
-    .limit(LIST_CAP);
-
-  if (archived === "active") query = query.is("archived_at", null);
-  else if (archived === "archived") query = query.not("archived_at", "is", null);
-
-  const { data, error } = await query;
-  if (error) {
-    throw new QuestionDeskReadError(
-      `The interviews could not be read: ${error.message}`,
-    );
-  }
-  const interviews = (data ?? []) as DecisionInterviewRow[];
-  if (interviews.length === 0) return { rows: [], countsTruncated: false };
+  const interviews = await readAllRows<DecisionInterviewRow>(
+    ({ from, to }) => {
+      let query = db()
+        .from("decision_interview")
+        .select("*", { count: "exact" })
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, to);
+      if (archived === "active") query = query.is("archived_at", null);
+      else if (archived === "archived") query = query.not("archived_at", "is", null);
+      return query;
+    },
+    { label: `interview.decision_interview[${archived}]` },
+  );
+  if (interviews.length === 0) return { rows: [] };
 
   const ids = interviews.map((row) => row.id);
-  const { data: questionRows, error: questionError } = await db()
-    .from("decision_question")
-    .select("interview_id,status,answered_at,delivered_at")
-    .in("interview_id", ids)
-    .is("deleted_at", null)
-    .order("interview_id", { ascending: true })
-    .limit(LIST_CAP + 1);
-  if (questionError) {
-    throw new QuestionDeskReadError(
-      `The interviews were read but their question counts were not: ${questionError.message}`,
-    );
-  }
-
-  const counted = questionRows ?? [];
-  const countsTruncated = counted.length > LIST_CAP;
+  const counted = await readAllRows<Pick<
+    DecisionQuestionRow,
+    "interview_id" | "status" | "answered_at" | "delivered_at"
+  >>(
+    ({ from, to }) =>
+      db()
+        .from("decision_question")
+        .select("interview_id,status,answered_at,delivered_at", { count: "exact" })
+        .in("interview_id", ids)
+        .is("deleted_at", null)
+        .order("interview_id", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "interview.decision_question counts" },
+  );
   const tally = new Map<
     string,
     { open: number; answered: number; delivered: number; total: number }
@@ -77,7 +74,7 @@ export async function listInterviews(
   for (const id of ids) {
     tally.set(id, { open: 0, answered: 0, delivered: 0, total: 0 });
   }
-  for (const row of counted.slice(0, LIST_CAP)) {
+  for (const row of counted) {
     const bucket = tally.get(row.interview_id as string);
     if (!bucket) continue;
     bucket.total += 1;
@@ -91,7 +88,6 @@ export async function listInterviews(
   );
 
   return {
-    countsTruncated,
     rows: interviews.map((row) => {
       const bucket = tally.get(row.id) ?? {
         open: 0,

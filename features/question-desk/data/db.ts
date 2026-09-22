@@ -25,13 +25,3 @@ export function questionDeskDb<C extends SupabaseClient<Database>>(client: C) {
 export function db() {
   return questionDeskDb(supabase);
 }
-
-/**
- * A read that cannot silently truncate. PostgREST caps a response at
- * `db-max-rows` and returns 206 with no error; an interview with more
- * questions than this cap would render as a SHORT interview and the person
- * would answer a list that lied about its own length. Every list read here
- * asks for CAP + 1 rows and the caller reports the overflow rather than
- * pretending the page is complete.
- */
-export const LIST_CAP = 2000;

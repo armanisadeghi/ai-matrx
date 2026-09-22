@@ -96,6 +96,7 @@ describe("AskTable", () => {
     if (!tableProps) throw new Error("AskTable did not render MatrxDataTable");
 
     expect(tableProps.density).toBe("condensed");
+    expect(tableProps.defaultSort).toBeUndefined();
     expect(tableProps.detail).toEqual({ enabled: false });
     expect(tableProps.copy).toBe(false);
     expect(tableProps.toolbar).toMatchObject({

@@ -14,7 +14,7 @@
 // column, so an answer typed against a stale row reports a conflict instead of
 // silently overwriting whatever an agent wrote through MCP in the meantime.
 
-import { guardedUpdate } from "@ai-matrx/data/db";
+import { guardedUpdate, readAllRows } from "@ai-matrx/data/db";
 import { NO_WORDS_MESSAGE, hasWords } from "../answerWords";
 import type {
   AnswerSource,
@@ -22,34 +22,36 @@ import type {
   DecisionQuestionUpdate,
   Verdict,
 } from "../types";
-import { LIST_CAP, db } from "./db";
+import { db } from "./db";
 import { QuestionDeskReadError } from "./interviews";
 
 export interface QuestionListResult {
   questions: DecisionQuestionRow[];
-  /** The read hit the cap — the screen says so rather than showing a short interview. */
-  truncated: boolean;
 }
 
 /** Every question in one interview, in the order the desk filed them. */
 export async function listQuestions(
   interviewId: string,
 ): Promise<QuestionListResult> {
-  const { data, error } = await db()
-    .from("decision_question")
-    .select("*")
-    .eq("interview_id", interviewId)
-    .is("deleted_at", null)
-    .order("position", { ascending: true })
-    .order("created_at", { ascending: true })
-    .limit(LIST_CAP + 1);
-  if (error) {
-    throw new QuestionDeskReadError(
-      `The questions could not be read: ${error.message}`,
+  try {
+    const questions = await readAllRows<DecisionQuestionRow>(
+      ({ from, to }) =>
+        db()
+          .from("decision_question")
+          .select("*", { count: "exact" })
+          .eq("interview_id", interviewId)
+          .is("deleted_at", null)
+          .order("position", { ascending: true })
+          .order("created_at", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: `interview.decision_question[${interviewId}]` },
     );
+    return { questions };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new QuestionDeskReadError(`The questions could not be read: ${reason}`);
   }
-  const rows = (data ?? []) as DecisionQuestionRow[];
-  return { questions: rows.slice(0, LIST_CAP), truncated: rows.length > LIST_CAP };
 }
 
 /** One question re-read by id — the row realtime or a conflict hands back. */

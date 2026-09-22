@@ -162,7 +162,6 @@ export function AskTable({
       density="condensed"
       pageSize={25}
       pageSizeOptions={[10, 25, 50]}
-      defaultSort={{ id: "question", direction: "asc" }}
       detail={{ enabled: false }}
       copy={false}
       toolbar={{

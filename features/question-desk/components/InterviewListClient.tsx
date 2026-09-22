@@ -43,7 +43,6 @@ export function InterviewListClient() {
   const [rows, setRows] = useState<InterviewListRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [countsTruncated, setCountsTruncated] = useState(false);
   /** How many archived interviews the current filter is hiding, when live is empty. */
   const [hiddenArchived, setHiddenArchived] = useState<number | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
@@ -56,7 +55,6 @@ export function InterviewListClient() {
         const result = await listInterviews(archived);
         if (!live) return;
         setRows(result.rows);
-        setCountsTruncated(result.countsTruncated);
         setError(null);
         // A LIST MAY NOT SAY "NONE" WHILE ITS OWN DEFAULT IS HIDING ROWS.
         // Only paid for when the live half really did come back empty.
@@ -212,12 +210,6 @@ export function InterviewListClient() {
 
   return (
     <div className="flex h-full min-h-0 flex-col p-4">
-      {countsTruncated ? (
-        <p className="mb-2 font-mono text-[11px] text-warning">
-          More questions exist than one page can count — the numbers below are a
-          floor, not a total.
-        </p>
-      ) : null}
       <MatrxDataTable<InterviewListRow>
         data={rows}
         isLoading={loading}
