@@ -18,7 +18,12 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
-import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import type {
+  ColumnFilterValue,
+  MatrxColumnDef,
+  MatrxDataTableQueryState,
+} from "@ai-matrx/design-system/data-table/types";
+import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import {
   formatCount,
   formatPercentFromFraction,
@@ -79,6 +84,39 @@ function getStatusBadge(status: string) {
 
 export function agentAppSuccessPercent(value: number | null): number | null {
   return value === null ? null : value * 100;
+}
+
+function textFilterValue(filter: ColumnFilterValue | undefined): string {
+  return filter?.kind === "text" ? filter.value : "";
+}
+
+function selectedValues(filter: ColumnFilterValue | undefined): string[] {
+  if (filter?.kind !== "select") return [];
+  return filter.values ?? (filter.value ? [filter.value] : []);
+}
+
+export function agentAppsScopeFilters(query: MatrxDataTableQueryState) {
+  const featured = query.columnFilters.featured;
+  const verified = query.columnFilters.verified;
+  return {
+    name: query.search,
+    slug: textFilterValue(query.columnFilters.slug),
+    status: selectedValues(query.columnFilters.status),
+    category: selectedValues(query.columnFilters.category),
+    featured:
+      featured?.kind === "boolean"
+        ? featured.value
+          ? "featured"
+          : "not-featured"
+        : "all",
+    verified:
+      verified?.kind === "boolean"
+        ? verified.value
+          ? "verified"
+          : "not-verified"
+        : "all",
+    creator: textFilterValue(query.columnFilters.creator),
+  } as const;
 }
 
 export const AGENT_APP_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
@@ -288,6 +326,11 @@ export default function AgentAppsAdminListPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [viewApps, setViewApps] = useState<AgentAppAdminView[]>([]);
+  const tableQuery = useTableUrlState({
+    tableId: "admin-agent-apps",
+    defaultSort: { id: "updated", direction: "desc" },
+    defaultPageSize: 50,
+  });
 
   const load = async () => {
     const retainsRows = apps.length > 0;
@@ -350,16 +393,11 @@ export default function AgentAppsAdminListPage() {
       admin_section: "apps",
       apps_list_total_count: apps.length,
       apps_list_filtered_count: visibleApps.length,
-      apps_list_filters: {
-        name: "",
-        slug: "",
-        status: [],
-        category: [],
-        featured: "all",
-        verified: "all",
-        creator: "",
+      apps_list_filters: agentAppsScopeFilters(tableQuery.state),
+      apps_list_sort: {
+        field: tableQuery.state.sort?.id ?? "",
+        direction: tableQuery.state.sort?.direction ?? "desc",
       },
-      apps_list_sort: { field: "updated", direction: "desc" },
       apps_list_rows: visibleApps.map((app) => ({
         id: app.id,
         name: app.name,
@@ -420,9 +458,10 @@ export default function AgentAppsAdminListPage() {
           <div className="min-h-0 flex-1">
             <MatrxDataTable<AgentAppAdminView>
               tableId="admin-agent-apps"
-              urlState={{
-                id: "admin-agent-apps",
-                defaultSort: { id: "updated", direction: "desc" },
+              query={{
+                mode: "controlled-local",
+                state: tableQuery.state,
+                onStateChange: tableQuery.onStateChange,
               }}
               data={apps}
               columns={AGENT_APP_COLUMNS}

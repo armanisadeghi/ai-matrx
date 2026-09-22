@@ -2,7 +2,9 @@ import {
   AGENT_APP_COLUMNS,
   AGENT_APPS_COVERAGE,
   agentAppSuccessPercent,
+  agentAppsScopeFilters,
 } from "./page";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 
 function column(id: string) {
   const found = AGENT_APP_COLUMNS.find((candidate) => candidate.id === id);
@@ -48,5 +50,32 @@ describe("Agent Apps canonical table contract", () => {
     expect(agentAppSuccessPercent(0.5)).toBe(50);
     expect(agentAppSuccessPercent(0)).toBe(0);
     expect(agentAppSuccessPercent(null)).toBeNull();
+  });
+
+  it("maps the canonical query into truthful surface filter and sort metadata", () => {
+    const query: MatrxDataTableQueryState = {
+      page: 1,
+      pageSize: 50,
+      search: "invoices",
+      anyOf: "",
+      sort: { id: "success-rate", direction: "asc" },
+      columnFilters: {
+        slug: { kind: "text", value: "billing" },
+        status: { kind: "select", value: "published", values: ["published"] },
+        category: { kind: "select", value: "finance", values: ["finance"] },
+        featured: { kind: "boolean", value: true },
+        verified: { kind: "boolean", value: false },
+        creator: { kind: "text", value: "admin@" },
+      },
+    };
+    expect(agentAppsScopeFilters(query)).toEqual({
+      name: "invoices",
+      slug: "billing",
+      status: ["published"],
+      category: ["finance"],
+      featured: "featured",
+      verified: "not-verified",
+      creator: "admin@",
+    });
   });
 });
