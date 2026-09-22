@@ -18914,6 +18914,20 @@ export type Database = {
           interaction_id: string
         }[]
       }
+      report_dropped_sms_part: {
+        Args: {
+          p_context?: Json
+          p_existing_body: string
+          p_idempotency_key: string
+          p_intended_body: string
+          p_organization_id: string
+          p_part_count: number
+          p_part_index: number
+          p_producer: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       resolve_channel_address: {
         Args: {
           p_actor_token_id: string
@@ -67869,6 +67883,24 @@ export type Database = {
           max_level?: Database["public"]["Enums"]["permission_level"]
           origin?: string | null
           refreshed_at?: string
+        }
+        Relationships: []
+      }
+      reachability_rebuild_pending: {
+        Row: {
+          noted_at: string
+          noted_by: string
+          txid: unknown
+        }
+        Insert: {
+          noted_at?: string
+          noted_by?: string
+          txid: unknown
+        }
+        Update: {
+          noted_at?: string
+          noted_by?: string
+          txid?: unknown
         }
         Relationships: []
       }
