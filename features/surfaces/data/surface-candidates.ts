@@ -414,7 +414,7 @@ export const SURFACE_CANDIDATES: readonly SurfaceCandidate[] = [
   {
     name: "matrx-admin/ai-models/audit",
     client_name: "matrx-admin",
-    description: "AI model usage audit",
+    description: "AI model data audit",
     sort_order: 410,
     is_active: false,
     group: "page",

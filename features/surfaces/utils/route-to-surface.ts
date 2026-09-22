@@ -226,6 +226,10 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
     surface: "matrx-admin/tool-registry",
   },
   {
+    prefix: "/administration/ai/ai-models/audit",
+    surface: "matrx-admin/ai-models/audit",
+  },
+  {
     prefix: "/administration/ai/ai-models",
     surface: "matrx-admin/ai-models",
   },

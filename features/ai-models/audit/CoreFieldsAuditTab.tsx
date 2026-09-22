@@ -11,7 +11,12 @@ import {
 import { aiModelService } from "../service";
 import type { AiModel } from "../types";
 import type { ModelAuditResult } from "./auditTypes";
-import { IssueList, ProviderBadge, StatusBadge } from "./AuditTableShell";
+import {
+  ApiNameCell,
+  IssueList,
+  ProviderBadge,
+  StatusBadge,
+} from "./AuditTableShell";
 import ModelDetailSheet, { OpenDetailButton } from "./ModelDetailSheet";
 
 interface CoreFieldsAuditTabProps {
@@ -21,6 +26,8 @@ interface CoreFieldsAuditTabProps {
   onRefresh: () => Promise<void>;
 }
 
+type EditableCoreField = "common_name" | "context_window" | "max_tokens";
+
 export default function CoreFieldsAuditTab({
   results,
   allModels,
@@ -28,7 +35,7 @@ export default function CoreFieldsAuditTab({
   onRefresh,
 }: CoreFieldsAuditTabProps) {
   const [editValues, setEditValues] = useState<
-    Record<string, Partial<AiModel>>
+    Record<string, Partial<Record<EditableCoreField, string>>>
   >({});
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
@@ -48,11 +55,11 @@ export default function CoreFieldsAuditTab({
   const dirtyIds = Object.keys(editValues).filter(
     (id) => Object.keys(editValues[id] ?? {}).length > 0,
   );
-  const getVal = (model: AiModel, field: keyof AiModel) =>
+  const getVal = (model: AiModel, field: EditableCoreField) =>
     editValues[model.id]?.[field] !== undefined
       ? String(editValues[model.id][field] ?? "")
       : String(model[field] ?? "");
-  const setVal = (model: AiModel, field: keyof AiModel, value: string) =>
+  const setVal = (model: AiModel, field: EditableCoreField, value: string) =>
     setEditValues((previous) => {
       const next = { ...previous };
       const edits = { ...(next[model.id] ?? {}) };
@@ -69,7 +76,7 @@ export default function CoreFieldsAuditTab({
       return next;
     });
   const buildPatch = (
-    edits: Partial<AiModel>,
+    edits: Partial<Record<EditableCoreField, string>>,
   ): Partial<Omit<AiModel, "id">> => {
     const patch: Partial<Omit<AiModel, "id">> = {};
     if (edits.common_name !== undefined)
@@ -142,11 +149,7 @@ export default function CoreFieldsAuditTab({
       id: "model_name",
       accessorFn: (r) => r.model.name,
       header: "API name",
-      cell: (r) => (
-        <span className="font-mono text-xs text-muted-foreground">
-          {r.model.name}
-        </span>
-      ),
+      cell: (r) => <ApiNameCell name={r.model.name} />,
       frozen: true,
       width: 220,
     },

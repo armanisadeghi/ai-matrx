@@ -23,6 +23,11 @@ import AuditOverviewTab from "./AuditOverviewTab";
 import CapabilitiesAuditTab from "./CapabilitiesAuditTab";
 import CoreFieldsAuditTab from "./CoreFieldsAuditTab";
 import AuditRulesConfig from "./AuditRulesConfig";
+import {
+  ADMIN_AI_MODEL_AUDIT_SURFACE_NAME,
+  createAdminAiModelAuditScope,
+} from "@/features/surfaces/manifests/admin-ai-model-audit.manifest";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 type TabId = AuditCategory | "overview" | "settings";
 
@@ -88,6 +93,36 @@ export default function ModelAuditDashboard() {
 
   const failCount = auditResults.filter((r) => !r.pass).length;
 
+  const getSurfaceScope = () =>
+    createAdminAiModelAuditScope({
+      models: models as unknown as Record<string, unknown>[],
+      audit_results: auditResults.map((result) => ({
+        model_id: result.model.id,
+        pass: result.pass,
+        category_pass: result.categoryPass,
+        issues: result.issues.map((issue) => ({
+          category: issue.category,
+          field: issue.field,
+          severity: issue.severity,
+          message: issue.message,
+        })),
+      })),
+      audit_summary: {
+        loaded_model_count: models.length,
+        audited_model_count: auditResults.length,
+        failing_model_count: failCount,
+      },
+      active_category: activeTab,
+      exclude_deprecated: excludeDeprecated,
+      audit_rules: rules as unknown as Record<string, unknown>,
+      audit_loading: loading,
+      audit_error: error ?? undefined,
+      selection: window.getSelection()?.toString() || undefined,
+      context: {
+        route: "/administration/ai/ai-models/audit",
+      },
+    });
+
   const getFailCountForTab = (tab: TabId): number => {
     if (tab === "overview") return auditResults.filter((r) => !r.pass).length;
     if (tab === "configurations" || tab === "settings") return 0;
@@ -96,156 +131,162 @@ export default function ModelAuditDashboard() {
   };
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b shrink-0 bg-card">
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
-          <span className="text-sm font-semibold">AI Model Data Audit</span>
-          {!loading && auditResults.length > 0 && (
-            <>
-              <span className="text-xs text-muted-foreground">
-                {auditResults.length} models
-              </span>
-              {failCount > 0 && (
-                <span className="text-xs text-destructive font-medium">
-                  · {failCount} failing
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_AI_MODEL_AUDIT_SURFACE_NAME}
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
+      <div className="flex flex-col h-full min-h-0">
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-b shrink-0 bg-card">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <span className="text-sm font-semibold">AI Model Data Audit</span>
+            {!loading && auditResults.length > 0 && (
+              <>
+                <span className="text-xs text-muted-foreground">
+                  {auditResults.length} models
                 </span>
-              )}
-            </>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="flex items-center gap-1.5 cursor-pointer select-none">
-            <Checkbox
-              checked={excludeDeprecated}
-              onCheckedChange={(v) => setExcludeDeprecated(v === true)}
-              className="shrink-0"
-            />
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <EyeOff className="h-3 w-3" />
-              Exclude deprecated
-            </span>
-          </label>
-          <div className="w-px h-4 bg-border" />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
-            onClick={loadModels}
-            disabled={loading}
-            title="Refresh models"
-          >
-            {loading ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <RefreshCcw className="h-3.5 w-3.5" />
-            )}
-          </Button>
-          <Button
-            variant={activeTab === "settings" ? "default" : "ghost"}
-            size="sm"
-            className="h-7 w-7 p-0"
-            onClick={() =>
-              setActiveTab(activeTab === "settings" ? "overview" : "settings")
-            }
-            title="Configure audit rules"
-          >
-            <Settings2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      </div>
-
-      {error && (
-        <div className="px-4 py-2 bg-destructive/10 border-b text-destructive text-xs shrink-0">
-          {error}
-        </div>
-      )}
-
-      {loading ? (
-        <div className="flex-1 flex items-center justify-center text-muted-foreground gap-2">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span className="text-sm">Loading models…</span>
-        </div>
-      ) : (
-        <>
-          {activeTab !== "settings" && (
-            <AuditSummaryBar
-              results={auditResults}
-              activeCategory={activeTab}
-              onCategoryClick={(cat) => setActiveTab(cat as TabId)}
-            />
-          )}
-
-          {activeTab !== "settings" && (
-            <div className="flex items-center gap-0.5 px-3 py-1.5 border-b shrink-0 overflow-x-auto">
-              {TAB_ORDER.filter((t) => t !== "settings").map((tab) => {
-                const tabFailCount = getFailCountForTab(tab);
-                return (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
-                      activeTab === tab
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                    }`}
-                  >
-                    {TAB_LABELS[tab]}
-                    {tabFailCount > 0 && (
-                      <span
-                        className={`text-[10px] font-bold px-1 py-0 rounded-full leading-tight ${
-                          activeTab === tab
-                            ? "bg-primary-foreground/20 text-primary-foreground"
-                            : "bg-destructive/15 text-destructive"
-                        }`}
-                      >
-                        {tabFailCount}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          <div className="flex-1 min-h-0 overflow-hidden">
-            {activeTab === "settings" && (
-              <AuditRulesConfig rules={rules} onChange={setRules} />
-            )}
-            {activeTab === "overview" && (
-              <AuditOverviewTab
-                results={auditResults}
-                allModels={auditModels}
-                onJumpToCategory={(cat) => setActiveTab(cat)}
-                onModelUpdated={handleModelUpdated}
-                onRefresh={loadModels}
-              />
-            )}
-            {activeTab === "core_fields" && (
-              <CoreFieldsAuditTab
-                results={auditResults}
-                allModels={auditModels}
-                onModelUpdated={handleModelUpdated}
-                onRefresh={loadModels}
-              />
-            )}
-            {activeTab === "capabilities" && (
-              <CapabilitiesAuditTab
-                results={auditResults}
-                allModels={auditModels}
-                onModelUpdated={handleModelUpdated}
-                onRefresh={loadModels}
-              />
-            )}
-            {activeTab === "configurations" && (
-              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                Configurations audit coming soon
-              </div>
+                {failCount > 0 && (
+                  <span className="text-xs text-destructive font-medium">
+                    · {failCount} failing
+                  </span>
+                )}
+              </>
             )}
           </div>
-        </>
-      )}
-    </div>
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <Checkbox
+                checked={excludeDeprecated}
+                onCheckedChange={(v) => setExcludeDeprecated(v === true)}
+                className="shrink-0"
+              />
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <EyeOff className="h-3 w-3" />
+                Exclude deprecated
+              </span>
+            </label>
+            <div className="w-px h-4 bg-border" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={loadModels}
+              disabled={loading}
+              title="Refresh models"
+            >
+              {loading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCcw className="h-3.5 w-3.5" />
+              )}
+            </Button>
+            <Button
+              variant={activeTab === "settings" ? "default" : "ghost"}
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={() =>
+                setActiveTab(activeTab === "settings" ? "overview" : "settings")
+              }
+              title="Configure audit rules"
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+
+        {error && (
+          <div className="px-4 py-2 bg-destructive/10 border-b text-destructive text-xs shrink-0">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex-1 flex items-center justify-center text-muted-foreground gap-2">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span className="text-sm">Loading models…</span>
+          </div>
+        ) : (
+          <>
+            {activeTab !== "settings" && (
+              <AuditSummaryBar
+                results={auditResults}
+                activeCategory={activeTab}
+                onCategoryClick={(cat) => setActiveTab(cat as TabId)}
+              />
+            )}
+
+            {activeTab !== "settings" && (
+              <div className="flex items-center gap-0.5 px-3 py-1.5 border-b shrink-0 overflow-x-auto">
+                {TAB_ORDER.filter((t) => t !== "settings").map((tab) => {
+                  const tabFailCount = getFailCountForTab(tab);
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
+                        activeTab === tab
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      }`}
+                    >
+                      {TAB_LABELS[tab]}
+                      {tabFailCount > 0 && (
+                        <span
+                          className={`text-[10px] font-bold px-1 py-0 rounded-full leading-tight ${
+                            activeTab === tab
+                              ? "bg-primary-foreground/20 text-primary-foreground"
+                              : "bg-destructive/15 text-destructive"
+                          }`}
+                        >
+                          {tabFailCount}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {activeTab === "settings" && (
+                <AuditRulesConfig rules={rules} onChange={setRules} />
+              )}
+              {activeTab === "overview" && (
+                <AuditOverviewTab
+                  results={auditResults}
+                  allModels={auditModels}
+                  onJumpToCategory={(cat) => setActiveTab(cat)}
+                  onModelUpdated={handleModelUpdated}
+                  onRefresh={loadModels}
+                />
+              )}
+              {activeTab === "core_fields" && (
+                <CoreFieldsAuditTab
+                  results={auditResults}
+                  allModels={auditModels}
+                  onModelUpdated={handleModelUpdated}
+                  onRefresh={loadModels}
+                />
+              )}
+              {activeTab === "capabilities" && (
+                <CapabilitiesAuditTab
+                  results={auditResults}
+                  allModels={auditModels}
+                  onModelUpdated={handleModelUpdated}
+                  onRefresh={loadModels}
+                />
+              )}
+              {activeTab === "configurations" && (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                  Configurations audit coming soon
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </SurfaceRuntimeProvider>
   );
 }

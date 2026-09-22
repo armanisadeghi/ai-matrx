@@ -194,6 +194,7 @@ import { transcriptScribeLiveManifest } from "./transcript-scribe-live.manifest"
 import { adminSystemAgentsManifest } from "./admin-system-agents.manifest";
 import { adminDatabaseManifest } from "./admin-database.manifest";
 import { adminAiModelsManifest } from "./admin-ai-models.manifest";
+import { adminAiModelAuditManifest } from "./admin-ai-model-audit.manifest";
 import { adminToolRegistryManifest } from "./admin-tool-registry.manifest";
 import { adminUsersManifest } from "./admin-users.manifest";
 import { adminLimitsManifest } from "./admin-limits.manifest";
@@ -428,6 +429,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   adminSystemAgentsManifest,
   adminDatabaseManifest,
   adminAiModelsManifest,
+  adminAiModelAuditManifest,
   adminToolRegistryManifest,
   adminUsersManifest,
   adminLimitsManifest,
