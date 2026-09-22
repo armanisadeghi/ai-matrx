@@ -1,5 +1,3 @@
-import { webcrypto } from "node:crypto";
-
 interface MockResult {
   data: unknown;
   error: { message: string; code?: string } | null;
@@ -39,6 +37,10 @@ jest.mock("@/utils/supabase/client", () => ({
         queryState.calls.push({ method: "from", args: [schema, table] });
         return queryBuilder();
       }),
+      rpc: jest.fn((name: string, args: unknown) => {
+        queryState.calls.push({ method: "rpc", args: [schema, name, args] });
+        return Promise.resolve(queryState.result);
+      }),
     })),
   },
 }));
@@ -55,11 +57,6 @@ import {
   fetchTopicExperts,
   removeInteraction,
 } from "./service";
-
-Object.defineProperty(globalThis, "crypto", {
-  configurable: true,
-  value: webcrypto,
-});
 
 const TOPIC_ID = "0d59c395-8c19-43df-90df-8ca384f3edc3";
 const PARTY_ID = "9111fe66-89a2-4bcc-b6f9-afcb6daafbaa";
@@ -116,62 +113,54 @@ describe("party id hydration", () => {
 });
 
 describe("interaction removal", () => {
-  it("scrubs linked Gmail audit data before erasing the retained reply", async () => {
-    queryState.result = { data: null, error: null, count: 1 };
+  it("sends only the opaque interaction id to the atomic database door", async () => {
+    queryState.result = { data: { status: "erased" }, error: null };
 
     await removeInteraction({
       id: "11111111-1111-4111-8111-111111111111",
-      organization_id: "22222222-2222-4222-8222-222222222222",
-      direction: "inbound",
-      channel_code: "email",
-      message_id: "gmail-provider-message-id",
-      attributes: {
-        outreach_inbound: {
-          identity_id: "33333333-3333-4333-8333-333333333333",
-          evidence: "Call me Tuesday",
-        },
-      },
     });
 
-    const writes = queryState.calls.filter(
-      ({ method }) => method === "from" || method === "update",
-    );
-    expect(writes).toHaveLength(4);
-    expect(writes[0]).toEqual({
-      method: "from",
-      args: ["crm", "sending_event"],
-    });
-    expect(writes[1]?.method).toBe("update");
-    expect(JSON.stringify(writes[1]?.args)).not.toContain(
+    expect(queryState.calls).toEqual([
+      {
+        method: "rpc",
+        args: [
+          "crm",
+          "erase_interaction",
+          {
+            p_interaction_id: "11111111-1111-4111-8111-111111111111",
+          },
+        ],
+      },
+    ]);
+    expect(JSON.stringify(queryState.calls)).not.toContain(
       "gmail-provider-message-id",
     );
-    expect(writes[2]).toEqual({ method: "from", args: ["crm", "interaction"] });
-    expect(writes[3]?.method).toBe("update");
-    expect(JSON.stringify(writes[3]?.args)).not.toContain(
-      "gmail-provider-message-id",
+    expect(JSON.stringify(queryState.calls)).not.toContain(
+      "provider_message_id",
     );
-    expect(queryState.calls).toContainEqual({
-      method: "eq",
-      args: ["organization_id", "22222222-2222-4222-8222-222222222222"],
-    });
-    expect(queryState.calls).toContainEqual({
-      method: "eq",
-      args: ["identity_id", "33333333-3333-4333-8333-333333333333"],
-    });
   });
 
-  it("refuses to report deletion when RLS updates no interaction", async () => {
-    queryState.result = { data: null, error: null, count: 0 };
+  it("surfaces a database refusal instead of reporting deletion", async () => {
+    queryState.result = {
+      data: null,
+      error: { message: "interaction is not writable", code: "42501" },
+    };
 
     await expect(
       removeInteraction({
         id: "11111111-1111-4111-8111-111111111111",
-        organization_id: "22222222-2222-4222-8222-222222222222",
-        direction: "outbound",
-        channel_code: "call",
-        message_id: null,
-        attributes: {},
       }),
-    ).rejects.toThrow("no longer writable in this organization");
+    ).rejects.toThrow("interaction is not writable (42501)");
+
+    expect(queryState.calls).toContainEqual({
+      method: "rpc",
+      args: [
+        "crm",
+        "erase_interaction",
+        {
+          p_interaction_id: "11111111-1111-4111-8111-111111111111",
+        },
+      ],
+    });
   });
 });
