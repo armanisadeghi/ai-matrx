@@ -14,11 +14,23 @@ const ORGANIZATION_ID = "11111111-1111-4111-8111-111111111111";
 const mockGetSession = jest.fn(async () => ({
   data: { session: { access_token: ACCESS_TOKEN } },
 }));
-const mockGetUser = jest.fn<
-  Promise<{ data: { user: { id: string; email?: string } }; error: null }>,
+const mockGetClaims = jest.fn<
+  Promise<{
+    data: {
+      claims: { sub: string; email: string; app_metadata: {}; user_metadata: {} };
+    };
+    error: null;
+  }>,
   [string?]
 >(async () => ({
-  data: { user: { id: "user-1", email: "admin@admin.com" } },
+  data: {
+    claims: {
+      sub: "user-1",
+      email: "admin@admin.com",
+      app_metadata: {},
+      user_metadata: {},
+    },
+  },
   error: null,
 }));
 
@@ -26,7 +38,7 @@ jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     auth: {
       getSession: mockGetSession,
-      getUser: mockGetUser,
+      getClaims: mockGetClaims,
     },
   }),
 }));
@@ -68,7 +80,7 @@ describe("Vault and Authenticator organization transport", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     mockGetSession.mockClear();
-    mockGetUser.mockClear();
+    mockGetClaims.mockClear();
     global.fetch = fetchMock as typeof fetch;
     installContext(ORGANIZATION_ID);
   });
@@ -97,9 +109,9 @@ describe("Vault and Authenticator organization transport", () => {
       { profile: "matrx_login_csv_v1", item_ids: ["item-1"] },
       { userId: "user-1", organizationId: ORGANIZATION_ID },
     );
-    expect(mockGetUser).toHaveBeenCalledWith(ACCESS_TOKEN);
+    expect(mockGetClaims).toHaveBeenCalledWith(ACCESS_TOKEN);
     expect(
-      mockGetUser.mock.calls.every((args) => args[0] === ACCESS_TOKEN),
+      mockGetClaims.mock.calls.every((args) => args[0] === ACCESS_TOKEN),
     ).toBe(true);
     expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({
       Authorization: `Bearer ${ACCESS_TOKEN}`,
@@ -221,8 +233,15 @@ describe("Vault and Authenticator organization transport", () => {
   });
 
   test("import mutation rechecks the frozen actor before sending", async () => {
-    mockGetUser.mockResolvedValueOnce({
-      data: { user: { id: "different-user" } },
+    mockGetClaims.mockResolvedValueOnce({
+      data: {
+        claims: {
+          sub: "different-user",
+          email: "admin@admin.com",
+          app_metadata: {},
+          user_metadata: {},
+        },
+      },
       error: null,
     });
     await expect(
