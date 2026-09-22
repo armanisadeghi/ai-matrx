@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-22T17:57:12.874Z",
+  "generated_at": "2026-09-22T17:58:50.768Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3594,7 +3594,7 @@
       "source": "matrx-frontend",
       "filename": "storeon_the_door_comment_records_the_ruling.sql",
       "checksum": "7a019db7213d574fc6e787843c344308faa006edcb338c50c9850f1364fe3fed",
-      "applied_at": "2026-09-22 17:57:12.123864+00"
+      "applied_at": "2026-09-22 17:58:50.068426+00"
     },
     "migrations/campaign/storeon_the_record_store_is_on_by_default.sql": {
       "source": "matrx-frontend",

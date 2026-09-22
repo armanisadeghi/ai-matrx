@@ -17,6 +17,7 @@
  * point: they refuse before anything opens.
  */
 import {
+  assertGuardResolvesOff,
   assertHeaderAgreesWithFlag,
   basedOnFunctionNames,
   nonAdditiveReasons,
@@ -726,3 +727,68 @@ describe("CHAIR RULING 2026-09-17 — the custom-data INSERT, bounded four ways"
     expect(verdict.customDataInserts[0]).toContain("custom.record");
   });
 });
+
+// ── STORE-ON 2026-09-23 — THE ONE BOUNDED EXCEPTION TO "the guard must resolve OFF" ────────
+//
+// `assertGuardResolvesOff` refuses a guarded production file whose knob does not resolve
+// `false`, so a file landing behind a switch cannot change a path anybody is on. Arman ruled
+// the record store's default ON on 2026-09-23, so `custom/system_enabled` resolves `true` —
+// and every campaign file headed `-- guard: custom/system_enabled` would have been refused
+// for ever, with no remedy but undoing the ruling. A knob the OWNER threw is ANNOUNCED, not
+// refused. Everything else about the gate is unchanged, which is what these tests pin.
+//
+// Empty `KNOBS_THE_OWNER_TURNED_ON` in scripts/lib/migration-target.ts and the first test
+// goes RED; drop the `KNOBS_THE_OWNER_TURNED_ON.includes(id)` condition and the second does.
+// The same four properties are pinned in aidream's
+// db/tests/test_migration_target_refusals.py, because the two runners must agree.
+describe("STORE-ON — a guard the owner has ruled ON is announced, not refused", () => {
+  const answering = (v: string | null) => async () => ({ rows: [{ v }] });
+
+  it("accepts each knob the owner turned on, and SAYS the apply is live", async () => {
+    const written: string[] = [];
+    const realWrite = process.stderr.write.bind(process.stderr);
+    (process.stderr as unknown as { write: (s: string) => boolean }).write = (chunk: string) => {
+      written.push(String(chunk));
+      return true;
+    };
+    try {
+      for (const id of [
+        "custom/system_enabled",
+        "custom/code_paths_enabled",
+        "data_tables.relation/relation_columns_enabled",
+      ]) {
+        const [feature, key] = [id.slice(0, id.lastIndexOf("/")), id.slice(id.lastIndexOf("/") + 1)];
+        await expect(
+          assertGuardResolvesOff(answering("true"), { feature, key }, "f.sql"),
+        ).resolves.toBe("owner-on");
+      }
+    } finally {
+      (process.stderr as unknown as { write: typeof realWrite }).write = realWrite;
+    }
+    const printed = written.join("");
+    expect(printed.match(/the owner turned this switch ON/g) ?? []).toHaveLength(3);
+    expect(printed).toContain("LIVE");
+  });
+
+  it("still refuses an unlisted knob that resolves true, and names the exception", async () => {
+    await expect(
+      assertGuardResolvesOff(answering("true"), { feature: "custom", key: "associations_guard" }, "f.sql"),
+    ).rejects.toThrow(/resolves true, not false/);
+    await expect(
+      assertGuardResolvesOff(answering("true"), { feature: "custom", key: "associations_guard" }, "f.sql"),
+    ).rejects.toThrow(/KNOBS_THE_OWNER_TURNED_ON/);
+  });
+
+  it("still refuses a listed knob whose answer is neither true nor false", async () => {
+    await expect(
+      assertGuardResolvesOff(answering(null), { feature: "custom", key: "system_enabled" }, "f.sql"),
+    ).rejects.toThrow(/resolves \(nothing\), not false/);
+  });
+
+  it("still accepts a knob that resolves false, with nothing printed", async () => {
+    await expect(
+      assertGuardResolvesOff(answering("false"), { feature: "custom", key: "associations_guard" }, "f.sql"),
+    ).resolves.toBe("off");
+  });
+});
+

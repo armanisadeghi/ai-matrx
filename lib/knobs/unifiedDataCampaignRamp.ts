@@ -59,10 +59,12 @@ export interface ConsumerStoreDecision {
   because: string;
 }
 
+// STORE-ON 2026-09-23 (owner ruling): the store is ON by default, so an organization reading
+// off has been switched off on purpose — the sentence names that act, not a missing one.
 const OFF_BECAUSE_KILL_SWITCH =
-  "This organization does not keep its data in the unified record store, so no consumer of it reads " +
-  "the unified store, whatever that consumer's own knob says. An owner or an administrator turns the " +
-  "store on for the organization on the unified data ramp screen. Reading the old table.";
+  "This organization has its record store switched off, so no consumer of it reads the unified " +
+  "store, whatever that consumer's own knob says. An owner or an administrator turns it back on " +
+  "for the organization on the unified data ramp screen. Reading the old table.";
 
 /**
  * THE ONE CALL every client and server read path makes.

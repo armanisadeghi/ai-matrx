@@ -3286,16 +3286,52 @@ export async function assertServerMatchesTarget(
 }
 
 /**
- * A `-- target: branch,production` file may only land on PRODUCTION when its named
- * knob exists there and resolves OFF. The knob's platform value is
- * `coalesce(value, default_value)` — `platform.knob_resolve(f, k, null)` — because
- * `platform.knob_scope_kind` has no `system` rung and never did.
+ * KNOBS THE OWNER HAS RULED ON — the one bounded exception to "a guarded file lands only
+ * while its knob is OFF", and the exception is DATA, never a flag a tired lane can pass.
+ *
+ * 🚨 WHY IT EXISTS (lane STORE-ON, 2026-09-23). `assertGuardResolvesOff` refuses a guarded
+ * production file whose knob does not resolve `false`, so that a file landing behind a
+ * switch cannot change a path anybody is on. That is exactly right while the switch is
+ * still down. On 2026-09-23 Arman ruled the record store's default ON and every active
+ * organization was switched on — so `custom/system_enabled` resolves `true` and EVERY
+ * campaign file headed `-- guard: custom/system_enabled` would be refused from that moment,
+ * with no remedy a lane could apply: the only "fix" the refusal offers is to turn the
+ * owner's ruling back off.
+ *
+ * So a knob the owner has DELIBERATELY thrown stops being a reason to refuse and becomes a
+ * reason to SAY SO LOUDLY: the object this file lands is LIVE the moment it lands, and the
+ * runner prints that above the apply rather than implying the old path is untouched. Every
+ * other knob keeps the refusal exactly as it was — an unlisted knob that resolves true is
+ * still a file being applied behind a switch somebody already threw without telling anyone,
+ * which is the defect this gate was built for.
+ *
+ * Identical to `KNOBS_THE_OWNER_TURNED_ON` in aidream's `db/migration_target.py`; the two
+ * runners must return the same verdict for the same bytes (migrations/JUDGMENT.md).
  */
+export const KNOBS_THE_OWNER_TURNED_ON: ReadonlyArray<string> = [
+  // Arman, 2026-09-23: "The default is ON." The record store itself, and the half aidream's
+  // server kill switch reads — one switch, so both halves are named.
+  "custom/system_enabled",
+  "custom/code_paths_enabled",
+  // The same ruling, the same day, for the older store's relation columns (OLD-TABLES-2 W4).
+  "data_tables.relation/relation_columns_enabled",
+];
+
+/**
+ * A `-- target: branch,production` file may only land on PRODUCTION when its named
+ * knob exists there and resolves OFF — or when that knob is one the owner has ruled ON
+ * (`KNOBS_THE_OWNER_TURNED_ON`), in which case the apply is ANNOUNCED as live rather than
+ * refused. The knob's platform value is `coalesce(value, default_value)` —
+ * `platform.knob_resolve(f, k, null)` — because `platform.knob_scope_kind` has no `system`
+ * rung and never did.
+ */
+export type GuardVerdict = "off" | "owner-on";
+
 export async function assertGuardResolvesOff(
   query: (sql: string) => Promise<{ rows: Array<Record<string, unknown>> }>,
   guard: { feature: string; key: string },
   filename: string,
-): Promise<void> {
+): Promise<GuardVerdict> {
   let res;
   try {
     res = await query(
@@ -3322,13 +3358,35 @@ export async function assertGuardResolvesOff(
     ]);
   }
   const v = String(res.rows[0]?.v ?? "");
-  if (v !== "false") {
-    fail([
-      `${filename}: its guard ${guard.feature}/${guard.key} resolves ${v || "(nothing)"}, not false.`,
-      `  A guarded file lands on production only while its knob is OFF, so the old path is`,
-      `  untouched until the switch. Seed or set the knob to false and re-run.`,
-    ]);
+  if (v === "false") return "off";
+
+  const id = `${guard.feature}/${guard.key}`;
+  if (v === "true" && KNOBS_THE_OWNER_TURNED_ON.includes(id)) {
+    // NOTHING FAILS SILENTLY, and nothing passes silently either. The file is applied, and
+    // the operator is told in the same breath that its guard is no longer holding anything
+    // back — because the sentence this gate used to print ("the old path is untouched until
+    // the switch") would now be a lie.
+    process.stderr.write(
+      `\n  🚨 ${filename}: its guard ${id} resolves TRUE — the owner turned this switch ON.\n` +
+        `     This file is NOT being applied behind a closed switch. Whatever it lands is LIVE\n` +
+        `     the moment it commits, for every organization that has not turned ${id} off itself.\n` +
+        `     Applying anyway, because refusing would offer no remedy but undoing the ruling.\n\n`,
+    );
+    // THE CALLER MUST NOT PRINT "the old path is untouched" AFTER THIS. That is why the
+    // verdict is returned rather than swallowed: a runner that says "resolves false" over a
+    // knob that resolves true is a screen telling a lie, which is the one thing a screen
+    // may never do.
+    return "owner-on";
   }
+
+  fail([
+    `${filename}: its guard ${guard.feature}/${guard.key} resolves ${v || "(nothing)"}, not false.`,
+    `  A guarded file lands on production only while its knob is OFF, so the old path is`,
+    `  untouched until the switch. Seed or set the knob to false and re-run.`,
+    `  (The one exception is a knob the OWNER has ruled ON — KNOBS_THE_OWNER_TURNED_ON in this`,
+    `  file and in aidream's db/migration_target.py. ${guard.feature}/${guard.key} is not one of`,
+    `  them, so a knob that is true here is a switch somebody threw without saying so.)`,
+  ]);
 }
 
 /**

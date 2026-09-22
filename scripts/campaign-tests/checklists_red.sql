@@ -266,7 +266,7 @@ begin
   -- of an organization's own store switch, and is never told the real answer — that they are
   -- not in it. Both halves are asserted, so a future re-wording cannot make this pass quietly.
   if v_caught not ilike '%switched off%'
-     and v_caught not ilike '%has not turned the record store on%' then
+     and v_caught not ilike '%has turned the record store off%' then
     raise exception 'RED 3 failed for another reason: %', v_caught;
   end if;
   if v_caught ilike '%not a member%' or v_caught ilike '%do not belong%' then

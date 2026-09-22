@@ -4,13 +4,17 @@
 --     \set store_org '6069a466-1445-42df-a64e-cf37ecdc1b99'
 --     \i scripts/campaign-tests/_borrow_store_switch.sql      -- AFTER `begin;`
 --
--- WHY IT EXISTS. `custom.system_enabled` defaults to FALSE and that is the design, not a
--- defect: THE RECORD STORE IS OPT-IN PER ORGANIZATION (STORE-OFF / FIX-11A). A suite that
--- takes a seat in an organization which has not opted in is answered "This organization has
--- not turned the record store on yet, so custom.<door> is not taking writes." — correctly.
--- Measured on the dev clone (production's own data) 2026-09-22, that one sentence was the
--- whole of seven suite failures and two skips. The answer is NEVER to change the knob's
--- default, which would switch the store on for every organization on the platform.
+-- WHY IT EXISTS. A suite that takes a seat in an organization whose record store is switched
+-- off is answered "This organization has turned the record store off, so custom.<door> is not
+-- taking writes." — correctly. Measured on the dev clone (production's own data) 2026-09-22,
+-- that one sentence was the whole of seven suite failures and two skips.
+--
+-- 🚨 UPDATED 2026-09-23 (lane STORE-ON, owner ruling). This file used to say the store was
+-- OPT-IN PER ORGANIZATION and that changing the knob's default was NEVER the answer. Arman
+-- ruled the opposite: the default is ON, and every active organization was switched on that
+-- day. So a suite reaching an organization that is off is now the rare case, not the normal
+-- one, and this helper is a BORROW for exactly that case plus the organizations a suite
+-- creates for itself — never a workaround for a platform default that is wrong.
 --
 -- WHAT IT DOES INSTEAD. It writes the ORGANIZATION-SCOPED override — the same row an owner
 -- writes from the UI, at the same rung — for the one organization the suite names, and

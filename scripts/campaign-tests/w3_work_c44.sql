@@ -602,7 +602,7 @@ begin
   -- unchanged: with the store off, a person cannot declare slots.
   exception when insufficient_privilege or sqlstate '0A000' then
     get stacked diagnostics v_msg = message_text, v_hint = pg_exception_hint;
-    if v_msg not ilike '%has not turned the record store on%' and v_msg not like '%double-booking%' then
+    if v_msg not ilike '%has turned the record store off%' and v_msg not like '%double-booking%' then
       raise exception 'PART 3 — the refusal has to name the switch or what cannot be decided, and it said: %', v_msg;
     end if;
     if v_msg not like '%custom.work_slots_declare%' and v_msg not like '%double-booking%' then

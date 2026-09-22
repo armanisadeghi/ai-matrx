@@ -155,8 +155,8 @@ begin
     -- a knob and a role and nothing a person could act on. It now says whose organization it is
     -- about and its hint says where the switch is. The door is exactly as closed. This clause
     -- asserts the PROMISE, not the old phrasing, and it still asserts the remedy below.
-    if v_msg not ilike '%has not turned the record store on%' then
-      raise exception 'B FAILED: refused with "%" (%), which does not say this organization has not turned the record store on.', v_msg, v_state;
+    if v_msg not ilike '%has turned the record store off%' then
+      raise exception 'B FAILED: refused with "%" (%), which does not say this organization has turned the record store off.', v_msg, v_state;
     end if;
     if coalesce(v_hint, '') not like '%custom/system_enabled%' and v_msg not like '%custom/system_enabled%' then
       raise exception 'B FAILED: the refusal carries no remedy naming the knob. Message "%", hint "%".', v_msg, v_hint;
@@ -176,7 +176,7 @@ begin
     get stacked diagnostics v_msg = message_text, v_state = returned_sqlstate;
     if v_msg like 'C FAILED%' then raise; end if;
     -- RE-PINNED with B above, same landing, same reason.
-    if v_msg not ilike '%has not turned the record store on%' then
+    if v_msg not ilike '%has turned the record store off%' then
       raise exception 'C FAILED: while the switch is off an invalid write was refused with "%" (%), which does not name the switch — the writer is being told about an internal instead of the thing that is actually shut.', v_msg, v_state;
     end if;
     raise notice 'C. an INVALID write with the switch off is refused at the same door — % "%"', v_state, v_msg;
@@ -196,7 +196,7 @@ begin
   if v_caught is null then
     raise exception 'C FAILED: with the store ON, an invalid document landed — the validation below the door is gone.';
   end if;
-  if v_caught ilike '%switched off%' or v_caught ilike '%has not turned the record store on%' then
+  if v_caught ilike '%switched off%' or v_caught ilike '%has turned the record store off%' then
     raise exception 'C FAILED: with the store ON the refusal still blames the switch: %', v_caught;
   end if;
   if custom.record_write(v_org, v_table, jsonb_build_object('full_name', 'Priya Vantana')) is null then

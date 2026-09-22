@@ -54,8 +54,18 @@ const SENTENCE_FILES = [
   "features/unified-data/components/UnifiedDataSwitchNotice.tsx",
 ];
 
-/** The exact shape of the claim this guard refuses to see stated blind. */
-const NEGATIVE_FACT = /does not keep its data in the unified record store/;
+/**
+ * The exact shape of the claim this guard refuses to see stated blind.
+ *
+ * TWO SPELLINGS, because the ruling of 2026-09-23 changed the words and not the class.
+ * STORE-ON moved the platform default to ON, so the off sentence stopped being "does not
+ * keep its data in the unified record store YET" and became "has its record store switched
+ * off". A guard keyed on the retired spelling alone would have gone quietly green over the
+ * live sentence — the same silence it exists to prevent — so the old wording stays here
+ * (nothing may reintroduce it blind either) and the new one is added beside it.
+ */
+const NEGATIVE_FACT =
+  /does not keep its data in the unified record store|has its record store switched off/;
 
 /** The honest counterpart. One of these must be in reach of the claim. */
 const HONEST = /UNIFIED_DATA_CAMPAIGN_UNAVAILABLE_SENTENCE|UnifiedDataSwitchNotice|could not (read|check|look)/i;

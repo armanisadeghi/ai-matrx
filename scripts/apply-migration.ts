@@ -195,6 +195,12 @@ import {
 } from "./lib/migration-target";
 import { confirmChairStep } from "./lib/chair-step";
 import {
+  listBuildLocks,
+  startLockHeartbeat,
+  BuildLockLeaseAbsent,
+  type LockQuery,
+} from "./lib/build-lock";
+import {
   recordAppliedRow,
   receiptPath,
   trailerLine,
@@ -579,20 +585,34 @@ async function ledgerRow(
  * (§4.14 — two lanes never land on one object at once), not a rehearsal claim, so it
  * stays. Read-only on the branch; opens and closes its own connection; refuses on
  * any error rather than assuming.
+ *
+ * 🚨 THE ROW MUST BE LIVE, NOT MERELY PRESENT (lane LOCK-HYGIENE, 2026-09-22). Since
+ * `lockhyg_a_lock_row_carries_a_lease.sql` every row carries `expires_at`, and a row whose
+ * lease has lapsed is EXPIRED — the next lane's TAKE evicts it. So an expired row is not an
+ * authorisation either: it authorises exactly what it blocks, which is nothing. A lane whose
+ * own row has gone stale is told to take it again (the take will evict its corpse and say so)
+ * rather than landing on production behind a lock every other lane is entitled to steal.
+ *
+ * It returns the lock names this lane holds LIVE, so the caller can keep their heartbeat
+ * beating for as long as the apply runs — a fifteen-minute lease must never lapse under a
+ * lane that is still working.
  */
 async function assertCampaignProductionIsAuthorised(
   filename: string,
   checksum: string,
   lane: string,
   branchRef: BranchRef,
-): Promise<string | null> {
+): Promise<{ refusal: string | null; liveLocks: string[] }> {
+  const no = (refusal: string) => ({ refusal, liveLocks: [] as string[] });
   let branchEnv;
   try {
     branchEnv = loadBranchDbEnv(ROOT, branchRef);
   } catch (err) {
-    return err instanceof TargetRefusal
-      ? err.message
-      : `could not read the rehearsal branch's connection: ${String(err)}`;
+    return no(
+      err instanceof TargetRefusal
+        ? err.message
+        : `could not read the rehearsal branch's connection: ${String(err)}`,
+    );
   }
   const branch = new pg.Client({
     host: branchEnv.host,
@@ -618,41 +638,104 @@ async function assertCampaignProductionIsAuthorised(
         ? `${C.dim}rehearsed ${row.applied_at} with DIFFERENT bytes (copy ${row.checksum.slice(0, 12)}, ` +
           `this file ${checksum.slice(0, 12)}) — the copy is not a gate${C.reset}`
         : `${C.dim}rehearsed on the copy at ${row.applied_at}, byte-identical${C.reset}`;
-    const lock = await branch.query<{ held_by: string; taken_at: string; lock_name: string }>(
-      `select lock_name, held_by, taken_at::text as taken_at from campaign_watch.build_lock
-         where held_by = $1`,
-      [lane],
-    );
-    if (lock.rows.length === 0) {
-      const anyLock = await branch.query<{ lock_name: string; held_by: string }>(
-        `select lock_name, held_by from campaign_watch.build_lock order by lock_name`,
-      );
-      return (
-        `lane ${lane} holds NO campaign_watch.build_lock row on the branch ${branchRef.branchRef}.\n` +
-        `  §4.14: the production apply happens WHILE the lane holds its object lock, so two lanes\n` +
-        `  never land on the same object at once and a lane that failed cannot land at all.\n` +
-        (anyLock.rows.length
-          ? `  Held right now: ${anyLock.rows.map((r) => `${r.lock_name} by ${r.held_by}`).join(", ")}.\n`
-          : `  No lock is held by anybody right now.\n`) +
-        `  Take yours on the BRANCH first:\n` +
-        `    insert into campaign_watch.build_lock (lock_name, held_by, note)\n` +
-        `    values ('<custom|platform|iam>', '${lane}', '<what for>')\n` +
-        `    on conflict (lock_name) do nothing returning lock_name, held_by, taken_at;`
+    // Every row, with the state the LEASE gives it. An `expired` row is not an authorisation:
+    // the next lane's take is entitled to evict it, so landing on production behind one is
+    // landing behind nothing.
+    const q: LockQuery = async (sql, params) => (await branch.query(sql, params as never)).rows;
+    const all = await listBuildLocks(q, `the branch ${branchRef.branchRef}`);
+    const mine = all.filter((r) => r.held_by === lane);
+    const live = mine.filter((r) => r.state === "live");
+    if (live.length === 0) {
+      const stale = mine.length
+        ? `  Lane ${lane}'s own row(s) are EXPIRED: ` +
+          mine
+            .map((r) => `${r.lock_name} taken ${r.taken_at}, no sign of life for ${r.since_heartbeat}`)
+            .join("; ") +
+          `.\n` +
+          `  An expired row blocks nobody — the next lane's take evicts it — so it authorises\n` +
+          `  nothing either. Take it again (the take will evict the corpse and say so).\n`
+        : "";
+      const othersLive = all.filter((r) => r.state === "live");
+      return no(
+        `lane ${lane} holds NO LIVE campaign_watch.build_lock row on the branch ${branchRef.branchRef}.\n` +
+          `  §4.14: the production apply happens WHILE the lane holds its object lock, so two lanes\n` +
+          `  never land on the same object at once and a lane that failed cannot land at all.\n` +
+          stale +
+          (othersLive.length
+            ? `  Live right now: ${othersLive.map((r) => `${r.lock_name} by ${r.held_by} (${r.lease_left} of lease left)`).join(", ")}.\n`
+            : `  No lock is LIVE for anybody right now.\n`) +
+          `  Take yours on the BRANCH first:\n` +
+          `    select * from campaign_watch.lock_take('<custom|platform|iam>', '${lane}', '<what for>');`,
       );
     }
     console.log(
-      `${TAG.ok}campaign authorisation ${C.dim}— lock ${lock.rows.map((r) => r.lock_name).join(", ")} ` +
-        `held by ${lane} since ${lock.rows[0]!.taken_at}; ${rehearsalNote}${C.reset}`,
+      `${TAG.ok}campaign authorisation ${C.dim}— lock ${live.map((r) => r.lock_name).join(", ")} ` +
+        `held LIVE by ${lane} since ${live[0]!.taken_at} (${live[0]!.lease_left} of lease left); ` +
+        `${rehearsalNote}${C.reset}`,
     );
-    return null;
+    return { refusal: null, liveLocks: live.map((r) => r.lock_name) };
   } catch (err) {
-    return (
+    if (err instanceof BuildLockLeaseAbsent) return no(err.message);
+    return no(
       `the campaign authorisation could not be READ on the branch, so it is refused rather than\n` +
-      `  assumed: ${err instanceof Error ? err.message : String(err)}`
+        `  assumed: ${err instanceof Error ? err.message : String(err)}`,
     );
   } finally {
     await branch.end().catch(() => {});
   }
+}
+
+/**
+ * Keep this lane's lock rows alive on the BRANCH for as long as the apply runs on production
+ * (lane LOCK-HYGIENE, 2026-09-22).
+ *
+ * The lease is fifteen minutes and an apply is normally seconds, so this does nothing almost
+ * every time — which is the point: the one apply that DOES run long must not finish holding a
+ * row the rest of the fleet is entitled to evict. It opens ONE extra connection to the branch,
+ * renews every five minutes (a third of the lease, so two lost renews are survivable), and
+ * closes on every exit path. It never refuses: a heartbeat that cannot connect is announced and
+ * the apply carries on, because killing a running production apply over a lock bookkeeping
+ * connection would be the cure being worse than the disease.
+ */
+async function startLeaseHeartbeats(
+  lockNames: readonly string[],
+  lane: string | null,
+  branchRef: BranchRef,
+): Promise<{ stop: () => Promise<void> }> {
+  if (lockNames.length === 0 || !lane) return { stop: async () => {} };
+  let branch: pg.Client;
+  try {
+    const env = loadBranchDbEnv(ROOT, branchRef);
+    branch = new pg.Client({
+      host: env.host,
+      port: env.port,
+      user: env.user,
+      password: env.password,
+      database: env.database,
+      ssl: { rejectUnauthorized: false },
+      application_name: `db:apply (build_lock heartbeat, ${lane})`,
+    });
+    await branch.connect();
+  } catch (err) {
+    console.warn(
+      `${TAG.warn}the build_lock heartbeat could not connect to the branch ` +
+        `(${err instanceof Error ? err.message : String(err)}). The apply continues; its lease ` +
+        `runs down normally and is renewed by the lane's next take.`,
+    );
+    return { stop: async () => {} };
+  }
+  const q: LockQuery = async (sql, params) => (await branch.query(sql, params as never)).rows;
+  const beats = lockNames.map((name) =>
+    startLockHeartbeat(q, name, lane, `the branch ${branchRef.branchRef}`, (why) =>
+      console.warn(`${TAG.warn}${why}`),
+    ),
+  );
+  return {
+    stop: async () => {
+      for (const b of beats) b.stop();
+      await branch.end().catch(() => undefined);
+    },
+  };
 }
 
 function usage(): void {
@@ -1256,12 +1339,15 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     }
     chairStepConfirmed = chairStep.why;
   }
+  /** The LIVE lock rows this lane holds on the branch — kept beating for the whole apply. */
+  let liveLocks: string[] = [];
   if (inCampaign && target === "production" && !dryRun) {
-    const refused = await assertCampaignProductionIsAuthorised(filename, checksum, lane!, branchRef);
-    if (refused) {
-      console.error(`${TAG.fail}${refused}`);
+    const auth = await assertCampaignProductionIsAuthorised(filename, checksum, lane!, branchRef);
+    if (auth.refusal) {
+      console.error(`${TAG.fail}${auth.refusal}`);
       return 1;
     }
+    liveLocks = auth.liveLocks;
   }
 
   let env: DbEnv | { missing: string[]; looked: string[] };
@@ -1405,14 +1491,20 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
     // a rehearsal of the production apply.
     if (guard && (target === "production" || target === "clone")) {
       try {
-        await assertGuardResolvesOff(
+        const verdict = await assertGuardResolvesOff(
           (text) => client.query(text) as Promise<{ rows: Array<Record<string, unknown>> }>,
           guard,
           filename,
         );
+        // TWO VERDICTS, TWO SENTENCES. Printing "resolves false — the old path is untouched"
+        // over a knob the owner has turned ON would be a screen telling a lie (STORE-ON,
+        // 2026-09-23), directly under the banner that just said the opposite.
         console.log(
-          `${TAG.ok}guard ${C.bold}${guard.feature}/${guard.key}${C.reset} ` +
-            `${C.dim}resolves false — the old path is untouched by this apply${C.reset}`,
+          verdict === "off"
+            ? `${TAG.ok}guard ${C.bold}${guard.feature}/${guard.key}${C.reset} ` +
+                `${C.dim}resolves false — the old path is untouched by this apply${C.reset}`
+            : `${TAG.ok}guard ${C.bold}${guard.feature}/${guard.key}${C.reset} ` +
+                `${C.dim}resolves TRUE — the owner turned it on, so this apply is LIVE (see above)${C.reset}`,
         );
       } catch (err) {
         if (err instanceof TargetRefusal) {
@@ -1708,6 +1800,15 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       return 0;
     }
 
+    // ── THE LEASE KEEPS BEATING WHILE THE APPLY RUNS (lane LOCK-HYGIENE, 2026-09-22) ──
+    // The lock row lives on the BRANCH and the apply runs on production, so nothing about the
+    // apply touches the lease: a file that takes longer than the lease would finish holding a
+    // row every other lane is entitled to evict. So a second connection to the branch pushes
+    // `expires_at` forward every five minutes for as long as this transaction is open, and
+    // stops on every exit path. A heartbeat that renews NOTHING is announced, never swallowed:
+    // it means somebody else now holds the row, which changes what this apply is doing.
+    const heartbeats = await startLeaseHeartbeats(liveLocks, lane, branchRef);
+
     const t0 = Date.now();
     try {
       await beginClean(client);
@@ -1716,6 +1817,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       await client.query(ledgerUpsert);
       await client.query("commit");
     } catch (err) {
+      await heartbeats.stop();
       await client.query("rollback").catch(() => undefined);
       console.error(
         `${TAG.fail}${filename} FAILED — the transaction was rolled back, nothing was applied ` +
@@ -1724,6 +1826,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       console.error(`${C.red}${formatPgError(err, sql)}${C.reset}`);
       return 1;
     }
+    await heartbeats.stop();
     const elapsed = Date.now() - t0;
 
     // Proof, not assumption: re-read the row and compare it to what we hashed.

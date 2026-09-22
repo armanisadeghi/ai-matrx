@@ -434,8 +434,8 @@ begin
   -- the ONE body every write door reaches — from "switched off", which named a knob and a role
   -- and nothing a person could act on, to a sentence that says whose organization it is about
   -- with a hint saying where the switch lives. The door is exactly as closed.
-  if v_caught not ilike '%has not turned the record store on%' then
-    raise exception '4a: the refusal does not say this organization has not turned the record store on: %', v_caught;
+  if v_caught not ilike '%has turned the record store off%' then
+    raise exception '4a: the refusal does not say this organization has turned the record store off: %', v_caught;
   end if;
 
   -- 4a. THE SECOND INPUT WITH A DIFFERENT EXPECTED ANSWER: the same call, the same person,

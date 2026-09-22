@@ -84,13 +84,17 @@ declare
   v_res     jsonb;
   v_boss    text := current_user;   -- the connected role, for the fixture steps no door covers
 begin
-  -- The GLOBAL rung of the switch is what block 1 is about: it resolves false, and this
-  -- organization is switched on ON TOP of it by its own override. Block 1 takes that override
-  -- away again through the switch screen's own door and watches what a person is told.
+  -- 🚨 STORE-ON 2026-09-23 — THIS PRECONDITION WAS AN ASSUMPTION, AND THE OWNER OVERTURNED IT.
+  -- It used to demand that `custom/system_enabled` resolve FALSE at the PLATFORM rung, because
+  -- block 1 is about what a switched-off store does and the platform default used to supply
+  -- the OFF. Arman ruled on 2026-09-23 that the default is ON, and this suite went red on the
+  -- precondition alone — it had never actually needed the platform rung: block 1 turns THIS
+  -- organization off through `platform.unified_data_store_set` a few lines below and turns it
+  -- back on in 1c. So the assertion moves to where the suite's own claim lives: this
+  -- organization, at its own rung, is OFF when block 1 asks its question. A suite that reads
+  -- a platform default to decide what one organization does was reading the wrong rung.
   select platform.knob_resolve('custom','system_enabled', null) #>> '{}' into v_switch;
-  if v_switch is distinct from 'false' then
-    raise exception 'PRECONDITION: custom/system_enabled resolves "%" globally and block 1 is about what OFF does.', v_switch;
-  end if;
+  raise notice 'the platform rung of custom/system_enabled resolves "%" — block 1 does not depend on it: it switches its own organization off through the door.', v_switch;
 
   -- WHO IS WRITING. platform.associations refuses an automated write that does not name the
   -- system doing it, and the store reaches that table through platform._gc_entity_associations.
@@ -178,19 +182,22 @@ begin
   if v_caught not like '%custom.record_write%' then
     raise exception 'GREEN 1b FAILED: refused, but the refusal does not name the door it was refused at: "%"', v_caught;
   end if;
-  -- 🚨 RED-SUITES 2026-09-21 — RE-PINNED TO THE SENTENCE THE DOOR GIVES NOW, WHICH IS BETTER.
-  -- This clause used to demand the words "switched off". The ruling that changed them is
-  -- `limitsfix_a_new_organization_has_the_store_on.sql`: real-data crew D built a table and its
-  -- columns before any door mentioned the switch, and the refusal they finally met named a knob,
-  -- a campaign checklist and a database role — nothing a person could act on. The door is
-  -- exactly as closed; the sentence now says WHOSE organization it is about and the HINT says
-  -- WHERE the switch is. So the clause asserts the promise rather than the old phrasing, and it
-  -- asserts the remedy too — which the old one never did.
-  if v_caught not ilike '%has not turned the record store on%' then
-    raise exception 'GREEN 1b FAILED: refused, but the refusal does not say this organization has not turned the store on: "%"', v_caught;
+  -- 🚨 RE-PINNED TWICE, TO THE SENTENCE THE DOOR GIVES NOW. RED-SUITES moved it off "switched
+  -- off" on 2026-09-21 (`limitsfix_a_new_organization_has_the_store_on.sql`: real-data crew D
+  -- built a table and its columns before any door mentioned the switch, and the refusal they
+  -- finally met named a knob, a campaign checklist and a database role — nothing a person could
+  -- act on). STORE-ON moved it again on 2026-09-23: with the platform default ON, "has not
+  -- turned the record store on YET" named the wrong act, so the door now says the organization
+  -- HAS TURNED IT OFF. The door is exactly as closed either way; the clause asserts the promise
+  -- and the remedy rather than a phrasing.
+  if v_caught not ilike '%has turned the record store off%' then
+    raise exception 'GREEN 1b FAILED: refused, but the refusal does not say this organization has turned the store off: "%"', v_caught;
   end if;
-  if coalesce(v_hint, '') not ilike '%turn the record store on%' then
-    raise exception 'GREEN 1b FAILED: refused and said the store is off, but told the person nothing about where to turn it on: hint "%"', coalesce(v_hint, '<none>');
+  -- STORE-ON 2026-09-23: the hint's verb became "turn it back on" when the platform default
+  -- moved to ON — an organization that is off was switched off on purpose, so there is no
+  -- "turn it on for the first time" left to point at.
+  if coalesce(v_hint, '') not ilike '%turn it back on%' then
+    raise exception 'GREEN 1b FAILED: refused and said the store is off, but told the person nothing about where to turn it back on: hint "%"', coalesce(v_hint, '<none>');
   end if;
   raise notice '1b. the SAME person THROUGH THE DOOR is refused, the refusal NAMES the door and the switch ("%"), and the hint says where to throw it.', v_caught;
 

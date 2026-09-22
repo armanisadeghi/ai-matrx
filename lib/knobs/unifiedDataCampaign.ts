@@ -185,10 +185,16 @@ export type StoreSwitchAnswer =
  * Pure string — safe from here, unlike the hook that used to sit below it.
  * `useUnifiedDataCampaignGate.ts` imports this one constant.
  */
+// STORE-ON 2026-09-23 (owner ruling): the record store is ON for every organization by
+// default, so "does not keep its data there YET" now names the wrong act. An organization
+// that reads off has had it switched off by somebody with an owner's or an administrator's
+// seat in it, and the sentence says that instead of sending a person looking for a setup
+// step that does not exist.
 export const UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE =
-    "This organization does not keep its data in the unified record store yet, so there are no " +
-    "tables here. An owner or an administrator of it turns that on once, for everybody, on the " +
-    "unified data ramp screen. Your existing data pages are unaffected.";
+    "This organization has its record store switched off, so there are no tables here. An " +
+    "owner or an administrator of it turns it back on, for everybody, on the unified data " +
+    "ramp screen — everything already made is kept and starts working again. Your existing " +
+    "data pages are unaffected.";
 
 /**
  * What a campaign route says when the switch COULD NOT BE READ. It states
