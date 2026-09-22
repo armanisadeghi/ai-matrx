@@ -162,13 +162,13 @@ export function LabelBatchDetail({
   organizationId: string | null;
 }) {
   const [batch, setBatch] = useState<LabelBatch | null>(null);
-  const [codes, setCodes] = useState<LabelCode[]>([]);
+  const [codes, setCodes] = useState<LabelCodeTableRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [reloadNonce, setReloadNonce] = useState(0);
   const [pageIndex, setPageIndex] = useState(0);
   const [pendingVoid, setPendingVoid] = useState(false);
   const [voiding, setVoiding] = useState(false);
-  const [processedCodes, setProcessedCodes] = useState<LabelCode[]>([]);
+  const [processedCodes, setProcessedCodes] = useState<LabelCodeTableRow[]>([]);
   const codesTable = useTableUrlState({
     tableId: `commerce-label-codes-${batchId}`,
     defaultPageSize: 25,
@@ -201,7 +201,7 @@ export function LabelBatchDetail({
           const reconciled = await reconcileBatchState(loaded, loadedCodes);
           if (cancelled) return;
           setBatch(reconciled);
-          setCodes(loadedCodes);
+          setCodes(loadedCodes.map((code, index) => ({ ...code, sourcePosition: index + 1 })));
         } catch (err) {
           console.error("[commerce-labels] batch load failed", err);
           toast.error("Could not load the batch.");
@@ -308,10 +308,7 @@ export function LabelBatchDetail({
   const assigned = codes.filter((c) => c.state === "assigned").length;
   const voided = codes.filter((c) => c.state === "void").length;
   const printable = codes.filter((c) => c.state !== "void");
-  const codeTableRows = codes.map((code, index) => ({
-    ...code,
-    sourcePosition: index + 1,
-  }));
+  const codeTableRows = codes;
   const pageCount = Math.max(1, Math.ceil(printable.length / perPage));
 
   return (
@@ -481,11 +478,7 @@ export function LabelBatchDetail({
               label: "Refresh codes",
             },
           }}
-          onViewChange={(rows) =>
-            setProcessedCodes(
-              rows.map(({ sourcePosition: _sourcePosition, ...code }) => code),
-            )
-          }
+          onViewChange={setProcessedCodes}
           window={{ title: (row) => row.value }}
           coverage={{
             noun: "label code",

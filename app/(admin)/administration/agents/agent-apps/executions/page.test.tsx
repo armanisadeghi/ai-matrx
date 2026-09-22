@@ -138,3 +138,31 @@ describe("Agent-app execution canonical table contract", () => {
     ).toBe("unresolved");
   });
 });
+
+
+describe("Execution source and export regressions", () => {
+  const appId = "0a20e787-aee2-4de1-b245-5df2b687dab5";
+  it("preserves app scope across both source requests and rejects malformed IDs", () => {
+    expect(scopedAppId(appId)).toBe(appId);
+    expect(scopedAppId("not-a-uuid")).toBeNull();
+    expect(scopedAppId(null)).toBeNull();
+    expect(executionSourceFilters(appId, "all")).toEqual({ app_id: appId, success: undefined, limit: 500 });
+    expect(errorSourceFilters(appId, "unresolved")).toEqual({ app_id: appId, resolved: false, limit: 500 });
+    expect(errorSourceFilters(null, "resolved").resolved).toBe(true);
+    expect(errorSourceFilters(null, "all").resolved).toBeUndefined();
+    expect(executionSourceFilters(null, "failed").success).toBe(false);
+  });
+  it("makes unfamiliar loaded error types selectable without duplicating known types", () => {
+    const values = ["future_provider_error", "execution_error", "api_error", "api_error"];
+    const options = errorTypeFilterOptions(values);
+    expect(options.filter(option => option.value === "api_error")).toHaveLength(1);
+    expect(options).toContainEqual({ value: "future_provider_error", label: "future_provider_error" });
+    expect(errorColumns(values).find(column => column.id === "type")?.filterOptions).toEqual(options);
+  });
+  it("never exports an unknown outcome as a failed execution", () => {
+    expect(humanExecution({ ...execution, success: null })).toContain("Pending");
+    expect(humanExecution({ ...execution, success: null })).not.toContain("Failed");
+    expect(humanExecution({ ...execution, success: true })).toContain("OK");
+    expect(humanExecution({ ...execution, success: false })).toContain("Failed");
+  });
+});
