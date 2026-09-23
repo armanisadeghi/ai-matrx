@@ -10,7 +10,7 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { Plus, X, AlertCircle, Layers } from "lucide-react";
+import { Plus, X, AlertCircle, Layers, SlidersHorizontal } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
@@ -18,8 +18,16 @@ import { useOpenScopeBatchImportWindow } from "@/features/overlays/openers/scope
 import {
   selectAgentVariableDefinitions,
   selectAgentMessages,
+  selectAgentSettings,
 } from "@/features/agents/redux/agent-definition/selectors";
-import { setAgentVariableDefinitions } from "@/features/agents/redux/agent-definition/slice";
+import {
+  setAgentControlBinding,
+  setAgentVariableDefinitions,
+} from "@/features/agents/redux/agent-definition/slice";
+import {
+  isControlVariable,
+  unbindControlVariable,
+} from "@/features/agents/utils/control-variables";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import { useOpenAgentVariableEditorWindow } from "@/features/overlays/openers/agentVariableEditorWindow";
 import {
@@ -51,6 +59,7 @@ function isStillFresh(v: VariableDefinition): boolean {
 export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
   const dispatch = useAppDispatch();
   const openBatchImport = useOpenScopeBatchImportWindow();
+  const settings = useAppSelector((state) => selectAgentSettings(state, agentId));
   const rawVariables = useAppSelector((state) =>
     selectAgentVariableDefinitions(state, agentId),
   );
@@ -138,6 +147,26 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
   };
 
   const handleRemove = (name: string) => {
+    // Removing a bound model control's variable UNBINDS it: its default goes
+    // back into settings as the literal, never silently dropped.
+    const removed = variables.find((v) => v.name === name);
+    const controlKey = removed?.control?.key;
+    if (controlKey) {
+      const next = unbindControlVariable({
+        key: controlKey,
+        control: null,
+        settings: (settings ?? {}) as Record<string, unknown>,
+        variableDefinitions: variables,
+      });
+      dispatch(
+        setAgentControlBinding({
+          id: agentId,
+          settings: next.settings as NonNullable<typeof settings>,
+          variableDefinitions: next.variableDefinitions,
+        }),
+      );
+      return;
+    }
     dispatch(
       setAgentVariableDefinitions({
         id: agentId,
@@ -158,7 +187,10 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
           className="flex items-center gap-1.5 flex-nowrap min-w-0 flex-1 py-0.5"
         >
           {variables.map((variable) => {
-            const isUsed = isVariableUsedInText(variable.name, allText);
+            // A bound model control is used by the model setting, not the text.
+            const isControl = isControlVariable(variable);
+            const isUsed =
+              isControl || isVariableUsedInText(variable.name, allText);
             return (
               <div
                 key={variable.name}
@@ -169,6 +201,12 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
                 }`}
               >
                 {!isUsed && <AlertCircle className="w-3 h-3 shrink-0" />}
+                {isControl && (
+                  <SlidersHorizontal
+                    className="w-3 h-3 shrink-0 text-muted-foreground"
+                    aria-label="Model setting input"
+                  />
+                )}
                 {/* A real button: the chip is the door to the variable editor,
                     so it must be reachable and openable from the keyboard and
                     announced as a control (PNI-000 F2). */}

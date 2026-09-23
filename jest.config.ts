@@ -155,6 +155,17 @@ const config: Config = {
         // on the mere fact that something rendered. They are run BY NAME
         // (`npx jest <path>`) and would otherwise make `pnpm test` red for ever.
         "\\.red\\.test\\.tsx?$",
+        "<rootDir>/work/",
+    ],
+    // Parked checkouts must not enter the HASTE MAP either: two aidream clones
+    // under work/ (2026-09-22) each carry apps/shared/*/package.json, and a
+    // duplicate `@ai-matrx/realtime` name fails EVERY suite that imports the
+    // store before a single test runs.
+    modulePathIgnorePatterns: [
+        "<rootDir>/work/",
+        "<rootDir>/.wt/",
+        "<rootDir>/.matrx/",
+        "<rootDir>/.coldwalk",
     ],
     // Restrict to *.test.ts(x) / *.spec.ts(x). Jest's default `testMatch`
     // also globs everything under `**/__tests__/**`, which picked up our

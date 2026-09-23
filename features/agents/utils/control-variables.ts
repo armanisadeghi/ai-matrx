@@ -207,11 +207,20 @@ export function variableValueToControlLiteral(
 ): unknown {
   if (value === undefined || value === null || value === "") return undefined;
   if (typeof value !== "string") return value;
-  if (control?.type === "boolean") {
+  if (!control) {
+    // No catalog definition at hand (e.g. the variable chip's remove): infer the
+    // literal's type from the text so a toggle's "On" never lands as a string.
+    const lowered = value.toLowerCase();
+    if (lowered === "on" || lowered === "true") return true;
+    if (lowered === "off" || lowered === "false") return false;
+    const n = Number(value);
+    return value.trim() !== "" && Number.isFinite(n) ? n : value;
+  }
+  if (control.type === "boolean") {
     const lowered = value.toLowerCase();
     return lowered === "on" || lowered === "true" || lowered === "yes";
   }
-  if (control?.type === "number" || control?.type === "integer") {
+  if (control.type === "number" || control.type === "integer") {
     const n = Number(value);
     return Number.isFinite(n) ? n : undefined;
   }
