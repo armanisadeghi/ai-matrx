@@ -42,6 +42,8 @@ export const TABLES = {
   customers: "415c3e23-2f90-4c66-9040-b246fa1c4b36", // Rincon Plumbing — Customers
   parity: "fc007161-f1c5-4ea9-9548-eefda0bc7d72", // Grid Parity Fixture
   defects: "8c67a085-197d-44c0-b2bb-ceeea9555303", // matrx-frontend (LCP test) — Known defects
+  // An OLDER table (workbench.udt_*), made for the regression half of the walk.
+  olderParts: "00d6e9a2-45c4-4e45-af46-431bccb3c51a", // Rincon Plumbing — Parts on order
 };
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 
@@ -785,6 +787,35 @@ async function main() {
       const tall = await heightOf();
       pass("layout-row-height", tall > normal + 4, `row ${Math.round(normal)}px → ${Math.round(tall)}px, kept in ${address.replace(ORIGIN, "")}`);
       await page.goto(`${ORIGIN}/data/${TABLES.calls}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+    }
+
+    // ── THE OLDER HALF STILL RUNS: an older table, through the older doors only ──
+    if (wants("older")) {
+      const ROW = "15639e63-cd41-4059-b11a-dca2e6ec2c9d"; // Rheem water heater
+      const doors = [];
+      const listen = (r) => {
+        const m = r.url().match(/\/rest\/v1\/rpc\/([a-z0-9_]+)/);
+        if (m) doors.push(`${r.headers()["content-profile"] ?? "public"}.${m[1]}`);
+      };
+      page.on("request", listen);
+      const text = await openGrid(page, TABLES.olderParts, "Rheem");
+      const cellS = () => page.locator(`[data-cell="${ROW}::supplier"]`).first();
+      const before = (await cellS().innerText()).trim();
+      await cellS().dblclick();
+      await page.keyboard.press("ControlOrMeta+a");
+      await page.keyboard.type("Ferguson Oxnard");
+      await page.keyboard.press("Enter");
+      await page.waitForTimeout(2500);
+      await page.locator('button[title^="Undo last cell change"]').first().click().catch(() => {});
+      await page.waitForTimeout(2500);
+      await openGrid(page, TABLES.olderParts, "Rheem");
+      const after = (await cellS().innerText()).trim();
+      page.off("request", listen);
+      const storeDoors = doors.filter((d) => d.startsWith("custom."));
+      pass("older-reads", text.includes("Rheem 50-gal gas water heater") && page.url().includes(`/data/${TABLES.olderParts}`), "the older table opens in the grid");
+      pass("older-uses-older-doors", doors.includes("public.get_user_table_data_paginated_v2") && doors.includes("public.udt_upsert_cell") && storeDoors.length === 0,
+        `older doors: ${[...new Set(doors.filter((d) => !d.startsWith("custom.")))].slice(0, 8).join(", ")}; record-store doors: ${storeDoors.length}`);
+      pass("older-edit-undo", after === before, `edit + undo leaves the supplier "${after}"`);
     }
 
     const onClone = String(process.env.GRID_PORT_ON_CLONE || "") === "1";
