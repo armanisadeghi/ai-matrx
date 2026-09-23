@@ -396,26 +396,26 @@
           "anyOf": [
             {
               "enum": [
-                "array",
-                "boolean",
-                "integer",
-                "null",
+                "string",
                 "number",
+                "integer",
+                "boolean",
+                "array",
                 "object",
-                "string"
+                "null"
               ],
               "type": "string"
             },
             {
               "items": {
                 "enum": [
-                  "array",
-                  "boolean",
-                  "integer",
-                  "null",
+                  "string",
                   "number",
+                  "integer",
+                  "boolean",
+                  "array",
                   "object",
-                  "string"
+                  "null"
                 ],
                 "type": "string"
               },
@@ -948,8 +948,8 @@
       "anyOf": [
         {
           "enum": [
-            "auto",
             "none",
+            "auto",
             "required"
           ],
           "type": "string"
@@ -978,13 +978,13 @@
         {
           "enum": [
             "auto",
-            "high",
-            "low",
-            "max",
-            "medium",
-            "minimal",
             "none",
-            "xhigh"
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
           ],
           "type": "string"
         },
@@ -999,11 +999,11 @@
       "anyOf": [
         {
           "enum": [
-            "always",
-            "auto",
             "concise",
             "detailed",
-            "never"
+            "never",
+            "auto",
+            "always"
           ],
           "type": "string"
         },
@@ -1018,10 +1018,10 @@
       "anyOf": [
         {
           "enum": [
-            "high",
+            "minimal",
             "low",
             "medium",
-            "minimal"
+            "high"
           ],
           "type": "string"
         },
@@ -1165,10 +1165,10 @@
       "anyOf": [
         {
           "enum": [
-            "edit",
+            "text_to_video",
             "image_to_video",
             "reference_to_video",
-            "text_to_video"
+            "edit"
           ],
           "type": "string"
         },
@@ -1183,9 +1183,9 @@
       "anyOf": [
         {
           "enum": [
-            "high",
             "low",
-            "medium"
+            "medium",
+            "high"
           ],
           "type": "string"
         },
@@ -1236,16 +1236,16 @@
       "anyOf": [
         {
           "enum": [
-            "16:9",
             "1:1",
-            "21:9",
             "2:3",
             "3:2",
             "3:4",
             "4:3",
             "4:5",
             "5:4",
-            "9:16"
+            "9:16",
+            "16:9",
+            "21:9"
           ],
           "type": "string"
         },
@@ -1296,10 +1296,10 @@
       "anyOf": [
         {
           "enum": [
-            "auto",
-            "high",
             "low",
-            "medium"
+            "medium",
+            "high",
+            "auto"
           ],
           "type": "string"
         },
@@ -1387,8 +1387,8 @@
       "anyOf": [
         {
           "enum": [
-            "natural",
-            "vivid"
+            "vivid",
+            "natural"
           ],
           "type": "string"
         },
@@ -1439,15 +1439,15 @@
       "anyOf": [
         {
           "enum": [
-            "aac",
-            "alaw",
-            "flac",
             "mp3",
-            "mulaw",
+            "wav",
             "ogg",
             "opus",
+            "aac",
+            "flac",
             "pcm",
-            "wav"
+            "mulaw",
+            "alaw"
           ],
           "type": "string"
         },
@@ -1474,7 +1474,7 @@
     "speech_speed": {
       "anyOf": [
         {
-          "maximum": 4.0,
+          "maximum": 4,
           "minimum": 0.25,
           "type": "number"
         },
@@ -1528,13 +1528,13 @@
       "anyOf": [
         {
           "enum": [
+            "480p",
+            "720p",
             "1080p",
+            "4k",
             "1K",
             "2K",
-            "480p",
-            "4K",
-            "4k",
-            "720p"
+            "4K"
           ],
           "type": "string"
         },
@@ -1621,14 +1621,14 @@
       "anyOf": [
         {
           "enum": [
-            "base64",
             "jpeg",
-            "json_object",
-            "json_schema",
             "png",
-            "text",
+            "webp",
+            "base64",
             "url",
-            "webp"
+            "text",
+            "json_object",
+            "json_schema"
           ],
           "type": "string"
         },
@@ -1796,9 +1796,9 @@
       "anyOf": [
         {
           "enum": [
+            "generate",
             "edit",
-            "extend",
-            "generate"
+            "extend"
           ],
           "type": "string"
         },
@@ -1880,8 +1880,8 @@
       "anyOf": [
         {
           "enum": [
-            "fast",
-            "high_quality"
+            "high_quality",
+            "fast"
           ],
           "type": "string"
         },
@@ -1956,10 +1956,10 @@
       "anyOf": [
         {
           "enum": [
-            "auto",
-            "high",
             "low",
-            "medium"
+            "medium",
+            "high",
+            "auto"
           ],
           "type": "string"
         },
