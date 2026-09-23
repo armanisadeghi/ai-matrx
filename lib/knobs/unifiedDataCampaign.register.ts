@@ -757,6 +757,33 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         kind: "tooling",
         why: "The eight consumer ids and the id-to-knob-key rule, split out for the same reason as this file: pure, import-free, readable by a guard in a bare checkout. It reads no knob and must not be gated.",
     },
+    // Registered by STORE-TXN-4 (2026-09-22): four migration-runner tools other lanes landed
+    // that import scripts/lib/migration-target and so failed check:campaign-entry-points for
+    // every lane. All four are scripts a person or a release gate runs by hand; none ships.
+    {
+        id: "build-lock-lease-self-test",
+        file: "scripts/check-build-lock-lease.ts",
+        kind: "tooling",
+        why: "LOCK-HYGIENE's RED-then-GREEN proof of the build-lock lease, run on the dev clone. A guard script; it ships to no user and must not wait on the switch it helps the campaign land.",
+    },
+    {
+        id: "revoke-order-self-test",
+        file: "scripts/check-revoke-order.ts",
+        kind: "tooling",
+        why: "Proves the runner's close-the-row-first REVOKE guard live on the dev clone inside one rolled-back transaction. A guard script; never served, never gated.",
+    },
+    {
+        id: "locks-sweep",
+        file: "scripts/locks-sweep.ts",
+        kind: "tooling",
+        why: "pnpm locks:sweep - reports which campaign_watch.build_lock rows hold the campaign on a named target. Run by a person at a terminal; ships to no user.",
+    },
+    {
+        id: "migration-revoke-order",
+        file: "scripts/migration-revoke-order.ts",
+        kind: "tooling",
+        why: "The close-the-row-first REVOKE judgement the migration runner calls before it executes a file. Part of the runner, which must never be gated on the campaign it applies.",
+    },
 ];
 
 /**
