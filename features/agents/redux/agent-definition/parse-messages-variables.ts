@@ -17,6 +17,7 @@ import {
 } from "@/features/agents/types/agent-definition.types";
 import type { components } from "@/types/python-generated/api-types";
 import { isMessagePart } from "@/types/python-generated/stream-events";
+import { isSpeechScriptPart } from "@/features/agents/speech-script/types";
 import {
   DECISION_QUESTIONS_KIND,
   isDecisionQuestionsPart,
@@ -450,6 +451,11 @@ function isDefinitionMessagePart(
   // row that was perfectly intact.
   if (isDecisionQuestionsPart(value as Record<string, unknown>)) {
     return Array.isArray((value as { questions?: unknown }).questions);
+  }
+  // The text-to-speech script. Same reason as above: a reader that refused it
+  // would drop EVERY message of the agent on the next load.
+  if (isSpeechScriptPart(value as Record<string, unknown>)) {
+    return Array.isArray((value as { turns?: unknown }).turns);
   }
   if (!isMessagePart(value)) return false;
   return (

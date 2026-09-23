@@ -370,6 +370,19 @@ function normalizeSingle(raw: MessagePart, index: number): RenderBlockPayload {
         metadata: raw.metadata,
       };
 
+    case "speech_script":
+      // The text-to-speech ASK on a user turn. Its editor lives in the agent
+      // builder; in a transcript it is the script that was performed.
+      return {
+        blockId: newId("db_speech_script"),
+        blockIndex: index,
+        type: "speech_script",
+        status: "complete",
+        content: null,
+        data: { payload: raw as unknown as Record<string, unknown> },
+        metadata: raw.metadata,
+      };
+
     default: {
       // Compile-time exhaustiveness — any new MessagePart variant in Python
       // surfaces here as a TS error until a case is added above.
@@ -441,7 +454,14 @@ function normalizeMedia(raw: AnyMediaPart, index: number): RenderBlockPayload {
         type: "audio_output",
         status: "complete",
         content: null,
-        data: fromCxAudioPart(raw) as unknown as Record<string, unknown>,
+        // A speech-script run stamps the performed script (and, when the
+        // vendor returns it, word alignment) on the audio part; the player
+        // renders the script beside itself.
+        data: {
+          ...fromCxAudioPart(raw),
+          speech_script: raw.metadata?.speech_script,
+          alignment: raw.metadata?.alignment,
+        } as unknown as Record<string, unknown>,
         metadata: raw.metadata,
       };
 

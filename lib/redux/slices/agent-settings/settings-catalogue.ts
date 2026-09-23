@@ -154,6 +154,10 @@ const IMAGE_VIDEO_GROUP: CatalogueEntry[] = [
 // that lack the custom editor render it as a normal row.
 const AUDIO_GROUP: CatalogueEntry[] = [
   { key: "tts_voice", label: "Voice" },
+  { key: "performance_direction", label: "Performance Direction" },
+  { key: "speech_speed", label: "Speed" },
+  { key: "turn_pause_ms", label: "Pause Between Turns (ms)" },
+  { key: "language_code", label: "Language" },
   { key: "audio_format", label: "Audio Format" },
 ];
 

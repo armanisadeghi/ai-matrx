@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   AlertTriangle,
+  AudioLines,
   ListChecks,
   Plus,
   Image as ImageIcon,
@@ -59,6 +60,14 @@ import {
   DecisionQuestionsEditor,
   newDecisionQuestion,
 } from "@/features/agents/components/builder/message-builders/DecisionQuestionsEditor";
+import { SpeechScriptEditor } from "@/features/agents/components/builder/message-builders/SpeechScriptEditor";
+import {
+  SPEECH_SCRIPT_KIND,
+  isSpeechScriptPart,
+  newSpeechScriptPart,
+  readTurns,
+  speechScriptCompatibility,
+} from "@/features/agents/speech-script/types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -71,7 +80,8 @@ export type BlockType =
   | "video"
   | "youtube_video"
   | "document"
-  | "decision_questions";
+  | "decision_questions"
+  | "speech_script";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -161,6 +171,15 @@ const BLOCK_TYPES: BlockTypeConfig[] = [
     // The questions part has no scalar field — its editor IS a table, so the
     // generic field form is skipped and `DecisionQuestionsEditor` renders in
     // the list instead of a `BlockRow`.
+    fields: [],
+  },
+  {
+    type: "speech_script",
+    label: "Speech script",
+    icon: <AudioLines className="w-3.5 h-3.5" />,
+    // A table like Questions: `SpeechScriptEditor` renders in the list. It is
+    // offered only on a user message of a text-to-speech model
+    // (`AddBlockTrigger.extraTypes`).
     fields: [],
   },
   {
@@ -315,7 +334,8 @@ export function BlockEditor({
   const config = blockType ? getConfig(blockType) : null;
   // The questions part is edited as a table by `DecisionQuestionsEditor`; it
   // never reaches this field form. `BlockList` adds it directly.
-  const isQuestionsPart = config?.type === DECISION_QUESTIONS_KIND;
+  const isQuestionsPart =
+    config?.type === DECISION_QUESTIONS_KIND || config?.type === SPEECH_SCRIPT_KIND;
   const [values, setValues] = useState<Record<string, string>>(
     config
       ? Object.fromEntries(
@@ -388,7 +408,7 @@ export function BlockEditor({
           </button>
         </div>
         <div className="grid grid-cols-2 gap-1">
-          {BLOCK_TYPES.map((bt) => (
+          {BLOCK_TYPES.filter((bt) => bt.type !== SPEECH_SCRIPT_KIND).map((bt) => (
             <button
               key={bt.type}
               onClick={() => onSelectType?.(bt.type)}
@@ -742,9 +762,21 @@ export function BlockRow({
 
 interface AddBlockTriggerProps {
   onSelectType: (type: BlockType) => void;
+  /**
+   * Block types offered beyond the always-available ones. `speech_script` is
+   * offered only when the message can be performed as speech (a user message
+   * on a text-to-speech model) — listing it elsewhere would be a dead control.
+   */
+  extraTypes?: BlockType[];
 }
 
-export function AddBlockTrigger({ onSelectType }: AddBlockTriggerProps) {
+/** Types offered only when a surface opts them in through `extraTypes`. */
+const GATED_BLOCK_TYPES: ReadonlySet<BlockType> = new Set<BlockType>(["speech_script"]);
+
+export function AddBlockTrigger({ onSelectType, extraTypes = [] }: AddBlockTriggerProps) {
+  const offered = BLOCK_TYPES.filter(
+    (bt) => !GATED_BLOCK_TYPES.has(bt.type) || extraTypes.includes(bt.type),
+  );
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -760,7 +792,7 @@ export function AddBlockTrigger({ onSelectType }: AddBlockTriggerProps) {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40">
-        {BLOCK_TYPES.map((bt) => (
+        {offered.map((bt) => (
           <DropdownMenuItem
             key={bt.type}
             onClick={() => onSelectType(bt.type)}
@@ -815,9 +847,17 @@ export function BlockList({
   // question and the table opens on it. Nothing to confirm, nothing to type
   // into a box that is not the editor.
   useEffect(() => {
-    if (pendingAddType !== DECISION_QUESTIONS_KIND) return;
-    onAddBlock({ ...newDecisionQuestionsPart([newDecisionQuestion([])]) });
-    onPendingAddTypeClear?.();
+    if (pendingAddType === DECISION_QUESTIONS_KIND) {
+      onAddBlock({ ...newDecisionQuestionsPart([newDecisionQuestion([])]) });
+      onPendingAddTypeClear?.();
+    } else if (pendingAddType === SPEECH_SCRIPT_KIND) {
+      // Same as Questions: the table IS the editor, so picking the block adds
+      // it with one empty turn and the table opens on it.
+      onAddBlock({
+        ...newSpeechScriptPart([{ speaker: "Host", text: "" }]),
+      });
+      onPendingAddTypeClear?.();
+    }
   }, [pendingAddType, onAddBlock, onPendingAddTypeClear]);
 
   const cancelAdd = () => {
@@ -840,7 +880,23 @@ export function BlockList({
   return (
     <div className="flex flex-col gap-1 w-full">
       {blocks.map((block, i) =>
-        isDecisionQuestionsPart(block) ? (
+        isSpeechScriptPart(block) ? (
+          <SpeechScriptEditor
+            key={i}
+            turns={readTurns(block)}
+            model={model}
+            validVariables={validVariables}
+            compatibility={speechScriptCompatibility(
+              model,
+              decisionContext?.modelId ?? null,
+              readTurns(block),
+            )}
+            onRemovePart={() => onRemoveBlock(i)}
+            onChange={(turns) =>
+              onUpdateBlock(i, { ...block, ...newSpeechScriptPart(turns) })
+            }
+          />
+        ) : isDecisionQuestionsPart(block) ? (
           <DecisionQuestionsEditor
             key={i}
             questions={readQuestions(block)}
@@ -878,7 +934,7 @@ export function BlockList({
       )}
 
       {/* Add editor — only shown when triggered from the header + button */}
-      {pendingAddType != null && (
+      {pendingAddType != null && pendingAddType !== SPEECH_SCRIPT_KIND && (
         <BlockEditor
           blockType={pendingAddType}
           onConfirm={handleAdded}

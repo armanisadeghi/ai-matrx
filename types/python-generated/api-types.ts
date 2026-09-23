@@ -28175,23 +28175,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/communications/sms/action-authorizations/{call_id}/confirm": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Confirm Action */
-        post: operations["confirm_action_communications_sms_action_authorizations__call_id__confirm_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/outreach/replies/lists/{outreach_list_id}/members/{member_id}/thread": {
         parameters: {
             query?: never;
@@ -28431,6 +28414,26 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a real Supabase Auth session for the given user id.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -43071,7 +43074,7 @@ export interface components {
             /** Is New */
             is_new: boolean;
             /** User Input */
-            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"] | components["schemas"]["DecisionQuestionsPart"] | components["schemas"]["DecisionAnswersPart"])[] | null;
+            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"] | components["schemas"]["DecisionQuestionsPart"] | components["schemas"]["DecisionAnswersPart"] | components["schemas"]["SpeechScriptPart"])[] | null;
             /** Variables */
             variables?: {
                 [key: string]: unknown;
@@ -43320,7 +43323,7 @@ export interface components {
             /** Is New */
             is_new: boolean;
             /** User Input */
-            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"] | components["schemas"]["DecisionQuestionsPart"] | components["schemas"]["DecisionAnswersPart"])[] | null;
+            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"] | components["schemas"]["DecisionQuestionsPart"] | components["schemas"]["DecisionAnswersPart"] | components["schemas"]["SpeechScriptPart"])[] | null;
             /** Variables */
             variables?: {
                 [key: string]: unknown;
@@ -43930,6 +43933,8 @@ export interface components {
             customComponent?: components["schemas"]["VariableComponentSpec"] | null;
             /** @description When set, filled from a scope context item and inherits its component. */
             binding?: components["schemas"]["ContextItemBinding"] | null;
+            /** @description When set, this variable is a model control exposed as an input: its resolved value is sent as that control (controls as first-class variables). */
+            control?: components["schemas"]["ControlBinding"] | null;
         } & {
             [key: string]: unknown;
         };
@@ -55211,6 +55216,14 @@ export interface components {
             tts_voice?: string | components["schemas"]["TtsVoiceSpeaker"][] | components["schemas"]["TtsDialogueTurn"][] | null;
             /** Audio Format */
             audio_format?: ("aac" | "alaw" | "flac" | "mp3" | "mulaw" | "ogg" | "opus" | "pcm" | "wav") | null;
+            /** Performance Direction */
+            performance_direction?: string | null;
+            /** Speech Speed */
+            speech_speed?: number | null;
+            /** Turn Pause Ms */
+            turn_pause_ms?: number | null;
+            /** Language Code */
+            language_code?: string | null;
             /** Duration Seconds */
             duration_seconds?: number | null;
             /** Resolution */
@@ -61011,6 +61024,19 @@ export interface components {
             /** Models */
             models: components["schemas"]["ModelReport"][];
         };
+        /**
+         * ControlBinding
+         * @description Binds a variable to a model control: the variable's value IS that control's value.
+         */
+        ControlBinding: {
+            /**
+             * Key
+             * @description Canonical control key (aspect_ratio, quality, tts_voice, temperature, ...). While bound, the key is absent from the agent's settings and the variable's defaultValue is the agent's value.
+             */
+            key: string;
+        } & {
+            [key: string]: unknown;
+        };
         /** ControlBlock */
         ControlBlock: {
             /** Control Revision */
@@ -61145,7 +61171,7 @@ export interface components {
              */
             target_instance_id?: string | null;
             /** User Input */
-            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"] | components["schemas"]["DecisionQuestionsPart"] | components["schemas"]["DecisionAnswersPart"])[] | null;
+            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"] | components["schemas"]["DecisionQuestionsPart"] | components["schemas"]["DecisionAnswersPart"] | components["schemas"]["SpeechScriptPart"])[] | null;
             /**
              * Retry
              * @default false
@@ -65400,6 +65426,33 @@ export interface components {
             access?: "public_no_auth";
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /**
          * DeviceRegistration
@@ -73551,7 +73604,7 @@ export interface components {
              */
             target_instance_id?: string | null;
             /** User Input */
-            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"] | components["schemas"]["DecisionQuestionsPart"] | components["schemas"]["DecisionAnswersPart"])[] | null;
+            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"] | components["schemas"]["DecisionQuestionsPart"] | components["schemas"]["DecisionAnswersPart"] | components["schemas"]["SpeechScriptPart"])[] | null;
             /**
              * Retry
              * @default false
@@ -83230,6 +83283,14 @@ export interface components {
             tts_voice?: string | components["schemas"]["TtsVoiceSpeaker"][] | components["schemas"]["TtsDialogueTurn"][] | null;
             /** Audio Format */
             audio_format?: ("aac" | "alaw" | "flac" | "mp3" | "mulaw" | "ogg" | "opus" | "pcm" | "wav") | null;
+            /** Performance Direction */
+            performance_direction?: string | null;
+            /** Speech Speed */
+            speech_speed?: number | null;
+            /** Turn Pause Ms */
+            turn_pause_ms?: number | null;
+            /** Language Code */
+            language_code?: string | null;
             /** Duration Seconds */
             duration_seconds?: number | null;
             /** Resolution */
@@ -96886,10 +96947,6 @@ export interface components {
             claimed_by_instance_id?: string | null;
             /** Claim Expires At */
             claim_expires_at?: string | null;
-            /** Execution Authorization */
-            execution_authorization?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            } | null;
         };
         /**
          * PendingExampleOut
@@ -101437,7 +101494,7 @@ export interface components {
             /** Is New */
             is_new: boolean;
             /** User Input */
-            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"] | components["schemas"]["DecisionQuestionsPart"] | components["schemas"]["DecisionAnswersPart"])[] | null;
+            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"] | components["schemas"]["DecisionQuestionsPart"] | components["schemas"]["DecisionAnswersPart"] | components["schemas"]["SpeechScriptPart"])[] | null;
             /** Variables */
             variables?: {
                 [key: string]: unknown;
@@ -114580,25 +114637,6 @@ export interface components {
             /** Record Page */
             record_page: string;
         };
-        /** SmsActionAuthorizationRequest */
-        SmsActionAuthorizationRequest: {
-            /**
-             * Confirm
-             * @constant
-             */
-            confirm: true;
-        };
-        /** SmsActionAuthorizationResponse */
-        SmsActionAuthorizationResponse: {
-            /** Confirmed */
-            confirmed: boolean;
-            /** Call Id */
-            call_id: string;
-            /** Action Digest */
-            action_digest: string;
-            /** Expires At */
-            expires_at: string;
-        };
         /** Smtp2GoServiceStatus */
         Smtp2GoServiceStatus: {
             /**
@@ -115826,6 +115864,64 @@ export interface components {
             mime_type: string;
             /** Model */
             model: string;
+        };
+        /** SpeechScriptPart */
+        SpeechScriptPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @default speech_script
+             * @constant
+             */
+            type: "speech_script";
+            /**
+             * Kind
+             * @default speech_script
+             * @constant
+             */
+            __kind?: "speech_script";
+            /** Turns */
+            turns: components["schemas"]["SpeechTurn"][];
+        };
+        /**
+         * SpeechTurn
+         * @description One spoken turn. Not a kind: it has no meaning outside its script.
+         */
+        SpeechTurn: {
+            /**
+             * Kind
+             * @description The registered kind this payload is an instance of, when it is one.
+             * @default
+             */
+            __kind?: string;
+            /**
+             * Speaker
+             * @description The speaker's name. Turns with the same name are the same speaker. For multi-speaker vendors (Gemini) this is the transcript label.
+             */
+            speaker: string;
+            /**
+             * Voice
+             * @description The voice this speaker uses: a literal provider voice id from the model's catalog, or a {{variable}}. Empty = bound to the agent's Voice setting (tts_voice).
+             */
+            voice?: string | null;
+            /**
+             * Text
+             * @description What is said. Any {{variable}} is filled at run time.
+             */
+            text: string;
+            /**
+             * Direction
+             * @description Free-text performance direction for this turn only (e.g. 'warm, a little amused').
+             */
+            direction?: string | null;
+            /**
+             * Pause After Ms
+             * @description Silence after this turn, in milliseconds.
+             */
+            pause_after_ms?: number | null;
         };
         /**
          * SplineServiceStatus
@@ -125040,6 +125136,8 @@ export interface components {
             width?: number | null;
             /** Height */
             height?: number | null;
+            /** Role */
+            role?: ("character" | "composition_control" | "edit_target" | "mask" | "style" | "subject") | null;
         } & (({
             url: string;
         } | {
@@ -176144,41 +176242,6 @@ export interface operations {
             };
         };
     };
-    confirm_action_communications_sms_action_authorizations__call_id__confirm_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                call_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SmsActionAuthorizationRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SmsActionAuthorizationResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     get_reply_thread_outreach_replies_lists__outreach_list_id__members__member_id__thread_get: {
         parameters: {
             query?: never;
@@ -176586,6 +176649,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

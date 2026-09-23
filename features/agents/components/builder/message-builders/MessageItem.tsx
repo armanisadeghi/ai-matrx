@@ -27,6 +27,7 @@ import {
 import { useModelFull } from "@/features/ai-models/hooks/useModels";
 import { isDecisionQuestionsPart } from "@/features/agents/decision-questions/types";
 import { modelTakesDecisions } from "@/features/agents/decision-questions/budget";
+import { modelProducesSpeech } from "@/features/agents/speech-script/types";
 import { setAgentMessages } from "@/features/agents/redux/agent-definition/slice";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
@@ -711,6 +712,11 @@ export function MessageItem({
             onClear={handleClear}
             onDelete={handleDelete}
             onAddBlockType={(type) => setPendingAddType(type)}
+            extraBlockTypes={
+              message.role === "user" && modelProducesSpeech(selectedModel)
+                ? ["speech_script"]
+                : undefined
+            }
             onVoiceTranscription={handleVoiceTranscription}
             sheetTitle={`${message.role} Message Actions`}
           />

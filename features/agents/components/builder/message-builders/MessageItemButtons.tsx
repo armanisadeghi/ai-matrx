@@ -38,6 +38,8 @@ interface MessageItemButtonsProps {
   onClear?: () => void;
   onDelete?: () => void;
   onAddBlockType?: (type: BlockType) => void;
+  /** Gated block types this message offers (e.g. `speech_script` on a TTS model). */
+  extraBlockTypes?: BlockType[];
   onVoiceTranscription?: (text: string) => void;
   sheetTitle?: string;
 }
@@ -57,6 +59,7 @@ export function MessageItemButtons({
   onClear,
   onDelete,
   onAddBlockType,
+  extraBlockTypes,
   onVoiceTranscription,
   sheetTitle = "Message Actions",
 }: MessageItemButtonsProps) {
@@ -244,7 +247,10 @@ export function MessageItemButtons({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span>
-                  <AddBlockTrigger onSelectType={onAddBlockType} />
+                  <AddBlockTrigger
+                    onSelectType={onAddBlockType}
+                    extraTypes={extraBlockTypes}
+                  />
                 </span>
               </TooltipTrigger>
               <TooltipContent side="top" className="z-[9999]">

@@ -17,6 +17,7 @@
 
 import React, { useEffect } from "react";
 import AudioOutputBlock from "./AudioOutputBlock";
+import SpeechScriptPanel, { readPerformedScript } from "./SpeechScriptPanel";
 import { useMediaResolution } from "@ai-matrx/media/core";
 import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
 import { buildMediaSource, pickStr } from "../buildMediaSource";
@@ -53,6 +54,18 @@ const AudioOutputBlockRenderer: React.FC<AudioOutputBlockRendererProps> = ({
   }, [resolvedUrl, data]);
 
   if (!resolvedUrl) return null;
+
+  // A speech-script run carries the performed script: player + script, side
+  // by side when there is room, stacked on a phone.
+  const script = readPerformedScript(data);
+  if (script) {
+    return (
+      <div className="grid gap-3 md:grid-cols-[minmax(0,22rem)_1fr] items-start">
+        <AudioOutputBlock url={resolvedUrl} mimeType={mime} title={title} />
+        <SpeechScriptPanel script={script} />
+      </div>
+    );
+  }
 
   return <AudioOutputBlock url={resolvedUrl} mimeType={mime} title={title} />;
 };

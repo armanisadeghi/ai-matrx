@@ -2953,7 +2953,7 @@ export interface ProgressItem {
   id: string;
   text: string;
   completed?: boolean;
-  priority?: "high" | "medium" | "low" | null;
+  priority?: "low" | "medium" | "high" | null;
   estimatedHours?: number | null;
   optional?: boolean;
   category?: string | null;
@@ -2963,7 +2963,7 @@ export interface ProgressItem {
   id: string;
   text: string;
   completed?: boolean;
-  priority?: "high" | "medium" | "low" | null;
+  priority?: "low" | "medium" | "high" | null;
   estimatedHours?: number | null;
   optional?: boolean;
   category?: string | null;
@@ -3015,7 +3015,7 @@ export interface TroubleshootingSolution {
   id: string;
   title: string;
   description?: string | null;
-  priority?: "high" | "medium" | "low" | null;
+  priority?: "low" | "medium" | "high" | null;
   successRate?: number | null;
   tags?: string[];
   steps?: TroubleshootingStep[];
@@ -3025,7 +3025,7 @@ export interface TroubleshootingSolution {
   id: string;
   title: string;
   description?: string | null;
-  priority?: "high" | "medium" | "low" | null;
+  priority?: "low" | "medium" | "high" | null;
   successRate?: number | null;
   tags?: string[];
   steps?: TroubleshootingStep[];
@@ -4165,6 +4165,7 @@ export type ImageMediaPart = {
   kind: "image";
   width?: number | null;
   height?: number | null;
+  role?: "subject" | "character" | "style" | "mask" | "edit_target" | "composition_control" | null;
 } & ({
   url: string;
 } | {
@@ -4595,6 +4596,22 @@ export interface DecisionAnswersPart {
   cost_usd: number;
 }
 
+export interface SpeechTurn {
+  __kind?: string;
+  speaker: string;
+  voice?: string | null;
+  text: string;
+  direction?: string | null;
+  pause_after_ms?: number | null;
+}
+
+export interface SpeechScriptPart {
+  metadata?: Record<string, unknown>;
+  type: "speech_script";
+  __kind: "speech_script";
+  turns: SpeechTurn[];
+}
+
 export type MessagePart =
   | TextPart
   | ThinkingPart
@@ -4623,7 +4640,8 @@ export type MessagePart =
   | DataInputPart
   | ContextInputPart
   | DecisionQuestionsPart
-  | DecisionAnswersPart;
+  | DecisionAnswersPart
+  | SpeechScriptPart;
 
 interface MessagePartJsonSchema {
   [key: string]: unknown;
@@ -6086,6 +6104,26 @@ const MESSAGE_PART_SCHEMA: MessagePartJsonSchema = {
           ],
           "default": null,
           "title": "Height"
+        },
+        "role": {
+          "anyOf": [
+            {
+              "enum": [
+                "subject",
+                "character",
+                "style",
+                "mask",
+                "edit_target",
+                "composition_control"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Role"
         }
       },
       "required": [
@@ -6762,6 +6800,114 @@ const MESSAGE_PART_SCHEMA: MessagePartJsonSchema = {
         "value"
       ],
       "title": "SnapshotValueResourceRefInput",
+      "type": "object"
+    },
+    "SpeechScriptPart": {
+      "additionalProperties": false,
+      "properties": {
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        },
+        "type": {
+          "const": "speech_script",
+          "default": "speech_script",
+          "title": "Type",
+          "type": "string"
+        },
+        "__kind": {
+          "const": "speech_script",
+          "default": "speech_script",
+          "title": "Kind",
+          "type": "string"
+        },
+        "turns": {
+          "items": {
+            "$ref": "#/$defs/SpeechTurn"
+          },
+          "minItems": 1,
+          "title": "Turns",
+          "type": "array"
+        }
+      },
+      "required": [
+        "turns",
+        "type"
+      ],
+      "title": "SpeechScriptPart",
+      "type": "object"
+    },
+    "SpeechTurn": {
+      "additionalProperties": false,
+      "description": "One spoken turn. Not a kind: it has no meaning outside its script.",
+      "properties": {
+        "__kind": {
+          "default": "",
+          "description": "The registered kind this payload is an instance of, when it is one.",
+          "title": "Kind",
+          "type": "string"
+        },
+        "speaker": {
+          "description": "The speaker's name. Turns with the same name are the same speaker. For multi-speaker vendors (Gemini) this is the transcript label.",
+          "maxLength": 40,
+          "minLength": 1,
+          "title": "Speaker",
+          "type": "string"
+        },
+        "voice": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The voice this speaker uses: a literal provider voice id from the model's catalog, or a {{variable}}. Empty = bound to the agent's Voice setting (tts_voice).",
+          "title": "Voice"
+        },
+        "text": {
+          "description": "What is said. Any {{variable}} is filled at run time.",
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "direction": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Free-text performance direction for this turn only (e.g. 'warm, a little amused').",
+          "title": "Direction"
+        },
+        "pause_after_ms": {
+          "anyOf": [
+            {
+              "maximum": 10000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Silence after this turn, in milliseconds.",
+          "title": "Pause After Ms"
+        }
+      },
+      "required": [
+        "speaker",
+        "text"
+      ],
+      "title": "SpeechTurn",
       "type": "object"
     },
     "TableCellBookmark": {
@@ -7961,6 +8107,9 @@ const MESSAGE_PART_SCHEMA: MessagePartJsonSchema = {
     },
     {
       "$ref": "#/$defs/DecisionAnswersPart"
+    },
+    {
+      "$ref": "#/$defs/SpeechScriptPart"
     }
   ]
 };

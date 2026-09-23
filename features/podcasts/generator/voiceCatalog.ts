@@ -37,10 +37,12 @@ export interface Voice {
   enabled: boolean;
   is_verified: boolean;
   sort_order: number;
+  /** `metadata.models` — the catalog model names this voice is linked to. */
+  metadata?: { models?: string[] } | null;
 }
 
 const SELECT_COLS =
-  "id,provider,provider_voice_id,name,voice_type,gender,accent,age,language,languages,tags,quality_score,description,style,sample_url,preview_url,enabled,is_verified,sort_order";
+  "id,provider,provider_voice_id,name,voice_type,gender,accent,age,language,languages,tags,quality_score,description,style,sample_url,preview_url,enabled,is_verified,sort_order,metadata";
 
 /** Fetch every enabled catalog voice (+ the signed-in user's own, via RLS).
  *  Higher `quality_score` first so the picker favors better voices as they're
@@ -76,4 +78,10 @@ export function fetchVoicesCached(): Promise<Voice[]> {
 
 export function clearVoiceCache(): void {
   cache = null;
+}
+
+/** The voices a given catalog model can speak with (`metadata.models`). */
+export function voicesForModel(voices: Voice[], modelName: string | null | undefined): Voice[] {
+  if (!modelName) return [];
+  return voices.filter((v) => (v.metadata?.models ?? []).includes(modelName));
 }
