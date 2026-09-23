@@ -1,0 +1,48 @@
+{
+  "kind": "ledger-rebase-proof",
+  "version": 1,
+  "file": "migrations/inverse/share_a_reason_that_names_nothing_down.sql",
+  "sha256": "ab2685215dad8ebc7ecff8de7f36501d3fa8d6da4dad7c45f1b4cd82aec79a23",
+  "target": "clone",
+  "clone_ref": "jxhgzalwckuarngvsdyq",
+  "clone_name": "clone-20260921",
+  "system_identifier": "7642734024280108049",
+  "ledgered_checksum": "eb4e785a365c2c57a85be4f9bbf58310010efa5c9ae265b76aaf33376b785726",
+  "ledger_applied_at": "2026-09-19 19:03:59.815425+00",
+  "measured_at": "2026-09-23T02:36:45.573Z",
+  "objects_inventoried": 54743,
+  "deltas": [],
+  "rows_written": [],
+  "concurrent_noise": [],
+  "verdict": "round-trip",
+  "runner": "matrx-frontend db:apply --ledger-rebase",
+  "mode": "round-trip",
+  "up_file": "migrations/campaign/share_a_reason_that_names_nothing.sql",
+  "up_sha256": "7d2fb1d1a38d8fd2c304f1414c8cec2c79bd5a4f96e04be346cd9176f90b996b",
+  "inverse_effect": [
+    {
+      "direction": "changed",
+      "kind": "function",
+      "object": "custom.share_access(p_organization_id uuid, p_subject_id uuid)",
+      "before": "body 1a3edb6640e23164cf06f00c751e7cfb acl {postgres=X/postgres,authenticated=X/postgres} owner postgres comment (none)",
+      "after": "body a7766cc7bd4c358b1c0849f992b96253 acl {postgres=X/postgres,authenticated=X/postgres} owner postgres comment (none)"
+    }
+  ],
+  "up_over_live": [
+    {
+      "direction": "changed",
+      "kind": "function",
+      "object": "custom.share_subject_name(p_organization_id uuid, p_type text, p_id uuid)",
+      "before": "body c286640639bde981a1e1a2401b0f455a acl {postgres=X/postgres} owner postgres comment (none)",
+      "after": "body 5da81784c438976e9d49ad0339d3c30f acl {postgres=X/postgres} owner postgres comment (none)"
+    },
+    {
+      "direction": "changed",
+      "kind": "function",
+      "object": "custom.table_webhook_archive(p_organization_id uuid, p_webhook_id uuid)",
+      "before": "body ff460a815c34bc13ec073880e728d214 acl {postgres=X/postgres} owner postgres comment 2a3fb309bbd761a8afc4c533092b5b90",
+      "after": "body ff460a815c34bc13ec073880e728d214 acl {postgres=X/postgres,authenticated=X/postgres} owner postgres comment 2a3fb309bbd761a8afc4c533092b5b90"
+    }
+  ],
+  "proof_sha256": "81ffec65384873dd5f162e4a63b176a01fe5e5ba9f73fe29e780ad2c44d1b507"
+}

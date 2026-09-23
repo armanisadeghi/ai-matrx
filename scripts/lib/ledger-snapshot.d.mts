@@ -74,4 +74,7 @@ export function formatRefusals(
   opts: { where: string; verdict?: string },
 ): string;
 export function trailerLine(relPath: string, newChecksum: string): string;
+/** `ledger-rebase: <path> <sha256>` — the trailer `db:apply --ledger-rebase` writes for a corrected inverse. */
+export const REBASE_TRAILER_KEY: string;
+export function rebaseTrailerLine(relPath: string, newChecksum: string): string;
 export function receiptPath(gitDir: string): string;

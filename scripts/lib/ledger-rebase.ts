@@ -229,6 +229,132 @@ export async function measureIdempotency(
   };
 }
 
+export interface RoundTripMeasurement {
+  /** up → [A] → inverse → [I] → up → [B]: every object where B differs from A. Must be empty. */
+  readonly deltas: ObjectDeltaRecord[];
+  /** A → I: what the inverse leg changed. Must NOT be empty. */
+  readonly inverseEffect: ObjectDeltaRecord[];
+  /** live → A: what re-running the up-file over live changed. Information only. */
+  readonly upOverLive: ObjectDeltaRecord[];
+  readonly concurrent: ObjectDeltaRecord[];
+  /**
+   * Tuples the INVERSE leg wrote into a table its own statements name (INSERT / UPDATE / DELETE /
+   * MERGE / TRUNCATE). Must be empty: an inverse puts DDL back, it never reaches anybody's rows.
+   */
+  readonly inverseRowsWritten: RowWriteRecord[];
+  /**
+   * Tuples written by the database's own guards while the inverse ran, into tables it does NOT
+   * name — measured: every DROP FUNCTION makes the provisioning trigger rewrite ~750
+   * `platform.provision_shape_debt` rows, and the second up rewrites them back. Printed, not
+   * counted; the object diff is what says whether the ground came back.
+   */
+  readonly inverseSideEffectRows: RowWriteRecord[];
+  readonly objectsInventoried: number;
+  readonly error: string | null;
+  readonly ms: number;
+}
+
+export function roundTripHolds(m: RoundTripMeasurement): boolean {
+  return m.error === null && m.deltas.length === 0 && m.inverseRowsWritten.length === 0 && m.inverseEffect.length > 0;
+}
+
+/**
+ * THE ROUND TRIP, for an INVERSE file (chair ruling 2026-09-23: "an inverse's ledger row is
+ * proven by a round trip, not by idempotence"). An inverse can never be a no-op on the state its
+ * up-file produced — that is what an inverse is — so its proof is rule 27 itself, measured:
+ * `up → inverse → up` inside one rolled-back savepoint, and the state after the second up must
+ * equal the state after the first, object for object. An inverse that drops something its up
+ * does not create shows here as a REMOVED object the second up never brings back; one that
+ * leaves the up's work behind shows as an empty inverse effect. The up's first leg is the
+ * baseline, not live: live may carry a later owner's body the up-file never wrote.
+ */
+export async function measureRoundTrip(
+  query: InventoryQuery,
+  upSql: string,
+  inverseSql: string,
+): Promise<RoundTripMeasurement> {
+  const t0 = Date.now();
+  const before = await inventoryObjects(query, "full");
+  await query("savepoint ledger_rebase_round_trip");
+  let error: string | null = null;
+  let a: Map<string, string> | null = null;
+  let i: Map<string, string> | null = null;
+  let b: Map<string, string> | null = null;
+  let inverseRowsWritten: RowWriteRecord[] = [];
+  let inverseSideEffectRows: RowWriteRecord[] = [];
+  const leg = async (what: string, sql: string): Promise<boolean> => {
+    try {
+      await query(sql);
+      return true;
+    } catch (err) {
+      if (isLockClash(err)) throw err;
+      error = `${what}: ${err instanceof Error ? err.message : String(err)}`;
+      return false;
+    }
+  };
+  if (await leg("the up-file (first leg)", upSql)) {
+    a = (await inventoryObjects(query, "full")).objects;
+    const rowsA = new Map<string, number>((await query(ROW_WRITES_SQL)).rows.map((r) => [String(r.t), Number(r.n)]));
+    if (await leg("the inverse", inverseSql)) {
+      const named = dmlTargetsOf(inverseSql);
+      const written = (await query(ROW_WRITES_SQL)).rows
+        .map((r) => ({ table: String(r.t), tuples: Number(r.n) - (rowsA.get(String(r.t)) ?? 0) }))
+        .filter((r) => r.tuples > 0)
+        .sort((x, y) => x.table.localeCompare(y.table));
+      inverseRowsWritten = written.filter((r) => named.has(r.table));
+      inverseSideEffectRows = written.filter((r) => !named.has(r.table));
+      i = (await inventoryObjects(query, "full")).objects;
+      if (await leg("the up-file (second leg)", upSql)) b = (await inventoryObjects(query, "full")).objects;
+    }
+  }
+  await query("rollback to savepoint ledger_rebase_round_trip");
+  const restored = await inventoryObjects(query, "full");
+  const concurrent = keyedDeltas(before.objects, restored.objects, () => true);
+  const noisy = new Set(
+    [...new Set([...before.objects.keys(), ...restored.objects.keys()])].filter(
+      (k) => before.objects.get(k) !== restored.objects.get(k),
+    ),
+  );
+  const quiet = (k: string) => !noisy.has(k);
+  return {
+    deltas: a && b ? keyedDeltas(a, b, quiet) : [],
+    inverseEffect: a && i ? keyedDeltas(a, i, quiet) : [],
+    upOverLive: a ? keyedDeltas(before.objects, a, quiet) : [],
+    concurrent,
+    inverseRowsWritten,
+    inverseSideEffectRows,
+    objectsInventoried: before.objects.size,
+    error,
+    ms: Date.now() - t0,
+  };
+}
+
+/**
+ * The tables a file's own top-level statements write rows into. Comments, string literals and
+ * dollar-quoted bodies are masked first, so a function BODY that mentions `insert into x` is not
+ * a statement of the file. Unqualified names are read as `public.`.
+ */
+export function dmlTargetsOf(sql: string): Set<string> {
+  const masked = sql
+    .replace(/\$([A-Za-z_][A-Za-z0-9_]*)?\$[\s\S]*?\$\1\$/g, " ")
+    .replace(/--[^\n]*/g, " ")
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/'(?:[^']|'')*'/g, "''");
+  const out = new Set<string>();
+  const re = /\b(?:insert\s+into|update|delete\s+from|merge\s+into|truncate(?:\s+table)?)\s+(?:only\s+)?("?[A-Za-z_][\w$]*"?(?:\s*\.\s*"?[A-Za-z_][\w$]*"?)?)/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(masked)) !== null) {
+    const name = m[1]!.replace(/"/g, "").replace(/\s+/g, "").toLowerCase();
+    out.add(name.includes(".") ? name : `public.${name}`);
+  }
+  return out;
+}
+
+/** Where a staged (corrected) inverse waits for the chair: beside its proof. */
+export function stagedBytesPath(migrationsDir: string, sha: string): string {
+  return resolve(migrationsDir, REBASE_PROOF_DIRNAME, `${sha}.sql`);
+}
+
 /** What `--target clone` writes and `--target production` reads. Same shape in both runners. */
 export interface RebaseProof {
   readonly kind: "ledger-rebase-proof";
@@ -249,8 +375,20 @@ export interface RebaseProof {
   readonly deltas: ObjectDeltaRecord[];
   readonly rows_written: RowWriteRecord[];
   readonly concurrent_noise: ObjectDeltaRecord[];
-  readonly verdict: "idempotent";
+  readonly verdict: "idempotent" | "round-trip";
   readonly runner: string;
+  /**
+   * ROUND-TRIP MODE (an inverse file; chair ruling 2026-09-23). Absent on an idempotence proof.
+   * `up_file` / `up_sha256` bind the proof to the up-file's bytes as well as the inverse's, and
+   * `inverse_effect` is what the inverse leg changed — never empty, because an inverse that
+   * changes nothing proves nothing.
+   */
+  readonly mode?: "idempotent" | "round-trip";
+  readonly up_file?: string;
+  readonly up_sha256?: string;
+  readonly inverse_effect?: ObjectDeltaRecord[];
+  /** What re-running the up-file over live changed (a later owner's body, say). Information only. */
+  readonly up_over_live?: ObjectDeltaRecord[];
   /** sha256 of canonicalJson(the proof without this field). A hand-edited proof fails it. */
   readonly proof_sha256: string;
 }
@@ -290,6 +428,9 @@ export interface ProofExpectation {
   /** What production's ledger row holds RIGHT NOW. */
   readonly ledgeredChecksum: string;
   readonly now: Date;
+  /** Round-trip mode: the up-file's path and the sha256 of its bytes RIGHT NOW. */
+  readonly upFile?: string;
+  readonly upSha256?: string;
 }
 
 /**
@@ -323,8 +464,22 @@ export function proofRefusal(proof: RebaseProof | null, want: ProofExpectation):
   if (proof.target !== "clone") {
     return `the proof was taken against "${String(proof.target)}". Only the dev clone may execute a file to prove it.`;
   }
-  if (proof.verdict !== "idempotent" || proof.deltas.length > 0 || proof.rows_written.length > 0) {
-    return `the proof does not say idempotent (${proof.deltas.length} object delta(s), ${proof.rows_written.length} table(s) written).`;
+  const mode = proof.mode ?? "idempotent";
+  const wantMode = want.upFile ? "round-trip" : "idempotent";
+  if (mode !== wantMode) {
+    return `the proof is a${mode === "round-trip" ? " round-trip" : "n idempotence"} proof, and this file needs a${wantMode === "round-trip" ? " round-trip (inverse → up)" : "n idempotence"} proof.`;
+  }
+  if (mode === "round-trip") {
+    if (proof.up_file !== want.upFile) return `the proof pairs this inverse with ${String(proof.up_file)}, not ${want.upFile}.`;
+    if (proof.up_sha256 !== want.upSha256) {
+      return `the proof was taken with up-file bytes ${short(String(proof.up_sha256))}, and ${want.upFile} is ${short(String(want.upSha256))} now — a round trip through other bytes proves nothing about these.`;
+    }
+    if (!proof.inverse_effect || proof.inverse_effect.length === 0) {
+      return `the proof records an inverse that changed nothing; a no-op inverse proves nothing.`;
+    }
+  }
+  if (proof.verdict !== mode || proof.deltas.length > 0 || proof.rows_written.length > 0) {
+    return `the proof does not say ${mode} (${proof.deltas.length} object delta(s), ${proof.rows_written.length} table(s) written).`;
   }
   if (proof.ledgered_checksum !== want.ledgeredChecksum) {
     return (
@@ -410,11 +565,15 @@ export function rebaseSentence(args: {
   now: string;
   cloneRef: string;
   measuredAt: string;
+  roundTrip?: boolean;
 }): string {
   return (
-    `Rebased ${args.filename} on ${args.target}: its ledger row now names the committed bytes ` +
-    `(${args.now.slice(0, 12)}…) instead of the lost ones (${args.was.slice(0, 12)}…), because ` +
-    `running those bytes on the dev clone ${args.cloneRef} at ${args.measuredAt} changed nothing; ` +
-    `the old checksum, the reason and the proof are kept on the row.`
+    `Rebased ${args.filename} on ${args.target}: its ledger row now names the proven bytes ` +
+    `(${args.now.slice(0, 12)}…) instead of the lost ones (${args.was.slice(0, 12)}…), because on the ` +
+    `dev clone ${args.cloneRef} at ${args.measuredAt} ` +
+    (args.roundTrip
+      ? `its up-file, then these bytes, then its up-file again left every object exactly as the first up did`
+      : `running those bytes changed nothing`) +
+    `; the old checksum, the reason and the proof are kept on the row.`
   );
 }

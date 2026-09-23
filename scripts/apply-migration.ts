@@ -197,6 +197,11 @@ import { confirmChairStep } from "./lib/chair-step";
 import {
   isIdempotent,
   isLockClash,
+  measureRoundTrip,
+  roundTripHolds,
+  stagedBytesPath,
+  type ObjectDeltaRecord,
+  type RoundTripMeasurement,
   LEDGER_REBASE_LANE,
   loadRebaseProof,
   measureIdempotency,
@@ -218,6 +223,7 @@ import {
   type LockQuery,
 } from "./lib/build-lock";
 import {
+  rebaseTrailerLine,
   recordAppliedRow,
   receiptPath,
   trailerLine,
@@ -4295,14 +4301,15 @@ async function rebaseReceiptWrite(
   }
 }
 
-async function measureOnClone(client: pg.Client, sql: string): Promise<IdempotencyMeasurement> {
+/** Run a measurement in a transaction that is always ROLLED BACK, retrying another lane's lock. */
+async function onCloneRolledBack<T>(client: pg.Client, run: (q: (s: string) => Promise<pg.QueryResult>) => Promise<T>): Promise<T> {
   const ATTEMPTS = 4;
   for (let attempt = 1; ; attempt++) {
     await beginClean(client);
     try {
       await client.query(`set local statement_timeout = '600s'`);
       await client.query(`set local lock_timeout = '30s'`);
-      return await measureIdempotency((s) => client.query(s), sql);
+      return await run((s) => client.query(s));
     } catch (err) {
       if (!isLockClash(err) || attempt === ATTEMPTS) throw err;
       console.warn(
@@ -4314,6 +4321,57 @@ async function measureOnClone(client: pg.Client, sql: string): Promise<Idempoten
       await client.query("rollback").catch(() => {});
     }
   }
+}
+
+async function measureOnClone(client: pg.Client, sql: string): Promise<IdempotencyMeasurement> {
+  return onCloneRolledBack(client, (q) => measureIdempotency(q, sql));
+}
+
+function printRoundTrip(m: RoundTripMeasurement): void {
+  console.log(
+    `${TAG.info}clone round trip ${C.dim}— up → inverse → up over ${m.objectsInventoried} objects, ` +
+      `${m.ms} ms, rolled back${C.reset}`,
+  );
+  if (m.error) console.log(`${TAG.fail}${m.error}`);
+  console.log(`${TAG.info}the inverse leg changed ${m.inverseEffect.length} object(s):`);
+  for (const d of m.inverseEffect) console.log(`         ${d.direction} ${d.kind} ${d.object}`);
+  if (m.upOverLive.length) {
+    console.log(`${TAG.info}re-running the up-file over live changed ${m.upOverLive.length} object(s) (a later owner's work; not counted):`);
+    for (const d of m.upOverLive) console.log(`         ${d.direction} ${d.kind} ${d.object}`);
+  }
+  for (const d of m.deltas) {
+    console.log(`${TAG.fail}NOT RESTORED ${d.direction.toUpperCase()} ${d.kind} ${d.object}`);
+    if (d.before) console.log(`         after the first up:  ${d.before}`);
+    if (d.after) console.log(`         after the second up: ${d.after}`);
+  }
+  for (const r of m.inverseRowsWritten) {
+    console.log(`${TAG.fail}THE INVERSE WROTE ROWS ${r.table}: ${r.tuples} tuple(s) — an inverse never reaches anybody's rows`);
+  }
+  for (const r of m.inverseSideEffectRows) {
+    console.log(`${TAG.info}the database's own guards wrote ${r.tuples} tuple(s) to ${r.table} while the inverse ran (a table it does not name; not counted)`);
+  }
+  if (m.concurrent.length) {
+    console.log(`${TAG.warn}${m.concurrent.length} object(s) changed by ANOTHER session on the shared clone — not counted:`);
+    for (const d of m.concurrent) console.log(`         ${d.direction} ${d.kind} ${d.object}`);
+  }
+}
+
+/**
+ * An inverse's up-file: `--up <path>`, or `<name without _down>.sql` in migrations/campaign/ then
+ * migrations/. Null when neither exists.
+ */
+function upFileFor(inverseRel: string, argv: readonly string[], valueOf: (f: string) => string | null): string | null {
+  const given = valueOf("--up");
+  if (given) {
+    const abs = resolve(ROOT, given);
+    return existsSync(abs) ? relative(ROOT, abs).replace(/\\/g, "/") : null;
+  }
+  void argv;
+  const stem = basename(inverseRel).replace(/_down\.sql$/, ".sql");
+  for (const dir of ["migrations/campaign", "migrations"]) {
+    if (existsSync(resolve(ROOT, dir, stem))) return `${dir}/${stem}`;
+  }
+  return null;
 }
 
 async function ledgerRebase(path: string, argv: readonly string[]): Promise<number> {
@@ -4342,9 +4400,37 @@ async function ledgerRebase(path: string, argv: readonly string[]): Promise<numb
     return 1;
   }
   const filename = basename(path);
-  const current = readFileSync(path, "utf8");
+  const onDisk = readFileSync(path, "utf8");
+  // `--with-bytes <file>`: the bytes being PROVEN and ledgered, when they are not the file's own —
+  // a corrected inverse. They reach the file only at the production rebase, in the same step as
+  // the ledger row, so the tree and the ledger never disagree in between.
+  const withBytesArg = valueOf("--with-bytes");
+  if (withBytesArg && !existsSync(resolve(ROOT, withBytesArg))) {
+    console.error(`${TAG.fail}--with-bytes ${withBytesArg} does not exist.`);
+    return 1;
+  }
+  const current = withBytesArg ? readFileSync(resolve(ROOT, withBytesArg), "utf8") : onDisk;
   const newChecksum = sha256(current);
   const trimmedChecksum = sha256(current.replace(/\s+$/, ""));
+  const isInverse = rel.startsWith(`migrations/${INVERSE_DIRNAME}/`);
+  if (withBytesArg && !isInverse) {
+    console.error(
+      `${TAG.fail}--with-bytes is for an INVERSE whose row is rebased onto corrected bytes (chair ruling ` +
+        `2026-09-23). An up-file's bytes are frozen history: write a new migration.`,
+    );
+    return 1;
+  }
+  const upRel = isInverse ? upFileFor(rel, argv, valueOf) : null;
+  if (isInverse && !upRel) {
+    console.error(
+      `${TAG.fail}${rel} is an inverse, and its proof is a round trip through its up-file — which ` +
+        `could not be found. Name it: --up migrations/campaign/<file>.sql`,
+    );
+    return 1;
+  }
+  const upSql = upRel ? readFileSync(resolve(ROOT, upRel), "utf8") : null;
+  const upSha = upSql !== null ? sha256(upSql) : null;
+  const upForms = upSql !== null ? [sha256(upSql), sha256(upSql.replace(/\s+$/, ""))] : [];
   const branchRef = loadBranchRef(ROOT, branchRefOverride(argv));
   let cloneRef: CloneRef | null = null;
   try {
@@ -4357,6 +4443,19 @@ async function ledgerRebase(path: string, argv: readonly string[]): Promise<numb
   }
   const lane = valueOf("--lane");
   const reason = valueOf("--reason");
+  /** The up-file must be the bytes the target's ledger says ran — a round trip through other bytes is fiction. */
+  const upRefusal = async (client: pg.Client): Promise<string | null> => {
+    if (!upRel) return null;
+    const upRow = await ledgerRow(client, basename(upRel));
+    if (!upRow) return `the up-file ${upRel} has no ledger row here, so it never ran and cannot anchor a round trip.`;
+    if (!upForms.includes(upRow.checksum)) {
+      return (
+        `the up-file ${upRel} is not the bytes the ledger says ran (ledger ${upRow.checksum.slice(0, 12)}…, ` +
+        `file ${String(upSha).slice(0, 12)}…). Its own row must agree before it can prove its inverse.`
+      );
+    }
+    return null;
+  };
 
   // ── THE PROOF, on the clone ────────────────────────────────────────────────
   if (target === "clone") {
@@ -4385,6 +4484,11 @@ async function ledgerRebase(path: string, argv: readonly string[]): Promise<numb
         );
         return 1;
       }
+      const up = await upRefusal(client);
+      if (up) {
+        console.error(`${TAG.fail}REFUSED — ${up}`);
+        return 1;
+      }
       // If this clone's row was already rebased by an earlier proof run, the checksum production
       // holds is the FIRST receipt's `was`, not the row's current value.
       const firstWas = Array.isArray(r.receipts) && r.receipts.length ? r.receipts[0]!.was : null;
@@ -4394,23 +4498,53 @@ async function ledgerRebase(path: string, argv: readonly string[]): Promise<numb
         return 0;
       }
       console.log(
-        `${C.bold}ledger rebase proof${C.reset} ${C.white}${rel}${C.reset} ${C.dim}(sha256 ${newChecksum}); ` +
-          `the ledger holds ${ledgered} from ${r.applied_at}; clone ${cloneRef!.cloneRef} (${cloneRef!.cloneName})${C.reset}`,
+        `${C.bold}ledger rebase proof${isInverse ? " (round trip)" : ""}${C.reset} ${C.white}${rel}${C.reset} ` +
+          `${C.dim}(sha256 ${newChecksum}${withBytesArg ? `, from ${withBytesArg}` : ""}` +
+          `${upRel ? `; up-file ${upRel} ${upSha}` : ""}); the ledger holds ${ledgered} from ${r.applied_at}; ` +
+          `clone ${cloneRef!.cloneRef} (${cloneRef!.cloneName})${C.reset}`,
       );
-      const m = await measureOnClone(client, current);
-      printMeasurement(m);
-      if (!isIdempotent(m)) {
-        console.error(
-          `${TAG.fail}NOT IDEMPOTENT — ${filename}'s committed bytes CHANGE the live state ` +
-            `(${m.deltas.length} object(s), ${m.rowsWritten.length} table(s) written${m.error ? ", or it did not run" : ""}). ` +
-            `They do not describe what production holds, so its ledger row cannot be moved onto ` +
-            `them. No proof was written and no ledger row moved. The remedy is a superseding ` +
-            `migration that makes live match what this file says, or a chair ruling on the file.`,
-        );
-        return 1;
+      let concurrent: ObjectDeltaRecord[];
+      let objects: number;
+      let extra: Partial<RebaseProof> = {};
+      if (isInverse) {
+        const m = await onCloneRolledBack(client, (q) => measureRoundTrip(q, upSql!, current));
+        printRoundTrip(m);
+        if (!roundTripHolds(m)) {
+          console.error(
+            `${TAG.fail}THE ROUND TRIP DOES NOT HOLD — ${m.error ? "a leg did not run" : m.inverseEffect.length === 0
+              ? "the inverse changed nothing, and a no-op inverse proves nothing"
+              : `${m.deltas.length} object(s) are not what the up-file left, ${m.inverseRowsWritten.length} table(s) written by the inverse`}. ` +
+              `No proof was written and no ledger row moved.`,
+          );
+          return 1;
+        }
+        concurrent = m.concurrent;
+        objects = m.objectsInventoried;
+        extra = {
+          mode: "round-trip",
+          up_file: upRel!,
+          up_sha256: upSha!,
+          inverse_effect: m.inverseEffect,
+          up_over_live: m.upOverLive,
+        };
+      } else {
+        const m = await measureOnClone(client, current);
+        printMeasurement(m);
+        if (!isIdempotent(m)) {
+          console.error(
+            `${TAG.fail}NOT IDEMPOTENT — ${filename}'s committed bytes CHANGE the live state ` +
+              `(${m.deltas.length} object(s), ${m.rowsWritten.length} table(s) written${m.error ? ", or it did not run" : ""}). ` +
+              `They do not describe what production holds, so its ledger row cannot be moved onto ` +
+              `them. No proof was written and no ledger row moved. The remedy is a superseding ` +
+              `migration that makes live match what this file says, or a chair ruling on the file.`,
+          );
+          return 1;
+        }
+        concurrent = m.concurrent;
+        objects = m.objectsInventoried;
       }
       const measuredAt = new Date().toISOString();
-      const body: Omit<RebaseProof, "proof_sha256"> = {
+      const body = {
         kind: "ledger-rebase-proof",
         version: 1,
         file: rel,
@@ -4422,18 +4556,24 @@ async function ledgerRebase(path: string, argv: readonly string[]): Promise<numb
         ledgered_checksum: ledgered,
         ledger_applied_at: r.applied_at,
         measured_at: measuredAt,
-        objects_inventoried: m.objectsInventoried,
+        objects_inventoried: objects,
         deltas: [],
         rows_written: [],
-        concurrent_noise: m.concurrent,
-        verdict: "idempotent",
+        concurrent_noise: concurrent,
+        verdict: isInverse ? "round-trip" : "idempotent",
         runner: REBASE_RUNNER,
-      };
+        ...extra,
+      } as Omit<RebaseProof, "proof_sha256">;
       const proof: RebaseProof = { ...body, proof_sha256: proofHashOf(body) };
       const proofPath = writeRebaseProof(MIGRATIONS_DIR, proof);
+      if (withBytesArg) {
+        const staged = stagedBytesPath(MIGRATIONS_DIR, newChecksum);
+        if (resolve(ROOT, withBytesArg) !== staged) writeFileSync(staged, current, "utf8");
+        console.log(`${TAG.info}the proven bytes are staged at ${relative(ROOT, staged)}; the production rebase writes them into ${rel}.`);
+      }
       console.log(
-        `${TAG.ok}IDEMPOTENT — 0 objects changed and 0 rows written. Proof written: ` +
-          `${relative(ROOT, proofPath)} ${C.dim}(proof sha256 ${proof.proof_sha256})${C.reset}`,
+        `${TAG.ok}${isInverse ? "ROUND TRIP HOLDS — the second up leaves exactly what the first did, and the inverse wrote no rows" : "IDEMPOTENT — 0 objects changed and 0 rows written"}. ` +
+          `Proof written: ${relative(ROOT, proofPath)} ${C.dim}(proof sha256 ${proof.proof_sha256})${C.reset}`,
       );
       if (r.checksum !== newChecksum) {
         const receipt: RebaseReceipt = {
@@ -4459,7 +4599,7 @@ async function ledgerRebase(path: string, argv: readonly string[]): Promise<numb
           return 1;
         }
         console.log(
-          rebaseSentence({ filename, target: "clone", was: r.checksum, now: newChecksum, cloneRef: cloneRef!.cloneRef, measuredAt }),
+          rebaseSentence({ filename, target: "clone", was: r.checksum, now: newChecksum, cloneRef: cloneRef!.cloneRef, measuredAt, roundTrip: isInverse }),
         );
       }
       return 0;
@@ -4484,6 +4624,7 @@ async function ledgerRebase(path: string, argv: readonly string[]): Promise<numb
     ),
   );
   if (chairRefusal) return refuse(chairRefusal);
+  if (current !== onDisk && !withBytesArg) return refuse(`internal: bytes differ from the file with no --with-bytes.`);
   const proof = loadRebaseProof(MIGRATIONS_DIR, newChecksum);
   if (!proof) {
     return refuse(proofRefusal(null, { file: rel, sha256: newChecksum, ledgeredChecksum: "", now: new Date() })!);
@@ -4514,7 +4655,15 @@ async function ledgerRebase(path: string, argv: readonly string[]): Promise<numb
       console.log(`${TAG.ok}${filename}'s production ledger row already names these bytes. There is nothing to rebase.`);
       return 0;
     }
-    const why = proofRefusal(proof, { file: rel, sha256: newChecksum, ledgeredChecksum: row.checksum, now: new Date() });
+    const up = await upRefusal(client);
+    if (up) return refuse(up);
+    const why = proofRefusal(proof, {
+      file: rel,
+      sha256: newChecksum,
+      ledgeredChecksum: row.checksum,
+      now: new Date(),
+      ...(upRel ? { upFile: upRel, upSha256: upSha! } : {}),
+    });
     if (why) return refuse(why);
     const rebasedAt = new Date().toISOString();
     const receipt: RebaseReceipt = {
@@ -4536,6 +4685,23 @@ async function ledgerRebase(path: string, argv: readonly string[]): Promise<numb
     };
     const w = await rebaseReceiptWrite(client, filename, row.checksum, newChecksum, receipt);
     if (!w.ok) return refuse(w.why);
+    // THE ONE EDIT OF A LEDGERED FILE THIS PRIMITIVE MAKES: a corrected inverse lands in its file
+    // in the same step its row moves onto it, with a receipt the commit guard turns into a
+    // `ledger-rebase:` trailer. Before this line the tree and the ledger agreed on the old bytes;
+    // after it, on the new ones.
+    if (current !== onDisk) {
+      writeFileSync(path, current, "utf8");
+      try {
+        const gitDir = execFileSync("git", ["rev-parse", "--git-common-dir"], { cwd: ROOT, encoding: "utf8" }).trim();
+        const receiptFile = receiptPath(resolve(ROOT, gitDir));
+        const line = rebaseTrailerLine(rel, newChecksum);
+        const already = existsSync(receiptFile) ? readFileSync(receiptFile, "utf8") : "";
+        if (!already.includes(line)) writeFileSync(receiptFile, `${already}${line}\n`, "utf8");
+        console.log(`${TAG.info}${rel} now carries the proven bytes; the next commit carries ${line}.`);
+      } catch (err) {
+        console.error(`${TAG.warn}the commit receipt could not be written (${(err as Error)?.message ?? String(err)}); the snapshot still moved, so the guard passes on the bytes alone.`);
+      }
+    }
     try {
       recordAppliedRow({ relPath: rel, source: SOURCE, filename, checksum: newChecksum, appliedAt: row.applied_at });
     } catch (err) {
@@ -4551,12 +4717,12 @@ async function ledgerRebase(path: string, argv: readonly string[]): Promise<numb
       at: new Date(rebasedAt),
     });
     console.log(
-      rebaseSentence({ filename, target: "production", was: row.checksum, now: newChecksum, cloneRef: proof.clone_ref, measuredAt: proof.measured_at }),
+      rebaseSentence({ filename, target: "production", was: row.checksum, now: newChecksum, cloneRef: proof.clone_ref, measuredAt: proof.measured_at, roundTrip: isInverse }),
     );
     console.log(
       `${TAG.info}${LEDGER_SNAPSHOT_REL} moved onto the new bytes` +
         (shrunk ? `, and ${relative(ROOT, GRANDFATHER_PATH)} shrank by this name through its ratchet (last_shrunk_by ${LEDGER_REBASE_LANE})` : ``) +
-        `. Commit those two files.`,
+        `. Commit ${current !== onDisk ? `${rel} and ` : ""}those two files.`,
     );
     return 0;
   } finally {
@@ -4597,9 +4763,32 @@ async function ledgerRebaseSelfTest(argv: readonly string[]): Promise<number> {
     ["a proof carrying a delta", sealed({ ...base, deltas: [{ direction: "added", kind: "function", object: "public.f()", before: null, after: "x" }] }), false],
     ["a proof taken against another ledger checksum", sealed({ ...base, ledgered_checksum: "b".repeat(64) }), false],
     ["a fresh, sealed, idempotent proof of these bytes", sealed(base), true],
+    ["an idempotence proof offered for an inverse", sealed(base), false],
   ];
+  const rtBase = {
+    ...base,
+    file: "migrations/inverse/x_down.sql",
+    mode: "round-trip" as const,
+    verdict: "round-trip" as const,
+    up_file: "migrations/campaign/x.sql",
+    up_sha256: sha256("create function x();\n"),
+    inverse_effect: [{ direction: "removed" as const, kind: "function", object: "public.x()", before: "x", after: null }],
+    up_over_live: [],
+  };
+  const rtWant = { ...want, file: rtBase.file, upFile: rtBase.up_file, upSha256: rtBase.up_sha256 };
+  const rtGate: Array<[string, RebaseProof, boolean]> = [
+    ["a round-trip proof through OTHER up-file bytes", sealed({ ...rtBase, up_sha256: sha256("other\n") }), false],
+    ["a round-trip proof paired with another up-file", sealed({ ...rtBase, up_file: "migrations/campaign/y.sql" }), false],
+    ["a round-trip proof whose inverse changed nothing", sealed({ ...rtBase, inverse_effect: [] }), false],
+    ["a fresh, sealed round-trip proof of these two files", sealed(rtBase), true],
+  ];
+  for (const [name, p, accept] of rtGate) {
+    const why = proofRefusal(p, rtWant);
+    if ((why === null) === accept) ok(`${accept ? "GREEN" : "RED"} — the production gate ${accept ? "accepts" : "refuses"} ${name}.`);
+    else bad(`the production gate ${accept ? "refused" : "ACCEPTED"} ${name}${why ? `: ${why}` : ""}.`);
+  }
   for (const [name, p, accept] of gate) {
-    const why = proofRefusal(p, want);
+    const why = proofRefusal(p, name.includes("offered for an inverse") ? { ...rtWant, file: base.file } : want);
     if ((why === null) === accept) ok(`${accept ? "GREEN" : "RED"} — the production gate ${accept ? "accepts" : "refuses"} ${name}.`);
     else bad(`the production gate ${accept ? "refused" : "ACCEPTED"} ${name}${why ? `: ${why}` : ""}.`);
   }
@@ -4646,6 +4835,46 @@ async function ledgerRebaseSelfTest(argv: readonly string[]): Promise<number> {
       if (verdict === idem) ok(`${idem ? "GREEN" : "RED"} — ${name}: ${idem ? "proven idempotent" : "refused"} (${what}).`);
       else bad(`${name} was judged ${verdict ? "IDEMPOTENT" : "not idempotent"} (${what}).`);
     }
+    // ROUND TRIP (chair ruling 2026-09-23): planted up/inverse pairs. `pre` runs first inside the
+    // same rolled-back transaction, so to the proof it is LIVE state the up-file did not create.
+    const rt = `zz_ledger_rebase_rt_${process.pid}`;
+    const upPlant = `create or replace function public.${rt}_made() returns int language sql as $$ select 1 $$;\n`;
+    const pairs: Array<[string, string, string, boolean]> = [
+      [
+        "an inverse that drops something its up-file did not create",
+        `create function public.${rt}_pre() returns int language sql as $$ select 0 $$;\n`,
+        `drop function public.${rt}_made();\ndrop function public.${rt}_pre();\n`,
+        false,
+      ],
+      ["an inverse that changes nothing", "", `select 1;\n`, false],
+      [
+        "an inverse that writes a row",
+        "",
+        `drop function public.${rt}_made();\nupdate platform.feature_knob set label = label where feature = 'custom' and key = 'agent_schema_changes';\n`,
+        false,
+      ],
+      ["an inverse that removes exactly what its up-file made", "", `drop function public.${rt}_made();\n`, true],
+    ];
+    for (const [name, pre, inv, holds] of pairs) {
+      const upFile = join(scratch, `rt_up_${pairs.findIndex((x) => x[0] === name)}.sql`);
+      const invFile = join(scratch, `rt_down_${pairs.findIndex((x) => x[0] === name)}.sql`);
+      writeFileSync(upFile, upPlant, "utf8");
+      writeFileSync(invFile, inv, "utf8");
+      const m = await onCloneRolledBack(client, async (q) => {
+        if (pre) await q(pre);
+        return measureRoundTrip(q, readFileSync(upFile, "utf8"), readFileSync(invFile, "utf8"));
+      });
+      const verdict = roundTripHolds(m);
+      const what =
+        `${m.deltas.length} object(s) not restored, inverse changed ${m.inverseEffect.length}, ` +
+        `inverse wrote ${m.inverseRowsWritten.map((r) => `${r.table}:${r.tuples}`).join(",") || "nothing it names"}${m.error ? `, ${m.error}` : ""}`;
+      if (verdict === holds) ok(`${holds ? "GREEN" : "RED"} — round trip, ${name}: ${holds ? "holds" : "refused"} (${what}).`);
+      else bad(`round trip, ${name}, was judged ${verdict ? "HOLDING" : "not holding"} (${what}).`);
+    }
+    const rtLeft = await client.query(`select count(*)::int as n from pg_proc where proname like $1`, [`${rt}%`]);
+    if (Number(rtLeft.rows[0]?.n ?? 0) === 0) ok(`GREEN — no round-trip plant survived on the clone.`);
+    else bad(`a round-trip plant (${rt}_*) SURVIVED on the clone.`);
+
     // Nothing planted may survive: the scratch function must not exist after the rollback.
     const left = await client.query(`select count(*)::int as n from pg_proc where proname = $1`, [tag]);
     if (Number(left.rows[0]?.n ?? 0) === 0) ok(`GREEN — nothing planted survived on the clone (${tag} is absent).`);
@@ -4704,7 +4933,7 @@ async function main(): Promise<number> {
   if (argv.includes("--ledger-rebase")) {
     if (argv.includes("--self-test")) return ledgerRebaseSelfTest(argv);
     const i = argv.indexOf("--ledger-rebase");
-    const skip = new Set(["--target", "--lane", "--reason", "--confirm-chair-step", "--clone-ref", "--branch-ref"]);
+    const skip = new Set(["--target", "--lane", "--reason", "--confirm-chair-step", "--clone-ref", "--branch-ref", "--up", "--with-bytes"]);
     const given = argv.slice(i + 1).find((a, k, rest) => !a.startsWith("--") && !(k > 0 && skip.has(rest[k - 1]!)));
     if (!given) {
       console.error(
