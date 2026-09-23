@@ -146,6 +146,11 @@ export function PromptPreviewContent({
               ) : (
                 <p className="text-xs text-muted-foreground">No tools.</p>
               )}
+              {preview.tool_schema_notice ? (
+                <p className="text-xs leading-snug text-muted-foreground">
+                  {preview.tool_schema_notice}
+                </p>
+              ) : null}
             </Section>
             <Section title="Params">
               <pre className="whitespace-pre-wrap break-words rounded-md border border-border bg-card p-3 font-mono text-[11px] text-muted-foreground">
