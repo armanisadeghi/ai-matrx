@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-23T01:26:54.310Z",
+  "generated_at": "2026-09-23T01:34:33.734Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3787,6 +3787,12 @@
       "filename": "storetxn4_the_halves_that_already_disagree_are_repaired.sql",
       "checksum": "0f859a6babbde316bc38338d62b6df4f525f88c86b3507db30ccf256f9e32e39",
       "applied_at": "2026-09-22 17:57:07.855179+00"
+    },
+    "migrations/campaign/storetxn4b_a_door_may_be_callable_only_to_be_refused.sql": {
+      "source": "matrx-frontend",
+      "filename": "storetxn4b_a_door_may_be_callable_only_to_be_refused.sql",
+      "checksum": "76154da7035c92eb44366a5d80d4b748ac835acebb92f03944641137649c4a55",
+      "applied_at": "2026-09-23 01:34:31.759195+00"
     },
     "migrations/campaign/storetxn_a_record_graph_is_one_transaction.sql": {
       "source": "matrx-frontend",
