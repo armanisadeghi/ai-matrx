@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-23T10:48:53.005Z",
+  "generated_at": "2026-09-23T11:49:02.507Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3823,6 +3823,12 @@
       "filename": "storerel_the_three_retention_doors_say_the_ladder_themselves.sql",
       "checksum": "f85fa81f5bcbf65c3174dad8b37801379253ffaf19adaf9fa1573b44f8c41c8f",
       "applied_at": "2026-09-19 17:56:18.542037+00"
+    },
+    "migrations/campaign/storerulegaps_an_example_a_shortest_length_and_other_choices.sql": {
+      "source": "matrx-frontend",
+      "filename": "storerulegaps_an_example_a_shortest_length_and_other_choices.sql",
+      "checksum": "2fd16b774e152cb0150cea3ef91828bdf1b51cdce4b4f54e59fa3119d1eefe36",
+      "applied_at": "2026-09-23 11:49:00.732956+00"
     },
     "migrations/campaign/storet_a_choice_is_a_word_and_unique_means_unique.sql": {
       "source": "matrx-frontend",
