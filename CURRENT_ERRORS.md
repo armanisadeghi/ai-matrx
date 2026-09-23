@@ -30,7 +30,7 @@
 
 | ID | First seen | Level | Signature | Home |
 |----|------------|-------|-----------|------|
-| _(none)_ | | | No currently reproduced Vercel runtime error class. | |
+| CE-002 | 2026-09-23 23:12Z | error | Returning CE-001: `POST /api/mcp/[transport]` task timed out after 15 seconds (12 events, 1 user) on v0.4.2254 deployment `dpl_AcK56xmMswmJzGdWB6SJuSGaVeH8`; see exact evidence and next step in D346. | FOUND_DEFECTS.md D346 |
 
 ---
 

@@ -15,6 +15,27 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D346 — MCP requests time out after 15 seconds on the current main deployment (2026-09-23)
+
+Vercel deployment `dpl_AcK56xmMswmJzGdWB6SJuSGaVeH8` (`239ef8910b`, v0.4.2254) logged 12
+`Vercel Runtime Timeout Error: Task timed out after 15 seconds` events on
+`POST /api/mcp/mcp` from 23:12:49Z–23:20:31Z, affecting one user. The Vercel log entries say
+HTTP 200, but the runtime-error group confirms the timeouts. The previous READY main deployment
+`dpl_67aT3DAbWEwM4hHsMwXtQPhc6x7p` had no matching errors in 21:30Z–22:20Z logs. Frontend
+`app/api/mcp/[transport]/route.ts` still declares `maxDuration = 60` and did not change between
+those SHAs. Compared both deployments and dispatched senior diagnosis; no production change made.
+Senior investigation confirmed the deployed MCP Lambda is configured for 15 seconds even though the
+route exports `maxDuration = 60`; the prior deployment had the same effective timeout. The installed
+Next 16.4 canary parser reads the export correctly, so the mismatch is introduced later in build
+packaging/configuration. The project reports `fluid=false` and `functionDefaultTimeout=15`. The route
+serves frontend feedback tools backed directly by Supabase and does not call AI Dream. The
+`@modelcontextprotocol/server` dependency changed from 2.0.0 to 2.1.0 between deployments. Logged
+responses already had HTTP 200; they do not reveal whether a stream remained open or tool work was
+slow. A read-only local initialize probe returned 401, so no authenticated reproduction is available.
+Next: inspect the generated function config and reproduce initialize/tools-list with SDK 2.0.0 and
+2.1.0; explicitly configuring the Vercel duration may restore 60 seconds but does not by itself prove
+the stream-completion issue fixed. No production change made. Returning signature of CE-001.
+
 ### D345 — The sync engine's persisted hydration hits its 8 s backstop on /notes (2026-09-21)
 
 Seen on the dev server, signed in as the test admin, on a plain load of `/notes`: the console error from `lib/sync/useSyncHydrated.ts` — `[sync] persisted hydration did not settle within 8000ms — surfaces waiting on restored state will now show their empty state. This is a defect in the sync engine's boot path, not a normal path.` The sidebar showed "Loading notes…" for the whole eight seconds while the start screen already listed recent notes. The same console shows `idb.write` for `scopesTree` at 73,208 bytes and a `remote.write.scheduled` for it during boot, so the engine is busy writing while hydration waits; whether hydration is blocked behind those writes, or a slice never reports settled, was not determined. Seen while measuring the slow folder create (features/notes/FEATURE.md, 2026-09-21); not investigated further. Reproduce: load `/notes` as the test admin with the console open and wait eight seconds.
