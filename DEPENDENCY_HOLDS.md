@@ -1,0 +1,1 @@
+- `@univerjs/core`, `@univerjs/themes`, and the Univer presets stay aligned at 0.25.1: updating core/themes alone to 0.25.2 produces four TypeScript `IPreset`/`Univer` incompatibilities in `DocumentEditor.tsx` and `WorkbookEditor.tsx` (verified 2026-09-23).
