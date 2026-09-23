@@ -12,9 +12,23 @@
 // list on `EntityListPage` inherits it; this file only says what a Rulebook's
 // distinguishing facts are — when it was started, and what it was built from.
 
-import { lookalikeNotes } from "@/lib/entity-list/lookalikes";
+import {
+  lookalikeNotesFor,
+  type LookalikeSpec,
+} from "@/lib/entity-list/lookalikes";
 import type { RulebookListRow } from "../types";
 import { formatSourceSummary } from "./sourceSummary";
+
+/**
+ * A Rulebook's distinguishing facts — ONE spec, read by the table (through
+ * `rulebookListConfig.lookalike`) and by the card and row views (below), so
+ * every view tells twins apart by the same rule and in the same words.
+ */
+export const RULEBOOK_LOOKALIKE: LookalikeSpec<RulebookListRow> = {
+  createdAt: (row) => row.created_at,
+  detail: (row) => formatSourceSummary(row.sources) ?? row.source.author ?? null,
+  startedWord: "Started",
+};
 
 /**
  * The note that tells a Rulebook apart from the same-named Rulebooks beside
@@ -23,13 +37,10 @@ import { formatSourceSummary } from "./sourceSummary";
 export function rulebookLookalikeNotes(
   rows: readonly RulebookListRow[],
 ): Map<string, string> {
-  return lookalikeNotes(
-    rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      createdAt: row.created_at,
-      detail: formatSourceSummary(row.sources) ?? row.source.author ?? null,
-    })),
-    "Started",
+  return lookalikeNotesFor(
+    rows,
+    (row) => row.id,
+    (row) => row.name,
+    RULEBOOK_LOOKALIKE,
   );
 }

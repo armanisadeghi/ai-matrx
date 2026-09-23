@@ -233,6 +233,15 @@ export interface EntityListConfig<TRow> {
    * a model-provider boundary.
    */
   getRowAgentContext?: (row: TRow) => string;
+  /**
+   * NO TWO ROWS READ ALIKE. When two rows on screen carry the same name, the
+   * name cell adds a line that tells them apart (created time, to the minute
+   * when they share a day, plus `detail` when it separates them). Every
+   * surface gets it: without a spec the row's own `created_at` is used; a
+   * surface declares a spec only to name its verb or add a detail. The table,
+   * cards and rows views all read this ONE spec (lib/entity-list/lookalikes).
+   */
+  lookalike?: import("./lookalikes").LookalikeSpec<TRow>;
   /** Canonical Door Law configuration for the record-name cell. */
   door?: {
     token?: string | ((row: TRow) => string | null | undefined);

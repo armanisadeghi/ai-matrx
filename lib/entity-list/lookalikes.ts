@@ -129,3 +129,46 @@ export function lookalikeNotes(
 
   return notes;
 }
+
+/**
+ * What a LIST says about its rows so twins can be told apart — declared once
+ * per surface on `EntityListConfig.lookalike` and read by EVERY view (the
+ * table's name cell, the cards, the rows), so there is one rule, not one per
+ * view. Cold walk 22 (defect D): the card view separated two same-named
+ * Rulebooks to the minute while the default TABLE printed them as the same
+ * row twice, because a table cell cannot see its neighbours.
+ */
+export interface LookalikeSpec<TRow> {
+  /** ISO creation time. Defaults to the row's own `created_at` when it has one. */
+  createdAt?: (row: TRow) => string | null | undefined;
+  /** One more fact that may separate twins (what it was built from, an owner). */
+  detail?: (row: TRow) => string | null | undefined;
+  /** The verb this entity is created with. Default "Created". */
+  startedWord?: string;
+}
+
+function ownCreatedAt(row: unknown): string | null {
+  if (row && typeof row === "object") {
+    const value = (row as Record<string, unknown>).created_at;
+    if (typeof value === "string") return value;
+  }
+  return null;
+}
+
+/** The notes for the rows a view renders, by the list's declared spec. */
+export function lookalikeNotesFor<TRow>(
+  rows: readonly TRow[],
+  getRowId: (row: TRow) => string,
+  getRowName: (row: TRow) => string,
+  spec: LookalikeSpec<TRow> | undefined,
+): Map<string, string> {
+  return lookalikeNotes(
+    rows.map((row) => ({
+      id: getRowId(row),
+      name: getRowName(row),
+      createdAt: spec?.createdAt ? spec.createdAt(row) : ownCreatedAt(row),
+      detail: spec?.detail?.(row) ?? null,
+    })),
+    spec?.startedWord ?? "Created",
+  );
+}

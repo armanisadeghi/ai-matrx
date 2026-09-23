@@ -31,6 +31,7 @@ import type { EntityListConfig, EntityRowActions } from "../config";
 import { entityColumnSortable } from "../columns";
 import { entityListDoorColumnId, entityListRowHref } from "../doors";
 import { EntityPhoneCard, resolvePhoneCardLayout } from "../phoneCards";
+import { lookalikeNotesFor } from "../lookalikes";
 import { NONE_VALUE, type EntityFacets, type EntityFilters } from "../types";
 import {
   buildDefaultTableRowMenuDescriptor,
@@ -201,6 +202,41 @@ export function EntityListTable<TRow>({
     />
   );
 
+  // NO TWO ROWS READ ALIKE (cold walk 22, defect D). A cell cannot see its
+  // neighbours, so the table computes the lookalike notes over the rows it is
+  // about to render and hands each twin's note to the name cell — the same
+  // rule and the same words the card and row views use.
+  const lookalikeNotes = lookalikeNotesFor(
+    rows,
+    config.getRowId,
+    config.getRowName,
+    config.lookalike,
+  );
+  const nameColumnId =
+    doorColumn ??
+    config.columns.find((spec) => spec.locked)?.id ??
+    config.columns[0]?.id;
+  const withLookalikeNote =
+    (spec: (typeof config.columns)[number]) =>
+    (row: TRow, index: number): React.ReactNode => {
+      const note = lookalikeNotes.get(config.getRowId(row));
+      const own = spec.column.cell
+        ? spec.column.cell(row, index)
+        : config.getRowName(row);
+      if (!note) return own;
+      return (
+        <div className="min-w-0">
+          {own}
+          <div
+            className="truncate text-xs text-muted-foreground"
+            data-lookalike-note=""
+          >
+            {note}
+          </div>
+        </div>
+      );
+    };
+
   const columns: MatrxColumnDef<TRow>[] = config.columns
     .filter(
       (spec) =>
@@ -213,7 +249,11 @@ export function EntityListTable<TRow>({
         ...spec.column,
         label: spec.column.label ?? spec.label,
         cell:
-          spec.id === "favorite" && favorite ? favoriteCell : spec.column.cell,
+          spec.id === "favorite" && favorite
+            ? favoriteCell
+            : spec.id === nameColumnId && lookalikeNotes.size > 0
+              ? withLookalikeNote(spec)
+              : spec.column.cell,
         href:
           spec.column.href ??
           (spec.id === doorColumn

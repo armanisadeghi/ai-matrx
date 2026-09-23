@@ -9,6 +9,7 @@ import {
   fetchRulebookPage,
 } from "./service";
 import { useRulebookRowActions } from "./useRulebookRowActions";
+import { RULEBOOK_LOOKALIKE } from "./lookalikeRulebooks";
 import { useRulebookMasterworks } from "./useRulebookMasterworks";
 import { MasterworkBrowseCards } from "./components/MasterworkBrowseCards";
 import { MasterworkBrowseRows } from "./components/MasterworkBrowseRows";
@@ -34,6 +35,8 @@ export const rulebookListConfig: EntityListConfig<RulebookListRow> = {
   prefsVersion: 2,
   getRowId: (row) => row.id,
   getRowName: (row) => row.name,
+  // Twins told apart in the TABLE too, by the same rule the cards use (walk 22).
+  lookalike: RULEBOOK_LOOKALIKE,
   door: { token: "rulebook" },
   sourceFeature: "masterwork",
   getRowEntity: (row) => ({
