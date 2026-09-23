@@ -37,6 +37,8 @@ Publish an associations SDK version containing the canonical `agent_term_list` t
 
 Frontend package adoption shipped in `v0.4.2237`, Vercel deployment `dpl_48Qm7yTcf3Aw9dP4awiFBEAjYXDy` is READY and serves `096168e74730c1d27e1d88c1d4aceccc459b49f4`. Runtime attach/detach is covered by the verified packed-package ESM/CJS RPC canaries; no production interaction was performed with a personal browser session.
 
+Package pin note (2026-09-23): keep `@univerjs/core` and `@univerjs/themes` at 0.25.1 with the 0.25.1 presets. Updating only core/themes to latest 0.25.2 caused four TS2322 incompatibilities in `DocumentEditor.tsx` and `WorkbookEditor.tsx`; reverting restored the compatible family.
+
 ### TASK-CRM-ERASURE-RPC: Apply the missing Gmail interaction erasure RPC
 - **Status:** blocked (2026-09-22) — live East schema is missing the RPC used by current CRM code
 - **Source:** `pnpm sync-types:live` against AI Dream SHA `468ca559d7b98f3128e01796e35f3fceb9513572`; read-only East catalog check by senior delegate
