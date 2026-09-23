@@ -345,6 +345,7 @@ export function ServedFieldControl({
           variableName={input.label || input.name}
           customComponent={component}
           helpText={input.help || undefined}
+          placeholder={input.placeholder || undefined}
           hideLabel
           compact
         />

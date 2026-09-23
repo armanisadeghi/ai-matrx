@@ -197,6 +197,36 @@ function buildFallbackInputs(
   return raw.map(parseServedInput).filter((i): i is ServedInput => i !== null);
 }
 
+/**
+ * WHAT GOES IN EACH BOX, SAID IN THE BOX (cold walk 22, friction).
+ *
+ * A checking Masterwork's first field is labelled "The text (verbatim)" by the
+ * build, and its placeholder read "Type your answer" — the generic invitation
+ * every variable textarea falls back to. It is not an answer; it is the text
+ * to be checked. A placeholder the field's author DECLARED always wins; for
+ * the two fields every checking Masterwork is built with, which declare none,
+ * the Masterwork says what goes there. Anything else keeps the generic line.
+ */
+export const MASTERWORK_FIELD_PLACEHOLDERS: Readonly<Record<string, string>> = {
+  document: "Paste the text to check",
+  notes: "Names, numbers and claims that must stay exactly as they are",
+};
+
+export function withMasterworkPlaceholders(
+  inputs: readonly ServedInput[],
+  isEdit: boolean,
+): readonly ServedInput[] {
+  if (!isEdit) return inputs;
+  let changed = false;
+  const out = inputs.map((input) => {
+    const said = MASTERWORK_FIELD_PLACEHOLDERS[input.name];
+    if (input.placeholder || !said) return input;
+    changed = true;
+    return { ...input, placeholder: said };
+  });
+  return changed ? out : inputs;
+}
+
 export function TryMasterworkBox({
   masterworkId,
   masterworkKind,
@@ -479,11 +509,18 @@ export function TryMasterworkBox({
   // declared fields, and a run was started against the wrong shape.
   const servedLoading = served.status === "loading";
   const usingFallback = !servedLoading && declared.length === 0;
-  const inputs: readonly ServedInput[] = servedLoading
-    ? EMPTY_SERVED_INPUTS
-    : usingFallback
-      ? fallbackInputs
-      : declared;
+  const inputs: readonly ServedInput[] = useMemo(
+    () =>
+      withMasterworkPlaceholders(
+        servedLoading
+          ? EMPTY_SERVED_INPUTS
+          : usingFallback
+            ? fallbackInputs
+            : declared,
+        isEdit,
+      ),
+    [servedLoading, usingFallback, fallbackInputs, declared, isEdit],
+  );
 
   const { values, touched, setValue } = useServedInputValues(inputs);
   const { kinds, error: kindError } = useServedInputKinds(inputs);

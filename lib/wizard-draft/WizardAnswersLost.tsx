@@ -35,8 +35,12 @@ export function WizardAnswersLost({
             We could not find {what}
           </h2>
           <p className="text-sm text-muted-foreground">
-            This link points to a later step, but {what} are not on this device
-            any more — they may have been saved on another device, or too long
+            {/* Number-agnostic on purpose: callers pass singular subjects
+                ("the teach-back you had going") as well as plural ones, and
+                "{what} are not on this device" read "what you told us are"
+                (cold walk 22 grammar census). */}
+            This link points to a later step, but this device no longer holds{" "}
+            {what} — it may have been saved on another device, or too long
             ago. Nothing was created. Start again and it will only take a
             moment.
           </p>

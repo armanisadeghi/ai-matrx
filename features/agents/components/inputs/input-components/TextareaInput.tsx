@@ -17,6 +17,11 @@ interface TextareaInputProps {
    * of inserting a newline (Shift / Cmd / Ctrl + Enter still insert one).
    */
   onEnterAdvance?: () => void;
+  /**
+   * What goes in this box, when the field's author declared it ("Paste the
+   * text to check"). Absent → the one generic invitation.
+   */
+  placeholder?: string;
 }
 
 /**
@@ -32,6 +37,7 @@ export function TextareaInput({
   autoFocus = true,
   wizardMode = false,
   onEnterAdvance,
+  placeholder,
 }: TextareaInputProps) {
   const hasSelectedRef = useRef(false);
 
@@ -50,7 +56,7 @@ export function TextareaInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onFocus={handleFocus}
-      placeholder={variableInputPlaceholder()}
+      placeholder={placeholder?.trim() || variableInputPlaceholder()}
       className={isCompact ? "min-h-[60px] text-xs" : "min-h-[160px] text-sm"}
       rows={isCompact ? 2 : undefined}
       autoFocus={autoFocus}

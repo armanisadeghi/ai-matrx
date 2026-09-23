@@ -143,7 +143,7 @@ jest.mock("@/features/organizations/useOrganizationRequired", () => ({
 jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () => ({
   OrganizationContextNotice: ({ what }: { what?: string }) => (
     <div>
-      <h3>{what ? `${what} need an organization` : "Choose an organization"}</h3>
+      <h3>{what ? `An organization is needed for ${what.toLowerCase()}` : "Choose an organization"}</h3>
       <p>Nothing was loaded because no organization is selected for this session.</p>
     </div>
   ),
@@ -292,10 +292,10 @@ describeLive("/data-v2 — the route files bind the store, live main database", 
     // both the failure this asserts against.
     activeOrg = null;
     const { default: UnifiedDataPage }: typeof import("../page") = require("../page");
-    await mount(<UnifiedDataPage />, (text) => text.includes("Data records need an organization") || text.includes("switched off"));
+    await mount(<UnifiedDataPage />, (text) => text.includes("An organization is needed for data records") || text.includes("switched off"));
 
     const text = container.textContent ?? "";
-    expect(text).toContain("Data records need an organization");
+    expect(text).toContain("An organization is needed for data records");
     expect(text).toContain("Nothing was loaded because no organization is selected");
     expect(text).not.toContain("404");
     // The route still drew its own header, so this is a page with a sentence on
