@@ -75,8 +75,8 @@ import {
   summarise,
   type ClassifiedDelta,
   type DeltaObject,
-  type ObjectKind,
 } from "./lib/db-objects-diff-core";
+import { inventoryObjects, parseIdentity, type Inventory } from "./lib/db-objects-inventory";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const APPLICATION_NAME = "matrx-frontend db:objects-diff";
@@ -110,146 +110,19 @@ function parseAgainst(argv: readonly string[]): "branch" {
 }
 
 // ---------------------------------------------------------------------------
-// The inventory. Five SELECTs, each producing `identity -> signature`.
+// The inventory — `scripts/lib/db-objects-inventory.ts` at depth "entry" (the five kinds this
+// tool has always compared), inside ONE read-only transaction per side.
 // ---------------------------------------------------------------------------
 
-const SEP = String.fromCharCode(31); // ASCII unit separator — never legal in a pg identifier
-
-function identityOf(o: DeltaObject): string {
-  return [o.kind, o.schema ?? "", o.table ?? "", o.name].join(SEP);
-}
-
-function parseIdentity(identity: string): DeltaObject {
-  const [kind, schema, table, name] = identity.split(SEP);
-  return {
-    kind: kind as ObjectKind,
-    schema: schema === "" ? null : schema!,
-    table: table === "" ? null : table!,
-    name: name!,
-  };
-}
-
-/** Catalog and per-session schemas only — everything else is inventoried. */
-const SCHEMA_FILTER = `n.nspname not in ('pg_catalog','information_schema')
-     and n.nspname not like 'pg_toast%' and n.nspname not like 'pg_temp%'`;
-
-const TABLES_SQL = `
-  select n.nspname as schema_name, c.relname as table_name
-  from pg_class c join pg_namespace n on n.oid = c.relnamespace
-  where c.relkind in ('r','p') and ${SCHEMA_FILTER}`;
-
-const COLUMNS_SQL = `
-  select n.nspname as schema_name, c.relname as table_name, a.attname as column_name,
-         format_type(a.atttypid, a.atttypmod) as data_type,
-         a.attnotnull as not_null,
-         coalesce(pg_get_expr(d.adbin, d.adrelid), '') as column_default,
-         a.attidentity as identity_kind,
-         a.attgenerated as generated_kind
-  from pg_attribute a
-  join pg_class c on c.oid = a.attrelid
-  join pg_namespace n on n.oid = c.relnamespace
-  left join pg_attrdef d on d.adrelid = a.attrelid and d.adnum = a.attnum
-  where c.relkind in ('r','p') and a.attnum > 0 and not a.attisdropped and ${SCHEMA_FILTER}`;
-
-const CONSTRAINTS_SQL = `
-  select n.nspname as schema_name, c.relname as table_name, con.conname as constraint_name,
-         pg_get_constraintdef(con.oid) as definition
-  from pg_constraint con
-  join pg_class c on c.oid = con.conrelid
-  join pg_namespace n on n.oid = c.relnamespace
-  where ${SCHEMA_FILTER}`;
-
-const TRIGGERS_SQL = `
-  select n.nspname as schema_name, c.relname as table_name, t.tgname as trigger_name,
-         pg_get_triggerdef(t.oid) as definition, t.tgenabled as enabled
-  from pg_trigger t
-  join pg_class c on c.oid = t.tgrelid
-  join pg_namespace n on n.oid = c.relnamespace
-  where not t.tgisinternal and ${SCHEMA_FILTER}`;
-
-const EVENT_TRIGGERS_SQL = `
-  select e.evtname as name, e.evtevent as event, e.evtenabled as enabled,
-         p.proname as function_name, e.evttags::text as tags
-  from pg_event_trigger e
-  join pg_proc p on p.oid = e.evtfoid`;
-
-interface Inventory {
-  readonly objects: Map<string, string>;
-  readonly tables: Set<string>;
-}
-
-/** Everything this tool reads, in ONE read-only transaction per side. */
 async function inventory(client: pg.Client): Promise<Inventory> {
-  const objects = new Map<string, string>();
-  const tables = new Set<string>();
   await client.query("begin transaction read only");
   try {
-    for (const r of (await client.query(TABLES_SQL)).rows) {
-      const o: DeltaObject = {
-        kind: "table",
-        schema: r.schema_name,
-        table: r.table_name,
-        name: r.table_name,
-      };
-      objects.set(identityOf(o), "exists");
-      tables.add(`${r.schema_name}.${r.table_name}`);
-    }
-    for (const r of (await client.query(COLUMNS_SQL)).rows) {
-      const o: DeltaObject = {
-        kind: "column",
-        schema: r.schema_name,
-        table: r.table_name,
-        name: r.column_name,
-      };
-      objects.set(
-        identityOf(o),
-        [
-          r.data_type,
-          r.not_null ? "not null" : "null",
-          r.column_default ? `default ${r.column_default}` : "no default",
-          r.identity_kind ? `identity ${r.identity_kind}` : "",
-          r.generated_kind ? `generated ${r.generated_kind}` : "",
-        ]
-          .filter(Boolean)
-          .join(" "),
-      );
-    }
-    for (const r of (await client.query(CONSTRAINTS_SQL)).rows) {
-      const o: DeltaObject = {
-        kind: "constraint",
-        schema: r.schema_name,
-        table: r.table_name,
-        name: r.constraint_name,
-      };
-      objects.set(identityOf(o), r.definition);
-    }
-    for (const r of (await client.query(TRIGGERS_SQL)).rows) {
-      const o: DeltaObject = {
-        kind: "trigger",
-        schema: r.schema_name,
-        table: r.table_name,
-        name: r.trigger_name,
-      };
-      objects.set(identityOf(o), `${r.definition} [enabled=${r.enabled}]`);
-    }
-    for (const r of (await client.query(EVENT_TRIGGERS_SQL)).rows) {
-      const o: DeltaObject = {
-        kind: "event_trigger",
-        schema: null,
-        table: null,
-        name: r.name,
-      };
-      objects.set(
-        identityOf(o),
-        `on ${r.event} execute ${r.function_name} [enabled=${r.enabled}] tags=${r.tags ?? "(all)"}`,
-      );
-    }
+    return await inventoryObjects((sql) => client.query(sql), "entry");
   } finally {
     // A read-only transaction has nothing to commit; end it either way so the
     // pooler never holds an idle-in-transaction connection on our account.
     await client.query("rollback").catch(() => undefined);
   }
-  return { objects, tables };
 }
 
 // ---------------------------------------------------------------------------

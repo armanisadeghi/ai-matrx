@@ -195,6 +195,22 @@ import {
 } from "./lib/migration-target";
 import { confirmChairStep } from "./lib/chair-step";
 import {
+  isIdempotent,
+  LEDGER_REBASE_LANE,
+  loadRebaseProof,
+  measureIdempotency,
+  proofHashOf,
+  proofRefusal,
+  rebaseProofPath,
+  rebaseSentence,
+  RECEIPT_COLUMN,
+  shrinkGrandfathered,
+  writeRebaseProof,
+  type IdempotencyMeasurement,
+  type RebaseProof,
+  type RebaseReceipt,
+} from "./lib/ledger-rebase";
+import {
   listBuildLocks,
   startLockHeartbeat,
   BuildLockLeaseAbsent,
@@ -4188,6 +4204,455 @@ async function amendIdempotent(path: string, target: Target, statementTimeout: s
   }
 }
 
+/* ───────────────────────── --ledger-rebase ────────────────────────────────
+ *
+ * THE LEDGER ROW MOVES ONTO THE COMMITTED BYTES, AND ONLY ON A CLONE PROOF (lane LEDGER-REBASE,
+ * chair ruling 2026-09-22). The rule, the proof and the receipt: `scripts/lib/ledger-rebase.ts`.
+ *
+ *   pnpm db:apply --ledger-rebase <file> --target clone
+ *       runs the file's current bytes on the dev clone inside a ROLLED-BACK transaction and
+ *       diffs the full object inventory + every row written. Zero and zero writes the proof
+ *       (migrations/rebase-proofs/<sha256>.json) and moves the CLONE's ledger row, so the write
+ *       path itself is rehearsed. Anything else prints the object diff and writes nothing.
+ *   pnpm db:apply --ledger-rebase <file> --target production --lane <lane> \
+ *       --reason "<why>" --confirm-chair-step <file>
+ *       executes NOTHING: refuses without a live build-lock lease, the chair confirmation, a
+ *       reason, or a fresh hash-bound proof taken against the checksum production holds now;
+ *       then moves the row, appends the receipt, updates migrations/LEDGER.json and shrinks the
+ *       grandfather list through its ratchet.
+ *   pnpm db:apply --ledger-rebase --self-test
+ *       RED then GREEN on the clone with planted scratch files (never in this checkout), plus the
+ *       proof gate's refusals with no database at all.
+ */
+
+const GRANDFATHER_PATH = resolve(ROOT, "scripts", "lib", "ledger-lock-grandfathered.json");
+const REBASE_RUNNER = "matrx-frontend db:apply --ledger-rebase";
+
+function printMeasurement(m: IdempotencyMeasurement): void {
+  console.log(
+    `${TAG.info}clone measurement ${C.dim}— ${m.objectsInventoried} objects inventoried (functions, ` +
+      `views, policies, indexes, ACLs, tables, columns, constraints, triggers), ${m.ms} ms, rolled back${C.reset}`,
+  );
+  if (m.error) console.log(`${TAG.fail}the file did not run on the clone: ${m.error}`);
+  for (const d of m.deltas) {
+    console.log(`${TAG.fail}${d.direction.toUpperCase()} ${d.kind} ${d.object}`);
+    if (d.before) console.log(`         before: ${d.before}`);
+    if (d.after) console.log(`         after:  ${d.after}`);
+  }
+  for (const r of m.rowsWritten) {
+    console.log(`${TAG.fail}ROWS WRITTEN ${r.table}: ${r.tuples} tuple(s) — a statement that writes a row is not a no-op`);
+  }
+  if (m.concurrent.length) {
+    console.log(
+      `${TAG.warn}${m.concurrent.length} object(s) changed under this proof by ANOTHER session on the ` +
+        `shared clone — not counted against the file, printed so nothing hides:`,
+    );
+    for (const d of m.concurrent) console.log(`         ${d.direction} ${d.kind} ${d.object}`);
+  }
+}
+
+async function rebaseReceiptWrite(
+  client: pg.Client,
+  filename: string,
+  expectChecksum: string,
+  newChecksum: string,
+  receipt: RebaseReceipt,
+): Promise<{ ok: true } | { ok: false; why: string }> {
+  await beginClean(client);
+  try {
+    await client.query(`set local lock_timeout = '5s'`);
+    await client.query(
+      `alter table public._schema_migrations add column if not exists ${RECEIPT_COLUMN} jsonb`,
+    );
+    const cur = await client.query<{ checksum: string }>(
+      `select checksum from public._schema_migrations where source = $1 and filename = $2 for update`,
+      [SOURCE, filename],
+    );
+    if (!cur.rows[0]) {
+      await client.query("rollback");
+      return { ok: false, why: `${filename} has no ledger row any more.` };
+    }
+    if (cur.rows[0].checksum !== expectChecksum) {
+      await client.query("rollback");
+      return {
+        ok: false,
+        why: `the row moved under this command: it holds ${cur.rows[0].checksum.slice(0, 12)}…, expected ${expectChecksum.slice(0, 12)}….`,
+      };
+    }
+    await client.query(
+      `update public._schema_migrations
+          set checksum = $1,
+              ${RECEIPT_COLUMN} = coalesce(${RECEIPT_COLUMN}, '[]'::jsonb) || jsonb_build_array($2::jsonb)
+        where source = $3 and filename = $4`,
+      [newChecksum, JSON.stringify(receipt), SOURCE, filename],
+    );
+    await client.query("commit");
+    return { ok: true };
+  } catch (err) {
+    await client.query("rollback").catch(() => {});
+    return { ok: false, why: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+async function ledgerRebase(path: string, argv: readonly string[]): Promise<number> {
+  const valueOf = (flag: string): string | null => {
+    const eq = argv.find((a) => a.startsWith(`${flag}=`));
+    if (eq) return eq.slice(flag.length + 1).trim() || null;
+    const i = argv.indexOf(flag);
+    return i >= 0 && argv[i + 1] && !argv[i + 1]!.startsWith("--") ? argv[i + 1]!.trim() : null;
+  };
+  const target = parseTargetFlag(argv);
+  if (target === "branch") {
+    console.error(
+      `${TAG.fail}--ledger-rebase runs at --target clone (the proof) or --target production (the ` +
+        `rebase). The branch is a schema-only transplant, not a copy of production, so running a ` +
+        `file there proves nothing about what production holds.`,
+    );
+    return 1;
+  }
+  if (!existsSync(path)) {
+    console.error(`${TAG.fail}${path} does not exist.`);
+    return 1;
+  }
+  const rel = relative(ROOT, resolve(path)).replace(/\\/g, "/");
+  if (rel.startsWith("..") || !rel.startsWith("migrations/")) {
+    console.error(`${TAG.fail}${rel} is not a migration of this repository.`);
+    return 1;
+  }
+  const filename = basename(path);
+  const current = readFileSync(path, "utf8");
+  const newChecksum = sha256(current);
+  const trimmedChecksum = sha256(current.replace(/\s+$/, ""));
+  const branchRef = loadBranchRef(ROOT, branchRefOverride(argv));
+  let cloneRef: CloneRef | null = null;
+  try {
+    cloneRef = loadCloneRef(ROOT, cloneRefOverride(argv));
+  } catch (err) {
+    if (target === "clone") {
+      console.error(`${TAG.fail}${err instanceof Error ? err.message : String(err)}`);
+      return 1;
+    }
+  }
+  const lane = valueOf("--lane");
+  const reason = valueOf("--reason");
+
+  // ── THE PROOF, on the clone ────────────────────────────────────────────────
+  if (target === "clone") {
+    let env: DbEnv;
+    try {
+      env = { ...loadCloneDbEnv(ROOT, cloneRef!) };
+      assertConfiguredHostMatchesTarget(env, "clone", branchRef, cloneRef);
+    } catch (err) {
+      console.error(`${TAG.fail}${err instanceof Error ? err.message : String(err)}`);
+      return 1;
+    }
+    const client = await connect(env);
+    try {
+      const sysid = await assertServerMatchesTarget((s) => client.query(s), "clone", branchRef, filename, cloneRef);
+      const row = await client.query<{ checksum: string; applied_at: string; receipts: RebaseReceipt[] | null }>(
+        `select checksum, applied_at::text as applied_at,
+                (to_jsonb(m) -> '${RECEIPT_COLUMN}') as receipts
+           from public._schema_migrations m where source = $1 and filename = $2`,
+        [SOURCE, filename],
+      );
+      const r = row.rows[0];
+      if (!r) {
+        console.error(
+          `${TAG.fail}${filename} has no ledger row on the clone (a copy of production's ledger), so ` +
+            `production never ran it and there is nothing to rebase. Apply it normally.`,
+        );
+        return 1;
+      }
+      // If this clone's row was already rebased by an earlier proof run, the checksum production
+      // holds is the FIRST receipt's `was`, not the row's current value.
+      const firstWas = Array.isArray(r.receipts) && r.receipts.length ? r.receipts[0]!.was : null;
+      const ledgered = r.checksum === newChecksum && firstWas ? firstWas : r.checksum;
+      if ([newChecksum, trimmedChecksum].includes(ledgered)) {
+        console.log(`${TAG.ok}${filename}'s ledger row already names these bytes. There is nothing to rebase.`);
+        return 0;
+      }
+      console.log(
+        `${C.bold}ledger rebase proof${C.reset} ${C.white}${rel}${C.reset} ${C.dim}(sha256 ${newChecksum}); ` +
+          `the ledger holds ${ledgered} from ${r.applied_at}; clone ${cloneRef!.cloneRef} (${cloneRef!.cloneName})${C.reset}`,
+      );
+      await beginClean(client);
+      let m: IdempotencyMeasurement;
+      try {
+        await client.query(`set local statement_timeout = '600s'`);
+        m = await measureIdempotency((s) => client.query(s), current);
+      } finally {
+        await client.query("rollback").catch(() => {});
+      }
+      printMeasurement(m);
+      if (!isIdempotent(m)) {
+        console.error(
+          `${TAG.fail}NOT IDEMPOTENT — ${filename}'s committed bytes CHANGE the live state ` +
+            `(${m.deltas.length} object(s), ${m.rowsWritten.length} table(s) written${m.error ? ", or it did not run" : ""}). ` +
+            `They do not describe what production holds, so its ledger row cannot be moved onto ` +
+            `them. No proof was written and no ledger row moved. The remedy is a superseding ` +
+            `migration that makes live match what this file says, or a chair ruling on the file.`,
+        );
+        return 1;
+      }
+      const measuredAt = new Date().toISOString();
+      const body: Omit<RebaseProof, "proof_sha256"> = {
+        kind: "ledger-rebase-proof",
+        version: 1,
+        file: rel,
+        sha256: newChecksum,
+        target: "clone",
+        clone_ref: cloneRef!.cloneRef,
+        clone_name: cloneRef!.cloneName,
+        system_identifier: sysid,
+        ledgered_checksum: ledgered,
+        ledger_applied_at: r.applied_at,
+        measured_at: measuredAt,
+        objects_inventoried: m.objectsInventoried,
+        deltas: [],
+        rows_written: [],
+        concurrent_noise: m.concurrent,
+        verdict: "idempotent",
+        runner: REBASE_RUNNER,
+      };
+      const proof: RebaseProof = { ...body, proof_sha256: proofHashOf(body) };
+      const proofPath = writeRebaseProof(MIGRATIONS_DIR, proof);
+      console.log(
+        `${TAG.ok}IDEMPOTENT — 0 objects changed and 0 rows written. Proof written: ` +
+          `${relative(ROOT, proofPath)} ${C.dim}(proof sha256 ${proof.proof_sha256})${C.reset}`,
+      );
+      if (r.checksum !== newChecksum) {
+        const receipt: RebaseReceipt = {
+          kind: "ledger-rebase",
+          was: r.checksum,
+          now: newChecksum,
+          reason: reason ?? "clone rehearsal of the ledger-rebase write path",
+          chair_step_confirmed: null,
+          lane,
+          target: "clone",
+          clone_proof: {
+            path: relative(ROOT, proofPath),
+            sha256: proof.proof_sha256,
+            clone_ref: cloneRef!.cloneRef,
+            measured_at: measuredAt,
+          },
+          runner: REBASE_RUNNER,
+          rebased_at: measuredAt,
+        };
+        const w = await rebaseReceiptWrite(client, filename, r.checksum, newChecksum, receipt);
+        if (!w.ok) {
+          console.error(`${TAG.fail}the clone's ledger row could not be moved (the write path is NOT proven): ${w.why}`);
+          return 1;
+        }
+        console.log(
+          rebaseSentence({ filename, target: "clone", was: r.checksum, now: newChecksum, cloneRef: cloneRef!.cloneRef, measuredAt }),
+        );
+      }
+      return 0;
+    } finally {
+      await client.end().catch(() => {});
+    }
+  }
+
+  // ── THE REBASE, on production — executes nothing ──────────────────────────
+  const refuse = (why: string): number => {
+    console.error(`${TAG.fail}REFUSED — ${why}\n       Nothing was executed and no ledger row moved.`);
+    return 1;
+  };
+  if (!reason) return refuse(`--reason "<one sentence: why these bytes, not the lost ones>" is required; it is kept on the row forever.`);
+  if (!lane) return refuse(`--lane <lane> is required: a production rebase happens while that lane holds a LIVE build-lock lease.`);
+  const chairRefusal = await confirmChairStep(
+    filename,
+    `ledger rebase of ${filename}: ${reason}`,
+    argv.flatMap((a, i) =>
+      a === "--confirm-chair-step" && argv[i + 1] ? [basename(argv[i + 1]!)] :
+      a.startsWith("--confirm-chair-step=") ? [basename(a.slice("--confirm-chair-step=".length))] : [],
+    ),
+  );
+  if (chairRefusal) return refuse(chairRefusal);
+  const proof = loadRebaseProof(MIGRATIONS_DIR, newChecksum);
+  if (!proof) {
+    return refuse(proofRefusal(null, { file: rel, sha256: newChecksum, ledgeredChecksum: "", now: new Date() })!);
+  }
+  const auth = await assertCampaignProductionIsAuthorised(filename, newChecksum, lane, branchRef);
+  if (auth.refusal) return refuse(auth.refusal);
+
+  const env = loadDbEnv();
+  if ("missing" in env) return refuse(`missing ${env.missing.join(", ")} — cannot reach the production ledger.`);
+  try {
+    assertConfiguredHostMatchesTarget(env, "production", branchRef, cloneRef);
+  } catch (err) {
+    return refuse(err instanceof Error ? err.message : String(err));
+  }
+  if (!isInsideWindow()) {
+    console.warn(
+      `${TAG.warn}outside the 1–4 AM Pacific window. This executes no migration, but it may add the ` +
+        `${RECEIPT_COLUMN} column to public._schema_migrations (a brief ACCESS EXCLUSIVE on the ledger, ` +
+        `lock_timeout 5s).`,
+    );
+  }
+  const client = await connect(env);
+  try {
+    await assertServerMatchesTarget((s) => client.query(s), "production", branchRef, filename, cloneRef);
+    const row = await ledgerRow(client, filename);
+    if (!row) return refuse(`${filename} has no ledger row on production; there is nothing to rebase.`);
+    if ([newChecksum, trimmedChecksum].includes(row.checksum)) {
+      console.log(`${TAG.ok}${filename}'s production ledger row already names these bytes. There is nothing to rebase.`);
+      return 0;
+    }
+    const why = proofRefusal(proof, { file: rel, sha256: newChecksum, ledgeredChecksum: row.checksum, now: new Date() });
+    if (why) return refuse(why);
+    const rebasedAt = new Date().toISOString();
+    const receipt: RebaseReceipt = {
+      kind: "ledger-rebase",
+      was: row.checksum,
+      now: newChecksum,
+      reason,
+      chair_step_confirmed: filename,
+      lane,
+      target: "production",
+      clone_proof: {
+        path: relative(ROOT, rebaseProofPath(MIGRATIONS_DIR, newChecksum)),
+        sha256: proof.proof_sha256,
+        clone_ref: proof.clone_ref,
+        measured_at: proof.measured_at,
+      },
+      runner: REBASE_RUNNER,
+      rebased_at: rebasedAt,
+    };
+    const w = await rebaseReceiptWrite(client, filename, row.checksum, newChecksum, receipt);
+    if (!w.ok) return refuse(w.why);
+    try {
+      recordAppliedRow({ relPath: rel, source: SOURCE, filename, checksum: newChecksum, appliedAt: row.applied_at });
+    } catch (err) {
+      console.error(
+        `${TAG.warn}${LEDGER_SNAPSHOT_REL} could not be updated (${(err as Error)?.message ?? String(err)}); ` +
+          `run pnpm refresh:ledger-snapshot.`,
+      );
+    }
+    const shrunk = shrinkGrandfathered(GRANDFATHER_PATH, rel, {
+      was: row.checksum,
+      now: newChecksum,
+      proofSha256: proof.proof_sha256,
+      at: new Date(rebasedAt),
+    });
+    console.log(
+      rebaseSentence({ filename, target: "production", was: row.checksum, now: newChecksum, cloneRef: proof.clone_ref, measuredAt: proof.measured_at }),
+    );
+    console.log(
+      `${TAG.info}${LEDGER_SNAPSHOT_REL} moved onto the new bytes` +
+        (shrunk ? `, and ${relative(ROOT, GRANDFATHER_PATH)} shrank by this name through its ratchet (last_shrunk_by ${LEDGER_REBASE_LANE})` : ``) +
+        `. Commit those two files.`,
+    );
+    return 0;
+  } finally {
+    await client.end().catch(() => {});
+  }
+}
+
+/**
+ * RED then GREEN. Part one needs no database: the production proof gate refuses every way a
+ * proof can be wrong. Part two runs PLANTED scratch files on the clone — written to a temp dir,
+ * never into this checkout — and requires the non-idempotent ones to be refused.
+ */
+async function ledgerRebaseSelfTest(argv: readonly string[]): Promise<number> {
+  let failed = 0;
+  const ok = (s: string) => console.log(`${TAG.ok}self-test ${s}`);
+  const bad = (s: string) => {
+    console.error(`${TAG.fail}SELF-TEST FAILED — ${s}`);
+    failed++;
+  };
+
+  // ── part one: the proof gate, no database ──
+  const now = new Date();
+  const sha = sha256("select 1;\n");
+  const base: Omit<RebaseProof, "proof_sha256"> = {
+    kind: "ledger-rebase-proof", version: 1, file: "migrations/campaign/x.sql", sha256: sha, target: "clone",
+    clone_ref: "clone", clone_name: "clone", system_identifier: "1", ledgered_checksum: "a".repeat(64),
+    ledger_applied_at: "2026-09-19", measured_at: now.toISOString(), objects_inventoried: 1, deltas: [],
+    rows_written: [], concurrent_noise: [], verdict: "idempotent", runner: REBASE_RUNNER,
+  };
+  const sealed = (b: Omit<RebaseProof, "proof_sha256">): RebaseProof => ({ ...b, proof_sha256: proofHashOf(b) });
+  const want = { file: base.file, sha256: sha, ledgeredChecksum: base.ledgered_checksum, now };
+  const gate: Array<[string, RebaseProof | null, boolean]> = [
+    ["a missing proof", null, false],
+    ["a proof of other bytes", sealed({ ...base, sha256: sha256("select 2;\n") }), false],
+    ["a stale proof (40 h old)", sealed({ ...base, measured_at: new Date(now.getTime() - 40 * 3_600_000).toISOString() }), false],
+    ["a hand-edited proof", { ...sealed(base), objects_inventoried: 2 }, false],
+    ["a proof taken on production", sealed({ ...base, target: "production" as "clone" }), false],
+    ["a proof carrying a delta", sealed({ ...base, deltas: [{ direction: "added", kind: "function", object: "public.f()", before: null, after: "x" }] }), false],
+    ["a proof taken against another ledger checksum", sealed({ ...base, ledgered_checksum: "b".repeat(64) }), false],
+    ["a fresh, sealed, idempotent proof of these bytes", sealed(base), true],
+  ];
+  for (const [name, p, accept] of gate) {
+    const why = proofRefusal(p, want);
+    if ((why === null) === accept) ok(`${accept ? "GREEN" : "RED"} — the production gate ${accept ? "accepts" : "refuses"} ${name}.`);
+    else bad(`the production gate ${accept ? "refused" : "ACCEPTED"} ${name}${why ? `: ${why}` : ""}.`);
+  }
+
+  // ── part two: planted files on the clone ──
+  if (argv.includes("--no-db")) {
+    console.log(`${TAG.warn}--no-db: the clone half was NOT run, so the measurement is unproven.`);
+    return failed ? 1 : 0;
+  }
+  const scratch = mkdtempSync(join(tmpdir(), "ledger-rebase-selftest-"));
+  const tag = `zz_ledger_rebase_selftest_${process.pid}`;
+  const planted: Array<[string, string, boolean]> = [
+    [
+      "a file that creates a function live does not have",
+      `create or replace function public.${tag}() returns int language sql as $$ select 1 $$;\n`,
+      false,
+    ],
+    [
+      "a file that CHANGES a live object (its comment)",
+      `comment on table public._schema_migrations is 'ledger-rebase self-test: a comment is state too';\n`,
+      false,
+    ],
+    [
+      "a file that writes a row, even the same value back",
+      `update platform.feature_knob set label = label where feature = 'custom' and key = 'agent_schema_changes';\n`,
+      false,
+    ],
+    ["a file that does not run at all", `select * from public.${tag}_no_such_table;\n`, false],
+    ["a file whose every statement is a no-op against live", `create schema if not exists public;\nselect 1;\n`, true],
+  ];
+  const ref = loadCloneRef(ROOT, cloneRefOverride(argv));
+  const env = { ...loadCloneDbEnv(ROOT, ref) };
+  const branchRef = loadBranchRef(ROOT, branchRefOverride(argv));
+  assertConfiguredHostMatchesTarget(env, "clone", branchRef, ref);
+  const client = await connect(env);
+  try {
+    await assertServerMatchesTarget((s) => client.query(s), "clone", branchRef, "--ledger-rebase --self-test", ref);
+    for (const [name, sql, idem] of planted) {
+      const file = join(scratch, `${name.replace(/[^a-z]+/g, "_").slice(0, 40)}.sql`);
+      writeFileSync(file, sql, "utf8");
+      await beginClean(client);
+      let m: IdempotencyMeasurement;
+      try {
+        m = await measureIdempotency((s) => client.query(s), readFileSync(file, "utf8"));
+      } finally {
+        await client.query("rollback").catch(() => {});
+      }
+      const verdict = isIdempotent(m);
+      const what = `${m.deltas.length} object delta(s), ${m.rowsWritten.length} table(s) written${m.error ? ", did not run" : ""}`;
+      if (verdict === idem) ok(`${idem ? "GREEN" : "RED"} — ${name}: ${idem ? "proven idempotent" : "refused"} (${what}).`);
+      else bad(`${name} was judged ${verdict ? "IDEMPOTENT" : "not idempotent"} (${what}).`);
+    }
+    // Nothing planted may survive: the scratch function must not exist after the rollback.
+    const left = await client.query(`select count(*)::int as n from pg_proc where proname = $1`, [tag]);
+    if (Number(left.rows[0]?.n ?? 0) === 0) ok(`GREEN — nothing planted survived on the clone (${tag} is absent).`);
+    else bad(`${tag} SURVIVED on the clone — the proof did not roll back.`);
+  } finally {
+    await client.end().catch(() => {});
+  }
+  console.log(`${TAG.info}planted files: ${scratch} (outside this checkout)`);
+  if (failed) {
+    console.error(`${TAG.fail}${failed} self-test arm(s) failed. --ledger-rebase is NOT safe to run.`);
+    return 1;
+  }
+  console.log(`${TAG.ok}--ledger-rebase self-test: every arm held.`);
+  return 0;
+}
+
 async function main(): Promise<number> {
   const argv = process.argv.slice(2);
   const dryRun = argv.includes("--dry-run");
@@ -4226,6 +4691,20 @@ async function main(): Promise<number> {
       ? given.map((a) => (existsSync(resolve(process.cwd(), a)) ? resolve(process.cwd(), a) : resolve(MIGRATIONS_DIR, a)))
       : [resolve(MIGRATIONS_DIR, JUDGMENT_CORPUS_DIRNAME)];
     return judgeOnly(paths);
+  }
+  if (argv.includes("--ledger-rebase")) {
+    if (argv.includes("--self-test")) return ledgerRebaseSelfTest(argv);
+    const i = argv.indexOf("--ledger-rebase");
+    const skip = new Set(["--target", "--lane", "--reason", "--confirm-chair-step", "--clone-ref", "--branch-ref"]);
+    const given = argv.slice(i + 1).find((a, k, rest) => !a.startsWith("--") && !(k > 0 && skip.has(rest[k - 1]!)));
+    if (!given) {
+      console.error(
+        `${TAG.fail}--ledger-rebase needs a file: pnpm db:apply --ledger-rebase ` +
+          `migrations/campaign/<file>.sql --target clone|production`,
+      );
+      return 1;
+    }
+    return ledgerRebase(resolve(ROOT, given), argv);
   }
   if (argv.includes("--amend-idempotent")) {
     if (argv.includes("--self-test")) return amendSelfTest();

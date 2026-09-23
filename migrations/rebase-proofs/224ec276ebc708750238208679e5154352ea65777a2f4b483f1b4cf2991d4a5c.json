@@ -1,0 +1,28 @@
+{
+  "kind": "ledger-rebase-proof",
+  "version": 1,
+  "file": "migrations/campaign/argsruled_the_second_id_lives_in_the_same_organization.sql",
+  "sha256": "224ec276ebc708750238208679e5154352ea65777a2f4b483f1b4cf2991d4a5c",
+  "target": "clone",
+  "clone_ref": "jxhgzalwckuarngvsdyq",
+  "clone_name": "clone-20260921",
+  "system_identifier": "7642734024280108049",
+  "ledgered_checksum": "53e52cf3fab6081595e954634c22d704ba416447feef5372a7177efc18e33723",
+  "ledger_applied_at": "2026-09-21 22:51:00.977029+00",
+  "measured_at": "2026-09-23T02:02:00.203Z",
+  "objects_inventoried": 54701,
+  "deltas": [],
+  "rows_written": [],
+  "concurrent_noise": [
+    {
+      "direction": "changed",
+      "kind": "function",
+      "object": "custom._relation_halves_agree()",
+      "before": "body 0c99faf43d4e97c559a9a0d5bea225fa acl (default) owner postgres comment 60c23b2cb259e9ba421d6a3933fd0844",
+      "after": "body d9c46f5d93e721041a2cb131ca6952d1 acl (default) owner postgres comment 60c23b2cb259e9ba421d6a3933fd0844"
+    }
+  ],
+  "verdict": "idempotent",
+  "runner": "matrx-frontend db:apply --ledger-rebase",
+  "proof_sha256": "6838b54e229bd429ab74c61223325287e15505f122dc1686183cc32bb3d70429"
+}

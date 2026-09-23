@@ -51,8 +51,23 @@
  * `scripts/lib/direct-db-env.ts` was split out of `direct-db.ts`.
  */
 
-/** The object kinds the entry check names. */
-export type ObjectKind = "table" | "column" | "constraint" | "trigger" | "event_trigger";
+/**
+ * The object kinds the entry check names, then the ones only the `full` inventory reads
+ * (`scripts/lib/db-objects-inventory.ts` — the ledger-rebase proof, lane LEDGER-REBASE).
+ * A `full`-only kind with no owning table carries `table: null`.
+ */
+export type ObjectKind =
+  | "table"
+  | "column"
+  | "constraint"
+  | "trigger"
+  | "event_trigger"
+  | "function"
+  | "view"
+  | "acl"
+  | "policy"
+  | "index"
+  | "schema";
 
 /** Which side has it — "differs" means both have it and the definitions disagree. */
 export type Direction = "production_only" | "branch_only" | "differs";
@@ -210,7 +225,9 @@ export function formatDelta(d: ClassifiedDelta): string {
       ? `event trigger ${o.name}`
       : o.kind === "table"
         ? `table ${o.schema}.${o.name}`
-        : `${o.kind} ${o.schema}.${o.table}.${o.name}`;
+        : o.table === null
+          ? `${o.kind} ${o.schema}.${o.name}`
+          : `${o.kind} ${o.schema}.${o.table}.${o.name}`;
   if (d.direction === "differs") {
     return [
       `  DIFFERS      ${where}`,

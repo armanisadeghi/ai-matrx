@@ -239,6 +239,33 @@ function selfTest() {
     );
   }
 
+  // GREEN-8 / RED-6 — A REBASED ROW (lane LEDGER-REBASE, `db:apply --ledger-rebase`). The
+  // runner moves the production row AND this snapshot onto the file's committed bytes after the
+  // dev clone proved they change nothing, and shrinks the grandfather list. The guard must take
+  // the rebased row at those bytes with NO grandfather entry and NO trailer — and a further
+  // edit after the rebase is refused like any other, even while a stale grandfather entry for
+  // the lost bytes is still on disk. Proven on a REAL grandfathered file.
+  if (gfPath) {
+    const gf = GRANDFATHERED[gfPath];
+    const bytes = existsSync(join(REPO_ROOT, gfPath)) ? readFileSync(join(REPO_ROOT, gfPath)) : null;
+    const rebasedSnap = emptySnapshot();
+    rebasedSnap.files[gfPath] = {
+      source: "campaign",
+      filename: gfPath.split("/").pop(),
+      checksum: bytes ? sha256(bytes) : "",
+      applied_at: gf.applied_at,
+    };
+    results.push({
+      name: `GREEN-8 a rebased row at the committed bytes passes with no trailer (${gfPath.split("/").pop()})`,
+      pass: bytes !== null && judge([{ relPath: gfPath, bytes }], rebasedSnap, null).length === 0,
+    });
+    check(
+      "RED-6 a FURTHER edit after a rebase is refused",
+      true,
+      judge([{ relPath: gfPath, bytes: Buffer.concat([bytes ?? Buffer.alloc(0), Buffer.from("\n-- after the rebase\n")]) }], rebasedSnap, null),
+    );
+  }
+
   // GREEN-6 — an UNREADABLE snapshot refuses instead of passing.
   writeFileSync(join(dir, "migrations", "LEDGER.json"), "{ not json");
   const unreadable = readSnapshot(join(dir, "migrations", "LEDGER.json"));
