@@ -64,7 +64,7 @@ describe("ResultPreview", () => {
     expect(tableProps.viewTabs).toBe(false);
     expect(tableProps.detail).toEqual({ enabled: false });
     expect(tableProps.window).toEqual({ enabled: false });
-    expect(tableProps.copy).toBe(false);
+    expect(tableProps.copy).toBeUndefined();
     expect(tableProps.toolbar).toEqual(
       expect.objectContaining({ title: "Query results", search: true }),
     );
@@ -85,10 +85,12 @@ describe("ResultPreview", () => {
     const metadata = tableProps.columns.find(
       (column) => column.id === "metadata",
     );
+    const id = tableProps.columns.find((column) => column.id === "id");
     const nullable = tableProps.columns.find(
       (column) => column.id === "nullable",
     );
     expect(metadata?.filterValue?.(tableProps.data[0])).toBe('{"rank":1}');
+    expect(id?.sortValue?.(tableProps.data[1])).toBe(2);
     expect(nullable?.cell?.(tableProps.data[0], 0)).toMatchObject({
       props: { children: { props: { children: "NULL" } } },
     });

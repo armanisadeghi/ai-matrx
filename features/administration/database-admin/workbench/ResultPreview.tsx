@@ -56,7 +56,12 @@ function resultColumns(columns: string[]): MatrxColumnDef<PreviewRow>[] {
         id: column,
         header: column,
         accessorFn: (preview) => preview.row[column],
-        sortValue: (preview) => formatCell(preview.row[column]),
+        sortValue: (preview) => {
+          const value = preview.row[column];
+          return value !== null && typeof value === "object"
+            ? formatCell(value)
+            : value;
+        },
         filterValue: (preview) => formatCell(preview.row[column]),
         filter: "text",
         width: 260,
@@ -146,7 +151,6 @@ export function ResultPreview({
                 viewTabs={false}
                 pageSize={0}
                 hidePagination
-                copy={false}
                 detail={{ enabled: false }}
                 window={{ enabled: false }}
                 toolbar={{
