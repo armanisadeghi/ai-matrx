@@ -20,6 +20,7 @@ import type { ToolLifecycleStatus } from "@/features/agents/types/request.types"
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { isStreamTransportLost, StreamTransportError } from "@/lib/api/errors";
 import { monitorStream } from "@ai-matrx/data/net";
+import { withPerformedScript } from "@/features/agents/speech-script/types";
 import {
   isChunkEvent,
   isReasoningChunkEvent,
@@ -1520,7 +1521,11 @@ export async function processStream({
                 // — genuinely varies per block type). UnifiedMediaBlock has no
                 // index signature to overlap with Record<string, unknown>, so
                 // the two-step cast is required, not a shortcut.
-                data: unified as unknown as Record<string, unknown>,
+                // Audio lifts the performed script exactly as the reload path
+                // does (withPerformedScript) — live and reloaded render alike.
+                data: (unified.kind === "audio"
+                  ? withPerformedScript(unified, unified.metadata)
+                  : unified) as unknown as Record<string, unknown>,
               },
             }),
           );

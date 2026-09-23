@@ -41805,6 +41805,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/audio/voice-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Voice Preview Route
+         * @description The model's sample of one voice — the vendor's own when it publishes one.
+         */
+        post: operations["voice_preview_route_audio_voice_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -133886,6 +133906,68 @@ export interface components {
             /** Text Preview */
             text_preview?: string | null;
         };
+        /** VoicePreviewRequest */
+        VoicePreviewRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            /**
+             * Model
+             * @description Catalog model the voice belongs to.
+             */
+            model: string;
+            /**
+             * Voice
+             * @description The model's voice id.
+             */
+            voice: string;
+        };
+        /** VoicePreviewResponse */
+        VoicePreviewResponse: {
+            /** Url */
+            url: string;
+            /** Model */
+            model: string;
+            /** Voice */
+            voice: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "synthesized" | "vendor_sample";
+            /**
+             * Mime Type
+             * @default audio/mpeg
+             */
+            mime_type?: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -199891,6 +199973,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    voice_preview_route_audio_voice_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoicePreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoicePreviewResponse"];
+                };
             };
             /** @description Validation Error */
             422: {

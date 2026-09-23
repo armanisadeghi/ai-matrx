@@ -46,6 +46,12 @@ export interface SpeakRequest {
   language?: string;
   /** Explicit speed — overrides the saved speed. */
   speed?: number;
+  /**
+   * Hear a catalog model's sample of one voice (e.g. a speech-script speaker)
+   * instead of speaking `text`. Always the catalog engine; `text` is the queue
+   * row's caption.
+   */
+  sample?: { model: string; voice: string };
 }
 
 export interface SpeakResult {
@@ -90,6 +96,18 @@ export function resolveSpeakEngine(requested?: SpeakEngineId): SpeakEngineId {
 
 /** Speak text through the single playback queue. */
 export function speak(request: SpeakRequest): SpeakResult {
+  if (request.sample) {
+    // A voice sample belongs to a catalog model, so it always rides the
+    // catalog lane — the queue, lock, and Media panel row stay the same.
+    const { id } = enqueuePlayback({
+      text: request.text,
+      processMarkdown: false,
+      label: request.label,
+      provider: "catalog",
+      catalog: { sample: request.sample },
+    });
+    return { id, engine: "catalog" };
+  }
   const engineId = resolveSpeakEngine(request.engine);
   const engine = speakEngine(engineId);
   const prefs = preferences();

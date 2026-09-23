@@ -95069,6 +95069,48 @@
           }
         }
       }
+    },
+    "/audio/voice-preview": {
+      "post": {
+        "tags": [
+          "Audio"
+        ],
+        "summary": "Voice Preview Route",
+        "description": "The model's sample of one voice — the vendor's own when it publishes one.",
+        "operationId": "voice_preview_route_audio_voice_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoicePreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoicePreviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -302480,6 +302522,142 @@
           "success"
         ],
         "title": "TypeResult"
+      },
+      "VoicePreviewRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Model",
+            "description": "Catalog model the voice belongs to."
+          },
+          "voice": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Voice",
+            "description": "The model's voice id."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "model",
+          "voice"
+        ],
+        "title": "VoicePreviewRequest"
+      },
+      "VoicePreviewResponse": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "voice": {
+            "type": "string",
+            "title": "Voice"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "synthesized",
+              "vendor_sample"
+            ],
+            "title": "Source"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type",
+            "default": "audio/mpeg"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url",
+          "model",
+          "voice",
+          "source"
+        ],
+        "title": "VoicePreviewResponse"
       }
     }
   }

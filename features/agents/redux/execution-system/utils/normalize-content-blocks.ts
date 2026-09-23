@@ -14,6 +14,7 @@ import {
   fromCxVideoPart,
 } from "@/features/files/blocks/adapters/from-cx-av-part";
 import { DECISION_ANSWERS_BLOCK_TYPE } from "@/features/content-ir/kinds/decision-answers";
+import { withPerformedScript } from "@/features/agents/speech-script/types";
 import { seedPersistedEnvelopeCache } from "@/features/content-ir/registry/region-envelope-memo";
 
 /**
@@ -457,11 +458,10 @@ function normalizeMedia(raw: AnyMediaPart, index: number): RenderBlockPayload {
         // A speech-script run stamps the performed script (and, when the
         // vendor returns it, word alignment) on the audio part; the player
         // renders the script beside itself.
-        data: {
-          ...fromCxAudioPart(raw),
-          speech_script: raw.metadata?.speech_script,
-          alignment: raw.metadata?.alignment,
-        } as unknown as Record<string, unknown>,
+        data: withPerformedScript(
+          fromCxAudioPart(raw),
+          raw.metadata,
+        ) as unknown as Record<string, unknown>,
         metadata: raw.metadata,
       };
 

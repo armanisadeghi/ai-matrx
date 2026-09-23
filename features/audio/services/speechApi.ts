@@ -6,6 +6,7 @@ import { CATALOG_VOICES } from "@/features/audio/service/engines";
 
 type TranscriptionWire = components["schemas"]["aidream__services__audio__speech__TranscriptionResponse"];
 type SpeechWire = components["schemas"]["SpeechResponse"];
+type VoicePreviewWire = components["schemas"]["VoicePreviewResponse"];
 
 function normalizeTranscription(data: TranscriptionWire): TranscriptionResult {
   return {
@@ -111,6 +112,23 @@ export async function generateSpeech(
     organization_id: organizationId,
     voice: voice && CATALOG_TTS_VOICES.has(voice) ? voice : undefined,
     quality: options.quality ?? "fast",
+  });
+  return data;
+}
+
+/**
+ * A catalog model's sample of one voice — the vendor's own sample when it
+ * publishes one (ElevenLabs), otherwise one short line the server renders once
+ * and caches per (model, voice). Played through `speak({ sample })`.
+ */
+export async function previewVoice(
+  params: { model: string; voice: string; organizationId?: string },
+): Promise<VoicePreviewWire> {
+  const organizationId = await ensureOrgId(params.organizationId);
+  const { data } = await apiPost("/audio/voice-preview", {
+    model: params.model,
+    voice: params.voice,
+    organization_id: organizationId,
   });
   return data;
 }

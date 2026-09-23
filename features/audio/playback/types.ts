@@ -48,7 +48,16 @@ export interface PlaybackRequest {
     purpose?: "reading" | "assistant";
   };
   /** Catalog speech voice params — resolved by `speak()`; server picks the vendor. */
-  catalog?: { voice?: string; model?: string };
+  catalog?: {
+    voice?: string;
+    model?: string;
+    /**
+     * Play a model's sample of one voice instead of synthesizing `text`: the
+     * vendor's own sample when it publishes one (ElevenLabs), otherwise one
+     * short line the server renders once and caches per (model, voice).
+     */
+    sample?: { model: string; voice: string };
+  };
 }
 
 export interface PlaybackItem extends PlaybackRequest {

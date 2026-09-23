@@ -9,7 +9,11 @@ description: "The TTS/STT/audio-playback system behind the one `speak()` entry p
 
 1. **`speak()` is the ONE entry point** (`features/audio/service/speak.ts`). Never
    hand-roll a TTS call, never construct a player, never read a voice preference
-   yourself. React surfaces use `useSpeech()` on top of it.
+   yourself. React surfaces use `useSpeech()` on top of it. To let someone HEAR
+   a catalog model's voice (e.g. a speech-script speaker), call
+   `speak({ text, sample: { model, voice } })` — the catalog lane plays the
+   vendor's own sample (ElevenLabs) or a line the server renders once per
+   (model, voice) via `POST /audio/voice-preview`.
 2. **Voice / speed / language come from the tiered `listening` config**
    (`features/audio/service/listeningConfig.ts`) — system → org → user, user wins.
    **Never read `userPreferences.voice.*` for playback**; those fields survive

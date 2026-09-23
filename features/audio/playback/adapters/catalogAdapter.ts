@@ -14,7 +14,7 @@
 import { applySinkToMediaElement } from "@/features/audio/audioOutputSink";
 import { getPrimedMediaElement } from "@/features/audio/unlock";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
-import { generateSpeech } from "@/features/audio/services/speechApi";
+import { generateSpeech, previewVoice } from "@/features/audio/services/speechApi";
 import type {
   ActivePlayback,
   PlaybackAdapter,
@@ -32,16 +32,21 @@ export const catalogAdapter: PlaybackAdapter = {
   ): Promise<ActivePlayback> {
     cb.onLoading();
 
-    const processMarkdown = item.processMarkdown ?? true;
-    const processed = (
-      processMarkdown ? parseMarkdownToText(item.text) : item.text
-    ).trim();
-    if (!processed) {
-      throw new Error("Nothing to speak");
+    const sample = item.catalog?.sample;
+    let url: string;
+    if (sample) {
+      url = (await previewVoice(sample)).url;
+    } else {
+      const processMarkdown = item.processMarkdown ?? true;
+      const processed = (
+        processMarkdown ? parseMarkdownToText(item.text) : item.text
+      ).trim();
+      if (!processed) {
+        throw new Error("Nothing to speak");
+      }
+      const speech = await generateSpeech(processed, { voice: item.catalog?.voice });
+      url = speech.url;
     }
-
-    const speech = await generateSpeech(processed, { voice: item.catalog?.voice });
-    const url = speech.url;
 
     // iOS/WebKit blocks `.play()` outside a user gesture, and we arrive here
     // AFTER the synthesis round-trip. Reuse the app's gesture-activated

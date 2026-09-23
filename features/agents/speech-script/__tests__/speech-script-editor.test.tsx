@@ -55,6 +55,12 @@ jest.mock("@/features/podcasts/generator/useVoices", () => ({
   }),
 }));
 
+const mockSpeak = jest.fn();
+jest.mock("@/features/audio/service/speak", () => ({
+  speak: (request: unknown) => mockSpeak(request),
+}));
+jest.mock("@/features/audio/unlock", () => ({ primeAudioOutput: () => {} }));
+
 // eslint-disable-next-line import/first
 import { SpeechScriptEditor } from "@/features/agents/components/builder/message-builders/SpeechScriptEditor";
 
@@ -122,19 +128,19 @@ describe("SpeechScriptEditor", () => {
 
   it("refuses three speakers on a two-speaker model and names the cap", () => {
     render(THREE_SPEAKERS, GEMINI);
-    const banner = host.querySelector('[role="status"]');
+    const banner = host.querySelector('[data-testid="speech-script-banner"]');
     expect(banner?.textContent).toContain("performs at most 2 speakers per request; this script has 3");
     expect(host.textContent).toContain("3/2 speakers");
   });
 
   it("shows no banner for the same script on a ten-speaker model", () => {
     render(THREE_SPEAKERS, ELEVEN_V3);
-    expect(host.querySelector('[role="status"]')).toBeNull();
+    expect(host.querySelector('[data-testid="speech-script-banner"]')).toBeNull();
   });
 
   it("says a model that does not speak cannot perform the script", () => {
     render(THREE_SPEAKERS.slice(0, 1), CHAT);
-    expect(host.querySelector('[role="status"]')?.textContent).toContain("gpt-5 does not speak");
+    expect(host.querySelector('[data-testid="speech-script-banner"]')?.textContent).toContain("gpt-5 does not speak");
   });
 
   it("adds a turn for the other speaker, carrying that speaker's voice", () => {
@@ -147,6 +153,53 @@ describe("SpeechScriptEditor", () => {
     expect(next).toHaveLength(3);
     expect(next[2]).toEqual({ speaker: "Maya", text: "", voice: "kore" });
   });
+
+  it("plays the model's sample of a speaker's voice through speak()", () => {
+    mockSpeak.mockClear();
+    render(THREE_SPEAKERS.slice(0, 2), GEMINI);
+    const play = host.querySelector<HTMLButtonElement>('[aria-label="Play a sample of Kore · female"]');
+    expect(play).not.toBeNull();
+    act(() => play!.click());
+    expect(mockSpeak).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sample: { model: "gemini-2.5-flash-preview-tts", voice: "kore" },
+      }),
+    );
+  });
+
+  it("offers no sample for the Voice setting — there is no single voice to play", () => {
+    render([{ speaker: "Ava", text: "Hello." }], GEMINI);
+    expect(host.querySelector('[aria-label^="Play a sample"]')).toBeNull();
+  });
+
+  it("reorders turns by dragging the grip (keyboard drag)", async () => {
+    const onChange = render(THREE_SPEAKERS, ELEVEN_V3);
+    expect(host.querySelector('[aria-label="Move turn 1 down"]')).toBeNull();
+    const grip = host.querySelector<HTMLButtonElement>('[aria-label="Reorder turn 1"]');
+    expect(grip).not.toBeNull();
+    // Rows have no layout in jsdom; give each a box so the keyboard sensor can
+    // find the next droppable below.
+    host.querySelectorAll<HTMLElement>('[data-testid="speech-turn"]').forEach((row, i) => {
+      row.getBoundingClientRect = () =>
+        ({ top: i * 50, bottom: i * 50 + 40, left: 0, right: 600, width: 600, height: 40, x: 0, y: i * 50, toJSON: () => ({}) }) as DOMRect;
+    });
+    const key = async (code: string) => {
+      await act(async () => {
+        grip!.dispatchEvent(
+          new KeyboardEvent("keydown", { code, key: code === "Space" ? " " : code, bubbles: true }),
+        );
+        await new Promise((r) => setTimeout(r, 20));
+      });
+    };
+    grip!.focus();
+    await key("Space");
+    await key("ArrowDown");
+    await key("Space");
+    expect(onChange).toHaveBeenCalled();
+    const next = onChange.mock.calls.at(-1)![0] as SpeechTurnSpec[];
+    expect(next.map((t) => t.speaker)).toEqual(["Sam", "Maya", "Ava"]);
+  });
+
 });
 
 describe("speechScriptCompatibility", () => {

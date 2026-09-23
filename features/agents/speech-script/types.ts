@@ -177,3 +177,25 @@ export function speechScriptCompatibility(
   }
   return { verdict: "native" };
 }
+
+/**
+ * THE audio render-block data for a speech-script run — one function for the
+ * live stream and the reloaded message, so they render identically.
+ *
+ * The server stamps the performed script (and, when the vendor returns it,
+ * word alignment + voice segments) on the audio part's `metadata`; the live
+ * `media_block` event carries that same metadata. Both paths lift the two keys
+ * to the top of the block data, where the player's script panel reads them.
+ * Before this, only the reload path lifted them, so a live TTS run showed the
+ * player alone until the page was reloaded.
+ */
+export function withPerformedScript<T extends object>(
+  data: T,
+  metadata: Record<string, unknown> | null | undefined,
+): T & { speech_script?: unknown; alignment?: unknown } {
+  return {
+    ...data,
+    speech_script: metadata?.speech_script,
+    alignment: metadata?.alignment,
+  };
+}
