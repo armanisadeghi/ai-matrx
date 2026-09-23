@@ -301,6 +301,9 @@ export function liveTrackedToastCount(): number {
   return liveToasts.size;
 }
 
+/** Where a toast that stays until dismissed is raised — clear of action rows. */
+export const PERSISTENT_TOAST_POSITION = "top-center" as const;
+
 /** Sonner's emitting signature — what every wrapped method looks like. */
 type Emit = (message: unknown, options?: RecordToastOptions) => ToastId;
 
@@ -327,6 +330,17 @@ function track(
 
   // "Sonner, don't you time this" — not "forever".
   const passthrough: RecordToastOptions = { ...options, duration: Infinity };
+  // 🚨 A TOAST THAT STAYS UNTIL DISMISSED NEVER PARKS OVER AN ACTION ROW
+  // (cold walk 22, friction). The duplicate-name notice stays until she closes
+  // it, and at the Toaster's bottom-right it sat for as long as it stayed over
+  // the interview drawer's footer — "Start the interview" and the sentence
+  // beside it. Bottom-right is where every docked panel, sticky footer and
+  // phone action bar puts its primary control, so a toast that will not leave
+  // on its own is raised at the top instead. A caller that names a position
+  // keeps it; timed toasts are untouched (they leave on their own).
+  if (requested === Infinity && options?.position === undefined) {
+    passthrough.position = PERSISTENT_TOAST_POSITION;
+  }
 
   const previousDismiss = options?.onDismiss as ((t: unknown) => void) | undefined;
   const previousAutoClose = options?.onAutoClose as
