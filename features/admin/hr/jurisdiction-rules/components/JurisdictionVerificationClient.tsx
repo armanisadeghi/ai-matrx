@@ -2,24 +2,233 @@
 //
 // /administration/hr/jurisdiction-rules/verification (SPEC-UI-IA §3.12 route
 // 85b) — the JUR-SEED board and the overdue list.
-//
-// A verification date is a promise that a cited rule still says what we
-// recorded. Overdue days are rendered in red because an expired promise on a
-// binding rule is the same class of problem as a wrong number.
 
 "use client";
 
+import { cloneElement, isValidElement, type ReactNode } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { AlertTriangle, CheckCircle2, Circle } from "lucide-react";
 
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { cn } from "@/lib/utils";
 
 import { useJurisdictionRulesAdminData } from "../useJurisdictionRulesAdminData";
-import { CA_PTO_PAYOUT_SEED_TASK } from "../types";
+import {
+  CA_PTO_PAYOUT_SEED_TASK,
+  type JurisdictionRuleOverdue,
+  type JurSeedProgress,
+} from "../types";
 import { CitationLine, RuleLoadGate, RuleStatusBadge } from "./rule-chrome";
 
+const seedProgressColumns: MatrxColumnDef<JurSeedProgress>[] = [
+  {
+    id: "jur_seed_task",
+    accessorKey: "jur_seed_task",
+    header: "Task",
+    cell: (task) => (
+      <span className="font-mono text-xs">{task.jur_seed_task}</span>
+    ),
+    width: 180,
+  },
+  {
+    id: "rows_total",
+    accessorKey: "rows_total",
+    header: "Rules",
+    filter: "number",
+    align: "right",
+    width: 76,
+  },
+  {
+    id: "rows_active",
+    accessorKey: "rows_active",
+    header: "Active",
+    filter: "number",
+    align: "right",
+    width: 76,
+  },
+  {
+    id: "rows_advisory",
+    accessorKey: "rows_advisory",
+    header: "Advisory",
+    filter: "number",
+    align: "right",
+    width: 88,
+  },
+  {
+    id: "rows_draft",
+    accessorKey: "rows_draft",
+    header: "Draft",
+    filter: "number",
+    align: "right",
+    width: 72,
+  },
+  {
+    id: "rows_with_unverified_keys",
+    accessorKey: "rows_with_unverified_keys",
+    header: "Unverified keys",
+    filter: "number",
+    align: "right",
+    cell: (task) => (
+      <span
+        className={cn(
+          "tabular-nums",
+          task.rows_with_unverified_keys > 0 &&
+            "text-amber-700 dark:text-amber-400",
+        )}
+      >
+        {task.rows_with_unverified_keys}
+      </span>
+    ),
+    width: 128,
+  },
+  {
+    id: "rows_overdue",
+    accessorKey: "rows_overdue",
+    header: "Overdue",
+    filter: "number",
+    align: "right",
+    cell: (task) => (
+      <span
+        className={cn(
+          "tabular-nums",
+          task.rows_overdue > 0 && "font-medium text-destructive",
+        )}
+      >
+        {task.rows_overdue}
+      </span>
+    ),
+    width: 88,
+  },
+  {
+    id: "next_verification_due",
+    accessorKey: "next_verification_due",
+    header: "Next due",
+    filter: "date",
+    cell: (task) => (
+      <span className="text-xs text-muted-foreground">
+        {task.next_verification_due ?? "—"}
+      </span>
+    ),
+    width: 128,
+  },
+  {
+    id: "task_complete",
+    accessorKey: "task_complete",
+    header: "Complete",
+    filter: "boolean",
+    cell: (task) =>
+      task.task_complete ? (
+        <span className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
+          <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+          complete
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          <Circle className="h-3.5 w-3.5" aria-hidden="true" />
+          open
+        </span>
+      ),
+    width: 104,
+  },
+];
+
+const overdueColumns: MatrxColumnDef<JurisdictionRuleOverdue>[] = [
+  {
+    id: "rule_class_label",
+    accessorKey: "rule_class_label",
+    header: "Class",
+    cell: (row) => (
+      <AppLink
+        href={`/administration/hr/jurisdiction-rules/${row.rule_id}`}
+        className="text-primary hover:underline"
+      >
+        {row.rule_class_label}
+      </AppLink>
+    ),
+    width: 180,
+  },
+  {
+    id: "jurisdiction",
+    header: "Jurisdiction",
+    accessorFn: (row) =>
+      `${row.jurisdiction_name ?? row.jurisdiction_key} ${row.jurisdiction_key}`,
+    cell: (row) => (
+      <span>
+        {row.jurisdiction_name ?? row.jurisdiction_key}{" "}
+        <span className="font-mono text-xs text-muted-foreground">
+          {row.jurisdiction_key}
+        </span>
+      </span>
+    ),
+    width: 200,
+  },
+  {
+    id: "status",
+    accessorKey: "status",
+    header: "Status",
+    filter: "select",
+    cell: (row) => <RuleStatusBadge status={row.status} />,
+    width: 112,
+  },
+  {
+    id: "verification_due",
+    accessorKey: "verification_due",
+    header: "Due",
+    filter: "date",
+    cell: (row) => (
+      <span className="text-xs text-muted-foreground">
+        {row.verification_due ?? "—"}
+      </span>
+    ),
+    width: 112,
+  },
+  {
+    id: "days_overdue",
+    accessorKey: "days_overdue",
+    header: "Days overdue",
+    filter: "number",
+    align: "right",
+    cell: (row) => (
+      <span className="font-medium tabular-nums text-destructive">
+        {row.days_overdue}
+      </span>
+    ),
+    width: 120,
+  },
+  {
+    id: "jur_seed_task",
+    accessorKey: "jur_seed_task",
+    header: "Task",
+    cell: (row) => (
+      <span className="font-mono text-xs text-muted-foreground">
+        {row.jur_seed_task ?? "—"}
+      </span>
+    ),
+    width: 180,
+  },
+  {
+    id: "citation",
+    header: "Citation",
+    accessorFn: (row) =>
+      [row.citation?.authority, row.citation?.url].filter(Boolean).join(" "),
+    cell: (row) => <CitationLine citation={row.citation} />,
+    width: 260,
+  },
+];
+
+function seedTaskRowWrapper(task: JurSeedProgress, children: ReactNode) {
+  if (!isValidElement<{ className?: string; id?: string }>(children)) {
+    return children;
+  }
+  return cloneElement(children, {
+    id: task.jur_seed_task,
+    className: cn(children.props.className, "scroll-mt-16"),
+  });
+}
+
 export function JurisdictionVerificationClient() {
-  const { load, loading } = useJurisdictionRulesAdminData();
+  const { load, loading, reload } = useJurisdictionRulesAdminData();
 
   const gate = (
     <RuleLoadGate
@@ -56,165 +265,50 @@ export function JurisdictionVerificationClient() {
       ) : null}
 
       <section>
-        <h2 className="px-1 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          JUR-SEED tasks ({seedProgress.length})
-        </h2>
-        <div className="overflow-x-auto rounded-lg border border-border bg-card">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="px-3 py-1.5 font-medium">Task</th>
-                <th className="px-3 py-1.5 font-medium">Rules</th>
-                <th className="px-3 py-1.5 font-medium">Active</th>
-                <th className="px-3 py-1.5 font-medium">Advisory</th>
-                <th className="px-3 py-1.5 font-medium">Draft</th>
-                <th className="px-3 py-1.5 font-medium">Unverified keys</th>
-                <th className="px-3 py-1.5 font-medium">Overdue</th>
-                <th className="px-3 py-1.5 font-medium">Next due</th>
-                <th className="px-3 py-1.5 font-medium">Complete</th>
-              </tr>
-            </thead>
-            <tbody>
-              {seedProgress.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={9}
-                    className="px-3 py-4 text-sm text-muted-foreground"
-                  >
-                    No JUR-SEED tasks are recorded.
-                  </td>
-                </tr>
-              ) : (
-                seedProgress.map((task) => (
-                  <tr
-                    key={task.jur_seed_task}
-                    id={task.jur_seed_task}
-                    className="border-b border-border/60 scroll-mt-16"
-                  >
-                    <td className="px-3 py-1.5 font-mono text-xs">
-                      {task.jur_seed_task}
-                    </td>
-                    <td className="px-3 py-1.5 tabular-nums">
-                      {task.rows_total}
-                    </td>
-                    <td className="px-3 py-1.5 tabular-nums">
-                      {task.rows_active}
-                    </td>
-                    <td className="px-3 py-1.5 tabular-nums">
-                      {task.rows_advisory}
-                    </td>
-                    <td className="px-3 py-1.5 tabular-nums">
-                      {task.rows_draft}
-                    </td>
-                    <td
-                      className={cn(
-                        "px-3 py-1.5 tabular-nums",
-                        task.rows_with_unverified_keys > 0 &&
-                          "text-amber-700 dark:text-amber-400",
-                      )}
-                    >
-                      {task.rows_with_unverified_keys}
-                    </td>
-                    <td
-                      className={cn(
-                        "px-3 py-1.5 tabular-nums",
-                        task.rows_overdue > 0 && "font-medium text-destructive",
-                      )}
-                    >
-                      {task.rows_overdue}
-                    </td>
-                    <td className="px-3 py-1.5 text-xs text-muted-foreground">
-                      {task.next_verification_due ?? "—"}
-                    </td>
-                    <td className="px-3 py-1.5">
-                      {task.task_complete ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          complete
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                          <Circle className="h-3.5 w-3.5" />
-                          open
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <MatrxDataTable
+          urlState={{ id: "jurisdiction-seed-progress", selectedRow: false }}
+          data={seedProgress}
+          columns={seedProgressColumns}
+          getRowId={(task) => task.jur_seed_task}
+          density="condensed"
+          viewTabs={false}
+          pageSize={25}
+          zebra
+          isFetching={loading}
+          detail={{ enabled: false }}
+          rowWrapper={seedTaskRowWrapper}
+          emptyState={{ title: "No JUR-SEED tasks are recorded." }}
+          toolbar={{
+            title: "JUR-SEED tasks",
+            titleCount: { value: seedProgress.length, label: "tasks" },
+            search: true,
+            searchPlaceholder: "Search JUR-SEED tasks…",
+            refresh: { onRefresh: reload, label: "Refresh verification board" },
+          }}
+        />
       </section>
 
       <section>
-        <h2 className="px-1 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Past their verification date ({overdue.length})
-        </h2>
-        <div className="overflow-x-auto rounded-lg border border-border bg-card">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="px-3 py-1.5 font-medium">Class</th>
-                <th className="px-3 py-1.5 font-medium">Jurisdiction</th>
-                <th className="px-3 py-1.5 font-medium">Status</th>
-                <th className="px-3 py-1.5 font-medium">Due</th>
-                <th className="px-3 py-1.5 font-medium">Days overdue</th>
-                <th className="px-3 py-1.5 font-medium">Task</th>
-                <th className="px-3 py-1.5 font-medium">Citation</th>
-              </tr>
-            </thead>
-            <tbody>
-              {overdue.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="px-3 py-4 text-sm text-muted-foreground"
-                  >
-                    Nothing is past its verification date.
-                  </td>
-                </tr>
-              ) : (
-                overdue.map((row) => (
-                  <tr
-                    key={`${row.rule_id}-${row.rule_version ?? 0}`}
-                    className="border-b border-border/60"
-                  >
-                    <td className="px-3 py-1.5">
-                      <AppLink
-                        href={`/administration/hr/jurisdiction-rules/${row.rule_id}`}
-                        className="text-primary hover:underline"
-                      >
-                        {row.rule_class_label}
-                      </AppLink>
-                    </td>
-                    <td className="px-3 py-1.5">
-                      {row.jurisdiction_name ?? row.jurisdiction_key}{" "}
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {row.jurisdiction_key}
-                      </span>
-                    </td>
-                    <td className="px-3 py-1.5">
-                      <RuleStatusBadge status={row.status} />
-                    </td>
-                    <td className="px-3 py-1.5 text-xs text-muted-foreground">
-                      {row.verification_due ?? "—"}
-                    </td>
-                    <td className="px-3 py-1.5 font-medium tabular-nums text-destructive">
-                      {row.days_overdue}
-                    </td>
-                    <td className="px-3 py-1.5 font-mono text-xs text-muted-foreground">
-                      {row.jur_seed_task ?? "—"}
-                    </td>
-                    <td className="px-3 py-1.5 text-xs">
-                      <CitationLine citation={row.citation} />
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <MatrxDataTable
+          urlState={{ id: "jurisdiction-overdue-rules", selectedRow: false }}
+          data={overdue}
+          columns={overdueColumns}
+          getRowId={(row) => `${row.rule_id}-${row.rule_version ?? 0}`}
+          density="condensed"
+          viewTabs={false}
+          pageSize={25}
+          zebra
+          isFetching={loading}
+          detail={{ enabled: false }}
+          emptyState={{ title: "Nothing is past its verification date." }}
+          toolbar={{
+            title: "Past their verification date",
+            titleCount: { value: overdue.length, label: "rules" },
+            search: true,
+            searchPlaceholder: "Search overdue rules…",
+            refresh: { onRefresh: reload, label: "Refresh verification board" },
+          }}
+        />
       </section>
     </div>
   );
