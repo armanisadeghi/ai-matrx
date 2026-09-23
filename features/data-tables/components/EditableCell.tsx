@@ -56,6 +56,7 @@ import type { FieldFormatConfig } from "@/lib/field-formats/types";
 import { ChoiceInput } from "./ChoiceInput";
 import { RatingInput } from "./RatingInput";
 import { AttachmentInput } from "./AttachmentInput";
+import { DateCellEditor } from "./DateCellEditor";
 import { isDirectClickEditor, type GridMove } from "../grid-selection";
 import { upsertCell } from "../service";
 import { validateCellValue, type ValidationRules } from "../validation";
@@ -654,40 +655,28 @@ export function EditableCell({
     );
   }
 
-  if (dataType === "date") {
+  // Dates edit through the ONE date editor: a typeable field in the cell and a
+  // calendar layer drawn outside the table, open the moment editing starts.
+  // The native date input hid its only calendar button past a narrow column's
+  // edge — see DateCellEditor's header.
+  const dateKind =
+    editorKind === "date" || editorKind === "datetime"
+      ? editorKind
+      : dataType === "date" || dataType === "datetime"
+        ? dataType
+        : null;
+  if (dateKind) {
     return (
-      <Input
+      <DateCellEditor
         ref={inputRef as React.RefObject<HTMLInputElement>}
-        type="date"
-        value={typeof draft === "string" ? draft.slice(0, 10) : ""}
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={handleKey}
-        onBlur={() => void commitEdit()}
-        onClick={(e) => e.stopPropagation()}
+        kind={dateKind}
+        value={value}
+        seed={seed}
         disabled={saving}
-        className={cn(editorClass, "h-auto")}
+        className={editorClass}
         style={editorStyle}
-      />
-    );
-  }
-
-  if (dataType === "datetime") {
-    return (
-      <Input
-        ref={inputRef as React.RefObject<HTMLInputElement>}
-        type="datetime-local"
-        value={
-          typeof draft === "string" && draft.length >= 16
-            ? draft.slice(0, 16)
-            : ""
-        }
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={handleKey}
-        onBlur={() => void commitEdit()}
-        onClick={(e) => e.stopPropagation()}
-        disabled={saving}
-        className={cn(editorClass, "h-auto")}
-        style={editorStyle}
+        onCommit={(next, move) => void commitEdit({ value: next, move })}
+        onCancel={cancelEdit}
       />
     );
   }
