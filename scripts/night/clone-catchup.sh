@@ -278,11 +278,63 @@ name_hashes_sql() {  # name_hashes_sql <schema.name> — every overload, signatu
         where n.nspname = '$q' and p.proname = '$n' and p.prokind in ('f','p')) s"
 }
 
+# ── a provision PROJECTION is a record, and is carried as one ─────────────────
+# 🚨 lane BRANCH-REFRESH-3, 2026-09-23. `db/provision_pull.py` renders every applied
+# platform.provision_spec row as a file headed "-- Projection of platform.provision_spec", and
+# production LEDGERS it with `--mark-applied` — it executes nothing, because the call it records
+# has already run. Replaying it EXECUTES it, and that can never land: the runner's transaction
+# carries a 15min statement_timeout that provision_preflight() refuses (1s…60s), and past that
+# the projection holds the NORMALIZED spec (with `platform_answers`), which provision() answers
+# with "already carries a DIFFERENT declaration" (measured on the clone for
+# 20260923082013_provision_agent_term_list.sql). So a projection is carried the way production
+# carried it — `--mark-applied` — and ONLY when the declaration it records already stands on the
+# clone: the token's current spec_hash equals the file's `-- spec_hash:` and its relation exists.
+# Anything else is a named refusal; nothing is recorded that the clone does not actually hold.
+is_projection() { [ -r "$1" ] && head -1 "$1" | grep -q '^-- Projection of platform.provision_spec'; }
+
+carry_projection() {  # carry_projection <source> <filename> <repo> <relpath> <selector>
+  local source="$1" filename="$2" repo="$3" relpath="$4" selector="$5" token want have
+  token="$(head -1 "$repo/$relpath" | sed -nE 's/.*token=([A-Za-z0-9_]+).*/\1/p')"
+  want="$(grep -m1 '^-- spec_hash: ' "$repo/$relpath" | sed -E 's/^-- spec_hash: *//' | tr -d ' \r')"
+  if [ -z "$token" ] || [ -z "$want" ]; then
+    say "PROJECTION NOT CARRIED: $source/$filename names no token or spec_hash in its header."; return 1
+  fi
+  have="$("$PSQL" "${CLONE_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c \
+    "select c.spec_hash from platform.v_provision_spec_current c where c.token = '$token'
+        and to_regclass(format('%I.%I', c.spec->>'schema', c.spec->>'table')) is not null" 2>&1 | tr -d ' \r')"
+  if [ "$have" != "$want" ]; then
+    say "PROJECTION NOT CARRIED: $source/$filename records $token at spec_hash $want, and the clone's"
+    say "  current declaration is ${have:-absent}. Recording it would claim a declaration the clone"
+    say "  does not hold; apply the provision that produced it first. Nothing recorded."
+    return 1
+  fi
+  local -a cmd; cmd=(uv run python db/apply_migrations.py --no-generate --target clone --mark-applied --only "$filename")
+  case "$selector" in
+    campaign|inverse) cmd+=(--source "$selector" --lane "$LANE") ;;
+    "") [ "$source" != "aidream" ] && cmd+=(--source "$source") ;;
+  esac
+  say "recording projection ($token, spec_hash $want — already the clone's declaration): $relpath --mark-applied"
+  ( cd "$repo" && "${cmd[@]}" ) 2>&1 | tee "$APPLY_OUT"
+  return ${pipestatus[1]}
+}
+
 # ── apply, in production's own ledger order ──────────────────────────────────
 APPLIED=0; FAILED=0; REPAIRED=0; SUPERSEDED=0; FAILED_NAMES=(); SUPERSEDED_NAMES=()
 while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner selector reapply reason applied_at; do
   [ "$kind" = "APPLY" ] || continue
   local_rc=0
+  if [ "$runner" != "frontend" ] && is_projection "$repo/$relpath"; then
+    if carry_projection "$source" "$filename" "$repo" "$relpath" "$selector"; then
+      APPLIED=$((APPLIED+1))
+      "$PSQL" "${CLONE_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c \
+        "update public._schema_migrations set rehearsal_on = 'catchup — provision projection recorded with --mark-applied, as production did — ' || coalesce(rehearsal_on, '') \
+           where source = '$source' and filename = '$filename' and coalesce(rehearsal_on, '') not like 'catchup%'" \
+        >/dev/null 2>&1 || say "  (note: could not mark the ledger row rehearsal_on=catchup)"
+    else
+      FAILED=$((FAILED+1)); FAILED_NAMES+=("$source/$filename (projection not carried)")
+    fi
+    continue
+  fi
   apply_one "$source" "$filename" "$repo" "$relpath" "$runner" "$selector" "$reapply" || local_rc=$?
 
   if [ $local_rc -ne 0 ] && ! grep -q 'based on sha256' "$APPLY_OUT" 2>/dev/null \
