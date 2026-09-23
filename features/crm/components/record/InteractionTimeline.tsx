@@ -283,20 +283,6 @@ export function InteractionTimeline({
               agent={() =>
                 interactionsAgentPayload(copyParent, interactions)
               }
-              json={() => interactionCopyViews}
-              aiVariants={[
-                {
-                  id: "activity-overview",
-                  label: "Activity overview",
-                  hint: "Subjects, channels, directions, and dates without bodies",
-                  build: () =>
-                    interactionsAgentPayload(
-                      copyParent,
-                      interactions,
-                      false,
-                    ),
-                },
-              ]}
             />
           )}
           <CollapsibleTextGroupControls
@@ -497,7 +483,6 @@ export function InteractionTimeline({
                       agent={() =>
                         interactionAgentPayload(copyParent, row)
                       }
-                      json={() => copyView}
                     />
                   )}
                   <button

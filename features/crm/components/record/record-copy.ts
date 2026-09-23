@@ -349,7 +349,6 @@ export function formatInteractionsCopy(
 export function interactionsAgentPayload(
   parent: CrmRecordCopyParent,
   rows: InteractionRow[],
-  _includeBodies = true,
 ): AgentPayloadInput {
   const data = rows.map(buildModelSafeInteractionReference);
   return {
