@@ -60,6 +60,7 @@ describe("ResultPreview", () => {
     expect(tableProps.data.at(-1)).toEqual({ row: rows[99], index: 99 });
     expect(tableProps.pageSize).toBe(0);
     expect(tableProps.hidePagination).toBe(true);
+    expect(tableProps.coverage).toBeUndefined();
     expect(tableProps.viewTabs).toBe(false);
     expect(tableProps.detail).toEqual({ enabled: false });
     expect(tableProps.window).toEqual({ enabled: false });
@@ -73,6 +74,13 @@ describe("ResultPreview", () => {
       "metadata",
       "nullable",
     ]);
+    expect(tableProps.columns.slice(1)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "id", filter: "text" }),
+        expect.objectContaining({ id: "metadata", filter: "text" }),
+        expect.objectContaining({ id: "nullable", filter: "text" }),
+      ]),
+    );
 
     const metadata = tableProps.columns.find(
       (column) => column.id === "metadata",
