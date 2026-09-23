@@ -44,11 +44,15 @@ export function FieldRuleRefusal({
   onDiscard?: () => void;
   className?: string;
 }) {
-  const hasDoors = Boolean(onKeepEditing || onDiscard);
+  // THE DOORS ARE THE PRIMITIVE'S (records-ui 0.82.0, lane REFUSAL-SWEEP): one
+  // component draws Keep editing / Discard for every refusal on the platform, so
+  // this file passes the handlers and no longer draws buttons of its own.
   return (
     <RefusalNotice
       error={refusal.error}
       className={cn("text-left", className)}
+      onKeepEditing={onKeepEditing}
+      onDiscard={onDiscard}
       actions={
         <div
           className="mt-1 space-y-1"
@@ -64,30 +68,6 @@ export function FieldRuleRefusal({
             <p className="opacity-80" data-matrx-column-rules="">
               {refusal.fieldDisplayName} accepts: {refusal.rules.join(" · ")}
             </p>
-          ) : null}
-          {hasDoors ? (
-            <div className="flex flex-wrap items-center gap-1 pt-0.5">
-              {onKeepEditing ? (
-                <button
-                  type="button"
-                  data-matrx-refusal-keep-editing=""
-                  className="rounded border px-2 py-0.5 text-xs hover:bg-muted"
-                  onClick={onKeepEditing}
-                >
-                  Keep editing
-                </button>
-              ) : null}
-              {onDiscard ? (
-                <button
-                  type="button"
-                  data-matrx-refusal-discard=""
-                  className="rounded border px-2 py-0.5 text-xs hover:bg-muted"
-                  onClick={onDiscard}
-                >
-                  Discard
-                </button>
-              ) : null}
-            </div>
           ) : null}
         </div>
       }

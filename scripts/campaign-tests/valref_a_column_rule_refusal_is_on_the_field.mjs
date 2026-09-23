@@ -146,8 +146,8 @@ async function walk(width, height, tag) {
 
   // 4. TWO DOORS, BOTH REACHABLE.
   for (const [what, sel] of [
-    ["Keep editing", "[data-matrx-refusal-keep-editing]"],
-    ["Discard", "[data-matrx-refusal-discard]"],
+    ["Keep editing", "[data-refusal-keep-editing]"],
+    ["Discard", "[data-refusal-discard]"],
   ]) {
     const b = page.locator(sel).first();
     if ((await b.count()) === 0) {
@@ -198,7 +198,7 @@ async function walk(width, height, tag) {
   else fail(`[${tag}] the notice disappeared on its own — a refusal on a timer is a refusal nobody read`);
 
   // 7. DISCARD PUTS THE STORED VALUE BACK.
-  await page.locator("[data-matrx-refusal-discard]").first().click();
+  await page.locator("[data-refusal-discard]").first().click();
   await sleep(2000);
   const after = (await cell.innerText()).trim();
   if (after === stored) ok(`[${tag}] Discard put ${JSON.stringify(stored)} back in the cell`);
@@ -227,7 +227,7 @@ async function walk(width, height, tag) {
         .evaluate((el) => (el.closest('[role="alert"], .space-y-1')?.parentElement?.textContent ?? el.textContent ?? "").replace(/\s+/g, " ").trim())
         .catch(() => "");
       ok(`[${tag}] the row modal draws the same notice: ${JSON.stringify(formRead.slice(0, 200))}`);
-      if ((await page.locator('[role="dialog"] [data-matrx-refusal-keep-editing]').count()) === 0)
+      if ((await page.locator('[role="dialog"] [data-refusal-keep-editing]').count()) === 0)
         ok(`[${tag}] and offers no editor doors — the value is in a field the person can already fix`);
       else fail(`[${tag}] the row modal offered Keep editing / Discard, which belong to an open cell editor`);
       await page.screenshot({ path: `${OUT}/valref-${tag}-2-row-modal-refusal.png` });

@@ -161,9 +161,9 @@ describe("the grid cell — a column rule refuses a value", () => {
     renderCell();
     const editor = typeAndCommit("not a job number at all");
 
-    expect(document.querySelector("[data-matrx-refusal-keep-editing]")).not.toBeNull();
+    expect(document.querySelector("[data-refusal-keep-editing]")).not.toBeNull();
     const discard = document.querySelector(
-      "[data-matrx-refusal-discard]",
+      "[data-refusal-discard]",
     ) as HTMLButtonElement | null;
     expect(discard).not.toBeNull();
     expect(editor.value).toBe("not a job number at all");
@@ -183,7 +183,7 @@ describe("the grid cell — a column rule refuses a value", () => {
     const editor = typeAndCommit("not a job number at all");
 
     const keep = document.querySelector(
-      "[data-matrx-refusal-keep-editing]",
+      "[data-refusal-keep-editing]",
     ) as HTMLButtonElement;
     act(() => keep.click());
 
@@ -254,7 +254,7 @@ describe("the form-field shape — row modals and the paste preview", () => {
     expect(said).toContain("Correct it and save again");
     expect(said).toContain("Crew size accepts: At most 12");
     // No editor is open here, so there is nothing to keep and nothing to discard.
-    expect(container.querySelector("[data-matrx-refusal-keep-editing]")).toBeNull();
-    expect(container.querySelector("[data-matrx-refusal-discard]")).toBeNull();
+    expect(container.querySelector("[data-refusal-keep-editing]")).toBeNull();
+    expect(container.querySelector("[data-refusal-discard]")).toBeNull();
   });
 });

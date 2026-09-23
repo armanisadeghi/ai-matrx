@@ -49,8 +49,8 @@ import {
 } from "@/features/data-tables/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Textarea } from "@/components/ui/textarea";
-import { RefusalNotice } from "@ai-matrx/records-ui";
-import type { RecordsError, RecordsErrorCode } from "@ai-matrx/records";
+import { RefusalNotice, refusal as importRefusal } from "@ai-matrx/records-ui";
+import type { RecordsError } from "@ai-matrx/records";
 
 interface ImportTableModalProps {
   isOpen: boolean;
@@ -451,48 +451,32 @@ export default function ImportTableModal({
 
         <div className="flex-1 overflow-y-auto min-h-0 space-y-4 py-4">
           {error && (
+            // The file and settings are still in the form, so the notice owns the
+            // two doors out — unless the table already exists, when the way out
+            // is to open it (lane REFUSAL-SWEEP).
             <RefusalNotice
               error={error}
               className="text-left"
-              actions={
-                <div className="flex flex-wrap items-center gap-1 pt-0.5">
-                  {createdTableId ? (
-                    <button
-                      type="button"
-                      className="rounded border px-2 py-0.5 text-xs hover:bg-muted"
-                      onClick={() => {
-                        const id = createdTableId;
-                        resetForm();
-                        onSuccess(id);
-                        onClose();
-                      }}
-                    >
-                      Open the table
-                    </button>
-                  ) : (
-                    <>
-                      {/* The file and settings are still in the form: the notice
-                          owns the two doors out. */}
-                      <button
-                        type="button"
-                        data-matrx-refusal-keep-editing=""
-                        className="rounded border px-2 py-0.5 text-xs hover:bg-muted"
-                        onClick={() => setError(null)}
-                      >
-                        Keep editing
-                      </button>
-                      <button
-                        type="button"
-                        data-matrx-refusal-discard=""
-                        className="rounded border px-2 py-0.5 text-xs hover:bg-muted"
-                        onClick={resetForm}
-                      >
-                        Discard
-                      </button>
-                    </>
-                  )}
-                </div>
-              }
+              {...(createdTableId
+                ? {
+                    actions: (
+                      <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                        <button
+                          type="button"
+                          className="rounded border px-2 py-0.5 text-xs hover:bg-muted"
+                          onClick={() => {
+                            const id = createdTableId;
+                            resetForm();
+                            onSuccess(id);
+                            onClose();
+                          }}
+                        >
+                          Open the table
+                        </button>
+                      </div>
+                    ),
+                  }
+                : { onKeepEditing: () => setError(null), onDiscard: resetForm })}
             />
           )}
 
@@ -583,32 +567,14 @@ export default function ImportTableModal({
                       <RefusalNotice
                         className="text-left"
                         error={importRefusal("invalid_argument", pasteError, "Copy the rows again with their header row, then paste.")}
-                        actions={
-                          <div className="flex flex-wrap items-center gap-1 pt-0.5">
-                            <button
-                              type="button"
-                              data-matrx-refusal-keep-editing=""
-                              className="rounded border px-2 py-0.5 text-xs hover:bg-muted"
-                              onClick={() => {
-                                setPasteError("");
-                                document.getElementById("pasteData")?.focus();
-                              }}
-                            >
-                              Keep editing
-                            </button>
-                            <button
-                              type="button"
-                              data-matrx-refusal-discard=""
-                              className="rounded border px-2 py-0.5 text-xs hover:bg-muted"
-                              onClick={() => {
-                                setPasteError("");
-                                setPasteData("");
-                              }}
-                            >
-                              Discard
-                            </button>
-                          </div>
-                        }
+                        onKeepEditing={() => {
+                          setPasteError("");
+                          document.getElementById("pasteData")?.focus();
+                        }}
+                        onDiscard={() => {
+                          setPasteError("");
+                          setPasteData("");
+                        }}
                       />
                     )}
                     <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -847,18 +813,4 @@ export default function ImportTableModal({
       </DialogContent>
     </Dialog>
   );
-}
-
-/**
- * A refusal this modal writes itself, in the SAME shape the store's own refusals
- * arrive in, so `RefusalNotice` draws both identically (heading, sentence,
- * remedy; the engineer's note out of sight). Lane REFUSAL-SWEEP.
- */
-function importRefusal(
-  code: RecordsErrorCode,
-  message: string,
-  hint?: string,
-  diagnostic?: string | null,
-): RecordsError {
-  return { code, message, ...(hint ? { hint } : {}), ...(diagnostic ? { diagnostic } : {}) };
 }
