@@ -1,6 +1,9 @@
 import { initialOutlineExpansion, outlineIndentLevel, studyGuideOutlineItems, studyGuideOutlineTitle, toggleOutlineSection, visibleOutlineItems } from "../outline";
 import type { NoteOutlineItem } from "@/features/notes/utils/noteOutline";
 import { parseNoteOutline } from "@/features/notes/utils/noteOutline";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { OutlineHeader } from "./OutlineHeader";
 
 const outline: NoteOutlineItem[] = [
   { level: 1, text: "Unit one", charOffset: 0, headingIndex: 0 },
@@ -34,6 +37,10 @@ describe("study guide outline", () => {
     expect(studyGuideOutlineTitle(headings)).toMatchObject({
       level: 1, headingIndex: 0, text: "AP Human Geography Unit 1: Thinking Geographically",
     });
+    const titleMarkup = renderToStaticMarkup(createElement(OutlineHeader, { title: studyGuideOutlineTitle(headings), active: false, onJump: () => undefined }));
+    expect(titleMarkup).toContain("<button");
+    expect(titleMarkup).toContain("AP Human Geography Unit 1: Thinking Geographically");
+    expect(titleMarkup).not.toContain("On this page");
     const items = studyGuideOutlineItems(headings);
     expect(items.map((item) => item.text)).not.toContain("AP Human Geography Unit 1: Thinking Geographically");
     expect(items.map((item) => item.headingIndex)).toEqual([1, 2, 3, 4, 5, 6]);
@@ -52,6 +59,7 @@ describe("study guide outline", () => {
   it("retains multiple H1 section roots", () => {
     const headings = parseNoteOutline("# First\n## Child\n# Second\n## Child");
     expect(studyGuideOutlineTitle(headings)).toBeNull();
+    expect(renderToStaticMarkup(createElement(OutlineHeader, { title: studyGuideOutlineTitle(headings), active: false, onJump: () => undefined }))).toContain("On this page");
     const items = studyGuideOutlineItems(headings);
     expect(items.map((item) => item.level)).toEqual([1, 2, 1, 2]);
     expect(initialOutlineExpansion(items)).toEqual({ 0: true, 2: false });
@@ -60,6 +68,7 @@ describe("study guide outline", () => {
   it("does not manufacture a title when there is no H1", () => {
     const headings = parseNoteOutline("## First\n### Child\n## Second");
     expect(studyGuideOutlineTitle(headings)).toBeNull();
+    expect(renderToStaticMarkup(createElement(OutlineHeader, { title: studyGuideOutlineTitle(headings), active: false, onJump: () => undefined }))).toContain("On this page");
     expect(studyGuideOutlineItems(headings)).toEqual(headings);
     expect(initialOutlineExpansion(headings)).toEqual({ 0: true, 2: false });
   });

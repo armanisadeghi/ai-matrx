@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { initialOutlineExpansion, outlineIndentLevel, studyGuideOutlineItems, studyGuideOutlineTitle, toggleOutlineSection, visibleOutlineItems } from "../outline";
+import { OutlineHeader } from "./OutlineHeader";
 import { StudyFlashcardLinks } from "./StudyFlashcardLinks";
 import { useEffect, useRef, useState } from "react";
 import { Panel, type Layout } from "react-resizable-panels";
@@ -261,7 +262,7 @@ function Outline({ content, onJump }: { content: string; onJump: (headingIndex: 
   if (!title && !outline.length) return null;
   return (
     <div className="border-t border-border py-1">
-      {title && <button type="button" onClick={() => { setActiveHeading(title.headingIndex); onJump(title.headingIndex); }} title={title.text} className={cn("block w-full overflow-hidden whitespace-nowrap border-l-2 px-1 py-1 text-left text-xs font-semibold [mask-image:linear-gradient(to_right,black_calc(100%_-_12px),transparent)] hover:bg-accent", activeHeading === title.headingIndex ? "border-primary bg-primary/10 text-primary" : "border-transparent text-foreground")}>{title.text}</button>}
+      <OutlineHeader title={title} active={activeHeading === title?.headingIndex} onJump={(headingIndex) => { setActiveHeading(headingIndex); onJump(headingIndex); }} />
       <div className="grid gap-0.5">{visibleOutlineItems(outline, expanded).map((item) => {
         const index = outline.indexOf(item);
         const hasChildren = outline[index + 1]?.level > item.level;
