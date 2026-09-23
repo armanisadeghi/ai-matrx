@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 import type {
@@ -47,12 +48,39 @@ export function PendingVerificationFlag({
   unverifiedKeys,
   producesMoney,
   className,
+  compact = false,
 }: {
   unverifiedKeys: readonly string[];
   producesMoney: boolean;
   className?: string;
+  compact?: boolean;
 }) {
   if (unverifiedKeys.length === 0) return null;
+  if (compact) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label={`Pending verification: ${unverifiedKeys.join(", ")}${producesMoney ? "; money withheld" : ""}`}
+            className={cn(
+              "inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[11px] font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring",
+              producesMoney
+                ? "border-destructive/40 bg-destructive/10 text-destructive"
+                : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+              className,
+            )}
+          >
+            <AlertTriangle className="h-3 w-3" />
+            Pending verification{producesMoney ? " · money withheld" : null}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-md">
+          Pending verification: {unverifiedKeys.join(", ")}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
   return (
     <span
       className={cn(
@@ -88,13 +116,53 @@ export function externalCitationUrl(url: string | null | undefined): string | nu
 
 export function CitationLine({
   citation,
+  compact = false,
 }: {
   citation: JurisdictionRuleCitation | null;
+  compact?: boolean;
 }) {
   if (!citation) {
     return <span className="text-muted-foreground">No citation recorded</span>;
   }
   const href = externalCitationUrl(citation.url);
+  if (compact) {
+    return (
+      <span className="inline-flex w-full min-w-0 items-center gap-1.5 whitespace-nowrap">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              aria-label={`Full citation authority: ${citation.authority ?? "No authority recorded"}`}
+              className="min-w-0 max-w-[170px] truncate text-left text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+            >
+              {citation.authority ?? "—"}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-md">
+            {citation.authority ?? "No authority recorded"}
+          </TooltipContent>
+        </Tooltip>
+        {href ? (
+          <a
+            href={href}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="shrink-0 text-primary hover:underline"
+          >
+            source <ExternalLink className="inline h-3 w-3" />
+          </a>
+        ) : (
+          <span
+            className="shrink-0 text-amber-700 dark:text-amber-400"
+            aria-label="Own research; no external source"
+            title="Own research; no external source"
+          >
+            own research
+          </span>
+        )}
+      </span>
+    );
+  }
   return (
     <span className="inline-flex items-center gap-1.5">
       <span className="text-foreground">{citation.authority ?? "—"}</span>
@@ -119,8 +187,10 @@ export function CitationLine({
 
 export function FixtureSummary({
   fixtures,
+  compact = false,
 }: {
   fixtures: readonly JurisdictionRuleFixture[];
+  compact?: boolean;
 }) {
   if (fixtures.length === 0) {
     return <span className="text-muted-foreground">no fixtures</span>;
@@ -134,8 +204,11 @@ export function FixtureSummary({
     (fixture) => fixture.expected_status === "pending_verification",
   ).length;
   return (
-    <span className="inline-flex items-center gap-1">
-      <FlaskConical className="h-3 w-3 text-muted-foreground" />
+    <span
+      className={cn("inline-flex items-center gap-1", compact && "whitespace-nowrap")}
+      title={`${fixtures.length} fixtures${pending > 0 ? `, ${pending} pending verification` : ""}`}
+    >
+      <FlaskConical className="h-3 w-3 shrink-0 text-muted-foreground" />
       <span>{fixtures.length} fixtures</span>
       {pending > 0 ? (
         <span className="text-amber-700 dark:text-amber-400">

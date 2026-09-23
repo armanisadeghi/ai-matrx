@@ -89,6 +89,7 @@ const libraryColumns: MatrxColumnDef<JurisdictionRule>[] = [
           unverifiedKeys={rule.unverified_keys}
           producesMoney={rule.produces_money}
           className="mt-0.5"
+          compact
         />
       </div>
     ),
@@ -132,8 +133,8 @@ const libraryColumns: MatrxColumnDef<JurisdictionRule>[] = [
     header: "Citation",
     accessorFn: (rule) =>
       [rule.citation?.authority, rule.citation?.url].filter(Boolean).join(" "),
-    cell: (rule) => <CitationLine citation={rule.citation} />,
-    width: 260,
+    cell: (rule) => <CitationLine citation={rule.citation} compact />,
+    width: 320,
   },
   {
     id: "jur_seed_task",
@@ -147,8 +148,8 @@ const libraryColumns: MatrxColumnDef<JurisdictionRule>[] = [
     header: "Fixtures",
     accessorFn: (rule) => rule.fixtures.length,
     filter: "number",
-    cell: (rule) => <FixtureSummary fixtures={rule.fixtures} />,
-    width: 136,
+    cell: (rule) => <FixtureSummary fixtures={rule.fixtures} compact />,
+    width: 176,
   },
 ];
 
