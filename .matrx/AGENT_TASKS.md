@@ -37,20 +37,6 @@ Publish an associations SDK version containing the canonical `agent_term_list` t
 
 Publish the generated association registry update from AI Dream's existing entity vocabulary, release a new `@ai-matrx/associations` version, then update the FE lockfile and rerun type sync/typecheck. Verify attach/detach reaches the server with the new token; no frontend cast or local registry patch. Feature is committed on main and shipped in `v0.4.2236`; keep the remaining package integration item visible until that call path is proven.
 
-### TASK-018: Identify recurring MCP stream timeouts
-- **Status:** blocked (2026-09-23) — runtime logs omit the JSON-RPC method; senior review recommends safe method-only instrumentation
-- **Created:** 2026-09-23
-- **Source:** Release watch reproduced 15-second Vercel runtime timeouts on the production MCP route.
-
-**Goal**
-Identify the MCP request method causing production timeouts and apply a narrowly scoped fix if it is an unsupported long-lived subscription.
-
-**Notes**
-Current main deployment `dpl_9z8sjTHLkPgZAYg1WDrE285WkMQG` logged `Vercel Runtime Timeout Error: Task timed out after 15 seconds` on `POST /api/mcp/mcp` at 08:00:08Z; Vercel aggregates 5 occurrences for one user. Senior review compared v0.4.2229 with its preceding deployment: both MCP lambdas had the same artifact digest and 15-second limit, while the preceding deployment had no comparable request logs. The latest main deployment reproduced the error, but current logs do not identify its JSON-RPC method. The repeated ~16-second cadence is consistent with (but does not prove) an unsupported `subscriptions/listen` stream. Add an `onEvent` logger for JSON-RPC method, elapsed time, and status only; never log parameters, tokens, or full URLs. If the method is confirmed as `subscriptions/listen`, reject that method within the authentication boundary while preserving ordinary tool requests.
-
-**Next concrete step**
-Instrument only the method/status metadata, collect a fresh occurrence, confirm the JSON-RPC method, then implement and locally verify the protocol-level refusal only if it is the unsupported subscription method.
-
 ### TASK-CRM-ERASURE-RPC: Apply the missing Gmail interaction erasure RPC
 - **Status:** blocked (2026-09-22) — live East schema is missing the RPC used by current CRM code
 - **Source:** `pnpm sync-types:live` against AI Dream SHA `468ca559d7b98f3128e01796e35f3fceb9513572`; read-only East catalog check by senior delegate

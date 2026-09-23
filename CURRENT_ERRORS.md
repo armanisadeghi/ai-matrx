@@ -30,10 +30,12 @@
 
 | ID | First seen | Level | Signature | Home |
 |----|------------|-------|-----------|------|
-| CE-001 | 2026-07-05 | error | Vercel 15 s runtime timeout on `POST /api/mcp/[transport]` (5 occurrences, 1 user; latest 2026-09-23) | `.matrx/AGENT_TASKS.md` TASK-018 |
+| _(none)_ | | | No currently reproduced Vercel runtime error class. | |
 
 ---
 
 ## Resolved
 
-_(pruned after a shipped build confirms, or ~2 weeks)_
+| ID | Resolution evidence |
+|----|---------------------|
+| CE-001 | Previously observed 15 s timeout on `POST /api/mcp/[transport]` (5 occurrences, 1 user; latest 2026-09-23 08:00Z on main v0.4.2234). Current main v0.4.2236 deployment `dpl_4fzVZzArGjKUnRWwpQt8inNLVEzu` had no error/fatal runtime logs from 08:24:45Z to 08:39:45Z; close as not reproduced on the current release. Reopen only if a new current-deployment occurrence appears. |
