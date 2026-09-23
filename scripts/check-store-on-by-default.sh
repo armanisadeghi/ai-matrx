@@ -5,8 +5,12 @@
 # It runs `scripts/campaign-tests/storeon_green.sql` against the NIGHTLY DEV CLONE and nothing
 # else. The suite asks one question, in the words of the owner ruling of 2026-09-23:
 #
-#     no ACTIVE organization reads the record store OFF unless it carries its own
-#     organization-rung override saying false, with a written reason for it.
+#     no ACTIVE organization reads the record store OFF unless one of its own owners or
+#     administrators switched it off through the settings door, and nothing has rewritten
+#     the switch since.
+#
+# (Tightened 2026-09-23, VERIFIER-15: the first version excused any OFF organization with "a
+# written reason", and Alex Hart's Workspace sat OFF under a note that said "on by default".)
 #
 # It also holds the platform default itself (value AND factory reset) to ON for both halves of
 # the one switch and for the older store's relation columns, proves an organization born one

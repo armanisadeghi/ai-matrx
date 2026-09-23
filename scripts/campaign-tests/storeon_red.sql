@@ -14,6 +14,10 @@
 -- ARM D — the FACTORY RESET alone goes back to false while the live value stays true. This is
 --         the half-recorded ruling: green today, and undone by the next
 --         `platform.feature_knob_set(…, null)`.
+-- ARM E — VERIFIER-15's row: an organization OFF under somebody else's "on by default" note,
+--         left by a value-only rewrite. The first version of clause 2 accepted it.
+-- CONTROL F — the same organization switched off by its OWN owner through the settings door
+--         is accepted: the guard forbids omission, never an owner's choice.
 --
 -- Arm C has to defeat FIX-11A's `store_switch_halves_follow_each_other_tg`, which exists
 -- precisely to stop the halves drifting. It is disabled for the length of this transaction and
@@ -40,11 +44,35 @@ set local statement_timeout = '10min';
 -- The green suite's clause 3 reads both halves; arm C needs the mirror out of the way.
 alter table platform.knob_override disable trigger store_switch_halves_follow_each_other_tg;
 
+-- storeon_green.sql clause 2's owner-opt-out predicate, word for word, as a function that
+-- lives and dies inside this transaction (pg_temp), so arms E and F ask the SAME question.
+create function pg_temp.storeon_red_owner_opt_out(p_org uuid) returns boolean
+language sql stable as $f$
+  select coalesce((
+    select ov.value = 'false'::jsonb
+       and coalesce(ov.set_note, '') ilike 'Unified-data switch screen%'
+       and exists (select 1 from iam.memberships m
+                    where m.organization_id = p_org and m.container_type = 'organization'
+                      and m.user_id = ov.updated_by and m.status = 'active'
+                      and m.role in ('owner', 'admin'))
+       and coalesce((select a.new_value = 'false'::jsonb
+                            and a.actor is not distinct from ov.updated_by
+                            and a.set_note is not distinct from ov.set_note
+                       from platform.knob_override_audit a
+                      where a.organization_id = p_org and a.feature = 'custom'
+                        and a.key = 'system_enabled' and a.scope_kind = 'organization'
+                      order by a.id desc limit 1), false)
+      from platform.knob_override ov
+     where ov.feature = 'custom' and ov.key = 'system_enabled'
+       and ov.scope_kind = 'organization' and ov.organization_id = p_org), false)
+$f$;
+
 do $storeon_red$
 declare
   v_org   uuid;
   v_name  text;
   v_n     int;
+  v_owner uuid;
 begin
   -- A borrowed organization for arms B and C: a real, active one, put back by the ROLLBACK.
   select o.id, o.name into v_org, v_name
@@ -133,7 +161,48 @@ begin
   end if;
   raise notice 'ARM D: the live value is true and the factory reset is false — clause 1 would fail on default_value, which is the half a ruling loses quietly.';
 
-  raise notice 'storeon_red.sql: ALL 4 ARMS ARMED AND CAUGHT. Everything here goes with the ROLLBACK below.';
+  -- Put arm D back so arms E and F measure only themselves.
+  update platform.feature_knob set default_value = 'true'::jsonb
+   where feature = 'custom' and key = 'system_enabled';
+
+  -- ── ARM E — VERIFIER-15's row: OFF, wearing somebody else's reason ────────────────────
+  -- Alex Hart's Workspace, 2026-09-23: the batch wrote ON with the note "owner ruling
+  -- 2026-09-23: on by default", then a demo harness rewrote only the VALUE to a hardcoded
+  -- false, keeping that note and that actor. The old clause 2 excused any note of 20+
+  -- characters and read it as a reason. Reproduced exactly, and the predicate must name it.
+  -- (The owner-opt-out predicate below is storeon_green.sql clause 2's, word for word.)
+  select o.id, o.name, (select m.user_id from iam.memberships m
+                          where m.organization_id = o.id and m.container_type = 'organization'
+                            and m.status = 'active' and m.role = 'owner' limit 1)
+    into v_org, v_name, v_owner
+    from iam.organizations o
+   where o.archived_at is null and coalesce(o.is_system, false) = false
+     and coalesce(o.is_personal, false) = false
+     and exists (select 1 from iam.memberships m
+                  where m.organization_id = o.id and m.container_type = 'organization'
+                    and m.status = 'active' and m.role = 'owner')
+   order by o.created_at desc limit 1;
+  perform platform.unified_data_store_set(v_org, true, '87a6e699-3622-4869-8843-d0867456c0dd'::uuid,
+                                          'owner ruling 2026-09-23: on by default');
+  update platform.knob_override set value = 'false'::jsonb
+   where feature = 'custom' and key = 'system_enabled'
+     and scope_kind = 'organization' and organization_id = v_org;
+  if pg_temp.storeon_red_owner_opt_out(v_org) then
+    raise exception 'ARM E FAILED: % reads OFF under a note that says "on by default", written by somebody who is not its owner, and the predicate accepted it as an owner opt-out. That is VERIFIER-15''s row.', v_name;
+  end if;
+  raise notice 'ARM E: % OFF under somebody else''s "on by default" note — clause 2 names it.', v_name;
+
+  -- ── CONTROL F — a real owner opt-out through the settings door is ACCEPTED ──────────────
+  -- A guard that refused every OFF organization would pass arm E and be wrong: an owner may
+  -- turn their own store off. The same organization, its own owner, the door, no note — so
+  -- the door writes its own settings-screen sentence.
+  perform platform.unified_data_store_set(v_org, false, v_owner, null);
+  if not pg_temp.storeon_red_owner_opt_out(v_org) then
+    raise exception 'CONTROL F FAILED: % was switched off by its own owner through the settings door and the predicate still refused it — the guard would forbid a legitimate opt-out.', v_name;
+  end if;
+  raise notice 'CONTROL F: % switched off by its own owner through the door — accepted, as it must be.', v_name;
+
+  raise notice 'storeon_red.sql: ALL 5 ARMS ARMED AND CAUGHT, AND THE OWNER OPT-OUT CONTROL PASSED. Everything here goes with the ROLLBACK below.';
 end
 $storeon_red$;
 

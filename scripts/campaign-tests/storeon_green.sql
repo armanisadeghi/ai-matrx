@@ -7,8 +7,10 @@
 -- WHAT THIS ASKS, EVERY NIGHT, AND WHY IT IS THE RIGHT QUESTION. Not "is the knob true" — a
 -- knob is a row and a row can be true while the thing it governs is dark. The predicate is:
 --
---     no ACTIVE organization reads the record store OFF unless it carries its own
---     organization-rung override saying false, with a written reason for it.
+--     no ACTIVE organization reads the record store OFF unless one of its own owners or
+--     administrators switched it off through the settings door, and nothing has rewritten
+--     the switch since. (Tightened 2026-09-23 after VERIFIER-15: "any written reason" was
+--     not a predicate — see clause 2.)
 --
 -- An organization that turns its own store off is the product working. An organization that is
 -- off because NOBODY EVER TURNED IT ON is the defect the ruling closes, and it is invisible
@@ -95,29 +97,67 @@ begin
     raise exception 'CLAUSE 2 FAILED: this database holds NO active organization at all, so the census below would pass by asserting nothing.';
   end if;
 
+  -- 🚨 TIGHTENED 2026-09-23 (VERIFIER-15). This clause used to excuse any OFF organization
+  -- whose override carried "a written reason" of 20 characters or more. VERIFIER-15 found the
+  -- hole on the main database: test@test.com's own workspace, Alex Hart's Workspace, read OFF
+  -- carrying THIS LANE'S OWN NOTE — "owner ruling 2026-09-23: on by default" — because a
+  -- records-ui demo harness kept rewriting only the row's VALUE to a hardcoded false and left
+  -- the note and actor of whoever wrote it last. Any sentence at all passed. The note was
+  -- literally saying the opposite of the value, and the guard read it as a reason.
+  --
+  -- So the ONE way out is now an OWNER OPT-OUT, and every part of it is checked, not read:
+  --   (a) the override says false;
+  --   (b) it was written through the settings door — `platform.unified_data_store_set`'s own
+  --       sentence for a person at the switch screen, "Unified-data switch screen, …";
+  --   (c) by a PERSON who is an owner or an administrator of THAT organization, active;
+  --   (e) and the LAST audit row on that switch is that same write — false, that person,
+  --       that sentence — so a later value-only rewrite that kept somebody else's words
+  --       (exactly today's defect) can never borrow their opt-out.
   select count(*), string_agg(format('%s (%s) — %s', name, id, why), E'\n  ' order by name)
     into v_n, v_bad
   from (
     select o.id, o.name,
            case when ov.value is null
                   then 'reads OFF and carries no override of its own: nobody ever turned it on'
-                when coalesce(nullif(btrim(ov.set_note), ''), '') = ''
-                  then 'is switched off by an override that gives no reason'
-                else 'reads OFF' end as why
+                when ov.value <> 'false'::jsonb
+                  then 'reads OFF although its own override says ' || ov.value::text
+                when coalesce(ov.set_note, '') not ilike 'Unified-data switch screen%'
+                  then format('is switched off by a write that did not come through the settings door (note: %L)', left(coalesce(ov.set_note, ''), 80))
+                when not owner_ok
+                  then format('is switched off in the name of %s, who is not an owner or an administrator of it', coalesce(ov.updated_by::text, 'nobody'))
+                else 'is switched off, but the last write on its switch was not that opt-out — somebody rewrote the value after it'
+           end as why
       from iam.organizations o
       left join platform.knob_override ov
              on ov.feature = 'custom' and ov.key = 'system_enabled'
             and ov.scope_kind = 'organization' and ov.organization_id = o.id
+      cross join lateral (
+        select exists (
+                 select 1 from iam.memberships m
+                  where m.organization_id = o.id and m.container_type = 'organization'
+                    and m.user_id = ov.updated_by and m.status = 'active'
+                    and m.role in ('owner', 'admin')) as owner_ok,
+               (select a.new_value = 'false'::jsonb
+                       and a.actor is not distinct from ov.updated_by
+                       and a.set_note is not distinct from ov.set_note
+                  from platform.knob_override_audit a
+                 where a.organization_id = o.id and a.feature = 'custom'
+                   and a.key = 'system_enabled' and a.scope_kind = 'organization'
+                 order by a.id desc limit 1) as last_write_is_it
+      ) chk
      where o.archived_at is null
        and platform.knob_resolve('custom', 'system_enabled', o.id, null, null) is distinct from 'true'::jsonb
-       -- THE ONE WAY OUT: the organization said so itself, and said why.
-       and not (ov.value = 'false'::jsonb and length(btrim(coalesce(ov.set_note, ''))) >= 20)
+       -- THE ONE WAY OUT: an owner opt-out, through the settings door, still standing.
+       and not (ov.value = 'false'::jsonb
+                and coalesce(ov.set_note, '') ilike 'Unified-data switch screen%'
+                and chk.owner_ok
+                and coalesce(chk.last_write_is_it, false))
   ) s;
 
   if v_n > 0 then
-    raise exception E'CLAUSE 2 FAILED: % of % active organizations read the record store OFF without having turned it off themselves. Each of these has tables, forms and portals that answer nothing, and nobody inside them can tell why:\n  %', v_n, v_active, v_bad;
+    raise exception E'CLAUSE 2 FAILED: % of % active organizations read the record store OFF and none of them is an owner''s own opt-out through the settings door. Each of these has tables, forms and portals that answer nothing, and nobody inside them can tell why:\n  %', v_n, v_active, v_bad;
   end if;
-  raise notice 'CLAUSE 2 PASSED: all % active organizations read the record store ON, or turned it off themselves with a written reason.', v_active;
+  raise notice 'CLAUSE 2 PASSED: all % active organizations read the record store ON, or were switched off by one of their own owners through the settings door and nothing has rewritten it since.', v_active;
 
   -- ── 3. THE TWO HALVES OF THE ONE SWITCH AGREE, EVERYWHERE ─────────────────────────────
   select count(*), string_agg(format('%s (%s): system_enabled=%s code_paths_enabled=%s', name, id, a, b), E'\n  ' order by name)

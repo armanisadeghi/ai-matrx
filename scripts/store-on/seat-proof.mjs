@@ -37,6 +37,9 @@ const SEATS = [
   { email: env.AI_ADMIN_USERNAME ?? "admin@admin.com", password: env.AI_ADMIN_PASSWORD, org: "Ashford Labs", shot: "store-on-seat-admin.png" },
   // Ironclad Mobile Mechanic, a crew test@test.com works in, also read OFF until that batch.
   { email: "test@test.com", password: env.TEST_USER_PASSWORD ?? "Password1234#", org: "Ironclad Mobile Mechanic", shot: "store-on-seat-test.png" },
+  // VERIFIER-15, 2026-09-23: test@test.com's OWN workspace, which a demo seam had kept
+  // committing back to OFF. The personal organization is picked by name like any other.
+  { email: "test@test.com", password: env.TEST_USER_PASSWORD ?? "Password1234#", org: "Alex Hart's Workspace", shot: "store-on-seat-test-own-workspace.png" },
 ];
 
 async function run(seat) {
@@ -66,8 +69,8 @@ async function run(seat) {
     // A session with no organization picked gets the picker — honest, and not the question
     // this proof asks. Pick one the way a person does, then read the hub.
     let picked = null;
-    if (/need an organization/i.test(await page.evaluate(() => document.body.innerText))) {
-      const rows = page.locator(':is(button, [role="option"]):visible').filter({ hasNotText: /Personal|Test organizations|Keep it at the top|Choose org/ });
+    if (/need an organization|organization is needed|No organization selected/i.test(await page.evaluate(() => document.body.innerText))) {
+      const rows = page.locator(':is(button, [role="option"]):visible').filter({ hasNotText: /Test organizations|Keep it at the top|Choose org/ });
       const target = rows.filter({ hasText: seat.org }).first();
       picked = ((await target.innerText().catch(() => "")) || "").replace(/\s+/g, " ").trim();
       await target.click();
