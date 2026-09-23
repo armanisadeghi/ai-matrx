@@ -234,6 +234,28 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
       "which found check:campaign-entry-points exiting 1 on origin/main (fea66d1167).",
   },
   {
+    id: "gridprim-g4-delivery",
+    file: "scripts/campaign-tests/gridprim_g4_delivery.ts",
+    kind: "tooling",
+    why:
+      "Lane GRID-PRIMITIVES G4 — the webhook delivery proof: four record changes on the rehearsal " +
+      "branch become four platform.activity_log events, four signed POSTs from " +
+      "files.webhook_dispatch and four HTTP answers. It imports scripts/lib/migration-target only " +
+      "to refuse every database but the branch. A script a developer runs, never served to a " +
+      "user, so it must not call the gate.",
+  },
+  {
+    id: "gridprim-g5-examples",
+    file: "scripts/campaign-tests/gridprim_g5_examples.ts",
+    kind: "tooling",
+    why:
+      "Lane GRID-PRIMITIVES G5 — the example-table proof: every registered use case of " +
+      "@ai-matrx/records/use-cases built whole through custom.table_from_example, in one " +
+      "rolled-back transaction on the clone or the branch. It imports scripts/lib/migration-target " +
+      "only for the runner-target verdict. A script a developer runs, never served to a user, so " +
+      "it must not call the gate.",
+  },
+  {
     id: "data-hub-shared-table-context",
     file: "features/unified-data/hub/useSharedTable.ts",
     kind: "runtime",
