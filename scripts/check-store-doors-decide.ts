@@ -63,7 +63,55 @@ const DECIDERS = [
   "visible_record_ids",
 ];
 
-const CALLER_CENSUS = (deciders: string[]) => `
+/**
+ * CENSUS 18 AND THE ONE EXEMPTION IT EARNS — `refusal_only` (lane STORE-TXN-4, 2026-09-22).
+ *
+ * There is a third kind of door: one a client may CALL that does NOTHING, whose one statement
+ * raises our sentence so a person hears a remedy instead of PostgreSQL's "permission denied for
+ * function". It needs no access decision because nothing happens — so censuses 1 and 5 would
+ * name it for deciding nothing, and they would be wrong.
+ *
+ * The exemption is NOT the register word. A word that excused a door from the ladder would be a
+ * permission slip any door could wear. It is the word AND the body: the row says
+ * `refusal_only`, the function is SECURITY DEFINER (an INVOKER stub would be a quiet exemption
+ * no census looks at), and `platform.door_body_is_refusal_only(oid)` — the ONE definition of the
+ * shape, also read by the live DDL guard `platform.door_body_must_decide` — proves the body
+ * reads nothing, writes nothing, branches nowhere and returns nothing. Census 18 re-proves every
+ * `refusal_only` row on every run, and a row whose body has grown a `select` is named by census
+ * 17 AND loses the exemption, so censuses 1 and 5 name it too.
+ *
+ * Before `storetxn4b_a_door_may_be_callable_only_to_be_refused.sql` is on a database the column
+ * and the shape function do not exist; then there is no exemption at all (stricter, never
+ * looser) and census 18 has nothing to measure, which it says.
+ */
+const REFUSAL_ONLY_PROVEN = (alias: string) => `
+     and not exists (select 1 from platform.client_callable_door ro
+                      where ro.schema_name = 'custom'
+                        and ro.function_name = ${alias}.proname
+                        and ro.identity_argtypes = platform.door_argtypes(${alias}.proargtypes)
+                        and ro.refusal_only
+                        and ${alias}.prosecdef
+                        and (platform.door_body_is_refusal_only(${alias}.oid)).ok)`;
+
+const REFUSAL_ONLY_CENSUS = `
+  select d.schema_name || '.' || d.function_name as function_name, d.identity_args,
+         case
+           when p.oid is null then 'declared refusal_only and there is no live function with this signature'
+           when not p.prosecdef then 'declared refusal_only and SECURITY INVOKER - an invoker stub is a '
+                                  || 'QUIET exemption every other census skips; it must be DEFINER so its shape is checked'
+           else 'declared refusal_only, but ' || s.why
+         end as why
+    from platform.client_callable_door d
+    left join pg_proc p
+      on p.pronamespace = to_regnamespace(d.schema_name)
+     and p.proname = d.function_name
+     and platform.door_argtypes(p.proargtypes) = d.identity_argtypes
+    left join lateral platform.door_body_is_refusal_only(p.oid) s on true
+   where d.refusal_only
+     and (p.oid is null or not p.prosecdef or not s.ok)
+   order by 1`;
+
+const CALLER_CENSUS = (deciders: string[], refusalOnly = false) => `
   select p.proname::text as function_name, pg_get_function_identity_arguments(p.oid) as identity_args
     from pg_proc p
    where p.pronamespace = 'custom'::regnamespace
@@ -72,6 +120,7 @@ const CALLER_CENSUS = (deciders: string[]) => `
      and pg_get_function_identity_arguments(p.oid) ~ 'p_organization_id uuid'
      and p.proname <> 'store_is_open'
      ${deciders.length ? `and pg_get_functiondef(p.oid) !~* '(${deciders.join("|")})'` : ""}
+     ${refusalOnly ? REFUSAL_ONLY_PROVEN("p") : ""}
    order by 1`;
 
 const RECORD_CENSUS = (deciders: string[]) => `
@@ -173,7 +222,7 @@ const DECLARED_DOOR_BODY = `
 /** `--` comments stripped: a sentence promising the ladder is not the ladder. */
 const NO_COMMENTS = `regexp_replace(pg_get_functiondef(p.oid), '--[^' || chr(10) || ']*', '', 'g')`;
 
-const DECLARED_LADDER_CENSUS = (rungs: string[]) => `
+const DECLARED_LADDER_CENSUS = (rungs: string[], refusalOnly = false) => `
   select p.proname::text as function_name, pg_get_function_identity_arguments(p.oid) as identity_args,
          'declared client-callable, is SECURITY DEFINER, takes an id - and its body never reaches '
          'the one ladder (custom.assert_client_may_reach / _may_change / _may_open / has_visibility)'::text as why
@@ -183,6 +232,7 @@ const DECLARED_LADDER_CENSUS = (rungs: string[]) => `
      and exists (select 1 from unnest(p.proargtypes) t(typ)
                   where t.typ in ('pg_catalog.uuid'::regtype, 'pg_catalog.uuid[]'::regtype))
      ${rungs.length ? `and ${NO_COMMENTS} !~* '(${rungs.join("|")})'` : ""}
+     ${refusalOnly ? REFUSAL_ONLY_PROVEN("p") : ""}
    order by 1`;
 
 /**
@@ -782,6 +832,17 @@ function report(title: string, rows: Row[], qualified = false): boolean {
  * non-blocking run rather than the one a lane waits on, and why it is a flag rather than a
  * deletion.
  */
+/** Is lane STORE-TXN-4's refusal_only word on this database (the column AND its one shape test)? */
+async function refusalOnlyIsInstalled(client: Awaited<ReturnType<typeof connectDirect>>): Promise<boolean> {
+  const r = await client.query<{ here: boolean }>(
+    `select to_regprocedure('platform.door_body_is_refusal_only(oid)') is not null
+        and exists (select 1 from information_schema.columns
+                     where table_schema = 'platform' and table_name = 'client_callable_door'
+                       and column_name = 'refusal_only') as here`,
+  );
+  return Boolean(r.rows[0]?.here);
+}
+
 async function main(): Promise<void> {
   const selfTest = process.argv.includes("--self-test");
   const exhaustive = process.argv.includes("--exhaustive");
@@ -1156,11 +1217,85 @@ async function main(): Promise<void> {
       );
     }
 
-    const callers = (await client.query<Row>(CALLER_CENSUS(DECIDERS))).rows;
+    // CENSUS 18, THE RED HALF (lane STORE-TXN-4). Every refusal_only door, one at a time, has
+    // its body given ONE read of custom.record inside a transaction that is always rolled back.
+    // Census 18 must then name it, AND it must lose its exemption so censuses 1 and 5 name it
+    // too — otherwise the word is a permission slip and the shape test is decoration.
+    // (A plain `create or replace` of a body touches no door row, so the live DDL guard on
+    // platform.client_callable_door does not fire; that guard's own RED half is
+    // scripts/campaign-tests/refusalonly_red.sql.)
+    if (selfTest && (await refusalOnlyIsInstalled(client))) {
+      const stubs = (
+        await client.query<{ oid: number; name: string }>(
+          `select p.oid::int as oid, p.proname::text as name
+             from platform.client_callable_door d
+             join pg_proc p
+               on p.pronamespace = to_regnamespace(d.schema_name) and p.proname = d.function_name
+              and platform.door_argtypes(p.proargtypes) = d.identity_argtypes
+            where d.refusal_only and d.schema_name = 'custom'`,
+        )
+      ).rows;
+      if (stubs.length === 0) {
+        fail(
+          "SELF-TEST FAILED - the refusal_only word is on this database and not one door wears it, " +
+            "so census 18's RED half has nothing to plant into. custom.migrate_purge_hard_request is " +
+            "the first one; if it is gone, the word proves nothing here.",
+        );
+      }
+      for (const stub of stubs) {
+        await client.query("begin");
+        try {
+          await client.query(
+            `do $plant$
+             declare v_def text;
+             begin
+               v_def := pg_get_functiondef(${stub.oid}::oid);
+               execute regexp_replace(v_def, '\\mbegin\\M',
+                 'begin' || chr(10) || '  perform 1 from custom.record limit 1; -- planted by check:store-doors-decide --self-test',
+                 'i');
+             end $plant$`,
+          );
+          const c17 = (await client.query<Row>(REFUSAL_ONLY_CENSUS)).rows;
+          const c1 = (await client.query<Row>(CALLER_CENSUS(DECIDERS, true))).rows;
+          const c5 = (await client.query<Row>(DECLARED_LADDER_CENSUS(LADDER_RUNGS, true))).rows;
+          const named17 = c17.some((r) => r.function_name === `custom.${stub.name}`);
+          const named1 = c1.some((r) => r.function_name === stub.name);
+          const named5 = c5.some((r) => r.function_name === stub.name);
+          if (!named17 || !named1 || !named5) {
+            fail(
+              `SELF-TEST FAILED - custom.${stub.name} was given a read of custom.record and ` +
+                `census 18 ${named17 ? "named" : "DID NOT name"} it, census 1 ${named1 ? "named" : "DID NOT name"} it, ` +
+                `census 5 ${named5 ? "named" : "DID NOT name"} it. A refusal_only door that reads a table ` +
+                "must lose its exemption everywhere at once.",
+            );
+          }
+          console.log(
+            `[ OK ] self-test - custom.${stub.name} planted with one read of custom.record: census 18 ` +
+              "names it and censuses 1 and 5 withdraw its exemption. The word can go red.",
+          );
+        } finally {
+          await client.query("rollback").catch(() => undefined);
+        }
+      }
+    }
+
+    const refusalOnlyHere = await refusalOnlyIsInstalled(client);
+    const callers = (await client.query<Row>(CALLER_CENSUS(DECIDERS, refusalOnlyHere))).rows;
     const records = (await client.query<Row>(RECORD_CENSUS(DECIDERS))).rows;
     const grants = (await client.query<Row>(GRANT_CENSUS)).rows;
     const ladder = (await client.query<Row>(ONE_LADDER_CENSUS)).rows;
-    const declaredLadder = (await client.query<Row>(DECLARED_LADDER_CENSUS(LADDER_RUNGS))).rows;
+    const declaredLadder = (
+      await client.query<Row>(DECLARED_LADDER_CENSUS(LADDER_RUNGS, refusalOnlyHere))
+    ).rows;
+    const refusalOnly = refusalOnlyHere
+      ? (await client.query<Row>(REFUSAL_ONLY_CENSUS)).rows
+      : [];
+    if (!refusalOnlyHere) {
+      console.log(
+        "[INFO] census 18 - platform.client_callable_door.refusal_only is not on this database, so " +
+          "no door here can claim the word and none is exempted. Nothing to measure; not a pass.",
+      );
+    }
     const declaredSwitch = (await client.query<Row>(DECLARED_SWITCH_CENSUS(true))).rows;
     const tablePrivileges = (await client.query<Row>(TABLE_PRIVILEGE_CENSUS)).rows;
     const closedSchemas = (await client.query<Row>(CLOSED_SCHEMA_CENSUS(true))).rows;
@@ -1338,6 +1473,10 @@ async function main(): Promise<void> {
         "the recorded access-kernel fingerprint disagreeing with the live kernel bodies",
         kernelDrift,
         true,
+      ),
+      report(
+        "refusal_only doors whose body does something besides refuse (census 18)",
+        refusalOnly,
       ),
     ].every(Boolean);
 
