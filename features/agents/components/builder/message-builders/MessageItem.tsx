@@ -58,6 +58,8 @@ import { useAgentUndoRedo } from "@/features/agents/hooks/useAgentUndoRedo";
 import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import MarkdownStream from "@/components/MarkdownStream";
+import { MessageFlagToggles } from "@/features/agents/message-flags/MessageFlagToggles";
+import { useMessageFlags } from "@/features/agents/message-flags/useMessageFlags";
 
 /** Extract text from a TextBlock. */
 function extractTextFromBlock(block: Record<string, unknown>): string {
@@ -161,6 +163,7 @@ export function MessageItem({
   const { canUndo, canRedo, undo, redo, undoHint, redoHint } = useAgentUndoRedo(
     { agentId },
   );
+  const messageFlags = useMessageFlags(agentId, messageIndex);
 
   const handleViewHistory = useCallback(() => {
     dispatch(
@@ -735,6 +738,11 @@ export function MessageItem({
             </SelectContent>
           </Select>
           <MessageViewModeMenu viewMode={viewMode} onChange={setViewMode} />
+          <MessageFlagToggles
+            flags={messageFlags.flags}
+            states={messageFlags.states}
+            onToggle={messageFlags.onToggle}
+          />
         </div>
         <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
           <MessageItemButtons

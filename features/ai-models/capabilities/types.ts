@@ -101,6 +101,10 @@ export const FEATURE_KEYS = [
   // which are about billing and latency, not retention.
   "context_management",
   "partial_mode",
+  // The model continues a trailing assistant message (response prefill).
+  // Anthropic removed it on Sonnet 5 / Opus 5 / Fable / 4.6-4.8; older Claude
+  // models keep it. Read by features/agents/message-flags (the Prefill flag).
+  "assistant_prefill",
   // Extraction family (GLiNER2 / fastino models)
   "ner",
   "classification",

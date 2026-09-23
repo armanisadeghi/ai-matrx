@@ -63,6 +63,7 @@ import { AssistantTurnGroup } from "./assistant/AssistantTurnGroup";
 import { AgentAssistantMessage } from "./assistant/AgentAssistantMessage";
 import { AgentEmptyMessageDisplay } from "./assistant/AgentEmptyMessageDisplay";
 import { ErrorBoundaryWithCapture } from "@/lib/error-boundary/ErrorBoundaryWithCapture";
+import { ExampleTurnsGroup } from "@/features/agents/message-flags/ExampleTurnsGroup";
 
 interface AgentConversationDisplayProps {
   conversationId: string;
@@ -284,6 +285,42 @@ export function AgentConversationDisplay({
                     compact={compact}
                   />
                 </div>
+              </ErrorBoundaryWithCapture>
+            );
+          }
+
+          if (group.kind === "examples") {
+            return (
+              <ErrorBoundaryWithCapture
+                key={group.key}
+                boundary="AgentConversationDisplayGroup"
+                relation={group.key}
+                resetKeys={[group.key]}
+              >
+                <ExampleTurnsGroup count={group.members.length}>
+                  {group.members.map((member) =>
+                    member.role === "user" ? (
+                      <AgentUserMessage
+                        key={member.messageId}
+                        conversationId={conversationId}
+                        messageId={member.messageId}
+                        surfaceKey={surfaceKey}
+                        compact
+                      />
+                    ) : (
+                      <AgentAssistantMessage
+                        key={member.messageId}
+                        conversationId={conversationId}
+                        messageId={member.messageId}
+                        isStreamActive={false}
+                        surfaceKey={surfaceKey}
+                        compact
+                        hideActionBar
+                        deferColdMarkdown={deferColdMarkdown}
+                      />
+                    ),
+                  )}
+                </ExampleTurnsGroup>
               </ErrorBoundaryWithCapture>
             );
           }

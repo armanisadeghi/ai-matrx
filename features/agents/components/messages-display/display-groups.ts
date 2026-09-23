@@ -21,6 +21,17 @@ export interface DisplayEntry {
   streamSlotEnd?: number;
   /** True for a delivered agent-collaboration note (see isCollabNoteRecord). */
   isCollabNote?: boolean;
+  /** A few-shot turn the author flagged `example` — collapsed with its run. */
+  isExample?: boolean;
+}
+
+function recordFlags(rec: MessageRecord): Record<string, unknown> {
+  const meta = rec.metadata;
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) return {};
+  const flags = (meta as Record<string, unknown>).flags;
+  return flags && typeof flags === "object" && !Array.isArray(flags)
+    ? (flags as Record<string, unknown>)
+    : {};
 }
 
 /**
@@ -49,6 +60,11 @@ export function isCollabNoteRecord(rec: MessageRecord): boolean {
 
 export type DisplayGroup =
   | { kind: "user"; key: string; messageId: string }
+  | {
+      kind: "examples";
+      key: string;
+      members: Array<{ role: "user" | "assistant"; messageId: string }>;
+    }
   | { kind: "collab-note"; key: string; messageId: string }
   | {
       kind: "assistant";
@@ -118,6 +134,9 @@ export function buildDisplayEntries({
   const entries: DisplayEntry[] = [];
   for (const rec of messages) {
     if (rec.role === "tool" || rec.role === "system") continue;
+    // A consumed PREFILL: its text is the start of the reply that follows, so
+    // it never renders as a turn of its own.
+    if (recordFlags(rec).prefill === true && rec.id !== streamingAssistantId) continue;
     const isStreamingMessage = rec.id === streamingAssistantId;
     if (
       isEmptyReservedAssistant(rec) &&
@@ -139,6 +158,7 @@ export function buildDisplayEntries({
       isFailed: recFailed,
       canRetry: false,
       isCollabNote: rec.role === "user" ? isCollabNoteRecord(rec) : false,
+      isExample: recordFlags(rec).example === true && !isStreamingMessage,
       streamSlotStart: rec._streamSlotStart,
       streamSlotEnd: rec._streamSlotEnd,
     });
@@ -204,7 +224,24 @@ export function groupDisplayEntries(
     buffer = [];
   };
 
+  let examples: Array<{ role: "user" | "assistant"; messageId: string }> = [];
+  const flushExamples = () => {
+    if (examples.length === 0) return;
+    groups.push({ kind: "examples", key: `ex:${examples[0].messageId}`, members: examples });
+    examples = [];
+  };
+
   for (const entry of displayEntries) {
+    if (
+      entry.isExample &&
+      entry.messageId &&
+      (entry.role === "user" || entry.role === "assistant")
+    ) {
+      flush();
+      examples.push({ role: entry.role, messageId: entry.messageId });
+      continue;
+    }
+    flushExamples();
     if (entry.role === "assistant") {
       if (entry.isFailed) {
         if (entry.requestId) {
@@ -241,6 +278,7 @@ export function groupDisplayEntries(
       });
     }
   }
+  flushExamples();
   flush();
   return groups;
 }

@@ -5,6 +5,10 @@
  */
 
 import {
+  flagsOf,
+  flagsShapeProblem,
+} from "@/features/agents/message-flags/flags";
+import {
   VARIABLE_COMPONENT_TYPES,
   type AgentDefinition,
   type StructuredListBinding,
@@ -126,7 +130,7 @@ const STASH_KNOWN_KEYS = [
 
 const RESOURCE_CONTEXT_KNOWN_KEYS = ["promote", "exclude"] as const;
 const RESOURCE_PROMOTION_KNOWN_KEYS = ["representation", "max_chars"] as const;
-const MESSAGE_KNOWN_KEYS = ["role", "content"] as const;
+const MESSAGE_KNOWN_KEYS = ["role", "content", "flags"] as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -574,6 +578,18 @@ export function parseAgentMessages(raw: unknown): AgentDefinition["messages"] {
       return part;
     });
     const parsed: DefinitionMessage = { role: value.role, content };
+    // Message flags are typed, validated here, and never an opaque passthrough.
+    // A malformed value is read as the lawful flags it carries — and SCREAMS,
+    // so the row gets re-saved (the server refuses it at run time).
+    const flagProblem = flagsShapeProblem(value.flags);
+    if (flagProblem) {
+      console.error(
+        `[agent-definition] LOUD: ${path}.flags — ${flagProblem}. Reading only the ` +
+          `known flags; re-save this agent in the builder.`,
+      );
+    }
+    const flags = flagsOf(value);
+    if (Object.keys(flags).length) parsed.flags = flags;
     copyOpaqueKeys(parsed, value, MESSAGE_KNOWN_KEYS);
     return parsed;
   });

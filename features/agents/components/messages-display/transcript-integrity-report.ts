@@ -192,7 +192,9 @@ export function buildTranscriptIntegrityReport(
     messageIds:
       g.kind === "assistant"
         ? g.members.map((m) => shortId(m.messageId ?? m.requestId ?? ""))
-        : [shortId(g.messageId ?? "")],
+        : g.kind === "examples"
+          ? g.members.map((m) => shortId(m.messageId))
+          : [shortId(g.messageId ?? "")],
     rendered: renderedKeys.has(g.key),
   }));
 

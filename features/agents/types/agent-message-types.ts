@@ -79,6 +79,7 @@ import type {
 import type { Enums } from "@/types/database.types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { DecisionQuestionsPart } from "@/features/agents/decision-questions/types";
+import type { MessageFlags } from "@/features/agents/message-flags/flags";
 
 // The canonical role union, sourced from the generated DB enum so it can never
 // drift from `public.cx_message.role`. Aliased here so `MessageRole` below
@@ -445,6 +446,14 @@ export interface AgentDefinitionMessage {
     // `features/agents/decision-questions/types.ts`), never a local copy.
     | DecisionQuestionsPart
   >;
+  /**
+   * Message FLAGS — instructions to the translator, never content
+   * (`common-docs/systems/agents/typed-messages/FEATURE.md`, Flag row):
+   * `prefill` (last assistant turn the reply continues from), `cache_boundary`
+   * (cache everything up to here), `example` (a few-shot turn). Placement rules
+   * and compatibility: `features/agents/message-flags/flags.ts`.
+   */
+  flags?: MessageFlags;
 }
 
 /**

@@ -20,6 +20,8 @@ import type { AgentDefinitionMessage } from "@/features/agents/types/agent-messa
 // Module Shared Components
 import { HighlightedText } from "@/features/agents/components/variables-management/HighlightedText";
 import { SystemMessageButtons } from "@/features/agents/components/builder/message-builders/system-instructions/SystemMessageButtons";
+import { MessageFlagToggles } from "@/features/agents/message-flags/MessageFlagToggles";
+import { useMessageFlags } from "@/features/agents/message-flags/useMessageFlags";
 import {
   MessageViewModeMenu,
   type MessageViewMode,
@@ -98,6 +100,8 @@ export function SystemMessage({
   const systemMessage = useAppSelector((state) =>
     selectAgentSystemMessage(state, agentId),
   );
+  const systemIndex = messages?.findIndex((m) => m.role === "system") ?? -1;
+  const systemFlags = useMessageFlags(agentId, systemIndex);
 
   const agentSettings = useAppSelector((state) =>
     selectAgentSettings(state, agentId),
@@ -661,6 +665,13 @@ export function SystemMessage({
               System
             </Label>
             <MessageViewModeMenu viewMode={viewMode} onChange={setViewMode} />
+            {systemIndex >= 0 && (
+              <MessageFlagToggles
+                flags={systemFlags.flags}
+                states={systemFlags.states}
+                onToggle={systemFlags.onToggle}
+              />
+            )}
           </div>
           <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
             <SystemMessageButtons

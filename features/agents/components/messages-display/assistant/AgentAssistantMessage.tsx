@@ -40,6 +40,7 @@ import {
 } from "react";
 import MarkdownStream from "@/components/MarkdownStream";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { PrefillNote } from "@/features/agents/message-flags/PrefillNote";
 import { useDebugContext } from "@/hooks/useDebugContext";
 import {
   selectErrorIsFatal,
@@ -620,6 +621,7 @@ export function AgentAssistantMessage({
           {!isClosedStreamSegment && displaySources.length > 0 && (
             <MessageSourcesRow sources={displaySources} className="mt-2" />
           )}
+          {!isStreamActive && <PrefillNote metadata={record?.metadata} />}
           {/* While content is streaming, the breathing orb trails just below
               it, moving down as the message grows, then unmounts at completion
               (its slot becomes the action bar). The pre-token / "waiting for
