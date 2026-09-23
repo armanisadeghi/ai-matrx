@@ -517,6 +517,8 @@ export interface RebaseReceipt {
   };
   readonly runner: string;
   readonly rebased_at: string;
+  /** Who ran this rebase — lane, OS user, host, session, process, git HEAD, window (LEDGER-LANE). */
+  readonly attribution?: Record<string, unknown>;
 }
 
 /**

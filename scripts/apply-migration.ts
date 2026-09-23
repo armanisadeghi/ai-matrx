@@ -195,6 +195,15 @@ import {
 } from "./lib/migration-target";
 import { confirmChairStep } from "./lib/chair-step";
 import {
+  attributionColumnsPresent,
+  attributionJson,
+  attributionUpsertParts,
+  collectAttribution,
+  notRecordedSentence,
+  outsideWindowSentence,
+  stripLedgerShapeStatements,
+} from "./lib/ledger-attribution";
+import {
   isIdempotent,
   isLockClash,
   measureRoundTrip,
@@ -378,7 +387,9 @@ function statementFacts(sql: string): StatementFacts {
   const s = stripForStatementDetection(sql);
   const txn = s.match(TXN_CONTROL_RE);
   return {
-    selfLedger: SELF_LEDGER_RE.test(s),
+    // The runner's own ledger SHAPE (the seven attribution columns, one ADD/DROP COLUMN per
+    // statement) is the one closed door through this refusal — lib/ledger-attribution.ts.
+    selfLedger: SELF_LEDGER_RE.test(stripLedgerShapeStatements(s)),
     txnControl: txn ? txn[1]!.toUpperCase() : null,
     autocommit: NEEDS_AUTOCOMMIT_RE.test(s),
   };
@@ -1787,11 +1798,26 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         );
       }
     }
-    const ledgerUpsert =
+    // 🚨 WHO APPLIED THIS ROW (lane LEDGER-LANE, 2026-09-23). Two production applies landed
+    // outside the window on 2026-09-23 and the ledger could not say whose they were. Every row
+    // this runner writes now carries the lane, the OS user, the host, the agent session, the
+    // process chain and the HEAD of the checkout the file came from; the database computes
+    // `applied_in_window` in the same transaction. A ledger that lacks the columns (production
+    // until the chair applies ledgerlane_a_ledger_row_names_who_applied_it.sql) gets the row
+    // WITHOUT them, and this says so — never a refusal, never silence.
+    // The columns are read AGAIN inside the transaction, after the file ran and immediately
+    // before the ledger insert: the file itself may be the one that adds them (the up) or drops
+    // them (its inverse), and an insert naming a column that is not there fails the whole apply.
+    const attribution = collectAttribution(path, lane);
+    const attrQ = (text: string) => client.query(text) as Promise<{ rows: Array<Record<string, unknown>> }>;
+    const attrParts = attributionUpsertParts(attribution, lit);
+    let attrMissing: string[] = [];
+    const buildLedgerUpsert = (attr: typeof attrParts | null) =>
       chairStepLog +
       `insert into public._schema_migrations (source, filename, checksum, duration_ms` +
       (chairStepConfirmed ? `, chair_step` : ``) +
       (rehearsalMark ? `, rehearsal_on` : ``) +
+      (attr ? `, ${attr.cols.join(", ")}` : ``) +
       `)\n` +
       `values (${lit(SOURCE)}, ${lit(filename)}, ${lit(checksum)},\n` +
       `        greatest(1, (extract(epoch from clock_timestamp()\n` +
@@ -1800,6 +1826,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         ? `,\n        ${lit(`${chairStepConfirmed} — named with --confirm-chair-step by ${process.env.USER ?? "unknown"}`)}`
         : ``) +
       (rehearsalMark ? `,\n        ${lit(rehearsalMark)}` : ``) +
+      (attr ? `,\n        ${attr.values.join(",\n        ")}` : ``) +
       `)\n` +
       `on conflict (source, filename) do update set\n` +
       `  checksum = excluded.checksum, applied_at = now(), duration_ms = excluded.duration_ms` +
@@ -1807,8 +1834,13 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       // A row COPIED FROM PRODUCTION that a rehearsal overwrites must stop looking like
       // production's row the moment it is overwritten. That is the whole conflict case.
       (rehearsalMark ? `, rehearsal_on = excluded.rehearsal_on` : ``) +
+      // A --reapply EXECUTES again, so the row is re-attributed to whoever executed it this time.
+      (attr ? `,\n  ${attr.sets.join(", ")}` : ``) +
       `;`;
 
+    let ledgerUpsert = buildLedgerUpsert(
+      (await attributionColumnsPresent(attrQ)).present ? attrParts : null,
+    );
     if (dryRun) {
       console.log(`${TAG.info}--dry-run — nothing was sent. Exactly what would run, in ONE transaction:`);
       console.log(`${C.dim}${"─".repeat(72)}${C.reset}`);
@@ -1848,6 +1880,9 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         sql,
       );
       if (revokeFindings.length) throw new RevokeOrderRefusal(filename, revokeFindings);
+      const attrNow = await attributionColumnsPresent(attrQ);
+      attrMissing = attrNow.missing;
+      ledgerUpsert = buildLedgerUpsert(attrNow.present ? attrParts : null);
       await client.query(ledgerUpsert);
       await client.query("commit");
     } catch (err) {
@@ -1884,6 +1919,35 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       `${TAG.ok}Applied and ledgered — checksum ${checksum} == sha256 of the executed bytes ` +
         `${C.dim}(${elapsed} ms, applied_at ${after.applied_at})${C.reset}`,
     );
+    if (attrMissing.length) console.warn(`${TAG.warn}${notRecordedSentence(target, attrMissing)}`);
+    else {
+      const who = await client
+        .query<{ lane: string | null; os_user: string | null; host: string | null; in_window: boolean | null }>(
+          `select applied_by_lane as lane, applied_by_os_user as os_user, applied_by_host as host,
+                  applied_in_window as in_window
+             from public._schema_migrations where source = $1 and filename = $2`,
+          [SOURCE, filename],
+        )
+        .then((r) => r.rows[0] ?? null)
+        .catch(() => null);
+      if (!who || who.os_user === null) {
+        console.error(
+          `${TAG.fail}${filename} committed, but its ledger row carries NO attribution although the ` +
+            `columns exist. Something else wrote this row after the runner did. Investigate.`,
+        );
+        return 1;
+      }
+      console.log(
+        `${TAG.ok}attributed — lane ${who.lane ?? "(none named)"}, ${who.os_user}@${who.host}, ` +
+          `${who.in_window ? "inside" : "outside"} the 1–4 AM Pacific window ` +
+          `${C.dim}(pnpm ledger:who ${filename})${C.reset}`,
+      );
+    }
+    // Allowed, never refused (a function-body chair step may run outside the window on the
+    // chair's word) — the point is that the apply is NAMED, out loud, at the moment it happens.
+    if (target === "production" && !isInsideWindow()) {
+      console.warn(`${TAG.warn}${outsideWindowSentence(filename, attribution)}`);
+    }
 
     // THE CHECKED-IN SNAPSHOT IS WRITTEN BY THE RUNNER, HERE, ON THE ONE PATH THAT CAN
     // KNOW (lane LEDGER-LOCK, 2026-09-22). `migrations/LEDGER.json` is what the pre-commit
@@ -4264,7 +4328,16 @@ async function rebaseReceiptWrite(
   expectChecksum: string,
   newChecksum: string,
   receipt: RebaseReceipt,
+  filePath?: string,
 ): Promise<{ ok: true } | { ok: false; why: string }> {
+  // A rebase EXECUTES NOTHING, so it never overwrites the apply's attribution columns: its own
+  // attribution rides in the receipt it appends (lane LEDGER-LANE, 2026-09-23).
+  if (filePath) {
+    receipt = {
+      ...receipt,
+      attribution: attributionJson(collectAttribution(filePath, receipt.lane), isInsideWindow()),
+    };
+  }
   await beginClean(client);
   try {
     await client.query(`set local lock_timeout = '5s'`);
@@ -4593,7 +4666,7 @@ async function ledgerRebase(path: string, argv: readonly string[]): Promise<numb
           runner: REBASE_RUNNER,
           rebased_at: measuredAt,
         };
-        const w = await rebaseReceiptWrite(client, filename, r.checksum, newChecksum, receipt);
+        const w = await rebaseReceiptWrite(client, filename, r.checksum, newChecksum, receipt, path);
         if (!w.ok) {
           console.error(`${TAG.fail}the clone's ledger row could not be moved (the write path is NOT proven): ${w.why}`);
           return 1;
@@ -4683,7 +4756,7 @@ async function ledgerRebase(path: string, argv: readonly string[]): Promise<numb
       runner: REBASE_RUNNER,
       rebased_at: rebasedAt,
     };
-    const w = await rebaseReceiptWrite(client, filename, row.checksum, newChecksum, receipt);
+    const w = await rebaseReceiptWrite(client, filename, row.checksum, newChecksum, receipt, path);
     if (!w.ok) return refuse(w.why);
     // THE ONE EDIT OF A LEDGERED FILE THIS PRIMITIVE MAKES: a corrected inverse lands in its file
     // in the same step its row moves onto it, with a receipt the commit guard turns into a

@@ -55,6 +55,19 @@ function's own HINT text made `pnpm db:apply` refuse a file that needed no autoc
 Both runners now print `autocommit`, `txn_control` and `self_ledger` on every `--judge-only`
 line, so the corpus holds them to the same reading.
 
+**The one closed door through the self-ledger refusal (lane LEDGER-LANE, 2026-09-23).** A file may
+change the ledger's SHAPE in exactly one way: `alter table public._schema_migrations add column if
+not exists <col> <type>` (and, in an inverse, `… drop column if exists <col>`), ONE column per
+statement, for the seven attribution columns the runners themselves write — `applied_by_lane`,
+`applied_by_os_user`, `applied_by_host`, `applied_by_session`, `applied_by_process`,
+`applied_from_git_head` (all `text`) and `applied_in_window` (`boolean`). Those statements are
+removed before `self_ledger` is read (`stripLedgerShapeStatements` in
+`scripts/lib/ledger-attribution.ts`, `strip_ledger_shape_statements` in
+`aidream/db/ledger_attribution.py`); every other ledger statement — another column, another type,
+a row write riding beside the shape — still reads `self_ledger: yes` and is refused.
+Fixtures `lg-01` … `lg-04`. Adding a name to that list is a runner change, made in both runners
+and this file in the same commit.
+
 ### 1b. `-- retired: <why>` — frozen history that may never execute again
 
 An already-ledgered file is **never re-judged**: its bytes are frozen history, and that is
