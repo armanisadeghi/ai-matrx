@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
     "build": "ts-node scripts/generate-manifest.ts && pnpm build:sw && pnpm build:kind-sandbox && pnpm build:pdfjs-worker && pnpm build:next",
-    "build:next": "next build --experimental-build-mode compile && next build --experimental-build-mode generate",
+    "build:next": "next build --experimental-build-mode compile && node scripts/check-turbopack-chunk-identities.mjs && next build --experimental-build-mode generate",
     "build:sw": "tsx features/files/cache/service-worker/build-sw.ts",
     "build:kind-sandbox": "tsx features/content-ir/sandbox/build-kind-sandbox.ts",
     "harness:kind-sandbox": "tsx features/content-ir/sandbox/make-acceptance-harness.ts",
@@ -800,7 +800,7 @@
     "mcp-handler": "^2.2.0",
     "mermaid": "^12.0.0",
     "motion": "^13.4.1",
-    "next": "latest",
+    "next": "16.4.0-canary.39",
     "node-fetch": "^3.3.2",
     "normalizr": "latest",
     "onnxruntime-web": "1.30.0",
