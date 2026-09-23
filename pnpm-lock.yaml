@@ -130,8 +130,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0(mermaid@12.0.0)
       '@modelcontextprotocol/server':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^2.1.0
+        version: 2.1.0
       '@monaco-editor/react':
         specifier: ^4.7.0
         version: 4.7.0(monaco-editor@0.52.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -331,8 +331,8 @@ importers:
         specifier: 0.25.1
         version: 0.25.1
       '@upstash/ratelimit':
-        specifier: ^2.1.0
-        version: 2.1.0(@upstash/redis@1.39.0)
+        specifier: ^2.2.0
+        version: 2.2.0(@upstash/redis@1.39.0)
       '@upstash/redis':
         specifier: ^1.39.0
         version: 1.39.0
@@ -443,10 +443,10 @@ importers:
         version: 3.10.2
       katex:
         specifier: latest
-        version: 0.18.7
+        version: 0.18.9
       konva:
-        specifier: ^10.6.0
-        version: 10.6.0(canvas@3.2.3)
+        specifier: ^10.7.0
+        version: 10.7.0(canvas@3.2.3)
       leaflet:
         specifier: ^1.9.4
         version: 1.9.4
@@ -467,13 +467,13 @@ importers:
         version: 2.32.7
       mcp-handler:
         specifier: ^2.2.0
-        version: 2.2.0(@modelcontextprotocol/server@2.0.0)(next@16.4.0-canary.39(@babel/core@8.0.6)(@opentelemetry/api@1.9.0)(@playwright/test@1.63.0)(@types/node@26.6.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))
+        version: 2.2.0(@modelcontextprotocol/server@2.1.0)(next@16.4.0-canary.39(@babel/core@8.0.6)(@opentelemetry/api@1.9.0)(@playwright/test@1.63.0)(@types/node@26.6.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))
       mermaid:
         specifier: ^12.0.0
         version: 12.0.0
       motion:
-        specifier: ^13.4.1
-        version: 13.4.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        specifier: ^13.4.2
+        version: 13.4.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       next:
         specifier: 16.4.0-canary.39
         version: 16.4.0-canary.39(@babel/core@8.0.6)(@opentelemetry/api@1.9.0)(@playwright/test@1.63.0)(@types/node@26.6.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -523,11 +523,11 @@ importers:
         specifier: latest
         version: 17.0.1(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)
       react-email:
-        specifier: ^6.9.5
-        version: 6.9.5(bufferutil@4.1.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(utf-8-validate@5.0.10)
+        specifier: ^6.11.0
+        version: 6.11.0(bufferutil@4.1.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(utf-8-validate@5.0.10)
       react-filerobot-image-editor:
         specifier: 5.0.1
-        version: 5.0.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-konva@19.3.0(@types/react@19.3.0)(konva@10.6.0(canvas@3.2.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))
+        version: 5.0.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-konva@19.3.0(@types/react@19.3.0)(konva@10.7.0(canvas@3.2.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))
       react-hook-form:
         specifier: latest
         version: 7.88.0(react@19.3.0)
@@ -539,13 +539,13 @@ importers:
         version: 3.1.0(prop-types@15.8.1)(react@19.3.0)
       react-konva:
         specifier: ^19.3.0
-        version: 19.3.0(@types/react@19.3.0)(konva@10.6.0(canvas@3.2.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 19.3.0(@types/react@19.3.0)(konva@10.7.0(canvas@3.2.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react-leaflet:
         specifier: ^5.0.0
         version: 5.0.0(leaflet@1.9.4)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react-live:
-        specifier: ^4.1.8
-        version: 4.1.8(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        specifier: ^5.0.0
+        version: 5.0.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react-markdown:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@19.3.0)(react@19.3.0)
@@ -671,10 +671,10 @@ importers:
         version: 0.18.5
       y-protocols:
         specifier: ^1.0.7
-        version: 1.0.7(yjs@13.6.32)
+        version: 1.0.7(yjs@13.6.33)
       yjs:
-        specifier: ^13.6.32
-        version: 13.6.32
+        specifier: ^13.6.33
+        version: 13.6.33
       zod:
         specifier: ^4.6.5
         version: 4.6.5
@@ -2297,12 +2297,12 @@ packages:
   '@mixmark-io/domino@2.2.0':
     resolution: {integrity: sha512-Y28PR25bHXUg88kCV7nivXrP2Nj2RueZ3/l/jdx6J9f8J4nsEGcgX0Qe6lt7Pa+J79+kPiJU3LguR6O/6zrLOw==}
 
-  '@modelcontextprotocol/core@2.0.0':
-    resolution: {integrity: sha512-pJCEwGG7Lfr/+PQp9ZTwKXNeO5wzbfKL7H3MYpCorM4oFBoQrdjnBgEoqG+RjhsvS1FKrDbKux+M1HhlnGWqcA==}
+  '@modelcontextprotocol/core@2.1.0':
+    resolution: {integrity: sha512-YdFj5gMRHr0gYNAhTbQDgjLHiEJdIAUYxomhKseUNye7ZGlISQmUoLh2sveFFCiQ7j2YMffT1kgSND0FSfIFjQ==}
     engines: {node: '>=20'}
 
-  '@modelcontextprotocol/server@2.0.0':
-    resolution: {integrity: sha512-YhHWdHfpFMQfd0prsEnxKeS3Qz3ytIGmsS0sth4KDjnacIT7hxk6hXHkJ9KysxlkvTM+WZAtQbbcUhdoP4Hvtw==}
+  '@modelcontextprotocol/server@2.1.0':
+    resolution: {integrity: sha512-FdvwZU5N03O77Suh35JqjAqq5R1ZTEPFtwu6N4BgBq28qrQtrCnpbLL5U2pwYCuE194jAw0xnlOVmIqhfoYuUQ==}
     engines: {node: '>=20'}
 
   '@monaco-editor/loader@1.7.0':
@@ -6068,8 +6068,8 @@ packages:
     resolution: {integrity: sha512-7qJHGxpQgQr9/vmeS1PktEwvNAF7TI4iJDi8Pu2CFZ9YUGHZH4fOP5TfYlZ4aVxfopnELiE4BS4FBjyK7V1/xQ==}
     engines: {node: '>=16.0.0'}
 
-  '@upstash/ratelimit@2.1.0':
-    resolution: {integrity: sha512-a0bpet6HkEfLaTldcBgIgUCe7ELfnpudrruNDye/W1Oknz+ekB9PthUbqFSWRNZnV0y/EbK8YXYfhLG5KU8DYw==}
+  '@upstash/ratelimit@2.2.0':
+    resolution: {integrity: sha512-gSydXspG6TJKTh71/gGGv4IGDjD9rXglQfm2jAue2kh4bcfWtEAsG1NW4OqzZd/hubJPojsbOU6AMdS6Xqh0tQ==}
     peerDependencies:
       '@upstash/redis': ^1.38.2
 
@@ -6753,9 +6753,9 @@ packages:
     resolution: {integrity: sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==}
     engines: {node: '>= 8.10.0'}
 
-  chokidar@4.0.3:
-    resolution: {integrity: sha512-Qgzu8kfBvo+cA4962jnP1KkS6Dop5NS6g7R5LFYJr4b8Ub94PPQXUksCw9PvXoeXPRRddRNC5C1JQUR2SMGtnA==}
-    engines: {node: '>= 14.16.0'}
+  chokidar@5.0.0:
+    resolution: {integrity: sha512-TQMmc3w+5AxjpL8iIiwebF73dRDF4fBIieAqGn9RGCWaEVwQ6Fb2cGe31Yns0RRIzii5goJ1Y7xbMwo1TxMplw==}
+    engines: {node: '>= 20.19.0'}
 
   chownr@1.1.4:
     resolution: {integrity: sha512-jJ0bqzaylmJtVnNgzTeSOs8DPavpbYgEr/b0YL8/2GO3xJEhInFmhKMUnEJQjZumK7KXGFhUy89PrsJWlakBVg==}
@@ -8128,8 +8128,8 @@ packages:
     resolution: {integrity: sha512-GMBAbW9antB8iZRHLoGw0b3HANt57diZYFO/HL1JGIC1MjKrdmhxvrJbupnVvpys0zsz7yBApXdQyfepKly2kA==}
     engines: {node: '>=0.10.0'}
 
-  framer-motion@13.4.1:
-    resolution: {integrity: sha512-6DsbU4hsNsokXkwSp3ezdMWMiv5yWzCcdjFgakkeUC6FVIK01Py8ToSzsXvBw8cYA5hff/oXFvZFU7ltbVyUYA==}
+  framer-motion@13.4.2:
+    resolution: {integrity: sha512-yrC5GJqlGbuZEz2DFaH+VUCrBwlA6mM5v/Sfazd83/IRpWdOdVqgZmsAZWoS30YTuA3PCbGNL2JIWyGVmeimsA==}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
@@ -9183,8 +9183,8 @@ packages:
     resolution: {integrity: sha512-Eeo8Ys1doU1z+x8AZsPpQu+p/QcZBI5PeOo7QGQdy2x2m0MU/hYagBbGOmXwr5KVbEfVuWv9LpnQWeehogurjg==}
     hasBin: true
 
-  katex@0.18.7:
-    resolution: {integrity: sha512-h+UCwkZ+4Jz8WQ7MLGfj7UVFrRCizGb912fwF4luGdYsC5paYG1vx+jy+KRcC/XkpjGva/P7nAWuxNnPzRvzHw==}
+  katex@0.18.9:
+    resolution: {integrity: sha512-8ad9RyoKsb/g8/yLFE+KAlP+DhbCTRUNi/V9XGsxn0R+trJJltNwzcDNo0q/DEkOy5fQUQTAQyCXCYSE+OakTQ==}
     hasBin: true
 
   kdbush@4.1.0:
@@ -9212,8 +9212,8 @@ packages:
     resolution: {integrity: sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==}
     engines: {node: '>=6'}
 
-  konva@10.6.0:
-    resolution: {integrity: sha512-6dyI91lZTx2mDu9DRo5zrT2Pg+Q3TFeyLfGQSAPJMhfvKjelbjPnTJimYQISam/EW+g0+pjLk/yztJKpSuxFPQ==}
+  konva@10.7.0:
+    resolution: {integrity: sha512-2CwuytBrOlTh7WHCSeXyUeysB2rpwHruUUDD5etYtrzijkCVH+00+CQz5fJUGI0hm7mzxxDLYLw4Wpo+8QGJ4g==}
     peerDependencies:
       canvas: ^3.0.0
       skia-canvas: ^3.0.0
@@ -9861,14 +9861,14 @@ packages:
   monotone-convex-hull-2d@1.0.1:
     resolution: {integrity: sha512-ixQ3qdXTVHvR7eAoOjKY8kGxl9YjOFtzi7qOjwmFFPfBqZHVOjUFOBy/Dk9dusamRSPJe9ggyfSypRbs0Bl8BA==}
 
-  motion-dom@13.4.1:
-    resolution: {integrity: sha512-qw6ILBFHrIPQd3k9Dd1fNlCLHTNzvMXW2zpeTlxn4wZXX02m0Dnsf8ycyvcjtAZtBiBnL4SfbyDIXWg+b1x/Ig==}
+  motion-dom@13.4.2:
+    resolution: {integrity: sha512-mY293Iyj4rOQo5sDxUwPYLOKiveLQrJoK1tKfG8V1H3MMGMfan3s2i7NBW18WnD39DD79ogyiL/1fmy22GLG5w==}
 
   motion-utils@13.3.0:
     resolution: {integrity: sha512-sgSschQp7EseHInIlR7hBbMuvet3RA0bs28KPZAXJcGKGdxHGvh1ogpYDilY3bOMtl73EqPNmp75sAKHYPU5sg==}
 
-  motion@13.4.1:
-    resolution: {integrity: sha512-9YjJ918QN6/4VSigEoqJysNPh33uTruTLbrBdGDI7pM6WTWU4kTPKzmEqJ4bXzLGYyDyZ5ubWX2tv2uTuFQugg==}
+  motion@13.4.2:
+    resolution: {integrity: sha512-PlwVlwO7Ibhv2gZMX9ZqE7eGfSmbeU9Yf+mqkvJFdDSyTK7inlKRCry7IpofrcIU8JY7++83614eG7TJ7ORC2w==}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
@@ -10783,9 +10783,9 @@ packages:
       react-dom: ^19.0.0
       react-is: ^19.0.0
 
-  react-email@6.9.5:
-    resolution: {integrity: sha512-XkUFa4S3XGbVQegdGSvkShsEOn/j9t3yL5MXRf5A2l4K+RzXNPK2TZLOgI/bXfWu2WRyKWb9aVDtfLLuyBMi2A==}
-    engines: {node: '>=20.0.0'}
+  react-email@6.11.0:
+    resolution: {integrity: sha512-u0NBK+ypniH+snmYa1BQTCvqPTounU9OczXH+j2BLUoMrNkk5/d5qq5Droral87f2B7eClsDp0pF0Y4taWERbg==}
+    engines: {node: '>=20.19.0'}
     hasBin: true
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
@@ -10839,9 +10839,8 @@ packages:
       react: ^19.0.0
       react-dom: ^19.0.0
 
-  react-live@4.1.8:
-    resolution: {integrity: sha512-B2SgNqwPuS2ekqj4lcxi5TibEcjWkdVyYykBEUBshPAPDQ527x2zPEZg560n8egNtAjUpwXFQm7pcXV65aAYmg==}
-    engines: {node: '>= 0.12.0', npm: '>= 2.0.0'}
+  react-live@5.0.0:
+    resolution: {integrity: sha512-7bedhRQx8DmF1tppVijaKAu6El99x+fKDYB2/h5oIwaJK6DBzshuJtq4IHRYEuAVGXg6f+xUOi4vPcNwS0f8HQ==}
     peerDependencies:
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
@@ -10986,9 +10985,9 @@ packages:
     resolution: {integrity: sha512-hOS089on8RduqdbhvQ5Z37A0ESjsqz6qnRcffsMU3495FuTdqSm+7bhJ29JvIOsBDEEnan5DPu9t3To9VRlMzA==}
     engines: {node: '>=8.10.0'}
 
-  readdirp@4.1.2:
-    resolution: {integrity: sha512-GDhwkLfywWL2s6vEjyhri+eXmfH6j1L7JE27WhqLeYzoh/A3DBaYGEj2H/HFZCn/kMfim73FXxEJTw06WtxQwg==}
-    engines: {node: '>= 14.18.0'}
+  readdirp@5.1.1:
+    resolution: {integrity: sha512-Kko+Y5XQ6fM+Ce3dq3m9YGxnacYZYl9cA1wZjaF3Vbry2L3i1qVg8+CAgNPsXRArPMUMCaOR7oa9Nqntc43JKA==}
+    engines: {node: '>= 20.19.0'}
 
   recharts@3.10.1:
     resolution: {integrity: sha512-QXFrvt6IVcw7eeZCoyXTwkIJAX3Dv1nyVhMicXJ47GsGDDpcN8z6o644DibE9XjpBTThtsomLKnTV6lc+cVFUA==}
@@ -12645,8 +12644,8 @@ packages:
     resolution: {integrity: sha512-GZtjxm/J/4TSxuL3FNYjCmLktBTnIw/rVmKSIyKeYAZpmJB2ig9VauCC5xsa82GNKVKDAqpOn3KVzNt0zmrU0g==}
     engines: {node: '>=12'}
 
-  yjs@13.6.32:
-    resolution: {integrity: sha512-lfiJIIC4Xayt5ItynE407ehlE03pCjeOc4hkR4yxxvvNJ4kuiN25B0g+Qp8XagYz361LLL7DCzR5bvFJ81QKtQ==}
+  yjs@13.6.33:
+    resolution: {integrity: sha512-q/UYvr1gOk4XII+Cu1CW2dINjYqJJFifTzogEaIARznrvX7uOlHsdTEXcnOBMuIsrCGEEKdNxi74kyMLZlKVfw==}
     engines: {node: '>=16.0.0', npm: '>=8.0.0'}
 
   yn@3.1.1:
@@ -14336,13 +14335,13 @@ snapshots:
 
   '@mixmark-io/domino@2.2.0': {}
 
-  '@modelcontextprotocol/core@2.0.0':
+  '@modelcontextprotocol/core@2.1.0':
     dependencies:
       zod: 4.6.5
 
-  '@modelcontextprotocol/server@2.0.0':
+  '@modelcontextprotocol/server@2.1.0':
     dependencies:
-      '@modelcontextprotocol/core': 2.0.0
+      '@modelcontextprotocol/core': 2.1.0
       zod: 4.6.5
 
   '@monaco-editor/loader@1.7.0':
@@ -19968,7 +19967,7 @@ snapshots:
     dependencies:
       '@upstash/redis': 1.39.0
 
-  '@upstash/ratelimit@2.1.0(@upstash/redis@1.39.0)':
+  '@upstash/ratelimit@2.2.0(@upstash/redis@1.39.0)':
     dependencies:
       '@upstash/core-analytics': 0.0.10
       '@upstash/redis': 1.39.0
@@ -20884,9 +20883,9 @@ snapshots:
       fsevents: 2.3.3
     optional: true
 
-  chokidar@4.0.3:
+  chokidar@5.0.0:
     dependencies:
-      readdirp: 4.1.2
+      readdirp: 5.1.1
 
   chownr@1.1.4: {}
 
@@ -22498,9 +22497,9 @@ snapshots:
     dependencies:
       map-cache: 0.2.2
 
-  framer-motion@13.4.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  framer-motion@13.4.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
-      motion-dom: 13.4.1
+      motion-dom: 13.4.2
       motion-utils: 13.3.0
       tslib: 2.8.1
     optionalDependencies:
@@ -23884,7 +23883,7 @@ snapshots:
     dependencies:
       commander: 8.3.0
 
-  katex@0.18.7:
+  katex@0.18.9:
     dependencies:
       commander: 15.0.0
 
@@ -23908,7 +23907,7 @@ snapshots:
 
   kleur@3.0.3: {}
 
-  konva@10.6.0(canvas@3.2.3):
+  konva@10.7.0(canvas@3.2.3):
     optionalDependencies:
       canvas: 3.2.3
 
@@ -24213,9 +24212,9 @@ snapshots:
 
   math-intrinsics@1.1.0: {}
 
-  mcp-handler@2.2.0(@modelcontextprotocol/server@2.0.0)(next@16.4.0-canary.39(@babel/core@8.0.6)(@opentelemetry/api@1.9.0)(@playwright/test@1.63.0)(@types/node@26.6.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)):
+  mcp-handler@2.2.0(@modelcontextprotocol/server@2.1.0)(next@16.4.0-canary.39(@babel/core@8.0.6)(@opentelemetry/api@1.9.0)(@playwright/test@1.63.0)(@types/node@26.6.2)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)):
     dependencies:
-      '@modelcontextprotocol/server': 2.0.0
+      '@modelcontextprotocol/server': 2.1.0
       chalk: 5.6.2
       commander: 11.1.0
     optionalDependencies:
@@ -24761,15 +24760,15 @@ snapshots:
     dependencies:
       robust-orientation: 1.2.1
 
-  motion-dom@13.4.1:
+  motion-dom@13.4.2:
     dependencies:
       motion-utils: 13.3.0
 
   motion-utils@13.3.0: {}
 
-  motion@13.4.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  motion@13.4.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
-      framer-motion: 13.4.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      framer-motion: 13.4.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       tslib: 2.8.1
     optionalDependencies:
       react: 19.3.0
@@ -25807,12 +25806,12 @@ snapshots:
       react-dom: 19.3.0(react@19.3.0)
       react-is: 19.3.0
 
-  react-email@6.9.5(bufferutil@4.1.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(utf-8-validate@5.0.10):
+  react-email@6.11.0(bufferutil@4.1.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(utf-8-validate@5.0.10):
     dependencies:
       '@babel/parser': 7.29.2
       '@babel/traverse': 7.29.0
       '@react-email/render': 2.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      chokidar: 4.0.3
+      chokidar: 5.0.0
       commander: 13.1.0
       conf: 15.1.0
       css-tree: 3.2.1
@@ -25838,7 +25837,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  react-filerobot-image-editor@5.0.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-konva@19.3.0(@types/react@19.3.0)(konva@10.6.0(canvas@3.2.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)):
+  react-filerobot-image-editor@5.0.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-konva@19.3.0(@types/react@19.3.0)(konva@10.7.0(canvas@3.2.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)):
     dependencies:
       '@babel/runtime': 7.29.7
       '@scaleflex/icons': 2.6.3(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -25847,7 +25846,7 @@ snapshots:
       prop-types: 15.7.2
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
-      react-konva: 19.3.0(@types/react@19.3.0)(konva@10.6.0(canvas@3.2.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      react-konva: 19.3.0(@types/react@19.3.0)(konva@10.7.0(canvas@3.2.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       styled-components: 6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
     transitivePeerDependencies:
       - '@types/react'
@@ -25873,11 +25872,11 @@ snapshots:
       prop-types: 15.8.1
       react: 19.3.0
 
-  react-konva@19.3.0(@types/react@19.3.0)(konva@10.6.0(canvas@3.2.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  react-konva@19.3.0(@types/react@19.3.0)(konva@10.7.0(canvas@3.2.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       '@types/react-reconciler': 0.33.0(@types/react@19.3.0)
       its-fine: 2.0.0(@types/react@19.3.0)(react@19.3.0)
-      konva: 10.6.0(canvas@3.2.3)
+      konva: 10.7.0(canvas@3.2.3)
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
       react-reconciler: 0.34.0(react@19.3.0)
@@ -25892,7 +25891,7 @@ snapshots:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
 
-  react-live@4.1.8(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  react-live@5.0.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       prism-react-renderer: 2.4.1(react@19.3.0)
       react: 19.3.0
@@ -26075,7 +26074,7 @@ snapshots:
       picomatch: 2.3.2
     optional: true
 
-  readdirp@4.1.2: {}
+  readdirp@5.1.1: {}
 
   recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1):
     dependencies:
@@ -28064,10 +28063,10 @@ snapshots:
 
   xtend@4.0.2: {}
 
-  y-protocols@1.0.7(yjs@13.6.32):
+  y-protocols@1.0.7(yjs@13.6.33):
     dependencies:
       lib0: 0.2.117
-      yjs: 13.6.32
+      yjs: 13.6.33
 
   y18n@4.0.3: {}
 
@@ -28114,7 +28113,7 @@ snapshots:
       y18n: 5.0.8
       yargs-parser: 21.1.1
 
-  yjs@13.6.32:
+  yjs@13.6.33:
     dependencies:
       lib0: 0.2.117
 
