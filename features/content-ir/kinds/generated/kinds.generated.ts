@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 533 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 534 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "1a14753b4952";
+export const KIND_REGISTRY_FINGERPRINT = "39030e58b628";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -2478,7 +2478,7 @@ export interface ItemSpecific {
 }
 
 /**
- * * Shared by 68 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
+ * * Shared by 70 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
  */
 export type JsonValue = unknown;
 
@@ -5084,6 +5084,7 @@ export interface SeoKeywordResearchIngestSummary {
   primary_keyword_ids?: string[];
   edges_skipped_rejected?: number;
   keywords_already_existed?: number;
+  site_keyword_values_created?: number;
 }
 
 /**
@@ -5872,6 +5873,65 @@ export interface SheetSpec {
 }
 
 /**
+ * * From kind `cms_publish_result`.
+ */
+export interface ShellCheckSummaryItem {
+  site: string;
+  pages?: ShellPageResultItem[];
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  site_issues?: ShellSiteIssueItem[];
+  pages_passed?: number;
+  pages_checked?: number;
+  truncation_note?: string | null;
+}
+
+/**
+ * * From kind `cms_publish_result`.
+ */
+export interface ShellIssueItem {
+  key: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  message: string;
+  severity: "site" | "page";
+}
+
+/**
+ * * From kind `cms_publish_result`.
+ */
+export interface ShellPageResultItem {
+  ok?: boolean;
+  url: string;
+  route?: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  issues?: ShellIssueItem[];
+  page_id?: string | null;
+  http_status?: number | null;
+  state_checked?: string;
+}
+
+/**
+ * * From kind `cms_publish_result`.
+ */
+export interface ShellSiteIssueItem {
+  key: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  message: string;
+  pages_affected: number;
+}
+
+/**
  * * Shared by 2 kinds (serp_placement, web_result).
  */
 export interface SiteLink {
@@ -5976,6 +6036,38 @@ export interface SourcedSpec {
    */
   __kind?: string;
   source: string;
+}
+
+/**
+ * One spoken turn. Not a kind: it has no meaning outside its script.
+ *  *
+ *  * From kind `speech_script`.
+ */
+export interface SpeechTurn {
+  /**
+   * What is said. Any {{variable}} is filled at run time.
+   */
+  text: string;
+  /**
+   * The voice this speaker uses: a literal provider voice id from the model's catalog, or a {{variable}}. Empty = bound to the agent's Voice setting (tts_voice).
+   */
+  voice?: string | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * The speaker's name. Turns with the same name are the same speaker. For multi-speaker vendors (Gemini) this is the transcript label.
+   */
+  speaker: string;
+  /**
+   * Free-text performance direction for this turn only (e.g. 'warm, a little amused').
+   */
+  direction?: string | null;
+  /**
+   * Silence after this turn, in milliseconds.
+   */
+  pause_after_ms?: number | null;
 }
 
 /**
@@ -7695,7 +7787,7 @@ export interface CmsPageBuild {
 }
 
 /**
- * Kind `cms_publish_result` (registry v6).
+ * Kind `cms_publish_result` (registry v7).
  */
 export interface CmsPublishResult {
   /**
@@ -7709,6 +7801,7 @@ export interface CmsPublishResult {
   published?: number;
   requested?: number;
   cms_site_id: string;
+  shell_check?: ShellCheckSummaryItem | null;
   web_site_id: string;
   cms_site_slug: string;
   would_publish?: number;
@@ -10162,18 +10255,32 @@ export interface ItemVisionExtraction {
 }
 
 /**
- * Kind `items` (registry v3).
+ * A list of things — THE input every generic list node consumes.
+ *
+ * Registered as ``items`` (family ``workflow_io``) since ``wf_013`` as a
+ * hand-seeded archetype row with no model in code, so the seven list nodes
+ * that declare ``input_kind="items"`` (``data.filter``, ``data.flatten``,
+ * ``data.dedupe``, ``data.sort``, ``data.limit``, ``data.batch``,
+ * ``data.aggregate``) could not be graded against it. This is that row's
+ * shape, field for field: ``archetype`` and ``count`` stay because the
+ * canonical ``Items`` payload (``matrx_graph.types.canonical_payloads``)
+ * emits them, and a consumer must accept what its producer sends.
+ *  *
+ *  * Kind `items` (registry v5).
  */
 export interface Items {
   /**
    * len(items); auto-derived when not provided.
    */
   count?: number;
-  items: unknown[];
+  /**
+   * The elements, in order.
+   */
+  items: JsonValue[];
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "items";
+  __kind?: "items";
   archetype?: "items";
 }
 
@@ -15895,7 +16002,7 @@ export interface SeoGscSearchPerformanceReceipt {
 /**
  * Output of ``seo.keywords.classify`` — batch classification counters.
  *  *
- *  * Kind `seo_keyword_classify_result` (registry v4).
+ *  * Kind `seo_keyword_classify_result` (registry v5).
  */
 export interface SeoKeywordClassifyResult {
   /**
@@ -15907,13 +16014,17 @@ export interface SeoKeywordClassifyResult {
   eligible?: number;
   result_kind?: string;
   skipped_error?: number;
+  facet_dimensions?: string[];
+  facet_rows_written?: number;
   missing_keyword_ids?: string[];
+  rejected_unknown_value?: string[];
+  facet_dimensions_skipped?: string[];
 }
 
 /**
  * Output of ``seo.keywords.relationships.research``.
  *  *
- *  * Kind `seo_keyword_relationship_research_result` (registry v12).
+ *  * Kind `seo_keyword_relationship_research_result` (registry v14).
  */
 export interface SeoKeywordRelationshipResearchResult {
   /**
@@ -15922,6 +16033,7 @@ export interface SeoKeywordRelationshipResearchResult {
   __kind?: "seo_keyword_relationship_research_result";
   ingest?: SeoKeywordResearchIngestSummary;
   volume?: SeoKeywordVolumeRefreshResult | null;
+  site_id?: string;
   artifact?: KeywordRelationshipResearch;
   result_kind?: string;
   classification?: SeoKeywordClassifyResult | null;
@@ -15994,7 +16106,7 @@ export interface SeoKeywordSerpIntentAnalysis {
  * Output of ``seo.keywords.topics.assign`` — keywords placed into the
  * shared topic tree for a business territory.
  *  *
- *  * Kind `seo_keyword_topic_assign_result` (registry v5).
+ *  * Kind `seo_keyword_topic_assign_result` (registry v6).
  */
 export interface SeoKeywordTopicAssignResult {
   /**
@@ -16005,7 +16117,9 @@ export interface SeoKeywordTopicAssignResult {
   result_kind?: "keywords.assign_topics";
   unassignable?: number;
   topics_created?: string[];
+  human_protected?: number;
   keywords_assigned?: number;
+  keywords_proposed?: number;
   unknown_topic_refs?: string[];
 }
 
@@ -16279,7 +16393,7 @@ export interface SeoPageAuditResult {
  * Output of ``seo.pages.analyze_batch`` — change-gated page analyses
  * queued through the durable Batch lane.
  *  *
- *  * Kind `seo_page_batch_submit_result` (registry v4).
+ *  * Kind `seo_page_batch_submit_result` (registry v5).
  */
 export interface SeoPageBatchSubmitResult {
   /**
@@ -16291,6 +16405,7 @@ export interface SeoPageBatchSubmitResult {
   enqueued?: number;
   requested?: number;
   skipped_unchanged?: number;
+  more_pages_waiting?: boolean;
   skipped_no_content?: number;
 }
 
@@ -17269,6 +17384,19 @@ export interface SourceRef {
    */
   published_at?: string | null;
   effective_from?: string | null;
+}
+
+/**
+ * An ordered script of spoken turns — the text-to-speech authoring part.
+ *  *
+ *  * Kind `speech_script` (registry v2).
+ */
+export interface SpeechScript {
+  turns: SpeechTurn[];
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "speech_script";
 }
 
 /**
@@ -18392,14 +18520,27 @@ export interface UuidValue {
 }
 
 /**
- * Kind `value` (registry v3).
+ * One JSON value — what ``data.parse_json``, ``data.parse_yaml`` and
+ * ``math.evaluate`` produce and what ``data.stringify_json`` and
+ * ``text.json_path`` consume.
+ *
+ * Registered as ``value`` (family ``workflow_io``) since ``wf_013``; this is
+ * that row's shape, and the canonical ``Value`` payload's.
+ *  *
+ *  * Kind `value` (registry v5).
  */
 export interface Value {
-  value: unknown;
+  /**
+   * The computed value produced by the node.
+   */
+  value: JsonValue;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "value";
+  __kind?: "value";
+  /**
+   * Canonical payload discriminator for a single computed value.
+   */
   archetype?: "value";
 }
 
@@ -22475,6 +22616,7 @@ export type GeneratedKindSlug =
   | "sorted_list_result"
   | "source_authority_rankings"
   | "source_ref"
+  | "speech_script"
   | "split_result"
   | "spoken_practice_session"
   | "sql_query_result"
@@ -23011,6 +23153,7 @@ export interface KindPayloadBySlug {
   "sorted_list_result": SortedListResult;
   "source_authority_rankings": SourceAuthorityRankings;
   "source_ref": SourceRef;
+  "speech_script": SpeechScript;
   "split_result": SplitResult;
   "spoken_practice_session": SpokenPracticeSession;
   "sql_query_result": SqlQueryResult;
@@ -23551,6 +23694,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "sorted_list_result",
   "source_authority_rankings",
   "source_ref",
+  "speech_script",
   "split_result",
   "spoken_practice_session",
   "sql_query_result",
