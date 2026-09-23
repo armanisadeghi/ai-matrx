@@ -423,7 +423,7 @@ export function ShortcutDirectory({
               <EntityRef
                 token="agent"
                 id={first.agentId}
-                name={group.label}
+                name={first.agentName ?? first.agentId.slice(0, 8)}
                 href={resolveAgentUrl(first.agentId, mode)}
                 showIcon={false}
                 className="font-semibold"
