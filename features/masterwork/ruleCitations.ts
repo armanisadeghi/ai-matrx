@@ -139,6 +139,21 @@ export interface RuleCitationIndex {
 }
 
 /**
+ * A rule's name as the slug a ruling would write for it: lowercase, apostrophes
+ * dropped ("don't" → "dont"), every other run of non-alphanumerics one hyphen.
+ * "Put the override in writing" → `put-the-override-in-writing`.
+ */
+export function ruleNameSlug(name: string): string {
+  return name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/['\u2019]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/**
  * Index a Rulebook's rules by every handle a ruling could honestly carry.
  * A handle two rules would both answer to is dropped, not resolved.
  */
@@ -174,6 +189,12 @@ export function buildRuleCitationIndex(
     if (typeof rule?.id !== "string" || rule.id === "") continue;
     claim(rule.id, rule);
     claim(rule.id.slice(0, RULE_ID_MINT_LENGTH), rule);
+    // WALK 22: the rule's NAME, as a slug. A ruling that cites
+    // `override-in-writing` for a rule NAMED "Override in writing" is quoting
+    // the name, not guessing at it. Same ambiguity law: a slug two rules'
+    // names (or a name and another rule's id) share is dropped, never
+    // resolved to either.
+    if (typeof rule.name === "string") claim(ruleNameSlug(rule.name), rule);
   }
   // Prefixes are claimed in a SECOND pass so that an id which is itself the
   // prefix of a longer id keeps its own exact meaning above.
@@ -325,7 +346,25 @@ const TRUNCATION_MARK = /^(?:…|\.\.\.)/;
  * carrying words, bold marks or a dash ends the run, so a rule id followed by
  * a sentence cannot drag the next hyphenated English word in with it.
  */
-const RUN_SEPARATOR = /^\s*(?:,|,?\s+(?:and|or))\s*$/;
+const RUN_SEPARATOR = /^\s*(?:,|\/|·|,?\s+(?:and|or))\s*$/;
+
+/**
+ * WALK 22: a citation list can carry ONE-WORD members too —
+ * `moisture-reading / straight-crack / greenboard / override-in-writing /
+ * tap-every-tile-on-a-floor`. `greenboard` is not hyphenated, so `HANDLE`
+ * never sees it, and its presence made the gap between `straight-crack` and
+ * `override-in-writing` look like words, which broke the run. A gap made of
+ * nothing but separators and bare lowercase words is read as those words
+ * standing as members of the same list. Only BETWEEN two hyphenated members:
+ * a lone word is never considered on its own.
+ */
+const MEMBER_WORD = /[a-z0-9]+/g;
+const GAP_OF_MEMBERS = /^\s*(?:,|\/|·)\s*(?:[a-z0-9]+\s*(?:,|\/|·)\s*)+$/;
+
+/** How a member we could not tie to a rule reads: its own words, quoted. */
+function citedWords(token: string): string {
+  return `\u201c${token.replace(/-/g, " ")}\u201d`;
+}
 
 /**
  * The label a machine puts in front of a handle. Once the handle is the rule's
@@ -374,7 +413,41 @@ function findCitations(
       rule: ruleForHandle(index, match[0]),
     });
   }
-  return found;
+  return withWordMembers(prose, found, index);
+}
+
+/** Admit one-word list members that sit between two hyphenated ones. */
+function withWordMembers(
+  prose: string,
+  found: Citation[],
+  index: RuleCitationIndex | null,
+): Citation[] {
+  if (found.length < 2) return found;
+  const out: Citation[] = [found[0]];
+  for (let i = 1; i < found.length; i += 1) {
+    const gapStart = found[i - 1].markEnd;
+    const gap = prose.slice(gapStart, found[i].start);
+    if (GAP_OF_MEMBERS.test(gap)) {
+      MEMBER_WORD.lastIndex = 0;
+      for (
+        let word = MEMBER_WORD.exec(gap);
+        word !== null;
+        word = MEMBER_WORD.exec(gap)
+      ) {
+        const start = gapStart + word.index;
+        const end = start + word[0].length;
+        out.push({
+          token: word[0],
+          start,
+          end,
+          markEnd: end,
+          rule: ruleForHandle(index, word[0]),
+        });
+      }
+    }
+    out.push(found[i]);
+  }
+  return out;
 }
 
 /**
@@ -400,10 +473,35 @@ function provenRuns(prose: string, found: readonly Citation[]): boolean[] {
   return proven;
 }
 
+/**
+ * The tokens this document PROVED are citations of rules we could not name —
+ * members of a citation run with no rule of their own. The same token
+ * elsewhere in the same document is the same citation ("The
+ * override-in-writing rule becomes live…", two sentences after the list that
+ * proved it), so it reads as the same quoted words there too.
+ */
+function provenUnresolvedTokens(
+  chunks: readonly string[],
+  index: RuleCitationIndex,
+): Set<string> {
+  const tokens = new Set<string>();
+  for (const chunk of chunks) {
+    const found = findCitations(chunk, index);
+    const proven = provenRuns(chunk, found);
+    found.forEach((citation, i) => {
+      if (!citation.rule && proven[i] && citation.token.includes("-")) {
+        tokens.add(citation.token);
+      }
+    });
+  }
+  return tokens;
+}
+
 function resolveInProse(
   prose: string,
   index: RuleCitationIndex | null,
   render: CiteRender,
+  provenElsewhere: ReadonlySet<string> = new Set(),
 ): string {
   const usable =
     index && (index.byHandle.size > 0 || index.byPrefix.size > 0)
@@ -423,11 +521,14 @@ function resolveInProse(
       cursor = citation.markEnd;
       return;
     }
-    if (proven[i]) {
+    if (proven[i] || provenElsewhere.has(citation.token)) {
       // Proven to stand in a citation list, but not proven to BE any one rule:
-      // it reaches the Expert as the words it already said, never as a link
-      // and never as somebody else's rule name.
-      out += citation.token.replace(/-/g, " ");
+      // it reaches the Expert as the words it already said — quoted, so it
+      // reads as a reference and not as a broken sentence (walk 22) — never
+      // as a link and never as somebody else's rule name. A one-word member
+      // is quoted only when it is IN the run; the same English word elsewhere
+      // is just a word.
+      out += citedWords(citation.token);
       cursor = citation.end;
       return;
     }
@@ -457,6 +558,10 @@ function resolveDocument(
   render: CiteRender,
 ): string {
   if (markdown === "") return markdown;
+  const provenElsewhere =
+    index && (index.byHandle.size > 0 || index.byPrefix.size > 0)
+      ? provenUnresolvedTokens(markdown.split(PROTECTED), index)
+      : new Set<string>();
   let out = "";
   let cursor = 0;
   PROTECTED.lastIndex = 0;
@@ -465,7 +570,12 @@ function resolveDocument(
     match !== null;
     match = PROTECTED.exec(markdown)
   ) {
-    out += resolveInProse(markdown.slice(cursor, match.index), index, render);
+    out += resolveInProse(
+      markdown.slice(cursor, match.index),
+      index,
+      render,
+      provenElsewhere,
+    );
     const construct = match[0];
     const inlineCode =
       construct.startsWith("`") &&
@@ -485,7 +595,9 @@ function resolveDocument(
     }
     cursor = match.index + construct.length;
   }
-  return out + resolveInProse(markdown.slice(cursor), index, render);
+  return (
+    out + resolveInProse(markdown.slice(cursor), index, render, provenElsewhere)
+  );
 }
 
 /**

@@ -1,0 +1,183 @@
+{
+ "source": "workflow.run d1b55499-8dca-4c62-b9be-a0c086dc824f (show.ruling excerpt, The Audit Reckoned -> Diagnostics Before Quoting) and platform.rulebook f3fefbaf-15e6-4493-ae86-f9870e7e1f4d rules (id, name), read from the live database 2026-09-22",
+ "rulebookId": "f3fefbaf-15e6-4493-ae86-f9870e7e1f4d",
+ "ruling": "- moisture-reading / straight-crack / greenboard / override-in-writing / tap-every-tile-on-a-floor — not applicable. *Sustained.* No reading, no crack, no substrate, no override has been made yet. The override-in-writing rule becomes live the moment Dave issues a verdict; the amended text now says the verdict goes in writing.\n\n**The Three Verdicts**\n\n- **the-three-possible-verdicts** — violation",
+ "rules": [
+  {
+   "id": "the-three-possible-verdicts",
+   "name": "The three possible verdicts"
+  },
+  {
+   "id": "no-number-without-the-three-checks",
+   "name": "No number without the three checks"
+  },
+  {
+   "id": "grout-age-is-not-a-diagnostic-signal",
+   "name": "Grout age is not a diagnostic signal"
+  },
+  {
+   "id": "moisture-reading-is-read-against-a-dry-reference",
+   "name": "Moisture reading is read against a dry reference, not alone"
+  },
+  {
+   "id": "majority-hollow-tap-test-in-the-wet-courses-mean",
+   "name": "Majority-hollow tap test in the wet courses means retile"
+  },
+  {
+   "id": "greenboard-behind-tile-in-the-wet-zone-is-a-red",
+   "name": "Greenboard behind tile in the wet zone is a red flag on its own"
+  },
+  {
+   "id": "put-the-override-in-writing-when-it-contradicts",
+   "name": "Put the override in writing when it contradicts the customer's expected verdict"
+  },
+  {
+   "id": "tap-every-tile-on-a-floor-not-just-the-stained-o",
+   "name": "Tap every tile on a floor, not just the stained ones"
+  },
+  {
+   "id": "a-grout-crack-that-runs-straight-across-several",
+   "name": "A grout crack that runs straight across several tiles is structural movement, not a grout problem"
+  },
+  {
+   "id": "every-change-of-plane-gets-flexible-sealant-neve",
+   "name": "Every change of plane gets flexible sealant, never grout — on every job"
+  },
+  {
+   "id": "zero-tolerance-a-grouted-corner-gets-redone-same",
+   "name": "Zero tolerance: a grouted corner gets redone same day"
+  },
+  {
+   "id": "cement-grout-cure-and-seal-timeline",
+   "name": "Cement grout cure and seal timeline"
+  },
+  {
+   "id": "sealing-cement-grout-too-early-causes-a-milky-ha",
+   "name": "Sealing cement grout too early causes a milky haze"
+  },
+  {
+   "id": "when-to-use-epoxy-grout-instead-of-cement",
+   "name": "When to use epoxy grout instead of cement"
+  },
+  {
+   "id": "unsanded-grout-only-for-joints-an-eighth-inch-or",
+   "name": "Unsanded grout only for joints an eighth inch or smaller"
+  },
+  {
+   "id": "never-acid-wash-natural-stone",
+   "name": "Never acid wash natural stone"
+  },
+  {
+   "id": "a-photo-can-earn-a-visit-never-a-number",
+   "name": "A photo can earn a visit, never a number"
+  },
+  {
+   "id": "flood-test-the-shower-pan-before-quoting-a-mud-s",
+   "name": "Flood test the shower pan before quoting a mud-set floor with staining past the curb"
+  },
+  {
+   "id": "lead-with-what-you-measured-not-the-price",
+   "name": "Lead with what you measured, not the price"
+  },
+  {
+   "id": "always-name-the-cheaper-option-you-rejected-and",
+   "name": "Always name the cheaper option you rejected, and why, in one sentence"
+  },
+  {
+   "id": "never-promise-new-grout-color-will-fix-mildew",
+   "name": "Never promise new grout color will fix mildew"
+  },
+  {
+   "id": "never-give-a-completion-date-that-omits-the-72-h",
+   "name": "Never give a completion date that omits the 72-hour cure window"
+  },
+  {
+   "id": "flexible-plane-changes",
+   "name": "Caulk, don't grout, at changes of plane"
+  },
+  {
+   "id": "crack-pattern-diagnosis",
+   "name": "A straight crack across tiles signals movement, not a grout defect"
+  },
+  {
+   "id": "cure-time-before-sealing",
+   "name": "Wait 72 hours before sealing cement grout"
+  },
+  {
+   "id": "no-acid-on-natural-stone",
+   "name": "Never use acid on travertine or marble"
+  },
+  {
+   "id": "mildew-root-cause-check",
+   "name": "Check ventilation before treating mildew, and never promise colour fixes it"
+  },
+  {
+   "id": "flood-test-before-mudset-quote",
+   "name": "Flood test before quoting a mud-set shower floor"
+  },
+  {
+   "id": "diagnose-before-quoting",
+   "name": "Never form a verdict before completing the field inspection"
+  },
+  {
+   "id": "no-quote-without-field-sheet",
+   "name": "Field sheet precedes every quote"
+  },
+  {
+   "id": "moisture-reading-locations",
+   "name": "Moisture reading locations"
+  },
+  {
+   "id": "moisture-reading-grout-joint",
+   "name": "Tile-course moisture reading via grout joint"
+  },
+  {
+   "id": "moisture-thresholds-verdict",
+   "name": "Moisture reading thresholds and required action"
+  },
+  {
+   "id": "record-reading-with-location",
+   "name": "Every reading must carry its location"
+  },
+  {
+   "id": "tap-test-procedure",
+   "name": "Tap test coverage"
+  },
+  {
+   "id": "mark-hollow-tiles",
+   "name": "Mark hollow tiles on sketch"
+  },
+  {
+   "id": "hollow-tile-threshold-regrout-off",
+   "name": "Hollow tile threshold rules out regrout"
+  },
+  {
+   "id": "floor-band-hollow-check-substrate",
+   "name": "Hollow band on floor signals substrate failure"
+  },
+  {
+   "id": "changes-of-plane-check-locations",
+   "name": "Change of plane inspection points"
+  },
+  {
+   "id": "change-of-plane-remediation",
+   "name": "Grouted change of plane must be replaced with sealant"
+  },
+  {
+   "id": "shower-pan-flood-test-trigger",
+   "name": "Flood test trigger for mud-set shower pans"
+  },
+  {
+   "id": "ventilation-check",
+   "name": "Ventilation check procedure"
+  },
+  {
+   "id": "mildew-ventilation-priority",
+   "name": "Mildew on sound grout points to ventilation first"
+  },
+  {
+   "id": "verdict-reason-requirement",
+   "name": "Verdict justification must be reading-based"
+  }
+ ]
+}
