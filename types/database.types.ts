@@ -3212,6 +3212,10 @@ export type Database = {
         }[]
       }
       jsonb_num: { Args: { n: number }; Returns: Json }
+      model_message_flag_profile: {
+        Args: { p_model_id: string }
+        Returns: Json
+      }
       resolve_model_config: { Args: { p_model_id: string }; Returns: Json }
     }
     Enums: {
