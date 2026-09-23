@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import type { PostgrestError } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import { ChatConversationRoom } from "@/features/agents/components/chat/ChatConversationRoom";
@@ -7,7 +6,6 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { resolveMandateSeed } from "@/features/mandates/seed.server";
 import { ChatRunHeader } from "@/features/agents/components/chat/ChatRunHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 import {
   conversationSandboxBindingFromRow,
   type ConversationSandboxBinding,
@@ -15,29 +13,6 @@ import {
 
 interface ConversationPageProps {
   params: Promise<{ conversationId: string }>;
-}
-
-interface ConversationMetadataProps extends ConversationPageProps {
-  searchParams: Promise<{ attention?: string | string[] }>;
-}
-
-export async function generateMetadata({
-  params,
-  searchParams,
-}: ConversationMetadataProps): Promise<Metadata> {
-  const [{ conversationId }, query] = await Promise.all([params, searchParams]);
-  if (query.attention !== "approval") return {};
-
-  return createDynamicRouteMetadata("/chat", {
-    title: "Approval needed",
-    description: "A secure action from your AI Matrx text assistant is waiting for your review.",
-    letter: "C",
-    socialCard: {
-      eyebrow: "Text assistant",
-      intent: "Action waiting",
-      seed: `approval:${conversationId}`,
-    },
-  });
 }
 
 /**

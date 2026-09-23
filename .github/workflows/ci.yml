@@ -1178,9 +1178,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: TypeScript type-check
-        # Matches the ceiling `pnpm dev` uses; tsc over this repo outgrew the
-        # default heap once already.
-        run: NODE_OPTIONS='--max-old-space-size=6144' pnpm type-check
+        # tsc over this repo outgrew the default heap once already, and on
+        # 2026-09-22 it outgrew 6144 too: every run on every branch died with
+        # "Ineffective mark-compacts near heap limit" ~70s in, before a single
+        # diagnostic — and main never noticed because every push there is
+        # cancelled by the next one. Measured that day on the same tree:
+        # 6144 OOM, 8192 OOM, 12288 completes. ubuntu-latest carries 16 GB.
+        run: NODE_OPTIONS='--max-old-space-size=12288' pnpm type-check
 
   # ---------------------------------------------------------------------------
   # mandate-references — every Mandate this build names, and every place
