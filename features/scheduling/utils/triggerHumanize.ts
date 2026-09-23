@@ -86,12 +86,14 @@ export function humanizeTrigger(
 
     case "event": {
       const c = config as Partial<EventConfig>;
-      if (c.entity_type === "user_table_row") {
+      // Both stores read the same: an older row (`user_table_row`, `row.*`) and a record-store
+      // record (`custom_record:<table>`, `record.*`, GRIDPRIM G8).
+      if (c.entity_type === "user_table_row" || c.entity_type?.startsWith("custom_record:")) {
         const what =
           !c.actions || c.actions.length === 0
             ? "changes"
             : c.actions
-                .map((a) => a.replace(/^row\./, ""))
+                .map((a) => a.replace(/^(row|record)\./, ""))
                 .map((a) => ({ created: "is added", updated: "changes", archived: "is archived", restored: "is restored", deleted: "is deleted" })[a] ?? a)
                 .join(" or ");
         return `When a table row ${what}${c.changed_fields?.length ? ` (${c.changed_fields.join(", ")})` : ""}`;

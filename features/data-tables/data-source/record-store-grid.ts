@@ -115,6 +115,43 @@ export function autonumberBackfill(home: RecordStoreHome, fieldId: string) {
   });
 }
 
+// ─── G8: a row change can start an agent ─────────────────────────────────────
+
+export type RecordChangeActions = {
+  entity_type: string;
+  table_id: string;
+  actions: Array<{ value: string; label: string }>;
+};
+
+/**
+ * The changes an `event` schedule on this Table may listen for
+ * (`custom.record_change_actions`, lane GRID-PORT, applied right after G8). The door being
+ * there IS the signal that G8 is: before it, a record-store row change reaches no schedule,
+ * so the grid offers nothing rather than a schedule that never fires.
+ */
+export function recordChangeActions(home: RecordStoreHome, tableId: string) {
+  return callGridDoor<RecordChangeActions>(home, "record_change_actions", { p_table_id: tableId });
+}
+
+/**
+ * The schedule trigger `scheduler.sch_match_event` matches for a record-store Table.
+ * 🚨 SWAP ON PUBLISH: this is `recordChangeTrigger` from `@ai-matrx/records` (aidream
+ * 65c22253cc, src/grid.ts), which is not in a published release yet; consumer code may not
+ * import an unpublished API. Same inputs, same output — replace this with the import.
+ */
+export function recordChangeTrigger(
+  tableId: string,
+  options: { actions?: string[]; changedFields?: string[] } = {},
+): { type: "event"; entity_type: string; table_id: string; actions?: string[]; changed_fields?: string[] } {
+  return {
+    type: "event",
+    entity_type: `custom_record:${tableId}`,
+    table_id: tableId,
+    ...(options.actions && options.actions.length > 0 ? { actions: options.actions } : {}),
+    ...(options.changedFields && options.changedFields.length > 0 ? { changed_fields: options.changedFields } : {}),
+  };
+}
+
 // ─── the store's own verbs the published client does not wrap ───────────────
 
 /** FLD-4 / T12: change what a field behaves as; values convert or are kept in `_retired`. */

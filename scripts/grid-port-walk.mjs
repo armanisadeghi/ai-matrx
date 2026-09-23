@@ -46,6 +46,8 @@ export const TABLES = {
   // (A table made in admin's Workspace for this is moved into the record store by the
   // mover's next run on the clone — which is how "Parts on order" became one.)
   olderExample: "437ad3e2-0b61-4cc2-938c-db22fc5c5220", // Example: Product Catalog
+  // Harbor Point Plumbing & Drain — Service calls (scripts/grid-port-seed-harbor-point.sql).
+  harborCalls: process.env.GRID_PORT_HARBOR_CALLS ?? "",
 };
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 
@@ -901,6 +903,110 @@ async function main() {
       await openGrid(page, TABLES.calls, "WO-4473");
       const cleared = await tintOf();
       pass("colorrules-remove", !/bg-amber-50/.test(cleared), "the rule is gone after a reload");
+    }
+
+    // ── A ROW CHANGE RUNS AN AGENT (G8): make the schedule from the grid, then fire it ─
+    // Harbor Point's office manager asks for the invoice agent whenever a service call's
+    // Status changes; closing CALL-2291 in the grid must queue exactly one run.
+    if (wants("rowchange")) {
+      if (!TABLES.harborCalls) throw new Error("GRID_PORT_HARBOR_CALLS must name Harbor Point's Service calls table");
+      const hp = await (await browser.newContext({ viewport: { width: 1600, height: 1000 } })).newPage();
+      hp.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
+      hp.on("response", (r) => { if (r.status() >= 400) bad.push(`${r.status()} ${r.url()}`); });
+      await signIn(hp);
+      await hp.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 240000 });
+      const choose = hp.getByText("Choose org", { exact: true }).first();
+      await choose.waitFor({ timeout: 60000 }).catch(() => {});
+      await choose.click();
+      await hp.getByRole("option").filter({ hasText: "Harbor Point Plumbing & Drain" }).first().click();
+      await hp.waitForTimeout(2500);
+      await openGrid(hp, TABLES.harborCalls, "CALL-2291");
+      await hp.locator('[aria-label="Row actions for this table"]').first().click();
+      const item = hp.getByRole("menuitem", { name: /When a row changes, run an agent/ }).first();
+      const offered = (await item.count()) > 0;
+      pass("rowchange-offered", offered, offered ? "the grid offers it on a record-store table (the store has G8)" : "the item is absent");
+      if (offered) {
+        await item.click();
+        await hp.waitForURL(/\/schedules\/new/, { timeout: 120000 });
+        await hp.waitForTimeout(3000);
+        const url = hp.url();
+        const formText = await hp.evaluate(() => document.body.innerText);
+        pass("rowchange-form", url.includes(`entityType=custom_record%3A${TABLES.harborCalls}`) && /The table you opened this from/.test(formText) && /A row is changed/.test(formText),
+          "the schedule form opens on this table with the store's change words");
+        await hp.locator("#title").fill("Draft the invoice when a service call is complete");
+        await hp.getByRole("checkbox").filter({ has: hp.locator("xpath=..") }).first().waitFor().catch(() => {});
+        await hp.locator("label").filter({ hasText: "A row is changed" }).locator("button[role=checkbox]").first().click();
+        await hp.locator("#ev-fields").fill("status");
+        await hp.locator("#prompt").fill("The service call in this event changed status. If it now reads Complete, draft the invoice from its labor hours and parts used.");
+        // The form posts the schedule to the Python server's /scheduler/tasks. The trigger it
+        // sends is what this clause judges; on a clone-backed server that server is
+        // production's and refuses a clone-minted session (401), so the SAME config is then
+        // written the way that server writes it (GRID_PORT_SCHEDULE_OUT) and the grid half runs.
+        let posted = null;
+        hp.on("request", (r) => {
+          if (/\/scheduler\/tasks$/.test(r.url()) && r.method() === "POST") {
+            try { posted = JSON.parse(r.postData() ?? "null"); } catch { posted = null; }
+          }
+        });
+        await hp.getByRole("button", { name: /Create schedule/ }).first().click();
+        await hp.waitForTimeout(4000);
+        const trig = posted?.trigger ?? posted?.triggers?.[0] ?? null;
+        const cfg = trig?.config ?? trig ?? {};
+        pass("rowchange-trigger-built", cfg.entity_type === `custom_record:${TABLES.harborCalls}` && cfg.table_id === TABLES.harborCalls && JSON.stringify(cfg.actions) === '["record.updated"]' && JSON.stringify(cfg.changed_fields) === '["status"]',
+          `the form sends ${JSON.stringify(cfg).slice(0, 220)}`);
+        if (process.env.GRID_PORT_SCHEDULE_OUT) writeFileSync(process.env.GRID_PORT_SCHEDULE_OUT, JSON.stringify(posted, null, 2));
+        await hp.screenshot({ path: `${OUT}/gridport-${SEAT}-15-row-change-schedule.png` });
+        if (process.env.GRID_PORT_STOP_AFTER_FORM === "1") {
+          await hp.close();
+          throw new Error("stopped after the form, as asked (GRID_PORT_STOP_AFTER_FORM)");
+        }
+
+        // A notes change must not fire it; CALL-2291 to Complete must.
+        await openGrid(hp, TABLES.harborCalls, "CALL-2291");
+        // The row id of a call, read off its Call cell, so every cell is addressed by its key.
+        const idOf = async (call) =>
+          hp.evaluate((c) => {
+            const cell = [...document.querySelectorAll("[data-cell$='::call_number']")].find((e) => (e.textContent ?? "").includes(c));
+            return cell?.getAttribute("data-cell")?.split("::")[0] ?? "";
+          }, call);
+        const callId = await idOf("CALL-2291");
+        if (!callId) {
+          const seen = await hp.evaluate(() => [...document.querySelectorAll("[data-cell$='::call_number']")].map((e) => JSON.stringify(e.textContent)).join(" | "));
+          throw new Error(`CALL-2291 is not on the Harbor Point grid; call cells read: ${seen.slice(0, 300)}; url ${hp.url()}`);
+        }
+        const rowOf = () => ({ locator: (sel) => hp.locator(`[data-cell="${callId}::${sel.match(/::([a-z_]+)/)[1]}"]`) });
+        const notes = rowOf("CALL-2291").locator("[data-cell$='::tech_notes']").first();
+        await notes.dblclick();
+        await hp.keyboard.press("ControlOrMeta+a");
+        await hp.keyboard.type("Water heater T&P valve replaced; customer shown the shutoff");
+        await hp.keyboard.press("Enter");
+        await hp.waitForTimeout(2500);
+        // A choice cell: the first click selects it, the second opens its chooser, and the
+        // option is CLICKED — never Enter with a picker open (it types into the grid instead).
+        const status = rowOf("CALL-2291").locator("[data-cell$='::status']").first();
+        // Nothing else may be open first (the organization list stays in the page after it was used).
+        await hp.keyboard.press("Escape");
+        const chooserButton = status.locator("button").first();
+        // One click selects the cell or, on a selected one, opens the chooser; a second only if needed.
+        await chooserButton.click();
+        await hp.waitForTimeout(900);
+        if ((await hp.getByRole("option", { name: /^Complete$/ }).count()) === 0) {
+          await status.locator("button").first().click();
+          await hp.waitForTimeout(900);
+        }
+        const complete = hp.getByRole("option", { name: /^Complete$/ }).first();
+        const picked = (await complete.count()) > 0;
+        if (!picked) console.log("chooser shows:", await hp.evaluate(() => [...document.querySelectorAll("[cmdk-item],[role=combobox],[cmdk-empty]")].map((e) => (e.getAttribute("role") || "empty") + ":" + e.textContent?.trim().slice(0, 30)).join(" / ")));
+        if (picked) await complete.click();
+        else await hp.keyboard.press("Escape");
+        await hp.waitForTimeout(3000);
+        pass("rowchange-status-picked", picked, picked ? "Complete picked from the Status chooser" : "the Status chooser did not open");
+        await openGrid(hp, TABLES.harborCalls, "CALL-2291");
+        const now = (await rowOf("CALL-2291").locator("[data-cell$='::status']").first().innerText()).trim();
+        pass("rowchange-status-written", /Complete/.test(now), `CALL-2291 status reads "${now}"`);
+        await hp.screenshot({ path: `${OUT}/gridport-${SEAT}-16-call-complete.png` });
+      }
+      await hp.close();
     }
 
     const onClone = String(process.env.GRID_PORT_ON_CLONE || "") === "1";

@@ -145,6 +145,7 @@ import {
   getRowsForClientSort,
   isRecordStoreTable,
   readRowsById,
+  rowChangeScheduleFor,
   runRowAction as runRowActionInTheStore,
   getTableMetadata,
   getTablePage,
@@ -456,6 +457,19 @@ const UserTableViewer = ({
 }: UserTableViewerProps) => {
   const router = useRouter();
   const [scheduleNavigationPending, startScheduleNavigation] = React.useTransition();
+  // Whether "When a row changes, run an agent…" can be offered here (data seam).
+  const [rowChangeSchedule, setRowChangeSchedule] = useState<Awaited<ReturnType<typeof rowChangeScheduleFor>>>(
+    () => (isRecordStoreTable(tableId) ? null : { entityType: "user_table_row", actions: [] }),
+  );
+  useEffect(() => {
+    let live = true;
+    void rowChangeScheduleFor({ tableId }).then((answer) => {
+      if (live) setRowChangeSchedule(answer);
+    });
+    return () => {
+      live = false;
+    };
+  }, [tableId]);
   const isMobile = useIsMobile();
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
   const [fields, setFields] = useState<TableField[]>([]);
@@ -4746,19 +4760,19 @@ const UserTableViewer = ({
                             what the system already does). The door opens the
                             schedule form with the "table change" trigger set to
                             this table; the schedule runs the agent when a row changes.
-                            ABSENT for a record-store table: the scheduler's one
-                            event producer is the older store's row trigger
-                            (migrations/udt_row_change_events.sql), so a schedule
-                            made here would never fire (lane GRID-PORT finding F4). */}
-                        {!isRecordStoreTable(tableId) && <DropdownMenuSeparator />}
-                        {!isRecordStoreTable(tableId) && (
+                            For a record-store table it is offered only when the
+                            store says a row change there reaches the scheduler (G8,
+                            `rowChangeScheduleFor`); before that a schedule made here
+                            would never fire, so the item is absent (GRID-PORT F4). */}
+                        {rowChangeSchedule && <DropdownMenuSeparator />}
+                        {rowChangeSchedule && (
                         <DropdownMenuItem
                           disabled={scheduleNavigationPending}
                           onSelect={() => {
                             if (scheduleNavigationPending) return;
                             startScheduleNavigation(() => {
                               router.push(
-                                `/schedules/new?trigger=event&tableId=${encodeURIComponent(tableId)}&prompt=${encodeURIComponent(`A row in the table "${tableInfo?.table_name ?? "this table"}" changed. The event variable names the row and the columns that changed. `)}`,
+                                `/schedules/new?trigger=event&tableId=${encodeURIComponent(tableId)}${rowChangeSchedule.entityType !== "user_table_row" ? `&entityType=${encodeURIComponent(rowChangeSchedule.entityType)}` : ""}&prompt=${encodeURIComponent(`A row in the table "${tableInfo?.table_name ?? "this table"}" changed. The event variable names the row and the columns that changed. `)}`,
                               );
                             });
                           }}

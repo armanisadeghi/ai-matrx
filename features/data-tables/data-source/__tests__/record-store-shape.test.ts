@@ -75,6 +75,8 @@ describe("a store Field reads back as the column the older grid drew", () => {
   it("hands a list its option Table's words as choices", () => {
     const choices = [choiceFromOption({ data: { name: "Queued", color: "amber" } })!, choiceFromOption({ data: { name: "Done" } })!];
     expect(choices).toEqual([{ value: "Queued", color: "amber" }, { value: "Done" }]);
+    // An option Table the store made itself for a `select` column keys its words `title`.
+    expect(choiceFromOption({ data: { title: "Complete" } })).toEqual({ value: "Complete" });
     expect(olderFormat(field({ type: "list", format: "choice" } as never), choices)).toEqual({
       id: "choice",
       options: { choices },

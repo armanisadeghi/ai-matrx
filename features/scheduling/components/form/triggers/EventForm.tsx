@@ -37,6 +37,14 @@ export const ROW_EVENT_ACTIONS: readonly { value: string; label: string }[] = [
   { value: "row.deleted", label: "A row is deleted" },
 ];
 
+/** A record-store table's changes (GRIDPRIM G4/G8 — the store's own words, `record.*`). */
+export const RECORD_EVENT_ACTIONS: readonly { value: string; label: string }[] = [
+  { value: "record.created", label: "A row is added" },
+  { value: "record.updated", label: "A row is changed" },
+  { value: "record.archived", label: "A row is archived" },
+  { value: "record.restored", label: "A row is restored" },
+];
+
 const ANY_TABLE = "__any__";
 
 interface Props {
@@ -77,6 +85,10 @@ export function EventForm({ value, onChange, error }: Props) {
     onChange(merged);
   };
   const actions = config.actions ?? [];
+  // A schedule on ONE record-store table: that table is the subject (the grid opened this form
+  // for it), and its change words are the store's own.
+  const onRecordStoreTable = config.entity_type.startsWith("custom_record:");
+  const actionChoices = onRecordStoreTable ? RECORD_EVENT_ACTIONS : ROW_EVENT_ACTIONS;
   const toggleAction = (action: string) =>
     update({
       actions: actions.includes(action) ? actions.filter((a) => a !== action) : [...actions, action],
@@ -94,6 +106,12 @@ export function EventForm({ value, onChange, error }: Props) {
         </span>
       </div>
 
+      {onRecordStoreTable ? (
+        <div className="space-y-2">
+          <Label>Table</Label>
+          <p className="text-sm text-muted-foreground">The table you opened this from.</p>
+        </div>
+      ) : (
       <div className="space-y-2">
         <Label htmlFor="ev-table">Table</Label>
         <Select
@@ -117,11 +135,12 @@ export function EventForm({ value, onChange, error }: Props) {
           <p className="text-xs text-muted-foreground">You have no data tables yet; the schedule will fire for any table you create.</p>
         )}
       </div>
+      )}
 
       <div className="space-y-2">
         <Label>When</Label>
         <div className="grid gap-1.5 sm:grid-cols-2">
-          {ROW_EVENT_ACTIONS.map((a) => (
+          {actionChoices.map((a) => (
             <label key={a.value} className="flex items-center gap-2 text-sm">
               <Checkbox checked={actions.includes(a.value)} onCheckedChange={() => toggleAction(a.value)} />
               {a.label}

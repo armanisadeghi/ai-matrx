@@ -207,7 +207,10 @@ export function olderColumnFromField(
  */
 export function choiceFromOption(option: { data?: Record<string, unknown> | null }): FieldChoice | null {
   const data = option.data ?? {};
-  const name = typeof data.name === "string" ? data.name : typeof data.label === "string" ? data.label : null;
+  // An option Table the MOVER made keys its words `name`; one the store makes itself for a
+  // `select` column (custom._options_table_for) keys them `title`. Both are the option's words.
+  const words = [data.name, data.title, data.label].find((w) => typeof w === "string" && w.trim() !== "");
+  const name = typeof words === "string" ? words : null;
   if (!name) return null;
   const color = typeof data.color === "string" && data.color.trim() !== "" ? data.color : undefined;
   return color ? { value: name, color } : { value: name };

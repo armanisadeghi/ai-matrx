@@ -30,6 +30,7 @@ import type { FieldFormatConfig } from "@/lib/field-formats/types";
 import { rewriteFormulaReferences } from "./formulas";
 import * as recordStore from "./data-source/record-store";
 import { recordStoreHomeOf } from "./data-source/table-home";
+import { recordChangeActions, recordChangeTrigger } from "./data-source/record-store-grid";
 
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { parseTableMetadata } from "./types";
@@ -1374,4 +1375,20 @@ export async function addTableRow(params: { tableId: string; data: Record<string
     return made.success ? { success: true, rowId: made.data.id } : { success: false, error: made.error };
   }
   return addRowToOlderTable(supabase, params);
+}
+
+/**
+ * "When a row changes, run an agent…" for this table: which changes a schedule may listen
+ * for, or `null` when a schedule on it would never fire. An older table always answers
+ * (its row trigger feeds the scheduler); a record-store table answers only once G8 and
+ * `custom.record_change_actions` are on the database (lane GRID-PORT F4).
+ */
+export async function rowChangeScheduleFor(args: {
+  tableId: string;
+}): Promise<{ entityType: string; actions: Array<{ value: string; label: string }> } | null> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (!home) return { entityType: "user_table_row", actions: [] };
+  const answer = await recordChangeActions(home, args.tableId);
+  if (!answer.ok) return null;
+  return { entityType: recordChangeTrigger(args.tableId).entity_type, actions: answer.data.actions };
 }
