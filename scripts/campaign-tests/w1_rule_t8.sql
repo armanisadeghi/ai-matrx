@@ -112,7 +112,12 @@ begin
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
-  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_rule_t8');
+  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_rule_t8')
+  -- SUITES-TIDY-2 2026-09-22: STORE-ON wrote this organization's own system_enabled row (owner
+  -- ruling 2026-09-23), so a plain insert collides. This suite never commits: the upsert goes
+  -- with its ROLLBACK and leaves the owner's row exactly as it was.
+  on conflict (feature, key, scope_kind, scope_id, organization_id)
+  do update set value = excluded.value, set_note = excluded.set_note;
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 0 — THE SEAT. Everything below this line runs as a signed-in person.

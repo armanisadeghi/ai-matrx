@@ -92,7 +92,12 @@ begin
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
-  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_field_types_red');
+  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_field_types_red')
+  -- SUITES-TIDY-2 2026-09-22: STORE-ON wrote this organization's own system_enabled row (owner
+  -- ruling 2026-09-23), so a plain insert collides. This suite never commits: the upsert goes
+  -- with its ROLLBACK and leaves the owner's row exactly as it was.
+  on conflict (feature, key, scope_kind, scope_id, organization_id)
+  do update set value = excluded.value, set_note = excluded.set_note;
 
   -- PART 0 — TAKE THE SEAT AND PROVE IT.
   perform set_config('role', 'authenticated', true);
@@ -195,7 +200,12 @@ begin
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
-  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_field_types_red');
+  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_field_types_red')
+  -- SUITES-TIDY-2 2026-09-22: STORE-ON wrote this organization's own system_enabled row (owner
+  -- ruling 2026-09-23), so a plain insert collides. This suite never commits: the upsert goes
+  -- with its ROLLBACK and leaves the owner's row exactly as it was.
+  on conflict (feature, key, scope_kind, scope_id, organization_id)
+  do update set value = excluded.value, set_note = excluded.set_note;
 
   perform set_config('role', 'authenticated', true);
   if current_user <> 'authenticated' then
@@ -259,7 +269,12 @@ begin
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
-  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_field_types_red');
+  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_field_types_red')
+  -- SUITES-TIDY-2 2026-09-22: STORE-ON wrote this organization's own system_enabled row (owner
+  -- ruling 2026-09-23), so a plain insert collides. This suite never commits: the upsert goes
+  -- with its ROLLBACK and leaves the owner's row exactly as it was.
+  on conflict (feature, key, scope_kind, scope_id, organization_id)
+  do update set value = excluded.value, set_note = excluded.set_note;
 
   perform set_config('role', 'authenticated', true);
   if current_user <> 'authenticated' then
@@ -325,7 +340,12 @@ begin
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
-  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_field_types_red');
+  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_field_types_red')
+  -- SUITES-TIDY-2 2026-09-22: STORE-ON wrote this organization's own system_enabled row (owner
+  -- ruling 2026-09-23), so a plain insert collides. This suite never commits: the upsert goes
+  -- with its ROLLBACK and leaves the owner's row exactly as it was.
+  on conflict (feature, key, scope_kind, scope_id, organization_id)
+  do update set value = excluded.value, set_note = excluded.set_note;
 
   perform set_config('role', 'authenticated', true);
   if current_user <> 'authenticated' then
@@ -390,7 +410,12 @@ begin
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
     (v_org, 'organization', v_org, c_dana,  'member', 'active');
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
-  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_field_types_red');
+  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_field_types_red')
+  -- SUITES-TIDY-2 2026-09-22: STORE-ON wrote this organization's own system_enabled row (owner
+  -- ruling 2026-09-23), so a plain insert collides. This suite never commits: the upsert goes
+  -- with its ROLLBACK and leaves the owner's row exactly as it was.
+  on conflict (feature, key, scope_kind, scope_id, organization_id)
+  do update set value = excluded.value, set_note = excluded.set_note;
 
   perform set_config('role', 'authenticated', true);
   if current_user <> 'authenticated' then
