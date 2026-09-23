@@ -167,8 +167,14 @@ for f in "${FILES[@]}"; do
     TIMEOUT) TIMEOUT=$((TIMEOUT+1)); FAIL=$((FAIL+1)) ;;
     *)       FAIL=$((FAIL+1)) ;;
   esac
-  printf '%s\t%s\t%ss\t%s\n' "$b" "$verdict" "$dur" "$(print -r -- "$sentence" | tr '\t\n' '  ' | cut -c1-260)" >> "$TSV"
-  say "$(printf '%-52s %-8s %4ss  %s' "$b" "$verdict" "$dur" "$(print -r -- "$sentence" | cut -c1-110)")"
+  note="$(printf '%s' "$sentence" | tr '\t\n' '  ' | cut -c1-260 | sed 's/[[:blank:]]*$//')"
+  printf '%s\t%s\t%ss\t%s\n' "$b" "$verdict" "$dur" "${note:--}" >> "$TSV"
+  short_note="$(printf '%s' "$sentence" | cut -c1-110 | sed 's/[[:blank:]]*$//')"
+  if [ -n "$short_note" ]; then
+    say "$(printf '%-52s %-8s %4ss  %s' "$b" "$verdict" "$dur" "$short_note")"
+  else
+    say "$(printf '%-52s %-8s %4ss' "$b" "$verdict" "$dur")"
+  fi
 done
 
 say "───────── SWEEP RESULT (DEV CLONE) ─────────"
