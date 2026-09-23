@@ -46,21 +46,6 @@ take inside a feature task:
   first thing a person opening a family of jobs needs. Workaround used meanwhile: the per-mandate
   Notes tab (`agent.mandate_note`), which is visible on both hosts.
 
-### D343 — Two `features/shell` jest suites are red on `main`, and one of them says the shell docs lie (2026-09-21)
-
-Found red before any of 2026-09-21's shell work, unrelated to it, still red:
-
-- `features/shell/__tests__/header-right-set.test.ts` — "keeps one copy of the profile menu"
-  asserts `styles/shell.css` does not contain `elevated-shell-user-menu`. It contains it 9 times
-  (`styles/shell.css:2648+`), and `components/matrx/resizable/ElevatedShellUserMenu.tsx` is alive
-  and imported. `features/shell/FEATURE.md`'s 2026-09-19 change log claims that component, its
-  store and its CSS were DELETED. Either the deletion was reverted or it never landed — decide
-  which is true, then delete the twin or delete the claim and the test.
-- `features/shell/components/header/header-right-menu/UserProfileHeader.test.tsx` — 3 cases die
-  with `TypeError: Cannot read properties of null (reading 'useContext')` at
-  `menuCheckboxId.tsx:26`. The test calls the component as a plain function outside a renderer,
-  so React has no dispatcher; it needs to render (or the hook needs a default outside a provider).
-
 ### D341 — A window's LAYOUT comes back on refresh for 13 windows out of 195 (2026-09-19)
 
 Two systems restore a window panel and only one of them is general. `?panels=` (URL) now opens
@@ -3838,6 +3823,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D346** — the two shell Jest failures reported 2026-09-21 were stale; both focused suites passed 2026-09-23 (7 tests, commit `c3edf550f1`).
 
 - **D343** — `GET /media/libraries` published `visibility`, `adapter` and `q` in API-CONTRACT.md §3 and DECLARED none of them, so FastAPI dropped all three and answered 200 with the whole unfiltered list: `/libraries`' search box did not narrow, its four lane tabs served identical rows, D10's per-lane counts were four identical totals, and the Acquisition Console's Library rows linked bare because no parameter could be honoured. FIXED 2026-09-20 in both halves — aidream `d7093434f6` (all three declared through one `apply_library_filter`, unknown values refused 400, `total` counts the filtered set, contract 0.6.0; the `…/metrics` and `…/videos` siblings swept with it) and this repo's `urlState: true` on `createLibraryListConfig`, `adapter` on the wire, lane counts under the same narrowing, and `librariesHref` on every console Library row. Guard: `features/source-library/__tests__/the-libraries-link-is-a-query-the-list-runs.test.ts` (11 cases, 8 red against the pre-fix behaviour).
 - **D330** — an expression index on an RLS table is unusable by every client read (`->>` is not LEAKPROOF, so the qual can never be an index condition). FIXED 2026-09-17 by CS-30: the identity moved into real columns `files.files.artifact_kind` / `provider_session_id` (`migrations/20260917_files_artifact_identity_columns.sql` + `…_backfill_and_index.sql` + `…_column_grants.sql`, all ledgered), the server's upload door stamps them (`aidream packages/matrx-files/matrx_files/artifact_identity.py`), the panel's read filters them, and the useless index was dropped through the chair step `migrations/inverse/files_coding_session_artifact_index_drop.sql`. `pnpm check:artifact-read-latency` now refuses a returning `metadata->>` FILTER on that read by name. The two genuine siblings (`idx_cld_files_derived_from`, `idx_cld_files_variant_key`) stay: server-side readers bypass RLS. Remainder is D331, a different cause.
