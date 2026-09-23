@@ -106,15 +106,17 @@ export function ScalarValueControl({
 
   // text
   const str = value == null ? "" : String(value);
-  if (c.multiline && !compact) {
+  // A multiline field is ALWAYS a textarea, grid cells included: an <input>
+  // strips line breaks from its value, so editing a cell used to save the
+  // field with every newline destroyed.
+  if (c.multiline) {
     return (
       <ProTextarea
         value={str}
         onChange={(e) => onChange(e.target.value || null)}
-        rows={2}
+        rows={compact ? 1 : 2}
         placeholder={c.placeholder}
-        className="text-sm resize-none"
-        style={{ fontSize: "16px" }}
+        className={cn(compact ? "min-h-7 text-xs" : "text-sm", "resize-none")}
         disabled={disabled}
       />
     );
