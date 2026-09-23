@@ -169,6 +169,68 @@ async function openEveryListing(page) {
   await sleep(1500);
 }
 
+/**
+ * CLAUSE 5 — THE ITEM ROWS OPEN THE ITEM (VERIFIER-14 item 2, records-ui 0.82.0).
+ * For each of Forms, Digests, Portals and Shared outside, the first row is
+ * CLICKED from the hub. Its address must carry `?rail=`, and the table screen
+ * must show that item — the row marked `[data-linked="true"]` in its rail, or
+ * for a share the dialog — or the package's own sentence saying why not. A
+ * grid with nothing open is the FAIL.
+ */
+const ITEM_LISTINGS = [
+  { id: "forms", rail: "forms" },
+  { id: "digests", rail: "notifications" },
+  { id: "portals", rail: "portals" },
+  { id: "shared-outside", rail: "share" },
+];
+const HONEST_REFUSALS = [
+  "The link named a form this table does not have",
+  "The link named a digest that is not one of yours",
+  "The link named a portal this table is not part of",
+  "only someone with Admin on this table can share it",
+];
+async function itemRowsOpenTheItem(page, label, shots) {
+  for (const { id, rail } of ITEM_LISTINGS) {
+    await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+    await settled(page);
+    await openEveryListing(page);
+    const row = page.locator(`[data-hub-listing="${id}"] li a`).first();
+    if ((await row.count()) === 0) {
+      say(`${label}: the ${id} listing has no rows on this seat — nothing to open`);
+      continue;
+    }
+    const name = (await row.textContent())?.trim() ?? "";
+    const href = (await row.getAttribute("href")) ?? "";
+    clause(`${label} · the ${id} row's address names its rail`, href.includes(`rail=${rail}`), `${name} → ${href}`);
+    await row.click();
+    const landed = await until(
+      `the ${id} item on its table`,
+      async () =>
+        page.evaluate(
+          ({ rail, refusals }) => {
+            const body = document.body?.innerText ?? "";
+            const refusal = refusals.find((r) => body.includes(r));
+            if (refusal) return { how: `the page says: ${refusal}…` };
+            if (rail === "share") {
+              const dialog = document.querySelector('[role="dialog"]');
+              return dialog ? { how: `the share dialog is open — ${(dialog.textContent ?? "").replace(/\s+/g, " ").slice(0, 90)}` } : null;
+            }
+            const marked = document.querySelector('[data-linked="true"]');
+            return marked ? { how: `marked in its rail — ${(marked.textContent ?? "").replace(/\s+/g, " ").slice(0, 90)}` } : null;
+          },
+          { rail, refusals: HONEST_REFUSALS },
+        ),
+      45000,
+    );
+    clause(
+      `${label} · the ${id} row OPENS the item, not the grid`,
+      Boolean(landed.v),
+      landed.v ? `${landed.v.how} (${landed.ms} ms)` : `nothing opened within ${landed.ms} ms — URL ${page.url()}`,
+    );
+    await shoot(page, `${shots.itemPrefix}-${id}`);
+  }
+}
+
 async function walk(context, label, { email, password, organization, shots, openShared }) {
   const page = await context.newPage();
   const already = await whoAmI(page, ORIGIN);
@@ -300,6 +362,8 @@ async function walk(context, label, { email, password, organization, shots, open
     }
   }
 
+  if (shots.itemPrefix) await itemRowsOpenTheItem(page, label, shots);
+
   await page.close();
   return hub;
 }
@@ -322,7 +386,7 @@ try {
     email: ADMIN,
     password: ADMIN_PASSWORD,
     organization: "Rincon Plumbing Co",
-    shots: { desktop: "hubfix-admin-rincon-1600", shared: "hubfix-admin-rincon-shared" },
+    shots: { desktop: "hubfix-admin-rincon-1600", shared: "hubfix-admin-rincon-shared", itemPrefix: "hubfix-admin-1600-opens" },
   });
   await desktop.close();
 
@@ -332,7 +396,7 @@ try {
     password: TEST_PASSWORD,
     organization: "Rincon Plumbing Co",
     openShared: true,
-    shots: { desktop: "hubfix-member-rincon-1600", shared: "hubfix-member-rincon-shared-opens" },
+    shots: { desktop: "hubfix-member-rincon-1600", shared: "hubfix-member-rincon-shared-opens", itemPrefix: "hubfix-member-1600-opens" },
   });
   await member.close();
 
@@ -346,7 +410,7 @@ try {
     email: ADMIN,
     password: ADMIN_PASSWORD,
     organization: "Rincon Plumbing Co",
-    shots: { desktop: "hubfix-admin-rincon-390", shared: "hubfix-admin-rincon-390-shared" },
+    shots: { desktop: "hubfix-admin-rincon-390", shared: "hubfix-admin-rincon-390-shared", itemPrefix: "hubfix-admin-390-opens" },
   });
   await phone.close();
 
@@ -361,7 +425,7 @@ try {
     password: TEST_PASSWORD,
     organization: "Rincon Plumbing Co",
     openShared: true,
-    shots: { desktop: "hubfix-member-rincon-390", shared: "hubfix-member-rincon-390-shared-opens" },
+    shots: { desktop: "hubfix-member-rincon-390", shared: "hubfix-member-rincon-390-shared-opens", itemPrefix: "hubfix-member-390-opens" },
   });
   await memberPhone.close();
 
