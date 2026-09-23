@@ -27,7 +27,7 @@ import { chromium } from "playwright";
 import { fillByLabel } from "./fill-by-label.mjs";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { signIn } from "../lib/seat-browser.mjs";
+import { signIn, setOrganization } from "../lib/seat-browser.mjs";
 
 const PORT = process.env.WALK_PORT ?? "3001";
 /** The public surfaces: a stranger's host, no session, nothing to evict. */
@@ -40,7 +40,9 @@ mkdirSync(OUT, { recursive: true });
 const FORM_URL = `${PUBLIC_ORIGIN}/f/690c349e-87ae-4daa-8fe5-c43b08a4367f`;
 const BOOKING_URL = `${PUBLIC_ORIGIN}/b/a5da70ac-4223-4c4d-b509-391916bf7067`;
 /** The organization the viewer actually belongs to, and a table it keeps work in. */
-const VIEWER_ORG = "ironclad-mobile-mechanic-719980a1";
+// FIXTURE-ORGS 2026-09-23: the -719980a1 copy was archived as a duplicate; the kept Ironclad now carries
+// test@test.com as a member (added through mbr_add from the admin seat), so the viewer picks it by its slug.
+const VIEWER_ORG = "ironclad-mobile-mechanic";
 const VIEWER_TABLE = "Service Calls";
 
 const argv = process.argv.slice(2);
@@ -342,16 +344,10 @@ async function proofRefusal(browser) {
   // The platform never picks an organization for anyone: pick one the viewer belongs to.
   await page.goto(`${VIEWER_ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await page.waitForTimeout(12000);
-  const picked = await page.evaluate((wanted) => {
-    const row = Array.from(document.querySelectorAll("button[role=option]"))
-      .filter((e) => e.getClientRects().length)
-      .find((e) => (e.textContent || "").includes(wanted));
-    if (!row) return false;
-    row.scrollIntoView({ block: "center" });
-    row.click();
-    return true;
-  }, VIEWER_ORG);
-  if (!picked) throw new Error(`the picker offered the viewer no row for ${VIEWER_ORG}`);
+  // Through the ONE seat helper: the picker hides test-fixture organizations behind a disclosure.
+  // Since FIXTURE-ORGS there is exactly one "Ironclad Mobile Mechanic", and the picker prints an
+  // address only when two names collide — so the viewer picks it by its name, as a person would.
+  await setOrganization(page, "Ironclad Mobile Mechanic");
   record.organization = VIEWER_ORG;
   await page.waitForTimeout(12000);
 

@@ -18,8 +18,9 @@ import { formatDurationMs } from "@ai-matrx/kit/format";
 import { readFileSync, existsSync } from "node:fs";
 
 const SERVER = process.env.MATRX_SERVER ?? "https://server.app.matrxserver.com";
-const TABLE = process.env.TABLE ?? "ad769621-04ba-499b-8414-dc48d589770e";
-const ORG = process.env.ORG ?? "719980a1-75f1-410f-88aa-0223f38f2872";
+// FIXTURE-ORGS 2026-09-23: repointed from the archived -719980a1 duplicate to the kept Ironclad and its Service Calls.
+const TABLE = process.env.TABLE ?? "215e2e75-d04e-4c8a-b208-5be46488b18d";
+const ORG = process.env.ORG ?? "0a751390-558e-4775-ba0e-3891bdf82d45";
 const MANDATE = "data.page_guidance";
 
 function env(name) {
@@ -35,7 +36,7 @@ function env(name) {
 }
 
 const SUPABASE_URL = env("NEXT_PUBLIC_SUPABASE_URL");
-const ANON = env("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+const ANON = env("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
 
 const signIn = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
   method: "POST",
@@ -60,6 +61,12 @@ const answered = await fetch(`${SERVER}/ai/mandates/${MANDATE}`, {
   body: JSON.stringify({
     user_input: "make me a signup form",
     stream: true,
+    // The conversation-start contract (2026-09-23): every start names its organization, its
+    // store choice and a fresh wire conversation id, exactly as the app's execute thunk does.
+    organization_id: ORG,
+    store: true,
+    conversation_id: crypto.randomUUID(),
+    is_new: true,
     context: {
       records_table_id: TABLE,
       records_wanted: "form",

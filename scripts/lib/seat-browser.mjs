@@ -249,7 +249,30 @@ export async function setOrganizationBySlug(page, organizationName, slug) {
       ),
     30000,
   );
-  if (!clicked.v) throw new Error(`no "${organizationName}" row printed the address ${slug}`);
+  if (clicked.v) {
+    await sleep(1500);
+    return `by address ${slug}`;
+  }
+  // THE PICKER PRINTS AN ADDRESS ONLY WHEN TWO NAMES COLLIDE (FIXTURE-ORGS, 2026-09-23). Once
+  // the duplicate fixture organizations were archived, "Ironclad Mobile Mechanic" was the only
+  // one of its name, its row carried no address, and every caller of this helper threw. When
+  // exactly ONE row carries the name there is nothing to disambiguate: pick it, and say so.
+  // Two or more rows with no matching address is still a refusal — never a guess.
+  const only = await page.evaluate((name) => {
+    const rows = Array.from(document.querySelectorAll("button[role='option']")).filter((el) =>
+      new RegExp(`${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`).test((el.textContent ?? "").trim()),
+    );
+    // The picker is drawn TWICE on a page with nothing chosen (sidebar + the hold notice), so
+    // one organization is two identical rows; different texts are different organizations.
+    const distinct = new Set(rows.map((el) => (el.textContent ?? "").trim()));
+    if (distinct.size !== 1) return distinct.size;
+    const row = rows.find((el) => el.getClientRects().length) ?? rows[0];
+    row.scrollIntoView({ block: "center" });
+    row.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
+    return 1;
+  }, organizationName);
+  if (only !== 1) throw new Error(`no "${organizationName}" row printed the address ${slug} (${only} different organizations carry the name)`);
+  console.log(`[seat] "${organizationName}" is the only organization of that name — the picker prints no address, so it was picked by name (asked for ${slug})`);
   await sleep(1500);
-  return `by address ${slug}`;
+  return `by name — the only "${organizationName}" (asked for ${slug})`;
 }
