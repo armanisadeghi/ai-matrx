@@ -207,6 +207,7 @@ import {
   SNAPSHOT_REL as LEDGER_SNAPSHOT_REL,
 } from "./lib/ledger-snapshot.mjs";
 import { basedOnCheck, findReplaceOccurrences, type Query } from "./migration-based-on";
+import { RevokeOrderRefusal, revokeOrderFindings } from "./migration-revoke-order";
 import { judgeTexts as judgeKernelPairing } from "./check-kernel-rerecord-pairing";
 import { judgeOneInverse } from "./check-inverses-leave-the-ground-standing";
 
@@ -1814,6 +1815,16 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       await beginClean(client);
       await client.query(prologue);
       await client.query(sql);
+      // CLOSE THE ROW FIRST, THEN REVOKE (STORE-TXN-3's class, lane ARGS-RULED-2). Read the END
+      // state of every door this file revokes, inside the transaction, before anything commits:
+      // a REVOKE that platform.reopen_declared_doors undid, or one that left grant and register
+      // disagreeing, rolls the whole file back. See scripts/migration-revoke-order.ts.
+      const revokeFindings = await revokeOrderFindings(
+        async (text, params) =>
+          (await client.query(text, (params ?? []) as never[])).rows as Record<string, unknown>[],
+        sql,
+      );
+      if (revokeFindings.length) throw new RevokeOrderRefusal(filename, revokeFindings);
       await client.query(ledgerUpsert);
       await client.query("commit");
     } catch (err) {
