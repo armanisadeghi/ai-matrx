@@ -40,7 +40,7 @@ async function main() {
   await client.connect();
   const sysid = (await client.query<{ s: string }>("select system_identifier::text as s from pg_control_system()")).rows[0]!.s;
   if (sysid !== ref.systemIdentifier) throw new Error(`not the rehearsal branch (system_identifier ${sysid})`);
-  const receiver = `${ref.apiUrl ?? `https://${ref.branchRef}.supabase.co`}/rest/v1/`;
+  const receiver = `https://${ref.branchRef}.supabase.co/rest/v1/`;
   let failures = 0;
   const clause = (name: string, ok: boolean, saw: string) => {
     if (!ok) failures++;

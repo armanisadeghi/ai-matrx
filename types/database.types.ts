@@ -63460,6 +63460,7 @@ export type Database = {
           non_client_lane: string | null
           probe_args: Json | null
           reason: string
+          refusal_only: boolean
           schema_name: string
           signed_in_callers: boolean
         }
@@ -63478,6 +63479,7 @@ export type Database = {
           non_client_lane?: string | null
           probe_args?: Json | null
           reason: string
+          refusal_only?: boolean
           schema_name: string
           signed_in_callers?: boolean
         }
@@ -63496,6 +63498,7 @@ export type Database = {
           non_client_lane?: string | null
           probe_args?: Json | null
           reason?: string
+          refusal_only?: boolean
           schema_name?: string
           signed_in_callers?: boolean
         }
@@ -70530,6 +70533,10 @@ export type Database = {
         Returns: Json[]
       }
       door_argtypes: { Args: { p_argtypes: unknown }; Returns: unknown[] }
+      door_body_is_refusal_only: {
+        Args: { p_oid: unknown }
+        Returns: Record<string, unknown>
+      }
       door_probe_args_ok: { Args: { p_recipe: Json }; Returns: boolean }
       door_rules_normalize: {
         Args: { p_arg_checks: Json; p_args: string }
