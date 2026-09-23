@@ -65,7 +65,7 @@ export async function whereThisTableLives(
   const found = rows.some((row) => row.id === tableId);
   // The flag is how the new home knows to say, once, that the table moved — a redirect
   // that lands silently leaves a person wondering why their table looks different.
-  if (found) return { kind: "record_store", href: `/data-v2/${tableId}?from=older-table` };
+  if (found) return { kind: "record_store", href: `/data-v2/${tableId}?moved=older-table` };
 
   // A partial page cannot say "nowhere": at the ceiling the answer is a page,
   // not the whole list, and this organization's table might be on page two.

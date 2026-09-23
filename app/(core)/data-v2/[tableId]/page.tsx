@@ -56,7 +56,9 @@ export default function UnifiedDataTableRoute({
   const activeRecordId = searchParams.get("record");
   // ARRIVED BY AN OLDER-TABLE LINK. `whereThisTableLives` adds this when the old /data/<id>
   // viewer finds the table has moved here; the notice then says so in one line.
-  const movedFromOlderTable = searchParams.get("from") === "older-table";
+  // Its own key, never `from`: `from` is already this page's "you came here from" and a
+  // shared key printed "You came here from 'older-table'" beside the sentence.
+  const movedFromOlderTable = searchParams.get("moved") === "older-table";
   /**
    * WHICH VIEW THE ADDRESS NAMES — grid, kanban, calendar, gallery, dashboards.
    *

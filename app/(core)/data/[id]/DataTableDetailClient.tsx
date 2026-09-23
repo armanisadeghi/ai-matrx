@@ -183,6 +183,26 @@ export default function DataTableDetailClient({
           // other surfaces, so the provider is opt-in — see the prop's docs.
           emitSurfaceScope
           onTableInfoChange={(info) => {
+            // A TABLE THAT WAS MOVED IS NOT "HERE" EVEN THOUGH ITS ROW STILL IS. The move
+            // archives the older dataset and writes `metadata.moved_to` — it never deletes
+            // it — and this viewer's reads do not filter archived datasets, so an old link
+            // opened the archived copy as if nothing had happened (found by lane
+            // OLD-TABLES-4's headless walk). The pointer is the answer: ask the record
+            // store, exactly as for an id the older store does not know.
+            // An UNARCHIVED table keeps `moved_to` as history and gains `unarchived_at`
+            // (workbench.udt_dataset_unarchive) — that is the undo, and it must open here.
+            // The viewer reports `null` while it is still loading — nothing to judge yet.
+            const meta = info?.metadata as
+              | { moved_to?: { table_id?: string; at?: string }; unarchived_at?: string }
+              | undefined;
+            const movedTo = meta?.moved_to;
+            const stillMoved =
+              Boolean(movedTo?.table_id) &&
+              (!meta?.unarchived_at || String(movedTo?.at ?? "") > String(meta.unarchived_at));
+            if (stillMoved) {
+              notHere(tableId);
+              return;
+            }
             setTableInfo(info);
             setRenamedTo(null);
           }}
