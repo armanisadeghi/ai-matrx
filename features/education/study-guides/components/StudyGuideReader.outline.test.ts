@@ -1,4 +1,4 @@
-import { initialOutlineExpansion, outlineIndentLevel, studyGuideOutlineItems, toggleOutlineSection, visibleOutlineItems } from "../outline";
+import { initialOutlineExpansion, outlineIndentLevel, studyGuideOutlineItems, studyGuideOutlineTitle, toggleOutlineSection, visibleOutlineItems } from "../outline";
 import type { NoteOutlineItem } from "@/features/notes/utils/noteOutline";
 import { parseNoteOutline } from "@/features/notes/utils/noteOutline";
 
@@ -30,7 +30,11 @@ describe("study guide outline", () => {
   ].join("\n");
 
   it("treats a sole H1 as the title and opens only the first topic", () => {
-    const items = studyGuideOutlineItems(parseNoteOutline(source));
+    const headings = parseNoteOutline(source);
+    expect(studyGuideOutlineTitle(headings)).toMatchObject({
+      level: 1, headingIndex: 0, text: "AP Human Geography Unit 1: Thinking Geographically",
+    });
+    const items = studyGuideOutlineItems(headings);
     expect(items.map((item) => item.text)).not.toContain("AP Human Geography Unit 1: Thinking Geographically");
     expect(items.map((item) => item.headingIndex)).toEqual([1, 2, 3, 4, 5, 6]);
     const initial = initialOutlineExpansion(items);
@@ -46,9 +50,24 @@ describe("study guide outline", () => {
   });
 
   it("retains multiple H1 section roots", () => {
-    const items = studyGuideOutlineItems(parseNoteOutline("# First\n## Child\n# Second\n## Child"));
+    const headings = parseNoteOutline("# First\n## Child\n# Second\n## Child");
+    expect(studyGuideOutlineTitle(headings)).toBeNull();
+    const items = studyGuideOutlineItems(headings);
     expect(items.map((item) => item.level)).toEqual([1, 2, 1, 2]);
     expect(initialOutlineExpansion(items)).toEqual({ 0: true, 2: false });
+  });
+
+  it("does not manufacture a title when there is no H1", () => {
+    const headings = parseNoteOutline("## First\n### Child\n## Second");
+    expect(studyGuideOutlineTitle(headings)).toBeNull();
+    expect(studyGuideOutlineItems(headings)).toEqual(headings);
+    expect(initialOutlineExpansion(headings)).toEqual({ 0: true, 2: false });
+  });
+
+  it("keeps a lone H1 visible when it is the entire document", () => {
+    const headings = parseNoteOutline("# Only title");
+    expect(studyGuideOutlineTitle(headings)?.headingIndex).toBe(0);
+    expect(studyGuideOutlineItems(headings)).toEqual([]);
   });
 });
 
