@@ -9,6 +9,7 @@
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { renderToStaticMarkup } from "react-dom/server";
 
 jest.mock("@/components/ui/tooltip", () => ({
   Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -19,6 +20,7 @@ jest.mock("@/components/ui/tooltip", () => ({
 }));
 
 import { MessageFlagToggles } from "../MessageFlagToggles";
+import { MessageFlagsPreview } from "../MessageFlagsPreview";
 import {
   cacheBoundaryVerdict,
   exampleRuns,
@@ -138,6 +140,27 @@ describe("the request preview", () => {
   it("shows no saving on a route that caches automatically", () => {
     const preview = flagPreview(drafter(), { ...anthropicProfile, wire_format: "openai_chat" });
     expect(preview.savingsPercent).toBeNull();
+  });
+
+  it("does not price a cached read when the prefix is below Anthropic's minimum", () => {
+    const preview = flagPreview(
+      [{ role: "system", content: text("Short policy"), flags: { cache_boundary: true } }],
+      anthropicProfile,
+    );
+    expect(preview.belowCacheMinimum).toBe(true);
+    expect(preview.cachedInputCost).toBeNull();
+    expect(preview.savingsPercent).toBeNull();
+    expect(renderToStaticMarkup(<MessageFlagsPreview preview={preview} profile={anthropicProfile} />))
+      .not.toContain("Repeat run input");
+  });
+
+  it("does not call an uncached route an automatic cache", () => {
+    const profile = { ...anthropicProfile, wire_format: "other_chat" };
+    const markup = renderToStaticMarkup(
+      <MessageFlagsPreview preview={flagPreview(drafter(), profile)} profile={profile} />,
+    );
+    expect(markup).toContain("This route has no prompt caching");
+    expect(markup).not.toContain("caches automatically");
   });
 });
 

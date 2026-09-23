@@ -56,9 +56,18 @@ export function MessageFlagsPreview({
             {preview.savingsPercent !== null ? ` (−${preview.savingsPercent}%)` : ""}
           </span>
         )}
-      {hasCache && profile && profile.wire_format !== "anthropic_chat" && (
-        <span>This model caches automatically; the boundary changes nothing on its bill.</span>
-      )}
+      {hasCache &&
+        profile &&
+        (profile.wire_format === "openai_chat" || profile.wire_format === "google_chat") && (
+          <span>This model caches automatically; the boundary changes nothing on its bill.</span>
+        )}
+      {hasCache &&
+        profile &&
+        profile.wire_format !== "anthropic_chat" &&
+        profile.wire_format !== "openai_chat" &&
+        profile.wire_format !== "google_chat" && (
+          <span>This route has no prompt caching; the boundary has no effect.</span>
+        )}
       {preview.belowCacheMinimum && (
         <span className="text-amber-600 dark:text-amber-400">
           Under {ANTHROPIC_MIN_CACHEABLE_TOKENS.toLocaleString()} tokens — Claude does not

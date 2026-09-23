@@ -314,7 +314,9 @@ export function flagPreview(
   let fullInputCost: number | null = null;
   let cachedInputCost: number | null = null;
   let savingsPercent: number | null = null;
-  if (native && input !== null && cached !== null && cachedPrefixTokens > 0) {
+  const belowCacheMinimum =
+    native && cachedPrefixTokens > 0 && cachedPrefixTokens < ANTHROPIC_MIN_CACHEABLE_TOKENS;
+  if (native && input !== null && cached !== null && cachedPrefixTokens > 0 && !belowCacheMinimum) {
     fullInputCost = (totalTokens * input) / 1_000_000;
     cachedInputCost =
       (cachedPrefixTokens * cached + (totalTokens - cachedPrefixTokens) * input) / 1_000_000;
@@ -329,7 +331,6 @@ export function flagPreview(
     fullInputCost,
     cachedInputCost,
     savingsPercent,
-    belowCacheMinimum:
-      native && cachedPrefixTokens > 0 && cachedPrefixTokens < ANTHROPIC_MIN_CACHEABLE_TOKENS,
+    belowCacheMinimum,
   };
 }
