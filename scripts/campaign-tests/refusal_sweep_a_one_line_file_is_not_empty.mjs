@@ -50,11 +50,17 @@ try {
     ["customers-header-and-one.csv", { says: "the 1 row below it are imported", header: true, shot: "refusal-oneline-header-plus-one.png" }],
   ]) {
     await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 240000 });
-    await page.getByText("Import/Paste", { exact: true }).first().click({ timeout: 120000 });
+    // The header action is an icon button; its name is its aria-label.
+    await page.getByRole("button", { name: "Import/Paste" }).first().click({ timeout: 120000 });
     await page.locator('input[type="file"]').first().setInputFiles(join(dir, name));
     const says = page.locator("[data-matrx-import-first-row-says]");
     await says.waitFor({ timeout: 60000 }).catch(() => {});
-    const body = await page.locator('[role="dialog"]').innerText().catch(() => "");
+    // THIS modal — the page carries other dialogs, and the first match is not it.
+    const body = await page
+      .locator('[role="dialog"]', { hasText: "Import Table from File or Clipboard" })
+      .first()
+      .innerText()
+      .catch(() => "");
     check(`${name}: not called empty`, !/is empty|No valid data/i.test(body));
     const text = (await says.count()) ? await says.innerText() : "(no first-row line)";
     check(`${name}: reads the line as it is`, text.includes(expect.says), text);
