@@ -397,17 +397,13 @@ else
   # on 2026-09-22), and a refresh that destroyed them would have made the branch worse than the
   # drift it was fixing. --no-owner stays (both databases connect as `postgres`); the ACLs come
   # across, and they are asserted BY NAME in step (4) rather than assumed.
-  # 🚨 THE DUMP DOES NOT CARRY THE PASSWORD IN argv. A DSN handed to pg_dump is readable in
-  # `ps aux` by every process on this machine for the whole ten minutes the dump runs — measured
-  # on 2026-09-22, the clone's database password was sitting there in plain text. So the
-  # connection is split into -h/-p/-U/-d and the password goes through PGPASSWORD, which the
-  # process table does not show, and is unset again immediately afterwards.
-  if ! night_dsn_args "$SRC_DSN" || [ ${#NIGHT_DSN_ARGS[@]} -lt 8 ]; then
-    say "REFUSED: the clone connection could not be split for the dump. Nothing done."; exit 78
-  fi
-  typeset -a DUMPCONN; DUMPCONN=("${NIGHT_DSN_ARGS[@]}")
-  export PGPASSWORD="$NIGHT_DSN_PASSWORD"; NIGHT_DSN_PASSWORD=""
-  PGOPTIONS='-c statement_timeout=600000' timeout $DUMP_CAP "$PGDUMP" "${DUMPCONN[@]}" \
+  # 🚨 NO COMMAND LINE IN THIS FILE CARRIES A PASSWORD. A DSN handed to pg_dump or psql is readable
+  # in `ps aux` by every process on this machine for as long as the process runs — the clone's
+  # password was measured there during the ten-minute dump on 2026-09-22, and the BRANCH's during the
+  # 63-minute restore on 2026-09-23, because only this one call site had been fixed. The DSN helpers
+  # in lib-night.sh now return connections with NO password at all (it is in the per-run PGPASSFILE),
+  # so every call below is safe by construction. Guard: scripts/night/night-argv-self-test.sh.
+  PGOPTIONS='-c statement_timeout=600000' timeout $DUMP_CAP "$PGDUMP" "$SRC_DSN" \
     --schema-only --no-owner --no-comments --quote-all-identifiers \
     --lock-wait-timeout=5000 "${DUMPARGS[@]}" -f "$DUMP" 2> "$WORK/dump.err"
   DRC=$?
@@ -430,7 +426,6 @@ else
     exit 78
   fi
   [ -s "$WORK/dump.err" ] && say "pg_dump stderr (first 3): $(head -3 "$WORK/dump.err" | tr '\n' ' ')"
-  unset PGPASSWORD   # the dump is done; nothing after this point needs it
 
   # ─────────────────────────────────────────────────────────────────────────────
   # (1b) THE ROLES THE DUMP NAMES — created on the branch BEFORE the restore.
@@ -757,7 +752,7 @@ if print -r -- "$LOUT" | grep -qE 'ERROR|FATAL'; then
 else
   say "  public._schema_migrations: $(wc -l < "$LEDGER" | tr -d ' ') rows"
 fi
-# No PGPASSWORD is ever set by this job: the clone DSN carries its own password, and the
+# No PGPASSWORD is ever set by this job: both DSNs are password-less and libpq reads PGPASSFILE; the
 # production credentials in aidream/.env are never read here at all.
 
 # ─────────────────────────────────────────────────────────────────────────────

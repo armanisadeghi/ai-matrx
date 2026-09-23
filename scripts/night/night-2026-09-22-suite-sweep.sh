@@ -53,8 +53,9 @@ else
   H="$(grep -m1 '^SUPABASE_MATRIX_HOST=' "$AIDREAM/.env" | cut -d= -f2- | tr -d '"')"
   PT="$(grep -m1 '^SUPABASE_MATRIX_PORT=' "$AIDREAM/.env" | cut -d= -f2- | tr -d '"')"
   N="$(grep -m1 '^SUPABASE_MATRIX_DATABASE_NAME=' "$AIDREAM/.env" | cut -d= -f2- | tr -d '"')"
-  export PGPASSWORD="$(grep -m1 '^SUPABASE_MATRIX_PASSWORD=' "$AIDREAM/.env" | cut -d= -f2- | tr -d '"')"
-  if [ -z "$H" ] || [ -z "$PGPASSWORD" ]; then say "REFUSED: the five SUPABASE_MATRIX_* values are not all present. Nothing attempted."; exit 78; fi
+  PW="$(grep -m1 '^SUPABASE_MATRIX_PASSWORD=' "$AIDREAM/.env" | cut -d= -f2- | tr -d '"')"
+  [ -n "$PW" ] && night_pgpass_add "$H" "$PT" "$U" "$PW"
+  if [ -z "$H" ] || [ -z "$PW" ]; then say "REFUSED: the five SUPABASE_MATRIX_* values are not all present. Nothing attempted."; exit 78; fi
   PGA=(-h "$H" -p "$PT" -U "$U" -d "$N")
   night_assert_target production "${PGA[@]}" || exit $?
 fi

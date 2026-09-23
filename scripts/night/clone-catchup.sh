@@ -65,8 +65,10 @@ if [ -z "$CLONE_DSN" ]; then
 fi
 night_dsn_args "$CLONE_DSN" || { say "REFUSED: the clone DSN is not a DSN. Nothing attempted."; exit 78; }
 CLONE_ARGS=("${NIGHT_DSN_ARGS[@]}")
-CLONE_PW="$NIGHT_DSN_PASSWORD"
-export PGPASSWORD="$CLONE_PW"
+# No PGPASSWORD anywhere in this job: the clone's password is in PGPASSFILE (lib-night.sh), and so
+# is production's, each matched by (host, port, user). Until 2026-09-23 this job toggled one
+# exported PGPASSWORD between the two by hand, which is one missed toggle from sending production's
+# password to the clone.
 night_assert_target clone "${CLONE_ARGS[@]}" || exit $?
 
 # ── production, which this job only READS ────────────────────────────────────
@@ -81,7 +83,8 @@ if [ -z "$P_USER" ] || [ -z "$P_HOST" ] || [ -z "$P_PW" ]; then
   exit 78
 fi
 PROD_ARGS=(-h "$P_HOST" -p "${P_PORT:-6543}" -U "$P_USER" -d "${P_DB:-postgres}")
-export PGPASSWORD="$P_PW"
+night_pgpass_add "$P_HOST" "${P_PORT:-6543}" "$P_USER" "$P_PW" || { say "REFUSED: could not register production's password in PGPASSFILE. Nothing attempted."; exit 78; }
+P_PW=""
 night_assert_target_readonly production "${PROD_ARGS[@]}" || exit $?
 
 # Proven: clone (writable) + production(read-only). That earns the window exemption.
@@ -89,11 +92,8 @@ night_window_guard 0100 0330 || exit $?
 
 # ── the two ledgers ──────────────────────────────────────────────────────────
 LEDGER_SQL="select source, filename, checksum, applied_at::text from public._schema_migrations"
-
-export PGPASSWORD="$P_PW"
 night_readonly_psql "${PROD_ARGS[@]}" -F $'\t' --sql "$LEDGER_SQL" > "$WORK/production.tsv" || {
   say "REFUSED: production's ledger could not be read. Nothing applied."; exit 70; }
-export PGPASSWORD="$CLONE_PW"
 "$PSQL" "${CLONE_ARGS[@]}" -qAt -F $'\t' -v ON_ERROR_STOP=1 -c "$LEDGER_SQL" > "$WORK/clone.tsv" || {
   say "REFUSED: the clone's ledger could not be read. Nothing applied."; exit 70; }
 say "ledgers read: production $(wc -l < "$WORK/production.tsv" | tr -d ' ') rows, clone $(wc -l < "$WORK/clone.tsv" | tr -d ' ') rows"
@@ -166,12 +166,10 @@ body_hash_sql() {  # body_hash_sql <schema.name(argtypes)>
 }
 
 clone_body_hash() {  # clone_body_hash <schema.name(argtypes)>
-  export PGPASSWORD="$CLONE_PW"
   "$PSQL" "${CLONE_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c "$(body_hash_sql "$1")" 2>/dev/null | tr -d ' \r'
 }
 
 prod_body_hash() {  # prod_body_hash <schema.name(argtypes)> — SELECT-only, proven read-only
-  export PGPASSWORD="$P_PW"
   night_readonly_psql "${PROD_ARGS[@]}" --sql "$(body_hash_sql "$1")" 2>/dev/null | tr -d ' \r'
 }
 
@@ -260,9 +258,7 @@ already_level() {  # already_level <repo> <relpath> -> 0 when every body this fi
   for name in "${names[@]}"; do
     [ -n "$name" ] || continue
     any=1
-    export PGPASSWORD="$CLONE_PW"
     c="$("$PSQL" "${CLONE_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c "$(name_hashes_sql "$name")" 2>/dev/null)"
-    export PGPASSWORD="$P_PW"
     p="$(night_readonly_psql "${PROD_ARGS[@]}" --sql "$(name_hashes_sql "$name")" 2>/dev/null)"
     [ -n "$p" ] || return 1
     [ "$c" = "$p" ] || return 1
@@ -332,7 +328,6 @@ while IFS=$'\x1f' read -r kind source filename checksum repo relpath runner sele
   # THE ROW SAYS WHAT IT IS. The runner already marks a clone row `rehearsal_on`; this names
   # the catch-up, so anybody reading the clone's ledger can tell "production ran this and the
   # night job carried it over" from "a lane rehearsed here".
-  export PGPASSWORD="$CLONE_PW"
   "$PSQL" "${CLONE_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c \
     "update public._schema_migrations set rehearsal_on = 'catchup — ' || coalesce(rehearsal_on, '') \
        where source = '$source' and filename = '$filename' and rehearsal_on not like 'catchup%'" \

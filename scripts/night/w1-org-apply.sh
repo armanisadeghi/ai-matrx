@@ -171,7 +171,8 @@ else
   PT="$(grep -m1 '^SUPABASE_MATRIX_PORT=' "$AIDREAM/.env" | cut -d= -f2- | tr -d '"')"
   N="$(grep -m1 '^SUPABASE_MATRIX_DATABASE_NAME=' "$AIDREAM/.env" | cut -d= -f2- | tr -d '"')"
   PW="$(grep -m1 '^SUPABASE_MATRIX_PASSWORD=' "$AIDREAM/.env" | cut -d= -f2- | tr -d '"')"
-  export PGPASSWORD="$PW"
+  night_pgpass_add "$H" "$PT" "$U" "$PW" || { say "REFUSED: could not register the password in PGPASSFILE. Nothing attempted."; exit 78; }
+  PW=""
   night_assert_target production -h "$H" -p "$PT" -U "$U" -d "$N" || exit $?
   PROBE_ARGS=(-h "$H" -p "$PT" -U "$U" -d "$N")
 fi

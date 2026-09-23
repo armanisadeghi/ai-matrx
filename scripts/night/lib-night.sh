@@ -90,15 +90,80 @@ night_window_guard() {
   return 0
 }
 
+# ── credentials: a pgpass file, never argv ───────────────────────────────────
+# 🚨 A PASSWORD IN A COMMAND LINE IS PUBLIC. Every process on this machine can read another
+# process's argv (`ps aux`), and on 2026-09-23 the branch's password was sitting in `ps` for the
+# whole 63-minute restore, because `night_branch_dsn` handed back `postgresql://user:PASSWORD@…`
+# and every `"$PSQL" "$BRANCH_DSN"` in this directory carried it. `night_dsn_args` had been built
+# the day before to stop exactly that — for ONE call site (the clone pg_dump). An instance fix.
+#
+# THE CLASS FIX: the DSN helpers never return a password at all. `night_branch_dsn` and
+# `night_clone_dsn` write the password into a PER-RUN pgpass file (dir 0700, file 0600, created
+# when this library is sourced, exported as PGPASSFILE) and hand back `postgresql://user@host:port/db`.
+# libpq finds the password there by (host, port, user); nothing in any command line carries it.
+# A job that builds a connection of its own (the production reads) registers its password with
+# `night_pgpass_add` — a zsh function, so the password never reaches another process's argv either.
+#
+# PGPASSWORD IS UNSET HERE and nothing in this directory sets it: it OUTRANKS pgpass, so one job
+# that exported production's password and then opened a branch connection sent production's
+# password to the branch (clone-catchup did this until 2026-09-23, toggling it by hand).
+# The file is removed when the main shell exits — `zshexit` runs after the job's own EXIT trap and
+# never in a `$(…)` subshell. A SIGKILLed job leaves it behind in its 0700 temp directory.
+# Guard: `zsh scripts/night/night-argv-self-test.sh` (RED on the pre-fix library, then GREEN).
+unset PGPASSWORD
+if [ -z "${NIGHT_PGPASS_DIR:-}" ] || [ "${NIGHT_PGPASS_OWNER:-}" != "$$" ]; then
+  NIGHT_PGPASS_DIR="$(mktemp -d "${TMPDIR:-/tmp}/night-pgpass.XXXXXX")" || { print -r -- "REFUSED: no temp dir for the pgpass file."; exit 78; }
+  NIGHT_PGPASS_OWNER=$$
+  chmod 700 "$NIGHT_PGPASS_DIR"
+  export PGPASSFILE="$NIGHT_PGPASS_DIR/pgpass"
+  ( umask 077; : > "$PGPASSFILE" ); chmod 600 "$PGPASSFILE"
+  _night_pgpass_cleanup() {
+    (( ZSH_SUBSHELL == 0 )) || return 0
+    [ -n "${NIGHT_PGPASS_DIR:-}" ] && [ -d "$NIGHT_PGPASS_DIR" ] && /bin/rm -rf -- "$NIGHT_PGPASS_DIR"
+  }
+  typeset -ga zshexit_functions
+  zshexit_functions+=(_night_pgpass_cleanup)
+fi
+
+_night_urldecode() { setopt localoptions extendedglob; print -rn -- "${1//(#b)%([[:xdigit:]][[:xdigit:]])/${(#):-0x$match[1]}}"; }
+_night_pgpass_escape() { local v="${1//\\/\\\\}"; print -rn -- "${v//:/\\:}"; }
+
+# night_pgpass_add <host> <port> <user> <password> — register a password for that endpoint.
+night_pgpass_add() {
+  local line cur=""
+  [ -n "${PGPASSFILE:-}" ] && [ -f "$PGPASSFILE" ] || return 1
+  line="$(_night_pgpass_escape "$1"):$(_night_pgpass_escape "$2"):*:$(_night_pgpass_escape "$3"):$(_night_pgpass_escape "$4")"
+  cur="$(<"$PGPASSFILE")"
+  [[ $'\n'"$cur"$'\n' == *$'\n'"$line"$'\n'* ]] && return 0
+  print -r -- "$line" >> "$PGPASSFILE"
+}
+
+# night_dsn_strip <postgresql://user:pass@host:port/db?opts> -> the same DSN with NO password,
+# the password registered in PGPASSFILE. A DSN that carries no password passes through unchanged.
+night_dsn_strip() {
+  local dsn="$1" scheme rest userinfo hostpart user pass host port
+  case "$dsn" in *://*) ;; *) print -r -- "$dsn"; return 0 ;; esac
+  scheme="${dsn%%://*}"; rest="${dsn#*://}"
+  case "$rest" in *@*) userinfo="${rest%%@*}"; hostpart="${rest#*@}" ;; *) print -r -- "$dsn"; return 0 ;; esac
+  case "$userinfo" in *:*) ;; *) print -r -- "$dsn"; return 0 ;; esac
+  user="${userinfo%%:*}"; pass="${userinfo#*:}"
+  host="${hostpart%%[/?]*}"; port="${host##*:}"; [ "$port" = "$host" ] && port=5432; host="${host%%:*}"
+  night_pgpass_add "$(_night_urldecode "$host")" "$port" "$(_night_urldecode "$user")" "$(_night_urldecode "$pass")" || return 1
+  print -r -- "${scheme}://${user}@${hostpart}"
+}
+
 # ── the target ───────────────────────────────────────────────────────────────
 night_branch_dsn() {
-  grep -m1 '^SUPABASE_BRANCH_DATABASE_URL=' "$FRONTEND/.env.local" | cut -d= -f2- | tr -d '"'
+  local raw
+  raw="$(grep -m1 '^SUPABASE_BRANCH_DATABASE_URL=' "$FRONTEND/.env.local" | cut -d= -f2- | tr -d '"')"
+  [ -n "$raw" ] || return 1
+  night_dsn_strip "$raw"
 }
 
 # The nightly dev clone's DSN. CLONE_DATABASE_URL wins; otherwise it is assembled from the
 # checked-in CLONE-REF (identities) plus the password file CLONE-REF names (never printed).
 night_clone_dsn() {
-  if [ -n "${CLONE_DATABASE_URL:-}" ]; then print -r -- "$CLONE_DATABASE_URL"; return 0; fi
+  if [ -n "${CLONE_DATABASE_URL:-}" ]; then night_dsn_strip "$CLONE_DATABASE_URL"; return $?; fi
   local h p u d pf pw
   h="$(night_ref_key "$CLONE_REF_FILE" pooler_host)"
   p="$(night_ref_key "$CLONE_REF_FILE" pooler_port)"
@@ -106,24 +171,18 @@ night_clone_dsn() {
   d="$(night_ref_key "$CLONE_REF_FILE" database)"
   pf="$(night_ref_key "$CLONE_REF_FILE" password_file)"
   [ -n "$h" ] && [ -n "$u" ] && [ -r "$pf" ] || return 1
-  pw="$(tr -d '\n' < "$pf")"
-  print -r -- "postgresql://${u}:${pw}@${h}:${p:-6543}/${d:-postgres}"
+  pw="$(<"$pf")"; pw="${pw//$'\n'/}"
+  # The password goes into the pgpass file and NEVER into the string this prints.
+  night_pgpass_add "$h" "${p:-6543}" "$u" "$pw" || return 1
+  print -r -- "postgresql://${u}@${h}:${p:-6543}/${d:-postgres}"
 }
 
-# ── a DSN that does not sit in the process table ─────────────────────────────
-# 🚨 A PASSWORD PASSED AS argv IS PUBLIC. `pg_dump "postgresql://user:pass@host/db"` prints the
-# whole DSN, password included, in `ps aux` for every process on the machine, for as long as the
-# dump runs — and a schema dump of this estate runs for TEN MINUTES. Measured 2026-09-22 while
-# watching the clone refresh: the clone's database password was plainly readable in `ps` output.
-# Sub-second psql calls have the same hole but a far smaller window; a long-lived pg_dump is the
-# one that matters, so it takes its connection APART.
-#
+# ── a DSN taken apart ────────────────────────────────────────────────────────
 # night_dsn_args <dsn> sets two GLOBALS and prints nothing: the array NIGHT_DSN_ARGS
-# (`-h … -p … -U … -d …`) and NIGHT_DSN_PASSWORD, which the caller exports as PGPASSWORD and
-# then clears. It deliberately does NOT print the args for `$(…)` capture — a command
-# substitution runs in a subshell, so the password it set would be lost with it (measured here
-# on the first cut, 2026-09-22). night_conn_ref still reads the project ref back from libpq, so
-# the target assertion works identically on the split form — proven below in this same session.
+# (`-h … -p … -U … -d …`) and NIGHT_DSN_PASSWORD. Since 2026-09-23 the helpers above hand back
+# DSNs that carry NO password (it is in PGPASSFILE), so NIGHT_DSN_PASSWORD is normally empty and
+# nothing in this directory exports it. It deliberately does NOT print the args for `$(…)`
+# capture — a command substitution runs in a subshell and its globals are lost with it.
 night_dsn_args() {
   local dsn="$1" rest userinfo hostpart user pass host port db
   NIGHT_DSN_PASSWORD=""
@@ -137,7 +196,10 @@ night_dsn_args() {
   db="${hostpart#*/}"; db="${db%%\?*}"; hostpart="${hostpart%%/*}"
   host="${hostpart%%:*}"; port="${hostpart#*:}"; [ "$port" = "$host" ] && port=5432
   [ -n "$host" ] && [ -n "$user" ] || return 1
-  NIGHT_DSN_PASSWORD="$pass"
+  # A password that arrives here anyway goes to PGPASSFILE, never back to the caller.
+  if [ -n "$pass" ]; then
+    night_pgpass_add "$(_night_urldecode "$host")" "$port" "$(_night_urldecode "$user")" "$(_night_urldecode "$pass")" || return 1
+  fi
   NIGHT_DSN_ARGS=(-h "$host" -p "$port" -U "$user" -d "${db:-postgres}")
   return 0
 }
