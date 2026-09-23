@@ -28,7 +28,7 @@ export function PillToggleInput({
 
   return (
     <div
-      className={`inline-flex w-full rounded-md border border-border bg-muted p-0.5 ${compact ? "gap-0.5" : "gap-0.5"}`}
+      className={`inline-flex w-full rounded-md border border-border bg-muted p-0.5 gap-0.5 ${options.length > 6 ? "flex-wrap" : ""}`}
       role="radiogroup"
       aria-label={variableName}
     >
@@ -42,7 +42,7 @@ export function PillToggleInput({
             aria-checked={isSelected}
             onClick={() => onChange(option)}
             className={`
-              min-w-0 flex-1 ${height} ${px} ${textSize} whitespace-normal break-words rounded font-medium leading-tight transition-all duration-150
+              ${options.length > 6 ? "flex-none" : "min-w-0 flex-1"} ${height} ${px} ${textSize} whitespace-normal break-words rounded font-medium leading-tight transition-all duration-150
               focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring
               ${
                 isSelected

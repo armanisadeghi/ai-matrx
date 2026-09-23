@@ -1,3 +1,4 @@
+import type { ImageReferenceRole } from "@/features/agents/image-roles/roles";
 import type {
   ContextPolicy,
   CustomToolDefinition,
@@ -157,6 +158,13 @@ export interface VariableCustomComponent {
    */
   resource_context?: VariableResourceContextConfig;
   /**
+   * Image-generation reference role this image variable fills (subject,
+   * character, style, mask, edit_target, composition_control). Stamped from
+   * the image block that uses `{{name}}`; the run form asks for it by role
+   * ("Style reference"). Vocabulary: `features/agents/image-roles/roles.ts`.
+   */
+  imageRole?: ImageReferenceRole;
+  /**
    * Preserved config fragments for other component types.
    * Written when the user edits a field that isn't used by the current type
    * (or when switching away from a type that had config set); read back when
@@ -200,6 +208,18 @@ export interface ContextItemBinding {
   onMissing?: "empty" | "skip" | "error";
 }
 
+/**
+ * Binds a variable to a MODEL CONTROL (controls as first-class variables). The
+ * variable's resolved value is that control's value for the run; while bound, the
+ * key is absent from `settings` and the variable's `defaultValue` IS the agent's
+ * value. Resolved server-side before the catalog compile
+ * (aidream `matrx_ai/agents/control_bindings.py`).
+ */
+export interface ControlBinding {
+  /** Canonical control key from the model's catalog record (aspect_ratio, quality, tts_voice, …). */
+  key: string;
+}
+
 export interface VariableDefinition {
   name: string;
   defaultValue: unknown;
@@ -209,6 +229,8 @@ export interface VariableDefinition {
   customComponent?: VariableCustomComponent;
   /** When set, this variable is filled from a scope context item and inherits its component. */
   binding?: ContextItemBinding;
+  /** When set, this variable is a model control exposed as a run input. */
+  control?: ControlBinding;
 }
 
 export interface ModelTier {

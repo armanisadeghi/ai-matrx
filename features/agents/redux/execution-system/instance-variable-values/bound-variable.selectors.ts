@@ -19,6 +19,7 @@ import type { RootState } from "@/lib/redux/store";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import { selectAllContextItems } from "@/features/scope-system/redux/contextItemsSlice";
 import type { ContextItem } from "@/features/scope-system/redux/contextItemsSlice";
+import { orderVariablesForForm } from "@/features/agents/utils/control-variables";
 
 const EMPTY_DEFS: VariableDefinition[] = [];
 
@@ -101,7 +102,11 @@ export const selectVisibleInputDefinitions = (
           // pill. Unresolved bound vars stay as ordinary inputs (no requirement).
           return isEmptyVal(entry.scopeValues[d.name]);
         });
-        return visible.length === effective.length ? effective : visible;
+        // Bound model controls render as a "Settings" group AFTER the content inputs
+        // in every form style (controls as first-class variables).
+        return orderVariablesForForm(
+          visible.length === effective.length ? effective : visible,
+        );
       },
     );
     visibleCache.set(conversationId, sel);

@@ -14,6 +14,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Plus, Variable, AlertCircle, Trash2, X } from "lucide-react";
+import { isControlVariable } from "@/features/agents/utils/control-variables";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -212,7 +213,7 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
                   <span className="flex-1 text-xs font-mono truncate">
                     {variable.name}
                   </span>
-                  {!isUsed && (
+                  {!isUsed && !isControlVariable(variable) && (
                     <span title="Not referenced in messages">
                       <AlertCircle className="w-3 h-3 shrink-0 text-amber-500" />
                     </span>

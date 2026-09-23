@@ -583,6 +583,29 @@ export const agentDefinitionSlice = createSlice({
       );
     },
 
+    /**
+     * Bind or unbind a model control to a variable in ONE edit (one undo step):
+     * the settings literal and the variable definitions move together.
+     * See features/agents/utils/control-variables.ts.
+     */
+    setAgentControlBinding(
+      state,
+      action: PayloadAction<{
+        id: string;
+        settings: AgentDefinition["settings"];
+        variableDefinitions: AgentDefinition["variableDefinitions"];
+      }>,
+    ) {
+      const record = state.agents[action.payload.id];
+      if (!record) return;
+      applyFieldEdit(record, "settings", action.payload.settings);
+      applyFieldEdit(
+        record,
+        "variableDefinitions",
+        action.payload.variableDefinitions,
+      );
+    },
+
     setAgentContextPolicies(
       state,
       action: PayloadAction<{
@@ -925,6 +948,7 @@ export const {
   setAgentMessages,
   setAgentSettings,
   setAgentVariableDefinitions,
+  setAgentControlBinding,
   setAgentContextPolicies,
   setAgentTools,
   setAgentCustomTools,

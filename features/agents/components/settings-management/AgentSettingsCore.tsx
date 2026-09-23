@@ -16,6 +16,8 @@ import {
   Braces,
   Loader2,
   Zap,
+  Variable,
+  Unlink,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -47,8 +49,10 @@ import {
   selectAgentModelId,
   selectAgentTools,
   selectAgentOutputSchema,
+  selectAgentVariableDefinitions,
 } from "@/features/agents/redux/agent-definition/selectors";
 import {
+  setAgentControlBinding,
   setAgentSettings,
   setAgentField,
   setAgentTools,
@@ -90,6 +94,16 @@ import {
   buildSettingsRows,
   type SettingsRow,
 } from "@/lib/redux/slices/agent-settings/settings-catalogue";
+import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
+import {
+  bindControlToVariable,
+  CONTROL_BINDABLE_KNOB,
+  findControlVariable,
+  isControlBindable,
+  readControlBindablePolicy,
+  unbindControlVariable,
+} from "@/features/agents/utils/control-variables";
+import { variableValueToDisplay } from "@/features/agents/utils/variable-utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1009,6 +1023,13 @@ export function AgentSettingsCore({
     selectAgentTools(state, agentId),
   );
   const models = useAppSelector(selectAllModels);
+  const variableDefinitions = useAppSelector((state) =>
+    selectAgentVariableDefinitions(state, agentId),
+  );
+  // Which controls this organization lets an agent expose as run inputs.
+  const bindablePolicy = readControlBindablePolicy(
+    useSessionKnob(CONTROL_BINDABLE_KNOB),
+  );
   const outputSchema = useAppSelector((state) =>
     selectAgentOutputSchema(state, agentId),
   );
@@ -1467,11 +1488,108 @@ export function AgentSettingsCore({
     );
   };
 
+  // Controls as first-class variables: the literal moves to a variable (the run
+  // input's default) and back. One reducer, one undo step.
+  const handleBindControl = (key: string, control: ControlDefinition) => {
+    const next = bindControlToVariable({
+      key,
+      control,
+      settings: currentSettings as Record<string, unknown>,
+      variableDefinitions,
+    });
+    dispatch(
+      setAgentControlBinding({
+        id: agentId,
+        settings: next.settings as LLMParams,
+        variableDefinitions: next.variableDefinitions,
+      }),
+    );
+  };
+
+  const handleUnbindControl = (
+    key: string,
+    control: ControlDefinition | null,
+  ) => {
+    const next = unbindControlVariable({
+      key,
+      control,
+      settings: currentSettings as Record<string, unknown>,
+      variableDefinitions,
+    });
+    dispatch(
+      setAgentControlBinding({
+        id: agentId,
+        settings: next.settings as LLMParams,
+        variableDefinitions: next.variableDefinitions,
+      }),
+    );
+  };
+
+  const renderBoundControl = (
+    key: string,
+    label: string,
+    control: ControlDefinition | null,
+    variableName: string,
+    defaultValue: unknown,
+  ) => (
+    <div
+      key={key}
+      className="flex items-center gap-2 mb-2 rounded px-1 py-1 hover:bg-muted/20"
+      data-bound-control={key}
+    >
+      <span className="h-2 w-2 rounded-full shrink-0 bg-primary" aria-hidden />
+      <div className="flex items-center gap-2 pt-0.5 flex-shrink-0">
+        <Checkbox checked disabled aria-label={`${label} is a run input`} />
+        <Label className="text-xs flex-shrink-0 w-36 text-gray-700 dark:text-gray-300">
+          {label}
+        </Label>
+      </div>
+      <div className="flex-1 min-w-0 flex items-center gap-2">
+        <span className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-xs font-mono text-primary">
+          <Variable className="w-3 h-3" />
+          {`{{${variableName}}}`}
+        </span>
+        <span className="text-[11px] text-muted-foreground truncate">
+          {variableValueToDisplay(defaultValue) || "model default"}
+        </span>
+      </div>
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground hover:text-foreground"
+              onClick={() => handleUnbindControl(key, control)}
+              aria-label={`Make ${label} a fixed setting`}
+            >
+              <Unlink className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="text-xs">
+            Make a fixed setting
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  );
+
   const renderControl = (
     key: keyof FeLlmParams,
     label: string,
     control: ControlDefinition | null,
   ) => {
+    const boundVariable = findControlVariable(variableDefinitions, key);
+    if (boundVariable) {
+      return renderBoundControl(
+        key,
+        label,
+        control,
+        boundVariable.name,
+        boundVariable.defaultValue,
+      );
+    }
+    const canBind = !!control && isControlBindable(key, bindablePolicy);
     const isEnabled = enabledSettings.has(key);
     const valueRaw = (currentSettings as Record<string, unknown>)[key];
     const checkboxId = `setting-agent-${key}`;
@@ -1574,6 +1692,27 @@ export function AgentSettingsCore({
 
         {/* Per-row actions */}
         <div className="flex items-center gap-0 shrink-0">
+          {canBind && control && (
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-primary"
+                    onClick={() => handleBindControl(key, control)}
+                    aria-label={`Make ${label} a run input`}
+                    data-bind-control={key}
+                  >
+                    <Variable className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  Make a run input
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           {fixable && isEnabled && (
             <TooltipProvider delayDuration={200}>
               <Tooltip>
@@ -1621,7 +1760,11 @@ export function AgentSettingsCore({
   // it; otherwise it degrades to a normal row so it is never hidden.
   const renderVoiceRow = (row: SettingsRow) => {
     const voiceControl = getControl("tts_voice");
-    if (!voiceControl || !voiceControl.enum?.length) {
+    if (
+      !voiceControl ||
+      !voiceControl.enum?.length ||
+      findControlVariable(variableDefinitions, "tts_voice")
+    ) {
       return renderControl(
         "tts_voice",
         row.label,

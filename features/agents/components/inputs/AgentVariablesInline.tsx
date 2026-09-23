@@ -38,6 +38,8 @@ import { BoundVariableChips } from "./BoundVariableChips";
 import { formatText } from "@ai-matrx/kit/text-case";
 import { variableValueToDisplay } from "@/features/agents/utils/variable-utils";
 import { calculateVisualViewportLift } from "@/lib/dom/visual-viewport-lift";
+import { collapsedRowKind } from "./collapsed-row";
+import { isControlVariable } from "@/features/agents/utils/control-variables";
 
 interface AgentVariablesInlineProps {
   conversationId: string;
@@ -230,6 +232,10 @@ export function AgentVariablesInline({
   if (!shouldShowVariables || !showVariablePanel || definitions.length === 0)
     return null;
 
+  // Bound model controls are ordered after the content inputs by the selector;
+  // they render as a "Settings" group with their real component, never a text box.
+  const firstSettingIndex = visibleDefs.findIndex(isControlVariable);
+
   return (
     <div
       className="w-full shrink-0"
@@ -250,6 +256,69 @@ export function AgentVariablesInline({
           const displayValue: string = variableValueToDisplay(rawValue);
           const isPicklistBound = !!readStructuredList(variable.customComponent)
             ?.listId;
+
+          if (isControlVariable(variable)) {
+            return (
+              <div key={variable.name} data-control-variable={variable.name}>
+                {index === firstSettingIndex && (
+                  <p className="px-2.5 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Settings
+                  </p>
+                )}
+                <div className="flex items-center gap-2 pl-2.5 pr-1.5 py-1 min-h-8">
+                  <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap flex-shrink-0">
+                    {formatText(variable.name)}:
+                  </Label>
+                  <div className="flex-1 min-w-0">
+                    <VariableInputComponent
+                      conversationId={conversationId}
+                      value={rawValue}
+                      onChange={(v) => handleValueChange(variable.name, v)}
+                      variableName={variable.name}
+                      customComponent={variable.customComponent}
+                      helpText={variable.helpText}
+                      compact
+                      hideLabel
+                      autoFocus={false}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          // THE COLLAPSED ROW DRAWS THE SAME COMPONENT AS THE EXPANDED EDITOR.
+          // A select stays a select — never a free-text box (collapsed-row.ts).
+          const rowKind = collapsedRowKind(variable.customComponent, {
+            picklistBound: isPicklistBound,
+          });
+          if (!isExpanded && rowKind === "component") {
+            return (
+              <div
+                key={variable.name}
+                className="flex items-center gap-2 pl-2.5 pr-1.5 py-1 min-h-8 bg-transparent hover:bg-accent/40 transition-colors focus-within:bg-accent/30"
+                data-variable-index={index}
+                data-collapsed-row="component"
+              >
+                <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap flex-shrink-0">
+                  {formatText(variable.name)}:
+                </Label>
+                <div className="flex-1 min-w-0">
+                  <VariableInputComponent
+                    conversationId={conversationId}
+                    value={rawValue}
+                    onChange={(v) => handleValueChange(variable.name, v)}
+                    variableName={variable.name}
+                    customComponent={variable.customComponent}
+                    helpText={variable.helpText}
+                    compact
+                    hideLabel
+                    autoFocus={false}
+                  />
+                </div>
+              </div>
+            );
+          }
 
           if (isExpanded) {
             return (
@@ -327,7 +396,7 @@ export function AgentVariablesInline({
               >
                 {formatText(variable.name)}:
               </Label>
-              {isPicklistBound ? (
+              {rowKind === "open-editor" ? (
                 <button
                   type="button"
                   onClick={() => handleExpand(variable.name)}

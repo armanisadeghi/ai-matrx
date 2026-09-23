@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { isControlVariable } from "@/features/agents/utils/control-variables";
 import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
 import { BoundVariableChips } from "@/features/agents/components/inputs/BoundVariableChips";
 import {
@@ -102,6 +103,12 @@ export function AgentVariableForm({ conversationId }: AgentVariableFormProps) {
             {visibleDefs.map((def, i) => (
               <div key={def.name}>
                 {i > 0 && <div className="border-t border-border my-2" />}
+                {isControlVariable(def) &&
+                  !(i > 0 && isControlVariable(visibleDefs[i - 1])) && (
+                    <p className="pb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Settings
+                    </p>
+                  )}
                 <VariableField
                   conversationId={conversationId}
                   def={def}

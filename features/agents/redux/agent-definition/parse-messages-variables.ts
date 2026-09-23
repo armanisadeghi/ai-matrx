@@ -404,6 +404,19 @@ function parseContextItemBinding(
   return parsed;
 }
 
+function parseControlBinding(
+  value: unknown,
+  path: string,
+): VariableDefinition["control"] {
+  if (value === undefined || value === null) return undefined;
+  if (!isRecord(value) || typeof value.key !== "string" || !value.key) {
+    fail(path, "must be an object with a non-empty string key");
+  }
+  const parsed: NonNullable<VariableDefinition["control"]> = { key: value.key };
+  copyOpaqueKeys(parsed, value, ["key"]);
+  return parsed;
+}
+
 function parseVariableDefinition(
   value: unknown,
   index: number,
@@ -424,11 +437,13 @@ function parseVariableDefinition(
     `${path}.customComponent`,
   );
   const binding = parseContextItemBinding(value.binding, `${path}.binding`);
+  const control = parseControlBinding(value.control, `${path}.control`);
   if (helpText !== undefined) parsed.helpText = helpText;
   if (required !== undefined) parsed.required = required;
   if (customComponent !== undefined) parsed.customComponent = customComponent;
   if (binding !== undefined) parsed.binding = binding;
-  copyOpaqueKeys(parsed, value, VARIABLE_DEFINITION_KNOWN_KEYS);
+  if (control !== undefined) parsed.control = control;
+  copyOpaqueKeys(parsed, value, [...VARIABLE_DEFINITION_KNOWN_KEYS, "control"]);
   return parsed;
 }
 
