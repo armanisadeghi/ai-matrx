@@ -27,14 +27,29 @@ Provision and deploy the canonical AI Dream term-list resource, then regenerate 
 **Current evidence**
 
 - Frontend `features/agents/term-lists/service.ts` references `agent.term_list` fields absent from generated types; the 2026-09-23 full `pnpm sync-types` run regenerated East/API types, passed the API property-drop guard, and left exactly 14 type errors in this file.
-- East generated database types still have no `agent.term_list` relation. API types were generated from AI Dream checkout SHA `6dee0f0b2a5e`; current AI Dream `main` is `21100869077f15380a8dfbf63fe948cdaf4a72a9`, while live ECS `/health/version` reports `9c9d2c14752c6fc0950164d75ae108b9f292d284` (`built_at` `2026-09-23T06:49:23Z`). The generated API contract and running dependency are not aligned.
+- East generated database types still have no `agent.term_list` relation. The 08:04Z live sync used the running ECS SHA `9c9d2c14752c6fc0950164d75ae108b9f292d284` (contains pinned commit `3ea9804c73`); OpenAPI exposes `/term-lists` routes, but the serving database model/table is absent. This is a database/server-model gap, not an API-schema drop.
 - Sol accepted the term-list spec, shared reachability repair, explicit migration-window classifier for hot-parent locks, FK runner guard, and RLS-safe server CRUD projection. The service avoids metadata reads/writes and preserves actor scope, optimistic version checks, and partial-cache behavior. Focused clone checks passed (29 tests at the last combined run); production term-list setup remains pending.
 - At `2026-09-23T08:00Z`, the shared `platform.rebuild_reachability` repair applied and ledgered in 2.64s. The following term-list provisioning transaction rolled back before any term-table or base-FK change: the runner held the canonical advisory claim on one connection while `platform.provision` attempted the same claim on another and refused with “another provisioning run”. Do not bypass or blindly retry. East currently has the shared reachability repair only.
+- Frontend release `v0.4.2235` could not start its migration phase: `/Users/armanisadeghi/code/aidream/db/apply_migrations.py:4632` raises `SyntaxError: expected 'except' or 'finally' block`. Senior read-only review found HEAD/index parse successfully and an unstaged working-tree edit breaks parsing before any module code executes. No migration could have run in that attempt; the AI Dream owner must repair the shared edit before the next migration check.
 - Clone evidence: all 888 roots matched the existing 7,582 reachability rows (51.72s reference vs 0.406s candidate, zero symmetric difference); the reviewed final term-list/server bundle and FK phases passed clone rehearsal. Provisioning is restricted to 01:00–04:00 America/Los_Angeles.
 
 **Next concrete step**
 
-Fix and independently review the advisory-claim handoff so the production runner can apply the exact term-list bundle without self-refusal. Rehearse runner up/inverse/up plus FK attach/validate on the clone; retry in the authorized 01:00–04:00 PDT window only if the exact reviewed SQL/hash/baseline gates pass. Deploy the matching AI Dream contract, confirm `/health/version`, regenerate East/API/entity types from the serving source, and resolve the 14 frontend errors through callers without casts or fabricated generated types. Keep the uncommitted term-list UI/service out of release until the contract and typecheck are complete.
+The AI Dream owner must first repair the parseable migration applier and independently review the advisory-claim handoff. Rehearse runner up/inverse/up plus FK attach/validate on the clone; retry the exact reviewed SQL/hash/baseline gates in the authorized window. Then confirm the deployed server/model and East relation, regenerate live types, and resolve the 14 frontend errors through callers without casts or fabricated generated types. Keep the uncommitted term-list UI/service out of release until the contract and typecheck are complete.
+
+### TASK-018: Identify recurring MCP stream timeouts
+- **Status:** blocked (2026-09-23) — runtime logs omit the JSON-RPC method; senior review recommends safe method-only instrumentation
+- **Created:** 2026-09-23
+- **Source:** Release watch reproduced 15-second Vercel runtime timeouts on the production MCP route.
+
+**Goal**
+Identify the MCP request method causing production timeouts and apply a narrowly scoped fix if it is an unsupported long-lived subscription.
+
+**Notes**
+Current main deployment `dpl_9z8sjTHLkPgZAYg1WDrE285WkMQG` logged `Vercel Runtime Timeout Error: Task timed out after 15 seconds` on `POST /api/mcp/mcp` at 08:00:08Z; Vercel aggregates 5 occurrences for one user. Senior review compared v0.4.2229 with its preceding deployment: both MCP lambdas had the same artifact digest and 15-second limit, while the preceding deployment had no comparable request logs. The latest main deployment reproduced the error, but current logs do not identify its JSON-RPC method. The repeated ~16-second cadence is consistent with (but does not prove) an unsupported `subscriptions/listen` stream. Add an `onEvent` logger for JSON-RPC method, elapsed time, and status only; never log parameters, tokens, or full URLs. If the method is confirmed as `subscriptions/listen`, reject that method within the authentication boundary while preserving ordinary tool requests.
+
+**Next concrete step**
+Instrument only the method/status metadata, collect a fresh occurrence, confirm the JSON-RPC method, then implement and locally verify the protocol-level refusal only if it is the unsupported subscription method.
 
 ### TASK-CRM-ERASURE-RPC: Apply the missing Gmail interaction erasure RPC
 - **Status:** blocked (2026-09-22) — live East schema is missing the RPC used by current CRM code

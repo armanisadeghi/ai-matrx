@@ -30,6 +30,7 @@
 
 | ID | First seen | Level | Signature | Home |
 |----|------------|-------|-----------|------|
+| CE-001 | 2026-07-05 | error | Vercel 15 s runtime timeout on `POST /api/mcp/[transport]` (5 occurrences, 1 user; latest 2026-09-23) | `.matrx/AGENT_TASKS.md` TASK-018 |
 
 ---
 
