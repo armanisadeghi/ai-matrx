@@ -18213,29 +18213,6 @@ export type Database = {
           task_notifications: boolean
         }[]
       }
-      confirm_sms_tool_authorization: {
-        Args: { p_call_id: string; p_recent_auth_at: string; p_user_id: string }
-        Returns: Json
-      }
-      confirm_voice_tool_authorization: {
-        Args: {
-          p_call_id: string
-          p_interaction_id: string
-          p_response_kind: string
-          p_response_value: string
-          p_user_id: string
-        }
-        Returns: Json
-      }
-      consume_sms_tool_authorization: {
-        Args: {
-          p_action_digest: string
-          p_conversation_id: string
-          p_organization_id: string
-          p_user_id: string
-        }
-        Returns: Json
-      }
       consume_voice_agent_session_reference: {
         Args: {
           p_provider: string
