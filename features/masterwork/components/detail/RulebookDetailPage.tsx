@@ -74,17 +74,20 @@ import {
   saveRules,
   splitMasterworksByArchive,
   updateRulebookMeta,
+  setExpertDescription,
   upsertRuleWithRetry,
 } from "../../service";
 import {
   applyManualRuleEdit,
   disagreesWith,
+  expertDescription,
   heldByOneSourceOnly,
   intakeGoal,
   recurrencePieces,
   ruleState,
   SEVERITY_LABELS,
   stampRuled,
+  suggestedDescription,
   type Masterwork,
   type Rulebook,
   type RulebookRule,
@@ -93,6 +96,7 @@ import {
   type RuleSourceRef,
 } from "../../types";
 import { TriageDraftsDialog } from "../../triage/TriageDraftsDialog";
+import { SuggestedWording } from "./SuggestedWording";
 import { useRulebookDialogSession } from "../../durable-run/rulebookDialogSession";
 import { RuleRelations, ruleAnchorId } from "./RuleRelations";
 import { RuleMove, ruleMoveIsEmpty } from "./RuleMove";
@@ -2157,6 +2161,36 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
     [rulebook, persist],
   );
 
+  // THE GUIDE LINE IS HERS (cold walk 22, friction): a rewrite by the
+  // interviewer is a suggestion she accepts or declines — see
+  // `SuggestedWording` and `suggestedDescription`.
+  const guideSuggestion = rulebook ? suggestedDescription(rulebook) : null;
+  const useSuggestedGuide = useCallback(async () => {
+    if (!rulebook?.description) return;
+    try {
+      const saved = await setExpertDescription(rulebook, rulebook.description);
+      setRulebook(saved);
+      toast.success("Using the suggested wording");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save that");
+    }
+  }, [rulebook]);
+  const keepMyGuide = useCallback(async () => {
+    if (!rulebook) return;
+    const hers = expertDescription(rulebook);
+    if (hers === null) return;
+    try {
+      const saved = await updateRulebookMeta({
+        rulebookId: rulebook.id,
+        patch: { description: hers },
+      });
+      setRulebook(saved);
+      toast.success("Kept your wording");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save that");
+    }
+  }, [rulebook]);
+
   const renameRulebook = useCallback(
     async (next: string) => {
       if (!rulebook) return;
@@ -2453,6 +2487,13 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                 >
                   {rulebook.description}
                 </p>
+                {canEdit && guideSuggestion ? (
+                  <SuggestedWording
+                    hers={guideSuggestion.hers}
+                    onUse={useSuggestedGuide}
+                    onKeepMine={keepMyGuide}
+                  />
+                ) : null}
               </div>
             ) : null}
             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">

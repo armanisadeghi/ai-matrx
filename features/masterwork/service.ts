@@ -182,6 +182,9 @@ export async function createDraftRulebook(
     p_visibility: visibilityFromWhoRunsIt(input.intake?.who_runs_it),
     p_metadata: {
       ...(input.intake ? { intake: input.intake } : {}),
+      // Her Guide line, as she wrote it — what a later rewrite is compared
+      // against so it can be shown as a suggestion (`suggestedDescription`).
+      ...(input.description ? { expert_description: input.description } : {}),
       client_token: clientToken,
     } as never,
   });
@@ -368,6 +371,48 @@ export async function updateRulebookMeta(opts: {
     );
   }
   return parseRulebook(data as unknown as RulebookRow);
+}
+
+/**
+ * Record the Guide-line wording she chose (`metadata.expert_description`).
+ * Metadata-only through the Rulebook's one save door, CAS-guarded on the rules
+ * version without bumping it; a concurrent save (the interviewer's next turn)
+ * is re-read and the one key re-sent, since nobody disagreed about it.
+ */
+export async function setExpertDescription(
+  rulebook: Rulebook,
+  wording: string,
+): Promise<Rulebook> {
+  let base = rulebook;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const result = await guardedUpdate<RulebookRow>({
+      expectedVersion: base.version,
+      applyUpdate: ({ expectedVersion }) =>
+        doorCas<RulebookRow>(
+          supabase.rpc("rulebook_save", {
+            p_rulebook_id: base.id,
+            p_expected_version: expectedVersion,
+            p_metadata_patch: { expert_description: wording } as never,
+          }),
+        ),
+      fetchCurrent: () =>
+        rulebookTable()
+          .select("*")
+          .eq("id", base.id)
+          .is("deleted_at", null)
+          .maybeSingle(),
+    });
+    if (result.status === "saved") return parseRulebook(result.row);
+    if (result.status !== "conflict") {
+      throw new Error(
+        "That Rulebook is no longer available. Reload to see the current list.",
+      );
+    }
+    base = parseRulebook(result.currentRow);
+  }
+  throw new Error(
+    "Could not save your choice — the Rulebook kept changing. Try again.",
+  );
 }
 
 export type DumpUrlWriteResult =

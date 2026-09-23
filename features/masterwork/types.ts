@@ -1061,6 +1061,50 @@ export function intakeGoal(rulebook: Rulebook): string {
   return typeof goal === "string" ? goal.trim() : "";
 }
 
+/**
+ * THE GUIDE LINE IN HER OWN WORDS (cold walk 22, friction).
+ *
+ * The Rulebook's description is the Guide line she typed on /masterwork/new.
+ * The interviewer's `update_meta` rewrites it after turn 1 ("How this shop
+ * decides, on-site, …"), and the page printed the rewrite as if it were hers.
+ * `metadata.expert_description` holds the wording she wrote or last chose;
+ * when the live description differs from it, the page shows the difference
+ * as a SUGGESTION she accepts or declines — never a silent overwrite.
+ * Falls back to the intake goal she typed; with neither there is nothing to
+ * compare against and nothing is claimed.
+ */
+export function expertDescription(rulebook: Rulebook): string | null {
+  const meta = rulebook.metadata;
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) return null;
+  const raw = (meta as Record<string, unknown>).expert_description;
+  if (typeof raw === "string") return raw;
+  // Before this key existed, her Guide line was recorded only as the intake
+  // goal — the description IS `goal.trim()` at creation — so a Rulebook made
+  // through /masterwork/new still knows her words (walk 22's own Rulebook).
+  const goal = intakeGoal(rulebook);
+  return goal === "" ? null : goal;
+}
+
+/** Same words to a person: whitespace runs and surrounding space ignored. */
+function sameWording(a: string, b: string): boolean {
+  const norm = (t: string) => t.trim().replace(/\s+/g, " ");
+  return norm(a) === norm(b);
+}
+
+/**
+ * The wording someone else proposed for her Guide line, or null when the live
+ * description IS hers (or we have no record of hers to compare against).
+ */
+export function suggestedDescription(
+  rulebook: Rulebook,
+): { suggested: string; hers: string } | null {
+  const hers = expertDescription(rulebook);
+  const live = rulebook.description ?? "";
+  if (hers === null || live.trim() === "") return null;
+  if (sameWording(hers, live)) return null;
+  return { suggested: live, hers };
+}
+
 /** The staged dump URLs off a Rulebook's metadata (tolerant read). */
 export function dumpUrlSources(rulebook: Rulebook): DumpUrlSource[] {
   const meta = rulebook.metadata;
