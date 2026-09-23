@@ -23,7 +23,7 @@
 
 import type { RecordsClient } from "@ai-matrx/records/core";
 import type { RecordsDataSource, Table } from "@ai-matrx/records";
-import { keptByTheApp, visibilityLaneFor, type VisibilityLane } from "@ai-matrx/records-ui";
+import { VISIBILITY_LANE_TITLE, visibilityLaneFor, type VisibilityLane } from "@ai-matrx/records-ui";
 
 import * as doors from "./doors";
 import type { ChangedByKind, DoorFailure } from "./doors";
@@ -75,6 +75,13 @@ export interface HubCapability {
   what: string;
   /** What a person DOES when there are none. An empty list that says nothing reads as broken. */
   empty: string;
+  /**
+   * The sentence instead, when this organization shows a member only what is
+   * shared with them (`custom/member_default_visibility = shared_only`). "No
+   * tables yet. Make one below" is false there: the tables exist, and none has
+   * been shared with this person (VERIFIER-16, the member in admin's Workspace).
+   */
+  emptyWhenSharedOnly?: string | undefined;
   /** The store door this listing reads, named on screen so nobody has to guess. */
   door: string;
   /** Which kind `custom.hub_changed_by` answers for these, or null when the store cannot say. */
@@ -94,7 +101,7 @@ function byId(tables: readonly Table[]): Map<string, Table> {
  * (records-ui 0.83.0, VERIFIER-15). A kernel table, the app's bookkeeping and a
  * store-kept choice list answer `null`: nobody chose a visibility for them, so
  * they show under Everything and under no lane. The store's own marker for the
- * last of those is `keptByTheApp`, from the same package.
+ * last of those is the record's own `kept_by_the_app`, read by that function.
  */
 function laneOfTable(table: Table): VisibilityLane | null {
   return visibilityLaneFor(table);
@@ -136,6 +143,30 @@ function failed(error: { message?: string; hint?: string } | undefined, door: st
   };
 }
 
+/**
+ * WHAT AN EMPTY LANE SAYS. Each line is only what is true of that lane, and it
+ * names no control this app does not have — no screen here changes a table's
+ * visibility, so none of them tells a person to (VERIFIER-16 M6: every lane
+ * used to say "Nothing has been made here yet. Make a table below").
+ */
+export const LANE_EMPTY_SENTENCE: Record<VisibilityLane, string> = {
+  mine: "Nothing here is visible to you alone — a new table is shared with this organization from the start.",
+  organization: "Nothing here is shared across this organization yet.",
+  community:
+    "Nothing here is open to every signed-in account. Tables cannot be shared that way yet; a link anyone can open is under World.",
+  world: "Nothing here is open to anyone with its link.",
+};
+
+/** The empty sentence for one capability under one lane. */
+export function emptyInLane(capabilityTitle: string, lane: VisibilityLane): string {
+  return `No ${capabilityTitle.toLowerCase()} in ${VISIBILITY_LANE_TITLE[lane]}. ${LANE_EMPTY_SENTENCE[lane]}`;
+}
+
+/** The Tables sentence for a member who sees only what is shared with them. */
+export const SHARED_ONLY_EMPTY =
+  "In this organization you see only the tables someone has shared with you, and none has been " +
+  "shared with you yet. Ask whoever keeps the table you need to share it with you — or make your own below.";
+
 // ── the declarations ────────────────────────────────────────────────────────
 
 export const HUB_CAPABILITIES: readonly HubCapability[] = [
@@ -144,6 +175,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     title: "Tables",
     what: "Everything this organization keeps records in.",
     empty: "No tables yet. Make one below, or drop a spreadsheet on it and the store reads the columns.",
+    emptyWhenSharedOnly: SHARED_ONLY_EMPTY,
     door: "custom.read_records over the Table kernel",
     changedByKind: "structure",
     async read(ctx) {
@@ -152,7 +184,11 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
         // THE PERSON'S TABLES, AND ONLY THOSE. What the store keeps for itself
         // is listed below under "Kept by the app" — same doors, same rows, one
         // listing further down, so nothing is hidden and nothing is buried.
-        items: ctx.tables.filter((table) => !keptByTheApp(table)).map((table) => ({
+        // A person's tables are exactly the ones in one of the four visibility
+        // lanes, so Tables is the sum of the lanes and nothing else (VERIFIER-16
+        // M6: "Saved views" was in Tables and in no lane, so Everything counted
+        // one more than the lanes added up to).
+        items: ctx.tables.filter((table) => laneOfTable(table) !== null).map((table) => ({
           id: table.id,
           title: table.name ?? "(unnamed table)",
           tableId: table.id,
@@ -228,7 +264,9 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
             plural(Number(booking.booked ?? 0), "booking"),
             Number(booking.upcoming ?? 0) > 0 ? `${Number(booking.upcoming)} still to come` : "",
           ].filter(Boolean) as string[],
-          href: `/data-v2/${booking.table_id}`,
+          // THE BOOKING PAGE ITSELF, marked in the table's Bookings rail
+          // (VERIFIER-16 M4) — never the bare grid.
+          href: `/data-v2/${booking.table_id}?rail=bookings&item=${booking.form_id}`,
           publicHref: booking.published_at ? `/b/${booking.form_id}` : undefined,
           publicLabel: booking.published_at ? "The page somebody books on" : undefined,
         })),
@@ -530,7 +568,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     async read(ctx) {
       return {
         ok: true,
-        items: ctx.tables.filter(keptByTheApp).map((table) => ({
+        items: ctx.tables.filter((table) => laneOfTable(table) === null).map((table) => ({
           id: table.id,
           title: table.name ?? "(unnamed table)",
           tableId: table.id,

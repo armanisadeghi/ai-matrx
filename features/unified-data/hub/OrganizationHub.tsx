@@ -38,9 +38,17 @@ import type { RecordsDataSource, Table } from "@ai-matrx/records";
 import { Button, cn } from "@ai-matrx/design-system";
 
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+
+/** The organization's member-visibility setting, at its one registry address. */
+const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" } as const;
 
 import {
   HUB_CAPABILITIES,
+  LANE_EMPTY_SENTENCE,
+  SHARED_ONLY_EMPTY,
   attachChangedBy,
   type HubItem,
   type HubReadContext,
@@ -90,6 +98,15 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
   const tables = useMemo<readonly Table[]>(() => tablesRead.data ?? [], [tablesRead.data]);
 
   const [lane, setLane] = useState<VisibilityLane | null>(null);
+  /**
+   * DOES THIS ORGANIZATION SHOW A MEMBER ONLY WHAT IS SHARED WITH THEM? The
+   * organization's own setting, read through the one knob reader. An
+   * unresolved value reads as "no", which keeps the ordinary sentence — it
+   * never invents a sharing rule nobody measured.
+   */
+  const userId = useAppSelector(selectUserId);
+  const memberVisibility = useEffectiveKnob(organizationId, userId, MEMBER_VISIBILITY);
+  const sharedOnly = memberVisibility === "shared_only";
   const [states, setStates] = useState<Record<string, HubListingState>>({});
   const [open, setOpen] = useState<Record<string, boolean>>({ tables: true });
   const [archivedTables, setArchivedTables] = useState<ArchivedTable[] | null>(null);
@@ -250,8 +267,15 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
         <div className="border-t border-border px-3 py-2">
           {newest.length === 0 ? (
             <p className="text-xs text-muted-foreground">
-              Nothing has been made here yet. Make a table below and everything else — forms,
-              boards, dashboards, digests — hangs off it.
+              {/* THREE DIFFERENT EMPTIES, three different sentences (VERIFIER-16
+                  M6 + the shared-only member): a lane with nothing in it, an
+                  organization that shows this member only what is shared with
+                  them, and an organization with genuinely nothing yet. */}
+              {lane
+                ? LANE_EMPTY_SENTENCE[lane]
+                : sharedOnly
+                  ? SHARED_ONLY_EMPTY
+                  : "Nothing has been made here yet. Make a table below and everything else — forms, boards, dashboards, digests — hangs off it."}
             </p>
           ) : (
             <ul className="flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -322,6 +346,8 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
           capability={capability}
           state={filtered[capability.id] ?? { phase: "reading" }}
           laneLabel={lane ? VISIBILITY_LANE_TITLE[lane] : null}
+          lane={lane}
+          sharedOnly={sharedOnly}
           open={open[capability.id] ?? false}
           onOpenChange={(next) => setOpen((prev) => ({ ...prev, [capability.id]: next }))}
         />

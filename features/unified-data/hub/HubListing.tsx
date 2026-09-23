@@ -21,7 +21,9 @@ import Link from "next/link";
 import { ChevronDown, ExternalLink, TriangleAlert } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 
-import type { HubCapability, HubItem } from "./capabilities";
+import type { VisibilityLane } from "@ai-matrx/records-ui";
+
+import { emptyInLane, type HubCapability, type HubItem } from "./capabilities";
 import type { DoorFailure } from "./doors";
 
 export type HubListingState =
@@ -34,6 +36,10 @@ export interface HubListingProps {
   state: HubListingState;
   /** The lane filter the whole hub is under, for the sentence an empty lane gets. */
   laneLabel: string | null;
+  /** The lane the whole hub is filtered to, for the lane's own empty sentence. */
+  lane?: VisibilityLane | null | undefined;
+  /** This organization shows members only what is shared with them. */
+  sharedOnly?: boolean | undefined;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -107,6 +113,8 @@ export function HubListing({
   capability,
   state,
   laneLabel,
+  lane,
+  sharedOnly,
   open,
   onOpenChange,
 }: HubListingProps) {
@@ -160,9 +168,11 @@ export function HubListing({
             </div>
           ) : state.items.length === 0 ? (
             <p className="px-3 py-3 text-xs text-muted-foreground">
-              {laneLabel
-                ? `Nothing here in ${laneLabel}. ${capability.empty}`
-                : capability.empty}
+              {lane
+                ? emptyInLane(capability.title, lane)
+                : sharedOnly && capability.emptyWhenSharedOnly
+                  ? capability.emptyWhenSharedOnly
+                  : capability.empty}
             </p>
           ) : (
             <ul className="divide-y-0">

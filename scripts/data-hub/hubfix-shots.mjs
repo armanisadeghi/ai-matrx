@@ -181,6 +181,7 @@ const ITEM_LISTINGS = [
   { id: "forms", rail: "forms" },
   { id: "digests", rail: "notifications" },
   { id: "portals", rail: "portals" },
+  { id: "bookings", rail: "bookings" },
   { id: "shared-outside", rail: "share" },
 ];
 const HONEST_REFUSALS = [
@@ -283,7 +284,61 @@ async function acceptedShareOpens(page, label, shots) {
   await shoot(page, `${shots.itemPrefix}-accepted-share`);
 }
 
-async function walk(context, label, { email, password, organization, slug, shots, openShared }) {
+/**
+ * CLAUSES 10–13 (VERIFIER-16).
+ *   10. Every lane's empty sentence is true: none says "Make one below" or
+ *       "Nothing has been made here yet" while it is a LANE that is empty (M6).
+ *   11. Tables under Everything is the sum of Tables under the four lanes (M6).
+ *   12. On a shared-only organization, a member with nothing shared sees the
+ *       sentence that says so, never "No tables yet".
+ *   13. No "Shared with me" row comes from an ARCHIVED organization (M5).
+ */
+const ARCHIVED_SHARE_OWNERS = [
+  "95725d0b-aa9b-4817-8311-29a581c3cef1",
+  "ca0c5df9-462f-4ff3-a423-77eeb0c7f00b",
+  "4e05cf9e-6652-451d-b4e5-e4d541363716",
+  "e9e7e190-ddac-4824-bd10-a02c9d1239c0",
+];
+async function lanesTellTheTruth(page, label, { expectSharedOnly }) {
+  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await settled(page);
+  await openEveryListing(page);
+  const everything = await readHub(page);
+  const tablesAll = Number(everything.rows.find((r) => r.id === "tables")?.count ?? NaN);
+
+  if (expectSharedOnly) {
+    const text = await page.evaluate(() => document.querySelector('[data-hub-listing="tables"]')?.textContent ?? "");
+    clause(
+      `${label} · a shared-only member with nothing shared is told exactly that`,
+      /shared with you/i.test(text) && !/No tables yet/.test(text),
+      text.replace(/\s+/g, " ").slice(0, 200),
+    );
+  }
+
+  const hrefs = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('[data-hub-listing="shared-with-me"] li a')).map((a) => a.getAttribute("href") ?? ""),
+  );
+  const fromArchived = hrefs.filter((h) => ARCHIVED_SHARE_OWNERS.some((id) => h.includes(id)));
+  clause(`${label} · no "Shared with me" row comes from an archived organization`, fromArchived.length === 0, fromArchived.length ? fromArchived.join(" | ") : `${hrefs.length} row(s), none from the four archived owners`);
+
+  let sum = 0;
+  const lies = [];
+  for (const laneId of ["mine", "organization", "community", "world"]) {
+    await page.evaluate((id) => document.querySelector(`[data-hub-lane="${id}"]`)?.click(), laneId);
+    await sleep(900);
+    const hub = await readHub(page);
+    sum += Number(hub.rows.find((r) => r.id === "tables")?.count ?? 0);
+    const text = await page.evaluate(() => document.querySelector("[data-hub-root]")?.innerText ?? "");
+    for (const bad of ["Make one below", "Nothing has been made here yet", "only you can see"]) {
+      if (text.includes(bad)) lies.push(`${laneId}: "${bad}"`);
+    }
+  }
+  await page.evaluate(() => document.querySelector('[data-hub-lane="everything"]')?.click());
+  clause(`${label} · every empty lane says what is true of that lane`, lies.length === 0, lies.length ? lies.join(" · ") : "no lane carries the old sentences");
+  clause(`${label} · Tables under Everything is the sum of the four lanes`, sum === tablesAll, `Everything ${tablesAll}, lanes add to ${sum}`);
+}
+
+async function walk(context, label, { email, password, organization, slug, shots, openShared, expectSharedOnly }) {
   const page = await context.newPage();
   const already = await whoAmI(page, ORIGIN);
   // The dev server compiles /login on first hit and the sign-in helper's own wait
@@ -429,6 +484,7 @@ async function walk(context, label, { email, password, organization, slug, shots
     }
   }
 
+  await lanesTellTheTruth(page, label, { expectSharedOnly: Boolean(expectSharedOnly) });
   if (shots.itemPrefix) await itemRowsOpenTheItem(page, label, shots);
   if (openShared && shots.itemPrefix) await acceptedShareOpens(page, label, shots);
 
@@ -496,6 +552,22 @@ try {
     shots: { desktop: "hubfix-member-rincon-390", shared: "hubfix-member-rincon-390-shared-opens", itemPrefix: "hubfix-member-390-opens" },
   });
   await memberPhone.close();
+
+  // THE SHARED-ONLY MEMBER (VERIFIER-16): test@test.com in admin's Workspace,
+  // which shows members only what is shared with them, at both widths.
+  for (const [width, height, tag] of [[1600, 1000, "1600"], [390, 844, "390"]]) {
+    const seat = await browser.newContext({ viewport: { width, height }, ...(width < 768 ? { isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : {}) });
+    await tryWalk(seat, `test@test.com · admin's Workspace · ${tag}`, {
+      email: TEST,
+      password: TEST_PASSWORD,
+      organization: "admin's Workspace",
+      slug: "admin",
+      expectSharedOnly: true,
+      openShared: true,
+      shots: { desktop: `hubfix-member-workspace-${tag}`, shared: `hubfix-member-workspace-${tag}-shared`, itemPrefix: `hubfix-member-workspace-${tag}-opens` },
+    });
+    await seat.close();
+  }
 
   // CLAUSE 8 — A PORTAL ROW OPENS THE PORTAL (VERIFIER-15 H5). Rincon's portals
   // are all archived, so this runs on Ironclad Mobile Mechanic, whose live
