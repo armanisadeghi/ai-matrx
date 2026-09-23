@@ -1,5 +1,17 @@
 import type { NoteOutlineItem } from "@/features/notes/utils/noteOutline";
 
+/** A document with one H1 uses that heading as its title, not as a section. */
+export function studyGuideOutlineItems(outline: readonly NoteOutlineItem[]): NoteOutlineItem[] {
+  const h1Items = outline.filter((item) => item.level === 1);
+  return h1Items.length === 1 ? outline.filter((item) => item !== h1Items[0]) : [...outline];
+}
+
+/** Show at most three visual tiers, relative to the first outline heading level. */
+export function outlineIndentLevel(item: NoteOutlineItem, outline: readonly NoteOutlineItem[]): number {
+  const rootLevel = Math.min(...outline.map((heading) => heading.level));
+  return Math.min(2, Math.max(0, item.level - rootLevel));
+}
+
 export function visibleOutlineItems(
   outline: readonly NoteOutlineItem[],
   expanded: Readonly<Record<number, boolean>>,

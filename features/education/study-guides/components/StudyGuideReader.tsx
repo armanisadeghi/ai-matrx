@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { initialOutlineExpansion, toggleOutlineSection, visibleOutlineItems } from "../outline";
+import { initialOutlineExpansion, outlineIndentLevel, studyGuideOutlineItems, toggleOutlineSection, visibleOutlineItems } from "../outline";
 import { StudyFlashcardLinks } from "./StudyFlashcardLinks";
 import { useEffect, useRef, useState } from "react";
 import { Panel, type Layout } from "react-resizable-panels";
@@ -253,7 +253,7 @@ function GuideList({ guides, activeId, activeLabel, content, onJump, loading, er
 
 
 function Outline({ content, onJump }: { content: string; onJump: (headingIndex: number) => void }) {
-  const outline = parseNoteOutline(content);
+  const outline = studyGuideOutlineItems(parseNoteOutline(content));
   const [expanded, setExpanded] = useState(() => initialOutlineExpansion(outline));
   const [activeHeading, setActiveHeading] = useState<number | null>(null);
   if (!outline.length) return null;
@@ -263,14 +263,14 @@ function Outline({ content, onJump }: { content: string; onJump: (headingIndex: 
       <div className="grid gap-0.5">{visibleOutlineItems(outline, expanded).map((item) => {
         const index = outline.indexOf(item);
         const hasChildren = outline[index + 1]?.level > item.level;
-        return <OutlineItem key={`${item.headingIndex}:${item.charOffset}`} item={item} active={activeHeading === item.headingIndex} onJump={(headingIndex) => { setActiveHeading(headingIndex); if (hasChildren && expanded[headingIndex] === false) setExpanded((current) => toggleOutlineSection(outline, current, headingIndex)); onJump(headingIndex); }} hasChildren={hasChildren} expanded={expanded[item.headingIndex] !== false} onToggle={() => setExpanded((current) => toggleOutlineSection(outline, current, item.headingIndex))} />;
+        return <OutlineItem key={`${item.headingIndex}:${item.charOffset}`} item={item} indentLevel={outlineIndentLevel(item, outline)} active={activeHeading === item.headingIndex} onJump={(headingIndex) => { setActiveHeading(headingIndex); if (hasChildren && expanded[headingIndex] === false) setExpanded((current) => toggleOutlineSection(outline, current, headingIndex)); onJump(headingIndex); }} hasChildren={hasChildren} expanded={expanded[item.headingIndex] !== false} onToggle={() => setExpanded((current) => toggleOutlineSection(outline, current, item.headingIndex))} />;
       })}</div>
     </div>
   );
 }
 
-function OutlineItem({ item, onJump, hasChildren, expanded, onToggle, active }: { item: NoteOutlineItem; onJump: (index: number) => void; hasChildren: boolean; expanded: boolean; onToggle: () => void; active: boolean }) {
-  return <div className={cn("flex min-w-0 items-center border-l-2", active ? "border-primary bg-primary/10" : "border-transparent")} style={{ paddingLeft: `${Math.min(2, Math.max(0, item.level - 1)) * 10}px` }}>{hasChildren ? <button type="button" aria-expanded={expanded} aria-label={`${expanded ? "Collapse" : "Expand"} ${item.text}`} onClick={onToggle} className="grid h-5 w-5 shrink-0 place-items-center rounded hover:bg-accent">{expanded ? <ChevronDown className="h-3.5 w-3.5" aria-hidden /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}</button> : <span className="w-5 shrink-0" />}<button type="button" onClick={() => onJump(item.headingIndex)} title={item.text} className={cn("min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap rounded px-1 py-1 text-left text-xs hover:bg-accent [mask-image:linear-gradient(to_right,black_calc(100%_-_12px),transparent)]", active ? "font-medium text-primary" : "text-muted-foreground hover:text-foreground")}>{item.text}</button></div>;
+function OutlineItem({ item, indentLevel, onJump, hasChildren, expanded, onToggle, active }: { item: NoteOutlineItem; indentLevel: number; onJump: (index: number) => void; hasChildren: boolean; expanded: boolean; onToggle: () => void; active: boolean }) {
+  return <div className={cn("flex min-w-0 items-center border-l-2", active ? "border-primary bg-primary/10" : "border-transparent")} style={{ paddingLeft: `${indentLevel * 10}px` }}>{hasChildren ? <button type="button" aria-expanded={expanded} aria-label={`${expanded ? "Collapse" : "Expand"} ${item.text}`} onClick={onToggle} className="grid h-5 w-5 shrink-0 place-items-center rounded hover:bg-accent">{expanded ? <ChevronDown className="h-3.5 w-3.5" aria-hidden /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}</button> : <span className="w-5 shrink-0" />}<button type="button" onClick={() => onJump(item.headingIndex)} title={item.text} className={cn("min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap rounded px-1 py-1 text-left text-xs hover:bg-accent [mask-image:linear-gradient(to_right,black_calc(100%_-_12px),transparent)]", active ? "font-medium text-primary" : "text-muted-foreground hover:text-foreground")}>{item.text}</button></div>;
 }
 
 function AnnotationCard({ annotation }: { annotation: Note }) {
