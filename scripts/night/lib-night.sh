@@ -1,4 +1,9 @@
 #!/bin/zsh
+# launchd starts every night job with a bare PATH (/usr/bin:/bin:/usr/sbin:/sbin). The tools
+# these jobs call — timeout, pg_dump, psql, node, pnpm — live under Homebrew, and on 2026-09-23
+# the 01:05 branch refresh died at its first pg_dump with "command not found: timeout" (exit 78)
+# before touching anything. Every job sources this file first, so the PATH is set once, here.
+export PATH="/opt/homebrew/bin:/opt/homebrew/opt/libpq/bin:/opt/homebrew/opt/postgresql@17/bin:$HOME/.local/bin:$PATH"
 # ─────────────────────────────────────────────────────────────────────────────
 # lib-night.sh — the shared body of every unattended night job in this directory.
 #
