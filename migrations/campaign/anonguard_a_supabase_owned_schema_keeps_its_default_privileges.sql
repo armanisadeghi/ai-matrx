@@ -1,4 +1,4 @@
--- additive: yes
+-- chair-step: replaces ONE live event-trigger function body outside schema custom (iam.anon_key_needs_a_class_lane), so the additive allow-list's guard-read rule cannot admit it; body only - no GRANT, no REVOKE, no DROP, no data, same signature, owner and search_path. Production answers are unchanged (the exempted set there is still storage, graphql, graphql_public); it stops the guard refusing every GRANT on a database that carries another Supabase-owned schema.
 -- lane: STORE-SMALLS
 -- based-on: iam.anon_key_needs_a_class_lane() 395a89da8142bd26f18df4f285b5e0d3a1b3af7868807a9f0acf8f5eaecaa5ea
 -- supersedes-function: iam.anon_key_needs_a_class_lane
@@ -23,8 +23,12 @@
 -- move. Part 2 (a key to a table whose class emits no anon lane) is byte-for-byte unchanged,
 -- and a default ACL in any schema `postgres` owns, or database-wide, is still refused.
 --
+-- WHY A CHAIR STEP. The body lives outside schema custom and is fired by every GRANT, so the
+-- allow-list's guard-read rule (JUDGMENT §4a) cannot admit it under an additive header, and
+-- a knob cannot switch a DDL guard off. It rehearses on the branch from these same bytes.
+--
 -- Same signature, same owner, same SECURITY DEFINER, same search_path, same messages.
--- The inverse is migrations/inverse/anonguard_a_schema_supabase_owns_keeps_its_own_default_privileges_down.sql.
+-- The inverse is migrations/inverse/anonguard_a_supabase_owned_schema_keeps_its_default_privileges_down.sql.
 
 set lock_timeout = '4s';
 

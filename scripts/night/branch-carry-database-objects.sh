@@ -36,7 +36,6 @@ source /Users/armanisadeghi/code/matrx-frontend/scripts/night/lib-night.sh
 
 typeset -A SKIP
 SKIP=(
-  anon_key_needs_a_class_lane "the branch carries Supabase's database-webhooks schema supabase_functions (since 2026-09-15; production and the clone do not), whose default ACL - owned by supabase_admin, which postgres can neither alter nor drop - gives anon SELECT on future tables; this guard grandfathers storage/graphql/graphql_public but not supabase_functions, so on the branch it refuses EVERY GRANT (measured 2026-09-23 12:1xZ on doorsonly4). Carry it again once the guard grandfathers supabase_functions (a platform migration, owned by the guard's authors) or the branch's webhooks schema is removed"
   policylock_red_escalates "a RED-suite fixture left on the clone (policylock_red_probe.escalate takes ACCESS EXCLUSIVE on a bystander table on every CREATE/ALTER/DROP POLICY); production does not carry it"
 )
 
@@ -45,6 +44,23 @@ BR="$(night_branch_dsn)"; CL="$(night_clone_dsn)"
 [ -n "$BR" ] && [ -n "$CL" ] || { say "REFUSED: the branch or clone connection could not be assembled. Nothing attempted."; exit 78; }
 night_assert_target branch "$BR" || exit $?
 night_assert_target clone  "$CL" || exit $?
+
+# ── anon_key_needs_a_class_lane: carried only when the branch's guard can live with the branch ──
+# The branch carries Supabase's database-webhooks schema `supabase_functions` (since 2026-09-15;
+# production and the clone do not), owned by supabase_admin, whose default ACL keys anon and which
+# postgres can neither alter nor drop. A guard body that exempts Supabase's schemas by a HAND LIST
+# (0896: storage, graphql, graphql_public) refuses EVERY GRANT there. STORE-SMALLS' campaign file
+# `anonguard_a_supabase_owned_schema_keeps_its_default_privileges.sql` exempts them by OWNER instead,
+# and a refresh restores production's body — so this is ASKED, not assumed: in a transaction that is
+# rolled back, attach the guard and issue one ordinary grant to `authenticated`. Refused -> not
+# carried, with the guard's own sentence; accepted -> carried like every other trigger.
+ANON_PROBE="$("$PSQL" "$BR" -X -qAt -v ON_ERROR_STOP=1 -c "begin; set local lock_timeout = '10s';
+  create event trigger anon_key_probe_carry on ddl_command_end when tag in ('GRANT','ALTER DEFAULT PRIVILEGES')
+    execute function iam.anon_key_needs_a_class_lane();
+  grant select on custom.carrying_rule to authenticated; rollback;" 2>&1)"
+if [ $? -ne 0 ]; then
+  SKIP[anon_key_needs_a_class_lane]="on this branch the guard refuses an ordinary grant to authenticated ($(print -r -- "$ANON_PROBE" | grep -m1 -E 'ERROR' | cut -c1-200)) - the branch's body still exempts Supabase's schemas by a hand list that lacks supabase_functions; it is carried once the body is anonguard_a_supabase_owned_schema_keeps_its_default_privileges.sql's"
+fi
 
 HAVE="$("$PSQL" "$BR" -X -qAt -c 'select evtname from pg_event_trigger' 2>&1)" || { say "REFUSED: could not read the branch's event triggers: $HAVE"; exit 78; }
 SRCROWS="$("$PSQL" "$CL" -X -qAt -F $'\x1f' -c "begin transaction read only;

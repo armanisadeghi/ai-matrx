@@ -1,7 +1,7 @@
 -- chair-step: the inverse of STORE-SMALLS' anon-key guard fix — puts back 0896's hand list (storage, graphql, graphql_public) in iam.anon_key_needs_a_class_lane(), which re-refuses every GRANT on any database carrying a Supabase-owned schema not on that list (the rehearsal branch's supabase_functions). Body only; no grant, no data.
 -- based-on: iam.anon_key_needs_a_class_lane() 40614096fc9e7d3953048ebbdb50a3158916f70a309f854f242d4fb045681d16
 --
--- Inverse of migrations/campaign/anonguard_a_schema_supabase_owns_keeps_its_own_default_privileges.sql.
+-- Inverse of migrations/campaign/anonguard_a_supabase_owned_schema_keeps_its_default_privileges.sql.
 -- Restores the body live on production before it, byte for byte as pg_get_functiondef gave
 -- it on 2026-09-23 (sha256 395a89da…aa5ea). It reintroduces the defect; it exists so rule 27
 -- (up -> inverse -> up) can prove the fix against its own prior state.
