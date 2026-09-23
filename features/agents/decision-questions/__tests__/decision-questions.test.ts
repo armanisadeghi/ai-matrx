@@ -8,7 +8,9 @@
 
 import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
 import {
+  DECISION_TURN_TOOLS_NOTICE,
   decisionQuestionsCompatibility,
+  decisionToolsNotice,
   statePartCompatibility,
 } from "../compatibility";
 import { decisionBudgetForModel, readDecisionBudget } from "../budget";
@@ -183,5 +185,47 @@ describe("question names", () => {
     expect(uniqueQuestionName("urgency", ["urgency", "urgency_2"])).toBe(
       "urgency_3",
     );
+  });
+});
+
+// The Sonnet twin of the feedback-triage agent carried the Records tool and
+// its decision turn shipped twenty tool schemas (45,739 input tokens vs 729 on
+// the native holder). The server now drops tools for a decision turn; the
+// builder must SAY so wherever tools are attached, never leave it silent.
+describe("decision turn tools notice", () => {
+  const triage = [
+    {
+      role: "system",
+      content: [{ type: "text", text: "You triage feedback." }],
+    },
+    {
+      role: "user",
+      content: [
+        { type: "text", text: "Pickup marked complete, no truck came." },
+        {
+          type: "decision_questions",
+          questions: [{ name: "is_defect", type: "noul" }],
+        },
+      ],
+    },
+  ];
+  const chat = [
+    {
+      role: "user",
+      content: [{ type: "text", text: "Summarize this report." }],
+    },
+  ];
+
+  it("names the rule when a Questions part meets attached tools", () => {
+    expect(decisionToolsNotice(triage, 1)).toBe(DECISION_TURN_TOOLS_NOTICE);
+    expect(DECISION_TURN_TOOLS_NOTICE).toBe(
+      "Questions parts run without tools; the attached tools are ignored for this turn.",
+    );
+  });
+
+  it("stays quiet with no tools, or with no Questions part", () => {
+    expect(decisionToolsNotice(triage, 0)).toBeNull();
+    expect(decisionToolsNotice(chat, 3)).toBeNull();
+    expect(decisionToolsNotice(undefined, 3)).toBeNull();
   });
 });

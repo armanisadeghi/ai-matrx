@@ -8,6 +8,8 @@ import type { RootState } from "@/lib/redux/store";
 // re-wrap or bypass it with a second boundary on MarkdownStreamImpl; that
 // duplicated the whole rich-document engine into a second chunk group.
 import MarkdownStream from "@/components/MarkdownStream";
+import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
+import { emptyStateInstruction } from "./empty-state-instruction";
 
 const IconResolver = dynamic(
   () =>
@@ -49,11 +51,22 @@ export function AgentEmptyMessageDisplay({
     selectInstanceAgentDescription(conversationId),
   );
 
+  // Variables that draw a form on this run: the form, not the composer, is
+  // what the person fills in.
+  const formFields = useAppSelector(
+    selectVisibleInputDefinitions(conversationId),
+  );
+
   const displayName = nameOverride || agentName;
   const displayDescription =
     descriptionOverride !== null && descriptionOverride !== undefined
       ? descriptionOverride
       : agentDescription;
+
+  const instruction = emptyStateInstruction({
+    formFieldCount: formFields.length,
+    hasDescription: !!displayDescription,
+  });
 
   const isLongDescription =
     (displayDescription?.length ?? 0) > LONG_DESCRIPTION_CHAR_THRESHOLD;
@@ -62,6 +75,9 @@ export function AgentEmptyMessageDisplay({
     return (
       <div className="flex flex-col h-full justify-start text-left px-6 py-8 max-w-3xl mx-auto w-full">
         <MarkdownStream content={displayDescription} hideCopyButton={true} />
+        {instruction && (
+          <p className="text-sm text-muted-foreground mt-3">{instruction}</p>
+        )}
       </div>
     );
   }
@@ -84,16 +100,8 @@ export function AgentEmptyMessageDisplay({
         {displayDescription && (
           <MarkdownStream content={displayDescription} hideCopyButton={true} />
         )}
-        {!displayDescription && (
-          <p className="text-sm text-muted-foreground mt-1">
-            {/* A SCREEN NEVER POINTS AT SOMETHING THAT ISN'T THERE
-                (jobs-bar-2026-09-16, item 4). This used to read "Fill in any
-                variables below and type a message to start." on every surface,
-                including the many that show no variables at all — and
-                "variables" is a programmer's word in front of a
-                non-technical Expert. What is always true is the composer. */}
-            Type a message below to start.
-          </p>
+        {instruction && (
+          <p className="text-sm text-muted-foreground mt-1">{instruction}</p>
         )}
       </div>
     </div>

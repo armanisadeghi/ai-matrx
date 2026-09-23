@@ -88,13 +88,14 @@ function Distribution({
           key={entry.key}
           className={cn(
             "grid grid-cols-[minmax(4rem,9rem)_1fr_2.5rem] items-center gap-1.5 text-[10px]",
-            entry.key === answer.answerKey && "text-foreground",
+            entry.key === answer.answerKey && "font-semibold text-foreground",
           )}
+          data-peak={entry.key === answer.answerKey ? "true" : undefined}
         >
           <span
             className={cn(
               "truncate text-muted-foreground",
-              entry.key === answer.answerKey && "font-medium text-foreground",
+              entry.key === answer.answerKey && "font-semibold text-foreground",
             )}
             title={entry.label}
           >
@@ -106,7 +107,12 @@ function Distribution({
               answer.type === "noul" && entry.key === "true" ? threshold : null
             }
           />
-          <span className="text-right font-mono text-muted-foreground">
+          <span
+            className={cn(
+              "text-right font-mono text-muted-foreground",
+              entry.key === answer.answerKey && "text-foreground",
+            )}
+          >
             {percent(entry.value)}
           </span>
         </div>

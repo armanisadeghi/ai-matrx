@@ -9,6 +9,8 @@
  * Both defects these cover were found by a reviewer looking at the screen:
  *   A. `{"answer": false, "probability": 0.3}` rendered "No 30%".
  *   B. a score of 1.87 rendered level 2's label beside level 1's 49%.
+ *   C. (2026-09-23) a score's label named the level NEAREST the weighted
+ *      number, contradicting the bars below it; the label is now the peak.
  */
 
 import {
@@ -180,9 +182,9 @@ describe("Yes/No — the percentage belongs to the answer, not to `true`", () =>
       },
     });
     const only = view!.answers[0];
-    expect(`${formatDecisionAnswer(only)} ${pct(answerProbability(only))}`).toBe(
-      "No 71%",
-    );
+    expect(
+      `${formatDecisionAnswer(only)} ${pct(answerProbability(only))}`,
+    ).toBe("No 71%");
   });
 
   it("compares two No answers as a small delta, not as their complements", () => {
@@ -190,7 +192,12 @@ describe("Yes/No — the percentage belongs to the answer, not to `true`", () =>
       {
         __kind: "decision_answers",
         answers: {
-          q: { __kind: "decision_answer", type: "noul", answer: false, probability: 0.29 },
+          q: {
+            __kind: "decision_answer",
+            type: "noul",
+            answer: false,
+            probability: 0.29,
+          },
         },
       },
       "q",
@@ -199,7 +206,12 @@ describe("Yes/No — the percentage belongs to the answer, not to `true`", () =>
       {
         __kind: "decision_answers",
         answers: {
-          q: { __kind: "decision_answer", type: "noul", answer: false, probability: 0.32 },
+          q: {
+            __kind: "decision_answer",
+            type: "noul",
+            answer: false,
+            probability: 0.32,
+          },
         },
       },
       "q",
@@ -220,27 +232,44 @@ describe("Yes/No — the percentage belongs to the answer, not to `true`", () =>
   });
 });
 
-describe("Score — the label and the percentage come from the SAME level", () => {
-  it("pairs 1.87 with level 2's label and level 2's own probability", () => {
+describe("Score — the weighted number, then the MOST LIKELY level and its probability", () => {
+  // The headline used to take the label of the level NEAREST the weighted
+  // score. On the Sonnet run of 2026-09-23 that printed
+  // "urgency 2.9 — data or money at risk 16%" above bars led by
+  // "a feature is blocked 46%" — a contradiction on one screen. The label is
+  // now the distribution's peak, with the peak's own probability.
+
+  it("1.87 reads as level 1 (the 49% peak), not level 2 at 27%", () => {
     const urgency = answer(JEV_BATTLE_TURN, "urgency");
-    expect(formatDecisionAnswer(urgency)).toBe("1.9 — a feature is blocked");
-    expect(answerProbability(urgency)).toBeCloseTo(0.27, 10);
-    expect(pct(answerProbability(urgency))).not.toBe("49%");
+    expect(formatDecisionAnswer(urgency)).toBe("1.9 — minor friction");
+    expect(answerProbability(urgency)).toBeCloseTo(0.49, 10);
+    expect(urgency.answerKey).toBe("1");
   });
 
-  it("pairs 3.09 with level 3, whose probability is not the top bucket", () => {
+  it("3.09 reads as level 4 (the 44% peak), not the nearest level 3 at 21%", () => {
     const urgency = answer(JEV_RUNNER_TURN, "urgency");
-    expect(formatDecisionAnswer(urgency)).toBe("3.1 — data or money at risk");
-    expect(answerProbability(urgency)).toBeCloseTo(0.21, 10);
+    expect(formatDecisionAnswer(urgency)).toBe("3.1 — down for someone");
+    expect(answerProbability(urgency)).toBeCloseTo(0.44, 10);
   });
 
-  it("pairs 3.12 with level 3 even when level 4 holds most of the mass", () => {
+  it("3.12 reads as level 4 when level 4 holds most of the mass", () => {
     const urgency = answer(SONNET_BATTLE_TURN, "urgency");
-    expect(formatDecisionAnswer(urgency)).toBe("3.1 — data or money at risk");
-    expect(answerProbability(urgency)).toBeCloseTo(0.15, 10);
+    expect(formatDecisionAnswer(urgency)).toBe("3.1 — down for someone");
+    expect(answerProbability(urgency)).toBeCloseTo(0.53, 10);
   });
 
-  it("reads a 1-based legend, as the contract example writes it", () => {
+  it("the peak is the first bar, so the headline and the bold row agree", () => {
+    for (const payload of [
+      JEV_BATTLE_TURN,
+      JEV_RUNNER_TURN,
+      SONNET_BATTLE_TURN,
+    ]) {
+      const urgency = answer(payload, "urgency");
+      expect(urgency.probabilities[0].key).toBe(urgency.answerKey);
+    }
+  });
+
+  it("reads a 1-based legend, as the contract example writes it; a tie goes to the level nearest the score", () => {
     const view = readDecisionAnswers({
       __kind: "decision_answers",
       answers: {
@@ -265,22 +294,35 @@ describe("Score — the label and the percentage come from the SAME level", () =
     expect(answerProbability(urgency)).toBeCloseTo(0.4, 10);
   });
 
-  it("clamps a score past the top level to the level that exists", () => {
-    const view = readDecisionAnswers({
-      __kind: "decision_answers",
-      answers: {
-        s: {
-          __kind: "decision_answer",
-          type: "score",
-          answer: 4.8,
-          probabilities: { "0": 0.1, "1": 0.1, "2": 0.1, "3": 0.2, "4": 0.5 },
-          legend: { "0": "a", "1": "b", "2": "c", "3": "d", "4": "down for someone" },
+  it("the same weighted score with two different peaks reads two different labels", () => {
+    const at = (probabilities: Record<string, number>) =>
+      answer(
+        {
+          __kind: "decision_answers",
+          answers: {
+            s: {
+              __kind: "decision_answer",
+              type: "score",
+              answer: 2.9,
+              probabilities,
+              legend: {
+                "0": "cosmetic",
+                "1": "minor friction",
+                "2": "a feature is blocked",
+                "3": "data or money at risk",
+                "4": "down for someone",
+              },
+            },
+          },
         },
-      },
-    });
-    const only = view!.answers[0];
-    expect(formatDecisionAnswer(only)).toBe("4.8 — down for someone");
-    expect(answerProbability(only)).toBeCloseTo(0.5, 10);
+        "s",
+      );
+    const blocked = at({ "0": 0.0, "1": 0.0, "2": 0.46, "3": 0.16, "4": 0.38 });
+    const down = at({ "0": 0.0, "1": 0.1, "2": 0.2, "3": 0.2, "4": 0.5 });
+    expect(formatDecisionAnswer(blocked)).toBe("2.9 — a feature is blocked");
+    expect(answerProbability(blocked)).toBeCloseTo(0.46, 10);
+    expect(formatDecisionAnswer(down)).toBe("2.9 — down for someone");
+    expect(answerProbability(down)).toBeCloseTo(0.5, 10);
   });
 });
 

@@ -21,7 +21,7 @@
 import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
 import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
 import { modelTakesDecisions } from "./budget";
-import { partKind } from "./types";
+import { isDecisionQuestionsPart, partKind } from "./types";
 
 export type PartCompatibility =
   | { verdict: "native" }
@@ -53,7 +53,8 @@ function modelTakesText(model: AIModelRecord | null | undefined): boolean {
     modelName: model.name,
   });
   const conversational =
-    capabilities.interaction === "turn" || capabilities.interaction === "single";
+    capabilities.interaction === "turn" ||
+    capabilities.interaction === "single";
   return conversational && capabilities.input.includes("text");
 }
 
@@ -109,4 +110,30 @@ export function statePartCompatibility(
     verdict: "refused",
     reason: `A decision reads text state only, so ${modelLabel(model)} does not receive this ${kind.replace(/_/g, " ")} — convert it to text or move the questions to a message of their own.`,
   };
+}
+
+/**
+ * THE DECISION TURN IS ITS MESSAGE PARTS. A message carrying a questions part
+ * runs with no tool loop and no auto-context beyond its own parts, on BOTH
+ * routes (the native holder never took tools; the text-model route drops them
+ * server-side — `matrx_ai.decisions.translate.suspend_chat_furniture`). An
+ * agent with tools attached must be TOLD that, never left to believe the tools
+ * are in play. Returns the sentence to show, or null when nothing is attached.
+ */
+export const DECISION_TURN_TOOLS_NOTICE =
+  "Questions parts run without tools; the attached tools are ignored for this turn.";
+
+export function decisionToolsNotice(
+  messages: ReadonlyArray<{ content?: unknown }> | null | undefined,
+  attachedToolCount: number,
+): string | null {
+  if (attachedToolCount <= 0 || !Array.isArray(messages)) return null;
+  const asksQuestions = messages.some(
+    (message) =>
+      Array.isArray(message?.content) &&
+      (message.content as Record<string, unknown>[]).some((part) =>
+        isDecisionQuestionsPart(part),
+      ),
+  );
+  return asksQuestions ? DECISION_TURN_TOOLS_NOTICE : null;
 }

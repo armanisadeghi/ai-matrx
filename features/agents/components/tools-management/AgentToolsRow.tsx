@@ -15,7 +15,7 @@
 // The wrench stays where it is for people who know it.
 
 import { useEffect, useMemo } from "react";
-import { Wrench, Plus, X } from "lucide-react";
+import { Wrench, Plus, X, Info } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ScrollFade } from "@/components/ui/scroll-fade";
@@ -24,7 +24,9 @@ import {
   selectAgentTools,
   selectAgentCustomTools,
   selectAgentMcpServers,
+  selectAgentMessages,
 } from "@/features/agents/redux/agent-definition/selectors";
+import { decisionToolsNotice } from "@/features/agents/decision-questions/compatibility";
 import { setAgentTools } from "@/features/agents/redux/agent-definition/slice";
 import {
   selectAllTools,
@@ -55,6 +57,9 @@ export function AgentToolsRow({ agentId }: AgentToolsRowProps) {
   );
   const mcpServers = useAppSelector((state) =>
     selectAgentMcpServers(state, agentId),
+  );
+  const messages = useAppSelector((state) =>
+    selectAgentMessages(state, agentId),
   );
   const catalog = useAppSelector(selectAllTools);
   const identityById = useAppSelector(selectToolIdentityMap);
@@ -98,74 +103,92 @@ export function AgentToolsRow({ agentId }: AgentToolsRowProps) {
 
   const customCount = Array.isArray(customTools) ? customTools.length : 0;
   const mcpCount = Array.isArray(mcpServers) ? mcpServers.length : 0;
+  // A message with a Questions part runs as a decision turn: no tool loop and
+  // no auto-context (the server drops them for that turn). Said here, where the
+  // tools are, so nobody believes the attached tools are in play.
+  const toolsNotice = decisionToolsNotice(
+    messages,
+    selected.length + customCount + mcpCount,
+  );
 
   return (
-    <div className="flex min-w-0 items-center gap-2">
-      <Label className="shrink-0 text-xs text-muted-foreground">Tools</Label>
+    <div className="flex min-w-0 flex-col gap-1">
+      <div className="flex min-w-0 items-center gap-2">
+        <Label className="shrink-0 text-xs text-muted-foreground">Tools</Label>
 
-      <ScrollFade
-        orientation="horizontal"
-        className="flex min-w-0 flex-1 flex-nowrap items-center gap-1.5 py-0.5"
-      >
-        {selected.length === 0 && customCount === 0 && mcpCount === 0 ? (
-          <span className="shrink-0 text-xs text-muted-foreground/70">
-            None yet — Add gives this agent something it can do
-          </span>
-        ) : null}
-
-        {selected.map((id) => {
-          const tool = byId.get(id);
-          return (
-            <span
-              key={id}
-              className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 text-xs"
-              title={tool?.name ?? "Loading this tool's name…"}
-            >
-              <Wrench className="h-3 w-3 shrink-0 text-muted-foreground" />
-              <span className="max-w-[140px] truncate">
-                {tool ? humanToolName(tool.name) : "Loading…"}
-              </span>
-              <button
-                type="button"
-                aria-label={`Remove ${tool ? humanToolName(tool.name) : "this tool"}`}
-                title="Remove from this agent"
-                className="text-muted-foreground hover:text-foreground"
-                onClick={() => remove(id)}
-              >
-                <X className="h-3 w-3" />
-              </button>
+        <ScrollFade
+          orientation="horizontal"
+          className="flex min-w-0 flex-1 flex-nowrap items-center gap-1.5 py-0.5"
+        >
+          {selected.length === 0 && customCount === 0 && mcpCount === 0 ? (
+            <span className="shrink-0 text-xs text-muted-foreground/70">
+              None yet — Add gives this agent something it can do
             </span>
-          );
-        })}
+          ) : null}
 
-        {customCount > 0 ? (
-          <span className="shrink-0 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 text-xs">
-            {customCount} custom
-          </span>
-        ) : null}
-        {mcpCount > 0 ? (
-          <span className="shrink-0 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 text-xs">
-            {mcpCount} connected service{mcpCount === 1 ? "" : "s"}
-          </span>
-        ) : null}
-      </ScrollFade>
+          {selected.map((id) => {
+            const tool = byId.get(id);
+            return (
+              <span
+                key={id}
+                className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 text-xs"
+                title={tool?.name ?? "Loading this tool's name…"}
+              >
+                <Wrench className="h-3 w-3 shrink-0 text-muted-foreground" />
+                <span className="max-w-[140px] truncate">
+                  {tool ? humanToolName(tool.name) : "Loading…"}
+                </span>
+                <button
+                  type="button"
+                  aria-label={`Remove ${tool ? humanToolName(tool.name) : "this tool"}`}
+                  title="Remove from this agent"
+                  className="text-muted-foreground hover:text-foreground"
+                  onClick={() => remove(id)}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            );
+          })}
 
-      <div className="flex shrink-0 items-center gap-1">
-        <AgentToolsModal
-          agentId={agentId}
-          renderTrigger={(open) => (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 gap-1 px-1.5 text-xs text-muted-foreground hover:text-foreground"
-              onClick={open}
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add
-            </Button>
-          )}
-        />
+          {customCount > 0 ? (
+            <span className="shrink-0 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 text-xs">
+              {customCount} custom
+            </span>
+          ) : null}
+          {mcpCount > 0 ? (
+            <span className="shrink-0 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 text-xs">
+              {mcpCount} connected service{mcpCount === 1 ? "" : "s"}
+            </span>
+          ) : null}
+        </ScrollFade>
+
+        <div className="flex shrink-0 items-center gap-1">
+          <AgentToolsModal
+            agentId={agentId}
+            renderTrigger={(open) => (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 gap-1 px-1.5 text-xs text-muted-foreground hover:text-foreground"
+                onClick={open}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add
+              </Button>
+            )}
+          />
+        </div>
       </div>
+      {toolsNotice ? (
+        <p
+          className="flex items-start gap-1.5 text-[11px] text-muted-foreground"
+          data-testid="decision-turn-tools-notice"
+        >
+          <Info className="mt-px h-3 w-3 shrink-0" />
+          <span>{toolsNotice}</span>
+        </p>
+      ) : null}
     </div>
   );
 }

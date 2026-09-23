@@ -40,12 +40,11 @@ export interface DecisionAnswerView {
   probabilities: Array<{ key: string; label: string; value: number }>;
   /**
    * The distribution key the ANSWER points at: the option for a choice, the
-   * nearest level for a score, `"true"`/`"false"` for a Yes/No. `null` when
-   * the answer is unreadable or no distribution was returned. THE LEGEND
-   * INDEX BASE IS RESOLVED HERE, ONCE — live TypeSafe indexes score levels
-   * from 0 while the contract's example shows 1, so the level is chosen by
-   * numeric nearness to the score rather than by assuming either base, and
-   * no component ever adds or subtracts one.
+   * MOST LIKELY level (the distribution's peak) for a score, `"true"`/`"false"`
+   * for a Yes/No. `null` when the answer is unreadable or no distribution was
+   * returned. A score's weighted number is shown as the number; its label and
+   * percentage come from the peak, so the headline and the bold bar below it
+   * are the same level (see `answerKeyFor`).
    */
   answerKey: string | null;
   confidence: number | null;
@@ -128,12 +127,15 @@ function noulDistribution(
 /**
  * The distribution entry the answer points at.
  *
- * A score comes back as a probability-weighted number BETWEEN levels (1.87
- * on a five-level scale), so the level it belongs to is the numerically
- * nearest key the distribution actually carries. Choosing by nearness rather
- * than by `round()` + an assumed base is what makes this correct on both the
- * live 0-based payloads and the contract example's 1-based one — and it is
- * why no component may compute a level itself.
+ * A score is a probability-weighted number BETWEEN levels (2.9 on a
+ * five-level scale). Its headline used to take the label of the level NEAREST
+ * that number, which on a spread distribution read as a contradiction:
+ * "urgency 2.9 — data or money at risk 16%" printed above bars led by
+ * "a feature is blocked 46%". The label now names the MOST LIKELY level — the
+ * peak — with the peak's own probability, while the weighted score stays the
+ * number (Arman's ruling via the owning session, 2026-09-23). A tie on the
+ * peak goes to the level nearest the weighted score, so the choice is stable.
+ * Keys are compared as numbers, never by an assumed 0- or 1-based index.
  */
 function answerKeyFor(
   type: DecisionAnswerView["type"],
@@ -147,12 +149,17 @@ function answerKeyFor(
   }
   if (type === "choice") return null;
   let best: string | null = null;
+  let bestValue = Number.NEGATIVE_INFINITY;
   let bestDistance = Number.POSITIVE_INFINITY;
   for (const entry of probabilities) {
     const level = Number(entry.key);
     if (!Number.isFinite(level)) continue;
     const distance = Math.abs(level - answer);
-    if (distance < bestDistance) {
+    if (
+      entry.value > bestValue ||
+      (entry.value === bestValue && distance < bestDistance)
+    ) {
+      bestValue = entry.value;
       bestDistance = distance;
       best = entry.key;
     }
@@ -190,12 +197,16 @@ function readAnswer(name: string, value: unknown): DecisionAnswerView {
     legend,
     suggestedThreshold: finiteNumber(raw?.suggested_threshold),
     instruction:
-      typeof raw?.instructions === "string" ? (raw.instructions as string) : null,
+      typeof raw?.instructions === "string"
+        ? (raw.instructions as string)
+        : null,
   };
 }
 
 /** `null` when the value is not a decision_answers payload at all. */
-export function readDecisionAnswers(value: unknown): DecisionAnswersView | null {
+export function readDecisionAnswers(
+  value: unknown,
+): DecisionAnswersView | null {
   const raw = record(value);
   if (!raw) return null;
   const answers = record(raw.answers);
@@ -247,9 +258,9 @@ export function formatDecisionAnswer(answer: DecisionAnswerView): string {
  *
  * Two ways this used to lie, both live: a `noul` answered `false` at
  * `probability: 0.3` printed "No 30%" when the model was 70% sure of No; and
- * a score of 1.87 printed the top bucket's 49% beside level 2's label, whose
- * own probability was 27%. Both are the same mistake — reading a number that
- * describes something other than the answer on screen.
+ * a score's label and percentage came from different levels. For a score the
+ * label is the peak level, so this is the peak's own probability — the label
+ * and the number always describe the same level.
  */
 export function answerProbability(answer: DecisionAnswerView): number | null {
   const key = answer.answerKey;
