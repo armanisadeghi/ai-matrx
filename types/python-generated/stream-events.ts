@@ -2953,7 +2953,7 @@ export interface ProgressItem {
   id: string;
   text: string;
   completed?: boolean;
-  priority?: "low" | "medium" | "high" | null;
+  priority?: "high" | "medium" | "low" | null;
   estimatedHours?: number | null;
   optional?: boolean;
   category?: string | null;
@@ -2963,7 +2963,7 @@ export interface ProgressItem {
   id: string;
   text: string;
   completed?: boolean;
-  priority?: "low" | "medium" | "high" | null;
+  priority?: "high" | "medium" | "low" | null;
   estimatedHours?: number | null;
   optional?: boolean;
   category?: string | null;
@@ -3015,7 +3015,7 @@ export interface TroubleshootingSolution {
   id: string;
   title: string;
   description?: string | null;
-  priority?: "low" | "medium" | "high" | null;
+  priority?: "high" | "medium" | "low" | null;
   successRate?: number | null;
   tags?: string[];
   steps?: TroubleshootingStep[];
@@ -3025,7 +3025,7 @@ export interface TroubleshootingSolution {
   id: string;
   title: string;
   description?: string | null;
-  priority?: "low" | "medium" | "high" | null;
+  priority?: "high" | "medium" | "low" | null;
   successRate?: number | null;
   tags?: string[];
   steps?: TroubleshootingStep[];
@@ -4161,8 +4161,6 @@ export type ImageMediaPart = {
   url?: string | null;
   mime_type?: string | null;
   size_bytes?: number | null;
-  visibility?: string | null;
-  cdn_url?: string | null;
   type: "media";
   kind: "image";
   width?: number | null;
@@ -4181,8 +4179,6 @@ export type AudioMediaPart = {
   url?: string | null;
   mime_type?: string | null;
   size_bytes?: number | null;
-  visibility?: string | null;
-  cdn_url?: string | null;
   type: "media";
   kind: "audio";
   duration_ms?: number | null;
@@ -4200,8 +4196,6 @@ export type VideoMediaPart = {
   url?: string | null;
   mime_type?: string | null;
   size_bytes?: number | null;
-  visibility?: string | null;
-  cdn_url?: string | null;
   type: "media";
   kind: "video";
   width?: number | null;
@@ -4220,8 +4214,6 @@ export type DocumentMediaPart = {
   url?: string | null;
   mime_type?: string | null;
   size_bytes?: number | null;
-  visibility?: string | null;
-  cdn_url?: string | null;
   type: "media";
   kind: "document";
   width?: number | null;
@@ -4924,30 +4916,6 @@ const MESSAGE_PART_SCHEMA: MessagePartJsonSchema = {
           ],
           "default": null,
           "title": "Size Bytes"
-        },
-        "visibility": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Visibility"
-        },
-        "cdn_url": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Cdn Url"
         },
         "type": {
           "const": "media",
@@ -5879,30 +5847,6 @@ const MESSAGE_PART_SCHEMA: MessagePartJsonSchema = {
           "default": null,
           "title": "Size Bytes"
         },
-        "visibility": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Visibility"
-        },
-        "cdn_url": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Cdn Url"
-        },
         "type": {
           "const": "media",
           "default": "media",
@@ -6124,30 +6068,6 @@ const MESSAGE_PART_SCHEMA: MessagePartJsonSchema = {
           ],
           "default": null,
           "title": "Size Bytes"
-        },
-        "visibility": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Visibility"
-        },
-        "cdn_url": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Cdn Url"
         },
         "type": {
           "const": "media",
@@ -7765,30 +7685,6 @@ const MESSAGE_PART_SCHEMA: MessagePartJsonSchema = {
           ],
           "default": null,
           "title": "Size Bytes"
-        },
-        "visibility": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Visibility"
-        },
-        "cdn_url": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Cdn Url"
         },
         "type": {
           "const": "media",

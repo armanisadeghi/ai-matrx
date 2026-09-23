@@ -28420,26 +28420,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a real Supabase Auth session for the given user id.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -65426,33 +65406,6 @@ export interface components {
             access?: "public_no_auth";
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /**
          * DeviceRegistration
@@ -176649,41 +176602,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

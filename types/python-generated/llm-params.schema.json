@@ -1390,6 +1390,60 @@
       "default": null,
       "title": "Audio Format"
     },
+    "performance_direction": {
+      "anyOf": [
+        {
+          "maxLength": 2000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Performance Direction"
+    },
+    "speech_speed": {
+      "anyOf": [
+        {
+          "maximum": 4,
+          "minimum": 0.25,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Speech Speed"
+    },
+    "turn_pause_ms": {
+      "anyOf": [
+        {
+          "maximum": 10000,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Turn Pause Ms"
+    },
+    "language_code": {
+      "anyOf": [
+        {
+          "maxLength": 16,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Language Code"
+    },
     "duration_seconds": {
       "anyOf": [
         {
