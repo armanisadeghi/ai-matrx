@@ -28175,6 +28175,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/communications/sms/action-authorizations/{call_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Action */
+        post: operations["confirm_action_communications_sms_action_authorizations__call_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/outreach/replies/lists/{outreach_list_id}/members/{member_id}/thread": {
         parameters: {
             query?: never;
@@ -28414,26 +28431,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a real Supabase Auth session for the given user id.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -65404,33 +65401,6 @@ export interface components {
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
         };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
-        };
         /**
          * DeviceRegistration
          * @description The helper's self-description. The desktop engine sends the same shape.
@@ -96916,6 +96886,10 @@ export interface components {
             claimed_by_instance_id?: string | null;
             /** Claim Expires At */
             claim_expires_at?: string | null;
+            /** Execution Authorization */
+            execution_authorization?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
         };
         /**
          * PendingExampleOut
@@ -114605,6 +114579,25 @@ export interface components {
             production_period: string;
             /** Record Page */
             record_page: string;
+        };
+        /** SmsActionAuthorizationRequest */
+        SmsActionAuthorizationRequest: {
+            /**
+             * Confirm
+             * @constant
+             */
+            confirm: true;
+        };
+        /** SmsActionAuthorizationResponse */
+        SmsActionAuthorizationResponse: {
+            /** Confirmed */
+            confirmed: boolean;
+            /** Call Id */
+            call_id: string;
+            /** Action Digest */
+            action_digest: string;
+            /** Expires At */
+            expires_at: string;
         };
         /** Smtp2GoServiceStatus */
         Smtp2GoServiceStatus: {
@@ -176151,6 +176144,41 @@ export interface operations {
             };
         };
     };
+    confirm_action_communications_sms_action_authorizations__call_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                call_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SmsActionAuthorizationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SmsActionAuthorizationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_reply_thread_outreach_replies_lists__outreach_list_id__members__member_id__thread_get: {
         parameters: {
             query?: never;
@@ -176558,41 +176586,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

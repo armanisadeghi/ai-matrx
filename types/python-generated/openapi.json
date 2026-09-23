@@ -57623,6 +57623,58 @@
         }
       }
     },
+    "/communications/sms/action-authorizations/{call_id}/confirm": {
+      "post": {
+        "tags": [
+          "Communications / SMS"
+        ],
+        "summary": "Confirm Action",
+        "operationId": "confirm_action_communications_sms_action_authorizations__call_id__confirm_post",
+        "parameters": [
+          {
+            "name": "call_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Call Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmsActionAuthorizationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmsActionAuthorizationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/outreach/replies/lists/{outreach_list_id}/members/{member_id}/thread": {
       "get": {
         "tags": [
@@ -58274,66 +58326,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/dev/login-as": {
-      "post": {
-        "tags": [
-          "Dev Login"
-        ],
-        "summary": "Dev Login As",
-        "description": "Mint a real Supabase Auth session for the given user id.",
-        "operationId": "dev_login_as_dev_login_as_post",
-        "parameters": [
-          {
-            "name": "X-Dev-Login-Secret",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Dev-Login-Secret"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DevLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DevLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -150181,61 +150173,6 @@
         "title": "DevCommunityArticleList",
         "description": "Bounded public-article response."
       },
-      "DevLoginRequest": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "UUID of an existing row in auth.users."
-          },
-          "ttl_seconds": {
-            "type": "integer",
-            "maximum": 86400,
-            "minimum": 60,
-            "title": "Ttl Seconds",
-            "description": "Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.",
-            "default": 7200
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "DevLoginRequest"
-      },
-      "DevLoginResponse": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "expires_at": {
-            "type": "integer",
-            "title": "Expires At"
-          },
-          "issued_at": {
-            "type": "integer",
-            "title": "Issued At"
-          },
-          "jti": {
-            "type": "string",
-            "title": "Jti"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "user_id",
-          "expires_at",
-          "issued_at",
-          "jti"
-        ],
-        "title": "DevLoginResponse"
-      },
       "DeviceRegistration": {
         "properties": {
           "instance_id": {
@@ -220110,6 +220047,20 @@
               }
             ],
             "title": "Claim Expires At"
+          },
+          "execution_authorization": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Execution Authorization"
           }
         },
         "type": "object",
@@ -259972,6 +259923,48 @@
         ],
         "title": "SmkPublicArtwork",
         "description": "Safe bounded projection of one provider-marked public-domain artwork."
+      },
+      "SmsActionAuthorizationRequest": {
+        "properties": {
+          "confirm": {
+            "type": "boolean",
+            "const": true,
+            "title": "Confirm"
+          }
+        },
+        "type": "object",
+        "required": [
+          "confirm"
+        ],
+        "title": "SmsActionAuthorizationRequest"
+      },
+      "SmsActionAuthorizationResponse": {
+        "properties": {
+          "confirmed": {
+            "type": "boolean",
+            "title": "Confirmed"
+          },
+          "call_id": {
+            "type": "string",
+            "title": "Call Id"
+          },
+          "action_digest": {
+            "type": "string",
+            "title": "Action Digest"
+          },
+          "expires_at": {
+            "type": "string",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "confirmed",
+          "call_id",
+          "action_digest",
+          "expires_at"
+        ],
+        "title": "SmsActionAuthorizationResponse"
       },
       "Smtp2GoServiceStatus": {
         "properties": {
