@@ -24,7 +24,11 @@ import { createClient } from "@/utils/supabase/client";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { EntityTypeChip } from "@/components/entity-types/EntityTypeChip";
 import { EntityTypeCombobox } from "@/components/entity-types/EntityTypeCombobox";
-import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
+import {
+  MatrxDataTable,
+  MatrxUuidCell,
+} from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import {
@@ -34,15 +38,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { ConveyPill } from "./shared";
+import { reachabilityCoverage } from "./reachability-coverage";
 import { RELATIONSHIPS_LOCATION } from "../utils";
 import type { ReachabilityContainer, ReachabilityContent } from "../types";
 import {
@@ -62,6 +59,80 @@ export interface ReachabilityInspectorClientProps {
   /** Deep link: record id. With `initialType`, the lookup runs on mount. */
   initialId?: string;
 }
+
+const contentsColumns: MatrxColumnDef<ReachabilityContent>[] = [
+  {
+    id: "item_type",
+    accessorKey: "item_type",
+    header: "Item",
+    cell: (row) => <EntityTypeChip token={row.item_type} showToken />,
+    width: 208,
+  },
+  {
+    id: "item_id",
+    accessorKey: "item_id",
+    header: "ID",
+    cell: (row) => (
+      <MatrxUuidCell value={row.item_id} token={row.item_type} label="Item" />
+    ),
+    width: 384,
+  },
+  {
+    id: "depth",
+    accessorKey: "depth",
+    header: "Depth",
+    filter: "number",
+    align: "right",
+    cell: (row) => <span className="text-xs tabular-nums">{row.depth}</span>,
+    width: 80,
+  },
+  {
+    id: "max_level",
+    accessorKey: "max_level",
+    header: "Max level",
+    cell: (row) => <ConveyPill level={row.max_level} />,
+    width: 112,
+  },
+];
+
+const containersColumns: MatrxColumnDef<ReachabilityContainer>[] = [
+  {
+    id: "container_type",
+    accessorKey: "container_type",
+    header: "Container",
+    cell: (row) => <EntityTypeChip token={row.container_type} showToken />,
+    width: 208,
+  },
+  {
+    id: "container_id",
+    accessorKey: "container_id",
+    header: "ID",
+    cell: (row) => (
+      <MatrxUuidCell
+        value={row.container_id}
+        token={row.container_type}
+        label="Container"
+      />
+    ),
+    width: 384,
+  },
+  {
+    id: "depth",
+    accessorKey: "depth",
+    header: "Depth",
+    filter: "number",
+    align: "right",
+    cell: (row) => <span className="text-xs tabular-nums">{row.depth}</span>,
+    width: 80,
+  },
+  {
+    id: "max_level",
+    accessorKey: "max_level",
+    header: "Max level",
+    cell: (row) => <ConveyPill level={row.max_level} />,
+    width: 112,
+  },
+];
 
 export function ReachabilityInspectorClient({
   initialMode,
@@ -291,56 +362,41 @@ export function ReachabilityInspectorClient({
         )}
       </div>
 
-      {rows !== null ? (
-        rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            {mode === "contents"
-              ? "This container reaches nothing."
-              : "No container conveys access to this item."}
-          </p>
-        ) : (
-          <div className="overflow-x-auto rounded-md border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    {mode === "contents" ? "Item" : "Container"}
-                  </TableHead>
-                  <TableHead className="w-96">ID</TableHead>
-                  <TableHead className="w-20">Depth</TableHead>
-                  <TableHead className="w-24">Max level</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((row) => {
-                  const type =
-                    "item_type" in row ? row.item_type : row.container_type;
-                  const id = "item_id" in row ? row.item_id : row.container_id;
-                  return (
-                    <TableRow key={`${type}:${id}`}>
-                      <TableCell>
-                        <EntityTypeChip token={type} showToken />
-                      </TableCell>
-                      <TableCell>
-                        <MatrxUuidCell
-                          value={id}
-                          token={type}
-                          label={mode === "contents" ? "Item" : "Container"}
-                        />
-                      </TableCell>
-                      <TableCell className="text-xs tabular-nums">
-                        {row.depth}
-                      </TableCell>
-                      <TableCell>
-                        <ConveyPill level={row.max_level} />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )
+      {mode === "contents" && contents !== null ? (
+        <MatrxDataTable<ReachabilityContent>
+          data={contents}
+          columns={contentsColumns}
+          getRowId={(row) => `${row.item_type}:${row.item_id}`}
+          defaultSort={{ id: "depth", direction: "asc" }}
+          pageSize={0}
+          hidePagination
+          copy={false}
+          coverage={reachabilityCoverage("reachable item", contents.length)}
+          emptyState={{ title: "This container reaches nothing." }}
+          toolbar={{
+            title: "Reachable contents",
+            search: true,
+            searchPlaceholder: "Search reachable contents…",
+          }}
+        />
+      ) : null}
+      {mode === "containers" && containers !== null ? (
+        <MatrxDataTable<ReachabilityContainer>
+          data={containers}
+          columns={containersColumns}
+          getRowId={(row) => `${row.container_type}:${row.container_id}`}
+          defaultSort={{ id: "depth", direction: "asc" }}
+          pageSize={0}
+          hidePagination
+          copy={false}
+          coverage={reachabilityCoverage("conveying container", containers.length)}
+          emptyState={{ title: "No container conveys access to this item." }}
+          toolbar={{
+            title: "Conveying containers",
+            search: true,
+            searchPlaceholder: "Search conveying containers…",
+          }}
+        />
       ) : null}
     </section>
   );
