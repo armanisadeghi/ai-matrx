@@ -98,7 +98,7 @@ import { formatDurationMs } from "@ai-matrx/kit/format";
 import { connectDirect } from "./lib/direct-db";
 import { functionsTouched, openProductionReadOnly, parityDrift } from "./lib/clone-parity";
 import { onceAsync, withBuildLockCleanup } from "./lib/build-lock-cleanup";
-import { takeBuildLock, releaseBuildLock, type LockQuery } from "./lib/build-lock";
+import { takeBuildLock, releaseBuildLock, startLockHeartbeat, type LockQuery } from "./lib/build-lock";
 import {
   cloneRefOverride,
   loadCloneDbEnv,
@@ -850,7 +850,30 @@ async function main(): Promise<number> {
         }
       }
 
-      return await runLegs();
+      // THE LEASE MUST OUTLIVE THE LEGS (lane LOCK-HYGIENE, 2026-09-22). Rule 27's three legs,
+      // each with a measure pass and a spawned apply under a statement timeout of up to ten
+      // minutes, can run longer than the 15-minute lease — and a rehearsal whose own row lapses
+      // mid-leg is a rehearsal another lane is entitled to evict. So every row this process
+      // took is renewed every five minutes, on its own connection, until the legs return.
+      let beat: { stop: () => Promise<void> } | null = null;
+      if (acquired.length) {
+        const hb = await connectDirect({ ...env }, "db:rehearse (build_lock heartbeat)");
+        const hq: LockQuery = async (sql, params) => (await hb.query(sql, params as never)).rows;
+        const beats = acquired.map((family) =>
+          startLockHeartbeat(hq, family, heldBy, "the clone", (why) => console.warn(`${TAG.warn}${why}`)),
+        );
+        beat = {
+          stop: async () => {
+            for (const b of beats) b.stop();
+            await hb.end().catch(() => undefined);
+          },
+        };
+      }
+      try {
+        return await runLegs();
+      } finally {
+        await beat?.stop();
+      }
     },
     async () => {
       await releaseOnce();

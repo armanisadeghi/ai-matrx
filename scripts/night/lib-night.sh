@@ -375,7 +375,26 @@ night_take_lock() {
   esac
   LOCK_TAKEN=1; LOCK_NAME="$lock"; LOCK_LANE="$lane"
   say "$message"
+  _night_heartbeat "$lock" "$lane" "$dsn"
   return 0
+}
+
+# THE LEASE MUST OUTLIVE THE JOB. A night job (the branch refresh, a suite sweep) routinely runs
+# longer than the 15-minute lease, and a job whose own row lapses mid-run is a job the next lane
+# is entitled to evict. So every take starts a background renewer that pushes the lease forward
+# every five minutes. It needs no kill and no cleanup, which matters because both prompt in an
+# unattended run: it stops ON ITS OWN the moment either
+#   · the job's shell is gone (`kill -0 $$` fails — a SIGKILLed job's lease then lapses within
+#     one lease, which is the whole point of having one), or
+#   · the renew answers anything but `t` (the job released the row, or somebody else holds it).
+_night_heartbeat() {
+  local lock="$1" lane="$2" dsn="$3" parent=$$
+  (
+    while sleep "${NIGHT_LEASE_BEAT_SECONDS:-300}"; do
+      kill -0 "$parent" 2>/dev/null || exit 0
+      [ "$("$PSQL" "$dsn" -qAt -c "select campaign_watch.lock_renew('$lock', '$lane')" 2>/dev/null)" = "t" ] || exit 0
+    done
+  ) >/dev/null 2>&1 &!
 }
 
 # Push this job's lease forward. A long job calls it between steps; a job shorter than the lease
