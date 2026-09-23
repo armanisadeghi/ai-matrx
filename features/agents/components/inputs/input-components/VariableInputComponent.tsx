@@ -64,6 +64,13 @@ interface VariableInputComponentProps {
    * input — other input types (selects, toggles, media) ignore it.
    */
   onEnterAdvance?: () => void;
+  /**
+   * The field's declared placeholder, when it has one. Until cold walk 22 a
+   * served input's `placeholder` was parsed and then dropped here, so "The
+   * text (verbatim)" on a Masterwork said "Type your answer" — it is the text
+   * to be checked, not an answer.
+   */
+  placeholder?: string;
 }
 
 /** Coerce any incoming value to a string for the existing text-style inputs. */
@@ -89,6 +96,7 @@ export function VariableInputComponent({
   hideLabel = false,
   wizardMode = false,
   onEnterAdvance,
+  placeholder,
 }: VariableInputComponentProps) {
   const [containerRef, containerWidth] = useContainerWidth();
 
@@ -123,6 +131,7 @@ export function VariableInputComponent({
       onRequestClose={onRequestClose}
       onEnterAdvance={onEnterAdvance}
       autoFocus={autoFocus}
+      placeholder={placeholder}
       {...sharedProps}
     />
   );
