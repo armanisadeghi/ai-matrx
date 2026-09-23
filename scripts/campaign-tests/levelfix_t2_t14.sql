@@ -9,7 +9,7 @@
 --
 -- It runs against ONE throwaway organization and deletes it at the end; a census fails the run
 -- unless every trace is gone. `admin@admin.com` is the author, `test@test.com` (Dana) is the
--- plain member, `arman@titaniumsuccess.com` (Sam) is the principal shared on nothing.
+-- plain member, `g2t13.tomas@example.test` (Tomas) is the principal shared on nothing.
 --
 -- The organization is left at `shared_only`, which is what "Dana is a viewer on A ONLY" means:
 -- a test whose subject is what a SHARE conveys cannot be run in an organization that shows
@@ -46,7 +46,7 @@
 \set ORG   '\'1ef10000-0000-4a00-8a00-000000000e01\''
 \set ADMIN '\'87a6e699-3622-4869-8843-d0867456c0dd\''
 \set DANA  '\'4060701e-706a-4c76-b3ca-0bbc69fa5a14\''
-\set SAM   '\'34ed4fc3-c527-4819-99bf-15c26603b261\''
+\set TOMAS   '\'daeb6d44-a7dd-4085-aba2-5025fb711b79\''
 \set HQ    '\'1ef10000-0000-4a00-8a00-000000000e11\''
 
 begin;
@@ -76,7 +76,7 @@ values (:ORG, 'Rincon Plumbing Co', 'rincon-plumbing-levelfix-t2t14', 'RPC', :AD
 insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
 values (:ORG, 'organization', :ORG, :ADMIN, 'owner',  'active'),
        (:ORG, 'organization', :ORG, :DANA,  'member', 'active'),
-       (:ORG, 'organization', :ORG, :SAM,   'member', 'active');
+       (:ORG, 'organization', :ORG, :TOMAS,   'member', 'active');
 insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
 values ('custom', 'system_enabled',            'organization', :ORG, :ORG, 'true'::jsonb,          'LEVEL-FIX T2'),
        ('custom', 'member_default_visibility', 'organization', :ORG, :ORG, '"shared_only"'::jsonb, 'LEVEL-FIX T2');
@@ -183,7 +183,7 @@ declare
   v_hq    constant uuid := '1ef10000-0000-4a00-8a00-000000000e11';
   v_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
   v_dana_j  constant text := '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}';
-  v_sam_j   constant text := '{"sub":"34ed4fc3-c527-4819-99bf-15c26603b261","role":"authenticated"}';
+  v_tomas_j   constant text := '{"sub":"daeb6d44-a7dd-4085-aba2-5025fb711b79","role":"authenticated"}';
   v_dana  constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
   v_doc jsonb;
   v_a uuid; v_c uuid; v_note uuid;
@@ -274,7 +274,7 @@ begin
   end if;
 
   -- 6. A PRINCIPAL SHARED ON NONE OF A, B, C OR THE AUTHOR DOES NOT SEE IT.
-  perform set_config('request.jwt.claims', v_sam_j, true);
+  perform set_config('request.jwt.claims', v_tomas_j, true);
   if custom.query_can_see(v_org, v_note, 'viewer') then
     raise exception 'T2 FAILED — a member shared on nothing at all sees the note.';
   end if;

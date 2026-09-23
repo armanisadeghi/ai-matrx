@@ -17,7 +17,7 @@
 -- trace is gone.
 --
 -- THE IDENTITIES. `admin@admin.com` owns the throwaway organization; `test@test.com` (Dana) is
--- a plain MEMBER of it; `arman@titaniumsuccess.com` (Sam) is the third seat the ladder is
+-- a plain MEMBER of it; `g2t13.tomas@example.test` (Tomas) is the third seat the ladder is
 -- tested against. Nobody's own records are touched. It signs nobody in and reads no credential.
 --
 -- ITS RED TWIN is `share_red.sql`.
@@ -40,7 +40,7 @@
 \set ORG2   '\'5ba50000-0000-4a00-8a00-000000000a02\''
 \set ADMIN  '\'87a6e699-3622-4869-8843-d0867456c0dd\''
 \set DANA   '\'4060701e-706a-4c76-b3ca-0bbc69fa5a14\''
-\set SAM    '\'34ed4fc3-c527-4819-99bf-15c26603b261\''
+\set TOMAS    '\'daeb6d44-a7dd-4085-aba2-5025fb711b79\''
 \set HQ     '\'5ba50000-0000-4a00-8a00-000000000101\''
 \set TBL    '\'5ba50000-0000-4a00-8a00-000000000201\''
 \set REC    '\'5ba50000-0000-4a00-8a00-000000000301\''
@@ -76,7 +76,7 @@ values (:ORG,  'Rincon Plumbing Co',        'rincon-plumbing-share-green',   'RP
 insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
 values (:ORG,  'organization', :ORG,  :ADMIN, 'owner',  'active'),
        (:ORG,  'organization', :ORG,  :DANA,  'member', 'active'),
-       (:ORG,  'organization', :ORG,  :SAM,   'member', 'active'),
+       (:ORG,  'organization', :ORG,  :TOMAS,   'member', 'active'),
        (:ORG2, 'organization', :ORG2, :ADMIN, 'owner',  'active');
 -- `iam.organization_member` is a VIEW over `iam.memberships` (container_type='organization',
 -- status='active'), so the rows above are already the picker's rows. Nothing to insert twice.
@@ -167,7 +167,7 @@ set local role authenticated;
 -- calls for a record — so the clause is now testing the path a person actually has.
 -- (`iam.fn_grant_resource_permission` is the FILE side of the same closure and refuses
 -- resource_type 'record' by name; a record is shared through the store's door, not that one.)
-select custom.share_grant(:ORG::uuid, :REC::uuid, 'user', :SAM::uuid, 'viewer'::public.permission_level)
+select custom.share_grant(:ORG::uuid, :REC::uuid, 'user', :TOMAS::uuid, 'viewer'::public.permission_level)
 \g (tuples_only=on format=unaligned) /dev/null
 reset role;
 do $t$
@@ -175,7 +175,7 @@ declare v_n int;
 begin
   select count(*) into v_n from iam.permissions
    where resource_type = 'record' and resource_id = '5ba50000-0000-4a00-8a00-000000000301'
-     and granted_to_user_id = '34ed4fc3-c527-4819-99bf-15c26603b261';
+     and granted_to_user_id = 'daeb6d44-a7dd-4085-aba2-5025fb711b79';
   if v_n <> 1 then raise exception '2a FAILED — the direct share did not land (% rows).', v_n; end if;
   raise notice 'PART 2 PASSED — a signed-in person wrote a record grant through the client role.';
 end $t$;
@@ -216,10 +216,10 @@ begin
   end if;
   select * into v_row from custom.share_people('5ba50000-0000-4a00-8a00-000000000a01',
                                                '5ba50000-0000-4a00-8a00-000000000301')
-   where email = 'arman@titaniumsuccess.com';
+   where email = 'g2t13.tomas@example.test';
   if v_row.already_at is distinct from 'viewer'::public.permission_level
      or v_row.already_why is distinct from 'Shared with them directly' then
-    raise exception '3b FAILED — the picker does not say Sam is already in at viewer (got %, %).',
+    raise exception '3b FAILED — the picker does not say Tomas is already in at viewer (got %, %).',
       v_row.already_at, v_row.already_why;
   end if;
 end $t$;
@@ -235,7 +235,7 @@ begin
     into v_own, v_dir, v_def
     from custom.share_access('5ba50000-0000-4a00-8a00-000000000a01', '5ba50000-0000-4a00-8a00-000000000301');
   if v_own <> 1 then raise exception '3c FAILED — the Owner is not named (% rows).', v_own; end if;
-  if v_dir <> 2 then raise exception '3c FAILED — % direct shares, expected Sam and Dana.', v_dir; end if;
+  if v_dir <> 2 then raise exception '3c FAILED — % direct shares, expected Tomas and Dana.', v_dir; end if;
   if v_def <> 0 then raise exception '3c FAILED — an organization-default reason under shared_only.'; end if;
   if (select count(*) from custom.share_access('5ba50000-0000-4a00-8a00-000000000a01','5ba50000-0000-4a00-8a00-000000000301')
        where reason_detail is null or btrim(reason_detail) = '') > 0 then
@@ -359,7 +359,7 @@ begin
     raise exception '4a FAILED — an editor is told they may decide who else sees this.';
   end if;
   v_out := public.share_resource_with_user('record', '5ba50000-0000-4a00-8a00-000000000301',
-                                           '34ed4fc3-c527-4819-99bf-15c26603b261', 'admin');
+                                           'daeb6d44-a7dd-4085-aba2-5025fb711b79', 'admin');
   if (v_out ->> 'success')::boolean then raise exception '4a FAILED — an editor shared it.'; end if;
   if v_out ->> 'error' not like '%need Admin%' then
     raise exception '4a FAILED — the refusal does not name the rung: %', v_out ->> 'error';
@@ -383,7 +383,7 @@ begin
   select count(*) into v_n from public.get_resource_permissions('record', '5ba50000-0000-4a00-8a00-000000000301');
   if v_n < 2 then raise exception '4b FAILED — an admin is shown % grants, expected the real list.', v_n; end if;
   v_out := public.revoke_resource_access('record', '5ba50000-0000-4a00-8a00-000000000301',
-                                         '34ed4fc3-c527-4819-99bf-15c26603b261');
+                                         'daeb6d44-a7dd-4085-aba2-5025fb711b79');
   if not (v_out ->> 'success')::boolean then
     raise exception '4b FAILED — an admin could not revoke: %', v_out ->> 'error';
   end if;

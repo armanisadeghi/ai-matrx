@@ -93,7 +93,7 @@ begin
     raise exception 'BLOCK 2 NOT RED — the created_by-only check still admits an admin.';
   end if;
   v_out := public.share_resource_with_user('record', '5bd50000-0000-4a00-8a00-000000000301',
-                                           '34ed4fc3-c527-4819-99bf-15c26603b261', 'viewer');
+                                           'daeb6d44-a7dd-4085-aba2-5025fb711b79', 'viewer');
   if (v_out ->> 'success')::boolean then
     raise exception 'BLOCK 2 NOT RED — an admin shared while the narrow check was in force.';
   end if;
@@ -139,7 +139,7 @@ declare v_id uuid; v_n int;
 begin
   insert into iam.permissions (resource_type, resource_id, granted_to_user_id, permission_level, created_by)
   values ('record', '5bd50000-0000-4a00-8a00-000000000301',
-          '34ed4fc3-c527-4819-99bf-15c26603b261', 'viewer',
+          'daeb6d44-a7dd-4085-aba2-5025fb711b79', 'viewer',
           '87a6e699-3622-4869-8843-d0867456c0dd')
   returning id into v_id;
   select count(*) into v_n from history.row_versions
