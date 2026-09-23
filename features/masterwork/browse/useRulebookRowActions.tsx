@@ -2,24 +2,29 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, Link2, Share2, Trash2, Workflow } from "lucide-react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { Eye, Link2, Pencil, Share2, Trash2, Workflow } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
+import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import type {
   EntityListController,
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
-import { softDeleteRulebook } from "../service";
+import { softDeleteRulebook, updateRulebookMeta } from "../service";
 import type { RulebookListRow } from "../types";
 
 export function useRulebookRowActions(
   list: EntityListController<RulebookListRow>,
 ): EntityRowActionsResult<RulebookListRow> {
   const router = useRouter();
+  const userId = useAppSelector(selectUserId);
   const [deleting, setDeleting] = useState<RulebookListRow | null>(null);
   const [sharing, setSharing] = useState<RulebookListRow | null>(null);
+  const [renaming, setRenaming] = useState<RulebookListRow | null>(null);
   const [busy, setBusy] = useState(false);
 
   const confirmDelete = useCallback(async () => {
@@ -61,6 +66,24 @@ export function useRulebookRowActions(
             },
           ],
         },
+        // THE RENAME THE DUPLICATE-NAME NOTICE PROMISES (cold walk 22, A):
+        // "rename either from its own page" — and here, from the list. Only on
+        // the Rulebooks she can edit (the same rule the Rulebook page uses).
+        ...(userId !== null && row.created_by === userId
+          ? [
+              {
+                id: "manage",
+                items: [
+                  {
+                    id: "rename",
+                    label: "Rename",
+                    icon: Pencil,
+                    onSelect: () => setRenaming(row),
+                  },
+                ],
+              },
+            ]
+          : []),
         {
           id: "copy",
           items: [
@@ -100,7 +123,7 @@ export function useRulebookRowActions(
         },
       ],
     }),
-    [],
+    [userId],
   );
 
   const onOpenRow = useCallback(
@@ -112,6 +135,37 @@ export function useRulebookRowActions(
     actions: { menuFor, onOpenRow },
     modals: (
       <>
+      {renaming ? (
+        <TextInputDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setRenaming(null);
+          }}
+          title="Rename this Rulebook"
+          defaultValue={renaming.name}
+          confirmLabel="Rename"
+          onConfirm={async (next) => {
+            const row = renaming;
+            const name = next.trim();
+            setRenaming(null);
+            if (!row || !name || name === row.name) return;
+            try {
+              const saved = await updateRulebookMeta({
+                rulebookId: row.id,
+                patch: { name },
+              });
+              list.patchRow(row.id, { name: saved.name });
+              toast.success(`Renamed to "${saved.name}"`);
+            } catch (err) {
+              toast.error(
+                err instanceof Error
+                  ? err.message
+                  : "Could not rename the Rulebook",
+              );
+            }
+          }}
+        />
+      ) : null}
       {sharing ? (
         <ShareModal
           isOpen={sharing !== null}

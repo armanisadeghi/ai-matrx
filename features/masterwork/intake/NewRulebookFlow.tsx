@@ -700,7 +700,7 @@ export function NewRulebookFlow() {
         `"${rulebook.name}" started`,
         rulebook.nameAlreadyInUse
           ? {
-              description: `You already have a Rulebook called "${rulebook.name}". This one is separate — rename either from its own page. ${approach.costTimeShape}`,
+              description: `You already have a Rulebook called "${rulebook.name}". This one is separate — to rename either, click its name at the top of its page, or use Rename in its menu on the Masterworks list. ${approach.costTimeShape}`,
               duration: Infinity,
             }
           : { description: approach.costTimeShape },

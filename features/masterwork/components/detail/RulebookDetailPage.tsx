@@ -35,7 +35,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { BulkApproveDialog } from "./BulkApproveDialog";
-import { ArchivedDisclosure, Input } from "@ai-matrx/design-system";
+import {
+  ArchivedDisclosure,
+  EditableLabel,
+  Input,
+} from "@ai-matrx/design-system";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import {
   Tooltip,
@@ -2153,6 +2157,29 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
     [rulebook, persist],
   );
 
+  const renameRulebook = useCallback(
+    async (next: string) => {
+      if (!rulebook) return;
+      const name = next.trim();
+      if (name === "" || name === rulebook.name) return;
+      try {
+        const saved = await updateRulebookMeta({
+          rulebookId: rulebook.id,
+          patch: { name },
+        });
+        setRulebook(saved);
+        toast.success(`Renamed to "${saved.name}"`);
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Could not rename the Rulebook",
+        );
+        // Rejecting keeps the field open with her words in it, to retry.
+        throw err;
+      }
+    },
+    [rulebook],
+  );
+
   const activate = useCallback(async () => {
     if (!rulebook) return;
     try {
@@ -2307,11 +2334,33 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                       could not read back her own goal anywhere on the page.
                       Two lines on a phone, one truncated line from `sm:` up
                       where the row has the width for it. */}
+                  {/* 🚨 THE NAME IS RENAMED WHERE IT IS READ (cold walk 22, A).
+                      The duplicate-name notice tells her to "rename either
+                      from its own page" — and this page had no rename. The
+                      owner clicks the name to edit it in place (the platform's
+                      one inline-title primitive, `EditableLabel`): Enter or
+                      leaving the field saves through the Rulebook's one meta
+                      door, Esc cancels, an empty name is refused. */}
                   <h2
                     className="line-clamp-2 min-w-0 text-base font-semibold text-foreground sm:truncate"
                     data-surface-value="rulebook_name"
                   >
-                    {rulebook.name}
+                    {canEdit ? (
+                      <EditableLabel
+                        value={rulebook.name}
+                        commitMode="await"
+                        ariaLabel="Rulebook name"
+                        truncate={false}
+                        validate={(next) =>
+                          next.trim() === "" ? "A Rulebook needs a name" : null
+                        }
+                        onCommit={renameRulebook}
+                        displayClassName="text-base font-semibold"
+                        inputClassName="text-base font-semibold"
+                      />
+                    ) : (
+                      rulebook.name
+                    )}
                   </h2>
                 </div>
               </div>
