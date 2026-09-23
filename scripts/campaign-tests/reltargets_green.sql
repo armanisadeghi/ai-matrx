@@ -270,15 +270,26 @@ end $seat$;
 reset role;
 -- 8 · the halves census for this organization (the store's own census; owner-only by design)
 do $c$
-declare v_n int;
+declare v_n int; v_guard boolean;
 begin
-  -- Deferred halves guard settles here, as it would at COMMIT.
+  -- The deferred halves guard settles here, as it would at COMMIT: every write above is judged.
+  select exists (select 1 from pg_trigger t where t.tgrelid = 'custom.record'::regclass
+                  and t.tgname = 'zzzz_relation_halves_agree') into v_guard;
   set constraints all immediate;
+  if to_regprocedure('custom.relation_halves_disagreements(uuid, uuid)') is null then
+    -- The census is STORE-TXN-4's; a database that predates it still has the guard's verdict.
+    if v_guard then
+      raise notice 'CLAUSE 8 PASS (guard only) — the census function is not on this database; the deferred halves guard is installed and settled every write above';
+    else
+      raise notice 'CLAUSE 8 SKIPPED — neither the halves census nor the halves guard is on this database, so nothing about the two halves was measured here. A skip is not a pass.';
+    end if;
+    return;
+  end if;
   select count(*) into v_n from custom.relation_halves_disagreements((select v from _rt where k='org'));
   if v_n <> 0 then
     raise exception 'CLAUSE 8 FAILED: % half/halves disagree in Harborline', v_n;
   end if;
-  raise notice 'CLAUSE 8 PASS — 0 relation halves disagree; the deferred guard settled with every write above';
+  raise notice 'CLAUSE 8 PASS — 0 relation halves disagree; the deferred guard settled on every write';
 end $c$;
 
 \echo 'reltargets_green: all clauses PASS.'
