@@ -49,6 +49,8 @@ import {
 } from "@/features/data-tables/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Textarea } from "@/components/ui/textarea";
+import { RefusalNotice } from "@ai-matrx/records-ui";
+import type { RecordsError, RecordsErrorCode } from "@ai-matrx/records";
 
 interface ImportTableModalProps {
   isOpen: boolean;
@@ -87,6 +89,8 @@ export default function ImportTableModal({
   // Paste state
   const [pasteData, setPasteData] = useState("");
   const [pasteError, setPasteError] = useState<string>("");
+  /** Set when the table exists but its rows did not all land — the notice then offers to open it. */
+  const [createdTableId, setCreatedTableId] = useState<string | null>(null);
 
   // Preview state
   const [fullData, setFullData] = useState<Record<string, any>[]>([]);
@@ -98,7 +102,10 @@ export default function ImportTableModal({
 
   // Loading/submission
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // 🚨 A REFUSAL, NOT A RED STRING (lane REFUSAL-SWEEP, 2026-09-23). This held
+  // `err.message` and printed it in a red box: the store's words raw, no heading,
+  // no remedy, and — for a bulk write that half-landed — nothing at all.
+  const [error, setError] = useState<RecordsError | null>(null);
 
   // Smart Import handoff — when /workbooks routes a typed-looking file here,
   // it passes it as `prefilledFile`. We auto-process it the same way the
@@ -163,13 +170,14 @@ export default function ImportTableModal({
 
             setLoading(false);
           } catch (err) {
-            setUploadError("Failed to parse CSV file");
+            setUploadError("That file could not be read as CSV.");
             console.error(err);
             setLoading(false);
           }
         },
         error: (err) => {
-          setUploadError(`Error reading CSV file: ${err.message}`);
+          console.error("Import: CSV read failed", err);
+          setUploadError("That file could not be read as CSV.");
           setLoading(false);
         },
       });
@@ -209,7 +217,7 @@ export default function ImportTableModal({
 
           setLoading(false);
         } catch (err) {
-          setUploadError("Failed to parse Excel file");
+          setUploadError("That file could not be read as a spreadsheet.");
           console.error(err);
           setLoading(false);
         }
@@ -250,19 +258,20 @@ export default function ImportTableModal({
             setShowPreview(true);
             setLoading(false);
           } catch (err) {
-            setPasteError("Failed to parse pasted data");
+            setPasteError("Those rows could not be read as a table.");
             console.error(err);
             setLoading(false);
           }
         },
         // Papa's string-input overload types the error callback as (Error, string).
         error: (err: Error) => {
-          setPasteError(`Error parsing data: ${err.message}`);
+          console.error("Import: paste parse failed", err);
+          setPasteError("Those rows could not be read as a table.");
           setLoading(false);
         },
       });
     } catch (err) {
-      setPasteError("Failed to process pasted data");
+      setPasteError("Those rows could not be read as a table.");
       console.error(err);
       setLoading(false);
     }
@@ -282,12 +291,12 @@ export default function ImportTableModal({
 
   const handleSubmit = async () => {
     if (!tableName.trim()) {
-      setError("Please enter a table name");
+      setError(importRefusal("invalid_argument", "This table has no name yet.", "Type a name for it above, then import."));
       return;
     }
 
     if (fullData.length === 0) {
-      setError("No data to import");
+      setError(importRefusal("invalid_argument", "There is nothing to import yet.", "Pick a file or paste rows first."));
       return;
     }
 
@@ -307,7 +316,7 @@ export default function ImportTableModal({
         }));
 
       if (includedFields.length === 0) {
-        setError("Please select at least one column to import");
+        setError(importRefusal("invalid_argument", "Every column is switched off, so nothing would be imported.", "Switch on at least one column, then import."));
         setLoading(false);
         return;
       }
@@ -323,7 +332,15 @@ export default function ImportTableModal({
       });
 
       if (!createResult.success || !createResult.tableId) {
-        throw new Error(createResult.error || "Failed to create table");
+        setError(
+          importRefusal(
+            "internal",
+            "The table could not be created, so nothing was imported.",
+            "Try the import again. Your file and settings are still here.",
+            createResult.error,
+          ),
+        );
+        return;
       }
 
       const tableId = createResult.tableId;
@@ -348,7 +365,18 @@ export default function ImportTableModal({
 
       const bulkResult = await bulkWrite({ tableId, operations });
       if (isServiceFailure(bulkResult)) {
-        throw new Error(`Failed to import rows: ${bulkResult.error}`);
+        // The store's own refusal, whole (FIX-15 keeps DETAIL and HINT on it).
+        setError(
+          bulkResult.refusal ??
+            importRefusal(
+              "internal",
+              "The table was created but its rows were not written.",
+              "Open the table and paste the rows in, or try the import again.",
+              bulkResult.error,
+            ),
+        );
+        setCreatedTableId(tableId);
+        return;
       }
 
       // Sanity-check the per-op envelope. With insert ops this is belt-and-
@@ -356,10 +384,19 @@ export default function ImportTableModal({
       // check so a future op-mix change cannot silently lose rows.
       const failedRows = bulkResult.data.results.filter(isBulkOpError);
       if (failedRows.length > 0) {
-        console.warn(
-          `Import: ${failedRows.length} of ${operations.length} rows reported errors`,
-          failedRows,
+        // 🚨 NOTHING FAILS SILENTLY. This was a console warning and the modal
+        // closed on a table missing rows the person believed were in it.
+        setError(
+          importRefusal(
+            "refused_by_rule",
+            `${failedRows.length} of ${operations.length} rows were not written; the other ${
+              operations.length - failedRows.length
+            } are in the new table.`,
+            "Open the table to see what landed, then paste the missing rows in.",
+          ),
         );
+        setCreatedTableId(tableId);
+        return;
       }
 
       // Reset form
@@ -371,7 +408,12 @@ export default function ImportTableModal({
     } catch (err) {
       console.error("Error importing table:", err);
       setError(
-        err instanceof Error ? err.message : "An unexpected error occurred",
+        importRefusal(
+          "internal",
+          "The import stopped before it finished.",
+          "Try it again. Your file and settings are still here.",
+          err instanceof Error ? err.message : String(err),
+        ),
       );
     } finally {
       setLoading(false);
@@ -392,6 +434,7 @@ export default function ImportTableModal({
     setUploadError("");
     setPasteError("");
     setError(null);
+    setCreatedTableId(null);
   };
 
   const handleClose = () => {
@@ -408,9 +451,49 @@ export default function ImportTableModal({
 
         <div className="flex-1 overflow-y-auto min-h-0 space-y-4 py-4">
           {error && (
-            <div className="bg-red-50 dark:bg-red-950 p-3 rounded-md text-red-600 dark:text-red-400 text-sm">
-              {error}
-            </div>
+            <RefusalNotice
+              error={error}
+              className="text-left"
+              actions={
+                <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                  {createdTableId ? (
+                    <button
+                      type="button"
+                      className="rounded border px-2 py-0.5 text-xs hover:bg-muted"
+                      onClick={() => {
+                        const id = createdTableId;
+                        resetForm();
+                        onSuccess(id);
+                        onClose();
+                      }}
+                    >
+                      Open the table
+                    </button>
+                  ) : (
+                    <>
+                      {/* The file and settings are still in the form: the notice
+                          owns the two doors out. */}
+                      <button
+                        type="button"
+                        data-matrx-refusal-keep-editing=""
+                        className="rounded border px-2 py-0.5 text-xs hover:bg-muted"
+                        onClick={() => setError(null)}
+                      >
+                        Keep editing
+                      </button>
+                      <button
+                        type="button"
+                        data-matrx-refusal-discard=""
+                        className="rounded border px-2 py-0.5 text-xs hover:bg-muted"
+                        onClick={resetForm}
+                      >
+                        Discard
+                      </button>
+                    </>
+                  )}
+                </div>
+              }
+            />
           )}
 
           {!showPreview ? (
@@ -477,7 +560,10 @@ export default function ImportTableModal({
                       )}
                     </div>
                     {uploadError && (
-                      <p className="text-sm text-red-500">{uploadError}</p>
+                      <RefusalNotice
+                        className="text-left"
+                        error={importRefusal("invalid_argument", uploadError, "Pick another file, or save this one as CSV or Excel and pick it again.")}
+                      />
                     )}
                   </div>
                 </TabsContent>
@@ -494,7 +580,36 @@ export default function ImportTableModal({
                       className="font-mono text-sm"
                     />
                     {pasteError && (
-                      <p className="text-sm text-red-500">{pasteError}</p>
+                      <RefusalNotice
+                        className="text-left"
+                        error={importRefusal("invalid_argument", pasteError, "Copy the rows again with their header row, then paste.")}
+                        actions={
+                          <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                            <button
+                              type="button"
+                              data-matrx-refusal-keep-editing=""
+                              className="rounded border px-2 py-0.5 text-xs hover:bg-muted"
+                              onClick={() => {
+                                setPasteError("");
+                                document.getElementById("pasteData")?.focus();
+                              }}
+                            >
+                              Keep editing
+                            </button>
+                            <button
+                              type="button"
+                              data-matrx-refusal-discard=""
+                              className="rounded border px-2 py-0.5 text-xs hover:bg-muted"
+                              onClick={() => {
+                                setPasteError("");
+                                setPasteData("");
+                              }}
+                            >
+                              Discard
+                            </button>
+                          </div>
+                        }
+                      />
                     )}
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       Copy table data from Google Sheets, Excel, or any
@@ -732,4 +847,18 @@ export default function ImportTableModal({
       </DialogContent>
     </Dialog>
   );
+}
+
+/**
+ * A refusal this modal writes itself, in the SAME shape the store's own refusals
+ * arrive in, so `RefusalNotice` draws both identically (heading, sentence,
+ * remedy; the engineer's note out of sight). Lane REFUSAL-SWEEP.
+ */
+function importRefusal(
+  code: RecordsErrorCode,
+  message: string,
+  hint?: string,
+  diagnostic?: string | null,
+): RecordsError {
+  return { code, message, ...(hint ? { hint } : {}), ...(diagnostic ? { diagnostic } : {}) };
 }
