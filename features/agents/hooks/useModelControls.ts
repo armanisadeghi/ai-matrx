@@ -339,6 +339,14 @@ export function resolveModelControls(
     "max_tokens",
     "output_format",
     "n",
+    // Provider-native aliases LLMParams._FIELD_ALIASES accepts (gpt-image-*
+    // `quality` → render_quality, Together `output_quality` → encode_quality,
+    // `seconds` → duration_seconds). Unlisted, a model declaring them had its
+    // control silently dropped into unmappedControls — gpt-image-2's Quality
+    // never rendered in the builder and a saved value read as "unknown key".
+    "quality",
+    "output_quality",
+    "seconds",
     // Model-gated UI flags from model controls (e.g. { allowed: true }). These
     // indicate what a model supports — they live in agent.uiGates, not in
     // LLMParams. Recognized here (via the canonical UI_GATE_KEYS) so the parser

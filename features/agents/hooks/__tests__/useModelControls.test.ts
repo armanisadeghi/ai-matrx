@@ -29,4 +29,28 @@ describe("useModelControls", () => {
       },
     );
   });
+
+  it("recognizes provider-native aliases the server accepts (gpt-image-2 quality)", () => {
+    const models = [
+      {
+        id: "gpt-image-2",
+        controls: {
+          aspect_ratio: { type: "enum", enum: ["1:1", "16:9"] },
+          quality: { type: "enum", enum: ["auto", "low", "medium", "high"], default: "auto" },
+        },
+      },
+    ] as unknown as AIModelRecord[];
+
+    const { normalizedControls } = useModelControls(models, "gpt-image-2");
+
+    expect(normalizedControls?.quality).toEqual({
+      type: "enum",
+      enum: ["auto", "low", "medium", "high"],
+      default: "auto",
+      min: undefined,
+      max: undefined,
+      required: undefined,
+    });
+    expect(normalizedControls?.unmappedControls).toEqual({});
+  });
 });
