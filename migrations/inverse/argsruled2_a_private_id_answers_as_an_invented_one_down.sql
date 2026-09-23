@@ -1,6 +1,8 @@
 -- lock: platform
 -- lane: ARGS-RULED-2
--- (based-on lines are added once the up has landed: they name the body the up leaves behind)
+-- based-on: public.fork_shared_conversation(uuid, uuid, text) f6870e321400165966c53a5736ad412d1c0172821a0b55321c07ecc036c4c131
+-- based-on: public.fork_shared_flashcard_set(uuid, uuid, text) 03c89ea4f03a5c4826e168ff5be95e3efa42aef8ca6ff059bfb0455f9aa5454f
+-- based-on: public.fork_shared_quiz(uuid, uuid, text) 217524a157ecfa5ec10116a67921de76fa18fc621bb7df46e4957f6b690db7c8
 --
 -- INVERSE of migrations/campaign/argsruled2_a_private_id_answers_as_an_invented_one.sql: puts
 -- the three fork_shared_*(uuid,uuid,text) bodies back exactly as they were (pg_get_functiondef,
