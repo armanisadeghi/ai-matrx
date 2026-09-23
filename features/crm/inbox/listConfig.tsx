@@ -9,7 +9,6 @@
 // no bespoke list shell.
 
 import type { EntityListConfig } from "@/lib/entity-list/config";
-import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
 import { INBOX_COLUMNS } from "./columns";
 import {
   fetchInboxFacets,
@@ -19,9 +18,6 @@ import {
 import { useInboxRowActions } from "./useInboxRowActions";
 import {
   INBOX_LIST_SCOPES,
-  inboxBacklinkHref,
-  inboxCampaignHref,
-  inboxReputationCaseHref,
   inboxRowHref,
   type InboxRow,
 } from "./types";
@@ -132,74 +128,22 @@ export const inboxListConfig: EntityListConfig<InboxRow> = {
     rowKind: "outreach-reply",
     listKind: "outreach-inbox",
     rowDescription:
-      "One inbound reply to outreach — who replied, what the classifier made of it, the campaign and step it answers, and the record that motivated the message. Snippet only; the full body is not included.",
+      "An opaque reference to one inbox interaction. Message content stays local until immutable provenance permits model transfer.",
     listDescription:
-      "The unified outreach inbox as currently scoped, searched and filtered.",
-    humanRow: (row) =>
-      [
-        row.party_name ?? "Unknown contact",
-        row.employer_name ? `(${row.employer_name})` : null,
-        `— ${row.classification ?? "unclassified"}`,
-        `on ${row.outreach_list_name ?? "no campaign"}`,
-        row.step != null ? `step ${row.step}` : null,
-        row.handled ? "· handled" : "· needs me",
-      ]
-        .filter(Boolean)
-        .join(" "),
-    agentRow: (row) => ({
-      id: row.id,
-      party: row.party_name,
-      party_href: inboxRowHref(row),
-      employer: row.employer_name,
-      classification: row.classification,
-      evidence: row.evidence,
-      subject: row.subject,
-      snippet: row.snippet,
-      occurred_at: row.occurred_at,
-      handled: row.handled,
-      campaign: row.outreach_list_name,
-      campaign_href: inboxCampaignHref(row),
-      step: row.step,
-      replying_to: row.outbound_subject,
-      sent_from: row.sending_identity_label,
-      motivating_record:
-        row.reputation_case_label ?? row.backlink_label ?? null,
-      motivating_record_href:
-        inboxReputationCaseHref(row) ?? inboxBacklinkHref(row) ?? null,
-      body_included: false,
-    }),
+      "Opaque references and counts for the currently visible outreach inbox.",
+    // The table package also embeds `humanRow` as an agent summary. Keep this
+    // projection opaque; the visible table cells still render the full local
+    // inbox row.
+    humanRow: (row) => `Reply ${row.id}`,
+    agentRow: (row) => ({ id: row.id }),
     rowAttributes: (row) => ({
       id: row.id,
-      party: row.party_name,
-      label: row.classification,
-      handled: row.handled,
     }),
     listAttributes: (visible, all) => ({
       rows: visible.length,
       rows_loaded: all.length,
       rows_total: all[0]?.total_count ?? visible.length,
     }),
-    aiVariants: (visible, all) => [
-      keyFieldsAiVariant({
-        kind: "outreach-inbox",
-        location: "/crm/inbox",
-        description:
-          "Replies projected to who / verdict / campaign / step / state.",
-        visible,
-        project: (row) => ({
-          party: row.party_name,
-          classification: row.classification,
-          campaign: row.outreach_list_name,
-          step: row.step,
-          handled: row.handled,
-          occurred_at: row.occurred_at,
-        }),
-        attributes: {
-          rows: visible.length,
-          rows_total: all[0]?.total_count ?? visible.length,
-        },
-      }),
-    ],
   },
   emptyState: {
     title: "No replies yet",
