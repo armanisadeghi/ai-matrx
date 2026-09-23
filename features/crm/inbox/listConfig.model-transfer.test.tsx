@@ -195,7 +195,7 @@ describe("CRM inbox table model-transfer seam", () => {
       __entity: { id: ROW.party_id, title: HOSTILE_PARTY },
     });
     const resolvedRowScope = resolveApplicationScope({
-      contextData: resolvedRowMenu?.context,
+      contextData: resolvedRowMenu?.context ?? {},
       selectedText: "",
       selectionRange: null,
     });

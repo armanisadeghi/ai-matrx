@@ -23,13 +23,12 @@ _(none)_
 **Current evidence**
 
 - Frontend `features/crm/service.ts:1746` calls `crm.erase_interaction(p_interaction_id)` for CRM interaction erasure.
-- Live East has no `crm.erase_interaction` function, no migration ledger row for `1031_an_erased_gmail_reply_leaves_only_a_tombstone.sql`, and no `client_callable_door` entry. The canonical migration exists at `/Users/armanisadeghi/code/aidream/db/migrations/1031_an_erased_gmail_reply_leaves_only_a_tombstone.sql`; its inverse drops the function.
-- Type generation removed the RPC from `types/database.types.ts`, and the sync typecheck now reports TS2345 at the `erase_interaction` call. No live database write was made.
-- Senior AI Dream repair is pushed at `8cde872368a6aaac395a22bfa464be9fa0a5e770`; SQL bytes are unchanged, and independent review approved. The canonical runner rejected migration 1031 as `headerless-non-additive` because of its privilege `REVOKE`. East apply and verification remain outstanding; West is out of scope.
+- On 2026-09-23, `pnpm sync-types` regenerated `types/database.types.ts` from live East and retained `crm.erase_interaction` at line 23896. This supersedes the earlier claim that the live function is absent. The same run's single type error was in the new entity-list context-menu test, not this RPC call.
+- The live migration-ledger row and `client_callable_door` entry have not been rechecked in this pass. The historical AI Dream repair is `8cde872368a6aaac395a22bfa464be9fa0a5e770`; do not apply or rerun migration 1031 based on the stale absence claim.
 
 **Next concrete step**
 
-Database owner: rehearse migration 1031 and its inverse on the quarantined clone, then apply only this migration to East with `uv run python db/apply_migrations.py --target production --source aidream --only 1031_an_erased_gmail_reply_leaves_only_a_tombstone.sql --confirm-chair-step 1031_an_erased_gmail_reply_leaves_only_a_tombstone.sql`. Verify the function, callable-door registry, and ledger row; then rerun `pnpm sync-types:live` and frontend type health. Keep the typegen drop visible until live East contains the RPC.
+Read-only verify the live East ledger row and callable-door entry for `crm.erase_interaction`, then update this task with those results. If either is absent, investigate the current live SQL authority before any apply; West is out of scope.
 
 ### TASK-W1-ORG-CUTOVER: Repair rejected REC-61/REC-64 production migrations
 - **Status:** blocked (2026-09-22) — current production files are committed but must not be applied
