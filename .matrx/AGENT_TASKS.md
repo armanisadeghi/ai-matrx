@@ -16,22 +16,6 @@ _(none)_
 
 ## Blocked
 
-### TASK-019: Rehearse and apply HUB-FIX table facts migrations
-- **Status:** blocked — `custom` build lock is held by STORE-RULE-GAPS
-- **Created:** 2026-09-23
-- **Source:** Main hub changes call `custom.table_facts(uuid)`, which is absent from production.
-
-**Goal**
-
-Apply the two additive HUB-FIX campaign migrations only after the campaign rehearsal and lock requirements pass.
-
-**Notes**
-
-- At 2026-09-23 11:40:18 UTC, the senior migration delegate verified both migrations are absent from the rehearsal ledger and production; the function and callable-door row are also absent in both. Dry runs passed. No SQL was applied.
-- `STORE-RULE-GAPS` held the `custom` lock for `branch apply of storerulegaps`, taken 11:40:08 UTC and expiring 11:55:08 UTC. HUB-FIX lock acquisition stopped safely. The holder may renew its lease; recheck live lock state before proceeding.
-- Exact files: `migrations/campaign/hubfix_each_table_says_who_can_see_it_and_whose_it_is.sql` and `migrations/campaign/hubfix_the_table_facts_door_can_be_reached.sql`. Follow [`migrations/campaign/README.md`](../migrations/campaign/README.md): acquire HUB-FIX locks, rehearse both exact files, verify the same-byte rehearsal ledger rows, then apply to East production only when every guard passes. The grant migration requires its documented chair-step confirmation.
-- Keep AI Dream checkout read-only. Do not bypass the other lane's lock. After the DB gate clears, recheck latest `main` and deploy freshness before deciding whether a main release is due.
-
 ### TASK-017: Publish the agent term-list association token
 - **Status:** resolved (2026-09-23) — associations 0.10.2 is published, adopted by the frontend, and shipped in v0.4.2237
 - **Created:** 2026-09-23
@@ -480,6 +464,7 @@ The historical rows owned by another AI Matrx account remain with that owner unl
 
 ## Completed
 
+- **TASK-019** — Rehearsed and applied both HUB-FIX table-facts migrations to East; exact checksums and caller permissions verified (2026-09-23, `431a53b5` / `a88e0997`). Production ledger snapshot refreshed.
 - **TASK-016** — Closed the concrete runtime defects exposed by the navigation browser pass (2026-09-15, `fa902de612`, `aae41697b6`). Marketing reports now render real null Search Console placement and click-through values honestly instead of crashing or inventing zeroes; four identity-result Redux selectors now return stable state references directly, eliminating the Reselect warnings on ordinary chat loads. The browser also exposed `gsc_perf_freshness_multi` timing out because it computed MIN/MAX/COUNT for every profile on every site; the live function now performs a bounded newest-query-date index lookup per authorized site, with 0 `plpgsql_check` findings and a clean authenticated localhost reload. Realtime reconnect notices were traced to real channel error/timeout/close events rather than route-cleanup churn, and the existing lifecycle suite passed 9/9, so the diagnostics were retained. Verified with 6 focused regression tests, clean focused ESLint, real localhost null-bearing report rows, a fresh chat reload with no new selector warnings, and independent Sol review.
 - **TASK-BL-ASSISTS** — Site-filtered backlinks AssistStrip + deterministic six-family producer (`features/marketing/components/backlinks/`).
 - **TASK-BL-UI-A** — Plain-language pass on the backlinks workspace (2026-08-11, `done`). Root `CLAUDE.md` §"The user — a brilliant, absolutely NON-technical Subject Matter Expert" was violated throughout this surface; it now reads as one voice. The label layer lives ONCE in `lib/vocab.ts` (refresh profiles, review statuses, relevance, control levels, recommended actions, page types, link types, placements, link attributes, `backlinkEmptyHint()`, the rank/spam/credit explainers) — components call a label function, never `humanizeAssessmentValue(raw_key)`. Machine keys, query params and filter values are untouched. Verified 0 occurrences of `Dead letter`, bare `Awaiting`, `Your ruling`, `Cache key`, `PR`/`DR` headers, and user-visible `snapshot`. Kept deliberately: `backlink`, `anchor text`, `referring domain`, `dofollow`/`nofollow`, `spam score` — each explained once where first shown. `StatusBadge` gained an optional `label` prop (extended, not forked) so tone stays keyed on the machine value. Gates: tsc clean in every touched file, eslint clean, 30/30 tests. Layout/tab/mobile restructuring stayed out — TASK-BL-UI-B and TASK-BL-UI-C own those.

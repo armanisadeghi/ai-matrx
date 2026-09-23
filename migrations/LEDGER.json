@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-23T11:49:02.507Z",
+  "generated_at": "2026-09-23T11:56:06.150Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -2096,11 +2096,23 @@
       "checksum": "2931436afb7a5ad6d418d59717ed206c3397c0f8bd1e690333b0a3880682a7c0",
       "applied_at": "2026-09-23 10:48:52.101377+00"
     },
+    "migrations/campaign/hubfix_each_table_says_who_can_see_it_and_whose_it_is.sql": {
+      "source": "matrx-frontend",
+      "filename": "hubfix_each_table_says_who_can_see_it_and_whose_it_is.sql",
+      "checksum": "431a53b5b0327a6f8f01be0b7654f87d379da2e80ac3425833970451f68d0fa5",
+      "applied_at": "2026-09-23 11:51:47.573704+00"
+    },
     "migrations/campaign/hubfix_the_shared_tables_door_can_be_reached.sql": {
       "source": "matrx-frontend",
       "filename": "hubfix_the_shared_tables_door_can_be_reached.sql",
       "checksum": "bf7ea65a7256093f5c98ad316fe1d193ea99422f10bc843eb4e02090924c5882",
       "applied_at": "2026-09-23 03:04:08.605098+00"
+    },
+    "migrations/campaign/hubfix_the_table_facts_door_can_be_reached.sql": {
+      "source": "matrx-frontend",
+      "filename": "hubfix_the_table_facts_door_can_be_reached.sql",
+      "checksum": "a88e09975fb87e6b428fd69451ca9985799b226e3213b36565897073a714d93f",
+      "applied_at": "2026-09-23 11:52:06.611828+00"
     },
     "migrations/campaign/import2_a_batch_of_imported_rows_is_one_statement.sql": {
       "source": "matrx-frontend",
