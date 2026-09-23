@@ -329,6 +329,16 @@ async function walk(context, label, { email, password, organization, slug, shots
   const hub = await readHub(page);
   say(`${label}: ${hub.rows.length} listings — ${hub.rows.map((r) => `${r.title} ${r.count}`).join(" · ")}`);
 
+  // ── clause 9: the four visibility lanes, and nothing else (VERIFIER-15) ────
+  {
+    const expected = ["Everything", "Mine", "My organization", "Community", "World"];
+    clause(
+      `${label} · the lane strip is Everything plus the four visibility lanes`,
+      JSON.stringify(hub.lanes) === JSON.stringify(expected),
+      hub.lanes.join(" · "),
+    );
+  }
+
   // ── clause 4: choice lists are not a person's tables ───────────────────────
   const tables = hub.rows.find((r) => r.id === "tables");
   const kept = hub.rows.find((r) => r.id === "kept-by-the-app");

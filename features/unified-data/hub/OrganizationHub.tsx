@@ -10,14 +10,14 @@
 // forty tables one at a time.
 //
 // Everything here is composition over `@ai-matrx/records-ui`'s published
-// primitives — the lane words (`laneFor`, `LANE_TITLE`), the archive control
+// primitives — the lane words (`visibilityLaneFor`, `VISIBILITY_LANE_TITLE`), the archive control
 // (`ArchivedDisclosure`), the archived portals rail, the tables home, the
 // inbox. Nothing was forked and no package was republished for it. The ONE
 // thing that had to be new is SQL, because the store had no cross-table door
 // for automations, for sharing outside, or for "who changed this" — and a hub
 // assembled by asking per table in the browser is the thing we refuse.
 //
-// THE LANES ARE THE PACKAGE'S, not this file's. `laneFor(table)` is the only
+// THE LANES ARE THE PACKAGE'S, not this file's. `visibilityLaneFor(table)` is the only
 // place a lane is decided anywhere in the platform, and a thing's lane here is
 // the lane of the TABLE it belongs to — which is what makes "my organization"
 // mean the same word on this page and on the tables list underneath it.
@@ -28,10 +28,10 @@ import { useRouter } from "next/navigation";
 import {
   ArchivedDisclosure,
   ArchivedPortals,
-  LANE_TITLE,
-  TABLE_LANES,
+  VISIBILITY_LANES,
+  VISIBILITY_LANE_TITLE,
   TablesHome,
-  type TableLane,
+  type VisibilityLane,
 } from "@ai-matrx/records-ui";
 import { useRecordsClient, useTables } from "@ai-matrx/records/react";
 import type { RecordsDataSource, Table } from "@ai-matrx/records";
@@ -89,7 +89,7 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
   const tablesRead = useTables();
   const tables = useMemo<readonly Table[]>(() => tablesRead.data ?? [], [tablesRead.data]);
 
-  const [lane, setLane] = useState<TableLane | null>(null);
+  const [lane, setLane] = useState<VisibilityLane | null>(null);
   const [states, setStates] = useState<Record<string, HubListingState>>({});
   const [open, setOpen] = useState<Record<string, boolean>>({ tables: true });
   const [archivedTables, setArchivedTables] = useState<ArchivedTable[] | null>(null);
@@ -295,7 +295,10 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
         >
           Everything
         </button>
-        {TABLE_LANES.map((candidate) => (
+        {/* THE FOUR VISIBILITY LANES — mine, my organization, community, world —
+            and nothing else (VERIFIER-15: six chips, two of which were about who
+            MADE a table, not who can see it). */}
+        {VISIBILITY_LANES.map((candidate) => (
           <button
             key={candidate}
             type="button"
@@ -308,7 +311,7 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
                 : "border-border text-muted-foreground hover:bg-muted/50",
             )}
           >
-            {LANE_TITLE[candidate]}
+            {VISIBILITY_LANE_TITLE[candidate]}
           </button>
         ))}
       </div>
@@ -318,7 +321,7 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
           key={capability.id}
           capability={capability}
           state={filtered[capability.id] ?? { phase: "reading" }}
-          laneLabel={lane ? LANE_TITLE[lane] : null}
+          laneLabel={lane ? VISIBILITY_LANE_TITLE[lane] : null}
           open={open[capability.id] ?? false}
           onOpenChange={(next) => setOpen((prev) => ({ ...prev, [capability.id]: next }))}
         />

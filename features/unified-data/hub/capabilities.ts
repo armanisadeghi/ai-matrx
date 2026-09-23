@@ -23,7 +23,7 @@
 
 import type { RecordsClient } from "@ai-matrx/records/core";
 import type { RecordsDataSource, Table } from "@ai-matrx/records";
-import { laneFor, type TableLane } from "@ai-matrx/records-ui";
+import { keptByTheApp, visibilityLaneFor, type VisibilityLane } from "@ai-matrx/records-ui";
 
 import * as doors from "./doors";
 import type { ChangedByKind, DoorFailure } from "./doors";
@@ -40,7 +40,7 @@ export interface HubItem {
    * none — a table another organization shared with you is theirs, not a lane of
    * yours. A `null` row shows under Everything and under no lane filter.
    */
-  lane: TableLane | null;
+  lane: VisibilityLane | null;
   /** The short facts that go on the row — "4 stages", "12 answers". Never a count nobody read. */
   facts: string[];
   /** Where it opens. THE DOOR LAW: every named thing opens. */
@@ -89,45 +89,27 @@ function byId(tables: readonly Table[]): Map<string, Table> {
 }
 
 /**
- * WHETHER THE STORE ITSELF SAYS THIS TABLE IS MACHINERY.
- *
- * 🚨 MEASURED ON RINCON PLUMBING CO, 2026-09-22 (VERIFIER-14 §5). Thirteen
- * tables called "Crew choices" and fourteen called "Status choices" sat in the
- * person's own Tables list — one per choice field, made by the store when a
- * field of choices is declared. They are option-list machinery, and a hub that
- * lists twenty-seven of them beside Jobs, Customers and Invoices is a hub whose
- * front page is mostly not the business.
- *
- * The marker is the STORE'S OWN, not a guess from the name: the Table record
- * carries `kept_by_the_app: true` in its document (`custom.record`, the Table
- * kernel), and `tableList()` spreads the whole document onto the Table object.
- * It is not in `@ai-matrx/records`' `Table` interface yet, which is why it is
- * read through a narrow cast here and nowhere else — the day the package
- * declares it, this helper's body is one property access and nothing above it
- * changes. Sniffing the SLUG ("status_choices_<hex>") would have worked today
- * and broken the first time the store named one differently.
+ * THE LANE OF A TABLE IS ITS VISIBILITY — mine, my organization, community or
+ * world — decided ONCE, by `@ai-matrx/records-ui`'s `visibilityLaneFor`
+ * (records-ui 0.83.0, VERIFIER-15). A kernel table, the app's bookkeeping and a
+ * store-kept choice list answer `null`: nobody chose a visibility for them, so
+ * they show under Everything and under no lane. The store's own marker for the
+ * last of those is `keptByTheApp`, from the same package.
  */
-export function keptByTheApp(table: Table): boolean {
-  return (table as unknown as { kept_by_the_app?: unknown }).kept_by_the_app === true;
-}
-
-/**
- * The lane of a TABLE. `laneFor` is the package's ONE lane decision and this
- * does not second-guess it — it adds the one fact `laneFor` cannot see yet:
- * a table the store keeps for the app belongs in the app's lane, exactly like
- * the kernel tables `laneFor` already puts there.
- */
-function laneOfTable(table: Table): TableLane {
-  return keptByTheApp(table) ? "app" : laneFor(table);
+function laneOfTable(table: Table): VisibilityLane | null {
+  return visibilityLaneFor(table);
 }
 
 /** Another organization's table: in none of this organization's lanes. */
-const OUTSIDE_LANE: TableLane | null = null;
+const OUTSIDE_LANE: VisibilityLane | null = null;
 
 /** The lane of a thing is the lane of the table it belongs to (the ONE `laneFor`). */
-function laneOf(index: Map<string, Table>, tableId: string | null | undefined): TableLane {
+function laneOf(
+  index: Map<string, Table>,
+  tableId: string | null | undefined,
+): VisibilityLane | null {
   const table = tableId ? index.get(tableId) : undefined;
-  return table ? laneOfTable(table) : "organization";
+  return table ? laneOfTable(table) : null;
 }
 
 function nameOf(
@@ -553,7 +535,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
           title: table.name ?? "(unnamed table)",
           tableId: table.id,
           tableName: table.name ?? null,
-          lane: "app" as TableLane,
+          lane: null,
           facts: [plural(table.fields?.length ?? 0, "column")],
           href: `/data-v2/${table.id}`,
         })),
