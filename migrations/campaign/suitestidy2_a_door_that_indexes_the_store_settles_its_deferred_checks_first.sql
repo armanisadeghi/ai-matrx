@@ -16,11 +16,14 @@
 -- — so every write to `custom.record` leaves an event pending until COMMIT. Postgres refuses
 -- `CREATE INDEX` (and `ALTER TABLE`) on a table that has pending trigger events in the same
 -- transaction. `custom.promote_field` (ROUTE A, the small-Table route) runs `CREATE INDEX ... ON
--- custom.record` INSIDE its caller's transaction, and both of its callers write the store first:
--- `custom.work_slots_declare` declares its Table and then promotes the slot key in ONE call, and
--- `custom.promote_table` is reached right after a Table's fields are written. So since 18:01Z
--- every booking-slot declaration a PERSON makes fails with 55006 — the two suites were the first
--- to say so, and their shape (write, then declare) is exactly how a person uses the product.
+-- custom.record` INSIDE its caller's transaction. The deferred check fires only for rows whose
+-- `data_class = 'record'` (its WHEN clause), and `custom.work_slots_declare` itself writes only
+-- Table and Field rows (`'table'`, `'field'`) — so A PERSON'S SINGLE CALL IS NOT AFFECTED; each
+-- PostgREST call is its own transaction. What fails is any transaction that wrote an ORDINARY
+-- record first and then reaches this index: the two suites (they build a working business and
+-- then declare its slots in one transaction, which is the correct shape for a suite), and any
+-- server path that batches several door calls into one transaction. A door must not depend on
+-- being first in its transaction, so the door is where this is fixed.
 --
 -- PROVED on the clone, on a scratch table with the identical trigger shape (so no index is built
 -- over the store's real rows): after one INSERT, `CREATE INDEX` answers "cannot CREATE INDEX
@@ -75,7 +78,7 @@ begin
 end $function$;
 
 comment on function platform.settle_deferred_checks(regclass, boolean) is
-  'DEFERRED CHECKS BEFORE DDL: with true, fires every deferrable constraint on a table now (SET CONSTRAINTS ... IMMEDIATE) so a door can run CREATE INDEX / ALTER TABLE on it mid-transaction without SQLSTATE 55006 "pending trigger events"; with false, puts each back to the mode it was declared with. The check still runs on the same rows, only earlier. SUITES-TIDY-2, 2026-09-22, after custom.promote_field failed every booking-slot declaration once custom.record gained zzzz_relation_halves_agree. Returns the number of constraints it set.';
+  'DEFERRED CHECKS BEFORE DDL: with true, fires every deferrable constraint on a table now (SET CONSTRAINTS ... IMMEDIATE) so a door can run CREATE INDEX / ALTER TABLE on it mid-transaction without SQLSTATE 55006 "pending trigger events"; with false, puts each back to the mode it was declared with. The check still runs on the same rows, only earlier. SUITES-TIDY-2, 2026-09-22, after custom.promote_field refused any caller whose transaction had already written a record, once custom.record gained zzzz_relation_halves_agree. Returns the number of constraints it set.';
 
 CREATE OR REPLACE FUNCTION custom.promote_field(p_organization_id uuid, p_table_id uuid, p_field_id uuid)
  RETURNS jsonb
@@ -139,9 +142,9 @@ begin
   -- `custom.record` carries `zzzz_relation_halves_agree`, a DEFERRABLE INITIALLY DEFERRED
   -- constraint trigger, so every write to the store leaves an event pending until COMMIT — and
   -- Postgres refuses `CREATE INDEX` on a table with pending trigger events (SQLSTATE 55006).
-  -- `custom.work_slots_declare` writes its Table and THEN calls this in the same call, so every
-  -- slot declaration failed. The check is fired NOW rather than at COMMIT (it is the same check
-  -- on the same rows, only earlier), and put back to its declared DEFERRED after the index.
+  -- A caller whose transaction already wrote an ordinary record (a suite, or a server path that
+  -- batches door calls) was refused here. The check is fired NOW rather than at COMMIT (it is the
+  -- same check on the same rows, only earlier), and put back to its declared DEFERRED after.
   perform platform.settle_deferred_checks('custom.record'::regclass, true);
   execute format('create %s index if not exists %I on custom.record (organization_id, %s) where table_id = %L::uuid and deleted_at is null',
                  case when v_uniq then 'unique' else '' end, v_name, v_expr, p_table_id);
