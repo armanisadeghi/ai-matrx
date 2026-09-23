@@ -196,6 +196,7 @@ import {
 import { confirmChairStep } from "./lib/chair-step";
 import {
   isIdempotent,
+  isLockClash,
   LEDGER_REBASE_LANE,
   loadRebaseProof,
   measureIdempotency,
@@ -4294,6 +4295,27 @@ async function rebaseReceiptWrite(
   }
 }
 
+async function measureOnClone(client: pg.Client, sql: string): Promise<IdempotencyMeasurement> {
+  const ATTEMPTS = 4;
+  for (let attempt = 1; ; attempt++) {
+    await beginClean(client);
+    try {
+      await client.query(`set local statement_timeout = '600s'`);
+      await client.query(`set local lock_timeout = '30s'`);
+      return await measureIdempotency((s) => client.query(s), sql);
+    } catch (err) {
+      if (!isLockClash(err) || attempt === ATTEMPTS) throw err;
+      console.warn(
+        `${TAG.warn}attempt ${attempt}/${ATTEMPTS} hit another session's lock on the shared clone ` +
+          `(${(err as { code?: string }).code}); rolled back, retrying.`,
+      );
+      await new Promise((r) => setTimeout(r, 2000 * attempt));
+    } finally {
+      await client.query("rollback").catch(() => {});
+    }
+  }
+}
+
 async function ledgerRebase(path: string, argv: readonly string[]): Promise<number> {
   const valueOf = (flag: string): string | null => {
     const eq = argv.find((a) => a.startsWith(`${flag}=`));
@@ -4375,14 +4397,7 @@ async function ledgerRebase(path: string, argv: readonly string[]): Promise<numb
         `${C.bold}ledger rebase proof${C.reset} ${C.white}${rel}${C.reset} ${C.dim}(sha256 ${newChecksum}); ` +
           `the ledger holds ${ledgered} from ${r.applied_at}; clone ${cloneRef!.cloneRef} (${cloneRef!.cloneName})${C.reset}`,
       );
-      await beginClean(client);
-      let m: IdempotencyMeasurement;
-      try {
-        await client.query(`set local statement_timeout = '600s'`);
-        m = await measureIdempotency((s) => client.query(s), current);
-      } finally {
-        await client.query("rollback").catch(() => {});
-      }
+      const m = await measureOnClone(client, current);
       printMeasurement(m);
       if (!isIdempotent(m)) {
         console.error(
@@ -4625,13 +4640,7 @@ async function ledgerRebaseSelfTest(argv: readonly string[]): Promise<number> {
     for (const [name, sql, idem] of planted) {
       const file = join(scratch, `${name.replace(/[^a-z]+/g, "_").slice(0, 40)}.sql`);
       writeFileSync(file, sql, "utf8");
-      await beginClean(client);
-      let m: IdempotencyMeasurement;
-      try {
-        m = await measureIdempotency((s) => client.query(s), readFileSync(file, "utf8"));
-      } finally {
-        await client.query("rollback").catch(() => {});
-      }
+      const m = await measureOnClone(client, readFileSync(file, "utf8"));
       const verdict = isIdempotent(m);
       const what = `${m.deltas.length} object delta(s), ${m.rowsWritten.length} table(s) written${m.error ? ", did not run" : ""}`;
       if (verdict === idem) ok(`${idem ? "GREEN" : "RED"} — ${name}: ${idem ? "proven idempotent" : "refused"} (${what}).`);
