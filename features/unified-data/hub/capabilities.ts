@@ -86,6 +86,13 @@ export interface HubCapability {
   door: string;
   /** Which kind `custom.hub_changed_by` answers for these, or null when the store cannot say. */
   changedByKind: ChangedByKind | null;
+  /**
+   * These items are the store's own — one per (table, column) that needs one,
+   * so a field named "Crew" on thirteen tables makes thirteen rows all titled
+   * "Crew choices". Naming the same thing thirteen times teaches nothing; the
+   * listing collapses same-titled rows into one, with the count on it.
+   */
+  groupDuplicateTitles?: boolean | undefined;
   read: (ctx: HubReadContext) => Promise<HubRead>;
 }
 
@@ -96,8 +103,10 @@ function byId(tables: readonly Table[]): Map<string, Table> {
 }
 
 /**
- * THE LANE OF A TABLE IS ITS VISIBILITY — mine, my organization, community or
- * world — decided ONCE, by `@ai-matrx/records-ui`'s `visibilityLaneFor`
+ * THE LANE OF A TABLE IS ITS VISIBILITY — my organization, community or world
+ * (Mine is ownership, and is decided on the hub from the Table's own
+ * `created_by`; see `OrganizationHub`'s `inLane`) — decided ONCE, by
+ * `@ai-matrx/records-ui`'s `visibilityLaneFor`
  * (records-ui 0.83.0, VERIFIER-15). A kernel table, the app's bookkeeping and a
  * store-kept choice list answer `null`: nobody chose a visibility for them, so
  * they show under Everything and under no lane. The store's own marker for the
@@ -150,7 +159,7 @@ function failed(error: { message?: string; hint?: string } | undefined, door: st
  * used to say "Nothing has been made here yet. Make a table below").
  */
 export const LANE_EMPTY_SENTENCE: Record<VisibilityLane, string> = {
-  mine: "Nothing here is visible to you alone — a new table is shared with this organization from the start.",
+  mine: "Nothing here was made by you yet. A table you make is yours, and shared with this organization from the start.",
   organization: "Nothing here is shared across this organization yet.",
   community:
     "Nothing here is open to every signed-in account. Tables cannot be shared that way yet; a link anyone can open is under World.",
@@ -565,6 +574,7 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     empty: "The store keeps nothing of its own here yet.",
     door: "custom.read_records over the Table kernel",
     changedByKind: "structure",
+    groupDuplicateTitles: true,
     async read(ctx) {
       return {
         ok: true,

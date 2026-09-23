@@ -95,7 +95,51 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
   const router = useRouter();
   const client = useRecordsClient();
   const tablesRead = useTables();
-  const tables = useMemo<readonly Table[]>(() => tablesRead.data ?? [], [tablesRead.data]);
+  const userIdForFacts = useAppSelector(selectUserId);
+  /**
+   * WHO CAN SEE EACH TABLE, AND WHICH ARE MINE. The Table list carries each
+   * Table's document, and `visibility` and `created_by` are record COLUMNS, not
+   * document keys — so without this read every Table arrived with neither, every
+   * lane fell through to its default and Mine read 0 everywhere (VERIFIER-16 M6).
+   * `null` while reading; `{ failed }` when the door did not answer — and then the
+   * lane filters are ABSENT, with the reason, never lanes that quietly lie.
+   */
+  const [facts, setFacts] = useState<
+    | { phase: "reading" }
+    | { phase: "read"; rows: Map<string, { visibility: string; mine: boolean }> }
+    | { phase: "failed"; why: string }
+  >({ phase: "reading" });
+  useEffect(() => {
+    let alive = true;
+    setFacts({ phase: "reading" });
+    void doors.tableFacts(dataSource, organizationId).then((answered) => {
+      if (!alive) return;
+      setFacts(
+        answered.ok
+          ? {
+              phase: "read",
+              rows: new Map(answered.data.map((r) => [r.table_id, { visibility: r.visibility, mine: r.mine }])),
+            }
+          : { phase: "failed", why: answered.error.message },
+      );
+    });
+    return () => {
+      alive = false;
+    };
+  }, [dataSource, organizationId]);
+  const tables = useMemo<readonly Table[]>(() => {
+    const listed = tablesRead.data ?? [];
+    if (facts.phase !== "read") return listed;
+    // The two columns folded onto the Table the package's own lane decision
+    // reads (`visibilityLaneFor`), so the lane is decided in ONE place.
+    return listed.map((t) => {
+      const f = facts.rows.get(t.id);
+      return f
+        ? ({ ...t, visibility: f.visibility, created_by: f.mine ? (userIdForFacts ?? t.created_by) : t.created_by } as Table)
+        : t;
+    });
+  }, [tablesRead.data, facts, userIdForFacts]);
+  const lanesKnown = facts.phase === "read";
 
   const [lane, setLane] = useState<VisibilityLane | null>(null);
   /**
@@ -111,12 +155,17 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
   const [open, setOpen] = useState<Record<string, boolean>>({ tables: true });
   const [archivedTables, setArchivedTables] = useState<ArchivedTable[] | null>(null);
   const [archiveTrouble, setArchiveTrouble] = useState<string | null>(null);
+  /** Said when the archive is bigger than the hub reads in one visit. Never a failure. */
+  const [archiveNote, setArchiveNote] = useState<string | null>(null);
   const [restoring, setRestoring] = useState<string | null>(null);
 
   // EVERY CAPABILITY, ONE CALL EACH, IN PARALLEL. Ten doors, ten round trips
   // for the whole organization — not ten per table.
   useEffect(() => {
     if (tablesRead.loading) return;
+    // Read the capabilities ONCE, after the lane facts have answered either way,
+    // rather than once before and once after.
+    if (facts.phase === "reading") return;
     let alive = true;
     const ctx: HubReadContext = {
       client,
@@ -174,7 +223,7 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
     return () => {
       alive = false;
     };
-  }, [client, dataSource, organizationId, tables, tablesRead.loading]);
+  }, [client, dataSource, organizationId, tables, tablesRead.loading, facts.phase]);
 
   // THE ARCHIVE, through the store's own archived door over the Table kernel —
   // the same door a table's own archive uses, addressed at the kernel that
@@ -185,14 +234,44 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
       setArchiveTrouble(kernel.error.message);
       return;
     }
-    const answered = await client.listArchived({ table_id: kernel.data, lane: "org", limit: 100 });
-    if (!answered.ok) {
-      setArchiveTrouble(answered.error.message);
-      return;
+    // 🚨 THE COUNT ON THE DISCLOSURE IS A COUNT, NEVER A PAGE SIZE (guide re-walk,
+    // 2026-09-23): "Show archived tables (100)" was the first page's LIMIT printed
+    // as if it were how many there are. The door answers pages and says the
+    // total only once a page comes back short, so the hub reads until it does.
+    const PAGE = 100;
+    const MAX_PAGES = 50;
+    const rows: Array<{
+      id: string;
+      document: unknown;
+      archivedAt: string;
+      archivedByName: string | null;
+    }> = [];
+    let complete = false;
+    for (let page = 0; page < MAX_PAGES; page += 1) {
+      const answered = await client.listArchived({
+        table_id: kernel.data,
+        lane: "org",
+        limit: PAGE,
+        offset: page * PAGE,
+      });
+      if (!answered.ok) {
+        setArchiveTrouble(answered.error.message);
+        return;
+      }
+      rows.push(...answered.data.rows);
+      if (answered.data.total !== null) {
+        complete = true;
+        break;
+      }
     }
     setArchiveTrouble(null);
+    setArchiveNote(
+      complete
+        ? null
+        : `More than ${PAGE * MAX_PAGES} tables are archived here; the first ${PAGE * MAX_PAGES} are listed.`,
+    );
     setArchivedTables(
-      answered.data.rows.map((row) => ({
+      rows.map((row) => ({
         id: row.id,
         name:
           (row.document as { name?: string } | null)?.name?.trim() || "(unnamed table)",
@@ -222,16 +301,37 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
   );
 
   /** The lane filter, applied to every listing at once. */
+  /**
+   * WHICH TABLES ARE MINE — the ones I MADE, whatever their visibility (chair
+   * ruling, 2026-09-23). Mine is the only lane that is not a visibility: a new
+   * table is internal, so it sits under Mine AND under My organization, and a
+   * table somebody else made that is shared across the organization is under My
+   * organization only. The creator is the Table record's own `created_by`.
+   */
+  const ownedTableIds = useMemo(
+    () => new Set(tables.filter((t) => userId && t.created_by === userId).map((t) => t.id)),
+    [tables, userId],
+  );
+  const inLane = useCallback(
+    (item: HubItem, wanted: VisibilityLane): boolean => {
+      // No lane at all — the app's own tables, another organization's — is
+      // under Everything only.
+      if (item.lane === null) return false;
+      if (wanted === "mine") return Boolean(item.tableId && ownedTableIds.has(item.tableId));
+      return item.lane === wanted;
+    },
+    [ownedTableIds],
+  );
   const filtered = useMemo(() => {
     const out: Record<string, HubListingState> = {};
     for (const [id, state] of Object.entries(states)) {
       out[id] =
         state.phase === "read" && lane
-          ? { phase: "read", items: state.items.filter((item) => item.lane === lane) }
+          ? { phase: "read", items: state.items.filter((item) => inLane(item, lane)) }
           : state;
     }
     return out;
-  }, [states, lane]);
+  }, [states, lane, inLane]);
 
   /** THE NEWEST THREE THINGS, computed from what the doors actually returned. */
   const newest = useMemo<Array<HubItem & { capability: string }>>(() => {
@@ -304,41 +404,51 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
       </section>
 
       {/* THE LANES, AS FILTERS AND NEVER A FLAT LIST. The words are the package's. */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-muted-foreground">Show</span>
-        <button
-          type="button"
-          data-hub-lane="everything"
-          onClick={() => setLane(null)}
-          className={cn(
-            "rounded-full border px-2.5 py-1 text-xs transition-colors",
-            lane === null
-              ? "border-foreground bg-foreground text-background"
-              : "border-border text-muted-foreground hover:bg-muted/50",
-          )}
-        >
-          Everything
-        </button>
-        {/* THE FOUR VISIBILITY LANES — mine, my organization, community, world —
-            and nothing else (VERIFIER-15: six chips, two of which were about who
-            MADE a table, not who can see it). */}
-        {VISIBILITY_LANES.map((candidate) => (
+      {lanesKnown ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-muted-foreground">Show</span>
           <button
-            key={candidate}
             type="button"
-            data-hub-lane={candidate}
-            onClick={() => setLane(candidate)}
+            data-hub-lane="everything"
+            onClick={() => setLane(null)}
             className={cn(
               "rounded-full border px-2.5 py-1 text-xs transition-colors",
-              lane === candidate
+              lane === null
                 ? "border-foreground bg-foreground text-background"
                 : "border-border text-muted-foreground hover:bg-muted/50",
             )}
           >
-            {VISIBILITY_LANE_TITLE[candidate]}
+            Everything
           </button>
-        ))}
-      </div>
+          {/* THE FOUR VISIBILITY LANES — mine, my organization, community, world —
+              and nothing else (VERIFIER-15: six chips, two of which were about who
+              MADE a table, not who can see it). */}
+          {VISIBILITY_LANES.map((candidate) => (
+            <button
+              key={candidate}
+              type="button"
+              data-hub-lane={candidate}
+              onClick={() => setLane(candidate)}
+              className={cn(
+                "rounded-full border px-2.5 py-1 text-xs transition-colors",
+                lane === candidate
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border text-muted-foreground hover:bg-muted/50",
+              )}
+            >
+              {VISIBILITY_LANE_TITLE[candidate]}
+            </button>
+          ))}
+        </div>
+      ) : facts.phase === "failed" ? (
+        /* ABSENT, NEVER A LIE. Without the facts every table would be filed under
+           My organization and Mine would read 0 — so the filters are not offered,
+           and the reason is. */
+        <p className="text-xs text-muted-foreground">
+          Who can see each table, and which are yours, could not be read, so only everything is
+          shown. {facts.why}
+        </p>
+      ) : null}
 
       {HUB_CAPABILITIES.map((capability) => (
         <HubListing
@@ -360,6 +470,7 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
           and the way back is on the row (the archived-items law, 2026-09-09). */}
       <section data-hub-archive className="rounded-lg border border-border bg-card p-3">
         <ArchivedDisclosure noun="tables" count={archivedTables?.length}>
+          {archiveNote ? <p className="py-2 text-xs text-muted-foreground">{archiveNote}</p> : null}
           {archiveTrouble ? (
             <p className="py-2 text-xs text-destructive">
               The archive did not answer, so nothing was read — this is not an empty archive.{" "}

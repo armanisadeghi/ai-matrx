@@ -166,8 +166,12 @@ export default function AcceptTableSharePage() {
         <dd className="min-w-0">{p.organization}</dd>
       </div>
       <div className="flex gap-3 p-2.5">
-        <dt className="w-28 flex-shrink-0 text-xs text-muted-foreground">You can</dt>
-        <dd className="min-w-0">{p.means}</dd>
+        {/* `means` is the store's own phrase for the level, and it already starts
+            with the verb — "can read it", "can read and comment on it". Under a
+            "You can" label it read "You can can read it" (guide re-walk,
+            2026-09-23), so the label names the row and the sentence says it once. */}
+        <dt className="w-28 flex-shrink-0 text-xs text-muted-foreground">Access</dt>
+        <dd className="min-w-0">You {p.means}</dd>
       </div>
       <div className="flex gap-3 p-2.5">
         <dt className="w-28 flex-shrink-0 text-xs text-muted-foreground">

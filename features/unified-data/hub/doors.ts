@@ -198,6 +198,27 @@ export function tablesSharedWithMe(
   return call<SharedTableRow[]>(dataSource, "tables_shared_with_me", {});
 }
 
+export interface TableFactRow {
+  table_id: string;
+  /** The record's own `visibility` column: personal · internal · link · public. */
+  visibility: string;
+  /** Whether the person signed in MADE this Table. Never who did. */
+  mine: boolean;
+}
+
+/**
+ * WHO CAN SEE EACH TABLE, AND WHETHER THE CALLER MADE IT — `custom.table_facts(org)`
+ * (lane HUB-FIX). Both are COLUMNS of `custom.record`, and the Table list is built
+ * from each Table's DOCUMENT, so without this every Table arrived with neither and
+ * no lane could be decided: Mine read 0 everywhere (VERIFIER-16 M6).
+ */
+export function tableFacts(
+  dataSource: RecordsDataSource,
+  organizationId: string,
+): Promise<DoorAnswer<TableFactRow[]>> {
+  return call<TableFactRow[]>(dataSource, "table_facts", { p_organization_id: organizationId }, organizationId);
+}
+
 /** The three kinds `custom.hub_changed_by` knows. Closed, and it refuses a fourth. */
 export type ChangedByKind = "structure" | "form" | "portal";
 
