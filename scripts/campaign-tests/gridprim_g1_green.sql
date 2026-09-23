@@ -65,7 +65,7 @@ begin
   -- ══ PART 0 — THE SEAT. ═══════════════════════════════════════════════════════════════
   perform set_config('request.jwt.claims', c_dana_j, true);
   perform set_config('role', 'authenticated', true);
-  if current_user <> 'authenticated' then raise exception '0: not seated (current_user %)', current_user; end if;
+  if current_user is distinct from 'authenticated' then raise exception '0: not seated (current_user %)', current_user; end if;
   begin
     perform 1 from custom.record limit 1;
     raise exception '0: this seat can SELECT custom.record directly, so it is not a client seat';
@@ -81,11 +81,11 @@ begin
   -- ══ PART 1 — COLOR BY A CHOICE COLUMN; HIGHLIGHT A ROW. ═══════════════════════════════
   v_doc := custom.table_decorate(v_org, v_appts, array['color_by'],
              jsonb_build_object('field', f_status, 'target', 'row'));
-  if v_doc -> 'color_by' ->> 'field' <> f_status::text then
+  if v_doc -> 'color_by' ->> 'field' is distinct from f_status::text then
     raise exception '1a: color_by not stored: %', v_doc;
   end if;
   v_doc := custom.table_decorate(v_org, v_appts, array['rows', r7::text], '"red"'::jsonb);
-  if v_doc -> 'rows' ->> r7::text <> 'red' then raise exception '1b: row highlight not stored: %', v_doc; end if;
+  if v_doc -> 'rows' ->> r7::text is distinct from 'red' then raise exception '1b: row highlight not stored: %', v_doc; end if;
   -- …and a highlight on a record of ANOTHER table of the same clinic is refused.
   begin
     perform custom.table_decorate(v_org, v_appts, array['rows', s1::text], '"red"'::jsonb);
@@ -100,7 +100,7 @@ begin
   v_doc := custom.table_decorate(v_org, v_appts, array['rules'], jsonb_build_array(
     jsonb_build_object('field', f_fee, 'op', 'gte', 'value', '300', 'color', 'amber', 'target', 'cell'),
     jsonb_build_object('field', f_deposit, 'op', 'is_empty', 'color', 'violet', 'target', 'row')));
-  if jsonb_array_length(v_doc -> 'rules') <> 2 or (v_doc -> 'rules' -> 0 ->> 'id') is null
+  if jsonb_array_length(v_doc -> 'rules') is distinct from 2 or (v_doc -> 'rules' -> 0 ->> 'id') is null
      or (v_doc -> 'rules' -> 1) ? 'value' then
     raise exception '2a: rules not stored as sent (each with an id; no value on is_empty): %', v_doc -> 'rules';
   end if;
@@ -138,7 +138,7 @@ begin
 
   -- ══ PART 3 — A CELL HIGHLIGHT, THEN CLEARED, LEAVES NO HUSK. ══════════════════════════
   v_doc := custom.table_decorate(v_org, v_appts, array['cells', r3::text, f_fee::text], '"blue"'::jsonb);
-  if v_doc -> 'cells' -> r3::text ->> f_fee::text <> 'blue' then raise exception '3a: cell highlight not stored: %', v_doc; end if;
+  if v_doc -> 'cells' -> r3::text ->> f_fee::text is distinct from 'blue' then raise exception '3a: cell highlight not stored: %', v_doc; end if;
   v_doc := custom.table_decorate(v_org, v_appts, array['cells', r3::text, f_fee::text], null);
   if v_doc ? 'cells' then raise exception '3b: clearing the only cell highlight left a husk: %', v_doc -> 'cells'; end if;
   v_doc := custom.table_decorate(v_org, v_appts, array['columns', f_phone::text], '"teal"'::jsonb);
@@ -151,16 +151,16 @@ begin
   perform set_config('role', 'authenticated', true);
   -- Parts 1–3 made five successful writes (color_by, a row, the rules, a cell set, a cell
   -- clear, a column = six); each is one version of the Table record and one outbox line.
-  if v_n - v_before <> 6 then
+  if v_n - v_before is distinct from 6 then
     raise exception '4: six color writes produced % records.changed line(s) on the Table record, not six', v_n - v_before;
   end if;
   raise notice '4 PASS — six color writes, six records.changed lines on the Appointments Table record: every open grid repaints.';
 
   -- ══ PART 5 — THE READ, AND A RULE OVER A GONE COLUMN SAYS SO. ════════════════════════
   v_res := custom.table_decorations(v_org, v_appts);
-  if jsonb_array_length(v_res -> 'rules') <> 2 or v_res -> 'rows' ->> r7::text <> 'red'
-     or v_res -> 'columns' ->> f_phone::text <> 'teal' or jsonb_array_length(v_res -> 'stale') <> 0
-     or not (v_res -> 'colors' ? 'teal') or jsonb_array_length(v_res -> 'rule_ops') <> 11 then
+  if jsonb_array_length(v_res -> 'rules') is distinct from 2 or v_res -> 'rows' ->> r7::text is distinct from 'red'
+     or v_res -> 'columns' ->> f_phone::text is distinct from 'teal' or jsonb_array_length(v_res -> 'stale') is distinct from 0
+     or not (v_res -> 'colors' ? 'teal') or jsonb_array_length(v_res -> 'rule_ops') is distinct from 11 then
     raise exception '5a: the read does not give back what was written: %', v_res;
   end if;
   -- The practice manager retires the Deposit column; the rule over it stops painting AND says so.
@@ -168,15 +168,15 @@ begin
   perform custom.field_retire(v_org, f_deposit);
   perform set_config('request.jwt.claims', c_dana_j, true);
   v_res := custom.table_decorations(v_org, v_appts);
-  if jsonb_array_length(v_res -> 'rules') <> 1 or jsonb_array_length(v_res -> 'stale') <> 1
-     or v_res -> 'stale' -> 0 ->> 'part' <> 'rules' then
+  if jsonb_array_length(v_res -> 'rules') is distinct from 1 or jsonb_array_length(v_res -> 'stale') is distinct from 1
+     or v_res -> 'stale' -> 0 ->> 'part' is distinct from 'rules' then
     raise exception '5b: a rule over a retired column went quiet instead of saying so: %', v_res;
   end if;
   raise notice '5 PASS — the read gives back both rules, the red row and the teal column; retiring Deposit leaves one rule painting and names the other under stale: "%".', v_res -> 'stale' -> 0 ->> 'says';
 
   -- ══ PART 6 — LAYOUT: platform, organization, view; every choice says where it came from. ═
   v_res := custom.grid_layout(v_org, v_appts, null);
-  if v_res -> 'layout' ->> 'row_height' <> 'normal' or v_res -> 'source' ->> 'row_height' <> 'platform' then
+  if v_res -> 'layout' ->> 'row_height' is distinct from 'normal' or v_res -> 'source' ->> 'row_height' is distinct from 'platform' then
     raise exception '6a: the platform default is not the answer: %', v_res;
   end if;
   perform set_config('role', 'postgres', true);
@@ -186,17 +186,17 @@ begin
           'gridprim G1: the clinic reads the day sheet on a wall monitor');
   perform set_config('role', 'authenticated', true);
   v_res := custom.grid_layout(v_org, v_appts, null);
-  if v_res -> 'layout' ->> 'row_height' <> 'tall' or v_res -> 'source' ->> 'row_height' <> 'organization'
-     or v_res -> 'source' ->> 'mode' <> 'platform' then
+  if v_res -> 'layout' ->> 'row_height' is distinct from 'tall' or v_res -> 'source' ->> 'row_height' is distinct from 'organization'
+     or v_res -> 'source' ->> 'mode' is distinct from 'platform' then
     raise exception '6b: the organization default is not named as the organization''s: %', v_res;
   end if;
   v_view := custom.view_declare(v_org, v_appts, jsonb_build_object('name', 'Busy morning',
               'definition', jsonb_build_object('layout', jsonb_build_object(
                 'row_height', 'compact', 'widths', jsonb_build_object(f_status::text, 220)))));
   v_res := custom.grid_layout(v_org, v_appts, v_view);
-  if v_res -> 'layout' ->> 'row_height' <> 'compact' or v_res -> 'source' ->> 'row_height' <> 'view'
-     or (v_res -> 'layout' -> 'widths' ->> f_status::text)::integer <> 220
-     or v_res -> 'layout' ->> 'freeze_first_column' <> 'true' then
+  if v_res -> 'layout' ->> 'row_height' is distinct from 'compact' or v_res -> 'source' ->> 'row_height' is distinct from 'view'
+     or (v_res -> 'layout' -> 'widths' ->> f_status::text)::integer is distinct from 220
+     or v_res -> 'layout' ->> 'freeze_first_column' is distinct from 'true' then
     raise exception '6c: the view''s layout does not win where it chose and yield where it did not: %', v_res;
   end if;
   begin
@@ -231,11 +231,11 @@ begin
       jsonb_build_object('op', 'empty',  'key', 'desk_notes'),
       jsonb_build_object('op', 'unique', 'key', 'desk_notes'),
       jsonb_build_object('op', 'count')));
-  if (v_m ->> 'median_visit_fee')::numeric <> 185 or (v_m ->> 'filled_visit_fee')::numeric <> 9
-     or (v_m ->> 'empty_visit_fee')::numeric <> 1 or (v_m ->> 'unique_visit_fee')::numeric <> 6
-     or (v_m ->> 'sum_visit_fee')::numeric <> 1833 or (v_m ->> 'filled_desk_notes')::numeric <> 5
-     or (v_m ->> 'empty_desk_notes')::numeric <> 5 or (v_m ->> 'unique_desk_notes')::numeric <> 5
-     or (v_m ->> 'count')::numeric <> 10 then
+  if (v_m ->> 'median_visit_fee')::numeric is distinct from 185 or (v_m ->> 'filled_visit_fee')::numeric is distinct from 9
+     or (v_m ->> 'empty_visit_fee')::numeric is distinct from 1 or (v_m ->> 'unique_visit_fee')::numeric is distinct from 6
+     or (v_m ->> 'sum_visit_fee')::numeric is distinct from 1833 or (v_m ->> 'filled_desk_notes')::numeric is distinct from 5
+     or (v_m ->> 'empty_desk_notes')::numeric is distinct from 5 or (v_m ->> 'unique_desk_notes')::numeric is distinct from 5
+     or (v_m ->> 'count')::numeric is distinct from 10 then
     raise exception '7: the summaries disagree with the older grid on the same ten rows: %', v_m;
   end if;
   perform set_config('role', 'postgres', true);
