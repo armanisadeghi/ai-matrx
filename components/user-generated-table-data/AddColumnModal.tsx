@@ -18,8 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { supabase } from '@/utils/supabase/client';
-import { addColumn, VALID_DATA_TYPES } from '@/utils/user-table-utls/table-utils';
+import { VALID_DATA_TYPES } from '@/utils/user-table-utls/table-utils';
+import { addTableColumn } from '@/features/data-tables/service';
 import { sanitizeFieldName } from '@/utils/user-table-utls/field-name-sanitizer';
 import { setFieldFormat } from '@/features/data-tables/service';
 import { FormulaExpressionEditor } from '@/features/data-tables/components/FormulaExpressionEditor';
@@ -104,7 +104,7 @@ export default function AddColumnModal({ tableId, organizationId, isOpen, onClos
       setError(null);
       
       // Use the utility function
-      const result = await addColumn(supabase, {
+      const result = await addTableColumn({
         tableId,
         fieldName,
         displayName,

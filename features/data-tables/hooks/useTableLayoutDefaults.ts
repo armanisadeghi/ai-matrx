@@ -24,6 +24,9 @@ import { useEffect, useState } from "react";
 
 import { ensureEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 
+import { gridLayoutDefaults } from "../data-source/record-store";
+import { recordStoreHomeOf } from "../data-source/table-home";
+
 import {
   parseLayoutMode,
   parseRowDensity,
@@ -86,26 +89,47 @@ async function load(organizationId: string): Promise<TableLayoutDefaults> {
   };
 }
 
+/**
+ * A table the RECORD STORE holds reads its defaults from the store's own knob
+ * (`custom/grid_layout`, via `custom.grid_layout`) — the same three answers,
+ * where the store keeps them. A store that cannot answer keeps the seeded values.
+ */
+async function loadForRecordStore(tableId: string): Promise<TableLayoutDefaults> {
+  const home = recordStoreHomeOf(tableId);
+  const answer = home ? await gridLayoutDefaults(home, tableId) : null;
+  if (!answer) return SEEDED_TABLE_LAYOUT_DEFAULTS;
+  const n = Number(answer.fitMaxColumns);
+  return {
+    layout: parseLayoutMode(answer.layout),
+    fitMaxColumns: Number.isFinite(n) && n >= 2 && n <= 30 ? Math.round(n) : SEEDED_TABLE_LAYOUT_DEFAULTS.fitMaxColumns,
+    rowHeight: parseRowDensity(answer.rowHeight),
+  };
+}
+
 export function useTableLayoutDefaults(
   organizationId: string | null | undefined,
+  /** The table — a record-store table reads the store's own layout knob. */
+  tableId?: string | null,
 ): TableLayoutDefaults {
   const [defaults, setDefaults] = useState<TableLayoutDefaults>(
     SEEDED_TABLE_LAYOUT_DEFAULTS,
   );
+  const onTheRecordStore = Boolean(tableId && recordStoreHomeOf(tableId));
   useEffect(() => {
     if (!organizationId) return;
     let cancelled = false;
-    let pending = cache.get(organizationId);
+    const key = onTheRecordStore && tableId ? `record:${tableId}` : organizationId;
+    let pending = cache.get(key);
     if (!pending) {
-      pending = load(organizationId);
-      cache.set(organizationId, pending);
+      pending = onTheRecordStore && tableId ? loadForRecordStore(tableId) : load(organizationId);
+      cache.set(key, pending);
     }
     pending
       .then((value) => {
         if (!cancelled) setDefaults(value);
       })
       .catch((err) => {
-        cache.delete(organizationId);
+        cache.delete(key);
         console.error(
           "Table layout defaults could not be read; the platform's seeded defaults stay in force.",
           err,
@@ -114,6 +138,6 @@ export function useTableLayoutDefaults(
     return () => {
       cancelled = true;
     };
-  }, [organizationId]);
+  }, [organizationId, onTheRecordStore, tableId]);
   return defaults;
 }

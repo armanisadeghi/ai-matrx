@@ -8,6 +8,7 @@ import AddRowModal from "./AddRowModal";
 import EditRowModal from "./EditRowModal";
 import DeleteRowModal from "./DeleteRowModal";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
+import { isRecordStoreTable } from "@/features/data-tables/service";
 import TableConfigModal from "./TableConfigModal";
 import TableReferenceOverlay from "./TableReferenceOverlay";
 import RowOrderingModal from "./RowOrderingModal";
@@ -359,8 +360,11 @@ export default function TableToolbar({
         )}
 
         <div className="hidden md:flex shrink-0 items-center w-full md:w-auto justify-end gap-1 md:ml-auto">
-          {/* Row Ordering Controls - only show if not read-only */}
-          {!isReadOnly && (
+          {/* Row Ordering Controls - only show if not read-only. Absent for a
+              record-store table: the store keeps no hand-made row order yet
+              (lane GRID-PORT finding), and a button that could not save its
+              order would be a dead control. */}
+          {!isReadOnly && !isRecordStoreTable(tableId) && (
             <Button
               variant="outline"
               size="sm"
@@ -385,7 +389,11 @@ export default function TableToolbar({
           {!isMobile ? <Button variant="outline" size="icon" className="h-7 w-7" aria-label="Get reference" title="Get reference" onClick={chooseReference}><Link className="h-4 w-4" /></Button> : null}
 
           <ShareButton
-            resourceType="dataset"
+            // A record-store table is shared as the record it is (data seam).
+            resourceType={isRecordStoreTable(tableId) ? "record" : "dataset"}
+            {...(isRecordStoreTable(tableId) && tableInfo?.organization_id
+              ? { organizationId: tableInfo.organization_id as string }
+              : {})}
             resourceId={tableId}
             resourceName={tableInfo.table_name}
             showStatus={false}
@@ -426,7 +434,11 @@ export default function TableToolbar({
             </div>
           ) : null}
           <ShareButton
-            resourceType="dataset"
+            // A record-store table is shared as the record it is (data seam).
+            resourceType={isRecordStoreTable(tableId) ? "record" : "dataset"}
+            {...(isRecordStoreTable(tableId) && tableInfo?.organization_id
+              ? { organizationId: tableInfo.organization_id as string }
+              : {})}
             resourceId={tableId}
             resourceName={tableInfo.table_name}
             showStatus={false}
@@ -466,6 +478,7 @@ export default function TableToolbar({
                   setShowPasteRowsDialog(true);
                 }}
               />
+              {!isRecordStoreTable(tableId) && (
               <MobileActionRow
                 icon={GripVertical}
                 label={
@@ -477,6 +490,7 @@ export default function TableToolbar({
                   handleReorderClick();
                 }}
               />
+              )}
               {cleanupControl && (
                 <div className="px-2 py-1">{cleanupControl}</div>
               )}
@@ -554,6 +568,7 @@ export default function TableToolbar({
             isCellValueDirty={isCellValueDirty}
           />
           <DeleteRowModal
+            tableId={tableId}
             rowId={selectedRowId}
             rowLabel={
               selectedRowData

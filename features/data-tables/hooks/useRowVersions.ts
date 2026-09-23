@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { supabase } from "@/utils/supabase/client";
 
+import { isRecordStoreTable, readRowHistory } from "../service";
 import type { RowVersion } from "../types";
 
 type UseRowVersionsState = {
@@ -25,9 +26,18 @@ type UseRowVersionsState = {
 
 export function useRowVersions(
   rowId: string | null | undefined,
-  options?: { limit?: number },
+  options?: {
+    limit?: number;
+    /**
+     * The row's table. A table the RECORD STORE holds reads the store's own
+     * history (`custom.record_history`, via the data seam) instead of
+     * `udt_dataset_row_versions`, in the same shape.
+     */
+    tableId?: string | null;
+  },
 ): UseRowVersionsState & { refresh: () => void } {
   const limit = options?.limit ?? 50;
+  const tableId = options?.tableId ?? null;
   const [state, setState] = useState<UseRowVersionsState>({
     versions: [],
     loading: false,
@@ -54,6 +64,20 @@ export function useRowVersions(
       loading: true,
       error: null,
     }));
+
+    if (tableId && isRecordStoreTable(tableId)) {
+      void readRowHistory({ tableId, rowId, limit }).then((read) => {
+        if (cancelled) return;
+        setState(
+          read.success
+            ? { versions: read.data, loading: false, error: null }
+            : { versions: [], loading: false, error: read.error },
+        );
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
 
     supabase
       .schema("workbench")
@@ -92,7 +116,7 @@ export function useRowVersions(
     return () => {
       cancelled = true;
     };
-  }, [rowId, limit, reloadToken]);
+  }, [rowId, limit, reloadToken, tableId]);
 
   return {
     ...state,

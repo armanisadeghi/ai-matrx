@@ -16,8 +16,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
-import { supabase } from '@/utils/supabase/client';
-import { getTableDetails, addRow, type TableField } from '@/utils/user-table-utls/table-utils';
+import { type TableField } from '@/utils/user-table-utls/table-utils';
+import { addTableRow, readTableDetails } from '@/features/data-tables/service';
 import {
   FormatAwareInput,
   formatHasOwnInput,
@@ -71,7 +71,7 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess, relat
       try {
         setLoadingFields(true);
         
-        const result = await getTableDetails(supabase, tableId);
+        const result = await readTableDetails(tableId);
         
         if (!result.success || !result.fields) {
           throw new Error(result.error || 'Failed to load table fields');
@@ -188,7 +188,7 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess, relat
       setError(null);
       
       // Use the utility function
-      const result = await addRow(supabase, {
+      const result = await addTableRow({
         tableId,
         data: rowData
       });

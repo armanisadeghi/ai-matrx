@@ -21,6 +21,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { supabase } from "@/utils/supabase/client";
+import { relationWords as recordStoreRelationWords } from "./data-source/record-store";
+import { recordStoreHomeOf } from "./data-source/table-home";
 import type { FieldChoice, FieldFormatConfig } from "@/lib/field-formats/types";
 import { isRelationFormat, relationIdsInColumn, type RelationWordsByField, type RelationWordsMap } from "./relation-words";
 
@@ -41,9 +43,22 @@ export async function fetchRelationWords(args: {
   /** The column's own `metadata.format.options.display`, passed through untouched. */
   display?: unknown;
   rowIds: readonly string[];
+  /**
+   * The table and the column the cells are in. A table the RECORD STORE holds
+   * (`data-source/table-home.ts`) resolves its words through the store's own
+   * door for that column (`custom.relation_words_many`), which reads the
+   * column's display spec itself; an older table ignores both.
+   */
+  tableId?: string | null;
+  fieldName?: string | null;
 }): Promise<RelationWordsMap> {
   const { organizationId, display, rowIds } = args;
-  if (!organizationId || rowIds.length === 0) return EMPTY_WORDS;
+  if (rowIds.length === 0) return EMPTY_WORDS;
+  const home = recordStoreHomeOf(args.tableId);
+  if (home && args.tableId && args.fieldName) {
+    return recordStoreRelationWords(home, { tableId: args.tableId, fieldName: args.fieldName, rowIds });
+  }
+  if (!organizationId) return EMPTY_WORDS;
 
   const { data, error } = await supabase
     .schema("workbench")
@@ -82,6 +97,8 @@ export function useRelationWordsFor(
     format: FieldFormatConfig | null | undefined;
   }[],
   rows: readonly { data?: Record<string, unknown> | null }[],
+  /** The table these rows belong to — see `fetchRelationWords`. */
+  tableId?: string | null,
 ): { choicesByField: ReadonlyMap<string, FieldChoice[]>; wordsByField: RelationWordsByField; loading: boolean } {
   // What to ask for, as a stable string, so a re-render with the same ids does
   // not re-ask. A page of forty rows changes this exactly when its ids change.
@@ -100,8 +117,8 @@ export function useRelationWordsFor(
   }, [fields, rows]);
 
   const key = useMemo(
-    () => (organizationId ?? "") + "|" + JSON.stringify(request),
-    [organizationId, request],
+    () => (organizationId ?? "") + "|" + (tableId ?? "") + "|" + JSON.stringify(request),
+    [organizationId, request, tableId],
   );
 
   const [state, setState] = useState<{ key: string; byField: Map<string, RelationWordsMap> } | null>(null);
@@ -117,7 +134,7 @@ export function useRelationWordsFor(
       for (const r of request) {
         byField.set(
           r.field,
-          await fetchRelationWords({ organizationId, display: r.display, rowIds: r.ids }),
+          await fetchRelationWords({ organizationId, display: r.display, rowIds: r.ids, tableId, fieldName: r.field }),
         );
       }
       if (live) setState({ key, byField });
@@ -125,7 +142,7 @@ export function useRelationWordsFor(
     return () => {
       live = false;
     };
-  }, [key, organizationId, request]);
+  }, [key, organizationId, request, tableId]);
 
   const wordsByField: RelationWordsByField = state?.key === key ? state.byField : EMPTY_BY_FIELD;
 

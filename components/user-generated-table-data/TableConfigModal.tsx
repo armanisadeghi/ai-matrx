@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { supabase } from "@/utils/supabase/client";
-import { unwrapUserTableMutation } from "@/utils/user-tables-rpc";
 import {
   changeFieldType,
   deleteField,
   getTableProfile,
   rewriteFormulasForRename,
+  isRecordStoreTable,
   setFieldFormat,
   setValidationMode,
+  updateTableConfig,
 } from "@/features/data-tables/service";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { FieldFormatPicker } from "@/lib/field-formats/FieldFormatPicker";
@@ -157,6 +157,9 @@ export default function TableConfigModal({
   onSuccess,
 }: TableConfigModalProps) {
   const [loading, setLoading] = useState(false);
+  // Which store holds this table (data seam) — decides the two controls a
+  // record-store table does not have in the older form.
+  const onTheRecordStore = isRecordStoreTable(tableId);
   const [error, setError] = useState<string | null>(null);
 
   // Table metadata state
@@ -598,22 +601,14 @@ export default function TableConfigModal({
         }
       }
 
-      // Call the RPC function
-      const rpcParams: any = { p_table_id: tableId };
-      if (Object.keys(cleanTableUpdates).length > 0) {
-        rpcParams.p_table_updates = cleanTableUpdates;
-      }
-      if (fieldUpdates.length > 0) {
-        rpcParams.p_field_updates = fieldUpdates;
-      }
-
-      const { data, error: rpcError } = await supabase.rpc(
-        "update_user_table_config",
-        rpcParams,
-      );
-
-      if (rpcError) throw rpcError;
-      unwrapUserTableMutation(data ?? null);
+      // The table-and-column settings write, through the data seam (older
+      // `update_user_table_config`, or the record store's own field doors).
+      const saved = await updateTableConfig({
+        tableId,
+        tableUpdates: cleanTableUpdates as Record<string, unknown>,
+        fieldUpdates: fieldUpdates as Array<Record<string, unknown> & { id: string }>,
+      });
+      if (isServiceFailure(saved)) throw new Error(saved.error);
 
       // `validation_mode` is not part of update_user_table_config's table
       // updates — it goes through its own service (direct RLS UPDATE). Only
@@ -994,6 +989,9 @@ export default function TableConfigModal({
                             Req
                           </Label>
                         </div>
+                        {/* A record-store column has no per-column "public" mark —
+                            who sees what is the table's sharing — so the box is absent. */}
+                        {!onTheRecordStore && (
                         <div className="flex items-center gap-1.5">
                           <Checkbox
                             id={`public-${field.id}`}
@@ -1009,6 +1007,7 @@ export default function TableConfigModal({
                             Pub
                           </Label>
                         </div>
+                        )}
                       </div>
 
                       <div className="col-span-2 col-start-3 row-start-3 flex h-8 items-center justify-end sm:col-span-1 sm:col-start-4 sm:row-start-1 lg:col-start-7 lg:row-start-1 lg:justify-start">
@@ -1131,10 +1130,9 @@ export default function TableConfigModal({
                         Strict Validation
                       </Label>
                       <div className="text-xs text-muted-foreground">
-                        Reject writes that violate the column types or drop a
-                        required field. Existing rows are grandfathered (their
-                        other fields stay editable). Recommended for newly
-                        imported tables where column types are well-defined.
+                        {onTheRecordStore
+                          ? "Always on for this table: every change is checked against its columns' types, rules and required marks."
+                          : "Reject writes that violate the column types or drop a required field. Existing rows are grandfathered (their other fields stay editable). Recommended for newly imported tables where column types are well-defined."}
                       </div>
                     </div>
                   </div>
@@ -1143,6 +1141,10 @@ export default function TableConfigModal({
                     checked={
                       toValidationMode(tableInfo.validation_mode) === "strict"
                     }
+                    // A record-store table is strict by construction: every
+                    // change is judged by its columns' rules. The switch shows
+                    // that truth and cannot be turned off.
+                    disabled={onTheRecordStore}
                     onCheckedChange={(checked) =>
                       handleTableInfoChange(
                         "validation_mode",
@@ -1219,7 +1221,12 @@ export default function TableConfigModal({
             </div>
             <div className="flex shrink-0 flex-wrap justify-end gap-2">
               <ShareButton
-                resourceType="dataset"
+                // A record-store table is shared as the record it is (data seam).
+                resourceType={isRecordStoreTable(tableId) ? "record" : "dataset"}
+                {...(isRecordStoreTable(tableId) &&
+                (tableInfo as { organization_id?: string } | null)?.organization_id
+                  ? { organizationId: (tableInfo as { organization_id?: string }).organization_id as string }
+                  : {})}
                 resourceId={tableId}
                 resourceName={tableInfo.table_name}
                 showStatus={false}

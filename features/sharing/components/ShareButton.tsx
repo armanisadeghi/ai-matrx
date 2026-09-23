@@ -25,6 +25,12 @@ interface ShareButtonProps {
   showStatus?: boolean;
   /** Sizing/spacing override for dense chrome (compact toolbars, header rows). */
   className?: string;
+  /**
+   * The organization the resource belongs to, for the contact picker — which must
+   * offer the people of THIS organization and nobody else (FIX-7B). Passed
+   * through to `ShareModal`; omit it and the modal behaves exactly as before.
+   */
+  organizationId?: string;
 }
 
 /**
@@ -49,6 +55,7 @@ export function ShareButton({
   size = "default",
   showStatus = true,
   className,
+  organizationId,
 }: ShareButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { isPublic, loading, error, refresh } = useSharingStatus(
@@ -111,6 +118,7 @@ export function ShareButton({
           resourceId={resourceId}
           resourceName={resourceName}
           isOwner={isOwner}
+          {...(organizationId ? { organizationId } : {})}
         />
       )}
     </>

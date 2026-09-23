@@ -39,8 +39,6 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { supabase } from "@/utils/supabase/client";
-import { unwrapUserTableMutation } from "@/utils/user-tables-rpc";
 import type { TableField } from "@/utils/user-table-utls/table-utils";
 
 import { FieldFormatPicker } from "@/lib/field-formats/FieldFormatPicker";
@@ -64,6 +62,7 @@ import {
   renameColumn,
   setFieldFormat,
   setTableRowLabel,
+  updateTableConfig,
 } from "@/features/data-tables/service";
 import { isServiceFailure, type FieldDataType } from "@/features/data-tables/types";
 import {
@@ -201,12 +200,8 @@ function ColumnSettingsForm({
       if (required !== Boolean(original.is_required)) update.is_required = required;
       if (JSON.stringify(nextRules) !== JSON.stringify(priorRules)) update.validation_rules = nextRules;
       if (Object.keys(update).length > 1) {
-        const { data, error } = await supabase.rpc("update_user_table_config", {
-          p_table_id: tableId,
-          p_field_updates: [update],
-        } as never);
-        if (error) throw error;
-        unwrapUserTableMutation(data ?? null);
+        const saved = await updateTableConfig({ tableId, fieldUpdates: [update as Record<string, unknown> & { id: string }] });
+        if (isServiceFailure(saved)) throw new Error(saved.error);
       }
       if (asRowLabel !== isLabel) {
         const label = await setTableRowLabel({

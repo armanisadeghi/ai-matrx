@@ -21,6 +21,8 @@
 
 import { supabase } from "@/utils/supabase/client";
 
+import { recordStoreHomeOf } from "../data-source/table-home";
+
 import {
   DATA_TABLE_SURFACE_KEY,
   SAVED_VIEW_DEFINITION_VERSION,
@@ -105,6 +107,10 @@ export async function listSavedViews(args: {
 export async function getTableOrganizationId(
   tableId: string,
 ): Promise<ServiceResult<string>> {
+  // A table the RECORD STORE holds (data seam) belongs to the organization it
+  // was opened in — the store is keyed (organization, id) and has no dataset row.
+  const home = recordStoreHomeOf(tableId);
+  if (home) return { success: true, data: home.organizationId };
   const { data, error } = await supabase
     .schema("workbench")
     .from("udt_datasets")

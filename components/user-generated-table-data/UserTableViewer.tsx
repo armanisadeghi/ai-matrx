@@ -128,6 +128,7 @@ import {
   useTableRealtime,
   type TableRealtimeEvent,
 } from "@/features/data-tables/hooks/useTableRealtime";
+import { useRecordStoreTableRealtime } from "@/features/data-tables/hooks/useRecordStoreTableRealtime";
 import { useGridSelection } from "@/features/data-tables/hooks/useGridSelection";
 import { useCellUndo } from "@/features/data-tables/hooks/useCellUndo";
 import {
@@ -136,11 +137,15 @@ import {
   type CellAddress,
 } from "@/features/data-tables/grid-selection";
 import { classifyEcho } from "@/features/data-tables/realtime-echo";
+import { computedColumnsFor } from "@/features/data-tables/data-source/computed-columns";
 import {
   bulkWrite,
   deleteField,
   getCompleteTable,
   getRowsForClientSort,
+  isRecordStoreTable,
+  readRowsById,
+  runRowAction as runRowActionInTheStore,
   getTableMetadata,
   getTablePage,
   hasEditorAccess,
@@ -168,10 +173,7 @@ import {
 } from "@/features/data-tables/table-style";
 import { ColorRulesDialog } from "@/features/data-tables/components/ColorRulesDialog";
 import { isChoiceFormat } from "@/lib/field-formats/choices";
-import {
-  isComputedColumn,
-  withComputedColumns,
-} from "@/features/data-tables/formulas";
+import { isComputedColumn } from "@/features/data-tables/formulas";
 import {
   hasValidationRules,
   parseValidationRules,
@@ -716,9 +718,13 @@ const UserTableViewer = ({
     fetchCurrentUser();
   }, []);
 
+  // WHO WORKS A FORMULA OUT: the browser for an older table, the store for a
+  // record-store table (data-source/computed-columns.ts). One shape either way.
+  const computeColumns = computedColumnsFor(tableId);
+
   // The ORGANIZATION's layout defaults for this table (three knobs); a person's
   // own Layout choice overrides them, and `default` in the view means "theirs".
-  const layoutDefaults = useTableLayoutDefaults(tableInfo?.organization_id ?? null);
+  const layoutDefaults = useTableLayoutDefaults(tableInfo?.organization_id ?? null, tableId);
   const [systemOrgId, setSystemOrgId] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -1043,6 +1049,7 @@ const UserTableViewer = ({
     tableInfo?.organization_id ?? null,
     formatFields,
     fullDatasetCache ?? data,
+    tableId,
   );
   const choiceMap = useFieldChoiceMap(formatFields, personChoices, relationChoices);
 
@@ -1090,6 +1097,8 @@ const UserTableViewer = ({
             organizationId: tableInfo?.organization_id ?? null,
             display: relationDisplayOf(f.format),
             rowIds: relationIdsInColumn(rows, f.field_name),
+            tableId,
+            fieldName: f.field_name,
           }),
         );
       }
@@ -1101,7 +1110,7 @@ const UserTableViewer = ({
         return { ...row, data };
       });
     },
-    [formatFields, tableInfo?.organization_id],
+    [formatFields, tableInfo?.organization_id, tableId],
   );
 
   const cellValueForReader = useCallback(
@@ -1289,7 +1298,17 @@ const UserTableViewer = ({
 
       const local = rowsRef.current.find((r) => r.id === event.rowId);
       const incomingData = event.row.data;
-      if (!local || !incomingData) return;
+      if (!local || !incomingData) {
+        // The record store's port names ids, not what happened to them, so a
+        // row this page does not hold may be one somebody just ADDED: re-read.
+        if (isRecordStoreTable(tableId)) {
+          if (realtimeRefetchTimer.current) clearTimeout(realtimeRefetchTimer.current);
+          realtimeRefetchTimer.current = setTimeout(() => {
+            void loadTableData(currentPage, limit, sortField, sortDirection, searchTerm);
+          }, 400);
+        }
+        return;
+      }
 
       // The decision itself lives in `realtime-echo.ts` and is unit-tested —
       // this is the class that has frozen browsers before, and it should not be
@@ -1342,7 +1361,18 @@ const UserTableViewer = ({
     [currentPage, limit, sortField, sortDirection, searchTerm],
   );
 
+  // ONE HANDLER, TWO WIRES: postgres_changes for an older table, the record
+  // store's broadcast port for a record-store table — each off for the other.
+  const onTheRecordStore = isRecordStoreTable(tableId);
+  useRecordStoreTableRealtime(tableId, handleRealtime, {
+    enabled: onTheRecordStore,
+    // A column, the table's name or its colors moved: only a metadata read redraws that.
+    onShapeChange: () => {
+      void loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true);
+    },
+  });
   useTableRealtime(tableId, handleRealtime, {
+    enabled: !onTheRecordStore,
     // Another editor renamed the table, rewrote its description or changed
     // its colors: adopt the row. `metadata` arriving as a NEW object is what
     // retires any optimistic local style patch in favour of the server's.
@@ -1585,7 +1615,7 @@ const UserTableViewer = ({
         // A formula column has no stored value to sort by — compute it over
         // the freshly loaded rows first, then sort on what the user sees.
         const sortedData = smartSort(
-          withComputedColumns(asTableDataRows(allPayload.data), fields, displayValueOf).rows,
+          computeColumns(asTableDataRows(allPayload.data), fields, displayValueOf).rows,
           field,
           newDirection,
           fieldDataType,
@@ -1636,7 +1666,7 @@ const UserTableViewer = ({
 
     // Formula columns are EMPTY in what the database returns — compute them
     // before the search, the filters and the sort look at the rows.
-    let rows: TableDataRow[] = withComputedColumns(
+    let rows: TableDataRow[] = computeColumns(
       complete.data.rows.map((row) => ({
         id: row.id,
         data: row.data,
@@ -2293,7 +2323,7 @@ const UserTableViewer = ({
   if (hasColumnFilters) {
     // Formula values are computed BEFORE the filter and the sort run, so a
     // filter on a formula column judges the number the user sees.
-    const source = withComputedColumns(fullDatasetCache ?? data, fields, displayValueOf).rows;
+    const source = computeColumns(fullDatasetCache ?? data, fields, displayValueOf).rows;
     let filtered = applyColumnFilters(source);
     if (sortField) {
       filtered = smartSort(
@@ -2318,7 +2348,7 @@ const UserTableViewer = ({
   // number and a write can never land in it (the cell is read-only below, and
   // paste / clear / fill skip it). Errors are per cell: a bad reference or a
   // division by zero renders #ERROR with the reason.
-  const computedPage = withComputedColumns(displayRows, fields, displayValueOf);
+  const computedPage = computeColumns(displayRows, fields, displayValueOf);
   displayRows = computedPage.rows;
   const formulaErrors = computedPage.errors;
   // Formula AND system columns (Created / Last modified time): everything the
@@ -2737,6 +2767,44 @@ const UserTableViewer = ({
           confirmLabel: `Run "${action.name}"`,
         });
         if (!ok) return;
+      }
+      if (isRecordStoreTable(tableId)) {
+        // THE STORE RUNS IT (G2): the whole selection in one transaction, every
+        // formula step worked out by the store, the whole run refused by rule
+        // if any row is refused. The browser computes nothing; it reads the
+        // rows back and records each changed cell for Undo, as before.
+        const priorById = new Map(rows.map((r) => [r.id, { ...(r.data ?? {}) }] as const));
+        const ran = await runRowActionInTheStore({ tableId, actionId: action.id, rowIds: rows.map((r) => r.id) });
+        if (isServiceFailure(ran)) {
+          toast({
+            title: `"${action.name}" was not run`,
+            description: `${ran.error} Nothing was changed.`,
+            variant: "destructive",
+          });
+          return;
+        }
+        const after = await readRowsById({ tableId, rowIds: rows.map((r) => r.id) });
+        if (!isServiceFailure(after)) {
+          for (const row of after.data) {
+            const prior = priorById.get(row.id) ?? {};
+            for (const f of fields) {
+              const next = row.data[f.field_name] ?? null;
+              const was = prior[f.field_name] ?? null;
+              if (JSON.stringify(next) === JSON.stringify(was)) continue;
+              patchLocalCell(row.id, f.field_name, next);
+              cellUndo.record({
+                tableId,
+                rowId: row.id,
+                fieldName: f.field_name,
+                fieldDisplayName: f.display_name,
+                priorValue: was,
+                nextValue: next,
+              });
+            }
+          }
+        }
+        toast({ title: `${action.name}: ${rows.length} row${rows.length === 1 ? "" : "s"} updated` });
+        return;
       }
       const built = buildRowActionOps(action, rows, fields);
       if (!built.ok) {
@@ -3372,13 +3440,13 @@ const UserTableViewer = ({
       : null;
   // Both agent-facing row sets carry computed formula values — the same
   // numbers the user is looking at, never the stored blanks.
-  const tickedRows = withComputedColumns(
+  const tickedRows = computeColumns(
     (fullDatasetCache ?? data).filter((row) => selectedRowIdSet.has(row.id)),
     fields,
     displayValueOf,
   ).rows;
   const fullDatasetForScope = fullDatasetCache
-    ? withComputedColumns(fullDatasetCache, fields, displayValueOf).rows
+    ? computeColumns(fullDatasetCache, fields, displayValueOf).rows
     : null;
 
   const surfaceScopeSnapshot: DataTableScopeInput = {
@@ -3957,7 +4025,7 @@ const UserTableViewer = ({
               if (isServiceFailure(complete)) throw new Error(complete.error);
               // Same rule as `loadRowsForCopy`: formula columns are computed
               // before anything downstream (export, sort) reads the rows.
-              const rows = withComputedColumns(complete.data.rows, fields, displayValueOf).rows;
+              const rows = computeColumns(complete.data.rows, fields, displayValueOf).rows;
               const ordered: typeof rows = sortField
                 ? (smartSort(
                     rows as unknown as TableDataRow[],
@@ -4494,7 +4562,7 @@ const UserTableViewer = ({
                         // do not cover `totalCount`.
                         localRows={
                           isFormulaField(field.field_name)
-                            ? withComputedColumns(fullDatasetCache ?? data, fields, displayValueOf).rows
+                            ? computeColumns(fullDatasetCache ?? data, fields, displayValueOf).rows
                             : (fullDatasetCache ?? data)
                         }
                         totalCount={totalCount}
@@ -5297,7 +5365,7 @@ const UserTableViewer = ({
                 <TableCell className="sticky left-0 z-10 w-10 bg-inherit px-2 md:px-3" />
                 {viewFields.map((field) => {
                   const kind = columnSummaries[field.field_name] ?? null;
-                  const summaryRows = withComputedColumns(fullDatasetCache ?? displayRows, fields, displayValueOf).rows;
+                  const summaryRows = computeColumns(fullDatasetCache ?? displayRows, fields, displayValueOf).rows;
                   const partial = summaryRows.length < effectiveTotalCount;
                   return (
                     <TableCell

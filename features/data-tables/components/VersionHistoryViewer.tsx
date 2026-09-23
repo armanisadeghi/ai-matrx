@@ -44,7 +44,14 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
 
-import { upsertCell, upsertRow } from "../service";
+import {
+  isRecordStoreTable,
+  restoreArchivedRow,
+  restoreRowVersion,
+  revertRowField,
+  upsertCell,
+  upsertRow,
+} from "../service";
 import { isServiceFailure } from "../types";
 import { useRowVersions } from "../hooks/useRowVersions";
 import type { RowVersion } from "../types";
@@ -86,7 +93,12 @@ export function VersionHistoryViewer({
   const [effectiveLimit, setEffectiveLimit] = useState(initialLimit);
   const { versions, loading, error, refresh } = useRowVersions(rowId, {
     limit: effectiveLimit,
+    tableId,
   });
+  // A record-store row is put back by the STORE's own verbs — the version, the
+  // column at a version, or the archived record under its own id — never by
+  // writing a snapshot over it. Same buttons, same words.
+  const onTheRecordStore = isRecordStoreTable(tableId);
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
   const canWrite = Boolean(editable && tableId);
@@ -127,6 +139,12 @@ export function VersionHistoryViewer({
       });
       if (!ok) return;
       await runWrite(`restore-${version.id}`, async () => {
+        if (onTheRecordStore) {
+          const back = await restoreArchivedRow({ tableId, rowId });
+          if (isServiceFailure(back)) throw new Error(back.error);
+          toast.success("Row restored.");
+          return;
+        }
         const result = await upsertRow({ tableId, data: snapshot });
         if (isServiceFailure(result)) throw new Error(result.error);
         toast.success("Row restored as a new row.");
@@ -144,6 +162,12 @@ export function VersionHistoryViewer({
     });
     if (!ok) return;
     await runWrite(`restore-${version.id}`, async () => {
+      if (onTheRecordStore) {
+        const back = await restoreRowVersion({ tableId, rowId, version: Number(version.id) });
+        if (isServiceFailure(back)) throw new Error(back.error);
+        toast.success("Version restored.");
+        return;
+      }
       const result = await upsertRow({ tableId, rowId, data: snapshot });
       if (isServiceFailure(result)) throw new Error(result.error);
       toast.success("Version restored.");
@@ -157,6 +181,17 @@ export function VersionHistoryViewer({
   ) => {
     if (!tableId || !rowId) return;
     await runWrite(`revert-${version.id}-${fieldName}`, async () => {
+      if (onTheRecordStore) {
+        // "Revert" puts the column back to what it said BEFORE this change —
+        // the store's value at the previous version.
+        const back = await revertRowField({ tableId, rowId, fieldName, version: Number(version.id) - 1 });
+        if (isServiceFailure(back)) throw new Error(back.error);
+        recordToast.success(
+          { type: "row", id: rowId },
+          `"${label(fieldName)}" reverted. This is recorded in history too.`,
+        );
+        return;
+      }
       const result = await upsertCell({
         tableId,
         rowId,

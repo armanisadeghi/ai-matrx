@@ -1,5 +1,7 @@
 "use client";
 
+import { getRowsForClientSort } from "@/features/data-tables/service";
+import { isServiceFailure } from "@/features/data-tables/types";
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -18,11 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Copy, Link } from "lucide-react";
-import { supabase } from "@/utils/supabase/client";
-import {
-  isPaginatedDataRow,
-  unwrapGetUserTableDataPaginatedRows,
-} from "@/utils/user-tables-rpc";
+import { isPaginatedDataRow } from "@/utils/user-tables-rpc";
 import { buildBookmarkReferenceFence } from "@/features/matrx-envelope/bookmarkToReference";
 
 interface TableField {
@@ -104,20 +102,10 @@ export default function TableReferenceOverlay({
 
     try {
       setLoadingRows(true);
-      const { data, error } = await supabase.rpc(
-        "get_user_table_data_paginated",
-        {
-          p_table_id: tableId,
-          p_limit: 100, // Load first 100 rows for selection
-          p_offset: 0,
-          p_sort_field: undefined,
-          p_sort_direction: "asc",
-          p_search_term: undefined,
-        },
-      );
-
-      if (error) throw error;
-      const rawRows = unwrapGetUserTableDataPaginatedRows(data ?? null);
+      // First 100 rows for selection, through the data seam.
+      const read = await getRowsForClientSort({ tableId, limit: 100 });
+      if (isServiceFailure(read)) throw new Error(read.error);
+      const rawRows: unknown[] = read.data;
       const normalized: TableRow[] = rawRows
         .filter(isPaginatedDataRow)
         .map((r) => ({

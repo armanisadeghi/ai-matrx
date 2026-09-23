@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import { supabase } from "@/utils/supabase/client";
-import { unwrapUserTableMutation } from "@/utils/user-tables-rpc";
+import { deleteRow, isRecordStoreTable } from "@/features/data-tables/service";
+import { isServiceFailure } from "@/features/data-tables/types";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 
 interface DeleteRowModalProps {
+  /** The row's table — the data seam decides which store deletes it. */
+  tableId: string;
   rowId: string | null;
   /** What the row is called (the table's row label) — so the question names what is being deleted. */
   rowLabel?: string;
@@ -22,6 +24,7 @@ interface DeleteRowModalProps {
 }
 
 export default function DeleteRowModal({
+  tableId,
   rowId,
   rowLabel,
   isOpen,
@@ -30,6 +33,7 @@ export default function DeleteRowModal({
 }: DeleteRowModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const archives = isRecordStoreTable(tableId);
 
   // Handle delete
   const handleDelete = async () => {
@@ -42,16 +46,8 @@ export default function DeleteRowModal({
       setLoading(true);
       setError(null);
 
-      // Call the RPC function
-      const { data, error } = await supabase.rpc(
-        "delete_data_row_from_user_table",
-        {
-          p_row_id: rowId,
-        },
-      );
-
-      if (error) throw error;
-      unwrapUserTableMutation(data ?? null);
+      const done = await deleteRow({ tableId, rowId });
+      if (isServiceFailure(done)) throw new Error(done.error);
 
       onSuccess();
       onClose();
@@ -75,9 +71,13 @@ export default function DeleteRowModal({
         <DialogHeader>
           <DialogTitle>{rowLabel ? `Delete "${rowLabel}"?` : "Delete Row"}</DialogTitle>
           <DialogDescription>
-            {rowLabel
-              ? `The row "${rowLabel}" will be deleted. This action cannot be undone.`
-              : "Are you sure you want to delete this row? This action cannot be undone."}
+            {archives
+              ? // THE RECORD STORE ARCHIVES — it never destroys a row (REC-23), so
+                // "cannot be undone" would be a false sentence here.
+                `${rowLabel ? `The row "${rowLabel}"` : "This row"} will be archived: it leaves this table, and it stays restorable from the table's archive for the table's retention period.`
+              : rowLabel
+                ? `The row "${rowLabel}" will be deleted. This action cannot be undone.`
+                : "Are you sure you want to delete this row? This action cannot be undone."}
           </DialogDescription>
         </DialogHeader>
 

@@ -34,6 +34,15 @@ import { recordStoreHomeOf } from "./data-source/table-home";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { parseTableMetadata } from "./types";
 import { operationFailed } from "@/utils/errors";
+import { unwrapUserTableMutation } from "@/utils/user-tables-rpc";
+import {
+  addColumn as addColumnToOlderTable,
+  addRow as addRowToOlderTable,
+  getTableDetails as getOlderTableDetails,
+  type AddColumnParams,
+  type AddColumnResult,
+  type GetTableResult,
+} from "@/utils/user-table-utls/table-utils";
 import type {
   BulkOp,
   BulkWriteResponse,
@@ -453,7 +462,8 @@ export type ChangeFieldTypeArgs = {
 export async function changeFieldType(
   args: ChangeFieldTypeArgs,
 ): Promise<ServiceResult<ChangeFieldTypeResponse>> {
-  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("change a column's type");
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.changeFieldType(home, args) as Promise<ServiceResult<ChangeFieldTypeResponse>>;
   const { data, error } = await supabase.rpc("udt_change_field_type", {
     p_table_id: args.tableId,
     p_field_id: args.fieldId,
@@ -496,7 +506,8 @@ export type DeleteFieldResponse = {
 export async function deleteField(
   args: DeleteFieldArgs,
 ): Promise<ServiceResult<DeleteFieldResponse>> {
-  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("remove a column");
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.deleteField(home, args);
   const { data, error } = await supabase.rpc("udt_delete_field", {
     p_table_id: args.tableId,
     p_field_id: args.fieldId,
@@ -531,7 +542,8 @@ export type SetFieldFormatArgs = {
 export async function setFieldFormat(
   args: SetFieldFormatArgs,
 ): Promise<ServiceResult<{ field_id: string }>> {
-  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("change how a column shows its values");
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.setFieldFormat(home, args);
   const { data, error } = await supabase.rpc("udt_set_field_format", {
     p_table_id: args.tableId,
     p_field_id: args.fieldId,
@@ -574,7 +586,8 @@ export async function backfillAutonumber(args: {
   tableId: string;
   fieldId: string;
 }): Promise<ServiceResult<{ numbered: number; highest: number }>> {
-  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("number an Autonumber column");
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.backfillAutonumber(home, args);
   const { data, error } = await supabase.rpc("udt_backfill_autonumber", {
     p_table_id: args.tableId,
     p_field_id: args.fieldId,
@@ -666,7 +679,6 @@ export async function renameColumn(args: {
 }): Promise<
   ServiceResult<{ formulasUpdated: string[]; formulasFailed: string[] }>
 > {
-  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("rename a column");
   const newName = args.newName.trim();
   if (!newName) return { success: false, error: "A column needs a name." };
   if (newName === args.field.display_name) {
@@ -684,6 +696,9 @@ export async function renameColumn(args: {
       error: `Another column is already called "${clash.display_name}". Column names must be different so formulas and agents can tell them apart.`,
     };
   }
+
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.renameColumn(home, { tableId: args.tableId, fieldId: args.field.id, newName });
 
   const { data, error } = await supabase.rpc("update_user_table_config", {
     p_table_id: args.tableId,
@@ -722,7 +737,8 @@ export type SetTableStyleArgs = {
 export async function setTableStyle(
   args: SetTableStyleArgs,
 ): Promise<ServiceResult<{ style: unknown }>> {
-  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("change the table's colors");
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.setTableStyle(home, args);
   const { data, error } = await supabase.rpc("udt_set_table_style", {
     p_table_id: args.tableId,
     p_path: [...args.path],
@@ -753,7 +769,8 @@ export async function renumberFields(args: {
   tableId: string;
   updates: { id: string; field_order: number }[];
 }): Promise<ServiceResult<{ updated: number }>> {
-  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("reorder columns");
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.renumberFields(home, args);
   if (args.updates.length === 0) return { success: true, data: { updated: 0 } };
   const { data, error } = await supabase.rpc("update_user_table_config", {
     p_table_id: args.tableId,
@@ -831,7 +848,8 @@ export type UpdatedTableMetadata = {
 export async function updateTableMetadata(
   args: UpdateTableMetadataArgs,
 ): Promise<ServiceResult<UpdatedTableMetadata>> {
-  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("rename or describe the table");
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.updateTableMetadata(home, args);
   const { data, error } = await supabase.rpc("update_user_table_metadata", {
     p_table_id: args.tableId,
     ...(args.tableName !== undefined ? { p_table_name: args.tableName } : {}),
@@ -881,7 +899,14 @@ export type SetValidationModeArgs = {
 export async function setValidationMode(
   args: SetValidationModeArgs,
 ): Promise<ServiceResult<{ validation_mode: ValidationMode }>> {
-  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("switch strict validation");
+  if (recordStoreHomeOf(args.tableId)) {
+    // Not a gap: every write to a record-store table is judged by its columns'
+    // rules, so it is strict by construction and there is nothing to switch.
+    return {
+      success: false,
+      error: "This table lives in the record store, where every change is checked against the column's rules. It is always strict, so there is no switch to turn.",
+    };
+  }
   const { data, error } = await supabase
     .schema("workbench")
     .from("udt_datasets")
@@ -986,7 +1011,8 @@ export type GetTableProfileArgs = {
 export async function getTableProfile(
   args: GetTableProfileArgs,
 ): Promise<ServiceResult<TableProfile>> {
-  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("profile the table's columns");
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.getTableProfile(home, args) as Promise<ServiceResult<TableProfile>>;
   const { data, error } = await supabase.rpc("udt_table_profile", {
     p_table_id: args.tableId,
     p_preview_values: args.previewValues ?? 12,
@@ -1029,7 +1055,8 @@ export async function setTableRowLabel(args: {
   tableId: string;
   rowLabel: import("./row-label").RowLabelConfig | null;
 }): Promise<ServiceResult<{ row_label: unknown }>> {
-  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("set the row label");
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.setTableRowLabel(home, args);
   const { data, error } = await supabase.rpc("udt_set_table_row_label", {
     p_table_id: args.tableId,
     p_row_label: (args.rowLabel ?? null) as never,
@@ -1050,7 +1077,8 @@ export async function setTableRowActions(args: {
   tableId: string;
   rowActions: import("./row-actions").RowAction[];
 }): Promise<ServiceResult<{ row_actions: unknown }>> {
-  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("set the row actions");
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.setTableRowActions(home, args as { tableId: string; rowActions: Record<string, unknown>[] });
   const { data, error } = await supabase.rpc("udt_set_table_row_actions", {
     p_table_id: args.tableId,
     p_row_actions: args.rowActions as never,
@@ -1069,6 +1097,16 @@ export async function setTableRowActions(args: {
 // `supabase.rpc` directly, which is exactly the path a record-store table must
 // never take. They live here now so they dispatch like everything above; the
 // older bodies are the inline code, moved, unchanged.
+
+/** The dialogs' own envelope check (`unwrapUserTableMutation`), with its exact sentences. */
+function mutationFailure(data: unknown): ServiceErr | null {
+  try {
+    unwrapUserTableMutation((data ?? null) as never);
+    return null;
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : "Request failed" };
+  }
+}
 
 function envelopeFailure(data: unknown, fallback: string): ServiceErr | null {
   if (!isRecord(data) || typeof data.success !== "boolean") {
@@ -1123,7 +1161,8 @@ export async function setDefaultSort(args: {
   sortField?: string;
   sortDirection?: "asc" | "desc";
 }): Promise<ServiceResult<null>> {
-  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("save a default sort");
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.setDefaultSort(home, args);
   const { data, error } = await supabase.rpc("update_user_table_default_sort", {
     p_table_id: args.tableId,
     p_sort_field: args.sortField,
@@ -1148,7 +1187,8 @@ export async function deleteRow(args: {
     p_row_id: args.rowId,
   });
   if (error) return refused(error);
-  return { success: true, data: data ?? null };
+  const failed = mutationFailure(data);
+  return failed ?? { success: true, data: data ?? null };
 }
 
 /**
@@ -1202,4 +1242,136 @@ export async function getRowsForClientSort(args: {
   if (failed) return failed;
   const rows = (data as { data?: unknown }).data;
   return { success: true, data: Array.isArray(rows) ? (rows as TablePage["rows"]) : [] };
+}
+
+/**
+ * TRUE when the table is read and written through the record store. For the
+ * few places where the grid does something ITSELF that the store now does —
+ * working out a formula, running a row action's steps — so the grid asks
+ * rather than computing in the browser.
+ */
+export function isRecordStoreTable(tableId: string | null | undefined): boolean {
+  return recordStoreHomeOf(tableId) !== null;
+}
+
+/**
+ * Run an update row action over a selection. Record store only: the store runs
+ * the whole selection in one transaction and works every formula step out
+ * itself (G2). An older table keeps running its steps in the grid, as before.
+ */
+export async function runRowAction(args: {
+  tableId: string;
+  actionId: string;
+  rowIds: readonly string[];
+}): Promise<ServiceResult<{ changed: number }>> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (!home) {
+    return { success: false, error: "An older table runs its row actions in the grid; this door is the record store's." };
+  }
+  return recordStore.runRowAction(home, args);
+}
+
+/** Exactly these rows, read again from the table's store (after a write the store did itself). */
+export async function readRowsById(args: {
+  tableId: string;
+  rowIds: readonly string[];
+}): Promise<ServiceResult<TablePage["rows"]>> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (!home) {
+    return { success: false, error: "An older table's rows are read a page at a time; this door is the record store's." };
+  }
+  return recordStore.rowsById(home, args);
+}
+
+// ─── history (lane GRID-PORT) ───────────────────────────────────────────────
+//
+// An older row's history is read by `hooks/useRowVersions.ts` straight from
+// `udt_dataset_row_versions` and restored by writing the snapshot back
+// (`upsertRow` / `upsertCell`), exactly as before. A record-store row's history
+// is the store's own (`custom.record_history`), rebuilt into the same shape, and
+// restored by the store's own verbs — never by writing a snapshot over it.
+
+export async function readRowHistory(args: {
+  tableId: string;
+  rowId: string;
+  limit: number;
+}): Promise<ServiceResult<import("./types").RowVersion[]>> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (!home) return { success: false, error: "An older row's history is read by useRowVersions." };
+  const read = await recordStore.rowHistory(home, args);
+  return read.success ? { success: true, data: read.data as unknown as import("./types").RowVersion[] } : read;
+}
+
+export async function restoreRowVersion(args: { tableId: string; rowId: string; version: number }) {
+  const home = recordStoreHomeOf(args.tableId);
+  if (!home) return { success: false, error: "An older row is restored by writing its snapshot back." } as ServiceErr;
+  return recordStore.restoreRowVersion(home, args);
+}
+
+export async function revertRowField(args: { tableId: string; rowId: string; fieldName: string; version: number }) {
+  const home = recordStoreHomeOf(args.tableId);
+  if (!home) return { success: false, error: "An older row's cell is reverted by writing it back." } as ServiceErr;
+  return recordStore.revertRowField(home, args);
+}
+
+export async function restoreArchivedRow(args: { tableId: string; rowId: string }) {
+  const home = recordStoreHomeOf(args.tableId);
+  if (!home) return { success: false, error: "An older row that was deleted is re-inserted from its snapshot." } as ServiceErr;
+  return recordStore.restoreArchivedRow(home, args);
+}
+
+/**
+ * The table-and-column settings write the settings dialogs send
+ * (`update_user_table_config`: a table's name and description, a column's
+ * name, position, required mark and rules). A record-store table sends each
+ * column's change through `custom.field_update` and the table's through its
+ * own record.
+ */
+export async function updateTableConfig(args: {
+  tableId: string;
+  tableUpdates?: Record<string, unknown>;
+  fieldUpdates?: Array<Record<string, unknown> & { id: string }>;
+}): Promise<ServiceResult<null>> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.updateTableConfig(home, args);
+  const params: Record<string, unknown> = { p_table_id: args.tableId };
+  if (args.tableUpdates && Object.keys(args.tableUpdates).length > 0) params.p_table_updates = args.tableUpdates;
+  if (args.fieldUpdates && args.fieldUpdates.length > 0) params.p_field_updates = args.fieldUpdates;
+  const { data, error } = await supabase.rpc("update_user_table_config", params as never);
+  if (error) return refused(error);
+  const failed = mutationFailure(data);
+  return failed ?? { success: true, data: null };
+}
+
+// ─── the Add Column / Add Row forms (lane GRID-PORT) ────────────────────────
+//
+// Both forms call `utils/user-table-utls/table-utils` for an older table, as
+// they always did; a record-store table goes to the store's own doors
+// (`custom.field_declare`, `custom.record_write`).
+
+export async function addTableColumn(
+  params: AddColumnParams,
+): Promise<AddColumnResult> {
+  const home = recordStoreHomeOf(params.tableId);
+  if (home) return recordStore.addColumn(home, params);
+  return addColumnToOlderTable(supabase, params);
+}
+
+export async function readTableDetails(tableId: string): Promise<GetTableResult> {
+  const home = recordStoreHomeOf(tableId);
+  if (home) return recordStore.tableDetails(home, tableId) as Promise<GetTableResult>;
+  return getOlderTableDetails(supabase, tableId);
+}
+
+export async function addTableRow(params: { tableId: string; data: Record<string, unknown> }): Promise<{
+  success: boolean;
+  rowId?: string;
+  error?: string;
+}> {
+  const home = recordStoreHomeOf(params.tableId);
+  if (home) {
+    const made = await recordStore.upsertRow(home, { tableId: params.tableId, data: params.data });
+    return made.success ? { success: true, rowId: made.data.id } : { success: false, error: made.error };
+  }
+  return addRowToOlderTable(supabase, params);
 }

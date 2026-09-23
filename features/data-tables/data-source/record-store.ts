@@ -31,7 +31,15 @@
 //                               hides behind the batch.
 
 import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
-import type { Field, RecordsError } from "@ai-matrx/records";
+import { actionRefusals } from "@ai-matrx/records";
+import type {
+  DecorationPath,
+  Field,
+  RecordHistoryEntry,
+  RecordsError,
+  RowAction as StoreRowAction,
+  TableDecorations as StoreDecorations,
+} from "@ai-matrx/records";
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
 import { createClient } from "@/utils/supabase/client";
@@ -50,6 +58,9 @@ import type {
   TableMetadata,
 } from "../types";
 import type { RecordStoreHome } from "./table-home";
+import * as gridDoors from "./record-store-grid";
+import { migrateRetype } from "./record-store-grid";
+import type { FieldFormatConfig } from "@/lib/field-formats/types";
 import {
   choiceFromOption,
   jsonbText,
@@ -70,6 +81,8 @@ const READ_CEILING = 10_000;
 const READ_PAGE = 200;
 /** A metadata read followed by a page read is one question; they share one snapshot this long. */
 const SNAPSHOT_TTL_MS = 1_500;
+/** The store's history page ceiling (PAGE-1 — custom.page_contract answers 500). */
+const HISTORY_PAGE = 500;
 
 // ─── the client ──────────────────────────────────────────────────────────────
 
@@ -118,7 +131,13 @@ export function invalidateRecordStoreTable(tableId: string): void {
   snapshots.delete(tableId);
 }
 
-function asDataset(tableId: string, home: RecordStoreHome, document: Record<string, unknown>): Dataset {
+function asDataset(
+  tableId: string,
+  home: RecordStoreHome,
+  document: Record<string, unknown>,
+  level: string | null,
+  extras: { metadata: Record<string, unknown>; rowOrdering: Record<string, unknown> | null },
+): Dataset {
   const name = typeof document.name === "string" ? document.name : "";
   const description = typeof document.description === "string" ? document.description : null;
   const now = new Date().toISOString();
@@ -127,10 +146,14 @@ function asDataset(tableId: string, home: RecordStoreHome, document: Record<stri
     table_name: name,
     description,
     organization_id: home.organizationId,
-    // Ownership in the record store is a LEVEL on the Table, not a column on it,
-    // so there is no owner id to hand the grid. The grid's edit gate asks
-    // `hasEditorAccess` (my_levels) instead — see service.ts.
-    user_id: "",
+    // Ownership in the record store is a LEVEL on the Table, not a column on it.
+    // The grid's edit gate reads `user_id === me` as "full rights" and asks
+    // `hasEditorAccess` for everyone else, so a person whose level is `admin`
+    // (the store's full-rights level) is handed as the owner here — the grid then
+    // opens editable at once instead of flashing "Shared Table (read only)"
+    // while the level is asked again. Any other level leaves it empty and the
+    // edit gate asks `my_levels` (see service.ts `hasEditorAccess`).
+    user_id: level === "admin" && home.userId ? home.userId : "",
     created_by: "",
     updated_by: null,
     created_at: now,
@@ -140,8 +163,8 @@ function asDataset(tableId: string, home: RecordStoreHome, document: Record<stri
     // Every write to the record store is judged by the column's rules — there is
     // no permissive mode to switch off. The grid's Strict switch reads this.
     validation_mode: "strict",
-    row_ordering_config: null,
-    metadata: {},
+    row_ordering_config: extras.rowOrdering as Dataset["row_ordering_config"],
+    metadata: extras.metadata as Dataset["metadata"],
     custom_fields: {},
     project_id: null,
     sheet_index: null,
@@ -202,10 +225,31 @@ async function readSnapshot(home: RecordStoreHome, tableId: string): Promise<Ser
   if (!rowsRead.success) return rowsRead;
   const rows = rowsRead.data.map((row) => ({ id: row.id, data: olderRowData(row.document, columns) }));
   const level = levelRead.ok ? (levelRead.data.find((l) => l.id === tableId)?.level ?? null) : null;
+  const document = tableRead.data.document as Record<string, unknown>;
+  const [decorations, actions] = await Promise.all([
+    gridDoors.tableDecorations(home, tableId),
+    gridDoors.rowActions(home, tableId),
+  ]);
+  const metadata: Record<string, unknown> = {};
+  if (decorations.ok) metadata.style = olderStyle(decorations.data, fields);
+  if (actions.ok) metadata.row_actions = olderRowActions(actions.data.actions, fields);
+  const titleField = typeof document.title_field === "string" ? document.title_field : null;
+  if (titleField && fields.some((f) => f.key === titleField)) {
+    metadata.row_label = { kind: "field", field: titleField };
+  }
+  // What this grid cannot draw from the store, said once, where a reader of the
+  // table's metadata (the settings panel, an agent) will find it.
+  metadata.record_store = {
+    colors: decorations.ok ? "served" : decorations.error.message,
+    row_actions: actions.ok ? "served" : actions.error.message,
+  };
   return {
     success: true,
     data: {
-      table: asDataset(tableId, home, tableRead.data.document as Record<string, unknown>),
+      table: asDataset(tableId, home, document, level ? String(level) : null, {
+        metadata,
+        rowOrdering: olderRowOrdering(document.default_sort, fields),
+      }),
       fields,
       columns,
       rows,
@@ -397,6 +441,30 @@ export async function getColumnFacets(
   };
 }
 
+/**
+ * The words a page of relation cells reads, through the store's own door for
+ * that column (`custom.relation_words_many` reads the column's display spec and
+ * asks the ladder per record). An id the store answers nothing for is absent,
+ * and the grid draws it as the amber identifier chip — never as a blank.
+ */
+export async function relationWords(
+  home: RecordStoreHome,
+  args: { tableId: string; fieldName: string; rowIds: readonly string[] },
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (args.rowIds.length === 0) return out;
+  const columns = await columnsOf(home, args.tableId);
+  if (!columns.success) return out;
+  const column = columns.data.find((c) => c.field_name === args.fieldName);
+  if (!column) return out;
+  const answer = await clientFor(home).relationWordsMany({ field_id: column.id, record_ids: [...args.rowIds] });
+  if (!answer.ok) return out;
+  for (const [id, words] of Object.entries(answer.data)) {
+    if (typeof words === "string") out.set(id, words);
+  }
+  return out;
+}
+
 // ─── writes ──────────────────────────────────────────────────────────────────
 
 function asDatasetRow(tableId: string, home: RecordStoreHome, id: string, data: Record<string, unknown>): DatasetRow {
@@ -566,4 +634,774 @@ export async function bulkWrite(
   }
   invalidateRecordStoreTable(args.tableId);
   return { success: true, data: { table_id: args.tableId, count: args.operations.length, results } };
+}
+
+// ─── the Table record's own settings, in the grid's words ───────────────────
+//
+// Colors (G1) and row actions (G2) point at Fields BY ID; the grid's older
+// shapes point at them by MACHINE NAME. Both directions are translated here and
+// nowhere else. A reference to a column that is gone was already dropped by the
+// store's read door and named under `stale`.
+
+function keyOf(fields: readonly Field[], id: string): string | null {
+  return fields.find((f) => f.id === id)?.key ?? null;
+}
+
+function idOf(fields: readonly Field[], key: string): string | null {
+  return fields.find((f) => f.key === key)?.id ?? null;
+}
+
+function olderStyle(doc: StoreDecorations, fields: readonly Field[]): Record<string, unknown> {
+  const style: Record<string, unknown> = { version: 1 };
+  if (doc.color_by?.field) {
+    const field = keyOf(fields, doc.color_by.field);
+    if (field) style.colorBy = { field, target: doc.color_by.target };
+  }
+  if (Array.isArray(doc.rules)) {
+    style.rules = doc.rules.flatMap((r) => {
+      const field = keyOf(fields, r.field);
+      if (!field) return [];
+      return [{ ...r, field, ...(r.value === undefined || r.value === null ? {} : { value: String(r.value) }) }];
+    });
+  }
+  if (doc.rows && Object.keys(doc.rows).length) style.rows = { ...doc.rows };
+  const columns: Record<string, string> = {};
+  for (const [id, color] of Object.entries(doc.columns ?? {})) {
+    const key = keyOf(fields, id);
+    if (key) columns[key] = color;
+  }
+  if (Object.keys(columns).length) style.columns = columns;
+  const cells: Record<string, Record<string, string>> = {};
+  for (const [rowId, byField] of Object.entries(doc.cells ?? {})) {
+    for (const [id, color] of Object.entries(byField ?? {})) {
+      const key = keyOf(fields, id);
+      if (!key) continue;
+      (cells[rowId] ??= {})[key] = color;
+    }
+  }
+  if (Object.keys(cells).length) style.cells = cells;
+  return style;
+}
+
+/** The older style path + value → the store's decoration path + value. Null = the path names a column that is gone. */
+function storeDecorationWrite(
+  path: readonly string[],
+  value: unknown,
+  fields: readonly Field[],
+): { path: string[]; value: unknown } | null {
+  const [head, a, b] = path;
+  switch (head) {
+    case "colorBy": {
+      if (value === null) return { path: ["color_by"], value: null };
+      const v = value as { field?: string; target?: string };
+      const field = v?.field ? idOf(fields, v.field) : null;
+      return field ? { path: ["color_by"], value: { field, target: v.target } } : null;
+    }
+    case "rules": {
+      if (value === null) return { path: ["rules"], value: [] };
+      const rules = Array.isArray(value) ? value : [];
+      const mapped = [];
+      for (const r of rules as Array<Record<string, unknown>>) {
+        const field = typeof r.field === "string" ? idOf(fields, r.field) : null;
+        if (!field) return null;
+        mapped.push({ ...r, field });
+      }
+      return { path: ["rules"], value: mapped };
+    }
+    case "rows":
+      return a ? { path: ["rows", a], value } : null;
+    case "columns": {
+      const field = a ? idOf(fields, a) : null;
+      return field ? { path: ["columns", field], value } : null;
+    }
+    case "cells": {
+      const field = b ? idOf(fields, b) : null;
+      return a && field ? { path: ["cells", a, field], value } : null;
+    }
+    default:
+      return null;
+  }
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function olderRowActions(actions: readonly StoreRowAction[], fields: readonly Field[]): unknown[] {
+  return actions.map((a) => ({
+    id: a.id,
+    name: a.name,
+    kind: a.kind,
+    ...(a.color ? { color: a.color } : {}),
+    ...(a.icon ? { icon: a.icon } : {}),
+    ...(a.confirm ? { confirm: true } : {}),
+    ...(a.kind === "agent" ? { prompt: a.prompt ?? "" } : {}),
+    ...(a.kind === "update"
+      ? {
+          steps: (a.steps ?? []).flatMap((st) => {
+            const field = keyOf(fields, st.field);
+            if (!field) return [];
+            if (st.set === "clear") return [{ field, set: "clear" }];
+            if (st.set === "compute") return [{ field, set: "formula", expression: st.formula_text ?? "" }];
+            return [{ field, set: "value", value: st.value }];
+          }),
+        }
+      : {}),
+  }));
+}
+
+function storeRowActions(actions: ReadonlyArray<Record<string, unknown>>, fields: readonly Field[]): unknown[] | string {
+  const out: unknown[] = [];
+  for (const a of actions) {
+    const steps: unknown[] = [];
+    for (const st of (Array.isArray(a.steps) ? a.steps : []) as Array<Record<string, unknown>>) {
+      const field = typeof st.field === "string" ? idOf(fields, st.field) : null;
+      if (!field) return `The action "${String(a.name)}" changes a column that is not in this table.`;
+      if (st.set === "clear") steps.push({ field, set: "clear" });
+      else if (st.set === "formula") steps.push({ field, set: "compute", formula_text: st.expression });
+      else steps.push({ field, set: "value", value: st.value });
+    }
+    out.push({
+      // The store keys a row action by uuid; an older id that is not one gets one.
+      id: typeof a.id === "string" && UUID_RE.test(a.id) ? a.id : crypto.randomUUID(),
+      name: a.name,
+      kind: a.kind === "agent" ? "agent" : "update",
+      ...(a.color ? { color: a.color } : {}),
+      ...(a.icon ? { icon: a.icon } : {}),
+      ...(a.confirm ? { confirm: true } : {}),
+      ...(a.kind === "agent" ? { prompt: a.prompt } : { steps }),
+    });
+  }
+  return out;
+}
+
+/** The Table's `default_sort` (the store's own key: `[{key, direction}]`) as the older config. */
+function olderRowOrdering(defaultSort: unknown, fields: readonly Field[]): Record<string, unknown> | null {
+  const first = Array.isArray(defaultSort) ? (defaultSort[0] as { key?: unknown; direction?: unknown } | undefined) : undefined;
+  if (!first || typeof first.key !== "string" || !fields.some((f) => f.key === first.key)) return null;
+  return { default_sort: { field: first.key, direction: first.direction === "desc" ? "desc" : "asc" } };
+}
+
+async function fieldsOf(home: RecordStoreHome, tableId: string): Promise<ServiceResult<Field[]>> {
+  const snap = await snapshot(home, tableId);
+  if (!snap.success) return snap;
+  return { success: true, data: snap.data.fields };
+}
+
+function doorRefused(answer: { ok: false; error: RecordsError }): ServiceErr {
+  return refused(answer.error);
+}
+
+// ─── table-level writes ─────────────────────────────────────────────────────
+
+export async function setTableStyle(
+  home: RecordStoreHome,
+  args: { tableId: string; path: readonly string[]; value: unknown },
+): Promise<ServiceResult<{ style: unknown }>> {
+  const fields = await fieldsOf(home, args.tableId);
+  if (!fields.success) return fields;
+  const write = storeDecorationWrite(args.path, args.value ?? null, fields.data);
+  if (!write) return plainFailure("That color points at a column this table no longer has. Nothing was saved.");
+  const answer = await gridDoors.tableDecorate(home, args.tableId, write.path as DecorationPath, write.value);
+  invalidateRecordStoreTable(args.tableId);
+  if (!answer.ok) return doorRefused(answer);
+  return { success: true, data: { style: olderStyle(answer.data, fields.data) } };
+}
+
+export async function setTableRowActions(
+  home: RecordStoreHome,
+  args: { tableId: string; rowActions: ReadonlyArray<Record<string, unknown>> },
+): Promise<ServiceResult<{ row_actions: unknown }>> {
+  const fields = await fieldsOf(home, args.tableId);
+  if (!fields.success) return fields;
+  const mapped = storeRowActions(args.rowActions, fields.data);
+  if (typeof mapped === "string") return plainFailure(`${mapped} Nothing was saved.`);
+  const answer = await gridDoors.actionDeclare(home, args.tableId, mapped as StoreRowAction[]);
+  invalidateRecordStoreTable(args.tableId);
+  if (!answer.ok) return doorRefused(answer);
+  const read = await gridDoors.rowActions(home, args.tableId);
+  return { success: true, data: { row_actions: read.ok ? olderRowActions(read.data.actions, fields.data) : mapped } };
+}
+
+/**
+ * Run an update row action over a selection IN THE STORE (G2): one transaction,
+ * the formula steps worked out by the store, the whole selection refused by
+ * rule if any row is refused. Nothing is evaluated in the browser.
+ */
+export async function runRowAction(
+  home: RecordStoreHome,
+  args: { tableId: string; actionId: string; rowIds: readonly string[] },
+): Promise<ServiceResult<{ changed: number }>> {
+  const answer = await gridDoors.actionRun(home, args.actionId, args.rowIds);
+  invalidateRecordStoreTable(args.tableId);
+  if (!answer.ok) {
+    // A run any record refused changed NOTHING; name every record and field that refused.
+    const refusals = actionRefusals(answer.error);
+    if (refusals.length === 0) return doorRefused(answer);
+    const said = refusals
+      .slice(0, 3)
+      .map((r) => `${r.record ?? "a row"}${r.field ? ` (${r.field})` : ""}: ${r.says}`)
+      .join("; ");
+    return { ...refused(answer.error), error: `${said}${refusals.length > 3 ? ` — and ${refusals.length - 3} more` : ""}` };
+  }
+  const changed = typeof answer.data?.ran === "number" ? answer.data.ran : args.rowIds.length;
+  return { success: true, data: { changed } };
+}
+
+export async function setTableRowLabel(
+  home: RecordStoreHome,
+  args: { tableId: string; rowLabel: { kind: string; field?: string; expression?: string } | null },
+): Promise<ServiceResult<{ row_label: unknown }>> {
+  if (args.rowLabel && args.rowLabel.kind !== "field") {
+    return plainFailure(
+      "A record-store table names its rows by one of its columns; a label worked out by a formula is not something it keeps yet. Pick a column instead.",
+    );
+  }
+  const client = clientFor(home);
+  const written = await client.recordUpdate({
+    record_id: args.tableId,
+    patch: { title_field: args.rowLabel?.field ?? null },
+  });
+  invalidateRecordStoreTable(args.tableId);
+  if (!written.ok) return refused(written.error);
+  return { success: true, data: { row_label: args.rowLabel } };
+}
+
+export async function updateTableMetadata(
+  home: RecordStoreHome,
+  args: { tableId: string; tableName?: string; description?: string; isPublic?: boolean },
+): Promise<ServiceResult<{ id: string; table_name: string; description: string | null; version: number | null; is_public: boolean | null; updated_at: string }>> {
+  if (args.isPublic !== undefined) {
+    return plainFailure(
+      "A record-store table is shared by the Share button, person by person or with the organization — it has no public switch. Nothing was changed.",
+    );
+  }
+  const patch: Record<string, unknown> = {};
+  if (args.tableName !== undefined) patch.name = args.tableName;
+  if (args.description !== undefined) patch.description = args.description;
+  const written = await clientFor(home).recordUpdate({ record_id: args.tableId, patch });
+  invalidateRecordStoreTable(args.tableId);
+  if (!written.ok) return refused(written.error);
+  const snap = await snapshot(home, args.tableId, true);
+  return {
+    success: true,
+    data: {
+      id: args.tableId,
+      table_name: snap.success ? snap.data.table.table_name : (args.tableName ?? ""),
+      description: snap.success ? snap.data.table.description : (args.description ?? null),
+      version: written.data,
+      is_public: false,
+      updated_at: new Date().toISOString(),
+    },
+  };
+}
+
+export async function setDefaultSort(
+  home: RecordStoreHome,
+  args: { tableId: string; sortField?: string; sortDirection?: "asc" | "desc" },
+): Promise<ServiceResult<null>> {
+  const value = args.sortField ? [{ key: args.sortField, direction: args.sortDirection ?? "asc" }] : [];
+  const written = await clientFor(home).recordUpdate({ record_id: args.tableId, patch: { default_sort: value } });
+  invalidateRecordStoreTable(args.tableId);
+  if (!written.ok) return refused(written.error);
+  return { success: true, data: null };
+}
+
+// ─── column writes ──────────────────────────────────────────────────────────
+
+async function fieldById(home: RecordStoreHome, tableId: string, fieldId: string): Promise<ServiceResult<Field>> {
+  const fields = await fieldsOf(home, tableId);
+  if (!fields.success) return fields;
+  const field = fields.data.find((f) => f.id === fieldId);
+  return field ? { success: true, data: field } : plainFailure("That column is no longer part of this table.");
+}
+
+export async function renameColumn(
+  home: RecordStoreHome,
+  args: { tableId: string; fieldId: string; newName: string },
+): Promise<ServiceResult<{ formulasUpdated: string[]; formulasFailed: string[] }>> {
+  // A store formula points at its columns BY ID, so renaming one breaks no formula
+  // and none has to be rewritten; the store keeps each formula's text in step.
+  const written = await clientFor(home).fieldUpdate({ field_id: args.fieldId, patch: { label: args.newName } as never });
+  invalidateRecordStoreTable(args.tableId);
+  if (!written.ok) return refused(written.error);
+  return { success: true, data: { formulasUpdated: [], formulasFailed: [] } };
+}
+
+export async function renumberFields(
+  home: RecordStoreHome,
+  args: { tableId: string; updates: { id: string; field_order: number }[] },
+): Promise<ServiceResult<{ updated: number }>> {
+  const client = clientFor(home);
+  for (const u of args.updates) {
+    const written = await client.fieldUpdate({ field_id: u.id, patch: { sort: u.field_order } as never });
+    if (!written.ok) {
+      invalidateRecordStoreTable(args.tableId);
+      return refused(written.error);
+    }
+  }
+  invalidateRecordStoreTable(args.tableId);
+  return { success: true, data: { updated: args.updates.length } };
+}
+
+export async function deleteField(
+  home: RecordStoreHome,
+  args: { tableId: string; fieldId: string },
+): Promise<ServiceResult<{ table_id: string; field_id: string; field_name: string; display_name: string; rows_cleared: number }>> {
+  const field = await fieldById(home, args.tableId, args.fieldId);
+  if (!field.success) return field;
+  const retired = await clientFor(home).fieldRetire({ field_id: args.fieldId });
+  invalidateRecordStoreTable(args.tableId);
+  if (!retired.ok) return refused(retired.error);
+  return {
+    success: true,
+    data: {
+      table_id: args.tableId,
+      field_id: args.fieldId,
+      field_name: field.data.key,
+      display_name: field.data.label,
+      // The store retires the column; every value stays on its record, in history.
+      rows_cleared: 0,
+    },
+  };
+}
+
+/** The store's kind word for a format that changes what a column IS, not how it shows. */
+const KIND_FOR_FORMAT: Partial<Record<string, string>> = {
+  choice: "select",
+  multi_choice: "multi_select",
+  relation: "relation",
+  person: "member",
+  attachment: "attachment",
+  autonumber: "autonumber",
+  created_time: "created_time",
+  modified_time: "modified_time",
+};
+
+export async function setFieldFormat(
+  home: RecordStoreHome,
+  args: { tableId: string; fieldId: string; format: FieldFormatConfig | null },
+): Promise<ServiceResult<{ field_id: string }>> {
+  const field = await fieldById(home, args.tableId, args.fieldId);
+  if (!field.success) return field;
+  const client = clientFor(home);
+  const format = args.format;
+  let patch: Record<string, unknown>;
+  if (!format) {
+    patch = { display_format: null };
+  } else if (format.id === "formula") {
+    // THE TEXT GOES TO THE STORE; THE STORE WORKS IT OUT. `field_update` parses
+    // `formula_text` (custom.formula_parse) and keeps the text for the editor.
+    const expression = format.options?.formula?.expression ?? "";
+    const resultFormat = format.options?.formula?.resultFormat;
+    patch = String(field.data.type) === "formula" ? { formula_text: expression } : { type: "formula", formula_text: expression };
+    if (resultFormat) patch.display_format = { id: resultFormat };
+  } else if (KIND_FOR_FORMAT[format.id]) {
+    const kind = KIND_FOR_FORMAT[format.id]!;
+    patch = { type: kind };
+    const options = format.options ?? {};
+    if (kind === "select" || kind === "multi_select") {
+      const choices = (options.choices ?? []).map((c) => c.value).filter((v) => typeof v === "string" && v.trim() !== "");
+      if (choices.length) patch.options = choices;
+    }
+    if (kind === "relation") {
+      if (options.relation_target) patch.relation_target = options.relation_target;
+      if (typeof options.relation_max === "number") patch.relation_max = options.relation_max;
+    }
+  } else {
+    patch = { display_format: { id: format.id, ...(format.options ? { options: format.options } : {}) } };
+  }
+  const written = await client.fieldUpdate({ field_id: args.fieldId, patch: patch as never });
+  invalidateRecordStoreTable(args.tableId);
+  if (!written.ok) return refused(written.error);
+  if (format?.id === "autonumber") {
+    const numbered = await gridDoors.autonumberBackfill(home, args.fieldId);
+    if (!numbered.ok) {
+      return plainFailure(
+        `The column was set to Autonumber, but the existing rows could not be numbered: ${numbered.error.message}`,
+      );
+    }
+  }
+  return { success: true, data: { field_id: args.fieldId } };
+}
+
+export async function backfillAutonumber(
+  home: RecordStoreHome,
+  args: { tableId: string; fieldId: string },
+): Promise<ServiceResult<{ numbered: number; highest: number }>> {
+  const answer = await gridDoors.autonumberBackfill(home, args.fieldId);
+  invalidateRecordStoreTable(args.tableId);
+  if (!answer.ok) return doorRefused(answer);
+  const numbered = answer.data.numbered ?? 0;
+  const highest = answer.data.highest ?? 0;
+  return { success: true, data: { numbered, highest } };
+}
+
+/** The older storage type the grid asks for → the store's kind word (`field_update` type). */
+const KIND_FOR_TYPE: Partial<Record<string, string>> = {
+  string: "text",
+  number: "number",
+  integer: "number",
+  boolean: "checkbox",
+  datetime: "datetime",
+};
+
+export async function changeFieldType(
+  home: RecordStoreHome,
+  args: { tableId: string; fieldId: string; newType: string },
+): Promise<ServiceResult<{ field_id: string; new_type: string; strategy: string; rows_rewritten: number; rows_skipped: number; rows_total: number; values_emptied: number }>> {
+  const kind = KIND_FOR_TYPE[args.newType];
+  if (!kind) {
+    return plainFailure(
+      args.newType === "date"
+        ? "The record store keeps a day as a date-and-time column; choose Date & time. Nothing was changed."
+        : `The record store has no "${args.newType}" kind of column to change this one into. Nothing was changed.`,
+    );
+  }
+  // FLD-4 / T12: the store converts what converts and keeps what does not in
+  // `_retired`, with the reason — neither coerced nor deleted.
+  const behaviour = kind === "text" ? "text" : kind === "checkbox" ? "boolean" : "range";
+  const retyped = await migrateRetype(home, args.fieldId, behaviour);
+  if (!retyped.ok) {
+    invalidateRecordStoreTable(args.tableId);
+    return doorRefused(retyped);
+  }
+  if (kind === "datetime" || args.newType === "integer") {
+    const shaped = await clientFor(home).fieldUpdate({
+      field_id: args.fieldId,
+      patch: (kind === "datetime" ? { type: "datetime" } : { display_format: { id: "integer" } }) as never,
+    });
+    if (!shaped.ok) {
+      invalidateRecordStoreTable(args.tableId);
+      return refused(shaped.error);
+    }
+  }
+  invalidateRecordStoreTable(args.tableId);
+  const kept = retyped.data?.values_in_retired_for_this_field ?? 0;
+  const holding = retyped.data?.records_still_holding_a_value ?? 0;
+  return {
+    success: true,
+    data: {
+      field_id: args.fieldId,
+      new_type: args.newType,
+      strategy: "cast_or_null",
+      rows_rewritten: holding,
+      rows_skipped: 0,
+      rows_total: holding + kept,
+      values_emptied: kept,
+    },
+  };
+}
+
+/** The shape of every column over every row this person may see — computed from the one read. */
+export async function getTableProfile(
+  home: RecordStoreHome,
+  args: { tableId: string; previewValues?: number },
+): Promise<ServiceResult<{ table_id: string; total_rows: number; columns: unknown[] }>> {
+  const snap = await snapshot(home, args.tableId);
+  if (!snap.success) return snap;
+  const columns: unknown[] = [];
+  for (const c of snap.data.columns) {
+    const facets = await getColumnFacets(home, { tableId: args.tableId, fieldName: c.field_name, limit: args.previewValues ?? 12 });
+    if (!facets.success) return facets;
+    let numeric = 0;
+    let url = 0;
+    let email = 0;
+    let bool = 0;
+    for (const row of snap.data.rows) {
+      const raw = row.data[c.field_name];
+      if (raw === null || raw === undefined) continue;
+      const text = (typeof raw === "string" ? raw : jsonbText(raw)).trim();
+      if (text === "") continue;
+      if (/^-?[0-9]+(\.[0-9]+)?$/.test(text)) numeric += 1;
+      if (/^https?:\/\/\S+$/i.test(text)) url += 1;
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)) email += 1;
+      if (/^(true|false|yes|no)$/i.test(text)) bool += 1;
+    }
+    columns.push({
+      field_name: c.field_name,
+      display_name: c.display_name,
+      data_type: c.data_type,
+      is_required: c.is_required,
+      format: ((c.metadata ?? {}) as { format?: FieldFormatConfig }).format ?? null,
+      looks_numeric: numeric,
+      looks_url: url,
+      looks_email: email,
+      looks_bool: bool,
+      filled: facets.data.filled,
+      blank: facets.data.blank,
+      distinct_count: facets.data.distinct_count,
+      max_length: facets.data.max_length,
+      top_values: facets.data.values,
+    });
+  }
+  return { success: true, data: { table_id: args.tableId, total_rows: snap.data.rows.length, columns } };
+}
+
+/** Exactly these rows, read again through the store's id door (the same ladder as a page). */
+export async function rowsById(
+  home: RecordStoreHome,
+  args: { tableId: string; rowIds: readonly string[] },
+): Promise<ServiceResult<GridRow[]>> {
+  const columns = await columnsOf(home, args.tableId);
+  if (!columns.success) return columns;
+  const read = await clientFor(home).listByIds({ table_id: args.tableId, ids: args.rowIds });
+  if (!read.ok) return refused(read.error);
+  return {
+    success: true,
+    data: read.data.map((r) => ({ id: r.id, data: olderRowData(r.document as Record<string, unknown>, columns.data) })),
+  };
+}
+
+// ─── history ────────────────────────────────────────────────────────────────
+//
+// The older grid's history panel reads `udt_dataset_row_versions`: one row per
+// change carrying the WHOLE row after (`data`) and before (`prior_data`). The
+// store keeps each version as the fields that moved, with before and after —
+// so the whole-row snapshots are rebuilt here, oldest to newest, from exactly
+// what the store recorded. Nothing is guessed: a key the store never recorded
+// is absent from the snapshot, as it was absent from the record.
+
+export type StoreRowVersion = {
+  id: number;
+  row_id: string;
+  table_id: string;
+  change_kind: "insert" | "update" | "delete";
+  changed_at: string;
+  changed_by: string | null;
+  data: Record<string, unknown> | null;
+  prior_data: Record<string, unknown> | null;
+  reason: string | null;
+  custom_fields: Record<string, unknown>;
+};
+
+function changeKindOf(operation: string): StoreRowVersion["change_kind"] {
+  const word = operation.toLowerCase();
+  if (word === "insert" || word === "create" || word === "created") return "insert";
+  if (word.includes("archive") || word.includes("delete")) return "delete";
+  return "update";
+}
+
+export async function rowHistory(
+  home: RecordStoreHome,
+  args: { tableId: string; rowId: string; limit: number },
+): Promise<ServiceResult<StoreRowVersion[]>> {
+  const columns = await columnsOf(home, args.tableId);
+  if (!columns.success) return columns;
+  // Every version, so each snapshot can be rebuilt from the first; `limit` is
+  // applied to what is shown, newest first.
+  const entries: RecordHistoryEntry[] = [];
+  for (let offset = 0; offset < 5000; offset += HISTORY_PAGE) {
+    const read = await clientFor(home).recordHistory({ record_id: args.rowId, limit: HISTORY_PAGE, offset });
+    if (!read.ok) return refused(read.error);
+    entries.push(...read.data);
+    if (read.data.length < HISTORY_PAGE) break;
+  }
+  const oldestFirst = [...entries].sort((a, b) => a.version - b.version);
+  let current: Record<string, unknown> = {};
+  const out: StoreRowVersion[] = [];
+  for (const entry of oldestFirst) {
+    const prior = { ...current };
+    const kind = changeKindOf(entry.operation);
+    for (const change of entry.changes) {
+      if (change.after === null || change.after === undefined) delete current[change.key];
+      else current[change.key] = change.after;
+    }
+    out.push({
+      id: entry.version,
+      row_id: args.rowId,
+      table_id: args.tableId,
+      change_kind: kind,
+      changed_at: entry.occurred_at,
+      changed_by: entry.actor?.user_id ?? null,
+      data: kind === "delete" ? null : olderRowData({ ...current }, columns.data),
+      prior_data: kind === "insert" ? null : olderRowData(prior, columns.data),
+      reason: entry.operation_label ?? null,
+      custom_fields: {},
+    });
+  }
+  return { success: true, data: out.reverse().slice(0, args.limit) };
+}
+
+/** The store's own verb: the whole record back to a version, as a NEW version. */
+export async function restoreRowVersion(
+  home: RecordStoreHome,
+  args: { tableId: string; rowId: string; version: number },
+): Promise<ServiceResult<null>> {
+  const done = await clientFor(home).restoreVersion({ record_id: args.rowId, version: args.version });
+  invalidateRecordStoreTable(args.tableId);
+  if (!done.ok) return refused(done.error);
+  return { success: true, data: null };
+}
+
+/** One column back to what it said at a version, as a NEW version (HIS-N-2). */
+export async function revertRowField(
+  home: RecordStoreHome,
+  args: { tableId: string; rowId: string; fieldName: string; version: number },
+): Promise<ServiceResult<null>> {
+  const done = await clientFor(home).valueRestore({ record_id: args.rowId, field_key: args.fieldName, version: args.version });
+  invalidateRecordStoreTable(args.tableId);
+  if (!done.ok) return refused(done.error);
+  return { success: true, data: null };
+}
+
+/** An archived row back, under its OWN id (REC-23) — nothing is re-inserted. */
+export async function restoreArchivedRow(
+  home: RecordStoreHome,
+  args: { tableId: string; rowId: string },
+): Promise<ServiceResult<null>> {
+  const done = await clientFor(home).recordRestore({ record_id: args.rowId });
+  invalidateRecordStoreTable(args.tableId);
+  if (!done.ok) return refused(done.error);
+  return { success: true, data: null };
+}
+
+// ─── table settings: the older `update_user_table_config` shape ─────────────
+
+/** The older rule keys → the store's executable rules. A key it cannot enforce is named, never dropped. */
+function storeRules(rules: Record<string, unknown>): { rules: Array<{ kind: string; value: unknown }>; unique: boolean | null; refused: string[] } {
+  const out: Array<{ kind: string; value: unknown }> = [];
+  const refused: string[] = [];
+  let unique: boolean | null = null;
+  for (const [key, value] of Object.entries(rules)) {
+    if (value === undefined || value === null || value === "") continue;
+    if (key === "min" || key === "max" || key === "pattern") out.push({ kind: key, value });
+    else if (key === "maxLength") out.push({ kind: "length", value });
+    else if (key === "unique") unique = value === true;
+    else if (key === "patternHint") continue; // presentation, not a rule
+    else refused.push(key === "minLength" ? "a shortest length" : key === "allowedValues" ? "a list of allowed values" : key);
+  }
+  return { rules: out, unique, refused };
+}
+
+export async function updateTableConfig(
+  home: RecordStoreHome,
+  args: {
+    tableId: string;
+    tableUpdates?: Record<string, unknown>;
+    fieldUpdates?: Array<Record<string, unknown> & { id: string }>;
+  },
+): Promise<ServiceResult<null>> {
+  const table = args.tableUpdates ?? {};
+  if (table.table_name !== undefined || table.description !== undefined) {
+    const t = await updateTableMetadata(home, {
+      tableId: args.tableId,
+      ...(typeof table.table_name === "string" ? { tableName: table.table_name } : {}),
+      ...(typeof table.description === "string" ? { description: table.description } : {}),
+    });
+    if (!t.success) return t;
+  }
+  const client = clientFor(home);
+  for (const update of args.fieldUpdates ?? []) {
+    const patch: Record<string, unknown> = {};
+    if (typeof update.display_name === "string") patch.label = update.display_name;
+    if (typeof update.field_order === "number") patch.sort = update.field_order;
+    if (typeof update.is_required === "boolean") patch.required = update.is_required;
+    if (update.validation_rules !== undefined) {
+      const mapped = storeRules((update.validation_rules ?? {}) as Record<string, unknown>);
+      if (mapped.refused.length) {
+        invalidateRecordStoreTable(args.tableId);
+        return plainFailure(
+          `The record store checks a smallest or largest number, a pattern, a longest length and "no two rows the same"; it cannot keep ${mapped.refused.join(" or ")} yet. Nothing about this column was changed.`,
+        );
+      }
+      patch.rules = mapped.rules;
+      if (mapped.unique !== null) patch.unique = mapped.unique;
+    }
+    if (update.default_value !== undefined) {
+      invalidateRecordStoreTable(args.tableId);
+      return plainFailure("A record-store column has no default value to set. Nothing about this column was changed.");
+    }
+    if (Object.keys(patch).length === 0) continue;
+    const written = await client.fieldUpdate({ field_id: update.id, patch: patch as never });
+    if (!written.ok) {
+      invalidateRecordStoreTable(args.tableId);
+      return refused(written.error);
+    }
+  }
+  invalidateRecordStoreTable(args.tableId);
+  return { success: true, data: null };
+}
+
+// ─── add a column ───────────────────────────────────────────────────────────
+
+/** The older storage type an Add Column form picks → a new store Field's spec. */
+function specForNewColumn(dataType: string): Record<string, unknown> | null {
+  switch (dataType) {
+    case "string":
+      return { type: "text" };
+    case "number":
+      return { type: "number" };
+    case "integer":
+      return { type: "number", display_format: { id: "integer" } };
+    case "boolean":
+      return { type: "checkbox" };
+    case "date":
+      return { type: "datetime" };
+    case "json":
+      return { plain: "text", display_format: { id: "json" } };
+    case "array":
+      return { type: "text", multi: true };
+    default:
+      return null;
+  }
+}
+
+export async function addColumn(
+  home: RecordStoreHome,
+  args: {
+    tableId: string;
+    fieldName: string;
+    displayName: string;
+    dataType: string;
+    isRequired: boolean;
+    defaultValue?: string | number | boolean | null;
+    fieldOrder?: number;
+  },
+): Promise<{ success: boolean; columnId?: string; error?: string }> {
+  if (args.defaultValue !== undefined && args.defaultValue !== null && args.defaultValue !== "") {
+    return { success: false, error: "A record-store column has no default value. Leave it empty and fill the rows you need." };
+  }
+  const spec = specForNewColumn(args.dataType);
+  if (!spec) return { success: false, error: `The record store has no "${args.dataType}" kind of column.` };
+  const made = await clientFor(home).fieldDeclare({
+    table_id: args.tableId,
+    spec: {
+      label: args.displayName,
+      key: args.fieldName,
+      required: args.isRequired,
+      ...(typeof args.fieldOrder === "number" ? { sort: args.fieldOrder } : {}),
+      ...spec,
+    } as never,
+  });
+  invalidateRecordStoreTable(args.tableId);
+  if (!made.ok) return { success: false, error: made.error.message };
+  return { success: true, columnId: made.data };
+}
+
+/** The Add Row form's column list: this table's columns as the store holds them. */
+export async function tableDetails(
+  home: RecordStoreHome,
+  tableId: string,
+): Promise<{ success: boolean; table?: { id: string; name: string; description: string; is_public: boolean }; fields?: DatasetField[]; error?: string }> {
+  const snap = await snapshot(home, tableId, true);
+  if (!snap.success) return { success: false, error: snap.error };
+  return {
+    success: true,
+    table: { id: tableId, name: snap.data.table.table_name, description: snap.data.table.description ?? "", is_public: false },
+    fields: snap.data.columns,
+  };
+}
+
+/**
+ * The layout a record-store table's grid opens with (G1): the platform's value,
+ * then the organization's `custom/grid_layout` knob — the store's twin of the
+ * older `extensibility/user_tables.*` knobs, answered by `custom.grid_layout`.
+ */
+export async function gridLayoutDefaults(
+  home: RecordStoreHome,
+  tableId: string,
+): Promise<{ layout: string; fitMaxColumns: number; rowHeight: string } | null> {
+  const answer = await gridDoors.gridLayout(home, tableId);
+  if (!answer.ok) return null;
+  const l = answer.data.layout;
+  return { layout: l.mode, fitMaxColumns: l.fit_max_columns, rowHeight: l.row_height };
 }

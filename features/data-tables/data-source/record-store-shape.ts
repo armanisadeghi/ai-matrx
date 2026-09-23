@@ -105,12 +105,39 @@ export function olderFormat(
       ...(choices ? { options: { choices } } : {}),
     };
   }
+  const config = (field.config ?? {}) as Record<string, unknown>;
+  const display = displayFormatOf(field);
   if (behaviour === "formula") {
-    const expression = typeof field.expression === "string" ? field.expression : "";
-    return { id: "formula", options: { formula: { expression } } };
+    // G5: autonumber and the two record stamps are formula Fields with a system
+    // expression; the grid draws them as the kinds they are.
+    if (word === "autonumber" || word === "created_time" || word === "modified_time") return { id: word };
+    // G3: the text a person typed is kept beside the expression the store runs.
+    const expression =
+      typeof config.formula_text === "string"
+        ? config.formula_text
+        : typeof field.expression === "string"
+          ? field.expression
+          : "";
+    const resultFormat = display && display.id !== "formula" ? display.id : undefined;
+    return { id: "formula", options: { formula: { expression, ...(resultFormat ? { resultFormat } : {}) } } };
   }
+  // G5: a display format set on the store (`display_format: {id, options}`) is
+  // the whole older format, options and all.
+  if (display) return display;
   if (!word || !GRID_FORMAT_IDS.has(word)) return null;
   return { id: word as FieldFormatId };
+}
+
+/** `display_format: {id, options}` from the Field document, when it names a format the grid draws. */
+function displayFormatOf(field: object): FieldFormatConfig | null {
+  const raw = (field as { display_format?: unknown }).display_format;
+  if (!raw || typeof raw !== "object") return null;
+  const id = (raw as { id?: unknown }).id;
+  if (typeof id !== "string" || !GRID_FORMAT_IDS.has(id)) return null;
+  const options = (raw as { options?: unknown }).options;
+  return options && typeof options === "object"
+    ? { id: id as FieldFormatId, options: options as FieldFormatConfig["options"] }
+    : { id: id as FieldFormatId };
 }
 
 /** The store's executable rules → the older `validation_rules` keys (`validation.ts`). */

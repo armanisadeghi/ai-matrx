@@ -16,6 +16,8 @@
 // opens the list, and renaming happens in place rather than behind a settings
 // modal.
 
+import { isRecordStoreTable, updateTableMetadata } from "@/features/data-tables/service";
+import { isServiceFailure } from "@/features/data-tables/types";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ChevronDown, Pencil, Plus, Search } from "lucide-react";
@@ -93,6 +95,14 @@ export default function TableIdentityMenu({
     }
     setSaving(true);
     try {
+      if (isRecordStoreTable(tableId)) {
+        // A record-store table is renamed on its own Table record (data seam).
+        const renamed = await updateTableMetadata({ tableId, tableName: next });
+        if (isServiceFailure(renamed)) throw new Error(renamed.error);
+        onRenamed?.(next);
+        toast.success("Table renamed");
+        return;
+      }
       const { data, error } = await supabase.rpc("update_user_table_metadata", {
         p_table_id: tableId,
         p_table_name: next,
