@@ -1,12 +1,29 @@
+-- based-on: custom.visible_record_ids(uuid, permission_level) 23fc97ae4da88e8947de0e3cfa9533c5ad17a13c9239bc198b52df98e02041dd
+-- based-on: custom.carrying_edges_in(uuid) 9b8391ef9c63899101897d2fe5602cbdda5c7df7a6cb23880be657f9b8fe2cbd
+-- based-on: platform.memo_clear() 84095ae77c2585c60acdf31b2975d13cf7fbe255406febdfa06c8b80351a3657
 --
 -- INVERSE of migrations/campaign/mirrorperf2_the_organizations_edge_set_is_asked_once.sql.
 --
--- It puts the defect back and NOTHING else: the three bodies are the byte-for-byte
--- `pg_get_functiondef` output taken from the main database on 2026-09-21 immediately before the
--- migration was written, and the only objects it removes are the nine triggers that file
--- created, plus `platform.memo_clear_edge_inputs_stmt()`, which that file created for those
--- nine triggers and which nothing else on the database reaches. `platform.memo_clear_stmt()`
--- and `platform.memo_b_seat()` are untouched: this lane deliberately never adopted them.
+-- It puts the defect back and NOTHING else. The two custom bodies below are the
+-- `pg_get_functiondef` output taken from the main database on 2026-09-21, and they still hash to
+-- production's current bodies (4b4e40a753ab… and a99682186e83…, re-measured 2026-09-23).
+-- `platform.memo_clear()` is production's CURRENT body (section 3), and the nine triggers go back
+-- to `platform.memo_clear_stmt()` (section 4). The only object it removes is
+-- `platform.memo_clear_edge_inputs_stmt()`, which the up created and which nothing else reaches.
+-- `platform.memo_b_seat()` is untouched: this lane deliberately never adopted it.
+--
+-- THE `-- based-on:` LINES are the bodies this file overwrites — the up's, as the up file stands
+-- today, measured by running the up inside a rolled-back transaction on the dev clone
+-- (2026-09-23). 🚨 The up itself cannot land as written: its own `-- based-on:` line for
+-- `platform.memo_clear()` names 59a25537a63a…, and production's body has moved to c6470f278534…
+-- (WRITE-PERF-3/4's `mx_memo.g` generation), so the runner refuses it by name. When the up is
+-- re-based, re-run `pnpm db:based-on migrations/inverse/<this file>` for the memo_clear line.
+--
+-- REHEARSAL (lane INVERSE-GROUND, 2026-09-23, dev clone, one rolled-back transaction):
+-- before → up → this file → up → this file. After each run of this file the three bodies hash
+-- exactly as before the up and the nine triggers on platform.association_types,
+-- custom.carrying_rule and custom.portal_table run platform.memo_clear_stmt again. The same run
+-- with this file's previous bytes left memo_clear at 59a25537a63a… and all nine triggers gone.
 --
 -- After this file runs: `mx_memo.ce` is no longer cleared by anything, and nothing writes it,
 -- because the only writer is the memoised `custom.carrying_edges_in` this file replaces.
@@ -120,28 +137,75 @@ $function$
 
 ;
 
--- 3. THE MEMO LANE FORGETS THE SLOT.
+-- 3. THE MEMO LANE FORGETS THE SLOT — back to PRODUCTION'S body (hash c6470f278534…, main
+--    database and dev clone, 2026-09-23), not the 2026-09-21 dump this file first carried. Since
+--    that dump WRITE-PERF-3/4 added the `mx_memo.g` generation to this body; restoring the old
+--    three-slot body would have stopped every `mx_memo.k*` slot from ever being cleared.
 CREATE OR REPLACE FUNCTION platform.memo_clear()
  RETURNS void
  LANGUAGE sql
  SET search_path TO ''
 AS $function$
-  select set_config('mx_memo.v', '', true),
-         set_config('mx_memo.s', '', true),
-         set_config('mx_memo.b', '', true);
+  -- The three blobs, byte for byte as before — and the generation, which is what makes an O(1)
+  -- clear of every `mx_memo.k*` slot possible at all. `clock_timestamp()` and not `now()`: two
+  -- clears inside one transaction must produce two different generations.
+  select pg_catalog.set_config('mx_memo.v', '', true),
+         pg_catalog.set_config('mx_memo.s', '', true),
+         pg_catalog.set_config('mx_memo.b', '', true),
+         pg_catalog.set_config('mx_memo.g',
+           md5(clock_timestamp()::text || random()::text), true);
 $function$
 
 ;
 
--- 4. THE NINE TRIGGERS THIS MIGRATION CREATED COME OFF, AND THEN THE FUNCTION IT CREATED FOR
---    THEM — in that order, so no trigger is ever left standing over a body that is gone.
-drop trigger if exists zz_memo_clear_i on platform.association_types;
-drop trigger if exists zz_memo_clear_u on platform.association_types;
-drop trigger if exists zz_memo_clear_d on platform.association_types;
-drop trigger if exists zz_memo_clear_i on custom.carrying_rule;
-drop trigger if exists zz_memo_clear_u on custom.carrying_rule;
-drop trigger if exists zz_memo_clear_d on custom.carrying_rule;
-drop trigger if exists zz_memo_clear_i on custom.portal_table;
-drop trigger if exists zz_memo_clear_u on custom.portal_table;
-drop trigger if exists zz_memo_clear_d on custom.portal_table;
+-- 4. THE NINE TRIGGERS GO BACK TO THE MEMO LANE'S OWN BODY, AND THEN THE FUNCTION THIS
+--    MIGRATION CREATED FOR THEM IS DROPPED — in that order, so no trigger is ever left standing
+--    over a body that is gone.
+--
+--    NOT `drop trigger` (amended 2026-09-23, lane INVERSE-GROUND). SHARE-REVOKE
+--    (sharerevoke_every_table_the_ladder_reads_empties_the_memo.sql, on production since
+--    2026-09-23) put `zz_memo_clear_i/_u/_d` → `platform.memo_clear_stmt()` on these same three
+--    tables, and the up above REPLACES those triggers with its own. Dropping them here would
+--    take SHARE-REVOKE's clear off `platform.association_types`, `custom.carrying_rule` and
+--    `custom.portal_table` and put that lane's defect back (a revoked share stays "open" for the
+--    rest of the statement). So they are re-pointed at `platform.memo_clear_stmt()` — exactly
+--    what production held before the up. Written out, never built at runtime, so both runners'
+--    window-class judgement reads every statement; `create or replace trigger` does not fire the
+--    supautils hook. On a database that never had SHARE-REVOKE (an old branch) this leaves nine
+--    extra statement-level memo clears behind: a clear is always safe, it costs a GUC write.
+--
+-- ground-standing-ok: c — the static tree orders SHARE-REVOKE's file after this lane's
+-- unapplied up, so it reads `platform.memo_clear_edge_inputs_stmt` as run by no trigger. After
+-- the up it IS run by these nine triggers; the statements just above take every one of them off
+-- it first, and the body the live triggers then call, `platform.memo_clear_stmt` →
+-- `platform.memo_clear`, is the one section 3 restores.
+do $pre$
+begin
+  if to_regprocedure('platform.memo_clear_stmt()') is null then
+    raise exception 'MIRROR-PERF-2 inverse: platform.memo_clear_stmt() does not exist on this database, so the nine triggers have no memo-lane body to go back to. Nothing was changed.';
+  end if;
+end
+$pre$;
+
+create or replace trigger zz_memo_clear_i after insert on platform.association_types
+  for each statement execute function platform.memo_clear_stmt();
+create or replace trigger zz_memo_clear_u after update on platform.association_types
+  for each statement execute function platform.memo_clear_stmt();
+create or replace trigger zz_memo_clear_d after delete on platform.association_types
+  for each statement execute function platform.memo_clear_stmt();
+
+create or replace trigger zz_memo_clear_i after insert on custom.carrying_rule
+  for each statement execute function platform.memo_clear_stmt();
+create or replace trigger zz_memo_clear_u after update on custom.carrying_rule
+  for each statement execute function platform.memo_clear_stmt();
+create or replace trigger zz_memo_clear_d after delete on custom.carrying_rule
+  for each statement execute function platform.memo_clear_stmt();
+
+create or replace trigger zz_memo_clear_i after insert on custom.portal_table
+  for each statement execute function platform.memo_clear_stmt();
+create or replace trigger zz_memo_clear_u after update on custom.portal_table
+  for each statement execute function platform.memo_clear_stmt();
+create or replace trigger zz_memo_clear_d after delete on custom.portal_table
+  for each statement execute function platform.memo_clear_stmt();
+
 drop function if exists platform.memo_clear_edge_inputs_stmt();

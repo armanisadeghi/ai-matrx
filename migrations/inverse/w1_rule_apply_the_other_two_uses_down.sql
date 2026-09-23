@@ -1,32 +1,46 @@
 -- target: branch
--- based-on: custom.rule_node_kinds() a7a54aee69d2662e02e1e8aae5292151e7eba823aff9706e87b38ccac9012348
--- based-on: custom.rule_eval(uuid,jsonb,jsonb,jsonb) 2c80cbc00656d560ebf1fb53d4c6ad44a1e959940b8745903c35d1789055ee5b
+-- based-on: custom.rule_node_kinds() c7438c74c543c44907d98701e326deecc1b6e1c1f95327e087b888ad9f7a3d41
+-- based-on: custom.rule_eval(uuid, jsonb, jsonb, jsonb) 96c3da3e11971f96d5c41934807e5ad5612f3004b651a6fffdabb28934f02084
 --
--- THE INVERSE of `migrations/campaign/w1_rule_apply_the_other_two_uses.sql` and of the file
--- that superseded it (§4.13, rule 27). It restores the prior state exactly: none of this
--- lane's functions exist, the topology trigger is gone, the four rows it seeded are gone,
--- and the TWO bodies it replaced — `custom.rule_node_kinds()` and
--- `custom.rule_eval(uuid,jsonb,jsonb,jsonb)` — are back to `W1-RULE`'s, byte for byte, so
--- that `encode(sha256(convert_to(pg_get_functiondef(oid),'utf8')),'hex')` reads
--- `ce646289e178b4b56a8c1664c95b8069ca66d08ec7968a3ff02d89a42fabdf4c` and
--- `d2e11d617e0b170f4cf1472659ffc98c5b64228c308080babc7fb57121101977` again — the two hashes
--- the up-file's own `-- based-on:` lines name. That is what makes "the inverse restores the
--- prior state" a measurement rather than a claim.
+-- THE INVERSE of `migrations/campaign/w1_rule_apply_membership_and_applicability.sql` and of the file
+-- that superseded it (§4.13, rule 27). It puts W1-RULE-APPLY's two uses back to "refused":
+-- the topology trigger is gone, the membership / applicability / dependency functions it
+-- created are gone, the four rows it seeded are gone, and `custom.rule_eval` refuses a
+-- `parent_field` leaf with W1-RULE's own 0A000 sentence again.
+--
+-- REWRITTEN 2026-09-23 (lane INVERSE-GROUND) FOR THE GROUND-STANDING CHECK, CLAUSE d. The
+-- first version restored W1-RULE's bodies of `custom.rule_eval` and `custom.rule_node_kinds`
+-- byte for byte (hashes d2e11d617e0b… / ce646289e178…) and dropped every function this lane
+-- created. Five days of later lanes made both of those wrong:
+--   * `custom.rule_eval` and `custom.rule_node_kinds` were re-stated since by F5 (words),
+--     PIPELINES (previous / actor_at_least / stage_count), STAGE-RULES (sibling_count) and
+--     GRID-PRIMITIVES G6 (the fx.* formula nodes). W1-RULE's body would have taken all of
+--     that away with it. So both are now PRODUCTION'S bodies — the `-- based-on:` lines above
+--     are production's hashes on 2026-09-23, identical on the dev clone — with ONLY
+--     W1-RULE-APPLY's contribution undone: rule_eval's parent_field evaluation is W1-RULE's
+--     refusal again, and rule_node_kinds' parent_field row says so again. The grandparent and
+--     merge_field refusals W1-RULE-APPLY added stay: they are refusals, not the defect.
+--   * `custom.rule_context(uuid, uuid)` is NOT dropped. GRID-PRIMITIVES G3's
+--     `custom.formula_value` and G2's `custom.action_run` call it on every formula read and
+--     every row action. It only assembles the record's context; with parent_field refused
+--     again nothing reads its `parent_values`, so leaving it standing puts the defect back
+--     without breaking the formula column or the row action. Leave the object standing and
+--     neuter the behaviour. Census (dev clone, prosrc, 2026-09-23): no live body outside this
+--     lane calls any OTHER function this file drops.
 --
 -- IT IS `-- target: branch` ON PURPOSE, like every other inverse in this directory: an
 -- inverse is a DROP, which rule 9 forbids on production in any lane.
 --
 -- ORDER MATTERS: the trigger goes before the function it executes, the guard's helpers go
--- after the guard, and the two replaced bodies are restored BEFORE this lane's functions are
--- dropped, because W1-RULE's `custom.rule_eval` does not call any of them.
+-- after the guard, and the two bodies are re-stated BEFORE this lane's functions are dropped;
+-- neither re-stated body calls any of them.
 --
--- ground-standing-ok: b — W1-RULE's `custom.rule_eval` and `custom.rule_node_kinds`, restored
--- below byte for byte, call `custom.rule_field_key` and `custom.rule_truth`, which the sibling
--- inverse `w1_rule_object_and_uses_down.sql` drops. THIS FILE IS THE ONE MEANT TO RUN: it is
--- executed alone, inside a rolled-back transaction, to put back the two uses W1-RULE-APPLY
--- replaced. `w1_rule_object_and_uses_down.sql` un-applies the Rule OBJECT itself and belongs
--- at the very bottom of the stack: in a full un-apply this file runs FIRST, while both callees
--- still exist, and that one LAST. Running them the other way round leaves `rule_eval` calling
+-- ground-standing-ok: b — the two re-stated bodies call `custom.rule_field_key` and
+-- `custom.rule_truth`, which the sibling inverse `w1_rule_object_and_uses_down.sql` drops.
+-- THIS FILE IS THE ONE MEANT TO RUN: it puts back the two uses W1-RULE-APPLY replaced.
+-- `w1_rule_object_and_uses_down.sql` un-applies the Rule OBJECT itself and belongs at the very
+-- bottom of the stack: in a full un-apply this file runs FIRST, while both callees still
+-- exist, and that one LAST. Running them the other way round leaves `rule_eval` calling
 -- functions that are gone and is never correct.
 
 set lock_timeout = '5s';
@@ -34,41 +48,55 @@ set statement_timeout = '600s';
 
 drop trigger if exists custom_record_rule_topology_guard on custom.record;
 
--- W1-RULE's two bodies, restored first.
-create or replace function custom.rule_node_kinds() returns table (node text, evaluated_by text, note text)
-  language sql immutable parallel safe
-  set search_path to 'pg_catalog'
-as $fn_rule_nodes$
+-- The two bodies, production's with W1-RULE-APPLY's block undone, re-stated first.
+CREATE OR REPLACE FUNCTION custom.rule_node_kinds()
+ RETURNS TABLE(node text, evaluated_by text, note text)
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
   select * from (values
-    ('const',        'W1-RULE',       'a literal JSON value'),
-    ('field',        'W1-RULE',       'REC-17: the record''s own Value for the Field with this ID'),
-    ('parent_field', 'W1-RULE-APPLY', 'REC-16: the PARENT''s Value, one level up and no further — storable today, refused by name at evaluation until W1-RULE-APPLY lands it'),
-    ('eq',           'W1-RULE',       'two answers are the same'),
-    ('ne',           'W1-RULE',       'two answers differ'),
-    ('lt',           'W1-RULE',       'less than, numbers only'),
-    ('lte',          'W1-RULE',       'at most, numbers only'),
-    ('gt',           'W1-RULE',       'greater than, numbers only'),
-    ('gte',          'W1-RULE',       'at least, numbers only'),
-    ('and',          'W1-RULE',       'every argument is true'),
-    ('or',           'W1-RULE',       'some argument is true'),
-    ('not',          'W1-RULE',       'the opposite'),
-    ('add',          'W1-RULE',       'a sum'),
-    ('sub',          'W1-RULE',       'a difference'),
-    ('mul',          'W1-RULE',       'a product'),
-    ('div',          'W1-RULE',       'a quotient; dividing by nothing is refused by name'),
-    ('concat',       'W1-RULE',       'words joined'),
-    ('length',       'W1-RULE',       'how long the words are'),
-    ('present',      'W1-RULE',       'there is an answer at all'),
-    ('matches',      'W1-RULE',       'the words are written the expected way')
-  ) as t(node, evaluated_by, note);
-$fn_rule_nodes$;
+    ('const',         'W1-RULE',        'a literal JSON value'),
+    ('field',         'W1-RULE',        'REC-17: the record''s own Value for the Field with this ID'),
+    ('parent_field',  'W1-RULE-APPLY',  'REC-16: the PARENT''s Value, one level up and no further — storable today, refused by name at evaluation until W1-RULE-APPLY lands it'),
+    ('merge_field',   'W5-MERGE-B',     'DYN-4: the answer a merge field resolves to, by ID — storable today so a Rule and a merge field can be seen to depend on each other, and refused by name at evaluation until W5-MERGE-B lands it'),
+    ('previous',      'PIPELINES',      'the Value this record HELD for the Field with this ID before this write — absent on an insert, which leaves the leaf undecided rather than false'),
+    ('actor_at_least','PIPELINES',      'whether the person making this write holds at least the named level on this record — a rung of the one ladder, asked as a question rather than compared as a word'),
+    ('stage_count',   'PIPELINES',      'how many live records of this Table are already in the named stage, not counting the one being written — what a work-in-progress limit counts'),
+    ('sibling_count', 'STAGE-RULES',    'how many OTHER live records of this record''s own Table match it on every Field named in `same` and answer differently on every Field named in `differs` — the cross-record question "is there a second quote from a different contractor", asked about records rather than about quotes'),
+    ('eq',            'W1-RULE',        'two answers are the same'),
+    ('ne',            'W1-RULE',        'two answers differ'),
+    ('lt',            'W1-RULE',        'less than, numbers only'),
+    ('lte',           'W1-RULE',        'at most, numbers only'),
+    ('gt',            'W1-RULE',        'greater than, numbers only'),
+    ('gte',           'W1-RULE',        'at least, numbers only'),
+    ('and',           'W1-RULE',        'every argument is true'),
+    ('or',            'W1-RULE',        'some argument is true'),
+    ('not',           'W1-RULE',        'the opposite'),
+    ('add',           'W1-RULE',        'a sum'),
+    ('sub',           'W1-RULE',        'a difference'),
+    ('mul',           'W1-RULE',        'a product'),
+    ('div',           'W1-RULE',        'a quotient; dividing by nothing is refused by name'),
+    ('concat',        'W1-RULE',        'words joined'),
+    ('length',        'W1-RULE',        'how long the words are'),
+    ('present',       'W1-RULE',        'there is an answer at all'),
+    ('matches',       'W1-RULE',        'the words are written the expected way')
+  ) as t(node, evaluated_by, note)
+  -- GRID-PRIMITIVES G6: the formula language's nodes, worked out by custom.formula_eval, which
+  -- custom.rule_eval hands them to. One list, read from where it is kept.
+  union all
+  select k.node, 'GRID-PRIMITIVES G3 (custom.formula_eval)', k.signature || ' — ' || k.says
+    from custom.formula_node_kinds() k;
+$function$
 
-create or replace function custom.rule_eval(p_organization_id uuid, p_expr jsonb,
-                                 p_values jsonb, p_context jsonb default '{}'::jsonb)
-  returns jsonb
-  language plpgsql stable
-  set search_path to 'pg_catalog'
-as $fn_rule_eval$
+;
+
+CREATE OR REPLACE FUNCTION custom.rule_eval(p_organization_id uuid, p_expr jsonb, p_values jsonb, p_context jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
 declare
   v_op     text;
   v_args   jsonb;
@@ -78,6 +106,12 @@ declare
   v_key    text;
   v_acc    text;
   v_truth  boolean;
+  v_want   public.permission_level;
+  v_held   public.permission_level;
+  v_count  bigint;
+  -- F5, 2026-09-22. The words a person reads, and what joins them.
+  v_sep    text;
+  v_part   text;
 begin
   if p_expr is null or jsonb_typeof(p_expr) <> 'object' then
     raise exception 'this rule''s test is not written in a shape the system can work out'
@@ -91,6 +125,48 @@ begin
     raise exception 'this rule names a field instead of pointing at it'
       using errcode = '22023',
             hint = 'REC-17: a Rule references Fields by id, never by name — {"field": "<the field''s id>"}. A name changes and the rule would stop resolving; an id does not.';
+  end if;
+
+  -- ── GRID-PRIMITIVES G6 (chair ruling 2026-09-22): THE FORMULA LANGUAGE IN A RULE. ──────────
+  -- A Rule may now ask anything a formula can: IF, ROUND, DATEDIFF, CONTAINS, the whole list of
+  -- custom.formula_node_kinds(). Those nodes are worked out by custom.formula_eval, the ONE
+  -- formula evaluator, which hands every node that is not its own back here — so the two never
+  -- evaluate the same node, and a Rule and a formula column answer one question one way.
+  if left(coalesce(p_expr ->> 'op', ''), 3) = 'fx.' then
+    return custom.formula_eval(p_organization_id, p_expr, p_values, p_context);
+  end if;
+
+  -- ── PIPELINES: THE VALUE THIS RECORD HELD BEFORE THIS WRITE. ─────────────────────────
+  -- First, because it carries a `field` key and would otherwise be read as the CURRENT
+  -- value by the leaf below — which is the one wrong answer this node could give, and it
+  -- would be silent.
+  if p_expr ->> 'op' = 'previous' then
+    -- coalesce, AND THE MESSAGE BELOW ALREADY EXPECTED IT. `jsonb_typeof(NULL)` is NULL and
+    -- `NULL <> 'string'` is NULL, which is not true — so a `previous` node with NO `field`
+    -- key at all walked past this check, past the uuid test (also NULL), and returned NULL
+    -- from `p_context -> 'previous_values' -> NULL`. `custom.rule_truth(NULL)` is NULL, not
+    -- false, so a GATE written with a bare `previous` node PASSED: it stopped nobody and
+    -- said nothing. The sentence two lines down says "points at it with nothing", which is
+    -- the case that could never reach it.
+    if coalesce(jsonb_typeof(p_expr -> 'field'), 'absent') <> 'string'
+       or (p_expr ->> 'field') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+      raise exception 'this rule asks what a field used to say and points at it with % instead of with its id',
+                      coalesce(p_expr ->> 'field', 'nothing')
+        using errcode = '22023',
+              hint = 'REC-17 applies to `previous` too: {"op":"previous","field":"<the field''s id>"}.';
+    end if;
+    -- A record being CREATED held nothing before, and "held nothing" is undecided, not
+    -- false: a brand-new deal did not break the rule about moving out of Lead.
+    if jsonb_typeof(coalesce(p_context -> 'previous_values', 'null'::jsonb)) <> 'object' then
+      return 'null'::jsonb;
+    end if;
+    v_key := custom.rule_field_key(p_organization_id, (p_expr ->> 'field')::uuid);
+    if v_key is null then
+      raise exception 'this rule asks what a field used to say, and that field is not there any more'
+        using errcode = '23503',
+              hint = 'REC-17 / REC-18: the Rule holds the field''s id. Deleting a Field a Rule depends on is refused naming the Rule (REC-18, W3-MIG); this is what a Rule says when it happens anyway.';
+    end if;
+    return p_context -> 'previous_values' -> v_key;
   end if;
 
   if p_expr ? 'const' then
@@ -113,11 +189,27 @@ begin
     return p_values -> v_key;
   end if;
 
-  -- REC-16 IS NOT THIS LANE'S, AND THE REFUSAL SAYS SO RATHER THAN ANSWERING WRONG.
+  -- ── W1-RULE-APPLY: REC-16. ──────────────────────────────────────────────────────────
+  if p_expr ?| array['grandparent_field', 'ancestor_field'] then
+    raise exception 'this rule reads an answer two steps up, and a rule reads its own record and the one it is inside'
+      using errcode = '0A000',
+            hint = 'REC-16: an applicability Rule reads the record''s own Values and its parent''s, one level up and no further. To reach further, give the record a relation to the thing it needs and read that.';
+  end if;
+
+  -- INVERSE-GROUND (2026-09-23): the ONE block W1-RULE-APPLY's inverse takes back. W1-RULE
+  -- stored parent_field and refused it at evaluation with W1-RULE-APPLY as the remedy; this is
+  -- that refusal again, word for word, so REC-16's RED is the real mechanism. Every other block
+  -- of this body is production's, byte for byte, as later lanes left it.
   if p_expr ? 'parent_field' then
     raise exception 'this rule reads the parent''s answer, and that is not switched on yet'
       using errcode = '0A000',
             hint = 'REC-16: an applicability Rule reads the record''s own Values and its parent''s, one level up and no further. W1-RULE-APPLY builds that evaluator; W1-RULE stores the node and refuses to guess at it.';
+  end if;
+
+  if p_expr ? 'merge_field' then
+    raise exception 'this rule reads what a merge field works out, and that is not switched on yet'
+      using errcode = '0A000',
+            hint = 'DYN-4: a merge field resolves as a Value, a Reference, a Resolver, something Computed or a Collection. W5-MERGE-B builds that resolution; a Rule may name one today so the two cannot be saved depending on each other, and refuses to guess at its answer.';
   end if;
 
   v_op   := p_expr ->> 'op';
@@ -133,8 +225,99 @@ begin
             hint = 'REC-15: select * from custom.rule_node_kinds() is the closed list of what a Rule can do. A node outside it is refused rather than ignored.';
   end if;
 
-  -- and / or / not — short-circuited, so an argument that cannot be worked out is never
-  -- reached once the answer is already decided.
+  -- ── PIPELINES: WHO IS MAKING THIS WRITE. ────────────────────────────────────────────
+  -- A rung, asked as a rung. `owner` is not the word `admin`, and an organization owner may
+  -- obviously do what an admin may — comparing the words would have said otherwise.
+  if v_op = 'actor_at_least' then
+    if p_context ->> 'actor_level' is null then
+      -- Nobody asked, or nobody could be resolved. Undecided, never false: a rule about who
+      -- may move must not refuse a move it could not judge, silently.
+      return 'null'::jsonb;
+    end if;
+    begin
+      v_want := (custom.rule_eval(p_organization_id, v_args -> 0, p_values, p_context) #>> '{}')::public.permission_level;
+    exception when invalid_text_representation then
+      raise exception 'this rule asks whether somebody is at least %, and that is not one of the levels',
+                      custom.rule_eval(p_organization_id, v_args -> 0, p_values, p_context) #>> '{}'
+        using errcode = '22023',
+              hint = 'The levels are viewer, commenter, editor and admin, in that order.';
+    end;
+    v_held := (p_context ->> 'actor_level')::public.permission_level;
+    return to_jsonb(v_held >= v_want);
+  end if;
+
+  -- ── STAGE-RULES: A SECOND RECORD LIKE THIS ONE, AND HOW IT DIFFERS. ─────────────────
+  -- The smallest honest cross-record primitive. How many OTHER live records of this record's
+  -- own Table agree with it on every Field named in `same`, and answer differently on every
+  -- Field named in `differs`. "A second quote for the same room from a different contractor"
+  -- IS that question; so is "another signed contract on the same account", "a second reviewer
+  -- on the same submission", "another donation against the same pledge". It answers a COUNT,
+  -- so the gate that uses it is an ordinary `gte` node and no new comparison was invented.
+  --
+  -- WHY NOT A BESPOKE "second quote" CHECK: a gate that could only count quotes would be a
+  -- renovation feature living in the platform. This counts records, by Field id, on the one
+  -- store, and every organization's pipeline can ask it.
+  --
+  -- THE RECORD BEING WRITTEN IS EXCLUDED, for the same reason `stage_count` excludes it: a
+  -- demand for "one other" that counted the mover would be satisfied by the mover alone.
+  if v_op = 'sibling_count' then
+    if (p_context ->> 'table_id') is null then
+      -- Nobody said which Table this write is about, so there is no family to count. Undecided,
+      -- never zero: a gate must not be satisfied, or refused, by a question it could not ask.
+      return 'null'::jsonb;
+    end if;
+    if jsonb_typeof(coalesce(p_expr -> 'same', '[]'::jsonb)) <> 'array'
+       or jsonb_typeof(coalesce(p_expr -> 'differs', '[]'::jsonb)) <> 'array'
+       or jsonb_array_length(coalesce(p_expr -> 'same', '[]'::jsonb))
+        + jsonb_array_length(coalesce(p_expr -> 'differs', '[]'::jsonb)) = 0 then
+      raise exception 'this rule counts records like this one, and never says what "like this one" means'
+        using errcode = '22023',
+              hint = 'STAGE-RULES: {"op":"sibling_count","same":["<field id>"],"differs":["<field id>"]} — `same` are the Fields a sibling has to match, `differs` the Fields it has to answer differently. At least one of the two carries a Field.';
+    end if;
+    -- REC-17 AT EVALUATION, asked the way every other leaf asks it. A count taken over a
+    -- Field that is no longer there would quietly be zero, and a gate would quietly open.
+    for v_one in select e from jsonb_array_elements(
+                   coalesce(p_expr -> 'same', '[]'::jsonb) || coalesce(p_expr -> 'differs', '[]'::jsonb)) e
+    loop
+      if jsonb_typeof(v_one) <> 'string'
+         or (v_one #>> '{}') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+        raise exception 'this rule counts records like this one and points at a field with % instead of with its id',
+                        custom.said(v_one #>> '{}', 'nothing')
+          using errcode = '22023',
+                hint = 'REC-17 applies to sibling_count too: Fields by id, never by name.';
+      end if;
+      if custom.rule_field_key(p_organization_id, (v_one #>> '{}')::uuid) is null then
+        raise exception 'this rule counts records like this one by a field that is not there any more'
+          using errcode = '23503',
+                hint = 'REC-18: deleting a Field a Rule depends on is refused naming the Rule (W3-MIG). This is what the count says when it happens anyway.';
+      end if;
+    end loop;
+    select count(*) into v_count
+      from custom.record r
+     where r.organization_id = p_organization_id
+       and r.table_id = (p_context ->> 'table_id')::uuid
+       and r.deleted_at is null
+       and r.data_class = 'record'
+       and r.id is distinct from nullif(p_context ->> 'record_id', '')::uuid
+       and not exists (
+             select 1
+               from jsonb_array_elements_text(coalesce(p_expr -> 'same', '[]'::jsonb)) s(fid)
+              where r.data -> custom.rule_field_key(p_organization_id, s.fid::uuid)
+                is distinct from p_values -> custom.rule_field_key(p_organization_id, s.fid::uuid))
+       -- A SIBLING THAT ANSWERS NOTHING DOES NOT COUNT AS ANSWERING DIFFERENTLY. An empty
+       -- contractor is not a different contractor, and a rule that accepted it would let a
+       -- blank second quote satisfy a second-quote demand.
+       and not exists (
+             select 1
+               from jsonb_array_elements_text(coalesce(p_expr -> 'differs', '[]'::jsonb)) d(fid)
+              where coalesce(r.data -> custom.rule_field_key(p_organization_id, d.fid::uuid),
+                             'null'::jsonb) = 'null'::jsonb
+                 or r.data -> custom.rule_field_key(p_organization_id, d.fid::uuid)
+                    is not distinct from p_values -> custom.rule_field_key(p_organization_id, d.fid::uuid));
+    return to_jsonb(v_count);
+  end if;
+
+  -- and / or / not — short-circuited.
   if v_op = 'and' then
     for v_one in select e from jsonb_array_elements(v_args) e loop
       v_truth := custom.rule_truth(custom.rule_eval(p_organization_id, v_one, p_values, p_context));
@@ -156,6 +339,34 @@ begin
 
   v_a := custom.rule_eval(p_organization_id, v_args -> 0, p_values, p_context);
 
+  -- ── PIPELINES: HOW FULL A COLUMN ALREADY IS. ────────────────────────────────────────
+  -- The record being written is EXCLUDED. A limit of three that counted the mover would
+  -- refuse the third card, and the person would be told the column is full while looking at
+  -- two cards in it.
+  if v_op = 'stage_count' then
+    if (p_context ->> 'table_id') is null then
+      return 'null'::jsonb;
+    end if;
+    if v_a is null or jsonb_typeof(v_a) = 'null' then
+      return 'null'::jsonb;
+    end if;
+    v_key := custom._stage_field_key(p_organization_id, (p_context ->> 'table_id')::uuid);
+    if v_key is null then
+      raise exception 'this rule counts how many records are in a stage, and this table has no stage field'
+        using errcode = '22023',
+              hint = 'custom.pipeline_declare names the Choice field a table''s stage field. Until it does, there are no stages to count.';
+    end if;
+    select count(*) into v_count
+      from custom.record r
+     where r.organization_id = p_organization_id
+       and r.table_id = (p_context ->> 'table_id')::uuid
+       and r.deleted_at is null
+       and r.data_class = 'record'
+       and r.id is distinct from nullif(p_context ->> 'record_id', '')::uuid
+       and r.data ->> v_key = (v_a #>> '{}');
+    return to_jsonb(v_count);
+  end if;
+
   if v_op = 'present' then
     return to_jsonb(v_a is not null and jsonb_typeof(v_a) <> 'null');
   elsif v_op = 'length' then
@@ -166,20 +377,43 @@ begin
     end if;
     return to_jsonb(length(v_a #>> '{}'));
   elsif v_op = 'concat' then
-    v_acc := '';
+    -- ── F5 (VERIFIER-11), 2026-09-22: A JOIN IS READ BY A PERSON, SO IT CARRIES WORDS. ──
+    --
+    -- What a worked-out column printed on Greenline's Jobs: `GL-2034mow_edge`. The job number
+    -- is words somebody typed; `mow_edge` is the OPTION KEY the store stores for the choice
+    -- whose label, in the very next cell, reads `Mow & Edge`. A relation argument was worse
+    -- still — a bare row id. Concatenation is THE node whose answer is shown to a person and
+    -- never compared, so it is the one node that resolves a stored value to its display words.
+    -- Every comparison arm below this one keeps the STORED value, unchanged: `eq` on a choice
+    -- still asks about the key, because a comparison against a label would start answering
+    -- differently the day somebody renames the option.
+    --
+    -- ONE RESOLVER, NOT A SECOND LOOKUP. `custom.field_words` is the whole of it: a choice
+    -- goes through `custom.choice_options`, a relation through `custom._words_for` carrying
+    -- the Field's own `display` — the same primitive `custom.relation_words_many` and
+    -- `custom.record_words` call, with the same visibility ladder inside it, so a person who
+    -- may not see the record a relation points at reads the withheld label here too.
+    v_acc  := null;
+    v_sep  := coalesce(p_expr ->> 'separator', '');
     for v_one in select e from jsonb_array_elements(v_args) e loop
       v_b := custom.rule_eval(p_organization_id, v_one, p_values, p_context);
       if v_b is null or jsonb_typeof(v_b) = 'null' then continue; end if;
-      v_acc := v_acc || (v_b #>> '{}');
+      v_part := null;
+      if jsonb_typeof(v_one) = 'object' and (v_one ? 'field' or v_one ? 'parent_field') then
+        v_part := custom.field_words(p_organization_id,
+                    nullif(coalesce(v_one ->> 'field', v_one ->> 'parent_field'), '')::uuid, v_b);
+      end if;
+      v_part := coalesce(v_part, v_b #>> '{}');
+      -- AN ARGUMENT THAT SAYS NOTHING BRINGS NO SEPARATOR WITH IT. A blank second column
+      -- used to be invisible; with a separator it would print a dangling ` — ` instead.
+      if nullif(btrim(v_part), '') is null then continue; end if;
+      v_acc := case when v_acc is null then v_part else v_acc || v_sep || v_part end;
     end loop;
-    return to_jsonb(v_acc);
+    return to_jsonb(coalesce(v_acc, ''));
   end if;
 
   v_b := custom.rule_eval(p_organization_id, v_args -> 1, p_values, p_context);
 
-  -- AN ABSENT ANSWER MAKES THE WHOLE TEST UNDECIDED, and undecided is NOT false. Whether an
-  -- absence is allowed at all is the FIELD's `required`, which W1-FIELD's validator already
-  -- answers by name; a Rule that turned an absence into a refusal would say the wrong thing.
   if v_a is null or jsonb_typeof(v_a) = 'null' or v_b is null or jsonb_typeof(v_b) = 'null' then
     return 'null'::jsonb;
   end if;
@@ -197,8 +431,6 @@ begin
     return to_jsonb((v_a #>> '{}') ~ (v_b #>> '{}'));
   end if;
 
-  -- The arithmetic and the ordering are about NUMBERS, and a non-number is refused by name
-  -- rather than coerced — coercion is how a rule quietly answers about something else.
   if jsonb_typeof(v_a) <> 'number' or jsonb_typeof(v_b) <> 'number' then
     raise exception 'this rule compares numbers, and it was given a % and a %',
                     jsonb_typeof(v_a), jsonb_typeof(v_b)
@@ -221,13 +453,13 @@ begin
     return to_jsonb((v_a #>> '{}')::numeric / (v_b #>> '{}')::numeric);
   end if;
 
-  -- Unreachable while custom.rule_node_kinds() and this body agree. It is here because the
-  -- day they stop agreeing is the day a Rule would otherwise return NULL and mean nothing.
   raise exception 'this rule asks the system to %, and it knows the word but not the work', v_op
     using errcode = '22023',
           hint = 'custom.rule_node_kinds() lists this node and custom.rule_eval does not implement it. That is a defect in this migration, not in the rule.';
 end;
-$fn_rule_eval$;
+$function$
+
+;
 
 drop function if exists custom._rule_topology_guard();
 drop function if exists custom.dependency_cycle(uuid, custom.record);
@@ -238,7 +470,7 @@ drop function if exists custom.rule_members(uuid, uuid);
 drop function if exists custom.rule_membership(uuid, uuid, uuid);
 drop function if exists custom.record_applicability(uuid, uuid);
 drop function if exists custom.rule_applies(uuid, uuid, uuid);
-drop function if exists custom.rule_context(uuid, uuid);
+-- custom.rule_context(uuid, uuid) stays standing: see the header (clause d).
 
 delete from custom.record
  where organization_id = '39c38960-d30c-4840-b0c1-c9960de95582'::uuid
