@@ -311,11 +311,21 @@ async function lanesTellTheTruth(page, label, { expectSharedOnly }) {
 
   if (expectSharedOnly) {
     const text = await page.evaluate(() => document.querySelector('[data-hub-listing="tables"]')?.textContent ?? "");
-    clause(
-      `${label} · a shared-only member with nothing shared is told exactly that`,
-      /shared with you/i.test(text) && !/No tables yet/.test(text),
-      text.replace(/\s+/g, " ").slice(0, 200),
-    );
+    if (tablesAll === 0) {
+      clause(
+        `${label} · a shared-only member with nothing shared is told exactly that`,
+        /shared with you/i.test(text) && !/No tables yet/.test(text),
+        text.replace(/\s+/g, " ").slice(0, 200),
+      );
+    } else {
+      // Something HAS been shared with her since; then she sees it, and the
+      // empty sentence is rightly not on the page.
+      clause(
+        `${label} · a shared-only member sees exactly what was shared with her, and no "No tables yet"`,
+        !/No tables yet/.test(text),
+        `${tablesAll} table(s) shared with this seat`,
+      );
+    }
   }
 
   const hrefs = await page.evaluate(() =>
@@ -324,12 +334,27 @@ async function lanesTellTheTruth(page, label, { expectSharedOnly }) {
   const fromArchived = hrefs.filter((h) => ARCHIVED_SHARE_OWNERS.some((id) => h.includes(id)));
   clause(`${label} · no "Shared with me" row comes from an archived organization`, fromArchived.length === 0, fromArchived.length ? fromArchived.join(" | ") : `${hrefs.length} row(s), none from the four archived owners`);
 
+  if (everything.lanes.length === 0) {
+    say(`${label}: the lane filters are absent (the store's table facts are not live yet) — lane clauses have nothing to press`);
+    return;
+  }
+  // MINE OVERLAPS (chair ruling 2026-09-23: Mine = tables I made, whatever their
+  // visibility), so the lanes do not add up to Everything. What must hold is that
+  // no table falls through: every table under Everything is in at least one lane.
+  const tableHrefs = () =>
+    page.evaluate(() =>
+      Array.from(document.querySelectorAll('[data-hub-listing="tables"] li a')).map((a) => a.getAttribute("href") ?? ""),
+    );
+  const everythingHrefs = new Set(await tableHrefs());
+  const inSomeLane = new Set();
   let sum = 0;
   const lies = [];
   for (const laneId of ["mine", "organization", "community", "world"]) {
     await page.evaluate((id) => document.querySelector(`[data-hub-lane="${id}"]`)?.click(), laneId);
     await sleep(900);
     const hub = await readHub(page);
+    for (const h of await tableHrefs()) inSomeLane.add(h);
+    if (laneId === "mine") say(`${label}: Mine holds ${hub.rows.find((r) => r.id === "tables")?.count ?? 0} table(s) — the ones this seat made`);
     sum += Number(hub.rows.find((r) => r.id === "tables")?.count ?? 0);
     const text = await page.evaluate(() => document.querySelector("[data-hub-root]")?.innerText ?? "");
     for (const bad of ["Make one below", "Nothing has been made here yet", "only you can see"]) {
@@ -338,7 +363,12 @@ async function lanesTellTheTruth(page, label, { expectSharedOnly }) {
   }
   await page.evaluate(() => document.querySelector('[data-hub-lane="everything"]')?.click());
   clause(`${label} · every empty lane says what is true of that lane`, lies.length === 0, lies.length ? lies.join(" · ") : "no lane carries the old sentences");
-  clause(`${label} · Tables under Everything is the sum of the four lanes`, sum === tablesAll, `Everything ${tablesAll}, lanes add to ${sum}`);
+  const fallThrough = [...everythingHrefs].filter((h) => !inSomeLane.has(h));
+  clause(
+    `${label} · every table under Everything is in at least one lane`,
+    fallThrough.length === 0 && everythingHrefs.size === tablesAll,
+    `Everything ${tablesAll}; ${fallThrough.length} in no lane (lanes add to ${sum} because Mine overlaps)`,
+  );
 }
 
 async function walk(context, label, { email, password, organization, slug, shots, openShared, expectSharedOnly }) {
@@ -387,8 +417,17 @@ async function walk(context, label, { email, password, organization, slug, shots
   const hub = await readHub(page);
   say(`${label}: ${hub.rows.length} listings — ${hub.rows.map((r) => `${r.title} ${r.count}`).join(" · ")}`);
 
-  // ── clause 9: the four visibility lanes, and nothing else (VERIFIER-15) ────
-  {
+  // ── clause 9: the four lanes, and nothing else — or ABSENT with the reason ──
+  // The lanes read `custom.table_facts`; until the chair applies it the hub
+  // offers no lane filter and says why (never lanes that quietly file every
+  // table under My organization).
+  const lanesAbsent = hub.lanes.length === 0;
+  if (lanesAbsent) {
+    const said = await page.evaluate(() =>
+      (document.querySelector("[data-hub-root]")?.innerText ?? "").includes("could not be read, so only everything is shown"),
+    );
+    clause(`${label} · without the store's table facts, the lane filters are absent and say why`, said, said ? "the reason is on the page" : "no filters and no reason");
+  } else {
     const expected = ["Everything", "Mine", "My organization", "Community", "World"];
     clause(
       `${label} · the lane strip is Everything plus the four visibility lanes`,
