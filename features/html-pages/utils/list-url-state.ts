@@ -49,7 +49,7 @@ export function parseHtmlPagesListState(
   params: URLSearchParams,
 ): HtmlPagesListState {
   const viewRaw = params.get("view");
-  const view: HtmlPagesViewMode = viewRaw === "grid" ? "grid" : "table";
+  const view: HtmlPagesViewMode = viewRaw === "table" ? "table" : "grid";
   const sortRaw = params.get("sort");
   const sort: HtmlPagesSortField = SORT_FIELDS.has(
     sortRaw as HtmlPagesSortField,
@@ -78,7 +78,7 @@ export function htmlPagesListStateToSearchParams(
   state: HtmlPagesListState,
 ): URLSearchParams {
   const params = new URLSearchParams();
-  if (state.view !== "table") params.set("view", state.view);
+  if (state.view !== "grid") params.set("view", state.view);
   if (state.q.trim()) params.set("q", state.q.trim());
   if (state.indexableOnly) params.set("ix", "1");
   if (state.sort !== "updated_at") params.set("sort", state.sort);
