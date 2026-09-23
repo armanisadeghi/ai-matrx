@@ -148,6 +148,14 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   },
   { prefix: "/knowledge/library", surface: "matrx-user/knowledge-library" },
   {
+    prefix: "/knowledge/repositories",
+    surface: "matrx-user/knowledge-repositories",
+  },
+  {
+    prefix: "/rag/repositories",
+    surface: "matrx-user/knowledge-repositories",
+  },
+  {
     prefix: "/knowledge/data-stores",
     surface: "matrx-user/knowledge-data-stores",
   },

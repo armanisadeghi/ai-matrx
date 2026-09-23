@@ -71,6 +71,7 @@ import { mermaidEditorManifest } from "./mermaid-editor.manifest";
 import { ragSearchManifest } from "./rag-search.manifest";
 import { ragLibraryManifest } from "./rag-library.manifest";
 import { ragDataStoresManifest } from "./rag-data-stores.manifest";
+import { knowledgeRepositoriesManifest } from "./knowledge-repositories.manifest";
 import { ragViewerManifest } from "./rag-viewer.manifest";
 import { workingDocumentManifest } from "./working-document.manifest";
 import { scratchpadManifest } from "./scratchpad.manifest";
@@ -296,6 +297,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   ragSearchManifest,
   ragLibraryManifest,
   ragDataStoresManifest,
+  knowledgeRepositoriesManifest,
   ragViewerManifest,
   workingDocumentManifest,
   scratchpadManifest,

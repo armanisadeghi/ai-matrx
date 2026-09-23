@@ -12,9 +12,9 @@
  * genuine background work.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Code2,
   Database,
@@ -29,22 +29,21 @@ import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
-import { TapTargetButton } from "@ai-matrx/tap-target";
 import { Skeleton } from "@ai-matrx/design-system";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { postJson } from "@/lib/python-client";
 import { createClient } from "@/utils/supabase/client";
 import { codeDb } from "@/utils/supabase/codeDb";
 import type { components } from "@/types/python-generated/api-types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { buildKnowledgeRepositoriesContextData } from "@/features/rag/agent-context/buildKnowledgeRepositoriesContextData";
+
+const KNOWLEDGE_REPOSITORIES_SURFACE = "matrx-user/knowledge-repositories";
 
 // Index-response shape — DERIVED from the generated contract (never hand-mirrored).
 type ApiIndexResponse = components["schemas"]["IndexRepositoryResponse"];
@@ -67,7 +66,149 @@ interface RpcReposResponse {
   unattached_files: number;
 }
 
+function isFullyIndexed(repo: ApiRepo) {
+  return repo.file_count > 0 && repo.indexed_file_count >= repo.file_count;
+}
+
+const repositoryColumns = (
+  focusedId: string | null,
+): MatrxColumnDef<ApiRepo>[] => [
+  {
+    id: "name",
+    accessorKey: "name",
+    header: "Name",
+    label: "Name",
+    sortValue: (repo) => repo.name,
+    filterValue: (repo) => repo.name,
+    width: 220,
+    cell: (repo) =>
+      repo.repository_id ? (
+        <Link
+          href={`/knowledge/repositories?repo=${encodeURIComponent(repo.repository_id)}`}
+          className="block truncate font-medium hover:underline focus-visible:underline"
+          title={repo.name}
+          aria-current={
+            repo.repository_id === focusedId ? "location" : undefined
+          }
+        >
+          {repo.name}
+        </Link>
+      ) : (
+        <span className="block truncate font-medium" title={repo.name}>
+          {repo.name}
+        </span>
+      ),
+  },
+  {
+    id: "git_url",
+    accessorKey: "git_url",
+    header: "URL",
+    label: "URL",
+    sortValue: (repo) => repo.git_url ?? "",
+    filterValue: (repo) => repo.git_url ?? "",
+    width: 360,
+    cell: (repo) =>
+      repo.git_url ? (
+        <span
+          className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
+          title={repo.git_url}
+        >
+          <ExternalLink className="h-3 w-3 shrink-0" />
+          <span className="whitespace-nowrap">{repo.git_url}</span>
+        </span>
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      ),
+  },
+  {
+    id: "git_branch",
+    accessorKey: "git_branch",
+    header: "Branch",
+    label: "Branch",
+    sortValue: (repo) => repo.git_branch ?? "",
+    filterValue: (repo) => repo.git_branch ?? "",
+    width: 140,
+    cell: (repo) =>
+      repo.git_branch ? (
+        <code
+          className="block whitespace-nowrap rounded bg-muted/50 px-1.5 py-0.5 text-xs"
+          title={repo.git_branch}
+        >
+          {repo.git_branch}
+        </code>
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      ),
+  },
+  {
+    id: "file_count",
+    accessorKey: "file_count",
+    header: "Files",
+    label: "Files",
+    sortValue: (repo) => repo.file_count,
+    filterValue: (repo) => repo.file_count,
+    filter: "number",
+    align: "right",
+    width: 88,
+    cell: (repo) => <span className="tabular-nums">{repo.file_count}</span>,
+  },
+  {
+    id: "indexed_file_count",
+    accessorKey: "indexed_file_count",
+    header: "Indexed",
+    label: "Indexed",
+    sortValue: (repo) => repo.indexed_file_count,
+    filterValue: (repo) => repo.indexed_file_count,
+    filter: "number",
+    align: "right",
+    width: 112,
+    cell: (repo) => {
+      const fullyIndexed = isFullyIndexed(repo);
+      const partial =
+        repo.indexed_file_count > 0 &&
+        repo.indexed_file_count < repo.file_count;
+      return fullyIndexed ? (
+        <Badge variant="success" className="gap-1">
+          <CheckCircle2 className="h-3 w-3" />
+          {repo.indexed_file_count}
+        </Badge>
+      ) : partial ? (
+        <Badge variant="warning">
+          {repo.indexed_file_count} / {repo.file_count}
+        </Badge>
+      ) : (
+        <Badge variant="outline">0</Badge>
+      );
+    },
+  },
+  {
+    id: "last_synced_at",
+    accessorKey: "last_synced_at",
+    header: "Last sync",
+    label: "Last sync",
+    sortValue: (repo) => repo.last_synced_at ?? "",
+    filterValue: (repo) => repo.last_synced_at ?? "",
+    filter: "date",
+    width: 180,
+    cell: (repo) => (
+      <span
+        className="block truncate text-xs text-muted-foreground"
+        title={
+          repo.last_synced_at
+            ? new Date(repo.last_synced_at).toLocaleString()
+            : "never"
+        }
+      >
+        {repo.last_synced_at
+          ? new Date(repo.last_synced_at).toLocaleString()
+          : "never"}
+      </span>
+    ),
+  },
+];
+
 export function RepositoriesPage() {
+  const router = useRouter();
   const userId = useAppSelector(selectUserId);
   // `?repo=<id>` is THE deep link to one code.code_repositories row — what
   // `entityRegistry.code_repository.hrefFor` emits. This page is the only
@@ -75,7 +216,6 @@ export function RepositoriesPage() {
   // page with its row highlighted and scrolled into view".
   const searchParams = useSearchParams();
   const focusRepoId = searchParams?.get("repo") ?? null;
-  const focusRowRef = useRef<HTMLTableRowElement | null>(null);
   const [repos, setRepos] = useState<ApiRepo[]>([]);
   const [unattached, setUnattached] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -86,9 +226,9 @@ export function RepositoriesPage() {
   useEffect(() => {
     if (!userId) return undefined;
     let cancelled = false;
-    setLoading(true);
-    setError(null);
     (async () => {
+      setLoading(true);
+      setError(null);
       const supabase = createClient();
       const { data, error: rpcError } = await codeDb(supabase).rpc(
         "fn_list_repositories",
@@ -112,8 +252,11 @@ export function RepositoriesPage() {
   }, [userId, refreshKey]);
 
   useEffect(() => {
-    if (focusRepoId && focusRowRef.current) {
-      focusRowRef.current.scrollIntoView({ block: "center", behavior: "smooth" });
+    if (focusRepoId) {
+      const row = document.querySelector<HTMLTableRowElement>(
+        `tr[data-row-id="${CSS.escape(focusRepoId)}"]`,
+      );
+      row?.scrollIntoView({ block: "center", behavior: "smooth" });
     }
   }, [focusRepoId, repos]);
 
@@ -158,17 +301,23 @@ export function RepositoriesPage() {
     }
   };
 
+  const getScope = () =>
+    buildKnowledgeRepositoriesContextData({
+      repositories: repos,
+      loading,
+      error,
+      selectedRepositoryId: focusRepoId,
+      unattachedFileCount: unattached,
+      indexingRepositoryId: indexingId,
+    });
+
   return (
-    <>
-      <RagHubHeader
-        right={
-          <TapTargetButton
-            icon={<RefreshCw className="h-4 w-4" />}
-            ariaLabel="Refresh"
-            onClick={() => setRefreshKey((n) => n + 1)}
-          />
-        }
-      />
+    <SurfaceRuntimeProvider
+      surfaceName={KNOWLEDGE_REPOSITORIES_SURFACE}
+      getScope={getScope}
+      isEditable={false}
+    >
+      <RagHubHeader />
       <div className="flex flex-col h-full overflow-hidden bg-background pt-[var(--shell-header-h)]">
         {focusMissing && (
           <div className="mx-6 mb-2 shrink-0 rounded-md border border-warning/50 bg-warning/5 p-3 text-sm">
@@ -192,153 +341,100 @@ export function RepositoriesPage() {
           </div>
         )}
 
-      <div className="flex-1 min-h-0 overflow-auto">
-        {error && (
-          <div className="m-6 p-4 border border-destructive/50 bg-destructive/5 rounded-md text-sm text-destructive">
-            <strong>Could not load repositories:</strong> {error}
-          </div>
-        )}
+        <div className="flex-1 min-h-0 overflow-auto">
+          {error && (
+            <div className="m-6 p-4 border border-destructive/50 bg-destructive/5 rounded-md text-sm text-destructive">
+              <strong>Could not load repositories:</strong> {error}
+            </div>
+          )}
 
-        {loading && repos.length === 0 ? (
-          <div className="p-6 space-y-2">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </div>
-        ) : repos.length === 0 && !error ? (
-          <EmptyState />
-        ) : (
-          <Table>
-            <TableHeader className="sticky top-0 bg-background z-10">
-              <TableRow>
-                <TableHead>Repository</TableHead>
-                <TableHead>Branch</TableHead>
-                <TableHead className="text-right">Files</TableHead>
-                <TableHead className="text-right">Indexed</TableHead>
-                <TableHead>Last sync</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {repos.map((r) => {
-                const fullyIndexed =
-                  r.file_count > 0 && r.indexed_file_count >= r.file_count;
-                const partial =
-                  r.indexed_file_count > 0 &&
-                  r.indexed_file_count < r.file_count;
-                const focused =
-                  focusRepoId !== null && r.repository_id === focusRepoId;
+          {loading && repos.length === 0 ? (
+            <div className="p-6 space-y-2">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : (
+            <MatrxDataTable<ApiRepo>
+              data={repos}
+              columns={repositoryColumns(focusRepoId)}
+              getRowId={(repo) => repo.repository_id ?? repo.name}
+              getRowHref={(repo) =>
+                repo.repository_id
+                  ? `/knowledge/repositories?repo=${encodeURIComponent(repo.repository_id)}`
+                  : undefined
+              }
+              onRowOpen={(repo) => {
+                if (repo.repository_id)
+                  router.push(
+                    `/knowledge/repositories?repo=${encodeURIComponent(repo.repository_id)}`,
+                  );
+              }}
+              detail={{ enabled: false }}
+              density="condensed"
+              pageSize={0}
+              isFetching={loading && repos.length > 0}
+              rowClassName={(repo) =>
+                repo.repository_id === focusRepoId
+                  ? "bg-accent ring-1 ring-inset ring-primary/40"
+                  : undefined
+              }
+              rowActions={(repo) => {
+                const fullyIndexed = isFullyIndexed(repo);
                 return (
-                  <TableRow
-                    key={r.repository_id ?? r.name}
-                    ref={focused ? focusRowRef : undefined}
-                    aria-current={focused ? "true" : undefined}
-                    className={
-                      focused ? "bg-accent ring-1 ring-inset ring-primary/40" : undefined
+                  <Button
+                    size="sm"
+                    variant={fullyIndexed ? "outline" : "default"}
+                    onClick={() =>
+                      repo.repository_id &&
+                      indexRepo(repo.repository_id, fullyIndexed)
+                    }
+                    disabled={
+                      !repo.repository_id ||
+                      indexingId === repo.repository_id ||
+                      repo.file_count === 0
                     }
                   >
-                    <TableCell>
-                      <div className="font-medium">{r.name}</div>
-                      {r.git_url && (
-                        <div className="text-xs text-muted-foreground break-all flex items-center gap-1">
-                          <ExternalLink className="h-3 w-3" />
-                          {r.git_url}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      {r.git_branch ? (
-                        <code className="px-1.5 py-0.5 rounded bg-muted/50">
-                          {r.git_branch}
-                        </code>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {r.file_count}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {fullyIndexed ? (
-                        <Badge variant="success" className="gap-1">
-                          <CheckCircle2 className="h-3 w-3" />
-                          {r.indexed_file_count}
-                        </Badge>
-                      ) : partial ? (
-                        <Badge variant="warning">
-                          {r.indexed_file_count} / {r.file_count}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline">0</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                      {r.last_synced_at
-                        ? new Date(r.last_synced_at).toLocaleString()
-                        : "never"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant={fullyIndexed ? "outline" : "default"}
-                        onClick={() =>
-                          r.repository_id &&
-                          indexRepo(r.repository_id, fullyIndexed)
-                        }
-                        disabled={
-                          !r.repository_id ||
-                          indexingId === r.repository_id ||
-                          r.file_count === 0
-                        }
-                      >
-                        {indexingId === r.repository_id ? (
-                          <>
-                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                            Indexing…
-                          </>
-                        ) : fullyIndexed ? (
-                          <>
-                            <RefreshCw className="h-3 w-3 mr-1" />
-                            Re-index
-                          </>
-                        ) : (
-                          <>
-                            <Database className="h-3 w-3 mr-1" />
-                            Index
-                          </>
-                        )}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+                    {indexingId === repo.repository_id ? (
+                      <>
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        Indexing…
+                      </>
+                    ) : fullyIndexed ? (
+                      <>
+                        <RefreshCw className="mr-1 h-3 w-3" />
+                        Re-index
+                      </>
+                    ) : (
+                      <>
+                        <Database className="mr-1 h-3 w-3" />
+                        Index
+                      </>
+                    )}
+                  </Button>
                 );
-              })}
-            </TableBody>
-          </Table>
-        )}
+              }}
+              toolbar={{
+                title: "Repositories",
+                search: true,
+                searchPlaceholder: "Search name, URL, branch, or sync…",
+                refresh: { onRefresh: () => setRefreshKey((n) => n + 1) },
+              }}
+              emptyState={{
+                icon: <Code2 className="h-12 w-12 text-muted-foreground/50" />,
+                title: "No repositories yet",
+                description:
+                  "Repositories live in code.code_repositories. Once you create one and bind code files to it (via code_files.metadata.repository_id), it will appear here ready to index.",
+                action: (
+                  <Link href="/sandbox" className="text-sm underline">
+                    Open a sandbox to create one
+                  </Link>
+                ),
+              }}
+            />
+          )}
+        </div>
       </div>
-      </div>
-    </>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center text-center py-20 px-6">
-      <Code2 className="h-12 w-12 text-muted-foreground/50 mb-3" />
-      <h3 className="text-lg font-medium">No repositories yet</h3>
-      <p className="text-sm text-muted-foreground max-w-md mt-1">
-        Repositories live in <code>code.code_repositories</code>. Once you
-        create one and bind code files to it (via
-        <code> code_files.metadata.repository_id</code>), it will appear here
-        ready to index.
-      </p>
-      <p className="text-xs text-muted-foreground max-w-md mt-3">
-        Don't have repos yet but have orphan code files?{" "}
-        <Link href="/sandbox" className="underline">
-          Open a sandbox
-        </Link>{" "}
-        to create one.
-      </p>
-    </div>
+    </SurfaceRuntimeProvider>
   );
 }

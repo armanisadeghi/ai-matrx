@@ -1,24 +1,30 @@
 "use client";
 
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
-import { Fragment, useEffect, useRef, useState, useCallback } from "react";
+import {
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import { readAllRows } from "@ai-matrx/data/db";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
 import { createClient } from "@/utils/supabase/client";
 import { isJsonObject } from "@/types/json";
 import {
   Container,
-  RefreshCw,
   AlertCircle,
   Square,
   Trash2,
-  Timer,
   Users,
   Activity,
   Server,
   KeyRound,
   Loader2,
-  ChevronDown,
-  ChevronRight,
   Copy,
   Check,
   Download,
@@ -26,37 +32,32 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import AppLink from "@/components/navigation/AppLink";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/slices/userSlice";
 import { useSandboxLifecycleSubmission } from "@/lib/sandbox/useSandboxLifecycleSubmission";
 import { useSandboxLifecycleTerminalInvalidation } from "@/lib/sandbox/useSandboxLifecycleTerminalInvalidation";
 import { AdminUserRef } from "@/features/admin/users/components/AdminUserRef";
-import { sandboxInstanceSummary, formatSandboxTimestamp } from "@/lib/sandbox/format";
+import {
+  sandboxInstanceSummary,
+  formatSandboxTimestamp,
+} from "@/lib/sandbox/format";
 import type {
   SandboxInstanceRow as SandboxInstance,
   SandboxAccessResponse,
@@ -73,12 +74,7 @@ const STATUS_BADGE_MAP: Record<
   string,
   {
     variant:
-      | "success"
-      | "warning"
-      | "destructive"
-      | "secondary"
-      | "info"
-      | "default";
+      "success" | "warning" | "destructive" | "secondary" | "info" | "default";
     label: string;
   }
 > = {
@@ -92,19 +88,39 @@ const STATUS_BADGE_MAP: Record<
   expired: { variant: "secondary", label: "Expired" },
 };
 
-// ── Human-readable clipboard summaries ──────────────────────────────────────
-// Per-instance summary lives in lib/sandbox/format.ts (shared with the user
-// list + detail pages). The agent-payload envelope is produced by the shared
-// <CopyButtons> primitive; humanAll just composes per-instance summaries with
-// the admin-only stats header.
 const PAGE_LOCATION =
   "AI Matrx Admin — Accessible Sandboxes (/administration/compute/sandbox)";
 
-interface SandboxStats {
-  active: number;
-  total: number;
-  uniqueUsers: number;
-  failed: number;
+function sandboxListSummary(
+  list: SandboxInstance[],
+  stats: { active: number; total: number; uniqueUsers: number; failed: number },
+  filter: string,
+): string {
+  const header = `Accessible sandboxes — ${list.length} accessible instance(s) [filter: ${filter}]\nActive: ${stats.active} · Total: ${stats.total} · Unique users: ${stats.uniqueUsers} · Failed: ${stats.failed}`;
+  const body = list
+    .map(
+      (instance, index) =>
+        `--- [${index + 1}] ---\n${sandboxInstanceSummary(instance)}`,
+    )
+    .join("\n\n");
+  return `${header}\n\n${body}`;
+}
+
+function SandboxDetail({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <span className="mb-0.5 block text-xs font-medium text-muted-foreground">
+        {label}
+      </span>
+      {children}
+    </div>
+  );
 }
 
 // ── Surface projections (`matrx-admin/sandbox`) ─────────────────────────────
@@ -146,19 +162,6 @@ function toExpandedEntry(
   };
 }
 
-function humanAll(
-  list: SandboxInstance[],
-  stats: SandboxStats,
-  filter: string,
-): string {
-  const header = `Accessible sandboxes — ${list.length} accessible instance(s) [filter: ${filter}]
-Active: ${stats.active} · Total: ${stats.total} · Unique users: ${stats.uniqueUsers} · Failed: ${stats.failed}`;
-  const body = list
-    .map((i, idx) => `--- [${idx + 1}] ---\n${sandboxInstanceSummary(i)}`)
-    .join("\n\n");
-  return `${header}\n\n${body}`;
-}
-
 export default function AdminSandboxManagementPage() {
   // THE DOOR LAW, with a hard limit this console must respect: `/sandbox/[id]`
   // reads `/api/sandbox/[id]`, which filters `.eq("user_id", user.id)`. This
@@ -167,18 +170,25 @@ export default function AdminSandboxManagementPage() {
   // The door is therefore offered only for the viewer's own instances; every
   // row's OWNER is reachable through `AdminUserRef` regardless.
   const viewerUserId = useAppSelector(selectUserId);
-  const [accessibleSandboxes, setAccessibleSandboxes] = useState<SandboxInstance[]>([]);
+  const [accessibleSandboxes, setAccessibleSandboxes] = useState<
+    SandboxInstance[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const instances = statusFilter === "all"
-    ? accessibleSandboxes
-    : accessibleSandboxes.filter((instance) => instance.status === statusFilter);
+  const instances =
+    statusFilter === "all"
+      ? accessibleSandboxes
+      : accessibleSandboxes.filter(
+          (instance) => instance.status === statusFilter,
+        );
   const [deleteTarget, setDeleteTarget] = useState<SandboxInstance | null>(
     null,
   );
-  const lifecycleReservations = useAppSelector((state) => state.sandboxLifecycle.reservations);
+  const lifecycleReservations = useAppSelector(
+    (state) => state.sandboxLifecycle.reservations,
+  );
   const { submit: submitLifecycle } = useSandboxLifecycleSubmission();
   const fetchGeneration = useRef(0);
   const lifecycleViewerRef = useRef(viewerUserId);
@@ -200,26 +210,35 @@ export default function AdminSandboxManagementPage() {
       const supabase = createClient();
       // The current account's RLS-authorized scope. Counts and local filters
       // require every accessible, non-deleted row, not one PostgREST page.
-      const rows = await readAllRows<SandboxInstance>(({ from, to }) =>
-        supabase.from("sandbox_instances").select("*", { count: "exact" })
-          .is("deleted_at", null)
-          .order("created_at", { ascending: false })
-          .order("id", { ascending: false })
-          .range(from, to),
+      const rows = await readAllRows<SandboxInstance>(
+        ({ from, to }) =>
+          supabase
+            .from("sandbox_instances")
+            .select("*", { count: "exact" })
+            .is("deleted_at", null)
+            .order("created_at", { ascending: false })
+            .order("id", { ascending: false })
+            .range(from, to),
         { label: "admin.sandbox_instances" },
       );
       if (generation !== fetchGeneration.current) return;
       setAccessibleSandboxes(rows);
       setError(null);
     } catch (err) {
-      if (generation === fetchGeneration.current) setError(err instanceof Error ? err.message : "Unknown error");
+      if (generation === fetchGeneration.current)
+        setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       if (generation === fetchGeneration.current) setLoading(false);
     }
   }, []);
 
-  useEffect(() => { fetchGeneration.current += 1; }, [viewerUserId]);
-  useSandboxLifecycleTerminalInvalidation(() => fetchInstances(), () => lifecycleViewerRef.current === viewerUserId);
+  useEffect(() => {
+    fetchGeneration.current += 1;
+  }, [viewerUserId]);
+  useSandboxLifecycleTerminalInvalidation(
+    () => fetchInstances(),
+    () => lifecycleViewerRef.current === viewerUserId,
+  );
 
   useEffect(() => {
     setLoading(true);
@@ -235,13 +254,31 @@ export default function AdminSandboxManagementPage() {
   };
 
   const handleStop = async (instance: SandboxInstance) => {
-    const result = await submitLifecycle({ rowId: instance.id, sandboxId: instance.sandbox_id, kind: "stop" });
-    if (!result.admitted) setError(result.reason === "already_pending" ? "A sandbox operation is already pending for this target." : "Sandbox lifecycle is still connecting to your account.");
+    const result = await submitLifecycle({
+      rowId: instance.id,
+      sandboxId: instance.sandbox_id,
+      kind: "stop",
+    });
+    if (!result.admitted)
+      setError(
+        result.reason === "already_pending"
+          ? "A sandbox operation is already pending for this target."
+          : "Sandbox lifecycle is still connecting to your account.",
+      );
   };
 
   const handleDelete = async (target: SandboxInstance) => {
-    const result = await submitLifecycle({ rowId: target.id, sandboxId: target.sandbox_id, kind: "delete" });
-    if (!result.admitted) setError(result.reason === "already_pending" ? "A sandbox operation is already pending for this target." : "Sandbox lifecycle is still connecting to your account.");
+    const result = await submitLifecycle({
+      rowId: target.id,
+      sandboxId: target.sandbox_id,
+      kind: "delete",
+    });
+    if (!result.admitted)
+      setError(
+        result.reason === "already_pending"
+          ? "A sandbox operation is already pending for this target."
+          : "Sandbox lifecycle is still connecting to your account.",
+      );
   };
 
   const handleRequestSsh = async (instance: SandboxInstance) => {
@@ -302,13 +339,17 @@ export default function AdminSandboxManagementPage() {
     ["creating", "starting", "ready", "running"].includes(i.status),
   ).length;
   const uniqueUsers = new Set(accessibleSandboxes.map((i) => i.user_id)).size;
-  const failedCount = accessibleSandboxes.filter((i) => i.status === "failed").length;
+  const failedCount = accessibleSandboxes.filter(
+    (i) => i.status === "failed",
+  ).length;
 
   const statusFilters = [
     "all",
     "running",
     "ready",
     "creating",
+    "starting",
+    "shutting_down",
     "stopped",
     "failed",
     "expired",
@@ -330,8 +371,10 @@ export default function AdminSandboxManagementPage() {
   const expandedInstance = expandedRow
     ? instances.find((i) => i.id === expandedRow)
     : undefined;
-  const isLifecycleReserved = (id: string) => lifecycleReservations.some((reservation) => reservation.row_id === id);
-  const deleteTargetBusy = !!deleteTarget && isLifecycleReserved(deleteTarget.id);
+  const isLifecycleReserved = (id: string) =>
+    lifecycleReservations.some((reservation) => reservation.row_id === id);
+  const deleteTargetBusy =
+    !!deleteTarget && isLifecycleReserved(deleteTarget.id);
 
   const getAdminSandboxScope = () =>
     createAdminSandboxScope({
@@ -347,567 +390,612 @@ export default function AdminSandboxManagementPage() {
       // (an admin expands an instance, it expires out of the active filter).
       // The id still describes what the page thinks is open, but the detail
       // object is only emitted when the row is genuinely there to project.
-      ...(expandedRow ? { expanded_accessible_sandbox_instance_id: expandedRow } : {}),
+      ...(expandedRow
+        ? { expanded_accessible_sandbox_instance_id: expandedRow }
+        : {}),
       ...(expandedInstance
-        ? { expanded_accessible_sandbox_instance: toExpandedEntry(expandedInstance) }
+        ? {
+            expanded_accessible_sandbox_instance:
+              toExpandedEntry(expandedInstance),
+          }
         : {}),
     });
+
+  const columns: MatrxColumnDef<SandboxInstance>[] = [
+    {
+      accessorKey: "sandbox_id",
+      header: "Sandbox ID",
+      label: "Sandbox ID",
+      width: 184,
+      className: "font-mono text-xs",
+      cell: (instance) =>
+        instance.user_id === viewerUserId ? (
+          <AppLink
+            href={`/sandbox/${instance.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={`Open ${instance.sandbox_id} in a new tab`}
+            className="underline-offset-2 hover:text-primary hover:underline"
+          >
+            {instance.sandbox_id}
+          </AppLink>
+        ) : (
+          instance.sandbox_id
+        ),
+    },
+    {
+      accessorKey: "user_id",
+      header: "Owner",
+      label: "Owner",
+      width: 180,
+      cell: (instance) => <AdminUserRef userId={instance.user_id} />,
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      label: "Status",
+      width: 128,
+      filter: "select",
+      filterOptions: statusFilters
+        .filter((status) => status !== "all")
+        .map((status) => ({
+          value: status,
+          label: STATUS_BADGE_MAP[status]?.label ?? status,
+        })),
+      cell: (instance) => {
+        const status = STATUS_BADGE_MAP[instance.status] ?? {
+          variant: "secondary" as const,
+          label: instance.status,
+        };
+        return <Badge variant={status.variant}>{status.label}</Badge>;
+      },
+    },
+    {
+      accessorKey: "created_at",
+      header: "Created",
+      label: "Created",
+      width: 156,
+      cell: (instance) => (
+        <span className="text-xs text-muted-foreground">
+          {formatSandboxTimestamp(instance.created_at)}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "expires_at",
+      header: "Expires",
+      label: "Expires",
+      width: 156,
+      cell: (instance) => (
+        <span className="text-xs text-muted-foreground">
+          {formatSandboxTimestamp(instance.expires_at)}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "tier",
+      header: "Tier",
+      label: "Tier",
+      width: 112,
+      cell: (instance) => (
+        <span className="font-mono text-xs">{instance.tier ?? "--"}</span>
+      ),
+    },
+    {
+      accessorKey: "container_id",
+      header: "Container ID",
+      label: "Container ID",
+      hidden: true,
+      className: "font-mono text-xs",
+      cell: (instance) => instance.container_id ?? "--",
+    },
+    {
+      accessorKey: "ttl_seconds",
+      header: "TTL",
+      label: "TTL",
+      hidden: true,
+      cell: (instance) =>
+        `${instance.ttl_seconds}s (${formatDurationSeconds(
+          instance.ttl_seconds,
+          {
+            style: "coarse",
+            round: "down",
+          },
+        )})`,
+    },
+    {
+      accessorKey: "hot_path",
+      header: "Hot path",
+      label: "Hot path",
+      hidden: true,
+      className: "font-mono text-xs",
+      cell: (instance) => instance.hot_path ?? "--",
+    },
+    {
+      accessorKey: "cold_path",
+      header: "Cold path",
+      label: "Cold path",
+      hidden: true,
+      className: "font-mono text-xs",
+      cell: (instance) => instance.cold_path ?? "--",
+    },
+    {
+      accessorKey: "stop_reason",
+      header: "Stop reason",
+      label: "Stop reason",
+      hidden: true,
+      cell: (instance) => instance.stop_reason?.replace(/_/g, " ") ?? "--",
+    },
+    {
+      accessorKey: "last_heartbeat_at",
+      header: "Last heartbeat",
+      label: "Last heartbeat",
+      hidden: true,
+      cell: (instance) => formatSandboxTimestamp(instance.last_heartbeat_at),
+    },
+  ];
 
   return (
     <SurfaceRuntimeProvider
       surfaceName={ADMIN_SANDBOX_SURFACE_NAME}
       getScope={getAdminSandboxScope}
     >
-    <div className="min-h-dvh bg-textured">
-      <div className="p-4 border-b border-border bg-textured">
-        <div className="flex max-w-7xl mx-auto flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <Container className="w-6 h-6 text-orange-500" />
-            <div>
-              <h1 className="text-lg font-semibold">Accessible sandboxes</h1>
-              <p className="text-xs text-muted-foreground">
-                Sandbox records your account is authorized to access. Fleet-wide host health is separate.
-              </p>
-            </div>
-          </div>
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap sm:justify-end">
-            <AppLink
-              href="/administration/compute/sandbox-infra"
-              className="flex w-full shrink-0 items-center justify-center gap-1.5 rounded-md border border-input px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent sm:w-auto"
-            >
-              <Activity className="w-4 h-4" />
-              Fleet health
-              <ExternalLink className="w-3.5 h-3.5" />
-            </AppLink>
-            {instances.length > 0 && (
-              <CopyButtons
-                size="sm"
-                label="Accessible sandboxes"
-                human={() =>
-                  humanAll(
-                    instances,
-                    {
-                      active: activeCount,
-                      total: accessibleSandboxes.length,
-                      uniqueUsers,
-                      failed: failedCount,
-                    },
-                    statusFilter,
-                  )
-                }
-                agent={() => ({
-                  kind: "sandbox-instances",
-                  location: PAGE_LOCATION,
-                  description:
-                    "Sandbox instances currently listed within this account's authorized access scope.",
-                  data: instances,
-                  attributes: {
-                    count: instances.length,
-                    filter: statusFilter,
-                  },
-                  context: {
-                    active: activeCount,
-                    total: accessibleSandboxes.length,
-                    "unique-users": uniqueUsers,
-                    failed: failedCount,
-                  },
-                })}
-              />
-            )}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label="Refresh sandbox instances"
-                  title="Refresh sandbox instances"
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                >
-                  <RefreshCw
-                    className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
-                  />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Refresh sandbox instances</TooltipContent>
-            </Tooltip>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-4 max-w-7xl mx-auto space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card data-surface-value="accessible_sandbox_active_count">
-            <CardContent className="p-4 flex items-center gap-3">
-              <Server className="w-8 h-8 text-green-500" />
+      <div className="min-h-dvh bg-textured">
+        <div className="p-4 border-b border-border bg-textured">
+          <div className="flex max-w-7xl mx-auto items-center">
+            <div className="flex items-center gap-3">
+              <Container className="w-6 h-6 text-orange-500" />
               <div>
-                <p className="text-2xl font-semibold">{activeCount}</p>
+                <h1 className="text-lg font-semibold">Accessible sandboxes</h1>
                 <p className="text-xs text-muted-foreground">
-                  Active accessible instances
+                  Sandbox records your account is authorized to access.
+                  Fleet-wide host health is separate.
                 </p>
               </div>
-            </CardContent>
-          </Card>
-          <Card data-surface-value="accessible_sandbox_total_count">
-            <CardContent className="p-4 flex items-center gap-3">
-              <Activity className="w-8 h-8 text-blue-500" />
-              <div>
-                <p className="text-2xl font-semibold">{accessibleSandboxes.length}</p>
-                <p className="text-xs text-muted-foreground">Accessible instances</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card data-surface-value="accessible_sandbox_unique_user_count">
-            <CardContent className="p-4 flex items-center gap-3">
-              <Users className="w-8 h-8 text-purple-500" />
-              <div>
-                <p className="text-2xl font-semibold">{uniqueUsers}</p>
-                <p className="text-xs text-muted-foreground">Accessible users</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card data-surface-value="accessible_sandbox_failed_count">
-            <CardContent className="p-4 flex items-center gap-3">
-              <AlertCircle className="w-8 h-8 text-red-500" />
-              <div>
-                <p className="text-2xl font-semibold">{failedCount}</p>
-                <p className="text-xs text-muted-foreground">Failed accessible instances</p>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
-        {error && (
-          <Card className="border-destructive" data-surface-value="accessible_sandbox_list_error">
-            <CardContent className="flex items-center gap-2 p-4">
-              <AlertCircle className="w-4 h-4 text-destructive" />
-              <p className="text-sm text-destructive">{error}</p>
-            </CardContent>
-          </Card>
-        )}
+        <div className="p-4 max-w-7xl mx-auto space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card data-surface-value="accessible_sandbox_active_count">
+              <CardContent className="p-4 flex items-center gap-3">
+                <Server className="w-8 h-8 text-green-500" />
+                <div>
+                  <p className="text-2xl font-semibold">{activeCount}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Active accessible instances
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card data-surface-value="accessible_sandbox_total_count">
+              <CardContent className="p-4 flex items-center gap-3">
+                <Activity className="w-8 h-8 text-blue-500" />
+                <div>
+                  <p className="text-2xl font-semibold">
+                    {accessibleSandboxes.length}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Accessible instances
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card data-surface-value="accessible_sandbox_unique_user_count">
+              <CardContent className="p-4 flex items-center gap-3">
+                <Users className="w-8 h-8 text-purple-500" />
+                <div>
+                  <p className="text-2xl font-semibold">{uniqueUsers}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Accessible users
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card data-surface-value="accessible_sandbox_failed_count">
+              <CardContent className="p-4 flex items-center gap-3">
+                <AlertCircle className="w-8 h-8 text-red-500" />
+                <div>
+                  <p className="text-2xl font-semibold">{failedCount}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Failed accessible instances
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-        <div
-          className="flex items-center gap-2 flex-wrap"
-          data-surface-value="accessible_sandbox_status_filter"
-        >
-          {statusFilters.map((s) => (
-            <Button
-              key={s}
-              variant={statusFilter === s ? "default" : "outline"}
-              size="sm"
-              onClick={() => setStatusFilter(s)}
+          {error && (
+            <Card
+              className="border-destructive"
+              data-surface-value="accessible_sandbox_list_error"
             >
-              {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
-            </Button>
-          ))}
+              <CardContent className="flex items-center gap-2 p-4">
+                <AlertCircle className="w-4 h-4 text-destructive" />
+                <p className="text-sm text-destructive">{error}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          <div data-surface-value="accessible_sandbox_instances">
+            <span
+              className="sr-only"
+              data-surface-value="accessible_sandbox_status_filter"
+            >
+              {statusFilter}
+            </span>
+            <MatrxDataTable<SandboxInstance>
+              tableId="administration/compute/sandbox"
+              data={instances}
+              columns={columns}
+              getRowId={(instance) => instance.id}
+              density="condensed"
+              isLoading={loading}
+              isFetching={isRefreshing}
+              defaultSort={{ id: "created_at", direction: "desc" }}
+              pageSize={25}
+              pageSizeOptions={[10, 25, 50, 100]}
+              detail={{ enabled: false }}
+              expandedDetail={{
+                expandedId: expandedRow,
+                onExpandedIdChange: setExpandedRow,
+                render: (instance) => (
+                  <div
+                    className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4"
+                    data-surface-value="expanded_accessible_sandbox_instance"
+                  >
+                    <SandboxDetail label="Instance ID">
+                      <code className="break-all font-mono text-xs">
+                        {instance.id}
+                      </code>
+                    </SandboxDetail>
+                    <SandboxDetail label="Owner">
+                      <AdminUserRef userId={instance.user_id} />
+                    </SandboxDetail>
+                    {instance.container_id && (
+                      <SandboxDetail label="Container ID">
+                        <code className="break-all font-mono text-xs">
+                          {instance.container_id}
+                        </code>
+                      </SandboxDetail>
+                    )}
+                    <SandboxDetail label="TTL">
+                      <span className="text-xs">
+                        {instance.ttl_seconds}s (
+                        {formatDurationSeconds(instance.ttl_seconds, {
+                          style: "coarse",
+                          round: "down",
+                        })}
+                        )
+                      </span>
+                    </SandboxDetail>
+                    <SandboxDetail label="Hot Path">
+                      <code className="font-mono text-xs">
+                        {instance.hot_path ?? "--"}
+                      </code>
+                    </SandboxDetail>
+                    <SandboxDetail label="Cold Path">
+                      <code className="font-mono text-xs">
+                        {instance.cold_path ?? "--"}
+                      </code>
+                    </SandboxDetail>
+                    {instance.stop_reason && (
+                      <SandboxDetail label="Stop Reason">
+                        <span className="text-xs">
+                          {instance.stop_reason.replace(/_/g, " ")}
+                        </span>
+                      </SandboxDetail>
+                    )}
+                    {instance.last_heartbeat_at && (
+                      <SandboxDetail label="Last Heartbeat">
+                        <span className="font-mono text-xs">
+                          {formatSandboxTimestamp(instance.last_heartbeat_at)}
+                        </span>
+                      </SandboxDetail>
+                    )}
+                    {isJsonObject(instance.config) &&
+                      Object.keys(instance.config).length > 0 && (
+                        <div className="col-span-full">
+                          <span className="mb-0.5 block text-xs font-medium text-muted-foreground">
+                            Config
+                          </span>
+                          <pre className="overflow-x-auto rounded bg-muted p-2 font-mono text-xs">
+                            {JSON.stringify(instance.config, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                  </div>
+                ),
+              }}
+              toolbar={{
+                searchPlaceholder: "Search accessible sandboxes…",
+                refresh: { onRefresh: handleRefresh },
+                facets: [
+                  {
+                    type: "custom",
+                    id: "accessible-sandbox-status",
+                    filter: {
+                      active: statusFilter !== "all",
+                      onReset: () => setStatusFilter("all"),
+                    },
+                    render: () => (
+                      <Select
+                        value={statusFilter}
+                        onValueChange={setStatusFilter}
+                      >
+                        <SelectTrigger
+                          aria-label="Sandbox status"
+                          className="h-8 w-36"
+                        >
+                          <SelectValue placeholder="Any status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusFilters.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {status === "all"
+                                ? "Any status"
+                                : (STATUS_BADGE_MAP[status]?.label ?? status)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ),
+                  },
+                ],
+                actions: (
+                  <AppLink
+                    href="/administration/compute/sandbox-infra"
+                    className="flex shrink-0 items-center justify-center gap-1.5 rounded-md border border-input px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent"
+                  >
+                    <Activity className="h-4 w-4" />
+                    Fleet health
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </AppLink>
+                ),
+              }}
+              copy={{
+                label: "Sandbox instance",
+                listLabel: "Accessible sandboxes",
+                location: PAGE_LOCATION,
+                rowKind: "sandbox-instance",
+                listKind: "sandbox-instances",
+                rowDescription:
+                  "A single sandbox instance from the admin sandbox management table.",
+                listDescription:
+                  "Sandbox instances currently listed within this account's authorized access scope.",
+                humanRow: sandboxInstanceSummary,
+                agentRow: (instance) => instance,
+                rowAttributes: (instance) => ({
+                  id: instance.id,
+                  "sandbox-id": instance.sandbox_id,
+                  status: instance.status,
+                }),
+                listAttributes: (visible) => ({
+                  count: visible.length,
+                  filter: statusFilter,
+                }),
+                listContext: () => ({
+                  active: activeCount,
+                  total: accessibleSandboxes.length,
+                  "unique-users": uniqueUsers,
+                  failed: failedCount,
+                }),
+                aiVariants: (visible) => [
+                  {
+                    id: "accessible-summary",
+                    label: "Summary with counts",
+                    hint: "Readable list with accessible counts and every visible sandbox.",
+                    build: () =>
+                      sandboxListSummary(
+                        visible,
+                        {
+                          active: activeCount,
+                          total: accessibleSandboxes.length,
+                          uniqueUsers,
+                          failed: failedCount,
+                        },
+                        statusFilter,
+                      ),
+                  },
+                ],
+              }}
+              rowActions={(instance) => {
+                const busy = isLifecycleReserved(instance.id);
+                const active = ["ready", "running"].includes(instance.status);
+                return (
+                  <>
+                    {active && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRequestSsh(instance)}
+                        className="text-xs"
+                      >
+                        <KeyRound className="mr-1 h-4 w-4" />
+                        SSH
+                      </Button>
+                    )}
+                    {active && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleStop(instance)}
+                        disabled={busy}
+                        className="text-xs"
+                      >
+                        {busy ? (
+                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Square className="mr-1 h-4 w-4" />
+                        )}
+                        Stop
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Delete sandbox"
+                      title="Delete sandbox"
+                      onClick={() => setDeleteTarget(instance)}
+                      disabled={busy}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      {busy ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </>
+                );
+              }}
+              coverage={{
+                loaded: accessibleSandboxes.length,
+                matched: instances.length,
+                total: accessibleSandboxes.length,
+                answeredBy: "client",
+                noun: "sandbox instance",
+              }}
+              emptyState={{
+                title:
+                  "No accessible sandbox instances found for the selected filter.",
+              }}
+            />
+          </div>
         </div>
 
-        {loading ? (
-          <Card>
-            <CardContent className="p-8 text-center text-muted-foreground">
-              Loading accessible sandbox instances...
-            </CardContent>
-          </Card>
-        ) : instances.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center text-muted-foreground">
-              No accessible sandbox instances found for the selected filter.
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="rounded-md border" data-surface-value="accessible_sandbox_instances">
-            {isRefreshing && (
-              <div className="absolute top-2 right-2 z-10">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+        {/* Delete confirmation dialog */}
+        <ConfirmDialog
+          open={!!deleteTarget}
+          onOpenChange={(open) => {
+            if (!open && !deleteTargetBusy) setDeleteTarget(null);
+          }}
+          title="Delete Sandbox"
+          description={
+            <>
+              This will permanently remove this sandbox instance
+              {deleteTarget &&
+              ["ready", "running"].includes(deleteTarget.status)
+                ? " and destroy the running container"
+                : ""}
+              . This action cannot be undone.
+            </>
+          }
+          confirmLabel="Delete"
+          variant="destructive"
+          busy={deleteTargetBusy}
+          onConfirm={() => {
+            const target = deleteTarget;
+            setDeleteTarget(null);
+            if (target) void handleDelete(target);
+          }}
+        />
+
+        {/* SSH access dialog */}
+        <Dialog
+          open={sshDialogOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSshDialogOpen(false);
+              setSshAccess(null);
+              setSshError(null);
+            }
+          }}
+        >
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <KeyRound className="w-5 h-5" />
+                SSH Access — {sshTarget?.sandbox_id}
+              </DialogTitle>
+              <DialogDescription>
+                Temporary SSH credentials for direct shell access
+              </DialogDescription>
+            </DialogHeader>
+
+            {sshLoading && (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
             )}
-            <Table wrapperClassName="phone-stack">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-8"></TableHead>
-                  <TableHead>Sandbox ID</TableHead>
-                  <TableHead>User ID</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Expires</TableHead>
-                  <TableHead>Tier</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {instances.map((instance) => {
-                  const statusConfig = STATUS_BADGE_MAP[instance.status] ?? { variant: "secondary", label: instance.status };
-                  const isActive = ["ready", "running"].includes(
-                    instance.status,
-                  );
-                  const isExpanded = expandedRow === instance.id;
 
-                  return (
-                    <Fragment key={instance.id}>
-                      <TableRow
-                        key={instance.id}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() =>
-                          setExpandedRow(isExpanded ? null : instance.id)
-                        }
-                      >
-                        <TableCell className="w-8 px-2" data-phone="inline">
-                          {isExpanded ? (
-                            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                          )}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs" data-phone="lead">
-                          {instance.user_id === viewerUserId ? (
-                            <AppLink
-                              href={`/sandbox/${instance.id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              title={`Open ${instance.sandbox_id} in a new tab`}
-                              className="underline-offset-2 hover:text-primary hover:underline"
-                            >
-                              {instance.sandbox_id}
-                            </AppLink>
-                          ) : (
-                            instance.sandbox_id
-                          )}
-                        </TableCell>
-                        <TableCell
-                          className="max-w-[160px] text-xs"
-                          data-label="User"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {/* The owner is a real user — reach their admin
-                              surfaces instead of printing 8 hex characters. */}
-                          <AdminUserRef userId={instance.user_id} />
-                        </TableCell>
-                        <TableCell data-phone="inline">
-                          <Badge variant={statusConfig.variant}>
-                            {statusConfig.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground" data-label="Created" data-phone="inline">
-                          {formatSandboxTimestamp(instance.created_at)}
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground" data-label="Expires" data-phone="inline">
-                          {formatSandboxTimestamp(instance.expires_at)}
-                        </TableCell>
-                        <TableCell className="text-xs font-mono" data-label="Tier" data-phone="inline">
-                          {instance.tier ?? "--"}
-                        </TableCell>
-                        <TableCell className="text-right" data-phone="actions">
-                          <div
-                            className="flex items-center justify-end gap-1"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {isActive && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleRequestSsh(instance)}
-                                  className="text-xs"
-                                >
-                                  <KeyRound className="w-3 h-3 mr-1" />
-                                  SSH
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleStop(instance)}
-                                  disabled={isLifecycleReserved(instance.id)}
-                                >
-                                  {isLifecycleReserved(instance.id) ? (
-                                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                  ) : (
-                                    <Square className="w-3 h-3 mr-1" />
-                                  )}
-                                  Stop
-                                </Button>
-                              </>
-                            )}
-                            <CopyButtons
-                              size="icon"
-                              label={`Sandbox ${instance.sandbox_id}`}
-                              human={() => sandboxInstanceSummary(instance)}
-                              agent={() => ({
-                                kind: "sandbox-instance",
-                                location: PAGE_LOCATION,
-                                description:
-                                  "A single sandbox instance row from the admin sandbox management table.",
-                                data: instance,
-                                summary: sandboxInstanceSummary(instance),
-                                attributes: {
-                                  id: instance.id,
-                                  "sandbox-id": instance.sandbox_id,
-                                  status: instance.status,
-                                },
-                              })}
-                            />
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  aria-label="Delete sandbox"
-                                  title="Delete sandbox"
-                                  onClick={() => setDeleteTarget(instance)}
-                                  disabled={isLifecycleReserved(instance.id)}
-                                  className="text-destructive hover:text-destructive"
-                                >
-                                  {isLifecycleReserved(instance.id) ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="w-3 h-3" />
-                                  )}
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Delete sandbox</TooltipContent>
-                            </Tooltip>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      {isExpanded && (
-                        <TableRow key={`${instance.id}-detail`}>
-                          <TableCell
-                            colSpan={8}
-                            className="bg-muted/30 p-4"
-                            data-surface-value="expanded_accessible_sandbox_instance"
-                          >
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                              <div>
-                                <span className="text-xs font-medium text-muted-foreground block mb-0.5">
-                                  Instance ID
-                                </span>
-                                <code className="text-xs font-mono break-all">
-                                  {instance.id}
-                                </code>
-                              </div>
-                              <div>
-                                <span className="text-xs font-medium text-muted-foreground block mb-0.5">
-                                  Owner
-                                </span>
-                                <AdminUserRef userId={instance.user_id} />
-                              </div>
-                              {instance.container_id && (
-                                <div>
-                                  <span className="text-xs font-medium text-muted-foreground block mb-0.5">
-                                    Container ID
-                                  </span>
-                                  <code className="text-xs font-mono break-all">
-                                    {instance.container_id}
-                                  </code>
-                                </div>
-                              )}
-                              <div>
-                                <span className="text-xs font-medium text-muted-foreground block mb-0.5">
-                                  TTL
-                                </span>
-                                {/* The local h/m cascade was collapsed onto
-                                    the kit formatter (2026-09-12). Coarse
-                                    voice: a TTL is read at a glance, never to
-                                    the second. round:"down" because this is a
-                                    COUNTDOWN — rounding up would promise the
-                                    operator time the sandbox does not have. */}
-                                <span className="text-xs">
-                                  {instance.ttl_seconds}s (
-                                  {formatDurationSeconds(instance.ttl_seconds, {
-                                    style: "coarse",
-                                    round: "down",
-                                  })}
-                                  )
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-xs font-medium text-muted-foreground block mb-0.5">
-                                  Hot Path
-                                </span>
-                                <code className="text-xs font-mono">
-                                  {instance.hot_path ?? "--"}
-                                </code>
-                              </div>
-                              <div>
-                                <span className="text-xs font-medium text-muted-foreground block mb-0.5">
-                                  Cold Path
-                                </span>
-                                <code className="text-xs font-mono">
-                                  {instance.cold_path ?? "--"}
-                                </code>
-                              </div>
-                              {instance.stop_reason && (
-                                <div>
-                                  <span className="text-xs font-medium text-muted-foreground block mb-0.5">
-                                    Stop Reason
-                                  </span>
-                                  <span className="text-xs">
-                                    {instance.stop_reason.replace(/_/g, " ")}
-                                  </span>
-                                </div>
-                              )}
-                              {instance.last_heartbeat_at && (
-                                <div>
-                                  <span className="text-xs font-medium text-muted-foreground block mb-0.5">
-                                    Last Heartbeat
-                                  </span>
-                                  <span className="text-xs font-mono">
-                                    {formatSandboxTimestamp(instance.last_heartbeat_at)}
-                                  </span>
-                                </div>
-                              )}
-                              {isJsonObject(instance.config) &&
-                                Object.keys(instance.config).length > 0 && (
-                                  <div className="col-span-full">
-                                    <span className="text-xs font-medium text-muted-foreground block mb-0.5">
-                                      Config
-                                    </span>
-                                    <pre className="text-xs font-mono bg-muted rounded p-2 overflow-x-auto">
-                                      {JSON.stringify(instance.config, null, 2)}
-                                    </pre>
-                                  </div>
-                                )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
+            {sshError && (
+              <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-3">
+                {sshError}
+              </div>
+            )}
+
+            {sshAccess && (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground block mb-1">
+                    SSH Command
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-xs font-mono bg-zinc-950 text-green-400 rounded-md p-2.5 overflow-x-auto">
+                      {sshAccess.ssh_command}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        copyToClipboard(sshAccess.ssh_command, "command")
+                      }
+                      className="shrink-0 h-8 w-8 p-0"
+                    >
+                      {copiedField === "command" ? (
+                        <Check className="w-3.5 h-3.5 text-green-500" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
                       )}
-                    </Fragment>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </div>
+                    </Button>
+                  </div>
+                </div>
 
-      {/* Delete confirmation dialog */}
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => {
-          if (!open && !deleteTargetBusy) setDeleteTarget(null);
-        }}
-        title="Delete Sandbox"
-        description={
-          <>
-            This will permanently remove this sandbox instance
-            {deleteTarget && ["ready", "running"].includes(deleteTarget.status)
-              ? " and destroy the running container"
-              : ""}
-            . This action cannot be undone.
-          </>
-        }
-        confirmLabel="Delete"
-        variant="destructive"
-        busy={deleteTargetBusy}
-        onConfirm={() => {
-          const target = deleteTarget;
-          setDeleteTarget(null);
-          if (target) void handleDelete(target);
-        }}
-      />
-
-      {/* SSH access dialog */}
-      <Dialog
-        open={sshDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSshDialogOpen(false);
-            setSshAccess(null);
-            setSshError(null);
-          }
-        }}
-      >
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <KeyRound className="w-5 h-5" />
-              SSH Access — {sshTarget?.sandbox_id}
-            </DialogTitle>
-            <DialogDescription>
-              Temporary SSH credentials for direct shell access
-            </DialogDescription>
-          </DialogHeader>
-
-          {sshLoading && (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-          )}
-
-          {sshError && (
-            <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-3">
-              {sshError}
-            </div>
-          )}
-
-          {sshAccess && (
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground block mb-1">
-                  SSH Command
-                </label>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 text-xs font-mono bg-zinc-950 text-green-400 rounded-md p-2.5 overflow-x-auto">
-                    {sshAccess.ssh_command}
-                  </code>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadKey}
+                    className="text-xs"
+                  >
+                    <Download className="w-3.5 h-3.5 mr-1.5" />
+                    Download Key (.pem)
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() =>
-                      copyToClipboard(sshAccess.ssh_command, "command")
+                      copyToClipboard(sshAccess.private_key, "key")
                     }
-                    className="shrink-0 h-8 w-8 p-0"
+                    className="text-xs"
                   >
-                    {copiedField === "command" ? (
-                      <Check className="w-3.5 h-3.5 text-green-500" />
+                    {copiedField === "key" ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 mr-1.5 text-green-500" />
+                        Key Copied
+                      </>
                     ) : (
-                      <Copy className="w-3.5 h-3.5" />
+                      <>
+                        <Copy className="w-3.5 h-3.5 mr-1.5" />
+                        Copy Key
+                      </>
                     )}
                   </Button>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownloadKey}
-                  className="text-xs"
-                >
-                  <Download className="w-3.5 h-3.5 mr-1.5" />
-                  Download Key (.pem)
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyToClipboard(sshAccess.private_key, "key")}
-                  className="text-xs"
-                >
-                  {copiedField === "key" ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 mr-1.5 text-green-500" />
-                      Key Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5 mr-1.5" />
-                      Copy Key
-                    </>
-                  )}
-                </Button>
+                <div className="text-xs text-muted-foreground space-y-1 border-t border-border pt-2">
+                  <p>Save the key and set permissions:</p>
+                  <code className="block font-mono bg-muted rounded px-2 py-1">
+                    chmod 600 sandbox-{sshTarget?.sandbox_id}.pem
+                  </code>
+                </div>
               </div>
-
-              <div className="text-xs text-muted-foreground space-y-1 border-t border-border pt-2">
-                <p>Save the key and set permissions:</p>
-                <code className="block font-mono bg-muted rounded px-2 py-1">
-                  chmod 600 sandbox-{sshTarget?.sandbox_id}.pem
-                </code>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
     </SurfaceRuntimeProvider>
   );
 }
