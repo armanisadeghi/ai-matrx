@@ -1117,6 +1117,7 @@ say "  doors on the branch: $DOORMISS (source has $("$PSQL" "$SRC_DSN" -qAt -c '
 # Where the source holds customer rows the filtered copy was never going to replace them, so a
 # truncate could only DESTROY — those tables are appended to, and a row already present is refused
 # by its own primary key, counted, and named.
+typeset -a RETRY; RETRY=()
 for t in "${LOOKUP_OK[@]}"; do
   f="$WORK/lookup_${t//./_}.tsv"
   if [ -n "${RESTORE_LOADED[$t]:-}" ]; then
@@ -1127,8 +1128,24 @@ for t in "${LOOKUP_OK[@]}"; do
     fi
     continue
   fi
-  say "  $t: $(seed_load "$t" "$f" "$(authorship_fix "$t")" "" "${LOOKUP_TRUNC[$t]}" "$(common_cols "$t")")  -> $("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) rows on the branch$([ "${LOOKUP_TRUNC[$t]}" = "1" ] || print -n ' (appended: the source holds customer rows this branch must keep out, so it is never emptied)')"
+  res="$(seed_load "$t" "$f" "$(authorship_fix "$t")" "" "${LOOKUP_TRUNC[$t]}" "$(common_cols "$t")")"
+  say "  $t: $res  -> $("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) rows on the branch$([ "${LOOKUP_TRUNC[$t]}" = "1" ] || print -n ' (appended: the source holds customer rows this branch must keep out, so it is never emptied)')"
+  [[ "$res" == *"refused=0 "* || "$res" == *"first=duplicate key"* ]] || RETRY+=("$t")
 done
+# 🚨 A SECOND ROUND, FOR THE ORDER NO CATALOG SHOWS. The set is loaded parents-first by FOREIGN KEY,
+# but a trigger can read another table too: `ai.api`'s rules gate refuses a params key that is not
+# yet in `ai.setting` ("add the setting first"), so ai.api (a) loaded before ai.setting (s) lost 29
+# of 32 rows, and ai.offering lost 215 of 222 behind it (2026-09-23 12:38Z). Every table that refused
+# a row for any reason but "already here" gets ONE more pass, in the same order, APPENDING — never
+# truncated again, because a TRUNCATE … CASCADE here would empty children that already loaded.
+if [ ${#RETRY[@]} -gt 0 ]; then
+  say "  second round, appending, for ${#RETRY[@]} table(s) that refused rows on the first: ${(j:, :)RETRY}"
+  for t in "${LOOKUP_OK[@]}"; do
+    (( ${RETRY[(Ie)$t]} )) || continue
+    f="$WORK/lookup_${t//./_}.tsv"
+    say "    $t: $(seed_load "$t" "$f" "$(authorship_fix "$t")" "" 0 "$(common_cols "$t")")  -> $("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) rows on the branch"
+  done
+fi
 
 # ── (2c) THE TEST IDENTITIES' OWN SEAT ───────────────────────────────────────
 # 🚨 lane BRANCH-REFRESH-3, 2026-09-23. The identities step keeps admin@admin.com and test@test.com
