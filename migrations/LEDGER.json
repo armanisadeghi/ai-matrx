@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-23T10:04:07.002Z",
+  "generated_at": "2026-09-23T10:05:03.419Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -161,7 +161,7 @@
     "migrations/campaign/argsruled_the_second_id_lives_in_the_same_organization.sql": {
       "source": "matrx-frontend",
       "filename": "argsruled_the_second_id_lives_in_the_same_organization.sql",
-      "checksum": "53e52cf3fab6081595e954634c22d704ba416447feef5372a7177efc18e33723",
+      "checksum": "224ec276ebc708750238208679e5154352ea65777a2f4b483f1b4cf2991d4a5c",
       "applied_at": "2026-09-21 22:51:00.977029+00"
     },
     "migrations/campaign/argsruled_three_doors_that_never_looked_at_the_caller.sql": {
@@ -5189,7 +5189,7 @@
     "migrations/inverse/share_a_reason_that_names_nothing_down.sql": {
       "source": "matrx-frontend",
       "filename": "share_a_reason_that_names_nothing_down.sql",
-      "checksum": "eb4e785a365c2c57a85be4f9bbf58310010efa5c9ae265b76aaf33376b785726",
+      "checksum": "ab2685215dad8ebc7ecff8de7f36501d3fa8d6da4dad7c45f1b4cd82aec79a23",
       "applied_at": "2026-09-19 19:03:59.815425+00"
     },
     "migrations/inverse/share_one_ladder_reaches_the_share_dialog_down.sql": {

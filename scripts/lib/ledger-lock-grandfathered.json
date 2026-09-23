@@ -3,16 +3,6 @@
   "the_rule": "A name here exempts EXACTLY the bytes named here and nothing else. The entry binds BOTH the production checksum AND the tree checksum, so the very next edit to one of these files is refused like any other. ADDING A NAME HERE IS NOT A FIX; this list is a RATCHET and only ever shrinks. Why each survivor survives (DRIFT-9, 2026-09-22): argsruled_the_second_id_lives_in_the_same_organization.sql and share_a_reason_that_names_nothing_down.sql — THEIR LEDGERED BYTES NO LONGER EXIST. Production ran checksums 53e52cf3… and eb4e785a…; neither is any blob in this repo's object store (155,296 blobs scanned, reachable and unreachable), nor in aidream's (123,822), nor any copy of the file anywhere on this machine (working trees, .Trash release copies, MatrxLocal session artifacts). The file was applied from the working tree and edited before it was ever committed, so there is no honest baseline to restore to and `db:apply --amend-idempotent` — which finds the ledgered blob in git before it will amend anything — also cannot clear them. Clearing them needs a new primitive and a chair ruling, not a lane. share_the_store_has_a_share_door_down.sql — its ledgered bytes DO exist (commit 52cbc33e4d) and were deliberately NOT restored: lane INVERSE-GUARD changed them on 2026-09-21 so the inverse stops dropping custom.share_grant, which zzz_pipelines_on_entry on custom.record reaches through custom._pipeline_on_entry. Restoring the ledgered bytes would re-break the record store and turn `pnpm check:inverses-leave-the-ground-standing` red. It belongs to lane INVERSE-GUARD, whose fix it is.",
   "frozen_at": "2026-09-22T17:29:36.503034+00:00",
   "files": {
-    "migrations/campaign/argsruled_the_second_id_lives_in_the_same_organization.sql": {
-      "ledgered": "53e52cf3fab6081595e954634c22d704ba416447feef5372a7177efc18e33723",
-      "applied_at": "2026-09-21 22:51:00.977029+00",
-      "tree": "224ec276ebc708750238208679e5154352ea65777a2f4b483f1b4cf2991d4a5c"
-    },
-    "migrations/inverse/share_a_reason_that_names_nothing_down.sql": {
-      "ledgered": "eb4e785a365c2c57a85be4f9bbf58310010efa5c9ae265b76aaf33376b785726",
-      "applied_at": "2026-09-19 19:03:59.815425+00",
-      "tree": "c6d573ead7245e358fe3ea5032075887a7d5a9aece57823906aa2af68dbdfc58"
-    },
     "migrations/inverse/share_the_store_has_a_share_door_down.sql": {
       "ledgered": "22fc40a34e5fde890a17d66dcfb871909b50dcfaf7dcf90c23fac628a65f7122",
       "applied_at": "2026-09-19 19:00:55.886336+00",
@@ -21,8 +11,28 @@
   },
   "ratchet": {
     "frozen_at_count": 6,
-    "current_count": 3,
-    "last_shrunk_by": "DRIFT-9",
-    "last_shrunk_at": "2026-09-22"
+    "current_count": 1,
+    "last_shrunk_by": "LEDGER-REBASE",
+    "last_shrunk_at": "2026-09-23",
+    "shrunk": [
+      {
+        "file": "migrations/campaign/argsruled_the_second_id_lives_in_the_same_organization.sql",
+        "by": "LEDGER-REBASE",
+        "at": "2026-09-23T10:04:46.062Z",
+        "how": "ledger rebase: the file's current bytes changed nothing on the dev clone, so production's row moved onto them and this exemption is no longer needed",
+        "was": "53e52cf3fab6081595e954634c22d704ba416447feef5372a7177efc18e33723",
+        "now": "224ec276ebc708750238208679e5154352ea65777a2f4b483f1b4cf2991d4a5c",
+        "clone_proof_sha256": "6838b54e229bd429ab74c61223325287e15505f122dc1686183cc32bb3d70429"
+      },
+      {
+        "file": "migrations/inverse/share_a_reason_that_names_nothing_down.sql",
+        "by": "LEDGER-REBASE",
+        "at": "2026-09-23T10:05:02.723Z",
+        "how": "ledger rebase: the file's current bytes changed nothing on the dev clone, so production's row moved onto them and this exemption is no longer needed",
+        "was": "eb4e785a365c2c57a85be4f9bbf58310010efa5c9ae265b76aaf33376b785726",
+        "now": "ab2685215dad8ebc7ecff8de7f36501d3fa8d6da4dad7c45f1b4cd82aec79a23",
+        "clone_proof_sha256": "81ffec65384873dd5f162e4a63b176a01fe5e5ba9f73fe29e780ad2c44d1b507"
+      }
+    ]
   }
 }
