@@ -81,9 +81,9 @@
 -- `record_write_graph`, the import, the portal and the capture paths all end in an INSERT or an
 -- UPDATE of `custom.record`; writing the step into each body is seven places to forget it. The
 -- class lives where the choice-word step lives, and every door — including the ones nobody has
--- written yet — inherits it. It costs one indexed field lookup per write, the same one
--- `custom.record_relation_edges` already makes, and nothing at all for a Table with no Person
--- or File column.
+-- written yet — inherits it. It costs one indexed field lookup per STATEMENT (the statement
+-- memo `custom.record_relation_edges` already keeps, under its own key), and a Table with no
+-- relation column returns before it reads even the store switch.
 --
 -- THE 34 EXISTING FIELDS. None needs a byte changed: the rule is keyed on the field's declared
 -- target, so all 29 Person and 5 File fields are covered the moment it exists. The closing
@@ -256,6 +256,8 @@ declare
   v_to    uuid;
   v_new   jsonb;
   v_org   text;
+  v_key   text;
+  v_flds  jsonb;
 begin
   -- Only an ordinary, live record of an ordinary Table holds cells to resolve.
   if new.data_class is distinct from 'record' or new.table_id is null
@@ -265,6 +267,38 @@ begin
   end if;
   if tg_op = 'UPDATE' and old.data is not distinct from new.data
      and old.table_id is not distinct from new.table_id then
+    return new;
+  end if;
+
+  -- THIS TABLE'S RELATION FIELDS, READ ONCE PER STATEMENT. The same statement memo
+  -- `custom.record_relation_edges` keeps (WRITE-PERF-3b), under its own key, cleared by the same
+  -- structure triggers — so a 250-row import asks the catalogue once, and a Table with no
+  -- relation column stops here without reading the switch at all.
+  v_key  := 'rkt:' || new.organization_id::text || ':' || new.table_id::text;
+  v_flds := platform.memo_s_get(v_key)::jsonb;
+  if v_flds is null then
+    select coalesce(jsonb_agg(jsonb_build_object(
+             'k', x.k, 'label', x.label, 'tgt', x.tgt, 'is_kernel', x.is_kernel) order by x.k), '[]'::jsonb)
+      into v_flds
+      from (
+    select coalesce(nullif(fd.data ->> 'key', ''), fd.data ->> 'name')        as k,
+           coalesce(nullif(fd.data ->> 'label', ''), fd.data ->> 'name')      as label,
+           case when (fd.data ->> 'relation_target') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                then (fd.data ->> 'relation_target')::uuid end                as tgt,
+           coalesce(fd.data ->> 'relation_target' in (custom.person_kernel_id()::text,
+                                                      custom.file_kernel_id()::text), false)
+                                                                              as is_kernel
+      from custom.record fd
+     where fd.table_id = custom.field_kernel_id()
+       and fd.data_class <> 'kernel'
+       and fd.deleted_at is null
+       and fd.organization_id = new.organization_id
+       and nullif(fd.data ->> 'entity_definition_id', '')::uuid = new.table_id
+       and fd.data ->> 'type' = 'relation'
+      ) x;
+    perform platform.memo_s_put(v_key, v_flds::text);
+  end if;
+  if v_flds = '[]'::jsonb then
     return new;
   end if;
 
@@ -280,20 +314,7 @@ begin
   end if;
 
   for f in
-    select coalesce(nullif(fd.data ->> 'key', ''), fd.data ->> 'name')        as k,
-           coalesce(nullif(fd.data ->> 'label', ''), fd.data ->> 'name')      as label,
-           case when (fd.data ->> 'relation_target') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-                then (fd.data ->> 'relation_target')::uuid end                as tgt,
-           coalesce(fd.data ->> 'relation_target' in (custom.person_kernel_id()::text,
-                                                      custom.file_kernel_id()::text), false)
-                                                                              as is_kernel
-      from custom.record fd
-     where fd.table_id = custom.field_kernel_id()
-       and fd.data_class <> 'kernel'
-       and fd.deleted_at is null
-       and fd.organization_id = new.organization_id
-       and nullif(fd.data ->> 'entity_definition_id', '')::uuid = new.table_id
-       and fd.data ->> 'type' = 'relation'
+    select * from jsonb_to_recordset(v_flds) as j(k text, label text, tgt uuid, is_kernel boolean)
   loop
     v_val := new.data -> f.k;
     if v_val is null or jsonb_typeof(v_val) not in ('string', 'array') then
