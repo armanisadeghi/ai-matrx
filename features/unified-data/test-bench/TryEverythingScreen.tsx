@@ -35,7 +35,7 @@ import { ExternalLink, RefreshCw } from "lucide-react";
 // request, not an answer, and the lockfile is what the bundle actually carries.
 import recordsPkg from "@ai-matrx/records/package.json";
 import recordsUiPkg from "@ai-matrx/records-ui/package.json";
-import type { Table } from "@ai-matrx/records";
+import { FIELD_KINDS, type Table } from "@ai-matrx/records";
 import { useRecords, useRecordsClient, useTables } from "@ai-matrx/records/react";
 import {
     ActionInbox,
@@ -113,6 +113,19 @@ const MEMBER_VISIBILITY_FULL_KEY = `${MEMBER_VISIBILITY.feature}.${MEMBER_VISIBI
 // `Set to "all_records", which this screen has no words for` at a person.
 // `useKnobChoices` reads them from `platform.feature_knob` through the same
 // knob door the write below uses.
+
+// A SMALL COUNT SAID IN WORDS, NEVER A LITERAL. The number of field kinds the
+// store offers changes as the package adds them (sixteen, then nineteen); this
+// reads `FIELD_KINDS.length` every time rather than a number typed into a
+// sentence, so the sentence can never fall behind the store again.
+const SMALL_NUMBER_WORDS = [
+    "zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
+    "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+    "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
+];
+function wordForCount(n: number): string {
+    return SMALL_NUMBER_WORDS[n] ?? String(n);
+}
 
 /** The names the rail shows. The section number is the anchor. */
 const CONTENTS: ReadonlyArray<string> = [
@@ -514,7 +527,7 @@ function Bench({
                 title={CONTENTS[0]}
                 state="real"
                 defaultOpen
-                what="A table here is a real table in this organization's one record store: you name it, give it columns of any of the sixteen kinds, and type straight into the grid. Opening one gives you the grid, the board and the calendar of the same records."
+                what={`A table here is a real table in this organization's one record store: you name it, give it columns of any of the ${wordForCount(FIELD_KINDS.length)} kinds, and type straight into the grid. Opening one gives you the grid, the board and the calendar of the same records.`}
             >
                 <TryIt hint="this makes a real table in this organization">
                     <TablesHome onOpenTable={onOpenTable} />
@@ -860,6 +873,7 @@ interface ServerFacts {
     status: string;
     upSince: string;
     tools: number | null;
+    buildSha: string | null;
 }
 
 function StatusStrip({
@@ -920,23 +934,38 @@ function StatusStrip({
         };
     }, [organizationId, nonce]);
 
-    // THE DEPLOYED SERVER. It publishes no build id — this is what it does
-    // publish, and the strip says so rather than inventing a version.
+    // THE DEPLOYED SERVER. `/health/detailed` gives status, uptime and tool
+    // count; `/health/version` gives the deployed git SHA (`aidream/api/routers/health.py`,
+    // `deployed_git_sha()`) — the server does publish a build identity, this
+    // page just was not reading it. Both are read the same way: the strip
+    // shows the fact or names why it could not, never a number it made up.
     useEffect(() => {
         let cancelled = false;
         setServer(undefined);
         setServerProblem(null);
-        void fetch("https://server.app.matrxserver.com/health/detailed")
-            .then((response) => (response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`))))
-            .then((body: { status?: string; uptime_seconds?: number; components?: { tool_system?: { tool_count?: number } } }) => {
-                if (cancelled) return;
-                const up = typeof body.uptime_seconds === "number" ? body.uptime_seconds : 0;
-                setServer({
-                    status: body.status ?? "unknown",
-                    upSince: new Date(Date.now() - up * 1000).toLocaleString(),
-                    tools: body.components?.tool_system?.tool_count ?? null,
-                });
-            })
+        void Promise.all([
+            fetch("https://server.app.matrxserver.com/health/detailed").then((response) =>
+                response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)),
+            ),
+            fetch("https://server.app.matrxserver.com/health/version")
+                .then((response) => (response.ok ? response.json() : null))
+                .catch(() => null),
+        ])
+            .then(
+                ([body, versionBody]: [
+                    { status?: string; uptime_seconds?: number; components?: { tool_system?: { tool_count?: number } } },
+                    { git_sha?: string } | null,
+                ]) => {
+                    if (cancelled) return;
+                    const up = typeof body.uptime_seconds === "number" ? body.uptime_seconds : 0;
+                    setServer({
+                        status: body.status ?? "unknown",
+                        upSince: new Date(Date.now() - up * 1000).toLocaleString(),
+                        tools: body.components?.tool_system?.tool_count ?? null,
+                        buildSha: versionBody?.git_sha ? versionBody.git_sha.slice(0, 7) : null,
+                    });
+                },
+            )
             .catch((error: unknown) => {
                 if (cancelled) return;
                 setServerProblem(
@@ -1006,7 +1035,7 @@ function StatusStrip({
                     label="AI server"
                     value={
                         server
-                            ? `${server.status}, up since ${server.upSince}${server.tools === null ? "" : ` · ${server.tools} tools`}`
+                            ? `${server.status}, up since ${server.upSince}${server.tools === null ? "" : ` · ${server.tools} tools`}${server.buildSha ? ` · build ${server.buildSha}` : ""}`
                             : undefined
                     }
                     problem={serverProblem}
@@ -1022,8 +1051,8 @@ function StatusStrip({
                 />
             </div>
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-                The AI server publishes no build number, so this names what it does publish. Everything else
-                on this line was read from the live system when the page loaded; press Re-read to ask again.
+                Everything on this line was read from the live system when the page loaded; press
+                Re-read to ask again.
             </p>
         </div>
     );

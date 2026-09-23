@@ -109,6 +109,55 @@ function Row({ item }: { item: HubItem }) {
   );
 }
 
+/**
+ * ONE ROW FOR A GROUP OF SAME-TITLED ROWS — "Crew choices" said once, with the
+ * count on it, instead of once per table that has a Crew field. There is no
+ * single door a group of thirteen kernel tables opens, so the name is not a
+ * link here; the count is the whole fact.
+ */
+function GroupedRow({ title, items }: { title: string; items: HubItem[] }) {
+  const latest = items.reduce<HubItem | null>((newest, item) => {
+    if (!item.changedAt) return newest;
+    if (!newest || !newest.changedAt || item.changedAt > newest.changedAt) return item;
+    return newest;
+  }, null);
+  const changed = latest ? when(latest.changedAt) : null;
+  return (
+    <li className="group border-t border-border first:border-t-0">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-3 py-2">
+        <span className="min-w-0 truncate text-sm font-medium text-foreground">{title}</span>
+        <span className="truncate text-xs text-muted-foreground">
+          {items.length} {items.length === 1 ? "table" : "tables"}
+        </span>
+        {changed ? (
+          <span className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="truncate">
+              {latest?.changedBy ? `${latest.changedBy}, ` : ""}
+              most recently {changed}
+            </span>
+          </span>
+        ) : null}
+      </div>
+    </li>
+  );
+}
+
+/** Same-titled items collapsed into one group each, order kept by first sighting. */
+function groupItemsByTitle(items: HubItem[]): Array<{ title: string; items: HubItem[] }> {
+  const order: string[] = [];
+  const byTitle = new Map<string, HubItem[]>();
+  for (const item of items) {
+    const bucket = byTitle.get(item.title);
+    if (bucket) {
+      bucket.push(item);
+    } else {
+      byTitle.set(item.title, [item]);
+      order.push(item.title);
+    }
+  }
+  return order.map((title) => ({ title, items: byTitle.get(title) ?? [] }));
+}
+
 export function HubListing({
   capability,
   state,
@@ -118,7 +167,11 @@ export function HubListing({
   open,
   onOpenChange,
 }: HubListingProps) {
-  const count = state.phase === "read" ? state.items.length : null;
+  const grouped =
+    state.phase === "read" && capability.groupDuplicateTitles
+      ? groupItemsByTitle(state.items)
+      : null;
+  const count = state.phase === "read" ? (grouped ? grouped.length : state.items.length) : null;
 
   return (
     <section data-hub-listing={capability.id} className="rounded-lg border border-border bg-card">
@@ -174,6 +227,16 @@ export function HubListing({
                   ? capability.emptyWhenSharedOnly
                   : capability.empty}
             </p>
+          ) : grouped ? (
+            <ul className="divide-y-0">
+              {grouped.map((group) =>
+                group.items.length > 1 ? (
+                  <GroupedRow key={`${capability.id}:${group.title}`} title={group.title} items={group.items} />
+                ) : (
+                  <Row key={`${capability.id}:${group.items[0]!.id}`} item={group.items[0]!} />
+                ),
+              )}
+            </ul>
           ) : (
             <ul className="divide-y-0">
               {state.items.map((item) => (

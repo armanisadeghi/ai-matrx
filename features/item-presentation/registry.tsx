@@ -48,6 +48,7 @@ import { WEB_SITE_ITEM_TYPE } from "@/features/marketing/site-item-type";
 import { WEB_YOUTUBE_VIDEO_ITEM_TYPE } from "@/features/marketing/youtube/itemType";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { refinePartyDetail } from "@/features/crm/party-detail";
+import { refineResearchTemplateDetail } from "@/features/research/admin/template-detail";
 import { partyKindWord } from "@/features/crm/party-words";
 
 export interface ItemTypeConfig {
@@ -298,6 +299,12 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       schemaName: "research",
       titleField: "name",
     },
+    // Without this, every jsonb column (keyword templates, default tags,
+    // default search params, agent config, metadata) rendered as a raw
+    // `JSON.stringify` block on the record page — the try-everything guide's
+    // step 21 finding, 2026-09-23. `refineResearchTemplateDetail` gives it the
+    // same curated, labelled field list the party dossier gets.
+    refineDetail: refineResearchTemplateDetail,
   },
   note: {
     type: "note",

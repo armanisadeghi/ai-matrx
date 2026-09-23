@@ -1,11 +1,13 @@
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { describeCoverage } from "@ai-matrx/design-system/data-table/coverage";
 
 import type { ResearchTemplate } from "../types";
 import {
   RESEARCH_TEMPLATE_COLUMNS,
   RESEARCH_TEMPLATES_COVERAGE,
+  researchTemplatesCoverage,
   researchTemplateWiringCount,
   TemplateRowActions,
   toggleResearchTemplateExpanded,
@@ -70,6 +72,39 @@ describe("TemplatesManager canonical table contract", () => {
     expect(column("keyword-templates").hidden).toBe(true);
     expect(column("default-tag-values").hidden).toBe(true);
     expect(column("agent-config").hidden).toBe(true);
+  });
+
+  it("names the real total once the rows it already read are counted — 'the count comes from the same read as the rows'", () => {
+    // The try-everything guide (2026-09-23, step 21) caught the Templates
+    // tab saying "The total number of research templates in this table is
+    // not known" while five rows sat on screen. `TemplatesManager` renders
+    // `coverage={{ ...RESEARCH_TEMPLATES_COVERAGE, total: templates.length }}`
+    // — the SAME `templates` array `fetchTemplates` wrote and the table
+    // renders, never a second query. `RESEARCH_TEMPLATES_COVERAGE` itself
+    // stays total-less (the unwired-page default, asserted below), but the
+    // shared coverage reader must be handed a real total once the rows are
+    // in hand, and that must kill the "not known" sentence and its badge.
+    const templates: ResearchTemplate[] = [
+      template,
+      { ...template, id: "template-2", name: "Company" },
+      { ...template, id: "template-3", name: "Person" },
+      { ...template, id: "template-4", name: "Product" },
+      { ...template, id: "template-5", name: "Marketing" },
+    ];
+    expect(researchTemplatesCoverage(templates)).toEqual({
+      noun: "research template",
+      cap: 1000,
+      answeredBy: "client",
+      total: 5,
+    });
+
+    const result = describeCoverage({
+      ...researchTemplatesCoverage(templates),
+      loaded: templates.length,
+    });
+    expect(result.notice).not.toContain("is not known");
+    expect(result.badge).not.toBe("Unknown total");
+    expect(result.count).toEqual({ value: 5, exact: true });
   });
 
   it("counts only configured agent roles and preserves no-wiring as zero", () => {

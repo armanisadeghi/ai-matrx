@@ -28,6 +28,8 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { ReactNode } from "react";
 
+import { FIELD_KINDS } from "@ai-matrx/records";
+
 import TryEverythingScreen from "../TryEverythingScreen";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -48,6 +50,14 @@ const DELETED = [
     "the same screens fix as the form builder",
     "bind `savedViews`",
     "from 0.30.0 onwards",
+    // The AI server DOES publish a build identity now (`/health/version` →
+    // `deployed_git_sha()`, aidream `api/routers/health.py`) — the strip just
+    // was not reading it. Fixed 2026-09-23, copy-sweep lane.
+    "publishes no build number",
+    // The store offers nineteen field kinds (`FIELD_KINDS` from
+    // `@ai-matrx/records`), not sixteen — this sentence must read the count
+    // off the store, never carry a number of its own. Fixed 2026-09-23.
+    "any of the sixteen kinds",
 ];
 
 const TABLE = { id: "t-1", name: "Intake", slug: "intake" };
@@ -351,5 +361,21 @@ describe("the try-everything page never states a capability it did not check", (
         expect(badges(host, "Could not check")).toBeGreaterThanOrEqual(3);
         // And a refusal is NEVER read as "this was never built".
         expect(badges(host, "Not built yet")).toBe(0);
+    });
+
+    it("names the field-kind count off the store's own FIELD_KINDS, not a number typed into a sentence", async () => {
+        const page = await walk();
+        // The guide caught the page saying "sixteen" while the store already
+        // offered nineteen (`FIELD_KINDS.length === 19` today). Reading the
+        // live length, whatever it is, is the fix — asserting the word for
+        // TODAY'S count is what keeps this from going stale the next time a
+        // twentieth kind ships.
+        const words = [
+            "zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
+            "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+            "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
+        ];
+        const expectedWord = words[FIELD_KINDS.length] ?? String(FIELD_KINDS.length);
+        expect(page).toContain(`any of the ${expectedWord} kinds`);
     });
 });

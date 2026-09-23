@@ -117,6 +117,19 @@ export const RESEARCH_TEMPLATES_COVERAGE = {
   answeredBy: "client" as const,
 };
 
+/**
+ * THE COUNT COMES FROM THE SAME READ AS THE ROWS. `fetchTemplates` writes
+ * `templates` once and the table renders that same array — this hands the
+ * shared coverage reader its length as `total`, so the strip above the table
+ * says the real count instead of "The total number of research templates in
+ * this table is not known" (the try-everything guide, 2026-09-23, step 21:
+ * five rows on screen, the strip said the total was unknown). No second
+ * query, no client-side cap guess — just the length of what was already read.
+ */
+export function researchTemplatesCoverage(templates: readonly ResearchTemplate[]) {
+  return { ...RESEARCH_TEMPLATES_COVERAGE, total: templates.length };
+}
+
 export function researchTemplateWiringCount(
   template: ResearchTemplate,
 ): number {
@@ -911,7 +924,7 @@ export function TemplatesManager() {
             copy={false}
             detail={{ enabled: false }}
             window={{ enabled: false }}
-            coverage={RESEARCH_TEMPLATES_COVERAGE}
+            coverage={researchTemplatesCoverage(templates)}
             emptyState={{
               title: loadError
                 ? "Could not load research templates."
