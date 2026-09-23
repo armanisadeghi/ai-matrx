@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { Upload, FileText, X, CheckCircle2, AlertCircle, FileSpreadsheet } from 'lucide-react';
 import Papa from 'papaparse';
+import { cleanGrid, firstRowLooksLikeHeader, tableFromGrid, type Grid } from '@/utils/user-table-utls/grid-import';
 import { ZipCodeData } from '../page';
 import ColumnMapper from './ColumnMapper';
 
@@ -20,6 +21,29 @@ export default function FileUpload({ onDataUpload, onLoadingChange }: FileUpload
   const [showColumnMapper, setShowColumnMapper] = useState(false);
   const [rawData, setRawData] = useState<Record<string, unknown>[]>([]);
   const [availableColumns, setAvailableColumns] = useState<string[]>([]);
+
+  /**
+   * One reading for CSV and Excel (VERIFIER-16's class): the first row is column
+   * names only when it reads like them, so a one-line file is one row of data
+   * under "Column 1, Column 2…" instead of "empty".
+   */
+  const acceptGrid = (grid: Grid) => {
+    if (grid.length === 0) {
+      setError('There is nothing in this file to map — every line is blank.');
+      onLoadingChange(false);
+      return;
+    }
+    const { columns, rows } = tableFromGrid(grid, firstRowLooksLikeHeader(grid));
+    if (rows.length === 0) {
+      setError('This file has only column names and no rows, so there is nothing to put on the map. Add the ZIP codes below the names and upload it again.');
+      onLoadingChange(false);
+      return;
+    }
+    setRawData(rows);
+    setAvailableColumns(columns);
+    setShowColumnMapper(true);
+    onLoadingChange(false);
+  };
 
   const handleFileSelect = (file: File) => {
     if (!file) return;
@@ -41,23 +65,12 @@ export default function FileUpload({ onDataUpload, onLoadingChange }: FileUpload
 
     if (isCSV) {
       // Handle CSV files
-      Papa.parse<Record<string, unknown>>(file, {
-        header: true,
+      Papa.parse<string[]>(file, {
+        header: false,
         skipEmptyLines: true,
         complete: (results) => {
           try {
-            const data = results.data;
-            if (data.length === 0) {
-              setError('CSV file is empty');
-              onLoadingChange(false);
-              return;
-            }
-
-            const columns = Object.keys(data[0]);
-            setRawData(data);
-            setAvailableColumns(columns);
-            setShowColumnMapper(true);
-            onLoadingChange(false);
+            acceptGrid(cleanGrid(results.data));
           } catch (err) {
             setError('Failed to parse CSV file');
             console.error(err);
@@ -79,19 +92,7 @@ export default function FileUpload({ onDataUpload, onLoadingChange }: FileUpload
           const workbook = XLSX.read(data, { type: 'binary' });
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet);
-
-          if (jsonData.length === 0) {
-            setError('Excel file is empty');
-            onLoadingChange(false);
-            return;
-          }
-
-          const columns = Object.keys(jsonData[0]);
-          setRawData(jsonData);
-          setAvailableColumns(columns);
-          setShowColumnMapper(true);
-          onLoadingChange(false);
+          acceptGrid(cleanGrid(XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' }) as unknown[][]));
         } catch (err) {
           setError('Failed to parse Excel file');
           console.error(err);

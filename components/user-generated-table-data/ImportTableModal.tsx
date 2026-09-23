@@ -38,6 +38,12 @@ import {
 } from "@/utils/user-table-utls/table-utils";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import {
+  cleanGrid,
+  firstRowLooksLikeHeader,
+  tableFromGrid,
+  type Grid,
+} from "@/utils/user-table-utls/grid-import";
+import {
   analyzeData,
   type DetectedField,
 } from "@/utils/user-table-utls/type-inference";
@@ -89,6 +95,9 @@ export default function ImportTableModal({
   // Paste state
   const [pasteData, setPasteData] = useState("");
   const [pasteError, setPasteError] = useState<string>("");
+  /** The file as a raw grid; whether its first row is column names is a guess the person can flip. */
+  const [grid, setGrid] = useState<Grid | null>(null);
+  const [firstRowIsHeader, setFirstRowIsHeader] = useState(true);
   /** Set when the table exists but its rows did not all land — the notice then offers to open it. */
   const [createdTableId, setCreatedTableId] = useState<string | null>(null);
 
@@ -141,34 +150,12 @@ export default function ImportTableModal({
 
     if (isCSV) {
       // Handle CSV files
-      Papa.parse(file, {
-        header: true,
+      Papa.parse<string[]>(file, {
+        header: false,
         skipEmptyLines: true,
         complete: (results) => {
           try {
-            const data = results.data as Record<string, any>[];
-            if (data.length === 0) {
-              setUploadError("CSV file is empty");
-              setLoading(false);
-              return;
-            }
-
-            // Analyze and set preview
-            const fields = analyzeData(data);
-            setDetectedFields(fields);
-            setFullData(data); // Store all data
-            setPreviewData(data.slice(0, 10)); // Show first 10 rows
-            setShowPreview(true);
-
-            // Auto-generate table name from filename if not set
-            if (!tableName) {
-              const name = file.name
-                .replace(/\.[^/.]+$/, "")
-                .replace(/_/g, " ");
-              setTableName(name);
-            }
-
-            setLoading(false);
+            acceptGrid(cleanGrid(results.data), file.name, setUploadError);
           } catch (err) {
             setUploadError("That file could not be read as CSV.");
             console.error(err);
@@ -191,31 +178,10 @@ export default function ImportTableModal({
           const workbook = XLSX.read(data, { type: "binary" });
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet) as Record<
-            string,
-            any
-          >[];
-
-          if (jsonData.length === 0) {
-            setUploadError("Excel file is empty");
-            setLoading(false);
-            return;
-          }
-
-          // Analyze and set preview
-          const fields = analyzeData(jsonData);
-          setDetectedFields(fields);
-          setFullData(jsonData); // Store all data
-          setPreviewData(jsonData.slice(0, 10)); // Show first 10 rows
-          setShowPreview(true);
-
-          // Auto-generate table name from filename if not set
-          if (!tableName) {
-            const name = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
-            setTableName(name);
-          }
-
-          setLoading(false);
+          // RAW ROWS: `sheet_to_json` with no `header` option silently takes the
+          // first row as column names — the same assumption the CSV path made.
+          const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" }) as unknown[][];
+          acceptGrid(cleanGrid(rawRows), file.name, setUploadError);
         } catch (err) {
           setUploadError("That file could not be read as a spreadsheet.");
           console.error(err);
@@ -224,6 +190,48 @@ export default function ImportTableModal({
       };
       reader.readAsBinaryString(file);
     }
+  };
+
+  /**
+   * The ONE place a read file becomes the preview. The only refusal is a grid
+   * with nothing in it; whether the first row is column names is a guess, shown
+   * as one and flippable (lane REFUSAL-SWEEP / VERIFIER-16).
+   */
+  const acceptGrid = (read: Grid, sourceName: string | null, refuse: (why: string) => void) => {
+    if (read.length === 0) {
+      refuse("There is nothing in this file to import — every line is blank.");
+      setLoading(false);
+      return;
+    }
+    const header = firstRowLooksLikeHeader(read);
+    setGrid(read);
+    setFirstRowIsHeader(header);
+    applyGrid(read, header);
+    setShowPreview(true);
+    if (sourceName && !tableName) {
+      setTableName(sourceName.replace(/\.[^/.]+$/, "").replace(/_/g, " "));
+    }
+    setLoading(false);
+  };
+
+  const applyGrid = (read: Grid, header: boolean) => {
+    const { columns, rows } = tableFromGrid(read, header);
+    // A header-only file still has columns; analyzeData needs a row to infer a
+    // type from, so those columns start as text.
+    const fields =
+      rows.length > 0
+        ? analyzeData(rows, { columns })
+        : columns.map((column, index) => ({
+            field_name: sanitizeFieldName(column),
+            display_name: column,
+            data_type: "string",
+            field_order: index,
+            is_required: false,
+            included: true,
+          }));
+    setDetectedFields(fields);
+    setFullData(rows);
+    setPreviewData(rows.slice(0, 10));
   };
 
   const handlePaste = () => {
@@ -237,33 +245,20 @@ export default function ImportTableModal({
 
     try {
       // Parse TSV/CSV data (tab or comma separated)
-      Papa.parse<Record<string, any>>(pasteData.trim(), {
-        header: true,
+      Papa.parse<string[]>(pasteData.trim(), {
+        header: false,
         skipEmptyLines: true,
         delimiter: "", // Auto-detect
         complete: (results) => {
           try {
-            const data = results.data;
-            if (data.length === 0) {
-              setPasteError("No valid data found");
-              setLoading(false);
-              return;
-            }
-
-            // Analyze and set preview
-            const fields = analyzeData(data);
-            setDetectedFields(fields);
-            setFullData(data); // Store all data
-            setPreviewData(data.slice(0, 10)); // Show first 10 rows
-            setShowPreview(true);
-            setLoading(false);
+            acceptGrid(cleanGrid(results.data), null, setPasteError);
           } catch (err) {
             setPasteError("Those rows could not be read as a table.");
             console.error(err);
             setLoading(false);
           }
         },
-        // Papa's string-input overload types the error callback as (Error, string).
+        // Papa's string-input overload        // Papa's string-input overload types the error callback as (Error, string).
         error: (err: Error) => {
           console.error("Import: paste parse failed", err);
           setPasteError("Those rows could not be read as a table.");
@@ -295,7 +290,7 @@ export default function ImportTableModal({
       return;
     }
 
-    if (fullData.length === 0) {
+    if (fullData.length === 0 && detectedFields.length === 0) {
       setError(importRefusal("invalid_argument", "There is nothing to import yet.", "Pick a file or paste rows first."));
       return;
     }
@@ -363,7 +358,11 @@ export default function ImportTableModal({
         return { op: "insert", data: rowData };
       });
 
-      const bulkResult = await bulkWrite({ tableId, operations });
+      // A header-only file makes the table and its columns, and has no rows to write.
+      const bulkResult =
+        operations.length === 0
+          ? ({ success: true, data: { table_id: tableId, results: [] } } as unknown as Awaited<ReturnType<typeof bulkWrite>>)
+          : await bulkWrite({ tableId, operations });
       if (isServiceFailure(bulkResult)) {
         // The store's own refusal, whole (FIX-15 keeps DETAIL and HINT on it).
         setError(
@@ -430,6 +429,8 @@ export default function ImportTableModal({
     setFullData([]);
     setPreviewData([]);
     setDetectedFields([]);
+    setGrid(null);
+    setFirstRowIsHeader(true);
     setShowPreview(false);
     setUploadError("");
     setPasteError("");
@@ -649,6 +650,32 @@ export default function ImportTableModal({
                   </div>
                 </div>
 
+                {/* THE FIRST ROW IS A GUESS, SHOWN AS ONE (VERIFIER-16). A one-line
+                    file used to be refused as "empty" because its only line was
+                    silently taken as column names. */}
+                {grid ? (
+                  <div className="space-y-1 rounded-md border p-3" data-matrx-import-first-row="">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="firstRowIsHeader"
+                        checked={firstRowIsHeader}
+                        onCheckedChange={(checked) => {
+                          setFirstRowIsHeader(checked);
+                          applyGrid(grid, checked);
+                        }}
+                      />
+                      <Label htmlFor="firstRowIsHeader">First row is column names</Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground" data-matrx-import-first-row-says="">
+                      {firstRowIsHeader
+                        ? fullData.length === 0
+                          ? `This file has only column names, so the table will be created with these ${detectedFields.length} columns and no rows yet.`
+                          : `The first row is used as column names, and the ${fullData.length} row${fullData.length === 1 ? "" : "s"} below it are imported.`
+                        : `Every row is imported, ${fullData.length} in all, and the columns are named Column 1, Column 2 and so on — you can rename them once the table exists.`}
+                    </p>
+                  </div>
+                ) : null}
+
                 {/* Field type configuration */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -805,7 +832,9 @@ export default function ImportTableModal({
                   Creating...
                 </>
               ) : (
-                `Import ${fullData.length} Rows`
+                fullData.length === 0
+                  ? "Create the table"
+                  : `Import ${fullData.length} ${fullData.length === 1 ? "row" : "rows"}`
               )}
             </Button>
           )}

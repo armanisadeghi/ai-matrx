@@ -73,11 +73,11 @@ function byText(text: string): HTMLElement {
   return hit;
 }
 
-async function pasteAndPreview() {
+async function pasteAndPreview(text: string = SERVICE_LOG) {
   const paste = document.getElementById("pasteData") as HTMLTextAreaElement;
   await act(async () => {
     const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!;
-    setter.call(paste, SERVICE_LOG);
+    setter.call(paste, text);
     paste.dispatchEvent(new Event("input", { bubbles: true }));
   });
   await act(async () => {
@@ -86,7 +86,8 @@ async function pasteAndPreview() {
   await act(async () => {
     await new Promise((r) => setTimeout(r, 50));
   });
-  const name = document.getElementById("tableName") as HTMLInputElement;
+  const name = document.getElementById("tableName") as HTMLInputElement | null;
+  if (!name) return; // no preview: the paste was refused
   await act(async () => {
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
     setter.call(name, "Rincon service calls");
@@ -119,7 +120,7 @@ describe("ImportTableModal refusals", () => {
     const { onClose, onSuccess } = await mount();
     await pasteAndPreview();
     await act(async () => {
-      byText("Import 3 Rows").click();
+      byText("Import 3 rows").click();
     });
     await act(async () => {
       await new Promise((r) => setTimeout(r, 20));
@@ -143,7 +144,7 @@ describe("ImportTableModal refusals", () => {
     await mount();
     await pasteAndPreview();
     await act(async () => {
-      byText("Import 3 Rows").click();
+      byText("Import 3 rows").click();
     });
     await act(async () => {
       await new Promise((r) => setTimeout(r, 20));
@@ -162,5 +163,43 @@ describe("ImportTableModal refusals", () => {
     });
     expect(document.body.querySelector('[role="alert"]')).toBeNull();
     expect((document.getElementById("tableName") as HTMLInputElement | null)?.value ?? "").not.toBe("");
+  });
+
+  // VERIFIER-16: a one-line file was refused as "empty", because its only line
+  // was silently taken as column names.
+  it("a single row with no header is one record, with the guess shown and flippable", async () => {
+    await mount();
+    await pasteAndPreview("Takeda Property Management\t805-555-0142\t2210 Ocean View Dr");
+    expect(document.body.textContent).not.toContain("No valid data found");
+    expect(document.body.querySelector('[role="alert"]')).toBeNull();
+    const says = document.body.querySelector("[data-matrx-import-first-row-says]");
+    expect(says?.textContent).toContain("Every row is imported, 1 in all");
+    expect(byText("Import 1 row")).toBeTruthy();
+    // Flip it: the same line becomes the column names of an empty table.
+    const toggle = document.getElementById("firstRowIsHeader") as HTMLElement;
+    await act(async () => {
+      toggle.click();
+    });
+    expect(document.body.querySelector("[data-matrx-import-first-row-says]")?.textContent).toContain(
+      "only column names, so the table will be created with these 3 columns and no rows yet",
+    );
+    expect(byText("Create the table")).toBeTruthy();
+  });
+
+  it("a header plus one row is one row under those names", async () => {
+    await mount();
+    await pasteAndPreview("Customer\tPhone\nHarbor Street Dental\t805-555-0199");
+    expect(document.body.querySelector("[data-matrx-import-first-row-says]")?.textContent).toContain(
+      "The first row is used as column names, and the 1 row below it are imported.",
+    );
+    expect(document.body.textContent).toContain("Harbor Street Dental");
+    expect(byText("Import 1 row")).toBeTruthy();
+  });
+
+  it("a blank paste is the one real refusal, through the notice", async () => {
+    await mount();
+    await pasteAndPreview(",,,\n , , ,");
+    const notice = document.body.querySelector('[role="alert"]');
+    expect(notice?.textContent).toContain("every line is blank");
   });
 });
