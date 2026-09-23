@@ -1002,6 +1002,9 @@ export const primaryNavItems: ShellNavItem[] = [
     dashboard: false,
     description: "Podcasts, agent artifacts, and published sites",
     color: "violet",
+    // CMS is a child destination in this group but lives in its own route
+    // namespace. Keep Publish selected throughout that child route tree.
+    ownedRoutePrefixes: ["/cms"],
     children: [
       {
         label: "Podcasts",

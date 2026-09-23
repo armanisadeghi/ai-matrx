@@ -77,6 +77,14 @@ describe("shell navigation route ownership", () => {
     expect(isNavGroupActive("/work", chat!)).toBe(false);
   });
 
+  it("activates Publish for nested CMS routes through its CMS child", () => {
+    const publish = primaryNavItems.find((item) => item.label === "Publish");
+    expect(publish).toBeDefined();
+
+    expect(isNavGroupActive("/cms/html-pages", publish!)).toBe(true);
+    expect(isExclusiveNavGroupActive("/cms/html-pages", publish!, primaryNavItems)).toBe(true);
+  });
+
   it("keeps at most one primary group selected for every listed destination", () => {
     const hrefs = new Set<string>();
     for (const item of primaryNavItems) {
