@@ -11,7 +11,9 @@
 // Component; all mutations happen in the client island via the same RPCs.
 
 import { createClient } from "@/utils/supabase/server";
+import { readAllRows } from "@ai-matrx/data/db";
 import { RelationshipsOverviewClient } from "@/features/admin/relationships/components/RelationshipsOverviewClient";
+import type { RelationshipProblem } from "@/features/admin/relationships/types";
 
 export const metadata = {
   title: "Relationship Manager | Matrx Admin",
@@ -20,17 +22,30 @@ export const metadata = {
 export default async function RelationshipsOverviewPage() {
   const supabase = await createClient();
 
-  const [statusRes, problemsRes] = await Promise.all([
+  const [statusRes, problems] = await Promise.all([
     supabase.rpc("admin_relationship_system_status"),
-    supabase.rpc("admin_relationship_problems"),
+    readAllRows<RelationshipProblem>(
+      ({ from, to }) =>
+        supabase
+          .rpc("admin_relationship_problems", undefined, { count: "exact" })
+          .order("severity")
+          .order("edge_count", { ascending: false })
+          .order("kind")
+          .order("source_type")
+          .order("target_type")
+          .order("label")
+          .order("container_side")
+          .order("detail")
+          .range(from, to),
+      { label: "public.admin_relationship_problems" },
+    ),
   ]);
 
-  const firstError = statusRes.error ?? problemsRes.error;
-  if (firstError) {
+  if (statusRes.error) {
     // Loud, not swallowed — a failed load here means the RPC family or the
     // admin guard is broken, which is a defect to surface immediately.
     throw new Error(
-      `Relationship Manager failed to load: ${firstError.message}`,
+      `Relationship Manager failed to load: ${statusRes.error.message}`,
     );
   }
 
@@ -38,7 +53,7 @@ export default async function RelationshipsOverviewPage() {
     <div className="h-full overflow-y-auto">
       <RelationshipsOverviewClient
         status={statusRes.data?.[0] ?? null}
-        problems={problemsRes.data ?? []}
+        problems={problems}
       />
     </div>
   );

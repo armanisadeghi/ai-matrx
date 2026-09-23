@@ -98,7 +98,6 @@ const problemColumns: MatrxColumnDef<ProblemTableRow>[] = [
         <span className="text-xs text-muted-foreground">—</span>
       ),
     width: 128,
-    mobileHidden: true,
   },
   {
     id: "detail",
@@ -107,15 +106,18 @@ const problemColumns: MatrxColumnDef<ProblemTableRow>[] = [
     cell: (row) => (
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="block max-w-md truncate text-xs text-muted-foreground">
+          <button
+            type="button"
+            aria-label={`Full problem detail: ${row.detail}`}
+            className="block max-w-md truncate text-left text-xs text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+          >
             {row.detail}
-          </span>
+          </button>
         </TooltipTrigger>
         <TooltipContent className="max-w-md">{row.detail}</TooltipContent>
       </Tooltip>
     ),
     width: 384,
-    mobileHidden: true,
   },
   {
     id: "edge_count",
@@ -129,7 +131,6 @@ const problemColumns: MatrxColumnDef<ProblemTableRow>[] = [
     ),
     align: "right",
     width: 88,
-    mobileHidden: true,
   },
 ];
 

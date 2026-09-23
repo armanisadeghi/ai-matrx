@@ -104,18 +104,19 @@ describe("ProblemsPanel", () => {
     render();
 
     if (!tableProps) throw new Error("Problems table did not render");
-    if (!tableProps.copy || tableProps.copy === false) {
+    const props = tableProps;
+    if (!props.copy) {
       throw new Error("Problems table copy configuration did not render");
     }
 
-    expect(tableProps.urlState).toEqual({
+    expect(props.urlState).toEqual({
       id: "relationship-problems",
       selectedRow: false,
     });
-    expect(tableProps.detail).toEqual({ enabled: false });
-    expect(tableProps.pageSize).toBe(0);
-    expect(tableProps.toolbar?.titleCount).toBeUndefined();
-    expect(tableProps.columns.map((column) => column.id)).toEqual([
+    expect(props.detail).toEqual({ enabled: false });
+    expect(props.pageSize).toBe(0);
+    expect(props.toolbar?.titleCount).toBeUndefined();
+    expect(props.columns.map((column) => column.id)).toEqual([
       "severity",
       "kind",
       "source_type",
@@ -124,17 +125,17 @@ describe("ProblemsPanel", () => {
       "detail",
       "edge_count",
     ]);
-    expect(tableProps.data.map((row) => tableProps?.getRowId(row))).toEqual([
+    expect(props.data.map((row) => props.getRowId(row))).toEqual([
       "unregistered_pair:task:project:contains:0",
       "conveying_container_not_shareable:note:project::1",
       "wrong_way_edges:file:folder::2",
     ]);
-    expect(tableProps.copy?.agentRow?.(tableProps.data[0])).toEqual(problems[0]);
-    expect(tableProps.copy?.humanRow(tableProps.data[0])).toContain(
+    expect(props.copy.agentRow?.(props.data[0])).toEqual(problems[0]);
+    expect(props.copy.humanRow(props.data[0])).toContain(
       "Unregistered pair",
     );
-    const detailCell = tableProps.columns.find((column) => column.id === "detail")?.cell?.(
-      tableProps.data[0],
+    const detailCell = props.columns.find((column) => column.id === "detail")?.cell?.(
+      props.data[0],
       0,
     );
     if (!isValidElement<{ children: React.ReactNode }>(detailCell)) {
@@ -160,16 +161,16 @@ describe("ProblemsPanel", () => {
       discardPendingEdits() {},
     };
     const clickRowAction = (row: ProblemTableRow) => {
-      const action = tableProps.rowActions?.(row, controls);
+      const action = props.rowActions?.(row, controls);
       if (!isValidElement<{ onClick?: () => void }>(action) || !action.props.onClick) {
         throw new Error("Missing row action");
       }
       action.props.onClick();
     };
 
-    act(() => clickRowAction(tableProps.data[0]));
-    act(() => clickRowAction(tableProps.data[1]));
-    act(() => clickRowAction(tableProps.data[2]));
+    act(() => clickRowAction(props.data[0]));
+    act(() => clickRowAction(props.data[1]));
+    act(() => clickRowAction(props.data[2]));
 
     expect(onRegister).toHaveBeenCalledWith("task", "project", "contains");
     expect(onRegisterShareable).toHaveBeenCalledWith("project");
