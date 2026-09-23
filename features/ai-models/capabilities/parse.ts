@@ -39,13 +39,22 @@ export interface CapabilitiesParseContext {
   modelName?: string;
 }
 
-/** The five canonical top-level keys of `ai.model_definition.capabilities`. */
+/**
+ * The canonical top-level keys of `ai.model_definition.capabilities` (and of an
+ * offering's `capabilities_override`). Lockstep with aidream's
+ * `capability_vocabulary.CANONICAL_KEYS`. `image_reference_roles`
+ * (`{role: max, total: n}`) is read by `features/agents/image-roles`; the model
+ * readers here carry it through untouched — an unknown key THROWS in
+ * `requireCanonicalCapabilities`, so the server may never gain a key this list
+ * lacks (2026-09-22: adding it server-side first emptied every model picker).
+ */
 const CANONICAL_CAPABILITY_KEYS: ReadonlySet<string> = new Set([
   "input",
   "output",
   "features",
   "interaction",
   "multilingual",
+  "image_reference_roles",
 ]);
 
 // One scream per (model, field, value) per session — the parser runs on hot

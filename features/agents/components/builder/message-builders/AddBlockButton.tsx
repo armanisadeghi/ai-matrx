@@ -68,6 +68,15 @@ import {
   readTurns,
   speechScriptCompatibility,
 } from "@/features/agents/speech-script/types";
+import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
+import { ImageRoleSelector } from "@/features/agents/image-roles/ImageRoleSelector";
+import { useImageRoleLimits } from "@/features/agents/image-roles/useImageRoleLimits";
+import {
+  imageRoleVerdict,
+  isImageReferenceRole,
+  type ImageReferenceRole,
+  type ImageRoleLimits,
+} from "@/features/agents/image-roles/roles";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -210,6 +219,16 @@ export interface DecisionPartContext {
   /** The agent's chosen model id — set even while `model` is still loading. */
   modelId?: string | null;
   stateText: string;
+  /** The message this block list lives in. Reference-image roles apply to
+   *  images the PERSON sends, so they are offered on user messages only. */
+  messageRole?: string;
+}
+
+/** The role selector's inputs, present only when the model generates images. */
+interface ImageRoleContext {
+  limits: ImageRoleLimits | null;
+  modelLabel: string;
+  onChange: (role: ImageReferenceRole | null) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -388,6 +407,11 @@ export function BlockEditor({
     });
     const meta = pairsToMetadata(metadataPairs);
     if (meta) block.metadata = meta;
+    // The reference-image role is set by the role control on the row, not by
+    // this form — editing the URL must never silently strip it.
+    if (config.type === "image" && isImageReferenceRole(initialValues.role)) {
+      block.role = initialValues.role;
+    }
     onConfirm(block);
   };
 
@@ -565,6 +589,8 @@ interface BlockRowProps {
    * carrying the reason — it is never dropped and never looks fine.
    */
   compatibility?: PartCompatibility;
+  /** Reference-image role control — image blocks on an image-generating model. */
+  imageRole?: ImageRoleContext;
 }
 
 export function BlockRow({
@@ -573,6 +599,7 @@ export function BlockRow({
   onRemove,
   validVariables = [],
   compatibility,
+  imageRole,
 }: BlockRowProps) {
   const [open, setOpen] = useState(false);
   const type = partKind(block) || "unknown";
@@ -667,7 +694,13 @@ export function BlockRow({
     typeof metadata?.role === "string" ? (metadata.role as string) : null;
   const otherMetaCount = metadataCount - (role ? 1 : 0);
 
-  const refused = compatibility?.verdict === "refused";
+  const blockRole = isImageReferenceRole(block.role) ? block.role : null;
+  const roleVerdict =
+    imageRole && blockRole && imageRole.limits
+      ? imageRoleVerdict(blockRole, imageRole.limits, imageRole.modelLabel)
+      : null;
+  const refused =
+    compatibility?.verdict === "refused" || roleVerdict?.verdict === "refused";
 
   return (
     <div
@@ -732,6 +765,17 @@ export function BlockRow({
           <AlertTriangle className="w-3 h-3 shrink-0 mt-px" />
           <span>{compatibility.reason}</span>
         </p>
+      )}
+
+      {isImage && imageRole && (
+        <div className="pl-5 pt-1">
+          <ImageRoleSelector
+            value={blockRole}
+            onChange={imageRole.onChange}
+            limits={imageRole.limits}
+            modelLabel={imageRole.modelLabel}
+          />
+        </div>
       )}
 
       {fieldRows.map(
@@ -838,6 +882,35 @@ export function BlockList({
 
   const model = decisionContext?.model ?? null;
   const hasQuestionsPart = blocks.some(isDecisionQuestionsPart);
+  const generatesImages =
+    !!model &&
+    decisionContext?.messageRole === "user" &&
+    parseCapabilities(model.capabilities, {
+      modelId: model.id,
+      modelName: model.name,
+    }).output.includes("image");
+  const roleLimits = useImageRoleLimits(
+    decisionContext?.modelId ?? model?.id ?? null,
+    generatesImages,
+  );
+  const modelLabel =
+    model?.common_name?.trim() || model?.name?.trim() || "This model";
+  const imageRoleFor = (
+    block: Record<string, unknown>,
+    index: number,
+  ): ImageRoleContext | undefined =>
+    generatesImages && partKind(block) === "image"
+      ? {
+          limits: roleLimits,
+          modelLabel,
+          onChange: (role) => {
+            const next: Record<string, unknown> = { ...block };
+            if (role) next.role = role;
+            else delete next.role;
+            onUpdateBlock(index, next);
+          },
+        }
+      : undefined;
   const questionsVerdict = decisionQuestionsCompatibility(
     model,
     decisionContext?.modelId ?? null,
@@ -929,6 +1002,7 @@ export function BlockList({
             onRemove={() => onRemoveBlock(i)}
             validVariables={validVariables}
             compatibility={statePartCompatibility(block, model, hasQuestionsPart)}
+            imageRole={imageRoleFor(block, i)}
           />
         ),
       )}

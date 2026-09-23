@@ -36,6 +36,7 @@ import { setExpandedVariableId } from "@/features/agents/redux/execution-system/
 import { VariableInputComponent } from "./input-components/VariableInputComponent";
 import { BoundVariableChips } from "./BoundVariableChips";
 import { formatText } from "@ai-matrx/kit/text-case";
+import { variableRunHint, variableRunLabel } from "@/features/agents/image-roles/roles";
 import { variableValueToDisplay } from "@/features/agents/utils/variable-utils";
 import { calculateVisualViewportLift } from "@/lib/dom/visual-viewport-lift";
 import { collapsedRowKind } from "./collapsed-row";
@@ -267,7 +268,7 @@ export function AgentVariablesInline({
                 )}
                 <div className="flex items-center gap-2 pl-2.5 pr-1.5 py-1 min-h-8">
                   <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap flex-shrink-0">
-                    {formatText(variable.name)}:
+                    {variableRunLabel(variable, formatText)}:
                   </Label>
                   <div className="flex-1 min-w-0">
                     <VariableInputComponent
@@ -301,7 +302,7 @@ export function AgentVariablesInline({
                 data-collapsed-row="component"
               >
                 <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap flex-shrink-0">
-                  {formatText(variable.name)}:
+                  {variableRunLabel(variable, formatText)}:
                 </Label>
                 <div className="flex-1 min-w-0">
                   <VariableInputComponent
@@ -337,7 +338,7 @@ export function AgentVariablesInline({
                     tabIndex={index + 1}
                   >
                     <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap flex-shrink-0 cursor-pointer">
-                      {formatText(variable.name)}:
+                      {variableRunLabel(variable, formatText)}:
                     </Label>
                     <div className="flex-1 text-sm text-foreground min-w-0">
                       {displayValue ? (
@@ -394,7 +395,7 @@ export function AgentVariablesInline({
                 className="text-xs font-medium text-muted-foreground whitespace-nowrap flex-shrink-0 cursor-pointer"
                 onClick={() => handleExpand(variable.name)}
               >
-                {formatText(variable.name)}:
+                {variableRunLabel(variable, formatText)}:
               </Label>
               {rowKind === "open-editor" ? (
                 <button
@@ -406,7 +407,7 @@ export function AgentVariablesInline({
                 >
                   {displayValue || (
                     <span className="text-muted-foreground/60">
-                      {variable.helpText ?? "Choose…"}
+                      {variableRunHint(variable) ?? "Choose…"}
                     </span>
                   )}
                 </button>

@@ -17,6 +17,7 @@ import {
 } from "@/features/agents/types/agent-definition.types";
 import type { components } from "@/types/python-generated/api-types";
 import { isMessagePart } from "@/types/python-generated/stream-events";
+import { isImageReferenceRole } from "@/features/agents/image-roles/roles";
 import { isSpeechScriptPart } from "@/features/agents/speech-script/types";
 import {
   DECISION_QUESTIONS_KIND,
@@ -362,7 +363,13 @@ function parseVariableCustomComponent(
   if (assignment !== undefined) parsed.assignment = assignment;
   if (resourceContext !== undefined) parsed.resource_context = resourceContext;
   if (stash !== undefined) parsed.stash = stash;
-  copyOpaqueKeys(parsed, value, VARIABLE_COMPONENT_KNOWN_KEYS);
+  if (value.imageRole !== undefined && value.imageRole !== null) {
+    if (!isImageReferenceRole(value.imageRole)) {
+      fail(`${path}.imageRole`, "must be a reference-image role or null");
+    }
+    parsed.imageRole = value.imageRole;
+  }
+  copyOpaqueKeys(parsed, value, [...VARIABLE_COMPONENT_KNOWN_KEYS, "imageRole"]);
   return parsed;
 }
 
@@ -453,6 +460,15 @@ function isDefinitionMessageRole(
   return value === "system" || value === "user" || value === "assistant";
 }
 
+/** Builder short media block types -> the canonical media `kind`. */
+const AUTHORED_MEDIA_SHORT_TYPES: Record<string, string> = {
+  image: "image",
+  audio: "audio",
+  video: "video",
+  document: "document",
+  youtube_video: "youtube",
+};
+
 function isDefinitionMessagePart(
   value: unknown,
 ): value is DefinitionMessagePart {
@@ -471,6 +487,17 @@ function isDefinitionMessagePart(
   // would drop EVERY message of the agent on the next load.
   if (isSpeechScriptPart(value as Record<string, unknown>)) {
     return Array.isArray((value as { turns?: unknown }).turns);
+  }
+  // The builder authors media blocks in their SHORT form (`{type: "image",
+  // url}` — `AddBlockButton` BLOCK_TYPES), which aidream's reader accepts
+  // (`message_config` maps image/audio/video/document/youtube_video). The
+  // generated guard only knows the canonical `{type: "media", kind}` shape, so
+  // validate the short form AS its canonical twin and keep the authored block
+  // untouched. Without this, one image block made the reader refuse the whole
+  // agent ("must be a valid authored text or media message part").
+  const shortKind = isRecord(value) ? AUTHORED_MEDIA_SHORT_TYPES[String(value.type)] : undefined;
+  if (shortKind) {
+    return isMessagePart({ ...(value as Record<string, unknown>), type: "media", kind: shortKind });
   }
   if (!isMessagePart(value)) return false;
   return (

@@ -32,7 +32,16 @@ import type {
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import type { UserInputPart } from "@/features/agents/types/request.types";
 import { makeSelectAssembledRequest } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectAgentContextPolicies } from "@/features/agents/redux/agent-definition/selectors";
+import {
+  selectAgentContextPolicies,
+  selectAgentMessages,
+} from "@/features/agents/redux/agent-definition/selectors";
+import {
+  IMAGE_ROLE_META,
+  isImageReferenceRole,
+  variableNameOfImageUrl,
+  type ImageReferenceRole,
+} from "@/features/agents/image-roles/roles";
 import { EmptyStats, StatRow, StatSection } from "./panels/shared";
 import { TYPE_COLORS } from "./ContextPoliciesTab";
 import { cn } from "@/lib/utils";
@@ -167,6 +176,7 @@ function MessagePartsView({ parts }: { parts: UserInputPart[] }) {
       {parts.map((part, idx) => {
         const partType = part.type;
         const text = part.type === "text" ? part.text : undefined;
+        const partRole = (part as { role?: unknown }).role;
         return (
           <div
             key={idx}
@@ -175,6 +185,11 @@ function MessagePartsView({ parts }: { parts: UserInputPart[] }) {
             <span className="inline-flex items-center px-1.5 py-px rounded border text-[9px] font-mono uppercase tracking-wide bg-muted/40 border-border/40 text-muted-foreground shrink-0">
               {partType}
             </span>
+            {isImageReferenceRole(partRole) && (
+              <span className="inline-flex items-center px-1.5 py-px rounded border text-[9px] font-medium bg-primary/10 border-primary/30 text-primary shrink-0">
+                {IMAGE_ROLE_META[partRole].ask}
+              </span>
+            )}
             <div className="flex-1 min-w-0">
               {text ? (
                 <span className="font-mono text-[11px] text-foreground/90 break-all">
@@ -191,6 +206,32 @@ function MessagePartsView({ parts }: { parts: UserInputPart[] }) {
       })}
     </div>
   );
+}
+
+/** One roled reference image the agent's user messages send. */
+interface RoledImageRow {
+  role: ImageReferenceRole;
+  /** The variable that fills it, or null for a fixed URL. */
+  variable: string | null;
+  source: string;
+}
+
+function roledImagesOf(messages: unknown): RoledImageRow[] {
+  if (!Array.isArray(messages)) return [];
+  const rows: RoledImageRow[] = [];
+  for (const message of messages) {
+    if (!message || typeof message !== "object") continue;
+    const { role, content } = message as { role?: unknown; content?: unknown };
+    if (role !== "user" || !Array.isArray(content)) continue;
+    for (const block of content) {
+      if (!block || typeof block !== "object") continue;
+      const b = block as Record<string, unknown>;
+      if (b.type !== "image" || !isImageReferenceRole(b.role)) continue;
+      const source = typeof b.url === "string" ? b.url : String(b.file_id ?? "");
+      rows.push({ role: b.role, variable: variableNameOfImageUrl(source), source });
+    }
+  }
+  return rows;
 }
 
 // =============================================================================
@@ -220,6 +261,11 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
   const contextMap = useAppSelector((state) =>
     selectInstanceContextMap(state, conversationId),
   );
+
+  const agentMessages = useAppSelector((state) =>
+    agentId ? selectAgentMessages(state, agentId) : undefined,
+  );
+  const roledImages = roledImagesOf(agentMessages);
 
   const slotsByKey = useMemo(() => {
     const map = new Map<string, ContextPolicy>();
@@ -406,6 +452,40 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
           </div>
         )}
       </StatSection>
+
+      {/* ── Reference images (image-generation roles) ────────────────────── */}
+      {roledImages.length > 0 && (
+        <StatSection title="Reference images (sent with their roles)">
+          <div>
+            {roledImages.map((row, idx) => {
+              const value = row.variable ? variables?.[row.variable] : row.source;
+              return (
+                <div
+                  key={`${row.role}-${idx}`}
+                  className="py-1 border-b border-border/30 last:border-b-0"
+                  data-testid="payload-roled-image"
+                >
+                  <div className="flex items-center gap-2 text-[11px]">
+                    <span className="font-semibold text-foreground">
+                      {IMAGE_ROLE_META[row.role].ask}
+                    </span>
+                    <span className="font-mono text-muted-foreground">
+                      role: {row.role}
+                    </span>
+                  </div>
+                  <div className="mt-0.5 font-mono text-[10px] text-foreground/80 break-all">
+                    {row.variable
+                      ? value
+                        ? `{{${row.variable}}} = ${valuePreview(value)}`
+                        : `{{${row.variable}}} — not set yet`
+                      : row.source}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </StatSection>
+      )}
 
       {/* ── Config overrides ─────────────────────────────────────────────── */}
       <StatSection title="Config overrides">

@@ -7,6 +7,7 @@
  */
 
 import { formatText } from "@ai-matrx/kit/text-case";
+import { variableRunLabel } from "@/features/agents/image-roles/roles";
 import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import { BoundVariableChips } from "@/features/agents/components/inputs/BoundVariableChips";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
@@ -81,7 +82,7 @@ export function AgentVariablesStacked({
                 onChange={(newValue) =>
                   handleVariableValueChange(variable.name, newValue)
                 }
-                variableName={formatText(variable.name)}
+                variableName={variableRunLabel(variable, formatText)}
                 customComponent={variable.customComponent}
                 helpText={variable.helpText}
                 compact

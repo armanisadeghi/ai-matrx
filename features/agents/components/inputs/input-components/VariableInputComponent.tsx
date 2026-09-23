@@ -30,6 +30,7 @@ import { Label } from "@/components/ui/label";
 import { useContainerWidth } from "./useContainerColumns";
 import { Button } from "@/components/ui/button";
 import { Dices } from "lucide-react";
+import { IMAGE_ROLE_META } from "@/features/agents/image-roles/roles";
 import {
   isAutoAssignValue,
   RANDOM_AUTO_ASSIGN_VALUE,
@@ -89,10 +90,18 @@ export function VariableInputComponent({
   wizardMode = false,
   onEnterAdvance,
 }: VariableInputComponentProps) {
-  const formattedName = formatText(variableName);
   const [containerRef, containerWidth] = useContainerWidth();
 
   const type = customComponent?.type ?? "textarea";
+  // An image variable that fills a reference-image role is asked for BY that
+  // role ("Style reference") — the person uploading needs to know what the
+  // image will control, not the author's variable name.
+  const imageRoleMeta =
+    type === "image" && customComponent?.imageRole
+      ? IMAGE_ROLE_META[customComponent.imageRole]
+      : null;
+  const formattedName = imageRoleMeta?.ask ?? formatText(variableName);
+  const shownHelpText = helpText ?? imageRoleMeta?.explanation;
   const options = customComponent?.options ?? [];
   const hasOptions = options.length > 0;
   const sharedProps = { compact, wizardMode, containerWidth };
@@ -385,8 +394,10 @@ export function VariableInputComponent({
       {!hideLabel && !compact && (
         <div>
           <Label className="text-sm font-medium">{formattedName}</Label>
-          {helpText && (
-            <p className="text-xs text-muted-foreground mt-0.5">{helpText}</p>
+          {shownHelpText && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {shownHelpText}
+            </p>
           )}
         </div>
       )}
@@ -394,9 +405,9 @@ export function VariableInputComponent({
       {!hideLabel && compact && (
         <div className="flex items-center gap-1.5">
           <Label className="text-xs font-medium pb-1">{formattedName}</Label>
-          {helpText && (
+          {shownHelpText && (
             <span className="text-[11px] text-muted-foreground">
-              · {helpText}
+              · {shownHelpText}
             </span>
           )}
         </div>

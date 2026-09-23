@@ -28,7 +28,14 @@ import { useModelFull } from "@/features/ai-models/hooks/useModels";
 import { isDecisionQuestionsPart } from "@/features/agents/decision-questions/types";
 import { modelTakesDecisions } from "@/features/agents/decision-questions/budget";
 import { modelProducesSpeech } from "@/features/agents/speech-script/types";
-import { setAgentMessages } from "@/features/agents/redux/agent-definition/slice";
+import {
+  setAgentMessages,
+  setAgentVariableDefinitions,
+} from "@/features/agents/redux/agent-definition/slice";
+import {
+  isImageReferenceRole,
+  variableNameOfImageUrl,
+} from "@/features/agents/image-roles/roles";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
@@ -308,8 +315,41 @@ export function MessageItem({
         i === messageIndex ? { ...m, content: newContent } : m,
       );
       dispatch(setAgentMessages({ id: agentId, messages: updated }));
+
+      // An image block filled by a variable ({{name}}) hands its reference
+      // role to that variable, so every run form asks for it by role
+      // ("Style reference") instead of by a bare variable name.
+      const varName =
+        block.type === "image" ? variableNameOfImageUrl(block.url) : null;
+      if (varName && variableDefinitions) {
+        const role = isImageReferenceRole(block.role) ? block.role : undefined;
+        const current = variableDefinitions.find((v) => v.name === varName);
+        if (current && current.customComponent?.imageRole !== role) {
+          const customComponent = {
+            ...(current.customComponent ?? { type: "image" as const }),
+          };
+          if (role) customComponent.imageRole = role;
+          else delete customComponent.imageRole;
+          dispatch(
+            setAgentVariableDefinitions({
+              id: agentId,
+              variableDefinitions: variableDefinitions.map((v) =>
+                v.name === varName ? { ...v, customComponent } : v,
+              ),
+            }),
+          );
+        }
+      }
     },
-    [agentId, messageIndex, allMessages, message, rawBlocks, dispatch],
+    [
+      agentId,
+      messageIndex,
+      allMessages,
+      message,
+      rawBlocks,
+      variableDefinitions,
+      dispatch,
+    ],
   );
 
   const handleDelete = useCallback(() => {
@@ -831,6 +871,7 @@ export function MessageItem({
                 model: selectedModel ?? null,
                 modelId,
                 stateText: decisionStateText,
+                messageRole: message.role,
               }}
             />
           </div>

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Minus, Plus } from "lucide-react";
 import { formatText } from "@ai-matrx/kit/text-case";
+import { variableRunLabel } from "@/features/agents/image-roles/roles";
 import type { VariableDefinition as PromptVariable } from "@/features/agents/types/agent-definition.types";
 
 // ============================================================================
@@ -580,7 +581,7 @@ function GuidedVariableInputsBody({
 
   const variable = variableDefaults[activeIndex];
   const value = String(values[variable.name] ?? variable.defaultValue ?? "");
-  const formattedName = formatText(variable.name);
+  const formattedName = variableRunLabel(variable, formatText);
   const helpText = variable.helpText;
 
   const answeredCount = variableDefaults.filter((v) => {

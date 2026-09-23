@@ -28,6 +28,7 @@ import {
 import { VariableInputComponent } from "../input-components/VariableInputComponent";
 import { BoundVariableChips } from "../BoundVariableChips";
 import { formatText } from "@ai-matrx/kit/text-case";
+import { variableRunLabel } from "@/features/agents/image-roles/roles";
 
 interface AgentVariablesWizardProps {
   conversationId: string;
@@ -128,7 +129,7 @@ export function AgentVariablesWizard({
       <div className="grid grid-cols-[1fr_auto] gap-2 items-start px-3 pt-3 pb-0.5 shrink-0">
         <p className="text-[11px] text-muted-foreground leading-snug">
           <span className="font-semibold uppercase tracking-widest whitespace-nowrap">
-            {formatText(variable.name)}
+            {variableRunLabel(variable, formatText)}
           </span>
           {variable.helpText && (
             <span className="font-normal">

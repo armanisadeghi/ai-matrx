@@ -7,6 +7,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus } from "lucide-react";
 import { formatText } from "@ai-matrx/kit/text-case";
+import { variableRunLabel } from "@/features/agents/image-roles/roles";
 import { cn } from "@/lib/utils";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import { isMediaVariableType } from "@/features/agents/types/agent-definition.types";
@@ -716,7 +717,7 @@ export function AgentVariablesGuided({
   }
 
   const value: unknown = values[variable.name] ?? variable.defaultValue ?? "";
-  const formattedName = formatText(variable.name);
+  const formattedName = variableRunLabel(variable, formatText);
   const helpText = variable.helpText;
 
   const answeredCount = variableDefaults.filter((v) => {
