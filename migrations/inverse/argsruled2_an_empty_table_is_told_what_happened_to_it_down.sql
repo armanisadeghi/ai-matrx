@@ -1,6 +1,6 @@
 -- lock: custom
 -- lane: ARGS-RULED-2
--- (based-on: added after the up lands on the clone)
+-- based-on: custom.table_archive(uuid, uuid, integer, boolean) e139db9ebd0824628d319710d335d6ae69940cf4be53c4a8e5dd467b4f3d3165
 --
 -- INVERSE of migrations/campaign/argsruled2_an_empty_table_is_told_what_happened_to_it.sql: custom.table_archive's body back
 -- exactly as it was (MAIN, 2026-09-23), which brings back the false sentence and the preview
