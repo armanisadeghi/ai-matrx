@@ -17,7 +17,7 @@ _(none)_
 ## Blocked
 
 ### TASK-017: Provision the agent term-list server contract
-- **Status:** blocked (2026-09-23) — API routes and frontend WIP have no live table/model
+- **Status:** blocked (2026-09-23) — reviewed provision spec is pushed; production table/model are still absent
 - **Created:** 2026-09-23
 - **Source:** `pnpm sync-types` found 14 missing-field errors in the active term-list service.
 
@@ -27,13 +27,14 @@ Provision and deploy the canonical AI Dream term-list resource, then regenerate 
 **Current evidence**
 
 - Frontend `features/agents/term-lists/service.ts` references `agent.term_list` fields absent from generated types; `pnpm sync-types` reports 14 errors in this file.
-- Read-only East catalog query found no `agent.term_list` table. The AI Dream checkout has term-list API routes, but its model imports missing `db.models.agent.TermList`; no matching entity type or provision spec was found.
-- Senior contract repair concluded this needs the complete versioned organization-resource contract (RLS, soft delete, attachments, model and entity vocabulary). No AI Dream files or database were changed.
-- The migration owner restricts provisioning to 01:00–04:00 America/Los_Angeles; this pass occurred outside that window.
+- Read-only East catalog query found no `agent.term_list` table. The AI Dream route/model work still needs provisioned DB/ORM/entity vocabulary before types can expose the relation.
+- Senior Astra dispatch pushed reviewed `aidream/services/term_lists/provision.json` and `FEATURE.md` as `e216e2b556f7173b47b87113350a399a4ab7164e`; Sol re-review found no remaining spec findings. The spec covers organization/internal access, versions/history, soft delete, client column ACL, and JSON entry constraints. Quarantined clone checks reject 14 malformed payloads and accept 6 valid payloads; production remained unchanged.
+- Full association/reachability rehearsal hit a 30-second `platform.rebuild_reachability` timeout; it was rolled back. Attachment conveyance, edge tombstoning, and frontend interaction remain unverified. The initial clone installation persisted because its harness used autocommit; later validation transactions were explicitly rolled back.
+- Provisioning is restricted to 01:00–04:00 America/Los_Angeles. No production changes were made this pass.
 
 **Next concrete step**
 
-During the authorized window, implement and deploy the canonical AI Dream model, migration, entity registration and RLS contract. Then rerun `pnpm sync-types` and follow the new errors through all frontend callers. Keep the current uncommitted term-list UI/service out of release until the contract exists; do not cast or fabricate generated types.
+Resolve the reachability timeout and complete the full bounded rehearsal, including base foreign keys, attachments and edge tombstoning. During the authorized window, apply the reviewed spec and provision the canonical model/entity vocabulary; then rerun `pnpm sync-types` and follow the resulting errors through frontend callers. Keep the current uncommitted term-list UI/service out of release until the contract exists; do not cast or fabricate generated types.
 
 ### TASK-CRM-ERASURE-RPC: Apply the missing Gmail interaction erasure RPC
 - **Status:** blocked (2026-09-22) — live East schema is missing the RPC used by current CRM code
