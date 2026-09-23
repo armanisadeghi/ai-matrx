@@ -1,0 +1,160 @@
+-- lock: platform
+-- lane: ARGS-RULED-2
+-- based-on: public.cat_write(text, uuid, uuid, text, text, boolean, uuid, boolean, text, boolean, text, boolean, integer, boolean, text, boolean, jsonb, boolean) 9636c3e206c228882fdef175dd839e2555487751abf4caa86cf6f59f4f1abb6d
+--
+-- ARGS-RULED-2 — `public.cat_write` STOPS TELLING A STRANGER WHICH CATEGORY IDS ARE REAL.
+--
+-- MEASURED 2026-09-22 on the MAIN database, from test@test.com's `authenticated` seat (a
+-- signed-in account that is NOT a platform admin), against a category of an organization she
+-- is not in: the UPDATE arm answered `42501 cat_write: this category is not yours to change.`,
+-- while an invented uuid answered NULL a few lines earlier ("no such category"). One call per
+-- guessed uuid told any signed-in account whether it named a live category of another
+-- organization, in any dimension it cared to name. It wrote nothing — the ladder refused —
+-- but the refusal itself was the oracle: the DOOR-1 class `custom.read_record` was closed for
+-- on 2026-09-21.
+--
+-- THE FIX IS THE DOOR-1 ORDER: a caller who may not even SEE the row gets the answer a missing
+-- row gets. Somebody who may see it (visibility `public`, or a viewer grant through
+-- `iam.has_access`) already knows it exists and still hears the plain refusal. Nothing else in
+-- the body moves; members of the owning organization, the creator, an editor grant and the
+-- platform-admin arm pass exactly as before.
+--
+-- Seat suite: scripts/campaign-tests/argsruled2_holes_green.sql clauses 1, 3b, 3c; red twin
+-- scripts/campaign-tests/argsruled2_holes_red.sql. Inverse:
+-- migrations/inverse/argsruled2_a_stranger_cannot_learn_a_category_exists_down.sql.
+
+set lock_timeout = '4s';
+
+create or replace function public.cat_write(p_dimension text, p_category_id uuid DEFAULT NULL::uuid, p_organization_id uuid DEFAULT NULL::uuid, p_name text DEFAULT NULL::text, p_slug text DEFAULT NULL::text, p_set_slug boolean DEFAULT false, p_parent_id uuid DEFAULT NULL::uuid, p_set_parent boolean DEFAULT false, p_color text DEFAULT NULL::text, p_set_color boolean DEFAULT false, p_icon text DEFAULT NULL::text, p_set_icon boolean DEFAULT false, p_position integer DEFAULT NULL::integer, p_set_position boolean DEFAULT false, p_placement_type text DEFAULT NULL::text, p_set_placement_type boolean DEFAULT false, p_metadata_patch jsonb DEFAULT NULL::jsonb, p_is_system boolean DEFAULT false)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_actor uuid := auth.uid();
+  v_row platform.categories;
+  v_name text := nullif(btrim(coalesce(p_name, '')), '');
+  v_dim text := nullif(btrim(coalesce(p_dimension, '')), '');
+begin
+  if v_actor is null then
+    raise exception 'cat_write: a category belongs to an organization, and nobody is signed in.'
+      using errcode = '42501';
+  end if;
+  if v_dim is null then
+    raise exception 'cat_write: name the dimension this category belongs to (feedback, shortcut, skill, app, …).'
+      using errcode = '22004';
+  end if;
+  if p_metadata_patch is not null
+     and jsonb_typeof(p_metadata_patch) is distinct from 'object' then
+    raise exception 'cat_write: the metadata patch is an object.' using errcode = '22023';
+  end if;
+
+  -- ── CREATE ──
+  if p_category_id is null then
+    if v_name is null then
+      raise exception 'cat_write: a category needs a name.' using errcode = '22004';
+    end if;
+    if p_organization_id is null then
+      raise exception 'cat_write: name the organization this category belongs to.'
+        using errcode = '22004';
+    end if;
+    -- THE LADDER. What std_insert asked, plus the is_system arm the cat_* doors already carry.
+    if not (iam.has_org_access(p_organization_id)
+            or (p_organization_id in (select organization_id from iam.system_orgs where global_readable)
+                and public.is_super_admin())) then
+      raise exception 'cat_write: % is not an organization you can add a category to.', p_organization_id
+        using errcode = '42501';
+    end if;
+    if coalesce(p_is_system, false) and not public.is_super_admin() then
+      raise exception 'cat_write: a SYSTEM category is platform vocabulary, not an organization''s — that needs a super admin.'
+        using errcode = '42501';
+    end if;
+    -- THE PARENT IS THIS ORGANIZATION'S OR THE PLATFORM'S, the sentence cat_create already
+    -- carries (0850): a foreign parent and an invented one answer the SAME way, so the door is
+    -- not an existence oracle over every category id.
+    if p_parent_id is not null and not exists (
+         select 1 from platform.categories parent
+          where parent.id = p_parent_id and parent.deleted_at is null
+            and parent.dimension = v_dim
+            and (parent.organization_id = p_organization_id or parent.is_system)) then
+      raise exception 'cat_write: parent category not found' using errcode = '22023';
+    end if;
+
+    insert into platform.categories
+      (organization_id, dimension, name, slug, parent_id, is_system, color, icon,
+       "position", placement_type, metadata, created_by, updated_by)
+    values
+      (p_organization_id, v_dim, v_name, nullif(btrim(coalesce(p_slug, '')), ''),
+       p_parent_id, coalesce(p_is_system, false), p_color, p_icon,
+       p_position, nullif(btrim(coalesce(p_placement_type, '')), ''),
+       coalesce(p_metadata_patch, '{}'::jsonb), v_actor, v_actor)
+    returning * into v_row;
+
+    return public._category_json(v_row);
+  end if;
+
+  -- ── UPDATE ──
+  -- RESOLVED BY (id, dimension) TOGETHER. One table holds every vocabulary in the product and
+  -- no policy on it has ever looked at which one a row belongs to.
+  select * into v_row
+    from platform.categories c
+   where c.id = p_category_id and c.dimension = v_dim and c.deleted_at is null;
+  if not found then
+    return null;
+  end if;
+
+  if v_row.is_system then
+    if not public.is_super_admin() then
+      raise exception 'cat_write: this is platform vocabulary, not your organization''s — changing it needs a super admin.'
+        using errcode = '42501';
+    end if;
+  elsif not (iam.has_org_access(v_row.organization_id)
+             or v_row.created_by = v_actor
+             or iam.has_access('category', v_row.id, 'editor'::public.permission_level)
+             or ((v_row.visibility >= 'internal'::platform.visibility) and public.is_platform_admin())) then
+    -- A CATEGORY THE CALLER MAY NOT EVEN SEE ANSWERS WHAT A MISSING ONE ANSWERS
+    -- (ARGS-RULED-2, 2026-09-22). Until this line a stranger got 42501 here and NULL a few
+    -- lines up for an invented id, so one call per guessed uuid told a signed-in account
+    -- whether it named a live category of another organization. Somebody who may SEE it
+    -- (public, or a viewer grant) already knows it exists and is still told plainly why not.
+    if not (v_row.visibility = 'public'::platform.visibility
+            or iam.has_access('category', v_row.id, 'viewer'::public.permission_level)) then
+      return null;
+    end if;
+    raise exception 'cat_write: this category is not yours to change.' using errcode = '42501';
+  end if;
+
+  if p_set_parent and p_parent_id is not null and not exists (
+       select 1 from platform.categories parent
+        where parent.id = p_parent_id and parent.deleted_at is null
+          and parent.dimension = v_dim
+          and (parent.organization_id = v_row.organization_id or parent.is_system)) then
+    raise exception 'cat_write: parent category not found' using errcode = '22023';
+  end if;
+
+  -- A PATCH, NOT A REPLACEMENT. Every optional column carries its own `p_set_*` flag, so a
+  -- caller changing a name cannot erase a colour it never mentioned — which is what the
+  -- existing cat_update does, and what several of these call sites were working around.
+  update platform.categories c
+     set name = coalesce(v_name, c.name),
+         slug = case when p_set_slug then nullif(btrim(coalesce(p_slug, '')), '') else c.slug end,
+         parent_id = case when p_set_parent then p_parent_id else c.parent_id end,
+         color = case when p_set_color then p_color else c.color end,
+         icon = case when p_set_icon then p_icon else c.icon end,
+         "position" = case when p_set_position then p_position else c."position" end,
+         placement_type = case when p_set_placement_type
+                               then nullif(btrim(coalesce(p_placement_type, '')), '')
+                               else c.placement_type end,
+         -- THE MERGE. ContentBlocksManager wrote `{ is_active }` over the whole column and
+         -- wiped `legacy_table` with it.
+         metadata = case when p_metadata_patch is null then c.metadata
+                         else c.metadata || p_metadata_patch end,
+         updated_by = v_actor
+   where c.id = v_row.id and c.dimension = v_dim and c.deleted_at is null
+  returning * into v_row;
+
+  return public._category_json(v_row);
+end;
+$function$
+;
