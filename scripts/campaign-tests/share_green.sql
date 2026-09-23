@@ -71,8 +71,8 @@ delete from iam.memberships where organization_id in (:ORG, :ORG2);
 delete from iam.organizations where id in (:ORG, :ORG2);
 
 insert into iam.organizations (id, name, slug, abbreviation, created_by)
-values (:ORG,  'SHARE Throwaway',       'share-throwaway',   'SHT', :ADMIN),
-       (:ORG2, 'SHARE Throwaway Other', 'share-throwaway-2', 'SHO', :ADMIN);
+values (:ORG,  'Rincon Plumbing Co',        'rincon-plumbing-share-green',   'RPC', :ADMIN),
+       (:ORG2, 'Ironclad Mobile Mechanic',  'ironclad-mobile-mechanic-share-other', 'IMM', :ADMIN);
 insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
 values (:ORG,  'organization', :ORG,  :ADMIN, 'owner',  'active'),
        (:ORG,  'organization', :ORG,  :DANA,  'member', 'active'),

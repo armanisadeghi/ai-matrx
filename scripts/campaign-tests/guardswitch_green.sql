@@ -98,8 +98,8 @@ delete from iam.memberships where organization_id in (:ORG_A, :ORG_B);
 delete from iam.organizations where id in (:ORG_A, :ORG_B);
 
 insert into iam.organizations (id, name, slug, abbreviation, created_by)
-values (:ORG_A, 'GUARD-SWITCH Throwaway A', 'guardswitch-throwaway-a', 'GSA', :ADMIN),
-       (:ORG_B, 'GUARD-SWITCH Throwaway B', 'guardswitch-throwaway-b', 'GSB', :ADMIN);
+values (:ORG_A, 'Rincon Plumbing Co', 'rincon-plumbing-guardswitch-a', 'RPC', :ADMIN),
+       (:ORG_B, 'Ironclad Mobile Mechanic', 'ironclad-mobile-mechanic-guardswitch-b', 'IMM', :ADMIN);
 insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
 values (:ORG_A, 'organization', :ORG_A, :ADMIN, 'owner',  'active'),
        (:ORG_A, 'organization', :ORG_A, :DANA,  'member', 'active'),

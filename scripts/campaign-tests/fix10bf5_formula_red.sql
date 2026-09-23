@@ -211,7 +211,7 @@ $function$
 ;
 
 insert into iam.organizations (id, name, slug, abbreviation, created_by)
-values (:ORG, 'FIX-10B-F5 Red Throwaway', 'fix10bf5-red-throwaway', 'FFR', :ADMIN);
+values (:ORG, 'Rincon Plumbing Co', 'rincon-plumbing-f5-red', 'RPC', :ADMIN);
 insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
 values (:ORG, 'organization', :ORG, :ADMIN, 'owner', 'active');
 insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)

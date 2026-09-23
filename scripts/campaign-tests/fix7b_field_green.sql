@@ -80,7 +80,7 @@ begin
   perform set_config('request.jwt.claims', c_admin_j, true);
 
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'Timberline Roofing — safe to delete',
+  values (v_org, 'Timberline Roofing',
           'timberline-roofing-' || substr(v_org::text, 1, 8), 'TLR', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin, 'owner',  'active'),

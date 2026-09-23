@@ -44,7 +44,7 @@ declare
   v_id       uuid;
 begin
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'Ridgeline Physical Therapy - safe to delete',
+  values (v_org, 'Ridgeline Physical Therapy',
           'ridgeline-pt-' || left(v_org::text, 8), 'RPT', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status, created_by)
   values (v_org, 'organization', v_org, c_admin, 'owner', 'active', c_admin);

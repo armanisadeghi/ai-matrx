@@ -58,7 +58,7 @@ select set_config('app.actor_system', 'levelfix_red_twin', true);
 
 -- ── the fixture: the verifier's organization, every knob at its shipped default but the switch
 insert into iam.organizations (id, name, slug, abbreviation, created_by)
-values (:ORG, 'LEVELFIX Red Throwaway', 'levelfix-red-throwaway', 'LFR', :ADMIN);
+values (:ORG, 'Rincon Plumbing Co', 'rincon-plumbing-levelfix-red', 'RPC', :ADMIN);
 insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
 values (:ORG, 'organization', :ORG, :ADMIN, 'owner', 'active'),
        (:ORG, 'organization', :ORG, :DANA,  'member', 'active');

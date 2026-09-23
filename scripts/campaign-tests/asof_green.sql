@@ -81,7 +81,7 @@ delete from iam.memberships where organization_id = :ORG;
 delete from iam.organizations where id = :ORG;
 
 insert into iam.organizations (id, name, slug, abbreviation, created_by)
-values (:ORG, 'STORE-ASOF Throwaway', 'store-asof-throwaway', 'SAT', :ADMIN);
+values (:ORG, 'Rincon Plumbing Co', 'rincon-plumbing-asof', 'RPC', :ADMIN);
 insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
 values (:ORG, 'organization', :ORG, :ADMIN, 'owner',  'active'),
        (:ORG, 'organization', :ORG, :DANA,  'member', 'active');

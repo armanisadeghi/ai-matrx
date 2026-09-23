@@ -73,8 +73,8 @@ delete from iam.memberships where organization_id in (:ORG, :ORG2);
 delete from iam.organizations where id in (:ORG, :ORG2);
 
 insert into iam.organizations (id, name, slug, abbreviation, created_by)
-values (:ORG,  'LEVELFIX Green Throwaway',         'levelfix-green-throwaway',   'LFG', :ADMIN),
-       (:ORG2, 'LEVELFIX Green Control (store off)', 'levelfix-green-control',   'LFC', :ADMIN);
+values (:ORG,  'Rincon Plumbing Co',              'rincon-plumbing-levelfix-green',   'RPC', :ADMIN),
+       (:ORG2, 'Meridian Software',                  'meridian-software-levelfix-control', 'MSW', :ADMIN);
 insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
 values (:ORG,  'organization', :ORG,  :ADMIN, 'owner',  'active'),
        (:ORG,  'organization', :ORG,  :DANA,  'member', 'active'),

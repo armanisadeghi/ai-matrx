@@ -74,7 +74,7 @@ select set_config('app.actor_system', 'campaign-test/sharedonly_red', true);
 
 -- ── the same fixture, in its own organization id ────────────────────────────────────────
 insert into iam.organizations (id, name, slug, abbreviation, created_by)
-values (:ORG, 'SHARED-ONLY Red Throwaway', 'sharedonly-red-throwaway', 'SOR', :ADMIN);
+values (:ORG, 'Rincon Plumbing Co', 'rincon-plumbing-sharedonly-red', 'RPC', :ADMIN);
 insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
 values (:ORG, 'organization', :ORG, :ADMIN, 'owner',  'active'),
        (:ORG, 'organization', :ORG, :DANA,  'member', 'active');
