@@ -1,8 +1,11 @@
 /** @jest-environment jsdom */
 
-import { act } from "react";
+import { act, Children, isValidElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import type { MatrxDataTableProps } from "@ai-matrx/design-system/data-table";
+import type {
+  MatrxDataTableProps,
+  MatrxDataTableRecordControls,
+} from "@ai-matrx/design-system/data-table";
 
 import type { RelationshipProblem } from "../types";
 import { ProblemsPanel } from "./ProblemsPanel";
@@ -101,6 +104,9 @@ describe("ProblemsPanel", () => {
     render();
 
     if (!tableProps) throw new Error("Problems table did not render");
+    if (!tableProps.copy || tableProps.copy === false) {
+      throw new Error("Problems table copy configuration did not render");
+    }
 
     expect(tableProps.urlState).toEqual({
       id: "relationship-problems",
@@ -108,6 +114,7 @@ describe("ProblemsPanel", () => {
     });
     expect(tableProps.detail).toEqual({ enabled: false });
     expect(tableProps.pageSize).toBe(0);
+    expect(tableProps.toolbar?.titleCount).toBeUndefined();
     expect(tableProps.columns.map((column) => column.id)).toEqual([
       "severity",
       "kind",
@@ -126,15 +133,43 @@ describe("ProblemsPanel", () => {
     expect(tableProps.copy?.humanRow(tableProps.data[0])).toContain(
       "Unregistered pair",
     );
+    const detailCell = tableProps.columns.find((column) => column.id === "detail")?.cell?.(
+      tableProps.data[0],
+      0,
+    );
+    if (!isValidElement<{ children: React.ReactNode }>(detailCell)) {
+      throw new Error("Detail cell did not render its tooltip");
+    }
+    const [trigger, content] = Children.toArray(detailCell.props.children);
+    if (
+      !isValidElement<{ children: React.ReactNode }>(trigger) ||
+      !isValidElement<{ className?: string; children: string }>(trigger.props.children) ||
+      !isValidElement<{ children: string }>(content)
+    ) {
+      throw new Error("Detail tooltip is missing its trigger or content");
+    }
+    expect(trigger.props.children.props.className).toContain("truncate");
+    expect(content.props.children).toBe(problems[0].detail);
 
-    const register = tableProps.rowActions?.(tableProps.data[0], {} as never);
-    const shareable = tableProps.rowActions?.(tableProps.data[1], {} as never);
-    const edit = tableProps.rowActions?.(tableProps.data[2], {} as never);
-    if (!register || !shareable || !edit) throw new Error("Missing row action");
+    const controls: MatrxDataTableRecordControls = {
+      closeDetail() {},
+      openDetail() {},
+      openWindow() {},
+      closeWindow() {},
+      hasPendingEdits: false,
+      discardPendingEdits() {},
+    };
+    const clickRowAction = (row: ProblemTableRow) => {
+      const action = tableProps.rowActions?.(row, controls);
+      if (!isValidElement<{ onClick?: () => void }>(action) || !action.props.onClick) {
+        throw new Error("Missing row action");
+      }
+      action.props.onClick();
+    };
 
-    act(() => register.props.onClick());
-    act(() => shareable.props.onClick());
-    act(() => edit.props.onClick());
+    act(() => clickRowAction(tableProps.data[0]));
+    act(() => clickRowAction(tableProps.data[1]));
+    act(() => clickRowAction(tableProps.data[2]));
 
     expect(onRegister).toHaveBeenCalledWith("task", "project", "contains");
     expect(onRegisterShareable).toHaveBeenCalledWith("project");

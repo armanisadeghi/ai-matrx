@@ -13,6 +13,7 @@ import { ShieldAlert, ShieldCheck } from "lucide-react";
 import { EntityTypeChip } from "@/components/entity-types/EntityTypeChip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { PROBLEM_TITLES, problemHuman, RELATIONSHIPS_LOCATION } from "../utils";
@@ -104,9 +105,14 @@ const problemColumns: MatrxColumnDef<ProblemTableRow>[] = [
     accessorKey: "detail",
     header: "Detail",
     cell: (row) => (
-      <span className="block max-w-md text-xs text-muted-foreground">
-        {row.detail}
-      </span>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="block max-w-md truncate text-xs text-muted-foreground">
+            {row.detail}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-md">{row.detail}</TooltipContent>
+      </Tooltip>
     ),
     width: 384,
     mobileHidden: true,
@@ -170,7 +176,6 @@ export function ProblemsPanel({
         }}
         toolbar={{
           title: "Drift & problems",
-          titleCount: { value: problems.length, label: "problems" },
           search: true,
           searchPlaceholder: "Search relationship problems…",
           actions: (
