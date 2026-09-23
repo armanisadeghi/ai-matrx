@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table as TableIcon } from "lucide-react";
-import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
-import { getColumns, toRows } from "./utils/joinResults";
-import { cn } from "@/lib/utils";
 import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
+import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
+import { getColumns, toRows, type Row } from "./utils/joinResults";
 
 interface ResultPreviewProps {
   data: unknown;
@@ -30,6 +30,52 @@ function formatCell(value: unknown): string {
   return String(value);
 }
 
+interface PreviewRow {
+  row: Row;
+  index: number;
+}
+
+function resultColumns(columns: string[]): MatrxColumnDef<PreviewRow>[] {
+  return [
+    {
+      id: "row-number",
+      header: "#",
+      accessorFn: (preview) => preview.index + 1,
+      sortable: false,
+      filter: false,
+      width: 48,
+      compact: true,
+      cell: (preview) => (
+        <span className="font-mono text-muted-foreground">
+          {preview.index + 1}
+        </span>
+      ),
+    },
+    ...columns.map(
+      (column): MatrxColumnDef<PreviewRow> => ({
+        id: column,
+        header: column,
+        accessorFn: (preview) => preview.row[column],
+        sortValue: (preview) => formatCell(preview.row[column]),
+        filterValue: (preview) => formatCell(preview.row[column]),
+        filter: "text",
+        width: 260,
+        cell: (preview) => {
+          const text = formatCell(preview.row[column]);
+          return (
+            <div
+              className="max-w-[25rem] truncate font-mono text-xs"
+              title={text}
+            >
+              {text || <span className="text-muted-foreground">NULL</span>}
+            </div>
+          );
+        },
+      }),
+    ),
+  ];
+}
+
 export function ResultPreview({
   data,
   emptyMessage = "No rows returned",
@@ -42,6 +88,7 @@ export function ResultPreview({
   const columns = getColumns(rows);
   const truncated = rows.length > maxTableRows;
   const displayRows = truncated ? rows.slice(0, maxTableRows) : rows;
+  const tableRows = displayRows.map((row, index) => ({ row, index }));
 
   if (rows.length === 0 && (data === null || data === undefined)) {
     return (
@@ -80,62 +127,38 @@ export function ResultPreview({
           </TabsList>
         </div>
 
-        <TabsContent value="table" className="m-0 flex-1 min-h-0 overflow-auto">
+        <TabsContent
+          value="table"
+          className="m-0 flex-1 min-h-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col"
+        >
           {rows.length === 0 ? (
             <div className="p-3 text-xs text-slate-500 dark:text-slate-400 italic">
               {emptyMessage}
             </div>
           ) : (
-            <div className="overflow-auto">
-              <table className={cn("text-xs border-collapse", MOBILE_TABLE_FROZEN)}>
-                <thead className="sticky top-0 bg-slate-100 dark:bg-slate-800 z-10">
-                  <tr>
-                    <th className="text-left px-2 py-1 font-medium text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 w-8">
-                      #
-                    </th>
-                    {columns.map((col) => (
-                      <th
-                        key={col}
-                        className="text-left px-2 py-1 font-medium text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap"
-                      >
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayRows.map((row, idx) => (
-                    <tr
-                      key={idx}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800"
-                    >
-                      <td className="px-2 py-1 text-slate-400 dark:text-slate-500 font-mono">
-                        {idx + 1}
-                      </td>
-                      {columns.map((col) => {
-                        const text = formatCell(row[col]);
-                        return (
-                          <td
-                            key={col}
-                            className="px-2 py-1 font-mono text-slate-800 dark:text-slate-200 align-top max-w-[400px]"
-                            title={text}
-                          >
-                            <div className="truncate">
-                              {text || (
-                                <span className="text-slate-400 dark:text-slate-600">
-                                  NULL
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-2">
+              <MatrxDataTable<PreviewRow>
+                data={tableRows}
+                columns={resultColumns(columns)}
+                getRowId={(preview) => String(preview.index)}
+                density="condensed"
+                stickyHeader
+                viewTabs={false}
+                pageSize={0}
+                hidePagination
+                copy={false}
+                detail={{ enabled: false }}
+                window={{ enabled: false }}
+                toolbar={{
+                  title: "Query results",
+                  search: true,
+                  searchPlaceholder: "Search result rows…",
+                }}
+                className="min-h-0 flex-1"
+                emptyState={{ title: emptyMessage }}
+              />
               {truncated && (
-                <div className="px-2 py-1 text-[10px] text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40">
+                <div className="shrink-0 border-t border-border bg-muted/40 px-2 py-1 text-[10px] text-muted-foreground">
                   Showing {maxTableRows} of {rows.length} rows. Switch to JSON
                   to see all.
                 </div>
