@@ -54,6 +54,9 @@ export default function UnifiedDataTableRoute({
   // here with the record still shut. Same shape as `?dashboard=`: a link a queue produced has
   // to finish the sentence it started.
   const activeRecordId = searchParams.get("record");
+  // ARRIVED BY AN OLDER-TABLE LINK. `whereThisTableLives` adds this when the old /data/<id>
+  // viewer finds the table has moved here; the notice then says so in one line.
+  const movedFromOlderTable = searchParams.get("from") === "older-table";
   /**
    * WHICH VIEW THE ADDRESS NAMES — grid, kanban, calendar, gallery, dashboards.
    *
@@ -362,6 +365,7 @@ export default function UnifiedDataTableRoute({
                 somebody else's table must never be left to work out why their
                 own organization's things are not around it. One row, the
                 organization's name, and what they hold. */}
+            <UnifiedDataSwitchNotice gate={campaign} movedFromOlderTable={movedFromOlderTable} />
             {shared.state === "shared" ? (
               <p className="mb-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                 Shared with you by <span className="text-foreground">{shared.organizationName}</span>{" "}
