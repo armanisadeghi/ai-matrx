@@ -224,7 +224,8 @@ values
    'server_only: called only by the BEFORE-ROW trigger custom._relation_kernel_targets on '
    'custom.record, inside the store''s own write doors, after they have judged the caller; no '
    'client ever calls it directly.',
-   false, false);
+   false, false)
+on conflict (schema_name, function_name, identity_argtypes) do nothing;
 
 create or replace function custom._relation_kernel_targets()
 returns trigger
@@ -300,6 +301,20 @@ begin
       if v_to is null then
         select coalesce(nullif(o.name, ''), 'this organization') into v_org
           from iam.organizations o where o.id = new.organization_id;
+        -- A kernel record of this organization that has been REMOVED is a different sentence
+        -- from a stranger: the person (or file) was here, and somebody took their record away.
+        if exists (select 1 from custom.record t
+                    where t.organization_id = new.organization_id
+                      and t.id = (v_one #>> '{}')::uuid
+                      and t.table_id = f.tgt) then
+          raise exception '% names % that was removed from %.', f.label,
+                case when f.tgt = custom.person_kernel_id() then 'a person' else 'a file' end,
+                coalesce(v_org, 'this organization')
+            using errcode = '23514',
+                  hint = format('Pick %s again for %s, or restore the removed record first — the store never points a column at something that is gone.',
+                                case when f.tgt = custom.person_kernel_id() then 'who it is now' else 'the file' end,
+                                f.label);
+        end if;
         if f.tgt = custom.person_kernel_id() then
           raise exception '% names someone who is not a member of %.', f.label, coalesce(v_org, 'this organization')
             using errcode = '23514',
@@ -331,7 +346,7 @@ comment on function custom._relation_kernel_targets() is
 
 -- `_w…` sorts after `_value_envelope` (the door is judged first) and before every
 -- `custom_record_*` trigger (validation judges the resolved id). Trigger order is by name.
-create trigger _w_relation_kernel_targets
+create or replace trigger _w_relation_kernel_targets
   before insert or update on custom.record
   for each row execute function custom._relation_kernel_targets();
 

@@ -28,15 +28,12 @@
 --   1  ZERO halves disagree, in EITHER direction. Red names every one.
 --   2  the estate is not empty — relation values and relation edges exist in quantity, so
 --      clause 1's zero is a measured zero and not an empty table.
---   3  THE OPEN CLASS IS PRINTED, EVERY RUN. A relation field whose declared target is the
---      Person or File kernel holds an auth.users / storage id, and
---      `custom.record_relation_edges` implies a record-to-record edge for it that no door can
---      write — so the FIRST person to fill one of those cells is refused at COMMIT. 29 Person
---      fields and 5 File fields existed when this was written; one record had already hit it
---      (Signal & Scale Podcast's `producer`) and STORE-TXN-4 withdrew that value rather than
---      leave the episode unsavable. This clause does not FAIL on it — the repair is a change to
---      the store's hottest read function and belongs to a named lane — it PRINTS it, so the
---      class cannot be rediscovered by accident a third time.
+--   3  A PERSON OR FILE RELATION CANNOT BE REFUSED. STORE-TXN-4 printed this class (29 Person
+--      and 5 File fields; Signal & Scale's `producer` had already held an auth.users id and
+--      been withdrawn). RELATION-TARGETS closed it: the value is the kernel record's id and the
+--      store resolves a member's user id / an uploaded file's id to it at every write door. The
+--      clause FAILS on any cell that is not a live kernel record, and on the resolver trigger
+--      going missing once it has landed; see the clause for the one printed-only state.
 --
 -- Its twin is scripts/campaign-tests/relhalvescensus_red.sql, which plants one half of each
 -- direction and passes only when this census NAMES it.
@@ -124,22 +121,93 @@ begin
 end $$;
 
 \echo ''
-\echo '── 3 · the OPEN class: a relation that points at the Person or File kernel ────────────'
-\echo '     (printed, never failed — repairing it is a change to custom.record_relation_edges'
-\echo '      and to the halves guard, which belongs to its own lane, not to a census)'
+\echo '── 3 · a relation that points at the Person or File kernel cannot be refused ─────────'
 
-select k.data ->> 'name'                       as points_at_kernel,
-       count(*)                                as relation_fields,
-       count(distinct f.organization_id)       as organizations
-  from custom.record f
-  join custom.record k
-    on k.id = nullif(f.data ->> 'relation_target', '')::uuid
-   and k.data_class = 'kernel'
- where f.table_id = custom.field_kernel_id()
-   and f.deleted_at is null
-   and f.data ->> 'type' = 'relation'
- group by 1
- order by 2 desc;
+-- RELATION-TARGETS (2026-09-23) closed the class STORE-TXN-4 printed here: a Person or File
+-- relation is a relation (member / attachment ARE relations to the kernel Person / File Tables,
+-- custom.parity_field_types), its value is the kernel RECORD's id, and the BEFORE-ROW trigger
+-- `_w_relation_kernel_targets` turns the id a writer actually holds — a member's user id, an
+-- uploaded file's id — into that record through `custom.relation_kernel_record` at every write
+-- door. So "refusable" now means one of two things, and this clause counts both:
+--   a · the resolver is not on this database (every such field is refusable), or
+--   b · a cell already holds a value that is not a live kernel record of its organization (the
+--       record's next save is refused, whatever the resolver does).
+-- (b) FAILS here, always. (a) FAILS once the resolver function exists — so a trigger dropped or
+-- disabled after the fact is caught — and before RELATION-TARGETS is applied it PRINTS the count
+-- with the file that closes it, rather than turn a release gate red ahead of the chair's window.
+do $$
+declare
+  v_person   int;
+  v_file     int;
+  v_fn       boolean := to_regprocedure('custom.relation_kernel_record(uuid, uuid, uuid)') is not null;
+  v_trigger  boolean;
+  v_bad      int;
+  v_list     text;
+begin
+  select count(*) filter (where f.data ->> 'relation_target' = custom.person_kernel_id()::text),
+         count(*) filter (where f.data ->> 'relation_target' = custom.file_kernel_id()::text)
+    into v_person, v_file
+    from custom.record f
+   where f.table_id = custom.field_kernel_id() and f.data_class <> 'kernel'
+     and f.deleted_at is null and f.data ->> 'type' = 'relation';
+
+  select exists (select 1 from pg_trigger t
+                  where t.tgrelid = 'custom.record'::regclass
+                    and t.tgname = '_w_relation_kernel_targets'
+                    and t.tgenabled <> 'D')
+    into v_trigger;
+
+  with f as (
+    select f.organization_id, coalesce(nullif(f.data ->> 'key', ''), f.data ->> 'name') as k,
+           nullif(f.data ->> 'entity_definition_id', '')::uuid as tbl,
+           (f.data ->> 'relation_target')::uuid as tgt
+      from custom.record f
+     where f.table_id = custom.field_kernel_id() and f.data_class <> 'kernel'
+       and f.deleted_at is null and f.data ->> 'type' = 'relation'
+       and f.data ->> 'relation_target' in (custom.person_kernel_id()::text, custom.file_kernel_id()::text)
+  ), cells as (
+    select f.organization_id, r.id as record_id, f.k, f.tgt, x.val #>> '{}' as v
+      from f
+      join custom.record r
+        on r.organization_id = f.organization_id and r.table_id = f.tbl
+       and r.data_class = 'record' and r.deleted_at is null
+     cross join lateral jsonb_array_elements(
+             case jsonb_typeof(r.data -> f.k) when 'array' then r.data -> f.k
+                                               when 'string' then jsonb_build_array(r.data -> f.k)
+                                               else '[]'::jsonb end) x(val)
+  )
+  select count(*), string_agg(format('%s · record %s · %L = %s', c.organization_id, c.record_id, c.k, c.v),
+                              E'\n    ' order by c.organization_id, c.record_id)
+    into v_bad, v_list
+    from cells c
+   where not exists (select 1 from custom.record t
+                      where t.organization_id = c.organization_id and t.id::text = c.v
+                        and t.table_id = c.tgt and t.deleted_at is null);
+
+  if v_bad <> 0 then
+    raise exception '%', format(
+      'CLAUSE 3 FAILED: %s Person/File relation cell(s) hold a value that is not a live kernel '
+      'record of their organization, so the next save of each record is refused:' || chr(10)
+      || '    %s' || chr(10)
+      || '  Resolve each through custom.relation_kernel_record (a member''s user id or an uploaded '
+      || 'file''s id), one history.migration_log line per record.', v_bad, v_list);
+  end if;
+
+  if not v_trigger then
+    if v_fn then
+      raise exception 'CLAUSE 3 FAILED: custom.relation_kernel_record is on this database but the trigger '
+        '_w_relation_kernel_targets is missing or disabled on custom.record, so all % Person and % File '
+        'relation field(s) are refusable again. Re-apply '
+        'migrations/campaign/reltargets_a_person_or_a_file_field_takes_the_id_you_hold.sql.', v_person, v_file;
+    end if;
+    raise notice 'CLAUSE 3 OPEN — refusable Person/File relation fields: % (% Person, % File); 0 bad cells. '
+      'Closed by migrations/campaign/reltargets_a_person_or_a_file_field_takes_the_id_you_hold.sql '
+      '(RELATION-TARGETS), not yet applied here.', v_person + v_file, v_person, v_file;
+    return;
+  end if;
+  raise notice 'CLAUSE 3 PASS — refusable Person/File relation fields: 0 (of % Person, % File); 0 bad cells; the resolver trigger is installed and enabled.',
+               v_person, v_file;
+end $$;
 
 \echo ''
 \echo 'relhalvescensus_green: all clauses PASS. Nothing was written; this suite never opens a transaction.'
