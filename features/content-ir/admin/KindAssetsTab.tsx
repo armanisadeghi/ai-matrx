@@ -45,14 +45,8 @@ import { adminUpsertKindContentBlock } from "@/features/content-ir/studio/kind-c
 import KindContentBlockGenerator from "@/features/content-ir/studio/components/KindContentBlockGenerator";
 import KindAgentButton from "@/features/content-ir/studio/components/KindAgentButton";
 import type { GeneratedContentBlock } from "@/features/content-ir/registry/kind-content-block-generator";
-import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE,
-  MOBILE_TABLE_FROZEN_CELL,
-  MOBILE_TABLE_FROZEN_HEAD,
-  MOBILE_TABLE_FROZEN_SECOND,
-  MOBILE_TABLE_NOWRAP_CELLS,
-} from "@/components/official/mobile-table/mobileTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 // Where each part type is edited today. Content blocks and skills have real
 // admin surfaces; components/surfaces are authored by the agent (DB rows) and
@@ -161,6 +155,15 @@ interface KindAssetsTabProps {
   onOpenExamples: () => void;
 }
 
+type KindComponentAssetRow = KindDetailData["components"][number] & {
+  isWinner: boolean;
+  canSwitch: boolean;
+};
+
+function BooleanCell({ value }: { value: boolean }) {
+  return <span>{value ? "Yes" : "No"}</span>;
+}
+
 /** Per-source, per-row honesty — never "hardcoded". */
 function componentSourceExplainer(source: string): string {
   return source === "db"
@@ -221,7 +224,9 @@ export default function KindAssetsTab({
       router.refresh();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      toast.error("Failed to switch the default component", { description: message });
+      toast.error("Failed to switch the default component", {
+        description: message,
+      });
     } finally {
       setSwitchingId(null);
     }
@@ -237,6 +242,135 @@ export default function KindAssetsTab({
     // Re-run the server gather so the new block appears in the list + doctor row.
     router.refresh();
   };
+
+  const componentRows: KindComponentAssetRow[] = components.map(
+    (component) => ({
+      ...component,
+      isWinner:
+        winnerKey !== null &&
+        component.componentKey === winnerKey &&
+        component.platform === "web" &&
+        component.role === "output",
+      canSwitch:
+        component.platform === "web" &&
+        component.role === "output" &&
+        !component.isDefault &&
+        component.componentKey !== GENERIC_STRUCTURED_COMPONENT_KEY,
+    }),
+  );
+
+  const componentColumns: MatrxColumnDef<KindComponentAssetRow>[] = [
+    { accessorKey: "platform", header: "Platform", filter: "text", width: 105 },
+    { accessorKey: "role", header: "Role", filter: "text", width: 105 },
+    {
+      accessorKey: "componentKey",
+      header: "Component key",
+      filter: "text",
+      width: 230,
+      cell: (row) => (
+        <span
+          className="block truncate font-mono text-xs"
+          title={row.componentKey}
+        >
+          {row.componentKey}
+        </span>
+      ),
+    },
+    { accessorKey: "source", header: "Source", filter: "text", width: 105 },
+    {
+      accessorKey: "isActive",
+      header: "Active",
+      filter: "boolean",
+      width: 90,
+      cell: (row) => <BooleanCell value={row.isActive} />,
+    },
+    {
+      accessorKey: "isDefault",
+      header: "Default",
+      filter: "boolean",
+      width: 135,
+      cell: (row) =>
+        row.isDefault ? (
+          <BooleanCell value />
+        ) : row.canSwitch ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-[11px]"
+            disabled={switchingId === row.id}
+            onClick={() => void makeDefault(row.id)}
+          >
+            {switchingId === row.id ? (
+              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+            ) : null}
+            Make default
+          </Button>
+        ) : (
+          <BooleanCell value={false} />
+        ),
+    },
+    {
+      accessorKey: "isWinner",
+      header: "Renders now?",
+      label: "Renders now",
+      filter: "boolean",
+      width: 130,
+      cell: (row) =>
+        row.isWinner ? (
+          <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+            Winner
+          </span>
+        ) : (
+          <BooleanCell value={false} />
+        ),
+    },
+  ];
+
+  const surfaceColumns: MatrxColumnDef<KindDetailData["surfaces"][number]>[] = [
+    {
+      accessorKey: "surfaceType",
+      header: "Surface type",
+      filter: "text",
+      width: 145,
+    },
+    {
+      accessorKey: "token",
+      header: "Token",
+      filter: "text",
+      width: 190,
+      cell: (row) => (
+        <span className="block truncate font-mono text-xs" title={row.token}>
+          {row.token}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "parserStrategy",
+      header: "Parser strategy",
+      filter: "text",
+      width: 180,
+      cell: (row) => (
+        <span className="block truncate font-mono text-xs" title={row.parserStrategy}>
+          {row.parserStrategy}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "streaming",
+      header: "Streaming",
+      filter: "boolean",
+      width: 105,
+      cell: (row) => <BooleanCell value={row.streaming} />,
+    },
+    {
+      accessorKey: "isActive",
+      header: "Active",
+      filter: "boolean",
+      width: 90,
+      cell: (row) => <BooleanCell value={row.isActive} />,
+    },
+  ];
 
   return (
     <div className="mx-auto max-w-4xl space-y-3">
@@ -417,181 +551,96 @@ export default function KindAssetsTab({
       </ListSection>
 
       {/* Components */}
-      <ListSection
-        title="kind_component rows"
-        count={components.length}
-        actions={
-          <KindAgentButton
-            kind={detail.kind}
-            label={detail.label}
-            part="component"
-            emittedJsonSchema={detail.emittedJsonSchema}
-            className="min-h-10"
-          >
-            Create with agent
-          </KindAgentButton>
-        }
-      >
-        {components.length === 0 ? (
-          <p className="px-3 py-2.5 text-xs text-muted-foreground">
-            No kind_component rows — compiled/legacy render paths (if any) are
-            noted in the doctor cell above.
-          </p>
-        ) : (
-          <>
-            <div
-              className="overflow-x-auto overscroll-x-contain"
-              role="region"
-              aria-label="Kind component rows"
-              tabIndex={0}
-            >
-              <table className={cn("p-2 text-xs", MOBILE_TABLE, MOBILE_TABLE_NOWRAP_CELLS)}>
-                <thead>
-                  <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                    <th className="px-2 py-1 font-medium">Platform</th>
-                    <th className="px-2 py-1 font-medium">Role</th>
-                    <th className={cn("px-2 py-1 font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[9rem]")}>Component key</th>
-                    <th className="px-2 py-1 font-medium">Source</th>
-                    <th className="px-2 py-1 font-medium">Active</th>
-                    <th className="px-2 py-1 font-medium">Default</th>
-                    <th className="px-2 py-1 font-medium">Renders now?</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {components.map((c) => {
-                    const isWinner =
-                      winnerKey !== null &&
-                      c.componentKey === winnerKey &&
-                      c.platform === "web" &&
-                      c.role === "output";
-                    const canSwitch =
-                      c.platform === "web" &&
-                      c.role === "output" &&
-                      !c.isDefault &&
-                      c.componentKey !== GENERIC_STRUCTURED_COMPONENT_KEY;
-                    return (
-                      <tr key={c.id} className="border-t border-border/60">
-                        <td className="px-2 py-1 text-foreground">{c.platform}</td>
-                        <td className="px-2 py-1 text-foreground">{c.role}</td>
-                        <td className={cn("px-2 py-1 font-mono text-foreground", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[9rem]")}>
-                          {c.componentKey}
-                        </td>
-                        <td className="px-2 py-1 text-muted-foreground">
-                          {c.source}
-                        </td>
-                        <td className="px-2 py-1 text-muted-foreground">
-                          {c.isActive ? "yes" : "no"}
-                        </td>
-                        <td className="px-2 py-1 text-muted-foreground">
-                          {c.isDefault ? (
-                            "yes"
-                          ) : canSwitch ? (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 px-2 text-[11px]"
-                              disabled={switchingId === c.id}
-                              onClick={() => void makeDefault(c.id)}
-                            >
-                              {switchingId === c.id ? (
-                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                              ) : null}
-                              Make default
-                            </Button>
-                          ) : (
-                            "no"
-                          )}
-                        </td>
-                        <td className="px-2 py-1">
-                          {isWinner ? (
-                            <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-                              winner
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <p className="px-3 py-2 text-[11px] text-muted-foreground">
-              &quot;Renders now?&quot; is the live resolver's own answer
-              (source='db' overrides source='bundled'; among rows of the same
-              source, the default row wins). Per-source meaning:{" "}
-              {componentSourceExplainer("db")}{" "}
-              {componentSourceExplainer("bundled")}
-            </p>
-          </>
-        )}
-      </ListSection>
+      <section className="rounded-md border border-border bg-card">
+        <MatrxDataTable<KindComponentAssetRow>
+          data={componentRows}
+          columns={componentColumns}
+          getRowId={(row) => row.id}
+          viewTabs={false}
+          detail={{ enabled: false }}
+          density="condensed"
+          toolbar={{
+            title: "kind_component rows",
+            titleCount: {
+              value: componentRows.length,
+              label: "components",
+            },
+            searchPlaceholder: "Search component rows…",
+            actions: (
+              <KindAgentButton
+                kind={detail.kind}
+                label={detail.label}
+                part="component"
+                emittedJsonSchema={detail.emittedJsonSchema}
+                className="min-h-10"
+              >
+                Create with agent
+              </KindAgentButton>
+            ),
+          }}
+          pageSize={0}
+          coverage={{
+            loaded: componentRows.length,
+            total: componentRows.length,
+            answeredBy: "client",
+            noun: "component",
+          }}
+          emptyState={{
+            title: "No kind_component rows",
+            description:
+              "Compiled/legacy render paths (if any) are noted in the doctor cell above.",
+          }}
+        />
+        <p className="px-3 py-2 text-[11px] text-muted-foreground">
+          &quot;Renders now?&quot; is the live resolver&apos;s own answer
+          (source=&apos;db&apos; overrides source=&apos;bundled&apos;; among
+          rows of the same source, the default row wins). Per-source meaning:{" "}
+          {componentSourceExplainer("db")} {componentSourceExplainer("bundled")}
+        </p>
+      </section>
 
       {/* Surfaces */}
-      <ListSection
-        title="kind_surface rows (detection)"
-        count={detail.surfaces.length}
-        actions={
-          <KindAgentButton
-            kind={detail.kind}
-            label={detail.label}
-            part="surface"
-            emittedJsonSchema={detail.emittedJsonSchema}
-            className="min-h-10"
-          >
-            Create with agent
-          </KindAgentButton>
-        }
-      >
-        {detail.surfaces.length === 0 ? (
-          <p className="px-3 py-2.5 text-xs text-muted-foreground">
-            No detection surface registered (legitimate until Stage 5 — a{" "}
-            <code className="font-mono">__kind</code> JSON payload needs none).
-          </p>
-        ) : (
-          <div
-            className="overflow-x-auto overscroll-x-contain"
-            role="region"
-            aria-label="Kind detection surface rows"
-            tabIndex={0}
-          >
-            <table className={cn("p-2 text-xs", MOBILE_TABLE_FROZEN_SECOND)}>
-              <thead>
-                <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                  <th className="px-2 py-1 font-medium">Surface type</th>
-                  <th className="px-2 py-1 font-medium">Token</th>
-                  <th className="px-2 py-1 font-medium">Parser strategy</th>
-                  <th className="px-2 py-1 font-medium">Streaming</th>
-                  <th className="px-2 py-1 font-medium">Active</th>
-                </tr>
-              </thead>
-              <tbody>
-                {detail.surfaces.map((s) => (
-                  <tr key={s.id} className="border-t border-border/60">
-                    <td className="px-2 py-1 text-foreground">
-                      {s.surfaceType}
-                    </td>
-                    <td className="px-2 py-1 font-mono text-foreground">
-                      {s.token}
-                    </td>
-                    <td className="px-2 py-1 text-muted-foreground">
-                      {s.parserStrategy}
-                    </td>
-                    <td className="px-2 py-1 text-muted-foreground">
-                      {s.streaming ? "yes" : "no"}
-                    </td>
-                    <td className="px-2 py-1 text-muted-foreground">
-                      {s.isActive ? "yes" : "no"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </ListSection>
+      <section className="rounded-md border border-border bg-card">
+        <MatrxDataTable<KindDetailData["surfaces"][number]>
+          data={detail.surfaces}
+          columns={surfaceColumns}
+          getRowId={(row) => row.id}
+          viewTabs={false}
+          detail={{ enabled: false }}
+          density="condensed"
+          toolbar={{
+            title: "kind_surface rows (detection)",
+            titleCount: {
+              value: detail.surfaces.length,
+              label: "detection surfaces",
+            },
+            searchPlaceholder: "Search detection surface rows…",
+            actions: (
+              <KindAgentButton
+                kind={detail.kind}
+                label={detail.label}
+                part="surface"
+                emittedJsonSchema={detail.emittedJsonSchema}
+                className="min-h-10"
+              >
+                Create with agent
+              </KindAgentButton>
+            ),
+          }}
+          pageSize={0}
+          coverage={{
+            loaded: detail.surfaces.length,
+            total: detail.surfaces.length,
+            answeredBy: "client",
+            noun: "detection surface",
+          }}
+          emptyState={{
+            title: "No detection surface registered",
+            description:
+              "Legitimate until Stage 5: a __kind JSON payload needs none.",
+          }}
+        />
+      </section>
     </div>
   );
 }

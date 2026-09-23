@@ -55,10 +55,8 @@ import {
   initialValuesForVariables,
   pairKindFieldsWithVariables,
 } from "@/features/content-ir/input/kind-input-values";
-import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 type SchemaState =
   | { status: "loading" }
@@ -70,6 +68,56 @@ interface KindInputsTabProps {
   kind: string;
   emittedJsonSchema: Json | null;
 }
+
+type DriftRow = ReturnType<typeof describeRoundTripDrift>[number];
+
+const DRIFT_COLUMNS: MatrxColumnDef<DriftRow>[] = [
+  {
+    accessorKey: "fieldKey",
+    header: "Field",
+    filter: "text",
+    width: 180,
+    cell: (row) => (
+      <span className="block truncate font-mono text-[11px]" title={row.fieldKey}>
+        {row.fieldKey}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "originalType",
+    header: "Original",
+    filter: "text",
+    width: 150,
+    cell: (row) => (
+      <span className="block truncate text-[11px] text-muted-foreground" title={row.originalType}>
+        {row.originalType}
+      </span>
+    ),
+  },
+  {
+    id: "reconstructedType",
+    accessorFn: (row) => row.reconstructedType ?? "(field dropped)",
+    header: "Reconstructed",
+    filter: "text",
+    width: 190,
+    cell: (row) => {
+      const value = row.reconstructedType ?? "(field dropped)";
+      return (
+        <span
+          className={`block truncate text-[11px] ${
+            row.changed
+              ? "font-medium text-amber-800 dark:text-amber-200"
+              : "text-muted-foreground"
+          }`}
+          title={row.changed ? `${value} ← lossy` : value}
+        >
+          {value}
+          {row.changed && " ← lossy"}
+        </span>
+      );
+    },
+  },
+];
 
 async function copyJson(label: string, text: string): Promise<void> {
   try {
@@ -361,41 +409,30 @@ export default function KindInputsTab({
                 <code className="font-mono">losses[]</code>. Only this comparison
                 sees them.
               </p>
-              <div className="mt-1.5 overflow-x-auto">
-                <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
-                  <thead>
-                    <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                      <th className="py-1 pr-2 font-medium">Field</th>
-                      <th className="py-1 pr-2 font-medium">Original</th>
-                      <th className="py-1 pr-2 font-medium">Reconstructed</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {drift.map((row) => (
-                      <tr
-                        key={row.fieldKey}
-                        className="border-b border-border/60 last:border-0"
-                      >
-                        <td className="py-1 pr-2 font-mono text-[11px] text-foreground">
-                          {row.fieldKey}
-                        </td>
-                        <td className="py-1 pr-2 text-[11px] text-muted-foreground">
-                          {row.originalType}
-                        </td>
-                        <td
-                          className={`py-1 pr-2 text-[11px] ${
-                            row.changed
-                              ? "font-medium text-amber-800 dark:text-amber-200"
-                              : "text-muted-foreground"
-                          }`}
-                        >
-                          {row.reconstructedType ?? "(field dropped)"}
-                          {row.changed && " ← lossy"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="mt-1.5">
+                <MatrxDataTable<DriftRow>
+                  data={drift}
+                  columns={DRIFT_COLUMNS}
+                  getRowId={(row) => row.fieldKey}
+                  viewTabs={false}
+                  detail={{ enabled: false }}
+                  density="condensed"
+                  toolbar={{
+                    searchPlaceholder: "Search type drift…",
+                  }}
+                  pageSize={0}
+                  coverage={{
+                    loaded: drift.length,
+                    total: drift.length,
+                    noun: "field",
+                  }}
+                  cellClassName={(row, columnId) =>
+                    row.changed && columnId === "reconstructedType"
+                      ? "bg-amber-500/5"
+                      : undefined
+                  }
+                  emptyState={{ title: "No fields to compare" }}
+                />
               </div>
             </div>
           </section>
