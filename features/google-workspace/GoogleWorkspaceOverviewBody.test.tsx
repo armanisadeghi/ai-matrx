@@ -15,6 +15,10 @@ import type {
 const mockInventory = jest.fn();
 const mockCapabilities = jest.fn();
 const mockConnect = jest.fn();
+const mockOpenConsent = jest.fn();
+jest.mock("@/features/overlays/openers/connectorConsentDialog", () => ({
+  useOpenConnectorConsentDialog: () => mockOpenConsent,
+}));
 const mockRequestAuthorizationCode = jest.fn();
 const mockStartAuthorizationCodeRedirect = jest.fn();
 const mockReduxState = {
@@ -88,6 +92,7 @@ const keys = [
   "docs",
   "sheets",
   "gmail_send",
+  "gmail_read",
   "search_console",
   "analytics",
   "youtube",
@@ -102,6 +107,7 @@ const titles = [
   "Google Docs",
   "Google Sheets",
   "Reviewed Gmail send",
+  "Gmail reading",
   "Google Search Console",
   "Google Analytics 4",
   "YouTube channel preview",
@@ -212,12 +218,62 @@ describe("GoogleWorkspaceOverviewBody", () => {
     mockReduxState.userId = "user-1";
     mockReduxState.organizationId = "org-1";
   });
+
+  it("opens the reviewed Gmail reading chooser from its capability card", () => {
+    renderOverview();
+    expect(mockOpenConsent).not.toHaveBeenCalled();
+    const connect = Array.from(host.querySelectorAll("button")).find(
+      (button) => button.textContent === "Manage Gmail reading",
+    );
+    expect(connect).toBeDefined();
+    act(() => connect!.click());
+    expect(mockOpenConsent).toHaveBeenCalledWith({
+      initialProductKeys: ["gmail_read"],
+    });
+    expect(onAddAccount).not.toHaveBeenCalled();
+  });
+
+  it("offers Gmail reading consent when no Google account is connected", () => {
+    mockInventory.mockReturnValue({
+      data: { connections: [], resources: [] },
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+    renderOverview();
+    const connect = Array.from(host.querySelectorAll("button")).find(
+      (button) => button.textContent === "Connect Gmail reading",
+    );
+    expect(connect).toBeDefined();
+    act(() => connect!.click());
+    expect(mockOpenConsent).toHaveBeenCalledWith({
+      initialProductKeys: ["gmail_read"],
+    });
+  });
+
+  it("does not offer Gmail reading consent outside its admitted rollout", () => {
+    mockCapabilities.mockReturnValue({
+      data: capabilities.map((capability) =>
+        capability.key === "gmail_read"
+          ? { ...capability, eligible: false }
+          : capability,
+      ),
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+    renderOverview();
+    expect(host.textContent).toContain("Not available during this rollout");
+    expect(host.textContent).not.toContain("Manage Gmail reading");
+    expect(host.textContent).not.toContain("Connect Gmail reading");
+    expect(mockOpenConsent).not.toHaveBeenCalled();
+  });
   afterEach(() => {
     act(() => root.unmount());
     host.remove();
   });
 
-  it("renders all 12 descriptors and only real management actions", () => {
+  it("renders all 13 descriptors and only real management actions", () => {
     renderOverview();
     titles.forEach((title) => expect(host.textContent).toContain(title));
     expect(

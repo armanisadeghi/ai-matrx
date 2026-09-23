@@ -1,75 +1,51 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
-import Link from "next/link";
+import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/utils/supabase/client";
-import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { useOpenConnectorConsentDialog } from "@/features/overlays/openers/connectorConsentDialog";
 import {
-  listGoogleConnectionInventory,
+  useGoogleCapabilities,
+  useGoogleConnectionInventory,
+} from "@/features/marketing/google/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
   readGmailMessage,
   searchGmail,
 } from "@/features/marketing/google/service";
 import type {
   GmailMessageDetail,
   GmailSearchResult,
-  GoogleConnectionSummary,
 } from "@/features/marketing/google/types";
 import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 
 /** Reviewer-sized mailbox read. Nothing is fetched until the user searches. */
 export function GmailReadReview() {
-  const [accounts, setAccounts] = useState<GoogleConnectionSummary[]>([]);
-  const [connectionId, setConnectionId] = useState("");
+  const openConsent = useOpenConnectorConsentDialog();
+  const userId = useAppSelector(selectUserId);
+  const inventory = useGoogleConnectionInventory();
+  const capabilities = useGoogleCapabilities();
+  const gmailReading = capabilities.data?.find(
+    (capability) => capability.key === "gmail_read",
+  );
+  // The shared query is invalidated after consent succeeds. Keep the review
+  // screen subscribed so a newly connected mailbox is usable without reload.
+  const accounts = (inventory.data?.connections ?? []).filter(
+    (row) =>
+      row.owner_type === "user" &&
+      row.owner_user_id === userId &&
+      row.health === "connected" &&
+      row.scopes.includes(GOOGLE_SCOPE.gmailReadonly),
+  );
+  const [selectedConnectionId, setSelectedConnectionId] = useState("");
+  const connectionId = accounts.some((row) => row.id === selectedConnectionId)
+    ? selectedConnectionId
+    : (accounts[0]?.id ?? "");
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<GmailSearchResult | null>(null);
   const [message, setMessage] = useState<GmailMessageDetail | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    let active = true;
-    async function load() {
-      try {
-        const supabase = createClient();
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session?.access_token) throw new Error("Sign in to read Gmail.");
-        const { data: claims, error: claimsError } = await getClaimsUser(
-          supabase,
-          session.access_token,
-        );
-        if (claimsError || !claims.user?.id)
-          throw new Error("Your AI Matrx identity could not be verified.");
-        const inventory = await listGoogleConnectionInventory();
-        // Admin RLS can reveal other people's rows. The reviewer chooses only
-        // their own personal connection; the server repeats ownership checks.
-        const owned = inventory.connections.filter(
-          (row) =>
-            row.owner_type === "user" &&
-            row.owner_user_id === claims.user?.id &&
-            row.health === "connected" &&
-            row.scopes.includes(GOOGLE_SCOPE.gmailReadonly),
-        );
-        if (active) {
-          setAccounts(owned);
-          setConnectionId(owned[0]?.id ?? "");
-        }
-      } catch (cause) {
-        if (active)
-          setError(
-            cause instanceof Error
-              ? cause.message
-              : "Google accounts could not load.",
-          );
-      }
-    }
-    void load();
-    return () => {
-      active = false;
-    };
-  }, []);
 
   async function onSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -113,13 +89,26 @@ export function GmailReadReview() {
           messages, or send email.
         </p>
       </div>
-      {accounts.length === 0 ? (
+      {!userId || inventory.isLoading ? (
+        <p className="rounded-md border p-3 text-sm">Loading Google accounts…</p>
+      ) : inventory.isError ? null : accounts.length === 0 ? (
         <p className="rounded-md border p-3 text-sm">
           No personal Google account with Gmail reading is connected here.{" "}
-          <Link className="underline" href="/user-settings/integrations">
-            Connect Gmail reading in Settings
-          </Link>
-          .
+          {gmailReading?.eligible ? (
+            <button
+              type="button"
+              className="underline"
+              onClick={() => openConsent({ initialProductKeys: ["gmail_read"] })}
+            >
+              Connect Gmail reading
+            </button>
+          ) : gmailReading && !gmailReading.eligible ? (
+            "Gmail reading is not available to you during this rollout."
+          ) : capabilities.isLoading ? (
+            "Checking Gmail reading availability…"
+          ) : (
+            "Gmail reading availability could not be verified. Try again shortly."
+          )}
         </p>
       ) : (
         <form
@@ -134,7 +123,7 @@ export function GmailReadReview() {
             className="h-10 rounded-md border bg-background px-2 text-sm"
             value={connectionId}
             onChange={(event) => {
-              setConnectionId(event.target.value);
+              setSelectedConnectionId(event.target.value);
               setResult(null);
               setMessage(null);
             }}
@@ -169,9 +158,9 @@ export function GmailReadReview() {
           </p>
         </form>
       )}
-      {error ? (
+      {error || inventory.isError ? (
         <p role="alert" className="text-sm text-destructive">
-          {error}
+          {error || "Google accounts could not load. Try again shortly."}
         </p>
       ) : null}
       {result ? (

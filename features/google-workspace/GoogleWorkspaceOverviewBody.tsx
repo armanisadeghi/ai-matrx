@@ -48,6 +48,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { toast } from "@/lib/toast";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
+import { useOpenConnectorConsentDialog } from "@/features/overlays/openers/connectorConsentDialog";
 import {
   isGoogleAuthorizationCancelled,
   useGoogleAPI,
@@ -77,6 +78,7 @@ function GoogleWorkspaceOverviewBodyContent({
   onAddAccount,
   onManageWorkspace,
 }: GoogleWorkspaceOverviewBodyProps) {
+  const openConsent = useOpenConnectorConsentDialog();
   const authReady = useAppSelector(selectAuthReady);
   const userId = useAppSelector(selectUserId);
   const organizationContextId = useAppSelector(selectOrganizationId);
@@ -299,6 +301,9 @@ function GoogleWorkspaceOverviewBodyContent({
             connection={selectedConnection}
             resources={resources}
             onAddAccount={onAddAccount}
+            onManageGmailReading={() =>
+              openConsent({ initialProductKeys: ["gmail_read"] })
+            }
             onManageWorkspace={onManageWorkspace}
             onEnableCapability={enableCapability}
             busy={busy}
@@ -410,6 +415,7 @@ function CapabilityCatalog({
   connection,
   resources,
   onAddAccount,
+  onManageGmailReading,
   onManageWorkspace,
   onEnableCapability,
   busy,
@@ -419,6 +425,7 @@ function CapabilityCatalog({
   connection: GoogleConnectionSummary | null;
   resources: GoogleConnectionResource[];
   onAddAccount: () => void;
+  onManageGmailReading: () => void;
   onManageWorkspace: (connectionId: string) => void;
   onEnableCapability: (
     capability: GoogleCapabilityMetadata,
@@ -562,7 +569,18 @@ function CapabilityCatalog({
                   </div>
                 </details>
               ) : null}
-              {capability.key === "search_console" ? (
+              {capability.key === "gmail_read" && capability.eligible ? (
+                <Button
+                  className="mt-3"
+                  size="sm"
+                  variant="outline"
+                  onClick={onManageGmailReading}
+                >
+                  {permissionGranted
+                    ? "Manage Gmail reading"
+                    : "Connect Gmail reading"}
+                </Button>
+              ) : capability.key === "search_console" ? (
                 <Button className="mt-3" size="sm" variant="outline" asChild>
                   <Link href={marketingRoutes.connectionsGoogle()}>
                     Manage Search Console
