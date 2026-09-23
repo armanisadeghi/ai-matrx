@@ -16,6 +16,25 @@ _(none)_
 
 ## Blocked
 
+### TASK-017: Provision the agent term-list server contract
+- **Status:** blocked (2026-09-23) — API routes and frontend WIP have no live table/model
+- **Created:** 2026-09-23
+- **Source:** `pnpm sync-types` found 14 missing-field errors in the active term-list service.
+
+**Goal**
+Provision and deploy the canonical AI Dream term-list resource, then regenerate frontend types and resolve every affected caller.
+
+**Current evidence**
+
+- Frontend `features/agents/term-lists/service.ts` references `agent.term_list` fields absent from generated types; `pnpm sync-types` reports 14 errors in this file.
+- Read-only East catalog query found no `agent.term_list` table. The AI Dream checkout has term-list API routes, but its model imports missing `db.models.agent.TermList`; no matching entity type or provision spec was found.
+- Senior contract repair concluded this needs the complete versioned organization-resource contract (RLS, soft delete, attachments, model and entity vocabulary). No AI Dream files or database were changed.
+- The migration owner restricts provisioning to 01:00–04:00 America/Los_Angeles; this pass occurred outside that window.
+
+**Next concrete step**
+
+During the authorized window, implement and deploy the canonical AI Dream model, migration, entity registration and RLS contract. Then rerun `pnpm sync-types` and follow the new errors through all frontend callers. Keep the current uncommitted term-list UI/service out of release until the contract exists; do not cast or fabricate generated types.
+
 ### TASK-CRM-ERASURE-RPC: Apply the missing Gmail interaction erasure RPC
 - **Status:** blocked (2026-09-22) — live East schema is missing the RPC used by current CRM code
 - **Source:** `pnpm sync-types:live` against AI Dream SHA `468ca559d7b98f3128e01796e35f3fceb9513572`; read-only East catalog check by senior delegate
