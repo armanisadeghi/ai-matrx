@@ -96,7 +96,8 @@
     "POPOVER-EXPR": 3055,
     "FIX-15": 3056,
     "OLD-TABLES-4": 3058,
-    "GRID-PORT": 3059
+    "GRID-PORT": 3059,
+    "RECORDS-UI-FIX": 3060
   },
   "noDevServer": {
     "W6-DOCS": "Proves its contract through the document pipeline, not a browser.",
