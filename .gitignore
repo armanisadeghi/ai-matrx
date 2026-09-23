@@ -185,3 +185,5 @@ tmp/checks/
 tmp/fixer-logs/
 .matrx/fixer-ledger.json
 .matrx/fixer-dispatch.json
+# Parked checkouts other sessions drop here (aidream clones, 2026-09-22); never committed by a sweep.
+work/

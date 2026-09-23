@@ -131,6 +131,9 @@ const config: Config = {
         "/.wt/",
         "/.matrx/",
         "/.coldwalk",
+        // Parked aidream clones under work/ (4.4 GB on 2026-09-22) carry their
+        // own test files; never run them as this repo's suites.
+        "/work/",
         // This is an explicit Playwright gate that requires a running app and
         // Chromium; Jest owns the unit suite and must not attempt to load it.
         "/features/content-ir/sandbox/browser/",
