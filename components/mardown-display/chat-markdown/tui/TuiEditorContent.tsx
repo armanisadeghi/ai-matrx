@@ -6,6 +6,7 @@ import type { PluginFn } from "@toast-ui/editor";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import EditorLoading from "../../text-block/editorLoading";
 import { toast } from "@/lib/toast";
+import { attachTuiMarkdownGuard, type TuiGuardableEditor } from "./tuiMarkdownGuard";
 
 // Import the Toast UI Editor CSS
 import "@toast-ui/editor/dist/toastui-editor.css";
@@ -55,6 +56,10 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
     const [isThemeReady, setIsThemeReady] = useState(false);
     const hasAppliedInitialTheme = useRef(false);
     const endKeyCleanupRef = useRef<(() => void) | null>(null);
+    // Save-time guard: TUI's WYSIWYG serializer escapes, decodes and drops
+    // authored text; the guard makes getMarkdown() return authored bytes for
+    // everything the user did not edit (see tuiMarkdownGuard.ts).
+    const markdownGuardDetachRef = useRef<(() => void) | null>(null);
  
     // Reset theme application flag when editor key changes (remounts)
     useEffect(() => {
@@ -196,7 +201,23 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
             endKeyCleanupRef.current = null;
         }
 
+        if (markdownGuardDetachRef.current) {
+            markdownGuardDetachRef.current();
+            markdownGuardDetachRef.current = null;
+        }
+
         editorRef.current = instance;
+
+        // Install the guard before any getMarkdown() reaches onChange / save.
+        if (instance) {
+            try {
+                const tui = instance.getInstance() as unknown as TuiGuardableEditor;
+                markdownGuardDetachRef.current = attachTuiMarkdownGuard(tui);
+            } catch (e) {
+                console.error("TUI markdown guard failed to attach — saves will carry TUI escapes:", e);
+                toast.error("Editor safety guard failed to start; edits may add stray backslashes. Reload the page.");
+            }
+        }
         
         // Apply theme immediately when editor mounts
         if (instance && !hasAppliedInitialTheme.current) {

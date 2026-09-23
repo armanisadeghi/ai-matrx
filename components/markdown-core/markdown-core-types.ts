@@ -10,16 +10,22 @@ import type { Components } from "react-markdown";
  * - plain:      no plugins
  * - gfm:        remark-gfm
  * - gfm-breaks: remark-gfm + remark-breaks
- * - math:       remark-math + rehype-katex
- * - rich:       gfm + breaks + math(no single-$) + katex(strict:ignore)
+ * - math:       math only
+ * - gfm-math:   gfm + math
+ * - rich:       gfm + breaks + math
  * - chat:       rich + matrx variables + matrx citations + safe raw HTML
  * - message:    gfm + math + breaks + rehype-raw
+ *
+ * "math" everywhere means the ONE dialect in math-normalizer.ts: the source
+ * is normalized (`\(…\)` inline, `\[…\]` display, unambiguous `$…$`,
+ * code untouched) and remark-math/rehype-katex run with the shared options.
  */
 export type MarkdownPreset =
   | "plain"
   | "gfm"
   | "gfm-breaks"
   | "math"
+  | "gfm-math"
   | "rich"
   | "chat"
   | "message";

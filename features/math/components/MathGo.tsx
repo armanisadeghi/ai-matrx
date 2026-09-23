@@ -2,8 +2,8 @@
 
 import React, { useState, useRef, useEffect, JSX } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import "katex/dist/katex.min.css";
-import { BlockMath } from "react-katex";
+import DisplayMath from "./DisplayMath";
+import InlineMathText from "./InlineMathText";
 import { motion } from "motion/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -74,11 +74,11 @@ const MathProblem: React.FC<MathProblemProps> = ({
         if (currentStage === "overview") {
             addContent(
                 <div key="overview" className="space-y-2">
-                    <h2 className="text-2xl font-bold mb-4">{title}</h2>
+                    <h2 className="text-2xl font-bold mb-4"><InlineMathText text={title} /></h2>
                     <p className="text-base">Course: {course_name}</p>
                     <p className="text-base">Topic: {topic_name}</p>
                     <p className="text-base">Module: {module_name}</p>
-                    <p className="text-base">{description}</p>
+                    <p className="text-base"><InlineMathText text={description} /></p>
                 </div>
             );
             return;
@@ -87,7 +87,7 @@ const MathProblem: React.FC<MathProblemProps> = ({
         if (currentStage === "intro") {
             addContent(
                 <p key="intro" className="text-base mb-4">
-                    {intro_text}
+                    <InlineMathText text={intro_text} />
                 </p>
             );
         }
@@ -95,9 +95,9 @@ const MathProblem: React.FC<MathProblemProps> = ({
         if (currentStage === "intro" || currentStage === "solution") {
             addContent(
                 <div key="problem-statement" className="space-y-2 mb-4">
-                    <p className="text-base">{problem_statement.text}</p>
-                    <BlockMath math={problem_statement.equation} />
-                    <p className="text-base">{problem_statement.instruction}</p>
+                    <p className="text-base"><InlineMathText text={problem_statement.text} /></p>
+                    <DisplayMath math={problem_statement.equation} />
+                    <p className="text-base"><InlineMathText text={problem_statement.instruction} /></p>
                 </div>
             );
         }
@@ -106,7 +106,7 @@ const MathProblem: React.FC<MathProblemProps> = ({
             const solution = solutions[solutionIndex];
             addContent(
                 <p key={`task-${solutionIndex}`} className="text-base mb-4">
-                    {solution.task}
+                    <InlineMathText text={solution.task} />
                 </p>
             );
 
@@ -114,9 +114,9 @@ const MathProblem: React.FC<MathProblemProps> = ({
                 solution.steps.slice(0, stepIndex + 1).forEach((step, i) => {
                     addContent(
                         <div key={`step-${solutionIndex}-${i}`} className="mb-4">
-                            <h4 className="font-semibold text-lg">{step.title}</h4>
-                            <BlockMath math={step.equation} />
-                            {step.explanation && <p className="text-base">{step.explanation}</p>}
+                            <h4 className="font-semibold text-lg"><InlineMathText text={step.title} /></h4>
+                            <DisplayMath math={step.equation} />
+                            {step.explanation && <p className="text-base"><InlineMathText text={step.explanation} /></p>}
                         </div>
                     );
                 });
@@ -130,13 +130,13 @@ const MathProblem: React.FC<MathProblemProps> = ({
             } else if (currentSubStage === "transition" && solution.transitionText) {
                 addContent(
                     <p key={`transition-${solutionIndex}`} className="text-base">
-                        {solution.transitionText}
+                        <InlineMathText text={solution.transitionText} />
                     </p>
                 );
             } else if (currentSubStage === "finalStatement") {
                 addContent(
                     <p key="final-statement" className="text-base">
-                        {final_statement}
+                        <InlineMathText text={final_statement} />
                     </p>
                 );
             }

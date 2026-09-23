@@ -26,6 +26,12 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import rehypePrism from "rehype-prism-plus";
 import "katex/dist/katex.min.css";
+// Math rules are the core's, never local: same normalizer, same options.
+import {
+  normalizeMathDelimiters,
+  REHYPE_KATEX_OPTIONS,
+  REMARK_MATH_OPTIONS,
+} from "@/components/markdown-core/math-normalizer";
 import { cn } from "@/lib/utils";
 import { guardMarkdownDelimiters } from "@ai-matrx/kit/delimiter-guard";
 import { formatFileSize } from "@ai-matrx/kit/format";
@@ -153,12 +159,12 @@ export function MarkdownPreview({
       <div className="flex-1 overflow-auto px-6 py-5">
         <article className="prose prose-sm dark:prose-invert max-w-none">
           <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex, rehypePrism]}
+            remarkPlugins={[remarkGfm, [remarkMath, REMARK_MATH_OPTIONS]]}
+            rehypePlugins={[[rehypeKatex, REHYPE_KATEX_OPTIONS], rehypePrism]}
           >
             {/* Guard a stray `$$` / unclosed `[` from swallowing a section
                 (lib/markdown/delimiter-guard.ts). */}
-            {guardMarkdownDelimiters(content).text}
+            {normalizeMathDelimiters(guardMarkdownDelimiters(content).text)}
           </ReactMarkdown>
         </article>
       </div>

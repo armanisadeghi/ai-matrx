@@ -2,8 +2,8 @@
 
 import React, {useState, useRef, useEffect, JSX} from 'react';
 import {useRouter, useSearchParams} from 'next/navigation';
-import 'katex/dist/katex.min.css';
-import {BlockMath} from 'react-katex';
+import DisplayMath from './DisplayMath';
+import InlineMathText from './InlineMathText';
 import {motion} from 'motion/react';
 import {Card, CardContent} from '@/components/ui/card';
 import ControlPanel from './ControlPanel';
@@ -183,34 +183,34 @@ const MathProblem: React.FC<MathProblemProps> = (
         const content: JSX.Element[] = [];
 
         if (position.stage === 'overview') {
-            content.push(<h2 key="title" className="text-2xl font-bold mb-4">{title}</h2>);
+            content.push(<h2 key="title" className="text-2xl font-bold mb-4"><InlineMathText text={title} /></h2>);
             content.push(
                 <div key="overview" className="space-y-2 mb-4">
                     <p className="text-base">Course: {course_name}</p>
                     <p className="text-base">Topic: {topic_name}</p>
                     <p className="text-base">Module: {module_name}</p>
-                    <p className="text-base">{description}</p>
+                    <p className="text-base"><InlineMathText text={description} /></p>
                 </div>
             );
         }
 
         if (position.stage === 'intro' || position.stage !== 'overview') {
-            content.push(<p key="introText" className="text-base">{intro_text}</p>);
+            content.push(<p key="introText" className="text-base"><InlineMathText text={intro_text} /></p>);
         }
 
         if (position.stage === 'problem' || ['task', 'step', 'solutionAnswer', 'transition', 'finalStatement', 'congratulations'].includes(position.stage)) {
             content.push(
                 <div key="problemStatement" className="space-y-2">
-                    <p className="text-base">{problem_statement.text}</p>
-                    <BlockMath math={problem_statement.equation}/>
-                    <p className="text-base">{problem_statement.instruction}</p>
+                    <p className="text-base"><InlineMathText text={problem_statement.text} /></p>
+                    <DisplayMath math={problem_statement.equation}/>
+                    <p className="text-base"><InlineMathText text={problem_statement.instruction} /></p>
                 </div>
             );
         }
 
         if (position.stage === 'task' || ['step', 'solutionAnswer', 'transition', 'finalStatement', 'congratulations'].includes(position.stage)) {
             const solutionIndex = position.solutionIndex!;
-            content.push(<p key={`task-${solutionIndex}`} className="text-base">{solutions[solutionIndex].task}</p>);
+            content.push(<p key={`task-${solutionIndex}`} className="text-base"><InlineMathText text={solutions[solutionIndex].task} /></p>);
         }
 
         if (position.stage === 'step' || ['solutionAnswer', 'transition', 'finalStatement', 'congratulations'].includes(position.stage)) {
@@ -218,18 +218,18 @@ const MathProblem: React.FC<MathProblemProps> = (
             const steps = solutions[solutionIndex].steps;
             for (let s = 0; s <= (position.stage === 'step' ? position.stepIndex! : steps.length - 1); s++) {
                 const step = steps[s];
-                content.push(<h4 key={`step-${s}-title`} className="font-semibold text-lg mt-4">{step.title}</h4>);
+                content.push(<h4 key={`step-${s}-title`} className="font-semibold text-lg mt-4"><InlineMathText text={step.title} /></h4>);
                 if (s < position.stepIndex! || (s === position.stepIndex! && position.partIndex! >= 1)) {
-                    content.push(<BlockMath key={`step-${s}-equation`} math={step.equation}/>);
+                    content.push(<DisplayMath key={`step-${s}-equation`} math={step.equation}/>);
                 }
                 if ((s < position.stepIndex! || (s === position.stepIndex! && position.partIndex! >= 2)) && step.explanation) {
-                    content.push(<p key={`step-${s}-explanation`} className="text-base">{step.explanation}</p>);
+                    content.push(<p key={`step-${s}-explanation`} className="text-base"><InlineMathText text={step.explanation} /></p>);
                 }
                 if ((s < position.stepIndex! || (s === position.stepIndex! && position.partIndex! >= 3)) && step.simplified) {
                     content.push(
                         <div key={`step-${s}-simplified`}>
                             <p className="text-base">Simplified:</p>
-                            <BlockMath math={step.simplified}/>
+                            <DisplayMath math={step.simplified}/>
                         </div>
                     );
                 }
@@ -250,12 +250,12 @@ const MathProblem: React.FC<MathProblemProps> = (
             const solutionIndex = position.solutionIndex!;
             const transitionText = solutions[solutionIndex].transitionText;
             if (transitionText) {
-                content.push(<p key={`transition-${solutionIndex}`} className="text-base">{transitionText}</p>);
+                content.push(<p key={`transition-${solutionIndex}`} className="text-base"><InlineMathText text={transitionText} /></p>);
             }
         }
 
         if (position.stage === 'finalStatement') {
-            content.push(<p key="finalStatement" className="mt-4 text-base">{final_statement}</p>);
+            content.push(<p key="finalStatement" className="mt-4 text-base"><InlineMathText text={final_statement} /></p>);
         }
 
         if (position.stage === 'congratulations') {

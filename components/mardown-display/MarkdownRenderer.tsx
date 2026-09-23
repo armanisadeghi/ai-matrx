@@ -221,7 +221,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           isMarkdown={true}
         />
         <div className="text-base leading-relaxed tracking-wide h-full w-full">
-          <MarkdownCore preset="gfm" components={components}>
+          <MarkdownCore preset="gfm-math" components={components}>
             {content}
           </MarkdownCore>
         </div>

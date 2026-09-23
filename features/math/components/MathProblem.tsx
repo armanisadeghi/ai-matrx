@@ -15,7 +15,7 @@ import { Skeleton } from "@ai-matrx/design-system";
  * (the "front door"; Method B in the code-splitting skill).
  *
  * The heavy interactive core lives in `MathProblemImpl` — it pulls motion/react,
- * react-katex, the katex CSS, and touches `window.getComputedStyle`. That core is
+ * the markdown core (KaTeX via DisplayMath/InlineMathText), and touches `window.getComputedStyle`. That core is
  * split out via `next/dynamic({ ssr: false })` here, ONCE, so every consumer
  * (the education quick-math route, the markdown MathProblemBlock, and the canvas
  * renderers) gets the off-server split for free just by importing this module —
