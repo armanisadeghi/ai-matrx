@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-22T18:01:10.798Z",
+  "generated_at": "2026-09-23T01:26:54.310Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -49,6 +49,30 @@
       "filename": "apprvtail_the_queue_holds_a_delete_and_a_new_table.sql",
       "checksum": "b7ccb50ec072bbc3f8ea09e792768ee7fb52d5cc5a4f7130ee383e69e3cf8bf0",
       "applied_at": "2026-09-20 06:40:00.419117+00"
+    },
+    "migrations/campaign/argsruled2_a_private_id_answers_as_an_invented_one.sql": {
+      "source": "matrx-frontend",
+      "filename": "argsruled2_a_private_id_answers_as_an_invented_one.sql",
+      "checksum": "cbefb3339db75aef2eab1ad8ab677c739392b8a40b95a871781497bde131e474",
+      "applied_at": "2026-09-23 01:22:26.151592+00"
+    },
+    "migrations/campaign/argsruled2_a_stranger_cannot_learn_a_category_exists.sql": {
+      "source": "matrx-frontend",
+      "filename": "argsruled2_a_stranger_cannot_learn_a_category_exists.sql",
+      "checksum": "47535391eb0ddab09795f64f3a9029f3aff7e2cb0182bacaae5c17166853a74b",
+      "applied_at": "2026-09-23 01:18:11.477641+00"
+    },
+    "migrations/campaign/argsruled2_every_argument_of_the_last_ten_doors_says_what_it_is.sql": {
+      "source": "matrx-frontend",
+      "filename": "argsruled2_every_argument_of_the_last_ten_doors_says_what_it_is.sql",
+      "checksum": "9d9647a865459173e829473219fd6b56a7db950a854104ab2e5b87cca91e522c",
+      "applied_at": "2026-09-23 01:26:53.294659+00"
+    },
+    "migrations/campaign/argsruled2_the_hub_describes_only_what_you_may_open.sql": {
+      "source": "matrx-frontend",
+      "filename": "argsruled2_the_hub_describes_only_what_you_may_open.sql",
+      "checksum": "6ad1fd0e32e85075b0fb6b38475d2a3ec94b894183c78213d63be344ce4ef212",
+      "applied_at": "2026-09-23 01:18:26.487082+00"
     },
     "migrations/campaign/argsruled_a_comment_is_filed_where_its_record_lives.sql": {
       "source": "matrx-frontend",
