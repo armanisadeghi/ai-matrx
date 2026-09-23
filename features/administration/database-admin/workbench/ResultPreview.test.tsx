@@ -97,4 +97,16 @@ describe("ResultPreview", () => {
     expect(host.textContent).toContain("Table (101)");
     expect(host.textContent).toContain("Showing 100 of 101 rows. Switch to JSON");
   });
+
+  it("keeps the synthetic index distinct from arbitrary SQL aliases", () => {
+    act(() => {
+      root.render(<ResultPreview data={[{ "row-number": 42, "row-number:": 43 }]} />);
+    });
+
+    if (!tableProps) throw new Error("Result table was not rendered");
+    const ids = tableProps.columns.map((column) => column.id);
+    expect(ids).toHaveLength(3);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toEqual(["row-number::", "row-number", "row-number:"]);
+  });
 });

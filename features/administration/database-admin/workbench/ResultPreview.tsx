@@ -36,9 +36,11 @@ interface PreviewRow {
 }
 
 function resultColumns(columns: string[]): MatrxColumnDef<PreviewRow>[] {
+  let rowNumberId = "row-number";
+  while (columns.includes(rowNumberId)) rowNumberId += ":";
   return [
     {
-      id: "row-number",
+      id: rowNumberId,
       header: "#",
       accessorFn: (preview) => preview.index + 1,
       sortable: false,

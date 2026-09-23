@@ -163,6 +163,8 @@ export function WorkItemsPanel({
         if (!controller.signal.aborted) {
           setError(e.message);
           setRows(null);
+          setMatched(0);
+          setTruncated(false);
         }
       })
       .finally(() => {
@@ -404,7 +406,7 @@ export function WorkItemsPanel({
             "bg-destructive/5",
         )
       }
-      coverage={workItemsCoverage(rows?.length ?? 0, matched)}
+      coverage={rows && !loading && !error ? workItemsCoverage(rows.length, matched) : undefined}
       emptyState={
         error
           ? {
@@ -494,9 +496,11 @@ export function WorkItemsPanel({
                 ))}
               </div>
             ) : null}
-            <p className={cn("text-xs", truncated && "text-warning")}>
-              {sourceNotice}
-            </p>
+            {!loading && !error ? (
+              <p className={cn("text-xs", truncated && "text-warning")}>
+                {sourceNotice}
+              </p>
+            ) : null}
           </div>
         ),
       }}
