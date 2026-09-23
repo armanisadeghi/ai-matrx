@@ -32,7 +32,7 @@ import {
   ChevronRight,
   BookOpen,
 } from "lucide-react";
-import { listExampleTables } from "@/features/data-tables/service";
+import { countMovedTables, listExampleTables } from "@/features/data-tables/service";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import Link from "next/link";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
@@ -264,6 +264,19 @@ export default function TableCards() {
   useEffect(() => {
     fetchCurrentUser();
     fetchUserTables();
+  }, []);
+
+  // THE TABLES THAT MOVED ARE NAMED, NOT MISSING (VERIFIER-16). A moved table's older copy is
+  // archived, so this list no longer shows it; without a sentence the list just looks shorter.
+  const [movedCount, setMovedCount] = useState<number | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void countMovedTables().then((result) => {
+      if (alive && result.success) setMovedCount(result.data);
+    });
+    return () => {
+      alive = false;
+    };
   }, []);
 
   // Reset pagination when search changes
@@ -679,6 +692,21 @@ export default function TableCards() {
           </span>
         )}
       </div>
+
+      {movedCount !== null && movedCount > 0 && (
+        <div
+          data-moved-tables={movedCount}
+          className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-border bg-card px-3 py-2 text-sm text-muted-foreground"
+        >
+          <span>
+            {movedCount === 1 ? "1 of your tables has" : `${movedCount} of your tables have`} moved to the new data
+            home, with every row and its history. They are listed there now.
+          </span>
+          <Link href="/data-v2" className="font-medium text-primary hover:underline">
+            Open the new data home
+          </Link>
+        </div>
+      )}
 
       {/* My Tables Section */}
       <div>

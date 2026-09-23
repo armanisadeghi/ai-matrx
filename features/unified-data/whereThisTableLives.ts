@@ -22,11 +22,14 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-/** How many Tables an organization can hold before this answer is partial. */
-const TABLE_CEILING = 1000;
-
 export type OtherStore =
   | { kind: "record_store"; href: string }
+  /**
+   * The record store HOLDS this table and this person has not been given it. The store says
+   * so itself (`custom.record_resolve` refuses 42501, "ask whoever holds it to share it with
+   * you"), which is the truth: not missing, not deleted — not shared with them.
+   */
+  | { kind: "no_access" }
   | { kind: "nowhere" }
   /** The store was not reachable, which is NOT the same as "not there". */
   | { kind: "unknown"; why: string };
@@ -34,9 +37,19 @@ export type OtherStore =
 /**
  * Where `tableId` lives, for a person signed in and looking at `organizationId`.
  *
- * Returns `unknown` rather than `nowhere` on any refusal or transport failure,
- * because telling somebody their table does not exist when the truth is that we
- * could not ask is the same lie in a different sentence.
+ * ASKED FIRST, BEFORE THE OLDER STORE IS READ (VERIFIER-16): a table the record store answers
+ * for never reaches the older doors, which would otherwise answer a moved or unshared table
+ * with a refusal (a 500 from `get_full_table`) and a sentence about deletion.
+ *
+ *   1. `custom.read_records_by_ids` over the Table kernel — the table, if this person may
+ *      know it (the same ladder `/data-v2` uses). Found → `record_store`.
+ *   2. `custom.record_resolve` — a 42501 refusal means the store holds that record and this
+ *      person may not open it → `no_access`.
+ *   3. Otherwise → `nowhere` (the caller then asks the older store).
+ *
+ * Returns `unknown` rather than `nowhere` on a transport failure, because telling somebody
+ * their table does not exist when the truth is that we could not ask is the same lie in a
+ * different sentence.
  */
 export async function whereThisTableLives(
   client: SupabaseClient,
@@ -50,30 +63,22 @@ export async function whereThisTableLives(
     return { kind: "unknown", why: kernel.error?.message ?? "the record store did not name its Table table" };
   }
 
-  const tables = await store.rpc("read_records" as never, {
+  const found = await store.rpc("read_records_by_ids" as never, {
     p_organization_id: organizationId,
     p_table_id: kernel.data,
-    p_by_id: true,
-    p_limit: TABLE_CEILING,
-    p_offset: 0,
+    p_record_ids: [tableId],
   } as never);
-  if (tables.error) {
-    return { kind: "unknown", why: tables.error.message };
+  if (found.error) return { kind: "unknown", why: found.error.message };
+  if (((found.data ?? []) as Array<{ id?: string }>).some((row) => row.id === tableId)) {
+    // The flag is how the new home knows to say, once, that the table moved — a redirect
+    // that lands silently leaves a person wondering why their table looks different.
+    return { kind: "record_store", href: `/data-v2/${tableId}?moved=older-table` };
   }
 
-  const rows = (tables.data ?? []) as Array<{ id?: string }>;
-  const found = rows.some((row) => row.id === tableId);
-  // The flag is how the new home knows to say, once, that the table moved — a redirect
-  // that lands silently leaves a person wondering why their table looks different.
-  if (found) return { kind: "record_store", href: `/data-v2/${tableId}?moved=older-table` };
-
-  // A partial page cannot say "nowhere": at the ceiling the answer is a page,
-  // not the whole list, and this organization's table might be on page two.
-  if (rows.length >= TABLE_CEILING) {
-    return {
-      kind: "unknown",
-      why: `this organization has at least ${TABLE_CEILING} tables, so the list this read returned is a page rather than all of them`,
-    };
-  }
+  const resolved = await store.rpc("record_resolve" as never, {
+    p_organization_id: organizationId,
+    p_id: tableId,
+  } as never);
+  if (resolved.error?.code === "42501") return { kind: "no_access" };
   return { kind: "nowhere" };
 }

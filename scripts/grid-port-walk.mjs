@@ -841,7 +841,11 @@ async function main() {
       const text = await openGrid(page, TABLES.olderExample, "Product");
       await page.waitForTimeout(2000);
       page.off("request", listen);
-      const storeDoors = doors.filter((d) => d.startsWith("custom."));
+      // The route asks the record store WHERE the table lives before anything is read
+      // (VERIFIER-16); those lookups are allowed. The grid's DATA must come from the older store.
+      const lookupDoors = new Set(["custom.table_kernel_id", "custom.read_records_by_ids", "custom.record_resolve"]);
+      const storeDoors = doors.filter((d) => d.startsWith("custom.") && !lookupDoors.has(d));
+      console.log(`older table: store lookups ${doors.filter((d) => lookupDoors.has(d)).length}, other store doors: ${[...new Set(storeDoors)].join(", ")}`);
       pass("older-reads", /Example: Product Catalog/.test(text) && page.url().includes(`/data/${TABLES.olderExample}`) && /of 8 rows/.test(text), "the older example table opens in the grid, 8 rows");
       pass("older-read-only-example", /Shared Table/.test(text) || /read only/i.test(text), "an example table stays read-only for everyone");
       pass("older-uses-older-doors", doors.includes("public.get_user_table_data_paginated_v2") && storeDoors.length === 0,
@@ -1009,6 +1013,36 @@ async function main() {
       await hp.close();
     }
 
+    // ── A TABLE THAT WAS NOT SHARED WITH YOU (test seat, VERIFIER-16 finding 1) ────
+    if (wants("unshared")) {
+      const olderReads = [];
+      const listen = (r) => { if (/\/rpc\/get_full_table$/.test(r.url())) olderReads.push(r.url()); };
+      page.on("request", listen);
+      await page.goto(`${ORIGIN}/data/${TABLES.calls}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+      await page.waitForFunction(() => /not been shared with you|in neither|could not find out/.test(document.body.innerText), null, { timeout: 120000 }).catch(() => {});
+      await page.waitForTimeout(2000);
+      page.off("request", listen);
+      const text = await page.evaluate(() => document.body.innerText);
+      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-17-not-shared-with-you.png` });
+      pass("unshared-says-so", /has not been shared with you/.test(text) && /nobody has shared it with you yet/.test(text), (text.match(/This table[^\n]*\n?[^\n]*/) ?? [""])[0].replace(/\s+/g, " ").slice(0, 200));
+      pass("unshared-no-raw-id", !text.includes(TABLES.calls), text.includes(TABLES.calls) ? "the raw id is on the screen" : "no raw id on the screen");
+      pass("unshared-no-older-read", olderReads.length === 0, `older get_full_table reads: ${olderReads.length}`);
+      pass("unshared-no-deleted-sentence", !/may have been deleted|in neither/.test(text), "no sentence about deletion or 'in neither store'");
+    }
+
+    // ── THE OLDER LIST SAYS WHAT MOVED (VERIFIER-16 finding 2) ──────────────────────
+    if (wants("movedlist")) {
+      await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 240000 });
+      await page.waitForSelector("[data-moved-tables]", { timeout: 60000 }).catch(() => {});
+      const banner = page.locator("[data-moved-tables]").first();
+      const n = Number((await banner.getAttribute("data-moved-tables").catch(() => "0")) ?? "0");
+      const said = (await banner.innerText().catch(() => "")).replace(/\s+/g, " ");
+      const link = await banner.locator('a[href="/data-v2"]').count();
+      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-18-list-says-what-moved.png` });
+      pass("movedlist-count", n > 0 && said.includes(`${n} of your tables have moved`), `the list says: "${said}"`);
+      pass("movedlist-where", link > 0, link > 0 ? "and links to the new data home (/data-v2)" : "no link to where they live");
+    }
+
     const onClone = String(process.env.GRID_PORT_ON_CLONE || "") === "1";
     const python = /https:\/\/(server\.app|files)\.matrxserver\.com\//;
     // By design, /data/<id> asks the OLDER store first; for a table only the record
@@ -1016,12 +1050,16 @@ async function main() {
     // as a 500) and the route then finds the table in the record store. Named here
     // so it is counted once as what it is and never hides anything else.
     const olderFirst = /^500 https:\/\/[a-z0-9]+\.supabase\.co\/rest\/v1\/rpc\/get_full_table$/;
-    const excused = bad.filter((b) => (onClone && b.startsWith("401 ") && python.test(b.slice(4))) || olderFirst.test(b));
+    // The record store's own answer "this exists and you may not open it" is a 42501 from
+    // custom.record_resolve, which PostgREST sends as 403 — the route's no-access lookup.
+    const notSharedAnswer = /^403 https:\/\/[a-z0-9]+\.supabase\.co\/rest\/v1\/rpc\/record_resolve$/;
+    const excused = bad.filter((b) => (onClone && b.startsWith("401 ") && python.test(b.slice(4))) || olderFirst.test(b) || notSharedAnswer.test(b));
     const counted = bad.filter((b) => !excused.includes(b));
     const countedErrors = errors.filter(
       (e) =>
         !(onClone && /status of 401|ambient\.page_guidance failed to resolve: Authentication required/.test(e)) &&
-        !(excused.some((b) => b.startsWith("500 ")) && /status of 500/.test(e)),
+        !(excused.some((b) => b.startsWith("500 ")) && /status of 500/.test(e)) &&
+        !(excused.some((b) => b.startsWith("403 ")) && /status of 403/.test(e)),
     );
     pass("quiet", countedErrors.length === 0 && counted.length === 0,
       `console errors ${countedErrors.length}, responses>=400 ${counted.length}` +

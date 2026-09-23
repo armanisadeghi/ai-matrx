@@ -73,61 +73,85 @@ export default function DataTableDetailClient({
   const [placedIn, setPlacedIn] = useState<"older" | "record">(() =>
     recordStoreHomeOf(tableId) ? "record" : "older",
   );
-  // The id the OLDER store did not recognise, held until we can actually look
-  // for it. Answering the instant the first read fails would be answering
-  // before the organization gate has resolved — and "no organization is
-  // selected" during boot is the two-states-confused defect
-  // `useOrganizationRequired` exists to stop.
-  const [notHereId, setNotHereId] = useState<string | null>(null);
-  const [elsewhere, setElsewhere] = useState<
-    null | { kind: "looking" } | { kind: "nowhere" } | { kind: "unknown"; why: string }
-  >(null);
+  // WHERE THE TABLE LIVES IS ASKED FIRST (VERIFIER-16). The record store answers before
+  // the older store is read, so a table it holds — moved, or never shared with this person —
+  // never reaches the older doors (which answered it with a 500 and a sentence about
+  // deletion). "older" mounts the older viewer; "record" mounts it over the record store.
+  const [lookup, setLookup] = useState<
+    | { kind: "asking" }
+    | { kind: "older"; storeSaid: "nowhere" | { why: string } }
+    | { kind: "record" }
+    | { kind: "no_access" }
+  >(() => (recordStoreHomeOf(tableId) ? { kind: "record" } : { kind: "asking" }));
+  // The older viewer said the id is not one of its datasets (or is one that moved).
+  const [olderSaysNotHere, setOlderSaysNotHere] = useState(false);
 
   const displayName = renamedTo ?? tableInfo?.table_name ?? "Loading...";
 
-  const notHere = useCallback((id: string) => {
-    setNotHereId(id);
-    setElsewhere({ kind: "looking" });
+  const notHere = useCallback(() => {
+    setOlderSaysNotHere(true);
   }, []);
 
   useEffect(() => {
-    if (!notHereId) return;
+    if (lookup.kind !== "asking") return;
     if (organizationState === "resolving") return; // still looking; say nothing yet
     if (organizationState === "required") {
-      setElsewhere({
-        kind: "unknown",
-        why: "no organization is chosen yet, and a table in the record store belongs to one — choose an organization and this page will find it",
+      setLookup({
+        kind: "older",
+        storeSaid: {
+          why: "no organization is chosen yet, and a table in the record store belongs to one — choose an organization and this page will find it",
+        },
       });
       return;
     }
     if (organizationState === "unavailable" || !organizationId) {
-      setElsewhere({
-        kind: "unknown",
-        why: "your organizations could not be read just now, so the record store could not be asked",
+      setLookup({
+        kind: "older",
+        storeSaid: { why: "your organizations could not be read just now, so the record store could not be asked" },
       });
       return;
     }
     let cancelled = false;
     void (async () => {
-      const found = await whereThisTableLives(createClient(), organizationId, notHereId);
+      const found = await whereThisTableLives(createClient(), organizationId, tableId);
       if (cancelled) return;
       if (found.kind === "record_store") {
         if (RECORD_STORE_TABLES_OPEN_IN === "data-v2") {
           router.replace(found.href);
           return;
         }
-        placeTableInRecordStore(notHereId, { organizationId, userId: userId ?? null });
+        placeTableInRecordStore(tableId, { organizationId, userId: userId ?? null });
         setPlacedIn("record");
-        setNotHereId(null);
-        setElsewhere(null);
+        setLookup({ kind: "record" });
         return;
       }
-      setElsewhere(found.kind === "nowhere" ? { kind: "nowhere" } : { kind: "unknown", why: found.why });
+      if (found.kind === "no_access") {
+        setLookup({ kind: "no_access" });
+        return;
+      }
+      setLookup({ kind: "older", storeSaid: found.kind === "nowhere" ? "nowhere" : { why: found.why } });
     })();
     return () => {
       cancelled = true;
     };
-  }, [notHereId, organizationId, organizationState, router, userId]);
+  }, [lookup.kind, organizationId, organizationState, router, tableId, userId]);
+
+  // What the panel says instead of the grid, when it says anything.
+  const elsewhere:
+    | null
+    | { kind: "looking" }
+    | { kind: "no_access" }
+    | { kind: "nowhere" }
+    | { kind: "unknown"; why: string } =
+    lookup.kind === "asking"
+      ? { kind: "looking" }
+      : lookup.kind === "no_access"
+        ? { kind: "no_access" }
+        : lookup.kind === "older" && olderSaysNotHere
+          ? lookup.storeSaid === "nowhere"
+            ? { kind: "nowhere" }
+            : { kind: "unknown", why: lookup.storeSaid.why }
+          : null;
 
   return (
     <>
@@ -163,17 +187,29 @@ export default function DataTableDetailClient({
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Database className="h-4 w-4" aria-hidden />
                 <span className="text-sm font-medium">
-                  {elsewhere.kind === "looking" ? "Looking for this table" : "This table is not in either store"}
+                  {elsewhere.kind === "looking"
+                    ? "Looking for this table"
+                    : elsewhere.kind === "no_access"
+                      ? "This table has not been shared with you"
+                      : elsewhere.kind === "nowhere"
+                        ? "This table is not in either store"
+                        : "We could not find out where this table is"}
                 </span>
               </div>
               <p className="mt-3 text-sm text-muted-foreground">
                 {elsewhere.kind === "looking" ? (
-                  <>This id is not one of this store&rsquo;s datasets, so we are checking the record store.</>
+                  <>Checking where this table lives.</>
+                ) : elsewhere.kind === "no_access" ? (
+                  <>
+                    The table exists in this organization, but nobody has shared it with you yet. Ask the person who
+                    sent you the link, or an owner of this organization, to share it with you &mdash; it will open here
+                    as soon as they do.
+                  </>
                 ) : elsewhere.kind === "nowhere" ? (
                   <>
                     We looked in both places a table can live &mdash; this store&rsquo;s datasets and the record
-                    store &mdash; and <span className="font-mono">{tableId}</span> is in neither of them for this
-                    organization. If somebody sent you this link, they may have been in a different organization.
+                    store &mdash; and this link&rsquo;s table is in neither of them for this organization. If somebody
+                    sent you this link, they may have been in a different organization.
                   </>
                 ) : (
                   <>
@@ -223,7 +259,7 @@ export default function DataTableDetailClient({
               Boolean(movedTo?.table_id) &&
               (!meta?.unarchived_at || String(movedTo?.at ?? "") > String(meta.unarchived_at));
             if (stillMoved && placedIn === "older") {
-              notHere(tableId);
+              notHere();
               return;
             }
             setTableInfo(info);

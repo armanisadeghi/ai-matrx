@@ -1393,3 +1393,20 @@ export async function rowChangeScheduleFor(args: {
   if (!answer.ok) return null;
   return { entityType: recordChangeTrigger(args.tableId).entity_type, actions: answer.data.actions };
 }
+
+/**
+ * How many of the tables this person can see MOVED into the record store (lane OLD-TABLES-4:
+ * the older copy is archived with `metadata.moved_to`), for the older /data list to say so
+ * instead of silently showing fewer tables (VERIFIER-16). An unarchived table keeps its
+ * pointer as history but is live again, so it is not counted.
+ */
+export async function countMovedTables(): Promise<ServiceResult<number>> {
+  const { count, error } = await supabase
+    .schema("workbench")
+    .from("udt_datasets")
+    .select("id", { count: "exact", head: true })
+    .not("deleted_at", "is", null)
+    .not("metadata->moved_to", "is", null);
+  if (error) return refused(error);
+  return { success: true, data: count ?? 0 };
+}
