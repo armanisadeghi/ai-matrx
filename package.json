@@ -729,7 +729,7 @@
     "@ricky0123/vad-web": "0.0.31",
     "@slack/web-api": "^8.1.1",
     "@supabase/ssr": "^0.12.7",
-    "@supabase/supabase-js": "^2.117.0",
+    "@supabase/supabase-js": "^2.117.1",
     "@tabler/icons-react": "latest",
     "@tanstack/react-query": "^5.103.2",
     "@tanstack/react-query-devtools": "^5.103.2",
