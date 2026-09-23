@@ -685,7 +685,8 @@ export function MeetingScavengerDialog({
                       ) : null}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      {speaker.turns} turns · {speaker.words} words
+                      {speaker.turns} {speaker.turns === 1 ? "turn" : "turns"} ·{" "}
+                      {speaker.words} {speaker.words === 1 ? "word" : "words"}
                     </span>
                   </label>
                 ))}

@@ -210,7 +210,8 @@ export function KeptSourceReader({
         </div>
         <p className="text-xs text-muted-foreground">
           Captured {new Date(source.captured_at).toLocaleString()} ·{" "}
-          {source.word_count.toLocaleString()} words
+          {source.word_count.toLocaleString()}{" "}
+          {source.word_count === 1 ? "word" : "words"}
           {source.speaker_count > 0
             ? ` · ${source.speaker_count} speaker${source.speaker_count === 1 ? "" : "s"}`
             : null}

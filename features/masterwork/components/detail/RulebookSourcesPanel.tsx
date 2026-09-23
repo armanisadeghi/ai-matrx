@@ -513,7 +513,10 @@ export function RulebookSourcesPanel({
           );
         }
       }
-      if (meta.words) bits.push(`${meta.words.toLocaleString()} words`);
+      if (meta.words)
+        bits.push(
+          `${meta.words.toLocaleString()} ${meta.words === 1 ? "word" : "words"}`,
+        );
       if (meta.source_key) {
         // THE ONE JOIN (../../sourceSections) — the same predicate the kept
         // Sources list counts with, so two screens can never disagree about
@@ -2300,7 +2303,7 @@ function KeptMaterialSummary({
             </span>
             <span className="shrink-0 text-muted-foreground">
               {row.word_count
-                ? `${row.word_count.toLocaleString()} words`
+                ? `${row.word_count.toLocaleString()} ${row.word_count === 1 ? "word" : "words"}`
                 : row.medium}
             </span>
           </li>

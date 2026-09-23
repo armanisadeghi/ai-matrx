@@ -79,7 +79,8 @@ export function VoicePicker({
               ) : null}
             </span>
             <span className="shrink-0 text-xs text-muted-foreground">
-              {voice.count} {countNoun} · {voice.words} words
+              {voice.count} {countNoun} · {voice.words}{" "}
+              {voice.words === 1 ? "word" : "words"}
             </span>
           </label>
         ))}

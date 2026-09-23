@@ -109,7 +109,8 @@ describe("an empty field shows no statistics", () => {
     // A single newline IS a character, so counting starts — the rule is about
     // nothing typed, not about whitespace-only content being unmeasurable.
     const text = render(<PlainTextMetricsBar text={"\n"} />);
-    expect(text).toContain("chars");
+    // One character: "1 char", never "1 chars" (walk 22).
+    expect(text).toMatch(/1\s*char\b/);
   });
 });
 

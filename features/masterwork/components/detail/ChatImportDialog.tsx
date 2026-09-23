@@ -124,7 +124,7 @@ const TAB_OPTIONS: { value: ChatTab; title: string; blurb: string }[] = [
 
 function formatWords(count: number): string {
   if (count >= 1000) return `${(count / 1000).toFixed(1)}k words`;
-  return `${count} words`;
+  return `${count} ${count === 1 ? "word" : "words"}`;
 }
 
 const CHAT_IMPORT_DESCRIPTION =

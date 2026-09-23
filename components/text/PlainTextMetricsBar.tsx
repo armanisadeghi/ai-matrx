@@ -37,14 +37,26 @@ export interface PlainTextMetricsBarProps {
   reserveRightSpace?: number;
 }
 
-const METRIC_LABELS: Record<keyof PlainTextMetrics, string> = {
-  charCount: "chars",
-  whitespaceCharCount: "whitespace",
-  wordCount: "words",
-  lineCount: "lines",
-  paragraphCount: "paragraphs",
-  nonWhitespaceCharCount: "non-space chars",
+/**
+ * The word after a count, singular and plural. Cold walk 22 read "1 paragraphs"
+ * on the Bench's statistics bar — the label was one fixed plural string. Every
+ * counter this bar prints goes through `metricLabel`, so no count reads
+ * "1 lines", "1 words" or "1 chars" again.
+ */
+const METRIC_LABELS: Record<keyof PlainTextMetrics, readonly [string, string]> = {
+  charCount: ["char", "chars"],
+  whitespaceCharCount: ["whitespace", "whitespace"],
+  wordCount: ["word", "words"],
+  lineCount: ["line", "lines"],
+  paragraphCount: ["paragraph", "paragraphs"],
+  nonWhitespaceCharCount: ["non-space char", "non-space chars"],
 };
+
+/** The label for `count` of `key`, agreeing in number. */
+export function metricLabel(key: keyof PlainTextMetrics, count: number): string {
+  const [one, many] = METRIC_LABELS[key];
+  return count === 1 ? one : many;
+}
 
 const METRIC_SHORT_LABELS: Record<keyof PlainTextMetrics, string> = {
   charCount: "c",
@@ -246,7 +258,7 @@ export function PlainTextMetricsBar({
               <span className="text-foreground/90">
                 {stats.charCount.toLocaleString()}
               </span>
-              <span>chars</span>
+              <span>{metricLabel("charCount", stats.charCount)}</span>
             </button>
           </PopoverTrigger>
           <PopoverContent /* sizing: fixed — fixed metric tag list */ align="start" side="top" className="w-56 p-0">
@@ -283,7 +295,7 @@ export function PlainTextMetricsBar({
           label={
             density === "compact"
               ? METRIC_SHORT_LABELS[key]
-              : METRIC_LABELS[key]
+              : metricLabel(key, stats[key])
           }
           title={METRIC_TITLES[key]}
           icon={METRIC_ICONS[key]}
