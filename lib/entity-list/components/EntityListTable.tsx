@@ -32,6 +32,11 @@ import { entityColumnSortable } from "../columns";
 import { entityListDoorColumnId, entityListRowHref } from "../doors";
 import { EntityPhoneCard, resolvePhoneCardLayout } from "../phoneCards";
 import { NONE_VALUE, type EntityFacets, type EntityFilters } from "../types";
+import {
+  buildDefaultTableRowMenuDescriptor,
+  createTableRowMenuDescriptor,
+} from "@/features/context-menu-v3/table-row-context-registry";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 
 interface Props<TRow> {
   config: EntityListConfig<TRow>;
@@ -301,6 +306,27 @@ export function EntityListTable<TRow>({
         </ItemMenu>
       )}
       copy={config.copy}
+      contextMenu={
+        config.getRowAgentContext
+          ? {
+              resolveRowContext: (row, controls) => {
+                const descriptor = buildDefaultTableRowMenuDescriptor(
+                  { id: config.getRowId(row) },
+                  controls,
+                );
+                return createTableRowMenuDescriptor({
+                  ...descriptor,
+                  context: {
+                    content: config.getRowAgentContext?.(row) ?? "",
+                    context: { id: config.getRowId(row) },
+                    [CONTEXT_MENU_ENTITY_KEY]:
+                      config.getRowEntity?.(row) ?? null,
+                  },
+                });
+              },
+            }
+          : undefined
+      }
       // THE NARROW LAYOUT IS THE PRIMITIVE'S, NOT THE FEATURE'S. A surface may
       // still hand-write its phone card; when it does not, the shell renders
       // the canonical stacked card from the columns the surface already

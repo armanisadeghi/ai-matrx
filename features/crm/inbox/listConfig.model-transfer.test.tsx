@@ -1,9 +1,15 @@
-import { act } from "react";
+import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { buildRowAgentInput, buildViewAgentInput } from "@ai-matrx/design-system/data-table/copy-helpers";
 import type { MatrxDataTableCopyConfig } from "@ai-matrx/design-system/data-table/types";
 import type { EntityRowActions } from "@/lib/entity-list/config";
 import { EntityListTable } from "@/lib/entity-list/components/EntityListTable";
+import { buildEntityListRowContext } from "@/lib/entity-list/components/EntityListPage";
+import { resolveApplicationScope } from "@/features/context-menu-v3/value-resolution";
+import {
+  registerTableRowContextResolver,
+  resolveTableRowMenuDescriptor,
+} from "@/features/context-menu-v3/table-row-context-registry";
 import { inboxListConfig } from "./listConfig";
 import type { InboxRow } from "./types";
 
@@ -21,6 +27,7 @@ jest.mock("@ai-matrx/design-system/data-table", () => ({
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const HOSTILE = "gmail-inbox-secret-prepare-must-never-send";
+const HOSTILE_PARTY = "gmail-inbox-party-must-never-send";
 const ROW = {
   backlink_brand_id: "11111111-1111-4111-8111-111111111111",
   backlink_id: "22222222-2222-4222-8222-222222222222",
@@ -49,7 +56,7 @@ const ROW = {
   outreach_list_status: "active",
   party_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   party_kind: "person",
-  party_name: HOSTILE,
+  party_name: HOSTILE_PARTY,
   reputation_case_brand_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
   reputation_case_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
   reputation_case_label: HOSTILE,
@@ -133,6 +140,7 @@ describe("CRM inbox table model-transfer seam", () => {
     };
     expect(JSON.stringify(modelBound)).toContain(ROW.id);
     expect(JSON.stringify(modelBound)).not.toContain(HOSTILE);
+    expect(JSON.stringify(modelBound)).not.toContain(HOSTILE_PARTY);
     expect(copy.rowAttributes?.(ROW)).toEqual({ id: ROW.id });
     expect(copy.listAttributes?.([ROW], [ROW])).toEqual({
       rows: 1,
@@ -141,5 +149,57 @@ describe("CRM inbox table model-transfer seam", () => {
     });
     expect(copy.aiVariants).toBeUndefined();
     expect(copy.humanRow(ROW)).toBe(`Reply ${ROW.id}`);
+
+    // The visible title/aria remains descriptive, while the context-menu
+    // applicationScope uses the explicit model-safe hook.
+    expect(inboxListConfig.getRowName(ROW)).toContain(HOSTILE);
+    expect(inboxListConfig.getRowName(ROW)).toContain(HOSTILE_PARTY);
+    const rowActions = capturedTableProps?.rowActions as
+      | ((row: InboxRow) => ReactElement<{ children: ReactElement<{ "aria-label": string }> }>)
+      | undefined;
+    const renderedAction = rowActions?.(ROW);
+    expect(renderedAction?.props.children.props["aria-label"]).toBe(
+      `Actions for ${HOSTILE_PARTY} — ${HOSTILE}`,
+    );
+    const applicationScope = resolveApplicationScope({
+      contextData: buildEntityListRowContext(inboxListConfig, ROW),
+      selectedText: "",
+      selectionRange: null,
+    });
+    expect(applicationScope.content).toBe(`Reply ${ROW.id}`);
+    expect(JSON.stringify(applicationScope)).not.toContain(HOSTILE);
+    expect(JSON.stringify(applicationScope)).not.toContain(HOSTILE_PARTY);
+
+    const contextMenu = capturedTableProps?.contextMenu as
+      | {
+          resolveRowContext?: (row: InboxRow, controls: object) => unknown;
+        }
+      | undefined;
+    const descriptorToken = contextMenu?.resolveRowContext?.(ROW, {});
+    expect(descriptorToken).toBeDefined();
+    const unregister = registerTableRowContextResolver(
+      "crm-inbox-model-transfer-test",
+      () => descriptorToken,
+    );
+    const table = document.createElement("div");
+    table.dataset.matrxTableId = "crm-inbox-model-transfer-test";
+    const rowTarget = document.createElement("div");
+    rowTarget.dataset.rowId = ROW.id;
+    table.appendChild(rowTarget);
+    const resolvedRowMenu = resolveTableRowMenuDescriptor(rowTarget);
+    unregister();
+
+    expect(resolvedRowMenu?.context).toMatchObject({
+      content: `Reply ${ROW.id}`,
+      context: { id: ROW.id },
+      __entity: { id: ROW.party_id, title: HOSTILE_PARTY },
+    });
+    const resolvedRowScope = resolveApplicationScope({
+      contextData: resolvedRowMenu?.context,
+      selectedText: "",
+      selectionRange: null,
+    });
+    expect(JSON.stringify(resolvedRowScope)).not.toContain(HOSTILE);
+    expect(JSON.stringify(resolvedRowScope)).not.toContain(HOSTILE_PARTY);
   });
 });

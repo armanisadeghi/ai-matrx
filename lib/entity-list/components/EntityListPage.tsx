@@ -853,10 +853,7 @@ export function EntityListPage<TRow>({
         }
         return {
           config: actions.menuFor(row),
-          context: {
-            content: config.getRowName(row),
-            [CONTEXT_MENU_ENTITY_KEY]: config.getRowEntity?.(row) ?? null,
-          },
+          context: buildEntityListRowContext(config, row),
         };
       }}
     >
@@ -939,4 +936,13 @@ function LoadMoreFooter({
       </div>
     </div>
   );
+}
+export function buildEntityListRowContext<TRow>(
+  config: EntityListConfig<TRow>,
+  row: TRow,
+) {
+  return {
+    content: config.getRowAgentContext?.(row) ?? config.getRowName(row),
+    [CONTEXT_MENU_ENTITY_KEY]: config.getRowEntity?.(row) ?? null,
+  };
 }

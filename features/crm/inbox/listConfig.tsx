@@ -41,6 +41,7 @@ export const inboxListConfig: EntityListConfig<InboxRow> = {
   prefsVersion: 1,
   getRowId: (row) => row.id,
   getRowName: (row) => `${row.party_name ?? "Contact"} — ${row.subject}`,
+  getRowAgentContext: (row) => `Reply ${row.id}`,
   /**
    * THE DOOR LAW: a reply's destination is the PERSON, not the interaction.
    * crm.interaction is a component of party and has no route of its own, so

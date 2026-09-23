@@ -226,6 +226,13 @@ export interface EntityListConfig<TRow> {
   getRowId: (row: TRow) => string;
   /** Human name for a row — aria labels ("Actions for X"). */
   getRowName: (row: TRow) => string;
+  /**
+   * Content exposed when a row opens the shared context menu for agent work.
+   * Defaults to `getRowName` so existing surfaces retain their current
+   * behavior. Override when the visible title contains data that may not cross
+   * a model-provider boundary.
+   */
+  getRowAgentContext?: (row: TRow) => string;
   /** Canonical Door Law configuration for the record-name cell. */
   door?: {
     token?: string | ((row: TRow) => string | null | undefined);
