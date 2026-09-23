@@ -291,6 +291,27 @@ export function visibilityLabel(visibility: string): string {
   }
 }
 
+/**
+ * 🚨 THE VISIBILITY ROW AND THE HEADLINE ARE ONE TRUTH (lane RECORDS-UI-FIX, guide re-walk
+ * 2026-09-23). A new table in admin's Workspace read, on the Access tab, "Visibility:
+ * Internal — readable inside the owning organization" and, right under it, "Private — only
+ * you". Both came from the store and both were half right: the table's SETTING is internal,
+ * but `entity_access_summary` answers `org_readable = false` because that organization shows
+ * its members only what is shared with them (`iam.member_lane_open` is false). The row now
+ * reads the SETTING and what it actually reaches, from the same summary the headline reads,
+ * so the two can never disagree.
+ */
+export function summaryVisibilityLabel(summary: AccessSummary): string {
+  const setting = summary.visibility;
+  if ((setting === "internal" || setting === "shared") && !summary.orgReadable && !summary.isPublic) {
+    const where = summary.organizationName ?? "this organization";
+    return setting === "internal"
+      ? `Internal — but ${where} shows its members only what is shared with them, so nobody else in it can read this yet`
+      : visibilityLabel(setting);
+  }
+  return visibilityLabel(setting);
+}
+
 export function isPrivateSummary(summary: AccessSummary): boolean {
   return (
     !summary.isPublic &&
@@ -406,7 +427,7 @@ export function accessSummaryView(
   entityType: string,
 ): AccessSummaryView {
   return {
-    visibility_label: visibilityLabel(summary.visibility),
+    visibility_label: summaryVisibilityLabel(summary),
     headline: describeAccessSummary(summary),
     reasons: accessReasonRows(summary, entityType),
     nothing_else_grants: isPrivateSummary(summary) ? NOTHING_ELSE_GRANTS : null,

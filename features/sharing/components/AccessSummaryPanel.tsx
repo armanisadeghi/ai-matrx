@@ -37,7 +37,7 @@ import {
   isPrivateSummary,
   reasonCsvRows,
   sharingLocation,
-  visibilityLabel,
+  summaryVisibilityLabel,
   ACCESS_SUMMARY_ERROR_HEADLINE,
   NOTHING_ELSE_GRANTS,
   type AccessReasonRow,
@@ -242,7 +242,7 @@ export function AccessSummaryPanel({
         <p className="text-[12px] text-muted-foreground">
           Visibility:{" "}
           <span className="text-foreground">
-            {visibilityLabel(summary.visibility)}
+            {summaryVisibilityLabel(summary)}
           </span>
         </p>
         <span className="ml-auto flex items-center gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
