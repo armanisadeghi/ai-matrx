@@ -42,8 +42,10 @@ export const TABLES = {
   customers: "415c3e23-2f90-4c66-9040-b246fa1c4b36", // Rincon Plumbing — Customers
   parity: "fc007161-f1c5-4ea9-9548-eefda0bc7d72", // Grid Parity Fixture
   defects: "8c67a085-197d-44c0-b2bb-ceeea9555303", // matrx-frontend (LCP test) — Known defects
-  // An OLDER table (workbench.udt_*), made for the regression half of the walk.
-  olderParts: "00d6e9a2-45c4-4e45-af46-431bccb3c51a", // Rincon Plumbing — Parts on order
+  // An OLDER table (workbench.udt_*): the platform's example, read-only for everyone.
+  // (A table made in admin's Workspace for this is moved into the record store by the
+  // mover's next run on the clone — which is how "Parts on order" became one.)
+  olderExample: "437ad3e2-0b61-4cc2-938c-db22fc5c5220", // Example: Product Catalog
 };
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 
@@ -219,14 +221,36 @@ async function main() {
 
     /** Right-click a cell and choose one item of its column's submenu. */
     const columnMenu = async (rowId, fieldName, itemName) => {
-      await page.locator(`[data-cell="${rowId}::${fieldName}"]`).first().click({ button: "right" });
-      await page.waitForTimeout(900);
-      await openSubmenu(page, /^Column ·/);
-      const item = page.getByRole("menuitem", { name: itemName }).first();
-      if ((await item.count()) === 0) return false;
-      await item.click();
-      await page.waitForTimeout(1200);
-      return true;
+      // Menus open on pointer and focus timing; a second try is what a person does.
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        await page.keyboard.press("Escape");
+        await page.locator(`[data-cell="${rowId}::${fieldName}"]`).first().click({ button: "right" });
+        await page.waitForTimeout(900);
+        await openSubmenu(page, /^Column ·/);
+        const item = page.getByRole("menuitem", { name: itemName }).first();
+        if ((await item.count()) === 0) continue;
+        const clicked = await item.click({ timeout: 5000 }).then(() => true).catch(() => false);
+        if (!clicked) continue;
+        await page.waitForTimeout(1200);
+        return true;
+      }
+      return false;
+    };
+    /** The same, for the row's submenu. */
+    const rowMenu = async (cell, itemName) => {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        await page.keyboard.press("Escape");
+        await cell.click({ button: "right" });
+        await page.waitForTimeout(900);
+        await openSubmenu(page, /^Row ·/);
+        const item = page.getByRole("menuitem", { name: itemName }).first();
+        if ((await item.count()) === 0) continue;
+        const clicked = await item.click({ timeout: 5000 }).then(() => true).catch(() => false);
+        if (!clicked) continue;
+        await page.waitForTimeout(1000);
+        return true;
+      }
+      return false;
     };
     const dialog = () => page.getByRole("dialog").last();
 
@@ -293,6 +317,14 @@ async function main() {
     if (wants("columns")) {
       const ROW = "cfc72430-2dbf-40d6-980d-f6e5efdeab3d";
       await openGrid(page, TABLES.calls, "WO-4471");
+      if ((await page.locator(`[data-cell="${ROW}::minutes_on_site"]`).count()) > 0) {
+        // A run that stopped half-way left its column; take it away first.
+        if (await columnMenu(ROW, "minutes_on_site", /Delete column/)) {
+          await page.getByRole("button", { name: /Remove column/ }).first().click().catch(() => {});
+          await page.waitForTimeout(3000);
+        }
+        await openGrid(page, TABLES.calls, "WO-4471");
+      }
       await page.getByRole("button", { name: /^Column$/ }).first().click();
       await page.waitForTimeout(800);
       await page.locator("#displayName").fill("Minutes on site");
@@ -324,12 +356,14 @@ async function main() {
       await openGrid(page, TABLES.calls, "Minutes on site");
       if (await columnMenu(ROW, "minutes_on_site", /Delete column/)) {
         const confirmBtn = page.getByRole("button", { name: /Remove column/ }).first();
+        await confirmBtn.waitFor({ timeout: 5000 }).catch(() => {});
         if ((await confirmBtn.count()) > 0) {
           await confirmBtn.click();
           removed = true;
         }
         await page.waitForTimeout(3000);
       }
+      if (!removed) await page.screenshot({ path: `${OUT}/gridport-${SEAT}-debug-column-remove.png` });
       const after = await openGrid(page, TABLES.calls, "WO-4471");
       pass("columns-remove", removed && !after.includes("Minutes on site"), removed ? "the column is gone after a reload" : "no Delete column");
     }
@@ -682,16 +716,21 @@ async function main() {
       const ROW = "388a4759-6b92-4af4-90d4-0b0f3feef4ea"; // WO-4473, stage "Invoiced"
       const cellS = () => page.locator(`[data-cell="${ROW}::stage"]`).first();
       await openGrid(page, TABLES.calls, "WO-4473");
-      const before = (await cellS().innerText()).trim();
+      const before = "Invoiced";
+      if ((await cellS().innerText()).trim() !== before) {
+        // A run that stopped half-way left its edit; put the real value back first.
+        await cellS().dblclick();
+        await page.keyboard.press("ControlOrMeta+a");
+        await page.keyboard.type(before);
+        await page.keyboard.press("Enter");
+        await page.waitForTimeout(2500);
+      }
       await cellS().dblclick();
       await page.keyboard.press("ControlOrMeta+a");
       await page.keyboard.type("Invoiced - paid by check");
       await page.keyboard.press("Enter");
       await page.waitForTimeout(2500);
-      await cellS().click({ button: "right" });
-      await page.waitForTimeout(900);
-      await openSubmenu(page, /^Row ·/);
-      await page.getByRole("menuitem", { name: /Row history/ }).first().click();
+      await rowMenu(cellS(), /Row history/);
       await page.waitForTimeout(3000);
       // The newest entry is the edit just made; "Revert" on its Stage line puts the old value back.
       const revert = page.locator('button[title^="Set \\"Stage\\" back to"]').first();
@@ -791,31 +830,77 @@ async function main() {
 
     // ── THE OLDER HALF STILL RUNS: an older table, through the older doors only ──
     if (wants("older")) {
-      const ROW = "15639e63-cd41-4059-b11a-dca2e6ec2c9d"; // Rheem water heater
       const doors = [];
       const listen = (r) => {
         const m = r.url().match(/\/rest\/v1\/rpc\/([a-z0-9_]+)/);
         if (m) doors.push(`${r.headers()["content-profile"] ?? "public"}.${m[1]}`);
       };
       page.on("request", listen);
-      const text = await openGrid(page, TABLES.olderParts, "Rheem");
-      const cellS = () => page.locator(`[data-cell="${ROW}::supplier"]`).first();
-      const before = (await cellS().innerText()).trim();
-      await cellS().dblclick();
-      await page.keyboard.press("ControlOrMeta+a");
-      await page.keyboard.type("Ferguson Oxnard");
-      await page.keyboard.press("Enter");
-      await page.waitForTimeout(2500);
-      await page.locator('button[title^="Undo last cell change"]').first().click().catch(() => {});
-      await page.waitForTimeout(2500);
-      await openGrid(page, TABLES.olderParts, "Rheem");
-      const after = (await cellS().innerText()).trim();
+      const text = await openGrid(page, TABLES.olderExample, "Product");
+      await page.waitForTimeout(2000);
       page.off("request", listen);
       const storeDoors = doors.filter((d) => d.startsWith("custom."));
-      pass("older-reads", text.includes("Rheem 50-gal gas water heater") && page.url().includes(`/data/${TABLES.olderParts}`), "the older table opens in the grid");
-      pass("older-uses-older-doors", doors.includes("public.get_user_table_data_paginated_v2") && doors.includes("public.udt_upsert_cell") && storeDoors.length === 0,
-        `older doors: ${[...new Set(doors.filter((d) => !d.startsWith("custom.")))].slice(0, 8).join(", ")}; record-store doors: ${storeDoors.length}`);
-      pass("older-edit-undo", after === before, `edit + undo leaves the supplier "${after}"`);
+      pass("older-reads", /Example: Product Catalog/.test(text) && page.url().includes(`/data/${TABLES.olderExample}`) && /of 8 rows/.test(text), "the older example table opens in the grid, 8 rows");
+      pass("older-read-only-example", /Shared Table/.test(text) || /read only/i.test(text), "an example table stays read-only for everyone");
+      pass("older-uses-older-doors", doors.includes("public.get_user_table_data_paginated_v2") && storeDoors.length === 0,
+        `record-store doors: ${storeDoors.length}${storeDoors.length ? ` (${[...new Set(storeDoors)].join(", ")})` : ""}; older page door seen: ${doors.includes("public.get_user_table_data_paginated_v2")}`);
+    }
+
+    // ── EXPORT: the whole table as CSV, through the same read the grid uses ──────
+    if (wants("export")) {
+      await openGrid(page, TABLES.calls, "WO-4471");
+      await page.evaluate(() => {
+        window.__copied = [];
+        navigator.clipboard.writeText = async (t) => { window.__copied.push(String(t)); };
+        navigator.clipboard.write = async (items) => {
+          for (const it of items) for (const type of it.types) window.__copied.push(await (await it.getType(type)).text());
+        };
+      });
+      await page.locator('[aria-label^="Copy, transform or export"]').first().click();
+      await page.waitForTimeout(1200);
+      await page.getByRole("button", { name: /^Copy CSV$/ }).first().click();
+      await page.waitForTimeout(2500);
+      const copied = (await page.evaluate(() => window.__copied)).join("\n");
+      const lines = copied.split(/\r?\n/).filter(Boolean);
+      const hasAll = ["WO-4471", "WO-4472", "WO-4473", "WO-4474", "WO-4475"].every((w) => copied.includes(w));
+      const words = /Maria Delgado|Harbor View|Takeda/.test(copied);
+      pass("export-csv", hasAll && words && /Work order/.test(lines[0] ?? ""), `CSV of ${lines.length - 1} rows, headed "${(lines[0] ?? "").slice(0, 60)}", customers as names: ${words}`);
+      await page.keyboard.press("Escape");
+    }
+
+    // ── COLOR RULES: "Stage is Invoiced → amber row", then removed ────────────────
+    if (wants("colorrules")) {
+      const ROW = "388a4759-6b92-4af4-90d4-0b0f3feef4ea"; // WO-4473, stage "Invoiced"
+      const tintOf = async () =>
+        page.locator(`[data-cell="${ROW}::stage"]`).first().evaluate((el) => el.closest("tr")?.className ?? "");
+      await openGrid(page, TABLES.calls, "WO-4473");
+      await page.getByRole("button", { name: /^Colors$/ }).first().click();
+      await page.waitForTimeout(1000);
+      await page.getByRole("button", { name: /^Add rule$/ }).first().click();
+      await page.waitForTimeout(400);
+      await page.locator('[aria-label="Column"]').last().click();
+      await page.getByRole("option", { name: /^Stage$/ }).first().click();
+      await page.waitForTimeout(400);
+      await page.locator('input[aria-label="Value"]').last().fill("Invoiced");
+      await page.getByRole("button", { name: /^Save rules$/ }).first().click();
+      await page.waitForTimeout(3000);
+      await openGrid(page, TABLES.calls, "WO-4473");
+      const tinted = await tintOf();
+      pass("colorrules-paint", /bg-amber-50/.test(tinted), /bg-amber-50/.test(tinted) ? "WO-4473 wears the rule's amber after a reload" : `row class: ${tinted.slice(0, 120)}`);
+      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-14-color-rule.png` });
+      await page.getByRole("button", { name: /^Colors$/ }).first().click();
+      await page.waitForTimeout(1000);
+      for (let i = 0; i < 5; i += 1) {
+        const rm = page.locator('[aria-label="Remove rule"]').first();
+        if ((await rm.count()) === 0) break;
+        await rm.click();
+        await page.waitForTimeout(300);
+      }
+      await page.getByRole("button", { name: /^Save rules$/ }).first().click();
+      await page.waitForTimeout(3000);
+      await openGrid(page, TABLES.calls, "WO-4473");
+      const cleared = await tintOf();
+      pass("colorrules-remove", !/bg-amber-50/.test(cleared), "the rule is gone after a reload");
     }
 
     const onClone = String(process.env.GRID_PORT_ON_CLONE || "") === "1";

@@ -4742,11 +4742,16 @@ const UserTableViewer = ({
                           <Plus className="mr-2 h-3.5 w-3.5" />
                           {rowActions.length > 0 ? "Manage actions…" : "Add an action…"}
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
                         {/* Automations are SCHEDULES (Arman, 2026-09-22: plug into
                             what the system already does). The door opens the
                             schedule form with the "table change" trigger set to
-                            this table; the schedule runs the agent when a row changes. */}
+                            this table; the schedule runs the agent when a row changes.
+                            ABSENT for a record-store table: the scheduler's one
+                            event producer is the older store's row trigger
+                            (migrations/udt_row_change_events.sql), so a schedule
+                            made here would never fire (lane GRID-PORT finding F4). */}
+                        {!isRecordStoreTable(tableId) && <DropdownMenuSeparator />}
+                        {!isRecordStoreTable(tableId) && (
                         <DropdownMenuItem
                           disabled={scheduleNavigationPending}
                           onSelect={() => {
@@ -4763,6 +4768,7 @@ const UserTableViewer = ({
                             ? "Opening schedule…"
                             : "When a row changes, run an agent…"}
                         </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}
