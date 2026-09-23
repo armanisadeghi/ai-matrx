@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-23T03:04:09.731Z",
+  "generated_at": "2026-09-23T09:57:53.950Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -61,6 +61,12 @@
       "filename": "argsruled2_a_stranger_cannot_learn_a_category_exists.sql",
       "checksum": "47535391eb0ddab09795f64f3a9029f3aff7e2cb0182bacaae5c17166853a74b",
       "applied_at": "2026-09-23 01:18:11.477641+00"
+    },
+    "migrations/campaign/argsruled2_an_empty_table_is_told_what_happened_to_it.sql": {
+      "source": "matrx-frontend",
+      "filename": "argsruled2_an_empty_table_is_told_what_happened_to_it.sql",
+      "checksum": "fa6f2628c2297fd8f75c722915256b2d129d1a2920a45f69af20c4e10b60eaf7",
+      "applied_at": "2026-09-23 09:56:34.732995+00"
     },
     "migrations/campaign/argsruled2_every_argument_of_the_last_ten_doors_says_what_it_is.sql": {
       "source": "matrx-frontend",
@@ -2456,6 +2462,18 @@
       "checksum": "63ed529a07e22216301dc64aabab954c9eb0e73b1b818566ff5a02fe4d89f15d",
       "applied_at": "2026-09-22 16:29:20.411655+00"
     },
+    "migrations/campaign/oldtables_w7_a_moved_dataset_is_archived_and_says_where_it_went.sql": {
+      "source": "matrx-frontend",
+      "filename": "oldtables_w7_a_moved_dataset_is_archived_and_says_where_it_went.sql",
+      "checksum": "99669e477e2dea31e414110087fcbec838b3394d352ea3190e257102708017f1",
+      "applied_at": "2026-09-23 09:55:22.864768+00"
+    },
+    "migrations/campaign/oldtables_w7c_both_halves_of_the_relation_guard_judge_what_commits.sql": {
+      "source": "matrx-frontend",
+      "filename": "oldtables_w7c_both_halves_of_the_relation_guard_judge_what_commits.sql",
+      "checksum": "7f7627c689ab65e1f3d9de2fec2ec0046b7e8d39a8c4dada6d4a092e3bcac7aa",
+      "applied_at": "2026-09-23 09:55:34.150822+00"
+    },
     "migrations/campaign/open_census_a_closed_schema_closes_itself.sql": {
       "source": "matrx-frontend",
       "filename": "open_census_a_closed_schema_closes_itself.sql",
@@ -2899,6 +2917,12 @@
       "filename": "reldisp_a_relation_says_which_words_it_shows.sql",
       "checksum": "872cb5342908688ff68ede77eb750792bdcb92c710049e909655bca8bbdc7577",
       "applied_at": "2026-09-21 15:32:41.362266+00"
+    },
+    "migrations/campaign/reltargets_a_relation_across_organizations_holds_its_value.sql": {
+      "source": "matrx-frontend",
+      "filename": "reltargets_a_relation_across_organizations_holds_its_value.sql",
+      "checksum": "ad8d55a20e1b5b7b79c4e7d7e4a1ce46427b0d74c2928f5ab8092cba5f7cd165",
+      "applied_at": "2026-09-23 09:57:53.072928+00"
     },
     "migrations/campaign/rls_reference_convert_catalogues.sql": {
       "source": "matrx-frontend",
@@ -3823,6 +3847,12 @@
       "filename": "storetxn_the_graphs_children_are_a_declared_relation.sql",
       "checksum": "26c9b9725fec022e44751ffb5bce90d90b3596b6357b2147a763c71909eeae3d",
       "applied_at": "2026-09-22 14:12:01.160323+00"
+    },
+    "migrations/campaign/suitestidy2_a_door_that_indexes_the_store_settles_its_deferred_checks_first.sql": {
+      "source": "matrx-frontend",
+      "filename": "suitestidy2_a_door_that_indexes_the_store_settles_its_deferred_checks_first.sql",
+      "checksum": "64395dbf9b85632a00d06ab153f51081366447e721d60926a8bcf790e54f025b",
+      "applied_at": "2026-09-23 09:57:20.1633+00"
     },
     "migrations/campaign/suitestidy2_a_refusal_names_the_door_the_person_called.sql": {
       "source": "matrx-frontend",
