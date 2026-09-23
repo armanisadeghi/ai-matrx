@@ -450,31 +450,15 @@ export function WorkItemsPanel({
             Clear
           </Button>
         ) : undefined,
-        facets: [
-          {
-            type: "custom",
-            id: "lifecycle",
-            filter: {
-              active: Boolean(statusFilter),
-              onReset: () => onStatusFilter(null),
-            },
-            render: () => (
+        leading: (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
               <FilterSelect
                 value={statusFilter}
                 onChange={onStatusFilter}
                 placeholder="Any lifecycle"
                 options={[...WORK_ITEM_STATUSES]}
               />
-            ),
-          },
-          {
-            type: "custom",
-            id: "delivery",
-            filter: {
-              active: Boolean(handlerFilter),
-              onReset: () => onHandlerFilter(null),
-            },
-            render: () => (
               <FilterSelect
                 value={handlerFilter}
                 onChange={onHandlerFilter}
@@ -482,43 +466,19 @@ export function WorkItemsPanel({
                 options={[...HANDLER_STATUSES]}
                 labelFor={(value) => DELIVERY[value]?.label ?? value}
               />
-            ),
-          },
-          {
-            type: "custom",
-            id: "purpose",
-            filter: {
-              active: Boolean(purpose),
-              onReset: () => setPurpose(null),
-            },
-            render: () => (
               <FilterSelect
                 value={purpose}
                 onChange={setPurpose}
                 placeholder="Any purpose"
                 options={facets.purposes}
               />
-            ),
-          },
-          {
-            type: "custom",
-            id: "provider",
-            filter: {
-              active: Boolean(provider),
-              onReset: () => setProvider(null),
-            },
-            render: () => (
               <FilterSelect
                 value={provider}
                 onChange={setProvider}
                 placeholder="Any provider"
                 options={facets.providers}
               />
-            ),
-          },
-        ],
-        leading: (
-          <div className="space-y-2">
+            </div>
             {activeChips.length > 0 ? (
               <div className="flex flex-wrap items-center gap-1.5">
                 {activeChips.map((chip) => (
