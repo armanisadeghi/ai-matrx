@@ -18,7 +18,8 @@
 --      version (the trigger is bound with 'version','updated_at' only — never the WHEN keys)
 --   4  the trigger is bound, enabled, LAST among before-row UPDATE triggers on all five, with
 --      exactly the arguments {version, updated_at} (notes: + its stored generated content_preview)
---   5  workflow.definition carries NO such trigger, and a publish-shaped version-only update
+--   5  a publish still counts on workflow.definition: version-only while it carries NO such trigger,
+--      version + metadata.published once HR-LOOP-CLEANUP file (c) binds it; the old line read: a version-only update
 --      still moves its version (the publish counter; see the migration header)
 
 \set ON_ERROR_STOP on
@@ -108,21 +109,32 @@ begin
   raise notice '3 PASSED — a sch_task schedule tick still lands (% -> %)', v_ver, v_ans;
   end if;
 
-  -- 5: workflow.definition keeps its publish counter
-  if exists (select 1 from pg_trigger where tgrelid = 'workflow.definition'::regclass
-                and tgname = 'zzzzz_no_change_keeps_its_version') then
-    raise exception '5: workflow.definition carries zzzzz_no_change_keeps_its_version — DefinitionStore.publish (version = version + 1 and nothing else) would answer the old version and its snapshot insert would collide';
-  end if;
+  -- 5: workflow.definition keeps its publish counter.
+  -- HR-LOOP-CLEANUP (2026-09-24): until aidream c545fd2fe3 a publish was version-only, so this
+  -- table had to stay OFF the trigger. Since then publish also writes metadata.published in the
+  -- same UPDATE, and hrloopcleanup_c binds the trigger. Either state is legal; what must hold in
+  -- both is that the publish the server actually sends still counts.
   v_id := null;
   select id, version into v_id, v_ver from workflow.definition where deleted_at is null order by updated_at desc, id limit 1;
   if v_id is null then
-    raise notice 'SKIPPED clause 5 (the publish counter) — no live workflow.definition row on this database; its no-trigger half passed above';
+    raise notice 'SKIPPED clause 5 (the publish counter) — no live workflow.definition row on this database';
+  elsif exists (select 1 from pg_trigger where tgrelid = 'workflow.definition'::regclass
+                   and tgname = 'zzzzz_no_change_keeps_its_version') then
+    update workflow.definition
+       set version = version + 1,
+           metadata = coalesce(metadata, '{}'::jsonb) || jsonb_build_object('published',
+                        jsonb_build_object('version', v_ver + 1, 'at', clock_timestamp(), 'by', null))
+     where id = v_id returning version into v_ans;
+    if v_ans is distinct from v_ver + 1 then
+      raise exception '5: with the no-op trigger bound, a publish (version + metadata.published) answered % — expected %', v_ans, v_ver + 1;
+    end if;
+    raise notice '5 PASSED — workflow.definition carries the no-op trigger (HR-LOOP-CLEANUP c) and a publish still counts (% -> %)', v_ver, v_ans;
   else
-  update workflow.definition set version = version + 1 where id = v_id returning version into v_ans;
-  if v_ans is distinct from v_ver + 1 then
-    raise exception '5: a publish-shaped update on workflow.definition answered % — expected %', v_ans, v_ver + 1;
-  end if;
-  raise notice '5 PASSED — workflow.definition has no no-op trigger; a publish still counts (% -> %)', v_ver, v_ans;
+    update workflow.definition set version = version + 1 where id = v_id returning version into v_ans;
+    if v_ans is distinct from v_ver + 1 then
+      raise exception '5: a publish-shaped update on workflow.definition answered % — expected %', v_ans, v_ver + 1;
+    end if;
+    raise notice '5 PASSED — workflow.definition has no no-op trigger; a publish still counts (% -> %)', v_ver, v_ans;
   end if;
 
   raise notice 'versionhistoryfix_green: ALL 5 CLAUSES PASSED (any SKIPPED line above names what this database could not prove)';
