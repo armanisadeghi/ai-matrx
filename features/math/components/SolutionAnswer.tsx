@@ -1,9 +1,8 @@
 "use client";
 
 import React from "react";
-import { BlockMath } from "react-katex";
 import InlineMathText from "./InlineMathText";
-import "katex/dist/katex.min.css";
+import DisplayMath from "./DisplayMath";
 
 interface SolutionAnswerProps {
     answer: string;
@@ -15,7 +14,7 @@ interface SolutionAnswerProps {
  * Handles both pure LaTeX and mixed text with embedded LaTeX
  * 
  * Detects format:
- * - Pure LaTeX: "x = 4" → renders with BlockMath
+ * - Pure LaTeX: "x = 4" → renders with DisplayMath (the markdown core)
  * - Mixed text with LaTeX: "The answer is \\(x = 4\\)" → renders with InlineMathText
  * - Multi-line text: splits on \n and renders each line
  */
@@ -40,22 +39,10 @@ const SolutionAnswer: React.FC<SolutionAnswerProps> = ({ answer, className = "" 
         );
     }
 
-    // Pure LaTeX - render as block math
-    try {
-        return (
-            <div className={className}>
-                <BlockMath math={answer} />
-            </div>
-        );
-    } catch (error) {
-        // Fallback if LaTeX rendering fails
-        console.warn("Failed to render solution answer as LaTeX:", answer, error);
-        return (
-            <div className={`text-sm ${className}`}>
-                <InlineMathText text={answer} />
-            </div>
-        );
-    }
+    // Pure LaTeX - one display formula through the markdown core. KaTeX runs
+    // with strict:"ignore" and throwOnError off there, so a malformed answer
+    // renders KaTeX's own error text instead of throwing.
+    return <DisplayMath math={answer} className={className} />;
 };
 
 export default SolutionAnswer;

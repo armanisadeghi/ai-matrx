@@ -2,8 +2,7 @@
 
 import React, { useState, useRef, useEffect, JSX } from "react";
 import { useRouter } from "next/navigation";
-import "katex/dist/katex.min.css";
-import { BlockMath } from "react-katex";
+import DisplayMath from "./DisplayMath";
 import { motion } from "motion/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -163,7 +162,7 @@ const MathProblemImpl: React.FC<MathProblemProps> = ({
                         <InlineMathText text={problem_statement.text} />
                     </p>
                     <div className="bg-white/70 dark:bg-gray-900/70 rounded-lg p-2 mb-2 overflow-x-auto">
-                        <BlockMath math={problem_statement.equation} />
+                        <DisplayMath math={problem_statement.equation} />
                     </div>
                     <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
                         <InlineMathText text={problem_statement.instruction} />
@@ -227,7 +226,7 @@ const MathProblemImpl: React.FC<MathProblemProps> = ({
                                             <InlineMathText text={step.title} />
                                         </h4>
                                         <div className="bg-white/70 dark:bg-gray-900/70 rounded-lg p-2 mb-1.5 overflow-x-auto">
-                                            <BlockMath math={step.equation} />
+                                            <DisplayMath math={step.equation} />
                                         </div>
                                         {step.explanation && (
                                             <p className={`text-xs leading-relaxed ${colorClasses.text}`}>

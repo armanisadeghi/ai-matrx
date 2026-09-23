@@ -306,66 +306,10 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
       "[$1]($1)",
     );
 
-    // Convert LaTeX-style math delimiters to markdown math notation
-    // \[...\] → $$...$$ (display/block math)
-    // IMPORTANT: Display math needs blank lines before and after for remark-math to recognize it
-    processed = processed.replace(
-      /\\\[([\s\S]*?)\\\]/g,
-      (match, mathContent) => {
-        return `\n\n$$${mathContent}$$\n\n`;
-      },
-    );
-    // \(...\) is INLINE math and must stay inline (same fix as
-    // ConfigurableMarkdownContent, 2026-08-18): with single-$ disabled,
-    // remark-math's inline form is `$$…$$` inside running text — NO paragraph
-    // breaks. The old block promotion exploded list items and sentences
-    // ("- \(x\) — the roots" became a giant centered block splitting the
-    // bullet) in every chat message.
-    processed = processed.replace(/\\\((.*?)\\\)/g, (match, mathContent) => {
-      return `$$${mathContent}$$`;
-    });
+    // Math delimiters (\(…\), \[…\], $…$, bracket display) are NOT converted
+    // here: the ONE math normalizer runs inside MarkdownCore for every
+    // math-capable preset (components/markdown-core/math-normalizer.ts).
 
-    // Support non-standard [...] format for display math (some smaller models use this)
-    // Only convert if: contains LaTeX commands (\), multiline or substantial, NOT a markdown link
-    processed = processed.replace(
-      /\[[\s\n]*([\s\S]*?)[\s\n]*\](?!\()/g,
-      (match, content) => {
-        const trimmedContent = content.trim();
-
-        // Case 1: Contains LaTeX commands (backslash) - safe to convert if multiline or substantial
-        if (
-          content.includes("\\") &&
-          (content.includes("\n") || content.length >= 3)
-        ) {
-          return `\n\n$$${content}$$\n\n`;
-        }
-
-        // Case 2: Pure math expression without LaTeX commands
-        // Only if multiline format (brackets on own lines) and looks like math
-        const isMultilineBrackets =
-          match.startsWith("[\n") || match.startsWith("[ \n");
-        if (isMultilineBrackets && trimmedContent.length >= 3) {
-          // Check for math operators
-          const hasMathOperators = /[+\-=×÷*/]/.test(trimmedContent);
-          // Check it's not prose (doesn't contain common text words)
-          const hasProseWords =
-            /\b(note|step|example|optional|the|is|are|was|were|for|with|this|that)\b/i.test(
-              trimmedContent,
-            );
-          // Check that it's mostly math-like (numbers, operators, parentheses, variables)
-          const mathLikeRatio =
-            (trimmedContent.match(/[0-9+\-=×÷*/()xy\s]/g) || []).length /
-            trimmedContent.length;
-
-          if (hasMathOperators && !hasProseWords && mathLikeRatio > 0.6) {
-            return `\n\n$$${content}$$\n\n`;
-          }
-        }
-
-        // Otherwise, leave it as-is (could be regular brackets)
-        return match;
-      },
-    );
 
     // Normalize asterisk bullets (*) to dash bullets (-) to avoid ambiguity with bold markers (**)
     // Both render identically, but dash bullets don't conflict with bold syntax

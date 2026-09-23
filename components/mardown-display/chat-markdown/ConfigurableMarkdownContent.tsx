@@ -392,10 +392,9 @@ export const ConfigurableMarkdownContent: React.FC<
 
   // ---------------------------------------------------------------------------
   // preprocessContent — mirrors BasicMarkdownContent's preprocess. The two
-  // copies MUST stay in lockstep (the `\(…\)` inline-math fix, 2026-08-18,
-  // briefly landed in only one and split rendering between chat and
-  // flashcards — adversarial finding F2). Consolidating them into one shared
-  // preprocess function is the real fix; until then, change BOTH.
+  // copies MUST stay in lockstep. Math delimiters left both copies on
+  // 2026-09-23 (they had drifted once, adversarial finding F2): they are the
+  // core's job now — components/markdown-core/math-normalizer.ts.
   // ---------------------------------------------------------------------------
   const preprocessContent = (rawContent: string): string => {
     let processed = rawContent;
@@ -411,54 +410,9 @@ export const ConfigurableMarkdownContent: React.FC<
       "[$1]($1)",
     );
 
-    processed = processed.replace(
-      /\\\[([\s\S]*?)\\\]/g,
-      (match, mathContent) => `\n\n$$${mathContent}$$\n\n`,
-    );
-
-    // \(…\) is INLINE math and must stay inline: with singleDollarTextMath
-    // disabled (currency safety), remark-math's inline form is `$$…$$` inside
-    // running text — NO paragraph breaks. The old `\n\n`-wrapped conversion
-    // promoted every inline formula to a display block, which exploded list
-    // items and sentences (a formula card's "- \(x\) — the roots" rendered as
-    // a giant centered block splitting the bullet).
-    processed = processed.replace(
-      /\\\((.*?)\\\)/g,
-      (match, mathContent) => `$$${mathContent}$$`,
-    );
-
-    processed = processed.replace(
-      /\[[\s\n]*([\s\S]*?)[\s\n]*\](?!\()/g,
-      (match, content) => {
-        const trimmedContent = content.trim();
-
-        if (
-          content.includes("\\") &&
-          (content.includes("\n") || content.length >= 3)
-        ) {
-          return `\n\n$$${content}$$\n\n`;
-        }
-
-        const isMultilineBrackets =
-          match.startsWith("[\n") || match.startsWith("[ \n");
-        if (isMultilineBrackets && trimmedContent.length >= 3) {
-          const hasMathOperators = /[+\-=×÷*/]/.test(trimmedContent);
-          const hasProseWords =
-            /\b(note|step|example|optional|the|is|are|was|were|for|with|this|that)\b/i.test(
-              trimmedContent,
-            );
-          const mathLikeRatio =
-            (trimmedContent.match(/[0-9+\-=×÷*/()xy\s]/g) || []).length /
-            trimmedContent.length;
-
-          if (hasMathOperators && !hasProseWords && mathLikeRatio > 0.6) {
-            return `\n\n$$${content}$$\n\n`;
-          }
-        }
-
-        return match;
-      },
-    );
+    // Math delimiters (\(…\), \[…\], $…$, bracket display) are NOT converted
+    // here: the ONE math normalizer runs inside MarkdownCore for every
+    // math-capable preset (components/markdown-core/math-normalizer.ts).
 
     processed = processed.replace(/^(\s*)\*([ \t]+)/gm, "$1-$2");
 
