@@ -177,11 +177,15 @@ export function ShortcutList({
     placementFilter !== (placementFilterProp ?? "all") ||
     activeFilter !== "all" ||
     contextTagFilter !== "all";
-  const clearFilters = () => {
-    setCategoryFilter("all");
-    setPlacementFilter(placementFilterProp ?? "all");
-    setActiveFilter("all");
-    setContextTagFilter("all");
+  const handlePlacementFilterChange = (nextPlacement: string) => {
+    setPlacementFilter(nextPlacement);
+    if (
+      categoryFilter !== "all" &&
+      nextPlacement !== "all" &&
+      categoryById.get(categoryFilter)?.placementType !== nextPlacement
+    ) {
+      setCategoryFilter("all");
+    }
   };
   const handleToggleActive = async (shortcut: AgentShortcutRecord) => {
     try {
@@ -216,9 +220,6 @@ export function ShortcutList({
         header: "Label",
         label: "Label",
         width: 240,
-        entityToken: "agent_shortcut",
-        entityId: (shortcut) => shortcut.id,
-        href: (shortcut) => doorHrefFor?.(shortcut) ?? undefined,
         cell: (shortcut) => (
           <div className="flex min-w-0 items-center gap-2">
             <MousePointerClick className="size-4 shrink-0 text-primary" />
@@ -238,6 +239,7 @@ export function ShortcutList({
         header: "Placement",
         label: "Placement",
         width: 150,
+        filter: false,
         accessorFn: (shortcut) =>
           categoryById.get(shortcut.categoryId)?.placementType ?? "",
         cell: (shortcut) => {
@@ -258,6 +260,7 @@ export function ShortcutList({
         header: "Category",
         label: "Category",
         width: 160,
+        filter: false,
         accessorFn: (shortcut) =>
           categoryById.get(shortcut.categoryId)?.label ?? "",
         cell: (shortcut) => categoryById.get(shortcut.categoryId)?.label ?? "—",
@@ -267,6 +270,7 @@ export function ShortcutList({
         header: "Contexts",
         label: "Contexts",
         width: 220,
+        filter: false,
         accessorFn: (shortcut) => shortcut.enabledFeatures?.join(" ") ?? "",
         cell: (shortcut) =>
           shortcut.enabledFeatures?.length ? (
@@ -348,6 +352,7 @@ export function ShortcutList({
         header: "Active",
         label: "Active",
         width: 80,
+        filter: false,
         align: "center",
         compact: true,
         cell: (shortcut) => (
@@ -403,6 +408,124 @@ export function ShortcutList({
                 ? { onAdd: onCreate }
                 : undefined,
             actions: hideTitleBar ? undefined : toolbarSlot,
+            facets: [
+              {
+                type: "custom",
+                id: "placement",
+                filter: {
+                  active: placementFilter !== (placementFilterProp ?? "all"),
+                  onReset: () =>
+                    handlePlacementFilterChange(placementFilterProp ?? "all"),
+                },
+                render: () =>
+                  placementFilterProp ? (
+                    <Badge
+                      variant="outline"
+                      className="h-8 px-3 text-xs font-normal text-muted-foreground"
+                    >
+                      Placement: {getPlacementTypeMeta(placementFilterProp).label}{" "}
+                      — fixed by this view
+                    </Badge>
+                  ) : (
+                    <Select
+                      value={placementFilter}
+                      onValueChange={handlePlacementFilterChange}
+                    >
+                      <SelectTrigger className="h-8 w-[180px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Placements</SelectItem>
+                        {availablePlacements.map((placement) => (
+                          <SelectItem key={placement} value={placement}>
+                            {getPlacementTypeMeta(placement).label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ),
+              },
+              {
+                type: "custom",
+                id: "category",
+                filter: {
+                  active: categoryFilter !== "all",
+                  onReset: () => setCategoryFilter("all"),
+                },
+                render: () => (
+                  <Select
+                    value={categoryFilter}
+                    onValueChange={setCategoryFilter}
+                  >
+                    <SelectTrigger className="h-8 w-[180px]">
+                      <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {availableCategories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ),
+              },
+              {
+                type: "custom",
+                id: "status",
+                filter: {
+                  active: activeFilter !== "all",
+                  onReset: () => setActiveFilter("all"),
+                },
+                render: () => (
+                  <Select
+                    value={activeFilter}
+                    onValueChange={(value) =>
+                      setActiveFilter(value as typeof activeFilter)
+                    }
+                  >
+                    <SelectTrigger className="h-8 w-[160px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="active">Active Only</SelectItem>
+                      <SelectItem value="inactive">Inactive Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ),
+              },
+              {
+                type: "custom",
+                id: "context",
+                filter: {
+                  active: contextTagFilter !== "all",
+                  onReset: () => setContextTagFilter("all"),
+                },
+                render: () => (
+                  <Select
+                    value={contextTagFilter}
+                    onValueChange={setContextTagFilter}
+                  >
+                    <SelectTrigger className="h-8 w-[200px]">
+                      <SelectValue placeholder="Context tag" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All contexts</SelectItem>
+                      <SelectItem value="unrestricted">
+                        Unrestricted only
+                      </SelectItem>
+                      {uniqueContextTags.map((tag) => (
+                        <SelectItem key={tag} value={tag}>
+                          Tag: {tag}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ),
+              },
+            ],
             leading: (
               <div className="flex flex-wrap items-center gap-2">
                 {!hideTitleBar && (
@@ -425,87 +548,6 @@ export function ShortcutList({
                       </Card>
                     ))}
                   </div>
-                )}
-                {placementFilterProp ? (
-                  <Badge
-                    variant="outline"
-                    className="h-9 px-3 text-xs font-normal text-muted-foreground"
-                  >
-                    Placement: {getPlacementTypeMeta(placementFilterProp).label}{" "}
-                    — fixed by this view
-                  </Badge>
-                ) : (
-                  <Select
-                    value={placementFilter}
-                    onValueChange={setPlacementFilter}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Placements</SelectItem>
-                      {availablePlacements.map((placement) => (
-                        <SelectItem key={placement} value={placement}>
-                          {getPlacementTypeMeta(placement).label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                <Select
-                  value={categoryFilter}
-                  onValueChange={setCategoryFilter}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {availableCategories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={activeFilter}
-                  onValueChange={(value) =>
-                    setActiveFilter(value as typeof activeFilter)
-                  }
-                >
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active Only</SelectItem>
-                    <SelectItem value="inactive">Inactive Only</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={contextTagFilter}
-                  onValueChange={setContextTagFilter}
-                >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Context tag" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All contexts</SelectItem>
-                    <SelectItem value="unrestricted">
-                      Unrestricted only
-                    </SelectItem>
-                    {uniqueContextTags.map((tag) => (
-                      <SelectItem key={tag} value={tag}>
-                        Tag: {tag}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {hasActiveFilters && (
-                  <Button variant="outline" size="sm" onClick={clearFilters}>
-                    Clear filters
-                  </Button>
                 )}
               </div>
             ),
@@ -581,12 +623,26 @@ export function ShortcutList({
               )}
             </div>
           )}
-          mobileCards={(shortcut) => {
+          mobileCards={(shortcut, _index, controls) => {
             const category = categoryById.get(shortcut.categoryId);
+            const href = doorHrefFor?.(shortcut) ?? null;
+            const openShortcut = (event: React.MouseEvent<HTMLElement>) => {
+              if (event.metaKey || event.ctrlKey || event.shiftKey) {
+                if (href) window.open(href, "_blank", "noopener");
+                return;
+              }
+              onEdit?.(shortcut);
+            };
             return (
               <Card
                 className="cursor-pointer"
-                onClick={() => onEdit?.(shortcut)}
+                onClick={openShortcut}
+                onAuxClick={(event) => {
+                  if (event.button === 1 && href) {
+                    event.preventDefault();
+                    window.open(href, "_blank", "noopener");
+                  }
+                }}
               >
                 <CardContent className="space-y-2 p-3">
                   <div className="flex items-start justify-between gap-2">
@@ -611,16 +667,10 @@ export function ShortcutList({
                         token="agent_shortcut"
                         id={shortcut.id}
                         name={shortcut.label}
-                        href={doorHrefFor?.(shortcut) ?? null}
+                        href={href}
                         alwaysShowActions
                       />
-                      <Switch
-                        checked={shortcut.isActive}
-                        disabled={readonly}
-                        onCheckedChange={() =>
-                          void handleToggleActive(shortcut)
-                        }
-                      />
+                      {controls.actions}
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
