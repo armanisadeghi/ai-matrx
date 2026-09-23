@@ -200,27 +200,38 @@ function messageMediaPartToUserInputPart(
   part: PersistedMediaPart,
 ): RequestMediaPart {
   if (part.kind === "youtube") return part;
-  const locator = requestMediaLocator(part.url, part.file_id, undefined);
-  // Spreading `part` re-introduces every locator key it carries — a persisted
-  // part written by the server routinely holds BOTH `file_id` and `url`, so
-  // `{...part, ...locator}` shipped two and the server refused the request.
-  // Drop them all first, then apply the ONE the locator chose.
-  const {
-    url: _url,
-    file_id: _fileId,
-    ...rest
-  } = part as PersistedMediaPart & { url?: unknown; file_id?: unknown };
-  void _url;
-  void _fileId;
+  // Narrow by kind before spreading so role keeps the request contract's
+  // kind-specific union. Persisted parts may carry both locators; drop them
+  // inside the narrowed branch, then apply only the locator the request chose.
   switch (part.kind) {
-    case "image":
+    case "image": {
+      const locator = requestMediaLocator(part.url, part.file_id, undefined);
+      const { url: _url, file_id: _fileId, ...rest } = part;
+      void _url;
+      void _fileId;
       return { ...rest, ...locator, type: "media", kind: "image" };
-    case "audio":
+    }
+    case "audio": {
+      const locator = requestMediaLocator(part.url, part.file_id, undefined);
+      const { url: _url, file_id: _fileId, ...rest } = part;
+      void _url;
+      void _fileId;
       return { ...rest, ...locator, type: "media", kind: "audio" };
-    case "video":
+    }
+    case "video": {
+      const locator = requestMediaLocator(part.url, part.file_id, undefined);
+      const { url: _url, file_id: _fileId, ...rest } = part;
+      void _url;
+      void _fileId;
       return { ...rest, ...locator, type: "media", kind: "video" };
-    case "document":
+    }
+    case "document": {
+      const locator = requestMediaLocator(part.url, part.file_id, undefined);
+      const { url: _url, file_id: _fileId, ...rest } = part;
+      void _url;
+      void _fileId;
       return { ...rest, ...locator, type: "media", kind: "document" };
+    }
   }
 }
 

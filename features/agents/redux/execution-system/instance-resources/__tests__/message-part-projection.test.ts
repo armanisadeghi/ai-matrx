@@ -152,6 +152,33 @@ describe("request/message attachment projection", () => {
     });
   });
 
+  it("preserves kind-specific media roles when projecting persisted parts", () => {
+    expect(
+      messagePartToUserInputPart({
+        type: "media",
+        kind: "image",
+        file_id: "first-frame",
+        role: "first_frame",
+      }),
+    ).toMatchObject({ kind: "image", role: "first_frame" });
+    expect(
+      messagePartToUserInputPart({
+        type: "media",
+        kind: "audio",
+        file_id: "lip-sync-audio",
+        role: "lip_sync",
+      }),
+    ).toMatchObject({ kind: "audio", role: "lip_sync" });
+    expect(
+      messagePartToUserInputPart({
+        type: "media",
+        kind: "video",
+        file_id: "source-video",
+        role: "extend",
+      }),
+    ).toMatchObject({ kind: "video", role: "extend" });
+  });
+
   it("rejects persisted media without a locator at the generated boundary", () => {
     expect(isMessagePart({ type: "media", kind: "image" })).toBe(false);
   });
