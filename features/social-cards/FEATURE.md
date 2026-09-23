@@ -25,4 +25,6 @@ One server-safe visual system supplies large OpenGraph and Twitter preview image
 
 ## Change log
 
+- **2026-09-22** — The public chat opener uses conversation copy and a plain protected chat destination after removal of the SMS approval gate.
+
 - **2026-08-20** — Added the shared renderer and 24 deterministic themes; made canonical route metadata use it and added a private-safe approval-link treatment.

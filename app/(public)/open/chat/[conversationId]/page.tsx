@@ -15,13 +15,13 @@ export async function generateMetadata({
   const { conversationId } = await params;
   return {
     ...createDynamicRouteMetadata("/chat", {
-      title: "Approval needed",
-      description: "A secure action from your AI Matrx text assistant is waiting for your review.",
+      title: "Open your conversation",
+      description: "Continue your conversation with your AI Matrx text assistant.",
       letter: "C",
       socialCard: {
         eyebrow: "Text assistant",
-        intent: "Action waiting",
-        seed: `approval:${conversationId}`,
+        intent: "Open conversation",
+        seed: `conversation:${conversationId}`,
       },
     }),
     robots,
@@ -32,7 +32,7 @@ export default async function PublicChatOpenerPage({
   params,
 }: PublicChatOpenerPageProps) {
   const { conversationId } = await params;
-  const destination = `/chat/${encodeURIComponent(conversationId)}?attention=approval`;
+  const destination = `/chat/${encodeURIComponent(conversationId)}`;
   return (
     <>
       <meta httpEquiv="refresh" content={`0;url=${destination}`} />

@@ -83,7 +83,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 2. The Text assistant section reads transport readiness directly from `communication.get_my_sms_assistant_program` and controls only delivery through `communication.set_my_sms_assistant_enabled`.
 3. **Agent identity resolves only through `sms.owner_beta`.** The canonical `MandateAgentPicker` writes its Holder/version choice through the Mandate Binding API; the settings surface never writes an agent id into communication tables.
 4. The inbound webhook durably claims the provider event, gives STOP/HELP/START precedence, resolves the exact provider/account/source/destination/program/user/CRM/conversation binding, and queues only a resolved, ready assistant turn.
-5. Aidream resolves `sms.owner_beta` fresh for the exact user and organization on every admitted turn, runs the resolved Holder against the reserved canonical chat conversation with its complete authored tool set, atomically enqueues the reply, and delivers it through the durable outbound worker. Read-only tools run normally; consequential invocations suspend for exact-action approval and recent app re-authentication.
+5. Aidream resolves `sms.owner_beta` fresh for the exact user and organization on every admitted turn, runs the resolved Holder against the reserved canonical chat conversation with its complete authored tool set, atomically enqueues the reply, and delivers it through the durable outbound worker. Tools run through the ordinary executor without an SMS-specific approval or re-authentication gate.
 6. Pause changes delivery only and preserves the Binding. Holder/version changes happen only through the canonical Mandate surface and leave ordinary SMS-notification enrollment unchanged.
 
 ### Notification-family preferences
@@ -118,7 +118,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 - **Enrollment and transport health are distinct.** An unenrolled account says it is not enrolled; only a returned program state may report an inactive sender or global pause.
 - **Consent, notification families, and assistant replies are independent controls.** Overall verified SMS consent is the delivery prerequisite; `task_notifications` is an explicit family opt-in; `ai_agent_messages` governs only assistant replies.
 - **The communication schema never chooses an agent.** `sms.owner_beta` is the named job; its system/org/user/run Binding selects the Holder. Legacy preferred-agent columns are constrained NULL and legacy configuration RPCs do not exist.
-- **Transport never edits the Holder's tools.** SMS adds only its database-owned channel context. A `db_write`-or-higher call uses the canonical durable delegated-tool suspension, sends the user an authenticated conversation door, and requires a 15-minute, single-use approval bound to the exact canonical tool name, normalized arguments, user, organization, and conversation. Stale sessions complete an email OTP re-authentication before approval; secrets in arguments are redacted in the review card.
+- **Transport never edits the Holder's tools.** SMS adds its database-owned channel context. The backend removed its exact-action approval gate in `c2bf4167f9`; the frontend no longer renders the retired approval card or calls its deleted confirmation endpoint. Verified enrollment and exact user/program binding still control admission.
 - **A word is never authority.** `DONE` executes only through one exact durable offer; zero, malformed, or ambiguous offers never enter the worker queue.
 - **Task workspace is not transport tenancy.** An editable task may belong to any workspace; the caller's one active program enrollment owns the notification, conversation, message, and assist rows. Zero or multiple enrollments fail before durable intent.
 - A worker crash must not mint a second chat turn or Twilio send. Expired processing/sending claims become explicit stuck/uncertain work for repair, never automatic retries.
@@ -143,6 +143,8 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 ---
 
 ## Change log
+
+- `2026-09-22` — Removed the retired exact-action approval UI and refreshed the producer API contract after the backend gate deletion. Conversation links now describe opening the conversation without promising an approval pause.
 
 - `2026-09-21` — The browser now offers this person's timezone once per session on sign-in and again on a successful SMS enrolment, through one route to one database door that writes only when nothing the person themselves declared already answers. Closes the reason 749 of 766 people had their quiet hours judged in UTC.
 - `2026-09-21` — Designated test handsets now verify over our own Messaging Service instead of Twilio Verify, because a Verify code is unreadable by any door we can build (redacted in the API, and it never fires the inbound webhook). Same six-digit code, same single-use/expiry/attempt semantics, hashed at rest; the admission is structural (the `ai_matrx_test_handset` registration) and the consent rows are still written by the ordinary flow.

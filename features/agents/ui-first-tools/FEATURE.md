@@ -391,6 +391,8 @@ server-side; the same Realtime subscription updates the panel with no delegation
 
 ## Change Log
 
+- `2026-09-22` — Removed the retired SMS exact-action card, parser, pending-ask state and delegated-call interception after the backend removed its confirmation endpoint. Ordinary client-tool questions, surface-edit approvals and Gmail review still use their existing paths.
+
 - `2026-09-18` — Surface replacement approvals preserve the live original for
   the shared combined diff, expose New/Original views, and refuse stale approval.
   Automated regression checks cover the runtime-to-descriptor path; live
@@ -445,12 +447,6 @@ server-side; the same Realtime subscription updates the panel with no delegation
   approved remains reviewable.
 
 - `2026-08-25` — **Every universal agent display mode can render pending approvals.** `AgentRunner` now mounts the canonical `PendingAsksZone` above its composer, matching `AgentConversationColumn`. This closes the flexible-panel deadlock where `apply_surface_write` correctly enqueued an `ApprovalCard` and paused the run, but the overlay had no ask renderer and remained on “Delegating apply_surface_write to client / Working…” forever. The shared card, resolver registry, and pending-ask Redux state are reused unchanged; no second approval path was added.
-- `2026-08-20` — **SMS authorization is actionable on iPhone.** The mobile ask
-  host now uses the canonical fixed `92dvh` `BottomSheet`, whose body owns the
-  one vertical scroll, instead of an adaptive raw drawer that could leave card
-  actions below the viewport. SMS authorization actions live in the pinned
-  card footer, use full-width 44px mobile targets, keep JSON to horizontal
-  overflow on mobile, and use a 16px OTP input so Safari does not zoom.
 - `2026-08-15` — **Failed `user` calls can no longer strand a phantom prompt.**
   Reproduced from conversation `f659f218…`: `action:"notify"` failed the
   canonical `type` schema, its error result landed, and the immediate resume

@@ -7,7 +7,7 @@ import { ArrowRight, MessageSquareText } from "lucide-react";
 
 export function PublicChatOpener({ conversationId }: { conversationId: string }) {
   const router = useRouter();
-  const destination = `/chat/${encodeURIComponent(conversationId)}?attention=approval`;
+  const destination = `/chat/${encodeURIComponent(conversationId)}`;
 
   useEffect(() => {
     router.replace(destination);
@@ -23,7 +23,7 @@ export function PublicChatOpener({ conversationId }: { conversationId: string })
           Opening your secure conversation
         </h1>
         <p className="mt-2 text-pretty text-sm leading-6 text-muted-foreground">
-          Your text assistant has an action ready for review. Nothing happens until you approve it.
+          Continue to your conversation with your text assistant.
         </p>
         <div className="mt-6 h-1.5 overflow-hidden rounded-full bg-muted">
           <div className="h-full w-2/3 animate-pulse rounded-full bg-primary motion-reduce:animate-none" />

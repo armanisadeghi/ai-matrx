@@ -404,6 +404,8 @@ model overrides.
 
 ## Change Log
 
+- `2026-09-22` — Cold pending calls follow the regenerated backend contract without SMS authorization metadata; delegated calls route through their actual client executors.
+
 - 2026-09-19 — **THE FOURTH ORGANIZATION STATE (R37) on `/agents/new/manual`.** `CreateManualAgentClient` rendered `OrganizationRequiredNotice` from `bootstrapResolved && !organizationId`, which is also the FAILED organization read (`setOrgBootstrapFailure` sets that flag TRUE). It now reads `useOrganizationRequired().organizationState` and renders `OrganizationContextNotice`, so a failed read says so and offers Try again instead of asking for a pick nobody checked was needed. Guard: `pnpm check:org-three-states` rule 5.
 - `2026-09-19` — **The Model Context panel says when the ORGANIZATION read
   failed, instead of "Reading this conversation's context…" forever (R37, the

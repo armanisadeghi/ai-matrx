@@ -338,42 +338,6 @@ describe("surfaceDelegatedToolCall", () => {
     expect(mockSubmitted).toEqual([]);
   });
 
-  it("queues an SMS exact-action approval card instead of routing the call", async () => {
-    const store = makeStore();
-    route(store, {
-      toolName: "task_update",
-      data: {
-        arguments: { task_id: "task-1", status: "done" },
-        execution_authorization: {
-          kind: "sms_consequential_action",
-          version: 1,
-          action_digest: "a".repeat(64),
-          side_effect_class: "db_write",
-          tool_name: "task_update",
-          requested_at: "2026-08-18T00:00:00Z",
-          expires_at: "2026-08-18T00:15:00Z",
-        },
-      },
-    });
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
-
-    expect(
-      store.getState().pendingAsks.byConversationId[CONVERSATION_ID],
-    ).toEqual([
-      expect.objectContaining({
-        callId: CALL_ID,
-        kind: "sms_action_authorization",
-        toolName: "task_update",
-        status: "pending",
-        smsActionArguments: { task_id: "task-1", status: "done" },
-        expiresAtMs: 1787012100000,
-      }),
-    ]);
-    expect(mockRouted).toEqual([]);
-    expect(mockWatches).toEqual([]);
-    expect(mockSubmitted).toEqual([]);
-  });
-
   it("offers an unknown non-desktop tool to Matrx Extend with its arguments", () => {
     const store = makeStore();
     route(store, { toolName: "unknown_client_tool" });

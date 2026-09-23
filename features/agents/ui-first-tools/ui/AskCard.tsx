@@ -196,7 +196,6 @@ export function presentation(ask: PendingAsk): AskPresentation {
         title: ask.plan?.title,
       };
     case "approval":
-    case "sms_action_authorization":
     case "email_review":
       // Rendered by <ApprovalCard> / <GmailReviewCard> (PendingAsksZone routes
       // them there) — never reaches <AskCard>. Present only to keep the switch
@@ -462,7 +461,6 @@ export function AskBody(props: AskBodyProps) {
     case "takeover":
       return <TextBody {...props} secret={false} />;
     case "approval":
-    case "sms_action_authorization":
     case "email_review":
       return null;
   }

@@ -28175,23 +28175,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/communications/sms/action-authorizations/{call_id}/confirm": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Confirm Action */
-        post: operations["confirm_action_communications_sms_action_authorizations__call_id__confirm_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/outreach/replies/lists/{outreach_list_id}/members/{member_id}/thread": {
         parameters: {
             query?: never;
@@ -96933,10 +96916,6 @@ export interface components {
             claimed_by_instance_id?: string | null;
             /** Claim Expires At */
             claim_expires_at?: string | null;
-            /** Execution Authorization */
-            execution_authorization?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            } | null;
         };
         /**
          * PendingExampleOut
@@ -114626,25 +114605,6 @@ export interface components {
             production_period: string;
             /** Record Page */
             record_page: string;
-        };
-        /** SmsActionAuthorizationRequest */
-        SmsActionAuthorizationRequest: {
-            /**
-             * Confirm
-             * @constant
-             */
-            confirm: true;
-        };
-        /** SmsActionAuthorizationResponse */
-        SmsActionAuthorizationResponse: {
-            /** Confirmed */
-            confirmed: boolean;
-            /** Call Id */
-            call_id: string;
-            /** Action Digest */
-            action_digest: string;
-            /** Expires At */
-            expires_at: string;
         };
         /** Smtp2GoServiceStatus */
         Smtp2GoServiceStatus: {
@@ -176178,41 +176138,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PanelTrend"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    confirm_action_communications_sms_action_authorizations__call_id__confirm_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                call_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SmsActionAuthorizationRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SmsActionAuthorizationResponse"];
                 };
             };
             /** @description Validation Error */

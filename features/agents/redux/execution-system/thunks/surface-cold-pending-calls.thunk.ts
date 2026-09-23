@@ -66,7 +66,6 @@ export const surfaceColdPendingCalls = (
           // shape is byte-identical to the live path.
           data: {
             arguments: call.arguments ?? {},
-            execution_authorization: call.execution_authorization,
           },
         }),
       );

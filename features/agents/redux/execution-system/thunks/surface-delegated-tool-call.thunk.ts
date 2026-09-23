@@ -66,8 +66,6 @@ import { SURFACE_WRITE_TOOL_NAME } from "@/features/surfaces/runtime/surface-wri
 import { dispatchSurfaceWrite } from "./dispatch-surface-write.thunk";
 import { getLiveDesktopInstance } from "../client-capabilities/desktop-presence";
 import { watchDesktopDelegation } from "./watch-desktop-delegation.thunk";
-import { enqueuePendingAsk } from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
-import { parseSmsActionAuthorization } from "@/features/agents/ui-first-tools/sms-action-authorization";
 import { dispatchMatrxExtendTool } from "./dispatch-matrx-extend-tool.thunk";
 
 function toToolArguments(value: unknown): Record<string, unknown> {
@@ -150,32 +148,6 @@ export const surfaceDelegatedToolCall = (
     // routing so process-stream cannot finalize the instance as `complete`
     // while an immediate tool-result POST is arranging the continuation.
     dispatch(setInstanceStatus({ conversationId, status: "paused" }));
-
-    const smsAuthorization = parseSmsActionAuthorization(
-      data?.execution_authorization,
-    );
-    if (smsAuthorization) {
-      dispatch(
-        enqueuePendingAsk({
-          callId,
-          conversationId,
-          toolName,
-          kind: "sms_action_authorization",
-          header: "APPROVAL",
-          question: "Approve this action from your text assistant?",
-          context: `Tool: ${toolName}`,
-          smsActionAuthorization: smsAuthorization,
-          smsActionArguments:
-            data?.arguments && typeof data.arguments === "object"
-              ? (data.arguments as Record<string, unknown>)
-              : {},
-          expiresAtMs: Date.parse(smsAuthorization.expires_at),
-          status: "pending",
-          createdAtMs: Date.now(),
-        }),
-      );
-      return;
-    }
 
     if (isWidgetActionName(toolName)) {
       // Widget actions resolve fast and fire-and-forget — the microtask

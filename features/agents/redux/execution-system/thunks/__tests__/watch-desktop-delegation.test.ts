@@ -142,7 +142,6 @@ function ledgerRow(callId: string): PendingCallSummary {
     target_instance_id: "desktop-1",
     claimed_by_instance_id: null,
     claim_expires_at: null,
-    execution_authorization: null,
   };
 }
 
