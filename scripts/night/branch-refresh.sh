@@ -184,6 +184,11 @@ seed_load() {  # seed_load <schema.table> <tsv> [<fix sql>] [<prelude>] [<trunca
   [ "$trunc" = "1" ] && truncsql="truncate table $t cascade;"
   out="$("$PSQL" "$BRANCH_DSN" -qAt 2>&1 <<SQL
 begin;
+-- PROVENANCE, DECLARED. `platform._stamp_actor_tier` refuses an automated write that does not say
+-- WHICH system it is ("declares actor_tier=code, but names no actor_system") — tool.definition
+-- refused all 693 rows on 2026-09-23 01:1xZ for exactly that. This loader IS a system, and says so
+-- through the server channel the guard names. The guard is satisfied, not bypassed.
+set local app.actor_system = 'branch-refresh-seed';
 create temp table _seed_stage (like $t including defaults) on commit drop;
 create temp table _seed_done (c tid primary key) on commit drop;
 ${pre}
@@ -212,7 +217,10 @@ begin
       begin
         -- Addressed by ctid, NOT by a record parameter: a row from a temp table is a generic
         -- \`record\` and \`insert … select (\$1).*\` on one answers "record type has not been registered".
-        execute format('insert into %s select * from _seed_stage where ctid = %L', '$t', r.c);
+        -- OVERRIDING SYSTEM VALUE: a GENERATED ALWAYS identity refuses the source's own id otherwise
+        -- (`cannot insert a non-DEFAULT value into column "id"` — ddl_guard_log, org_context_ledger,
+        -- assist_producer_policy_history). It is a no-op on a table with no identity column.
+        execute format('insert into %s overriding system value select * from _seed_stage where ctid = %L', '$t', r.c);
         insert into _seed_done values (r.c);
         ok := ok + 1; moved := moved + 1;
       exception when others then
@@ -685,7 +693,34 @@ if [ -f "$WORK/lookups.read" ]; then
     LOOKUP_OK+=("$t"); LOOKUP_FILTER[$t]="$col"; LOOKUP_TRUNC[$t]="$trunc"
   done < "$WORK/lookups.read"
 fi
-say "  declared tables with platform-owned rows to load: ${#LOOKUP_OK[@]}"
+# 🚨 FOREIGN-KEY ORDER, NOT ALPHABETICAL. Loaded alphabetically, `tool.binding` (b) ran before
+# `tool.definition` (d) and every one of its 680 rows died on `tool_binding_tool_id_fkey`; so did
+# tool.bundle, tool.ui, tool.ui_version and the masterwork tables (2026-09-23 01:1xZ). The set is
+# sorted parents-first from the BRANCH's own catalog; a cycle keeps its members in name order.
+if [ ${#LOOKUP_OK[@]} -gt 1 ]; then
+  EDGES="$("$PSQL" "$BRANCH_DSN" -qAtF'|' -c "select distinct cn.nspname||'.'||cc.relname, pn.nspname||'.'||pc.relname
+      from pg_constraint k join pg_class cc on cc.oid=k.conrelid join pg_namespace cn on cn.oid=cc.relnamespace
+      join pg_class pc on pc.oid=k.confrelid join pg_namespace pn on pn.oid=pc.relnamespace
+     where k.contype='f' and k.conrelid <> k.confrelid" 2>/dev/null)"
+  LOOKUP_OK=("${(@f)$(python3 -c '
+import sys
+tables = sys.argv[1].split()
+want = set(tables)
+parents = {t: set() for t in tables}
+for line in sys.argv[2].splitlines():
+    if "|" in line:
+        c, p = line.split("|", 1)
+        if c in want and p in want and c != p: parents[c].add(p)
+out, done = [], set()
+while len(out) < len(tables):
+    ready = sorted(t for t in tables if t not in done and parents[t] <= done)
+    if not ready:  # a cycle: take the first remaining name and carry on
+        ready = [sorted(t for t in tables if t not in done)[0]]
+    for t in ready: out.append(t); done.add(t)
+print("\n".join(out))
+' "${LOOKUP_OK[*]}" "$EDGES")}")
+fi
+say "  declared tables with platform-owned rows to load: ${#LOOKUP_OK[@]} (in foreign-key order)"
 
 SYSORG="$WORK/seed_system_org.tsv"
 SYSORG_COLS="$(common_cols iam.organizations)"
