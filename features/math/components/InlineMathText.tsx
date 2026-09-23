@@ -1,7 +1,7 @@
 "use client";
 
 import MarkdownCore from "@/components/markdown-core/MarkdownCore";
-import type { Components } from "react-markdown";
+import type { MarkdownComponents } from "@/components/markdown-core/markdown-core-types";
 
 interface InlineMathTextProps {
   text: string | null | undefined;
@@ -10,7 +10,7 @@ interface InlineMathTextProps {
 
 // Inline host: paragraphs and display wrappers become spans so the text sits
 // inside the caller's <p>/<h4>.
-const INLINE_COMPONENTS: Components = {
+const INLINE_COMPONENTS: MarkdownComponents = {
   p: ({ children }) => <span>{children}</span>,
   div: ({ children, className }) => <span className={className}>{children}</span>,
 };

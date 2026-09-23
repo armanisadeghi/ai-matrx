@@ -30,6 +30,9 @@ export type MarkdownPreset =
   | "chat"
   | "message";
 
+/** The element-override map a caller may pass to the core — import THIS, never react-markdown's own type. */
+export type MarkdownComponents = Components;
+
 export interface MarkdownCoreProps {
   children: string;
   preset?: MarkdownPreset;
