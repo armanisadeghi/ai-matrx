@@ -86,7 +86,7 @@ describe("a waiting screen is never motionless", () => {
     // A fabricated bar is a lie told slowly: nothing on this path knows a
     // fraction of anything.
     for (const ms of [0, 5_000, 45_000, 500_000]) {
-      expect(elapsedDetail({ elapsedMs: ms, usualMs: 90_000 })).not.toMatch(
+      expect(elapsedDetail({ elapsedMs: ms, usualMs: 90_000 }) ?? "").not.toMatch(
         /\d+\s*%/,
       );
     }

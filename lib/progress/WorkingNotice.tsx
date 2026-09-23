@@ -54,6 +54,7 @@ export function WorkingNotice({
 }) {
   const elapsedMs = useElapsedSince(startedAt);
   if (startedAt === null) return null;
+  const detail = elapsedDetail({ elapsedMs, usualMs, keepsGoingWithoutYou });
   return (
     <div
       // A live region, because the sentence under it changes while the person
@@ -68,9 +69,9 @@ export function WorkingNotice({
       <Loader2 className="mt-0.5 size-4 shrink-0 animate-spin" />
       <div className="min-w-0 flex-1">
         <p className="text-foreground">{doing}</p>
-        <p className="mt-0.5 text-xs tabular-nums">
-          {elapsedDetail({ elapsedMs, usualMs, keepsGoingWithoutYou })}
-        </p>
+        {detail ? (
+          <p className="mt-0.5 text-xs tabular-nums">{detail}</p>
+        ) : null}
       </div>
       {action ? <div className="ml-auto shrink-0">{action}</div> : null}
     </div>

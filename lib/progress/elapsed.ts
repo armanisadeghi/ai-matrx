@@ -39,9 +39,22 @@ import { describeDuration, OVERDUE_GRACE_FACTOR } from "./estimateSentence";
 // Change the row, then re-mirror this literal; the value has no sync read path.
 export const ELAPSED_TICK_MS = 1_000;
 
-/** "2m 57s" / "48s" — the honest clock a stuck-looking screen owes the reader. */
+/**
+ * Below this a waiting line says nothing about time at all. Cold walk 22 read
+ * "0ms so far — this usually takes a few seconds." on the New Masterwork start
+ * notice: a person does not wait in milliseconds, and a clock that opens on
+ * zero reads as a clock that has not started. The line appears at one second.
+ */
+export const ELAPSED_SHOW_AFTER_MS = 1_000;
+
+/**
+ * "2m 57s" / "48s" — the honest clock a stuck-looking screen owes the reader.
+ * Whole seconds only: the value is floored to the second BEFORE formatting, so
+ * no caller can ever print "0ms" or "850ms" at a person.
+ */
 export function formatElapsed(ms: number): string {
-  return formatDurationMs(ms, { style: "compact", round: "down" });
+  const wholeSeconds = Math.max(1_000, Math.floor(Math.max(0, ms) / 1_000) * 1_000);
+  return formatDurationMs(wholeSeconds, { style: "compact", round: "down" });
 }
 
 /**
@@ -60,8 +73,10 @@ export function elapsedDetail({
   usualMs: number;
   /** True when the work survives the person leaving the page. */
   keepsGoingWithoutYou?: boolean;
-}): string {
-  const clock = formatElapsed(Math.max(0, elapsedMs));
+}): string | null {
+  // Nothing to say before the first whole second (walk 22, "0ms so far").
+  if (elapsedMs < ELAPSED_SHOW_AFTER_MS) return null;
+  const clock = formatElapsed(elapsedMs);
   if (elapsedMs < usualMs * OVERDUE_GRACE_FACTOR) {
     return `${clock} so far — this usually takes ${describeDuration(usualMs)}.`;
   }
