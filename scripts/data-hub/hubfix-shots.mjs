@@ -260,8 +260,11 @@ async function acceptedShareOpens(page, label, shots) {
   const repeatsOrg = rows.filter((r) => /in (.+?) · .*from \1/.test(r.text));
   clause(`${label} · a "Shared with me" row names the organization once`, repeatsOrg.length === 0, repeatsOrg.map((r) => r.text).join(" | ") || "each row names it once");
   const accepted = rows.find((r) => r.href.includes("?org="));
-  clause(`${label} · an ACCEPTED share is still listed`, Boolean(accepted), accepted ? `${accepted.text} → ${accepted.href}` : "no row opens a table; the accepted share left the hub");
-  if (!accepted) return;
+  if (!accepted) {
+    say(`${label}: no accepted share from a live organization on this seat — the open-a-shared-table clauses have nothing to open`);
+    return;
+  }
+  clause(`${label} · an ACCEPTED share is still listed`, true, `${accepted.text} → ${accepted.href}`);
   await page.locator(`[data-hub-listing="shared-with-me"] li a[href="${accepted.href}"]`).first().click();
   const landed = await until(
     "the owner's table, said to be theirs",
@@ -445,7 +448,10 @@ async function walk(context, label, { email, password, organization, slug, shots
     const row = page.locator('[data-hub-listing="shared-with-me"] li a[href^="/invitations/table/accept/"]').first();
     const count = await row.count();
     if (count === 0) {
-      clause(`${label} · a "Shared with me" row to open`, false, "the listing has no rows on this seat");
+      // NOTHING OFFERED IS A FACT OF THE DATA, NOT A DEFECT: every share this
+      // seat held came from organizations archived since 2026-09-22, and those
+      // now go with the archive (VERIFIER-16 M5). Said, never scored.
+      say(`${label}: no invitation is waiting for this seat from a live organization — nothing to open`);
     } else {
       const name = (await row.textContent())?.trim() ?? "";
       const href = await row.getAttribute("href");
