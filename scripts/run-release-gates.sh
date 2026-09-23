@@ -1251,6 +1251,17 @@ else
         "Settings: NEW knob-shaped constants (ratchet)|pnpm check:settings-hardcoded"
         "Settings: behavioural env toggles (ratchet)|pnpm check:settings-env-toggles"
         "Settings: every rung reachable in the universal UI|pnpm check:settings-ladder-ui"
+        # RICH CONTENT UNIFICATION — no NEW use of a legacy renderer, editor,
+        # menu or direct markdown/math package (react-markdown, remark/rehype,
+        # katex, marked, Toast UI, Remirror, FullScreenMarkdownEditor,
+        # messageActionRegistry, …) outside the one core edge. Resolved over the
+        # real import graph (TypeScript compiler API, aliases + barrels), with a
+        # shrink-only baseline: a new site fails naming its canonical
+        # replacement, and a baseline entry whose use is gone fails as STALE.
+        # Advisory (this list only) until the cutover campaign rules otherwise.
+        # Registry + checklist: scripts/rich-content-inventory/FEATURE.md.
+        "Rich content: no new legacy renderer/editor/menu use (ratchet)|pnpm check:rich-content-legacy"
+        "Rich content legacy guard can still fail (self-test)|pnpm check:rich-content-legacy:self-test"
     )
 fi
 
