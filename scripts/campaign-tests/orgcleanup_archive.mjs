@@ -96,6 +96,41 @@ const SWEEP_REASON =
   "slug and named after a real business, " +
   "instead of minting one. Nothing deleted; restorable.";
 
+
+// FIXTURE-ORGS (2026-09-23) — one organization per fixture family. `keep` is the slug the
+// suites (or the use-case seed files) reference; `hold` names siblings a live suite still
+// reaches by id, with the file that reaches it. A sibling that is neither is archived.
+const FIXTURE_CLASSIFICATION =
+  "FIXTURE-ORGS 2026-09-23 — a second copy of a fixture family, created by a test seat with no member outside the test seats";
+const FIXTURE_REASON =
+  "FIXTURE-ORGS 2026-09-23 — duplicate of a fixture family; the suites keep ONE organization per family, " +
+  "found by its slug. Nothing deleted; restorable.";
+export const FIXTURE_FAMILIES = [
+  { family: "Rincon Plumbing Co", keep: "rincon-plumbing-co",
+    hold: { "5531d39c-e863-467a-9e36-ad7f14b2faeb": "realtime_topic_seat(_red).sql, realtime2_opid_seat.sql — the company test@test.com is NOT in" } },
+  { family: "Ironclad Mobile Mechanic", keep: "ironclad-mobile-mechanic" },
+  { family: "Ridgeline Physical Therapy", keep: "ridgeline-physical-therapy" },
+  { family: "Birchwood Avenue Renovation", keep: "home-renovation" },
+  { family: "Cascade Electronics Recovery", keep: "cascade-electronics-recovery",
+    hold: {
+      "4352d061-ec13-4761-ae32-9c9bd52e7de3": "mirror2_red.sql — the company test@test.com is NOT in",
+      "7ead0000-0000-4a00-8a00-00000000c001": "operator-censuses/readperf_parity_20_pairs.sql — fixed-id parity fixture",
+    } },
+  { family: "Fairhaven Steelworks", keep: "fairhaven-steelworks" },
+  { family: "Greenline Landscaping Crew", keep: "greenline-landscaping-crew" },
+  { family: "Hands & Hope Alliance", keep: "hands-and-hope-alliance" },
+  { family: "Harbor Dental Group", keep: "harbor-dental-group",
+    hold: { "efe3623f-c1a0-4c0b-9315-c8c882a856b8": "tails4_a_link_carries_its_organization.mjs — NOT_MINE" } },
+  { family: "Ironline Fitness", keep: "fixture-ironline-fitness-f1wa0s" },
+  { family: "Signal & Scale Podcast", keep: "signal-scale-podcast-muaj1a8i" },
+  { family: "Wraithmoor Regional Museum of Art & Craft", keep: "wraithmoor-regional-museum-of-art-and-craft" },
+  // Single-copy families, listed so a future duplicate is caught by the same run.
+  { family: "Ashford Labs", keep: "ashford-labs" },
+  { family: "Meridian Software", keep: "meridian-software" },
+  { family: "Harborline Heating & Air", keep: "harborline-heating-and-air" },
+  { family: "Timberline Roofing", keep: "timberline-roofing" },
+];
+
 async function seat() {
   const sb = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -255,7 +290,85 @@ if (cmd === "list") {
     console.log(`FOR ARMAN — ${forArman.length} organization(s) carry a banned name but are NOT test artifacts by evidence; nothing was done to them:`);
     for (const [org, why] of forArman) console.log(`  ${org.id}  ${org.name} — ${why}`);
   }
+} else if (cmd === "fixtures") {
+  // FIXTURE-ORGS (2026-09-23). ONE ORGANIZATION PER FIXTURE FAMILY. The sweep above finds
+  // banned NAMES; this finds the opposite failure — realistic names that repeat, so a member's
+  // Shared-with-me shows ten identical "Rincon Plumbing Co — Ojai Branch" rows. For each family
+  // it keeps the organization the suites reference by slug (or, lacking one, the realistic seed
+  // the use-case files reference), HOLDS any sibling a live suite still names by id (archiving it
+  // would turn that suite's "a company she is not in" clause green for the wrong reason), and
+  // archives the rest through the door — after re-running the same evidence test: created by a
+  // test seat, no live member outside the test seats. Anything else is printed and left alone.
+  const DRY = process.argv.includes("--dry");
+  const { data: live, error: liveErr } = await sb
+    .schema("iam")
+    .from("organizations")
+    .select("id, name, slug, settings, created_by, created_at, is_personal, is_system")
+    .is("archived_at", null);
+  if (liveErr) throw new Error(`could not read the live organizations: ${liveErr.message}`);
+
+  const forArman = [];
+  const held = [];
+  let classified = 0;
+  let archived = 0;
+  for (const fam of FIXTURE_FAMILIES) {
+    const members = live.filter((o) => (o.name ?? "").startsWith(fam.family) && !o.is_personal);
+    if (members.length === 0) continue;
+    const keeper = members.find((o) => o.slug === fam.keep);
+    if (!keeper) {
+      forArman.push([{ id: "-", name: fam.family }, `the keeper slug ${fam.keep} is not live — nothing in this family was touched`]);
+      continue;
+    }
+    console.log(`\n${fam.family}: ${members.length} live — KEEP ${keeper.id} ${keeper.slug}`);
+    for (const org of members.sort((a, b) => a.created_at.localeCompare(b.created_at))) {
+      if (org.id === keeper.id) continue;
+      const hold = fam.hold?.[org.id];
+      if (hold) {
+        held.push([org, hold]);
+        console.log(`  HELD      ${org.id}  ${org.name} — ${hold}`);
+        continue;
+      }
+      if (org.is_system) {
+        forArman.push([org, "system organization — the door refuses it by design"]);
+        continue;
+      }
+      const { data: ms, error: memErr } = await sb
+        .schema("iam")
+        .from("memberships")
+        .select("user_id")
+        .eq("organization_id", org.id)
+        .eq("container_type", "organization")
+        .is("deleted_at", null);
+      if (memErr) throw new Error(`could not read members of ${org.id}: ${memErr.message}`);
+      const strangers = ms.filter((m) => !SEATS.has(m.user_id));
+      if (strangers.length > 0 || !SEATS.has(org.created_by)) {
+        forArman.push([org, `a person outside the test seats made it or is in it (${strangers.length} stranger member(s))`]);
+        console.log(`  LEFT ALONE ${org.id}  ${org.name}`);
+        continue;
+      }
+      if (DRY) {
+        console.log(`  would archive ${org.id}  ${org.slug}  ${org.name}`);
+        continue;
+      }
+      if (!(org.settings ?? {})["test_fixture"]) {
+        const settings = { ...(org.settings ?? {}), test_fixture: FIXTURE_CLASSIFICATION };
+        const { error: updErr } = await sb.rpc("org_update", { p_org_id: org.id, p_patch: { settings } });
+        if (updErr) throw new Error(`org_update refused ${org.id}: ${updErr.message}`);
+        classified += 1;
+      }
+      const r = await call(sb, "organization_archive", {
+        p_org: org.id,
+        p_confirm_name: org.name,
+        p_reason: FIXTURE_REASON,
+      });
+      if (r.changed) archived += 1;
+      console.log(`  ${r.changed ? "ARCHIVED " : "already  "} ${org.id}  ${org.name}`);
+    }
+  }
+  console.log(`\n${classified} newly classified, ${archived} newly archived, ${held.length} held.`);
+  if (forArman.length === 0) console.log("FOR ARMAN: nothing.");
+  else for (const [org, why] of forArman) console.log(`FOR ARMAN  ${org.id}  ${org.name} — ${why}`);
 } else {
-  console.log("usage: orgcleanup_archive.mjs list|archive|classify-and-archive|sweep [--dry]|roundtrip <org-id>");
+  console.log("usage: orgcleanup_archive.mjs list|archive|classify-and-archive|sweep [--dry]|fixtures [--dry]|roundtrip <org-id>");
   process.exit(1);
 }
