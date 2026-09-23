@@ -1559,6 +1559,66 @@ export type Database = {
           },
         ]
       }
+      term_list: {
+        Row: {
+          context: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          description: string | null
+          entries: Json
+          id: string
+          metadata: Json
+          modalities: string[]
+          name: string
+          organization_id: string
+          source_language: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          context?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string | null
+          entries?: Json
+          id?: string
+          metadata?: Json
+          modalities?: string[]
+          name: string
+          organization_id: string
+          source_language?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          context?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string | null
+          entries?: Json
+          id?: string
+          metadata?: Json
+          modalities?: string[]
+          name?: string
+          organization_id?: string
+          source_language?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       usage: {
         Row: {
           agent_id: string | null

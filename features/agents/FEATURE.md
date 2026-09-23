@@ -228,6 +228,20 @@ neither prompt blocks nor run inputs: a canonical
   `FileResourceChip`, so click/hover/details behavior is identical to Stored
   Files everywhere else. Never mount the large `AssociationList` browser here.
 
+### Term lists
+
+One org resource (`agent.term_list`, token `agent_term_list`) behind translation
+glossaries, TTS pronunciation, STT known terms and house terms: entries
+`{term, value?, kind, language?}` with kind translate | do_not_translate |
+pronounce | spell_as | boost, a modality tag, and context prose. Code:
+[term-lists/](term-lists/) (types + validation + CSV paste, direct-Supabase
+service, `TermListsWorkspace` at `/resources/term-lists`). Attached to an agent
+by an association edge `agent_term_list → agent`, role `term_list`, from the
+Builder's **Term lists** row (`components/builder/AgentTermListsManager.tsx`).
+The server places each list where the model's vendor wants it on every run:
+aidream `services/term_lists/FEATURE.md`. `metadata` holds the server's vendor
+cache (ElevenLabs dictionary locator) and is never written from here.
+
 ### Versioning
 
 Every Builder save = new `agent_definition` version. Runner + Chat default to the current pointer. **Shortcuts and Apps pin to a specific version** so embeds never break when the agent evolves. Drift is surfaced via **Find Usages & Drift** (below), never auto-resolved. See **AGENT_VERSIONING.md**.

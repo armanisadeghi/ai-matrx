@@ -7,6 +7,7 @@ import { AgentContextPoliciesManager } from "../context-policies-management/Agen
 import { AgentBuilderMessagesArea } from "./AgentBuilderLeftPanelContent";
 import { AddMessageButtons } from "./AddMessageButtons";
 import { AgentResourcesManager } from "./AgentResourcesManager";
+import { AgentTermListsManager } from "./AgentTermListsManager";
 
 interface AgentBuilderLeftPanelProps {
   agentId: string;
@@ -46,6 +47,7 @@ export function AgentBuilderLeftPanel({ agentId }: AgentBuilderLeftPanelProps) {
           showCompactInjectionControl
         />
         <AgentResourcesManager agentId={agentId} />
+        <AgentTermListsManager agentId={agentId} />
       </div>
 
       <Suspense fallback={<MessagesAreaSkeleton />}>
