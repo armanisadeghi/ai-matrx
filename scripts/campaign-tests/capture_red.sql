@@ -5,8 +5,8 @@
 --
 -- Every body planted below is the REAL bytes of one of this lane's own applied migrations,
 -- copied out of the file, not a paraphrase: the first write of custom.capture_submit (the
--- metadata blob the Data Doctrine guard refuses), the second (a list written into a Field
--- that holds one value), the third (the OUT parameter that makes the last statement of the
+-- metadata blob the Data Doctrine guard refuses), the second (a Field that holds one value
+-- given every photograph sent for it), the third (the OUT parameter that makes the last statement of the
 -- write path ambiguous at RUN time). The fourth is the wall itself: the CHECK constraint
 -- dropped, so a crew sheet can be published to the world.
 --
@@ -472,15 +472,28 @@ $fn$;
 
   perform set_config('role', 'authenticated', true);
 
-  -- ══ RED 2 — a list written into a Field that holds ONE value ══════════════════════
+  -- ══ RED 2 — two photographs for a question that holds ONE, refused only at the last step ══
+  -- REL-7 (lane STORE-TXN-3, 2026-09-22, reltargets_a_relation_across_organizations_holds_
+  -- its_value.sql) made ONE target written as a list of one legal for every relation, so a
+  -- single photograph sent as `["<id>"]` is no longer the defect: the store accepts it, the
+  -- planted body walks on into its OTHER defect (RED 3's ambiguous `record_id`) and this red
+  -- used to die of the wrong cause (measured on the clone 2026-09-23, lane STORE-SMALLS). What
+  -- the pre-fix body still does wrong is the case the fix names: it writes BOTH photographs
+  -- into the one-photo Field, and the store refuses that at custom.record_write — after the
+  -- walk to the bin and the upload — instead of the door refusing it up front, by name.
+  -- The green twin's PART 10 asserts the up-front refusal on the real body.
   begin
     select record_id into v_rec from custom.capture_submit(v_org, v_sheet, 'red-2',
              jsonb_build_object('bin_id', 'B-2'),
-             jsonb_build_array(jsonb_build_object('field', 'photo', 'name', 'b2.jpg')));
-    raise exception 'RED 2 DID NOT FIRE — a list was accepted into a single-valued photo field (%)', v_rec;
+             jsonb_build_array(jsonb_build_object('field', 'photo', 'name', 'b2-front.jpg'),
+                               jsonb_build_object('field', 'photo', 'name', 'b2-lid.jpg')));
+    raise exception 'RED 2 DID NOT FIRE — two photographs were accepted into a single-valued photo field (%)', v_rec;
   exception when others then
     get stacked diagnostics v_txt = message_text;
-    if v_txt not like '%one value%' and v_txt not like '%list%' then raise; end if;
+    -- the refusal must be the STORE's, at the last step — never the door's up-front one,
+    -- which is the fix and would mean the plant did not take.
+    if v_txt like '%more than one file%' then raise; end if;
+    if v_txt not like '%one value%' and v_txt not like '%at most%' then raise; end if;
     v_fired := v_fired + 1;
     raise notice 'RED 2 FIRED — "%"', v_txt;
   end;

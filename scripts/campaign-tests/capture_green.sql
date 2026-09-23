@@ -366,6 +366,26 @@ begin
   raise notice 'PART 9 PASSED — "%", and a sheet that does not exist says exactly the same', v_txt;
 
   perform set_config('request.jwt.claims', c_admin_j, true);
+
+  -- ══ PART 10 — TWO PHOTOGRAPHS FOR THE ONE-PHOTO QUESTION ARE REFUSED UP FRONT ══════
+  -- `photo` on a bin is one photograph. A phone that queued two for it must be told BY NAME
+  -- before anything is written — not at custom.record_write, the last step, after the
+  -- uploads (*photo points at 2 things, and it can point at 1 at most*). capture_red.sql
+  -- RED 2 plants the pre-fix body and watches it die at the last step instead.
+  v_fired := false;
+  begin
+    perform custom.capture_submit(v_org, v_sheet, 'cap-two-' || left(gen_random_uuid()::text, 8),
+              jsonb_build_object('bin_id', 'B-10', 'weight_kg', 12),
+              jsonb_build_array(jsonb_build_object('field', 'photo', 'name', 'b10-front.jpg'),
+                                jsonb_build_object('field', 'photo', 'name', 'b10-lid.jpg')));
+  exception when sqlstate '22004' then
+    v_fired := true; get stacked diagnostics v_txt = message_text;
+  end;
+  if not v_fired or v_txt not like '%more than one file for "photo"%' then
+    raise exception '10: two photographs for a one-photo question were not refused up front by name (%)', v_txt;
+  end if;
+  raise notice 'PART 10 PASSED — "%"', v_txt;
+
   raise notice '=== ALL PARTS PASSED ===';
 end;
 $suite$;
