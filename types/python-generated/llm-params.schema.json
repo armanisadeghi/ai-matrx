@@ -142,6 +142,26 @@
           "default": 0,
           "title": "Source Count",
           "type": "integer"
+        },
+        "glossary": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/GlossaryEntry"
+          },
+          "title": "Glossary",
+          "type": "array"
+        },
+        "context": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Context"
         }
       },
       "title": "DictionaryConfig",
@@ -238,6 +258,54 @@
         "term"
       ],
       "title": "DictionaryEntry",
+      "type": "object"
+    },
+    "GlossaryEntry": {
+      "description": "One translation rule from an attached term list.\n\n``translation`` None with ``do_not_translate`` True means \"keep the source\nterm verbatim in every target language\". ``target_language`` None means the\nrule applies to every target language.",
+      "properties": {
+        "term": {
+          "title": "Term",
+          "type": "string"
+        },
+        "translation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Translation"
+        },
+        "target_language": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Language"
+        },
+        "do_not_translate": {
+          "default": false,
+          "title": "Do Not Translate",
+          "type": "boolean"
+        },
+        "case_sensitive": {
+          "default": false,
+          "title": "Case Sensitive",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "term"
+      ],
+      "title": "GlossaryEntry",
       "type": "object"
     },
     "ImageLora": {
@@ -1390,6 +1458,60 @@
       "default": null,
       "title": "Audio Format"
     },
+    "performance_direction": {
+      "anyOf": [
+        {
+          "maxLength": 2000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Performance Direction"
+    },
+    "speech_speed": {
+      "anyOf": [
+        {
+          "maximum": 4,
+          "minimum": 0.25,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Speech Speed"
+    },
+    "turn_pause_ms": {
+      "anyOf": [
+        {
+          "maximum": 10000,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Turn Pause Ms"
+    },
+    "language_code": {
+      "anyOf": [
+        {
+          "maxLength": 16,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Language Code"
+    },
     "duration_seconds": {
       "anyOf": [
         {
@@ -1597,6 +1719,19 @@
       ],
       "default": null,
       "title": "Enhance Prompt"
+    },
+    "camera_control": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Camera Control"
     },
     "image_input": {
       "anyOf": [
