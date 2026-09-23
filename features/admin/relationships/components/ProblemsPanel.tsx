@@ -8,13 +8,13 @@
 // inline; "Register as shareable" / "Open rule" navigate to the Sharing /
 // Rules tabs with a consume-once query param).
 
-import { ArrowRight, ShieldAlert, ShieldCheck } from "lucide-react";
+import { ShieldAlert, ShieldCheck } from "lucide-react";
 
 import { EntityTypeChip } from "@/components/entity-types/EntityTypeChip";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { PROBLEM_TITLES, problemHuman, RELATIONSHIPS_LOCATION } from "../utils";
 import type { RelationshipProblem } from "../types";
 
@@ -27,6 +27,105 @@ interface Props {
   onRegisterShareable: (token: string) => void;
   onEdit: (source: string, target: string, label: string | null) => void;
 }
+
+type ProblemTableRow = RelationshipProblem & {
+  /**
+   * The RPC can report the same natural relationship key more than once when
+   * separate diagnostics apply. The original keyed those rows by their source
+   * order; retain that identity for the canonical table's row controls.
+   */
+  tableRowId: string;
+};
+
+const problemColumns: MatrxColumnDef<ProblemTableRow>[] = [
+  {
+    id: "severity",
+    accessorKey: "severity",
+    header: "Severity",
+    filter: "select",
+    filterOptions: [
+      { value: "error", label: "Error" },
+      { value: "warning", label: "Warning" },
+    ],
+    cell: (row) => (
+      <span className="inline-flex items-center gap-1.5 text-xs">
+        <span
+          className={`block h-2 w-2 rounded-full ${row.severity === "error" ? "bg-destructive" : "bg-amber-500"}`}
+          aria-hidden="true"
+        />
+        <span>{row.severity}</span>
+      </span>
+    ),
+    width: 104,
+  },
+  {
+    id: "kind",
+    accessorKey: "kind",
+    header: "Problem",
+    accessorFn: (row) => PROBLEM_TITLES[row.kind] ?? row.kind,
+    cell: (row) => (
+      <span className="whitespace-nowrap text-xs font-medium">
+        {PROBLEM_TITLES[row.kind] ?? row.kind}
+      </span>
+    ),
+    width: 184,
+  },
+  {
+    id: "source_type",
+    accessorKey: "source_type",
+    header: "Source",
+    cell: (row) => <EntityTypeChip token={row.source_type} />,
+    width: 160,
+  },
+  {
+    id: "target_type",
+    accessorKey: "target_type",
+    header: "Target",
+    cell: (row) => <EntityTypeChip token={row.target_type} />,
+    width: 160,
+  },
+  {
+    id: "label",
+    accessorKey: "label",
+    header: "Label",
+    cell: (row) =>
+      row.label ? (
+        <span className="font-mono text-[10px] text-muted-foreground">
+          {row.label}
+        </span>
+      ) : (
+        <span className="text-xs text-muted-foreground">—</span>
+      ),
+    width: 128,
+    mobileHidden: true,
+  },
+  {
+    id: "detail",
+    accessorKey: "detail",
+    header: "Detail",
+    cell: (row) => (
+      <span className="block max-w-md text-xs text-muted-foreground">
+        {row.detail}
+      </span>
+    ),
+    width: 384,
+    mobileHidden: true,
+  },
+  {
+    id: "edge_count",
+    accessorKey: "edge_count",
+    header: "Edges",
+    filter: "number",
+    cell: (row) => (
+      <span className="text-xs tabular-nums text-muted-foreground">
+        {row.edge_count > 0 ? `${row.edge_count} edges` : "—"}
+      </span>
+    ),
+    align: "right",
+    width: 88,
+    mobileHidden: true,
+  },
+];
 
 export function ProblemsPanel({
   problems,
@@ -47,146 +146,116 @@ export function ProblemsPanel({
     );
   }
 
+  const rows: ProblemTableRow[] = problems.map((problem, index) => ({
+    ...problem,
+    tableRowId: `${problem.kind}:${problem.source_type}:${problem.target_type}:${problem.label ?? ""}:${index}`,
+  }));
+
   return (
     <section className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <ShieldAlert className="h-4 w-4 text-destructive" />
-          Drift &amp; problems
-          {errorCount > 0 ? (
-            <Badge variant="destructive">
-              {errorCount} error{errorCount === 1 ? "" : "s"}
-            </Badge>
-          ) : null}
-          {warningCount > 0 ? (
-            <Badge
+      <MatrxDataTable
+        urlState={{ id: "relationship-problems", selectedRow: false }}
+        data={rows}
+        columns={problemColumns}
+        getRowId={(row) => row.tableRowId}
+        density="condensed"
+        viewTabs={false}
+        pageSize={0}
+        zebra
+        detail={{ enabled: false }}
+        emptyState={{
+          title: "No drift detected",
+          description:
+            "Every association shape is registered, directions are clean, and every conveying container is shareable.",
+        }}
+        toolbar={{
+          title: "Drift & problems",
+          titleCount: { value: problems.length, label: "problems" },
+          search: true,
+          searchPlaceholder: "Search relationship problems…",
+          actions: (
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4 text-destructive" aria-hidden="true" />
+              {errorCount > 0 ? (
+                <Badge variant="destructive">
+                  {errorCount} error{errorCount === 1 ? "" : "s"}
+                </Badge>
+              ) : null}
+              {warningCount > 0 ? (
+                <Badge
+                  variant="outline"
+                  className="border-amber-500/50 text-amber-600 dark:text-amber-500"
+                >
+                  {warningCount} warning{warningCount === 1 ? "" : "s"}
+                </Badge>
+              ) : null}
+            </div>
+          ),
+        }}
+        copy={{
+          label: "Relationship problem",
+          listLabel: "Drift & problems",
+          location: RELATIONSHIPS_LOCATION,
+          rowKind: "relationship-problem",
+          listKind: "relationship-problems",
+          rowDescription:
+            "One drift/problem row from the Relationship Manager.",
+          listDescription:
+            "Unified drift report from admin_relationship_problems().",
+          humanRow: problemHuman,
+          agentRow: ({ tableRowId: _tableRowId, ...problem }) => problem,
+          rowAttributes: (row) => ({
+            kind: row.kind,
+            severity: row.severity,
+            source: row.source_type,
+            target: row.target_type,
+            label: row.label,
+          }),
+          listAttributes: (visible) => ({
+            count: visible.length,
+            errors: visible.filter((row) => row.severity === "error").length,
+            warnings: visible.filter((row) => row.severity === "warning").length,
+          }),
+        }}
+        rowActions={(row) =>
+          row.kind === "unregistered_pair" ? (
+            <Button
+              size="sm"
               variant="outline"
-              className="border-amber-500/50 text-amber-600 dark:text-amber-500"
+              disabled={busy}
+              onClick={() =>
+                onRegister(row.source_type, row.target_type, row.label)
+              }
             >
-              {warningCount} warning{warningCount === 1 ? "" : "s"}
-            </Badge>
-          ) : null}
-        </h2>
-        <div className="ml-auto">
-          <CopyButtons
-            size="icon"
-            label="Drift & problems"
-            human={() => problems.map(problemHuman).join("\n\n---\n\n")}
-            agent={() => ({
-              kind: "relationship-problems",
-              location: RELATIONSHIPS_LOCATION,
-              description:
-                "Unified drift report from admin_relationship_problems().",
-              data: problems,
-              summary: problems.map(problemHuman).join("\n---\n"),
-              attributes: {
-                count: problems.length,
-                errors: errorCount,
-                warnings: warningCount,
-              },
-            })}
-          />
-        </div>
-      </div>
-      <div className="overflow-x-auto rounded-md border border-border">
-        <Table>
-          <TableBody>
-            {problems.map((p, i) => (
-              <TableRow
-                key={`${p.kind}:${p.source_type}:${p.target_type}:${p.label ?? ""}:${i}`}
-              >
-                <TableCell className="w-1">
-                  <span
-                    className={`block h-2 w-2 rounded-full ${p.severity === "error" ? "bg-destructive" : "bg-amber-500"}`}
-                    aria-label={p.severity}
-                  />
-                </TableCell>
-                <TableCell className="whitespace-nowrap text-xs font-medium">
-                  {PROBLEM_TITLES[p.kind] ?? p.kind}
-                </TableCell>
-                <TableCell>
-                  <span className="flex items-center gap-1.5">
-                    <EntityTypeChip token={p.source_type} />
-                    <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                    <EntityTypeChip token={p.target_type} />
-                    {p.label ? (
-                      <span className="font-mono text-[10px] text-muted-foreground">
-                        {p.label}
-                      </span>
-                    ) : null}
-                  </span>
-                </TableCell>
-                <TableCell className="max-w-md text-xs text-muted-foreground">
-                  {p.detail}
-                </TableCell>
-                <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
-                  {p.edge_count > 0 ? `${p.edge_count} edges` : ""}
-                </TableCell>
-                <TableCell className="w-48 text-right">
-                  <div className="inline-flex items-center justify-end gap-0.5">
-                    <CopyButtons
-                      size="icon"
-                      label={PROBLEM_TITLES[p.kind] ?? p.kind}
-                      human={() => problemHuman(p)}
-                      agent={() => ({
-                        kind: "relationship-problem",
-                        location: RELATIONSHIPS_LOCATION,
-                        description:
-                          "One drift/problem row from the Relationship Manager.",
-                        data: p,
-                        summary: problemHuman(p),
-                        attributes: {
-                          kind: p.kind,
-                          severity: p.severity,
-                          source: p.source_type,
-                          target: p.target_type,
-                          label: p.label,
-                        },
-                      })}
-                    />
-                    {p.kind === "unregistered_pair" ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={busy}
-                        onClick={() =>
-                          onRegister(p.source_type, p.target_type, p.label)
-                        }
-                      >
-                        Register as known
-                      </Button>
-                    ) : p.kind === "conveying_container_not_shareable" ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          onRegisterShareable(
-                            p.container_side === "target"
-                              ? p.target_type
-                              : p.source_type,
-                          )
-                        }
-                      >
-                        Register as shareable
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          onEdit(p.source_type, p.target_type, p.label)
-                        }
-                      >
-                        Open rule
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+              Register as known
+            </Button>
+          ) : row.kind === "conveying_container_not_shareable" ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                onRegisterShareable(
+                  row.container_side === "target"
+                    ? row.target_type
+                    : row.source_type,
+                )
+              }
+            >
+              Register as shareable
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() =>
+                onEdit(row.source_type, row.target_type, row.label)
+              }
+            >
+              Open rule
+            </Button>
+          )
+        }
+      />
     </section>
   );
 }
