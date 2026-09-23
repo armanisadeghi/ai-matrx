@@ -17,7 +17,7 @@ _(none)_
 ## Blocked
 
 ### TASK-017: Provision the agent term-list server contract
-- **Status:** blocked (2026-09-23) — reviewed provision spec is pushed; production table/model are still absent
+- **Status:** blocked (2026-09-23) — production table/model are absent; senior server-contract repair is in progress
 - **Created:** 2026-09-23
 - **Source:** `pnpm sync-types` found 14 missing-field errors in the active term-list service.
 
@@ -26,15 +26,15 @@ Provision and deploy the canonical AI Dream term-list resource, then regenerate 
 
 **Current evidence**
 
-- Frontend `features/agents/term-lists/service.ts` references `agent.term_list` fields absent from generated types; `pnpm sync-types` reports 14 errors in this file.
-- Read-only East catalog query found no `agent.term_list` table. The AI Dream route/model work still needs provisioned DB/ORM/entity vocabulary before types can expose the relation.
+- Frontend `features/agents/term-lists/service.ts` references `agent.term_list` fields absent from generated types; the 2026-09-23 full `pnpm sync-types` run regenerated East/API types, passed the API property-drop guard, and left exactly 14 type errors in this file.
+- East generated database types still have no `agent.term_list` relation. API types were generated from AI Dream checkout SHA `6dee0f0b2a5be893ee7a43c767e2caa6f487f40a`; live ECS `/health/version` reports `6c1acb4f8a4e13beba570c17c7ec13f6282758aa`, so the generated API contract is ahead of the running dependency.
 - Senior Astra dispatch pushed reviewed `aidream/services/term_lists/provision.json` and `FEATURE.md` as `e216e2b556f7173b47b87113350a399a4ab7164e`; Sol re-review found no remaining spec findings. The spec covers organization/internal access, versions/history, soft delete, client column ACL, and JSON entry constraints. Quarantined clone checks reject 14 malformed payloads and accept 6 valid payloads; production remained unchanged.
-- Full association/reachability rehearsal hit a 30-second `platform.rebuild_reachability` timeout; it was rolled back. Attachment conveyance, edge tombstoning, and frontend interaction remain unverified. The initial clone installation persisted because its harness used autocommit; later validation transactions were explicitly rolled back.
-- Provisioning is restricted to 01:00–04:00 America/Los_Angeles. No production changes were made this pass.
+- The 2026-09-23 senior dispatch replaced the clone rehearsal bottleneck with a candidate set-based traversal: all 888 roots match the existing 7,582 reachability rows (51.72 s baseline vs 0.406 s candidate, zero symmetric difference). Rollback-only rehearsal passed base FKs, term/file viewer reachability, archive tombstones, and full rollback; runner up → inverse → up passed without unexpected ACCESS EXCLUSIVE locks. The candidate changes shared `platform.rebuild_reachability` behavior and its server-only callable door, so it is a separate platform-wide change, not part of the additive term-list migration. Early-settlement proof is pending. A prior empty `agent.term_list` artifact remains in the quarantined clone, so exact final-name rehearsal is blocked while the senior investigates a safe clone-only reset. No production change has been made.
+- Provisioning is restricted to 01:00–04:00 America/Los_Angeles. At the latest check (00:20 PDT), the window had not opened and production was unchanged.
 
 **Next concrete step**
 
-Resolve the reachability timeout and complete the full bounded rehearsal, including base foreign keys, attachments and edge tombstoning. During the authorized window, apply the reviewed spec and provision the canonical model/entity vocabulary; then rerun `pnpm sync-types` and follow the resulting errors through frontend callers. Keep the current uncommitted term-list UI/service out of release until the contract exists; do not cast or fabricate generated types.
+Finish the early-settlement proof and independent review of the shared-function repair. In the authorized 01:00–04:00 PDT window, apply it to East only if the exact runner/inverse/up behavior and safety review pass; then apply the reviewed additive term-list contract, regenerate API/database/entity types from the now-live server contract, and follow every resulting error through frontend callers. Keep the current uncommitted term-list UI/service out of release until the contract exists; do not cast or fabricate generated types.
 
 ### TASK-CRM-ERASURE-RPC: Apply the missing Gmail interaction erasure RPC
 - **Status:** blocked (2026-09-22) — live East schema is missing the RPC used by current CRM code
