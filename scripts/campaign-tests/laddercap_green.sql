@@ -77,8 +77,17 @@ delete from platform.knob_override where organization_id = :ORG;
 delete from iam.memberships where organization_id = :ORG;
 delete from iam.organizations where id = :ORG;
 
-insert into iam.organizations (id, name, slug, abbreviation, created_by)
-values (:ORG, 'LADDERCAP Green Throwaway', 'laddercap-green-throwaway', 'LCG', :ADMIN);
+-- THE REAL USE CASE (owner law 2026-09-21; SUITES-TIDY-2 2026-09-22). Pierce County Tenant
+-- Legal Aid is a Tacoma nonprofit that defends tenants in eviction cases. Every client matter is a
+-- record in its Cases Table; the downtown office is the Home that carries that Table; the
+-- managing attorney (admin@admin.com) owns the organization and Dana (test@test.com) is a
+-- paralegal whose level on a Case is exactly what the grant ladder under test decides. The old
+-- fixture was called "LADDERCAP Green Throwaway", which ORG-CLEANUP-2's door now refuses by name;
+-- a fixture is a CLASSIFICATION, so it is tagged `settings.test_fixture` and found by its fixed
+-- id, never by a junk name.
+insert into iam.organizations (id, name, slug, abbreviation, created_by, settings)
+values (:ORG, 'Pierce County Tenant Legal Aid', 'pierce-county-tenant-legal-aid-lc', 'PTL', :ADMIN,
+        '{"test_fixture": true}'::jsonb);
 insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
 values (:ORG, 'organization', :ORG, :ADMIN, 'owner',  'active'),
        (:ORG, 'organization', :ORG, :DANA,  'member', 'active');
@@ -102,10 +111,10 @@ declare
   t uuid;
 begin
   insert into custom.record (id, organization_id, table_id, data_class, data, created_by)
-  values (v_hq, v_org, v_korg, 'record', jsonb_build_object('name', 'LADDERCAP Green HQ'), v_admin);
+  values (v_hq, v_org, v_korg, 'record', jsonb_build_object('name', 'Downtown Tacoma Office — 1102 Tacoma Ave S'), v_admin);
 
   t := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'Case', 'slug', 'laddercap_green_case', 'label_singular', 'Case', 'label_plural', 'Cases',
+    'name', 'Cases', 'slug', 'client_case', 'label_singular', 'Case', 'label_plural', 'Cases',
     'type', 'entity', 'display', 'list', 'ordered', false, 'weight', 'light', 'retention_days', 30,
     'default_sort', '[]'::jsonb, 'row_order', 'sorted', 'agent_writable', true,
     'fields', jsonb_build_array(jsonb_build_object('name', 'title', 'kind', 'text')),
@@ -132,7 +141,7 @@ begin
   end if;
 
   insert into custom.record (id, organization_id, table_id, data_class, data, created_by)
-  values (v_rec, v_org, v_tbl, 'record', jsonb_build_object('title', 'The admin''s record'), v_admin);
+  values (v_rec, v_org, v_tbl, 'record', jsonb_build_object('title', 'Okafor v. Ridgeline Property Management — unlawful detainer defense'), v_admin);
 end $t$;
 commit;
 

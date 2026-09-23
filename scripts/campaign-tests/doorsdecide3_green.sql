@@ -67,9 +67,13 @@ begin
   perform set_config('request.jwt.claims', j_admin, true);
 
   -- ── THE TWO ORGANIZATIONS ───────────────────────────────────────────────────────────────
-  insert into iam.organizations (id, name, slug, abbreviation, created_by) values
-    (v_north,   'Northgate Mechanical - safe to delete', 'northgate-mechanical-'||left(v_north::text,8), 'NGM', c_admin),
-    (v_cascade, 'Cascade Property Group - safe to delete', 'cascade-property-'||left(v_cascade::text,8), 'CPG', c_admin);
+  -- SUITES-TIDY-2 2026-09-22: ORG-CLEANUP-2's door refuses "- safe to delete" in a name. A
+  -- fixture is a CLASSIFICATION (`settings.test_fixture`), not a name; the business keeps its own.
+  insert into iam.organizations (id, name, slug, abbreviation, created_by, settings) values
+    (v_north,   'Northgate Mechanical', 'northgate-mechanical-'||left(v_north::text,8), 'NGM', c_admin,
+     '{"test_fixture": true}'::jsonb),
+    (v_cascade, 'Cascade Property Group', 'cascade-property-'||left(v_cascade::text,8), 'CPG', c_admin,
+     '{"test_fixture": true}'::jsonb);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status, created_by) values
     (v_north,   'organization', v_north,   c_admin, 'owner',  'active', c_admin),
     (v_north,   'organization', v_north,   c_dana,  'member', 'active', c_admin),
