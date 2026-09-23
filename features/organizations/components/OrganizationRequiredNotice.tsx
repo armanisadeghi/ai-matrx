@@ -61,6 +61,31 @@ export interface OrganizationRequiredNoticeProps {
   className?: string;
 }
 
+/**
+ * `what` as it reads INSIDE a sentence: the first letter lowered unless the
+ * first word is an acronym ("CRM contacts" stays "CRM contacts").
+ */
+export function subjectInSentence(what: string): string {
+  const trimmed = what.trim();
+  if (/^[A-Z]{2}/.test(trimmed)) return trimmed;
+  return trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
+}
+
+/**
+ * 🚨 THE HEADLINE NEVER HAS TO AGREE IN NUMBER WITH ITS SUBJECT.
+ *
+ * It used to be `${what} need an organization`, which is right for "Tasks"
+ * and wrong for every singular subject a caller passes — cold walk 22 read
+ * "Your agenda need an organization" on the dashboard, and the census found
+ * "This meeting", "Scanner health", "This site's tracking" and "a new
+ * education note" in the same shape. Guessing number from the last word fails
+ * on "people" and on subjects with a trailing clause, so the sentence is built
+ * so that number never matters: the subject is the object of "for".
+ */
+export function organizationNeededFor(what: string): string {
+  return `An organization is needed for ${subjectInSentence(what)}`;
+}
+
 const DEFAULT_DESCRIPTION =
   "Nothing was loaded because no organization is selected for this session. " +
   "Every request is filed under one organization, so pick the one you are " +
@@ -75,7 +100,7 @@ export function OrganizationRequiredNotice({
   className,
 }: OrganizationRequiredNoticeProps) {
   const headline =
-    title ?? (what ? `${what} need an organization` : "Choose an organization");
+    title ?? (what ? organizationNeededFor(what) : "Choose an organization");
 
   const picker = (
     <div className="w-full rounded-md border border-border p-1 text-left">
@@ -270,7 +295,7 @@ export function OrganizationContextNotice({
         >
           <p className="text-sm text-muted-foreground">
             {what
-              ? `Checking which organization ${what.toLowerCase()} belong to…`
+              ? `Checking which organization to use for ${subjectInSentence(what)}…`
               : "Checking which organization you are working in…"}
           </p>
           <Skeleton className="h-8 w-full" />

@@ -95,7 +95,7 @@ describe("EduNoteNew organization hydration", () => {
     });
 
     expect(host.querySelector('[data-testid="organization-required-notice"]')).not.toBeNull();
-    expect(host.textContent).toContain("new education note need an organization");
+    expect(host.textContent).toContain("An organization is needed for a new education note");
     expect(create).not.toHaveBeenCalled();
   });
 
