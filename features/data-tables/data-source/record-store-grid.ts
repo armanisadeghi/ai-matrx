@@ -1,22 +1,14 @@
 // features/data-tables/data-source/record-store-grid.ts — THE GRID PRIMITIVES' DOORS, CALLED BY NAME.
 //
-// Lane GRID-PRIMITIVES gave the record store the doors the older grid needs
-// (colors, the layout knob, row actions, autonumber) and `@ai-matrx/records`
-// 0.56.0 a typed method for each — but the package checks every call against the
-// door list GENERATED AT ITS LAST PUBLISH, and those doors enter that list only
-// when `records:generate` runs after the production apply (01:00–04:00 PT). Until
-// then every one of those methods answers `door_absent` WITHOUT asking, even on a
-// database that has the door. So the grid calls them the way
-// `features/record-change-approvals/applyRecordChange.ts` calls `work_approval_*`:
-// through the SAME data source the records client uses, schema `custom`, with the
-// package's own result TYPES and the store's refusal mapped by the package's own
-// `mapPgError`. `custom.migrate_retype` has no client method at all.
-//
-// 🚨 SWAP ON REGENERATE. Once `@ai-matrx/records` ships with these doors in its
-// generated list, each function below becomes a one-line call to
-// `tableDecorations` / `tableDecorate` / `gridLayout` / `rowActions` /
-// `actionDeclare` / `actionRun` / `autonumberBackfill`, and this file keeps only
-// `migrateRetype` until the client wraps it too.
+// `@ai-matrx/records` 0.57.0 carries a typed method for every grid primitive (colors,
+// layout, row actions, autonumber, recordChangeTrigger) and `record-store.ts` calls them there.
+// Two doors are left here because the client has no method for them yet, called the way
+// `features/record-change-approvals/applyRecordChange.ts` calls `work_approval_*`: through
+// the SAME data source the records client uses, schema `custom`, with the store's refusal
+// mapped by the package's own `mapPgError`:
+//   custom.record_change_actions  — lane GRID-PORT's presence door for G8 (not in the catalogue)
+//   custom.migrate_retype         — in the catalogue, no client method
+// 🚨 SWAP WHEN WRAPPED: each becomes a one-line client call and this file goes away.
 //
 // A door that is not on the database this browser talks to (production before
 // the 01:00–04:00 PT apply) answers PGRST202; that is mapped to ONE sentence a
@@ -24,14 +16,7 @@
 // control that fails when pressed.
 
 import { mapPgError } from "@ai-matrx/records/core";
-import type {
-  ActionRunResult,
-  DecorationPath,
-  GridLayout,
-  RecordsError,
-  RowAction,
-  TableDecorations,
-} from "@ai-matrx/records";
+import type { RecordsError } from "@ai-matrx/records";
 import { recordsDataSource } from "@ai-matrx/records-ui";
 
 import { createClient } from "@/utils/supabase/client";
@@ -75,46 +60,6 @@ export async function callGridDoor<T>(
   return { ok: true, data: answer.data as T };
 }
 
-// ─── G1: colors and layout ───────────────────────────────────────────────────
-
-export function tableDecorations(home: RecordStoreHome, tableId: string) {
-  return callGridDoor<TableDecorations>(home, "table_decorations", { p_table_id: tableId });
-}
-
-export function tableDecorate(home: RecordStoreHome, tableId: string, path: DecorationPath, value: unknown) {
-  return callGridDoor<TableDecorations>(home, "table_decorate", {
-    p_table_id: tableId,
-    p_path: path,
-    p_value: value ?? null,
-  });
-}
-
-export function gridLayout(home: RecordStoreHome, tableId: string) {
-  return callGridDoor<GridLayout>(home, "grid_layout", { p_table_id: tableId, p_view_id: null });
-}
-
-// ─── G2: row actions ─────────────────────────────────────────────────────────
-
-export function rowActions(home: RecordStoreHome, tableId: string) {
-  return callGridDoor<{ actions: RowAction[]; stale: unknown[] }>(home, "row_actions", { p_table_id: tableId });
-}
-
-export function actionDeclare(home: RecordStoreHome, tableId: string, actions: readonly RowAction[]) {
-  return callGridDoor<RowAction[]>(home, "action_declare", { p_table_id: tableId, p_actions: actions });
-}
-
-export function actionRun(home: RecordStoreHome, actionId: string, recordIds: readonly string[]) {
-  return callGridDoor<ActionRunResult>(home, "action_run", { p_action_id: actionId, p_record_ids: [...recordIds] });
-}
-
-// ─── G5: autonumber ──────────────────────────────────────────────────────────
-
-export function autonumberBackfill(home: RecordStoreHome, fieldId: string) {
-  return callGridDoor<{ numbered: number; highest: number | null; says: string }>(home, "autonumber_backfill", {
-    p_field_id: fieldId,
-  });
-}
-
 // ─── G8: a row change can start an agent ─────────────────────────────────────
 
 export type RecordChangeActions = {
@@ -131,25 +76,6 @@ export type RecordChangeActions = {
  */
 export function recordChangeActions(home: RecordStoreHome, tableId: string) {
   return callGridDoor<RecordChangeActions>(home, "record_change_actions", { p_table_id: tableId });
-}
-
-/**
- * The schedule trigger `scheduler.sch_match_event` matches for a record-store Table.
- * 🚨 SWAP ON PUBLISH: this is `recordChangeTrigger` from `@ai-matrx/records` (aidream
- * 65c22253cc, src/grid.ts), which is not in a published release yet; consumer code may not
- * import an unpublished API. Same inputs, same output — replace this with the import.
- */
-export function recordChangeTrigger(
-  tableId: string,
-  options: { actions?: string[]; changedFields?: string[] } = {},
-): { type: "event"; entity_type: string; table_id: string; actions?: string[]; changed_fields?: string[] } {
-  return {
-    type: "event",
-    entity_type: `custom_record:${tableId}`,
-    table_id: tableId,
-    ...(options.actions && options.actions.length > 0 ? { actions: options.actions } : {}),
-    ...(options.changedFields && options.changedFields.length > 0 ? { changed_fields: options.changedFields } : {}),
-  };
 }
 
 // ─── the store's own verbs the published client does not wrap ───────────────

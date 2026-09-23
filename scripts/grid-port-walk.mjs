@@ -135,7 +135,7 @@ async function main() {
       pass("read-relation-words", /Maria Delgado|Harbor View|Takeda/.test(grid) && uuids === 0, `customers as names, ${uuids} bare ids in the grid`);
       const parity = await openGrid(page, TABLES.parity, "Job 120");
       await page.screenshot({ path: `${OUT}/gridport-${SEAT}-2-parity-fixture-in-the-grid.png` });
-      pass("read-parity-fixture", /of 120 rows/.test(parity) && parity.includes("Amount") && parity.includes("Job 0"), "Grid Parity Fixture: 120 rows, its Amount column, its jobs");
+      pass("read-parity-fixture", /of 120 rows/.test(parity) && parity.includes("Amount") && /Job \d{3}/.test(parity), "Grid Parity Fixture: 120 rows, its Amount column, its jobs");
     }
 
     // ── WRITES: a real edit to a real service call, undone, persisted, put back ─────

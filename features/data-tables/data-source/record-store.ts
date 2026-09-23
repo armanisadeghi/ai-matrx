@@ -58,7 +58,6 @@ import type {
   TableMetadata,
 } from "../types";
 import type { RecordStoreHome } from "./table-home";
-import * as gridDoors from "./record-store-grid";
 import { migrateRetype } from "./record-store-grid";
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
 import {
@@ -227,8 +226,8 @@ async function readSnapshot(home: RecordStoreHome, tableId: string): Promise<Ser
   const level = levelRead.ok ? (levelRead.data.find((l) => l.id === tableId)?.level ?? null) : null;
   const document = tableRead.data.document as Record<string, unknown>;
   const [decorations, actions] = await Promise.all([
-    gridDoors.tableDecorations(home, tableId),
-    gridDoors.rowActions(home, tableId),
+    client.tableDecorations({ table_id: tableId }),
+    client.rowActions({ table_id: tableId }),
   ]);
   const metadata: Record<string, unknown> = {};
   if (decorations.ok) metadata.style = olderStyle(decorations.data, fields);
@@ -800,7 +799,7 @@ export async function setTableStyle(
   if (!fields.success) return fields;
   const write = storeDecorationWrite(args.path, args.value ?? null, fields.data);
   if (!write) return plainFailure("That color points at a column this table no longer has. Nothing was saved.");
-  const answer = await gridDoors.tableDecorate(home, args.tableId, write.path as DecorationPath, write.value);
+  const answer = await clientFor(home).tableDecorate({ table_id: args.tableId, path: write.path as DecorationPath, value: write.value });
   invalidateRecordStoreTable(args.tableId);
   if (!answer.ok) return doorRefused(answer);
   return { success: true, data: { style: olderStyle(answer.data, fields.data) } };
@@ -814,10 +813,10 @@ export async function setTableRowActions(
   if (!fields.success) return fields;
   const mapped = storeRowActions(args.rowActions, fields.data);
   if (typeof mapped === "string") return plainFailure(`${mapped} Nothing was saved.`);
-  const answer = await gridDoors.actionDeclare(home, args.tableId, mapped as StoreRowAction[]);
+  const answer = await clientFor(home).actionDeclare({ table_id: args.tableId, actions: mapped as StoreRowAction[] });
   invalidateRecordStoreTable(args.tableId);
   if (!answer.ok) return doorRefused(answer);
-  const read = await gridDoors.rowActions(home, args.tableId);
+  const read = await clientFor(home).rowActions({ table_id: args.tableId });
   return { success: true, data: { row_actions: read.ok ? olderRowActions(read.data.actions, fields.data) : mapped } };
 }
 
@@ -830,7 +829,7 @@ export async function runRowAction(
   home: RecordStoreHome,
   args: { tableId: string; actionId: string; rowIds: readonly string[] },
 ): Promise<ServiceResult<{ changed: number }>> {
-  const answer = await gridDoors.actionRun(home, args.actionId, args.rowIds);
+  const answer = await clientFor(home).actionRun({ action_id: args.actionId, record_ids: [...args.rowIds] });
   invalidateRecordStoreTable(args.tableId);
   if (!answer.ok) {
     // A run any record refused changed NOTHING; name every record and field that refused.
@@ -1013,7 +1012,7 @@ export async function setFieldFormat(
   invalidateRecordStoreTable(args.tableId);
   if (!written.ok) return refused(written.error);
   if (format?.id === "autonumber") {
-    const numbered = await gridDoors.autonumberBackfill(home, args.fieldId);
+    const numbered = await clientFor(home).autonumberBackfill({ field_id: args.fieldId });
     if (!numbered.ok) {
       return plainFailure(
         `The column was set to Autonumber, but the existing rows could not be numbered: ${numbered.error.message}`,
@@ -1027,7 +1026,7 @@ export async function backfillAutonumber(
   home: RecordStoreHome,
   args: { tableId: string; fieldId: string },
 ): Promise<ServiceResult<{ numbered: number; highest: number }>> {
-  const answer = await gridDoors.autonumberBackfill(home, args.fieldId);
+  const answer = await clientFor(home).autonumberBackfill({ field_id: args.fieldId });
   invalidateRecordStoreTable(args.tableId);
   if (!answer.ok) return doorRefused(answer);
   const numbered = answer.data.numbered ?? 0;
@@ -1400,7 +1399,7 @@ export async function gridLayoutDefaults(
   home: RecordStoreHome,
   tableId: string,
 ): Promise<{ layout: string; fitMaxColumns: number; rowHeight: string } | null> {
-  const answer = await gridDoors.gridLayout(home, tableId);
+  const answer = await clientFor(home).gridLayout({ table_id: tableId });
   if (!answer.ok) return null;
   const l = answer.data.layout;
   return { layout: l.mode, fitMaxColumns: l.fit_max_columns, rowHeight: l.row_height };

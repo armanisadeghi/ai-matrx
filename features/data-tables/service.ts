@@ -30,7 +30,8 @@ import type { FieldFormatConfig } from "@/lib/field-formats/types";
 import { rewriteFormulaReferences } from "./formulas";
 import * as recordStore from "./data-source/record-store";
 import { recordStoreHomeOf } from "./data-source/table-home";
-import { recordChangeActions, recordChangeTrigger } from "./data-source/record-store-grid";
+import { recordChangeActions } from "./data-source/record-store-grid";
+import { recordChangeTrigger } from "@ai-matrx/records";
 
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { parseTableMetadata } from "./types";
