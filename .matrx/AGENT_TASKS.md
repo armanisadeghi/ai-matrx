@@ -16,22 +16,6 @@ _(none)_
 
 ## Blocked
 
-### TASK-018: Repair AI Dream LLM schema generation
-- **Status:** blocked (2026-09-23) — AI Dream owner must update its generator; frontend write scope is read-only there
-- **Created:** 2026-09-23
-- **Source:** Frontend release sync exposed a stale AI Dream LLM JSON schema snapshot.
-
-**Goal**
-Generate and validate the complete `llm-params.schema.json` from the canonical Python models, including nested dictionary fields.
-
-**Subtasks**
-- [ ] In AI Dream, make the canonical generator write and `--check` the LLM JSON schema.
-- [ ] Regenerate the backend snapshot and verify top-level and nested model fields are present.
-- [ ] Rerun frontend `pnpm sync-types` and typecheck against the repaired snapshot.
-
-**Notes**
-Senior review confirmed source has 79 LLMParams properties while the generated snapshot has 74; missing fields are `performance_direction`, `speech_speed`, `turn_pause_ms`, `language_code`, `camera_control`, plus nested `DictionaryConfig.glossary`/`context` and `$defs.GlossaryEntry`. AI Dream `scripts/generate_types.py` does not generate/check this JSON artifact; its schema endpoint returns `LLMParams.model_json_schema()` directly. Source refs: `packages/matrx-ai/matrx_ai/config/llm_params.py:234`, `packages/matrx-ai/matrx_ai/config/dictionary_config.py:78`, `aidream/api/routers/schema.py:86`. Frontend sync output that deleted these fields was discarded; do not hand-patch generated JSON. AI Dream remains read-only in this lane.
-
 ### TASK-017: Publish the agent term-list association token
 - **Status:** resolved (2026-09-23) — associations 0.10.2 is published, adopted by the frontend, and shipped in v0.4.2237
 - **Created:** 2026-09-23
@@ -121,6 +105,23 @@ have removed the only working editor from two live surfaces. A half-done deletio
 failure mode the no-shims rule exists to prevent, not an example of it.
 
 ## Active
+
+### TASK-018: Repair AI Dream LLM schema generation
+- **Status:** resolved (2026-09-23) — backend repair pushed; frontend sync and typecheck passed
+- **Created:** 2026-09-23
+- **Source:** Frontend release sync exposed a stale AI Dream LLM JSON schema snapshot.
+
+**Goal**
+Generate and validate the complete `llm-params.schema.json` from the canonical Python models, including nested dictionary fields.
+
+**Subtasks**
+- [x] In AI Dream, make the canonical generator write and `--check` the LLM JSON schema.
+- [x] Regenerate the backend snapshot and verify top-level and nested model fields are present.
+- [x] Rerun frontend `pnpm sync-types` and typecheck against the repaired snapshot.
+
+**Notes**
+AI Dream main commit `3d86de7a6c273b9541134e32f1a755446e88fc75` is pushed. `generate_types.py llm-params` and default generation now write the complete 79-property schema; targeted/default `--check` verify it without writes. Runtime and offline emission share the same generator and normalize semantically unordered enum arrays against Python Literal import-order drift. The regenerated artifact includes `performance_direction`, `speech_speed`, `turn_pause_ms`, `language_code`, `camera_control`, `DictionaryConfig.glossary`/`context`, and `$defs.GlossaryEntry`. The committed-snapshot regression and check CLI failed before refresh and pass after. All 52 focused schema-router/response-format/model-drift tests pass, including HTTP bundle validation, nested dictionary round-trip, missing/nested-stale snapshot detection, and internal-field exclusion. Full generator `--check`, focused Ruff/Pyright, and documentation links pass. Independent Sol review accepted the actual six-file diff with no blocking findings. Frontend `pnpm sync-types` regenerated the LLM snapshot, passed the property-drop guard, and passed full `tsc --noEmit -p tsconfig.typecheck.json`; `node scripts/typecheck-health.mjs` census follows.
+
 
 ### TASK-015: Regenerate database types after the keyword-placement migration applies
 - **Status:** ready (three of four subtasks done 2026-09-12; the browser pass remains)
