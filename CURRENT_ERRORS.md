@@ -38,4 +38,4 @@
 
 | ID | Resolution evidence |
 |----|---------------------|
-| CE-001 | Previously observed 15 s timeout on `POST /api/mcp/[transport]` (5 occurrences, 1 user; latest 2026-09-23 08:00Z on main v0.4.2234). Current main v0.4.2236 deployment `dpl_4fzVZzArGjKUnRWwpQt8inNLVEzu` had no error/fatal runtime logs from 08:24:45Z to 08:39:45Z; close as not reproduced on the current release. Reopen only if a new current-deployment occurrence appears. |
+| CE-001 | Previously observed 15 s timeout on `POST /api/mcp/[transport]` (5 occurrences, 1 user; latest 2026-09-23 08:00Z on main v0.4.2234). Current main v0.4.2237 deployment `dpl_48Qm7yTcf3Aw9dP4awiFBEAjYXDy` has no runtime error clusters from release dispatch through READY at 09:21:46Z; close as not reproduced on the current release. Reopen only if a new current-deployment occurrence appears. |

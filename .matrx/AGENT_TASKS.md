@@ -17,7 +17,7 @@ _(none)_
 ## Blocked
 
 ### TASK-017: Publish the agent term-list association token
-- **Status:** blocked (2026-09-23) — live contract and frontend types are ready; published associations SDK rejects the new token
+- **Status:** resolved (2026-09-23) — associations 0.10.2 is published, adopted by the frontend, and shipped in v0.4.2237
 - **Created:** 2026-09-23
 - **Source:** `pnpm sync-types` initially found missing `agent.term_list` fields; after live provisioning, `pnpm sync-types:live` passes, but the installed association SDK has a stale entity-token registry.
 
@@ -26,16 +26,16 @@ Publish an associations SDK version containing the canonical `agent_term_list` t
 
 **Current evidence**
 
-- `pnpm sync-types:live` in this pass pulled AI Dream SHA `21100869077f15380a8dfbf63fe948cdaf4a72a9`, regenerated live East/API types, passed the API property-drop guard, and completed the full typecheck with zero errors. `types/database.types.ts` now includes `agent.term_list`; the previous 14 errors are resolved.
-- Current frontend dependency is `@ai-matrx/associations@0.10.1` (reported latest by package sync). Its runtime `isEntityTypeToken` checks a bundled `ENTITY_TYPE_TOKEN_SET` that omits `agent_term_list`; `associationsService.add/remove` therefore return `invalid_argument` before RPC for this feature's attach/detach calls. The read-only AI Dream generated vocabulary already includes the token. Do not cast around this package guard or hand-edit generated dependency output; publish/update the associations package first.
+- `pnpm sync-types` pulled AI Dream SHA `21100869077f15380a8dfbf63fe948cdaf4a72a9`, regenerated live East/API types, passed the API property-drop guard, and completed the full typecheck. `types/database.types.ts` includes `agent.term_list`.
+- `@ai-matrx/associations@0.10.2` is published and latest (tag `npm/associations/v0.10.2`, source `51ca151ea1bccea601080f7a46279cacd45c6ad7`). Publish workflow 35840482028 passed; public tarball integrity was verified, and packed ESM/CJS attach/detach checks exercised both `agent_term_list -> agent` and `file -> agent_term_list` RPC paths. Frontend lockfile resolves 0.10.2; all 20 Matrx packages are latest. Typecheck health reports zero errors.
 - Sol accepted the term-list spec, shared reachability repair, explicit migration-window classifier for hot-parent locks, FK runner guard, and RLS-safe server CRUD projection. The service avoids metadata reads/writes and preserves actor scope, optimistic version checks, and partial-cache behavior. Focused clone checks passed (29 tests at the last combined run); live type generation now confirms the East table is present.
 - Earlier at `2026-09-23T08:00Z`, term-list provisioning rolled back on an advisory-claim conflict. Subsequent live sync at SHA `21100869077f15380a8dfbf63fe948cdaf4a72a9` now proves the table/model is present. The release script migration phase also reported the earlier transient migration-applier syntax error; a later shared-tree AST parse succeeded. Frontend migration inventory reports no unapplied frontend migrations; historical drift/unverifiable rows remain.
 - The transient AI Dream applier syntax error observed during `v0.4.2235` was corrected in the shared working tree. The `v0.4.2236` migration phase completed normally and confirmed East at 2,497 applied, 0 pending; it applied no SQL. `pnpm check:migrations:strict` also found no unapplied frontend migrations; the historical inventory still has drifted and unverifiable rows.
 - Clone evidence: all 888 roots matched the existing 7,582 reachability rows (51.72s reference vs 0.406s candidate, zero symmetric difference); the reviewed final term-list/server bundle and FK phases passed clone rehearsal. Provisioning is restricted to 01:00–04:00 America/Los_Angeles.
 
-**Next concrete step**
+**Resolution**
 
-Publish the generated association registry update from AI Dream's existing entity vocabulary, release a new `@ai-matrx/associations` version, then update the FE lockfile and rerun type sync/typecheck. Verify attach/detach reaches the server with the new token; no frontend cast or local registry patch. Feature is committed on main and shipped in `v0.4.2236`; keep the remaining package integration item visible until that call path is proven.
+Frontend package adoption shipped in `v0.4.2237`, Vercel deployment `dpl_48Qm7yTcf3Aw9dP4awiFBEAjYXDy` is READY and serves `096168e74730c1d27e1d88c1d4aceccc459b49f4`. Runtime attach/detach is covered by the verified packed-package ESM/CJS RPC canaries; no production interaction was performed with a personal browser session.
 
 ### TASK-CRM-ERASURE-RPC: Apply the missing Gmail interaction erasure RPC
 - **Status:** blocked (2026-09-22) — live East schema is missing the RPC used by current CRM code
