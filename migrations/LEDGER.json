@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-23T10:05:03.419Z",
+  "generated_at": "2026-09-23T10:09:05.127Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -1904,11 +1904,35 @@
       "checksum": "2b8714fc931825abba0bd4b1bb4a2a68df4352a851de6d726b21ea9986d9c1e4",
       "applied_at": "2026-09-23 10:03:48.306033+00"
     },
+    "migrations/campaign/gridprim_a_formula_is_typed_and_the_store_works_it_out.sql": {
+      "source": "matrx-frontend",
+      "filename": "gridprim_a_formula_is_typed_and_the_store_works_it_out.sql",
+      "checksum": "8c6317a5d7db3c65665d1782589623db6f4b490f3ef9195f10c529e8768d9286",
+      "applied_at": "2026-09-23 10:08:19.311743+00"
+    },
+    "migrations/campaign/gridprim_a_row_action_runs_the_whole_selection_at_once.sql": {
+      "source": "matrx-frontend",
+      "filename": "gridprim_a_row_action_runs_the_whole_selection_at_once.sql",
+      "checksum": "71e83eed1485aacd7e9db86f7f8419c995b163fcb2257e8108d9b50a9cd693e6",
+      "applied_at": "2026-09-23 10:08:49.366465+00"
+    },
+    "migrations/campaign/gridprim_a_rule_speaks_the_formula_language.sql": {
+      "source": "matrx-frontend",
+      "filename": "gridprim_a_rule_speaks_the_formula_language.sql",
+      "checksum": "ec98b66f628fdb2cdabc9515e3f1827ab4a18683ea2c97a8ce4c30fec2640646",
+      "applied_at": "2026-09-23 10:09:04.004519+00"
+    },
     "migrations/campaign/gridprim_a_signed_in_person_may_ask_which_measures_there_are.sql": {
       "source": "matrx-frontend",
       "filename": "gridprim_a_signed_in_person_may_ask_which_measures_there_are.sql",
       "checksum": "1a7c7bc8ca79259af006e5080b71764ab0dd87821c6f291637da3b4cf3ae813d",
       "applied_at": "2026-09-23 10:04:06.027972+00"
+    },
+    "migrations/campaign/gridprim_a_table_can_start_from_a_real_example.sql": {
+      "source": "matrx-frontend",
+      "filename": "gridprim_a_table_can_start_from_a_real_example.sql",
+      "checksum": "79cd66ce4c430915bf2831b47414d9ac0c77ac5b4da16b1001a18a91072218d2",
+      "applied_at": "2026-09-23 10:08:56.168356+00"
     },
     "migrations/campaign/gridprim_a_table_wears_its_colors_and_its_layout.sql": {
       "source": "matrx-frontend",
@@ -2863,6 +2887,12 @@
       "filename": "realtime_the_switch_that_makes_a_table_live.sql",
       "checksum": "7e5d0b60fe2d6c63d0e296e07a81393c6a92b1b63cc7d511e7aea18e9ec965d1",
       "applied_at": "2026-09-21 04:28:47.694867+00"
+    },
+    "migrations/campaign/recsuite3_a_pick_list_keeps_the_table_it_names.sql": {
+      "source": "matrx-frontend",
+      "filename": "recsuite3_a_pick_list_keeps_the_table_it_names.sql",
+      "checksum": "08402584d3d2cf458f9ffbb6534907d2c2f3cb31cda67af99bb4a5a825f05e1c",
+      "applied_at": "2026-09-23 10:08:39.444318+00"
     },
     "migrations/campaign/redsuites2_a_new_organizations_first_migration_verb.sql": {
       "source": "matrx-frontend",
