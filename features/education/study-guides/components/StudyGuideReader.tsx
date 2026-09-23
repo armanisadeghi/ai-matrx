@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { initialOutlineExpansion, outlineIndentLevel, studyGuideOutlineItems, toggleOutlineSection, visibleOutlineItems } from "../outline";
+import { initialOutlineExpansion, outlineIndentLevel, studyGuideOutlineItems, studyGuideOutlineTitle, toggleOutlineSection, visibleOutlineItems } from "../outline";
 import { StudyFlashcardLinks } from "./StudyFlashcardLinks";
 import { useEffect, useRef, useState } from "react";
 import { Panel, type Layout } from "react-resizable-panels";
@@ -253,13 +253,15 @@ function GuideList({ guides, activeId, activeLabel, content, onJump, loading, er
 
 
 function Outline({ content, onJump }: { content: string; onJump: (headingIndex: number) => void }) {
-  const outline = studyGuideOutlineItems(parseNoteOutline(content));
+  const headings = parseNoteOutline(content);
+  const title = studyGuideOutlineTitle(headings);
+  const outline = studyGuideOutlineItems(headings);
   const [expanded, setExpanded] = useState(() => initialOutlineExpansion(outline));
   const [activeHeading, setActiveHeading] = useState<number | null>(null);
-  if (!outline.length) return null;
+  if (!title && !outline.length) return null;
   return (
     <div className="border-t border-border py-1">
-      <p className="px-1 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">On this page</p>
+      {title && <button type="button" onClick={() => { setActiveHeading(title.headingIndex); onJump(title.headingIndex); }} title={title.text} className={cn("block w-full overflow-hidden whitespace-nowrap border-l-2 px-1 py-1 text-left text-xs font-semibold [mask-image:linear-gradient(to_right,black_calc(100%_-_12px),transparent)] hover:bg-accent", activeHeading === title.headingIndex ? "border-primary bg-primary/10 text-primary" : "border-transparent text-foreground")}>{title.text}</button>}
       <div className="grid gap-0.5">{visibleOutlineItems(outline, expanded).map((item) => {
         const index = outline.indexOf(item);
         const hasChildren = outline[index + 1]?.level > item.level;

@@ -1,9 +1,14 @@
 import type { NoteOutlineItem } from "@/features/notes/utils/noteOutline";
 
 /** A document with one H1 uses that heading as its title, not as a section. */
-export function studyGuideOutlineItems(outline: readonly NoteOutlineItem[]): NoteOutlineItem[] {
+export function studyGuideOutlineTitle(outline: readonly NoteOutlineItem[]): NoteOutlineItem | null {
   const h1Items = outline.filter((item) => item.level === 1);
-  return h1Items.length === 1 ? outline.filter((item) => item !== h1Items[0]) : [...outline];
+  return h1Items.length === 1 ? h1Items[0] : null;
+}
+
+export function studyGuideOutlineItems(outline: readonly NoteOutlineItem[]): NoteOutlineItem[] {
+  const title = studyGuideOutlineTitle(outline);
+  return title ? outline.filter((item) => item !== title) : [...outline];
 }
 
 /** Show at most three visual tiers, relative to the first outline heading level. */

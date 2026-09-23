@@ -10,14 +10,14 @@ GENERATED — never edit by hand. Regenerate with `pnpm rich-content:inventory` 
 | hand-rolled-textarea | banned | 1 | 5 | 5 |
 | legacy-actions | banned | 2 | 6 | 6 |
 | legacy-editor | banned | 6 | 35 | 24 |
-| markdown-package | banned | 7 | 41 | 24 |
+| markdown-package | banned | 7 | 31 | 19 |
 | prompt-editor | banned | 2 | 7 | 5 |
-| raw-content-render | review | 3 | 849 | 679 |
+| raw-content-render | review | 3 | 846 | 676 |
 | raw-html | review | 1 | 37 | 23 |
 | renderer-entry-point | tracked | 8 | 178 | 167 |
-| **total** | | 32 | 1168 | 886 |
+| **total** | | 32 | 1155 | 881 |
 
-Files scanned: 14822. Surfaces reached: 1148. Unresolved local code imports (broken or generated paths the graph cannot follow): 3.
+Files scanned: 14826. Surfaces reached: 1147. Unresolved local code imports (broken or generated paths the graph cannot follow): 3.
 
 ## Pieces
 
@@ -26,8 +26,8 @@ Files scanned: 14822. Surfaces reached: 1148. Unresolved local code imports (bro
 | react-markdown | markdown-package | banned | 14 | 14 | Render through the ONE markdown core: `BasicMarkdownContent` / `MarkdownStream` (components/markdown-core/MarkdownCore → MarkdownCoreImpl is the only react-markdown/remark/rehype/katex edge). Target: `<RichContent source level>` — rich-content-unification PLAN §3.1–3.2. Never import the package directly. |
 | remark-* plugins | markdown-package | banned | 8 | 11 | Render through the ONE markdown core: `BasicMarkdownContent` / `MarkdownStream` (components/markdown-core/MarkdownCore → MarkdownCoreImpl is the only react-markdown/remark/rehype/katex edge). Target: `<RichContent source level>` — rich-content-unification PLAN §3.1–3.2. Never import the package directly. |
 | rehype-* plugins | markdown-package | banned | 1 | 2 | Render through the ONE markdown core: `BasicMarkdownContent` / `MarkdownStream` (components/markdown-core/MarkdownCore → MarkdownCoreImpl is the only react-markdown/remark/rehype/katex edge). Target: `<RichContent source level>` — rich-content-unification PLAN §3.1–3.2. Never import the package directly. |
-| katex (direct) | markdown-package | banned | 6 | 6 | Render through the ONE markdown core: `BasicMarkdownContent` / `MarkdownStream` (components/markdown-core/MarkdownCore → MarkdownCoreImpl is the only react-markdown/remark/rehype/katex edge). Target: `<RichContent source level>` — rich-content-unification PLAN §3.1–3.2. Never import the package directly. |
-| react-katex | markdown-package | banned | 6 | 6 | Render through the ONE markdown core: `BasicMarkdownContent` / `MarkdownStream` (components/markdown-core/MarkdownCore → MarkdownCoreImpl is the only react-markdown/remark/rehype/katex edge). Target: `<RichContent source level>` — rich-content-unification PLAN §3.1–3.2. Never import the package directly. |
+| katex (direct) | markdown-package | banned | 1 | 1 | Render through the ONE markdown core: `BasicMarkdownContent` / `MarkdownStream` (components/markdown-core/MarkdownCore → MarkdownCoreImpl is the only react-markdown/remark/rehype/katex edge). Target: `<RichContent source level>` — rich-content-unification PLAN §3.1–3.2. Never import the package directly. |
+| react-katex | markdown-package | banned | 1 | 1 | Render through the ONE markdown core: `BasicMarkdownContent` / `MarkdownStream` (components/markdown-core/MarkdownCore → MarkdownCoreImpl is the only react-markdown/remark/rehype/katex edge). Target: `<RichContent source level>` — rich-content-unification PLAN §3.1–3.2. Never import the package directly. |
 | marked | markdown-package | banned | 2 | 2 | Render through the ONE markdown core: `BasicMarkdownContent` / `MarkdownStream` (components/markdown-core/MarkdownCore → MarkdownCoreImpl is the only react-markdown/remark/rehype/katex edge). Target: `<RichContent source level>` — rich-content-unification PLAN §3.1–3.2. Never import the package directly. |
 | markdown-it | markdown-package | banned | 0 | 0 | Render through the ONE markdown core: `BasicMarkdownContent` / `MarkdownStream` (components/markdown-core/MarkdownCore → MarkdownCoreImpl is the only react-markdown/remark/rehype/katex edge). Target: `<RichContent source level>` — rich-content-unification PLAN §3.1–3.2. Never import the package directly. |
 | @toast-ui/* (Toast UI editor) | legacy-editor | banned | 1 | 6 | THE ONE EDITOR (Tiptap 3 visual + CodeMirror 6 source, save = splice) — rich-content-unification PLAN §3.5–3.6. Until it lands, add NO new consumer: extend the surface's existing editor call site instead of adding a new one. |
@@ -52,7 +52,7 @@ Files scanned: 14822. Surfaces reached: 1148. Unresolved local code imports (bro
 | RichDocument | renderer-entry-point | tracked | 19 | 19 | Current entry point — keep using it; it is absorbed by `<RichContent source level>` at cutover (PLAN §3.1). |
 | MarkdownPreview | renderer-entry-point | tracked | 3 | 3 | Current entry point — keep using it; it is absorbed by `<RichContent source level>` at cutover (PLAN §3.1). |
 | dangerouslySetInnerHTML | raw-html | review | 23 | 37 | Rich text renders through the markdown core; HTML-origin bodies go through the HTML-sanitizing path (PLAN §2). |
-| {x.content\|body\|description\|prompt\|reasoning\|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td> | raw-content-render | review | 562 | 690 | If the field can hold markdown, render it through the core at the right level (PLAN §3.1). |
+| {x.content\|body\|description\|prompt\|reasoning\|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td> | raw-content-render | review | 559 | 687 | If the field can hold markdown, render it through the core at the right level (PLAN §3.1). |
 | .split("\n").map(→ JSX) paragraph renderer | raw-content-render | review | 7 | 7 | Paragraphs come from the markdown core, never a hand split on newlines (PLAN §3.1). |
 | whitespace-pre-wrap / pre-line on a content field | raw-content-render | review | 134 | 152 | pre-wrap shows markdown source; render it through the core instead (PLAN §3.1). |
 
@@ -60,56 +60,56 @@ Files scanned: 14822. Surfaces reached: 1148. Unresolved local code imports (bro
 
 | Surface | Own files | Own banned | Own tracked | Own review | All banned (incl. shared) |
 |---|---:|---:|---:|---:|---:|
-| overlay agentAdvancedEditorWindow (Agent Advanced Editor) | 12 | 8 | 6 | 10 | 41 |
-| route /administration/agents/system-agents/agents/[id]/build | 12 | 8 | 6 | 10 | 41 |
-| route /agents/[id]/build | 12 | 8 | 6 | 10 | 41 |
-| route /agents/battle/variations | 12 | 8 | 6 | 10 | 41 |
-| route /agents/battle/system-prompt | 9 | 6 | 5 | 2 | 39 |
-| overlay contentEditorWorkspaceWindow (Content Workspace) | 5 | 5 | 2 | 2 | 38 |
-| overlay contentEditorListWindow (Content List Editor) | 5 | 5 | 2 | 1 | 38 |
-| overlay contentEditorWindow (Content Editor) | 5 | 5 | 2 | 1 | 38 |
-| overlay markdownEditor (Markdown Editor (fullscreen)) | 7 | 4 | 0 | 13 | 37 |
-| overlay markdownEditorWindow (Markdown Editor) | 7 | 4 | 0 | 13 | 37 |
-| route /s/[token] | 4 | 4 | 0 | 2 | 37 |
-| route /administration/users/feedback | 8 | 3 | 0 | 11 | 36 |
-| layout /notes | 2 | 2 | 1 | 1 | 36 |
-| overlay quickUtilities (Utilities) | 2 | 2 | 1 | 1 | 36 |
-| route /p/e/[resourceType]/[id] | 1 | 2 | 0 | 2 | 35 |
-| overlay htmlPreviewBridge | 3 | 2 | 1 | 0 | 35 |
-| overlay quickNotes (Quick Notes) | 1 | 2 | 1 | 0 | 36 |
-| route /education/notes/[id] | 1 | 2 | 1 | 0 | 36 |
-| route /education/notes/[id]/edit | 1 | 2 | 1 | 0 | 36 |
-| route /seo/ai-visibility | 2 | 2 | 0 | 1 | 35 |
+| overlay agentAdvancedEditorWindow (Agent Advanced Editor) | 12 | 8 | 6 | 10 | 35 |
+| route /administration/agents/system-agents/agents/[id]/build | 12 | 8 | 6 | 10 | 35 |
+| route /agents/[id]/build | 12 | 8 | 6 | 10 | 35 |
+| route /agents/battle/variations | 12 | 8 | 6 | 10 | 35 |
+| route /agents/battle/system-prompt | 9 | 6 | 5 | 2 | 33 |
+| overlay contentEditorWorkspaceWindow (Content Workspace) | 5 | 5 | 2 | 2 | 32 |
+| overlay contentEditorListWindow (Content List Editor) | 5 | 5 | 2 | 1 | 32 |
+| overlay contentEditorWindow (Content Editor) | 5 | 5 | 2 | 1 | 32 |
+| overlay markdownEditor (Markdown Editor (fullscreen)) | 7 | 4 | 0 | 13 | 31 |
+| overlay markdownEditorWindow (Markdown Editor) | 7 | 4 | 0 | 13 | 31 |
+| route /s/[token] | 4 | 4 | 0 | 2 | 31 |
+| route /administration/users/feedback | 8 | 3 | 0 | 11 | 30 |
+| layout /notes | 2 | 2 | 1 | 1 | 30 |
+| overlay quickUtilities (Utilities) | 2 | 2 | 1 | 1 | 30 |
+| route /p/e/[resourceType]/[id] | 1 | 2 | 0 | 2 | 29 |
+| overlay htmlPreviewBridge | 3 | 2 | 1 | 0 | 29 |
+| overlay quickNotes (Quick Notes) | 1 | 2 | 1 | 0 | 30 |
+| route /education/notes/[id] | 1 | 2 | 1 | 0 | 30 |
+| route /education/notes/[id]/edit | 1 | 2 | 1 | 0 | 30 |
+| route /seo/ai-visibility | 2 | 2 | 0 | 1 | 29 |
 | overlay announcements (Announcements) | 2 | 2 | 0 | 0 | 2 |
-| overlay noteInfoWindow (Note Info) | 1 | 2 | 0 | 0 | 35 |
-| route /administration/agents/system-agents/agents | 2 | 2 | 0 | 0 | 35 |
-| route /agents/all | 2 | 2 | 0 | 0 | 35 |
-| route /marketing/ai-visibility/runs/[runId] | 1 | 2 | 0 | 0 | 35 |
-| route /workflows/all | 2 | 2 | 0 | 0 | 35 |
-| route /marketing/[brandId]/content/plan/[siteId] | 8 | 1 | 1 | 10 | 36 |
-| route /marketing/[brandId]/content/plan/[siteId]/ai-runs | 8 | 1 | 1 | 10 | 36 |
-| route /marketing/[brandId]/content/plan/[siteId]/brief | 8 | 1 | 1 | 10 | 36 |
-| route /marketing/[brandId]/content/plan/[siteId]/entities | 8 | 1 | 1 | 10 | 36 |
-| route /marketing/[brandId]/content/plan/[siteId]/map | 8 | 1 | 1 | 10 | 36 |
-| route /marketing/[brandId]/content/plan/[siteId]/setup | 8 | 1 | 1 | 10 | 36 |
-| route /marketing/[brandId]/content/plan/[siteId]/table | 8 | 1 | 1 | 10 | 36 |
-| route /cms/[siteId]/pages/[pageId] | 5 | 1 | 1 | 4 | 35 |
-| route /cms/[siteId]/pages/new | 5 | 1 | 1 | 4 | 35 |
-| route /marketing/[brandId]/websites/[siteId]/pages/[pageId] | 5 | 1 | 1 | 4 | 35 |
-| route /masterwork/all | 3 | 1 | 0 | 2 | 34 |
-| route /administration/agents/system-agents/content-blocks | 1 | 1 | 1 | 0 | 34 |
-| route /administration/utilities/content-blocks | 1 | 1 | 1 | 0 | 34 |
-| route /administration/utilities/message-templates | 1 | 1 | 1 | 0 | 34 |
+| overlay noteInfoWindow (Note Info) | 1 | 2 | 0 | 0 | 29 |
+| route /administration/agents/system-agents/agents | 2 | 2 | 0 | 0 | 29 |
+| route /agents/all | 2 | 2 | 0 | 0 | 29 |
+| route /marketing/ai-visibility/runs/[runId] | 1 | 2 | 0 | 0 | 29 |
+| route /workflows/all | 2 | 2 | 0 | 0 | 29 |
+| route /marketing/[brandId]/content/plan/[siteId] | 8 | 1 | 1 | 10 | 30 |
+| route /marketing/[brandId]/content/plan/[siteId]/ai-runs | 8 | 1 | 1 | 10 | 30 |
+| route /marketing/[brandId]/content/plan/[siteId]/brief | 8 | 1 | 1 | 10 | 30 |
+| route /marketing/[brandId]/content/plan/[siteId]/entities | 8 | 1 | 1 | 10 | 30 |
+| route /marketing/[brandId]/content/plan/[siteId]/map | 8 | 1 | 1 | 10 | 30 |
+| route /marketing/[brandId]/content/plan/[siteId]/setup | 8 | 1 | 1 | 10 | 30 |
+| route /marketing/[brandId]/content/plan/[siteId]/table | 8 | 1 | 1 | 10 | 30 |
+| route /cms/[siteId]/pages/[pageId] | 5 | 1 | 1 | 4 | 29 |
+| route /cms/[siteId]/pages/new | 5 | 1 | 1 | 4 | 29 |
+| route /marketing/[brandId]/websites/[siteId]/pages/[pageId] | 5 | 1 | 1 | 4 | 29 |
+| route /masterwork/all | 3 | 1 | 0 | 2 | 28 |
+| route /administration/agents/system-agents/content-blocks | 1 | 1 | 1 | 0 | 28 |
+| route /administration/utilities/content-blocks | 1 | 1 | 1 | 0 | 28 |
+| route /administration/utilities/message-templates | 1 | 1 | 1 | 0 | 28 |
 | route /chat/message-templates/[id] | 1 | 1 | 0 | 1 | 1 |
 | api /api/chat/email-response | 1 | 1 | 0 | 0 | 1 |
 | api /api/export/email-table | 1 | 1 | 0 | 0 | 1 |
 | api /api/public/email | 1 | 1 | 0 | 0 | 1 |
 | api /api/sharing/email-link | 1 | 1 | 0 | 0 | 1 |
 | opener fullScreenEditor | 1 | 1 | 0 | 0 | 1 |
-| overlay extractionCellEditorWindow (Extraction Cell Editor) | 1 | 1 | 0 | 0 | 34 |
+| overlay extractionCellEditorWindow (Extraction Cell Editor) | 1 | 1 | 0 | 0 | 28 |
 | route /chat/message-templates/edit/[id] | 1 | 1 | 0 | 0 | 1 |
 | route /chat/message-templates/new | 1 | 1 | 0 | 0 | 1 |
-| layout / | 22 | 0 | 3 | 22 | 34 |
+| layout / | 22 | 0 | 3 | 22 | 28 |
 
 ## Shared files — reach more than 10 surfaces (convert once, every surface benefits)
 
@@ -309,12 +309,12 @@ Files scanned: 14822. Surfaces reached: 1148. Unresolved local code imports (bro
 
 ### `components/mardown-display/chat-markdown/BasicMarkdownContent.tsx` — reaches 1010 surfaces
 
-- [ ] `components/mardown-display/chat-markdown/BasicMarkdownContent.tsx:990` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: ' /* Center display math that appears after a line bre…`
+- [ ] `components/mardown-display/chat-markdown/BasicMarkdownContent.tsx:934` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: ' /* Center display math that appears after a line bre…`
 - [ ] `components/mardown-display/chat-markdown/BasicMarkdownContent.tsx:113` — **react-markdown** (BANNED) — `react-markdown` (type-only)
 
 ### `components/mardown-display/chat-markdown/ConfigurableMarkdownContent.tsx` — reaches 1011 surfaces
 
-- [ ] `components/mardown-display/chat-markdown/ConfigurableMarkdownContent.tsx:1052` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: dynamicStyles }}`
+- [ ] `components/mardown-display/chat-markdown/ConfigurableMarkdownContent.tsx:1006` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: dynamicStyles }}`
 - [ ] `components/mardown-display/chat-markdown/ConfigurableMarkdownContent.tsx:30` — **react-markdown** (BANNED) — `react-markdown` (type-only)
 
 ### `components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx` — reaches 1010 surfaces
@@ -369,10 +369,10 @@ Files scanned: 14822. Surfaces reached: 1148. Unresolved local code imports (bro
 
 - [ ] `components/mardown-display/chat-markdown/tui/TuiEditorContent.tsx:4` — **@toast-ui/* (Toast UI editor)** (BANNED) — `@toast-ui/react-editor` (type-only)
 - [ ] `components/mardown-display/chat-markdown/tui/TuiEditorContent.tsx:5` — **@toast-ui/* (Toast UI editor)** (BANNED) — `@toast-ui/editor` (type-only)
-- [ ] `components/mardown-display/chat-markdown/tui/TuiEditorContent.tsx:11` — **@toast-ui/* (Toast UI editor)** (BANNED) — `@toast-ui/editor/dist/toastui-editor.css`
-- [ ] `components/mardown-display/chat-markdown/tui/TuiEditorContent.tsx:12` — **@toast-ui/* (Toast UI editor)** (BANNED) — `@toast-ui/editor/dist/theme/toastui-editor-dark.css`
-- [ ] `components/mardown-display/chat-markdown/tui/TuiEditorContent.tsx:15` — **@toast-ui/* (Toast UI editor)** (BANNED) — `@toast-ui/react-editor`
-- [ ] `components/mardown-display/chat-markdown/tui/TuiEditorContent.tsx:23` — **@toast-ui/* (Toast UI editor)** (BANNED) — `@toast-ui/editor-plugin-color-syntax`
+- [ ] `components/mardown-display/chat-markdown/tui/TuiEditorContent.tsx:12` — **@toast-ui/* (Toast UI editor)** (BANNED) — `@toast-ui/editor/dist/toastui-editor.css`
+- [ ] `components/mardown-display/chat-markdown/tui/TuiEditorContent.tsx:13` — **@toast-ui/* (Toast UI editor)** (BANNED) — `@toast-ui/editor/dist/theme/toastui-editor-dark.css`
+- [ ] `components/mardown-display/chat-markdown/tui/TuiEditorContent.tsx:16` — **@toast-ui/* (Toast UI editor)** (BANNED) — `@toast-ui/react-editor`
+- [ ] `components/mardown-display/chat-markdown/tui/TuiEditorContent.tsx:24` — **@toast-ui/* (Toast UI editor)** (BANNED) — `@toast-ui/editor-plugin-color-syntax`
 
 ### `components/mardown-display/tables/MarkdownTable.tsx` — reaches 1010 surfaces
 
@@ -707,22 +707,6 @@ Files scanned: 14822. Surfaces reached: 1148. Unresolved local code imports (bro
 ### `features/marketing/strategy/components/StrategyBriefWorkspace.tsx` — reaches 14 surfaces
 
 - [ ] `features/marketing/strategy/components/StrategyBriefWorkspace.tsx:33` — **MarkdownRenderer** (tracked) — `@/components/mardown-display/MarkdownRenderer`
-
-### `features/math/components/InlineMathText.tsx` — reaches 1011 surfaces
-
-- [ ] `features/math/components/InlineMathText.tsx:5` — **katex (direct)** (BANNED) — `katex/dist/katex.min.css`
-- [ ] `features/math/components/InlineMathText.tsx:4` — **react-katex** (BANNED) — `react-katex`
-- [ ] `features/math/components/InlineMathText.tsx:66` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{part.content}`
-
-### `features/math/components/MathProblemImpl.tsx` — reaches 1011 surfaces
-
-- [ ] `features/math/components/MathProblemImpl.tsx:5` — **katex (direct)** (BANNED) — `katex/dist/katex.min.css`
-- [ ] `features/math/components/MathProblemImpl.tsx:6` — **react-katex** (BANNED) — `react-katex`
-
-### `features/math/components/SolutionAnswer.tsx` — reaches 1011 surfaces
-
-- [ ] `features/math/components/SolutionAnswer.tsx:6` — **katex (direct)** (BANNED) — `katex/dist/katex.min.css`
-- [ ] `features/math/components/SolutionAnswer.tsx:4` — **react-katex** (BANNED) — `react-katex`
 
 ### `features/matrx-envelope/directives/createProjectWithTasks/CreateProjectWithTasksRenderer.tsx` — reaches 1010 surfaces
 
@@ -4428,12 +4412,6 @@ No route, overlay or opener imports these (dead code, test-only, or loaded by a 
 - [ ] `features/legal/wc/pd-ratings/components/landing/PdRatingsCalculatorLanding.tsx:269` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{step.description}`
 - [ ] `features/legal/wc/pd-ratings/components/landing/PdRatingsCalculatorLanding.tsx:300` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 - [ ] `features/masterwork/home/MasterworkHomePage.tsx:404` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{rb.description}`
-- [ ] `features/math/components/MathGo.tsx:5` — **katex (direct)** (BANNED) — `katex/dist/katex.min.css`
-- [ ] `features/math/components/MathGo.tsx:6` — **react-katex** (BANNED) — `react-katex`
-- [ ] `features/math/components/MathGo.tsx:119` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{step.explanation}`
-- [ ] `features/math/components/MathProblemG.tsx:5` — **katex (direct)** (BANNED) — `katex/dist/katex.min.css`
-- [ ] `features/math/components/MathProblemG.tsx:6` — **react-katex** (BANNED) — `react-katex`
-- [ ] `features/math/components/MathProblemG.tsx:226` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{step.explanation}`
 - [ ] `features/message-templates/components/TemplatePreviewDrawer.tsx:83` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{template.content || ""}`
 - [ ] `features/notes/components/NoteEditor.tsx:42` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 - [ ] `features/notes/components/NoteEditor.tsx:51` — **TuiEditorContent** (BANNED) — `@/components/mardown-display/chat-markdown/tui/TuiEditorContent` (type-only)
