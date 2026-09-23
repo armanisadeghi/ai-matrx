@@ -423,8 +423,9 @@ export function ShortcutList({
                       variant="outline"
                       className="h-8 px-3 text-xs font-normal text-muted-foreground"
                     >
-                      Placement: {getPlacementTypeMeta(placementFilterProp).label}{" "}
-                      — fixed by this view
+                      Placement:{" "}
+                      {getPlacementTypeMeta(placementFilterProp).label} — fixed
+                      by this view
                     </Badge>
                   ) : (
                     <Select
@@ -525,32 +526,43 @@ export function ShortcutList({
                   </Select>
                 ),
               },
+              ...(!hideTitleBar
+                ? [
+                    {
+                      type: "custom" as const,
+                      id: "source-stats",
+                      render: () => (
+                        <div className="flex items-center gap-3 whitespace-nowrap text-xs text-muted-foreground">
+                          <span>
+                            <strong className="text-foreground">
+                              {stats.total}
+                            </strong>{" "}
+                            total in scope
+                          </span>
+                          <span>
+                            <strong className="text-foreground">
+                              {stats.active}
+                            </strong>{" "}
+                            active
+                          </span>
+                          <span>
+                            <strong className="text-foreground">
+                              {stats.wiredToAgent}
+                            </strong>{" "}
+                            connected
+                          </span>
+                          <span>
+                            <strong className="text-foreground">
+                              {stats.unwired}
+                            </strong>{" "}
+                            unwired
+                          </span>
+                        </div>
+                      ),
+                    },
+                  ]
+                : []),
             ],
-            leading: (
-              <div className="flex flex-wrap items-center gap-2">
-                {!hideTitleBar && (
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {[
-                      ["Total", stats.total, ""],
-                      ["Active", stats.active, "text-primary"],
-                      ["Connected", stats.wiredToAgent, "text-success"],
-                      ["Unwired", stats.unwired, "text-warning"],
-                    ].map(([label, value, tone]) => (
-                      <Card key={String(label)} className="min-w-16">
-                        <CardContent className="p-2">
-                          <div className={`text-lg font-bold ${tone}`}>
-                            {value}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {label}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ),
           }}
           copy={{
             label: "Shortcut",
