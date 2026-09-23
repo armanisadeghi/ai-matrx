@@ -2,7 +2,8 @@
 --   `migrations/campaign/reltargets_a_person_or_a_file_field_takes_the_id_you_hold.sql`.
 --   It DROPS the trigger `_w_relation_kernel_targets` on `custom.record` and the two functions
 --   that file created, `custom._relation_kernel_targets()` and
---   `custom.relation_kernel_record(uuid, uuid, uuid)`. Nothing else calls either. No row of
+--   `custom.relation_kernel_record(uuid, uuid, uuid)`, with that function's server-only row in
+--   `platform.client_callable_door`. Nothing else calls either. No row of
 --   anybody's data is touched: a Person or File record the rule wrote on first use stays, and
 --   every cell that names one stays valid, because it names a live kernel record — which is
 --   what the store accepted before this file too.
@@ -23,4 +24,8 @@
 
 drop trigger if exists _w_relation_kernel_targets on custom.record;
 drop function if exists custom._relation_kernel_targets();
+-- A door follows its function (provision_shape_guard): the declaration the up wrote goes with it.
+delete from platform.client_callable_door
+ where schema_name = 'custom' and function_name = 'relation_kernel_record'
+   and identity_args = 'p_organization_id uuid, p_kernel_table_id uuid, p_id uuid';
 drop function if exists custom.relation_kernel_record(uuid, uuid, uuid);
