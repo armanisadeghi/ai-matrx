@@ -1774,6 +1774,239 @@
         }
       }
     },
+    "/term-lists": {
+      "get": {
+        "tags": [
+          "Term Lists"
+        ],
+        "summary": "List Term Lists",
+        "operationId": "list_term_lists_term_lists_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TermListOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Term Lists Term Lists Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Term Lists"
+        ],
+        "summary": "Create Term List",
+        "operationId": "create_term_list_term_lists_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TermListWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TermListOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/term-lists/{term_list_id}": {
+      "get": {
+        "tags": [
+          "Term Lists"
+        ],
+        "summary": "Get Term List",
+        "operationId": "get_term_list_term_lists__term_list_id__get",
+        "parameters": [
+          {
+            "name": "term_list_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Term List Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TermListOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Term Lists"
+        ],
+        "summary": "Update Term List",
+        "operationId": "update_term_list_term_lists__term_list_id__patch",
+        "parameters": [
+          {
+            "name": "term_list_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Term List Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TermListUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TermListOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Term Lists"
+        ],
+        "summary": "Archive Term List",
+        "operationId": "archive_term_list_term_lists__term_list_id__delete",
+        "parameters": [
+          {
+            "name": "term_list_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Term List Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/term-lists/preview": {
+      "post": {
+        "tags": [
+          "Term Lists"
+        ],
+        "summary": "Preview Term Lists",
+        "description": "What each vendor would receive for these lists (read as the caller).",
+        "operationId": "preview_term_lists_term_lists_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Preview Term Lists Term Lists Preview Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai-tools": {
       "get": {
         "tags": [
@@ -5857,6 +6090,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/aidream__services__audio__speech__TranscriptionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/audio/voice-preview": {
+      "post": {
+        "tags": [
+          "Audio"
+        ],
+        "summary": "Voice Preview Route",
+        "description": "The model's sample of one voice — the vendor's own when it publishes one.",
+        "operationId": "voice_preview_route_audio_voice_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoicePreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoicePreviewResponse"
                 }
               }
             }
@@ -58281,6 +58556,66 @@
         }
       }
     },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a real Supabase Auth session for the given user id.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -95069,48 +95404,6 @@
           }
         }
       }
-    },
-    "/audio/voice-preview": {
-      "post": {
-        "tags": [
-          "Audio"
-        ],
-        "summary": "Voice Preview Route",
-        "description": "The model's sample of one voice — the vendor's own when it publishes one.",
-        "operationId": "voice_preview_route_audio_voice_preview_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VoicePreviewRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VoicePreviewResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
     }
   },
   "components": {
@@ -125432,6 +125725,18 @@
             ],
             "title": "Enhance Prompt"
           },
+          "camera_control": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Camera Control"
+          },
           "image_input": {
             "anyOf": [
               {
@@ -150249,6 +150554,61 @@
         "title": "DevCommunityArticleList",
         "description": "Bounded public-article response."
       },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
+      },
       "DeviceRegistration": {
         "properties": {
           "instance_id": {
@@ -150955,6 +151315,25 @@
             "type": "integer",
             "title": "Source Count",
             "default": 0
+          },
+          "glossary": {
+            "items": {
+              "$ref": "#/components/schemas/GlossaryEntry"
+            },
+            "type": "array",
+            "title": "Glossary",
+            "default": []
+          },
+          "context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context"
           }
         },
         "type": "object",
@@ -171890,6 +172269,52 @@
         "title": "GiteaApplicationCompatibility",
         "description": "Safe compatibility projection for the fixed official Gitea host."
       },
+      "GlossaryEntry": {
+        "properties": {
+          "term": {
+            "type": "string",
+            "title": "Term"
+          },
+          "translation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translation"
+          },
+          "target_language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Language"
+          },
+          "do_not_translate": {
+            "type": "boolean",
+            "title": "Do Not Translate",
+            "default": false
+          },
+          "case_sensitive": {
+            "type": "boolean",
+            "title": "Case Sensitive",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "term"
+        ],
+        "title": "GlossaryEntry",
+        "description": "One translation rule from an attached term list.\n\n``translation`` None with ``do_not_translate`` True means \"keep the source\nterm verbatim in every target language\". ``target_language`` None means the\nrule applies to every target language."
+      },
       "GmailCcAttribution": {
         "properties": {
           "address": {
@@ -189652,6 +190077,18 @@
               }
             ],
             "title": "Enhance Prompt"
+          },
+          "camera_control": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Camera Control"
           },
           "image_input": {
             "anyOf": [
@@ -225741,6 +226178,24 @@
         },
         "type": "object",
         "title": "PreviewFiresResponse"
+      },
+      "PreviewRequest": {
+        "properties": {
+          "term_list_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Term List Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "term_list_ids"
+        ],
+        "title": "PreviewRequest"
       },
       "PreviewSource": {
         "properties": {
@@ -273501,6 +273956,358 @@
         ],
         "title": "TemporalServiceStatus"
       },
+      "TermEntry": {
+        "properties": {
+          "term": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Term"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "boost",
+              "do_not_translate",
+              "pronounce",
+              "spell_as",
+              "translate"
+            ],
+            "title": "Kind"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "case_sensitive": {
+            "type": "boolean",
+            "title": "Case Sensitive",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "term",
+          "kind"
+        ],
+        "title": "TermEntry",
+        "description": "One row of a term list.\n\n- ``translate``: ``term`` (source) renders as ``value`` in ``language`` (target).\n- ``do_not_translate``: ``term`` stays verbatim in every language.\n- ``pronounce``: ``term`` is spoken as the respelling ``value``.\n- ``spell_as``: ``term`` is how it is heard or misspelled; write ``value``.\n- ``boost``: ``term`` is a known term a recognizer should favour."
+      },
+      "TermListOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "modalities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Modalities"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context"
+          },
+          "source_language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Language"
+          },
+          "entries": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Entries"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "vendor_cache": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Vendor Cache"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "organization_id",
+          "name",
+          "description",
+          "modalities",
+          "context",
+          "source_language",
+          "entries",
+          "version",
+          "updated_at",
+          "vendor_cache"
+        ],
+        "title": "TermListOut"
+      },
+      "TermListUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "modalities": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "house_terms",
+                    "pronunciation",
+                    "transcription",
+                    "translation"
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modalities"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context"
+          },
+          "source_language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Language"
+          },
+          "entries": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TermEntry"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entries"
+          },
+          "expected_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Version",
+            "description": "Optimistic lock: the version you read."
+          }
+        },
+        "type": "object",
+        "title": "TermListUpdate"
+      },
+      "TermListWrite": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "modalities": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "house_terms",
+                    "pronunciation",
+                    "transcription",
+                    "translation"
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modalities"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context"
+          },
+          "source_language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Language"
+          },
+          "entries": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TermEntry"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entries"
+          }
+        },
+        "type": "object",
+        "title": "TermListWrite"
+      },
       "TerraformRegistryPublicModuleVersion": {
         "properties": {
           "__kind": {
@@ -282394,6 +283201,18 @@
               }
             ],
             "title": "Transcription Result"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "lip_sync"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
           }
         },
         "additionalProperties": false,
@@ -283222,9 +284041,12 @@
               {
                 "type": "string",
                 "enum": [
+                  "asset",
                   "character",
                   "composition_control",
                   "edit_target",
+                  "first_frame",
+                  "last_frame",
                   "mask",
                   "style",
                   "subject"
@@ -283235,6 +284057,17 @@
               }
             ],
             "title": "Role"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
           }
         },
         "additionalProperties": false,
@@ -284052,6 +284885,32 @@
               }
             ],
             "title": "Duration Ms"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "extend",
+                  "restyle"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
           }
         },
         "additionalProperties": false,
@@ -290160,6 +291019,142 @@
         ],
         "title": "VistaSocialServiceStatus",
         "description": "Safe aggregate status projection for Vista Social's fixed status page."
+      },
+      "VoicePreviewRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Model",
+            "description": "Catalog model the voice belongs to."
+          },
+          "voice": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Voice",
+            "description": "The model's voice id."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "model",
+          "voice"
+        ],
+        "title": "VoicePreviewRequest"
+      },
+      "VoicePreviewResponse": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "voice": {
+            "type": "string",
+            "title": "Voice"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "synthesized",
+              "vendor_sample"
+            ],
+            "title": "Source"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type",
+            "default": "audio/mpeg"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url",
+          "model",
+          "voice",
+          "source"
+        ],
+        "title": "VoicePreviewResponse"
       },
       "VoiceShare": {
         "properties": {
@@ -302522,142 +303517,6 @@
           "success"
         ],
         "title": "TypeResult"
-      },
-      "VoicePreviewRequest": {
-        "properties": {
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "Organization context for the request; omitted to use the authenticated context."
-          },
-          "project_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Id",
-            "description": "Optional associated project selected by the caller."
-          },
-          "task_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Task Id",
-            "description": "Optional associated task selected by the caller."
-          },
-          "source_app": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source App",
-            "description": "Stable application slug that initiated the request."
-          },
-          "source_feature": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Feature",
-            "description": "Stable feature slug within the source application."
-          },
-          "initiation": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "auto",
-                  "user"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Initiation",
-            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
-          },
-          "model": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Model",
-            "description": "Catalog model the voice belongs to."
-          },
-          "voice": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Voice",
-            "description": "The model's voice id."
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "model",
-          "voice"
-        ],
-        "title": "VoicePreviewRequest"
-      },
-      "VoicePreviewResponse": {
-        "properties": {
-          "url": {
-            "type": "string",
-            "title": "Url"
-          },
-          "model": {
-            "type": "string",
-            "title": "Model"
-          },
-          "voice": {
-            "type": "string",
-            "title": "Voice"
-          },
-          "source": {
-            "type": "string",
-            "enum": [
-              "synthesized",
-              "vendor_sample"
-            ],
-            "title": "Source"
-          },
-          "mime_type": {
-            "type": "string",
-            "title": "Mime Type",
-            "default": "audio/mpeg"
-          }
-        },
-        "type": "object",
-        "required": [
-          "url",
-          "model",
-          "voice",
-          "source"
-        ],
-        "title": "VoicePreviewResponse"
       }
     }
   }

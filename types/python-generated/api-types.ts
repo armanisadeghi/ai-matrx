@@ -944,6 +944,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/term-lists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Term Lists */
+        get: operations["list_term_lists_term_lists_get"];
+        put?: never;
+        /** Create Term List */
+        post: operations["create_term_list_term_lists_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/term-lists/{term_list_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Term List */
+        get: operations["get_term_list_term_lists__term_list_id__get"];
+        put?: never;
+        post?: never;
+        /** Archive Term List */
+        delete: operations["archive_term_list_term_lists__term_list_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Term List */
+        patch: operations["update_term_list_term_lists__term_list_id__patch"];
+        trace?: never;
+    };
+    "/term-lists/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Term Lists
+         * @description What each vendor would receive for these lists (read as the caller).
+         */
+        post: operations["preview_term_lists_term_lists_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai-tools": {
         parameters: {
             query?: never;
@@ -2639,6 +2696,26 @@ export interface paths {
          *     video and over-provider-limit audio are normalized + chunked).
          */
         post: operations["transcribe_file_audio_transcribe_file_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/audio/voice-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Voice Preview Route
+         * @description The model's sample of one voice — the vendor's own when it publishes one.
+         */
+        post: operations["voice_preview_route_audio_voice_preview_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -28420,6 +28497,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a real Supabase Auth session for the given user id.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -41799,26 +41896,6 @@ export interface paths {
         put?: never;
         /** Renew Stream */
         post: operations["renew_stream_cb__stream_session_id__renew_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/audio/voice-preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Voice Preview Route
-         * @description The model's sample of one voice — the vendor's own when it publishes one.
-         */
-        post: operations["voice_preview_route_audio_voice_preview_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -55254,6 +55331,10 @@ export interface components {
             generate_audio?: boolean | null;
             /** Enhance Prompt */
             enhance_prompt?: boolean | null;
+            /** Camera Control */
+            camera_control?: {
+                [key: string]: unknown;
+            } | null;
             image_input?: components["schemas"]["MediaRef"] | null;
             /** Image Inputs */
             image_inputs?: components["schemas"]["MediaRef"][] | null;
@@ -65427,6 +65508,33 @@ export interface components {
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
         };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
+        };
         /**
          * DeviceRegistration
          * @description The helper's self-description. The desktop engine sends the same shape.
@@ -65766,6 +65874,13 @@ export interface components {
              * @default 0
              */
             source_count?: number;
+            /**
+             * Glossary
+             * @default []
+             */
+            glossary?: components["schemas"]["GlossaryEntry"][];
+            /** Context */
+            context?: string | null;
         };
         /** DictionaryEntry */
         DictionaryEntry: {
@@ -74986,6 +75101,32 @@ export interface components {
             instance_page?: "https://gitea.com";
         };
         /**
+         * GlossaryEntry
+         * @description One translation rule from an attached term list.
+         *
+         *     ``translation`` None with ``do_not_translate`` True means "keep the source
+         *     term verbatim in every target language". ``target_language`` None means the
+         *     rule applies to every target language.
+         */
+        GlossaryEntry: {
+            /** Term */
+            term: string;
+            /** Translation */
+            translation?: string | null;
+            /** Target Language */
+            target_language?: string | null;
+            /**
+             * Do Not Translate
+             * @default false
+             */
+            do_not_translate?: boolean;
+            /**
+             * Case Sensitive
+             * @default false
+             */
+            case_sensitive?: boolean;
+        };
+        /**
          * GmailCcAttribution
          * @description Whose address each copied-to recipient is, as the client's ONE integrity
          *     primitive decided (`features/crm/gmail/recipient-integrity.ts`).
@@ -83294,6 +83435,10 @@ export interface components {
             generate_audio?: boolean | null;
             /** Enhance Prompt */
             enhance_prompt?: boolean | null;
+            /** Camera Control */
+            camera_control?: {
+                [key: string]: unknown;
+            } | null;
             image_input?: components["schemas"]["MediaRef"] | null;
             /** Image Inputs */
             image_inputs?: components["schemas"]["MediaRef"][] | null;
@@ -99873,6 +100018,11 @@ export interface components {
              * @default false
              */
             event_driven?: boolean;
+        };
+        /** PreviewRequest */
+        PreviewRequest: {
+            /** Term List Ids */
+            term_list_ids: string[];
         };
         /**
          * PreviewSource
@@ -120845,6 +120995,100 @@ export interface components {
             status_page?: "https://status.temporal.io";
         };
         /**
+         * TermEntry
+         * @description One row of a term list.
+         *
+         *     - ``translate``: ``term`` (source) renders as ``value`` in ``language`` (target).
+         *     - ``do_not_translate``: ``term`` stays verbatim in every language.
+         *     - ``pronounce``: ``term`` is spoken as the respelling ``value``.
+         *     - ``spell_as``: ``term`` is how it is heard or misspelled; write ``value``.
+         *     - ``boost``: ``term`` is a known term a recognizer should favour.
+         */
+        TermEntry: {
+            /** Term */
+            term: string;
+            /** Value */
+            value?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "boost" | "do_not_translate" | "pronounce" | "spell_as" | "translate";
+            /** Language */
+            language?: string | null;
+            /**
+             * Case Sensitive
+             * @default false
+             */
+            case_sensitive?: boolean;
+        };
+        /** TermListOut */
+        TermListOut: {
+            /** Id */
+            id: string;
+            /** Organization Id */
+            organization_id: string;
+            /** Name */
+            name: string | null;
+            /** Description */
+            description: string | null;
+            /** Modalities */
+            modalities: string[];
+            /** Context */
+            context: string | null;
+            /** Source Language */
+            source_language: string | null;
+            /** Entries */
+            entries: {
+                [key: string]: unknown;
+            }[];
+            /** Version */
+            version: number | null;
+            /** Updated At */
+            updated_at: string | null;
+            /** Vendor Cache */
+            vendor_cache: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        /** TermListUpdate */
+        TermListUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Modalities */
+            modalities?: ("house_terms" | "pronunciation" | "transcription" | "translation")[] | null;
+            /** Context */
+            context?: string | null;
+            /** Source Language */
+            source_language?: string | null;
+            /** Entries */
+            entries?: components["schemas"]["TermEntry"][] | null;
+            /**
+             * Expected Version
+             * @description Optimistic lock: the version you read.
+             */
+            expected_version?: number | null;
+        };
+        /** TermListWrite */
+        TermListWrite: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Modalities */
+            modalities?: ("house_terms" | "pronunciation" | "transcription" | "translation")[] | null;
+            /** Context */
+            context?: string | null;
+            /** Source Language */
+            source_language?: string | null;
+            /** Entries */
+            entries?: components["schemas"]["TermEntry"][] | null;
+        };
+        /**
          * TerraformRegistryPublicModuleVersion
          * @description Safe bounded projection of one public Terraform module version.
          */
@@ -124844,6 +125088,8 @@ export interface components {
             duration_ms?: number | null;
             /** Transcription Result */
             transcription_result?: string | null;
+            /** Role */
+            role?: "lip_sync" | null;
         } & (({
             url: string;
         } | {
@@ -125110,7 +125356,9 @@ export interface components {
             /** Height */
             height?: number | null;
             /** Role */
-            role?: ("character" | "composition_control" | "edit_target" | "mask" | "style" | "subject") | null;
+            role?: ("asset" | "character" | "composition_control" | "edit_target" | "first_frame" | "last_frame" | "mask" | "style" | "subject") | null;
+            /** Name */
+            name?: string | null;
         } & (({
             url: string;
         } | {
@@ -125411,6 +125659,10 @@ export interface components {
             height?: number | null;
             /** Duration Ms */
             duration_ms?: number | null;
+            /** Role */
+            role?: ("extend" | "restyle") | null;
+            /** Name */
+            name?: string | null;
         } & (({
             url: string;
         } | {
@@ -128128,6 +128380,68 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.vistasocial.com/";
+        };
+        /** VoicePreviewRequest */
+        VoicePreviewRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            /**
+             * Model
+             * @description Catalog model the voice belongs to.
+             */
+            model: string;
+            /**
+             * Voice
+             * @description The model's voice id.
+             */
+            voice: string;
+        };
+        /** VoicePreviewResponse */
+        VoicePreviewResponse: {
+            /** Url */
+            url: string;
+            /** Model */
+            model: string;
+            /** Voice */
+            voice: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "synthesized" | "vendor_sample";
+            /**
+             * Mime Type
+             * @default audio/mpeg
+             */
+            mime_type?: string;
         };
         /** VoiceShare */
         VoiceShare: {
@@ -133906,68 +134220,6 @@ export interface components {
             /** Text Preview */
             text_preview?: string | null;
         };
-        /** VoicePreviewRequest */
-        VoicePreviewRequest: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /**
-             * Source App
-             * @description Stable application slug that initiated the request.
-             */
-            source_app?: string | null;
-            /**
-             * Source Feature
-             * @description Stable feature slug within the source application.
-             */
-            source_feature?: string | null;
-            /**
-             * Initiation
-             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
-             */
-            initiation?: ("auto" | "user") | null;
-            /**
-             * Model
-             * @description Catalog model the voice belongs to.
-             */
-            model: string;
-            /**
-             * Voice
-             * @description The model's voice id.
-             */
-            voice: string;
-        };
-        /** VoicePreviewResponse */
-        VoicePreviewResponse: {
-            /** Url */
-            url: string;
-            /** Model */
-            model: string;
-            /** Voice */
-            voice: string;
-            /**
-             * Source
-             * @enum {string}
-             */
-            source: "synthesized" | "vendor_sample";
-            /**
-             * Mime Type
-             * @default audio/mpeg
-             */
-            mime_type?: string;
-        };
     };
     responses: never;
     parameters: never;
@@ -135277,6 +135529,189 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicationStatus"][];
+                };
+            };
+        };
+    };
+    list_term_lists_term_lists_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TermListOut"][];
+                };
+            };
+        };
+    };
+    create_term_list_term_lists_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TermListWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TermListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_term_list_term_lists__term_list_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                term_list_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TermListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_term_list_term_lists__term_list_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                term_list_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_term_list_term_lists__term_list_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                term_list_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TermListUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TermListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_term_lists_term_lists_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -138149,6 +138584,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__services__audio__speech__TranscriptionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    voice_preview_route_audio_voice_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoicePreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoicePreviewResponse"];
                 };
             };
             /** @description Validation Error */
@@ -176688,6 +177156,41 @@ export interface operations {
             };
         };
     };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -199973,39 +200476,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    voice_preview_route_audio_voice_preview_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VoicePreviewRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VoicePreviewResponse"];
-                };
             };
             /** @description Validation Error */
             422: {
