@@ -31,6 +31,8 @@
 begin;
 set local statement_timeout = '60s';
 set local lock_timeout = '5s';
+-- clause 5 writes as the server's publish does, which must name its system (provenance guard).
+set local app.actor_system = 'matrx_graph.definition_store.publish';
 
 do $suite$
 declare
