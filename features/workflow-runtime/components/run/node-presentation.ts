@@ -178,17 +178,88 @@ export function resolveNodeIdentity(node: {
  * Tolerant by contract — a node missing a label/icon/category still produces a
  * renderable row, because a run page must render.
  */
+/**
+ * 🚨 A STEP TITLE IS A SENTENCE A PERSON READS (cold walk 22, friction).
+ *
+ * The live panel under a Masterwork's "Run it" printed
+ *   "Checking every finding cites a real rule — Diagnostics Before Quo"
+ *   "the expert makes the final call"
+ * Step titles are authored by builders (and by our own Masterwork compiler,
+ * which sliced a section name mid-word and templated "{author} makes the
+ * final call" with a lowercase author). Two repairs, here at the ONE place
+ * every run surface reads a step's title from:
+ *
+ *   · sentence case — the first letter is capitalised, nothing else moves;
+ *   · a word cut in half at the END of a title is completed from the same
+ *     run's own words, when another step's title carries that exact phrase
+ *     continuing into the rest of the word ("… Before Quo" + "Checking your
+ *     Diagnostics Before Quoting rules" → "… Before Quoting"). Nothing is
+ *     invented: with no sibling that proves the word, the title is left as
+ *     written, and the renderer wraps it rather than cutting it again.
+ */
+export function sentenceCaseTitle(title: string): string {
+  const trimmed = title.trim();
+  const first = trimmed.charAt(0);
+  if (first && first !== first.toUpperCase() && /\p{Ll}/u.test(first)) {
+    return first.toUpperCase() + trimmed.slice(1);
+  }
+  return trimmed;
+}
+
+function completeCutTailWord(title: string, siblings: readonly string[]): string {
+  // Only the part after a dash is a quoted name that can have been cut ("… —
+  // Diagnostics Before Quo"); a title's own closing word ("Apply rule") is
+  // never "completed" into a sibling's ("Apply rules").
+  const dash = title.search(/\s[\u2014\u2013]\s[^\u2014\u2013]*$/);
+  if (dash === -1) return title;
+  const tail = /(\S+(?:\s+\S+){0,5})$/.exec(title.slice(dash + 3));
+  if (!tail) return title;
+  // Try the longest phrase first, so the completion is anchored on as many of
+  // the title's own words as possible.
+  const words = tail[1].split(/\s+/);
+  for (let take = words.length; take >= 2; take -= 1) {
+    const phrase = words.slice(words.length - take).join(" ");
+    for (const sibling of siblings) {
+      if (sibling === title) continue;
+      let from = sibling.indexOf(phrase);
+      while (from !== -1) {
+        const atWordStart = from === 0 || /\s/.test(sibling.charAt(from - 1));
+        const rest = /^[\p{L}\p{N}'\u2019]+/u.exec(
+          sibling.slice(from + phrase.length),
+        );
+        if (atWordStart && rest) return title + rest[0];
+        from = sibling.indexOf(phrase, from + 1);
+      }
+    }
+  }
+  return title;
+}
+
+/** Every step title of one run, repaired against the run's own words. */
+export function presentStepTitles(titles: readonly string[]): string[] {
+  return titles.map((title) =>
+    sentenceCaseTitle(completeCutTailWord(title.trim(), titles)),
+  );
+}
+
 export function describeWorkflowSteps(
   definition: WorkflowDefinitionLike,
 ): RunStepPresentation[] {
-  return definition.nodes.map((node) => {
+  const titles = presentStepTitles(
+    definition.nodes.map(
+      (node) =>
+        readString(node.data as Record<string, unknown> | undefined, "label") ??
+        humanizeIdentifier(node.id),
+    ),
+  );
+  return definition.nodes.map((node, index) => {
     const data = node.data as Record<string, unknown> | undefined;
     const { specType, category } = resolveNodeIdentity(node);
     const family = familyOf(category, specType);
     const rawIcon = readString(data, "icon");
     return {
       nodeId: node.id,
-      label: readString(data, "label") ?? humanizeIdentifier(node.id),
+      label: titles[index],
       family,
       iconName: rawIcon ? kebabCaseToLucidePascalCase(rawIcon) : null,
       outputKind: readString(data, "output_kind"),

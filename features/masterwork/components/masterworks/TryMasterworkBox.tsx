@@ -198,6 +198,24 @@ function buildFallbackInputs(
 }
 
 /**
+ * The line that says which run is on screen. Never an id fragment: a fresh
+ * run is named by the minute it was started, a rejoined one by the fact that
+ * she started it earlier.
+ */
+export function runLabel(
+  origin: "fresh" | "rejoined" | null,
+  startedAt: number | null,
+): string {
+  if (origin === "rejoined") return "Rejoined the run you started earlier";
+  if (startedAt === null) return "This run";
+  const at = new Date(startedAt).toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `This run · started ${at}`;
+}
+
+/**
  * WHAT GOES IN EACH BOX, SAID IN THE BOX (cold walk 22, friction).
  *
  * A checking Masterwork's first field is labelled "The text (verbatim)" by the
@@ -282,6 +300,8 @@ export function TryMasterworkBox({
   const isEdit = masterworkKind !== "generate";
 
   const [steps, setSteps] = useState<RunStepPresentation[]>([]);
+  /** When the run on screen was started from THIS box — its name for a person. */
+  const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
   /** The definition itself — its EDGES are what name the handover step. */
   const [definition, setDefinition] = useState<WorkflowDefinitionLike | null>(
     null,
@@ -603,6 +623,7 @@ export function TryMasterworkBox({
     rememberRun(masterworkId, outcome.runId);
     setRunId(outcome.runId);
     setRunOrigin("fresh");
+    setRunStartedAt(Date.now());
   }, [
     inputs,
     values,
@@ -791,11 +812,9 @@ export function TryMasterworkBox({
             className="text-[11px] text-muted-foreground"
             data-masterwork-run={runOrigin ?? "fresh"}
           >
-            {runOrigin === "rejoined"
-              ? "Rejoined the run you started earlier"
-              : "This run"}
-            {" · "}
-            <span className="font-mono">{runId.slice(0, 8)}</span>
+            {/* A PERSON NAMES A RUN BY WHEN SHE STARTED IT, never by an id
+                fragment (cold walk 22 read "This run · d1b55499"). */}
+            {runLabel(runOrigin, runStartedAt)}
           </p>
         ) : null}
 
@@ -808,7 +827,7 @@ export function TryMasterworkBox({
                 <div
                   key={step.nodeId}
                   className={cn(
-                    "flex items-center gap-1.5 text-xs",
+                    "flex items-start gap-1.5 text-xs [&>svg]:mt-0.5",
                     phase === "idle"
                       ? "text-muted-foreground/50"
                       : "text-muted-foreground",
@@ -823,7 +842,11 @@ export function TryMasterworkBox({
                   ) : (
                     <CircleDashed className="h-3 w-3 shrink-0 opacity-40" />
                   )}
-                  <span className="truncate">{step.label}</span>
+                  {/* WRAPS, never cut mid-word (cold walk 22: "… Before
+                      Quo"); the full title is also on hover. */}
+                  <span className="min-w-0 break-words" title={step.label}>
+                    {step.label}
+                  </span>
                 </div>
               );
             })}

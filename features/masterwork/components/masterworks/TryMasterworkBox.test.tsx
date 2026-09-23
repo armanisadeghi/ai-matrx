@@ -265,6 +265,8 @@ it("settles an errored run from its live terminal event without the row-poll rec
   expect(container.textContent).toContain(
     "Rejoined the run you started earlier",
   );
+  // ...and never by an id fragment (cold walk 22: "This run · d1b55499").
+  expect(container.textContent).not.toContain(runId.slice(0, 8));
   expect(onRunFinished).not.toHaveBeenCalled();
 
   await act(async () => {
