@@ -280,7 +280,6 @@ export function JurisdictionVerificationClient() {
           emptyState={{ title: "No JUR-SEED tasks are recorded." }}
           toolbar={{
             title: "JUR-SEED tasks",
-            titleCount: { value: seedProgress.length, label: "tasks" },
             search: true,
             searchPlaceholder: "Search JUR-SEED tasks…",
             refresh: { onRefresh: reload, label: "Refresh verification board" },
@@ -303,7 +302,6 @@ export function JurisdictionVerificationClient() {
           emptyState={{ title: "Nothing is past its verification date." }}
           toolbar={{
             title: "Past their verification date",
-            titleCount: { value: overdue.length, label: "rules" },
             search: true,
             searchPlaceholder: "Search overdue rules…",
             refresh: { onRefresh: reload, label: "Refresh verification board" },
