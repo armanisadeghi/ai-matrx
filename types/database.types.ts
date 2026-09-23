@@ -71669,6 +71669,10 @@ export type Database = {
         }
         Returns: Json
       }
+      settle_deferred_checks: {
+        Args: { p_immediate: boolean; p_rel: unknown }
+        Returns: number
+      }
       soft_delete_orphan_census: {
         Args: never
         Returns: {
@@ -72790,6 +72794,7 @@ export type Database = {
           checksum: string
           duration_ms: number
           filename: string
+          rebase_receipts: Json | null
           source: string
         }
         Insert: {
@@ -72798,6 +72803,7 @@ export type Database = {
           checksum: string
           duration_ms: number
           filename: string
+          rebase_receipts?: Json | null
           source: string
         }
         Update: {
@@ -72806,6 +72812,7 @@ export type Database = {
           checksum?: string
           duration_ms?: number
           filename?: string
+          rebase_receipts?: Json | null
           source?: string
         }
         Relationships: []
@@ -109948,6 +109955,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      udt_dataset_archive: {
+        Args: {
+          p_moved_to_table_id: string
+          p_reason?: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      udt_dataset_unarchive: { Args: { p_table_id: string }; Returns: Json }
       udt_row_words_many: {
         Args: {
           p_display: Json

@@ -16,7 +16,8 @@
  *   pnpm sync-types          → all 3 steps, API contract from the ../aidream CHECKOUT
  *   pnpm sync-types:live     → all 3 steps, API contract from the LIVE server,
  *                              REFUSED unless that server contains the commit pinned
- *                              in scripts/aidream-contract-pin.json
+ *                              in scripts/aidream-contract-pin.json AND its generated API contract
+ *                              matches the checkout (including environment-gated routes)
  *   pnpm sync-types:local    → all 3 steps against the LOCAL backend (http://localhost:8000)
  *   pnpm sync-types:fast     → ONLY step 2 against the LOCAL backend (no db-types, no typecheck)
  *
@@ -46,6 +47,7 @@ import {
     readContractPin,
 } from './aidream-contract-pin.mjs';
 import { normalizeOpenApiDocument } from './typegen-openapi-normalize.mjs';
+import { compareAgainstReference, generateReference } from './check-api-types-fresh.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '..');
@@ -301,6 +303,37 @@ try {
         console.error(`    ${error instanceof Error ? error.message : String(error)}`);
         console.error('    Nothing was written. types/python-generated/ is untouched.\n');
         process.exit(1);
+    }
+
+    // An ancestor pin proves code lineage, not contract equality: a production
+    // app omits dev-only routes even when it runs the same commit as this tree.
+    // Every server mode must meet the same freshness rule as checkout generation
+    // before it can replace the canonical files, including unused endpoints.
+    if (!useCheckout) {
+        let reference;
+        try {
+            reference = generateReference(AIDREAM_ROOT);
+        } catch (error) {
+            if (error?.name !== 'UnmeasuredError') throw error;
+            console.error('\n  ? Could not compare server API types with the canonical checkout.\n');
+            for (const line of error.lines) console.error(`    ${line}`);
+            console.error('');
+            rmSync(stagingDir, { recursive: true, force: true });
+            process.exit(2);
+        }
+        try {
+            const findings = compareAgainstReference(stagingDir, reference);
+            if (findings.length > 0) {
+                throw new Error(
+                    'Server API contract differs from the aidream checkout. '
+                    + 'Run pnpm sync-types to regenerate from the canonical checkout. '
+                    + 'Nothing in types/python-generated/ was written.\n'
+                    + findings.map(({ file, what }) => `  ${file} ${what}`).join('\n'),
+                );
+            }
+        } finally {
+            rmSync(reference.dir, { recursive: true, force: true });
+        }
     }
 
     for (const name of ['openapi.json', 'api-types.ts', ...Object.values(BUNDLE_FILES)]) {

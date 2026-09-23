@@ -58,12 +58,13 @@ const AIDREAM_ROOT = resolve(REPO_ROOT, '../aidream');
 const COMMITTED_DIR = resolve(REPO_ROOT, 'types/python-generated');
 const GENERATOR = resolve(REPO_ROOT, 'node_modules/.bin/openapi-typescript');
 
-/** Exit 2, with a sentence. An unmeasurable check is never a passing check. */
+/** Represent an unmeasurable check for each CLI entrypoint to report. */
 function unmeasured(lines) {
-    console.error('\n  ? api-types freshness UNMEASURED — this check could not run.\n');
-    for (const line of lines) console.error(`    ${line}`);
-    console.error('');
-    process.exit(2);
+    const error = new Error(lines.join('\n'));
+    error.name = 'UnmeasuredError';
+    error.exitCode = 2;
+    error.lines = lines;
+    throw error;
 }
 
 /**
@@ -71,10 +72,10 @@ function unmeasured(lines) {
  * two steps `sync-types` runs. Returns the temp dir holding the reference
  * `openapi.json` (normalized) and `api-types.ts`.
  */
-function generateReference() {
-    if (!existsSync(AIDREAM_ROOT)) {
+export function generateReference(aidreamRoot = AIDREAM_ROOT) {
+    if (!existsSync(aidreamRoot)) {
         unmeasured([
-            `The aidream checkout is not at ${AIDREAM_ROOT}.`,
+            `The aidream checkout is not at ${aidreamRoot}.`,
             'That checkout IS the contract these generated files must match.',
             'Clone it next to this repo, then re-run.',
         ]);
@@ -87,40 +88,45 @@ function generateReference() {
     }
 
     const dir = mkdtempSync(join(tmpdir(), 'matrx-api-types-fresh-'));
-    const emitted = join(dir, 'emitted.json');
     try {
-        execFileSync('uv', ['run', 'python', 'scripts/emit_openapi.py', '--out', emitted], {
-            cwd: AIDREAM_ROOT,
+        const emitted = join(dir, 'emitted.json');
+        try {
+            execFileSync('uv', ['run', 'python', 'scripts/emit_openapi.py', '--out', emitted], {
+                cwd: aidreamRoot,
+                stdio: ['ignore', 'pipe', 'pipe'],
+                maxBuffer: 64 * 1024 * 1024,
+            });
+        } catch (error) {
+            const detail = [error?.stderr?.toString(), error?.stdout?.toString()]
+                .filter(Boolean)
+                .join('\n')
+                .trim()
+                .split('\n')
+                .slice(-6);
+            unmeasured([
+                'The aidream checkout could not emit its schema, so there is nothing to compare against.',
+                `Reproduce it: cd ${aidreamRoot} && uv run python scripts/emit_openapi.py --out /tmp/openapi.json`,
+                ...detail,
+            ]);
+        }
+
+        const document = JSON.parse(readFileSync(emitted, 'utf-8'));
+        normalizeOpenApiDocument(document);
+        const openapiPath = join(dir, 'openapi.json');
+        writeFileSync(openapiPath, `${JSON.stringify(document, null, 2)}\n`, 'utf-8');
+
+        const apiTypesPath = join(dir, 'api-types.ts');
+        execFileSync(GENERATOR, [openapiPath, '--default-non-nullable', 'false', '-o', apiTypesPath], {
+            cwd: REPO_ROOT,
             stdio: ['ignore', 'pipe', 'pipe'],
             maxBuffer: 64 * 1024 * 1024,
         });
+
+        return { dir, openapiPath, apiTypesPath, document };
     } catch (error) {
-        const detail = [error?.stderr?.toString(), error?.stdout?.toString()]
-            .filter(Boolean)
-            .join('\n')
-            .trim()
-            .split('\n')
-            .slice(-6);
-        unmeasured([
-            'The aidream checkout could not emit its schema, so there is nothing to compare against.',
-            `Reproduce it: cd ${AIDREAM_ROOT} && uv run python scripts/emit_openapi.py --out /tmp/openapi.json`,
-            ...detail,
-        ]);
+        rmSync(dir, { recursive: true, force: true });
+        throw error;
     }
-
-    const document = JSON.parse(readFileSync(emitted, 'utf-8'));
-    normalizeOpenApiDocument(document);
-    const openapiPath = join(dir, 'openapi.json');
-    writeFileSync(openapiPath, `${JSON.stringify(document, null, 2)}\n`, 'utf-8');
-
-    const apiTypesPath = join(dir, 'api-types.ts');
-    execFileSync(GENERATOR, [openapiPath, '--default-non-nullable', 'false', '-o', apiTypesPath], {
-        cwd: REPO_ROOT,
-        stdio: ['ignore', 'pipe', 'pipe'],
-        maxBuffer: 64 * 1024 * 1024,
-    });
-
-    return { dir, openapiPath, apiTypesPath, document };
 }
 
 /** The first line where two texts diverge, as a human sentence. */
@@ -315,7 +321,17 @@ function main() {
             : '\n  check:api-types-fresh — regenerating the contract from the aidream checkout to compare...\n',
     );
 
-    const reference = generateReference();
+    let reference;
+    try {
+        reference = generateReference();
+    } catch (error) {
+        if (error?.name !== 'UnmeasuredError') throw error;
+        console.error('\n  ? api-types freshness UNMEASURED — this check could not run.\n');
+        for (const line of error.lines) console.error(`    ${line}`);
+        console.error('');
+        process.exitCode = error.exitCode;
+        return;
+    }
     let code;
     try {
         code = selfTestMode ? selfTest(reference) : report(compareAgainstReference(committedDir, reference));
