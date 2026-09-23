@@ -2,11 +2,12 @@ import { renderHook } from "@/test-utils/renderHook";
 
 const executeSqlQuery = jest.fn();
 const getFunctions = jest.fn();
+const getPermissions = jest.fn();
 
 jest.mock("@/actions/admin/database", () => ({
   executeSqlQuery: (...args: unknown[]) => executeSqlQuery(...args),
   getFunctions: (...args: unknown[]) => getFunctions(...args),
-  getPermissions: jest.fn(),
+  getPermissions: (...args: unknown[]) => getPermissions(...args),
 }));
 
 import { parseWorkbenchPersistedState } from "../database-admin/workbench/hooks/useQueryWorkbench";
@@ -16,6 +17,7 @@ describe("useDatabaseAdmin terminal execution", () => {
   beforeEach(() => {
     executeSqlQuery.mockReset();
     getFunctions.mockReset();
+    getPermissions.mockReset();
   });
 
   it("preserves a function read failure for the dashboard to render and retry", async () => {
@@ -37,6 +39,28 @@ describe("useDatabaseAdmin terminal execution", () => {
     expect(received).toEqual(expect.any(Error));
     expect((received as Error).message).toBe("Function receipt unavailable");
     expect(hook.current.error).toBe("Function receipt unavailable");
+    await hook.unmount();
+  });
+
+  it("does not disguise a failed permission read as an empty catalog", async () => {
+    getPermissions.mockResolvedValue({
+      data: null,
+      error: "Permission receipt unavailable",
+    });
+    const hook = await renderHook(() => useDatabaseAdmin());
+
+    let received: unknown;
+    await hook.act(async () => {
+      try {
+        await hook.current.fetchPermissions();
+      } catch (error) {
+        received = error;
+      }
+    });
+
+    expect(received).toEqual(expect.any(Error));
+    expect((received as Error).message).toBe("Permission receipt unavailable");
+    expect(hook.current.error).toBe("Permission receipt unavailable");
     await hook.unmount();
   });
 

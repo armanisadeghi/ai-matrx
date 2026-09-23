@@ -11,7 +11,6 @@ import {
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -187,14 +186,15 @@ export function ShortcutDirectory({
       accessorKey: "id",
       header: "ID",
       label: "ID",
-      width: 260,
+      width: 112,
       sortable: false,
       cellKind: "text",
       cell: (row) => (
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 w-full justify-start gap-2 px-2 font-mono text-xs"
+          className="h-7 w-full justify-start gap-1 px-1 font-mono text-xs"
+          title={`Copy full shortcut ID: ${row.id}`}
           onClick={(event) => {
             event.stopPropagation();
             void copyId(row.id);
@@ -205,7 +205,7 @@ export function ShortcutDirectory({
           ) : (
             <Copy className="size-3 shrink-0" />
           )}
-          <span className="truncate">{row.id}</span>
+          <span>{row.id.slice(0, 8)}</span>
         </Button>
       ),
     },
@@ -241,7 +241,7 @@ export function ShortcutDirectory({
           <EntityRef
             token="agent"
             id={row.agentId}
-            name={row.agentName ?? row.agentId}
+            name={row.agentName ?? row.agentId.slice(0, 8)}
             href={resolveAgentUrl(row.agentId, mode)}
             showIcon={false}
             className="max-w-[180px] text-sm"
@@ -564,31 +564,19 @@ export function ShortcutDirectory({
           ),
           leading: (
             <div className="space-y-2">
-              <div className="grid max-w-xl grid-cols-3 gap-2">
-                {[
-                  { label: "Total", value: stats.total, tone: "" },
-                  {
-                    label: "Active",
-                    value: stats.active,
-                    tone: "text-primary",
-                  },
-                  {
-                    label: "Agent-linked",
-                    value: stats.withAgent,
-                    tone: "text-success",
-                  },
-                ].map((stat) => (
-                  <Card key={stat.label}>
-                    <CardContent className="p-2">
-                      <div className={`text-xl font-bold ${stat.tone}`}>
-                        {stat.value}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {stat.label}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <span>
+                  <strong className="font-semibold text-foreground">
+                    {stats.active}
+                  </strong>{" "}
+                  active
+                </span>
+                <span>
+                  <strong className="font-semibold text-foreground">
+                    {stats.withAgent}
+                  </strong>{" "}
+                  agent-linked
+                </span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="flex min-w-[320px] items-center gap-2">

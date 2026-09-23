@@ -1,18 +1,10 @@
-import React from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import React, { useEffect, useState } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
 import { Input } from "@ai-matrx/design-system";
-import { Badge } from "@/components/ui/badge";
-import { Key, RefreshCw, Search, Plus, Settings } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Search } from "lucide-react";
 import type { DatabasePermission } from "./types";
 import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 
@@ -21,174 +13,189 @@ interface PermissionsListProps {
   loading?: boolean;
   isRefreshing?: boolean;
   onRefresh?: () => void;
+  error?: string | null;
+}
+
+const PRIVILEGES = [
+  "SELECT",
+  "INSERT",
+  "UPDATE",
+  "DELETE",
+  "TRUNCATE",
+  "REFERENCES",
+  "TRIGGER",
+] as const;
+
+const columns: MatrxColumnDef<DatabasePermission>[] = [
+  {
+    id: "object_name",
+    accessorKey: "object_name",
+    header: "Object name",
+    width: 240,
+  },
+  {
+    id: "object_type",
+    accessorKey: "object_type",
+    header: "Type",
+    filter: "select",
+    width: 110,
+  },
+  {
+    id: "role",
+    accessorKey: "role",
+    header: "Role",
+    filter: "select",
+    width: 150,
+  },
+  ...PRIVILEGES.map((privilege): MatrxColumnDef<DatabasePermission> => ({
+    id: privilege.toLowerCase(),
+    header: privilege,
+    accessorFn: (row) => row.privileges.includes(privilege),
+    filter: "boolean",
+    width: 100,
+  })),
+];
+
+/** A permission row has no UUID; the catalog identifies it by object, type and role. */
+export function permissionRowId(row: DatabasePermission): string {
+  return JSON.stringify([row.object_name, row.object_type, row.role]);
 }
 
 const PermissionsList = ({
   permissions = [],
   loading = false,
   isRefreshing = false,
-  onRefresh = () => {},
+  onRefresh,
+  error,
 }: PermissionsListProps) => {
-  const [filter, setFilter] = useUrlState("permissionQ", stringUrlCodec());
-  const [selectedType, setSelectedType] = useUrlState(
-    "permissionType",
-    stringUrlCodec("all"),
-  );
+  const [, setFilterUrl] = useUrlState("permissionQ", stringUrlCodec());
+  const [, setTypeUrl] = useUrlState("permissionType", stringUrlCodec("all"));
+  const [filter, setFilter] = useState("");
+  const [selectedType, setSelectedType] = useState("all");
 
-  // Ensure we're getting an array of strings for uniqueTypes
-  const uniqueTypes = [
-    "all",
-    ...Array.from(new Set(permissions.map((p) => String(p.object_type)))),
-  ];
+  // The shared URL writer can complete a Next navigation after this input's
+  // next keystroke. Keep the editor immediately responsive and restore state
+  // from the URL on first mount and browser Back/Forward.
+  useEffect(() => {
+    const restore = () => {
+      const params = new URLSearchParams(window.location.search);
+      setFilter(params.get("permissionQ") ?? "");
+      setSelectedType(params.get("permissionType") ?? "all");
+    };
+    restore();
+    window.addEventListener("popstate", restore);
+    return () => window.removeEventListener("popstate", restore);
+  }, []);
 
-  const filteredPermissions = permissions.filter((perm) => {
-    const matchesFilter =
-      String(perm.object_name).toLowerCase().includes(filter.toLowerCase()) ||
-      String(perm.role).toLowerCase().includes(filter.toLowerCase());
-    const matchesType =
-      selectedType === "all" || String(perm.object_type) === selectedType;
-    return matchesFilter && matchesType;
+  // Retain the URL-backed object/role search and type scope. The shared table
+  // owns sorting, column filters, density, pagination and the standard toolbar.
+  const matching = permissions.filter((row) => {
+    const query = filter.trim().toLowerCase();
+    return (
+      (selectedType === "all" || row.object_type === selectedType) &&
+      (!query ||
+        row.object_name.toLowerCase().includes(query) ||
+        row.role.toLowerCase().includes(query))
+    );
   });
-
-  const privilegeTypes = [
-    "SELECT",
-    "INSERT",
-    "UPDATE",
-    "DELETE",
-    "TRUNCATE",
-    "REFERENCES",
-    "TRIGGER",
-  ];
-
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFilter(e.target.value);
-  };
-
-  const handleTypeSelect = (type: string) => {
-    setSelectedType(String(type));
-  };
+  const types = [...new Set(permissions.map((row) => row.object_type))].sort();
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Key className="h-5 w-5" />
-            Permissions Overview
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRefresh}
-              disabled={loading || isRefreshing}
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-              />
-            </Button>
-            <Button variant="default" size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Permission
-            </Button>
-          </div>
+    <div className="min-w-0" data-surface-value="database_permissions">
+      {error && (
+        <div
+          role="alert"
+          className="mb-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
+          {error}
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+      )}
+      <MatrxDataTable
+        tableId="database-admin-permissions"
+        data={matching}
+        columns={columns}
+        getRowId={permissionRowId}
+        isLoading={loading}
+        isFetching={isRefreshing}
+        viewTabs={false}
+        pageSize={25}
+        detail={{ enabled: false }}
+        emptyState={{
+          title: error
+            ? "Permissions could not be loaded"
+            : "No permissions match",
+        }}
+        coverage={
+          error
+            ? undefined
+            : {
+                loaded: permissions.length,
+                // The RPC returns the complete public-catalog query. Fewer than the
+                // PostgREST default 1,000-row response ceiling is a complete answer;
+                // at the ceiling the true total is unknown until source paging exists.
+                ...(permissions.length < 1000
+                  ? { total: permissions.length }
+                  : { cap: 1000 }),
+                noun: "permission",
+                answeredBy: "client",
+              }
+        }
+        toolbar={{
+          title: "Permissions overview",
+          search: false,
+          customSearch: (
+            <div className="relative w-64 max-w-full">
+              <Search
+                aria-hidden="true"
+                className="absolute left-2 top-2 h-4 w-4 text-muted-foreground"
+              />
               <Input
-                placeholder="Filter by object name or role..."
+                aria-label="Search permission object or role"
+                placeholder="Object or role…"
                 value={filter}
-                onChange={handleFilterChange}
-                className="pl-8"
+                onChange={(event) => {
+                  setFilter(event.target.value);
+                  setFilterUrl(event.target.value, { history: "replace" });
+                }}
+                className="h-8 pl-8"
               />
             </div>
-            <div className="flex gap-2">
-              {uniqueTypes.map((type, index) => (
-                <Button
-                  key={index}
-                  variant={selectedType === type ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handleTypeSelect(type)}
+          ),
+          facets: [
+            {
+              type: "custom",
+              id: "object-type",
+              filter: {
+                active: selectedType !== "all",
+                onReset: () => {
+                  setSelectedType("all");
+                  setTypeUrl("all");
+                },
+              },
+              render: () => (
+                <select
+                  aria-label="Permission object type"
+                  value={selectedType}
+                  onChange={(event) => {
+                    setSelectedType(event.target.value);
+                    setTypeUrl(event.target.value);
+                  }}
+                  className="h-8 rounded-md border border-input bg-background px-2 text-sm"
                 >
-                  {String(type)}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="flex justify-center p-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : (
-            <div className="rounded-md border">
-              {/* Phone reflow: THE PHONE-STACK TABLE (app/globals.css). */}
-              <Table wrapperClassName="phone-stack">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Object Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Role</TableHead>
-                    {privilegeTypes.map((priv, index) => (
-                      <TableHead key={index} className="text-center">
-                        {priv.slice(0, 3)}
-                      </TableHead>
-                    ))}
-                    <TableHead className="w-[80px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredPermissions.map((perm, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="font-medium" data-phone="lead">
-                        {String(perm.object_name)}
-                      </TableCell>
-                      <TableCell data-phone="inline">
-                        <Badge variant="outline">
-                          {String(perm.object_type)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell data-label="Role" data-phone="inline">
-                        {String(perm.role)}
-                      </TableCell>
-                      {privilegeTypes.map((priv, j) => (
-                        <TableCell
-                          key={j}
-                          className="text-center"
-                          data-label={priv}
-                          data-phone="inline"
-                        >
-                          <Checkbox
-                            checked={
-                              Array.isArray(perm.privileges) &&
-                              perm.privileges.includes(priv)
-                            }
-                            disabled
-                          />
-                        </TableCell>
-                      ))}
-                      <TableCell data-phone="actions">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="hover:bg-transparent"
-                        >
-                          <Settings className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                  <option value="all">All object types</option>
+                  {types.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
                   ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+                </select>
+              ),
+            },
+          ],
+          ...(onRefresh ? { refresh: { onRefresh } } : {}),
+        }}
+      />
+    </div>
   );
 };
 

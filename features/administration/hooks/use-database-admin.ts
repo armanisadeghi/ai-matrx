@@ -49,12 +49,14 @@ export const useDatabaseAdmin = () => {
       const result = await getPermissions();
       if (result.error) {
         setError(result.error);
-        return [];
+        throw new Error(result.error);
       }
       return result.data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-      return [];
+      const failure =
+        err instanceof Error ? err : new Error("An error occurred");
+      setError(failure.message);
+      throw failure;
     } finally {
       setLoading(false);
     }

@@ -26,20 +26,28 @@ import {
 } from "@ai-matrx/kit/url-state";
 
 function toDatabasePermissions(data: unknown): DatabasePermission[] {
-  if (!Array.isArray(data)) return [];
-  return data.filter(
-    (row): row is DatabasePermission =>
-      typeof row === "object" &&
-      row !== null &&
-      "object_name" in row &&
-      typeof row.object_name === "string" &&
-      "object_type" in row &&
-      typeof row.object_type === "string" &&
-      "role" in row &&
-      typeof row.role === "string" &&
-      "privileges" in row &&
-      Array.isArray(row.privileges),
+  if (!Array.isArray(data))
+    throw new Error("Permission source returned a non-list response.");
+  const invalidIndex = data.findIndex(
+    (row) =>
+      !(
+        typeof row === "object" &&
+        row !== null &&
+        "object_name" in row &&
+        typeof row.object_name === "string" &&
+        "object_type" in row &&
+        typeof row.object_type === "string" &&
+        "role" in row &&
+        typeof row.role === "string" &&
+        "privileges" in row &&
+        Array.isArray(row.privileges)
+      ),
   );
+  if (invalidIndex !== -1)
+    throw new Error(
+      `Permission source returned an invalid row at position ${invalidIndex + 1}.`,
+    );
+  return data as DatabasePermission[];
 }
 
 function toDatabaseFunctions(data: unknown): DatabaseFunction[] {
@@ -92,6 +100,7 @@ const DatabaseAdminDashboard = () => {
   const [functionsError, setFunctionsError] = useState<string | null>(null);
 
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+  const [permissionsError, setPermissionsError] = useState<string | null>(null);
 
   const { loading, error, fetchFunctions, fetchPermissions, executeQuery } =
     useDatabaseAdmin();
@@ -142,8 +151,16 @@ const DatabaseAdminDashboard = () => {
       const permissionsData = await fetchPermissions();
       setPermissions(toDatabasePermissions(permissionsData));
       setPermissionsLoaded(true);
+      setPermissionsError(null);
     } catch (err) {
       console.error("Failed to load permissions:", err);
+      setPermissions([]);
+      setPermissionsLoaded(true);
+      setPermissionsError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load database permissions.",
+      );
     }
   };
 
@@ -152,9 +169,7 @@ const DatabaseAdminDashboard = () => {
     try {
       // Refresh functions always; refresh permissions if they've been loaded
       // OR the user is currently on the Permissions tab. The latter is what
-      // lets the in-tab Refresh button RETRY after a failed first load (a
-      // failure leaves permissionsLoaded false, so a `permissionsLoaded`-only
-      // gate would make Refresh a no-op on exactly the screen that needs it).
+      // lets the in-tab Refresh button RETRY after a failed first load.
       await Promise.all([
         loadFunctions(),
         permissionsLoaded || activeTab === "permissions"
@@ -266,6 +281,7 @@ const DatabaseAdminDashboard = () => {
                   loading={loading}
                   isRefreshing={isRefreshing}
                   onRefresh={refreshData}
+                  error={permissionsError}
                 />
               </TabsContent>
 
