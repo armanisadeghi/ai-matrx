@@ -17,7 +17,7 @@ _(none)_
 ## Blocked
 
 ### TASK-017: Provision the agent term-list server contract
-- **Status:** blocked (2026-09-23) — production table/model are absent; senior server-contract repair is in progress
+- **Status:** blocked (2026-09-23) — shared reachability repair landed; term-list provisioning safely rolled back on runner claim conflict
 - **Created:** 2026-09-23
 - **Source:** `pnpm sync-types` found 14 missing-field errors in the active term-list service.
 
@@ -27,14 +27,14 @@ Provision and deploy the canonical AI Dream term-list resource, then regenerate 
 **Current evidence**
 
 - Frontend `features/agents/term-lists/service.ts` references `agent.term_list` fields absent from generated types; the 2026-09-23 full `pnpm sync-types` run regenerated East/API types, passed the API property-drop guard, and left exactly 14 type errors in this file.
-- East generated database types still have no `agent.term_list` relation. API types were generated from AI Dream checkout SHA `6dee0f0b2a5be893ee7a43c767e2caa6f487f40a`; live ECS `/health/version` reports `6c1acb4f8a4e13beba570c17c7ec13f6282758aa`, so the generated API contract is ahead of the running dependency.
-- Senior Astra dispatch pushed reviewed `aidream/services/term_lists/provision.json` and `FEATURE.md` as `e216e2b556f7173b47b87113350a399a4ab7164e`; Sol re-review found no remaining spec findings. The spec covers organization/internal access, versions/history, soft delete, client column ACL, and JSON entry constraints. Quarantined clone checks reject 14 malformed payloads and accept 6 valid payloads; production remained unchanged.
-- The 2026-09-23 senior dispatch replaced the clone rehearsal bottleneck with a candidate set-based traversal: all 888 roots match the existing 7,582 reachability rows (51.72 s baseline vs 0.406 s candidate, zero symmetric difference). Rollback-only rehearsal passed base FKs, term/file viewer reachability, archive tombstones, and full rollback; runner up → inverse → up passed without unexpected ACCESS EXCLUSIVE locks. The candidate changes shared `platform.rebuild_reachability` behavior and its server-only callable door, so it is a separate platform-wide change, not part of the additive term-list migration. Early-settlement proof is pending. A prior empty `agent.term_list` artifact remains in the quarantined clone, so exact final-name rehearsal is blocked while the senior investigates a safe clone-only reset. No production change has been made.
-- Provisioning is restricted to 01:00–04:00 America/Los_Angeles. At the latest check (00:20 PDT), the window had not opened and production was unchanged.
+- East generated database types still have no `agent.term_list` relation. API types were generated from AI Dream checkout SHA `6dee0f0b2a5e`; current AI Dream `main` is `21100869077f15380a8dfbf63fe948cdaf4a72a9`, while live ECS `/health/version` reports `9c9d2c14752c6fc0950164d75ae108b9f292d284` (`built_at` `2026-09-23T06:49:23Z`). The generated API contract and running dependency are not aligned.
+- Sol accepted the term-list spec, shared reachability repair, explicit migration-window classifier for hot-parent locks, FK runner guard, and RLS-safe server CRUD projection. The service avoids metadata reads/writes and preserves actor scope, optimistic version checks, and partial-cache behavior. Focused clone checks passed (29 tests at the last combined run); production term-list setup remains pending.
+- At `2026-09-23T08:00Z`, the shared `platform.rebuild_reachability` repair applied and ledgered in 2.64s. The following term-list provisioning transaction rolled back before any term-table or base-FK change: the runner held the canonical advisory claim on one connection while `platform.provision` attempted the same claim on another and refused with “another provisioning run”. Do not bypass or blindly retry. East currently has the shared reachability repair only.
+- Clone evidence: all 888 roots matched the existing 7,582 reachability rows (51.72s reference vs 0.406s candidate, zero symmetric difference); the reviewed final term-list/server bundle and FK phases passed clone rehearsal. Provisioning is restricted to 01:00–04:00 America/Los_Angeles.
 
 **Next concrete step**
 
-Finish the early-settlement proof and independent review of the shared-function repair. In the authorized 01:00–04:00 PDT window, apply it to East only if the exact runner/inverse/up behavior and safety review pass; then apply the reviewed additive term-list contract, regenerate API/database/entity types from the now-live server contract, and follow every resulting error through frontend callers. Keep the current uncommitted term-list UI/service out of release until the contract exists; do not cast or fabricate generated types.
+Fix and independently review the advisory-claim handoff so the production runner can apply the exact term-list bundle without self-refusal. Rehearse runner up/inverse/up plus FK attach/validate on the clone; retry in the authorized 01:00–04:00 PDT window only if the exact reviewed SQL/hash/baseline gates pass. Deploy the matching AI Dream contract, confirm `/health/version`, regenerate East/API/entity types from the serving source, and resolve the 14 frontend errors through callers without casts or fabricated generated types. Keep the uncommitted term-list UI/service out of release until the contract and typecheck are complete.
 
 ### TASK-CRM-ERASURE-RPC: Apply the missing Gmail interaction erasure RPC
 - **Status:** blocked (2026-09-22) — live East schema is missing the RPC used by current CRM code
