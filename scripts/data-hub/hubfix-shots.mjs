@@ -32,7 +32,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { chromium } from "playwright";
 
-import { signIn, setOrganization, sleep, until } from "../lib/seat-browser.mjs";
+import { signIn, setOrganization, setOrganizationBySlug, sleep, until } from "../lib/seat-browser.mjs";
 
 const args = process.argv.slice(2);
 const flag = (name, fallback) => {
@@ -186,7 +186,8 @@ const ITEM_LISTINGS = [
 const HONEST_REFUSALS = [
   "The link named a form this table does not have",
   "The link named a digest that is not one of yours",
-  "The link named a portal this table is not part of",
+  // NOT "The link named a portal this table is not part of": that sentence on a
+  // portal row IS the defect VERIFIER-15 H5 found — the row named the wrong table.
   "only someone with Admin on this table can share it",
 ];
 async function itemRowsOpenTheItem(page, label, shots) {
@@ -231,7 +232,58 @@ async function itemRowsOpenTheItem(page, label, shots) {
   }
 }
 
-async function walk(context, label, { email, password, organization, shots, openShared }) {
+/**
+ * CLAUSES 6 + 7 — AN ACCEPTED SHARE STAYS LISTED, AND OPENS WITHOUT A FALSE
+ * SENTENCE (VERIFIER-15 H4, H6). From the member seat: "Shared with me" holds a
+ * row whose address opens the owner's table (`?org=`), no two rows of that
+ * listing read the same, and clicking it lands on the table with "Shared with
+ * you by …" and WITHOUT the toast "…not a member of … nothing was opened and you
+ * were not moved" over it.
+ */
+async function acceptedShareOpens(page, label, shots) {
+  await page.goto(`${ORIGIN}/data-v2`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await settled(page);
+  await openEveryListing(page);
+  const rows = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('[data-hub-listing="shared-with-me"] li')).map((li) => ({
+      text: (li.textContent ?? "").replace(/\s+/g, " ").trim(),
+      href: li.querySelector("a")?.getAttribute("href") ?? "",
+    })),
+  );
+  // THE SAME THING TWICE is a defect; two organizations that happen to share a
+  // name ("Rincon Plumbing Co — Ojai Branch" is ten organizations in this
+  // store) are two things, so rows are compared by where they OPEN.
+  const hrefs = rows.map((r) => r.href);
+  const dupes = hrefs.filter((h, i) => hrefs.indexOf(h) !== i);
+  clause(`${label} · no "Shared with me" thing is listed twice`, dupes.length === 0, dupes.length ? `listed twice: ${dupes.join(" | ")}` : `${rows.length} rows, ${new Set(hrefs).size} distinct destinations`);
+  const repeatsOrg = rows.filter((r) => /in (.+?) · .*from \1/.test(r.text));
+  clause(`${label} · a "Shared with me" row names the organization once`, repeatsOrg.length === 0, repeatsOrg.map((r) => r.text).join(" | ") || "each row names it once");
+  const accepted = rows.find((r) => r.href.includes("?org="));
+  clause(`${label} · an ACCEPTED share is still listed`, Boolean(accepted), accepted ? `${accepted.text} → ${accepted.href}` : "no row opens a table; the accepted share left the hub");
+  if (!accepted) return;
+  await page.locator(`[data-hub-listing="shared-with-me"] li a[href="${accepted.href}"]`).first().click();
+  const landed = await until(
+    "the owner's table, said to be theirs",
+    async () =>
+      page.evaluate(() => {
+        const body = document.body?.innerText ?? "";
+        if (body.includes("Opening the table")) return null;
+        return body.includes("Shared with you by") ? { ok: true } : null;
+      }),
+    45000,
+  );
+  // Give a late toast its chance to appear before judging it absent.
+  await sleep(4000);
+  const lie = await page.evaluate(() => {
+    const body = document.body?.innerText ?? "";
+    return body.includes("you were not moved") || body.includes("not a member of");
+  });
+  clause(`${label} · the accepted share opens the owner's table and says whose it is`, Boolean(landed.v), landed.v ? `"Shared with you by …" after ${landed.ms} ms` : `no "Shared with you by" line within ${landed.ms} ms — URL ${page.url()}`);
+  clause(`${label} · no refusal toast over the open table`, !lie, lie ? 'the page says "not a member of … you were not moved"' : "no refusal sentence anywhere on the page");
+  await shoot(page, `${shots.itemPrefix}-accepted-share`);
+}
+
+async function walk(context, label, { email, password, organization, slug, shots, openShared }) {
   const page = await context.newPage();
   const already = await whoAmI(page, ORIGIN);
   // The dev server compiles /login on first hit and the sign-in helper's own wait
@@ -258,7 +310,10 @@ async function walk(context, label, { email, password, organization, shots, open
   let picked = false;
   for (let attempt = 0; attempt < 2 && !picked; attempt += 1) {
     try {
-      await setOrganization(page, organization);
+      // Several organizations share a name (eight are called "Ironclad Mobile
+      // Mechanic…"), so a walk that needs ONE of them picks it by slug.
+      if (slug) await setOrganizationBySlug(page, organization, slug);
+      else await setOrganization(page, organization);
       picked = true;
     } catch (error) {
       if (attempt === 1) throw error;
@@ -320,7 +375,9 @@ async function walk(context, label, { email, password, organization, shots, open
 
   // ── clause 1: the door law on "Shared with me" ─────────────────────────────
   if (openShared) {
-    const row = page.locator('[data-hub-listing="shared-with-me"] li a').first();
+    // An OFFERED share — the row that opens the invitation. An accepted one is
+    // judged by `acceptedShareOpens` below.
+    const row = page.locator('[data-hub-listing="shared-with-me"] li a[href^="/invitations/table/accept/"]').first();
     const count = await row.count();
     if (count === 0) {
       clause(`${label} · a "Shared with me" row to open`, false, "the listing has no rows on this seat");
@@ -363,6 +420,7 @@ async function walk(context, label, { email, password, organization, shots, open
   }
 
   if (shots.itemPrefix) await itemRowsOpenTheItem(page, label, shots);
+  if (openShared && shots.itemPrefix) await acceptedShareOpens(page, label, shots);
 
   await page.close();
   return hub;
@@ -428,6 +486,19 @@ try {
     shots: { desktop: "hubfix-member-rincon-390", shared: "hubfix-member-rincon-390-shared-opens", itemPrefix: "hubfix-member-390-opens" },
   });
   await memberPhone.close();
+
+  // CLAUSE 8 — A PORTAL ROW OPENS THE PORTAL (VERIFIER-15 H5). Rincon's portals
+  // are all archived, so this runs on Ironclad Mobile Mechanic, whose live
+  // "Customer Portal" shows one table beside its clients table.
+  const portalSeat = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
+  await tryWalk(portalSeat, "admin@admin.com · Ironclad Mobile Mechanic · 1600", {
+    email: ADMIN,
+    password: ADMIN_PASSWORD,
+    organization: "Ironclad Mobile Mechanic",
+    slug: "ironclad-mobile-mechanic",
+    shots: { desktop: "hubfix-admin-ironclad-1600", shared: "hubfix-admin-ironclad-shared", itemPrefix: "hubfix-admin-ironclad-opens" },
+  });
+  await portalSeat.close();
 
   say(`\n${failures === 0 ? "ALL CLAUSES PASS" : `${failures} CLAUSE(S) FAILED`}`);
   writeFileSync(resolve(OUT, "hubfix-walk.txt"), `${findings.join("\n")}\n`);

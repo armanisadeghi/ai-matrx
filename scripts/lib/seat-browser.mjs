@@ -224,11 +224,19 @@ export async function setOrganizationBySlug(page, organizationName, slug) {
           // <button role="option">; the <li> carries the same text and swallows a dispatched
           // click silently, which is how this helper's first run "picked" five crews and
           // stayed on the first one the whole time.
+          // THE ADDRESS IS A WHOLE WORD, never a prefix. "ironclad-mobile-mechanic"
+          // is also the start of "ironclad-mobile-mechanic-719980a1", and a
+          // substring match picked that organization instead (lane HUB-FIX).
+          const escaped = address.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          // Only the END is checked: the row's text runs the name straight into
+          // the address ("…Mechanicironclad-mobile-mechanic"), so nothing reliable
+          // precedes it, and a longer slug differs only in what FOLLOWS.
+          const whole = new RegExp(`${escaped}(?![a-z0-9-])`, "i");
           const rows = Array.from(
             document.querySelectorAll("button[role='option'], button, [role='menuitem'], a"),
           ).filter((el) => {
             const t = (el.textContent ?? "").trim();
-            return t.includes(name) && t.includes(address) && t.length < name.length + address.length + 80;
+            return t.includes(name) && whole.test(t) && t.length < name.length + address.length + 80;
           });
           // The innermost match is the row itself, not a list wrapping every row.
           const row = rows.sort((a, b) => (a.textContent ?? "").length - (b.textContent ?? "").length)[0];
