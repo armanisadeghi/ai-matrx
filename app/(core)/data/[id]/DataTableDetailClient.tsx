@@ -42,6 +42,13 @@ import CreateTableModal from "@/components/user-generated-table-data/CreateTable
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { createClient } from "@/utils/supabase/client";
 import { whereThisTableLives } from "@/features/unified-data/whereThisTableLives";
+import { RECORD_STORE_TABLES_OPEN_IN } from "@/features/data-tables/data-source/d3";
+import {
+  placeTableInRecordStore,
+  recordStoreHomeOf,
+} from "@/features/data-tables/data-source/table-home";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 interface DataTableDetailClientProps {
   tableId: string;
@@ -58,6 +65,14 @@ export default function DataTableDetailClient({
   // sync without refetching the table just to read back a name we set.
   const [renamedTo, setRenamedTo] = useState<string | null>(null);
   const { organizationId, organizationState } = useOrganizationRequired();
+  const userId = useAppSelector(selectUserId);
+  // WHICH STORE THE GRID IS READING (decision D3, `data-source/d3.ts`). A table
+  // the record store holds opens in THIS grid, with the record-store half of the
+  // data seam behind it; the key remounts the viewer onto that half the moment
+  // the table is placed, so nothing it read from the older store survives.
+  const [placedIn, setPlacedIn] = useState<"older" | "record">(() =>
+    recordStoreHomeOf(tableId) ? "record" : "older",
+  );
   // The id the OLDER store did not recognise, held until we can actually look
   // for it. Answering the instant the first read fails would be answering
   // before the organization gate has resolved — and "no organization is
@@ -97,7 +112,14 @@ export default function DataTableDetailClient({
       const found = await whereThisTableLives(createClient(), organizationId, notHereId);
       if (cancelled) return;
       if (found.kind === "record_store") {
-        router.replace(found.href);
+        if (RECORD_STORE_TABLES_OPEN_IN === "data-v2") {
+          router.replace(found.href);
+          return;
+        }
+        placeTableInRecordStore(notHereId, { organizationId, userId: userId ?? null });
+        setPlacedIn("record");
+        setNotHereId(null);
+        setElsewhere(null);
         return;
       }
       setElsewhere(found.kind === "nowhere" ? { kind: "nowhere" } : { kind: "unknown", why: found.why });
@@ -105,7 +127,7 @@ export default function DataTableDetailClient({
     return () => {
       cancelled = true;
     };
-  }, [notHereId, organizationId, organizationState, router]);
+  }, [notHereId, organizationId, organizationState, router, userId]);
 
   return (
     <>
@@ -173,6 +195,7 @@ export default function DataTableDetailClient({
           </div>
         ) : (
         <UserTableViewer
+          key={`${tableId}:${placedIn}`}
           tableId={tableId}
           onDatasetNotHere={notHere}
           fillHeight
@@ -199,7 +222,7 @@ export default function DataTableDetailClient({
             const stillMoved =
               Boolean(movedTo?.table_id) &&
               (!meta?.unarchived_at || String(movedTo?.at ?? "") > String(meta.unarchived_at));
-            if (stillMoved) {
+            if (stillMoved && placedIn === "older") {
               notHere(tableId);
               return;
             }

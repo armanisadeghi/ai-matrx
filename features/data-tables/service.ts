@@ -28,6 +28,8 @@ import { supabase } from "@/utils/supabase/client";
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
 
 import { rewriteFormulaReferences } from "./formulas";
+import * as recordStore from "./data-source/record-store";
+import { recordStoreHomeOf } from "./data-source/table-home";
 
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { parseTableMetadata } from "./types";
@@ -63,6 +65,22 @@ import type {
  */
 function refused(error: { message: string; code?: string; hint?: string; details?: string }): ServiceErr {
   return { success: false, error: error.message, refusal: mapPgError(error, "the older data tables") };
+}
+
+/**
+ * THE DATA SEAM (lane GRID-PORT). Every export below asks `table-home.ts` which
+ * store holds its table first: a record-store table goes to
+ * `data-source/record-store.ts`, anything else runs the older body under it,
+ * unchanged. An operation the record-store half does not carry yet REFUSES in
+ * words — it never falls through to the older door, which would write to the
+ * archived copy the move left behind and report success over a table nobody
+ * is looking at.
+ */
+function notOnTheRecordStoreYet(what: string): ServiceErr {
+  return {
+    success: false,
+    error: `This table lives in the record store, and this grid cannot ${what} there yet. Open the table at its record-store page to do it.`,
+  };
 }
 
 // ─── READS ───────────────────────────────────────────────────────────────────
@@ -113,6 +131,8 @@ export type GetTableMetadataArgs = {
 export async function getTableMetadata(
   args: GetTableMetadataArgs,
 ): Promise<ServiceResult<TableMetadata>> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.getTableMetadata(home, args);
   const ref: Record<string, string> = { table_id: args.tableId };
   if (args.tableName) ref.table_name = args.tableName;
 
@@ -220,6 +240,8 @@ export type TablePage = {
 export async function getTablePage(
   args: GetTablePageArgs,
 ): Promise<ServiceResult<TablePage>> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.getTablePage(home, args);
   const { data, error } = await supabase.rpc(
     "get_user_table_data_paginated_v2",
     {
@@ -291,6 +313,8 @@ export async function getCompleteTable(args: {
   sortField?: string | null;
   sortDirection?: "asc" | "desc";
 }): Promise<ServiceResult<CompleteTable>> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.getCompleteTable(home, args) as Promise<ServiceResult<CompleteTable>>;
   const { data, error } = await supabase.rpc("get_user_table_complete", {
     p_table_id: args.tableId,
     p_sort_field: args.sortField ?? undefined,
@@ -338,6 +362,8 @@ export type UpsertRowArgs = {
 export async function upsertRow(
   args: UpsertRowArgs,
 ): Promise<ServiceResult<DatasetRow>> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.upsertRow(home, args);
   // p_row_id is optional in the SQL signature (DEFAULT NULL); omit it to
   // get the insert path, pass it to get the update path.
   const { data, error } = await supabase.rpc("udt_upsert_row", {
@@ -361,6 +387,8 @@ export type UpsertCellArgs = {
 export async function upsertCell(
   args: UpsertCellArgs,
 ): Promise<ServiceResult<DatasetRow>> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.upsertCell(home, args);
   const { data, error } = await supabase.rpc("udt_upsert_cell", {
     p_table_id: args.tableId,
     p_row_id: args.rowId,
@@ -391,6 +419,8 @@ export type BulkWriteArgs = {
 export async function bulkWrite(
   args: BulkWriteArgs,
 ): Promise<ServiceResult<BulkWriteResponse>> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.bulkWrite(home, args);
   const { data, error } = await supabase.rpc("udt_bulk_write", {
     p_table_id: args.tableId,
     p_operations: args.operations as never,
@@ -423,6 +453,7 @@ export type ChangeFieldTypeArgs = {
 export async function changeFieldType(
   args: ChangeFieldTypeArgs,
 ): Promise<ServiceResult<ChangeFieldTypeResponse>> {
+  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("change a column's type");
   const { data, error } = await supabase.rpc("udt_change_field_type", {
     p_table_id: args.tableId,
     p_field_id: args.fieldId,
@@ -465,6 +496,7 @@ export type DeleteFieldResponse = {
 export async function deleteField(
   args: DeleteFieldArgs,
 ): Promise<ServiceResult<DeleteFieldResponse>> {
+  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("remove a column");
   const { data, error } = await supabase.rpc("udt_delete_field", {
     p_table_id: args.tableId,
     p_field_id: args.fieldId,
@@ -499,6 +531,7 @@ export type SetFieldFormatArgs = {
 export async function setFieldFormat(
   args: SetFieldFormatArgs,
 ): Promise<ServiceResult<{ field_id: string }>> {
+  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("change how a column shows its values");
   const { data, error } = await supabase.rpc("udt_set_field_format", {
     p_table_id: args.tableId,
     p_field_id: args.fieldId,
@@ -541,6 +574,7 @@ export async function backfillAutonumber(args: {
   tableId: string;
   fieldId: string;
 }): Promise<ServiceResult<{ numbered: number; highest: number }>> {
+  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("number an Autonumber column");
   const { data, error } = await supabase.rpc("udt_backfill_autonumber", {
     p_table_id: args.tableId,
     p_field_id: args.fieldId,
@@ -632,6 +666,7 @@ export async function renameColumn(args: {
 }): Promise<
   ServiceResult<{ formulasUpdated: string[]; formulasFailed: string[] }>
 > {
+  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("rename a column");
   const newName = args.newName.trim();
   if (!newName) return { success: false, error: "A column needs a name." };
   if (newName === args.field.display_name) {
@@ -687,6 +722,7 @@ export type SetTableStyleArgs = {
 export async function setTableStyle(
   args: SetTableStyleArgs,
 ): Promise<ServiceResult<{ style: unknown }>> {
+  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("change the table's colors");
   const { data, error } = await supabase.rpc("udt_set_table_style", {
     p_table_id: args.tableId,
     p_path: [...args.path],
@@ -717,6 +753,7 @@ export async function renumberFields(args: {
   tableId: string;
   updates: { id: string; field_order: number }[];
 }): Promise<ServiceResult<{ updated: number }>> {
+  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("reorder columns");
   if (args.updates.length === 0) return { success: true, data: { updated: 0 } };
   const { data, error } = await supabase.rpc("update_user_table_config", {
     p_table_id: args.tableId,
@@ -794,6 +831,7 @@ export type UpdatedTableMetadata = {
 export async function updateTableMetadata(
   args: UpdateTableMetadataArgs,
 ): Promise<ServiceResult<UpdatedTableMetadata>> {
+  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("rename or describe the table");
   const { data, error } = await supabase.rpc("update_user_table_metadata", {
     p_table_id: args.tableId,
     ...(args.tableName !== undefined ? { p_table_name: args.tableName } : {}),
@@ -843,6 +881,7 @@ export type SetValidationModeArgs = {
 export async function setValidationMode(
   args: SetValidationModeArgs,
 ): Promise<ServiceResult<{ validation_mode: ValidationMode }>> {
+  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("switch strict validation");
   const { data, error } = await supabase
     .schema("workbench")
     .from("udt_datasets")
@@ -899,6 +938,8 @@ export type GetColumnFacetsArgs = {
 export async function getColumnFacets(
   args: GetColumnFacetsArgs,
 ): Promise<ServiceResult<ColumnFacets>> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.getColumnFacets(home, args);
   const { data, error } = await supabase.rpc("udt_column_facets", {
     p_table_id: args.tableId,
     p_field_name: args.fieldName,
@@ -945,6 +986,7 @@ export type GetTableProfileArgs = {
 export async function getTableProfile(
   args: GetTableProfileArgs,
 ): Promise<ServiceResult<TableProfile>> {
+  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("profile the table's columns");
   const { data, error } = await supabase.rpc("udt_table_profile", {
     p_table_id: args.tableId,
     p_preview_values: args.previewValues ?? 12,
@@ -987,6 +1029,7 @@ export async function setTableRowLabel(args: {
   tableId: string;
   rowLabel: import("./row-label").RowLabelConfig | null;
 }): Promise<ServiceResult<{ row_label: unknown }>> {
+  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("set the row label");
   const { data, error } = await supabase.rpc("udt_set_table_row_label", {
     p_table_id: args.tableId,
     p_row_label: (args.rowLabel ?? null) as never,
@@ -1007,6 +1050,7 @@ export async function setTableRowActions(args: {
   tableId: string;
   rowActions: import("./row-actions").RowAction[];
 }): Promise<ServiceResult<{ row_actions: unknown }>> {
+  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("set the row actions");
   const { data, error } = await supabase.rpc("udt_set_table_row_actions", {
     p_table_id: args.tableId,
     p_row_actions: args.rowActions as never,
@@ -1017,4 +1061,145 @@ export async function setTableRowActions(args: {
     return { success: false, error: envelope?.error ?? "Failed to save the row actions" };
   }
   return { success: true, data: { row_actions: envelope.row_actions ?? [] } };
+}
+
+// ─── the doors the grid used to call inline (lane GRID-PORT) ─────────────────
+//
+// Until the seam, `UserTableViewer` and three modals called these doors with
+// `supabase.rpc` directly, which is exactly the path a record-store table must
+// never take. They live here now so they dispatch like everything above; the
+// older bodies are the inline code, moved, unchanged.
+
+function envelopeFailure(data: unknown, fallback: string): ServiceErr | null {
+  if (!isRecord(data) || typeof data.success !== "boolean") {
+    return { success: false, error: "Invalid table RPC response" };
+  }
+  if (!data.success) {
+    return { success: false, error: typeof data.error === "string" && data.error ? data.error : fallback };
+  }
+  return null;
+}
+
+/**
+ * May the signed-in person EDIT this table? The owner never asks (the viewer
+ * knows ownership from the table row); a shared editor is answered by the
+ * store: `has_permission` for an older table, `custom.my_levels` for a
+ * record-store table.
+ */
+export async function hasEditorAccess(args: { tableId: string }): Promise<boolean> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.hasEditorAccess(home, args);
+  const { data } = await supabase.rpc("has_permission", {
+    p_resource_type: "dataset",
+    p_resource_id: args.tableId,
+    p_required_permission: "editor",
+  });
+  return data === true;
+}
+
+/** Turn manual row ordering on with this order, or off (`enabled: false`, empty order). */
+export async function setRowOrdering(args: {
+  tableId: string;
+  enabled: boolean;
+  order: string[];
+}): Promise<ServiceResult<null>> {
+  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("keep a hand-made row order");
+  const { data, error } = await supabase.rpc("update_user_table_row_ordering", {
+    p_table_id: args.tableId,
+    p_enabled: args.enabled,
+    p_order: args.order,
+  });
+  if (error) return refused(error);
+  const failed = envelopeFailure(
+    data,
+    args.enabled ? "Failed to update row order" : "Failed to disable row ordering",
+  );
+  return failed ?? { success: true, data: null };
+}
+
+/** Save (or, with no field, clear) the table's default sort. */
+export async function setDefaultSort(args: {
+  tableId: string;
+  sortField?: string;
+  sortDirection?: "asc" | "desc";
+}): Promise<ServiceResult<null>> {
+  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("save a default sort");
+  const { data, error } = await supabase.rpc("update_user_table_default_sort", {
+    p_table_id: args.tableId,
+    p_sort_field: args.sortField,
+    ...(args.sortField ? { p_sort_direction: args.sortDirection } : {}),
+  });
+  if (error) return refused(error);
+  const failed = envelopeFailure(
+    data,
+    args.sortField ? "Failed to save sort preference" : "Failed to clear sort preference",
+  );
+  return failed ?? { success: true, data: null };
+}
+
+/** Delete (older store) or archive (record store) one row. */
+export async function deleteRow(args: {
+  tableId: string;
+  rowId: string;
+}): Promise<ServiceResult<unknown>> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.deleteRow(home, args);
+  const { data, error } = await supabase.rpc("delete_data_row_from_user_table", {
+    p_row_id: args.rowId,
+  });
+  if (error) return refused(error);
+  return { success: true, data: data ?? null };
+}
+
+/**
+ * The tables a header's switcher lists while `tableId` is open. An older table
+ * lists the person's older tables, as it always did; a record-store table lists
+ * those AND its organization's record-store Tables, because both open here now.
+ */
+export async function listTablesBeside(args: {
+  tableId: string;
+}): Promise<ServiceResult<UserTableListItem[]>> {
+  const older = await listUserTables();
+  const home = recordStoreHomeOf(args.tableId);
+  if (!home) return older;
+  const store = await recordStore.listTables(home);
+  if (!store.success) return older.success ? older : store;
+  const seen = new Set<string>();
+  const merged: UserTableListItem[] = [];
+  for (const t of [...store.data, ...(older.success ? older.data : [])]) {
+    if (seen.has(t.id)) continue;
+    seen.add(t.id);
+    merged.push(t as UserTableListItem);
+  }
+  return { success: true, data: merged };
+}
+
+/**
+ * Every row, for the grid's client-side sort of a small table. The older half
+ * is the FIRST paginated door (`get_user_table_data_paginated`), which the
+ * viewer's type-aware sort has always read — kept, so an older table sorts
+ * exactly as it did. A record-store table answers from the same read as a page.
+ */
+export async function getRowsForClientSort(args: {
+  tableId: string;
+  limit: number;
+}): Promise<ServiceResult<TablePage["rows"]>> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) {
+    const page = await recordStore.getTablePage(home, { tableId: args.tableId, limit: args.limit, offset: 0 });
+    return page.success ? { success: true, data: page.data.rows } : page;
+  }
+  const { data, error } = await supabase.rpc("get_user_table_data_paginated", {
+    p_table_id: args.tableId,
+    p_limit: args.limit,
+    p_offset: 0,
+    p_sort_field: undefined,
+    p_sort_direction: "asc",
+    p_search_term: undefined,
+  });
+  if (error) return refused(error);
+  const failed = envelopeFailure(data, "Failed to load data");
+  if (failed) return failed;
+  const rows = (data as { data?: unknown }).data;
+  return { success: true, data: Array.isArray(rows) ? (rows as TablePage["rows"]) : [] };
 }

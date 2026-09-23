@@ -140,10 +140,15 @@ import {
   bulkWrite,
   deleteField,
   getCompleteTable,
+  getRowsForClientSort,
   getTableMetadata,
-  listUserTables,
+  getTablePage,
+  hasEditorAccess,
+  listTablesBeside,
   renameColumn,
   renumberFields,
+  setDefaultSort,
+  setRowOrdering,
   setTableStyle,
   upsertCell,
 } from "@/features/data-tables/service";
@@ -755,16 +760,9 @@ const UserTableViewer = ({
   useEffect(() => {
     if (!tableInfo || currentUserId === null || isOwner) return;
     let cancelled = false;
-    supabase
-      .rpc("has_permission", {
-        p_resource_type: "dataset",
-        p_resource_id: tableId,
-        p_required_permission: "editor",
-      })
-      .then(({ data: perm }) => {
-        if (!cancelled)
-          setSharedEditorGrant({ tableId, granted: perm === true });
-      });
+    void hasEditorAccess({ tableId }).then((granted) => {
+      if (!cancelled) setSharedEditorGrant({ tableId, granted });
+    });
     return () => {
       cancelled = true;
     };
@@ -849,7 +847,7 @@ const UserTableViewer = ({
     if (!onTablesChange) return;
 
     try {
-      const result = await listUserTables();
+      const result = await listTablesBeside({ tableId });
       if (isServiceFailure(result)) throw new Error(result.error);
       onTablesChange(result.data as unknown as UserTable[]);
     } catch (err) {
@@ -928,31 +926,17 @@ const UserTableViewer = ({
 
       // Then load paginated data
       const offset = (page - 1) * pageLimit;
-      const { data: paginatedData, error: paginatedError } = await supabase.rpc(
-        "get_user_table_data_paginated_v2",
-        {
-          p_table_id: tableId,
-          p_limit: pageLimit,
-          p_offset: offset,
-          p_sort_field: effectiveSort ?? undefined,
-          p_sort_direction: effectiveDirection,
-          p_search_term: search ? search : undefined,
-        },
-      );
+      const paged = await getTablePage({
+        tableId,
+        limit: pageLimit,
+        offset,
+        sortField: effectiveSort ?? undefined,
+        sortDirection: effectiveDirection,
+        searchTerm: search ? search : undefined,
+      });
+      if (isServiceFailure(paged)) throw new Error(paged.error || "Failed to load data");
 
-      if (paginatedError) throw paginatedError;
-      assertRpcSuccessEnvelope(paginatedData);
-      if (!paginatedData.success)
-        throw new Error(paginatedData.error || "Failed to load data");
-
-      const pagePayload = paginatedData as typeof paginatedData & {
-        data: unknown[];
-        pagination: {
-          total_count: number;
-          page_count: number;
-          current_page: number;
-        };
-      };
+      const pagePayload = { data: paged.data.rows, pagination: paged.data.pagination };
       let processedData = asTableDataRows(pagePayload.data);
 
       // Apply row ordering if enabled and no other sorting is active
@@ -1188,25 +1172,18 @@ const UserTableViewer = ({
     try {
       setLoadingFullDataset(true);
       setFullDatasetError(null);
-      const { data: allData, error } = await supabase.rpc(
-        "get_user_table_data_paginated_v2",
-        {
-          p_table_id: tableId,
-          p_limit: Math.min(Math.max(totalCount, 1), FILTER_FETCH_CAP),
-          p_offset: 0,
-          p_sort_field: undefined,
-          p_sort_direction: "asc",
-          p_search_term: searchTerm ? searchTerm : undefined,
-        },
-      );
+      const all = await getTablePage({
+        tableId,
+        limit: Math.min(Math.max(totalCount, 1), FILTER_FETCH_CAP),
+        offset: 0,
+        sortField: undefined,
+        sortDirection: "asc",
+        searchTerm: searchTerm ? searchTerm : undefined,
+      });
+      if (isServiceFailure(all))
+        throw new Error(all.error || "Failed to load data for filtering");
 
-      if (error) throw error;
-      assertRpcSuccessEnvelope(allData);
-      if (!allData.success)
-        throw new Error(allData.error || "Failed to load data for filtering");
-
-      const payload = allData as typeof allData & { data: unknown[] };
-      const rows = asTableDataRows(payload.data);
+      const rows = asTableDataRows(all.data.rows);
       setFullDatasetCache(rows);
       // LOUD, not silent. Past the cap the filter runs over a subset while the
       // row count reads like the whole truth — a confident wrong answer. Record
@@ -1599,24 +1576,11 @@ const UserTableViewer = ({
       // Load all data for client-side sorting
       setLoading(true);
       try {
-        const { data: allData, error } = await supabase.rpc(
-          "get_user_table_data_paginated",
-          {
-            p_table_id: tableId,
-            p_limit: totalCount,
-            p_offset: 0,
-            p_sort_field: undefined,
-            p_sort_direction: "asc",
-            p_search_term: undefined,
-          },
-        );
+        const everyRow = await getRowsForClientSort({ tableId, limit: totalCount });
+        if (isServiceFailure(everyRow))
+          throw new Error(everyRow.error || "Failed to load data");
 
-        if (error) throw error;
-        assertRpcSuccessEnvelope(allData);
-        if (!allData.success)
-          throw new Error(allData.error || "Failed to load data");
-
-        const allPayload = allData as typeof allData & { data: unknown[] };
+        const allPayload = { data: everyRow.data };
         // Sort all data client-side with type awareness
         // A formula column has no stored value to sort by — compute it over
         // the freshly loaded rows first, then sort on what the user sees.
@@ -1837,19 +1801,9 @@ const UserTableViewer = ({
   // Update row ordering configuration
   const updateRowOrdering = async (newOrder: string[]) => {
     try {
-      const { data, error } = await supabase.rpc(
-        "update_user_table_row_ordering",
-        {
-          p_table_id: tableId,
-          p_enabled: true,
-          p_order: newOrder,
-        },
-      );
-
-      if (error) throw error;
-      assertRpcSuccessEnvelope(data);
-      if (!data.success)
-        throw new Error(data.error || "Failed to update row order");
+      const saved = await setRowOrdering({ tableId, enabled: true, order: newOrder });
+      if (isServiceFailure(saved))
+        throw new Error(saved.error || "Failed to update row order");
 
       // Clear sorted data cache when row ordering changes
       setAllSortedData(null);
@@ -1884,19 +1838,9 @@ const UserTableViewer = ({
   // Disable row ordering
   const disableRowOrdering = async () => {
     try {
-      const { data, error } = await supabase.rpc(
-        "update_user_table_row_ordering",
-        {
-          p_table_id: tableId,
-          p_enabled: false,
-          p_order: [],
-        },
-      );
-
-      if (error) throw error;
-      assertRpcSuccessEnvelope(data);
-      if (!data.success)
-        throw new Error(data.error || "Failed to disable row ordering");
+      const saved = await setRowOrdering({ tableId, enabled: false, order: [] });
+      if (isServiceFailure(saved))
+        throw new Error(saved.error || "Failed to disable row ordering");
 
       // Clear sorted data cache when row ordering changes
       setAllSortedData(null);
@@ -1925,19 +1869,9 @@ const UserTableViewer = ({
     try {
       setSavingSortPreference(true);
 
-      const { data, error } = await supabase.rpc(
-        "update_user_table_default_sort",
-        {
-          p_table_id: tableId,
-          p_sort_field: sortField,
-          p_sort_direction: sortDirection,
-        },
-      );
-
-      if (error) throw error;
-      assertRpcSuccessEnvelope(data);
-      if (!data.success)
-        throw new Error(data.error || "Failed to save sort preference");
+      const saved = await setDefaultSort({ tableId, sortField, sortDirection });
+      if (isServiceFailure(saved))
+        throw new Error(saved.error || "Failed to save sort preference");
 
       // Update saved sort state
       setSavedSortField(sortField);
@@ -1968,18 +1902,9 @@ const UserTableViewer = ({
     try {
       setSavingSortPreference(true);
 
-      const { data, error } = await supabase.rpc(
-        "update_user_table_default_sort",
-        {
-          p_table_id: tableId,
-          p_sort_field: undefined,
-        },
-      );
-
-      if (error) throw error;
-      assertRpcSuccessEnvelope(data);
-      if (!data.success)
-        throw new Error(data.error || "Failed to clear sort preference");
+      const saved = await setDefaultSort({ tableId });
+      if (isServiceFailure(saved))
+        throw new Error(saved.error || "Failed to clear sort preference");
 
       // Clear saved sort state
       setSavedSortField(null);
@@ -2018,24 +1943,18 @@ const UserTableViewer = ({
   /** Every row, not just the current page — cleaning only what you can see is
    *  the wrong answer for a table that paginates. */
   const loadAllRowsForCleanup = async (): Promise<CleanableRow[]> => {
-    const { data: allData, error: allError } = await supabase.rpc(
-      "get_user_table_data_paginated_v2",
-      {
-        p_table_id: tableId,
-        p_limit: Math.min(Math.max(totalCount, 1), FILTER_FETCH_CAP),
-        p_offset: 0,
-        p_sort_field: undefined,
-        p_sort_direction: "asc",
-        p_search_term: undefined,
-      },
-    );
-    if (allError) throw allError;
-    assertRpcSuccessEnvelope(allData);
-    if (!allData.success) {
-      throw new Error(allData.error || "Failed to load rows for cleanup");
+    const all = await getTablePage({
+      tableId,
+      limit: Math.min(Math.max(totalCount, 1), FILTER_FETCH_CAP),
+      offset: 0,
+      sortField: undefined,
+      sortDirection: "asc",
+      searchTerm: undefined,
+    });
+    if (isServiceFailure(all)) {
+      throw new Error(all.error || "Failed to load rows for cleanup");
     }
-    const payload = allData as typeof allData & { data: unknown[] };
-    return asTableDataRows(payload.data);
+    return asTableDataRows(all.data.rows);
   };
 
   /** Write the accepted patches as ONE atomic merge bulkWrite — only the
