@@ -203,7 +203,9 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
             plural(Number(form.responses ?? 0), "answer"),
             Number(form.held ?? 0) > 0 ? `${Number(form.held)} held` : "",
           ].filter(Boolean) as string[],
-          href: `/data-v2/${form.table_id}`,
+          // THE FORM'S OWN BUILDER, on the table it writes to — not that table's
+          // grid (VERIFIER-14 item 2; records-ui 0.82.0's `?rail=` + `?item=`).
+          href: `/data-v2/${form.table_id}?rail=forms&item=${form.form_id}`,
           publicHref: form.published_at ? `/f/${form.form_id}` : undefined,
           publicLabel: form.published_at ? "The link a stranger follows" : undefined,
         })),
@@ -268,7 +270,8 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
             plural(portal.tables ?? 0, "table"),
             `${portal.invited ?? 0} invited, ${portal.signed_in ?? 0} signed in`,
           ],
-          href: `/data-v2/${portal.client_table_id}`,
+          // THE PORTAL'S OWN CARD, opened, on the table whose records are its clients.
+          href: `/data-v2/${portal.client_table_id}?rail=portals&item=${portal.portal_id}`,
           publicHref: `/portal/${ctx.organizationId}`,
           publicLabel: "Where an outsider signs in",
         })),
@@ -332,7 +335,11 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
             sub.channel ?? "",
             sub.mine ? "yours" : "someone else's",
           ].filter(Boolean) as string[],
-          href: sub.table_id ? `/data-v2/${sub.table_id}` : "/data-v2",
+          // THE RULE ITSELF, marked in the table's notifications rail. A rule
+          // that is somebody else's is said so by the rail, never swapped.
+          href: sub.table_id
+            ? `/data-v2/${sub.table_id}?rail=notifications&item=${sub.rule_id}`
+            : "/data-v2",
           trouble: sub.table_id
             ? undefined
             : "This subscription names no table any more, so nothing can send it. Open the table it watched and write it again.",
@@ -428,7 +435,9 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
           tableName: nameOf(index, share.table_id, share.table_name),
           lane: laneOf(index, share.table_id),
           facts: [share.level_label, share.joined ? "joined" : share.expired ? "run out" : "invited"],
-          href: `/data-v2/${share.table_id}`,
+          // THE SHARE DIALOG over that table — where the invitation is resent,
+          // changed or taken back — not the table's grid.
+          href: `/data-v2/${share.table_id}?rail=share`,
           trouble: share.expired ? share.say : undefined,
           changedAt: share.invited_at,
         })),

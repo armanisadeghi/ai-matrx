@@ -68,6 +68,18 @@ export default function UnifiedDataTableRoute({
    * it does not substitute.
   */
   const activeView = searchParams.get("view");
+  /**
+   * WHICH RAIL, AND WHICH THING IN IT — `?rail=forms&item=<form>`, and the same
+   * for notifications, portals and share (records-ui 0.82.0).
+   *
+   * 🚨 THE FOURTH DEAD LINK OF THE SAME SHAPE (VERIFIER-14 item 2, 2026-09-23).
+   * The organization hub's Forms, Digests, Portals and Shared-outside rows all
+   * opened this page on the GRID, because nothing below the layout could be
+   * addressed. Passed RAW, like `?view=`: a word the page has no rail for is
+   * said on the screen by `TablePage`, never parsed away here.
+   */
+  const activeRail = searchParams.get("rail");
+  const activeItemId = searchParams.get("item");
   /** Which field the board's columns are, when a dashboard number sent them here. */
   const activeGroupField = searchParams.get("group");
   /** The number they clicked, so the board can say where they came from. */
@@ -375,6 +387,8 @@ export default function UnifiedDataTableRoute({
               cameFrom={cameFrom}
               filter={filter}
               onViewChanged={onViewChanged}
+              activeRail={activeRail}
+              activeItemId={activeItemId}
             />
           </RecordsMount>
         )}
