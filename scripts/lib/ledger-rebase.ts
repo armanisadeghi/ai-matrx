@@ -161,6 +161,17 @@ function keyedDeltas(
   return out;
 }
 
+/**
+ * 40P01 deadlock / 55P03 lock_not_available. The inventory reads every view through
+ * `pg_get_viewdef`, which holds ACCESS SHARE on each view until the transaction ends, so on the
+ * shared clone another lane's DDL can deadlock with a proof (measured on the aidream self-test's
+ * first run). That is retried by the caller, announced, never silent.
+ */
+export function isLockClash(err: unknown): boolean {
+  const code = (err as { code?: string } | null)?.code;
+  return code === "40P01" || code === "55P03";
+}
+
 const ROW_WRITES_SQL = `
   select schemaname || '.' || relname as t, (n_tup_ins + n_tup_upd + n_tup_del)::bigint as n
     from pg_stat_xact_user_tables`;
@@ -184,6 +195,9 @@ export async function measureIdempotency(
   try {
     await query(sql);
   } catch (err) {
+    // Another session's lock is the shared clone's traffic, not the file's verdict: rethrow so
+    // the caller rolls back and retries (isLockClash).
+    if (isLockClash(err)) throw err;
     error = err instanceof Error ? err.message : String(err);
   }
   let deltas: ObjectDeltaRecord[] = [];
