@@ -16,6 +16,22 @@ _(none)_
 
 ## Blocked
 
+### TASK-019: Rehearse and apply HUB-FIX table facts migrations
+- **Status:** blocked — `custom` build lock is held by STORE-RULE-GAPS
+- **Created:** 2026-09-23
+- **Source:** Main hub changes call `custom.table_facts(uuid)`, which is absent from production.
+
+**Goal**
+
+Apply the two additive HUB-FIX campaign migrations only after the campaign rehearsal and lock requirements pass.
+
+**Notes**
+
+- At 2026-09-23 11:40:18 UTC, the senior migration delegate verified both migrations are absent from the rehearsal ledger and production; the function and callable-door row are also absent in both. Dry runs passed. No SQL was applied.
+- `STORE-RULE-GAPS` held the `custom` lock for `branch apply of storerulegaps`, taken 11:40:08 UTC and expiring 11:55:08 UTC. HUB-FIX lock acquisition stopped safely. The holder may renew its lease; recheck live lock state before proceeding.
+- Exact files: `migrations/campaign/hubfix_each_table_says_who_can_see_it_and_whose_it_is.sql` and `migrations/campaign/hubfix_the_table_facts_door_can_be_reached.sql`. Follow [`migrations/campaign/README.md`](../migrations/campaign/README.md): acquire HUB-FIX locks, rehearse both exact files, verify the same-byte rehearsal ledger rows, then apply to East production only when every guard passes. The grant migration requires its documented chair-step confirmation.
+- Keep AI Dream checkout read-only. Do not bypass the other lane's lock. After the DB gate clears, recheck latest `main` and deploy freshness before deciding whether a main release is due.
+
 ### TASK-017: Publish the agent term-list association token
 - **Status:** resolved (2026-09-23) — associations 0.10.2 is published, adopted by the frontend, and shipped in v0.4.2237
 - **Created:** 2026-09-23
