@@ -108,6 +108,14 @@ export interface LinkOrganizationDecisionInput {
   switchWhenALinkAsks?: boolean;
   /** The account they are signed in as, for the refusal sentence. */
   signedInAs?: string | null;
+  /**
+   * The link's organization is one this person is not a member of but IS let into
+   * by a share they accepted (`lib/organizations/linkOrganizationAdmission.ts`).
+   * A share admits and never makes a member, so the answer is `admitted`: nobody
+   * is moved, nothing is refused, and the page opens it as that organization's
+   * guest. Omitted, the answer is exactly what it was before (VERIFIER-15 H4).
+   */
+  admittedByAShare?: boolean;
 }
 
 export type LinkOrganizationDecision =
@@ -130,6 +138,11 @@ export type LinkOrganizationDecision =
       message: string;
       actionLabel: string;
     }
+  /**
+   * Not a member, but let in by a share they accepted. Silent: nobody is moved
+   * (a share never makes a member) and nothing was refused (the page opens it).
+   */
+  | { kind: "admitted"; organizationId: string }
   /** Malformed, or not theirs. Changes nothing; says so. */
   | { kind: "refused"; reason: "malformed" | "not-a-member"; message: string };
 
@@ -214,6 +227,9 @@ export function decideLinkOrganization(
   }
 
   const match = memberships.find((o) => o.id === param.organizationId);
+  if (!match && input.admittedByAShare) {
+    return { kind: "admitted", organizationId: param.organizationId };
+  }
   if (!match) {
     return {
       kind: "refused",

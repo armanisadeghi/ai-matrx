@@ -35,7 +35,12 @@ export interface HubItem {
   /** The table it belongs to. `null` for the things that belong to none. */
   tableId: string | null;
   tableName: string | null;
-  lane: TableLane;
+  /**
+   * Which lane of THIS organization the thing sits in, or `null` when it sits in
+   * none — a table another organization shared with you is theirs, not a lane of
+   * yours. A `null` row shows under Everything and under no lane filter.
+   */
+  lane: TableLane | null;
   /** The short facts that go on the row — "4 stages", "12 answers". Never a count nobody read. */
   facts: string[];
   /** Where it opens. THE DOOR LAW: every named thing opens. */
@@ -115,6 +120,9 @@ export function keptByTheApp(table: Table): boolean {
 function laneOfTable(table: Table): TableLane {
   return keptByTheApp(table) ? "app" : laneFor(table);
 }
+
+/** Another organization's table: in none of this organization's lanes. */
+const OUTSIDE_LANE: TableLane | null = null;
 
 /** The lane of a thing is the lane of the table it belongs to (the ONE `laneFor`). */
 function laneOf(index: Map<string, Table>, tableId: string | null | undefined): TableLane {
@@ -256,6 +264,17 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
     async read(ctx) {
       const answered = await ctx.client.listPortals({ archived: "active" });
       if (!answered.ok) return failed(answered.error, "list_portals");
+      // WHICH TABLES EACH PORTAL SHOWS, in one call for the organization. The
+      // row opens on a table the portal SHOWS: the clients table is only who
+      // signs in, and its own Portals rail truthfully says the portal is not
+      // part of it (VERIFIER-15 H5).
+      const shown = await ctx.client.portalTables();
+      const firstShown = new Map<string, string>();
+      if (shown.ok) {
+        for (const ref of [...shown.data].sort((a, b) => a.name.localeCompare(b.name))) {
+          if (!firstShown.has(ref.portal_id)) firstShown.set(ref.portal_id, ref.table_id);
+        }
+      }
       const index = byId(ctx.tables);
       return {
         ok: true,
@@ -270,8 +289,15 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
             plural(portal.tables ?? 0, "table"),
             `${portal.invited ?? 0} invited, ${portal.signed_in ?? 0} signed in`,
           ],
-          // THE PORTAL'S OWN CARD, opened, on the table whose records are its clients.
-          href: `/data-v2/${portal.client_table_id}?rail=portals&item=${portal.portal_id}`,
+          // THE PORTAL'S OWN CARD, opened, on a table the portal SHOWS — the rail
+          // lists a portal only on the tables it exposes. A portal that shows no
+          // table yet opens its clients table and says so, never a dead card.
+          href: `/data-v2/${firstShown.get(portal.portal_id) ?? portal.client_table_id}?rail=portals&item=${portal.portal_id}`,
+          trouble: firstShown.has(portal.portal_id)
+            ? undefined
+            : shown.ok
+              ? "This portal shows no table yet, so there is nothing for a client to see. Open its clients table, press Portals, and add the table they should see."
+              : `The list of tables this portal shows did not answer, so the row opens its clients table instead. ${shown.error.message}`,
           publicHref: `/portal/${ctx.organizationId}`,
           publicLabel: "Where an outsider signs in",
         })),
@@ -448,39 +474,67 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
   {
     id: "shared-with-me",
     title: "Shared with me",
-    what: "Tables another organization has offered the person signed in — open one and it is yours to see.",
+    what: "Tables another organization has shared with the person signed in — theirs, not this organization's.",
     empty: "Nobody outside has shared a table with you.",
-    door: "custom.table_share_outside_for_me",
+    door: "custom.tables_shared_with_me + custom.table_share_outside_for_me",
     changedByKind: null,
     async read(ctx) {
-      const answered = await doors.sharedWithMe(ctx.dataSource);
-      if (!answered.ok) return { ok: false, error: answered.error };
-      return {
-        ok: true,
-        items: answered.data.map((share) => ({
+      // TWO DOORS, BECAUSE A SHARE HAS TWO STATES, and a row must stay on this
+      // list through both (VERIFIER-15 H6). Accepted: a live grant, and the row
+      // opens the table in its owner's organization. Offered: a pending
+      // invitation, and the row opens the invitation's own screen, where
+      // accepting writes the grant.
+      const [accepted, offered] = await Promise.all([
+        doors.tablesSharedWithMe(ctx.dataSource),
+        doors.sharedWithMe(ctx.dataSource),
+      ]);
+      if (!accepted.ok) return { ok: false, error: accepted.error };
+      if (!offered.ok) return { ok: false, error: offered.error };
+      const items: HubItem[] = [];
+      const open = new Set<string>();
+      for (const share of accepted.data) {
+        open.add(share.table_id);
+        items.push({
+          id: `accepted:${share.table_id}`,
+          title: share.table_name || "(unnamed table)",
+          tableId: share.table_id,
+          // The row prints "in <their organization>" once. The organization is
+          // never repeated as a second fact (VERIFIER-15 LOW).
+          tableName: share.organization,
+          // Another organization's table sits in none of THIS organization's
+          // lanes; it shows under Everything.
+          lane: OUTSIDE_LANE,
+          facts: [share.level_label],
+          // `?org=` is the platform's own way for a link to name its
+          // organization. The link judge knows a share admits
+          // (`linkOrganizationAdmission.ts`), and the table route opens it as
+          // that organization's guest and says whose table it is.
+          href: `/data-v2/${share.table_id}?org=${share.organization_id}`,
+          trouble: share.opens ? undefined : share.say,
+          changedAt: share.shared_at,
+        });
+      }
+      // ONE ROW PER OFFERED TABLE. The same table offered twice is one thing
+      // to accept, not two identical rows; the newest invitation wins.
+      const offeredOnce = new Set<string>();
+      for (const share of offered.data) {
+        if (open.has(share.table_id) || offeredOnce.has(share.table_id)) continue;
+        offeredOnce.add(share.table_id);
+        items.push({
           id: share.invitation_id,
           title: share.table_name || "(unnamed table)",
           tableId: share.table_id,
           tableName: share.organization,
-          // It is not in any of THIS organization's lanes; it was shared to the person.
-          lane: "community" as TableLane,
-          facts: [share.level_label, `from ${share.organization}`, "not accepted yet"],
-          // 🚨 THE ROW OPENS THE INVITATION, BECAUSE THAT IS WHAT THE ROW IS.
-          // VERIFIER-14 item 2: every row here opened `/data-v2/<table>` and
-          // landed on "This table is not here." Measured on the live store on
-          // 2026-09-23, the deeper reason: `custom.table_share_outside_for_me`
-          // answers `status = 'pending'` invitations ONLY, and the person had
-          // ZERO active grants — `custom.portal_admits` was false, so every
-          // door of that organization refused them and no address could have
-          // opened the table. The thing that exists is the INVITATION, and it
-          // already has its own screen: `/invitations/table/accept/<token>`
-          // names the table, the organization, what they will be able to do and
-          // who shared it, and the accept writes the grant and opens the table.
-          // Sending the row anywhere else would be a link to a thing that is
-          // not there yet.
+          lane: OUTSIDE_LANE,
+          facts: [share.level_label, "not accepted yet"],
+          // 🚨 THE ROW OPENS THE INVITATION, BECAUSE THAT IS WHAT THE ROW IS
+          // until it is accepted: no grant exists yet, so no address could open
+          // the table. `/invitations/table/accept/<token>` names the table, the
+          // organization and what they will be able to do.
           href: `/invitations/table/accept/${share.token}`,
-        })),
-      };
+        });
+      }
+      return { ok: true, items };
     },
   },
 

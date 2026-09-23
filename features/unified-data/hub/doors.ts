@@ -172,6 +172,32 @@ export function sharedWithMe(
   return call<ShareInboundRow[]>(dataSource, "table_share_outside_for_me", {});
 }
 
+export interface SharedTableRow {
+  table_id: string;
+  organization_id: string;
+  organization: string;
+  table_name: string;
+  level: string;
+  level_label: string;
+  shared_at: string | null;
+  /** Whether the owner's outside door is still open, so the table will actually open. */
+  opens: boolean;
+  /** The store's sentence — what this share lets them do, or why it will not open now. */
+  say: string;
+}
+
+/**
+ * THE SHARES THE PERSON SIGNED IN HAS ACCEPTED — `custom.tables_shared_with_me()`
+ * (lane HUB-FIX, VERIFIER-15 H6). Live grants addressed to them on a Table of an
+ * organization they are not a member of. Without it, accepting a share took the
+ * table off the hub for good, because the pending door above is all it read.
+ */
+export function tablesSharedWithMe(
+  dataSource: RecordsDataSource,
+): Promise<DoorAnswer<SharedTableRow[]>> {
+  return call<SharedTableRow[]>(dataSource, "tables_shared_with_me", {});
+}
+
 /** The three kinds `custom.hub_changed_by` knows. Closed, and it refuses a fourth. */
 export type ChangedByKind = "structure" | "form" | "portal";
 

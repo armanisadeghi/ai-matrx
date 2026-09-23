@@ -256,6 +256,18 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
       "it must not call the gate.",
   },
   {
+    id: "link-organization-admission",
+    file: "lib/organizations/linkOrganizationAdmission.ts",
+    kind: "runtime",
+    why:
+      "Lane HUB-FIX (VERIFIER-15 H4) — asks custom.tables_shared_with_me whether a link's ?org= " +
+      "names an organization the person is let into by a share they accepted, so the link judge " +
+      "answers `admitted` instead of a refusal toast over the table the share just opened. It is " +
+      "asked only after a link failed the membership check, and it reads the store's switch for " +
+      "that organization itself with UNIFIED_DATA_CAMPAIGN.check first — off or unreadable admits " +
+      "nothing and the ordinary refusal stands.",
+  },
+  {
     id: "data-hub-shared-table-context",
     file: "features/unified-data/hub/useSharedTable.ts",
     kind: "runtime",

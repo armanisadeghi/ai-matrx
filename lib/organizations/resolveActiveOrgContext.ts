@@ -246,14 +246,26 @@ export async function resolveActiveOrgContext(
       ? ({ kind: "malformed", raw: linkParam.organizationId } as const)
       : linkParam;
 
-  const link = decideLinkOrganization({
+  const linkInput = {
     param,
     memberships: orgs.map((o) => ({ id: o.id, name: o.name })),
     currentOrganizationId: laddered?.id ?? null,
     currentOrganizationName: laddered?.name ?? null,
     switchWhenALinkAsks: options.switchWhenALinkAsks,
     signedInAs: options.signedInAs,
-  });
+  };
+  let link = decideLinkOrganization(linkInput);
+  // A SHARE ADMITS, and a refusal toast over the table it opened is a lie
+  // (VERIFIER-15 H4). Asked only when the link already failed the membership
+  // check, so every ordinary boot is unchanged.
+  if (link.kind === "refused" && link.reason === "not-a-member" && param.kind === "named") {
+    const { admittedToOrganizationByAShare } = await import(
+      "@/lib/organizations/linkOrganizationAdmission"
+    );
+    if (await admittedToOrganizationByAShare(param.organizationId)) {
+      link = decideLinkOrganization({ ...linkInput, admittedByAShare: true });
+    }
+  }
 
   if (link.kind === "honoured") {
     return {

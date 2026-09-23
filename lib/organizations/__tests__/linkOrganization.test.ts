@@ -203,3 +203,40 @@ describe("a malformed or unknown org= value", () => {
     expect(decide(null, { current: FOOD_BANK }).kind).toBe("no-link");
   });
 });
+
+/**
+ * VERIFIER-15 H4 (lane HUB-FIX, 2026-09-23). The microbiology lab shared its
+ * incubator log with her, read-only, and she accepted. She is still not a
+ * member — a share never makes one — but the lab's table opens for her. A
+ * refusal toast ("nothing was opened and you were not moved") over the open
+ * table was the screen lying twice.
+ */
+describe("a link naming an organization she is let into by a share she accepted", () => {
+  const input = {
+    param: readLinkOrganizationParam(`?${LINK_ORGANIZATION_QUERY_KEY}=${LAB_ID}`),
+    memberships: MEMBERSHIPS,
+    currentOrganizationId: FOOD_BANK.id,
+    currentOrganizationName: FOOD_BANK.name,
+    switchWhenALinkAsks: true,
+    signedInAs: SIGNED_IN_AS,
+  };
+
+  it("is admitted — silent, and it moves her nowhere", () => {
+    const d = decideLinkOrganization({ ...input, admittedByAShare: true });
+    expect(d).toEqual({ kind: "admitted", organizationId: LAB_ID });
+  });
+
+  it("is still refused, exactly as before, when no share admits her", () => {
+    expect(decideLinkOrganization(input).kind).toBe("refused");
+    expect(decideLinkOrganization({ ...input, admittedByAShare: false }).kind).toBe("refused");
+  });
+
+  it("never lets a share outrank a membership she actually holds", () => {
+    const d = decideLinkOrganization({
+      ...input,
+      param: readLinkOrganizationParam(`?${LINK_ORGANIZATION_QUERY_KEY}=${PLUMBING.id}`),
+      admittedByAShare: true,
+    });
+    expect(d.kind).toBe("honoured");
+  });
+});

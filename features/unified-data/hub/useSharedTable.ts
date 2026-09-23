@@ -25,15 +25,23 @@
 //
 // 🚨 IT DOES NOT TRUST THE ADDRESS. A `?org=` in a URL is a claim anybody can
 // type. Before the route mounts the store for another organization, this asks
-// the store's OWN door — `custom.table_share_outside_for_me()`, which answers
-// only for the person signed in — whether that person really holds a live share
-// on THAT table in THAT organization. No row, no mount: the screen says what
+// the store's OWN door — `custom.tables_shared_with_me()`, which answers only
+// for the person signed in — whether that person really holds a live, ACCEPTED
+// share on THAT table in THAT organization. No row, no mount: the screen says what
 // the address asked for and that nothing backs it. The door is the authority;
 // this hook only reads it.
 //
 // It never changes which organization the person is working in. Their own
 // selection is untouched — they are reading somebody else's table for as long
 // as they are on this address, and the screen says so out loud.
+//
+// 🚨 IT RUNS EVEN WHEN `?org=` IS THE ORGANIZATION THEY ARE WORKING IN
+// (VERIFIER-15 H4). The accept screen sets the owner's organization and opens
+// the table in one gesture, so the address and the selection agree — and the
+// old guard ("asked === active → nothing to check") skipped the banner, leaving
+// nothing on the page to say whose table this is. The door only lists
+// organizations the person is NOT a member of, so a member's own `?org=` link
+// finds nothing here and the page behaves exactly as it always did.
 
 import { useEffect, useState } from "react";
 import type { RecordsDataSource } from "@ai-matrx/records";
@@ -53,7 +61,7 @@ export type SharedTableContext =
       organizationName: string;
       levelLabel: string;
     }
-  /** The address named an organization the store will not back. Say which, and why. */
+  /** A real share that cannot open right now. The sentence says why. */
   | { state: "not-shared"; why: string };
 
 export function useSharedTable(
@@ -63,25 +71,51 @@ export function useSharedTable(
   activeOrganizationId: string | null,
 ): SharedTableContext {
   const [answer, setAnswer] = useState<SharedTableContext>(
-    askedOrganizationId && askedOrganizationId !== activeOrganizationId
-      ? { state: "checking" }
-      : { state: "none" },
+    askedOrganizationId ? { state: "checking" } : { state: "none" },
   );
 
   useEffect(() => {
-    if (!askedOrganizationId || askedOrganizationId === activeOrganizationId) {
+    if (!askedOrganizationId) {
       setAnswer({ state: "none" });
       return;
     }
     let alive = true;
     setAnswer({ state: "checking" });
     void (async () => {
+      // FIRST, IS IT A SHARE AT ALL. The door answers only about the person
+      // signed in and names no organization, so asking it first costs every
+      // ordinary `?org=` link (a member's own notification) one small read and
+      // never a sentence about an organization they may well belong to.
+      const answered = await doors.tablesSharedWithMe(dataSource);
+      if (!alive) return;
+      if (!answered.ok) {
+        // We could not look. The table page's own mount still answers for the
+        // organization the person is working in; claiming anything about a
+        // share here would be a claim nobody measured.
+        setAnswer({ state: "none" });
+        return;
+      }
+      const share = answered.data.find(
+        (row) => row.table_id === tableId && row.organization_id === askedOrganizationId,
+      );
+      if (!share) {
+        // NOT A SHARE OF THEIRS. The door lists only organizations the person is
+        // not a member of, so this is either their own organization (the link
+        // judge moves them there, and the page is theirs) or an address naming a
+        // table nobody shared with them — for which the table page's own
+        // sentence ("This table is not here") is already the honest answer.
+        setAnswer({ state: "none" });
+        return;
+      }
+      if (!share.opens) {
+        setAnswer({ state: "not-shared", why: share.say });
+        return;
+      }
       // 🚨 THE SWITCH, ASKED OF THE ORGANIZATION WHOSE STORE WE ARE ABOUT TO
       // READ, and asked here rather than only by the route above — this hook is
       // the only thing that can open another organization's store on this page,
       // so the gate belongs inside it and cannot be walked past by a host that
-      // forgot its own. `off` and `could not check` are different sentences and
-      // both are said; neither is ever spelled as "you have no share".
+      // forgot its own. `off` and `could not check` are different sentences.
       const gate = await UNIFIED_DATA_CAMPAIGN.check(askedOrganizationId);
       if (!alive) return;
       if (gate.state !== "on") {
@@ -89,36 +123,8 @@ export function useSharedTable(
           state: "not-shared",
           why:
             gate.state === "unavailable"
-              ? "The record store's switch could not be read for the organization that owns this " +
-                `table, so nothing was read — this is not an answer about your access. ${gate.cause}`
-              : "The organization that owns this table does not keep its data in the record store, " +
-                "so there is nothing here to show you.",
-        });
-        return;
-      }
-      const answered = await doors.sharedWithMe(dataSource);
-      if (!alive) return;
-      if (!answered.ok) {
-        // The call did not happen. That is not "you have no share" — saying so
-        // would be a claim about this person's access that nobody measured.
-        setAnswer({
-          state: "not-shared",
-          why:
-            "The store's list of what has been shared with you did not answer, so nothing was " +
-            `read — this is not an answer about your access. ${answered.error.message}`,
-        });
-        return;
-      }
-      const share = answered.data.find(
-        (row) => row.table_id === tableId && row.organization_id === askedOrganizationId,
-      );
-      if (!share) {
-        setAnswer({
-          state: "not-shared",
-          why:
-            "This address says the table belongs to another organization and was shared with " +
-            "you, and the store says it was not — the share may have been taken back, or run " +
-            "out. Ask whoever shared it to share it again.",
+              ? `${share.organization} shared ${share.table_name} with you, and whether its record store is on could not be read, so nothing was read — this is not an answer about your access. ${gate.cause}`
+              : `${share.organization} shared ${share.table_name} with you, and does not keep its data in the record store right now, so there is nothing to show yet.`,
         });
         return;
       }

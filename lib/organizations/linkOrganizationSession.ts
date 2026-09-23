@@ -122,6 +122,8 @@ export async function announceLinkOrganizationDecision(
   switch (decision.kind) {
     case "no-link":
     case "already-current":
+    // A share let them in; the page they opened says whose table it is.
+    case "admitted":
       return;
     case "honoured":
       if (!decision.announcement) return; // cold arrival: nobody was moved

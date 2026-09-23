@@ -98,7 +98,7 @@ function LinkOrganizationWatcherInner(): null {
       }
       if (cancelled) return;
 
-      const decision = decideLinkOrganization({
+      const input = {
         param: readLinkOrganizationParam(
           `?${LINK_ORGANIZATION_QUERY_KEY}=${raw}`,
         ),
@@ -107,7 +107,21 @@ function LinkOrganizationWatcherInner(): null {
         currentOrganizationName: state.appContext?.organization_name ?? null,
         switchWhenALinkAsks: readSwitchWhenALinkAsks(),
         signedInAs: readSignedInAs(),
-      });
+      };
+      let decision = decideLinkOrganization(input);
+      // NOT A MEMBER IS NOT YET "REFUSED": a share they accepted may let them in,
+      // and then the page opens it and a refusal toast would be a lie over a
+      // working screen (VERIFIER-15 H4). Asked only on this branch, so an
+      // ordinary link costs nothing extra.
+      if (decision.kind === "refused" && decision.reason === "not-a-member" && input.param.kind === "named") {
+        const { admittedToOrganizationByAShare } = await import(
+          "@/lib/organizations/linkOrganizationAdmission"
+        );
+        if (await admittedToOrganizationByAShare(input.param.organizationId)) {
+          decision = decideLinkOrganization({ ...input, admittedByAShare: true });
+        }
+        if (cancelled) return;
+      }
 
       if (decision.kind === "honoured") {
         dispatch(

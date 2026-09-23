@@ -323,11 +323,11 @@ export default function UnifiedDataTableRoute({
              mounting the person's own organization meanwhile is exactly the
              "This table is not here" flash this whole change removes. */
           <p className="text-sm text-muted-foreground">
-            Checking whether this table was shared with you&hellip;
+            Opening the table&hellip;
           </p>
         ) : shared.state === "not-shared" ? (
           <div className="flex flex-col items-start gap-2 rounded-md border border-dashed p-6">
-            <p className="text-sm font-medium">This table was not shared with you</p>
+            <p className="text-sm font-medium">This shared table cannot open right now</p>
             <p className="max-w-prose text-xs text-muted-foreground">{shared.why}</p>
             <Button size="sm" variant="outline" onClick={() => router.push("/data-v2")}>
               Back to your tables
