@@ -478,7 +478,7 @@ export function InteractionTimeline({
                   {copyParent && (
                     <CrmRecordCopyButtons
                       revealFrom="item"
-                      label={`${copyView.subject} activity`}
+                      label={`Activity ${row.id}`}
                       human={() => formatInteractionCopy(copyView)}
                       agent={() =>
                         interactionAgentPayload(copyParent, row)

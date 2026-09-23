@@ -124,7 +124,7 @@ const INTERACTION = {
   recording_url: null,
   scheduled_at: null,
   status: "completed",
-  subject: "Relabeled Gmail activity",
+  subject: HOSTILE,
   thread_key: null,
   updated_at: "2026-09-22T08:00:00+00:00",
   updated_by: null,
@@ -172,9 +172,13 @@ describe("InteractionTimeline model-transfer seam", () => {
       expect(props.json).toBeUndefined();
       expect(props.aiVariants).toBeUndefined();
       const automatic = (props.agent as () => unknown)();
-      expect(JSON.stringify(automatic)).toContain(INTERACTION.id);
-      expect(JSON.stringify(automatic)).not.toContain(HOSTILE);
-      expect(JSON.stringify(automatic)).not.toContain("microsoft_365");
+      const modelBoundSnapshot = {
+        content_label: props.label,
+        content: automatic,
+      };
+      expect(JSON.stringify(modelBoundSnapshot)).toContain(INTERACTION.id);
+      expect(JSON.stringify(modelBoundSnapshot)).not.toContain(HOSTILE);
+      expect(JSON.stringify(modelBoundSnapshot)).not.toContain("microsoft_365");
       expect((props.human as () => string)()).toContain(HOSTILE);
     }
   });
