@@ -56,10 +56,13 @@ begin
                            where r.entity_type = %3$L and r.row_id = t.id
                            order by r.version desc, r.id desc limit 1) h
       where t.version > h.mv
-         or exists (select 1 from history.migration_log m
-                     where m.target_id = t.id and m.verb = 'version_agrees_with_history'
-                       and m.inverse ->> 'lane' = 'VERSION-HISTORY-FIX' and m.inverse ->> 'store' = %2$L
-                       and m.undone_at is null)$q$, c.store::regclass, c.store, c.token)
+         -- a hashed semi-join, not a per-row probe: history.migration_log has no target_id-leading
+         -- index, and once other lanes' lines landed (HR-LOOP-CLEANUP: ~16k) the correlated EXISTS
+         -- re-scanned the whole log for every web.page row and hit the 300 s statement timeout.
+         or t.id in (select m.target_id from history.migration_log m
+                      where m.verb = 'version_agrees_with_history'
+                        and m.inverse ->> 'lane' = 'VERSION-HISTORY-FIX' and m.inverse ->> 'store' = %2$L
+                        and m.undone_at is null)$q$, c.store::regclass, c.store, c.token)
     using array['version', 'updated_at'] || c.extra;
   end loop;
 end
