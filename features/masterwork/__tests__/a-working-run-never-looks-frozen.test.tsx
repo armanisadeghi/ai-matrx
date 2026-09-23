@@ -284,10 +284,16 @@ describe("leg 3 — a late heartbeat shows the server's sentence, never a spinne
           }}
         />,
       );
-      const first = view.status();
-      expect(first).toMatch(/0m?s so far/);
+      // Nothing about time before the first whole second (cold walk 22 read
+      // "0ms so far"); from one second on the clock counts in whole seconds.
+      expect(view.status()).not.toMatch(/so far/);
       await act(async () => {
-        jest.advanceTimersByTime(65_000);
+        jest.advanceTimersByTime(1_000);
+      });
+      const first = view.status();
+      expect(first).toMatch(/\b1s so far/);
+      await act(async () => {
+        jest.advanceTimersByTime(64_000);
       });
       const later = view.status();
       expect(later).not.toBe(first);

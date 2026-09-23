@@ -239,8 +239,14 @@ afterEach(() => {
  * long this kind of work takes. Both come from the real primitive
  * (`elapsedDetail`), so a surface cannot satisfy this by printing its own.
  */
-function expectAHonestWait(): void {
+async function expectAHonestWait(): Promise<void> {
+  // The clock speaks from the first whole second (cold walk 22: "0ms so far"
+  // was the defect, not the bar), so the wait is observed one tick in.
+  await act(async () => {
+    await new Promise((done) => setTimeout(done, 1_100));
+  });
   expect(text()).toMatch(/\d+m?s so far/);
+  expect(text()).not.toMatch(/\d+ms so far/);
   expect(text()).toContain("usually takes");
 }
 
@@ -269,7 +275,7 @@ describe("leg 1 — minting a fresh interview never waits in silence", () => {
     await pressStartTheInterview();
     // We really are past the start screen and inside the launch.
     expect(container.querySelector("[data-testid=start-screen]")).toBeNull();
-    expectAHonestWait();
+    await expectAHonestWait();
   });
 
   it("and stops saying it the moment the first question can be asked", async () => {
@@ -284,7 +290,7 @@ describe("leg 2 — resuming a prior interview never waits in silence", () => {
   it("says how long it has been while the transcript comes back", async () => {
     stillResuming = true;
     await open({ initialConversationId: "conv-1" });
-    expectAHonestWait();
+    await expectAHonestWait();
   });
 
   it("and stops saying it the moment the conversation is on screen", async () => {
@@ -304,19 +310,19 @@ describe("leg 3 — the panel's own boot never waits in silence", () => {
   it("says how long it has been while the interview history is read", async () => {
     interviewRows = "never-resolves";
     await open({ startNew: false });
-    expectAHonestWait();
+    await expectAHonestWait();
   });
 
   it("says how long it has been while the interviewer is resolved", async () => {
     mandateState = { mandate: null, loading: true, error: null };
     await open({ startNew: false });
-    expectAHonestWait();
+    await expectAHonestWait();
   });
 
   it("says how long it has been while the Rulebook document loads", async () => {
     docState = { ...docState, document: null, loading: true };
     await open({ startNew: false });
-    expectAHonestWait();
+    await expectAHonestWait();
   });
 });
 
