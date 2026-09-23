@@ -36,6 +36,11 @@ const CALLS = "dbc7cd48-7b46-4402-ac9d-e459a95f4598"; // Rincon Plumbing — Ser
 const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-23";
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 const WORDS = ["Maria Delgado", "Harbor View HOA", "Takeda Property Management"];
+// WHERE A MOVED TABLE'S OLD LINK LANDS is D3 (features/data-tables/data-source/d3.ts), read
+// from the tree the dev server is serving — the walk judges the behaviour that is built.
+const D3 = (readFileSync(resolve(ROOT, "features/data-tables/data-source/d3.ts"), "utf8")
+  .match(/RECORD_STORE_TABLES_OPEN_IN:\s*RecordStoreTablesOpenIn\s*=\s*"([^"]+)"/) || [])[1] || "data-v2";
+console.log(`D3: record-store tables open in ${D3}`);
 mkdirSync(OUT, { recursive: true });
 
 async function up() {
@@ -94,10 +99,23 @@ async function main() {
     await page.waitForTimeout(3000);
     const landed = page.url();
     await page.screenshot({ path: `${OUT}/oldtables4-1-old-link-lands-in-the-new-home.png` });
-    pass("old-link-redirects", landed.includes(`/data-v2/${CALLS}`), landed);
     const arrival = await page.evaluate(() => document.body.innerText);
-    const sentence = (arrival.match(/[^.\n]*\bmoved\b[^.\n]*/i) || [null])[0];
-    pass("old-link-sentence", Boolean(sentence), sentence || "no sentence on arrival says the table moved");
+    if (D3 === "data-v2") {
+      // D3 = data-v2: the old link hands the person to the new table page, and says so.
+      pass("old-link-redirects", landed.includes(`/data-v2/${CALLS}`), landed);
+      const sentence = (arrival.match(/[^.\n]*\bmoved\b[^.\n]*/i) || [null])[0];
+      pass("old-link-sentence", Boolean(sentence), sentence || "no sentence on arrival says the table moved");
+    } else {
+      // D3 = this-grid (GRID-PORT): the old link opens the STORE's copy in place — the same
+      // address, the real rows, the customers as names — so there is nothing to redirect.
+      await page.waitForFunction(() => document.body.innerText.includes("WO-4471"), null, { timeout: 120000 }).catch(() => {});
+      const here = await page.evaluate(() => document.body.innerText);
+      const inPlace = landed.includes(`/data/${CALLS}`) && here.includes("WO-4471");
+      pass("old-link-opens-in-place", inPlace, `${landed} (${here.includes("WO-4471") ? "rows" : "no rows"})`);
+      const names = WORDS.filter((w) => here.includes(w));
+      pass("old-link-reads-the-store", names.length > 0 && (here.match(UUID) || []).length === 0,
+        `names ${JSON.stringify(names)}, bare uuids ${(here.match(UUID) || []).length}`);
+    }
 
     // ── the unified table ───────────────────────────────────────────────────────────
     await page.goto(`${ORIGIN}/data-v2/${CALLS}`, { waitUntil: "domcontentloaded", timeout: 240000 });
