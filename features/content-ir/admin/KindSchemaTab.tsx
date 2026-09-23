@@ -11,10 +11,8 @@ import { Copy, Info } from "lucide-react";
 import { toast } from "@/lib/toast";
 import type { Json } from "@/types/database.types";
 import type { StoredFieldElement } from "@ai-matrx/content-ir";
-import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 interface FieldRow {
   name: string;
@@ -23,6 +21,33 @@ interface FieldRow {
   required: boolean;
   nullable: boolean;
 }
+
+const FIELD_COLUMNS: MatrxColumnDef<FieldRow>[] = [
+  {
+    accessorKey: "name",
+    header: "Field",
+    filter: "text",
+    width: 265,
+    cell: (row) => (
+      <span
+        className="block truncate font-mono text-xs"
+        style={{ paddingLeft: `${row.depth * 16}px` }}
+        title={row.name}
+      >
+        {row.name}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "type",
+    header: "Type",
+    filter: "text",
+    width: 300,
+    cell: (row) => <span className="block truncate" title={row.type}>{row.type}</span>,
+  },
+  { accessorKey: "required", header: "Required", filter: "boolean", width: 90 },
+  { accessorKey: "nullable", header: "Nullable", filter: "boolean", width: 90 },
+];
 
 function isStoredFieldArray(value: Json | null): value is Json[] {
   return (
@@ -121,60 +146,16 @@ export default function KindSchemaTab({
             the pydantic mirror; see emitted_json_schema below.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className={cn("text-sm", MOBILE_TABLE_FROZEN)}>
-              <thead>
-                <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                  <th className="px-3 py-1.5 font-medium">Field</th>
-                  <th className="px-3 py-1.5 font-medium">Type</th>
-                  <th className="px-3 py-1.5 font-medium">Required</th>
-                  <th className="px-3 py-1.5 font-medium">Nullable</th>
-                </tr>
-              </thead>
-              <tbody>
-                {fieldRows.map((row) => (
-                  <tr
-                    key={row.name}
-                    className="border-b border-border/60 last:border-0 hover:bg-accent/30"
-                  >
-                    <td
-                      className="px-3 py-1.5 font-mono text-xs text-foreground"
-                      style={{ paddingLeft: `${12 + row.depth * 16}px` }}
-                    >
-                      {row.name}
-                    </td>
-                    <td className="px-3 py-1.5 text-xs text-muted-foreground">
-                      {row.type}
-                    </td>
-                    <td className="px-3 py-1.5 text-xs">
-                      {row.required ? (
-                        <span className="font-medium text-foreground">yes</span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-1.5 text-xs">
-                      {row.nullable ? (
-                        <span className="font-medium text-foreground">yes</span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {fieldRows.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={4}
-                      className="px-3 py-3 text-center text-xs text-muted-foreground"
-                    >
-                      Empty field list.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <MatrxDataTable<FieldRow>
+            data={fieldRows}
+            columns={FIELD_COLUMNS}
+            getRowId={(row) => row.name}
+            viewTabs={false}
+            detail={{ enabled: false }}
+            toolbar={{ searchPlaceholder: "Search fields…" }}
+            pageSize={0}
+            emptyState={{ title: "Empty field list" }}
+          />
         )}
       </section>
 
