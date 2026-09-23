@@ -731,16 +731,7 @@ async function main(): Promise<number> {
   // it appears and a fixed one must be struck off. A name that STOPS drifting fails this check
   // too — a baseline allowed to rot is a permission slip.
   //
-  // FOUR, not the six a plain `sha256` finds. `checksumMatches` is this repo's canonical
-  // comparison and hashes the bytes BOTH ways the two runners do, and under it
-  // `readperf_the_class_finds_its_row_without_a_scan.sql` and
-  // `readperf_the_page_scan_has_its_indexes.sql` agree with what ran. VERIFY-AMEND counted six
-  // with a plain hash; the difference is the comparison, not the files, and this arm uses the
-  // same one the rest of the check uses so a campaign file is judged exactly like any other.
-  // This one is not from the idempotency sweep; it remains the sole historical exception.
-  const CAMPAIGN_DRIFT_BASELINE = [
-    "argsruled_the_second_id_lives_in_the_same_organization.sql",
-  ];
+  const CAMPAIGN_DRIFT_BASELINE: string[] = [];
   let campaignBlocking = 0;
   {
     const campaignDir = resolve(MIGRATIONS_DIR, "campaign");
