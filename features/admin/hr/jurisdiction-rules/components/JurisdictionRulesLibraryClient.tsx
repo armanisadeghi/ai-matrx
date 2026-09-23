@@ -11,15 +11,16 @@ import {
   isValidElement,
   useEffect,
   useRef,
-  useState,
   type ReactNode,
   type Ref,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Scale } from "lucide-react";
+import { CircleDollarSign, Scale } from "lucide-react";
 
-import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { MatrxDataTable, rankTableSearchRows } from "@ai-matrx/design-system/data-table";
+import { filterAndSortRows } from "@ai-matrx/design-system/data-table/filter-engine";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import {
   Select,
   SelectContent,
@@ -52,6 +53,26 @@ const libraryColumns: MatrxColumnDef<JurisdictionRule>[] = [
     hidden: true,
   },
   {
+    id: "rule_class",
+    accessorKey: "rule_class",
+    header: "Class key",
+    filter: "select",
+    hidden: true,
+  },
+  {
+    id: "jurisdiction_key",
+    accessorKey: "jurisdiction_key",
+    header: "Jurisdiction key",
+    filter: "select",
+    hidden: true,
+  },
+  {
+    id: "basis",
+    accessorKey: "basis",
+    header: "Legal basis",
+    hidden: true,
+  },
+  {
     id: "jurisdiction",
     header: "Jurisdiction",
     accessorFn: (rule) =>
@@ -71,7 +92,7 @@ const libraryColumns: MatrxColumnDef<JurisdictionRule>[] = [
         />
       </div>
     ),
-    width: 248,
+    width: 340,
   },
   {
     id: "status",
@@ -137,9 +158,29 @@ export function JurisdictionRulesLibraryClient() {
   const searchParams = useSearchParams();
   const focusRuleId = searchParams.get("rule");
 
-  const [classFilter, setClassFilter] = useState(ALL);
-  const [jurisdictionFilter, setJurisdictionFilter] = useState(ALL);
-  const [statusFilter, setStatusFilter] = useState(ALL);
+  const tableQuery = useTableUrlState({
+    tableId: "jurisdiction-rules-library",
+    defaultPageSize: 0,
+  });
+  const classFilter = tableQuery.state.columnFilters.rule_class?.kind === "select"
+    ? tableQuery.state.columnFilters.rule_class.value
+    : ALL;
+  const jurisdictionFilter = tableQuery.state.columnFilters.jurisdiction_key?.kind === "select"
+    ? tableQuery.state.columnFilters.jurisdiction_key.value
+    : ALL;
+  const statusFilter = tableQuery.state.columnFilters.status?.kind === "select"
+    ? tableQuery.state.columnFilters.status.value
+    : ALL;
+  function setDomainFilter(columnId: "rule_class" | "jurisdiction_key" | "status", value: string) {
+    tableQuery.onStateChange({
+      ...tableQuery.state,
+      page: 1,
+      columnFilters: {
+        ...tableQuery.state.columnFilters,
+        [columnId]: value === ALL ? undefined : { kind: "select", value },
+      },
+    });
+  }
   const rowRefs = useRef(new Map<string, HTMLTableRowElement>());
 
   useEffect(() => {
@@ -171,17 +212,6 @@ export function JurisdictionRulesLibraryClient() {
     ).entries(),
   ].sort((a, b) => a[1].localeCompare(b[1]));
   const statusOptions = [...new Set(rules.map((rule) => rule.status))].sort();
-  const filteredRules = rules.filter((rule) => {
-    if (classFilter !== ALL && rule.rule_class !== classFilter) return false;
-    if (
-      jurisdictionFilter !== ALL &&
-      rule.jurisdiction_key !== jurisdictionFilter
-    ) {
-      return false;
-    }
-    return statusFilter === ALL || rule.status === statusFilter;
-  });
-
   function wrapRuleRow(rule: JurisdictionRule, children: ReactNode) {
     if (
       !isValidElement<{
@@ -208,7 +238,7 @@ export function JurisdictionRulesLibraryClient() {
 
   const selectFilters = (
     <>
-      <Select value={classFilter} onValueChange={setClassFilter}>
+      <Select value={classFilter} onValueChange={(value) => setDomainFilter("rule_class", value)}>
         <SelectTrigger className="h-8 w-[190px] text-sm">
           <SelectValue placeholder="All classes" />
         </SelectTrigger>
@@ -221,7 +251,7 @@ export function JurisdictionRulesLibraryClient() {
           ))}
         </SelectContent>
       </Select>
-      <Select value={jurisdictionFilter} onValueChange={setJurisdictionFilter}>
+      <Select value={jurisdictionFilter} onValueChange={(value) => setDomainFilter("jurisdiction_key", value)}>
         <SelectTrigger className="h-8 w-[190px] text-sm">
           <SelectValue placeholder="All jurisdictions" />
         </SelectTrigger>
@@ -234,7 +264,7 @@ export function JurisdictionRulesLibraryClient() {
           ))}
         </SelectContent>
       </Select>
-      <Select value={statusFilter} onValueChange={setStatusFilter}>
+      <Select value={statusFilter} onValueChange={(value) => setDomainFilter("status", value)}>
         <SelectTrigger className="h-8 w-[150px] text-sm">
           <SelectValue placeholder="All statuses" />
         </SelectTrigger>
@@ -247,18 +277,33 @@ export function JurisdictionRulesLibraryClient() {
           ))}
         </SelectContent>
       </Select>
-      <span className="text-xs text-muted-foreground">
-        {filteredRules.length} of {rules.length}
-      </span>
     </>
   );
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <MatrxDataTable
-        urlState={{ id: "jurisdiction-rules-library", selectedRow: false }}
-        data={filteredRules}
+        query={{ mode: "controlled-local", state: tableQuery.state, onStateChange: tableQuery.onStateChange }}
+        data={rules}
+        coverage={{ loaded: rules.length, total: rules.length, answeredBy: "client", noun: "rule" }}
         columns={libraryColumns}
+        processLocalRows={(rows, state) =>
+          rankTableSearchRows(
+            filterAndSortRows(
+              rows,
+              libraryColumns,
+              state.columnFilters,
+              state.sort,
+              "",
+              undefined,
+              state.layeredFilters,
+              state.searchMatchMode,
+            ),
+            libraryColumns,
+            state.search,
+            { matchMode: state.searchMatchMode },
+          )
+        }
         getRowId={(rule) => rule.id}
         density="condensed"
         viewTabs={false}
@@ -281,17 +326,18 @@ export function JurisdictionRulesLibraryClient() {
           groupableColumnIds: [],
           rowNoun: "rule",
           renderLabel: (group) => (
-            <span className="inline-flex items-center gap-1.5">
+            <span className="relative z-10 inline-flex items-center gap-1.5 whitespace-nowrap">
               <Scale className="h-3.5 w-3.5 text-muted-foreground" />
               {group.label}
               {group.rows[0]?.produces_money ? (
-                <span className="font-normal text-muted-foreground">
-                  · produces money
+                <span
+                  aria-label="Produces money"
+                  title="Produces money"
+                  className="text-amber-700 dark:text-amber-400"
+                >
+                  <CircleDollarSign className="h-3.5 w-3.5" />
                 </span>
               ) : null}
-              <span className="font-normal text-muted-foreground">
-                · {group.rows.length}
-              </span>
             </span>
           ),
         }}
@@ -300,7 +346,6 @@ export function JurisdictionRulesLibraryClient() {
         }}
         toolbar={{
           title: "Jurisdiction rules",
-          titleCount: { value: filteredRules.length, label: "rules" },
           search: true,
           searchPlaceholder: "Search class, jurisdiction, basis, authority…",
           leading: (
