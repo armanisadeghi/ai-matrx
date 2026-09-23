@@ -155,11 +155,14 @@ begin
     end if;
     raise notice 'PART 2a — "%"', v_msg;
   end;
+  -- `median` WAS the bogus measure here until GRID-PRIMITIVES G1 (a791bc2251, 2026-09-22)
+  -- made it a real one (custom.agg_operations); PART 2g below asserts it now ANSWERS. The
+  -- word a block cannot measure is `mode`: a real statistic, and not one the store offers.
   begin
     perform custom.dashboard_declare(v_org, v_tbl, 'Bad measure',
       jsonb_build_array(jsonb_build_object('kind','number','measures',
-                        jsonb_build_array(jsonb_build_object('op','median','key','amount')))));
-    raise exception '2: "median" was accepted as a measure';
+                        jsonb_build_array(jsonb_build_object('op','mode','key','amount')))));
+    raise exception '2: "mode" was accepted as a measure';
   exception when others then
     get stacked diagnostics v_msg = message_text;
     if v_msg not like '%is not something a block can measure%' then
@@ -214,6 +217,28 @@ begin
     raise notice 'PART 2f — "%"', v_msg;
   end;
   raise notice 'PART 2 PASSED — six wrong blocks, six sentences, none of them saved';
+
+  -- ══ PART 2g — MEDIAN IS A REAL MEASURE, AND IT ANSWERS THE MIDDLE JOB ═════════════════
+  -- Twenty jobs at $100, $200 … $2,000: the middle two are $1,000 and $1,100, so the typical
+  -- job is $1,050. The max beside it proves the block carries more than one measure.
+  declare v_mdash uuid; v_m jsonb; begin
+    v_mdash := custom.dashboard_declare(v_org, v_tbl, 'Typical job',
+      jsonb_build_array(jsonb_build_object('title','Typical job','kind','number','measures',
+        jsonb_build_array(jsonb_build_object('op','median','key','amount'),
+                          jsonb_build_object('op','max','key','amount')))));
+    v_out := custom.dashboard_run(v_org, v_mdash, '{}'::jsonb);
+    select e into v_b from jsonb_array_elements(v_out -> 'blocks') e where e ->> 'title' = 'Typical job';
+    if v_b ? 'refused' then
+      raise exception '2g: the median block refused: %', v_b ->> 'refused';
+    end if;
+    v_m := v_b -> 'rows' -> 0 -> 'measures';
+    if (v_m ->> 'median_amount')::numeric is distinct from 1050
+       or (v_m ->> 'max_amount')::numeric is distinct from 2000 then
+      raise exception '2g: twenty jobs $100..$2,000 should have median 1050 and max 2000, the block said %', v_m;
+    end if;
+    perform custom.dashboard_delete(v_org, v_mdash);
+    raise notice 'PART 2g PASSED — median $% across twenty jobs, max $%', v_m ->> 'median_amount', v_m ->> 'max_amount';
+  end;
 
   -- ══ PART 3 — "THIS MONTH" IS A WINDOW INSIDE THE STORE'S OWN QUERY ═════════════════════
   -- Every record in this suite was written a moment ago, so the current month holds all
