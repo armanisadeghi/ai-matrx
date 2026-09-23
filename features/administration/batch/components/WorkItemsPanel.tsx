@@ -11,10 +11,15 @@
  * list; the money column is Stripe's (what it cost, what it would have cost,
  * the discount stated out loud).
  */
-import { Fragment, useEffect, useMemo, useState } from "react";
-import { ChevronRight, Inbox, Search, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Inbox, Search, X } from "lucide-react";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+  type MatrxDataTableCoverageConfig,
+} from "@ai-matrx/design-system/data-table";
 import { Button } from "@/components/ui/button";
-import { Input, Skeleton } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,
@@ -49,6 +54,30 @@ import {
 
 const ANY = "__any__";
 
+/**
+ * `listWorkItems` applies every displayed filter at the source, then returns
+ * the newest bounded page plus the exact source-side match count. Do not pass
+ * its fetch cap to MatrxDataTable's `cap`: that field means the FILTER searched
+ * only a prefix, which is not true here. The source notice below carries the
+ * distinct fact that this complete answer is represented by its newest page.
+ */
+export function workItemsCoverage(
+  loaded: number,
+  matched: number,
+): MatrxDataTableCoverageConfig {
+  return { loaded, matched, answeredBy: "source", noun: "work item" };
+}
+
+export function workItemsSourceNotice(
+  loaded: number,
+  matched: number,
+  truncated: boolean,
+): string {
+  return truncated
+    ? `Showing the newest ${fmtInt(loaded)} of ${fmtInt(matched)} matching work items. Narrow the filters to inspect the rest.`
+    : `${fmtInt(matched)} matching ${matched === 1 ? "work item" : "work items"} returned by the source.`;
+}
+
 export function WorkItemsPanel({
   statusFilter,
   handlerFilter,
@@ -82,7 +111,10 @@ export function WorkItemsPanel({
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  const [facets, setFacets] = useState<{ purposes: string[]; providers: string[] }>({
+  const [facets, setFacets] = useState<{
+    purposes: string[];
+    providers: string[];
+  }>({
     purposes: [],
     providers: [],
   });
@@ -106,6 +138,9 @@ export function WorkItemsPanel({
 
   useEffect(() => {
     const controller = new AbortController();
+    // This is a request-boundary reset, not derived render state: stale rows
+    // must become a table loading state before the next source answer arrives.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setError(null);
     listWorkItems(
@@ -134,7 +169,15 @@ export function WorkItemsPanel({
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [statusFilter, handlerFilter, purpose, provider, debounced, batchFilter, refreshTick]);
+  }, [
+    statusFilter,
+    handlerFilter,
+    purpose,
+    provider,
+    debounced,
+    batchFilter,
+    refreshTick,
+  ]);
 
   const filtersActive =
     Boolean(statusFilter) ||
@@ -174,9 +217,17 @@ export function WorkItemsPanel({
         clear: () => onHandlerFilter(null),
       });
     if (purpose)
-      chips.push({ key: "purpose", label: purpose, clear: () => setPurpose(null) });
+      chips.push({
+        key: "purpose",
+        label: purpose,
+        clear: () => setPurpose(null),
+      });
     if (provider)
-      chips.push({ key: "provider", label: provider, clear: () => setProvider(null) });
+      chips.push({
+        key: "provider",
+        label: provider,
+        clear: () => setProvider(null),
+      });
     if (debounced)
       chips.push({
         key: "search",
@@ -196,193 +247,300 @@ export function WorkItemsPanel({
     onBatchFilter,
   ]);
 
-  return (
-    <section className="rounded-lg border border-border bg-card">
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <div className="relative min-w-[200px] flex-1">
-          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search custom id, target id, model"
-            className="h-8 pl-7 text-xs"
+  const columns = useMemo<MatrxColumnDef<WorkItem>[]>(
+    () => [
+      // The source returns a capped newest-first answer. Each field remains an
+      // explicit column and accessor, but package-local sort/filter would lie
+      // about the full source result until listWorkItems grows those contracts.
+      {
+        id: "purpose",
+        accessorKey: "purpose",
+        header: "Purpose",
+        width: 190,
+        filter: false,
+        sortable: false,
+        cell: (row) => (
+          <div className="min-w-0">
+            <div
+              className="truncate font-medium text-foreground"
+              title={row.purpose}
+            >
+              {row.purpose}
+            </div>
+            <div
+              className="truncate font-mono text-[10px] text-muted-foreground"
+              title={row.custom_id}
+            >
+              {/* custom_id is a provider trace key, not a platform entity. */}
+              {/* eslint-disable-next-line matrx/no-bare-id-text */}
+              {row.custom_id}
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "model",
+        accessorKey: "model",
+        header: "Model",
+        width: 170,
+        filter: false,
+        sortable: false,
+        cell: (row) => (
+          <div className="min-w-0">
+            <div className="truncate text-foreground" title={row.model}>
+              {row.model}
+            </div>
+            <div
+              className="truncate text-[10px] text-muted-foreground"
+              title={row.provider}
+            >
+              {row.provider}
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "status",
+        accessorKey: "status",
+        header: "Lifecycle",
+        width: 126,
+        filter: false,
+        sortable: false,
+        cell: (row) => <StatusBadge status={row.status} />,
+      },
+      {
+        id: "delivery",
+        header: "Delivery",
+        accessorFn: (row) => row.handler_status ?? "none",
+        width: 132,
+        filter: false,
+        sortable: false,
+        cell: (row) => <DeliveryBadge handlerStatus={row.handler_status} />,
+      },
+      {
+        id: "cost",
+        header: "Cost",
+        accessorFn: (row) => num(row.actual_cost_usd),
+        width: 150,
+        align: "right",
+        filter: false,
+        sortable: false,
+        cell: (row) => (
+          <CostCell
+            actual={num(row.actual_cost_usd)}
+            liveEquivalent={
+              row.live_equivalent_cost_usd === null
+                ? null
+                : num(row.live_equivalent_cost_usd)
+            }
+            estimate={num(row.est_live_cost_usd)}
+            settled={row.status === "completed"}
           />
-        </div>
+        ),
+      },
+      {
+        id: "age",
+        header: "Age",
+        accessorFn: (row) => row.created_at ?? "",
+        width: 90,
+        align: "right",
+        filter: false,
+        sortable: false,
+        cell: (row) => (
+          <span className="font-mono tabular-nums text-muted-foreground">
+            {fmtAge(row.created_at)}
+          </span>
+        ),
+      },
+      {
+        id: "target",
+        header: "Target",
+        accessorFn: (row) => row.link_id ?? "",
+        width: 180,
+        filter: false,
+        sortable: false,
+        cell: (row) =>
+          row.link_kind && row.link_id ? (
+            <EntityRef
+              token={row.link_kind}
+              id={row.link_id}
+              name={`${row.link_kind} ${row.link_id.slice(0, 8)}`}
+              openInNewTab
+            />
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
+    ],
+    [],
+  );
 
-        <FilterSelect
-          value={statusFilter}
-          onChange={onStatusFilter}
-          placeholder="Any lifecycle"
-          options={[...WORK_ITEM_STATUSES]}
-        />
-        <FilterSelect
-          value={handlerFilter}
-          onChange={onHandlerFilter}
-          placeholder="Any delivery"
-          options={[...HANDLER_STATUSES]}
-          labelFor={(v) => DELIVERY[v]?.label ?? v}
-        />
-        <FilterSelect
-          value={purpose}
-          onChange={setPurpose}
-          placeholder="Any purpose"
-          options={facets.purposes}
-        />
-        <FilterSelect
-          value={provider}
-          onChange={setProvider}
-          placeholder="Any provider"
-          options={facets.providers}
-        />
+  const sourceNotice = workItemsSourceNotice(
+    rows?.length ?? 0,
+    matched,
+    truncated,
+  );
 
-        {filtersActive && (
-          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={clearAll}>
+  return (
+    <MatrxDataTable<WorkItem>
+      tableId="batch-work-items"
+      data={rows ?? []}
+      columns={columns}
+      getRowId={(row) => row.id}
+      isLoading={loading}
+      pageSize={WORK_ITEM_PAGE_SIZE}
+      hidePagination
+      detail={{ enabled: false }}
+      window={{ enabled: false }}
+      expandedDetail={{
+        expandedId: expanded,
+        onExpandedIdChange: setExpanded,
+        render: (row) => <WorkItemDetail row={row} onOpenBatch={onOpenBatch} />,
+      }}
+      rowClassName={(row) =>
+        cn(
+          row.status === "completed" &&
+            row.handler_status === "dead" &&
+            "bg-destructive/5",
+        )
+      }
+      coverage={workItemsCoverage(rows?.length ?? 0, matched)}
+      emptyState={
+        error
+          ? {
+              title: "The work items could not be read.",
+              description: error,
+            }
+          : {
+              icon: <Inbox className="h-6 w-6 text-muted-foreground" />,
+              title: filtersActive
+                ? "No work item matches these filters"
+                : "The queue is empty",
+              description: filtersActive
+                ? "The queue holds items — none of them look like this."
+                : "Nothing has been enqueued for batch processing. Items appear here when a background job is submitted at batch pricing.",
+              action: filtersActive ? (
+                <Button variant="outline" size="sm" onClick={clearAll}>
+                  Clear filters
+                </Button>
+              ) : undefined,
+            }
+      }
+      toolbar={{
+        title: "Work items",
+        customSearch: (
+          <div className="relative min-w-[200px]">
+            <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search custom id, target id, model"
+              className="h-8 pl-7 text-xs"
+              aria-label="Search work items"
+            />
+          </div>
+        ),
+        actions: filtersActive ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs"
+            onClick={clearAll}
+          >
             Clear
           </Button>
-        )}
-      </div>
-
-      {activeChips.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 border-b border-border px-3 py-1.5">
-          {activeChips.map((c) => (
-            <button
-              key={c.key}
-              type="button"
-              onClick={c.clear}
-              className="flex items-center gap-1 rounded border border-border bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground hover:text-foreground"
-            >
-              {c.label}
-              <X className="h-3 w-3" />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {loading ? (
-        <div className="space-y-2 p-3">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-9 w-full" />
-          ))}
-        </div>
-      ) : error ? (
-        <div className="px-4 py-6 text-xs text-destructive">
-          <p className="font-semibold">The work items could not be read.</p>
-          <p className="mt-1 font-mono">{error}</p>
-        </div>
-      ) : !rows || rows.length === 0 ? (
-        <EmptyItems filtersActive={filtersActive} onClear={clearAll} />
-      ) : (
-        <>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-border text-[11px] uppercase tracking-wide text-muted-foreground">
-                <tr>
-                  <th className="w-6" />
-                  <th className="px-2 py-1.5 font-medium">Purpose</th>
-                  <th className="px-2 py-1.5 font-medium">Model</th>
-                  <th className="px-2 py-1.5 font-medium">Lifecycle</th>
-                  <th className="px-2 py-1.5 font-medium">Delivery</th>
-                  <th className="px-2 py-1.5 text-right font-medium">Cost</th>
-                  <th className="px-2 py-1.5 text-right font-medium">Age</th>
-                  <th className="px-2 py-1.5 font-medium">Target</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => {
-                  const open = expanded === row.id;
-                  const undelivered =
-                    row.status === "completed" && row.handler_status === "dead";
-                  return (
-                    <Fragment key={row.id}>
-                      <tr
-                        onClick={() => setExpanded(open ? null : row.id)}
-                        className={cn(
-                          "cursor-pointer border-b border-border/60 align-middle hover:bg-accent/50",
-                          open && "bg-accent/40",
-                          undelivered && "bg-destructive/5",
-                        )}
-                      >
-                        <td className="pl-2">
-                          <ChevronRight
-                            className={cn(
-                              "h-3.5 w-3.5 text-muted-foreground transition-transform",
-                              open && "rotate-90",
-                            )}
-                          />
-                        </td>
-                        <td className="px-2 py-1.5">
-                          <div className="font-medium text-foreground">{row.purpose}</div>
-                          <div className="font-mono text-[10px] text-muted-foreground">
-                            {row.custom_id}
-                          </div>
-                        </td>
-                        <td className="px-2 py-1.5">
-                          <div className="text-foreground">{row.model}</div>
-                          <div className="text-[10px] text-muted-foreground">
-                            {row.provider}
-                          </div>
-                        </td>
-                        <td className="px-2 py-1.5">
-                          <StatusBadge status={row.status} />
-                        </td>
-                        <td className="px-2 py-1.5">
-                          <DeliveryBadge handlerStatus={row.handler_status} />
-                        </td>
-                        <td className="px-2 py-1.5 text-right">
-                          <CostCell
-                            actual={num(row.actual_cost_usd)}
-                            liveEquivalent={
-                              row.live_equivalent_cost_usd === null
-                                ? null
-                                : num(row.live_equivalent_cost_usd)
-                            }
-                            estimate={num(row.est_live_cost_usd)}
-                            settled={row.status === "completed"}
-                          />
-                        </td>
-                        <td className="px-2 py-1.5 text-right font-mono tabular-nums text-muted-foreground">
-                          {fmtAge(row.created_at)}
-                        </td>
-                        <td className="px-2 py-1.5">
-                          {row.link_kind && row.link_id ? (
-                            <EntityRef
-                              token={row.link_kind}
-                              id={row.link_id}
-                              name={`${row.link_kind} ${row.link_id.slice(0, 8)}`}
-                              openInNewTab
-                            />
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </td>
-                      </tr>
-                      {open && (
-                        <tr className="border-b border-border">
-                          <td colSpan={8} className="bg-muted/40 px-4 py-3">
-                            <WorkItemDetail row={row} onOpenBatch={onOpenBatch} />
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
+        ) : undefined,
+        facets: [
+          {
+            type: "custom",
+            id: "lifecycle",
+            filter: {
+              active: Boolean(statusFilter),
+              onReset: () => onStatusFilter(null),
+            },
+            render: () => (
+              <FilterSelect
+                value={statusFilter}
+                onChange={onStatusFilter}
+                placeholder="Any lifecycle"
+                options={[...WORK_ITEM_STATUSES]}
+              />
+            ),
+          },
+          {
+            type: "custom",
+            id: "delivery",
+            filter: {
+              active: Boolean(handlerFilter),
+              onReset: () => onHandlerFilter(null),
+            },
+            render: () => (
+              <FilterSelect
+                value={handlerFilter}
+                onChange={onHandlerFilter}
+                placeholder="Any delivery"
+                options={[...HANDLER_STATUSES]}
+                labelFor={(value) => DELIVERY[value]?.label ?? value}
+              />
+            ),
+          },
+          {
+            type: "custom",
+            id: "purpose",
+            filter: {
+              active: Boolean(purpose),
+              onReset: () => setPurpose(null),
+            },
+            render: () => (
+              <FilterSelect
+                value={purpose}
+                onChange={setPurpose}
+                placeholder="Any purpose"
+                options={facets.purposes}
+              />
+            ),
+          },
+          {
+            type: "custom",
+            id: "provider",
+            filter: {
+              active: Boolean(provider),
+              onReset: () => setProvider(null),
+            },
+            render: () => (
+              <FilterSelect
+                value={provider}
+                onChange={setProvider}
+                placeholder="Any provider"
+                options={facets.providers}
+              />
+            ),
+          },
+        ],
+        leading: (
+          <div className="space-y-2">
+            {activeChips.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-1.5">
+                {activeChips.map((chip) => (
+                  <button
+                    key={chip.key}
+                    type="button"
+                    onClick={chip.clear}
+                    className="flex items-center gap-1 rounded border border-border bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground hover:text-foreground"
+                  >
+                    {chip.label}
+                    <X className="h-3 w-3" />
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            <p className={cn("text-xs", truncated && "text-warning")}>
+              {sourceNotice}
+            </p>
           </div>
-          <footer className="flex items-center justify-between border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
-            <span>
-              Showing {fmtInt(rows.length)} of {fmtInt(matched)} matching{" "}
-              {matched === 1 ? "item" : "items"}
-            </span>
-            {truncated && (
-              <span className="text-warning">
-                Newest {WORK_ITEM_PAGE_SIZE} shown — narrow the filters to see the rest.
-              </span>
-            )}
-          </footer>
-        </>
-      )}
-    </section>
+        ),
+      }}
+    />
   );
 }
 
@@ -421,42 +579,6 @@ function FilterSelect({
   );
 }
 
-function EmptyItems({
-  filtersActive,
-  onClear,
-}: {
-  filtersActive: boolean;
-  onClear: () => void;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
-      <Inbox className="h-6 w-6 text-muted-foreground" />
-      {filtersActive ? (
-        <>
-          <p className="text-sm font-medium text-foreground">
-            No work item matches these filters
-          </p>
-          <p className="max-w-md text-xs text-muted-foreground">
-            The queue holds items — none of them look like this.
-          </p>
-          <Button variant="outline" size="sm" className="mt-1" onClick={onClear}>
-            Clear filters
-          </Button>
-        </>
-      ) : (
-        <>
-          <p className="text-sm font-medium text-foreground">The queue is empty</p>
-          <p className="max-w-md text-xs text-muted-foreground">
-            Nothing has been enqueued for batch processing. An idle queue is the
-            normal resting state of this system — items appear here the moment a
-            background job is submitted at batch pricing.
-          </p>
-        </>
-      )}
-    </div>
-  );
-}
-
 function Field({
   label,
   children,
@@ -469,7 +591,9 @@ function Field({
       <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
         {label}
       </div>
-      <div className="truncate font-mono text-[11px] text-foreground">{children}</div>
+      <div className="truncate font-mono text-[11px] text-foreground">
+        {children}
+      </div>
     </div>
   );
 }
@@ -490,7 +614,9 @@ function WorkItemDetail({
         <Field label="Enqueued">{fmtStamp(row.created_at)}</Field>
         <Field label="Submitted">{fmtStamp(row.submitted_at)}</Field>
         <Field label="Completed">{fmtStamp(row.completed_at)}</Field>
-        <Field label="Queue wait">{fmtSpan(row.created_at, row.submitted_at)}</Field>
+        <Field label="Queue wait">
+          {fmtSpan(row.created_at, row.submitted_at)}
+        </Field>
         <Field label="Provider turnaround">
           {fmtSpan(row.submitted_at, row.completed_at)}
         </Field>
@@ -499,7 +625,9 @@ function WorkItemDetail({
           {fmtInt(row.tokens_in)} / {fmtInt(row.tokens_out)}
         </Field>
         <Field label="Cache reads">
-          {row.cache_read_tokens === null ? "not reported" : fmtInt(row.cache_read_tokens)}
+          {row.cache_read_tokens === null
+            ? "not reported"
+            : fmtInt(row.cache_read_tokens)}
         </Field>
         <Field label="Estimated in / out">
           {fmtInt(row.est_tokens_in)} / {fmtInt(row.est_tokens_out)}
@@ -541,13 +669,17 @@ function WorkItemDetail({
           <>
             <Field label="Deadline">{fmtStamp(row.deadline_at)}</Field>
             <Field label="Escalated">{fmtStamp(row.escalated_at)}</Field>
-            <Field label="Escalation strategy">{row.escalation_strategy ?? "—"}</Field>
+            <Field label="Escalation strategy">
+              {row.escalation_strategy ?? "—"}
+            </Field>
           </>
         )}
         {row.claimed_at && (
           <>
             <Field label="Claimed">{fmtStamp(row.claimed_at)}</Field>
-            <Field label="Lease expires">{fmtStamp(row.lease_expires_at)}</Field>
+            <Field label="Lease expires">
+              {fmtStamp(row.lease_expires_at)}
+            </Field>
           </>
         )}
       </div>
