@@ -285,6 +285,7 @@ export function useIllustrateSetRun() {
         method: "POST",
         body: { set_id: setId, face, skip_existing: true },
         stream: true,
+        outputKind: "image",
         onStreamEvent: (event) => {
           const parsed = parseIllustrateEvent(
             (event as { data?: unknown }).data,

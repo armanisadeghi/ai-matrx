@@ -23,6 +23,7 @@ import type {
   RawStreamEvent,
   ReservationRecord,
   WorkflowNodeStreamEntry,
+  RequestGenerationJob,
 } from "@/features/agents/types/request.types";
 import type {
   Phase,
@@ -1906,6 +1907,18 @@ export const selectRequestError =
   (requestId: string) =>
   (state: RootState): ErrorPayload | undefined =>
     state.activeRequests.byRequestId[requestId]?.error ?? undefined;
+
+/** The generation job this run is, or null for a text run. */
+export const selectRequestGenerationJob =
+  (requestId: string) =>
+  (state: RootState): RequestGenerationJob | null =>
+    state.activeRequests.byRequestId[requestId]?.generationJob ?? null;
+
+/** When the run was submitted (ISO), for the job's elapsed clock. */
+export const selectRequestStartedAt =
+  (requestId: string) =>
+  (state: RootState): string | null =>
+    state.activeRequests.byRequestId[requestId]?.startedAt ?? null;
 
 // =============================================================================
 // Conversation Tree

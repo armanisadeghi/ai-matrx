@@ -144,6 +144,7 @@ import {
   createRequest,
   setRequestStatus,
   setRequestRouting,
+  setRequestGenerationJob,
 } from "../active-requests/active-requests.slice";
 import {
   addOptimisticUserMessage,
@@ -169,6 +170,17 @@ import { toast } from "@/lib/toast";
 import { resilientFetch } from "@ai-matrx/data/net";
 import { logApiTarget } from "@/lib/api/log-api-target";
 import { toNetError } from "@ai-matrx/data/net";
+import {
+  RUN_STREAM_LIFETIME_BACKSTOP_MS,
+  isJobOutputKind,
+  resolveRunWait,
+  runOutputKindFromModalities,
+  runWaitTimeoutMessage,
+  type RunOutputKind,
+} from "@/lib/api/run-wait";
+import { selectModelById } from "@/features/ai-models/redux/modelRegistrySlice";
+import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
+import { getUserId } from "@/utils/auth/getUserId";
 import { payloadSafetyStore } from "@/lib/persistence/payloadSafetyStore";
 import {
   startRequest as startNetRequest,
@@ -202,11 +214,13 @@ function stripUiCapabilityFlags(
   return out;
 }
 
-// Stream watchdog defaults — match the historical pre-regression values so
-// Builder runs have the same connection-health guarantees as agent runs.
-const CONNECT_TIMEOUT_MS = 15_000;
+// Stream watchdog. The heartbeat is the liveness check (the server beats every
+// 5 s). There is NO fixed wall-clock cap on a run: the first-response wait is
+// the organization's `agents.run_wait.<kind>_seconds` knob, resolved per run
+// (lib/api/run-wait.ts), and the lifetime is the same 24-hour backstop the
+// agent run path (runAiStream) uses. The fixed 15 s wait that lived here killed
+// image runs whose server preparation outlasted it (2026-09-22).
 const HEARTBEAT_TIMEOUT_MS = 30_000;
-const MAX_LIFETIME_MS = 600_000;
 
 // =============================================================================
 // Turn Conversion Utilities
@@ -630,6 +644,11 @@ export const executeManualInstance = createAsyncThunk<
 
     let firstTurnSnapshotStamped = false;
     let streamStarted = false;
+    // What this run produces and how long we waited for it to start — read by
+    // the catch block so a timeout can say which model and how long.
+    let runOutputKind: RunOutputKind = "text";
+    let runModelLabel: string | null = null;
+    let runWaitSeconds: number | null = null;
     try {
       const state = getState() as RootState;
       const instance = state.conversations.byConversationId[conversationId];
@@ -936,9 +955,46 @@ export const executeManualInstance = createAsyncThunk<
         recoveryId = null;
       }
 
-      // resilientFetch: bounded connect timeout (DNS/TLS/server-not-listening
-      // fails fast), no wall-clock ceiling on the body (the heartbeat watchdog
-      // on processStream is the streaming ceiling).
+      // What this run produces decides how long we wait for the server to
+      // START (an image job resolves reference images and runs for tens of
+      // seconds; a text reply starts in one or two). The wait is the
+      // organization's knob — never a constant — and once the stream is open
+      // there is no wall-clock cap at all.
+      const runModel = payload.ai_model_id
+        ? selectModelById(state, payload.ai_model_id)
+        : undefined;
+      runOutputKind = runModel?.capabilities
+        ? runOutputKindFromModalities(
+            parseCapabilities(runModel.capabilities, {
+              modelId: runModel.id,
+              modelName: runModel.name,
+            }).output,
+          )
+        : "text";
+      runModelLabel =
+        runModel?.common_name?.trim() || runModel?.name?.trim() || null;
+      const runWait = await resolveRunWait(
+        payload.organization_id,
+        getUserId() ?? null,
+        runOutputKind,
+      );
+      runWaitSeconds = runWait.seconds;
+      if (isJobOutputKind(runOutputKind)) {
+        dispatch(
+          setRequestGenerationJob({
+            requestId,
+            job: {
+              kind: runOutputKind as "image" | "video" | "audio",
+              modelLabel: runModelLabel,
+              firstResponseSeconds: runWait.seconds,
+            },
+          }),
+        );
+      }
+
+      // resilientFetch: the first-response wait above, no wall-clock ceiling
+      // on the body (the heartbeat watchdog on processStream is the streaming
+      // ceiling).
       const { response } = await resilientFetch(
         url,
         {
@@ -947,7 +1003,7 @@ export const executeManualInstance = createAsyncThunk<
           body: JSON.stringify(payload),
         },
         {
-          connectTimeoutMs: CONNECT_TIMEOUT_MS,
+          connectTimeoutMs: runWait.firstResponseMs,
           totalTimeoutMs: null,
           signal: abortController.signal,
           throwOnHttpError: false,
@@ -1026,7 +1082,7 @@ export const executeManualInstance = createAsyncThunk<
         },
         abortController,
         heartbeatTimeoutMs: HEARTBEAT_TIMEOUT_MS,
-        maxLifetimeMs: MAX_LIFETIME_MS,
+        maxLifetimeMs: RUN_STREAM_LIFETIME_BACKSTOP_MS,
       });
 
       unregisterAbortController(conversationId);
@@ -1077,6 +1133,10 @@ export const executeManualInstance = createAsyncThunk<
       );
 
       const message = error instanceof Error ? error.message : "Unknown error";
+      // A first-response timeout is NOT a failed run: the server may still be
+      // preparing or generating. Say so, name the model and the wait, and hand
+      // the person the conversation — the one place the result can land.
+      const firstResponseTimedOut = netErr.code === "connect-timeout";
       dispatch(
         setRequestStatus({
           requestId,
@@ -1085,6 +1145,21 @@ export const executeManualInstance = createAsyncThunk<
             error_type: "client_error",
             message,
             code: netErr?.code ?? null,
+            ...(firstResponseTimedOut
+              ? {
+                  user_message: runWaitTimeoutMessage(
+                    runOutputKind,
+                    runModelLabel,
+                    runWaitSeconds,
+                  ),
+                  details: {
+                    door: {
+                      label: "Open the conversation",
+                      href: `/chat/${conversationId}`,
+                    },
+                  },
+                }
+              : {}),
           },
         }),
       );

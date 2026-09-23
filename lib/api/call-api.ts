@@ -91,6 +91,8 @@ import { captureApiError } from "@/lib/diagnostics/captureApiError";
 import { wasStreamErrorCaptured } from "@/lib/diagnostics/captureStreamError";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { fetchWithMatrxProtocolFallback } from "@ai-matrx/agents/matrx";
+import { resolveRunWait, type RunOutputKind } from "@/lib/api/run-wait";
+import { getUserId } from "@/utils/auth/getUserId";
 import { applyDesktopTargetToRequestBody } from "@/lib/api/desktop-target-request";
 import {
   applyOrganizationContextHeader,
@@ -385,6 +387,15 @@ export interface ApiCallConfig<
    * streaming calls are uncapped). `null` disables the cap.
    */
   totalTimeoutMs?: number | null;
+
+  /**
+   * What a STREAMING call produces. A stream's headers only go out after the
+   * server finishes preparing the request, so for streams the header wait is
+   * the organization's `agents.run_wait.<kind>_seconds` knob (lib/api/run-wait.ts)
+   * — generous for image / video / audio jobs — unless `connectTimeoutMs` is set
+   * explicitly. Defaults to "text". Ignored for JSON calls.
+   */
+  outputKind?: RunOutputKind;
 
   // ── Context scope overrides ───────────────────────────────────────────────
 
@@ -1441,13 +1452,29 @@ export function callApi<
       }
 
       // ── Step 7: Execute ─────────────────────────────────────────────────
+      // A stream's header wait is the organization's run-wait knob for what
+      // it produces, never the 15 s JSON default: prepared-streaming routes
+      // send headers only after server-side preparation (2026-09-22).
+      const streamConfig =
+        config.stream && config.connectTimeoutMs === undefined
+          ? {
+              ...config,
+              connectTimeoutMs: (
+                await resolveRunWait(
+                  scope.organization_id,
+                  getUserId() ?? null,
+                  config.outputKind ?? "text",
+                )
+              ).firstResponseMs,
+            }
+          : config;
       const result = config.stream
         ? await executeStreamingRequest(
             url,
             config.method,
             headers,
             body,
-            config,
+            streamConfig,
           )
         : await executeJsonRequest(url, config.method, headers, body, config);
       // Single capture chokepoint for backend failures that resolve with an

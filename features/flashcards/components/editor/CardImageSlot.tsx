@@ -206,6 +206,7 @@ function FaceRow({
           method: "POST",
           body: { card_id: card.id, face },
           stream: true,
+          outputKind: "image",
           onStreamEvent: (event) => {
             const data = (event as { data?: LaneEventPayload }).data;
             if (data && (data.refused || data.result)) payload = data;

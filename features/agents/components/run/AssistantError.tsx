@@ -52,6 +52,11 @@ interface AssistantErrorProps {
   onRetry?: () => void;
   /** Drives the Retry button's busy state. */
   retrying?: boolean;
+  /**
+   * A door this specific failure carries (e.g. "Open the conversation" after a
+   * first-response timeout, when the server may still finish the run).
+   */
+  door?: { label: string; href: string } | null;
 }
 
 export function AssistantError({
@@ -61,6 +66,7 @@ export function AssistantError({
   code,
   onRetry,
   retrying = false,
+  door = null,
 }: AssistantErrorProps) {
   const [showDetails, setShowDetails] = useState(false);
 
@@ -84,6 +90,16 @@ export function AssistantError({
             className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-primary hover:bg-primary/10"
           >
             {RECOVERY_DOORS[errorType].label}
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+        )}
+
+        {door && (
+          <Link
+            href={door.href}
+            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-primary hover:bg-primary/10"
+          >
+            {door.label}
             <ArrowRight className="h-3 w-3" />
           </Link>
         )}

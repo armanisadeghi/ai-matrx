@@ -374,6 +374,14 @@ export interface ActiveRequest {
   routing: RequestRouting | null;
 
   /**
+   * Set when this run is a JOB — its model produces an image, video or audio
+   * rather than streamed text. Drives the working line ("Generating an image
+   * with <model> · 0:42") while the server works, and the honest timeout copy
+   * if the server never starts. Absent for text runs. See lib/api/run-wait.ts.
+   */
+  generationJob?: RequestGenerationJob | null;
+
+  /**
    * The server's request id for this turn — the `X-Request-ID` header on the
    * opened stream response (aidream AppContext.request_id). This is the id
    * `POST /ai/cancel/{request_id}` expects; the client-local `requestId`
@@ -414,6 +422,15 @@ export interface WorkflowNodeStreamEntry {
   /** Last applied per-node `stream_seq` — smaller/equal frames are drops. */
   lastStreamSeq: number;
   status: "streaming" | "done" | "failed";
+}
+
+/** A run whose output is a generated asset — see `ActiveRequest.generationJob`. */
+export interface RequestGenerationJob {
+  kind: "image" | "video" | "audio";
+  /** Display name of the model doing the work, when the catalog knows it. */
+  modelLabel: string | null;
+  /** How long the page waits for the server to start, in seconds (null = backstop). */
+  firstResponseSeconds: number | null;
 }
 
 /**

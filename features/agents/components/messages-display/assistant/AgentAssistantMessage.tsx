@@ -509,6 +509,7 @@ export function AgentAssistantMessage({
             detail={detail}
             errorType={streamError?.error_type}
             code={code}
+            door={readErrorDoor(streamError?.details)}
             onRetry={canRetry ? handleRetry : undefined}
             retrying={retrying}
           />
@@ -675,6 +676,19 @@ export function AgentAssistantMessage({
     </div>
     </MessageCitationsProvider>
   );
+}
+
+/** A failure's own door, carried on `error.details.door` by the client. */
+function readErrorDoor(
+  details: unknown,
+): { label: string; href: string } | null {
+  if (!details || typeof details !== "object") return null;
+  const door = (details as { door?: unknown }).door;
+  if (!door || typeof door !== "object") return null;
+  const { label, href } = door as { label?: unknown; href?: unknown };
+  return typeof label === "string" && typeof href === "string" && href.startsWith("/")
+    ? { label, href }
+    : null;
 }
 
 function AssistantMarkdownSkeleton() {

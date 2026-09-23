@@ -28,6 +28,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   ActiveRequest,
   RequestRouting,
+  RequestGenerationJob,
   RequestStatus,
   PendingToolCall,
   ClientMetrics,
@@ -377,6 +378,18 @@ const activeRequestsSlice = createSlice({
     ) {
       const request = state.byRequestId[action.payload.requestId];
       if (request) request.routing = action.payload.routing;
+    },
+
+    /** Mark this run as a generation job (image / video / audio output). */
+    setRequestGenerationJob(
+      state,
+      action: PayloadAction<{
+        requestId: string;
+        job: RequestGenerationJob | null;
+      }>,
+    ) {
+      const request = state.byRequestId[action.payload.requestId];
+      if (request) request.generationJob = action.payload.job;
     },
 
     /**
@@ -1472,6 +1485,7 @@ export const {
   recordTransportSeq,
   setRequestStatus,
   setRequestRouting,
+  setRequestGenerationJob,
   setRequestServerId,
   appendChunk,
   appendReasoningChunk,
