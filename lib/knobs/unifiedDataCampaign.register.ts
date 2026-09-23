@@ -222,6 +222,18 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
       "schema said out loud; there is no table read here.",
   },
   {
+    id: "gridprim-g3-formula-parity",
+    file: "scripts/campaign-tests/gridprim_g3_formula_parity.ts",
+    kind: "tooling",
+    why:
+      "Lane GRID-PRIMITIVES G3 — the formula-parity proof: the /data grid's browser evaluator " +
+      "and the store's custom.formula_parse / custom.formula_eval over the same clinic rows, in " +
+      "one rolled-back transaction on the clone or the branch. It imports " +
+      "scripts/lib/migration-target only for the runner-target verdict. A script a developer " +
+      "runs, never served to a user, so it must not call the gate. Registered by lane HUB-FIX, " +
+      "which found check:campaign-entry-points exiting 1 on origin/main (fea66d1167).",
+  },
+  {
     id: "data-hub-shared-table-context",
     file: "features/unified-data/hub/useSharedTable.ts",
     kind: "runtime",
