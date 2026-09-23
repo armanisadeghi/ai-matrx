@@ -39,7 +39,10 @@ CENSUS_SQL="$HERE/branch-seed-census.sql"
 # 5 and 411 rows refused on `*_surface_name_fkey` / `*_component_id_fkey`). The guard below — a
 # seeded table whose foreign key reaches a table the census never rules on is a REFUSAL — is what
 # names the next such schema instead of letting its children arrive empty.
-CENSUS_SCHEMAS='platform,tool,iam,custom,content_ir,history,ui'
+# `ai` JOINED the same day: the AI catalogue (ai.model_definition, provider, offering, …) is platform
+# reference data that argsruled_green reads by id ("allam-2-7b"), and it was absent on the branch
+# with no foreign key to make the guard see it.
+CENSUS_SCHEMAS='platform,tool,iam,custom,content_ir,history,ui,ai'
 # A row ceiling, because a table this large is data, not a register.
 CENSUS_CEILING=50000
 # A SIZE ceiling too (2026-09-23). `iam.access_delta_probe` has 22,514 rows — under the row
@@ -57,7 +60,8 @@ CENSUS_AUTHORSHIP='created_by,updated_by,deleted_by,archived_by,restored_by,publ
 # file. Keep this list SHORT and keep the reason honest — "it is inconvenient" is not one.
 CENSUS_DECLARED='{
   "iam.organizations": "identities and organizations are SYNTHESIZED on the branch, never copied (the owner'"'"'s no-real-people law); the single is_system organization the reference tables key on is seeded by the refresh'"'"'s own step, and one organization per registered REAL-DATA use case is created there",
-  "ui.ui_surface_agent_role": "every row keys on agent.definition, and the agent schema is not seeded by this refresh (agents are organization-owned records, not platform reference data), so each row would be refused on its foreign key; declared 2026-09-23 by lane BRANCH-REFRESH-3 rather than widening the census to a schema of customer agents"
+  "ui.ui_surface_agent_role": "every row keys on agent.definition, and the agent schema is not seeded by this refresh (agents are organization-owned records, not platform reference data), so each row would be refused on its foreign key; declared 2026-09-23 by lane BRANCH-REFRESH-3 rather than widening the census to a schema of customer agents",
+  "ai.voices": "its rows key on files.files (the voice samples are stored file records), and the files schema is not seeded by this refresh (a file row is organization-owned content, not reference data), so each row that names a sample would be refused; declared 2026-09-23 by lane BRANCH-REFRESH-3"
 }'
 
 # ── TABLES THAT RIDE THE RESTORE ─────────────────────────────────────────────

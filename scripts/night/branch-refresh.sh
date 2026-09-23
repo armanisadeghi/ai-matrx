@@ -184,6 +184,11 @@ seed_load() {  # seed_load <schema.table> <tsv> [<fix sql>] [<prelude>] [<trunca
   [ "$trunc" = "1" ] && truncsql="truncate table $t cascade;"
   out="$("$PSQL" "$BRANCH_DSN" -qAt 2>&1 <<SQL
 begin;
+-- 🚨 AN EXPLICIT CEILING. The per-row load of a table is ONE statement (the DO block below), and
+-- since 2026-09-23 the branch's `postgres` carries production's role default of 30s (carried by
+-- branch-carry-database-objects.sh). `custom.record` alone took 53s on the 2026-09-23 run. The
+-- branch is disposable and the job holds its lease, so a generous bound is the right one here.
+set local statement_timeout = '20min';
 -- PROVENANCE, DECLARED. `platform._stamp_actor_tier` refuses an automated write that does not say
 -- WHICH system it is ("declares actor_tier=code, but names no actor_system") — tool.definition
 -- refused all 693 rows on 2026-09-23 01:1xZ for exactly that. This loader IS a system, and says so
@@ -572,10 +577,15 @@ fi
 # and written by the NAMES both sides have, in the source's order. A table the branch does not have
 # at all gets an empty list and is skipped by name.
 typeset -A SRC_COLS BR_COLS
+# The census schemas come from the checked-in list itself, so a schema the census gains (`ui`,
+# 2026-09-23) is read here too — the hand-typed copy of that list left every ui.* table "not on
+# the branch" on the first run after `ui` joined the census.
+CENSUS_SCHEMA_LIST="$(python3 -c 'import json,sys; print(",".join("'"'"'%s'"'"'" % s for s in json.load(open(sys.argv[1]))["schemas"]))' "$SEED_LIST_JSON" 2>/dev/null)"
+[ -n "$CENSUS_SCHEMA_LIST" ] || { say "REFUSED: the census schema list could not be read from $SEED_LIST_JSON. Nothing written anywhere."; exit 78; }
 COLSQL="select n.nspname||'.'||c.relname, string_agg(quote_ident(a.attname), ',' order by a.attnum)
           from pg_attribute a join pg_class c on c.oid=a.attrelid join pg_namespace n on n.oid=c.relnamespace
          where c.relkind in ('r','p') and a.attnum > 0 and not a.attisdropped
-           and n.nspname = any(array['platform','tool','iam','custom','content_ir','history','public'])
+           and n.nspname = any(array[$CENSUS_SCHEMA_LIST,'public','users'])
          group by 1"
 while IFS='|' read -r ct cv; do [ -n "$ct" ] && SRC_COLS[$ct]="$cv"; done < <("$PSQL" "${SRC[@]}" -qAtF'|' -c "$COLSQL" 2>/dev/null)
 while IFS='|' read -r ct cv; do [ -n "$ct" ] && BR_COLS[$ct]="$cv"; done < <("$PSQL" "$BRANCH_DSN" -qAtF'|' -c "$COLSQL" 2>/dev/null)
@@ -591,12 +601,31 @@ common_cols() {
   print -n -- "$out"
 }
 
-typeset -A SEED_FILTER
-while IFS='|' read -r ft fv; do SEED_FILTER[$ft]="$fv"; done < <(python3 -c '
+typeset -A SEED_FILTER AUTHOR_COLS RESTORE_LOADED
+while IFS='|' read -r ft fv fa fr; do
+  SEED_FILTER[$ft]="$fv"; AUTHOR_COLS[$ft]="$fa"; [ -n "$fr" ] && RESTORE_LOADED[$ft]="$fr"
+done < <(python3 -c '
 import json, sys
 for t in json.load(open(sys.argv[1]))["tables"]:
-    print("%s|%s" % (t["table"], t.get("filter_column") or ""))
+    print("%s|%s|%s|%s" % (t["table"], t.get("filter_column") or "", t.get("authorship_columns") or "",
+                           t.get("load_with_restore") or ""))
 ' "$SEED_LIST_JSON" 2>/dev/null)
+
+# 🚨 AUTHORSHIP, RE-POINTED — NOT JUST ON THE SYSTEM ORGANIZATION. The purge removes every production
+# identity, so a copied row whose created_by/updated_by names one is refused on its auth.users key.
+# Measured on the 2026-09-23 run: content_ir.kind_definition 72 refused on kind_definition_created_by_fkey,
+# platform.flexible_data 26, platform.rulebook 4 (and platform.masterwork_corpus_item's 6 behind
+# them), tool.definition 1, tool.bundle 1 — and every child of a refused row after them. The census
+# already names each table's authorship columns; an authorship value that is not an identity on this
+# branch becomes the branch's own admin, and nothing else about the row is touched.
+authorship_fix() {  # authorship_fix <schema.table> -> SQL over _seed_stage, or empty
+  local t="$1" c out=""
+  for c in ${(s:,:)AUTHOR_COLS[$t]:-}; do
+    [ -n "$c" ] || continue
+    out="${out:+$out; }update _seed_stage s set \"$c\" = (select id from auth.users where email = 'admin@admin.com') where s.\"$c\" is not null and not exists (select 1 from auth.users u where u.id = s.\"$c\")"
+  done
+  print -r -- "$out"
+}
 
 say "─── (2) curated seed: reading the reference tables ───"
 typeset -a SEED_OK
@@ -678,7 +707,7 @@ print -r -- "$DECLARED" | while IFS='|' read -r t col trunc; do
   if [ -f "$f" ] && ! print -r -- "$o" | grep -qE 'ERROR|FATAL'; then
     n="$(wc -l < "$f" | tr -d ' ')"
     if [ "$n" = "0" ]; then say "    $t: 0 platform-owned rows on the source right now; not loaded"
-    else print -r -- "$t|$col|$trunc|$n" >> "$WORK/lookups.read"; fi
+    else print -r -- "$t|$col|$trunc|$n" >> "$WORK/lookups.read"; print -r -- "$t|$cc" >> "$WORK/lookups.cols"; fi
   else
     say "    $t: NOT READ — $(print -r -- "$o" | head -1)"
   fi
@@ -834,7 +863,7 @@ else
     for ((i=1; i<=${#REMAIN[@]}; i+=DROP_BATCH)); do
       typeset -a CHUNK; CHUNK=("${(@)REMAIN[i,i+DROP_BATCH-1]}")
       DROPOUT="$("$PSQL" "$BRANCH_DSN" -qAt \
-        -c "set lock_timeout = '60s'" \
+        -c "set lock_timeout = '60s'" -c "set statement_timeout = '10min'" \
         -c "drop schema if exists ${(j:, :)CHUNK} cascade" 2>&1)"
       if print -r -- "$DROPOUT" | grep -qE 'ERROR:|FATAL:'; then
         say "  pass $DROP_PASS, batch ${(j:,:)CHUNK}: $(print -r -- "$DROPOUT" | grep -m1 -E 'ERROR:|FATAL:')"
@@ -868,7 +897,7 @@ else
     say "  run it happens here, after the drop, with nothing left to cascade into."
   else
     say "purging copied identities: the branch holds $("$PSQL" "$BRANCH_DSN" -qAt -c 'select count(*) from auth.users' 2>&1) auth.users rows, 527 of which BRANCH-DRIFT.md measured as identical to production's (copied by the 2026-09-16 transplant)"
-    POUT="$("$PSQL" "$BRANCH_DSN" -v ON_ERROR_STOP=1 -qAt -c \
+    POUT="$("$PSQL" "$BRANCH_DSN" -v ON_ERROR_STOP=1 -qAt -c "set statement_timeout = '10min'" -c \
       "delete from auth.users where email is distinct from 'admin@admin.com' and email is distinct from 'test@test.com'" 2>&1)"
     if print -r -- "$POUT" | grep -qE 'ERROR|FATAL'; then say "  purge FAILED: $(print -r -- "$POUT" | head -1)"
     else say "  purged; $("$PSQL" "$BRANCH_DSN" -qAt -c 'select count(*) from auth.users' 2>&1) auth.users row(s) remain"; fi
@@ -884,7 +913,45 @@ else
 
   # pg_dump emits `CREATE SCHEMA "x";` for schemas we have just pre-created (they had to exist
   # before the extensions went back in). Make those tolerant; nothing else in the file is touched.
-  sed -E 's/^CREATE SCHEMA ("?[A-Za-z0-9_]+"?);$/CREATE SCHEMA IF NOT EXISTS \1;/' "$DUMP" > "$WORK/schema.apply.sql"
+  { print -r -- "-- branch-refresh: the branch's postgres carries production's 30s role default; a restore statement may take longer"
+    print -r -- "set statement_timeout = '10min';"
+    sed -E 's/^CREATE SCHEMA ("?[A-Za-z0-9_]+"?);$/CREATE SCHEMA IF NOT EXISTS \1;/' "$DUMP"
+  } > "$WORK/schema.apply.sql"
+
+  # 🚨 A TABLE WHOSE OWN GUARD REFUSES EVERY INSERT RIDES THE RESTORE. The census marks it
+  # `load_with_restore` with the name of its closing trigger (platform.anon_function_birth_grandfather
+  # -> anon_function_birth_grandfather_is_closed, "CLOSED — it may only shrink": all 272 rows were
+  # refused on 2026-09-23 and the branch's copy was EMPTY). Its rows are written into the restore
+  # stream immediately BEFORE the dump's own CREATE TRIGGER for that guard — where pg_dump puts a
+  # table's data in a whole dump. The guard is never disabled: at that line it does not exist yet.
+  if [ "$REHEARSE" != "1" ] && [ ${#RESTORE_LOADED[@]} -gt 0 ]; then
+    for t in "${(@k)RESTORE_LOADED}"; do
+      f="$WORK/lookup_${t//./_}.tsv"; cc="$(grep -m1 "^$t|" "$WORK/lookups.cols" 2>/dev/null | cut -d'|' -f2-)"
+      if [ ! -s "$f" ] || [ -z "$cc" ]; then say "  $t: NOT injected into the restore — the source read nothing for it"; continue; fi
+      INJ="$(python3 - "$WORK/schema.apply.sql" "$t" "${RESTORE_LOADED[$t]}" "$f" "$cc" <<'PYINJ'
+import re, sys
+path, table, trig, tsv, cols = sys.argv[1:6]
+sch, tab = table.split(".", 1)
+pat = re.compile(r'^CREATE TRIGGER "?%s"? .* ON (ONLY )?"?%s"?\."?%s"? ' % (re.escape(trig), re.escape(sch), re.escape(tab)))
+lines = open(path).read().split("\n")
+for i, l in enumerate(lines):
+    if pat.match(l):
+        block = ["-- branch-refresh: %s's rows, before its closing trigger %s exists" % (table, trig),
+                 "set app.actor_system = 'branch-refresh-seed';",
+                 "\\copy \"%s\".\"%s\" (%s) from '%s'" % (sch, tab, cols, tsv),
+                 "reset app.actor_system;"]
+        lines[i:i] = block
+        open(path, "w").write("\n".join(lines))
+        print("line %d" % (i + 1))
+        break
+else:
+    print("NOT FOUND")
+PYINJ
+)"
+      if [ "$INJ" = "NOT FOUND" ]; then say "  🚨 $t: the dump no longer creates ${RESTORE_LOADED[$t]} ON $t, so its rows were NOT injected; the census entry is stale"
+      else say "  $t: $(wc -l < "$f" | tr -d ' ') rows injected into the restore at $INJ, immediately before ${RESTORE_LOADED[$t]} is created"; fi
+    done
+  fi
 
   say "restoring the schema dump onto the branch"
   # ON_ERROR_STOP is deliberately OFF: a schema restore of this size always produces some
@@ -1025,6 +1092,8 @@ for t in "${SEED_OK[@]}"; do
 \\copy _door_types from '$DOOR_TYPES'"
     FIX="update _seed_stage s set identity_argtypes = x.oids from _door_types m, lateral (select array_agg(to_regtype(n)::oid order by ord) as oids, count(*) filter (where to_regtype(n) is null) as unresolved from unnest(string_to_array(m.names, ',')) with ordinality u(n, ord)) x where m.id = s.id and x.unresolved = 0"
   fi
+  AFIX="$(authorship_fix "$t")"
+  [ -n "$AFIX" ] && FIX="${FIX:+$FIX; }$AFIX"
   say "  $t: $(seed_load "$t" "$f" "$FIX" "$PRE" "${CURATED_TRUNC[$t]:-1}" "$(common_cols "$t")")  -> $("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) rows on the branch"
 done
 # WHAT THE DOOR TABLE STILL REFUSES, AND WHY IT IS NOT A COPY DEFECT. After the OID translation the
@@ -1050,8 +1119,85 @@ say "  doors on the branch: $DOORMISS (source has $("$PSQL" "$SRC_DSN" -qAt -c '
 # by its own primary key, counted, and named.
 for t in "${LOOKUP_OK[@]}"; do
   f="$WORK/lookup_${t//./_}.tsv"
-  say "  $t: $(seed_load "$t" "$f" "" "" "${LOOKUP_TRUNC[$t]}" "$(common_cols "$t")")  -> $("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) rows on the branch$([ "${LOOKUP_TRUNC[$t]}" = "1" ] || print -n ' (appended: the source holds customer rows this branch must keep out, so it is never emptied)')"
+  if [ -n "${RESTORE_LOADED[$t]:-}" ]; then
+    if [ "$SEED_ONLY" = "1" ] || [ "$REHEARSE" = "1" ]; then
+      say "  $t: left as it is — its closing trigger ${RESTORE_LOADED[$t]} refuses every insert, so it is loaded only inside a full refresh's restore ($("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) rows on the branch)"
+    else
+      say "  $t: loaded WITH THE RESTORE, before ${RESTORE_LOADED[$t]} existed -> $("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) rows on the branch (the source read $(wc -l < "$f" | tr -d ' '))"
+    fi
+    continue
+  fi
+  say "  $t: $(seed_load "$t" "$f" "$(authorship_fix "$t")" "" "${LOOKUP_TRUNC[$t]}" "$(common_cols "$t")")  -> $("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) rows on the branch$([ "${LOOKUP_TRUNC[$t]}" = "1" ] || print -n ' (appended: the source holds customer rows this branch must keep out, so it is never emptied)')"
 done
+
+# ── (2c) THE TEST IDENTITIES' OWN SEAT ───────────────────────────────────────
+# 🚨 lane BRANCH-REFRESH-3, 2026-09-23. The identities step keeps admin@admin.com and test@test.com
+# and synthesizes one organization per REAL-DATA use case — and gives the two test accounts NO
+# membership and NO default organization. Every suite that asks "which tenant does the admin write
+# in" then fails on the branch and passes on the clone: doorsonly5_categories_doors_work_from_a_seat
+# and doorsonly5_rulebook_doors_work_from_a_seat ("admin@admin.com has no default organization"),
+# and argsruled_green, whose fixture tenants Rincon Plumbing Co and Calder Approvals did not exist.
+#
+# THE RULE, BY VALUE, NOT BY NAME: an organization crosses when NO real person belongs to it — every
+# member is one of the two test accounts — or when it is a test account's own default organization
+# (the ORGANIZATION row only; its other members never cross). Their memberships in exactly those
+# organizations cross, and their users.user_preferences rows (the default organization). A customer
+# organization always has a real member, so it cannot satisfy the rule: AI Matrx, our own CRM tenant,
+# does not cross, which is why acquisition_console_rls_seat cannot pass here by construction.
+# Insert-missing only: a row the branch already holds (by primary key) is left exactly as it is.
+if [ "$REHEARSE" != "1" ]; then
+  say "─── (2c) the test identities' own seat: organizations only they belong to, their memberships and default ───"
+  TEST_IDS_SQL="select id from auth.users where email in ('admin@admin.com','test@test.com')"
+  SEAT_ORGS_SQL="select o.id from iam.organizations o where not o.is_system and (
+      (exists (select 1 from iam.memberships m where m.organization_id = o.id and m.user_id in ($TEST_IDS_SQL))
+       and not exists (select 1 from iam.memberships m where m.organization_id = o.id and m.user_id is not null and m.user_id not in ($TEST_IDS_SQL)))
+      or o.id in (select iam.default_organization_id(u.id) from auth.users u where u.id in ($TEST_IDS_SQL)))"
+  # The source's ids for the two accounts, so a branch whose accounts were synthesized under other
+  # ids still gets the right person on every copied row.
+  IDMAP="$("$PSQL" "${SRC[@]}" -qAt -F'|' -c "select id, email from auth.users where email in ('admin@admin.com','test@test.com')" 2>/dev/null)"
+  MAPVALS=""
+  while IFS='|' read -r mid mem; do [ -n "$mid" ] && MAPVALS="${MAPVALS:+$MAPVALS, }('$mid'::uuid, '$mem')"; done <<< "$IDMAP"
+  remap_fix() {  # remap_fix <col> -> SQL re-pointing a copied test-account id at this branch's own
+    [ -n "$MAPVALS" ] || return 0
+    print -r -- "update _seed_stage s set \"$1\" = b.id from (values $MAPVALS) m(cid, email) join auth.users b on b.email = m.email where s.\"$1\" = m.cid"
+  }
+  typeset -a SEAT_T SEAT_W SEAT_K
+  SEAT_T=(iam.organizations iam.memberships users.user_preferences)
+  SEAT_W=("id in ($SEAT_ORGS_SQL)"
+          "user_id in ($TEST_IDS_SQL) and organization_id in ($SEAT_ORGS_SQL)"
+          "user_id in ($TEST_IDS_SQL)")
+  SEAT_K=(id id user_id)
+  for i in 1 2 3; do
+    t="${SEAT_T[$i]}"; f="$WORK/seat_${t//./_}.tsv"
+    cc="$(common_cols "$t")"
+    if [ -z "$cc" ]; then
+      # users.* is outside the column catalogs read above; read it here.
+      local_src="$("$PSQL" "${SRC[@]}" -qAt -c "select string_agg(quote_ident(attname), ',' order by attnum) from pg_attribute where attrelid = '$t'::regclass and attnum > 0 and not attisdropped" 2>/dev/null)"
+      local_br="$("$PSQL" "$BRANCH_DSN" -qAt -c "select string_agg(quote_ident(attname), ',' order by attnum) from pg_attribute where attrelid = '$t'::regclass and attnum > 0 and not attisdropped" 2>/dev/null)"
+      cc=""; for c in ${(s:,:)local_src}; do [[ ",$local_br," == *",$c,"* ]] && cc="${cc:+$cc,}$c"; done
+    fi
+    if [ -z "$cc" ]; then say "  $t: not on both databases; skipped"; continue; fi
+    o="$("$PSQL" "${SRC[@]}" -qAt -c "\copy (select $cc from $t where ${SEAT_W[$i]}) to '$f'" 2>&1)"
+    if [ ! -f "$f" ] || print -r -- "$o" | grep -qE 'ERROR|FATAL'; then say "  $t: NOT READ — $(print -r -- "$o" | head -1)"; continue; fi
+    fx="delete from _seed_stage s where exists (select 1 from $t x where x.\"${SEAT_K[$i]}\" = s.\"${SEAT_K[$i]}\")"
+    [ "$t" != "iam.organizations" ] && fx="$(remap_fix user_id); $fx"
+    for c in created_by updated_by invited_by; do
+      [[ ",$cc," == *",$c,"* ]] || continue
+      fx="$(remap_fix $c); $fx; update _seed_stage s set \"$c\" = (select id from auth.users where email = 'admin@admin.com') where s.\"$c\" is not null and not exists (select 1 from auth.users u where u.id = s.\"$c\")"
+    done
+    fx="${fx#; }"
+    say "  $t: $(wc -l < "$f" | tr -d ' ') row(s) on the source — $(seed_load "$t" "$f" "$fx" "" 0 "$cc")  -> $("$PSQL" "$BRANCH_DSN" -qAt -c "select count(*) from $t" 2>&1) on the branch"
+  done
+  say "  admin@admin.com's default organization on the branch: $("$PSQL" "$BRANCH_DSN" -qAt -c "select coalesce((select name from iam.organizations where id = iam.default_organization_id(u.id)), '(none)') from auth.users u where u.email = 'admin@admin.com'" 2>&1)"
+fi
+
+# ── (3c) WHAT A SCHEMA DUMP CANNOT CARRY: event triggers and role settings ───
+# After the restore AND the seed, so neither ran under guards judging a half-built database.
+# branch-carry-database-objects.sh says why both classes are missing after every refresh.
+if [ "$SEED_ONLY" != "1" ]; then
+  say "─── (3c) event triggers and role settings, from the clone ───"
+  zsh "$FRONTEND/scripts/night/branch-carry-database-objects.sh" 2>&1 | grep -v 'target ok:' | while read -r l; do say "  ${l#\[*\] }"; done
+fi
 
 # BRANCH-REF re-point. Same database, so the identifier must NOT have moved; if it has,
 # something is very wrong and this job says so rather than rewriting the file.
