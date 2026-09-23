@@ -38,9 +38,9 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import {
   IMAGE_ROLE_META,
-  isImageReferenceRole,
+  isReferenceRole,
   variableNameOfImageUrl,
-  type ImageReferenceRole,
+  type ReferenceRole,
 } from "@/features/agents/image-roles/roles";
 import { EmptyStats, StatRow, StatSection } from "./panels/shared";
 import { TYPE_COLORS } from "./ContextPoliciesTab";
@@ -185,7 +185,7 @@ function MessagePartsView({ parts }: { parts: UserInputPart[] }) {
             <span className="inline-flex items-center px-1.5 py-px rounded border text-[9px] font-mono uppercase tracking-wide bg-muted/40 border-border/40 text-muted-foreground shrink-0">
               {partType}
             </span>
-            {isImageReferenceRole(partRole) && (
+            {isReferenceRole(partRole) && (
               <span className="inline-flex items-center px-1.5 py-px rounded border text-[9px] font-medium bg-primary/10 border-primary/30 text-primary shrink-0">
                 {IMAGE_ROLE_META[partRole].ask}
               </span>
@@ -210,7 +210,7 @@ function MessagePartsView({ parts }: { parts: UserInputPart[] }) {
 
 /** One roled reference image the agent's user messages send. */
 interface RoledImageRow {
-  role: ImageReferenceRole;
+  role: ReferenceRole;
   /** The variable that fills it, or null for a fixed URL. */
   variable: string | null;
   source: string;
@@ -226,7 +226,12 @@ function roledImagesOf(messages: unknown): RoledImageRow[] {
     for (const block of content) {
       if (!block || typeof block !== "object") continue;
       const b = block as Record<string, unknown>;
-      if (b.type !== "image" || !isImageReferenceRole(b.role)) continue;
+      if (
+        (b.type !== "image" && b.type !== "video" && b.type !== "audio") ||
+        !isReferenceRole(b.role)
+      ) {
+        continue;
+      }
       const source = typeof b.url === "string" ? b.url : String(b.file_id ?? "");
       rows.push({ role: b.role, variable: variableNameOfImageUrl(source), source });
     }

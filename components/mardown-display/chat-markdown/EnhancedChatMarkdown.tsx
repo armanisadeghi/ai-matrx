@@ -23,6 +23,8 @@ import {
   RunJobWorkingLine,
   useIsRunJob,
 } from "@/features/agents/components/run/RunJobWorkingLine";
+import { GenerationJobCard } from "@/features/agents/components/run/GenerationJobCard";
+import { selectRequestGenerationJob } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import FullScreenMarkdownEditor from "./FullScreenMarkdownEditor";
 import { InlineStatusIndicator } from "./internal-handlers/InlineStatusIndicator";
 import { InlineThinkingSlot } from "./internal-handlers/InlineThinkingSlot";
@@ -427,6 +429,12 @@ export const EnhancedChatMarkdownInternal: React.FC<
     requestId ? selectIsReasoningStreaming(requestId) : _selectFalse,
   );
   const isRunJob = useIsRunJob(requestId);
+  // A VIDEO job renders as a card (model, clock, estimated cost) until the
+  // stream's end lands the player; image/audio jobs keep the working line.
+  const isVideoJob =
+    useAppSelector(
+      requestId ? selectRequestGenerationJob(requestId) : () => null,
+    )?.kind === "video";
 
   const unifiedSlotsSelector = useMemo(
     () =>
@@ -1058,7 +1066,9 @@ export const EnhancedChatMarkdownInternal: React.FC<
         <div className="mb-1 w-full min-w-0 text-left overflow-x-clip">
           <div className={containerStyles}>
             <div className="flex items-center justify-start py-1">
-              {requestId && isRunJob ? (
+              {requestId && isVideoJob ? (
+                <GenerationJobCard requestId={requestId} />
+              ) : requestId && isRunJob ? (
                 // A generation job names itself, its model and its clock —
                 // "Processing…" for a minute reads as a hang.
                 <RunJobWorkingLine requestId={requestId} />
@@ -1198,6 +1208,15 @@ export const EnhancedChatMarkdownInternal: React.FC<
       // A generation job's status ("Initializing…", "Generating image…") is
       // replaced by the job's own line — what, which model, how long — so the
       // person watching a minute-long render sees a clock, not a loop.
+      if (requestId && isVideoJob) {
+        return (
+          <GenerationJobCard
+            key={`status-${slot.seq}`}
+            requestId={requestId}
+            className="my-2"
+          />
+        );
+      }
       if (requestId && isRunJob) {
         return (
           <RunJobWorkingLine

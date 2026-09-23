@@ -1,4 +1,4 @@
-import type { ImageReferenceRole } from "@/features/agents/image-roles/roles";
+import type { ReferenceRole } from "@/features/agents/image-roles/roles";
 import type {
   ContextPolicy,
   CustomToolDefinition,
@@ -158,12 +158,14 @@ export interface VariableCustomComponent {
    */
   resource_context?: VariableResourceContextConfig;
   /**
-   * Image-generation reference role this image variable fills (subject,
-   * character, style, mask, edit_target, composition_control). Stamped from
-   * the image block that uses `{{name}}`; the run form asks for it by role
-   * ("Style reference"). Vocabulary: `features/agents/image-roles/roles.ts`.
+   * Reference role this media variable fills — image-generation roles
+   * (subject … composition_control), video-side image roles (first_frame,
+   * last_frame, asset, style), video roles (extend, restyle) or audio
+   * (lip_sync). Stamped from the media block that uses `{{name}}`; the run form
+   * asks for it by role ("First frame", "Reference video"). Vocabulary:
+   * `features/agents/image-roles/roles.ts`.
    */
-  imageRole?: ImageReferenceRole;
+  imageRole?: ReferenceRole;
   /**
    * Preserved config fragments for other component types.
    * Written when the user edits a field that isn't used by the current type

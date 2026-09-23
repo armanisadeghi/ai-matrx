@@ -105,7 +105,8 @@ export function VariableInputComponent({
   // role ("Style reference") — the person uploading needs to know what the
   // image will control, not the author's variable name.
   const imageRoleMeta =
-    type === "image" && customComponent?.imageRole
+    (type === "image" || type === "video" || type === "audio") &&
+    customComponent?.imageRole
       ? IMAGE_ROLE_META[customComponent.imageRole]
       : null;
   const formattedName = imageRoleMeta?.ask ?? formatText(variableName);

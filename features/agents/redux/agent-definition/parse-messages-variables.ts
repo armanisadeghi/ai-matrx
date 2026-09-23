@@ -17,7 +17,7 @@ import {
 } from "@/features/agents/types/agent-definition.types";
 import type { components } from "@/types/python-generated/api-types";
 import { isMessagePart } from "@/types/python-generated/stream-events";
-import { isImageReferenceRole } from "@/features/agents/image-roles/roles";
+import { isReferenceRole } from "@/features/agents/image-roles/roles";
 import { isSpeechScriptPart } from "@/features/agents/speech-script/types";
 import {
   DECISION_QUESTIONS_KIND,
@@ -364,8 +364,8 @@ function parseVariableCustomComponent(
   if (resourceContext !== undefined) parsed.resource_context = resourceContext;
   if (stash !== undefined) parsed.stash = stash;
   if (value.imageRole !== undefined && value.imageRole !== null) {
-    if (!isImageReferenceRole(value.imageRole)) {
-      fail(`${path}.imageRole`, "must be a reference-image role or null");
+    if (!isReferenceRole(value.imageRole)) {
+      fail(`${path}.imageRole`, "must be a media reference role or null");
     }
     parsed.imageRole = value.imageRole;
   }

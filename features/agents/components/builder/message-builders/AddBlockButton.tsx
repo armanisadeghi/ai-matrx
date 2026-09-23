@@ -73,9 +73,11 @@ import { ImageRoleSelector } from "@/features/agents/image-roles/ImageRoleSelect
 import { useImageRoleLimits } from "@/features/agents/image-roles/useImageRoleLimits";
 import {
   imageRoleVerdict,
-  isImageReferenceRole,
-  type ImageReferenceRole,
+  isReferenceRole,
+  namedReferenceVerdict,
+  rolesFor,
   type ImageRoleLimits,
+  type ReferenceRole,
 } from "@/features/agents/image-roles/roles";
 
 // ---------------------------------------------------------------------------
@@ -224,11 +226,15 @@ export interface DecisionPartContext {
   messageRole?: string;
 }
 
-/** The role selector's inputs, present only when the model generates images. */
+/** The role selector's inputs, present only when the model generates images
+ *  or video (image, video and audio blocks on a user message). */
 interface ImageRoleContext {
   limits: ImageRoleLimits | null;
   modelLabel: string;
-  onChange: (role: ImageReferenceRole | null) => void;
+  roles: readonly ReferenceRole[];
+  onChange: (role: ReferenceRole | null) => void;
+  /** Present when the model generates video: tagged `@name` references. */
+  onNameChange?: (name: string | null) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -409,8 +415,16 @@ export function BlockEditor({
     if (meta) block.metadata = meta;
     // The reference-image role is set by the role control on the row, not by
     // this form — editing the URL must never silently strip it.
-    if (config.type === "image" && isImageReferenceRole(initialValues.role)) {
+    if (
+      (config.type === "image" ||
+        config.type === "video" ||
+        config.type === "audio") &&
+      isReferenceRole(initialValues.role)
+    ) {
       block.role = initialValues.role;
+      if (typeof initialValues.name === "string" && initialValues.name) {
+        block.name = initialValues.name;
+      }
     }
     onConfirm(block);
   };
@@ -694,13 +708,28 @@ export function BlockRow({
     typeof metadata?.role === "string" ? (metadata.role as string) : null;
   const otherMetaCount = metadataCount - (role ? 1 : 0);
 
-  const blockRole = isImageReferenceRole(block.role) ? block.role : null;
+  const blockRole =
+    isReferenceRole(block.role) && imageRole?.roles.includes(block.role)
+      ? block.role
+      : null;
+  const blockName = typeof block.name === "string" ? block.name : null;
   const roleVerdict =
-    imageRole && blockRole && imageRole.limits
-      ? imageRoleVerdict(blockRole, imageRole.limits, imageRole.modelLabel)
+    imageRole && isReferenceRole(block.role) && imageRole.limits
+      ? imageRole.roles.includes(block.role)
+        ? imageRoleVerdict(block.role, imageRole.limits, imageRole.modelLabel)
+        : {
+            verdict: "refused" as const,
+            reason: `${imageRole.modelLabel} does not read a ${type} as ${block.role.replace("_", " ")}. Pick a role below.`,
+          }
+      : null;
+  const nameVerdict =
+    imageRole?.onNameChange && blockName && imageRole.limits
+      ? namedReferenceVerdict(imageRole.limits, imageRole.modelLabel)
       : null;
   const refused =
-    compatibility?.verdict === "refused" || roleVerdict?.verdict === "refused";
+    compatibility?.verdict === "refused" ||
+    roleVerdict?.verdict === "refused" ||
+    nameVerdict?.verdict === "refused";
 
   return (
     <div
@@ -767,13 +796,16 @@ export function BlockRow({
         </p>
       )}
 
-      {isImage && imageRole && (
+      {imageRole && (
         <div className="pl-5 pt-1">
           <ImageRoleSelector
             value={blockRole}
             onChange={imageRole.onChange}
             limits={imageRole.limits}
             modelLabel={imageRole.modelLabel}
+            roles={imageRole.roles}
+            name={blockName}
+            onNameChange={imageRole.onNameChange}
           />
         </div>
       )}
@@ -882,35 +914,60 @@ export function BlockList({
 
   const model = decisionContext?.model ?? null;
   const hasQuestionsPart = blocks.some(isDecisionQuestionsPart);
-  const generatesImages =
-    !!model &&
-    decisionContext?.messageRole === "user" &&
-    parseCapabilities(model.capabilities, {
-      modelId: model.id,
-      modelName: model.name,
-    }).output.includes("image");
+  const outputs =
+    !!model && decisionContext?.messageRole === "user"
+      ? parseCapabilities(model.capabilities, {
+          modelId: model.id,
+          modelName: model.name,
+        }).output
+      : [];
+  // A video model reads images as frames/references, videos as extend/restyle
+  // and audio as lip sync; an image model reads images only.
+  const roleOutput: "image" | "video" | null = outputs.includes("video")
+    ? "video"
+    : outputs.includes("image")
+      ? "image"
+      : null;
   const roleLimits = useImageRoleLimits(
     decisionContext?.modelId ?? model?.id ?? null,
-    generatesImages,
+    roleOutput !== null,
   );
   const modelLabel =
     model?.common_name?.trim() || model?.name?.trim() || "This model";
   const imageRoleFor = (
     block: Record<string, unknown>,
     index: number,
-  ): ImageRoleContext | undefined =>
-    generatesImages && partKind(block) === "image"
-      ? {
-          limits: roleLimits,
-          modelLabel,
-          onChange: (role) => {
-            const next: Record<string, unknown> = { ...block };
-            if (role) next.role = role;
-            else delete next.role;
-            onUpdateBlock(index, next);
-          },
+  ): ImageRoleContext | undefined => {
+    const kind = partKind(block);
+    if (!roleOutput || (kind !== "image" && kind !== "video" && kind !== "audio")) {
+      return undefined;
+    }
+    const roles = rolesFor(kind, roleOutput);
+    if (roles.length === 0) return undefined;
+    return {
+      limits: roleLimits,
+      modelLabel,
+      roles,
+      onChange: (role) => {
+        const next: Record<string, unknown> = { ...block };
+        if (role) next.role = role;
+        else {
+          delete next.role;
+          delete next.name;
         }
-      : undefined;
+        onUpdateBlock(index, next);
+      },
+      onNameChange:
+        roleOutput === "video"
+          ? (name) => {
+              const next: Record<string, unknown> = { ...block };
+              if (name) next.name = name;
+              else delete next.name;
+              onUpdateBlock(index, next);
+            }
+          : undefined,
+    };
+  };
   const questionsVerdict = decisionQuestionsCompatibility(
     model,
     decisionContext?.modelId ?? null,

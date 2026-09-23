@@ -4165,7 +4165,8 @@ export type ImageMediaPart = {
   kind: "image";
   width?: number | null;
   height?: number | null;
-  role?: "subject" | "character" | "style" | "mask" | "edit_target" | "composition_control" | null;
+  role?: "subject" | "character" | "style" | "mask" | "edit_target" | "composition_control" | "first_frame" | "last_frame" | "asset" | null;
+  name?: string | null;
 } & ({
   url: string;
 } | {
@@ -4183,6 +4184,7 @@ export type AudioMediaPart = {
   kind: "audio";
   duration_ms?: number | null;
   transcription_result?: string | null;
+  role?: "lip_sync" | null;
 } & ({
   url: string;
 } | {
@@ -4201,6 +4203,8 @@ export type VideoMediaPart = {
   width?: number | null;
   height?: number | null;
   duration_ms?: number | null;
+  role?: "extend" | "restyle" | null;
+  name?: string | null;
 } & ({
   url: string;
 } | {
@@ -4952,6 +4956,19 @@ const MESSAGE_PART_SCHEMA: MessagePartJsonSchema = {
           ],
           "default": null,
           "title": "Transcription Result"
+        },
+        "role": {
+          "anyOf": [
+            {
+              "const": "lip_sync",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Role"
         }
       },
       "required": [
@@ -6114,7 +6131,10 @@ const MESSAGE_PART_SCHEMA: MessagePartJsonSchema = {
                 "style",
                 "mask",
                 "edit_target",
-                "composition_control"
+                "composition_control",
+                "first_frame",
+                "last_frame",
+                "asset"
               ],
               "type": "string"
             },
@@ -6124,6 +6144,18 @@ const MESSAGE_PART_SCHEMA: MessagePartJsonSchema = {
           ],
           "default": null,
           "title": "Role"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
         }
       },
       "required": [
@@ -7733,6 +7765,34 @@ const MESSAGE_PART_SCHEMA: MessagePartJsonSchema = {
           ],
           "default": null,
           "title": "Duration Ms"
+        },
+        "role": {
+          "anyOf": [
+            {
+              "enum": [
+                "extend",
+                "restyle"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Role"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
         }
       },
       "required": [

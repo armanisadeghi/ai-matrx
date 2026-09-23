@@ -116,6 +116,7 @@ export const LLM_PARAMS_KEYS = [
     'disable_safety_checker',
     'generate_audio',
     'enhance_prompt',
+    'camera_control',
     'image_input',
     'image_inputs',
     'mask',

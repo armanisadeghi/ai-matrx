@@ -33,8 +33,8 @@ import {
   setAgentVariableDefinitions,
 } from "@/features/agents/redux/agent-definition/slice";
 import {
-  isImageReferenceRole,
-  variableNameOfImageUrl,
+  isReferenceRole,
+  variableNameOfMediaUrl,
 } from "@/features/agents/image-roles/roles";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
@@ -316,17 +316,21 @@ export function MessageItem({
       );
       dispatch(setAgentMessages({ id: agentId, messages: updated }));
 
-      // An image block filled by a variable ({{name}}) hands its reference
-      // role to that variable, so every run form asks for it by role
-      // ("Style reference") instead of by a bare variable name.
-      const varName =
-        block.type === "image" ? variableNameOfImageUrl(block.url) : null;
-      if (varName && variableDefinitions) {
-        const role = isImageReferenceRole(block.role) ? block.role : undefined;
+      // A media block (image, video, audio) filled by a variable ({{name}})
+      // hands its reference role to that variable, so every run form asks for
+      // it by role ("First frame", "Reference video") instead of by a bare
+      // variable name.
+      const mediaType =
+        block.type === "image" || block.type === "video" || block.type === "audio"
+          ? block.type
+          : null;
+      const varName = mediaType ? variableNameOfMediaUrl(block.url) : null;
+      if (mediaType && varName && variableDefinitions) {
+        const role = isReferenceRole(block.role) ? block.role : undefined;
         const current = variableDefinitions.find((v) => v.name === varName);
         if (current && current.customComponent?.imageRole !== role) {
           const customComponent = {
-            ...(current.customComponent ?? { type: "image" as const }),
+            ...(current.customComponent ?? { type: mediaType }),
           };
           if (role) customComponent.imageRole = role;
           else delete customComponent.imageRole;

@@ -11,21 +11,33 @@
  * below, never hidden and never silently accepted.
  */
 
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   IMAGE_REFERENCE_ROLES,
   IMAGE_ROLE_META,
   imageRoleVerdict,
-  type ImageReferenceRole,
+  namedReferenceVerdict,
+  normalizeReferenceName,
+  roleTakesName,
   type ImageRoleLimits,
+  type ReferenceRole,
 } from "./roles";
 
 export interface ImageRoleSelectorProps {
-  value: ImageReferenceRole | null;
-  onChange: (role: ImageReferenceRole | null) => void;
+  value: ReferenceRole | null;
+  onChange: (role: ReferenceRole | null) => void;
   /** null = limits still loading; roles are not judged until they arrive. */
   limits: ImageRoleLimits | null;
   modelLabel: string;
+  /** The roles this block offers (image-generation roles by default; a video
+   *  model offers first frame / last frame / asset / style on images, extend /
+   *  restyle on videos, lip sync on audio). */
+  roles?: readonly ReferenceRole[];
+  /** Tagged reference name (`@name`). Offered only when `onNameChange` is set
+   *  and the chosen role can carry a name. */
+  name?: string | null;
+  onNameChange?: (name: string | null) => void;
   className?: string;
 }
 
@@ -34,10 +46,19 @@ export function ImageRoleSelector({
   onChange,
   limits,
   modelLabel,
+  roles = IMAGE_REFERENCE_ROLES,
+  name = null,
+  onNameChange,
   className,
 }: ImageRoleSelectorProps) {
   const chosenVerdict =
     value && limits ? imageRoleVerdict(value, limits, modelLabel) : null;
+  const showName = !!onNameChange && roleTakesName(value);
+  const [draft, setDraft] = useState(name ?? "");
+  useEffect(() => setDraft(name ?? ""), [name]);
+  const draftValid = draft.trim() === "" || normalizeReferenceName(draft) !== null;
+  const nameVerdict =
+    showName && name && limits ? namedReferenceVerdict(limits, modelLabel) : null;
 
   return (
     <div className={cn("flex flex-col gap-1", className)}>
@@ -46,7 +67,7 @@ export function ImageRoleSelector({
         aria-label="Reference image role"
         className="inline-flex w-fit flex-wrap rounded-md border border-border bg-muted/40 p-0.5"
       >
-        {IMAGE_REFERENCE_ROLES.map((role) => {
+        {roles.map((role) => {
           const meta = IMAGE_ROLE_META[role];
           const verdict = limits ? imageRoleVerdict(role, limits, modelLabel) : null;
           const refused = verdict?.verdict === "refused";
@@ -86,8 +107,51 @@ export function ImageRoleSelector({
           ? chosenVerdict?.verdict === "refused"
             ? chosenVerdict.reason
             : IMAGE_ROLE_META[value].explanation
-          : "No role: the model simply sees this image. Pick what it should control."}
+          : "No role: the model simply sees this. Pick what it should control."}
       </p>
+      {showName && (
+        <div className="flex items-center gap-1.5">
+          <label
+            className="text-[11px] text-muted-foreground"
+            htmlFor="reference-name"
+          >
+            Name
+          </label>
+          <span className="text-[11px] text-muted-foreground">@</span>
+          <input
+            id="reference-name"
+            data-testid="reference-name"
+            value={draft}
+            placeholder="hero"
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={() => {
+              if (!onNameChange) return;
+              const next = normalizeReferenceName(draft);
+              if (draft.trim() === "") onNameChange(null);
+              else if (next) onNameChange(next);
+            }}
+            className={cn(
+              "h-6 w-32 rounded border bg-background px-1.5 text-base md:text-[11px]",
+              draftValid ? "border-border" : "border-destructive",
+            )}
+          />
+          <span
+            className={cn(
+              "text-[11px]",
+              !draftValid || nameVerdict?.verdict === "refused"
+                ? "text-destructive"
+                : "text-muted-foreground",
+            )}
+            data-testid="reference-name-hint"
+          >
+            {!draftValid
+              ? "A letter, then letters, digits, _ or -."
+              : nameVerdict?.verdict === "refused"
+                ? nameVerdict.reason
+                : "The prompt can address it as @" + (name || "name") + "."}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
