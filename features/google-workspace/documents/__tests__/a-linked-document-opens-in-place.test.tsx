@@ -81,7 +81,7 @@ jest.mock("@/features/marketing/google/service", () => ({
         organization_id: null,
         provider: "google",
         provider_subject: "sub-1",
-        account_email: "arman@titaniumsuccess.com",
+        account_email: "maria.delgado@rinconplumbing.test",
         account_name: "Arman",
         scopes: ["https://www.googleapis.com/auth/drive.file"],
         status: "connected",
@@ -286,7 +286,7 @@ describe("one connected Google Doc, composed, in all three presentations", () =>
     it(`shows the same facts, body and composer in the ${which.name} presentation`, async () => {
       const m = await mount(which);
       const text = m.container.textContent ?? "";
-      expect(text).toContain("arman@titaniumsuccess.com");
+      expect(text).toContain("maria.delgado@rinconplumbing.test");
       expect(text).toContain("Refreshed");
       // The body read view — the cached text, not a field.
       expect(m.container.querySelector("[data-google-document-body]")?.textContent).toContain(

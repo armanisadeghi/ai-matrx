@@ -48,7 +48,7 @@ export function googleDocumentRow(
     external_url: `https://docs.google.com/document/d/${FILE_ID}/edit`,
     title: "Q3 Plan",
     mime_kind: "document",
-    owner_email: "arman@titaniumsuccess.com",
+    owner_email: "maria.delgado@rinconplumbing.test",
     external_modified_at: fromNow(-DAY),
     body_text: "Goals for Q3\n\nShip the connector.",
     // FRESH, so refresh-on-open does NOT fire unless a suite asks for it.

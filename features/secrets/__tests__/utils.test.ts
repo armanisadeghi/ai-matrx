@@ -96,10 +96,10 @@ describe("recommendedHandlingForFieldKey", () => {
 describe("parseEnvAssignment", () => {
   test("parses a pasted key and value", () => {
     expect(
-      parseEnvAssignment("DATA_FOR_SEO_EMAIL=arman@armansadeghi.com"),
+      parseEnvAssignment("DATA_FOR_SEO_EMAIL=james.grant@rinconplumbing.test"),
     ).toEqual({
       key: "DATA_FOR_SEO_EMAIL",
-      value: "arman@armansadeghi.com",
+      value: "james.grant@rinconplumbing.test",
     });
   });
 

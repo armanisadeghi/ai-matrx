@@ -74,10 +74,10 @@ describe("coding-session presentation", () => {
 
   it("never lets the note outrank a real label", () => {
     const identity = providerAccountIdentity({
-      provider_account_label: "arman@allgreenrecycling.com",
+      provider_account_label: "dev@rinconplumbing.test",
       provider_account_label_note: "stale note left behind by an earlier repair",
     });
-    expect(identity.display).toBe("arman@allgreenrecycling.com");
+    expect(identity.display).toBe("dev@rinconplumbing.test");
   });
 
   it("prefers the canonical provider_account_key over legacy fingerprints", () => {

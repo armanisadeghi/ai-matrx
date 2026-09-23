@@ -42,7 +42,7 @@ jest.mock("@/features/marketing/google/service", () => ({
         organization_id: null,
         provider: "google",
         provider_subject: "sub-1",
-        account_email: "arman@titaniumsuccess.com",
+        account_email: "maria.delgado@rinconplumbing.test",
         account_name: "Arman",
         scopes: [...IDENTITY, ...grantedScopes],
         status: "connected",

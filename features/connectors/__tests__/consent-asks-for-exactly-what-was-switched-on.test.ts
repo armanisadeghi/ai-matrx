@@ -50,7 +50,7 @@ function rollout(
 function account(scopes: string[]): ConnectorAccount {
   return {
     id: "conn-1",
-    label: "arman@aimatrx.com",
+    label: "linda.jensen@rinconplumbing.test",
     ownerKind: "person",
     organizationId: null,
     providerSubject: "google-subject-1",

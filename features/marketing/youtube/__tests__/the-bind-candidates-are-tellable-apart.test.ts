@@ -134,8 +134,8 @@ describe("channelBindCandidates", () => {
     const candidates = channelBindCandidates(
       inventory(
         [
-          { id: "conn-1", email: "arman@armansadeghi.com" },
-          { id: "conn-2", email: "arman@titaniumsuccess.com" },
+          { id: "conn-1", email: "james.grant@rinconplumbing.test" },
+          { id: "conn-2", email: "maria.delgado@rinconplumbing.test" },
         ],
         [
           {

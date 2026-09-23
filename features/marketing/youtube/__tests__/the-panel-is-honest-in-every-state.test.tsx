@@ -301,8 +301,8 @@ describe("no channel is bound", () => {
    */
   it("keeps two same-named channels distinguishable", async () => {
     world.connections = [
-      connection(CONNECTION_ID, "arman@armansadeghi.com"),
-      connection(SECOND_CONNECTION_ID, "arman@titaniumsuccess.com"),
+      connection(CONNECTION_ID, "james.grant@rinconplumbing.test"),
+      connection(SECOND_CONNECTION_ID, "maria.delgado@rinconplumbing.test"),
     ];
     world.resources = [
       channelResource({
@@ -330,7 +330,7 @@ describe("no channel is bound", () => {
       // does not — never nothing, and never a guess.
       expect(m.text).toContain("@armansadeghi");
       expect(m.text).toContain(OTHER_CHANNEL_ID);
-      expect(m.text).toContain("arman@titaniumsuccess.com");
+      expect(m.text).toContain("maria.delgado@rinconplumbing.test");
     } finally {
       m.unmount();
     }

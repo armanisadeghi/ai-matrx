@@ -12,7 +12,7 @@
  *   D6 — expanding a row printed `drive_files · generally available` and
  *        `youtube_analytics · still being certified`. Those are catalog keys.
  *   D7 — the consent dialog opened on the first row the inventory returned, so
- *        on the admin seat it opened on `arman26@gmail.com` and said "Docs,
+ *        on the admin seat it opened on `rincon.plumbing.office@gmail.test` and said "Docs,
  *        Sheets & Drive files — not connected" while Docs was connected on the
  *        account beside it.
  *   D2 — PLAN §5.3 asks for a per-product last success and last refusal. When
@@ -101,8 +101,8 @@ function account(
 }
 
 /** The admin's four real Google rows, 2026-09-17. */
-const ARMAN26 = account("c1", "arman26@gmail.com", [YOUTUBE, YT_ANALYTICS]);
-const PAGES = account("c2", "titanium-succes-4898@pages.plusgoogle.com", [
+const OFFICE_GMAIL = account("c1", "rincon.plumbing.office@gmail.test", [YOUTUBE, YT_ANALYTICS]);
+const PAGES = account("c2", "rincon-plumbing-4898@pages.plusgoogle.test", [
   CALENDAR,
   TASKS,
   CONTACTS,
@@ -110,7 +110,7 @@ const PAGES = account("c2", "titanium-succes-4898@pages.plusgoogle.com", [
   YT_ANALYTICS,
   YOUTUBE,
 ]);
-const ARMANSADEGHI = account("c3", "arman@armansadeghi.com", [
+const JAMES = account("c3", "james.grant@rinconplumbing.test", [
   CALENDAR,
   TASKS,
   CONTACTS,
@@ -239,11 +239,11 @@ describe("D6 — no machine key ever reaches the person", () => {
 });
 
 describe("D7 — a consent surface opens on the account that holds the most", () => {
-  const accounts = [ARMAN26, PAGES, ARMANSADEGHI, INFO];
+  const accounts = [OFFICE_GMAIL, PAGES, JAMES, INFO];
 
   it("does not open on the first row the inventory happened to return", () => {
     const chosen = preferredAccountId({ provider, accounts, rollout: LIVE });
-    expect(chosen).not.toBe(ARMAN26.id);
+    expect(chosen).not.toBe(OFFICE_GMAIL.id);
     // Calendar + Contacts + Tasks + Tag Manager + YouTube = five live products.
     expect(chosen).toBe(PAGES.id);
   });

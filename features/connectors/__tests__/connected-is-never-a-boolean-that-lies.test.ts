@@ -55,7 +55,7 @@ function account(
 ): ConnectorAccount {
   return {
     id: "conn-1",
-    label: "arman@aimatrx.com",
+    label: "linda.jensen@rinconplumbing.test",
     ownerKind: "person",
     organizationId: null,
     providerSubject: "subject-1",
@@ -190,7 +190,7 @@ describe("revokeConsequence", () => {
       [connected],
       3,
     );
-    expect(sentence).toContain("arman@aimatrx.com");
+    expect(sentence).toContain("linda.jensen@rinconplumbing.test");
     expect(sentence).toContain("the Docs and Sheets you picked");
     expect(sentence).toContain("3 items");
     expect(sentence).not.toContain("Are you sure");
