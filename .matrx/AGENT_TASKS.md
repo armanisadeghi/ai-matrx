@@ -16,26 +16,26 @@ _(none)_
 
 ## Blocked
 
-### TASK-017: Provision the agent term-list server contract
-- **Status:** blocked (2026-09-23) — shared reachability repair landed; term-list provisioning safely rolled back on runner claim conflict
+### TASK-017: Publish the agent term-list association token
+- **Status:** blocked (2026-09-23) — live contract and frontend types are ready; published associations SDK rejects the new token
 - **Created:** 2026-09-23
-- **Source:** `pnpm sync-types` found 14 missing-field errors in the active term-list service.
+- **Source:** `pnpm sync-types` initially found missing `agent.term_list` fields; after live provisioning, `pnpm sync-types:live` passes, but the installed association SDK has a stale entity-token registry.
 
 **Goal**
-Provision and deploy the canonical AI Dream term-list resource, then regenerate frontend types and resolve every affected caller.
+Publish an associations SDK version containing the canonical `agent_term_list` token, then update this frontend dependency and verify term-list attachment.
 
 **Current evidence**
 
-- Frontend `features/agents/term-lists/service.ts` references `agent.term_list` fields absent from generated types; the 2026-09-23 full `pnpm sync-types` run regenerated East/API types, passed the API property-drop guard, and left exactly 14 type errors in this file.
-- East generated database types still have no `agent.term_list` relation. The 08:04Z live sync used the running ECS SHA `9c9d2c14752c6fc0950164d75ae108b9f292d284` (contains pinned commit `3ea9804c73`); OpenAPI exposes `/term-lists` routes, but the serving database model/table is absent. This is a database/server-model gap, not an API-schema drop.
-- Sol accepted the term-list spec, shared reachability repair, explicit migration-window classifier for hot-parent locks, FK runner guard, and RLS-safe server CRUD projection. The service avoids metadata reads/writes and preserves actor scope, optimistic version checks, and partial-cache behavior. Focused clone checks passed (29 tests at the last combined run); production term-list setup remains pending.
-- At `2026-09-23T08:00Z`, the shared `platform.rebuild_reachability` repair applied and ledgered in 2.64s. The following term-list provisioning transaction rolled back before any term-table or base-FK change: the runner held the canonical advisory claim on one connection while `platform.provision` attempted the same claim on another and refused with “another provisioning run”. Do not bypass or blindly retry. East currently has the shared reachability repair only.
-- Frontend release `v0.4.2235` could not start its migration phase: `/Users/armanisadeghi/code/aidream/db/apply_migrations.py:4632` raised `SyntaxError: expected 'except' or 'finally' block`. Senior read-only review confirmed Python stopped before executing module code, so no migration ran in that attempt. Another actor has since corrected the shared working tree and a fresh AST parse succeeds; the file is still modified and the transaction behavior remains unverified. This release's later read-only `pnpm check:migrations:strict` found no unapplied frontend migrations, with historical drift/unverifiable rows only.
+- `pnpm sync-types:live` in this pass pulled AI Dream SHA `21100869077f15380a8dfbf63fe948cdaf4a72a9`, regenerated live East/API types, passed the API property-drop guard, and completed the full typecheck with zero errors. `types/database.types.ts` now includes `agent.term_list`; the previous 14 errors are resolved.
+- Current frontend dependency is `@ai-matrx/associations@0.10.1` (reported latest by package sync). Its runtime `isEntityTypeToken` checks a bundled `ENTITY_TYPE_TOKEN_SET` that omits `agent_term_list`; `associationsService.add/remove` therefore return `invalid_argument` before RPC for this feature's attach/detach calls. The read-only AI Dream generated vocabulary already includes the token. Do not cast around this package guard or hand-edit generated dependency output; publish/update the associations package first.
+- Sol accepted the term-list spec, shared reachability repair, explicit migration-window classifier for hot-parent locks, FK runner guard, and RLS-safe server CRUD projection. The service avoids metadata reads/writes and preserves actor scope, optimistic version checks, and partial-cache behavior. Focused clone checks passed (29 tests at the last combined run); live type generation now confirms the East table is present.
+- Earlier at `2026-09-23T08:00Z`, term-list provisioning rolled back on an advisory-claim conflict. Subsequent live sync at SHA `21100869077f15380a8dfbf63fe948cdaf4a72a9` now proves the table/model is present. The release script migration phase also reported the earlier transient migration-applier syntax error; a later shared-tree AST parse succeeded. Frontend migration inventory reports no unapplied frontend migrations; historical drift/unverifiable rows remain.
+- The transient AI Dream applier syntax error observed during `v0.4.2235` was corrected in the shared working tree. The `v0.4.2236` migration phase completed normally and confirmed East at 2,497 applied, 0 pending; it applied no SQL. `pnpm check:migrations:strict` also found no unapplied frontend migrations; the historical inventory still has drifted and unverifiable rows.
 - Clone evidence: all 888 roots matched the existing 7,582 reachability rows (51.72s reference vs 0.406s candidate, zero symmetric difference); the reviewed final term-list/server bundle and FK phases passed clone rehearsal. Provisioning is restricted to 01:00–04:00 America/Los_Angeles.
 
 **Next concrete step**
 
-The AI Dream owner must independently validate the corrected migration applier and advisory-claim handoff, then rehearse runner up/inverse/up plus FK attach/validate on the clone. Retry the exact reviewed SQL/hash/baseline gates in the authorized window. Then confirm the deployed server/model and East relation, regenerate live types, and resolve the 14 frontend errors through callers without casts or fabricated generated types. Keep the uncommitted term-list UI/service out of release until the contract and typecheck are complete.
+Publish the generated association registry update from AI Dream's existing entity vocabulary, release a new `@ai-matrx/associations` version, then update the FE lockfile and rerun type sync/typecheck. Verify attach/detach reaches the server with the new token; no frontend cast or local registry patch. Feature is committed on main and shipped in `v0.4.2236`; keep the remaining package integration item visible until that call path is proven.
 
 ### TASK-018: Identify recurring MCP stream timeouts
 - **Status:** blocked (2026-09-23) — runtime logs omit the JSON-RPC method; senior review recommends safe method-only instrumentation
