@@ -391,6 +391,12 @@ const nextConfig = {
     },
   },
   serverExternalPackages: [
+    // Cartesia uses ws on the SSR pass. Bundling ws pulls node-gyp-build
+    // (via its optional native accelerators) into Turbopack's asset tracer,
+    // which treats its static "." fallback as the entire project directory.
+    // Externalizing preserves the Node runtime dependency without shipping
+    // every source file in each function that renders the shared shell.
+    "ws",
     "canvas",
     "next-mdx-remote",
     "vscode-oniguruma",
