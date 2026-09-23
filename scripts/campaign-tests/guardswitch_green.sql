@@ -352,18 +352,26 @@ begin
   -- relation is the widest possible declaration — so anything that refuses below is the WALL
   -- refusing, never the target list.
   perform set_config('role', v_boss, true);
-  insert into custom.record (organization_id, table_id, data_class, data, created_by)
-  values (v_a, custom.field_kernel_id(), 'field', jsonb_build_object(
-    'key', 'supplier', 'label', 'Supplier', 'sort', 10, 'type', 'relation',
-    'multi', false, 'dated', false, 'required', false, 'source', 'manual',
-    'config', jsonb_build_object('target_mode', 'any'),
-    -- FLD-13's shape guard wants the declared target whatever the mode says; `target_mode: any`
-    -- is what platform.relation_declaration actually reads, and it makes REL-8 not a question.
-    'relation_target', v_tbl_a::text, 'relation_max', 5, 'on_target_delete', 'set_null',
-    'rules', '[]'::jsonb, 'depends_on', '[]'::jsonb, 'source_config', '{}'::jsonb,
-    'sensitivity', 'internal', 'context_policy', 'include', 'applies_to_types', '[]'::jsonb,
-    'promoted', false, 'entity_definition_id', v_tbl_a::text), v_admin)
-  returning id into v_fld;
+  -- RELATION-TARGETS 2026-09-23: custom.table_declare already wrote ONE Field row for the
+  -- `supplier` it declared (as text — `kind` is not a behaviour word), and this fixture used to
+  -- INSERT a second `supplier` Field beside it. Two Fields under one key is how the store read
+  -- this column as text on one path (`platform.relation_set` refused it: "behaves as text") and
+  -- as a relation on another (the halves guard). So the declared row BECOMES the relation.
+  update custom.record f
+     set data = f.data || jsonb_build_object(
+       'type', 'relation', 'multi', false,
+       'config', jsonb_build_object('target_mode', 'any'),
+       -- FLD-13's shape guard wants the declared target whatever the mode says; `target_mode:
+       -- any` is what platform.relation_declaration actually reads, and it makes REL-8 not a
+       -- question.
+       'relation_target', v_tbl_a::text, 'relation_max', 5, 'on_target_delete', 'set_null')
+   where f.organization_id = v_a and f.table_id = custom.field_kernel_id()
+     and f.deleted_at is null and f.data ->> 'entity_definition_id' = v_tbl_a::text
+     and coalesce(nullif(f.data ->> 'key', ''), f.data ->> 'name') = 'supplier'
+  returning f.id into v_fld;
+  if v_fld is null then
+    raise exception 'PART 2 fixture: custom.table_declare made no `supplier` Field row to turn into the relation';
+  end if;
   perform set_config('role', 'authenticated', true);
 
   -- ── DOORS-ONLY CLOSED THE CLIENT'S DIRECT WRITE ON platform.associations ───────────────
@@ -446,9 +454,13 @@ begin
   -- 2d — BOTH organizations opted in, and the link is made.
   perform platform.knob_override_set('custom', 'cross_organization_links', 'organization',
                                      v_b, v_b, 'true'::jsonb, 'guardswitch_green 2d');
-  insert into platform.associations
-    (source_type, source_id, target_type, target_id, organization_id, role, relation_field_id, origin, created_by)
-  values ('record', v_rec_a, 'record', v_rec_b, v_a, 'supplier', v_fld, 'campaign', v_admin);
+  -- RELATION-TARGETS 2026-09-23: THROUGH THE DOOR, BOTH HALVES. This used to INSERT the
+  -- association alone, and the deferred halves guard (the corrected REL-11: the value and the
+  -- edge are one fact) refused the whole transaction at COMMIT — rightly. The wall is the same
+  -- trigger either way: platform.relation_set writes the value through custom.record_update and
+  -- the edge beside it, and platform.enforce_relation_edge judges that edge exactly as it judged
+  -- the refused inserts above.
+  perform platform.relation_set(v_a, v_rec_a, 'supplier', jsonb_build_array(v_rec_b::text));
 
   -- 2d (the door's own answer) — and the person who owns the Case now SEES the foreign target
   --     through `custom.relation_target_card`, which is the declared client door onto the
@@ -488,10 +500,17 @@ begin
                                      'false'::jsonb, 'guardswitch_green 2f');
   if platform.relations_are_on(v_a) then
     raise exception '2f FAILED — the store was switched off and relations still read on.'; end if;
-  insert into platform.associations
-    (source_type, source_id, target_type, target_id, organization_id, role, relation_field_id, origin, created_by)
-  values ('record', v_rec_a, 'record', v_rec_b, v_a, 'vendor', v_fld, 'campaign', v_admin);
-  delete from platform.associations where organization_id = v_a and role = 'vendor';
+  -- The waved-through edge is an edge-only write (it is the point of the clause), so it lives
+  -- in its own subtransaction and is undone there: the deferred halves guard would otherwise
+  -- judge it at COMMIT, long after this clause proved what it is here to prove.
+  begin
+    insert into platform.associations
+      (source_type, source_id, target_type, target_id, organization_id, role, relation_field_id, origin, created_by)
+    values ('record', v_rec_a, 'record', v_rec_b, v_a, 'vendor', v_fld, 'campaign', v_admin);
+    raise exception using errcode = 'P0001', message = '2f: undo the waved-through edge';
+  exception when raise_exception then
+    if sqlerrm <> '2f: undo the waved-through edge' then raise; end if;
+  end;
   perform platform.knob_override_set('custom', 'system_enabled', 'organization', v_a, v_a,
                                      'true'::jsonb, 'guardswitch_green 2f control');
 
