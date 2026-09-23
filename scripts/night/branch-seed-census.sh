@@ -22,6 +22,7 @@
 #   --check        (default) refuse if the checked-in file does not rule on every table
 #   --self-test    prove the guard RED then GREEN, without touching the tracked file
 #   --file <path>  check a different copy (the self-test uses this; nothing else should)
+#   --census-schemas <csv>  measure a different schema set (the self-test's RED-3; nothing else)
 #
 # It reads the CLONE and writes NOTHING to any database, in every mode.
 # ─────────────────────────────────────────────────────────────────────────────
@@ -32,9 +33,20 @@ JSON="$HERE/branch-seed-tables.json"
 CENSUS_SQL="$HERE/branch-seed-census.sql"
 
 # The census schemas. Every reference/registry table the platform ships lives in one of these.
-CENSUS_SCHEMAS='platform,tool,iam,custom,content_ir,history'
+# 🚨 `ui` JOINED 2026-09-23 (lane BRANCH-REFRESH-3). `tool.ui` and `tool.surface_defaults` key on
+# `ui.ui_surface(name)`, and `tool.ui_version` / `tool.ui_incident` key on `tool.ui`. With `ui`
+# outside the census the parent was never seeded, and all four arrived EMPTY or nearly so (30, 40,
+# 5 and 411 rows refused on `*_surface_name_fkey` / `*_component_id_fkey`). The guard below — a
+# seeded table whose foreign key reaches a table the census never rules on is a REFUSAL — is what
+# names the next such schema instead of letting its children arrive empty.
+CENSUS_SCHEMAS='platform,tool,iam,custom,content_ir,history,ui'
 # A row ceiling, because a table this large is data, not a register.
 CENSUS_CEILING=50000
+# A SIZE ceiling too (2026-09-23). `iam.access_delta_probe` has 22,514 rows — under the row
+# ceiling — and weighs 423 MB on the clone (943 MB as TSV): the access-delta harness's own OUTPUT,
+# one wide row per probe per run. The per-row seed load of it hit the branch's statement timeout
+# and landed nothing. Rows alone do not tell a register from a log; bytes do.
+CENSUS_BYTE_CEILING=134217728   # 128 MB, pg_total_relation_size on the source
 # An `auth.users` foreign key on one of these columns is AUTHORSHIP, not an identity the row is
 # about: the loader re-points them at the branch's own admin. Any OTHER auth.users key means the
 # row names a person, and the table does not cross.
@@ -44,7 +56,22 @@ CENSUS_AUTHORSHIP='created_by,updated_by,deleted_by,archived_by,restored_by,publ
 # A table no measurement can classify, ruled on here by name, with the reason that goes into the
 # file. Keep this list SHORT and keep the reason honest — "it is inconvenient" is not one.
 CENSUS_DECLARED='{
-  "iam.organizations": "identities and organizations are SYNTHESIZED on the branch, never copied (the owner'"'"'s no-real-people law); the single is_system organization the reference tables key on is seeded by the refresh'"'"'s own step, and one organization per registered REAL-DATA use case is created there"
+  "iam.organizations": "identities and organizations are SYNTHESIZED on the branch, never copied (the owner'"'"'s no-real-people law); the single is_system organization the reference tables key on is seeded by the refresh'"'"'s own step, and one organization per registered REAL-DATA use case is created there",
+  "ui.ui_surface_agent_role": "every row keys on agent.definition, and the agent schema is not seeded by this refresh (agents are organization-owned records, not platform reference data), so each row would be refused on its foreign key; declared 2026-09-23 by lane BRANCH-REFRESH-3 rather than widening the census to a schema of customer agents"
+}'
+
+# ── TABLES THAT RIDE THE RESTORE ─────────────────────────────────────────────
+# A table whose OWN guard refuses every INSERT cannot be seeded row by row, and must not be: the
+# guard is right. `platform.anon_function_birth_grandfather` is the snapshot of functions already
+# anon-executable when DD-202 shipped; `anon_function_birth_grandfather_is_closed` refuses every
+# new row ("CLOSED — it may only shrink"), so all 272 rows were refused and the branch's copy was
+# EMPTY — which makes `close_new_functions_to_anon` revoke anon from those 272 functions the first
+# time a lane replaces one, a behaviour production does not have. The refresh therefore loads it
+# INSIDE THE RESTORE, immediately before the schema dump creates that closing trigger — exactly
+# where pg_dump itself would put the table's data. The guard is never disabled; it simply does not
+# exist yet, as on any restore. name -> the closing trigger the load must precede.
+CENSUS_RESTORE_LOADED='{
+  "platform.anon_function_birth_grandfather": "anon_function_birth_grandfather_is_closed"
 }'
 
 MODE=check
@@ -54,6 +81,7 @@ while [ $# -gt 0 ]; do
     --check) MODE=check ;;
     --self-test) MODE=selftest ;;
     --file) shift; JSON="$1" ;;
+    --census-schemas) shift; CENSUS_SCHEMAS="$1" ;;   # the self-test's RED-3 only
     *) print -r -- "unknown argument: $1"; exit 64 ;;
   esac
   shift
@@ -79,6 +107,8 @@ census_connect() {
 census_measure() {  # -> the census JSON on stdout
   "$PSQL" "$SRC_DSN" -qAt \
     -v ceiling="$CENSUS_CEILING" \
+    -v byteceiling="$CENSUS_BYTE_CEILING" \
+    -v restoreloaded="$CENSUS_RESTORE_LOADED" \
     -v schemas="$CENSUS_SCHEMAS" \
     -v authorship="$CENSUS_AUTHORSHIP" \
     -v declared="$CENSUS_DECLARED" \
@@ -141,6 +171,15 @@ for n, t in sorted(decl.items()):
     if not (t.get("reason") or "").strip():
         bad.append("  %s: ruled %s with NO reason. Every entry says why, or the next reader "
                    "cannot tell a ruling from an oversight." % (n, "SEED" if t.get("seed") else "EXCLUDED"))
+for t in sorted(live["tables"], key=lambda x: x["table"]):
+    if not (decl.get(t["table"]) or {}).get("seed"):
+        continue
+    for parent in t.get("fk_parents") or []:
+        if parent not in live_names:
+            bad.append("  %s: SEEDED, and its foreign key reaches %s, which is outside the census "
+                       "schemas - so the parent is never seeded and this table arrives empty on the "
+                       "branch (the ui.ui_surface class, 2026-09-23). Add %s to CENSUS_SCHEMAS."
+                       % (t["table"], parent, parent.split(".")[0]))
 if bad:
     print("REFUSED: the declared branch seed set does not cover the census schemas (%s)."
           % ", ".join(live["schemas"]))
@@ -168,7 +207,7 @@ d["tables"]=[t for t in d["tables"] if t["table"]!=drop]
 json.dump(d,open(sys.argv[2],"w"),indent=2)
 print("RED-1 removed",drop,"from the copy")
 ' "$JSON" "$T/red1.json" || exit 78
-  O="$("$0" --check --file "$T/red1.json" 2>&1)"; E=$?
+  O="$(zsh "$HERE/branch-seed-census.sh" --check --file "$T/red1.json" 2>&1)"; E=$?
   if [ $E -eq 0 ] || ! print -r -- "$O" | grep -q 'client_callable_door'; then
     print -r -- "RED-1 FAILED: the guard did not refuse a table it was not ruling on (exit $E)"; print -r -- "$O"; rc=1
   else
@@ -182,14 +221,22 @@ for t in d["tables"]:
     if t["table"]=="platform.feature_knob": t["reason"]=""
 json.dump(d,open(sys.argv[2],"w"),indent=2)
 ' "$JSON" "$T/red2.json" || exit 78
-  O="$("$0" --check --file "$T/red2.json" 2>&1)"; E=$?
+  O="$(zsh "$HERE/branch-seed-census.sh" --check --file "$T/red2.json" 2>&1)"; E=$?
   if [ $E -eq 0 ] || ! print -r -- "$O" | grep -q 'NO reason'; then
     print -r -- "RED-2 FAILED: the guard accepted a ruling with no reason (exit $E)"; print -r -- "$O"; rc=1
   else
     print -r -- "RED-2 ok (exit $E): $(print -r -- "$O" | grep -m1 'NO reason' | cut -c1-140)"
   fi
+  # RED-3: a seeded table whose foreign key reaches a schema the census does not cover. Run the
+  # census WITHOUT `ui` — the shape it had until 2026-09-23 — and tool.ui must be named.
+  O="$(zsh "$HERE/branch-seed-census.sh" --check --census-schemas 'platform,tool,iam,custom,content_ir,history' 2>&1)"; E=$?
+  if [ $E -eq 0 ] || ! print -r -- "$O" | grep -q 'reaches ui.ui_surface, which is outside the census'; then
+    print -r -- "RED-3 FAILED: the guard did not name a seeded table whose parent is outside the census (exit $E)"; print -r -- "$O" | head -5; rc=1
+  else
+    print -r -- "RED-3 ok (exit $E): $(print -r -- "$O" | grep -m1 'outside the census' | cut -c1-140)"
+  fi
   # GREEN: the tracked file itself.
-  O="$("$0" --check 2>&1)"; E=$?
+  O="$(zsh "$HERE/branch-seed-census.sh" --check 2>&1)"; E=$?
   if [ $E -ne 0 ]; then print -r -- "GREEN FAILED (exit $E): $O"; rc=1
   else print -r -- "GREEN ok: $O"; fi
   [ $rc -eq 0 ] && print -r -- "branch-seed-census self-test PASSED" || print -r -- "branch-seed-census self-test FAILED"

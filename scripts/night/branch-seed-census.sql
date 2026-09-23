@@ -47,7 +47,24 @@ t as (
   select n.nspname as s, c.relname as r, c.oid,
     (xpath('/row/c/text()', query_to_xml(format(
       'select count(*) as c from (select 1 from %I.%I limit %s) x', n.nspname, c.relname, :ceiling + 1),
-      false, true, '')))[1]::text::bigint as n_rows
+      false, true, '')))[1]::text::bigint as n_rows,
+    pg_total_relation_size(c.oid) as n_bytes,
+    -- every table a foreign key of this one reaches AND that at least one source row actually
+    -- points at (a NULL-everywhere key needs no parent: iam.industries.default_template_id is
+    -- 0 of 9), except itself, auth.* (identities are synthesized) and iam.organizations (seeded by
+    -- the refresh's own step). --check refuses a SEEDED table whose parent is outside the census:
+    -- that parent is never seeded, so every row that names it is refused.
+    (select array_agg(distinct fk.parent order by fk.parent)
+       from (select pn.nspname||'.'||pc.relname as parent, fa.attname
+               from pg_constraint k join pg_class pc on pc.oid = k.confrelid
+               join pg_namespace pn on pn.oid = pc.relnamespace
+               join pg_attribute fa on fa.attrelid = k.conrelid and fa.attnum = k.conkey[1]
+              where k.conrelid = c.oid and k.contype = 'f' and k.confrelid <> c.oid
+                and pn.nspname <> 'auth' and not (pn.nspname = 'iam' and pc.relname = 'organizations')
+             offset 0) fk   -- the fence: the row test below must only ever see a real FK column
+      where (xpath('/row/c/text()', query_to_xml(format(
+              'select count(*) as c from (select 1 from %I.%I where %I is not null limit 1) x',
+              n.nspname, c.relname, fk.attname), false, true, '')))[1]::text::int > 0) as fk_parents
   from pg_class c join pg_namespace n on n.oid = c.relnamespace
   where c.relkind in ('r','p') and not c.relispartition
     and n.nspname = any (string_to_array(:'schemas', ','))
@@ -88,7 +105,8 @@ h as (
 ),
 v as (
   select h.*,
-    (select x.reason from json_each_text(:'declared'::json) x(name, reason) where x.name = h.s||'.'||h.r) as declared_reason
+    (select x.reason from json_each_text(:'declared'::json) x(name, reason) where x.name = h.s||'.'||h.r) as declared_reason,
+    (select x.trig from json_each_text(:'restoreloaded'::json) x(name, trig) where x.name = h.s||'.'||h.r) as restore_trigger
   from h
 ),
 d as (
@@ -96,6 +114,7 @@ d as (
     case
       when v.declared_reason is not null                       then false
       when v.n_rows > :ceiling                                 then false
+      when v.n_bytes > :byteceiling                            then false
       when v.n_rows = 0                                        then false
       when v.identity_cols is not null                         then false
       when v.filter_col is not null and v.platform_rows = 0    then false
@@ -104,12 +123,16 @@ d as (
       when v.declared_reason is not null then v.declared_reason
       when v.n_rows > :ceiling then
         'over the '||:ceiling||'-row ceiling ('||v.n_rows||'+ rows on the source): a table this large is data, not a register'
+      when v.n_bytes > :byteceiling then
+        'over the '||pg_size_pretty(:byteceiling::bigint)||' size ceiling ('||pg_size_pretty(v.n_bytes)||' on the source, '||v.n_rows||' rows): a table this heavy is data, not a register, and a per-row seed load of it outlives the branch''s statement timeout'
       when v.n_rows = 0 then
         'empty on the source, so there is nothing to seed and emptying the branch copy could only destroy'
       when v.identity_cols is not null then
         'names a person: a foreign key to auth.users on '||v.identity_cols||', which is not an authorship column. Identities are synthesized on the branch, never copied'
       when v.filter_col is not null and v.platform_rows = 0 then
         'every one of its '||v.n_rows||' rows belongs to a customer organization ('||v.filter_col||'), so it is user data and none of it may cross'
+      when v.restore_trigger is not null then
+        'reference/registry: '||v.n_rows||' rows, LOADED WITH THE RESTORE immediately before the dump creates its closing trigger '||v.restore_trigger||', which refuses every insert (it may only shrink) — a per-row load is refused by design'
       when v.filter_col is not null then
         'reference/registry: '||v.platform_rows||' of '||v.n_rows||' rows are platform-owned ('||v.filter_col||' is null or the one is_system organization) and only those are copied'
       else
@@ -119,6 +142,7 @@ d as (
 )
 select json_build_object(
   'row_ceiling', :ceiling,
+  'byte_ceiling', :byteceiling,
   'schemas', string_to_array(:'schemas', ','),
   'authorship_columns', string_to_array(:'authorship', ','),
   'system_organization_is', 'iam.organizations where is_system is true',
@@ -133,5 +157,8 @@ select json_build_object(
       'authorship_columns', authorship_cols,
       'seed', seed,
       'truncate_first', seed and platform_rows = n_rows,
+      'bytes', n_bytes,
+      'fk_parents', fk_parents,
+      'load_with_restore', restore_trigger,
       'reason', reason) order by s, r) from d)
 );
