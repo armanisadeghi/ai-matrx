@@ -64,6 +64,19 @@
 --      not there". Then `zz_w2a_relation_association*` write the edge from the stored id, and
 --      `custom._relation_halves_agree` finds both halves at COMMIT, as for any relation.
 --
+--   3. THE SAME TRIGGER KEEPS EACH RECORD ONCE (coordinator's second item, 2026-09-23). A write
+--      that names the same record twice in any relation cell — a dispatcher double-clicking the
+--      furnace into "Equipment serviced" — was refused on the dev clone with
+--        21000  ON CONFLICT DO UPDATE command cannot affect row a second time
+--      from `custom._relation_associations_stmt_insert`, because two edges were proposed for
+--      one (target, role). The main database's `custom.record_relation_edges` already yields
+--      one edge per (target, role) (SEAT-SUITES, `seat_relation_edges_are_one_per_target.sql`,
+--      carried forward by WRITE-PERF-3b); the clone had lost that body (see PROGRESS-
+--      RELATION-TARGETS). Either way the VALUE still held the repeat, so the document said
+--      three things where its one association said two, and `relation_max` counted the repeat.
+--      Now the cell keeps each record once, in the order it was first named — a list the
+--      writer sent, only; a cell nobody touched is left as it stands.
+--
 -- WHY A TRIGGER AND NOT A DOOR ARGUMENT. `record_write`, `record_write_many`, `record_update`,
 -- `record_write_graph`, the import, the portal and the capture paths all end in an INSERT or an
 -- UPDATE of `custom.record`; writing the step into each body is seven places to forget it. The
@@ -269,7 +282,11 @@ begin
   for f in
     select coalesce(nullif(fd.data ->> 'key', ''), fd.data ->> 'name')        as k,
            coalesce(nullif(fd.data ->> 'label', ''), fd.data ->> 'name')      as label,
-           (fd.data ->> 'relation_target')::uuid                              as tgt
+           case when (fd.data ->> 'relation_target') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                then (fd.data ->> 'relation_target')::uuid end                as tgt,
+           coalesce(fd.data ->> 'relation_target' in (custom.person_kernel_id()::text,
+                                                      custom.file_kernel_id()::text), false)
+                                                                              as is_kernel
       from custom.record fd
      where fd.table_id = custom.field_kernel_id()
        and fd.data_class <> 'kernel'
@@ -277,11 +294,17 @@ begin
        and fd.organization_id = new.organization_id
        and nullif(fd.data ->> 'entity_definition_id', '')::uuid = new.table_id
        and fd.data ->> 'type' = 'relation'
-       and fd.data ->> 'relation_target' in (custom.person_kernel_id()::text,
-                                             custom.file_kernel_id()::text)
   loop
     v_val := new.data -> f.k;
     if v_val is null or jsonb_typeof(v_val) not in ('string', 'array') then
+      continue;
+    end if;
+    -- An ordinary relation has only one thing to normalize — a repeated id — so it is looked
+    -- at only when the cell is a list and the writer actually sent it. A cell nobody touched
+    -- is left byte-for-byte as it stands.
+    if not f.is_kernel
+       and (jsonb_typeof(v_val) <> 'array'
+            or (tg_op = 'UPDATE' and old.data -> f.k is not distinct from v_val)) then
       continue;
     end if;
 
@@ -296,7 +319,11 @@ begin
         continue;
       end if;
 
-      v_to := custom.relation_kernel_record(new.organization_id, f.tgt, (v_one #>> '{}')::uuid);
+      if not f.is_kernel then
+        v_to := (v_one #>> '{}')::uuid;
+      else
+        v_to := custom.relation_kernel_record(new.organization_id, f.tgt, (v_one #>> '{}')::uuid);
+      end if;
 
       if v_to is null then
         select coalesce(nullif(o.name, ''), 'this organization') into v_org
@@ -325,6 +352,13 @@ begin
                 hint = format('%s holds a file of this organization — upload it here first, then give its id and the store makes its File record. A file that belongs to another organization cannot be attached here.', f.label);
       end if;
 
+      -- ONE RECORD, ONCE, IN THE ORDER IT WAS FIRST NAMED. A relation that names the same record
+      -- twice states one fact twice; the association beside it is one row per (target, role),
+      -- so the value keeps the first mention and drops the repeat — and a member named by user
+      -- id AND by Person record id is the same person, caught here after resolution.
+      if v_out @> jsonb_build_array(to_jsonb(v_to::text)) then
+        continue;
+      end if;
       v_out := v_out || jsonb_build_array(to_jsonb(v_to::text));
     end loop;
 
@@ -341,8 +375,9 @@ $function$;
 comment on function custom._relation_kernel_targets() is
   'RELATION-TARGETS: BEFORE-ROW on custom.record. Rewrites each id in a Person or File '
   'relation cell to its kernel record through custom.relation_kernel_record, and refuses one '
-  'with no answer in the person''s own words. Fires after _value_envelope and before every '
-  'custom_record_* validation.';
+  'with no answer in the person''s own words; in every relation cell it keeps each record once, '
+  'in the order first named. Fires after _value_envelope and before every custom_record_* '
+  'validation.';
 
 -- `_w…` sorts after `_value_envelope` (the door is judged first) and before every
 -- `custom_record_*` trigger (validation judges the resolved id). Trigger order is by name.
