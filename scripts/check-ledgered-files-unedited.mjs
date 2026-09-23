@@ -37,6 +37,7 @@ import {
   readSnapshot,
   sha256,
   trailerLine,
+  rebaseTrailerLine,
 } from "./lib/ledger-snapshot.mjs";
 
 const argv = process.argv.slice(2);
@@ -265,6 +266,20 @@ function selfTest() {
       judge([{ relPath: gfPath, bytes: Buffer.concat([bytes ?? Buffer.alloc(0), Buffer.from("\n-- after the rebase\n")]) }], rebasedSnap, null),
     );
   }
+
+  // GREEN-9 / RED-7 — the `ledger-rebase:` trailer `db:apply --ledger-rebase` writes when a
+  // corrected INVERSE lands in its file (chair ruling 2026-09-23): honoured for the exact path
+  // and bytes, and laundering nothing for any other path.
+  check(
+    "GREEN-9 the runner's ledger-rebase trailer passes",
+    false,
+    judge([{ relPath: REL, bytes: Buffer.from(EDITED) }], snapshot, `x\n\n${rebaseTrailerLine(REL, sha256(EDITED))}\n`),
+  );
+  check(
+    "RED-7 a ledger-rebase trailer for another path is refused",
+    true,
+    judge([{ relPath: REL, bytes: Buffer.from(EDITED) }], snapshot, `x\n\n${rebaseTrailerLine(NEW_REL, sha256(EDITED))}\n`),
+  );
 
   // GREEN-6 — an UNREADABLE snapshot refuses instead of passing.
   writeFileSync(join(dir, "migrations", "LEDGER.json"), "{ not json");

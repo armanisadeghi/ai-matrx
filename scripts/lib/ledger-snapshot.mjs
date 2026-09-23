@@ -86,6 +86,13 @@ export const GRANDFATHERED = (() => {
 /** `amend-idempotent: <path> <sha256>` — written by the runner, never typed by a lane. */
 export const TRAILER_KEY = "amend-idempotent";
 
+/** `ledger-rebase: <path> <sha256>` — written by `db:apply --ledger-rebase`, never typed by a lane. */
+export const REBASE_TRAILER_KEY = "ledger-rebase";
+
+export function rebaseTrailerLine(relPath, newChecksum) {
+  return `${REBASE_TRAILER_KEY}: ${relPath} ${newChecksum}`;
+}
+
 export function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
 }
@@ -188,8 +195,10 @@ export function recordAppliedRow({ relPath, source, filename, checksum, appliedA
  */
 export function messageAllows(message, relPath, newChecksum) {
   if (!message) return false;
+  // Two runner-written keys: `amend-idempotent` (keyword-only amend) and `ledger-rebase` (a row
+  // moved onto proven bytes — for an inverse, the corrected bytes the round trip proved).
   const re = new RegExp(
-    `^\\s*${TRAILER_KEY}:\\s*(\\S+)\\s+([0-9a-f]{64})\\s*$`.replace(/\n/g, ""),
+    `^\\s*(?:${TRAILER_KEY}|${REBASE_TRAILER_KEY}):\\s*(\\S+)\\s+([0-9a-f]{64})\\s*$`.replace(/\n/g, ""),
     "gm",
   );
   let m;
