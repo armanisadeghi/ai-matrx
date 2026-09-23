@@ -4,6 +4,7 @@ import path from "node:path";
 import dotenv from "dotenv";
 import { writeFileSync, readFileSync } from "node:fs";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { fixtureOrg } from "../lib/fixture-org.mjs";
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env.local"), override: true });
 
@@ -27,23 +28,16 @@ async function main() {
   for (const file of files) {
     const raw = JSON.parse(readFileSync(path.resolve(__dirname, "use-cases", file), "utf8"));
     const orgName: string = raw.organization_name;
-    const abbrev = orgName.replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase().padEnd(2, "X");
-    const slug = orgName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 40) + "-" + Date.now().toString(36);
-    const { data: org, error } = await supabase.rpc("org_create", {
-      p_name: orgName,
-      p_abbreviation: abbrev,
-      p_slug: slug,
-      p_description: raw.use_case,
-      p_logo_url: null,
-      p_logo_file_id: null,
-      p_website: null,
-      p_settings: { test_fixture: true },
-    });
-    if (error) {
-      console.error(`FAILED ${orgName}: ${error.message}`);
+    // FIXTURE-ORGS 2026-09-23: this minted a new organization at `<name>-<timestamp>` on every
+    // run. It now reuses the family's ONE organization by slug through the shared helper.
+    let orgId: string;
+    try {
+      const { org } = await fixtureOrg(supabase, { name: orgName, description: raw.use_case });
+      orgId = org.id;
+    } catch (e) {
+      console.error(`FAILED ${orgName}: ${(e as Error).message}`);
       continue;
     }
-    const orgId: string = Array.isArray(org) ? (org[0]?.id ?? org[0]) : ((org as any)?.id ?? org);
     console.log(`${orgName} -> ${orgId}`);
     out[file] = orgId;
   }

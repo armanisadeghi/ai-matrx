@@ -10,6 +10,7 @@ import { config as loadEnv } from "dotenv";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { fixtureOrg } from "../../lib/fixture-org.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 loadEnv({ path: path.resolve(__dirname, "../../../.env.local"), quiet: true });
@@ -54,22 +55,13 @@ if (reuseOrgId) {
   org = data;
   console.log(`Reusing organization: ${org.id} slug=${org.slug}`);
 } else {
-  const baseSlug =
-    "fixture-" +
-    usecase.organization_name.toLowerCase().replace(/^fixture\s+/, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 30) +
-    "-" + Math.random().toString(36).slice(2, 8);
-  const { data, error } = await client.rpc("org_create", {
-    p_name: usecase.organization_name,
-    p_slug: baseSlug,
-    p_description: usecase.use_case,
-    p_settings: usecase.settings ?? { test_fixture: true },
-  });
-  if (error) {
-    logLimit(`org_create for "${usecase.organization_name}"`, `${error.code}: ${error.message}`, "organization created");
-    throw error;
-  }
-  org = data;
-  console.log(`Organization created: ${org.id} slug=${org.slug} settings=${JSON.stringify(org.settings)}`);
+  // FIXTURE-ORGS 2026-09-23: reuse the family's organization by slug; create it only once.
+  ({ org } = await fixtureOrg(client, {
+    name: usecase.organization_name,
+    slug: usecase.organization_slug,
+    description: usecase.use_case,
+    settings: usecase.settings ?? { test_fixture: true },
+  }));
 
   const { data: knobData, error: knobErr } = await client.schema("platform").rpc("unified_data_store_set", {
     p_organization_id: org.id,

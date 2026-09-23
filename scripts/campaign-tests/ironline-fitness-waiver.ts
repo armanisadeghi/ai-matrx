@@ -29,6 +29,7 @@ import { writeFileSync } from "node:fs";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { fixtureOrg } from "../lib/fixture-org.mjs";
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env.local"), override: true });
 
@@ -75,19 +76,16 @@ async function main() {
   }
 
   const stamp = Date.now().toString(36);
-  const { data: org, error: orgError } = await supabase.rpc("org_create", {
-    p_name: "Ironline Fitness",
-    p_abbreviation: "IRF",
-    p_slug: `ironline-fitness-${stamp}`,
-    p_description:
+  // FIXTURE-ORGS 2026-09-23: this minted a new "Ironline Fitness" at `ironline-fitness-<stamp>` on
+  // every run — three identical Ironline Fitness rows were on the picker. It now reuses the family's
+  // ONE organization by slug through the shared helper (the waiver TABLE stays per run, below).
+  const { org } = await fixtureOrg(supabase, {
+    name: "Ironline Fitness",
+    abbreviation: "IRF",
+    description:
       "Strength-training gym, Tempe AZ. Front-desk member roster: who has signed the liability waiver, who has refused, and who has not been asked.",
-    p_logo_url: null,
-    p_logo_file_id: null,
-    p_website: null,
-    p_settings: { test_fixture: true, lane: "LIMITS-FIX", use_case: "gym member waiver" },
   });
-  if (orgError) throw new Error(`org_create failed: ${orgError.message}`);
-  const orgId: string = Array.isArray(org) ? ((org[0] as any)?.id ?? org[0]) : ((org as any)?.id ?? org);
+  const orgId: string = org.id;
   console.log(`organization Ironline Fitness -> ${orgId}`);
 
   const store: RecordsClient = createRecordsClient({
@@ -95,6 +93,23 @@ async function main() {
     actor: personActor(userId),
     organizationId: orgId,
   });
+
+  // The organization is reused now, so the waiver table is too: a second run re-reads the
+  // Members table the first run built instead of declaring a look-alike beside it.
+  const listed = await store.tableList();
+  if (!listed.ok) throw new Error(`tableList failed: ${JSON.stringify(listed)}`);
+  const already = listed.data.find((t) => t.name === "Ironline Fitness: Members");
+  if (already) {
+    const alreadyHome = ((already as any).home_id ?? (already as any).parent_id ?? null) as string | null;
+    console.log(`reusing table Members -> ${already.id}`);
+    await assertTheThreeStates(store, already.id);
+    writeFileSync(
+      path.resolve(__dirname, "ironline-fitness-waiver.json"),
+      JSON.stringify({ orgId, homeId: alreadyHome, tableId: already.id, members: MEMBERS.length }, null, 2),
+    );
+    console.log(`\nfixture re-read. org=${orgId} table=${already.id}`);
+    return;
+  }
 
   const kernel = await store.personKernelId();
   if (!kernel.ok) throw new Error(`personKernelId failed: ${JSON.stringify(kernel)}`);

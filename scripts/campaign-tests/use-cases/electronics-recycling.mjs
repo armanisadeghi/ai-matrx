@@ -15,6 +15,7 @@
 // fees on a client site).
 import { signedInClient, SUPABASE_URL } from "./_client.mjs";
 import fs from "node:fs";
+import { fixtureOrg } from "../../lib/fixture-org.mjs";
 
 const LOG = [];
 function log(step, ok, detail) {
@@ -32,26 +33,24 @@ async function main() {
   log("sign-in", true, { userId });
 
   // 1. Create the organization through the real org_create RPC (iam schema, public rpc).
-  const orgName = "Fixture Recyclers Co";
-  const slugBase = "fixture-recyclers-" + Math.random().toString(36).slice(2, 8);
-  const { data: org, error: orgErr } = await client.rpc("org_create", {
-    p_name: orgName,
-    p_abbreviation: "FRC",
-    p_slug: slugBase,
-    p_description:
-      "Electronics recycling operator: schedules pickups, tracks material weights, issues certificates of destruction to client sites. Every client, site and person here is synthesized and belongs to nobody.",
-    p_logo_url: null,
-    p_logo_file_id: null,
-    p_website: null,
-    p_settings: { test_fixture: true },
-  });
-  if (orgErr) {
-    log("org_create", false, orgErr);
+  // FIXTURE-ORGS 2026-09-23: this minted "Fixture Recyclers Co" at a random slug on every run.
+  // It now takes the family's ONE organization by slug (the name its use-case file declares)
+  // through the shared helper, and creates it only the first time.
+  let org;
+  try {
+    ({ org } = await fixtureOrg(client, {
+      name: "Cascade Electronics Recovery",
+      abbreviation: "CER",
+      description:
+        "Electronics recycling operator: schedules pickups, tracks material weights, issues certificates of destruction to client sites. Every client, site and person here is synthesized and belongs to nobody.",
+    }));
+  } catch (orgErr) {
+    log("org_create", false, String(orgErr?.message ?? orgErr));
     fs.writeFileSync("/tmp/erecycle_log.json", JSON.stringify(LOG, null, 2));
     process.exit(1);
   }
-  const orgId = org.id || org;
-  log("org_create", true, { orgId, slug: slugBase });
+  const orgId = org.id;
+  log("org_create", true, { orgId, slug: org.slug });
 
   // 2. Turn the record store on for this organization: the same door the
   //    unified-data-ramp screen writes through, platform.knob_override_set,

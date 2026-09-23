@@ -12,6 +12,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
+import { fixtureSlug } from "../lib/fixture-org.mjs";
 
 const root = path.resolve(new URL(".", import.meta.url).pathname, "../..");
 for (const f of [".env.local", ".env"]) {
@@ -97,8 +98,8 @@ const SWEEP_REASON =
   "instead of minting one. Nothing deleted; restorable.";
 
 
-// FIXTURE-ORGS (2026-09-23) — one organization per fixture family. `keep` is the slug the
-// suites (or the use-case seed files) reference; `hold` names siblings a live suite still
+// FIXTURE-ORGS (2026-09-23) — one organization per fixture family. The kept slug is
+// fixtureSlug(family) from scripts/lib/fixture-org.mjs — the SAME answer the seeders reuse; `hold` names siblings a live suite still
 // reaches by id, with the file that reaches it. A sibling that is neither is archived.
 const FIXTURE_CLASSIFICATION =
   "FIXTURE-ORGS 2026-09-23 — a second copy of a fixture family, created by a test seat with no member outside the test seats";
@@ -106,29 +107,29 @@ const FIXTURE_REASON =
   "FIXTURE-ORGS 2026-09-23 — duplicate of a fixture family; the suites keep ONE organization per family, " +
   "found by its slug. Nothing deleted; restorable.";
 export const FIXTURE_FAMILIES = [
-  { family: "Rincon Plumbing Co", keep: "rincon-plumbing-co",
+  { family: "Rincon Plumbing Co",
     hold: { "5531d39c-e863-467a-9e36-ad7f14b2faeb": "realtime_topic_seat(_red).sql, realtime2_opid_seat.sql — the company test@test.com is NOT in" } },
-  { family: "Ironclad Mobile Mechanic", keep: "ironclad-mobile-mechanic" },
-  { family: "Ridgeline Physical Therapy", keep: "ridgeline-physical-therapy" },
-  { family: "Birchwood Avenue Renovation", keep: "home-renovation" },
-  { family: "Cascade Electronics Recovery", keep: "cascade-electronics-recovery",
+  { family: "Ironclad Mobile Mechanic" },
+  { family: "Ridgeline Physical Therapy" },
+  { family: "Birchwood Avenue Renovation" },
+  { family: "Cascade Electronics Recovery",
     hold: {
       "4352d061-ec13-4761-ae32-9c9bd52e7de3": "mirror2_red.sql — the company test@test.com is NOT in",
       "7ead0000-0000-4a00-8a00-00000000c001": "operator-censuses/readperf_parity_20_pairs.sql — fixed-id parity fixture",
     } },
-  { family: "Fairhaven Steelworks", keep: "fairhaven-steelworks" },
-  { family: "Greenline Landscaping Crew", keep: "greenline-landscaping-crew" },
-  { family: "Hands & Hope Alliance", keep: "hands-and-hope-alliance" },
-  { family: "Harbor Dental Group", keep: "harbor-dental-group",
+  { family: "Fairhaven Steelworks" },
+  { family: "Greenline Landscaping Crew" },
+  { family: "Hands & Hope Alliance" },
+  { family: "Harbor Dental Group",
     hold: { "efe3623f-c1a0-4c0b-9315-c8c882a856b8": "tails4_a_link_carries_its_organization.mjs — NOT_MINE" } },
-  { family: "Ironline Fitness", keep: "fixture-ironline-fitness-f1wa0s" },
-  { family: "Signal & Scale Podcast", keep: "signal-scale-podcast-muaj1a8i" },
-  { family: "Wraithmoor Regional Museum of Art & Craft", keep: "wraithmoor-regional-museum-of-art-and-craft" },
+  { family: "Ironline Fitness" },
+  { family: "Signal & Scale Podcast" },
+  { family: "Wraithmoor Regional Museum of Art & Craft" },
   // Single-copy families, listed so a future duplicate is caught by the same run.
-  { family: "Ashford Labs", keep: "ashford-labs" },
-  { family: "Meridian Software", keep: "meridian-software" },
-  { family: "Harborline Heating & Air", keep: "harborline-heating-and-air" },
-  { family: "Timberline Roofing", keep: "timberline-roofing" },
+  { family: "Ashford Labs" },
+  { family: "Meridian Software" },
+  { family: "Harborline Heating & Air" },
+  { family: "Timberline Roofing" },
 ];
 
 async function seat() {
@@ -314,9 +315,10 @@ if (cmd === "list") {
   for (const fam of FIXTURE_FAMILIES) {
     const members = live.filter((o) => (o.name ?? "").startsWith(fam.family) && !o.is_personal);
     if (members.length === 0) continue;
-    const keeper = members.find((o) => o.slug === fam.keep);
+    const keep = fixtureSlug(fam.family);
+    const keeper = members.find((o) => o.slug === keep);
     if (!keeper) {
-      forArman.push([{ id: "-", name: fam.family }, `the keeper slug ${fam.keep} is not live — nothing in this family was touched`]);
+      forArman.push([{ id: "-", name: fam.family }, `the keeper slug ${keep} is not live — nothing in this family was touched`]);
       continue;
     }
     console.log(`\n${fam.family}: ${members.length} live — KEEP ${keeper.id} ${keeper.slug}`);

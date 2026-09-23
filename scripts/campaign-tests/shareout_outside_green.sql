@@ -51,6 +51,13 @@
 \quit
 \endif
 
+-- FIXTURE-ORGS 2026-09-23: this suite's DO block used to run in autocommit, so every run
+-- COMMITTED a fresh branch organization (random slug, same realistic name) and left it on the
+-- database — the look-alike rows in a member's Shared-with-me. The branch is still built fresh
+-- (the outsider clauses need a company test@test.com is not in), but inside ONE transaction
+-- that rolls back, so a run leaves nothing.
+begin;
+
 do $green$
 declare
   c_admin   constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';   -- admin@admin.com, the office
@@ -295,3 +302,5 @@ begin
   raise notice 'SHARE-OUT / item 1 GREEN: all nine clauses passed from the two real seats.';
 end;
 $green$;
+
+rollback;

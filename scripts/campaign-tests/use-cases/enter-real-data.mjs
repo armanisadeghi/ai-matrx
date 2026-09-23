@@ -8,6 +8,7 @@ import { config as loadEnv } from "dotenv";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { fixtureOrg } from "../../lib/fixture-org.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 loadEnv({ path: path.resolve(__dirname, "../../../.env.local"), quiet: true });
@@ -52,30 +53,15 @@ if (reuseOrgId) {
   org = data;
   console.log(`Reusing organization: ${org.id} slug=${org.slug}`);
 } else {
-  const baseSlug =
-    "fixture-" +
-    usecase.organization_name
-      .toLowerCase()
-      .replace(/^fixture\s+/, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "")
-      .slice(0, 30) +
-    "-" +
-    Math.random().toString(36).slice(2, 8);
-  let slug = baseSlug;
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const { data, error } = await client.rpc("org_create", {
-      p_name: usecase.organization_name,
-      p_slug: slug,
-      p_description: usecase.one_sentence,
-      p_settings: usecase.settings_tag ?? { test_fixture: true },
-    });
-    if (!error) { org = data; break; }
-    if (error.code === "23505") { slug = `${baseSlug}-${Date.now().toString(36)}`; continue; }
-    logLimit(`org_create for "${usecase.organization_name}"`, `${error.code}: ${error.message}`, "organization created");
-    throw error;
-  }
-  console.log(`Organization created: ${org.id} slug=${org.slug} settings=${JSON.stringify(org.settings)}`);
+  // FIXTURE-ORGS 2026-09-23: one business, one slug, one organization. This used to mint a
+  // "fixture-<name>-<random>" organization on EVERY run under the same name; it now reuses the
+  // family's organization by slug through the shared helper and creates it only once.
+  ({ org } = await fixtureOrg(client, {
+    name: usecase.organization_name,
+    slug: usecase.organization_slug,
+    description: usecase.one_sentence,
+    settings: usecase.settings_tag ?? { test_fixture: true },
+  }));
 }
 
 // --- 1b. Switch the record store on for this organization (unified-data-ramp) ---

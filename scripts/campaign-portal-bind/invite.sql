@@ -15,24 +15,46 @@
 \set ON_ERROR_STOP on
 \pset tuples_only on
 \pset format unaligned
+-- FIXTURE-ORGS 2026-09-23: this walk used to mint a NEW Carpinteria branch on every run
+-- ('rincon-plumbing-carpinteria-<random>'), which is how the look-alike rows piled up. It now
+-- takes ONE branch by slug through the shared helper and builds its tables and portal only the
+-- first time; every later run reuses them and issues a fresh invitation - the part being walked.
+\set fixture_slug 'rincon-plumbing-co-carpinteria-portal-walk'
+\set fixture_name 'Rincon Plumbing Co — Carpinteria Branch'
+\set fixture_abbr 'RPC'
+\i scripts/campaign-tests/_fixture_org.sql
 
 do $walk$
 declare
   c_admin   constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
   c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
   c_mail    constant text := 'test@test.com';
-  v_org     uuid := gen_random_uuid();
+  v_org     uuid := current_setting('matrx.fixture_org')::uuid;
   v_home    uuid; v_cust uuid; v_jobs uuid; v_invs uuid; v_crews uuid;
   v_her     uuid; v_him uuid; v_portal uuid; v_out jsonb;
 begin
   perform set_config('app.actor_system', 'campaign.portalbind.walk', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
 
-  insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_org, 'Rincon Plumbing Co — Carpinteria Branch',
-          'rincon-plumbing-carpinteria-' || substr(v_org::text, 1, 8), 'RPC', c_admin);
-  insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
-  values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
+  select id into v_jobs from custom."table" where organization_id = v_org and slug = 'jobs';
+  if v_jobs is not null then
+    -- Built on an earlier run: reuse the tables, the customer and the portal it made.
+    select id into v_cust  from custom."table" where organization_id = v_org and slug = 'customers';
+    select id into v_invs  from custom."table" where organization_id = v_org and slug = 'invoices';
+    select id into v_crews from custom."table" where organization_id = v_org and slug = 'crews';
+    select id into v_her from custom.record
+     where organization_id = v_org and table_id = v_cust and deleted_at is null
+       and data ->> 'customer_name' = 'Marisol Vega'
+     order by created_at limit 1;
+    select id into v_portal from custom.portal
+     where organization_id = v_org and archived_at is null order by created_at limit 1;
+    if v_cust is null or v_invs is null or v_her is null or v_portal is null then
+      raise exception 'WALK REFUSED: the Carpinteria branch % was half-built on an earlier run (customers %, invoices %, Marisol %, portal %). Archive it through iam.organization_archive and run again.',
+        v_org, v_cust, v_invs, v_her, v_portal;
+    end if;
+    perform set_config('role', 'authenticated', true);
+    raise notice 'REUSED the Carpinteria branch built on an earlier run';
+  else
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
   values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'PORTAL-BIND walk'),
          ('custom','external_principal_enabled','organization', v_org, v_org, 'true'::jsonb, 'PORTAL-BIND walk');
@@ -112,6 +134,7 @@ begin
     jsonb_build_object('table_id', v_invs::text, 'names_via','customer',
       'visible_fields', jsonb_build_array('invoice_no','amount_due','status'),
       'editable_fields','[]'::jsonb,'comments',false)));
+  end if;
 
   v_out := custom.portal_invite(v_org, v_portal, v_her, c_mail);
 
