@@ -50,7 +50,7 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'w1_val_red.sql'
-\set requires 'grant:authenticated:custom.table_declare'
+\set requires 'grant:authenticated:custom.table_declare|function:platform.settle_deferred_checks'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
@@ -143,8 +143,11 @@ begin
   -- asserted here.
   -- ══════════════════════════════════════════════════════════════════════════
   perform set_config('role', v_boss, true);
+  -- SUITES-TIDY-2 2026-09-22: DDL on custom.record after a write in this transaction is refused with 55006 (zzzz_relation_halves_agree is deferred); fire it first, restore after.
+  perform platform.settle_deferred_checks('custom.record'::regclass, true);
   alter table custom.record drop constraint record_value_envelope;
   drop trigger _value_envelope on custom.record;
+  perform platform.settle_deferred_checks('custom.record'::regclass, false);
   perform set_config('role', 'authenticated', true);
 
   -- ── RED 1: an author outside the vocabulary, and a forged version, both LAND ──
@@ -213,7 +216,10 @@ begin
   -- both gone, the `fax` envelope was still refused, naming VAL-1. So the twin names the
   -- trigger that actually holds K and takes that out too — out of the seat, asserting nothing.
   perform set_config('role', v_boss, true);
+  -- SUITES-TIDY-2 2026-09-22: DDL on custom.record after a write in this transaction is refused with 55006 (zzzz_relation_halves_agree is deferred); fire it first, restore after.
+  perform platform.settle_deferred_checks('custom.record'::regclass, true);
   alter table custom.record disable trigger custom_record_field_validation;
+  perform platform.settle_deferred_checks('custom.record'::regclass, false);
   perform set_config('role', 'authenticated', true);
   perform custom.record_update(v_org, v_rec, jsonb_build_object('_actor','user',
     '_values', jsonb_build_object('fax', jsonb_build_object('ver',1,'actor','user','absent','none'))));

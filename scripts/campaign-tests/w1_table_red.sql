@@ -44,7 +44,7 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'w1_table_red.sql'
-\set requires 'grant:authenticated:custom.table_declare'
+\set requires 'grant:authenticated:custom.table_declare|function:platform.settle_deferred_checks'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
@@ -131,9 +131,12 @@ begin
   -- triggers are taken in ONE statement so the ACCESS EXCLUSIVE lock is waited for once; the
   -- re-enables below cost nothing because the transaction already holds it.
   perform set_config('role', v_boss, true);
+  -- SUITES-TIDY-2 2026-09-22: DDL on custom.record after a write in this transaction is refused with 55006 (zzzz_relation_halves_agree is deferred); fire it first, restore after.
+  perform platform.settle_deferred_checks('custom.record'::regclass, true);
   alter table custom.record
     disable trigger custom_record_containment_guard,
     disable trigger custom_record_table_shape_guard;
+  perform platform.settle_deferred_checks('custom.record'::regclass, false);
   perform set_config('role', 'authenticated', true);
 
   v_landed := custom.record_write(v_org, v_project,
@@ -167,7 +170,10 @@ begin
   perform set_config('role', v_boss, true);
   update custom.record set data = data - 'parent_id'
    where organization_id = v_org and id = v_hq;
+  -- SUITES-TIDY-2 2026-09-22: DDL on custom.record after a write in this transaction is refused with 55006 (zzzz_relation_halves_agree is deferred); fire it first, restore after.
+  perform platform.settle_deferred_checks('custom.record'::regclass, true);
   alter table custom.record enable trigger custom_record_containment_guard;
+  perform platform.settle_deferred_checks('custom.record'::regclass, false);
   perform set_config('role', 'authenticated', true);
 
   -- ── RED 2: the Table shape guard ─────────────────────────────────────────────
@@ -191,7 +197,10 @@ begin
   raise notice 'RED 2 - with custom_record_table_shape_guard DISABLED, custom.table_declare stored a Table carrying no title field (id %) and the read door hands it back that way. REC-1 and REC-2 are that trigger.', v_landed;
 
   perform set_config('role', v_boss, true);
+  -- SUITES-TIDY-2 2026-09-22: DDL on custom.record after a write in this transaction is refused with 55006 (zzzz_relation_halves_agree is deferred); fire it first, restore after.
+  perform platform.settle_deferred_checks('custom.record'::regclass, true);
   alter table custom.record enable trigger custom_record_table_shape_guard;
+  perform platform.settle_deferred_checks('custom.record'::regclass, false);
   perform set_config('role', 'authenticated', true);
 
   -- ── RED 3: T10's Home assertion is not vacuous ───────────────────────────────

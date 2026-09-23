@@ -49,7 +49,7 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'w1_index_red.sql'
-\set requires 'grant:authenticated:custom.table_declare'
+\set requires 'grant:authenticated:custom.table_declare|function:platform.settle_deferred_checks'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
@@ -151,7 +151,10 @@ begin
   -- ── RED 1 — the cap ────────────────────────────────────────────────────────────────────
   -- THE REMOVAL steps out of the seat: dropping a trigger is operator DDL.
   perform set_config('role', v_boss, true);
+  -- SUITES-TIDY-2 2026-09-22: DDL on custom.record after a write in this transaction is refused with 55006 (zzzz_relation_halves_agree is deferred); fire it first, restore after.
+  perform platform.settle_deferred_checks('custom.record'::regclass, true);
   drop trigger zz_promoted_field_cap on custom.record;
+  perform platform.settle_deferred_checks('custom.record'::regclass, false);
   perform set_config('role', 'authenticated', true);
   -- THE WRITE THAT NOW LANDS is a PERSON'S: exactly the call the green twin watches being
   -- refused, from the same seat, on the same Table.
@@ -200,9 +203,12 @@ begin
   -- rest on one guard. The REMOVALS are operator DDL and step out; the WRITE that then lands
   -- is a PERSON'S, through `custom.record_write`, which is where the green twin measures it.
   perform set_config('role', v_boss, true);
+  -- SUITES-TIDY-2 2026-09-22: DDL on custom.record after a write in this transaction is refused with 55006 (zzzz_relation_halves_agree is deferred); fire it first, restore after.
+  perform platform.settle_deferred_checks('custom.record'::regclass, true);
   alter table custom.record disable trigger _value_envelope;
   alter table custom.record disable trigger custom_record_field_validation;
   alter table custom.record drop constraint record_value_envelope;
+  perform platform.settle_deferred_checks('custom.record'::regclass, false);
   perform set_config('role', 'authenticated', true);
   if custom.record_write(v_org, v_table, jsonb_build_object(
        'code', 'red3',
@@ -212,8 +218,11 @@ begin
   v_red := v_red + 1;
   raise notice 'RED 3 — all three envelope doors removed: a signed-in person wrote `data -> ''_values'' -> ''code'' -> ''v''` through custom.record_write. GREEN PART 2''s refusal is a refusal, not an absence.';
   perform set_config('role', v_boss, true);
+  -- SUITES-TIDY-2 2026-09-22: DDL on custom.record after a write in this transaction is refused with 55006 (zzzz_relation_halves_agree is deferred); fire it first, restore after.
+  perform platform.settle_deferred_checks('custom.record'::regclass, true);
   alter table custom.record enable trigger _value_envelope;
   alter table custom.record enable trigger custom_record_field_validation;
+  perform platform.settle_deferred_checks('custom.record'::regclass, false);
   perform set_config('role', 'authenticated', true);
 
   -- ── RED 4 — the child-index rename ROUTE A now does ────────────────────────────────────
@@ -228,8 +237,11 @@ begin
   set local lock_timeout = '10s';
   set local statement_timeout = '60s';
   v_name := 'greenline_unrenamed_code_idx';
+  -- SUITES-TIDY-2 2026-09-22: DDL on custom.record after a write in this transaction is refused with 55006 (zzzz_relation_halves_agree is deferred); fire it first, restore after.
+  perform platform.settle_deferred_checks('custom.record'::regclass, true);
   execute format('create unique index %I on custom.record (organization_id, ((data->>''code''))) where table_id = %L::uuid and deleted_at is null',
                  v_name, v_table);
+  perform platform.settle_deferred_checks('custom.record'::regclass, false);
   perform set_config('role', 'authenticated', true);
 
   -- AND THE DUPLICATE IS WRITTEN BY A PERSON, through the door they write through, because

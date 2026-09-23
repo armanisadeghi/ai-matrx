@@ -59,7 +59,7 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'w1_index_c5.sql'
-\set requires 'grant:authenticated:custom.table_declare'
+\set requires 'grant:authenticated:custom.table_declare|function:platform.settle_deferred_checks'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
@@ -267,8 +267,11 @@ begin
       continue;
     end if;
     v_name := 'greenline_index_arm_' || v_arm;
+    -- SUITES-TIDY-2 2026-09-22: DDL on custom.record after a write in this transaction is refused with 55006 (zzzz_relation_halves_agree is deferred); fire it first, restore after.
+    perform platform.settle_deferred_checks('custom.record'::regclass, true);
     execute format('create index %I on custom.record (organization_id, %s) where organization_id = %L::uuid and deleted_at is null',
                    v_name, v_expr, v_org);
+    perform platform.settle_deferred_checks('custom.record'::regclass, false);
     v_built := v_built || v_arm;
 
     -- STATISTICS FIRST. MEASURED on main 2026-09-19: a brand-new organization's rows sit in a
