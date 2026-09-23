@@ -1,5 +1,6 @@
 -- lock: custom
 -- lane: ARGS-RULED-2
+-- based-on: custom.hub_changed_by(uuid, text, uuid[]) a4a98c8a9b97feaa933325a470680274ec141e7431c2ba4654b6a70595281d84
 --
 -- INVERSE of migrations/campaign/argsruled2_the_hub_describes_only_what_you_may_open.sql: puts custom.hub_changed_by's body back exactly as it was
 -- before (byte-for-byte from pg_get_functiondef on the MAIN database, 2026-09-22), which

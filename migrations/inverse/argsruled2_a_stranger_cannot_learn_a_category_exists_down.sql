@@ -1,5 +1,6 @@
 -- lock: platform
 -- lane: ARGS-RULED-2
+-- based-on: public.cat_write(text, uuid, uuid, text, text, boolean, uuid, boolean, text, boolean, text, boolean, integer, boolean, text, boolean, jsonb, boolean) 5dcf48f1c9e52983ee2e851c85f45561ecebc09cbfacafa856832906d61976e5
 --
 -- INVERSE of migrations/campaign/argsruled2_a_stranger_cannot_learn_a_category_exists.sql: puts public.cat_write's body back exactly as it was
 -- before (byte-for-byte from pg_get_functiondef on the MAIN database, 2026-09-22), which
