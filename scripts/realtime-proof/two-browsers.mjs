@@ -29,7 +29,8 @@ const ORIGIN = `http://${HOST}.localhost:${PORT}`;
 const ORG = "6069a466-1445-42df-a64e-cf37ecdc1b99"; // Rincon Plumbing Co
 // A table in Rincon Plumbing Co — Oxnard Branch, a company Marco is NOT a member of
 // (`iam.memberships` for him there: 0 rows). It is the negative half of clause 5.
-const OXNARD_TABLE = "2994156a-6201-4576-83b4-58f89bedbfce";
+// FIXTURE-ORGS 2026-09-23: the Oxnard branch was archived; Ridgeline Physical Therapy (admin only) is the company test@test.com is NOT in.
+const OXNARD_TABLE = "f9d61a79-0780-4cd2-9b58-3e2a25042714"; // Ridgeline's appointments table
 const ORG_NAME = "Rincon Plumbing Co";
 const JOBS = "af3bfff6-a255-41e5-9ac2-879d53816163"; // its Jobs table
 const TABLE_URL = `${ORIGIN}/data-v2/${JOBS}`;

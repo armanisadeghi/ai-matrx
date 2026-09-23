@@ -37,7 +37,7 @@ do $red$
 declare
   v_answers   jsonb;
   v_org       constant uuid := '6069a466-1445-42df-a64e-cf37ecdc1b99';  -- Rincon Plumbing Co
-  v_other_org constant uuid := '5531d39c-e863-467a-9e36-ad7f14b2faeb';  -- the Oxnard branch
+  v_other_org constant uuid := '0fec03d8-afe5-4ea0-bf14-d0ab18e4a536';  -- Ridgeline Physical Therapy: admin only, test@test.com is NOT in it (FIXTURE-ORGS 2026-09-23: repointed from an archived duplicate to the family's one kept org)
   v_jobs      constant uuid := 'af3bfff6-a255-41e5-9ac2-879d53816163';
   v_admin     constant text := '87a6e699-3622-4869-8843-d0867456c0dd';
   v_test      constant text := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';

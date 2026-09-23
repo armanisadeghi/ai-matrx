@@ -48,7 +48,7 @@ set local client_min_messages = notice;
 do $t$
 declare
   c_dana_j constant text := '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}';
-  c_org    constant uuid := '4352d061-ec13-4761-ae32-9c9bd52e7de3';
+  c_org    constant uuid := 'b3c98221-861e-405c-b986-5f5abd45e362';  -- Cascade Electronics Recovery, admin only (FIXTURE-ORGS 2026-09-23: repointed from an archived duplicate to the family's one kept org)
   v_n      integer;
   v_t0     timestamptz;
   v_ms     numeric;
@@ -94,7 +94,7 @@ $t$;
 do $t$
 declare
   c_dana_j constant text := '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}';
-  c_org    constant uuid := '4352d061-ec13-4761-ae32-9c9bd52e7de3';
+  c_org    constant uuid := 'b3c98221-861e-405c-b986-5f5abd45e362';  -- Cascade Electronics Recovery, admin only (FIXTURE-ORGS 2026-09-23: repointed from an archived duplicate to the family's one kept org)
   v_reds   integer := 0;
   v_want   integer := 5;
   v_qual   text;

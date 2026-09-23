@@ -18,8 +18,8 @@ set local statement_timeout = '3600s';
 select set_config('app.actor_system','readperf_parity20', true);
 do $t$
 declare
-  v_org   constant uuid := '7ead0000-0000-4a00-8a00-00000000c001';
-  v_tbl   constant uuid := 'b52d5921-945e-4f09-88d1-147d45cc2767';
+  v_org   constant uuid := 'b3c98221-861e-405c-b986-5f5abd45e362';  -- Cascade Electronics Recovery (FIXTURE-ORGS 2026-09-23: repointed from an archived duplicate to the family's one kept org; the old table b52d5921 no longer existed)
+  v_tbl   constant uuid := 'a7511f92-ace2-41a1-af39-da8efe2585ec';  -- Weights By Material
   v_admin constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
   v_dana  constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
   v_who uuid; v_lane text; v_lvl public.permission_level; v_row record;

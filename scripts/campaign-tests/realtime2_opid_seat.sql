@@ -212,8 +212,8 @@ begin
   -- AND IT ASKS THE SAME WALL. A member of another company is refused the Table itself.
   perform set_config('request.jwt.claims', json_build_object('sub', v_test, 'role', 'authenticated')::text, true);
   begin
-    perform custom.read_records_by_ids('5531d39c-e863-467a-9e36-ad7f14b2faeb'::uuid,
-                                       '2994156a-6201-4576-83b4-58f89bedbfce'::uuid,
+    perform custom.read_records_by_ids('0fec03d8-afe5-4ea0-bf14-d0ab18e4a536'::uuid,  -- Ridgeline PT, a company test@test.com is NOT in (FIXTURE-ORGS 2026-09-23: repointed from an archived duplicate to the family's one kept org)
+                                       'f9d61a79-0780-4cd2-9b58-3e2a25042714'::uuid,  -- its appointments table
                                        array[gen_random_uuid()]);
     raise exception '7c: a non-member read a table in a company she does not belong to';
   exception when others then

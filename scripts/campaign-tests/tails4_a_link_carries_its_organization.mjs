@@ -33,7 +33,8 @@ const PASSWORD = process.env.AI_ADMIN_PASSWORD;
 const ORG = "a2b50e76-7120-4bc2-b7a0-8a531ffa2cc8";
 const TABLE = "449c3251-2810-4bde-9953-9a885a591b1a";
 // An organization this account is genuinely not a member of.
-const NOT_MINE = "efe3623f-c1a0-4c0b-9315-c8c882a856b8";
+// FIXTURE-ORGS 2026-09-23: repointed from an archived duplicate to the family's one kept org: Blue Ridge Recycling has no members at all, so admin@admin.com is genuinely not in it.
+const NOT_MINE = "44f72de2-f9c6-487d-9c34-a8823b1ae1a9";
 
 const PICKER = /Select an organization|Choose (your|an) organization|organization first/i;
 

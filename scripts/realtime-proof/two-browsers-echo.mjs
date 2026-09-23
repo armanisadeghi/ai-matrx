@@ -39,8 +39,9 @@ const ORG = "6069a466-1445-42df-a64e-cf37ecdc1b99"; // Rincon Plumbing Co
 const ORG_NAME = "Rincon Plumbing Co";
 const JOBS = "af3bfff6-a255-41e5-9ac2-879d53816163"; // its Jobs board
 // A table in Rincon Plumbing Co — Oxnard Branch, a company Marco is NOT a member of.
-const OXNARD_ORG = "5531d39c-e863-467a-9e36-ad7f14b2faeb";
-const OXNARD_TABLE = "2994156a-6201-4576-83b4-58f89bedbfce";
+// FIXTURE-ORGS 2026-09-23: repointed from an archived duplicate to the family's one kept org: the Oxnard branch was archived; Ridgeline Physical Therapy is admin-only, so Marco (test@test.com) is NOT a member.
+const OXNARD_ORG = "0fec03d8-afe5-4ea0-bf14-d0ab18e4a536";
+const OXNARD_TABLE = "f9d61a79-0780-4cd2-9b58-3e2a25042714"; // Ridgeline's appointments table
 const TABLE_URL = `${ORIGIN}/data-v2/${JOBS}`;
 const TEST_EMAIL = "test@test.com";
 const TEST_PASSWORD = "Password1234#";

@@ -107,21 +107,15 @@ const FIXTURE_REASON =
   "FIXTURE-ORGS 2026-09-23 — duplicate of a fixture family; the suites keep ONE organization per family, " +
   "found by its slug. Nothing deleted; restorable.";
 export const FIXTURE_FAMILIES = [
-  { family: "Rincon Plumbing Co",
-    hold: { "5531d39c-e863-467a-9e36-ad7f14b2faeb": "realtime_topic_seat(_red).sql, realtime2_opid_seat.sql — the company test@test.com is NOT in" } },
+  { family: "Rincon Plumbing Co" },
   { family: "Ironclad Mobile Mechanic" },
   { family: "Ridgeline Physical Therapy" },
   { family: "Birchwood Avenue Renovation" },
-  { family: "Cascade Electronics Recovery",
-    hold: {
-      "4352d061-ec13-4761-ae32-9c9bd52e7de3": "mirror2_red.sql — the company test@test.com is NOT in",
-      "7ead0000-0000-4a00-8a00-00000000c001": "operator-censuses/readperf_parity_20_pairs.sql — fixed-id parity fixture",
-    } },
+  { family: "Cascade Electronics Recovery" },
   { family: "Fairhaven Steelworks" },
   { family: "Greenline Landscaping Crew" },
   { family: "Hands & Hope Alliance" },
-  { family: "Harbor Dental Group",
-    hold: { "efe3623f-c1a0-4c0b-9315-c8c882a856b8": "tails4_a_link_carries_its_organization.mjs — NOT_MINE" } },
+  { family: "Harbor Dental Group" },
   { family: "Ironline Fitness" },
   { family: "Signal & Scale Podcast" },
   { family: "Wraithmoor Regional Museum of Art & Craft" },
