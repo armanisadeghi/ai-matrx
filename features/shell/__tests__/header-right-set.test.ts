@@ -100,16 +100,21 @@ describe("the header right set", () => {
     // forbids outright. Forbidding the class name would have meant deleting
     // that fix, so the rule is stated where it actually bites: the stand-in
     // must be the SAME menu moved, not a second one written.
-    const elevated = read("components/matrx/resizable/ElevatedShellUserMenu.tsx");
+    const elevated = read(
+      "components/matrx/resizable/ElevatedShellUserMenu.tsx",
+    );
     // It mounts the canonical trigger and panel components — no local copy.
     for (const part of [
       "header-right-menu/UserMenuTrigger",
       "header-right-menu/UserMenuPanel",
       "header-right-menu/GuestUserMenuTrigger",
-      "header-right-menu/GuestUserMenuPanel",
     ]) {
       expect(elevated).toContain(part);
     }
+    // A signed-out visitor gets the sign-in icon, not a second menu with a
+    // signup pill. The guest panel stays out of this stand-in.
+    expect(elevated).not.toContain("GuestUserMenuPanel");
+    expect(elevated).toContain('placement="corner"');
     // And it shares the ONE open/close checkbox rather than declaring a second
     // id — two ids would be two menus that can be open at once, and every
     // `htmlFor="shell-user-menu"` item would stop dismissing this one.

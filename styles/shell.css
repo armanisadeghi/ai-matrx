@@ -727,6 +727,7 @@ button.shell-nav-item {
 
 .shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-label {
   width: 0;
+  min-width: 0;
 }
 
 .shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-env-details {
@@ -2451,6 +2452,7 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
   align-items: center;
   min-width: 0;
   width: 100%;
+  overflow: hidden;
 }
 
 /* Name + email, revealed only when the rail is expanded (same reveal as

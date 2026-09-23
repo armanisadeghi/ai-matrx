@@ -22,7 +22,6 @@
 import UserMenuTrigger from "../header/header-right-menu/UserMenuTrigger";
 import UserMenuPanel from "../header/header-right-menu/UserMenuPanel";
 import GuestUserMenuTrigger from "../header/header-right-menu/GuestUserMenuTrigger";
-import GuestUserMenuPanel from "../header/header-right-menu/GuestUserMenuPanel";
 import type { UserData } from "@/utils/userDataMapper";
 
 interface ShellUserBlockProps {
@@ -59,18 +58,18 @@ export default function ShellUserBlock({
           </label>
         ) : null}
       </div>
-      <label
-        htmlFor="shell-user-menu"
-        className="shell-user-menu-backdrop"
-        aria-hidden="true"
-      />
-      <div className="shell-user-menu-panel">
-        {isAuthenticated ? (
+      {isAuthenticated ? (
+        <label
+          htmlFor="shell-user-menu"
+          className="shell-user-menu-backdrop"
+          aria-hidden="true"
+        />
+      ) : null}
+      {isAuthenticated ? (
+        <div className="shell-user-menu-panel">
           <UserMenuPanel userData={userData} />
-        ) : (
-          <GuestUserMenuPanel />
-        )}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }

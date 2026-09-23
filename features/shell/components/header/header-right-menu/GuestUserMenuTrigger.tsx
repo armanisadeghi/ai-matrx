@@ -1,58 +1,53 @@
 "use client";
 
 import AppLink from "@/components/navigation/AppLink";
-import { UserPlus, LogIn } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { LogIn } from "lucide-react";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
 
 /**
- * Avatar-slot replacement for unauthenticated visitors. The primary
- * gradient pill ("Sign Up") opens the guest user menu via the same
- * hidden checkbox toggle (`#shell-user-menu`) that the authenticated
- * trigger uses, so the panel/backdrop wiring is identical. An adjacent
- * "Sign In" link routes straight to `/login` (no menu intermediary).
+ * Signed-out identity control.
  *
- * Sign In is shown at every breakpoint — including mobile — because our
- * own users frequently land here after being logged out (cookie expiry, a
- * refresh on a public route). Hiding login on mobile left them with only a
- * "Sign Up" pill, which is the wrong door for a returning account holder.
+ * `rail` sits in the bottom-left sidebar block and follows the same rules as
+ * every other nav item: icon always, label only while the rail is expanded
+ * (`.shell-nav-label`). It goes straight to login.
  *
- * Footprint matches `UserMenuTrigger` (h-11 wrapper, 32 × 32 inner) so
- * the header layout stays pixel-stable across auth states.
+ * `corner` is the glass-layer stand-in when a panel covers the top-right.
+ * It is the same 44px icon slot as the signed-in avatar, with no label.
  */
 export default function GuestUserMenuTrigger({
-  menuCheckboxId = "shell-user-menu",
+  placement = "rail",
 }: {
-  menuCheckboxId?: string;
+  placement?: "rail" | "corner";
 }) {
   const loginHref = useLoginHref();
-  return (
-    <div className="flex items-center gap-1.5 h-11 pr-1">
+
+  if (placement === "corner") {
+    return (
       <AppLink
         href={loginHref}
-        className={cn(
-          "inline-flex items-center h-7 px-2 rounded-md text-xs font-medium",
-          "text-foreground hover:bg-[var(--matrx-glass-bg-hover)] transition-colors",
-        )}
+        aria-label="Sign in"
+        title="Sign in"
+        className="flex h-11 w-11 items-center justify-center text-[var(--shell-nav-icon)] hover:bg-[var(--matrx-glass-bg-hover)]"
       >
-        <LogIn className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
-        Sign In
+        <LogIn
+          className="h-[18px] w-[18px]"
+          strokeWidth={1.75}
+          aria-hidden="true"
+        />
       </AppLink>
+    );
+  }
 
-      <label
-        htmlFor={menuCheckboxId}
-        aria-label="Sign up menu"
-        className={cn(
-          "inline-flex items-center gap-1.5 h-8 px-3 rounded-full cursor-pointer outline-none transition-all",
-          "bg-gradient-to-r from-blue-600 to-violet-600 text-white text-xs font-semibold",
-          "hover:from-blue-700 hover:to-violet-700",
-          "shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30",
-          "active:scale-95",
-        )}
-      >
-        <UserPlus className="w-3.5 h-3.5" aria-hidden="true" />
-        Sign Up
-      </label>
-    </div>
+  return (
+    <AppLink
+      href={loginHref}
+      title="Sign in"
+      className="shell-nav-item shell-tactile-subtle mx-1.5 min-w-0 flex-1"
+    >
+      <span className="shell-nav-icon">
+        <LogIn size={18} strokeWidth={1.75} aria-hidden="true" />
+      </span>
+      <span className="shell-nav-label">Sign in</span>
+    </AppLink>
   );
 }

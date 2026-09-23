@@ -20,7 +20,6 @@ import type { UserData } from "@/utils/userDataMapper";
 import UserMenuTrigger from "@/features/shell/components/header/header-right-menu/UserMenuTrigger";
 import UserMenuPanel from "@/features/shell/components/header/header-right-menu/UserMenuPanel";
 import GuestUserMenuTrigger from "@/features/shell/components/header/header-right-menu/GuestUserMenuTrigger";
-import GuestUserMenuPanel from "@/features/shell/components/header/header-right-menu/GuestUserMenuPanel";
 import {
   getDynamicPanelAvatarCoverActive,
   subscribeDynamicPanelAvatarCover,
@@ -57,20 +56,20 @@ function ElevatedShellUserMenuChrome() {
         {userData ? (
           <UserMenuTrigger userData={userData} />
         ) : (
-          <GuestUserMenuTrigger />
+          <GuestUserMenuTrigger placement="corner" />
         )}
-        <label
-          htmlFor="shell-user-menu"
-          className="elevated-shell-user-menu-backdrop"
-          aria-hidden="true"
-        />
-        <div className="elevated-shell-user-menu-panel">
-          {userData ? (
+        {userData ? (
+          <label
+            htmlFor="shell-user-menu"
+            className="elevated-shell-user-menu-backdrop"
+            aria-hidden="true"
+          />
+        ) : null}
+        {userData ? (
+          <div className="elevated-shell-user-menu-panel">
             <UserMenuPanel userData={userData} />
-          ) : (
-            <GuestUserMenuPanel />
-          )}
-        </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
