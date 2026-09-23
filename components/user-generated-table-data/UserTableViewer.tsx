@@ -2117,8 +2117,11 @@ const UserTableViewer = ({
   const handleDeleteColumn = async (field: TableField) => {
     const ok = await confirmDialog({
       title: `Remove "${field.display_name}"?`,
-      description:
-        "This column and its values are removed from every row in the table. Row history keeps a record, but there is no undo in the app.",
+      description: isRecordStoreTable(tableId)
+        ? // The record store RETIRES a column (custom.field_retire): it leaves the
+          // table and every screen, and its values stay on each record's history.
+          "This column leaves the table and every screen that shows it. Its values are kept in each row's history, but there is no undo in the app."
+        : "This column and its values are removed from every row in the table. Row history keeps a record, but there is no undo in the app.",
       confirmLabel: "Remove column",
       variant: "destructive",
     });
