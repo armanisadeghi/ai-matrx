@@ -19,6 +19,7 @@
 -- ('rincon-plumbing-carpinteria-<random>'), which is how the look-alike rows piled up. It now
 -- takes ONE branch by slug through the shared helper and builds its tables and portal only the
 -- first time; every later run reuses them and issues a fresh invitation - the part being walked.
+begin;
 \set fixture_slug 'rincon-plumbing-co-carpinteria-portal-walk'
 \set fixture_name 'Rincon Plumbing Co — Carpinteria Branch'
 \set fixture_abbr 'RPC'
@@ -149,3 +150,4 @@ begin
   raise notice 'SAY=%', v_out ->> 'say';
   raise notice 'DELIVERY=%', v_out ->> 'delivery_say';
 end $walk$;
+commit;
