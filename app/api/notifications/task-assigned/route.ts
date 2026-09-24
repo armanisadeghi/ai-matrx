@@ -3,6 +3,12 @@ import { createClient } from "@/utils/supabase/server";
 import { sendTaskAssignmentEmail } from "@/lib/email/notificationService";
 import { sendDm } from "@/lib/services/system-dm";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { z } from "zod";
+
+const assignmentNoticeRequest = z.object({
+  taskId: z.string().uuid(),
+  taskVersion: z.number().int().nonnegative(),
+});
 
 /**
  * POST /api/notifications/task-assigned
@@ -22,18 +28,52 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
-    const { assigneeId, taskTitle, taskId, taskDescription } = body;
-
-    if (!assigneeId || !taskTitle || !taskId) {
+    const parsed = assignmentNoticeRequest.safeParse(await request.json());
+    if (!parsed.success) {
       return NextResponse.json(
         {
           success: false,
-          msg: "assigneeId, taskTitle, and taskId are required",
+          msg: "A task ID and the saved task version are required",
         },
         { status: 400 },
       );
     }
+    const { taskId, taskVersion } = parsed.data;
+
+    // This signed-in read is governed by task RLS. The request supplies an
+    // identity for the saved change, never the recipient or words to send.
+    const { data: taskRow, error: taskError } = await supabase
+      .schema("workspace").from("tasks")
+      .select("id, assignee_id, title, description, organization_id, updated_by, updated_at, version")
+      .eq("id", taskId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (taskError) {
+      console.error("[task-assigned] task read failed:", taskError);
+      return NextResponse.json({ success: false, msg: "Could not verify task assignment" }, { status: 503 });
+    }
+    if (!taskRow) {
+      return NextResponse.json({ success: false, msg: "Task not found" }, { status: 404 });
+    }
+    if (!taskRow.organization_id || !taskRow.assignee_id) {
+      return NextResponse.json({ success: false, msg: "Task has no notification destination" }, { status: 409 });
+    }
+    // This bounds the legacy post-write route to the caller's recent saved
+    // task version. It cannot prove an assignee transition or dedupe replays;
+    // those require a transactional assignment event in the shared outbox.
+    const ageMs = Date.now() - Date.parse(taskRow.updated_at);
+    if (taskRow.version !== taskVersion ||
+        taskRow.updated_by !== user.id ||
+        !Number.isFinite(ageMs) || ageMs < 0 || ageMs > 5 * 60_000) {
+      return NextResponse.json(
+        { success: false, msg: "This is not the user's recent saved task version" },
+        { status: 409 },
+      );
+    }
+
+    const assigneeId = taskRow.assignee_id;
+    const taskTitle = taskRow.title;
+    const taskDescription = taskRow.description ?? undefined;
 
     // Don't send notification if assigning to yourself
     if (assigneeId === user.id) {
@@ -58,23 +98,6 @@ export async function POST(request: Request) {
         : null) ||
       "Someone";
 
-    // THE TASK NAMES THE ORGANIZATION. A DM about a task belongs where the task lives; it
-    // used to be filed in the ASSIGNER's personal workspace (DEFAULT-ORG-4, 2026-09-22).
-    const { data: taskRow } = await supabase
-      .schema("workspace").from("tasks")
-      .select("organization_id")
-      .eq("id", taskId)
-      .single();
-    if (!taskRow?.organization_id) {
-      return NextResponse.json(
-        {
-          success: false,
-          msg: "We could not tell which organization that task belongs to, so no notification was sent.",
-        },
-        { status: 400 },
-      );
-    }
-
     // In-app DM (actionable: Open / Complete / Snooze) + email, in parallel.
     // Both best-effort; the assignment itself already succeeded.
     const [dmResult, result] = await Promise.all([
@@ -90,6 +113,7 @@ export async function POST(request: Request) {
       }),
       sendTaskAssignmentEmail({
         assigneeId,
+        organizationId: taskRow.organization_id,
         assignerName,
         taskTitle,
         taskId,

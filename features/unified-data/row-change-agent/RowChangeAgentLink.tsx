@@ -29,6 +29,56 @@ type Answer =
   | { state: "refused"; why: string }
   | { state: "offered"; entityType: string };
 
+/**
+ * WHETHER THIS TABLE OFFERS "WHEN A ROW CHANGES, RUN AN AGENT", AND WHERE IT GOES — the one
+ * answer the link below and the table's own menu both draw from (lane DATA-V2-FACE: the table
+ * page carries it in its one menu, not on a row of its own). Absent until the store says a row
+ * change here reaches a schedule; a refusal is returned to be SAID, never dropped.
+ */
+export type RowChangeAgentOffer =
+  | { state: "asking" }
+  | { state: "absent" }
+  | { state: "refused"; why: string }
+  | { state: "offered"; href: string };
+
+export function useRowChangeAgentOffer({
+  tableId,
+  tableName,
+  organizationId,
+  userId,
+}: {
+  tableId: string;
+  tableName: string | null;
+  organizationId: string | null;
+  userId: string | null;
+}): RowChangeAgentOffer {
+  const [answer, setAnswer] = useState<Answer>({ state: "asking" });
+
+  useEffect(() => {
+    if (!organizationId) return;
+    let live = true;
+    void recordChangeActions({ store: "record", organizationId, userId }, tableId).then((door) => {
+      if (!live) return;
+      if (door.ok) setAnswer({ state: "offered", entityType: door.data.entity_type });
+      else if (door.absent) setAnswer({ state: "absent" });
+      else setAnswer({ state: "refused", why: door.error.message });
+    });
+    return () => {
+      live = false;
+    };
+  }, [tableId, organizationId, userId]);
+
+  if (answer.state !== "offered") return answer;
+  const prompt = `${tableName ? `A row in the table "${tableName}"` : "A row in this table"} changed. The event variable names the row and the columns that changed. `;
+  return {
+    state: "offered",
+    href: `/schedules/new?trigger=event&tableId=${encodeURIComponent(tableId)}&entityType=${encodeURIComponent(answer.entityType)}&prompt=${encodeURIComponent(prompt)}`,
+  };
+}
+
+/** The words the offer carries, wherever it is drawn. */
+export const ROW_CHANGE_AGENT_LABEL = "When a row changes, run an agent…";
+
 export function RowChangeAgentLink({
   tableId,
   tableName,
@@ -42,27 +92,12 @@ export function RowChangeAgentLink({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [answer, setAnswer] = useState<Answer>({ state: "asking" });
+  const offer = useRowChangeAgentOffer({ tableId, tableName, organizationId, userId });
 
-  useEffect(() => {
-    let live = true;
-    void recordChangeActions({ store: "record", organizationId, userId }, tableId).then((door) => {
-      if (!live) return;
-      if (door.ok) setAnswer({ state: "offered", entityType: door.data.entity_type });
-      else if (door.absent) setAnswer({ state: "absent" });
-      else setAnswer({ state: "refused", why: door.error.message });
-    });
-    return () => {
-      live = false;
-    };
-  }, [tableId, organizationId, userId]);
-
-  if (answer.state === "asking" || answer.state === "absent") return null;
-  if (answer.state === "refused") {
-    return <span className="text-destructive">Running an agent when a row changes is not available: {answer.why}</span>;
+  if (offer.state === "asking" || offer.state === "absent") return null;
+  if (offer.state === "refused") {
+    return <span className="text-destructive">Running an agent when a row changes is not available: {offer.why}</span>;
   }
-  const prompt = `${tableName ? `A row in the table "${tableName}"` : "A row in this table"} changed. The event variable names the row and the columns that changed. `;
-  const href = `/schedules/new?trigger=event&tableId=${encodeURIComponent(tableId)}&entityType=${encodeURIComponent(answer.entityType)}&prompt=${encodeURIComponent(prompt)}`;
   return (
     <button
       type="button"
@@ -71,11 +106,11 @@ export function RowChangeAgentLink({
       disabled={pending}
       onClick={() => {
         if (pending) return;
-        startTransition(() => router.push(href));
+        startTransition(() => router.push(offer.href));
       }}
     >
       <Zap className="h-3 w-3" />
-      {pending ? "Opening schedule…" : "When a row changes, run an agent…"}
+      {pending ? "Opening schedule…" : ROW_CHANGE_AGENT_LABEL}
     </button>
   );
 }

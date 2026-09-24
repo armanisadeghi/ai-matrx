@@ -30,9 +30,14 @@ export interface SheetLayoutProps {
   organizationId: string;
   /** The person reading; `null` only while the session is still resolving. */
   userId: string | null;
+  /**
+   * The table page's own export, handed to a host layout by records-ui 0.85+ (the export is a
+   * rail of the page's one menu there, so there is no button to find). Absent on an older page.
+   */
+  openExport?: (() => void) | undefined;
 }
 
-export function SheetLayout({ tableId, organizationId, userId }: SheetLayoutProps) {
+export function SheetLayout({ tableId, organizationId, userId, openExport: pageExport }: SheetLayoutProps) {
   const placedAlready = (() => {
     const home = recordStoreHomeOf(tableId);
     return !!home && home.organizationId === organizationId && home.userId === userId;
@@ -50,6 +55,12 @@ export function SheetLayout({ tableId, organizationId, userId }: SheetLayoutProp
   // that menu yet, so the page's own trigger is found and pressed; if it is not on screen,
   // the person is told where it is — never a dead item.
   const openExport = useCallback(() => {
+    if (pageExport) {
+      // Called from the right-click menu, which is still closing: open the page's export once
+      // it has let go, so the rail is not dismissed by the menu handing focus back.
+      window.setTimeout(pageExport, 120);
+      return;
+    }
     const trigger = Array.from(
       document.querySelectorAll<HTMLElement>('[aria-label^="Copy, transform or export"]'),
     ).find((el) => !el.closest("[data-sheet-layout]"));
@@ -77,7 +88,7 @@ export function SheetLayout({ tableId, organizationId, userId }: SheetLayoutProp
       title: "Export is in the page header",
       description: "Use CSV, XLSX, or the copy-and-transform menu above the table.",
     });
-  }, []);
+  }, [pageExport]);
 
   if (!placed) return null;
   return (

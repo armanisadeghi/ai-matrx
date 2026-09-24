@@ -11,7 +11,9 @@
 import { use, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import * as recordsUiPackage from "@ai-matrx/records-ui";
 import { RecordsMount, TablePage, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { useTable } from "@ai-matrx/records/react";
 import type { AgentBuildAsk, OpenRecordsAsk, PageView } from "@ai-matrx/records-ui";
 import type { RecordFilter } from "@ai-matrx/records";
 import { Button } from "@ai-matrx/design-system";
@@ -39,7 +41,36 @@ import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/Unif
 import { SheetLayout } from "@/features/data-tables/components/SheetLayout";
 import { runRowAgentAction, type RowAgentActionTarget } from "@/features/unified-data/row-agent-action/rowAgentAction";
 import { toast } from "@/lib/toast";
-import { RowChangeAgentLink } from "@/features/unified-data/row-change-agent/RowChangeAgentLink";
+import {
+  ROW_CHANGE_AGENT_LABEL,
+  RowChangeAgentLink,
+  useRowChangeAgentOffer,
+} from "@/features/unified-data/row-change-agent/RowChangeAgentLink";
+
+/**
+ * 🚨 WHETHER THE INSTALLED `@ai-matrx/records-ui` DRAWS THE TABLE'S ONE-ROW FACE (lane
+ * DATA-V2-FACE: `TablePage`'s `leading` and `menuExtras`, the table menu, the designated
+ * opening). Until that release is installed the page keeps the where-it-lives row it had, so the
+ * organization stays named; once it is, the row is gone and the chip rides the table's own row.
+ * SWAP ON INSTALL: delete this constant and the `faceAware ? … : …` fallback below, and pass
+ * `leading` / `menuExtras` by name inside `<TablePage>`.
+ */
+const FACE_AWARE = typeof (recordsUiPackage as Record<string, unknown>)["tableOpening"] === "function";
+
+/**
+ * THE PAGE'S TITLE IS THE TABLE'S OWN NAME (owner, 2026-09-24: a table he knows must look like
+ * the thing he knows, not like "Data"). Read inside the mount, through the same `useTable` every
+ * package screen reads, and set through the shell's one header primitive.
+ */
+function TableTitle({ tableId }: { tableId: string }) {
+  const table = useTable(tableId);
+  const name = table.data?.name?.trim();
+  return (
+    <PageHeader>
+      <HeaderStructured title={name && name !== "" ? name : "Data"} />
+    </PageHeader>
+  );
+}
 
 export default function UnifiedDataTableRoute({
   params,
@@ -61,11 +92,6 @@ export default function UnifiedDataTableRoute({
   // here with the record still shut. Same shape as `?dashboard=`: a link a queue produced has
   // to finish the sentence it started.
   const activeRecordId = searchParams.get("record");
-  // ARRIVED BY AN OLDER-TABLE LINK. `whereThisTableLives` adds this when the old /data/<id>
-  // viewer finds the table has moved here; the notice then says so in one line.
-  // Its own key, never `from`: `from` is already this page's "you came here from" and a
-  // shared key printed "You came here from 'older-table'" beside the sentence.
-  const movedFromOlderTable = searchParams.get("moved") === "older-table";
   /**
    * WHICH VIEW THE ADDRESS NAMES — grid, kanban, calendar, gallery, dashboards.
    *
@@ -407,24 +433,67 @@ export default function UnifiedDataTableRoute({
    */
   const agentPorts = { runAgentAction: onRunAgentAction };
 
+  /** TABLE-PARITY N2, in the table's one menu: absent until the store says a row change reaches a schedule. */
+  const rowChangeOffer = useRowChangeAgentOffer({
+    tableId,
+    tableName: null,
+    organizationId: campaign.state === "on" && object.state === "found" ? object.organizationId : null,
+    userId: userId ?? null,
+  });
+  /**
+   * WHICH ORGANIZATION THIS TABLE LIVES IN, NAMED QUIETLY ON THE TABLE'S OWN ROW (owner,
+   * 2026-09-23: "I am not seeing how I can see what org this data is in"; 2026-09-24: no rows of
+   * chrome above the table). The one builder every object page and list row renders, and, for a
+   * table another organization shared in, the level it was shared at — one fact, not a banner.
+   */
+  const whereItLives =
+    object.state === "found" ? (
+      <span className="inline-flex items-center gap-1.5" data-table-lives-in="">
+        <WhereItLives
+          dataSource={dataSource}
+          tableId={tableId}
+          knownOrganizationName={knownOrganizationName}
+          onMoved={() => object.retry()}
+        />
+        {shared.state === "shared" ? <span>Shared with you &middot; {shared.levelLabel}</span> : null}
+      </span>
+    ) : null;
+  const facePorts = {
+    leading: whereItLives,
+    menuExtras:
+      rowChangeOffer.state === "offered"
+        ? [
+            {
+              key: "row-change-agent",
+              label: ROW_CHANGE_AGENT_LABEL,
+              onSelect: () => router.push((rowChangeOffer as { href: string }).href),
+            },
+          ]
+        : rowChangeOffer.state === "refused"
+          ? [
+              {
+                key: "row-change-agent",
+                label: ROW_CHANGE_AGENT_LABEL,
+                onSelect: () =>
+                  toast.error("Running an agent when a row changes is not available", {
+                    description: (rowChangeOffer as { why: string }).why,
+                  }),
+              },
+            ]
+          : [],
+  };
+
   return (
     <>
-      <PageHeader>
+      {/* "Data" only until the table is open; the open table's own name replaces it. */}
+      <PageHeader fallback>
         <HeaderStructured title="Data" />
       </PageHeader>
       <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
-        {/* WHICH ORGANIZATION THIS TABLE LIVES IN, BY NAME, FROM THE TABLE — and, for its owner,
-            where else it can go (owner, 2026-09-23: "I am not seeing how I can see what org this
-            data is in"). The one builder every object page and list row renders. */}
-        {object.state === "found" ? (
+        {/* STAND-IN until the installed records-ui draws the one-row face — see FACE_AWARE. */}
+        {!FACE_AWARE && object.state === "found" ? (
           <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
-            <span>Lives in</span>
-            <WhereItLives
-              dataSource={dataSource}
-              tableId={tableId}
-              knownOrganizationName={knownOrganizationName}
-              onMoved={() => object.retry()}
-            />
+            {whereItLives}
             {/* TABLE-PARITY N2: absent until the store says a row change here reaches a schedule. */}
             {campaign.state === "on" ? (
               <span className="ml-auto">
@@ -522,11 +591,13 @@ export default function UnifiedDataTableRoute({
                 {
                   id: "sheet",
                   label: "Sheet",
-                  render: ({ tableId: sheetTableId }) => (
+                  render: (args) => (
                     <SheetLayout
-                      tableId={sheetTableId}
+                      tableId={args.tableId}
                       organizationId={readingOrganizationId!}
                       userId={userId ?? null}
+                      // The page's own export, handed over by records-ui 0.85+ (absent before it).
+                      openExport={(args as { openExport?: () => void }).openExport}
                     />
                   ),
                 },
@@ -537,13 +608,10 @@ export default function UnifiedDataTableRoute({
                 somebody else's table must never be left to work out why their
                 own organization's things are not around it. One row, the
                 organization's name, and what they hold. */}
-            <UnifiedDataSwitchNotice gate={campaign} movedFromOlderTable={movedFromOlderTable} />
-            {shared.state === "shared" ? (
-              <p className="mb-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                Shared with you by <span className="text-foreground">{shared.organizationName}</span>{" "}
-                &middot; {shared.levelLabel}. It stays in their organization; yours is unchanged.
-              </p>
-            ) : null}
+            <TableTitle tableId={tableId} />
+            {/* SIDE BY SIDE IS A FACT, NOT A BANNER (owner, 2026-09-24): no notice that this table
+                also lives in the older system, and no "shared with you" paragraph — the table's
+                row names its organization and the level it was shared at. */}
             {/* A table this organization cannot see says so and offers the way
                 back — never the blank frame the 19 September verdict found. */}
             {/* `activeDashboardId` is a DECLARED prop of TablePage from
@@ -565,6 +633,7 @@ export default function UnifiedDataTableRoute({
               onViewChanged={onViewChanged}
               activeRail={activeRail}
               activeItemId={activeItemId}
+              {...(FACE_AWARE ? facePorts : {})}
             />
           </RecordsMount>
         )}

@@ -29,33 +29,17 @@ export interface UnifiedDataSwitchNoticeProps {
   gate: UnifiedDataCampaignGate;
   /** What this screen is, for the resolving line. e.g. "Data records". */
   what?: string;
-  /**
-   * The person arrived by an OLDER-table link that redirected here, because that table
-   * was moved into the record store (OLD-TABLES-CUTOVER W7). When the gate is `on`, the
-   * notice says so in one line instead of rendering nothing; a link that silently lands
-   * somewhere new is a link that lies about where the person is.
-   */
-  movedFromOlderTable?: boolean;
 }
 
-/** The one sentence a moved table's old link lands on. */
-export const MOVED_FROM_OLDER_TABLE_SENTENCE =
-  "This table moved to its new home; the older copy is archived and can be brought back.";
-
 /**
- * Renders the gate's non-`on` states and, for `on`, nothing — unless the person arrived by
- * a moved older table's link, when it says so in one line. A caller reads:
- *
+ * Renders the gate's non-`on` states and, for `on`, nothing. A caller reads:
  *   {gate.state === "on" ? <TheRealScreen/> : <UnifiedDataSwitchNotice gate={gate}/>}
+ *
+ * (The one-line "this table moved" notice is gone, lane DATA-V2-FACE 2026-09-24: nothing
+ * redirects between the two systems, and side by side is a fact, not a banner.)
  */
-export function UnifiedDataSwitchNotice({ gate, what, movedFromOlderTable }: UnifiedDataSwitchNoticeProps) {
-  if (gate.state === "on") {
-    return movedFromOlderTable ? (
-      <p className="mb-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground" role="status">
-        {MOVED_FROM_OLDER_TABLE_SENTENCE}
-      </p>
-    ) : null;
-  }
+export function UnifiedDataSwitchNotice({ gate, what }: UnifiedDataSwitchNoticeProps) {
+  if (gate.state === "on") return null;
 
   // RESOLVING is not an answer and never wears an answer's clothes.
   if (gate.state === "resolving") {

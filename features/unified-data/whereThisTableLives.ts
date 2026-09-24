@@ -78,7 +78,7 @@ export async function whereThisTableLives(
     tableId,
   );
   if (own.state === "found" && own.kind === "table") {
-    return { kind: "record_store", href: `/data-v2/${tableId}?moved=older-table`, organizationId: own.organizationId };
+    return { kind: "record_store", href: `/data-v2/${tableId}`, organizationId: own.organizationId };
   }
   if (own.state === "found" || own.state === "not-given") return { kind: "nowhere" };
   if (own.state === "unavailable") return { kind: "unknown", why: own.why };
@@ -99,9 +99,9 @@ export async function whereThisTableLives(
   } as never);
   if (found.error) return { kind: "unknown", why: found.error.message };
   if (((found.data ?? []) as Array<{ id?: string }>).some((row) => row.id === tableId)) {
-    // The flag is how the new home knows to say, once, that the table moved — a redirect
-    // that lands silently leaves a person wondering why their table looks different.
-    return { kind: "record_store", href: `/data-v2/${tableId}?moved=older-table`, organizationId };
+    // No "it moved" flag on the address any more (lane DATA-V2-FACE): nothing redirects between
+    // the two systems, and the table page carries no banner about the older copy.
+    return { kind: "record_store", href: `/data-v2/${tableId}`, organizationId };
   }
 
   const resolved = await store.rpc("record_resolve" as never, {

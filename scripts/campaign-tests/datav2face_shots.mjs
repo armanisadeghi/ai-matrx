@@ -7,18 +7,21 @@
  *   node scripts/campaign-tests/datav2face_shots.mjs
  *
  * FACE_TABLE defaults to "Rincon Plumbing — Service Calls" (admin's Workspace), a table copied from
- * the older data system that both seats can open. Credentials come from the environment and are
+ * the older data system. FACE_TABLE_TEST names the table the test seat opens when it differs (a
+ * table somebody shared with her; the Service Calls are not). Credentials come from the environment and are
  * never printed. Headless only, the real login form (scripts/lib/seat-browser.mjs). Writes PNGs and
  * `census-<phase>.json` (the visible words of every control above the records) into FACE_SHOTS.
  */
 import { chromium } from "playwright";
 import { mkdirSync, writeFileSync } from "node:fs";
 
-import { signIn, sleep } from "../lib/seat-browser.mjs";
+import { setOrganization, signIn, sleep } from "../lib/seat-browser.mjs";
 
 const ORIGIN = process.env.FACE_ORIGIN ?? "http://localhost:3001";
 const PHASE = process.env.FACE_PHASE ?? "before";
 const TABLE = process.env.FACE_TABLE ?? "dbc7cd48-7b46-4402-ac9d-e459a95f4598";
+/** The organization the list is looked at in — both seats are members of admin's Workspace. */
+const LIST_ORG = process.env.FACE_LIST_ORG ?? "admin's Workspace";
 const OUT =
   process.env.FACE_SHOTS ??
   "/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/shots/data-v2-face";
@@ -65,10 +68,11 @@ try {
       const page = await context.newPage();
       const who = await signIn(page, ORIGIN, email, PASSWORD, `${seat} seat`);
       if (who !== email) throw new Error(`${seat}: the app says someone else is signed in`);
+      const ONLY = process.env.FACE_ONLY ?? "";
       for (const [where, path] of [
-        ["table", `/data-v2/${TABLE}`],
+        ["table", `/data-v2/${seat === "test" && process.env.FACE_TABLE_TEST ? process.env.FACE_TABLE_TEST : TABLE}`],
         ["list", "/data-v2"],
-      ]) {
+      ].filter(([where]) => ONLY === "" || ONLY === where)) {
         await page.goto(`${ORIGIN}${path}`, { waitUntil: "domcontentloaded", timeout: 240000 });
         // The page reads where the table lives, then the store; give it the time a person waits.
         await page
@@ -76,6 +80,15 @@ try {
             timeout: 120000,
           })
           .catch(() => {});
+        if (where === "list") {
+          // A fresh session has no organization picked; the list is looked at in one, chosen the
+          // way a person chooses it (the picker), never forced by a cookie or an address.
+          const needsOrg = await page.evaluate(() => /An organization is needed/.test(document.body.innerText));
+          if (needsOrg) {
+            await setOrganization(page, LIST_ORG);
+            await page.goto(`${ORIGIN}${path}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+          }
+        }
         await sleep(6000);
         const shot = `${OUT}/${PHASE}-${where}-${seat}-${width}.png`;
         await page.screenshot({ path: shot });
@@ -88,5 +101,5 @@ try {
 } finally {
   await browser.close();
 }
-writeFileSync(`${OUT}/census-${PHASE}.json`, JSON.stringify(result, null, 2));
+writeFileSync(`${OUT}/census-${PHASE}${process.env.FACE_ONLY ? `-${process.env.FACE_ONLY}` : ""}.json`, JSON.stringify(result, null, 2));
 console.log(`census: ${OUT}/census-${PHASE}.json`);

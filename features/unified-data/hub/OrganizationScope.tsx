@@ -16,7 +16,7 @@
 // Champion: Linear's workspace switcher beside "All teams", and Slack's "All workspaces" —
 // the filter is named where you look, and the unfiltered view is one click.
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Building2, Layers } from "lucide-react";
 import { Button, Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
@@ -31,11 +31,14 @@ export function OrganizationScopeStrip({
   showingAll,
   onShowAll,
   onShowOne,
+  trailing,
 }: {
   organizationName: string | null;
   showingAll: boolean;
   onShowAll: () => void;
   onShowOne: () => void;
+  /** The list's other filter (whose tables), on the same row — one place to narrow the list. */
+  trailing?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const name = organizationName ?? "the organization you are working in";
@@ -78,6 +81,7 @@ export function OrganizationScopeStrip({
           </Button>
         </>
       )}
+      {trailing ? <div className="ml-auto flex flex-wrap items-center gap-1.5">{trailing}</div> : null}
     </div>
   );
 }

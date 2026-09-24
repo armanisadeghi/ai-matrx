@@ -23,7 +23,6 @@
 // mean the same word on this page and on the tables list underneath it.
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ArchivedDisclosure,
@@ -48,8 +47,6 @@ const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" 
 
 import {
   HUB_CAPABILITIES,
-  LANE_EMPTY_SENTENCE,
-  SHARED_ONLY_EMPTY,
   attachChangedBy,
   type HubItem,
   type HubReadContext,
@@ -363,96 +360,13 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
     return out;
   }, [states, lane, inLane]);
 
-  /** THE NEWEST THREE THINGS, computed from what the doors actually returned. */
-  const newest = useMemo<Array<HubItem & { capability: string }>>(() => {
-    const all: Array<HubItem & { capability: string }> = [];
-    for (const capability of HUB_CAPABILITIES) {
-      const state = filtered[capability.id];
-      if (state?.phase !== "read") continue;
-      for (const item of state.items) {
-        if (item.changedAt) all.push({ ...item, capability: capability.title });
-      }
-    }
-    all.sort((a, b) => (b.changedAt ?? "").localeCompare(a.changedAt ?? ""));
-    return all.slice(0, 3);
-  }, [filtered]);
-
-  const scopeStrip = (
-    <OrganizationScopeStrip
-      organizationName={organizationName}
-      showingAll={showingAll}
-      onShowAll={() => setScope(true)}
-      onShowOne={() => setScope(false)}
-    />
-  );
-  if (showingAll) {
-    return (
-      <div data-hub-root className="space-y-4">
-        {scopeStrip}
-        <AllOrganizationsTables dataSource={dataSource} />
-      </div>
-    );
-  }
-
-  return (
-    <div data-hub-root className="space-y-4">
-      {scopeStrip}
-      {/* START HERE — the walkthrough, and the three newest things, which are read
-          off the same doors as everything below rather than written down here. */}
-      <section className="rounded-lg border border-border bg-card">
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-3 py-2">
-          <span className="text-sm font-medium text-foreground">Start here</span>
-          <Link
-            href="/data-v2/try-everything"
-            className="text-xs text-foreground underline underline-offset-2"
-          >
-            Try everything on one page
-          </Link>
-          <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-            every part of the record store, with the unfinished parts named
-          </span>
-        </div>
-        <div className="border-t border-border px-3 py-2">
-          {newest.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              {/* THREE DIFFERENT EMPTIES, three different sentences (VERIFIER-16
-                  M6 + the shared-only member): a lane with nothing in it, an
-                  organization that shows this member only what is shared with
-                  them, and an organization with genuinely nothing yet. */}
-              {lane
-                ? LANE_EMPTY_SENTENCE[lane]
-                : sharedOnly
-                  ? SHARED_ONLY_EMPTY
-                  : "Nothing has been made here yet. Make a table below and everything else — forms, boards, dashboards, digests — hangs off it."}
-            </p>
-          ) : (
-            <ul className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <li className="text-xs text-muted-foreground">Newest:</li>
-              {newest.map((item) => (
-                <li key={`${item.capability}:${item.id}`} className="min-w-0">
-                  <Link
-                    href={item.href}
-                    className="text-xs text-foreground underline underline-offset-2"
-                  >
-                    {item.title}
-                  </Link>
-                  {/* THE NAME AND WHAT IT IS ARE TWO THINGS. Without a separator
-                      they set in the same size and flow, so "Jobs" followed by
-                      "Tables" read as one name — "Jobs Tables" (VERIFIER-14 §4).
-                      The middot is the one the rows already use between facts. */}
-                  <span className="text-xs text-muted-foreground">
-                    {" · "}
-                    {item.capability}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </section>
-
-      {/* THE LANES, AS FILTERS AND NEVER A FLAT LIST. The words are the package's. */}
-      {lanesKnown ? (
+  /**
+   * THE LIST'S ONE PLACE TO NARROW IT (lane DATA-V2-FACE, owner 2026-09-24): which organization,
+   * and whose — on ONE row above the tables, and nothing else above them. The lanes, as filters
+   * and never a flat list; the words are the package's.
+   */
+  const laneFilter = (
+    lanesKnown ? (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-muted-foreground">Show</span>
           <button
@@ -460,7 +374,7 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
             data-hub-lane="everything"
             onClick={() => setLane(null)}
             className={cn(
-              "rounded-full border px-2.5 py-1 text-xs transition-colors",
+              "rounded-full border px-2 py-0.5 text-xs transition-colors",
               lane === null
                 ? "border-foreground bg-foreground text-background"
                 : "border-border text-muted-foreground hover:bg-muted/50",
@@ -478,7 +392,7 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
               data-hub-lane={candidate}
               onClick={() => setLane(candidate)}
               className={cn(
-                "rounded-full border px-2.5 py-1 text-xs transition-colors",
+                "rounded-full border px-2 py-0.5 text-xs transition-colors",
                 lane === candidate
                   ? "border-foreground bg-foreground text-background"
                   : "border-border text-muted-foreground hover:bg-muted/50",
@@ -496,7 +410,42 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
           Who can see each table, and which are yours, could not be read, so only everything is
           shown. {facts.why}
         </p>
-      ) : null}
+      ) : null
+  );
+  const scopeStrip = (
+    <OrganizationScopeStrip
+      organizationName={organizationName}
+      showingAll={showingAll}
+      onShowAll={() => setScope(true)}
+      onShowOne={() => setScope(false)}
+      trailing={showingAll ? null : laneFilter}
+    />
+  );
+  if (showingAll) {
+    return (
+      <div data-hub-root className="space-y-4">
+        {scopeStrip}
+        <AllOrganizationsTables dataSource={dataSource} />
+      </div>
+    );
+  }
+
+  return (
+    <div data-hub-root className="space-y-4">
+      {scopeStrip}
+
+      {HUB_CAPABILITIES.filter((capability) => capability.id !== "kept-by-the-app" || showEverything).map((capability) => (
+        <HubListing
+          key={capability.id}
+          capability={capability}
+          state={filtered[capability.id] ?? { phase: "reading" }}
+          laneLabel={lane ? VISIBILITY_LANE_TITLE[lane] : null}
+          lane={lane}
+          sharedOnly={sharedOnly}
+          open={open[capability.id] ?? false}
+          onOpenChange={(next) => setOpen((prev) => ({ ...prev, [capability.id]: next }))}
+        />
+      ))}
 
       {(() => {
         const kept = states["kept-by-the-app"];
@@ -518,19 +467,6 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
           </div>
         );
       })()}
-
-      {HUB_CAPABILITIES.filter((capability) => capability.id !== "kept-by-the-app" || showEverything).map((capability) => (
-        <HubListing
-          key={capability.id}
-          capability={capability}
-          state={filtered[capability.id] ?? { phase: "reading" }}
-          laneLabel={lane ? VISIBILITY_LANE_TITLE[lane] : null}
-          lane={lane}
-          sharedOnly={sharedOnly}
-          open={open[capability.id] ?? false}
-          onOpenChange={(next) => setOpen((prev) => ({ ...prev, [capability.id]: next }))}
-        />
-      ))}
 
       {/* THE QUEUE, UNDER THE FRONT DOOR RATHER THAN OVER IT. See `inbox` above. */}
       {inbox}

@@ -575,6 +575,10 @@ export async function updateTask(
     const payload: TablesUpdate<{ schema: "workspace" }, "tasks"> = {
       ...rest,
     };
+    // The assignment notice reads the persisted actor back from the task.
+    // Stamp it on the same write as the assignment rather than trusting the
+    // browser's later notification request to say who performed that write.
+    if (updates.assignee_id !== undefined) payload.updated_by = requireUserId();
     if (reminders !== undefined) payload.reminders = toJson(reminders);
     // Lifecycle bookkeeping: completing stamps completed_at; reopening clears it.
     if (updates.status === "completed" && updates.completed_at === undefined) {
@@ -627,16 +631,17 @@ async function sendTaskAssignmentNotification(
   if (!task.assignee_id) return;
 
   try {
-    await fetch("/api/notifications/task-assigned", {
+    const response = await fetch("/api/notifications/task-assigned", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        assigneeId: task.assignee_id,
-        taskTitle: task.title,
         taskId: task.id,
-        taskDescription: task.description,
+        taskVersion: task.version,
       }),
     });
+    if (!response.ok) {
+      console.error("Task assignment was saved, but its notification was refused:", response.status);
+    }
   } catch (error) {
     console.error("Failed to send task assignment notification:", error);
   }

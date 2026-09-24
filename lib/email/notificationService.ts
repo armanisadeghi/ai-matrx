@@ -131,12 +131,13 @@ async function getUserDetails(
  */
 export async function sendTaskAssignmentEmail(options: {
   assigneeId: string;
+  organizationId: string;
   assignerName: string;
   taskTitle: string;
   taskId: string;
   taskDescription?: string;
 }): Promise<NotificationResult> {
-  const { assigneeId, assignerName, taskTitle, taskId, taskDescription } =
+  const { assigneeId, organizationId, assignerName, taskTitle, taskId, taskDescription } =
     options;
 
   // Check user preferences
@@ -157,7 +158,10 @@ export async function sendTaskAssignmentEmail(options: {
 
   // Generate task URL
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://aimatrx.com";
-  const taskUrl = `${baseUrl}/tasks?task=${taskId}`;
+  const taskUrl = await linkCarriesItsOrganization(
+    `${baseUrl}/tasks?task=${taskId}`,
+    organizationId,
+  );
 
   // Render React Email template
   const html = await renderTemplate(
