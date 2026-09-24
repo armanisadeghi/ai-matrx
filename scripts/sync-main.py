@@ -765,7 +765,9 @@ def main():
     for leftover in ("MERGE_HEAD", "rebase-merge", "rebase-apply", "CHERRY_PICK_HEAD"):
         if os.path.exists(os.path.join(gd, leftover)):
             die("a %s is already in progress here. Finish it, or undo it with `git merge --abort` "
-                "/ `git rebase --abort`, then run this again." % leftover)
+                "/ `git rebase --abort`, then run this again. BEFORE undoing, run "
+                "`git diff --cached --name-only`: undoing resets every STAGED edit (unstaged edits "
+                "survive), so commit or note anything staged that is real work." % leftover)
 
     stamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
     total_local = pulled = 0
