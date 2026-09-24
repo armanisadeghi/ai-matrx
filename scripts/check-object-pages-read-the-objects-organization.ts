@@ -49,6 +49,7 @@ export const OBJECT_HELPERS: readonly string[] = [
   "features/unified-data/whereThisTableLives.ts",
   "features/data-tables/data-source/locate-table.ts",
   "features/record-change-approvals/applyRecordChange.ts",
+  "features/list-change-proposals/applyListChange.ts",
   "features/unified-data/components/EntityCustomFields.tsx",
 ];
 

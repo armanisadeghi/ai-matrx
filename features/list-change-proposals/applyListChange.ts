@@ -41,7 +41,7 @@ import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core"
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { createClient } from "@/utils/supabase/client";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { resolveObjectOrganization, standInOrganizationId } from "@/features/unified-data/objectOrganization";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   UNIFIED_DATA_CAMPAIGN,
@@ -206,10 +206,21 @@ async function unifiedDataCampaignOn(organizationId: string | null): Promise<boo
   return UNIFIED_DATA_CAMPAIGN.enabled(organizationId);
 }
 
-async function recordsClientOrRefusal(): Promise<{ client: RecordsClient } | { refused: string }> {
+async function recordsClientOrRefusal(tableId: string): Promise<{ client: RecordsClient } | { refused: string }> {
   const state = getStoreSingleton()?.getState();
-  const organizationId = state ? selectActiveOrganizationId(state) : null;
   const userId = state ? selectUserId(state) : null;
+  // ACCESS IS PERSONAL (owner, 2026-09-23). The TABLE names its organization; the one the
+  // person happens to be working in decides nothing. The active organization is read only by
+  // the announced stand-in while custom.where_id_opens is absent from a database.
+  const dataSource = recordsDataSource(createClient());
+  const own = await resolveObjectOrganization(dataSource, tableId);
+  if (own.state === "not-given") {
+    return { refused: "This table is not one you have been given, or it is no longer there." };
+  }
+  if (own.state === "unavailable") {
+    return { refused: `Could not ask the record store where this table lives, so nothing was changed. ${own.why}` };
+  }
+  const organizationId = own.state === "found" ? own.organizationId : standInOrganizationId();
   if (!(await unifiedDataCampaignOn(organizationId))) {
     return { refused: UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE };
   }
@@ -220,7 +231,7 @@ async function recordsClientOrRefusal(): Promise<{ client: RecordsClient } | { r
   }
   return {
     client: createRecordsClient({
-      dataSource: recordsDataSource(createClient()),
+      dataSource,
       actor: personActor(userId),
       organizationId,
     }),
@@ -229,7 +240,7 @@ async function recordsClientOrRefusal(): Promise<{ client: RecordsClient } | { r
 
 const recordTableStore: ListStore<Extract<ListChangeTarget, { kind: "table" }>> = {
   async read(target) {
-    const resolved = await recordsClientOrRefusal();
+    const resolved = await recordsClientOrRefusal(target.tableId);
     if ("refused" in resolved) return { status: "refused", detail: resolved.refused };
     const { client } = resolved;
 
@@ -251,7 +262,7 @@ const recordTableStore: ListStore<Extract<ListChangeTarget, { kind: "table" }>> 
   },
 
   async apply(target, proposal) {
-    const resolved = await recordsClientOrRefusal();
+    const resolved = await recordsClientOrRefusal(target.tableId);
     if ("refused" in resolved) return { status: "refused", detail: resolved.refused };
     const { client } = resolved;
 
