@@ -14,6 +14,9 @@ import {
 } from "@/components/ui/credenza-modal/credenza";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import {
   Select,
   SelectContent,
@@ -103,6 +106,7 @@ export function VaultLoginExportDialog({
   items: VaultItem[];
 }) {
   const organizationId = useAppSelector(selectOrganizationId);
+  const { organizationState } = useOrganizationRequired();
   const passwordInput = useRef<HTMLInputElement | null>(null);
   const controller = useRef<AbortController | null>(null);
   const generation = useRef(0);
@@ -210,6 +214,12 @@ export function VaultLoginExportDialog({
 
   const handleExportError = (cause: unknown) => {
     if (cause instanceof DOMException && cause.name === "AbortError") return;
+    if (isOrganizationRequiredError(cause)) {
+      invalidate(
+        "Your organization selection changed. Choose an organization to start the export again.",
+      );
+      return;
+    }
     if (cause instanceof VaultLoginExportTransportError) {
       if (cause.code === "recent_auth_required") {
         const actor = expectedActor.current;
@@ -348,6 +358,28 @@ export function VaultLoginExportDialog({
   const loginItems = items.filter(
     (item) => item.definition_key === WEBSITE_LOGIN_DEFINITION_KEY,
   );
+
+  if (organizationState !== "ready") {
+    return (
+      <Credenza
+        open={open}
+        onOpenChange={(next) => (next ? onOpenChange(true) : close())}
+      >
+        <CredenzaContent className="md:max-w-2xl">
+          <CredenzaHeader>
+            <CredenzaTitle>Export selected logins</CredenzaTitle>
+          </CredenzaHeader>
+          <CredenzaBody className="px-4 pb-6 md:px-0">
+            <OrganizationContextNotice
+              state={organizationState}
+              what="Vault login exports"
+              compact
+            />
+          </CredenzaBody>
+        </CredenzaContent>
+      </Credenza>
+    );
+  }
 
   return (
     <Credenza open={open} onOpenChange={(next) => (next ? onOpenChange(true) : close())}>

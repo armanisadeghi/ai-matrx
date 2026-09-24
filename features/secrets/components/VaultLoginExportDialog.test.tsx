@@ -8,6 +8,8 @@ import {
   previewVaultLoginCsv,
   VaultLoginExportTransportError,
 } from "../vault-service";
+import { OrganizationContextError } from "@/lib/api/organization-context";
+import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 
 const actor = {
   userId: "user-1",
@@ -18,6 +20,7 @@ let authListener:
   | ((event: string, session?: { user: { id: string } } | null) => void)
   | undefined;
 let selectedOrganization = actor.organizationId;
+let organizationState: OrganizationState = "ready";
 const signInWithPasswordMock = jest.fn();
 const getClaimsMock = jest.fn();
 
@@ -28,6 +31,21 @@ if (!HTMLElement.prototype.scrollIntoView) {
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => selectedOrganization,
 }));
+jest.mock("@/features/organizations/useOrganizationRequired", () => ({
+  useOrganizationRequired: () => ({ organizationState }),
+}));
+jest.mock(
+  "@/features/organizations/components/OrganizationRequiredNotice",
+  () => ({
+    OrganizationContextNotice: ({
+      state,
+      what,
+    }: {
+      state: string;
+      what?: string;
+    }) => <div data-testid="organization-context-notice">{state}:{what}</div>,
+  }),
+);
 jest.mock("@/hooks/use-media-query", () => ({
   useMediaQuery: () => false,
 }));
@@ -114,6 +132,7 @@ describe("VaultLoginExportDialog", () => {
     root = createRoot(host);
     getActorMock.mockReset();
     selectedOrganization = actor.organizationId;
+    organizationState = "ready";
     previewMock.mockReset();
     downloadMock.mockReset();
     signInWithPasswordMock.mockReset();
@@ -283,6 +302,37 @@ describe("VaultLoginExportDialog", () => {
     );
     expect(document.body.textContent).toContain("1 eligible of 1 selected");
     expect(button("Download CSV").disabled).toBe(true);
+  });
+
+  test.each(["resolving", "required", "unavailable"] as const)(
+    "does not offer login export controls while organization context is %s",
+    async (state) => {
+      organizationState = state;
+      await render();
+
+      expect(document.querySelector("#vault-export-profile")).toBeNull();
+      expect(document.querySelectorAll('[role="checkbox"]')).toHaveLength(0);
+      expect(previewMock).not.toHaveBeenCalled();
+      expect(document.body.textContent).toContain(`${state}:Vault login exports`);
+    },
+  );
+
+  test("returns to the organization gate when context disappears while reviewing", async () => {
+    previewMock.mockImplementation(async () => {
+      organizationState = "required";
+      throw new OrganizationContextError("organization_context_required");
+    });
+    await render();
+    const checkbox = document.querySelector('[role="checkbox"]');
+    if (!(checkbox instanceof HTMLElement)) throw new Error("selection missing");
+    await act(async () => checkbox.click());
+    await act(async () => button("Review selected logins").click());
+    await render();
+
+    expect(document.querySelector("#vault-export-profile")).toBeNull();
+    expect(document.querySelectorAll('[role="checkbox"]')).toHaveLength(0);
+    expect(document.body.textContent).toContain("required:Vault login exports");
+    expect(document.body.textContent).not.toContain("Export preview");
   });
 
   test("binds the NordPass destination to preview and clears a prior preview when changed", async () => {
