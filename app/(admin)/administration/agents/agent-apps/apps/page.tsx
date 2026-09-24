@@ -49,13 +49,6 @@ import {
 } from "@/features/agent-apps/components/AgentAppRef";
 import { pushAppHref } from "@/lib/deployment/navigate";
 
-/** `fetchAgentAppsAdmin({limit: 1000})` has no total-count receipt. */
-export const AGENT_APPS_COVERAGE = {
-  noun: "agent app",
-  cap: 1000,
-  answeredBy: "client" as const,
-};
-
 function getStatusBadge(status: string) {
   const map: Record<string, { cls: string; Icon: typeof Clock }> = {
     draft: { cls: "bg-muted text-foreground", Icon: Clock },
@@ -337,7 +330,7 @@ export default function AgentAppsAdminListPage() {
     try {
       if (retainsRows) setIsRefreshing(true);
       else setLoading(true);
-      const data = await fetchAgentAppsAdmin({ limit: 1000 });
+      const data = await fetchAgentAppsAdmin();
       setApps(data);
       setViewApps(data);
       setLoadError(null);
@@ -576,7 +569,6 @@ export default function AgentAppsAdminListPage() {
                   ) : undefined,
               }}
               onViewChange={setViewApps}
-              coverage={AGENT_APPS_COVERAGE}
               detail={{ enabled: false }}
               window={{ enabled: false }}
               copy={false}

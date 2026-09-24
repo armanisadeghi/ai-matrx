@@ -291,25 +291,36 @@ export async function fetchAgentAppsAdmin(filters?: {
   scope?: "global" | "user";
 }): Promise<AgentAppAdminView[]> {
   const supabase = getClient();
-  let query = supabase
-    .schema("app")
-    .from("definition")
-    .select("*")
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false });
+  const limit = filters?.limit;
+  const makeQuery = (range?: { from: number; to: number }) => {
+    let query = supabase
+      .schema("app")
+      .from("definition")
+      .select("*")
+      .is("deleted_at", null)
+      .order("updated_at", { ascending: false });
 
-  if (filters?.status) query = query.eq("status", filters.status);
-  if (filters?.is_featured !== undefined)
-    query = query.eq("is_featured", filters.is_featured);
-  if (filters?.is_verified !== undefined)
-    query = query.eq("is_verified", filters.is_verified);
-  if (filters?.category) query = query.eq("category", filters.category);
-  if (filters?.scope === "global") query = query.is("created_by", null);
-  if (filters?.scope === "user") query = query.not("created_by", "is", null);
-  if (filters?.limit) query = query.limit(filters.limit);
+    if (filters?.status) query = query.eq("status", filters.status);
+    if (filters?.is_featured !== undefined)
+      query = query.eq("is_featured", filters.is_featured);
+    if (filters?.is_verified !== undefined)
+      query = query.eq("is_verified", filters.is_verified);
+    if (filters?.category) query = query.eq("category", filters.category);
+    if (filters?.scope === "global") query = query.is("created_by", null);
+    if (filters?.scope === "user") query = query.not("created_by", "is", null);
+    return range ? query.range(range.from, range.to) : query;
+  };
 
-  const { data, error } = await query;
-  if (error) throw error;
+  const data = limit
+    ? await (async () => {
+        const { data: limited, error } = await makeQuery().limit(limit);
+        if (error) throw error;
+        return limited ?? [];
+      })()
+    : await readAllRows<Database["app"]["Tables"]["definition"]["Row"]>(
+        ({ from, to }) => makeQuery({ from, to }),
+        { label: "app.definition (agent apps administration)" },
+      );
 
   const keyByMandateId = await fetchMandateKeys(
     (data ?? []).map((r) => (r as { mandate_id?: string | null }).mandate_id),
