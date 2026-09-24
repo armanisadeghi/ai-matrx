@@ -289320,11 +289320,11 @@
           "profile": {
             "type": "string",
             "enum": [
-              "matrx_login_csv_v1",
-              "nordpass_csv_v1",
               "google_password_manager_csv_v1",
               "keeper_csv_v1",
-              "lastpass_csv_v1"
+              "lastpass_csv_v1",
+              "matrx_login_csv_v1",
+              "nordpass_csv_v1"
             ],
             "title": "Profile"
           },
@@ -289400,11 +289400,11 @@
           "profile": {
             "type": "string",
             "enum": [
-              "matrx_login_csv_v1",
-              "nordpass_csv_v1",
               "google_password_manager_csv_v1",
               "keeper_csv_v1",
-              "lastpass_csv_v1"
+              "lastpass_csv_v1",
+              "matrx_login_csv_v1",
+              "nordpass_csv_v1"
             ],
             "title": "Profile"
           },
@@ -289431,11 +289431,11 @@
           "profile": {
             "type": "string",
             "enum": [
-              "matrx_login_csv_v1",
-              "nordpass_csv_v1",
               "google_password_manager_csv_v1",
               "keeper_csv_v1",
-              "lastpass_csv_v1"
+              "lastpass_csv_v1",
+              "matrx_login_csv_v1",
+              "nordpass_csv_v1"
             ],
             "title": "Profile"
           },

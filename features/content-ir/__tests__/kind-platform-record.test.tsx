@@ -40,6 +40,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
+import userAuthReducer from "@/lib/redux/slices/userAuthSlice";
 
 import {
   applyIrKindRoute,
@@ -89,7 +90,10 @@ const KIND = "platform_record";
 
 function mount(node: React.ReactNode): string {
   const store = configureStore({
-    reducer: { probe: (state: Record<string, never> = {}) => state },
+    // The real userAuth slice: EntityRef resolves an agent address through
+    // useAgentAddressViewer, which reads `userAuth.isAdmin` from any store it
+    // finds — every app store has the slice, so the probe store does too.
+    reducer: { userAuth: userAuthReducer },
   });
   return renderToStaticMarkup(<Provider store={store}>{node}</Provider>);
 }

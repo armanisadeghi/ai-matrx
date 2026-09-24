@@ -19135,6 +19135,23 @@ export type Database = {
       [_ in never]: never
     }
   }
+  content: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   content_ir: {
     Tables: {
       admission_config: {
@@ -65029,6 +65046,7 @@ export type Database = {
           agent_write_notes: string | null
           allow_preview: boolean
           anon_lane_pending_withdrawal_reason: string | null
+          anonymous_read_status: string | null
           audit_class: string
           audit_class_reason: string | null
           base_tier: number
@@ -65090,6 +65108,7 @@ export type Database = {
           agent_write_notes?: string | null
           allow_preview?: boolean
           anon_lane_pending_withdrawal_reason?: string | null
+          anonymous_read_status?: string | null
           audit_class?: string
           audit_class_reason?: string | null
           base_tier?: number
@@ -65155,6 +65174,7 @@ export type Database = {
           agent_write_notes?: string | null
           allow_preview?: boolean
           anon_lane_pending_withdrawal_reason?: string | null
+          anonymous_read_status?: string | null
           audit_class?: string
           audit_class_reason?: string | null
           base_tier?: number
@@ -112832,6 +112852,9 @@ export const Constants = {
     Enums: {},
   },
   communication: {
+    Enums: {},
+  },
+  content: {
     Enums: {},
   },
   content_ir: {
