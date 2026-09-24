@@ -1,3 +1,11 @@
+-- target: branch,production
+-- additive: yes
+--   It REPLACES two functions of schema `custom` (`dashboard_block_normalize`, `dashboard_run`) with
+--   their existing signatures, security and search_path, keeping every existing branch, and adds one
+--   SECURITY INVOKER helper (`dashboard_target_field_assert`). What changes: a block target may name
+--   a goal column instead of a fixed number. No table, column, trigger, policy or grant is touched;
+--   no row of anybody's data is written; a fixed-number target answers exactly as before.
+-- guard: custom/system_enabled
 -- lane: S3
 -- lock: custom
 -- based-on: custom.dashboard_block_normalize(uuid, uuid, jsonb) 327b9588847703903a0079b364b784c20d275c0ced3a325b52aa4e1bf5c785c0
