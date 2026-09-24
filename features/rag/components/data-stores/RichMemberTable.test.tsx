@@ -77,16 +77,17 @@ jest.mock("@/features/rag/components/library/QuickSearchDialog", () => ({
     ) : null,
 }));
 
-jest.mock("@/components/ui/dialog", () => ({
-  Dialog: ({ open, children }: { open: boolean; children: ReactNode }) =>
-    open ? <div role="dialog">{children}</div> : null,
-  DialogContent: ({ children }: { children: ReactNode }) => <>{children}</>,
-  DialogDescription: ({ children }: { children: ReactNode }) => (
+// The remove confirmation is an AlertDialog (it blocks — policy ai-reachable-everywhere).
+jest.mock("@/components/ui/alert-dialog", () => ({
+  AlertDialog: ({ open, children }: { open: boolean; children: ReactNode }) =>
+    open ? <div role="alertdialog">{children}</div> : null,
+  AlertDialogContent: ({ children }: { children: ReactNode }) => <>{children}</>,
+  AlertDialogDescription: ({ children }: { children: ReactNode }) => (
     <p>{children}</p>
   ),
-  DialogFooter: ({ children }: { children: ReactNode }) => <>{children}</>,
-  DialogHeader: ({ children }: { children: ReactNode }) => <>{children}</>,
-  DialogTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
+  AlertDialogFooter: ({ children }: { children: ReactNode }) => <>{children}</>,
+  AlertDialogHeader: ({ children }: { children: ReactNode }) => <>{children}</>,
+  AlertDialogTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
 }));
 
 jest.mock("@/components/ui/tooltip", () => ({

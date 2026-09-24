@@ -157,6 +157,11 @@ export default function TableConfigModal({
   onSuccess,
 }: TableConfigModalProps) {
   const [loading, setLoading] = useState(false);
+  // Which tab is showing, so the footer speaks for THAT tab's save model
+  // (register ARE-033): row actions save as each is saved, the other tabs on
+  // Save Changes.
+  const [activeTab, setActiveTab] = useState<string>(defaultTab ?? "fields");
+  const onActionsTab = activeTab === "actions";
   // Which store holds this table (data seam) — decides the two controls a
   // record-store table does not have in the older form.
   const onTheRecordStore = isRecordStoreTable(tableId);
@@ -775,7 +780,12 @@ export default function TableConfigModal({
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs key={defaultTab ?? "fields"} defaultValue={defaultTab ?? "fields"} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <Tabs
+          key={defaultTab ?? "fields"}
+          defaultValue={defaultTab ?? "fields"}
+          onValueChange={setActiveTab}
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+        >
           <TabsList className="mx-3 mt-2 grid shrink-0 w-auto grid-cols-3 sm:mx-4">
             <TabsTrigger value="fields">Fields & Order</TabsTrigger>
             <TabsTrigger value="table">Table Settings</TabsTrigger>
@@ -1216,11 +1226,15 @@ export default function TableConfigModal({
               {Object.keys(dataTypeChanges).length > 0 && (
                 <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
               )}
-              {Object.keys(dataTypeChanges).length > 0
-                ? `${Object.keys(dataTypeChanges).length} ${Object.keys(dataTypeChanges).length === 1 ? "column" : "columns"} will be converted when saved`
-                : hasChanges
-                  ? "You have unsaved changes"
-                  : "No changes made"}
+              {onActionsTab
+                ? hasChanges
+                  ? "Row actions save one at a time. Other tabs have unsaved changes."
+                  : "Row actions save one at a time, as you save each."
+                : Object.keys(dataTypeChanges).length > 0
+                  ? `${Object.keys(dataTypeChanges).length} ${Object.keys(dataTypeChanges).length === 1 ? "column" : "columns"} will be converted when saved`
+                  : hasChanges
+                    ? "You have unsaved changes"
+                    : "No changes made"}
             </div>
             <div className="flex shrink-0 flex-wrap justify-end gap-2">
               <ShareButton
@@ -1234,14 +1248,22 @@ export default function TableConfigModal({
                 resourceName={tableInfo.table_name}
                 showStatus={false}
               />
-              <Button variant="outline" onClick={onClose} disabled={loading}>
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-              <Button onClick={handleSave} disabled={loading || !hasChanges}>
-                <Save className="h-4 w-4 mr-2" />
-                {loading ? "Saving..." : "Save Changes"}
-              </Button>
+              {onActionsTab && !hasChanges ? (
+                <Button variant="outline" onClick={onClose}>
+                  Close
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={onClose} disabled={loading}>
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSave} disabled={loading || !hasChanges}>
+                    <Save className="h-4 w-4 mr-2" />
+                    {loading ? "Saving..." : "Save Changes"}
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </DialogFooter>
