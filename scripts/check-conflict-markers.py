@@ -50,13 +50,22 @@ def main():
             elif line.startswith("### "):
                 folder = line[4:].strip().rstrip("/") + "/"
             elif line.startswith("- ") and section:
-                item = line[2:].strip()
+                item = line[2:].split(" — ")[0].strip()
                 if section == "held":
                     listed_held.add(folder + item + ".held")
                 else:
                     listed_docs.add(item)
 
     problems = 0
+    # a "### _conflicts/<stamp>/" heading with no items under it is a leftover: delete it
+    if os.path.exists(LOG_REL):
+        rows = open(LOG_REL).read().splitlines()
+        for i, row in enumerate(rows):
+            if row.startswith("### "):
+                nxt = next((r for r in rows[i + 1:] if r.strip()), "")
+                if not nxt.startswith("- "):
+                    print("EMPTY HEADING, DELETE IT in %s: %s" % (LOG_REL, row))
+                    problems += 1
     for path in sorted(found):
         kinds = found[path]
         held_note = path.endswith(".held-note.txt")

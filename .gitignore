@@ -187,3 +187,9 @@ tmp/fixer-logs/
 .matrx/fixer-dispatch.json
 # Parked checkouts other sessions drop here (aidream clones, 2026-09-22); never committed by a sweep.
 work/
+
+# Agent scratch that a whole-tree commit (scripts/sync-main.py) must never pick up
+/=
+/tmp/
+/measurements/
+/scripts/.tmp-*
