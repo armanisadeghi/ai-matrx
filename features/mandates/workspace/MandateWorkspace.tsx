@@ -93,7 +93,8 @@ import {
   type MandateWorkspaceData,
   type WorkspaceAgentInfo,
 } from "./useMandateWorkspaceData";
-import { loadFailedFailure } from "../mandate-address";
+import { loadFailedFailure, readMandateAddress } from "../mandate-address";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useMandate } from "../useMandate";
 import { MANDATE_WORKSPACE_SURFACE_NAME } from "@/features/surfaces/manifests/mandate-workspace.manifest";
 import { normalizeTransferJson } from "@ai-matrx/alchemy/core";
@@ -444,6 +445,24 @@ function OneMandateWorkspace({
     // whose answer cannot change. Retry survives for the one state where it
     // can succeed. Both other states get the door that can — the list.
     const verdict = failure ?? loadFailedFailure("Unknown error.");
+    // A uuid address nothing readable answers to is an access question the
+    // canonical gate can resolve (denied / deleted / never existed). A KEY
+    // address has no id to ask about, so it keeps the sentence below.
+    if (
+      verdict.kind === "no-such-mandate" &&
+      readMandateAddress(mandateKeyOrId) === "id"
+    ) {
+      return (
+        <AccessGate
+          token="mandate"
+          id={mandateKeyOrId.trim()}
+          fallbackHref={
+            host === "admin-route" ? "/administration/mandates" : "/mandates"
+          }
+          fallbackLabel="All mandates"
+        />
+      );
+    }
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-3 px-6 py-24 text-center">
         <p
