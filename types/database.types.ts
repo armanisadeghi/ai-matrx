@@ -34034,6 +34034,20 @@ export type Database = {
         Args: { p_key: string; p_organization_id: string; p_record_id: string }
         Returns: Json
       }
+      vault_write_revision: {
+        Args: {
+          p_actor_id: string
+          p_expected_revision: number
+          p_item_id: string
+          p_organization_id: string
+          p_row_data: Json
+        }
+        Returns: {
+          history_revision: number
+          occurred_at: string
+          snapshot_id: string
+        }[]
+      }
       who_could_see: {
         Args: { p_at: string; p_organization_id: string; p_record_id: string }
         Returns: {
@@ -64200,6 +64214,7 @@ export type Database = {
       }
       comments: {
         Row: {
+          anchor: Json | null
           body: string
           created_at: string
           created_by: string | null
@@ -64211,12 +64226,15 @@ export type Database = {
           metadata: Json
           organization_id: string
           parent_id: string | null
+          resolved_at: string | null
+          resolved_by: string | null
           updated_at: string
           updated_by: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          anchor?: Json | null
           body: string
           created_at?: string
           created_by?: string | null
@@ -64228,12 +64246,15 @@ export type Database = {
           metadata?: Json
           organization_id: string
           parent_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          anchor?: Json | null
           body?: string
           created_at?: string
           created_by?: string | null
@@ -64245,6 +64266,8 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           parent_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -76936,6 +76959,10 @@ export type Database = {
           parent_id: string
           updated_at: string
         }[]
+      }
+      cmt_resolve: {
+        Args: { p_id: string; p_resolved?: boolean }
+        Returns: undefined
       }
       component_created_by_report: { Args: never; Returns: Json }
       container_resource_counts: {
@@ -103249,6 +103276,7 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           display_name: string
+          history_revision: number
           id: string
           lifecycle: Json
           login_urls: string[]
@@ -103275,6 +103303,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           display_name: string
+          history_revision?: number
           id?: string
           lifecycle?: Json
           login_urls?: string[]
@@ -103301,6 +103330,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           display_name?: string
+          history_revision?: number
           id?: string
           lifecycle?: Json
           login_urls?: string[]
