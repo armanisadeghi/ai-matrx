@@ -181,15 +181,12 @@ export default function UnifiedDataTableRoute({
    */
   const object = useObjectOrganization(dataSource, tableId);
   /**
-   * The NAME of the table's organization while `custom.table_home` is not on this database:
-   * the person's own organization list, matched by the id the TABLE named. Never the active
-   * organization; absent when the table lives in an organization she is not a member of.
+   * The NAME of the table's organization while `custom.table_home` has not answered (or is not
+   * on this database): the person's own organization list matched by the id the TABLE named,
+   * else — for a table shared with her from outside — the owner organization the share door
+   * names. Never the active organization.
    */
   const { organizations: myOrganizations } = useUserOrganizations();
-  const knownOrganizationName =
-    object.state === "found"
-      ? (myOrganizations.find((o) => o.id === object.organizationId)?.name ?? null)
-      : null;
   /**
    * A TABLE ANOTHER ORGANIZATION GAVE THIS PERSON. The store already admitted her (the door
    * above answered); `useSharedTable` asks `custom.tables_shared_with_me`, which lists only
@@ -210,6 +207,11 @@ export default function UnifiedDataTableRoute({
     shareHint,
     object.state === "stand-in" ? object.activeOrganizationId : null,
   );
+  const knownOrganizationName =
+    object.state === "found"
+      ? (myOrganizations.find((o) => o.id === object.organizationId)?.name ??
+        (shared.state === "shared" ? shared.organizationName : null))
+      : null;
   /** The organization this page reads as: the TABLE'S. */
   const readingOrganizationId: string | null =
     object.state === "found"

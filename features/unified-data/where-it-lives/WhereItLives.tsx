@@ -75,7 +75,9 @@ export function WhereItLives({ dataSource, tableId, knownOrganizationName, onMov
       ? "Reading where this lives…"
       : answer.state === "not-given"
         ? "Not shared with you"
-        : "Organization unknown");
+        : answer.state === "door-absent"
+          ? "Its organization is not named here yet"
+          : "Could not ask where this lives");
 
   async function moveTo(to: TableHomeDestination) {
     if (!home) return;
@@ -201,7 +203,7 @@ function WhereItLivesBody({
       ) : (
         <div className="space-y-1">
           <p className="font-medium text-foreground">Move it to</p>
-          <ul className="space-y-1">
+          <ul className="max-h-64 space-y-1 overflow-y-auto pr-1">
             {home.destinations.map((to) => (
               <li key={to.id} className="flex items-start gap-2">
                 {to.ok ? (

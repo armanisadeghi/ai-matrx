@@ -15,6 +15,7 @@
 --   nothing is written by this file. The grant is its own chair-step file,
 --   `sc1p_a_table_says_where_it_lives_doors_can_be_reached.sql`.
 --   The inverse is `migrations/inverse/sc1p_a_table_says_where_it_lives_and_its_owner_can_move_it_down.sql`.
+--   Runs AFTER sc1p_each_table_says_who_keeps_it.sql (it asks custom.table_placement).
 -- guard: custom/system_enabled
 -- lock: custom
 -- based-on: custom._store_door() 37fd64e8272b3c06190cf238eed0328b2e87a7dd89e582fd0c44a5d12f8646b0
@@ -385,6 +386,10 @@ begin
      where x.organization_id = v_org and x.deleted_at is null
        and x.table_id is distinct from v_fieldk            -- a column of another table is named above
        and not (x.id = any (v_all))
+       -- A row of a table THE APP keeps (its own bookkeeping — the older saved-views copy, a
+       -- choice list) follows the table by id and holds nothing in place.
+       and not (ot.id is not null
+                and coalesce((custom.table_placement(ot.organization_id, ot.id, ot.data, false) ->> 'kept_by_the_app')::boolean, false))
        and x.data::text ~ v_idre
      limit 3
   loop
@@ -470,8 +475,12 @@ begin
   if v_opens is null or v_opens ->> 'kind' is distinct from 'table' then
     return null;
   end if;
-  perform custom.assert_client_may_open((v_opens ->> 'organization_id')::uuid, p_table_id,
-                                        'custom.table_home', 'viewer', 'table');
+  -- NOT custom.assert_client_may_open: its first question is the organization wall
+  -- (custom.assert_client_may_reach), which refuses a person a table was SHARED with from
+  -- outside while the organization's outside-access switch is off — and she may open it (the
+  -- share door and where_id_opens both say so). The name of where it lives is hers to read
+  -- whenever the table is (SHARE-GATE-OFF's walk: "Lives in: Organization unknown" for an
+  -- outsider while the banner below named the organization — a screen that lied).
   v_plan := custom._table_move_plan((v_opens ->> 'resolved_id')::uuid, p_to_organization_id, v_me);
   if v_plan is null then
     return null;
@@ -531,7 +540,8 @@ begin
   end if;
   v_from := (v_opens ->> 'organization_id')::uuid;
   v_id   := (v_opens ->> 'resolved_id')::uuid;
-  perform custom.assert_client_may_open(v_from, v_id, 'custom.table_move', 'viewer', 'table');
+  -- where_id_opens is the store's one "may she open it" (custom._where_id_may_open). Whether she
+  -- may MOVE it is the plan's: its maker, or an owner/admin of its organization.
 
   v_plan := custom._table_move_plan(v_id, p_to_organization_id, v_me);
 
@@ -702,11 +712,11 @@ values
   ('custom', 'table_home',
    'p_table_id uuid, p_to_organization_id uuid',
    array['uuid'::regtype::oid, 'uuid'::regtype::oid],
-   'Takes a Table id and answers only when custom.where_id_opens says the signed-in caller may open that Table (the organization wall, then the ladder), re-checked with custom.assert_client_may_open on the Table''s own organization; otherwise null, the same as for an id that does not exist. It returns the Table''s organization id and name, whether the caller may move it (its maker, or an owner/admin of that organization), the sentences that hold it in place, and the caller''s own other organizations with ok / why not. It writes nothing.',
+   'Takes a Table id and answers only when custom.where_id_opens says the signed-in caller may open that Table (custom._where_id_may_open: the organization wall or a share, then the ladder); otherwise null, the same as for an id that does not exist. It returns the Table''s organization id and name, whether the caller may move it (its maker, or an owner/admin of that organization), the sentences that hold it in place, and the caller''s own other organizations with ok / why not. It writes nothing.',
    'sc1p_a_table_says_where_it_lives_and_its_owner_can_move_it.sql', null, true, false),
   ('custom', 'table_move',
    'p_table_id uuid, p_to_organization_id uuid, p_expected_version integer',
    array['uuid'::regtype::oid, 'uuid'::regtype::oid, 'int4'::regtype::oid],
-   'Takes a Table id and a destination organization. Refuses unless custom.where_id_opens says the signed-in caller may open the Table and custom.assert_client_may_open agrees; then refuses unless the caller made the Table or is an owner/admin of its organization (iam.is_org_manager), is a member of the destination, the destination''s record store is open, and nothing holds the Table in place (custom._table_move_plan). Only then does it re-key the Table and what is only its own to the destination, in one transaction.',
+   'Takes a Table id and a destination organization. Refuses unless custom.where_id_opens says the signed-in caller may open the Table (custom._where_id_may_open); then refuses unless the caller made the Table or is an owner/admin of its organization (iam.is_org_manager), is a member of the destination, the destination''s record store is open, and nothing holds the Table in place (custom._table_move_plan). Only then does it re-key the Table and what is only its own to the destination, in one transaction.',
    'sc1p_a_table_says_where_it_lives_and_its_owner_can_move_it.sql', null, true, false)
 on conflict do nothing;
