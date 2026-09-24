@@ -21,10 +21,7 @@
  */
 
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { AlertCircle } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { createClient } from "@/utils/supabase/server";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { checkIsUserAdmin } from "@/utils/supabase/userSessionData";
@@ -102,31 +99,26 @@ export default async function AgentGoPage({
     );
   }
 
+  // The canonical access gate tells denied / deleted / never existed / fault
+  // apart. The error crosses the server->client boundary as a plain object.
   return (
-    <div className="flex h-full w-full items-center justify-center p-8">
-      <Card className="bg-textured w-full max-w-md border-destructive/30 p-8">
-        <div className="flex flex-col items-center space-y-4 text-center">
-          <div className="rounded-full bg-destructive/10 p-3">
-            <AlertCircle className="h-8 w-8 text-destructive" />
-          </div>
-          <div>
-            <h2 className="mb-2 text-xl font-semibold">
-              {failed ? "Couldn’t look this agent up" : "No such agent"}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {failed
-                ? "The agent directory could not be read just now, so we can’t tell you where this record lives. Try again in a moment."
-                : "Nothing was found for this id. It is not an agent or an agent version you can see, or it was deleted."}
-            </p>
-            <p className="mt-3 break-all font-mono text-xs text-muted-foreground/70">
-              {id}
-            </p>
-          </div>
-          <Link href="/agents/all">
-            <Button>Back to Agents</Button>
-          </Link>
-        </div>
-      </Card>
+    <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+      <AccessGate
+        token="agent"
+        id={id ?? ""}
+        error={
+          error
+            ? {
+                message: error.message,
+                code: error.code,
+                details: error.details,
+                hint: error.hint,
+              }
+            : undefined
+        }
+        fallbackHref="/agents/all"
+        fallbackLabel="Your agents"
+      />
     </div>
   );
 }
