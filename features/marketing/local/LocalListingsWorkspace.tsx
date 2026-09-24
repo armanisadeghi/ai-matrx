@@ -13,6 +13,7 @@ import {
   Star,
 } from "lucide-react";
 
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Badge } from "@/components/ui/badge";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
@@ -270,20 +271,15 @@ function BrandLocations({
   }
 
   if (locationId && !selected) {
+    // Not in this brand's list: deleted, never existed, another brand's, or
+    // no access. The gate resolves which and offers the way forward.
     return (
-      <SectionCard title="Location unavailable" className="min-w-0 flex-1">
-        <div className="p-3">
-          <p className="text-sm text-muted-foreground">
-            This location is not part of the brand named in the URL, or you no
-            longer have access to it.
-          </p>
-          <Button asChild variant="outline" size="sm" className="mt-3">
-            <Link href={marketingRoutes.brandLocal(brandId)}>
-              Open this brand&apos;s locations
-            </Link>
-          </Button>
-        </div>
-      </SectionCard>
+      <AccessGate
+        token="web_business_location"
+        id={locationId}
+        fallbackHref={marketingRoutes.brandLocal(brandId)}
+        fallbackLabel="This brand's locations"
+      />
     );
   }
 
