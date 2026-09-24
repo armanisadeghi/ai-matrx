@@ -16,7 +16,8 @@
  * (guarded by `a-record-store-table-never-reaches-an-older-door.test.ts`).
  */
 
-import { useLayoutEffect, useState } from "react";
+import { useCallback, useLayoutEffect, useState } from "react";
+import { toast } from "@/components/ui/use-toast";
 import UserTableViewer from "@/components/user-generated-table-data/UserTableViewer";
 import {
   placeTableInRecordStore,
@@ -43,6 +44,31 @@ export function SheetLayout({ tableId, organizationId, userId }: SheetLayoutProp
     setPlaced(true);
   }, [tableId, organizationId, userId]);
 
+  // THE PAGE OWNS SHARE AND EXPORT (ruling 2026-09-23). The grid's own controls are absent;
+  // its right-click "Export this table…" opens the table page's export (CSV, XLSX and the
+  // copy-and-transform menu in the page header). records-ui gives a host layout no door to
+  // that menu yet, so the page's own trigger is found and pressed; if it is not on screen,
+  // the person is told where it is — never a dead item.
+  const openExport = useCallback(() => {
+    const trigger = Array.from(
+      document.querySelectorAll<HTMLElement>('[aria-label^="Copy, transform or export"]'),
+    ).find((el) => !el.closest("[data-sheet-layout]"));
+    if (trigger) {
+      // Called from a menu item: the menu is still closing and returns focus as it goes,
+      // which would dismiss a popover opened in the same tick. Open it on the next frame.
+      window.setTimeout(() => {
+        trigger.scrollIntoView({ block: "nearest" });
+        trigger.focus();
+        trigger.click();
+      }, 150);
+      return;
+    }
+    toast({
+      title: "Export is in the page header",
+      description: "Use CSV, XLSX, or the copy-and-transform menu above the table.",
+    });
+  }, []);
+
   if (!placed) return null;
   return (
     <div className="flex h-full min-h-0 flex-col" data-sheet-layout={tableId}>
@@ -56,6 +82,7 @@ export function SheetLayout({ tableId, organizationId, userId }: SheetLayoutProp
         // write a confirmed cell through the seam's own upsertCell, and the row forms get
         // their Person chooser (PersonChoicesProvider sits inside this branch).
         emitSurfaceScope
+        pageOwnsShareAndExport={{ openExport }}
       />
     </div>
   );

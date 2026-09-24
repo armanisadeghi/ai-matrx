@@ -18,6 +18,7 @@ import {
   olderFormat,
   olderRowData,
   olderRowOrdering,
+  withHandOrder,
   olderValidationRules,
   searchRowsLikeTheOlderStore,
   sortRowsLikeTheOlderStore,
@@ -224,5 +225,24 @@ describe("a table's saved default sort is read and written in the store's own wo
     expect(olderRowOrdering([{ field: "gone", direction: "asc" }], fields)).toBeNull();
     expect(olderRowOrdering([], fields)).toBeNull();
     expect(storeDefaultSort(undefined, undefined)).toEqual([]);
+  });
+});
+
+describe("a table's hand-set order (G13) reaches the grid as the older row ordering", () => {
+  // Coding Accounts on production: row_order "manual" and a Reset Date default sort. Three
+  // accounts dragged into an order on its hand-ordered view.
+  const sort = { default_sort: { field: "reset_date", direction: "asc" } };
+  const order = ["49154b37-d134-4e1e-992f-7e95ca4b128e", "fbfbea36-cb6e-4eb1-b787-abeca7f0a7e6", "a68a644c-abc7-49be-9d46-621206e25663"];
+
+  it("hands the grid the order, beside the saved sort, when the store keeps it", () => {
+    expect(withHandOrder(sort, { status: "served", enabled: true, order })).toEqual({ ...sort, enabled: true, order });
+    expect(withHandOrder(null, { status: "served", enabled: true, order: [] })).toEqual({ enabled: true, order: [] });
+  });
+
+  it("hands only the sort when the table is sorted, or the store cannot keep an order", () => {
+    expect(withHandOrder(sort, { status: "served", enabled: false, order })).toBe(sort);
+    expect(
+      withHandOrder(sort, { status: "The record store this page is connected to does not have custom.read_records_in_view_order yet", enabled: true, order }),
+    ).toBe(sort);
   });
 });
