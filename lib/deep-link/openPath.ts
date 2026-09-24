@@ -33,6 +33,28 @@ export type OpenSide = "new" | "old";
 export interface OpenPathOptions {
   /** Open one side of a table to compare. Absent = the side the id lives on. */
   side?: OpenSide;
+  /**
+   * THE LINK THIS CALLER USED BEFORE `/o/<id>` — used ONLY while the database does not yet
+   * carry the door (`platform.resolve_id` absent: a deploy that lands ahead of its migration).
+   * The caller already knew the kind, so it knows the old screen; the page takes it without a
+   * lookup. Once the door answers, this is never read: a "not yours" from the door is never
+   * routed around through the fallback. Must be one of our own paths (starts with a single `/`).
+   */
+  fallback?: string;
+}
+
+/** The query key the page reads the fallback from. One spelling, here. */
+export const OPEN_BY_ID_FALLBACK_KEY = "fallback";
+
+/** True when `path` is a path on THIS site (never another origin, never `/o/` itself). */
+export function isOwnFallbackPath(path: string | null | undefined): path is string {
+  return (
+    typeof path === "string" &&
+    path.startsWith("/") &&
+    !path.startsWith("//") &&
+    !path.startsWith("/\\") &&
+    !path.startsWith(`${OPEN_BY_ID_PREFIX}/`)
+  );
 }
 
 /**
@@ -45,5 +67,9 @@ export interface OpenPathOptions {
  */
 export function openPath(id: string, options: OpenPathOptions = {}): string {
   const path = `${OPEN_BY_ID_PREFIX}/${encodeURIComponent(id.trim())}`;
-  return options.side ? `${path}?side=${options.side}` : path;
+  const query = new URLSearchParams();
+  if (options.side) query.set("side", options.side);
+  if (isOwnFallbackPath(options.fallback)) query.set(OPEN_BY_ID_FALLBACK_KEY, options.fallback);
+  const qs = query.toString();
+  return qs ? `${path}?${qs}` : path;
 }

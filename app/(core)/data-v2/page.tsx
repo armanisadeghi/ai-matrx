@@ -131,7 +131,11 @@ export default function UnifiedDataPage() {
                      here inside whichever organization was selected and say "This table
                      is not here". `/o/<id>` asks the one door, which opens the record
                      inside the organization it LIVES in. */
-                  onOpenRecord={(recordId) => router.push(openPath(recordId))}
+                  onOpenRecord={(recordId, tableId) =>
+                    router.push(
+                      openPath(recordId, { fallback: `/data-v2/${tableId}?record=${recordId}` }),
+                    )
+                  }
                 />
               }
             />

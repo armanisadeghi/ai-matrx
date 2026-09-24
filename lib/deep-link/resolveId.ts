@@ -26,8 +26,15 @@ export type ResolvedId =
   | { state: "refused"; says: string }
   /** No such id, or not theirs — the door says the same words either way. */
   | { state: "not_yours"; says: string }
-  /** The door could not be asked, or answered something unreadable. NOT an answer about access. */
-  | { state: "unknown"; why: string };
+  /**
+   * The door could not be asked, or answered something unreadable. NOT an answer about access.
+   * `doorAbsent` = the database does not carry `platform.resolve_id` yet (PostgREST PGRST202 /
+   * Postgres 42883) — the one case a caller's fallback link may be used.
+   */
+  | { state: "unknown"; why: string; doorAbsent?: boolean };
+
+/** The two ways "this function is not in the database" arrives through PostgREST. */
+const DOOR_ABSENT_CODES = new Set(["PGRST202", "42883"]);
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -113,7 +120,11 @@ export async function resolveId(
     if (answered.error.code === "22023" || answered.error.code === "22004") {
       return { state: "refused", says: answered.error.message };
     }
-    return { state: "unknown", why: answered.error.message };
+    return {
+      state: "unknown",
+      why: answered.error.message,
+      ...(DOOR_ABSENT_CODES.has(answered.error.code ?? "") ? { doorAbsent: true } : {}),
+    };
   }
   return readResolvedId(answered.data);
 }

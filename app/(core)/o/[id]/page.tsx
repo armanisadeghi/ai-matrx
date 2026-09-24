@@ -28,7 +28,7 @@ import { redirect } from "next/navigation";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
-import { openPath } from "@/lib/deep-link/openPath";
+import { isOwnFallbackPath, OPEN_BY_ID_FALLBACK_KEY, openPath } from "@/lib/deep-link/openPath";
 import { isResolvableId, readSide, resolveId, type ResolvedId } from "@/lib/deep-link/resolveId";
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
@@ -75,7 +75,20 @@ export default async function OpenByIdPage({ params, searchParams }: OpenByIdPag
   // `redirect` throws by design, so it stays outside any try/catch.
   if (answer.state === "opens") redirect(answer.path);
 
+  // AHEAD OF ITS DOOR. A release can reach people before the migration that adds
+  // `platform.resolve_id`; then — and only then — the caller's own previous link opens, so a
+  // screen never breaks ahead of its door. Any answer the door DOES give (not yours, archived…)
+  // is never routed around this way.
+  const fallback = firstValue(query[OPEN_BY_ID_FALLBACK_KEY]);
+  if (answer.state === "unknown" && answer.doorAbsent && isOwnFallbackPath(fallback)) {
+    redirect(fallback);
+  }
+
   return <OpenNotice {...noticeFor(answer, asked)} />;
+}
+
+function firstValue(raw: string | string[] | undefined): string | undefined {
+  return Array.isArray(raw) ? raw[0] : raw;
 }
 
 function noticeFor(

@@ -1,8 +1,9 @@
 // The one address every feature mints for an id, and the strict reading of the door's answer.
 // Door + seat proof: scripts/campaign-tests/openbyid_green.sql (lane ROUTE-RESOLVER).
 
-import { OPEN_BY_ID_PREFIX, openPath } from "@/lib/deep-link/openPath";
-import { isResolvableId, readResolvedId, readSide } from "@/lib/deep-link/resolveId";
+import { isOwnFallbackPath, OPEN_BY_ID_PREFIX, openPath } from "@/lib/deep-link/openPath";
+import { isResolvableId, readResolvedId, readSide, resolveId } from "@/lib/deep-link/resolveId";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import manifest from "@/lib/route-manifest/manifest.generated.json";
 
 const ID = "3c1f6f0e-2a4b-4d8e-9f10-5b6c7d8e9f01";
@@ -89,5 +90,43 @@ describe("the address's own inputs", () => {
     expect(readSide("OLD")).toBe("old");
     expect(readSide(["new", "old"])).toBe("new");
     expect(readSide("sideways")).toBe("sideways");
+  });
+});
+
+describe("ahead of its door — the caller's previous link", () => {
+  const old = `/data-v2/t1?record=${ID}`;
+
+  it("rides on the link, encoded, only when it is one of our paths", () => {
+    const link = openPath(ID, { fallback: old });
+    expect(new URL(link, "https://x.test").searchParams.get("fallback")).toBe(old);
+    expect(openPath(ID, { fallback: "https://elsewhere.example/x" })).toBe(`/o/${ID}`);
+    expect(openPath(ID, { fallback: "//elsewhere.example/x" })).toBe(`/o/${ID}`);
+    expect(openPath(ID, { side: "old", fallback: old })).toBe(`/o/${ID}?side=old&fallback=${encodeURIComponent(old)}`);
+  });
+
+  it.each(["https://e.example", "//e.example", "/\\e.example", `/o/${ID}`, "", null, undefined])(
+    "refuses %p as a fallback",
+    (p) => expect(isOwnFallbackPath(p as string)).toBe(false),
+  );
+
+  const clientAnswering = (error: { code: string; message: string } | null, data: unknown = null) =>
+    ({ schema: () => ({ rpc: async () => ({ data, error }) }) }) as unknown as SupabaseClient;
+
+  it.each(["PGRST202", "42883"])("marks the door ABSENT on %s — the only case the fallback may be used", async (code) => {
+    expect(await resolveId(clientAnswering({ code, message: "Could not find the function platform.resolve_id" }), ID)).toMatchObject({
+      state: "unknown",
+      doorAbsent: true,
+    });
+  });
+
+  it("does not call a transport failure an absent door", async () => {
+    const r = await resolveId(clientAnswering({ code: "PGRST000", message: "connection refused" }), ID);
+    expect(r).toMatchObject({ state: "unknown" });
+    expect("doorAbsent" in r).toBe(false);
+  });
+
+  it("never treats the door's own not-yours as absent", async () => {
+    const r = await resolveId(clientAnswering(null, { state: "not_yours", says: "Not for you." }), ID);
+    expect(r.state).toBe("not_yours");
   });
 });
