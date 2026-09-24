@@ -75,3 +75,32 @@ export function readable(value: unknown): string {
   if (Array.isArray(value)) return value.map(readable).filter(Boolean).join(", ");
   return "";
 }
+
+/**
+ * S6 — IS THIS RECORD HERS. The read door already keeps an outsider to her own client's records;
+ * a person who can read MORE (an employee of the business who is also somebody's client reads the
+ * whole Table through the member lane) would otherwise see everybody's jobs under her own name.
+ * So the portal keeps its list to the records whose `names_via` Field points at HER client record.
+ * A database older than S6 names no Field, and the door's answer stands as it always did.
+ */
+export function isHers(
+  document: Record<string, unknown>,
+  namesVia: string | null | undefined,
+  clientRecordId: string,
+): boolean {
+  if (!namesVia) return true;
+  // The door masked the Field (it arrives NULL beside a `_hidden` entry naming it): that is the
+  // outsider's lane, where the door itself already kept the list to her client's records.
+  const hidden = document["_hidden"];
+  if (hidden && typeof hidden === "object" && namesVia in (hidden as Record<string, unknown>)) return true;
+  const points = (v: unknown): boolean => {
+    if (typeof v === "string") return v === clientRecordId;
+    if (Array.isArray(v)) return v.some(points);
+    if (v && typeof v === "object") {
+      const o = v as Record<string, unknown>;
+      return points(o.id ?? o.record_id ?? o.value ?? null);
+    }
+    return false;
+  };
+  return points(document[namesVia]);
+}

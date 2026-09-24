@@ -113,6 +113,45 @@ export interface PortalPublic {
   state: "open" | "unavailable";
   /** Only present with `unavailable`: the store's own sentence. */
   message?: string | null;
+  /**
+   * S6 — the portal's look, resolved by the store: its own name, logo and colour over the
+   * organization's brand. Absent only on a database older than lane S6.
+   */
+  style?: PortalStyle;
+}
+
+/** The design system's colour names — the only accents a portal carries (`custom.portal_accents()`). */
+export type PortalAccent = "slate" | "green" | "amber" | "red" | "blue" | "violet" | "teal";
+
+/** S6 — what a client is shown of a portal's look (`custom._portal_style`). */
+export interface PortalStyle {
+  display_name: string;
+  welcome: string | null;
+  logo_file_id: string | null;
+  /** The logo's PUBLIC address (a public picture of the organization's Files), or null. */
+  logo_url: string | null;
+  /** Null means the app's own colour. */
+  accent: PortalAccent | null;
+  footer_links: Array<{ label: string; url: string }>;
+  from_organization: string[];
+}
+
+/** S6 — one form a client may send from her portal (open ones only). */
+export interface PortalFormLink {
+  form_id: string;
+  label: string;
+  order: number;
+  title: string;
+  table_id: string | null;
+  table: string;
+  state: string;
+}
+
+/** S6 — a Table's stages, when the portal shows its stage Field. A record stores the `key`. */
+export interface PortalStage {
+  field: string;
+  label: string;
+  stages: Array<{ key: string; label: string; retired: boolean }>;
 }
 
 /**
@@ -191,6 +230,10 @@ export interface PortalTable {
   /** The subset of those the portal lets her change. */
   editable_fields: string[];
   comments: boolean;
+  /** S6 — the stages this Table moves through, when the portal shows its stage. */
+  stage?: PortalStage | null;
+  /** S6 — the relation Field that says whose a record is (the portal's `names_via`). */
+  names_via?: string | null;
 }
 
 /** One portal this person is a principal of. */
@@ -203,6 +246,10 @@ export interface PortalMembership {
   principal_id: string;
   client_record_id: string;
   client: string;
+  /** S6 — the portal's look. */
+  style?: PortalStyle;
+  /** S6 — the forms she may send, in the owner's order. */
+  forms?: PortalFormLink[];
   tables: PortalTable[];
 }
 
@@ -415,4 +462,108 @@ export async function portalCommentWrite(args: {
       p_parent_comment_id: null,
     }),
   );
+}
+
+// ---------------------------------------------------------------------------
+// S6 — HER PORTAL'S FORMS AND EACH RECORD'S STATUS LINE. The person's own client, always.
+// ---------------------------------------------------------------------------
+
+/** What `custom.portal_form` answers: one form on HER portal. */
+export interface PortalFormSpec {
+  form_id: string;
+  portal_id: string;
+  table_id: string;
+  title: string;
+  label: string;
+  presentation: {
+    intro?: string | null;
+    questions?: Array<{ field: string; ask?: string | null; help?: string | null; required?: boolean | null }>;
+    submit_label?: string | null;
+    thank_you?: { title?: string | null; body?: string | null } | null;
+    flow?: string | null;
+  } | null;
+  /** The form's exposed Fields as the store holds them — never the one naming the client. */
+  fields: Array<Record<string, unknown> & { id: string; key: string }>;
+  required: string[];
+  state: "open" | "closed" | "full";
+  message: string | null;
+}
+
+/**
+ * One form of her portal. The door refuses anybody who is not a live principal of this live
+ * portal, and a form that is not on its list — the page shows that refusal, never a blank.
+ */
+export async function portalForm(args: {
+  organizationId: string;
+  portalId: string;
+  formId: string;
+}): Promise<PortalFormSpec> {
+  return unwrap<PortalFormSpec>(
+    "custom.portal_form",
+    await (await myDoors()).rpc("portal_form", {
+      p_organization_id: args.organizationId,
+      p_portal_id: args.portalId,
+      p_form_id: args.formId,
+    }),
+  );
+}
+
+/** What `custom.portal_form_submit` answers. */
+export interface PortalFormAnswer {
+  submission_id: string | null;
+  record_id: string | null;
+  state: "accepted" | "held" | "rejected" | "closed" | "full" | "too_many";
+  message: string | null;
+}
+
+/**
+ * Send one form of her portal. The STORE fills the Field that says which client this is for
+ * with her own record; this module never sends it, and the door refuses it if anybody does.
+ */
+export async function portalFormSubmit(args: {
+  organizationId: string;
+  portalId: string;
+  formId: string;
+  answers: Record<string, unknown>;
+  clientKey: string | null;
+}): Promise<PortalFormAnswer> {
+  return unwrap<PortalFormAnswer>(
+    "custom.portal_form_submit",
+    await (await myDoors()).rpc("portal_form_submit", {
+      p_organization_id: args.organizationId,
+      p_portal_id: args.portalId,
+      p_form_id: args.formId,
+      p_payload: args.answers,
+      p_client_key: args.clientKey,
+    }),
+  );
+}
+
+/** One version of a record, as `custom.record_history` hands it to this reader. */
+export interface PortalHistoryEntry {
+  version: number;
+  occurred_at: string;
+  operation: string;
+  changes: Array<{ key: string; before?: unknown; after?: unknown; withheld?: unknown }>;
+}
+
+/**
+ * A record's history, through the EXISTING history door, as her. The door masks every field the
+ * portal did not open (the change is named, its values do not leave), so the timeline built from
+ * it can only ever say what she may read.
+ */
+export async function portalRecordHistory(args: {
+  organizationId: string;
+  recordId: string;
+}): Promise<PortalHistoryEntry[]> {
+  const rows = unwrap<PortalHistoryEntry[] | null>(
+    "custom.record_history",
+    await (await myDoors()).rpc("record_history", {
+      p_organization_id: args.organizationId,
+      p_record_id: args.recordId,
+      p_limit: 200,
+      p_offset: 0,
+    }),
+  );
+  return rows ?? [];
 }

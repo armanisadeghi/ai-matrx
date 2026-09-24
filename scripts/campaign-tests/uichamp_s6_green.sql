@@ -440,6 +440,13 @@ begin
     raise exception '4e: Invoices has no stage, yet one was named: %', v_t -> 'stage';
   end if;
 
+  -- Each Table names the Field that says whose a record is, so a screen can keep her list to her
+  -- own client even when she can read more (an employee who is also a client).
+  select t into v_t from jsonb_array_elements(v_p -> 'tables') t where (t ->> 'table_id')::uuid = v_calls;
+  if (v_t ->> 'names_via') is distinct from 'building' then
+    raise exception '4e2: portal_me does not say which Field names her client on Service calls: %', v_t;
+  end if;
+
   -- THE TIMELINE, THROUGH THE EXISTING HISTORY DOOR, AS HER.
   select jsonb_agg(jsonb_build_object('op', h.operation, 'changes', h.changes) order by h.version)
     into v_hist from custom.record_history(v_org, v_call_a1, 50, 0) h;

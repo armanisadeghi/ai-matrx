@@ -15,7 +15,7 @@
 -- lane: S6
 -- lock: custom,platform
 -- based-on: custom.portal_card(uuid, uuid) 6d6174146629aea49ff6165a3cdcb744e17fa063e96ccc5532440dbe04033aea
--- based-on: custom.portal_me() 33901ffd459808e00527c9d899b4e7d357fedcffc575009d1403845e1c46bc63
+-- based-on: custom.portal_me() d23760fcd768faa9da61d1bcaecdba38b956623a513f989b771f87e49e61eff4
 -- based-on: custom.portal_public(text) aadafba9e8a17bfc62ecc82d71a0b2755eaa68d65ea072c7f4bbd1f05a576e26
 
 set local lock_timeout = '5s';

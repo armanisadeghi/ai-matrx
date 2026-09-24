@@ -935,6 +935,10 @@ begin
                  select jsonb_agg(jsonb_build_object(
                           'table_id', pt.table_id,
                           'name', coalesce(nullif(t.data ->> 'name', ''), 'Records'),
+                          -- S6: the Field that says whose a record is, so a screen can keep her
+                          -- list to HER client even when she can read more (an employee who is
+                          -- also somebody's client reads the whole Table through the member lane).
+                          'names_via', pt.edge_role,
                           'visible_fields', pt.visible_field_keys,
                           'editable_fields', pt.editable_field_keys,
                           'comments', pt.comments_allowed,

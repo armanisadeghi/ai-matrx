@@ -50,6 +50,67 @@ async function magicLink() {
   return `${ORIGIN}/auth/confirm?token_hash=${encodeURIComponent(hash)}&type=magiclink&redirectTo=${encodeURIComponent(dest)}`;
 }
 
+// S6_JOURNEY=1 — the rest of her visit (the Rincon fixture, `_s6_walk_fixture.sql`): open the
+// boiler-room call and read its status line; open "Update a gate code", send it, and see it land.
+const JOURNEY = process.env.S6_JOURNEY === "1";
+/** The accent band's computed colour, or null when the page drew none. */
+const accentBand = (page) =>
+  page.evaluate(() => {
+    const el = document.querySelector("main > div[aria-hidden].fixed");
+    return el ? getComputedStyle(el).backgroundColor : null;
+  });
+const bodyText = (page) => page.evaluate(() => document.body.innerText.replace(/\s+/g, " ").trim());
+
+async function journey(page, label) {
+  // 1. Her boiler-room call and where it stands.
+  const callHref = await page.getByRole("link", { name: /Boiler room floor drain backing up/ }).first().getAttribute("href");
+  await page.goto(`${ORIGIN}${callHref}`, { waitUntil: "domcontentloaded", timeout: 300000 });
+  await page.getByRole("heading", { name: "Status" }).waitFor({ timeout: 120000 });
+  await page.waitForLoadState("networkidle", { timeout: 120000 }).catch(() => {});
+  const rec = await bodyText(page);
+  const order = ["Requested", "Scheduled", "On site", "Done"].map((w) => rec.indexOf(w));
+  clause(`${label}: the call's status line reads Requested, Scheduled, On site, Done in order`,
+    order.every((i) => i >= 0) && order.every((i, k) => k === 0 || i > order[k - 1]), rec.slice(0, 500));
+  const current = await page.locator('li[aria-current="step"]').innerText().catch(() => "");
+  clause(`${label}: "On site" is the current step`, /On site/.test(current), current);
+  const done = await page.locator("ol li").evaluateAll((lis) => lis.map((li) => li.textContent ?? ""));
+  clause(`${label}: the passed steps carry the moment they were reached`,
+    /Requested.*(AM|PM)/.test(done[0] ?? "") && /Scheduled.*(AM|PM)/.test(done[1] ?? ""), done);
+  clause(`${label}: the office's private note never reaches her`, !/Office notes|Tech: Luis|reserve account/.test(rec), rec.slice(0, 400));
+  await page.screenshot({ path: `${OUT}/${TAG}-${label}-status-line.png`, fullPage: true });
+
+  // 2. "Update a gate code", from her portal, sent as her.
+  await page.goto(`${ORIGIN}/portal/c/${SLUG}`, { waitUntil: "domcontentloaded", timeout: 300000 });
+  // Follow the link's own address (a click during the dev server's first compile can be eaten).
+  const formHref = await page.getByRole("link", { name: "Update a gate code" }).getAttribute("href");
+  clause(`${label}: "Update a gate code" opens inside the portal`, Boolean(formHref?.startsWith(`/portal/c/${SLUG}/f/`)), formHref);
+  await page.goto(`${ORIGIN}${formHref}`, { waitUntil: "domcontentloaded", timeout: 300000 });
+  await page.getByRole("heading", { name: "Update a gate code" }).waitFor({ timeout: 120000 });
+  await page.waitForLoadState("networkidle", { timeout: 120000 }).catch(() => {});
+  await page.waitForTimeout(2500);
+  const formText = await bodyText(page);
+  clause(`${label}: the gate-code form never asks which building she is`, !/Building/.test(formText), formText.slice(0, 400));
+  await page.screenshot({ path: `${OUT}/${TAG}-${label}-gate-form.png`, fullPage: true });
+  const gate = label.startsWith("phone") ? "North pedestrian gate" : "Garage entry gate";
+  // Hydration: a fill that lands before the bundle attaches is silently undone by React.
+  await page.waitForLoadState("networkidle", { timeout: 120000 }).catch(() => {});
+  await page.waitForTimeout(2500);
+  await page.getByLabel(/Which gate\?/).pressSequentially(gate, { delay: 10 });
+  await page.getByLabel(/The new code/).pressSequentially(label.startsWith("phone") ? "2580" : "7314", { delay: 10 });
+  await page.getByRole("button", { name: /^Send$/ }).click();
+  await page.getByText(/Sent|It is on your portal now|arrived|waiting/i).first().waitFor({ timeout: 120000 });
+  const sentText = await bodyText(page);
+  clause(`${label}: the form says it was sent, in her words`, /on your portal now, and Rincon Plumbing has it/i.test(sentText) && !/stamped on it/.test(sentText), sentText.slice(0, 300));
+  await page.screenshot({ path: `${OUT}/${TAG}-${label}-gate-sent.png`, fullPage: true });
+
+  // 3. Back on her portal, the request is on her own list.
+  await page.goto(`${ORIGIN}/portal/c/${SLUG}`, { waitUntil: "domcontentloaded", timeout: 300000 });
+  await page.waitForTimeout(2000);
+  const after = await bodyText(page);
+  clause(`${label}: her new request is on her own list`, after.includes(gate), after.slice(0, 600));
+  clause(`${label}: no row reads "Untitled"`, !/Untitled/.test(after), after.slice(0, 600));
+}
+
 const receipt = { ranAt: new Date().toISOString(), origin: ORIGIN, slug: SLUG, seat: EMAIL, clauses: [] };
 const clause = (name, ok, saw) => {
   receipt.clauses.push({ name, ok, saw });
@@ -63,11 +124,23 @@ try {
     const page = await ctx.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(String(e)));
+    // 0. SIGNED OUT, the page she opens from the text message: it says whose it is first.
+    if (JOURNEY) {
+      await page.goto(`${ORIGIN}/portal/c/${SLUG}`, { waitUntil: "domcontentloaded", timeout: 300000 });
+      await page.waitForLoadState("networkidle", { timeout: 120000 }).catch(() => {});
+      const out = await bodyText(page);
+      clause(`${label}: signed out, the sign-in page carries the business's own name`, /Rincon Plumbing/.test(out) && /Sign in|email/i.test(out), out.slice(0, 300));
+      const band = await accentBand(page);
+      clause(`${label}: signed out, the accent band is drawn`, Boolean(band) && band !== "rgba(0, 0, 0, 0)", band);
+      await page.screenshot({ path: `${OUT}/${TAG}-${label}-signed-out.png`, fullPage: true });
+    }
     const link = await magicLink();
     const resp = await page.goto(link, { waitUntil: "domcontentloaded", timeout: 300000 });
     await page.waitForLoadState("networkidle", { timeout: 120000 }).catch(() => {});
     await page.waitForTimeout(3000);
     const url = page.url();
+    // Screenshots hide the caret with an inline style; one taken before hydration is a mismatch
+    // the walk itself caused, so the page is settled first.
     const text = await page.evaluate(() => document.body.innerText.replace(/\s+/g, " ").trim());
     const who = await page.evaluate(async () => {
       try { return (await (await fetch("/api/whoami")).json())?.email ?? null; } catch { return null; }
@@ -76,13 +149,20 @@ try {
     clause(`${label}: the app says ${EMAIL} is signed in`, who === EMAIL, who);
     const broken = /malformed array literal|Something went wrong|Application error|Unhandled Runtime Error|This page could not be found/i.test(text);
     clause(`${label}: the portal page answers (status ${resp?.status()}), no crash`, !broken && (resp?.status() ?? 500) < 500, text.slice(0, 300));
-    for (const s of EXPECT) clause(`${label}: shows "${s}"`, text.includes(s), text.slice(0, 400));
+    // Case-insensitive: a label drawn in small capitals reads upper-case in innerText.
+    for (const s of EXPECT) clause(`${label}: shows "${s}"`, text.toLowerCase().includes(s.toLowerCase()), text.slice(0, 400));
     for (const s of FORBID) clause(`${label}: never shows "${s}"`, !text.includes(s), s);
+    if (JOURNEY) {
+      const band = await accentBand(page);
+      clause(`${label}: signed in, the accent band is drawn`, Boolean(band) && band !== "rgba(0, 0, 0, 0)", band);
+    }
     const noHScroll = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
     clause(`${label}: no horizontal scroll`, noHScroll, await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]));
     const shot = `${OUT}/${TAG}-${label}.png`;
     await page.screenshot({ path: shot, fullPage: true });
     receipt[label] = { url, shot, pageErrors: errors, text: text.slice(0, 1500) };
+    if (JOURNEY) await journey(page, label);
+    clause(`${label}: no uncaught page error`, errors.length === 0, errors);
     await ctx.close();
   }
 } finally {

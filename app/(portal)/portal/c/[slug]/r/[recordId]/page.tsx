@@ -21,6 +21,10 @@ import { ChevronLeft } from "lucide-react";
 
 import { PortalCommentThread, type ThreadComment } from "@/features/portals/PortalCommentThread";
 import { PortalFieldEditor } from "@/features/portals/PortalFieldEditor";
+import { PortalAccentBand, PortalFooter, PortalLogo } from "@/features/portals/PortalBrand";
+import { PortalStatusTimeline } from "@/features/portals/PortalStatusTimeline";
+import { portalLook, type PortalLook } from "@/features/portals/look";
+import { buildTimeline, stageLabel } from "@/features/portals/timeline";
 import { PortalSignOutButton } from "@/features/portals/PortalSignOutButton";
 import {
   membershipFor,
@@ -28,12 +32,13 @@ import {
   portalMe,
   portalPublic,
   portalRecord,
+  portalRecordHistory,
   portalRecords,
   portalViewer,
   type PortalMembership,
   type PortalTable,
 } from "@/features/portals/service";
-import { readable, shownFields } from "@/features/portals/shown";
+import { isHers, readable, shownFields } from "@/features/portals/shown";
 
 import { addPortalComment, savePortalField } from "./actions";
 
@@ -56,13 +61,14 @@ export default async function PortalRecordPage({
 
   const viewer = await portalViewer();
   const membership = viewer ? membershipFor(await portalMe(), portal.slug) : null;
+  const look = portalLook(membership?.style ?? portal.style, portal.organization);
 
   // Signed out, or signed in as somebody who is not on this portal: the portal's
   // own front page says the right sentence for both, so send them there rather
   // than writing a second, quieter version of it here.
   if (!membership) {
     return (
-      <Frame>
+      <Frame look={look}>
         <section className="w-full max-w-md rounded-2xl border border-border bg-card p-6 text-sm shadow-sm sm:p-8">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">{portal.title}</h1>
           <p className="mt-2 text-muted-foreground">
@@ -82,7 +88,7 @@ export default async function PortalRecordPage({
   const located = await locate(membership, recordId);
   if (!located) {
     return (
-      <Frame>
+      <Frame look={look}>
         <section className="w-full max-w-md rounded-2xl border border-border bg-card p-6 text-sm shadow-sm sm:p-8">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">
             That is not on your portal
@@ -103,11 +109,18 @@ export default async function PortalRecordPage({
   }
 
   const { table } = located;
-  const [document, fields] = await Promise.all([
+  const [document, fields, history] = await Promise.all([
     portalRecord({ organizationId: membership.organization_id, recordId }),
     shownFields(membership.organization_id, table),
+    // S6: the status line reads the EXISTING history door as her, which masks every field the
+    // portal did not open. A table with no stage shown asks nothing.
+    table.stage
+      ? portalRecordHistory({ organizationId: membership.organization_id, recordId }).catch(() => null)
+      : Promise.resolve([]),
   ]);
   if (!document) notFound();
+  const stageKey = table.stage?.field ?? null;
+  const timeline = table.stage ? buildTimeline(table.stage, document[table.stage.field], history ?? []) : null;
 
   const comments: ThreadComment[] = table.comments
     ? (
@@ -127,12 +140,14 @@ export default async function PortalRecordPage({
       }))
     : [];
 
-  const headline = fields[0] ? readable(document[fields[0].key]) : "";
-  const readOnly = fields.filter((field) => !field.editable);
+  // A relation Field holds another record's id — not something a person reads.
+  const worded = fields.filter((field) => field.type !== "relation");
+  const headline = worded[0] ? readable(document[worded[0].key]) : "";
+  const readOnly = worded.filter((field) => !field.editable);
   const editable = fields.filter((field) => field.editable);
 
   return (
-    <Frame align="start">
+    <Frame align="start" look={look}>
       <div className="w-full max-w-2xl">
         <header className="flex items-start justify-between gap-3 pt-1">
           <div className="min-w-0">
@@ -144,20 +159,28 @@ export default async function PortalRecordPage({
               <ChevronLeft className="h-4 w-4" />
               {membership.client}
             </Link>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-              {headline || table.name}
-            </h1>
+            <div className="mt-1 flex items-center gap-3">
+              <PortalLogo look={look} size="sm" />
+              <h1 className="min-w-0 text-2xl font-semibold tracking-tight text-foreground">
+                {headline || table.name}
+              </h1>
+            </div>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {table.name} · {membership.organization}
+              {table.name} · {look.name}
             </p>
           </div>
           <PortalSignOutButton slug={membership.slug} />
         </header>
 
+        {timeline ? (
+          <PortalStatusTimeline timeline={timeline} look={look} unavailable={history === null} />
+        ) : null}
+
         <section className="mt-6 overflow-hidden rounded-xl border border-border bg-card">
           <dl className="divide-y divide-border">
             {readOnly.map((field) => {
-              const value = readable(document[field.key]);
+              const raw = document[field.key];
+              const value = field.key === stageKey ? stageLabel(table.stage, raw) : readable(raw);
               return (
                 <div
                   key={field.key}
@@ -206,6 +229,7 @@ export default async function PortalRecordPage({
         ) : (
           <div className="pb-12" />
         )}
+        <PortalFooter look={look} />
       </div>
     </Frame>
   );
@@ -215,9 +239,11 @@ export default async function PortalRecordPage({
 function Frame({
   children,
   align = "center",
+  look,
 }: {
   children: React.ReactNode;
   align?: "center" | "start";
+  look: PortalLook;
 }) {
   return (
     <main
@@ -225,6 +251,7 @@ function Frame({
         align === "center" ? "justify-center py-10" : "justify-start py-6"
       }`}
     >
+      <PortalAccentBand look={look} />
       {children}
     </main>
   );
@@ -240,7 +267,13 @@ async function locate(
       organizationId: membership.organization_id,
       tableId: table.table_id,
     });
-    if (records.some((record) => record.id === recordId)) return { table };
+    if (
+      records.some(
+        (record) =>
+          record.id === recordId && isHers(record.document, table.names_via, membership.client_record_id),
+      )
+    )
+      return { table };
   }
   return null;
 }
