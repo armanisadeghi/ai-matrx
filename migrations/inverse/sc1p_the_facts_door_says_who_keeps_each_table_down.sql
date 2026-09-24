@@ -1,5 +1,7 @@
 -- chair-step: the inverse of sc1p_the_facts_door_says_who_keeps_each_table.sql. It puts the view custom.table back to its columns before SC-1 (drop and re-make: a view cannot lose columns in place; nothing depends on it and only its owner holds privileges on it) and custom.table_facts(uuid) back to its three result columns, byte for byte, with its grant to authenticated. Its platform.client_callable_door row is untouched. Run BEFORE sc1p_each_table_says_who_keeps_it_down.sql.
 -- lane: SC-1
+-- based-on: custom.table_facts(uuid) 5ceebe4926db95d8f129a23ab47eaa432a48bb640df4de4da9218109d99cb0bf
+-- based-on: view custom.table 798c79b3188f8fc8498845fc301a13df0eb63e18c3aafca38f9d8aa0f75c1aef
 -- lock: custom
 
 set local lock_timeout = '5s';
