@@ -29,8 +29,19 @@ const toastError = jest.fn();
 let selectedOrganizationId: string | null = null;
 let desktopWorkspace = true;
 
+// WHERE A ROUTED CREDENTIAL LIVES, as the credential row answers under RLS.
+const CREDENTIAL_HOMES: Record<string, VaultScope> = {
+  "mine-row": { kind: "mine" },
+  "selected-row": { kind: "organization", organizationId: "org-selected" },
+  "first-row": { kind: "organization", organizationId: "org-first" },
+};
 jest.mock("../vault-service", () => ({
   fetchVaultItems: (...args: unknown[]) => fetchVaultItems(...args),
+  resolveCredentialHome: jest.fn(async (id: string) =>
+    CREDENTIAL_HOMES[id]
+      ? { state: "found", scope: CREDENTIAL_HOMES[id] }
+      : { state: "not-given" },
+  ),
   fetchCredentialDefinitions: jest.fn(async () => []),
   fetchVaultGrants: jest.fn(async () => []),
   fetchVaultAudit: jest.fn(async () => []),
@@ -101,6 +112,10 @@ jest.mock("@/features/organizations/hooks", () => ({
     ],
     loading: false,
   }),
+}));
+
+jest.mock("@/features/access-gate/components/AccessGate", () => ({
+  AccessGate: ({ id }: { id: string }) => <div>No access page for {id}</div>,
 }));
 
 jest.mock("@/hooks/use-media-query", () => ({
@@ -435,6 +450,22 @@ describe("VaultWorkspace scope routing", () => {
     });
     expect(requestedScopes().at(-1)).toBe("organization:org-selected");
     expect(container.textContent).toContain("Selected Org Login");
+  });
+
+  // ACCESS IS PERSONAL (owner, 2026-09-23): a credential of one of her organizations opens at
+  // /vault/<id> while she works in ANOTHER organization — the page reads where the credential
+  // lives from the credential and carries the list there, never refusing it as "not in Mine".
+  it("opens a routed credential of a non-active organization in that organization's scope", async () => {
+    selectedOrganizationId = "org-selected";
+    await mount({ selectedItemId: "first-row" });
+    expect(requestedScopes().at(-1)).toBe("organization:org-first");
+    expect(container.textContent).toContain("First Org Login");
+  });
+
+  it("still shows the No Access page for a routed credential she was never given", async () => {
+    await mount({ selectedItemId: "someone-elses-row" });
+    expect(requestedScopes()).toEqual(["mine"]);
+    expect(container.textContent).toContain("No access page for someone-elses-row");
   });
 
   it("keeps the Favorites filter when the item route remounts", async () => {

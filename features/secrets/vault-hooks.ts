@@ -33,6 +33,7 @@ import {
   importVaultEnv,
   removeVaultGrant,
   replaceVaultAttachment,
+  resolveCredentialHome,
   rotateVaultItem,
   setVaultAccessMode,
   transferVaultItem,
@@ -42,6 +43,7 @@ import {
   updateVaultGrant,
   updateVaultItem,
 } from "./vault-service";
+import type { CredentialHome } from "./vault-service";
 import { toPrincipalIn } from "./types";
 import type {
   CredentialDefinition,
@@ -60,6 +62,32 @@ import type {
   VaultScope,
   VaultTransferResponse,
 } from "./types";
+
+// ── Where one credential lives (ACCESS IS PERSONAL) ─────────────────────
+
+/**
+ * The scope that holds `itemId`, read from the credential itself (never from
+ * the organization the person is working in). `null` while there is nothing to
+ * ask or the answer is on its way. See `resolveCredentialHome`.
+ */
+export function useCredentialHome(
+  itemId: string | null | undefined,
+  enabled = true,
+): CredentialHome | null {
+  const [answer, setAnswer] = useState<{ id: string; home: CredentialHome } | null>(null);
+  useEffect(() => {
+    if (!itemId || !enabled) return;
+    let active = true;
+    void resolveCredentialHome(itemId).then((home) => {
+      if (active) setAnswer({ id: itemId, home });
+    });
+    return () => {
+      active = false;
+    };
+  }, [itemId, enabled]);
+  if (!itemId || !enabled || answer?.id !== itemId) return null;
+  return answer.home;
+}
 
 // ── Catalog definitions ───────────────────────────────────────────────────
 

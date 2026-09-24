@@ -51,7 +51,20 @@ export const OBJECT_HELPERS: readonly string[] = [
   "features/record-change-approvals/applyRecordChange.ts",
   "features/list-change-proposals/applyListChange.ts",
   "features/unified-data/components/EntityCustomFields.tsx",
+  // /vault/<id> — the credential workspace the route mounts (ACTIVE-ORG-PAGES).
+  "features/secrets/components/VaultWorkspace.tsx",
 ];
+
+/**
+ * MUST ASK THE OBJECT — an object page outside the record store answers "where does this live"
+ * through its own row-level door, not `custom.where_id_opens`. Reading no active organization is
+ * not enough there: the page must CALL its resolver, or a routed id is looked up inside whatever
+ * list happens to be showing (the /vault/<id> defect: a credential of one of her organizations
+ * opened as nothing because the list showed "Mine"). Each file here must match its pattern.
+ */
+export const MUST_ASK_THE_OBJECT: Readonly<Record<string, RegExp>> = {
+  "features/secrets/components/VaultWorkspace.tsx": /\buseCredentialHome\s*\(/,
+};
 
 /**
  * RECORDED EXCEPTIONS — a file whose object read is already decided by the object, but which
@@ -144,9 +157,27 @@ export function scan(
   root: string,
   helpers: readonly string[] = OBJECT_HELPERS,
   excused: Readonly<Record<string, string>> = {},
+  mustAsk: Readonly<Record<string, RegExp>> = {},
 ): { scanned: string[]; findings: Finding[] } {
   const scanned = [...new Set([...objectRoutes(root), ...helpers])].sort();
   const findings: Finding[] = [];
+  for (const [f, re] of Object.entries(mustAsk)) {
+    let body = "";
+    try {
+      body = readFileSync(join(root, f), "utf8");
+    } catch {
+      findings.push({ file: f, line: 0, text: "", why: "MUST_ASK_THE_OBJECT names a file that is missing — restore it or remove its row" });
+      continue;
+    }
+    if (!re.test(body)) {
+      findings.push({
+        file: f,
+        line: 0,
+        text: "",
+        why: `never asks the object where it lives (expected ${re}) — a routed id is being looked up inside whatever list is showing`,
+      });
+    }
+  }
   for (const f of scanned) {
     const hits = scanFile(root, f);
     if (excused[f] !== undefined) {
@@ -233,6 +264,14 @@ function selfTest(): number {
   const excusedHeld = scan(dir, [], { "app/(core)/data-v2/[tableId]/page.tsx": "fixture reason long enough" }).findings;
   expect("GREEN-4 a recorded exception holds its file", !excusedHeld.some((f) => f.file.includes("[tableId]")));
 
+  // MUST ASK THE OBJECT: a workspace that finds a routed id only inside the showing list.
+  write("features/x/workspace.tsx", `const selected = items.find((i) => i.id === routedId);\n`);
+  write("features/x/asks.tsx", `const home = useCredentialHome(routedId);\n`);
+  const red5 = scan(dir, [], {}, { "features/x/workspace.tsx": /\buseCredentialHome\s*\(/ }).findings;
+  expect("RED-5 an object workspace that never asks the object fails", red5.some((f) => f.file === "features/x/workspace.tsx" && /never asks/.test(f.why)));
+  const green5 = scan(dir, [], {}, { "features/x/asks.tsx": /\buseCredentialHome\s*\(/ }).findings;
+  expect("GREEN-5 an object workspace that asks the object passes", !green5.some((f) => f.file === "features/x/asks.tsx"));
+
   console.log(failures === 0 ? "[ OK ] self-test: every arm answered as designed" : `[FAIL] self-test: ${failures} arm(s) wrong`);
   return failures === 0 ? 0 : 1;
 }
@@ -241,6 +280,6 @@ if (require.main === module) {
   if (process.argv.includes("--self-test")) {
     process.exit(selfTest());
   }
-  const { scanned, findings } = scan(ROOT, OBJECT_HELPERS, EXCUSED);
+  const { scanned, findings } = scan(ROOT, OBJECT_HELPERS, EXCUSED, MUST_ASK_THE_OBJECT);
   process.exit(report(findings, scanned));
 }
