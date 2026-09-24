@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
@@ -170,12 +169,16 @@ export default function WorkbookPage({
         <RouteHeader
           left={<ChevronLeftTapButton href="/workbooks" ariaLabel="Back" />}
         />
-        <div className="flex h-full flex-col items-center justify-center gap-2 text-sm">
-          <div className="text-destructive">Could not load workbook.</div>
-          <div className="text-muted-foreground">{error}</div>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/workbooks">Back to workbooks</Link>
-          </Button>
+        {/* The service reports only a message (no PostgREST code), so the
+            gate asks the platform which state this is — denied, deleted,
+            missing, or signed out — rather than guessing from the text. */}
+        <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+          <AccessGate
+            token="workbook"
+            id={id}
+            fallbackHref="/workbooks"
+            fallbackLabel="Back to workbooks"
+          />
         </div>
       </>
     );
