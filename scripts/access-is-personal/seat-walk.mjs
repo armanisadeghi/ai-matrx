@@ -19,6 +19,8 @@
 //                     (no ?org=) still opens with the same line.
 //   hub-scope         /data-v2 names the organization it lists and "All my organizations" lists
 //                     every organization's tables, each opening where it lives.
+//   portal-accept     (when AP_PORTAL_TOKEN is set) Active = Alex Hart's Workspace. A portal
+//                     invitation accepts and the portal opens; her organization did NOT move.
 //
 // Env: AP_ORIGIN (e.g. http://accesspersonal.localhost:3064), AP_EMAIL, AP_PASSWORD, AP_TOKEN
 // (the invitation token; read from a file, never printed), AP_SHOTS (screenshot dir).
@@ -77,6 +79,9 @@ const openTable = async (id, expectName = null, query = "") => {
   return v ?? "timeout";
 };
 
+const ONLY = (process.env.AP_ONLY ?? "").split(",").filter(Boolean);
+const wants = (clause) => ONLY.length === 0 || ONLY.includes(clause);
+
 try {
   const who = await signIn(page, ORIGIN, process.env.AP_EMAIL, process.env.AP_PASSWORD);
   pass("seat", who === "test@test.com", `/api/whoami answered ${who}`);
@@ -86,6 +91,26 @@ try {
   pass("active-org", before === HOME_ORG, `the hub reads "Showing what is in ${before}"`);
   await shot("hub-home-org");
 
+  // ── portal-accept ──
+  if (process.env.AP_PORTAL_TOKEN && wants("portal-accept")) {
+    await page.goto(`${ORIGIN}/invitations/portal/accept/${process.env.AP_PORTAL_TOKEN}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+    const openPortal = page.locator('button:has-text("Open Customer Portal"):not([disabled])').first();
+    await openPortal.waitFor({ state: "visible", timeout: 90000 });
+    await openPortal.click({ timeout: 60000 });
+    const accepted = await until("the portal accepted", async () => (/is open to you|already/.test(await text()) ? true : null), 90000);
+    await shot("portal-accepted");
+    pass("portal-accept", Boolean(accepted.v), accepted.v ? "Customer Portal is open to her" : "the accept did not answer");
+    const onward = page.locator('button:has-text("Open Customer Portal"):not([disabled])').first();
+    if (await onward.count()) await onward.click({ timeout: 60000 });
+    const portal = await until("the portal page", async () => (page.url().includes("/portal/c/") ? page.url() : null), 90000);
+    await sleep(4000);
+    await shot("portal-opened");
+    pass("portal-opens", Boolean(portal.v), `landed on ${String(portal.v ?? page.url()).replace(ORIGIN, "")}`);
+    const afterPortal = await activeOrgLine();
+    pass("portal-accept-org-unchanged", afterPortal === HOME_ORG, `after accepting the portal, the hub still reads "${afterPortal}"`);
+  }
+
+  if (!wants("member-elsewhere")) throw new Error("__only__");
   // ── member-elsewhere ──
   const jobs = await openTable(RINCON_JOBS, "Jobs");
   const jobsText = await text();
@@ -151,7 +176,7 @@ try {
   pass("hub-all-organizations", Boolean(listed.v) && page.url().includes("scope=all"),
     listed.v ? `grouped list with Rincon Plumbing Co and Ironclad Mobile Mechanic (shared with you); address ${page.url().replace(ORIGIN, "")}` : "no grouped list");
 } catch (e) {
-  pass("walk", false, String(e?.message ?? e));
+  if (String(e?.message) !== "__only__") pass("walk", false, String(e?.message ?? e));
 } finally {
   writeFileSync(`${SHOTS}/walk.json`, JSON.stringify({ results, rpcErrors: errors }, null, 2));
   await browser.close();
