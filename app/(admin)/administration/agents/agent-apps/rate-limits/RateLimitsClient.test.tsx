@@ -146,7 +146,7 @@ describe("RateLimitsClient canonical table contract", () => {
         }),
       ]),
     );
-    expect(host.textContent).toContain("Loaded limits");
+    expect(host.textContent).not.toContain("Loaded limits");
     expect(host.textContent).toContain("Blocked loaded");
 
     await act(async () => {

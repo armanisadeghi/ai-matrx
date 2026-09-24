@@ -331,9 +331,8 @@ export function RateLimitsClient() {
         data-matrx-table-page
         className="flex h-full min-h-0 flex-col gap-3 p-4"
       >
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {[
-            ["Loaded limits", stats.total, ""],
             ["Blocked loaded", stats.blocked, "text-destructive"],
             ["Active loaded", stats.active, "text-green-600"],
             ["User limits loaded", stats.users, "text-purple-600"],
