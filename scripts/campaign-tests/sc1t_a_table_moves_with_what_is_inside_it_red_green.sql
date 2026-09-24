@@ -23,7 +23,11 @@
 --       with the sentence naming which organization has not, and the move is refused
 --   L3  with the wall open the move lands and the link holds its value: the edge is filed under
 --       Portland (the organization of the row it starts at) and still names the hauler in Tacoma
---   K1  a COLUMN whose own target stays is still refused with the sentence, wall open or not
+--   K1  a COLUMN whose target stays (Scale tickets' Hauler → Haulers), and a column that stays
+--       pointing in (Haulers' Last ticket → Scale tickets), are held by name while their Table does
+--       not allow links to other organizations — and, the wall open, the move lands with the Hauler
+--       column still pointing at Tacoma's Haulers (chair ruling 2026-09-24: one wall for row links
+--       and field targets). RED before sc1t_a_column_crosses_the_wall_where_it_is_open.sql: 23503.
 --   K2  records of a table that stays, living inside a moving row, are still refused
 
 \set ON_ERROR_STOP on
@@ -80,7 +84,7 @@ begin
     'name', 'Haulers', 'slug', 'haulers', 'label_singular', 'Hauler', 'label_plural', 'Haulers',
     'title_field', 'company', 'parent_id', v_home_tac::text,
     'default_sort', jsonb_build_array(jsonb_build_object('field', 'company', 'direction', 'asc')),
-    'fields', jsonb_build_array(jsonb_build_object('name', 'company'))));
+    'fields', jsonb_build_array(jsonb_build_object('name', 'company'), jsonb_build_object('name', 'last_ticket', 'kind', 'relation'))));
   v_h1 := custom.record_write(v_tac, v_haul, jsonb_build_object('company', 'Puget Sound Salvage'));
 
   -- Scale tickets: moves.
@@ -90,14 +94,20 @@ begin
     'default_sort', jsonb_build_array(jsonb_build_object('field', 'ticket', 'direction', 'asc')),
     'fields', jsonb_build_array(jsonb_build_object('name', 'ticket'), jsonb_build_object('name', 'hauler', 'kind', 'relation'))));
   perform custom.field_declare(v_tac, v_t, jsonb_build_object('key', 'net_lbs', 'label', 'Net weight (lb)', 'type', 'number', 'sort', 30));
-  -- The hauler column: the store's one shape for a column whose values may name rows of another
-  -- table (target_mode any — REL-8 — with its declared target its own table, which is what the
-  -- wall lets a column name; see guardswitch_green.sql part 2).
+  -- The hauler column points at Haulers (REL-8 target_mode one); Haulers' Last ticket column points
+  -- back at Scale tickets. Field rows written as the store owner: no client door declares a
+  -- relation column yet (guardswitch_green.sql part 2 says why).
+  update custom.record f
+     set data = f.data || jsonb_build_object(
+       'type', 'relation', 'multi', false, 'label', 'Last ticket',
+       'relation_target', v_t::text, 'relation_max', 1, 'on_target_delete', 'set_null')
+   where f.organization_id = v_tac and f.table_id = custom.field_kernel_id() and f.deleted_at is null
+     and f.data ->> 'entity_definition_id' = v_haul::text
+     and coalesce(nullif(f.data ->> 'key', ''), f.data ->> 'name') = 'last_ticket';
   update custom.record f
      set data = f.data || jsonb_build_object(
        'type', 'relation', 'multi', false, 'label', 'Hauler',
-       'config', jsonb_build_object('target_mode', 'any'),
-       'relation_target', v_t::text, 'relation_max', 1, 'on_target_delete', 'set_null')
+       'relation_target', v_haul::text, 'relation_max', 1, 'on_target_delete', 'set_null')
    where f.organization_id = v_tac and f.table_id = custom.field_kernel_id() and f.deleted_at is null
      and f.data ->> 'entity_definition_id' = v_t::text
      and coalesce(nullif(f.data ->> 'key', ''), f.data ->> 'name') = 'hauler'
@@ -142,14 +152,15 @@ begin
   if exists (select 1 from jsonb_array_elements_text(v_home -> 'held_by') h where h like '%lives inside one of its rows%') then
     raise exception 'C1 RED: a table with tables inside its rows is held — "%"', v_home -> 'held_by';
   end if;
-  if jsonb_array_length(v_home -> 'held_by') <> 0 then
+  -- (the two crossing columns are K1's; nothing ELSE may hold it)
+  if exists (select 1 from jsonb_array_elements_text(v_home -> 'held_by') h where h not like '% column%') then
     raise exception 'C1: something else holds Scale tickets: %', v_home -> 'held_by';
   end if;
   if coalesce((v_home #>> '{carries,tables_inside}')::int, -1) <> 2 then
     raise exception 'C1: the confirm does not say two tables ride along: %', v_home -> 'carries';
   end if;
   select d into v_d from jsonb_array_elements(v_home -> 'destinations') d where d ->> 'id' = v_pdx::text;
-  if v_d is null or not (v_d ->> 'ok')::boolean then
+  if v_d is null then
     raise exception 'C1: Portland is not offered: %', v_d;
   end if;
   raise notice 'sc1t: C1 GREEN — nothing holds it; 2 tables ride along';
@@ -181,28 +192,28 @@ begin
 end
 $k2$;
 
--- ══ K1 · a column whose own target stays is refused, wall open or not ═══════════════════════
+-- ══ K1 · columns that cross, held by name while their Tables do not allow it ═════════════════
 do $k1$
 declare
   c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
-  v_tac uuid; v_t uuid; v_haul uuid; v_fld uuid; v_home jsonb;
+  v_t uuid; v_home jsonb;
 begin
-  select v into v_tac from mv where k = 'tac'; select v into v_t from mv where k = 't';
-  select v into v_haul from mv where k = 'haul'; select v into v_fld from mv where k = 'fld';
-  perform set_config('role', 'postgres', true);
-  update custom.record set data = jsonb_set(data, '{relation_target}', to_jsonb(v_haul::text))
-   where organization_id = v_tac and id = v_fld;
+  select v into v_t from mv where k = 't';
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
   v_home := custom.table_home(v_t);
   if not exists (select 1 from jsonb_array_elements_text(v_home -> 'held_by') h
-                  where h like '%Hauler column links to Haulers, which stays in %') then
-    raise exception 'K1: a column whose own target stays is not held with the sentence: %', v_home -> 'held_by';
+                  where h like 'Its Hauler column links to Haulers, which stays in %, and Scale tickets does not allow links to other organizations%') then
+    raise exception 'K1: the Hauler column is not held by the wall''s sentence: %', v_home -> 'held_by';
   end if;
-  perform set_config('role', 'postgres', true);
-  update custom.record set data = jsonb_set(data, '{relation_target}', to_jsonb(v_t::text))
-   where organization_id = v_tac and id = v_fld;
-  raise notice 'sc1t: K1 GREEN — a column never points across the wall';
+  if not exists (select 1 from jsonb_array_elements_text(v_home -> 'held_by') h
+                  where h like 'Haulers links to this table through its Last ticket column and stays in %, and Haulers does not allow links%') then
+    raise exception 'K1: the Last ticket column pointing in is not held by the wall''s sentence: %', v_home -> 'held_by';
+  end if;
+  if coalesce((v_home #>> '{carries,columns_across}')::int, -1) <> 2 then
+    raise exception 'K1: the confirm does not count the two columns that cross: %', v_home -> 'carries';
+  end if;
+  raise notice 'sc1t: K1 GREEN — columns that cross are held by name while the wall is shut';
 end
 $k1$;
 
@@ -236,6 +247,7 @@ begin
 
   -- L2: the table allows it (its settings, through the door); the organizations have not.
   perform custom.record_update(v_tac, v_t, jsonb_build_object('cross_organization_relations', true));
+  perform custom.record_update(v_tac, (select v from mv where k = 'haul'), jsonb_build_object('cross_organization_relations', true));
   v_home := custom.table_home(v_t);
   if jsonb_array_length(v_home -> 'held_by') <> 0 then
     raise exception 'L2: still held once the table allows links: %', v_home -> 'held_by';
@@ -320,6 +332,10 @@ begin
                   where a.source_id = v_r1 and a.target_id = v_h1 and a.deleted_at is null
                     and a.relation_field_id = v_fld and a.organization_id = v_pdx) then
     raise exception 'L3: the hauler link is not filed under Portland with its value';
+  end if;
+  if not exists (select 1 from custom.record where organization_id = v_pdx and id = v_fld
+                   and data ->> 'relation_target' = (select v::text from mv where k = 'haul')) then
+    raise exception 'K1: the Hauler column did not move still pointing at Tacoma''s Haulers';
   end if;
   if (select organization_id from custom.record where id = v_h1) <> v_tac then
     raise exception 'L3: the hauler moved, and it should have stayed';
