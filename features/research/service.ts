@@ -1,4 +1,5 @@
 import { supabase } from "@/utils/supabase/client";
+import { readAllRows } from "@ai-matrx/data/db";
 import { requireUserId } from "@/utils/auth/getUserId";
 import type { Database } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
@@ -40,11 +41,7 @@ import {
   type SourceImportance,
 } from "./ranking";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import type {
-  CostLedgerInput,
-  CostLedgerRow,
-  SynthesisCostRow,
-} from "./costs";
+import type { CostLedgerInput, CostLedgerRow, SynthesisCostRow } from "./costs";
 
 import type { ScopesRpcResult } from "@/features/scopes/types";
 import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
@@ -193,7 +190,9 @@ export async function setTopicProject(
  * lets through" (a user belongs to multiple orgs; a bare RLS-only read
  * here previously blended all of them into one undifferentiated list).
  */
-export async function getAllTopics(scope?: ListScopeWord): Promise<ResearchTopic[]> {
+export async function getAllTopics(
+  scope?: ListScopeWord,
+): Promise<ResearchTopic[]> {
   const userId = requireUserId();
   // THE VIEW LAW still holds — this list declares its scope rather than taking a bare RLS read.
   // What changed (DD-137c / §3.3) is WHERE the declaration comes from: `research_topic` is
@@ -206,8 +205,9 @@ export async function getAllTopics(scope?: ListScopeWord): Promise<ResearchTopic
     .select("*")
     .is("deleted_at", null);
   if (ownerOnly) topicQuery = topicQuery.eq("created_by", userId);
-  const { data, error } = await topicQuery
-    .order("created_at", { ascending: false });
+  const { data, error } = await topicQuery.order("created_at", {
+    ascending: false,
+  });
   if (error) throw error;
   return (data ?? []).map(rowToResearchTopic);
 }
@@ -419,7 +419,8 @@ export async function addKeywords(
   if (keywords.length === 0) return [];
   const goalFor = (keyword: string): string | null => {
     const raw =
-      goalsByKeyword?.[keyword] ?? goalsByKeyword?.[keyword.toLocaleLowerCase()];
+      goalsByKeyword?.[keyword] ??
+      goalsByKeyword?.[keyword.toLocaleLowerCase()];
     const trimmed = raw?.trim();
     return trimmed ? trimmed : null;
   };
@@ -1484,52 +1485,82 @@ export async function getTemplate(
 export async function getTopicCostLedger(
   topicId: string,
 ): Promise<CostLedgerInput> {
-  const LEDGER_COLUMNS = "id, agent_type, agent_id, model_id, status, created_at, token_usage";
+  const LEDGER_COLUMNS =
+    "id, agent_type, agent_id, model_id, status, created_at, token_usage";
 
   const [analyses, syntheses, documents, keywords, tags] = await Promise.all([
-    supabase
-      .schema("research")
-      .from("rs_analysis")
-      .select(LEDGER_COLUMNS)
-      .eq("topic_id", topicId),
-    supabase
-      .schema("research")
-      .from("rs_synthesis")
-      .select(`${LEDGER_COLUMNS}, scope, keyword_id, tag_id`)
-      .eq("topic_id", topicId),
-    supabase
-      .schema("research")
-      .from("rs_document")
-      .select(LEDGER_COLUMNS)
-      .eq("topic_id", topicId),
-    supabase
-      .schema("research")
-      .from("rs_keyword")
-      .select("id, keyword")
-      .eq("topic_id", topicId),
-    supabase
-      .schema("research")
-      .from("rs_tag")
-      .select("id, name")
-      .eq("topic_id", topicId),
+    readAllRows<CostLedgerRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("research")
+          .from("rs_analysis")
+          .select(LEDGER_COLUMNS, { count: "exact" })
+          .eq("topic_id", topicId)
+          .order("created_at", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "research.rs_analysis topic cost ledger" },
+    ),
+    readAllRows<SynthesisCostRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("research")
+          .from("rs_synthesis")
+          .select(`${LEDGER_COLUMNS}, scope, keyword_id, tag_id`, {
+            count: "exact",
+          })
+          .eq("topic_id", topicId)
+          .order("created_at", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "research.rs_synthesis topic cost ledger" },
+    ),
+    readAllRows<CostLedgerRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("research")
+          .from("rs_document")
+          .select(LEDGER_COLUMNS, { count: "exact" })
+          .eq("topic_id", topicId)
+          .order("created_at", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "research.rs_document topic cost ledger" },
+    ),
+    readAllRows<{ id: string; keyword: string }>(
+      ({ from, to }) =>
+        supabase
+          .schema("research")
+          .from("rs_keyword")
+          .select("id, keyword", { count: "exact" })
+          .eq("topic_id", topicId)
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "research.rs_keyword topic cost ledger" },
+    ),
+    readAllRows<{ id: string; name: string }>(
+      ({ from, to }) =>
+        supabase
+          .schema("research")
+          .from("rs_tag")
+          .select("id, name", { count: "exact" })
+          .eq("topic_id", topicId)
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "research.rs_tag topic cost ledger" },
+    ),
   ]);
 
-  // Any of the five failing means the ledger would silently under-report,
-  // which is worse than showing nothing — surface it.
-  for (const res of [analyses, syntheses, documents, keywords, tags]) {
-    if (res.error) throw res.error;
-  }
-
   const keywordNames: Record<string, string> = {};
-  for (const k of keywords.data ?? []) keywordNames[k.id] = k.keyword;
+  for (const k of keywords) keywordNames[k.id] = k.keyword;
 
   const tagNames: Record<string, string> = {};
-  for (const t of tags.data ?? []) tagNames[t.id] = t.name;
+  for (const t of tags) tagNames[t.id] = t.name;
 
   return {
-    analyses: (analyses.data ?? []) as CostLedgerRow[],
-    syntheses: (syntheses.data ?? []) as SynthesisCostRow[],
-    documents: (documents.data ?? []) as CostLedgerRow[],
+    analyses,
+    syntheses,
+    documents,
     keywordNames,
     tagNames,
   };

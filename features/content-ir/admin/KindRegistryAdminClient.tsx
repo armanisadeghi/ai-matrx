@@ -33,6 +33,8 @@ import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import {
   catalogResolver,
   listAllKinds,
@@ -41,10 +43,6 @@ import {
   type KindCatalogSource,
 } from "@/features/content-ir/registry/kind-catalog";
 import type { FieldSchema } from "@ai-matrx/content-ir";
-import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
 
 const SOURCE_STYLES: Record<KindCatalogSource, string> = {
   system: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200",
@@ -60,7 +58,16 @@ const SOURCE_LABELS: Record<KindCatalogSource, string> = {
 };
 
 /** One row per field, inline_object children flattened with dotted names. */
-type FieldRow = { name: string; depth: number; field: FieldSchema };
+type FieldRow = {
+  name: string;
+  depth: number;
+  type: string;
+  required: boolean;
+  nullable: boolean;
+  kindRefs: string[];
+  /** A scalar accessor keeps all referenced kinds independently filterable. */
+  kindRefsText: string;
+};
 
 function flattenFields(
   fields: Record<string, FieldSchema>,
@@ -69,7 +76,16 @@ function flattenFields(
 ): FieldRow[] {
   const rows: FieldRow[] = [];
   for (const [name, field] of Object.entries(fields)) {
-    rows.push({ name: `${prefix}${name}`, depth, field });
+    const kindRefs = fieldKindRefs(field);
+    rows.push({
+      name: `${prefix}${name}`,
+      depth,
+      type: fieldTypeSummary(field),
+      required: field.required ?? false,
+      nullable: field.nullable ?? false,
+      kindRefs,
+      kindRefsText: kindRefs.join(", "),
+    });
     if (field.type === "inline_object") {
       rows.push(...flattenFields(field.fields, `${prefix}${name}.`, depth + 1));
     }
@@ -156,6 +172,94 @@ export default function KindRegistryAdminClient() {
   const selected = useMemo(
     () => catalog?.find((entry) => entry.kind === selectedKind) ?? null,
     [catalog, selectedKind],
+  );
+
+  const fieldRows = useMemo(
+    () => (selected ? flattenFields(selected.fields) : []),
+    [selected],
+  );
+
+  const knownKinds = useMemo(
+    () => new Set((catalog ?? []).map((entry) => entry.kind)),
+    [catalog],
+  );
+
+  const fieldColumns = useMemo<MatrxColumnDef<FieldRow>[]>(
+    () => [
+      {
+        accessorKey: "name",
+        header: "Field",
+        filter: "text",
+        width: 265,
+        cell: (row) => (
+          <span
+            className="block truncate font-mono text-xs text-foreground"
+            style={{ paddingLeft: `${row.depth * 16}px` }}
+            title={row.name}
+          >
+            {row.name}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "type",
+        header: "Type",
+        filter: "text",
+        width: 300,
+        cell: (row) => (
+          <span
+            className="block truncate text-xs text-muted-foreground"
+            title={row.type}
+          >
+            {row.type}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "required",
+        header: "Required",
+        filter: "boolean",
+        width: 90,
+        cell: (row) =>
+          row.required ? (
+            <span className="font-medium text-foreground">yes</span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
+      {
+        accessorKey: "nullable",
+        header: "Nullable",
+        filter: "boolean",
+        width: 90,
+        cell: (row) =>
+          row.nullable ? (
+            <span className="font-medium text-foreground">yes</span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
+      {
+        accessorKey: "kindRefsText",
+        header: "Kind refs",
+        label: "Kind refs",
+        filter: "text",
+        width: 240,
+        cell: (row) => (
+          <div className="flex flex-wrap gap-1">
+            {row.kindRefs.map((kind) => (
+              <KindChip
+                key={kind}
+                kind={kind}
+                known={knownKinds.has(kind)}
+                onNavigate={setSelectedKind}
+              />
+            ))}
+          </div>
+        ),
+      },
+    ],
+    [knownKinds],
   );
 
   const resolver = useMemo(
@@ -400,87 +504,30 @@ export default function KindRegistryAdminClient() {
                 </section>
 
                 {/* Fields */}
-                <section className="overflow-hidden rounded-lg border border-border bg-card">
-                  <div className="border-b border-border px-3 py-2 text-sm font-semibold text-foreground">
-                    Fields
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className={cn("text-sm", MOBILE_TABLE_FROZEN)}>
-                      <thead>
-                        <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                          <th className="px-3 py-1.5 font-medium">Field</th>
-                          <th className="px-3 py-1.5 font-medium">Type</th>
-                          <th className="px-3 py-1.5 font-medium">Required</th>
-                          <th className="px-3 py-1.5 font-medium">Nullable</th>
-                          <th className="px-3 py-1.5 font-medium">Kind refs</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {flattenFields(selected.fields).map((row) => (
-                          <tr
-                            key={row.name}
-                            className="border-b border-border/60 last:border-0 hover:bg-accent/30"
-                          >
-                            <td
-                              className="px-3 py-1.5 font-mono text-xs text-foreground"
-                              style={{
-                                paddingLeft: `${12 + row.depth * 16}px`,
-                              }}
-                            >
-                              {row.name}
-                            </td>
-                            <td className="px-3 py-1.5 text-xs text-muted-foreground">
-                              {fieldTypeSummary(row.field)}
-                            </td>
-                            <td className="px-3 py-1.5 text-xs">
-                              {row.field.required ? (
-                                <span className="font-medium text-foreground">
-                                  yes
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
-                            </td>
-                            <td className="px-3 py-1.5 text-xs">
-                              {row.field.nullable ? (
-                                <span className="font-medium text-foreground">
-                                  yes
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
-                            </td>
-                            <td className="px-3 py-1.5">
-                              <div className="flex flex-wrap gap-1">
-                                {fieldKindRefs(row.field).map((ref) => (
-                                  <KindChip
-                                    key={ref}
-                                    kind={ref}
-                                    known={
-                                      catalog?.some((e) => e.kind === ref) ??
-                                      false
-                                    }
-                                    onNavigate={setSelectedKind}
-                                  />
-                                ))}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                        {Object.keys(selected.fields).length === 0 && (
-                          <tr>
-                            <td
-                              colSpan={5}
-                              className="px-3 py-3 text-center text-xs text-muted-foreground"
-                            >
-                              No fields — the registry has no schema for this
-                              kind yet.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                <section>
+                  <MatrxDataTable<FieldRow>
+                    data={fieldRows}
+                    columns={fieldColumns}
+                    getRowId={(row) => row.name}
+                    viewTabs={false}
+                    detail={{ enabled: false }}
+                    density="condensed"
+                    toolbar={{
+                      title: "Fields",
+                      searchPlaceholder: "Search fields…",
+                    }}
+                    pageSize={0}
+                    coverage={{
+                      loaded: fieldRows.length,
+                      total: fieldRows.length,
+                      noun: "field",
+                    }}
+                    emptyState={{
+                      title: "No fields",
+                      description:
+                        "The registry has no schema for this kind yet.",
+                    }}
+                  />
                 </section>
 
                 {/* References */}

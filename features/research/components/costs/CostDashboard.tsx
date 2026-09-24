@@ -8,7 +8,7 @@
  * viewer, raw USD appended for admins. Never format a dollar figure here.
  */
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   AlertTriangle,
   Brain,
@@ -25,19 +25,17 @@ import {
 import { cn } from "@/lib/utils";
 import { CostValue } from "@/components/processing-units/CostValue";
 import { useCostDisplay } from "@/components/processing-units/useCostDisplay";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useTopicContext } from "../../context/ResearchContext";
 import { useTopicCosts } from "../../hooks/useTopicCosts";
 import {
   COST_PHASE_LABELS,
   type CostLedgerEntry,
   type CostPhase,
+  type PhaseRollup,
 } from "../../costs";
-import {
-  MOBILE_TABLE,
-  MOBILE_TABLE_NOWRAP_CELLS,
-  MOBILE_TABLE_FROZEN_CELL,
-  MOBILE_TABLE_FROZEN_HEAD,
-} from "@/components/official/mobile-table/mobileTable";
+import type { NormalizedUsageModel } from "@/lib/token-usage/normalize";
 
 const PHASE_ICON: Record<CostPhase, typeof Brain> = {
   page_analyses: Brain,
@@ -103,98 +101,357 @@ function StatTile({
   );
 }
 
-// ── Ledger row ──────────────────────────────────────────────────────────────
-
-function LedgerRow({ entry }: { entry: CostLedgerEntry }) {
-  const Icon = PHASE_ICON[entry.phase];
-  return (
-    <tr
-      className={cn(
-        "border-b border-border/30 last:border-0 hover:bg-muted/20 transition-colors",
-        !entry.succeeded && "bg-destructive/5",
-      )}
-    >
-      <td className={cn("px-2 py-1.5 whitespace-nowrap text-muted-foreground tabular-nums text-[11px]", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[6rem]")}>
-        {formatTime(entry.createdAt)}
-      </td>
-      <td className="px-2 py-1.5">
-        <div className="flex items-center gap-1.5">
-          <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
-          <span className="sm:truncate">{entry.phaseLabel}</span>
+const PHASE_COLUMNS: MatrxColumnDef<PhaseRollup>[] = [
+  {
+    id: "phase",
+    header: "Phase",
+    label: "Phase",
+    accessorKey: "label",
+    filter: "select",
+    frozen: true,
+    width: 220,
+    cell: (phase) => {
+      const Icon = PHASE_ICON[phase.phase];
+      return (
+        <div className="flex items-center gap-2">
+          {phase.label !== "All phases · unfiltered" && (
+            <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
+          )}
+          <span className="font-medium">{phase.label}</span>
+          {phase.failed_calls > 0 && (
+            <span className="text-[10px] text-destructive/80">
+              {phase.failed_calls} failed
+            </span>
+          )}
         </div>
-      </td>
-      <td className="px-2 py-1.5">
-        <span className="block sm:truncate" title={entry.subject}>
-          {entry.subject}
+      );
+    },
+  },
+  {
+    accessorKey: "calls",
+    header: "Calls",
+    filter: "number",
+    align: "right",
+    width: 84,
+    cell: (phase) => <span className="tabular-nums">{phase.calls}</span>,
+  },
+  {
+    accessorKey: "input_tokens",
+    header: "In",
+    label: "Input tokens",
+    filter: "number",
+    align: "right",
+    width: 108,
+    cell: (phase) => (
+      <span className="tabular-nums">
+        {phase.input_tokens.toLocaleString()}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "cached_input_tokens",
+    header: "Cached",
+    label: "Cached input tokens",
+    filter: "number",
+    align: "right",
+    width: 120,
+    cell: (phase) => (
+      <span className="tabular-nums text-muted-foreground">
+        {phase.cached_input_tokens > 0
+          ? phase.cached_input_tokens.toLocaleString()
+          : "—"}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "output_tokens",
+    header: "Out",
+    label: "Output tokens",
+    filter: "number",
+    align: "right",
+    width: 108,
+    cell: (phase) => (
+      <span className="tabular-nums">
+        {phase.output_tokens.toLocaleString()}
+      </span>
+    ),
+  },
+  {
+    id: "cost",
+    header: "Cost",
+    accessorFn: (phase) => phase.estimated_cost_usd,
+    filter: "number",
+    align: "right",
+    width: 112,
+    cell: (phase) => (
+      <CostValue
+        costUsd={phase.estimated_cost_usd}
+        short
+        muted={phase.calls === 0}
+      />
+    ),
+  },
+];
+
+const MODEL_COLUMNS: MatrxColumnDef<NormalizedUsageModel>[] = [
+  {
+    accessorKey: "model",
+    header: "Model",
+    filter: "text",
+    frozen: true,
+    width: 240,
+    cell: (model) => <span className="font-medium">{model.model}</span>,
+  },
+  {
+    accessorKey: "api",
+    header: "Provider",
+    filter: "text",
+    width: 140,
+    cell: (model) => (
+      <span className="text-muted-foreground">{model.api ?? "—"}</span>
+    ),
+  },
+  {
+    accessorKey: "requests",
+    header: "Requests",
+    filter: "number",
+    align: "right",
+    width: 100,
+    cell: (model) => (
+      <span className="tabular-nums">{model.requests.toLocaleString()}</span>
+    ),
+  },
+  {
+    accessorKey: "inputTokens",
+    header: "In",
+    label: "Input tokens",
+    filter: "number",
+    align: "right",
+    width: 108,
+    cell: (model) => (
+      <span className="tabular-nums">{model.inputTokens.toLocaleString()}</span>
+    ),
+  },
+  {
+    accessorKey: "cachedInputTokens",
+    header: "Cached",
+    label: "Cached input tokens",
+    filter: "number",
+    align: "right",
+    width: 120,
+    cell: (model) => (
+      <span className="tabular-nums text-muted-foreground">
+        {model.cachedInputTokens > 0
+          ? model.cachedInputTokens.toLocaleString()
+          : "—"}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "outputTokens",
+    header: "Out",
+    label: "Output tokens",
+    filter: "number",
+    align: "right",
+    width: 108,
+    cell: (model) => (
+      <span className="tabular-nums">
+        {model.outputTokens.toLocaleString()}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "costUsd",
+    header: "Cost",
+    filter: "number",
+    align: "right",
+    width: 112,
+    cell: (model) => <CostValue costUsd={model.costUsd} short />,
+  },
+];
+
+const LEDGER_COLUMNS: MatrxColumnDef<CostLedgerEntry>[] = [
+  {
+    id: "created-at",
+    header: "When",
+    label: "When",
+    accessorFn: (entry) => entry.createdAt ?? "",
+    filter: "date",
+    frozen: true,
+    width: 144,
+    cell: (entry) => (
+      <span className="whitespace-nowrap text-[11px] tabular-nums text-muted-foreground">
+        {formatTime(entry.createdAt)}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "phaseLabel",
+    header: "Phase",
+    filter: "select",
+    filterOptions: Object.entries(COST_PHASE_LABELS).map(([value, label]) => ({
+      value: label,
+      label,
+    })),
+    width: 180,
+    cell: (entry) => {
+      const Icon = PHASE_ICON[entry.phase];
+      return (
+        <div className="flex items-center gap-1.5">
+          <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
+          <span>{entry.phaseLabel}</span>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "subject",
+    header: "Subject",
+    filter: "text",
+    width: 300,
+    cell: (entry) => (
+      <span className="block truncate" title={entry.subject}>
+        {entry.subject}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "agentType",
+    header: "Agent type",
+    filter: "text",
+    width: 150,
+    mobileHidden: true,
+    cell: (entry) => (
+      <span className="block truncate" title={entry.agentType ?? undefined}>
+        {entry.agentType ?? "—"}
+      </span>
+    ),
+  },
+  {
+    id: "models",
+    header: "Model",
+    accessorFn: (entry) => entry.models.join(" "),
+    filter: "text",
+    width: 180,
+    mobileHidden: true,
+    cell: (entry) => (
+      <span className="block truncate" title={entry.models.join(", ")}>
+        {entry.models.length > 0 ? entry.models.join(", ") : "—"}
+      </span>
+    ),
+  },
+  {
+    id: "providers",
+    header: "Provider",
+    accessorFn: (entry) => entry.providers.join(" "),
+    filter: "text",
+    width: 150,
+    mobileHidden: true,
+    cell: (entry) => (
+      <span className="block truncate" title={entry.providers.join(", ")}>
+        {entry.providers.length > 0 ? entry.providers.join(", ") : "—"}
+      </span>
+    ),
+  },
+  {
+    id: "status",
+    header: "Status",
+    accessorFn: (entry) => (entry.succeeded ? "success" : "failed"),
+    sortValue: (entry) => entry.status,
+    filter: "select",
+    filterOptions: [
+      { value: "success", label: "Successful" },
+      { value: "failed", label: "Failed" },
+    ],
+    align: "center",
+    width: 96,
+    cell: (entry) =>
+      entry.succeeded ? (
+        <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+          ok
         </span>
-        {entry.agentType && (
-          <span className="block sm:truncate text-[10px] text-muted-foreground/70">
-            {entry.agentType}
-          </span>
-        )}
-      </td>
-      <td className="px-2 py-1.5 hidden md:table-cell">
-        <span className="block truncate" title={entry.models.join(", ")}>
-          {entry.models.length > 0 ? entry.models.join(", ") : "—"}
-        </span>
-        {entry.providers.length > 0 && (
-          <span className="block text-[10px] text-muted-foreground/70">
-            {entry.providers.join(", ")}
-          </span>
-        )}
-      </td>
-      <td className="px-2 py-1.5 text-center">
-        {entry.succeeded ? (
-          <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
-            ok
-          </span>
-        ) : (
-          <span className="text-[10px] text-destructive">{entry.status}</span>
-        )}
-      </td>
-      <td className="px-2 py-1.5 text-right tabular-nums">
-        {entry.inputTokens.toLocaleString()}
-      </td>
-      <td className="px-2 py-1.5 text-right tabular-nums text-muted-foreground hidden lg:table-cell">
+      ) : (
+        <span className="text-[10px] text-destructive">{entry.status}</span>
+      ),
+  },
+  {
+    accessorKey: "inputTokens",
+    header: "In",
+    label: "Input tokens",
+    filter: "number",
+    align: "right",
+    width: 92,
+    cell: (entry) => (
+      <span className="tabular-nums">{entry.inputTokens.toLocaleString()}</span>
+    ),
+  },
+  {
+    accessorKey: "cachedInputTokens",
+    header: "Cached",
+    label: "Cached input tokens",
+    filter: "number",
+    align: "right",
+    width: 112,
+    mobileHidden: true,
+    cell: (entry) => (
+      <span className="tabular-nums text-muted-foreground">
         {entry.cachedInputTokens > 0
           ? entry.cachedInputTokens.toLocaleString()
           : "—"}
-      </td>
-      <td className="px-2 py-1.5 text-right tabular-nums">
+      </span>
+    ),
+  },
+  {
+    accessorKey: "outputTokens",
+    header: "Out",
+    label: "Output tokens",
+    filter: "number",
+    align: "right",
+    width: 92,
+    cell: (entry) => (
+      <span className="tabular-nums">
         {entry.outputTokens.toLocaleString()}
-      </td>
-      <td className="px-2 py-1.5 text-right tabular-nums text-muted-foreground hidden sm:table-cell">
+      </span>
+    ),
+  },
+  {
+    accessorKey: "totalTokens",
+    header: "Total",
+    label: "Total tokens",
+    filter: "number",
+    align: "right",
+    width: 104,
+    mobileHidden: true,
+    cell: (entry) => (
+      <span className="tabular-nums text-muted-foreground">
         {entry.totalTokens.toLocaleString()}
-      </td>
-      <td className="px-2 py-1.5 text-right font-medium whitespace-nowrap">
-        <CostValue
-          costUsd={entry.costUsd}
-          short
-          stacked
-          muted={!entry.succeeded}
-        />
-      </td>
-    </tr>
-  );
-}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "costUsd",
+    header: "Cost",
+    filter: "number",
+    align: "right",
+    width: 112,
+    cell: (entry) => (
+      <CostValue
+        costUsd={entry.costUsd}
+        short
+        stacked
+        muted={!entry.succeeded}
+      />
+    ),
+  },
+];
 
 // ── Page ────────────────────────────────────────────────────────────────────
 
 export default function CostDashboard() {
+  const [showFailed, setShowFailed] = useState(true);
   const { topicId } = useTopicContext();
   const { ledger, isLoading, error } = useTopicCosts(topicId);
   const { showUsd, units: unitsLabel } = useCostDisplay();
-  const [phaseFilter, setPhaseFilter] = useState<CostPhase | "all">("all");
-  const [showFailed, setShowFailed] = useState(true);
-
-  const visibleEntries = useMemo(() => {
-    if (!ledger) return [];
-    return ledger.entries.filter((e) => {
-      if (phaseFilter !== "all" && e.phase !== phaseFilter) return false;
-      if (!showFailed && !e.succeeded) return false;
-      return true;
-    });
-  }, [ledger, phaseFilter, showFailed]);
 
   if (isLoading && !ledger) {
     return (
@@ -243,6 +500,9 @@ export default function CostDashboard() {
   }
 
   const { totals, phases, models } = ledger;
+  const visibleEntries = showFailed
+    ? ledger.entries
+    : ledger.entries.filter((entry) => entry.succeeded);
   const cacheRate =
     totals.inputTokens > 0
       ? (totals.cachedInputTokens / totals.inputTokens) * 100
@@ -303,233 +563,125 @@ export default function CostDashboard() {
         </div>
       )}
 
-      {/* ── By phase ───────────────────────────────────────────────────── */}
-      <section className="rounded-xl border border-border/50 bg-card/40 backdrop-blur-sm overflow-hidden">
-        <header className="px-3 py-2 border-b border-border/50 bg-muted/30">
-          <h2 className="text-xs font-semibold">By pipeline phase</h2>
-        </header>
-        <div className="overflow-x-auto">
-          <table className={cn("text-xs", MOBILE_TABLE)}>
-            <thead>
-              <tr className="border-b border-border/40 text-[10px] uppercase tracking-wide text-muted-foreground">
-                <th className={cn("px-3 py-2 text-left font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-card")}>Phase</th>
-                <th className="px-3 py-2 text-right font-medium">Calls</th>
-                <th className="px-3 py-2 text-right font-medium">In</th>
-                <th className="px-3 py-2 text-right font-medium">Cached</th>
-                <th className="px-3 py-2 text-right font-medium">Out</th>
-                <th className="px-3 py-2 text-right font-medium">Cost</th>
-              </tr>
-            </thead>
-            <tbody>
-              {phases.map((phase) => {
-                const Icon = PHASE_ICON[phase.phase];
-                const empty = phase.calls === 0;
-                return (
-                  <tr
-                    key={phase.phase}
-                    className={cn(
-                      "border-b border-border/30 last:border-0",
-                      empty && "opacity-50",
-                    )}
-                  >
-                    <td className={cn("px-3 py-1.5 font-medium", MOBILE_TABLE_FROZEN_CELL)}>
-                      <div className="flex items-center gap-2">
-                        <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
-                        <span>{phase.label}</span>
-                        {phase.failed_calls > 0 && (
-                          <span className="text-[10px] text-destructive/80">
-                            {phase.failed_calls} failed
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums">
-                      {phase.calls}
-                    </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums">
-                      {phase.input_tokens.toLocaleString()}
-                    </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">
-                      {phase.cached_input_tokens > 0
-                        ? phase.cached_input_tokens.toLocaleString()
-                        : "—"}
-                    </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums">
-                      {phase.output_tokens.toLocaleString()}
-                    </td>
-                    <td className="px-3 py-1.5 text-right font-medium">
-                      <CostValue
-                        costUsd={phase.estimated_cost_usd}
-                        short
-                        muted={empty}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            <tfoot>
-              <tr className="bg-muted/20 font-semibold">
-                <td className="px-3 py-1.5">Total</td>
-                <td className="px-3 py-1.5 text-right tabular-nums">
-                  {totals.calls}
-                </td>
-                <td className="px-3 py-1.5 text-right tabular-nums">
-                  {totals.inputTokens.toLocaleString()}
-                </td>
-                <td className="px-3 py-1.5 text-right tabular-nums">
-                  {totals.cachedInputTokens.toLocaleString()}
-                </td>
-                <td className="px-3 py-1.5 text-right tabular-nums">
-                  {totals.outputTokens.toLocaleString()}
-                </td>
-                <td className="px-3 py-1.5 text-right">
-                  <CostValue costUsd={totals.costUsd} short />
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+      <section>
+        <MatrxDataTable<PhaseRollup>
+          tableId="research/topic-costs/by-phase"
+          data={phases}
+          columns={PHASE_COLUMNS}
+          getRowId={(phase) => phase.phase}
+          density="condensed"
+          pageSize={0}
+          hidePagination
+          viewTabs={false}
+          copy={false}
+          detail={{ enabled: false }}
+          window={{ enabled: false }}
+          toolbar={{ title: "By pipeline phase", search: false }}
+          coverage={{
+            noun: "pipeline phase",
+            loaded: phases.length,
+            total: phases.length,
+            answeredBy: "client",
+          }}
+          footerRows={[
+            {
+              phase: "page_analyses",
+              label: "All phases · unfiltered",
+              calls: totals.calls,
+              input_tokens: totals.inputTokens,
+              cached_input_tokens: totals.cachedInputTokens,
+              output_tokens: totals.outputTokens,
+              estimated_cost_usd: totals.costUsd,
+              failed_calls: totals.failedCalls,
+              cost_is_complete: totals.costIsComplete,
+            },
+          ]}
+          rowClassName={(phase) =>
+            phase.calls === 0 ? "opacity-50" : undefined
+          }
+          emptyState={{
+            title: "No pipeline phases",
+            description: "Costs will appear here as this topic runs.",
+          }}
+        />
       </section>
 
       {/* ── By model ───────────────────────────────────────────────────── */}
       {models.length > 0 && (
-        <section className="rounded-xl border border-border/50 bg-card/40 backdrop-blur-sm overflow-hidden">
-          <header className="px-3 py-2 border-b border-border/50 bg-muted/30">
-            <h2 className="text-xs font-semibold">By model</h2>
-          </header>
-          <div className="overflow-x-auto">
-            <table className={cn("text-xs", MOBILE_TABLE)}>
-              <thead>
-                <tr className="border-b border-border/40 text-[10px] uppercase tracking-wide text-muted-foreground">
-                  <th className={cn("px-3 py-2 text-left font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-card")}>Model</th>
-                  <th className="px-3 py-2 text-left font-medium">Provider</th>
-                  <th className="px-3 py-2 text-right font-medium">Requests</th>
-                  <th className="px-3 py-2 text-right font-medium">In</th>
-                  <th className="px-3 py-2 text-right font-medium">Cached</th>
-                  <th className="px-3 py-2 text-right font-medium">Out</th>
-                  <th className="px-3 py-2 text-right font-medium">Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {models.map((m) => (
-                  <tr
-                    key={m.model}
-                    className="border-b border-border/30 last:border-0"
-                  >
-                    <td className={cn("px-3 py-1.5 font-medium", MOBILE_TABLE_FROZEN_CELL)}>
-                      {m.model}
-                    </td>
-                    <td className="px-3 py-1.5 text-muted-foreground">
-                      {m.api ?? "—"}
-                    </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums">
-                      {m.requests.toLocaleString()}
-                    </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums">
-                      {m.inputTokens.toLocaleString()}
-                    </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">
-                      {m.cachedInputTokens > 0
-                        ? m.cachedInputTokens.toLocaleString()
-                        : "—"}
-                    </td>
-                    <td className="px-3 py-1.5 text-right tabular-nums">
-                      {m.outputTokens.toLocaleString()}
-                    </td>
-                    <td className="px-3 py-1.5 text-right font-medium">
-                      <CostValue costUsd={m.costUsd} short />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        <MatrxDataTable<NormalizedUsageModel>
+          tableId="research/topic-costs/by-model"
+          data={models}
+          columns={MODEL_COLUMNS}
+          getRowId={(model) => model.model}
+          density="condensed"
+          pageSize={0}
+          hidePagination
+          viewTabs={false}
+          copy={false}
+          detail={{ enabled: false }}
+          window={{ enabled: false }}
+          toolbar={{ title: "By model", search: false }}
+          coverage={{
+            noun: "model",
+            loaded: models.length,
+            total: models.length,
+            answeredBy: "client",
+          }}
+        />
       )}
 
       {/* ── Every call ─────────────────────────────────────────────────── */}
-      <section className="rounded-xl border border-border/50 bg-card/40 backdrop-blur-sm overflow-hidden">
-        <header className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-border/50 bg-muted/30">
-          <h2 className="text-xs font-semibold">Every AI call</h2>
-          <span className="text-[10px] text-muted-foreground tabular-nums">
-            {visibleEntries.length} of {ledger.entries.length}
-          </span>
-          <div className="flex-1" />
-          <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={showFailed}
-              onChange={(e) => setShowFailed(e.target.checked)}
-              className="h-3 w-3 accent-primary"
-            />
-            Show failed
-          </label>
-          <select
-            value={phaseFilter}
-            onChange={(e) => setPhaseFilter(e.target.value as CostPhase | "all")}
-            className="rounded-md border border-border/60 bg-background px-2 py-1 text-[11px]"
-          >
-            <option value="all">All phases</option>
-            {phases.map((p) => (
-              <option key={p.phase} value={p.phase}>
-                {COST_PHASE_LABELS[p.phase]}
-              </option>
-            ))}
-          </select>
-        </header>
-        <div className="overflow-x-auto">
-          {/* The desktop min-width lives on this wrapper, not the table: MOBILE_TABLE
-              already sets `sm:min-w-0`, and two `sm:min-w-*` utilities on one element
-              resolve by stylesheet order, not by cn() argument order. */}
-          <div className="sm:min-w-[860px]">
-          <table className={cn("text-xs sm:table-fixed", MOBILE_TABLE, MOBILE_TABLE_NOWRAP_CELLS)}>
-            <colgroup>
-              <col className="w-[128px]" />
-              <col className="w-[140px]" />
-              <col />
-              <col className="w-[128px] hidden md:table-column" />
-              <col className="w-[56px]" />
-              <col className="w-[68px]" />
-              <col className="w-[68px] hidden lg:table-column" />
-              <col className="w-[68px]" />
-              <col className="w-[72px] hidden sm:table-column" />
-              <col className="w-[96px]" />
-            </colgroup>
-            <thead className="bg-muted/60">
-              <tr className="border-b border-border/50 text-[10px] uppercase tracking-wide text-muted-foreground">
-                <th className={cn("px-2 py-2 text-left font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[6rem]")}>When</th>
-                <th className="px-2 py-2 text-left font-medium">Phase</th>
-                <th className="px-2 py-2 text-left font-medium">Subject</th>
-                <th className="px-2 py-2 text-left font-medium hidden md:table-cell">
-                  Model
-                </th>
-                <th className="px-2 py-2 text-center font-medium">Status</th>
-                <th className="px-2 py-2 text-right font-medium">In</th>
-                <th className="px-2 py-2 text-right font-medium hidden lg:table-cell">
-                  Cached
-                </th>
-                <th className="px-2 py-2 text-right font-medium">Out</th>
-                <th className="px-2 py-2 text-right font-medium hidden sm:table-cell">
-                  Total
-                </th>
-                <th className="px-2 py-2 text-right font-medium">Cost</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleEntries.map((entry) => (
-                <LedgerRow key={entry.id} entry={entry} />
-              ))}
-            </tbody>
-          </table>
-          </div>
-        </div>
-        {visibleEntries.length === 0 && (
-          <p className="px-3 py-6 text-center text-[11px] text-muted-foreground">
-            No calls match the current filter.
-          </p>
-        )}
-      </section>
+      <MatrxDataTable<CostLedgerEntry>
+        tableId="research/topic-costs/every-call"
+        data={visibleEntries}
+        columns={LEDGER_COLUMNS}
+        getRowId={(entry) => entry.id}
+        density="condensed"
+        pageSize={0}
+        hidePagination
+        viewTabs={false}
+        copy={false}
+        detail={{ enabled: false }}
+        window={{ enabled: false }}
+        toolbar={{
+          title: "Every AI call",
+          searchPlaceholder: "Search subjects, phases, models, or providers…",
+          facets: [
+            {
+              type: "custom",
+              id: "show-failed",
+              render: () => (
+                <label className="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={showFailed}
+                    onChange={(event) => setShowFailed(event.target.checked)}
+                    className="h-3.5 w-3.5 accent-primary"
+                  />
+                  Show failed
+                </label>
+              ),
+              filter: {
+                active: !showFailed,
+                onReset: () => setShowFailed(true),
+              },
+            },
+          ],
+        }}
+        coverage={{
+          noun: "AI call",
+          loaded: ledger.entries.length,
+          total: ledger.entries.length,
+          answeredBy: "client",
+        }}
+        rowClassName={(entry) =>
+          entry.succeeded ? undefined : "bg-destructive/5"
+        }
+        emptyState={{
+          title: "No calls match the current filters",
+          description: "Clear a filter or run another AI task for this topic.",
+        }}
+      />
     </div>
   );
 }
