@@ -320,7 +320,10 @@ describe("VaultLoginExportDialog", () => {
   test("returns to the organization gate when context disappears while reviewing", async () => {
     previewMock.mockImplementation(async () => {
       organizationState = "required";
-      throw new OrganizationContextError("organization_context_required");
+      throw new OrganizationContextError(
+        "organization_context_required",
+        "Select an organization before sending this request.",
+      );
     });
     await render();
     const checkbox = document.querySelector('[role="checkbox"]');
