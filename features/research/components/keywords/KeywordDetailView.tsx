@@ -14,6 +14,7 @@ import {
   Play,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@ai-matrx/design-system";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -49,7 +50,12 @@ export function KeywordDetailView({
   const [resultsExpanded, setResultsExpanded] = useState(false);
   const runPipeline = useRunPipeline();
 
-  const { data: keywords } = useResearchKeywords(topicId);
+  const {
+    data: keywords,
+    isLoading: keywordsLoading,
+    error: keywordsError,
+    refresh: refreshKeywords,
+  } = useResearchKeywords(topicId);
   const { data: sources, isLoading: srcLoading } = useResearchSources(topicId, {
     keyword_id: keywordId,
   });
@@ -82,6 +88,24 @@ export function KeywordDetailView({
       ? srcList
       : srcList.slice(0, INLINE_RESULTS);
   const hiddenSrc = srcList.length - visibleSrc.length;
+
+  // The keyword read settled and this keyword isn't in it (deleted, another
+  // topic's, someone else's) — or the read itself failed. Say which, through
+  // the canonical gate, instead of rendering a "Keyword" with zero counts.
+  if (!keywordsLoading && (keywordsError || (keywords && !keyword))) {
+    return (
+      <div className="h-full overflow-hidden">
+        <AccessGate
+          token="research_keyword"
+          id={keywordId}
+          error={keywordsError ?? undefined}
+          onRetry={refreshKeywords}
+          fallbackHref={`/research/topics/${topicId}/keywords`}
+          fallbackLabel="This topic's keywords"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
