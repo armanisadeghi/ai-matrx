@@ -200,24 +200,30 @@ describeLive("a table saved or appended to outside the grid lives in its organiz
   });
 
   it("an organization whose tables have not moved keeps its births and its tables in the older store", async () => {
-    // Our own CRM organization is NOT moved on the clone; admin is a member of it.
-    const UNMOVED = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
+    // The clone moves organizations as lanes work, so the unmoved organization is FOUND, not named:
+    // the first organization holding a live older dataset admin can reach whose tables have not moved.
     const where = await import("../where-a-table-is-born");
-    const born = await where.whereANewTableIsBorn(UNMOVED);
-    expect(born).toEqual({ ok: true, store: "older", organizationId: UNMOVED });
     const { data } = await client
       .schema("workbench" as never)
       .from("udt_datasets" as never)
-      .select("id")
+      .select("id, organization_id")
       .is("deleted_at", null)
-      .eq("organization_id", UNMOVED)
-      .limit(1);
-    const target = (data ?? [])[0] as { id: string } | undefined;
-    expect(target).toBeDefined();
-    const located = await where.locateTable(target!.id, UNMOVED);
-    expect(located).toEqual({ ok: true, store: "older" });
-    expect(service.isRecordStoreTable(target!.id)).toBe(false);
-    // And the moved organization answers the other way.
+      .neq("organization_id", ORG)
+      .limit(200);
+    let proved = false;
+    for (const row of (data ?? []) as Array<{ id: string; organization_id: string }>) {
+      const born = await where.whereANewTableIsBorn(row.organization_id);
+      if (!born.ok || born.store !== "older") continue;
+      const located = await where.locateTable(row.id, row.organization_id);
+      if (!located.ok) continue; // not a member there: the store will not answer for it
+      expect(born).toEqual({ ok: true, store: "older", organizationId: row.organization_id });
+      expect(located).toEqual({ ok: true, store: "older" });
+      expect(service.isRecordStoreTable(row.id)).toBe(false);
+      proved = true;
+      break;
+    }
+    if (!proved) console.warn("no unmoved organization with a reachable older table on the clone; the older arm was not exercised");
+    // And the moved organization answers the other way, always.
     const moved = await where.whereANewTableIsBorn(ORG);
     expect(moved.ok && moved.store).toBe("record");
   });

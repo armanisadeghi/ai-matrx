@@ -28,6 +28,8 @@ These are independent. A `<WindowPanel>` rendered on a page directly — without
 
 ## The hard rules (broken at your peril)
 
+0. **No blocking layers — AI stays reachable** (`/policies/ai-reachable-everywhere.md` in common-docs). On desktop the package `Dialog` (≥ 0.38.1) is a non-blocking window by default: no overlay, outside clicks never close it, Escape only from inside, the header drags it. Never pass `modal` to make a workbench block; only a confirmation (`ConfirmDialog` / `AlertDialog`), a permission grant, an auth interrupt or a command palette may block. `pnpm check:blocking-dialogs` fails a forced `modal` or a dialog built straight on Radix.
+
 1. **No `{...spread}` in `features/overlays/OverlayController.tsx`.** Wire every prop by name. ESLint enforces with `no-restricted-syntax`. The whole reason this file exists is to make prop wiring auditable by TypeScript; a single spread reintroduces the silent-failure bug class.
 2. **Don't put functions in `openOverlay` data.** Use the callback registry via `callbackManager`; the opener hides this from callers. Functions can't travel through Redux.
 3. **Don't add a `kind: "window" | "modal" | "sheet"` discriminator** anywhere in the catalogue or controller. Sheets, modals, windows, toasts are all "just components" to the controller. If you find code branching on a kind field, that's the conflation creeping back.

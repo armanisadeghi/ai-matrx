@@ -1,7 +1,5 @@
 "use client";
 
-import { useDialogWindow } from "@/components/ui/use-dialog-window";
-import { cn } from "@/lib/utils";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   changeFieldType,
@@ -159,7 +157,6 @@ export default function TableConfigModal({
   onSuccess,
 }: TableConfigModalProps) {
   const [loading, setLoading] = useState(false);
-  const dialogWindow = useDialogWindow();
   // Which store holds this table (data seam) — decides the two controls a
   // record-store table does not have in the older form.
   const onTheRecordStore = isRecordStoreTable(tableId);
@@ -756,17 +753,12 @@ export default function TableConfigModal({
   };
 
   return (
-    // A NON-BLOCKING window (register ARE-006 prototype): the grid, the Agents
-    // menu, the assist dock and right-click AI stay usable while it is open.
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()} {...dialogWindow.rootProps}>
-      <DialogContent
-        className="flex max-h-[92dvh] flex-col w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] gap-0 overflow-hidden p-0 shadow-2xl sm:w-[calc(100vw-2rem)] sm:max-w-6xl"
-        {...dialogWindow.contentProps}
-      >
-        <DialogHeader
-          {...dialogWindow.handleProps}
-          className={cn("shrink-0 border-b px-4 py-3 pr-12 sm:px-5", dialogWindow.handleProps.className)}
-        >
+    // On desktop the package Dialog is a non-blocking window (design-system
+    // 0.38.0, register ARE-006): the grid, the Agents menu, the assist dock and
+    // right-click AI stay usable while Table settings is open; the header drags it.
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="flex max-h-[92dvh] flex-col w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)] sm:max-w-6xl">
+        <DialogHeader className="shrink-0 border-b px-4 py-3 pr-12 sm:px-5">
           <DialogTitle className="flex min-w-0 items-center gap-2">
             <Settings className="h-5 w-5" />
             <span className="shrink-0">Configure Table:</span>

@@ -32,7 +32,9 @@ let container: HTMLDivElement;
 function Harness({ dialogOpen }: { dialogOpen: boolean }) {
   return (
     <>
-      <Dialog open={dialogOpen} onOpenChange={() => {}}>
+      {/* This guard is about a BLOCKING dialog, which owns the body lock; a
+          desktop dialog is a window by default (design-system 0.38.0). */}
+      <Dialog open={dialogOpen} modal onOpenChange={() => {}}>
         <DialogContent>
           <DialogTitle>Sync policy</DialogTitle>
           <button type="button">Save policy</button>

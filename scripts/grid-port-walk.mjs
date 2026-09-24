@@ -29,6 +29,10 @@ const arg = (name) => {
   return i > -1 ? process.argv[i + 1] : null;
 };
 const SEAT = arg("seat") ?? "admin";
+// WHICH SURFACE THE GRID IS WALKED ON. "data" = the older route /data/<id>; "sheet" = the
+// owner's ruling of 2026-09-23 — the ported grid as the Sheet layout of the one table page,
+// /data-v2/<id>?view=sheet. The older example table is always walked at /data (the older half).
+const SURFACE = arg("surface") ?? "data";
 const ONLY = arg("only")?.split(",") ?? null;
 const EMAIL = process.env.GRID_PORT_EMAIL ?? "";
 const PASSWORD = process.env.GRID_PORT_PASSWORD ?? "";
@@ -102,9 +106,22 @@ async function openSubmenu(page, name) {
   return true;
 }
 
+/** Where a table's grid lives on the surface under walk. */
+function tableUrl(tableId) {
+  return SURFACE === "sheet" && tableId !== TABLES.olderExample
+    ? `${ORIGIN}/data-v2/${tableId}?view=sheet`
+    : tableUrl(tableId);
+}
+/** Is the page showing this table's grid on the surface under walk? */
+function onTable(url, tableId) {
+  return SURFACE === "sheet" && tableId !== TABLES.olderExample
+    ? url.includes(`/data-v2/${tableId}`) && /[?&]view=sheet\b/.test(url)
+    : url.includes(`/data/${tableId}`) && !url.includes("/data-v2/");
+}
+
 /** Open a table at the OLDER grid's route and wait until a known cell is drawn. */
 async function openGrid(page, tableId, mustSee) {
-  await page.goto(`${ORIGIN}/data/${tableId}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(tableUrl(tableId), { waitUntil: "domcontentloaded", timeout: 240000 });
   await page.waitForFunction((t) => document.body.innerText.includes(t), mustSee, { timeout: 180000 }).catch(() => {});
   await page.waitForTimeout(1500);
   return page.evaluate(() => document.body.innerText);
@@ -125,8 +142,8 @@ async function main() {
 
     if (wants("read")) {
       const text = await openGrid(page, TABLES.calls, "WO-4471");
-      const stayed = page.url().includes(`/data/${TABLES.calls}`) && !page.url().includes("/data-v2/");
-      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-1-service-calls-in-the-grid.png` });
+      const stayed = onTable(page.url(), TABLES.calls);
+      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-1-service-calls-in-the-grid.png` });
       pass("read-stays-on-the-grid", stayed, page.url().replace(ORIGIN, ""));
       pass("read-rows", ["WO-4471", "WO-4472", "WO-4473"].every((w) => text.includes(w)), "work orders WO-4471..4473 on screen");
       pass("read-columns", ["Work order", "Customer", "Stage"].every((w) => text.includes(w)), "headers Work order / Customer / Stage");
@@ -134,7 +151,7 @@ async function main() {
       const uuids = (grid.match(UUID) || []).length;
       pass("read-relation-words", /Maria Delgado|Harbor View|Takeda/.test(grid) && uuids === 0, `customers as names, ${uuids} bare ids in the grid`);
       const parity = await openGrid(page, TABLES.parity, "Job 120");
-      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-2-parity-fixture-in-the-grid.png` });
+      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-2-parity-fixture-in-the-grid.png` });
       pass("read-parity-fixture", /of 120 rows/.test(parity) && parity.includes("Amount") && /Job \d{3}/.test(parity), "Grid Parity Fixture: 120 rows, its Amount column, its jobs");
     }
 
@@ -170,7 +187,7 @@ async function main() {
       await openGrid(page, TABLES.calls, "WO-4475");
       const persisted = await stageText();
       pass("write-persists", persisted.includes("customer confirmed"), `after reload "${persisted}"`);
-      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-3-edited-cell.png` });
+      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-3-edited-cell.png` });
 
       // ── history: the row's own versions, from the store ──────────────────────────
       await cell().click({ button: "right" });
@@ -184,7 +201,7 @@ async function main() {
       const panel = await page.evaluate(() => document.body.innerText);
       const restoreButtons = await page.getByRole("button", { name: /Restore|Revert/ }).count();
       pass("history-panel", hasHistory && restoreButtons > 0 && /customer confirmed/.test(panel), hasHistory ? `Row history drawn with ${restoreButtons} restore/revert control(s)` : "no Row history item");
-      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-4-row-history.png` });
+      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-4-row-history.png` });
       await page.keyboard.press("Escape");
 
       // put the real value back, the way a person would
@@ -214,7 +231,7 @@ async function main() {
       await openGrid(page, TABLES.calls, "WO-4471");
       const painted = await target().evaluate((el) => `${el.className} ${el.closest("td")?.className ?? ""}`);
       pass("colors-cell-highlight", picked && /amber/.test(painted), picked ? `the cell paints: ${(painted.match(/\S*amber\S*/g) ?? []).slice(0, 3).join(" ")}` : "no Amber in Highlight cell");
-      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-5-cell-highlight.png` });
+      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-5-cell-highlight.png` });
       const cleared = await pick(/^Clear highlight/);
       await openGrid(page, TABLES.calls, "WO-4471");
       const after = await target().evaluate((el) => `${el.className} ${el.closest("td")?.className ?? ""}`);
@@ -268,7 +285,7 @@ async function main() {
       await page.waitForTimeout(3000);
       const said = await page.evaluate(() => document.body.innerText);
       const refusedOnScreen = /was not accepted/i.test(said) && /Must match the pattern/.test(said);
-      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-6-rule-refusal.png` });
+      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-6-rule-refusal.png` });
       await page.keyboard.press("Escape");
       await openGrid(page, TABLES.calls, "WO-4472");
       const kept = (await cellWO.innerText().catch(() => "")).trim();
@@ -284,7 +301,7 @@ async function main() {
       await page.waitForTimeout(2500);
       const opened = await columnMenu(JOB120, "total", /Column settings/);
       let saved = false;
-      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-7a-formula-settings.png` });
+      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-7a-formula-settings.png` });
       if (!opened) console.log("the Total column's settings did not open");
       if (opened) {
         // The formula opens in its own editor, from the button that shows it.
@@ -312,7 +329,7 @@ async function main() {
       await page.waitForTimeout(2500);
       const total = (await page.locator(`[data-cell="${JOB120}::total"]`).first().innerText().catch(() => "")).trim();
       pass("formula-store-computes", saved && /4,?653/.test(total), `Total for Job 120 (4653 × 1) reads "${total}"`);
-      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-7-formula.png` });
+      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-7-formula.png` });
     }
 
     // ── COLUMNS: add one, change what it holds, remove it ────────────────────────
@@ -365,7 +382,7 @@ async function main() {
         }
         await page.waitForTimeout(3000);
       }
-      if (!removed) await page.screenshot({ path: `${OUT}/gridport-${SEAT}-debug-column-remove.png` });
+      if (!removed) await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-debug-column-remove.png` });
       const after = await openGrid(page, TABLES.calls, "WO-4471");
       pass("columns-remove", removed && !after.includes("Minutes on site"), removed ? "the column is gone after a reload" : "no Delete column");
     }
@@ -426,7 +443,7 @@ async function main() {
         await saveDefault.click();
         await page.waitForTimeout(2500);
       }
-      await page.goto(`${ORIGIN}/data/${TABLES.calls}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+      await page.goto(tableUrl(TABLES.calls), { waitUntil: "domcontentloaded", timeout: 240000 });
       await page.waitForFunction(() => document.body.innerText.includes("WO-4471"), null, { timeout: 180000 }).catch(() => {});
       await page.waitForTimeout(2000);
       const reopened = await order();
@@ -438,7 +455,7 @@ async function main() {
         await clear.click();
         await page.waitForTimeout(2500);
       }
-      await page.goto(`${ORIGIN}/data/${TABLES.calls}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+      await page.goto(tableUrl(TABLES.calls), { waitUntil: "domcontentloaded", timeout: 240000 });
       await page.waitForFunction(() => document.body.innerText.includes("WO-4471"), null, { timeout: 180000 }).catch(() => {});
       await page.waitForTimeout(2000);
       const stillSaved = (await page.getByText("Saved as default").count()) > 0;
@@ -475,7 +492,7 @@ async function main() {
       const body = await page.evaluate(() => document.body.innerText);
       const footer = (body.match(/SUM[^\n]*\n?[^\n]*\$[0-9,.]+/i) ?? [""])[0].replace(/\s+/g, " ");
       pass("summaries-sum", /75,210/.test(footer) && !/page/i.test(footer), `the footer under Amount reads "${footer}" (expected $75,210.00 over 30 rows)`);
-      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-8-summary.png` });
+      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-8-summary.png` });
     }
 
     // ── SAVED VIEWS: save one, open it by its address ─────────────────────────────
@@ -494,7 +511,7 @@ async function main() {
         saved = true;
       }
       const address = page.url();
-      await page.goto(`${ORIGIN}/data/${TABLES.calls}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+      await page.goto(tableUrl(TABLES.calls), { waitUntil: "domcontentloaded", timeout: 240000 });
       await page.waitForTimeout(4000);
       await page.goto(address, { waitUntil: "domcontentloaded", timeout: 240000 });
       await page.waitForFunction(() => document.body.innerText.includes("WO-4473"), null, { timeout: 180000 }).catch(() => {});
@@ -644,7 +661,7 @@ async function main() {
         said = (await page.getByRole("dialog").last().innerText().catch(() => "")).replace(/\s+/g, " ");
         shared = /test@test\.com|shared|granted|access/i.test(said);
       }
-      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-10-share-${level.toLowerCase()}.png` });
+      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-10-share-${level.toLowerCase()}.png` });
       pass(`share-${level.toLowerCase()}`, shared, shared ? `the dialog now lists test@test.com (${level})` : `the share did not go through: ${said.slice(0, 200)}`);
       await page.keyboard.press("Escape");
     }
@@ -653,10 +670,10 @@ async function main() {
     if (wants("seat")) {
       const ROW_CELL = page.locator("[data-cell$='::household']").filter({ hasText: "Maria Delgado" }).first();
       const text = await openGrid(page, TABLES.customers, "Maria Delgado");
-      pass("seat-opens-shared-table", text.includes("Maria Delgado") && page.url().includes(`/data/${TABLES.customers}`), "the shared table opens in the grid from the non-admin seat");
+      pass("seat-opens-shared-table", text.includes("Maria Delgado") && onTable(page.url(), TABLES.customers), "the shared table opens in the grid from the non-admin seat");
       const readOnly = /Shared Table/.test(text) && /read only/i.test(text);
       const expectEditor = (process.env.GRID_PORT_EXPECT || "viewer") === "editor";
-      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-11-${expectEditor ? "editor" : "viewer"}.png` });
+      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-11-${expectEditor ? "editor" : "viewer"}.png` });
       if (!expectEditor) {
         pass("seat-viewer-read-only", readOnly, readOnly ? "the grid says Shared Table (read only)" : "no read-only banner");
         await ROW_CELL.dblclick().catch(() => {});
@@ -704,7 +721,7 @@ async function main() {
         .then(() => true)
         .catch(() => false);
       pass("live-other-window", seen, seen ? "the other window shows the edit within 15 s, no reload" : "the other window never showed it");
-      await other.screenshot({ path: `${OUT}/gridport-${SEAT}-12-live-other-window.png` });
+      await other.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-12-live-other-window.png` });
       await cellA.dblclick();
       await page.keyboard.press("ControlOrMeta+a");
       await page.keyboard.type(before);
@@ -771,7 +788,7 @@ async function main() {
         [...document.querySelectorAll("tr")].filter((tr) => /bg-(green|amber|red|blue|violet|teal|slate)-(50|100)/.test(tr.className)).length,
       );
       pass("colorby-choice", tinted >= 10, `${tinted} rows wear their Status color after a reload`);
-      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-13-color-by-status.png` });
+      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-13-color-by-status.png` });
       await findJob();
       await columnMenu(JOB, "status", /^Stop coloring|^Color rows by this column/);
       await page.waitForTimeout(2500);
@@ -827,7 +844,7 @@ async function main() {
       await page.waitForTimeout(2000);
       const tall = await heightOf();
       pass("layout-row-height", tall > normal + 4, `row ${Math.round(normal)}px → ${Math.round(tall)}px, kept in ${address.replace(ORIGIN, "")}`);
-      await page.goto(`${ORIGIN}/data/${TABLES.calls}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+      await page.goto(tableUrl(TABLES.calls), { waitUntil: "domcontentloaded", timeout: 240000 });
     }
 
     // ── THE OLDER HALF STILL RUNS: an older table, through the older doors only ──
@@ -846,7 +863,7 @@ async function main() {
       const lookupDoors = new Set(["custom.table_kernel_id", "custom.read_records_by_ids", "custom.record_resolve"]);
       const storeDoors = doors.filter((d) => d.startsWith("custom.") && !lookupDoors.has(d));
       console.log(`older table: store lookups ${doors.filter((d) => lookupDoors.has(d)).length}, other store doors: ${[...new Set(storeDoors)].join(", ")}`);
-      pass("older-reads", /Example: Product Catalog/.test(text) && page.url().includes(`/data/${TABLES.olderExample}`) && /of 8 rows/.test(text), "the older example table opens in the grid, 8 rows");
+      pass("older-reads", /Example: Product Catalog/.test(text) && onTable(page.url(), TABLES.olderExample) && /of 8 rows/.test(text), "the older example table opens in the grid, 8 rows");
       pass("older-read-only-example", /Shared Table/.test(text) || /read only/i.test(text), "an example table stays read-only for everyone");
       pass("older-uses-older-doors", doors.includes("public.get_user_table_data_paginated_v2") && storeDoors.length === 0,
         `record-store doors: ${storeDoors.length}${storeDoors.length ? ` (${[...new Set(storeDoors)].join(", ")})` : ""}; older page door seen: ${doors.includes("public.get_user_table_data_paginated_v2")}`);
@@ -893,7 +910,7 @@ async function main() {
       await openGrid(page, TABLES.calls, "WO-4473");
       const tinted = await tintOf();
       pass("colorrules-paint", /bg-amber-50/.test(tinted), /bg-amber-50/.test(tinted) ? "WO-4473 wears the rule's amber after a reload" : `row class: ${tinted.slice(0, 120)}`);
-      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-14-color-rule.png` });
+      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-14-color-rule.png` });
       await page.getByRole("button", { name: /^Colors$/ }).first().click();
       await page.waitForTimeout(1000);
       for (let i = 0; i < 5; i += 1) {
@@ -959,7 +976,7 @@ async function main() {
         pass("rowchange-trigger-built", cfg.entity_type === `custom_record:${TABLES.harborCalls}` && cfg.table_id === TABLES.harborCalls && JSON.stringify(cfg.actions) === '["record.updated"]' && JSON.stringify(cfg.changed_fields) === '["status"]',
           `the form sends ${JSON.stringify(cfg).slice(0, 220)}`);
         if (process.env.GRID_PORT_SCHEDULE_OUT) writeFileSync(process.env.GRID_PORT_SCHEDULE_OUT, JSON.stringify(posted, null, 2));
-        await hp.screenshot({ path: `${OUT}/gridport-${SEAT}-15-row-change-schedule.png` });
+        await hp.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-15-row-change-schedule.png` });
         if (process.env.GRID_PORT_STOP_AFTER_FORM === "1") {
           await hp.close();
           throw new Error("stopped after the form, as asked (GRID_PORT_STOP_AFTER_FORM)");
@@ -1008,7 +1025,7 @@ async function main() {
         await openGrid(hp, TABLES.harborCalls, "CALL-2291");
         const now = (await rowOf("CALL-2291").locator("[data-cell$='::status']").first().innerText()).trim();
         pass("rowchange-status-written", /Complete/.test(now), `CALL-2291 status reads "${now}"`);
-        await hp.screenshot({ path: `${OUT}/gridport-${SEAT}-16-call-complete.png` });
+        await hp.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-16-call-complete.png` });
       }
       await hp.close();
     }
@@ -1018,12 +1035,12 @@ async function main() {
       const olderReads = [];
       const listen = (r) => { if (/\/rpc\/get_full_table$/.test(r.url())) olderReads.push(r.url()); };
       page.on("request", listen);
-      await page.goto(`${ORIGIN}/data/${TABLES.calls}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+      await page.goto(tableUrl(TABLES.calls), { waitUntil: "domcontentloaded", timeout: 240000 });
       await page.waitForFunction(() => /not been shared with you|in neither|could not find out/.test(document.body.innerText), null, { timeout: 120000 }).catch(() => {});
       await page.waitForTimeout(2000);
       page.off("request", listen);
       const text = await page.evaluate(() => document.body.innerText);
-      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-17-not-shared-with-you.png` });
+      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-17-not-shared-with-you.png` });
       pass("unshared-says-so", /has not been shared with you/.test(text) && /nobody has shared it with you yet/.test(text), (text.match(/This table[^\n]*\n?[^\n]*/) ?? [""])[0].replace(/\s+/g, " ").slice(0, 200));
       pass("unshared-no-raw-id", !text.includes(TABLES.calls), text.includes(TABLES.calls) ? "the raw id is on the screen" : "no raw id on the screen");
       pass("unshared-no-older-read", olderReads.length === 0, `older get_full_table reads: ${olderReads.length}`);
@@ -1038,7 +1055,7 @@ async function main() {
       const n = Number((await banner.getAttribute("data-moved-tables").catch(() => "0")) ?? "0");
       const said = (await banner.innerText().catch(() => "")).replace(/\s+/g, " ");
       const link = await banner.locator('a[href="/data-v2"]').count();
-      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-18-list-says-what-moved.png` });
+      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-18-list-says-what-moved.png` });
       pass("movedlist-count", n > 0 && said.includes(`${n} of your tables have moved`), `the list says: "${said}"`);
       pass("movedlist-where", link > 0, link > 0 ? "and links to the new data home (/data-v2)" : "no link to where they live");
     }
@@ -1069,7 +1086,7 @@ async function main() {
   } finally {
     await browser.close();
   }
-  writeFileSync(`${OUT}/gridport-${SEAT}-walk.json`, JSON.stringify({ clauses, errors: errors.slice(0, 20), bad: bad.slice(0, 20) }, null, 2));
+  writeFileSync(`${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-walk.json`, JSON.stringify({ clauses, errors: errors.slice(0, 20), bad: bad.slice(0, 20) }, null, 2));
   const failed = Object.entries(clauses).filter(([, c]) => !c.ok).map(([n]) => n);
   console.log(failed.length ? `FAILED: ${failed.join(", ")}` : "ALL CLAUSES PASS");
   process.exit(failed.length ? 1 : 0);

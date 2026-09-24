@@ -214,6 +214,9 @@ and enqueue retroactive rechecks; old ledger evidence is never relabeled.
 - MUST: never hand-render a stream (`MarkdownStream` → kind registry; lint `matrx/no-bespoke-stream-renderer`); one component per `__kind`; AI work streams into `LiveRunWindow` — no top-of-page live block, no spinner; runs survive refresh.
 - MUST: no system prompt / persona / raw agent UUID in code (`useMandate` / `launchMandate`; `pnpm check:hardcoded-prompts`, `pnpm check:hardcoded-agents`); nothing structured via `user_input`.
 - MUST: friction points get an `<AssistStrip surfaceName>` before any manual affordance is invented.
+- MUST (**AI REACHABLE FROM EVERY STATE** — `/policies/ai-reachable-everywhere.md` rule 2): open every dialog, window, sheet and sidebar the surface has, one at a time; with each open, the top-bar Agents menu opens, right-click AI opens on the page, and the assist dock / chat entry is clickable. A layer that blocks them fails (`pnpm check:blocking-dialogs`).
+- MUST (**THE PAGE STAYS LIVE** — same policy, rule 1): with a desktop layer open, the page behind is visible and clickable, the layer does not close when the page is clicked, and the layer's header drags it. Only a confirmation, a permission grant, an auth interrupt or a command palette may block; a phone keeps its bottom sheet.
+- MUST (**AI IN EVERY FIELD** — rules 4 and 5): every box where the person writes is `ProTextarea` (microphone and bound agents); every field that expects a syntax (formula, pattern, cron, JSON, filter) offers "Help with this…" carrying the field's context until the describe-it primitive ships.
 - Evidence: commands green for the surface's files.
 
 ## S18 · Docs, review, ledger — `context-docs` + `agent-review-queue` + this skill

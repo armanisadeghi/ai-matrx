@@ -64,7 +64,7 @@ describe("Radix dialog accessibility semantics", () => {
   it("marks a modal dialog and hides its background from assistive technology", () => {
     act(() => {
       root.render(
-        <Dialog defaultOpen>
+        <Dialog defaultOpen modal>
           <DialogTrigger>Open profile</DialogTrigger>
           <DialogContent>
             <DialogTitle>Edit profile</DialogTitle>

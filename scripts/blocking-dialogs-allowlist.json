@@ -1,0 +1,15 @@
+{
+  "description": "Screens allowed to force a BLOCKING dialog or build one straight on Radix. Every entry needs a reason; a stale entry fails the guard. Register: common-docs/projects/ai-reachable-everywhere/REGISTER.md (ARE-008).",
+  "entries": [
+    {
+      "file": "components/ui/matrx/dialog.tsx",
+      "kind": "direct-radix",
+      "reason": "A second, older host dialog implementation that blocks by default. Nothing imports it (census 2026-09-23); retirement is Arman's call under the unfinished-work alarm (register ARE-008 update). Any new importer would still be caught by the forced-modal rule only if it passes modal, so keep this entry visible until it is retired."
+    },
+    {
+      "file": "components/ui/matrx/dialog.tsx",
+      "kind": "forced-modal",
+      "reason": "Same file: its Root forwards the caller's modal prop. See the direct-radix entry."
+    }
+  ]
+}
