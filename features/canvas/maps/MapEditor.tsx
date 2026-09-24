@@ -24,6 +24,7 @@ import {
 } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -330,15 +331,15 @@ export function MapEditor({ mapId }: { mapId: string }) {
     return (
       <>
         {header}
-        <div
-          className="flex h-full flex-col items-center justify-center gap-3 overflow-hidden p-6 text-center"
-          style={{ paddingTop: "var(--shell-header-h)" }}
-        >
-          <TriangleAlert className="h-6 w-6 text-destructive" />
-          <p className="text-sm text-foreground">{loadError}</p>
-          <Button asChild size="sm">
-            <Link href="/maps">Back to your maps</Link>
-          </Button>
+        {/* getMap reports only a message, so the gate asks the platform
+            which state this is (denied, deleted, missing, signed out). */}
+        <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+          <AccessGate
+            token="canvas_item"
+            id={mapId}
+            fallbackHref="/maps"
+            fallbackLabel="Back to your maps"
+          />
         </div>
       </>
     );
