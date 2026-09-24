@@ -482,7 +482,6 @@ export default function SystemErrorsPanel() {
       ) : null}
       <div className="min-h-0 flex-1">
         <MatrxDataTable<SystemErrorRow>
-          urlState={{ id: "system-errors" }}
           data={rows}
           columns={columns}
           getRowId={(row) => row.id}
