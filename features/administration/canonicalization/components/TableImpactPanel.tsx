@@ -51,8 +51,14 @@ export function TableImpactPanel() {
   const [schema, setSchema] = useUrlState("schema", stringUrlCodec());
   const [table, setTable] = useUrlState("table", stringUrlCodec());
   const [hasRun, setHasRun] = useUrlState("run", booleanUrlCodec(false));
-  const [rows, setRows] = useState<TableImpactRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const targetKey = JSON.stringify([schema.trim(), table.trim()]);
+  const [snapshot, setSnapshot] = useState<{ key: string; rows: TableImpactRow[] } | null>(null);
+  const rows = snapshot?.key === targetKey ? snapshot.rows : [];
+  const [pendingRequest, setPendingRequest] = useState<{ key: string; id: number } | null>(null);
+  const [errorState, setErrorState] = useState<{ key: string; message: string } | null>(null);
+  const readError = errorState?.key === targetKey ? errorState.message : null;
+  const requestVersion = useRef(0);
+  const loading = hasRun && pendingRequest?.key === targetKey;
 
   const runImpact = useCallback(async () => {
     const target = { schema: schema.trim(), table: table.trim() };
@@ -60,7 +66,10 @@ export function TableImpactPanel() {
       toast.error("Schema and table are required");
       return;
     }
-    setLoading(true);
+    const key = JSON.stringify([target.schema, target.table]);
+    const requestId = ++requestVersion.current;
+    setPendingRequest({ key, id: requestId });
+    setErrorState(null);
     try {
       const res = await fetch("/api/admin/canonicalization/table-impact", {
         method: "POST",
@@ -69,15 +78,24 @@ export function TableImpactPanel() {
       });
       const data = await readJsonObject(res);
       if (!res.ok) throw new Error(errorMessageFrom(data, res));
-      const nextRows: unknown[] = Array.isArray(data.rows) ? data.rows : [];
-      setRows(nextRows.filter(isTableImpactRow));
+      const nextRows: unknown = data.rows;
+      if (!Array.isArray(nextRows) || !nextRows.every(isTableImpactRow)) {
+        throw new Error("Preflight returned an invalid dependency list");
+      }
+      if (requestId === requestVersion.current) setSnapshot({ key, rows: nextRows.filter(isTableImpactRow) });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
-      setRows([]);
+      if (requestId !== requestVersion.current) return;
+      const message = err instanceof Error ? err.message : String(err);
+      setErrorState({ key, message });
+      toast.error(message);
     } finally {
-      setLoading(false);
+      if (requestId === requestVersion.current) setPendingRequest(null);
     }
   }, [schema, table]);
+
+  useEffect(() => {
+    requestVersion.current += 1;
+  }, [targetKey, hasRun]);
 
   useEffect(() => {
     if (!initialDeepLink.current) return;
@@ -159,7 +177,10 @@ export function TableImpactPanel() {
             if (patch.schema !== undefined) setSchema(patch.schema);
             if (patch.table !== undefined) setTable(patch.table);
             setHasRun(false);
-            setRows([]);
+            requestVersion.current += 1;
+            setPendingRequest(null);
+            setSnapshot(null);
+            setErrorState(null);
           }}
           disabled={loading}
         />
@@ -188,11 +209,18 @@ export function TableImpactPanel() {
         ) : null}
       </div>
 
-      {hasRun && brokenCount > 0 ? (
+      {hasRun && !readError && brokenCount > 0 ? (
         <div className="mx-4 mb-3 flex shrink-0 items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           {brokenCount} dependent function{brokenCount === 1 ? "" : "s"}{" "}
           currently broken — fix these before or as part of this migration.
+        </div>
+      ) : null}
+
+      {readError ? (
+        <div role="alert" className="mx-4 mb-3 flex shrink-0 items-center justify-between gap-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          <span>Preflight could not be read: {readError}. {rows.length ? "The last successful result remains below; it may be stale." : "There is no verified result for this table."}</span>
+          <Button size="sm" variant="outline" disabled={loading} onClick={() => void runImpact()}>Retry</Button>
         </div>
       ) : null}
 
@@ -204,7 +232,9 @@ export function TableImpactPanel() {
           csvFilename="canonicalization-table-impact.csv"
           defaultSort={{ key: "currently_broken", dir: "desc" }}
           emptyMessage={
-            hasRun
+            readError
+              ? "Preflight unavailable. Retry the read before changing this table."
+              : hasRun
               ? "No dependent functions found."
               : "Choose a table above and run preflight."
           }
