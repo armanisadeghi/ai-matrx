@@ -28,15 +28,11 @@ import {
   ChevronDown,
   ChevronRight,
   Copy,
-  RefreshCw,
   Repeat2,
 } from "lucide-react";
 
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import AppLink from "@/components/navigation/AppLink";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import type { CopySubsetColumn } from "@/components/agent-copy/copy-subset/types";
-import { useCopySubsetVariant } from "@/components/agent-copy/copy-subset/useCopySubsetVariant";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { ADMIN_REPORTING_SURFACE_NAME } from "@/features/surfaces/manifests/admin-reporting.manifest";
@@ -209,14 +205,6 @@ const COLUMNS: ColumnSpec[] = [
   { key: "conversations", label: "Convos", align: "right", title: "Distinct conversations in which this tool was repeated." },
 ];
 
-/** The report's columns as copy-subset columns — same labels the table shows. */
-const SUBSET_COLUMNS: CopySubsetColumn<ToolRefetchSummaryRow>[] = COLUMNS.map((c) => ({
-  id: c.key,
-  header: c.label,
-  accessorKey: c.key,
-  filter: c.key === "toolName" ? "auto" : "number",
-}));
-
 const TOOL_REFETCH_AI_LOCATION = "AI Matrx Admin — Tool re-fetch report";
 
 function rowsToHumanText(rows: ToolRefetchSummaryRow[], win: RefetchWindow): string {
@@ -226,6 +214,61 @@ function rowsToHumanText(rows: ToolRefetchSummaryRow[], win: RefetchWindow): str
       `${r.toolName}: ${r.repeats} repeats of ${r.totalCalls ?? "?"} calls (${r.sameDataRepeats} same-data, ${r.newDataRepeats} new-data, ${r.unknownDataRepeats} unknown, ${r.afterTrimRepeats} after trim) across ${r.conversations} conversations`,
   );
   return [header, "", ...lines].join("\n");
+}
+
+type ToolRefetchCopyInput = {
+  window: RefetchWindow;
+  sortKey: string;
+  sortAscending: boolean;
+  truncated: boolean;
+  truncationNote: string | null | undefined;
+};
+
+/**
+ * List callbacks are consumed by the shared table's one toolbar Alchemy. They
+ * retain the report's established whole-view payloads while row copy stays on
+ * the canonical per-tool contract.
+ */
+export function toolRefetchCopyConfig(input: ToolRefetchCopyInput) {
+  const { window: win, sortKey, sortAscending, truncated, truncationNote } = input;
+  return {
+    label: "Tool",
+    listLabel: "Tool re-fetch report",
+    location: TOOL_REFETCH_AI_LOCATION,
+    rowKind: "tool-refetch-report-row",
+    listKind: "tool-refetch-report",
+    humanRow: (row: ToolRefetchSummaryRow) => rowsToHumanText([row], win),
+    agentRow: (row: ToolRefetchSummaryRow) => row,
+    listHuman: (visible: ToolRefetchSummaryRow[], _all: ToolRefetchSummaryRow[]) => rowsToHumanText(visible, win),
+    listJson: (visible: ToolRefetchSummaryRow[], _all: ToolRefetchSummaryRow[]) => visible,
+    listAgent: (visible: ToolRefetchSummaryRow[], _all: ToolRefetchSummaryRow[]) => ({
+      kind: "tool-refetch-report",
+      location: TOOL_REFETCH_AI_LOCATION,
+      description: `Tool re-fetch report for the ${win} window: ${visible.length} visible tools, sorted by ${sortKey} ${sortAscending ? "ascending" : "descending"}.`,
+      data: visible,
+      summary: rowsToHumanText(visible, win),
+      attributes: {
+        window: win,
+        tool_count: visible.length,
+        truncated,
+        sort: `${sortKey}:${sortAscending ? "asc" : "desc"}`,
+      },
+      context: {
+        truncation_note: truncationNote ?? undefined,
+        trim_audit_epoch: TRIM_AUDIT_EPOCH,
+      },
+    }),
+    export: (visible: ToolRefetchSummaryRow[], _all: ToolRefetchSummaryRow[]) => ({
+      items: [
+        jsonExportItem(() => visible),
+        csvExportItem(
+          () => visible as unknown as Array<Record<string, unknown>>,
+          "CSV",
+          COLUMNS.map((c) => ({ key: c.key, header: c.label })),
+        ),
+      ],
+    }),
+  };
 }
 
 /* ── drill-down ────────────────────────────────────────────────────────────── */
@@ -528,8 +571,6 @@ export function ToolRefetchConsole() {
     defaultSort: { id: "sameDataRepeats", direction: "desc" },
     defaultPageSize: 50,
   });
-  const copySubset = useCopySubsetVariant();
-
   const report = useQuery({
     queryKey: ["admin", "tool-refetch", "summary", win],
     queryFn: () => getToolRefetchSummary(win),
@@ -568,6 +609,15 @@ export function ToolRefetchConsole() {
   ], []);
   const sortKey = table.state.sort?.id ?? "unsorted";
   const sortAsc = table.state.sort?.direction === "asc";
+  const copyConfig = toolRefetchCopyConfig(
+    {
+      window: win,
+      sortKey,
+      sortAscending: sortAsc,
+      truncated: report.data?.truncated ?? false,
+      truncationNote: report.data?.truncationNote,
+    },
+  );
 
   const visibleTotals = useMemo(() => {
     return {
@@ -605,56 +655,6 @@ export function ToolRefetchConsole() {
               on this database, rows on both sides of that date still come back unaudited, so treat
               the after-trim column as a floor.
             </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <CopyButtons
-              size="sm"
-              label="Tool re-fetch report"
-              disabled={visibleRows.length === 0}
-              human={() => rowsToHumanText(visibleRows, win)}
-              json={() => visibleRows}
-              agent={() => ({
-                kind: "tool-refetch-report",
-                location: TOOL_REFETCH_AI_LOCATION,
-                description: `Tool re-fetch report for the ${win} window: ${visibleRows.length} visible tools, sorted by ${sortKey} ${sortAsc ? "ascending" : "descending"}.`,
-                data: visibleRows,
-                summary: rowsToHumanText(visibleRows, win),
-                attributes: {
-                  window: win,
-                  tool_count: visibleRows.length,
-                  truncated: report.data?.truncated ?? false,
-                  sort: `${sortKey}:${sortAsc ? "asc" : "desc"}`,
-                },
-                context: {
-                  truncation_note: report.data?.truncationNote ?? undefined,
-                  trim_audit_epoch: TRIM_AUDIT_EPOCH,
-                },
-              })}
-              aiVariants={[
-                copySubset(() => ({
-                  label: `Tool re-fetch report (${win})`,
-                  location: TOOL_REFETCH_AI_LOCATION,
-                  kind: "tool-refetch-report",
-                  rows: visibleRows,
-                  columns: SUBSET_COLUMNS,
-                  getRowId: (row) => row.toolName,
-                })),
-              ]}
-              export={{
-                items: [
-                  jsonExportItem(() => visibleRows),
-                  csvExportItem(
-                    () => visibleRows as unknown as Array<Record<string, unknown>>,
-                    "CSV",
-                    COLUMNS.map((c) => ({ key: c.key, header: c.label })),
-                  ),
-                ],
-              }}
-            />
-            <Button variant="outline" size="sm" onClick={() => void report.refetch()} disabled={refreshing}>
-              <RefreshCw className={cn("mr-2 h-4 w-4", refreshing && "animate-spin")} />
-              Refresh
-            </Button>
           </div>
         </div>
 
@@ -735,7 +735,15 @@ export function ToolRefetchConsole() {
         isFetching={refreshing}
         pageSize={50}
         emptyState={{ title: error || timedOut ? "The report could not be read" : "No repeated tool calls in this window" }}
-        toolbar={{ search: true, searchPlaceholder: "Search tools…" }}
+        toolbar={{
+          search: true,
+          searchPlaceholder: "Search tools…",
+          refresh: {
+            onRefresh: () => void report.refetch(),
+            label: "Refresh tool re-fetch report",
+          },
+        }}
+        copy={copyConfig}
         onViewChange={setVisibleRows}
         detail={{ title: (row) => row.toolName, description: (row) => `${fmtCount(row.repeats)} repeats in the ${win} window`, render: (row) => <ToolDetail toolName={row.toolName} window={win} expectedRepeats={row.repeats} /> }}
       />

@@ -141,6 +141,7 @@ describe("ToolRefetchConsole toolbar Alchemy", () => {
       medianGapSecs: 30,
       charsRefetchedSameData: 72,
       conversations: 2,
+      totalConversations: 2,
       lastRepeatAt: "2026-09-24T12:00:00.000Z",
     },
   ];
@@ -156,7 +157,8 @@ describe("ToolRefetchConsole toolbar Alchemy", () => {
       },
     );
 
-    expect(copy.showToolbar).not.toBe(false);
+    expect(copy.label).toBe("Tool");
+    expect(copy.listLabel).toBe("Tool re-fetch report");
     expect(copy.listHuman(summaryRows, summaryRows)).toBe(
       "Tool re-fetch report (30d) — 1 tools\n\nweb.search: 3 repeats of 10 calls (2 same-data, 1 new-data, 0 unknown, 1 after trim) across 2 conversations",
     );
