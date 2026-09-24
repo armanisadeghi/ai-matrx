@@ -42,7 +42,7 @@ LOG_REL = "_conflicts/README.md"
 HOLD_ROOT = "_conflicts"
 MAX_ATTEMPTS = 5
 
-DOC_EXTS = {".md", ".mdx", ".txt", ".rst"}
+DOC_EXTS = {".md", ".mdx", ".rst"}   # prose only; .txt (requirements.txt...) is code: comments-only rule
 # comment style per extension: (line prefixes that make a line a comment, how to write one line)
 SLASH = (("//", "/*", "*", "*/", "{/*"), lambda s: "// " + s)
 HASH = (("#",), lambda s: "# " + s)
@@ -464,7 +464,9 @@ def resolve_docs(path, ours, base, theirs, when=""):
         return None
     ok, merged = merge3(ours, base, theirs)
     if ok:
-        return merged
+        # A clean merge here already FAILED resolve_fake's lossless check (same base), so taking it
+        # would silently drop lines. Never: it is held instead. (2026-09-24, matrx-local lockfile.)
+        return None
     hunks = list(HUNK.finditer(merged))
     if not hunks:
         return None
