@@ -153,6 +153,11 @@ sent bearer and recheck the frozen actor/request organization afterward.
 passwords are uncontrolled and cleared on submit/cancel. Provider-only
 confirmation is unsupported until a real ceremony exists.
 
+For Show and Copy, an expired reveal request opens the same current-account
+password confirmation. Successful confirmation does not automatically reveal or
+copy: the person chooses the action again. An unrelated 401 remains an auth
+error rather than being mislabeled as an expired recent-auth event.
+
 ## Destination login and browser fill (2026-07-26)
 
 Items carry PLAINTEXT destination metadata — `login_urls`, `uri_match_mode`

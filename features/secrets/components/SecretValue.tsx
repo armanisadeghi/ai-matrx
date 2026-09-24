@@ -29,9 +29,19 @@ import {
   Loader2,
   LockKeyhole,
   RefreshCw,
+  ShieldAlert,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Credenza,
+  CredenzaBody,
+  CredenzaContent,
+  CredenzaHeader,
+  CredenzaTitle,
+} from "@/components/ui/credenza-modal/credenza";
+import { Input } from "@ai-matrx/design-system";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -39,7 +49,15 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { createClient } from "@/utils/supabase/client";
 
 import { useTransientSecret } from "../vault-hooks";
-import { resolveVaultFields, revealVaultField } from "../vault-service";
+import {
+  confirmVaultPasswordIdentity,
+  getVaultExportActor,
+  resolveVaultFields,
+  revealVaultField,
+  VaultIdentityConfirmationError,
+  VaultRecentAuthRequiredError,
+  type VaultVerifiedExportActor,
+} from "../vault-service";
 import {
   isProtectedExecutionField,
   type VaultField,
@@ -64,7 +82,11 @@ export function canShowField(item: VaultItem, field: VaultField): boolean {
  * copying never needs a visible reveal first — two clicks to the clipboard,
  * which is the interaction the whole product is judged on.
  */
-export function useFieldSecret(item: VaultItem, field: VaultField) {
+export function useFieldSecret(
+  item: VaultItem,
+  field: VaultField,
+  onRecentAuthRequired?: () => void,
+) {
   // Standard values are ordinary authorized display data: keep them for this
   // mounted row instead of hiding them on the restricted-value timer.
   const held = useTransientSecret(
@@ -230,7 +252,11 @@ export function useFieldSecret(item: VaultItem, field: VaultField) {
       return true;
     } catch (e) {
       if (isCurrent(operation)) {
-        toast.error(e instanceof Error ? e.message : String(e));
+        if (e instanceof VaultRecentAuthRequiredError && onRecentAuthRequired) {
+          onRecentAuthRequired();
+        } else {
+          toast.error(e instanceof Error ? e.message : String(e));
+        }
       }
       return false;
     } finally {
@@ -247,7 +273,14 @@ export function useFieldSecret(item: VaultItem, field: VaultField) {
         value = await fetchValue();
       } catch (e) {
         if (isCurrent(operation)) {
-          toast.error(e instanceof Error ? e.message : String(e));
+          if (
+            e instanceof VaultRecentAuthRequiredError &&
+            onRecentAuthRequired
+          ) {
+            onRecentAuthRequired();
+          } else {
+            toast.error(e instanceof Error ? e.message : String(e));
+          }
         }
         return;
       } finally {
@@ -259,7 +292,8 @@ export function useFieldSecret(item: VaultItem, field: VaultField) {
       if (!isCurrent(operation)) return;
       await navigator.clipboard.writeText(value);
     } catch {
-      if (isCurrent(operation)) toast.error("Your browser blocked clipboard access");
+      if (isCurrent(operation))
+        toast.error("Your browser blocked clipboard access");
       return;
     }
     if (!isCurrent(operation)) return;
@@ -340,7 +374,14 @@ export function SecretValue({
   className,
   children,
 }: SecretValueProps) {
-  const secret = useFieldSecret(item, field);
+  const [reauthOpen, setReauthOpen] = useState(false);
+  const secret = useFieldSecret(item, field, () => setReauthOpen(true));
+  const reauthDialog = reauthOpen && (
+    <VaultRevealReauthDialog
+      open={reauthOpen}
+      onClose={() => setReauthOpen(false)}
+    />
+  );
   const secondsLeft = useSecondsLeft(secret.expiresAt);
   // Belt and braces with the clear-on-revoke effect: even for the single
   // render before that effect runs, a value the user may no longer see is
@@ -480,70 +521,210 @@ export function SecretValue({
 
   if (variant === "actions") {
     return (
-      <div className={cn("flex items-center gap-0.5", className)}>
-        {controls}
-        {children}
-      </div>
+      <>
+        <div className={cn("flex items-center gap-0.5", className)}>
+          {controls}
+          {children}
+        </div>
+        {reauthDialog}
+      </>
     );
   }
 
   return (
-    <div
-      className={cn(
-        "group/value flex min-h-8 min-w-0 items-center gap-1.5",
-        className,
-      )}
-    >
+    <>
       <div
         className={cn(
-          "min-w-0 flex-1 whitespace-pre-wrap break-all font-mono text-[13px] leading-5",
-          revealed ? "text-foreground" : "text-muted-foreground",
+          "group/value flex min-h-8 min-w-0 items-center gap-1.5",
+          className,
         )}
       >
-        {protectedExecution ? (
-          <span className="font-sans text-xs text-muted-foreground">
-            Native provider use only. This private passkey material cannot be
-            revealed, copied, or used as a runtime value.
-          </span>
-        ) : revealed ? (
-          secret.value
-        ) : field.handling === "visible" && visibleLoadFailedForField ? (
-          <span className="font-sans text-xs text-destructive">
-            Value unavailable
-          </span>
-        ) : field.handling === "visible" && !secret.allowed ? (
-          <span className="font-sans text-xs text-muted-foreground">
-            Value unavailable
-          </span>
-        ) : field.handling === "visible" ? (
-          <span
-            className="block h-4 w-full max-w-64 animate-pulse rounded bg-muted"
-            aria-label="Loading value"
-          />
-        ) : (
-          <>
-            <span className="sr-only">
-              {field.is_active ? "Hidden" : "Hidden — field is inactive"}
-            </span>
-            <span
-              aria-hidden="true"
-              className="select-none text-base tracking-[0.18em]"
-            >
-              ••••••••••••
-            </span>
-          </>
-        )}
-      </div>
-      {showCountdown && revealed && secondsLeft !== null && (
-        <span
-          className="shrink-0 rounded-full bg-muted/50 px-2 py-0.5 text-[10px] tabular-nums text-muted-foreground"
-          title="This value hides itself automatically"
+        <div
+          className={cn(
+            "min-w-0 flex-1 whitespace-pre-wrap break-all font-mono text-[13px] leading-5",
+            revealed ? "text-foreground" : "text-muted-foreground",
+          )}
         >
-          Hides in {secondsLeft}s
-        </span>
-      )}
-      {controls}
-      {children}
-    </div>
+          {protectedExecution ? (
+            <span className="font-sans text-xs text-muted-foreground">
+              Native provider use only. This private passkey material cannot be
+              revealed, copied, or used as a runtime value.
+            </span>
+          ) : revealed ? (
+            secret.value
+          ) : field.handling === "visible" && visibleLoadFailedForField ? (
+            <span className="font-sans text-xs text-destructive">
+              Value unavailable
+            </span>
+          ) : field.handling === "visible" && !secret.allowed ? (
+            <span className="font-sans text-xs text-muted-foreground">
+              Value unavailable
+            </span>
+          ) : field.handling === "visible" ? (
+            <span
+              className="block h-4 w-full max-w-64 animate-pulse rounded bg-muted"
+              aria-label="Loading value"
+            />
+          ) : (
+            <>
+              <span className="sr-only">
+                {field.is_active ? "Hidden" : "Hidden — field is inactive"}
+              </span>
+              <span
+                aria-hidden="true"
+                className="select-none text-base tracking-[0.18em]"
+              >
+                ••••••••••••
+              </span>
+            </>
+          )}
+        </div>
+        {showCountdown && revealed && secondsLeft !== null && (
+          <span
+            className="shrink-0 rounded-full bg-muted/50 px-2 py-0.5 text-[10px] tabular-nums text-muted-foreground"
+            title="This value hides itself automatically"
+          >
+            Hides in {secondsLeft}s
+          </span>
+        )}
+        {controls}
+        {children}
+      </div>
+      {reauthDialog}
+    </>
+  );
+}
+
+function VaultRevealReauthDialog({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [actor, setActor] = useState<VaultVerifiedExportActor | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [running, setRunning] = useState(false);
+  const passwordInput = useRef<HTMLInputElement | null>(null);
+  const generation = useRef(0);
+
+  useEffect(() => {
+    if (!open) return;
+    const current = ++generation.current;
+    void getVaultExportActor().then(
+      (next) => {
+        if (generation.current === current) setActor(next);
+      },
+      () => {
+        if (generation.current === current)
+          setError("Your account changed. Reload the Vault and try again.");
+      },
+    );
+    return () => {
+      generation.current += 1;
+      if (passwordInput.current) passwordInput.current.value = "";
+    };
+  }, [open]);
+
+  const close = () => {
+    generation.current += 1;
+    if (passwordInput.current) passwordInput.current.value = "";
+    setActor(null);
+    setError(null);
+    onClose();
+  };
+
+  const confirm = async () => {
+    const password = passwordInput.current?.value ?? "";
+    if (passwordInput.current) passwordInput.current.value = "";
+    if (!actor || !password) {
+      setError("Enter your current Matrx password to confirm your identity.");
+      return;
+    }
+    const current = generation.current;
+    setRunning(true);
+    setError(null);
+    try {
+      await confirmVaultPasswordIdentity(actor, password, getVaultExportActor);
+      if (generation.current !== current) return;
+      close();
+      toast.success("Identity confirmed. Choose Show or Copy again.");
+    } catch (cause) {
+      if (generation.current !== current) return;
+      const code =
+        cause instanceof VaultIdentityConfirmationError ? cause.code : null;
+      setError(
+        code === "credentials_rejected"
+          ? "That password was not accepted. Try your current Matrx password."
+          : code === "context_changed"
+            ? "Your account or organization changed. Reload the Vault and try again."
+            : "Your identity could not be confirmed. Try signing in again.",
+      );
+    } finally {
+      if (generation.current === current) setRunning(false);
+    }
+  };
+
+  return (
+    <Credenza
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) close();
+      }}
+    >
+      <CredenzaContent className="md:max-w-md">
+        <CredenzaHeader>
+          <CredenzaTitle>Confirm your identity</CredenzaTitle>
+        </CredenzaHeader>
+        <CredenzaBody className="space-y-3 px-4 pb-6 md:px-0">
+          <p className="flex gap-2 text-sm text-muted-foreground">
+            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+            For security, showing or copying a Vault value needs a recent
+            sign-in.
+          </p>
+          {actor && (
+            <>
+              <div className="space-y-1.5">
+                <Label htmlFor="vault-reveal-email">Current account</Label>
+                <Input id="vault-reveal-email" value={actor.email} readOnly />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="vault-reveal-password">
+                  Current Matrx password
+                </Label>
+                <Input
+                  ref={passwordInput}
+                  id="vault-reveal-password"
+                  type="password"
+                  autoComplete="current-password"
+                  disabled={running}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Connected-provider sign-in needs a separate confirmation method.
+              </p>
+            </>
+          )}
+          {error && (
+            <p className="text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={close}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void confirm()}
+              disabled={!actor || running}
+            >
+              {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Confirm identity
+            </Button>
+          </div>
+        </CredenzaBody>
+      </CredenzaContent>
+    </Credenza>
   );
 }

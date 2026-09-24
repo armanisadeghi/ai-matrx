@@ -112,6 +112,14 @@ export class VaultIdentityConfirmationError extends Error {
   }
 }
 
+export class VaultRecentAuthRequiredError extends Error {
+  constructor() {
+    super(
+      "Confirm your identity with your current Matrx password, then try showing or copying this value again.",
+    );
+  }
+}
+
 export class VaultRestoreTransportError extends Error {
   constructor(
     public readonly code:
@@ -603,6 +611,30 @@ async function vaultFetch<T>(
         throw new VaultImportTransportError("context_changed");
       }
       throw new VaultImportTransportError("request_rejected");
+    }
+    if (resp.status === 401 && path.endsWith("/reveal")) {
+      let body: unknown;
+      try {
+        body = await resp.json();
+      } catch {
+        // Authentication failures outside the recency gate stay generic.
+      }
+      const detail =
+        body && typeof body === "object" && "detail" in body
+          ? body.detail
+          : null;
+      const recentAuthCode =
+        detail && typeof detail === "object" && "code" in detail
+          ? detail.code
+          : null;
+      if (
+        recentAuthCode === "recent_auth_required" ||
+        (typeof detail === "string" &&
+          (detail.startsWith("recent authentication is required") ||
+            detail.startsWith("authentication within the last ")))
+      ) {
+        throw new VaultRecentAuthRequiredError();
+      }
     }
     throw new Error(`Vault request failed (${resp.status})`);
   }
