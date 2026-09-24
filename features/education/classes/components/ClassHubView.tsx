@@ -25,6 +25,7 @@ import {
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useClasses } from "../hooks/useClasses";
 import { useClassContent } from "../hooks/useClassContent";
@@ -108,15 +109,19 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
     return <MemberClassView access={access} />;
   }
 
+  // Denied / deleted / never existed / signed-out all land here — a class is a
+  // context scope, so the gate asks the platform which one it is.
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4 p-4">
       <BackToClasses />
-      <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-10 text-center">
-        <GraduationCap className="h-8 w-8 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">
-          This class doesn&apos;t exist, or you don&apos;t have access to it.
-        </p>
-      </div>
+      <AccessGate
+        token="scope"
+        id={resolvedId ?? classParam}
+        error={access.error}
+        onRetry={() => void access.refresh()}
+        fallbackHref="/education/classes"
+        fallbackLabel="Classes"
+      />
     </div>
   );
 }
