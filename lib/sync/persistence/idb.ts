@@ -241,6 +241,48 @@ export async function readSlice(
 }
 
 /**
+ * Read many slice records in ONE IDB operation — one transaction, one
+ * `IDB_OPERATION_TIMEOUT_MS` bound. Boot hydration must use this, never a loop
+ * of `readSlice`: each call carries its own timeout, so a stalled browser IDB
+ * made 16 sequential reads cost ~16s and blew the 8s hydration backstop
+ * (D345, 2026-09-24). Returns a map keyed by slice name holding only usable
+ * records; `null` when IDB is unavailable, stalled, or failed — the caller then
+ * falls back to the localStorage mirror for every slice.
+ */
+export async function readSlices(
+  identityKey: string,
+  requests: readonly { sliceName: string; version: number }[],
+): Promise<Map<string, IdbSliceRecord> | null> {
+  if (requests.length === 0) return new Map();
+  const db = await openDb();
+  if (!db) return null;
+  try {
+    const records = await completeIdbOperation(
+      db,
+      "readMany",
+      db.slices.bulkGet(
+        requests.map((r) => buildKey(identityKey, r.sliceName, r.version)),
+      ),
+    );
+    if (records === null) return null;
+    const found = new Map<string, IdbSliceRecord>();
+    records.forEach((record, index) => {
+      const request = requests[index];
+      // Mismatched version — orphan, treat as missing.
+      if (record && record.version === request.version) {
+        found.set(request.sliceName, record);
+      }
+    });
+    return found;
+  } catch (err) {
+    logger.warn("idb.readMany.error", {
+      meta: { error: extractErrorMessage(err), count: requests.length },
+    });
+    return null;
+  }
+}
+
+/**
  * Upsert one slice record. Fire-and-forget from the caller's perspective —
  * errors are logged but never propagated, mirroring the sync adapter's
  * contract.

@@ -31,6 +31,12 @@ hydration errors.
 
 ## Change log
 
+- 2026-09-24 — Boot's IndexedDB pass reads every warm-cache slice in ONE
+  bounded `readSlices` (`bulkGet`) call instead of a per-slice loop. Each loop
+  read carried its own 1s timeout, so a stalled browser IDB summed to ~16s and
+  fired the 8s "persisted hydration did not settle" error on /notes (D345).
+  Never reintroduce a per-slice IDB loop on the boot path; the guard in
+  `engine.boot.idb.test.ts` stalls 16 slices and fails if you do.
 - 2026-09-12 — The engine can now be ASKED whether persisted state has finished
   loading: `store._sync.hydrationSettled()` / `onHydrationSettledChange()`, and
   the `useSyncHydrated()` hook over them. Until this existed no consumer could

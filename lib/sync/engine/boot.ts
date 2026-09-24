@@ -27,7 +27,7 @@ import type { Store } from "@reduxjs/toolkit";
 import { logger } from "../logger";
 import { openSyncChannel, type SyncChannel } from "../channel";
 import { localStorageAdapter, readLegacyKey, removeLegacyKey } from "../persistence/local-storage";
-import { readSlice as readIdbSlice } from "../persistence/idb";
+import { readSlices as readIdbSlices, type IdbSliceRecord } from "../persistence/idb";
 import { getPreset } from "../policies/presets";
 import { buildIdentityResetAction } from "./identityReset";
 import { buildRehydrateAction } from "./rehydrate";
@@ -206,18 +206,33 @@ async function hydrateFromIdb(
         return false;
     };
     const warmCachePolicies = policies.filter(
-        (p) => getPreset(p.config.preset).storageTier === "idb",
+        (p) =>
+            getPreset(p.config.preset).storageTier === "idb" &&
+            !alreadyHydrated.has(p.config.sliceName),
     );
 
+    // ONE bounded read for every slice. A per-slice loop paid the IDB timeout
+    // once per slice, so a stalled browser IDB summed past the 8s hydration
+    // backstop (D345). `null` = IDB unusable this pass → mirror for all.
+    let fromIdb: Map<string, IdbSliceRecord> | null = null;
+    try {
+        fromIdb = await readIdbSlices(
+            identity.key,
+            warmCachePolicies.map((p) => ({
+                sliceName: p.config.sliceName,
+                version: p.config.version,
+            })),
+        );
+    } catch (err) {
+        logger.warn("boot.idb.read.failed", {
+            meta: { error: extractErrorMessage(err) },
+        });
+    }
+    if (!stillCurrent()) return hydrated;
+
     for (const policy of warmCachePolicies) {
-        if (alreadyHydrated.has(policy.config.sliceName)) continue;
         try {
-            const record = await readIdbSlice(
-                identity.key,
-                policy.config.sliceName,
-                policy.config.version,
-            );
-            if (!stillCurrent()) return hydrated;
+            const record = fromIdb?.get(policy.config.sliceName) ?? null;
             if (record) {
                 if (record.identityKey !== identity.key) {
                     logger.debug("boot.idb.identityMismatch", {
