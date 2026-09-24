@@ -45,6 +45,8 @@ def main():
                 section = "held"
             elif line.startswith("## Docs and comments"):
                 section = "docs"
+            elif line.startswith("## "):
+                section = None
             elif line.startswith("### "):
                 folder = line[4:].strip().rstrip("/") + "/"
             elif line.startswith("- ") and section:
