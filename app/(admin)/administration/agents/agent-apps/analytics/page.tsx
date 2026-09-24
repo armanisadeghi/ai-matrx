@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import {
@@ -41,6 +42,7 @@ import {
 } from "@/lib/services/agent-apps-admin-service";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { isUuidValue } from "@/components/official/entity-ref/doors";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { humanAgentApp } from "@/features/agent-apps/format";
 import { UNKNOWN_DISPLAY, formatCount, formatDurationMs, formatPercentFromFraction, formatUsd, isKnownNumber, safeRatio } from "@ai-matrx/kit/format";
@@ -51,6 +53,10 @@ import {
 } from "@/features/surfaces/manifests/admin-agent-apps.manifest";
 
 export const ANALYTICS_COVERAGE = { noun: "app", answeredBy: "client" } as const;
+
+export function analyticsSlugDisplay(slug: string): string {
+  return isUuidValue(slug) ? slug.slice(0, 8) : slug;
+}
 
 export const ANALYTICS_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
   {
@@ -70,11 +76,14 @@ export const ANALYTICS_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
     filter: "text",
     width: 150,
     mobileHidden: true,
-    cell: (app) => (
-      <code className="block truncate text-xs" title={app.slug}>
-        {app.slug}
-      </code>
-    ),
+    cell: (app) =>
+      isUuidValue(app.slug) ? (
+        <MatrxUuidCell value={app.slug} label="Agent app slug" />
+      ) : (
+        <code className="block truncate text-xs" title={app.slug}>
+          {analyticsSlugDisplay(app.slug)}
+        </code>
+      ),
   },
   {
     id: "status",

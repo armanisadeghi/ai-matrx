@@ -1,5 +1,9 @@
 import type { AgentAppAdminView } from "@/lib/services/agent-apps-admin-service";
-import { ANALYTICS_COLUMNS, ANALYTICS_COVERAGE } from "./page";
+import {
+  ANALYTICS_COLUMNS,
+  ANALYTICS_COVERAGE,
+  analyticsSlugDisplay,
+} from "./page";
 
 const app = {
   id: "app-id",
@@ -54,5 +58,12 @@ describe("Agent-app analytics canonical table contract", () => {
     expect(
       ANALYTICS_COLUMNS.find((column) => column.id === "success-rate")?.accessorFn?.(app),
     ).toBeNull();
+  });
+
+  it("keeps a textual slug readable and shortens UUID fallback values", () => {
+    expect(analyticsSlugDisplay("analytics-app")).toBe("analytics-app");
+    expect(analyticsSlugDisplay("99820f36-a939-4ae3-b5e8-15f1107bef86")).toBe(
+      "99820f36",
+    );
   });
 });
