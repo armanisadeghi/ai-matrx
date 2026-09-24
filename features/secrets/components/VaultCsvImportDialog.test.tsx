@@ -801,6 +801,80 @@ describe("VaultCsvImportDialog", () => {
     expect(document.body.textContent).not.toContain("Import selected records");
   });
 
+  it("retries only the unresolved CSV row with its original frozen command identity", async () => {
+    createVaultItemMock
+      .mockResolvedValueOnce({ id: "first", display_name: "First" } as never)
+      .mockRejectedValueOnce(new VaultImportTransportError("retryable"))
+      .mockResolvedValueOnce({ id: "second", display_name: "Second" } as never);
+    await act(async () => {
+      root.render(
+        <VaultCsvImportDialog
+          open
+          onOpenChange={jest.fn()}
+          principal={{ type: "user" }}
+          existingItems={[]}
+          onCommitted={async () => undefined}
+        />,
+      );
+    });
+    const input = document.body.querySelector('input[type="file"]');
+    if (!(input instanceof HTMLInputElement))
+      throw new Error("file input missing");
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [csvFile("title,password\nFirst,one\nSecond,two")],
+    });
+    await act(async () => {
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await settle();
+    });
+    const importButton = [...document.querySelectorAll("button")].find(
+      (candidate) => candidate.textContent?.includes("Import selected records"),
+    );
+    if (!(importButton instanceof HTMLButtonElement))
+      throw new Error("import button missing");
+    await act(async () => {
+      importButton.click();
+      await settle();
+    });
+    expect(createVaultItemMock).toHaveBeenCalledTimes(2);
+    const [, firstOptions] = createVaultItemMock.mock.calls[0] ?? [];
+    const [unresolvedBody, unresolvedOptions] =
+      createVaultItemMock.mock.calls[1] ?? [];
+    expect(document.body.textContent).toContain(
+      "Imported 1; skipped 0; failed 1.",
+    );
+    const retryButton = [...document.querySelectorAll("button")].find(
+      (candidate) => candidate.textContent?.includes("Retry current row"),
+    );
+    if (!(retryButton instanceof HTMLButtonElement))
+      throw new Error("retry button missing");
+    await act(async () => {
+      retryButton.click();
+      await settle();
+    });
+    expect(createVaultItemMock).toHaveBeenCalledTimes(3);
+    expect(
+      createVaultItemMock.mock.calls.map(([body]) => body.display_name),
+    ).toEqual(["First", "Second", "Second"]);
+    expect(createVaultItemMock.mock.calls[2]?.[0]).toBe(unresolvedBody);
+    expect(createVaultItemMock.mock.calls[2]?.[0]).toStrictEqual(
+      unresolvedBody,
+    );
+    expect(createVaultItemMock.mock.calls[2]?.[1]?.idempotencyKey).toBe(
+      unresolvedOptions?.idempotencyKey,
+    );
+    expect(createVaultItemMock.mock.calls[2]?.[1]?.idempotencyKey).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
+    expect(createVaultItemMock.mock.calls[2]?.[0]).not.toBe(
+      createVaultItemMock.mock.calls[0]?.[0],
+    );
+    expect(createVaultItemMock.mock.calls[2]?.[1]?.idempotencyKey).not.toBe(
+      firstOptions?.idempotencyKey,
+    );
+  });
+
   it("opens the real CSV dialog from the full workspace", async () => {
     await act(async () => {
       root.render(
