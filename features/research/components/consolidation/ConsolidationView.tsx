@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { ChevronLeft, RefreshCw, Loader2, AlertCircle, Layers } from 'lucide-react';
 import Link from 'next/link';
+import { AccessGate } from '@/features/access-gate/components/AccessGate';
 import { useResearchApi } from '../../hooks/useResearchApi';
 import { useResearchTags, useResearchSynthesis } from '../../hooks/useResearchState';
 import { useResearchStream } from '../../hooks/useResearchStream';
@@ -44,7 +45,7 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
     const api = useResearchApi();
     const debug = useStreamDebug();
     const stream = useResearchStream();
-    const { data: tags } = useResearchTags(topicId);
+    const { data: tags, isLoading: tagsLoading, error: tagsError, refresh: refreshTags } = useResearchTags(topicId);
     const { data: tagSyntheses, refresh: refetch } = useResearchSynthesis(topicId, { scope: 'tag' });
     const [streamingText, setStreamingText] = useState('');
 
@@ -101,6 +102,24 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
         });
         debug.pushEvents(stream.rawEvents, 'consolidate');
     }, [api, topicId, tagId, stream, refetch, debug, consolidating, consolidation, tag]);
+
+    // The TAG itself can't be read (deleted, another topic's, no access, or the
+    // read failed) — the canonical gate, not "No consolidation yet". A real tag
+    // with no consolidation still gets the honest empty state below.
+    if (!tagsLoading && (tagsError || (tags && !tag))) {
+        return (
+            <div className="h-full overflow-hidden">
+                <AccessGate
+                    token="research_tag"
+                    id={tagId}
+                    error={tagsError ?? undefined}
+                    onRetry={refreshTags}
+                    fallbackHref={`/research/topics/${topicId}/tags`}
+                    fallbackLabel="This topic's tags"
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="p-3 sm:p-4 space-y-3">
