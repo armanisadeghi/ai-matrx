@@ -44,6 +44,14 @@ const HEALTH_FILTER_OPTIONS = (
   label: value === "drift" ? "Drift (pinned behind)" : HEALTH_META[value].label,
 }));
 
+// The rpc's `version` filter vocabulary (mnd_list_scoped): following the
+// agent's newest version, pinned and current, or pinned behind.
+const VERSION_FILTER_OPTIONS = [
+  { value: "latest", label: "Latest" },
+  { value: "pinned", label: "Pinned (current)" },
+  { value: "behind", label: "Pinned behind" },
+];
+
 export function mandateColumnsFor(
   hrefFor: (row: MandateListRow) => string,
 ): EntityColumnSpec<MandateListRow>[] {
@@ -61,13 +69,25 @@ export function mandateColumnsFor(
         // dedicated route (cmd-click, middle-click, keyboard). Row CLICK opens
         // the window panel instead — both hosts wrap the same workspace.
         href: hrefFor,
+        // The name only — the key and the feature are their own columns, so
+        // each sorts and filters as one piece of data.
+        width: 280,
+        cell: (row) => <div className="truncate font-medium">{row.label}</div>,
+      },
+    },
+    {
+      id: "mandate_key",
+      label: "Key",
+      column: {
+        id: "mandate_key",
+        accessorKey: "mandate_key",
+        header: "Key",
+        filter: "text",
+        width: 240,
         cell: (row) => (
-          <div className="min-w-0">
-            <div className="truncate font-medium">{row.label}</div>
-            <div className="truncate font-mono text-[11px] text-muted-foreground/80">
-              {row.mandate_key}
-            </div>
-          </div>
+          <span className="block truncate font-mono text-[11px] text-muted-foreground">
+            {row.mandate_key}
+          </span>
         ),
       },
     },
@@ -124,63 +144,20 @@ export function mandateColumnsFor(
         accessorFn: (row) => row.resolved_agent_name ?? "",
         header: "Fulfilled by",
         filter: "text",
-        // The effective Holder — an agent identity — plus who decided it. The
-        // full doors (open / peek / window) live on the workspace; the list cell
-        // stays light so 25 rows don't mount 25 EntityRefs.
-        cell: (row) => {
-          const layer = layerMeta(row.resolved_layer);
-          return (
-            <div className="flex min-w-0 items-center gap-2">
-              <span className="truncate">
-                {row.resolved_agent_name ?? <Muted>—</Muted>}
-              </span>
-              <Badge
-                variant="outline"
-                className={cn("shrink-0 py-0 text-[10px]", layer.className)}
-              >
-                {layer.label}
-              </Badge>
-              {row.drift ? (
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "shrink-0 py-0 font-mono text-[10px]",
-                    HEALTH_META.drift.className,
-                  )}
-                >
-                  {row.drift}
-                </Badge>
-              ) : null}
-            </div>
-          );
-        },
-      },
-    },
-    {
-      id: "coverage",
-      label: "Coverage",
-      locked: true,
-      column: {
-        id: "coverage",
-        accessorFn: (row) => row.mandate_key,
-        header: "Coverage",
-        // The verdict comes from aidream (GET /mandates/coverage/states), not
-        // from this row — so there is no database column to sort or filter on.
-        // Sorting it would mean re-deriving the classification in SQL, which is
-        // the one thing FALLBACK-MANDATES.md forbids. Narrowing happens by
-        // CLICKING a badge (the console board's pattern), which sends the keys
-        // the server already classified.
-        sortable: false,
-        width: 140,
+        // The effective Holder (an agent) only. Who decided it and whether it
+        // is pinned behind are their own columns ("Decided by", "Version").
+        width: 220,
+        className: "max-w-[16rem] overflow-hidden",
         cell: (row) => (
-          <MandateCoverageBadge mandateKey={row.mandate_key} nameLeader />
+          <span className="block truncate">
+            {row.resolved_agent_name ?? <Muted>—</Muted>}
+          </span>
         ),
       },
     },
     {
       id: "layer",
       label: "Decided by",
-      defaultHidden: true,
       facet: "layer",
       column: {
         id: "layer",
@@ -200,6 +177,58 @@ export function mandateColumnsFor(
             </Badge>
           );
         },
+      },
+    },
+    {
+      id: "version",
+      label: "Version",
+      column: {
+        id: "version",
+        accessorFn: (row) => row.pinned_version_number ?? 0,
+        header: "Version",
+        filter: "select",
+        filterOptions: VERSION_FILTER_OPTIONS,
+        width: 110,
+        cell: (row) =>
+          row.drift ? (
+            <Badge
+              variant="outline"
+              className={cn(
+                "py-0 font-mono text-[10px]",
+                HEALTH_META.drift.className,
+              )}
+            >
+              {row.drift}
+            </Badge>
+          ) : row.pinned_version_number !== null ? (
+            <span className="font-mono text-[11px]">
+              v{row.pinned_version_number}
+            </span>
+          ) : (
+            <Muted>latest</Muted>
+          ),
+      },
+    },
+    {
+      id: "coverage",
+      label: "Coverage",
+      locked: true,
+      column: {
+        id: "coverage",
+        accessorFn: (row) => row.mandate_key,
+        header: "Coverage",
+        // The verdict comes from aidream (GET /mandates/coverage/states), not
+        // from this row — so there is no database column to sort or filter on.
+        // Sorting it would mean re-deriving the classification in SQL, which is
+        // the one thing FALLBACK-MANDATES.md forbids. Narrowing happens by
+        // CLICKING a badge (the console board's pattern), which sends the keys
+        // the server already classified.
+        sortable: false,
+        // Wide enough for the leader's mandate key the badge names.
+        width: 220,
+        cell: (row) => (
+          <MandateCoverageBadge mandateKey={row.mandate_key} nameLeader />
+        ),
       },
     },
     {
