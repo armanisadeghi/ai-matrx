@@ -28,7 +28,7 @@ let mockAuthStateListener:
 let mockOrganizationId = "11111111-1111-4111-8111-111111111111";
 
 jest.mock("@/utils/supabase/client", () => ({
-  supabase: { auth: {} },
+  supabase: { auth: {}, schema: jest.fn(() => ({})) },
   createClient: () => ({
     auth: {
       onAuthStateChange: (
@@ -272,6 +272,20 @@ const readDashlaneCsvArchiveMock = jest.mocked(readDashlaneCsvArchive);
 async function settle(turns = 6): Promise<void> {
   for (let i = 0; i < turns; i += 1) {
     await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+}
+
+async function waitForCondition(
+  condition: () => boolean,
+  message: string,
+  timeoutMs = 1_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (!condition()) {
+    if (Date.now() >= deadline) throw new Error(message);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
   }
 }
 
@@ -824,20 +838,21 @@ describe("VaultCsvImportDialog", () => {
       configurable: true,
       value: [csvFile("title,password\nFirst,one\nSecond,two")],
     });
-    await act(async () => {
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-      await settle();
-    });
+    await act(async () => input.dispatchEvent(new Event("change", { bubbles: true })));
+    await waitForCondition(
+      () => document.body.textContent?.includes("Row 2: First") ?? false,
+      "CSV preview did not appear",
+    );
     const importButton = [...document.querySelectorAll("button")].find(
       (candidate) => candidate.textContent?.includes("Import selected records"),
     );
     if (!(importButton instanceof HTMLButtonElement))
       throw new Error("import button missing");
-    await act(async () => {
-      importButton.click();
-      await settle();
-    });
-    expect(createVaultItemMock).toHaveBeenCalledTimes(2);
+    await act(async () => importButton.click());
+    await waitForCondition(
+      () => createVaultItemMock.mock.calls.length === 2,
+      "initial CSV import did not reach the retryable row",
+    );
     const [, firstOptions] = createVaultItemMock.mock.calls[0] ?? [];
     const [unresolvedBody, unresolvedOptions] =
       createVaultItemMock.mock.calls[1] ?? [];
@@ -849,10 +864,11 @@ describe("VaultCsvImportDialog", () => {
     );
     if (!(retryButton instanceof HTMLButtonElement))
       throw new Error("retry button missing");
-    await act(async () => {
-      retryButton.click();
-      await settle();
-    });
+    await act(async () => retryButton.click());
+    await waitForCondition(
+      () => createVaultItemMock.mock.calls.length === 3,
+      "retry did not dispatch the unresolved CSV row",
+    );
     expect(createVaultItemMock).toHaveBeenCalledTimes(3);
     expect(
       createVaultItemMock.mock.calls.map(([body]) => body.display_name),
