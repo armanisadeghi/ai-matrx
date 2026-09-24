@@ -2050,6 +2050,8 @@ const SELFTEST_FN_FILE = "zz_db_apply_selftest_dd220_fn.sql";
 const SELFTEST_REPLACE_FILE = "zz_db_apply_selftest_dd220_replace.sql";
 /** V-84 residue: the same rule applied to DDL built at runtime. */
 const SELFTEST_DYNAMIC_FILE = "zz_db_apply_selftest_dd220_dynamic.sql";
+/** PROGRESS-S2: the same rule applied to a DROP FUNCTION this same file recreates. */
+const SELFTEST_DROP_FILE = "zz_db_apply_selftest_dd220_drop.sql";
 /** `-- retired:` arm: a file the live database has moved past, proven unrunnable. */
 const SELFTEST_RETIRED_FILE = "zz_db_apply_selftest_retired.sql";
 
@@ -2163,6 +2165,7 @@ async function selfTest(statementTimeout: string, argv: readonly string[]): Prom
   const fnPath = resolve(MIGRATIONS_DIR, SELFTEST_FN_FILE);
   const replacePath = resolve(MIGRATIONS_DIR, SELFTEST_REPLACE_FILE);
   const dynamicPath = resolve(MIGRATIONS_DIR, SELFTEST_DYNAMIC_FILE);
+  const dropRecreatePath = resolve(MIGRATIONS_DIR, SELFTEST_DROP_FILE);
   const retiredPath = resolve(MIGRATIONS_DIR, SELFTEST_RETIRED_FILE);
   const body =
     `create schema if not exists ${SELFTEST_SCHEMA};\n` +
@@ -2362,6 +2365,71 @@ async function selfTest(statementTimeout: string, argv: readonly string[]): Prom
           `name, applied when declared (V-84 residue)`,
       );
 
+    // ── PROGRESS-S2: a DROP FUNCTION that this file recreates ────────────────
+    // Lane S3's file DROPped `record_aggregate`/`agg_sql` and re-created them with
+    // `CREATE FUNCTION` — no `OR REPLACE`, because the DROP already removed the
+    // object — from a stale dump. Proofs 1-5 above scan only for `CREATE OR REPLACE`,
+    // so that shape was INVISIBLE to them: the file put an older body back over a
+    // peer's change, twice, with no warning (common-docs/projects/data-doctrine-
+    // adoption/v5/handoff-2026-09-20/PROGRESS-S2.md). A DROP is also on the deny-list
+    // for a header-less file ("a DROP"), so this arm needs a confirmed `-- chair-step:`
+    // to get past THAT gate before it can prove the based-on gate underneath it.
+    console.log(
+      `${C.bold}self-test PROGRESS-S2${C.reset} ${C.dim}(a DROP this file recreates declares the ` +
+        `body it destroyed)${C.reset}`,
+    );
+    const dropHash = String(
+      (
+        await client.query<{ h: string }>(
+          `select encode(sha256(convert_to(pg_get_functiondef(
+             to_regprocedure('${SELFTEST_SCHEMA}.probe(text)')), 'utf8')), 'hex') as h`,
+        )
+      ).rows[0]?.h ?? "",
+    );
+    if (!/^[0-9a-f]{64}$/.test(dropHash))
+      fail(`could not read the live body hash of ${SELFTEST_SCHEMA}.probe(text) before the drop arm`);
+    const dropRecreateBody = (note: string) =>
+      `-- chair-step: prove the based-on gate under a DROP FUNCTION this file recreates\n` +
+      `drop function if exists ${SELFTEST_SCHEMA}.probe(text);\n` +
+      `create function ${SELFTEST_SCHEMA}.probe(p_in text)\n` +
+      `returns text language sql immutable as $fn$ select ${lit(note)} || p_in $fn$;\n`;
+    const dropOpts: ApplyOpts = { ...opts, confirmedChairSteps: [SELFTEST_DROP_FILE] };
+
+    writeFileSync(dropRecreatePath, dropRecreateBody("dropped:"), "utf8");
+    const dropNoHeader = await applyFile(dropRecreatePath, dropOpts);
+    if (dropNoHeader !== 1)
+      fail(`a DROP+recreate with no based-on line exited ${dropNoHeader}, expected 1`);
+
+    const dropStale = sha256("a body this database has never held (drop arm)");
+    writeFileSync(
+      dropRecreatePath,
+      `-- based-on: ${SELFTEST_SCHEMA}.probe(text) ${dropStale}\n${dropRecreateBody("dropped:")}`,
+      "utf8",
+    );
+    const dropStaleCode = await applyFile(dropRecreatePath, dropOpts);
+    if (dropStaleCode !== 1)
+      fail(`a DROP+recreate with a STALE based-on hash exited ${dropStaleCode}, expected 1`);
+
+    writeFileSync(
+      dropRecreatePath,
+      `-- based-on: ${SELFTEST_SCHEMA}.probe(text) ${dropHash}\n${dropRecreateBody("dropped:")}`,
+      "utf8",
+    );
+    const dropGoodCode = await applyFile(dropRecreatePath, dropOpts);
+    if (dropGoodCode !== 0)
+      fail(`a DROP+recreate with the CORRECT based-on hash exited ${dropGoodCode}, expected 0`);
+    const dropSays = (
+      await client.query<{ v: string }>(`select ${SELFTEST_SCHEMA}.probe('x') as v`)
+    ).rows[0]?.v;
+    if (dropSays !== "dropped:x")
+      fail(`the declared DROP+recreate did not land — probe('x') returned ${JSON.stringify(dropSays)}`);
+
+    if (failures === 0)
+      console.log(
+        `${TAG.ok}PROGRESS-S2 proven: a DROP FUNCTION this file recreates is REFUSED with no ` +
+          `based-on line and REFUSED on a stale hash; the declared hash applies and lands`,
+      );
+
     // ── `-- retired:`: frozen history that must never execute again ──────────
     // The door this closes is the one --reapply deliberately leaves open: an
     // already-ledgered file is never re-judged, so its OLD bytes still run. Five
@@ -2438,7 +2506,7 @@ async function selfTest(statementTimeout: string, argv: readonly string[]): Prom
          delete from public._schema_migrations where source = ${lit(SOURCE)}
             and filename in (${lit(SELFTEST_FILE)}, ${lit(SELFTEST_FN_FILE)},
                              ${lit(SELFTEST_REPLACE_FILE)}, ${lit(SELFTEST_DYNAMIC_FILE)},
-                             ${lit(SELFTEST_RETIRED_FILE)});`,
+                             ${lit(SELFTEST_DROP_FILE)}, ${lit(SELFTEST_RETIRED_FILE)});`,
       )
       .catch((err: unknown) =>
         console.error(
@@ -2447,7 +2515,7 @@ async function selfTest(statementTimeout: string, argv: readonly string[]): Prom
         ),
       );
     await client.end().catch(() => undefined);
-    for (const p of [path, fnPath, replacePath, dynamicPath, retiredPath])
+    for (const p of [path, fnPath, replacePath, dynamicPath, dropRecreatePath, retiredPath])
       if (existsSync(p)) unlinkSync(p);
   }
 

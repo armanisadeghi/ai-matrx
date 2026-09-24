@@ -199,12 +199,99 @@ export function findReplaceOccurrences(sql: string): ReplacedFunction[] {
       snippet,
     });
   }
+  out.push(...findDropRecreateOccurrences(text, spans));
   return out;
 }
 
 /** The statements written out in the file itself (no runtime-built DDL). */
 export function findReplacedFunctions(sql: string): ReplacedFunction[] {
   return findReplaceOccurrences(sql).filter((o) => !o.dynamic);
+}
+
+// ── DROP FUNCTION/PROCEDURE that this SAME FILE later recreates ─────────────
+//
+// PROGRESS-S2 (data-doctrine-adoption v5, 2026-09-20): lane S3's file DROPped
+// `record_aggregate`/`agg_sql` and re-created them from a stale dump. The scan above
+// only looks at `CREATE OR REPLACE`, so a bare `DROP FUNCTION x(...); CREATE FUNCTION
+// x(...) ...` — no `OR REPLACE` needed, because the DROP already removed the object —
+// was INVISIBLE to it: the file put an older body back over a peer's change, twice,
+// with no warning. A DROP this file recreates is now judged exactly like a replace —
+// the live body IT DESTROYS must be declared, by hash, the same as `CREATE OR REPLACE
+// FUNCTION` requires, and the same refusal sentence names it.
+//
+// Matched by NAME only, not by argument list: a recreate that changes the parameter
+// list still destroys the dropped body, and requiring an exact arg match would let
+// that shape through unguarded. `DROP FUNCTION foo;` (no arg list — valid only when
+// `foo` has a single overload) resolves through the existing "name-only" arm of
+// `resolveReplaced`, exactly as a dynamically-built `CREATE OR REPLACE` argument list
+// does today.
+const DROP_FN_KEYWORD = /\bDROP\s+(FUNCTION|PROCEDURE)\s+(?:IF\s+EXISTS\s+)?/gi;
+const CREATE_FN_ANY_KEYWORD = /\bCREATE\s+(?:OR\s+REPLACE\s+)?(FUNCTION|PROCEDURE)\s+/gi;
+
+interface FnKeywordHit {
+  readonly index: number;
+  readonly line: number;
+  readonly dynamic: boolean;
+  readonly kind: string;
+  readonly name: string | null;
+  readonly args: string | null;
+  readonly snippet: string;
+}
+
+/** A bare identifier chain right at the cursor — used when DROP FUNCTION omits the
+ *  argument list (valid only when the name has exactly one live overload). */
+function bareNameAt(window: string): string | null {
+  const m = new RegExp(`^(${IDENT}(?:\\.${IDENT})*)`).exec(window);
+  return m ? m[1]! : null;
+}
+
+function scanFunctionKeyword(text: string, spans: Array<[number, number]>, re: RegExp): FnKeywordHit[] {
+  const out: FnKeywordHit[] = [];
+  re.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const after = m.index + m[0].length;
+    const line = text.slice(0, m.index).split("\n").length;
+    const dynamic = inSpan(spans, m.index);
+    const window = joinLiteralText(text.slice(after, after + 4000));
+    const snippet = text.slice(after, after + 90).replace(/\s+/g, " ").trim();
+    const kind = m[1]!.toUpperCase();
+    const nmParen = NAME_AT.exec(window);
+    if (nmParen && !isComputed(nmParen[1]!)) {
+      const name = nmParen[1]!;
+      const open = window.indexOf("(", name.length - 1);
+      const a = open === -1 ? null : balanced(window, open);
+      out.push({ index: m.index, line, dynamic, kind, name, args: a !== null && !isComputed(a) ? a : null, snippet });
+      continue;
+    }
+    const bare = bareNameAt(window);
+    out.push({ index: m.index, line, dynamic, kind, name: bare && !isComputed(bare) ? bare : null, args: null, snippet });
+  }
+  return out;
+}
+
+/** Schema-qualified vs unqualified compared as the same name — the same rule
+ *  `additiveVerdictOf` already applies to `-- based-on:` names in migration-target.ts. */
+function fnNamesMatch(a: string, b: string): boolean {
+  const na = a.replace(/"/g, "").toLowerCase();
+  const nb = b.replace(/"/g, "").toLowerCase();
+  return na === nb || na.endsWith(`.${nb}`) || nb.endsWith(`.${na}`);
+}
+
+function findDropRecreateOccurrences(text: string, spans: Array<[number, number]>): ReplacedFunction[] {
+  const drops = scanFunctionKeyword(text, spans, DROP_FN_KEYWORD);
+  if (drops.length === 0) return [];
+  const creates = scanFunctionKeyword(text, spans, CREATE_FN_ANY_KEYWORD);
+  const out: ReplacedFunction[] = [];
+  for (const d of drops) {
+    // An unreadable DROP target: the deny-list already refuses the bare DROP by
+    // name ("a DROP"); this guard has nothing to look up.
+    if (d.name === null) continue;
+    const recreated = creates.some((c) => c.index > d.index && c.name !== null && fnNamesMatch(c.name, d.name!));
+    if (!recreated) continue;
+    out.push({ name: d.name, kind: d.kind, args: d.args, line: d.line, dynamic: d.dynamic, snippet: `DROP … ${d.snippet}` });
+  }
+  return out;
 }
 
 /** Text inside the parentheses starting at `open`, or null when unbalanced. */
@@ -297,7 +384,12 @@ function topLevelIndex(s: string, ch: string): number {
 }
 
 export interface BasedOnLine {
-  /** Signature as written, e.g. `billing.plan_status(uuid)`. */
+  /**
+   * `function` (the original DD-220 shape) or `trigger`/`view` (PROGRESS-S2:
+   * the DROP-then-recreate class, whose objects carry no `pg_get_functiondef`).
+   */
+  readonly kind: "function" | "trigger" | "view";
+  /** Signature as written, e.g. `billing.plan_status(uuid)`, `mytrig on sch.tbl`, `sch.myview`. */
   readonly signature: string;
   readonly hash: string;
   readonly line: number;
@@ -311,6 +403,15 @@ export interface BasedOnLine {
  * (`numeric(10,2)`) survive; the hash is the trailing 64 hex characters.
  */
 const BASED_ON_RE = /^\s*--\s*based-on:\s*(\S.*\))\s+([0-9a-fA-F]{64})\s*$/;
+/**
+ * `-- based-on: trigger <name> on <schema.table> <sha256>` — PROGRESS-S2. A trigger's
+ * identity is (name, table), not a signature with an argument list, so it needs its
+ * own shape rather than overloading the function one.
+ */
+const BASED_ON_TRIGGER_RE =
+  /^\s*--\s*based-on:\s*trigger\s+(\S+)\s+on\s+(\S+)\s+([0-9a-fA-F]{64})\s*$/i;
+/** `-- based-on: view <schema.name> <sha256>` — PROGRESS-S2. A view has no arguments. */
+const BASED_ON_VIEW_RE = /^\s*--\s*based-on:\s*view\s+(\S+)\s+([0-9a-fA-F]{64})\s*$/i;
 
 export function parseBasedOnLines(sql: string): {
   lines: BasedOnLine[];
@@ -320,12 +421,35 @@ export function parseBasedOnLines(sql: string): {
   const malformed: { raw: string; line: number }[] = [];
   sql.split("\n").forEach((raw, i) => {
     if (!/^\s*--\s*based-on:/i.test(raw)) return;
+    const trig = raw.match(BASED_ON_TRIGGER_RE);
+    if (trig) {
+      lines.push({
+        kind: "trigger",
+        signature: `${trig[1]!.replace(/"/g, "")} on ${trig[2]!.replace(/"/g, "")}`,
+        hash: trig[3]!.toLowerCase(),
+        line: i + 1,
+        raw: raw.trim(),
+      });
+      return;
+    }
+    const view = raw.match(BASED_ON_VIEW_RE);
+    if (view) {
+      lines.push({
+        kind: "view",
+        signature: view[1]!.replace(/"/g, ""),
+        hash: view[2]!.toLowerCase(),
+        line: i + 1,
+        raw: raw.trim(),
+      });
+      return;
+    }
     const m = raw.match(BASED_ON_RE);
     if (!m) {
       malformed.push({ raw: raw.trim(), line: i + 1 });
       return;
     }
     lines.push({
+      kind: "function",
       signature: m[1]!.trim(),
       hash: m[2]!.toLowerCase(),
       line: i + 1,
@@ -384,6 +508,148 @@ export function splitQualified(name: string): { schema: string | null; name: str
   if (parts.length >= 2)
     return { schema: unquote(parts[parts.length - 2]!), name: unquote(parts[parts.length - 1]!) };
   return { schema: null, name: unquote(parts[0]!) };
+}
+
+// ── DROP TRIGGER / DROP VIEW that this SAME FILE later recreates ────────────
+//
+// The identical PROGRESS-S2 class as the FUNCTION case above, generalized to the
+// two other object kinds the incident named. Neither a trigger nor a view has a
+// `pg_get_functiondef`, so each gets its own live-hash source
+// (`pg_get_triggerdef` / `pg_get_viewdef`) and its own `-- based-on:` shape —
+// see `parseBasedOnLines` above.
+
+export interface LiveTrigger {
+  readonly oid: number;
+  /** `<name> on <schema>.<table>`, exactly the shape a based-on line declares. */
+  readonly signature: string;
+  readonly hash: string;
+}
+
+export interface LiveView {
+  readonly oid: number;
+  /** `<schema>.<name>`. */
+  readonly signature: string;
+  readonly hash: string;
+}
+
+const DROP_TRIGGER_RE = new RegExp(
+  `\\bDROP\\s+TRIGGER\\s+(?:IF\\s+EXISTS\\s+)?(${IDENT})\\s+ON\\s+(${IDENT}(?:\\.${IDENT})*)`,
+  "gi",
+);
+const CREATE_TRIGGER_RE = new RegExp(
+  `\\bCREATE\\s+(?:OR\\s+REPLACE\\s+)?(?:CONSTRAINT\\s+)?TRIGGER\\s+(${IDENT})\\b[\\s\\S]{0,400}?\\bON\\s+(${IDENT}(?:\\.${IDENT})*)`,
+  "gi",
+);
+const DROP_VIEW_RE = new RegExp(
+  `\\bDROP\\s+(?:MATERIALIZED\\s+)?VIEW\\s+(?:IF\\s+EXISTS\\s+)?(${IDENT}(?:\\.${IDENT})*)`,
+  "gi",
+);
+const CREATE_VIEW_RE = new RegExp(
+  `\\bCREATE\\s+(?:OR\\s+REPLACE\\s+)?(?:MATERIALIZED\\s+)?VIEW\\s+(${IDENT}(?:\\.${IDENT})*)`,
+  "gi",
+);
+
+interface NamedHit {
+  readonly index: number;
+  readonly line: number;
+  readonly a: string;
+  readonly b: string | null;
+  readonly snippet: string;
+}
+
+function scanNamed(text: string, re: RegExp): NamedHit[] {
+  const out: NamedHit[] = [];
+  re.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const line = text.slice(0, m.index).split("\n").length;
+    out.push({
+      index: m.index,
+      line,
+      a: m[1]!.replace(/"/g, ""),
+      b: m[2] ? m[2].replace(/"/g, "") : null,
+      snippet: text.slice(m.index, m.index + 90).replace(/\s+/g, " ").trim(),
+    });
+  }
+  return out;
+}
+
+export interface DroppedTrigger {
+  readonly name: string;
+  /** Schema-qualified table, as written; null when the DROP could not be read that way. */
+  readonly table: string | null;
+  readonly line: number;
+  readonly snippet: string;
+}
+
+export interface DroppedView {
+  /** Schema-qualified, as written. */
+  readonly name: string;
+  readonly line: number;
+  readonly snippet: string;
+}
+
+/** Every `DROP TRIGGER` this file's own, later text recreates (name AND table match —
+ *  a trigger's identity is the pair, never the name alone). */
+export function findDroppedTriggersRecreated(sql: string): DroppedTrigger[] {
+  const text = stripComments(sql);
+  const drops = scanNamed(text, DROP_TRIGGER_RE);
+  if (drops.length === 0) return [];
+  const creates = scanNamed(text, CREATE_TRIGGER_RE);
+  const out: DroppedTrigger[] = [];
+  for (const d of drops) {
+    const recreated = creates.some(
+      (c) => c.index > d.index && fnNamesMatch(c.a, d.a) && c.b !== null && fnNamesMatch(c.b, d.b!),
+    );
+    if (recreated) out.push({ name: d.a, table: d.b, line: d.line, snippet: d.snippet });
+  }
+  return out;
+}
+
+/** Every `DROP VIEW` this file's own, later text recreates. */
+export function findDroppedViewsRecreated(sql: string): DroppedView[] {
+  const text = stripComments(sql);
+  const drops = scanNamed(text, DROP_VIEW_RE);
+  if (drops.length === 0) return [];
+  const creates = scanNamed(text, CREATE_VIEW_RE);
+  const out: DroppedView[] = [];
+  for (const d of drops) {
+    const recreated = creates.some((c) => c.index > d.index && fnNamesMatch(c.a, d.a));
+    if (recreated) out.push({ name: d.a, line: d.line, snippet: d.snippet });
+  }
+  return out;
+}
+
+/** The live trigger a DROP names, by (name, table), with its `pg_get_triggerdef` hash. */
+export async function liveTrigger(q: Query, name: string, table: string): Promise<LiveTrigger | null> {
+  const parts = splitQualified(table);
+  if (parts.schema === null) return null; // an unqualified table: ambiguous, refused by the caller
+  const rows = await q(
+    `select t.oid::int as oid,
+            t.tgname || ' on ' || n.nspname || '.' || c.relname as signature,
+            encode(sha256(convert_to(pg_get_triggerdef(t.oid), 'utf8')), 'hex') as hash
+       from pg_trigger t
+       join pg_class c on c.oid = t.tgrelid
+       join pg_namespace n on n.oid = c.relnamespace
+      where not t.tgisinternal and t.tgname = $1 and n.nspname = $2 and c.relname = $3`,
+    [unquote(name), parts.schema, parts.name],
+  );
+  return (rows[0] as unknown as LiveTrigger) ?? null;
+}
+
+/** The live view a DROP names, with its `pg_get_viewdef` hash. */
+export async function liveView(q: Query, name: string): Promise<LiveView | null> {
+  const parts = splitQualified(name);
+  if (parts.schema === null) return null; // an unqualified view: ambiguous, refused by the caller
+  const rows = await q(
+    `select c.oid::int as oid,
+            n.nspname || '.' || c.relname as signature,
+            encode(sha256(convert_to(pg_get_viewdef(c.oid), 'utf8')), 'hex') as hash
+       from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      where c.relkind in ('v', 'm') and n.nspname = $1 and c.relname = $2`,
+    [parts.schema, parts.name],
+  );
+  return (rows[0] as unknown as LiveView) ?? null;
 }
 
 /** `to_regtype` / `to_regprocedure`, each in its own statement so a syntax
@@ -503,15 +769,31 @@ export async function basedOnCheck(q: Query, sql: string): Promise<BasedOnResult
       signature: bad.raw,
       message:
         `line ${bad.line} is a \`-- based-on:\` line this runner cannot read: ${bad.raw}\n` +
-        `    The shape is exactly:  -- based-on: <schema>.<name>(<argtypes>) <64 hex sha256>\n` +
+        `    The shape is exactly one of:\n` +
+        `        -- based-on: <schema>.<name>(<argtypes>) <64 hex sha256>          (function/procedure)\n` +
+        `        -- based-on: trigger <name> on <schema>.<table> <64 hex sha256>   (trigger)\n` +
+        `        -- based-on: view <schema>.<name> <64 hex sha256>                 (view)\n` +
         `    Generate it: pnpm db:based-on <schema>.<name>`,
     });
 
-  if (replaced.length === 0 && lines.length === 0) return { findings, verified };
+  const droppedTriggers = findDroppedTriggersRecreated(sql);
+  const droppedViews = findDroppedViewsRecreated(sql);
+
+  if (
+    replaced.length === 0 &&
+    lines.length === 0 &&
+    droppedTriggers.length === 0 &&
+    droppedViews.length === 0
+  )
+    return { findings, verified };
+
+  const fnLines = lines.filter((l) => l.kind === "function");
+  const triggerLines = lines.filter((l) => l.kind === "trigger");
+  const viewLines = lines.filter((l) => l.kind === "view");
 
   // Declared lines, keyed by the live function they name.
   const declared = new Map<number, { hash: string; line: BasedOnLine }>();
-  for (const l of lines) {
+  for (const l of fnLines) {
     const oid = await resolveProcOid(q, l.signature);
     if (oid === null) {
       findings.push({
@@ -646,5 +928,94 @@ export async function basedOnCheck(q: Query, sql: string): Promise<BasedOnResult
     }
     verified.push(live.signature);
   }
+
+  // ── PROGRESS-S2: DROP TRIGGER that this file recreates ────────────────────
+  for (const dt of droppedTriggers) {
+    if (dt.table === null) {
+      findings.push({
+        kind: "unresolvable",
+        signature: dt.name,
+        message:
+          `line ${dt.line} DROPs trigger \`${dt.name}\` and this file recreates it, but the DROP\n` +
+          `    does not name a schema-qualified table (\`DROP TRIGGER ${dt.name} ON <schema>.<table>\`),\n` +
+          `    so the live body it destroys cannot be looked up. It will not execute a whole-object\n` +
+          `    overwrite it cannot identify. Schema-qualify the table, then declare the body.`,
+      });
+      continue;
+    }
+    const live = await liveTrigger(q, dt.name, dt.table);
+    if (!live) continue; // nothing live by that name on that table: nothing to clobber
+    const decl = triggerLines.find((l) => l.signature.toLowerCase() === live.signature.toLowerCase());
+    if (!decl) {
+      findings.push({
+        kind: "missing",
+        signature: live.signature,
+        message:
+          `line ${dt.line} DROPs trigger \`${live.signature}\`, which this file then recreates, and the\n` +
+          `    file never says which body the DROP destroyed.\n` +
+          `    A DROP-then-recreate is a whole-object write with no concurrency check, exactly like\n` +
+          `    \`CREATE OR REPLACE FUNCTION\` (DD-220/PROGRESS-S2): it silently discards whatever another\n` +
+          `    migration did to that trigger since you read it.\n` +
+          `    Re-read the live definition, re-base your change on it, and add the header line:\n` +
+          `        pnpm db:based-on ${live.signature}\n` +
+          `    (live body right now: sha256 ${live.hash})`,
+      });
+      continue;
+    }
+    if (decl.hash !== live.hash) {
+      findings.push({
+        kind: "stale",
+        signature: live.signature,
+        message:
+          `line ${decl.line} declares \`trigger ${live.signature}\` based on sha256 ${decl.hash},\n` +
+          `    but the body live on this database RIGHT NOW is sha256 ${live.hash}. Somebody replaced\n` +
+          `    that trigger after you read it. Applying this file's DROP-then-recreate would silently\n` +
+          `    throw their change away.\n` +
+          `    Remedy: re-read the live definition, re-base your edit on it, and regenerate the header\n` +
+          `    line: pnpm db:based-on ${live.signature}`,
+      });
+      continue;
+    }
+    verified.push(`trigger ${live.signature}`);
+  }
+
+  // ── PROGRESS-S2: DROP VIEW that this file recreates ────────────────────────
+  for (const dv of droppedViews) {
+    const live = await liveView(q, dv.name);
+    if (!live) continue; // nothing live by that name: nothing to clobber
+    const decl = viewLines.find((l) => l.signature.toLowerCase() === live.signature.toLowerCase());
+    if (!decl) {
+      findings.push({
+        kind: "missing",
+        signature: live.signature,
+        message:
+          `line ${dv.line} DROPs view \`${live.signature}\`, which this file then recreates, and the\n` +
+          `    file never says which body the DROP destroyed.\n` +
+          `    A DROP-then-recreate is a whole-object write with no concurrency check, exactly like\n` +
+          `    \`CREATE OR REPLACE FUNCTION\` (DD-220/PROGRESS-S2): it silently discards whatever another\n` +
+          `    migration did to that view since you read it.\n` +
+          `    Re-read the live definition, re-base your change on it, and add the header line:\n` +
+          `        pnpm db:based-on ${live.signature}\n` +
+          `    (live body right now: sha256 ${live.hash})`,
+      });
+      continue;
+    }
+    if (decl.hash !== live.hash) {
+      findings.push({
+        kind: "stale",
+        signature: live.signature,
+        message:
+          `line ${decl.line} declares \`view ${live.signature}\` based on sha256 ${decl.hash},\n` +
+          `    but the body live on this database RIGHT NOW is sha256 ${live.hash}. Somebody replaced\n` +
+          `    that view after you read it. Applying this file's DROP-then-recreate would silently\n` +
+          `    throw their change away.\n` +
+          `    Remedy: re-read the live definition, re-base your edit on it, and regenerate the header\n` +
+          `    line: pnpm db:based-on ${live.signature}`,
+      });
+      continue;
+    }
+    verified.push(`view ${live.signature}`);
+  }
+
   return { findings, verified };
 }
