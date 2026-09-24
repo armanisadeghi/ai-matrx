@@ -424,8 +424,10 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  */
 function CompareOneScope() {
   const [draft, setDraft] = useState("");
-  const [scopeId, setScopeId] = useState<string | null>(null);
-  const valid = UUID_RE.test(draft.trim());
+  const [agentDraft, setAgentDraft] = useState("");
+  const [target, setTarget] = useState<{ scopeId: string; agentId?: string } | null>(null);
+  const agentOk = !agentDraft.trim() || UUID_RE.test(agentDraft.trim());
+  const valid = UUID_RE.test(draft.trim()) && agentOk;
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -436,7 +438,8 @@ function CompareOneScope() {
           className="flex flex-col gap-2 sm:flex-row sm:items-end"
           onSubmit={(e) => {
             e.preventDefault();
-            if (valid) setScopeId(draft.trim());
+            if (valid)
+              setTarget({ scopeId: draft.trim(), agentId: agentDraft.trim() || undefined });
           }}
         >
           <div className="min-w-0 flex-1 space-y-1.5">
@@ -449,13 +452,27 @@ function CompareOneScope() {
               className="font-mono text-base md:text-sm"
             />
           </div>
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <Label htmlFor="compare-agent-id">Agent id (to answer on both paths)</Label>
+            <Input
+              id="compare-agent-id"
+              value={agentDraft}
+              onChange={(e) => setAgentDraft(e.target.value)}
+              placeholder="Optional — the agent whose answer you compare"
+              className="font-mono text-base md:text-sm"
+            />
+          </div>
           <Button type="submit" size="sm" disabled={!valid}>
             Compare
           </Button>
         </form>
-        {scopeId && (
+        {target && (
           <div className="flex min-h-[24rem] flex-col rounded-md border border-border">
-            <ContextCompareView key={scopeId} scopeIds={[scopeId]} />
+            <ContextCompareView
+              key={`${target.scopeId}:${target.agentId ?? ""}`}
+              scopeIds={[target.scopeId]}
+              agentId={target.agentId}
+            />
           </div>
         )}
       </CardContent>
