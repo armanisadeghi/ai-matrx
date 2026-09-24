@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import type { FieldFormatConfig, FieldFormatId } from "@/lib/field-formats/types";
 
@@ -48,6 +48,15 @@ const RESULT_FORMATS: { id: FieldFormatId; label: string }[] = [
   { id: "datetime", label: "Date and time" },
 ];
 
+/**
+ * What the formula is FOR — the editor speaks for that use (register ARE-031).
+ *  - `column`: a formula column; the result format is chosen here.
+ *  - `row-action`: a row action's "Calculate" step; the target column's own
+ *    type decides the result, so no result format is offered.
+ *  - `row-label`: the merged row label; always text.
+ */
+export type FormulaPurpose = "column" | "row-action" | "row-label";
+
 type Props = {
   /** The column's current format config (id must be `formula`). */
   value: FieldFormatConfig;
@@ -56,7 +65,25 @@ type Props = {
   siblingFields: { field_name: string; display_name: string }[];
   disabled?: boolean;
   className?: string;
+  /** Default `column`. */
+  purpose?: FormulaPurpose;
+  /** For `row-action`: the column the result is written into. */
+  targetColumnName?: string;
 };
+
+const EMPTY_TEXT: Record<FormulaPurpose, string> = {
+  column: "No expression yet — the column will be empty.",
+  "row-action": "No formula yet — write one, or ask for help from the … menu in the box.",
+  "row-label": "No formula yet — rows will be named by the first column.",
+};
+
+/** An example built from the person's REAL columns, never invented ones (ARE-030). */
+function exampleFrom(fields: { display_name: string }[]): string {
+  const [a, b] = fields.map((f) => f.display_name);
+  if (a && b) return `{${a}} & " " & {${b}}, or IF({${a}} = "", "Missing", {${a}})`;
+  if (a) return `UPPER({${a}}), or IF({${a}} = "", "Missing", {${a}})`;
+  return `TODAY(), or "Fixed text"`;
+}
 
 export function FormulaExpressionEditor({
   value,
@@ -64,6 +91,8 @@ export function FormulaExpressionEditor({
   siblingFields,
   disabled,
   className,
+  purpose = "column",
+  targetColumnName,
 }: Props) {
   const expression = value.options?.formula?.expression ?? "";
   const resultFormat = value.options?.formula?.resultFormat ?? "text";
@@ -87,6 +116,11 @@ export function FormulaExpressionEditor({
     setFormula({
       expression: `${expression}${expression && !expression.endsWith(" ") ? " " : ""}{${displayName}}`,
     });
+  // Functions insert on click, like columns (ARE-034).
+  const insertFunction = (name: string) =>
+    setFormula({
+      expression: `${expression}${expression && !/[\s(,]$/.test(expression) ? " " : ""}${name}(`,
+    });
 
   // A reference is judged against the table's columns HERE, not only at
   // evaluation: "Valid" for `{Prize}` on a table with a `Price` column would
@@ -101,7 +135,7 @@ export function FormulaExpressionEditor({
     : [];
 
   const status = !expression.trim()
-    ? { tone: "muted" as const, text: "No expression yet — the column will be empty." }
+    ? { tone: "muted" as const, text: EMPTY_TEXT[purpose] }
     : !parsed.ok
       ? { tone: "error" as const, text: `${parsed.error} (at character ${parsed.position + 1})` }
       : unknownReferences.length > 0
@@ -135,15 +169,55 @@ export function FormulaExpressionEditor({
           <Label htmlFor="formula-expression" className="text-xs">
             Formula
           </Label>
-          <Textarea
+          {/* The PLATFORM text box (ARE-020): microphone, and the … menu with
+              "Help with this…" carrying the columns, the functions and what
+              the formula is for, so an agent can write it. Prose clean-up is
+              off: it would mangle syntax. The "describe it" primitive
+              (ARE-021) replaces this interim help. */}
+          <ProTextarea
             id="formula-expression"
             value={expression}
             onChange={(e) => setFormula({ expression: e.target.value })}
             disabled={disabled}
             rows={3}
             spellCheck={false}
-            placeholder="{Budget} * 1.2, or IF({Status} = 'Done', 'Closed', 'Open')"
+            placeholder={exampleFrom(siblingFields)}
             className="font-mono text-sm"
+            enableCleanup={false}
+            enableHelpWithThis
+            surfaceName="matrx-user/data-tables"
+            helpContextItems={[
+              {
+                id: "formula-purpose",
+                key: "formula_purpose",
+                label: "What this formula is for",
+                value:
+                  purpose === "row-action"
+                    ? `A row action step that writes the result into the column ${targetColumnName ? `"${targetColumnName}"` : "chosen beside it"}, evaluated against the row as it is before the action.`
+                    : purpose === "row-label"
+                      ? "The name of each row (text), usually merged columns."
+                      : "A calculated column; every row shows the result.",
+              },
+              {
+                id: "formula-columns",
+                key: "formula_columns",
+                label: "Columns you can reference as {Name}",
+                value: siblingFields.map((f) => `{${f.display_name}}`).join(", ") || "(none)",
+              },
+              {
+                id: "formula-functions",
+                key: "formula_functions",
+                label: "Formula language",
+                value: FORMULA_FUNCTIONS.map((fn) => `${fn.signature} — ${fn.description}`).join("\n") +
+                  "\nOperators: + - * / % for numbers, & joins text, = != < <= > >= compare. Text in double quotes.",
+              },
+              {
+                id: "formula-current",
+                key: "formula_current",
+                label: "The formula as it stands",
+                value: expression || "(empty)",
+              },
+            ]}
           />
           <p
             className={cn(
@@ -182,6 +256,7 @@ export function FormulaExpressionEditor({
         )}
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {purpose === "column" && (
           <div className="space-y-1.5">
             <Label className="text-xs">Result shows as</Label>
             <Select
@@ -201,13 +276,21 @@ export function FormulaExpressionEditor({
               </SelectContent>
             </Select>
           </div>
+          )}
           <div className="space-y-1.5">
             <Label className="text-xs">Functions</Label>
             <div className="max-h-28 overflow-y-auto rounded border border-border p-1.5 text-[11px] leading-5 text-muted-foreground">
               {FORMULA_FUNCTIONS.map((fn) => (
-                <div key={fn.name} title={fn.description}>
+                <button
+                  key={fn.name}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => insertFunction(fn.name)}
+                  title={`${fn.description} — click to insert`}
+                  className="block w-full rounded px-1 text-left hover:bg-accent"
+                >
                   <span className="font-mono text-foreground">{fn.signature}</span>
-                </div>
+                </button>
               ))}
             </div>
           </div>
