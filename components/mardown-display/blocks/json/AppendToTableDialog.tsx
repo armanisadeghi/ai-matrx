@@ -19,9 +19,9 @@ import {
 } from "@/components/ui/select";
 import { Loader2, ExternalLink, AlertTriangle, ArrowRight } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { supabase } from "@/utils/supabase/client";
-import { getTableDetails } from "@/utils/user-table-utls/table-utils";
 import type { TableField } from "@/utils/user-table-utls/table-utils";
+import { listTablesEverywhere, readTableDetails } from "@/features/data-tables/service";
+import { locateTable } from "@/features/data-tables/data-source/where-a-table-is-born";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { autoMapColumns, SKIP } from "@/features/data-tables/reconcile";
@@ -100,17 +100,12 @@ export const AppendToTableDialog: React.FC<AppendToTableDialogProps> = ({
       setTablesLoading(true);
       setTablesError(null);
       try {
-        const { data, error: rpcError } = await supabase.rpc("get_user_tables");
-        if (rpcError) throw rpcError;
-        const payload = data as unknown as {
-          success: boolean;
-          error?: string;
-          tables?: UserTableSummary[];
-        };
-        if (!payload.success) {
-          throw new Error(payload.error || "Failed to load tables");
+        // Older tables AND the organization's record-store Tables (lane INTEG-CLIENTS F1).
+        const listed = await listTablesEverywhere();
+        if (!listed.success) throw new Error(listed.error || "Failed to load tables");
+        if (!cancelled) {
+          setTables(listed.data.map((t) => ({ ...t, description: t.description ?? "" })));
         }
-        if (!cancelled) setTables(payload.tables || []);
       } catch (err) {
         if (!cancelled) {
           setTablesError(
@@ -138,7 +133,9 @@ export const AppendToTableDialog: React.FC<AppendToTableDialogProps> = ({
       setFieldsLoading(true);
       setFieldsError(null);
       try {
-        const result = await getTableDetails(supabase, selectedTableId);
+        const located = await locateTable(selectedTableId);
+        if (!located.ok) throw new Error(located.error);
+        const result = await readTableDetails(selectedTableId);
         if (!result.success || !result.fields) {
           throw new Error(result.error || "Failed to load table details");
         }

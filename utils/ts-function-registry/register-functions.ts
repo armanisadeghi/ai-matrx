@@ -3,7 +3,17 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { registerFunction, FunctionDependencies } from './function-registry';
 import { createSchemaTemplate, getSchemaTemplates, getSchemaTemplateById, deleteSchemaTemplate, updateSchemaTemplate, CreateTemplateParams } from '../user-table-utls/template-utils';
-import { createTable, addColumn, getTableDetails, addRow, CreateTableParams, AddColumnParams, AddRowParams } from '../user-table-utls/table-utils';
+import type { CreateTableParams, AddColumnParams, AddRowParams } from '../user-table-utls/table-utils';
+// Through the data seam (lane INTEG-CLIENTS): a table is born where its organization keeps
+// tables, and an existing one is located before anything reads or writes it.
+import { addTableColumn, addTableRow, createTable, readTableDetails } from '@/features/data-tables/service';
+import { locateTable } from '@/features/data-tables/data-source/where-a-table-is-born';
+
+async function located<T>(tableId: string, then: () => Promise<T>): Promise<T | { success: false; error: string }> {
+  const where = await locateTable(tableId);
+  if (!where.ok) return { success: false, error: where.error };
+  return then();
+}
 
 /**
  * Every registered function here declares `['supabase']` as its required
@@ -225,7 +235,8 @@ export function registerDatabaseFunctions() {
       returnType: 'CreateTableResult'
     },
     async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
-      return await createTable(requireSupabase(dependencies), asParams<CreateTableParams>(params));
+      requireSupabase(dependencies);
+      return await createTable(asParams<CreateTableParams>(params));
     },
     ['supabase']
   );
@@ -277,7 +288,9 @@ export function registerDatabaseFunctions() {
       returnType: 'AddColumnResult'
     },
     async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
-      return await addColumn(requireSupabase(dependencies), asParams<AddColumnParams>(params));
+      requireSupabase(dependencies);
+      const args = asParams<AddColumnParams>(params);
+      return await located(args.tableId, () => addTableColumn(args));
     },
     ['supabase']
   );
@@ -299,7 +312,9 @@ export function registerDatabaseFunctions() {
       returnType: 'GetTableResult'
     },
     async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
-      return await getTableDetails(requireSupabase(dependencies), params.tableId as string);
+      requireSupabase(dependencies);
+      const tableId = params.tableId as string;
+      return await located(tableId, () => readTableDetails(tableId));
     },
     ['supabase']
   );
@@ -327,7 +342,9 @@ export function registerDatabaseFunctions() {
       returnType: 'AddRowResult'
     },
     async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
-      return await addRow(requireSupabase(dependencies), asParams<AddRowParams>(params));
+      requireSupabase(dependencies);
+      const args = asParams<AddRowParams>(params);
+      return await located(args.tableId, () => addTableRow(args));
     },
     ['supabase']
   );

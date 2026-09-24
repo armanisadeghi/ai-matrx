@@ -22,12 +22,10 @@ import {
 } from "@/components/ui/select";
 import { Loader2, ExternalLink } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { supabase } from "@/utils/supabase/client";
-import {
-  createTable,
-  addRow,
-  VALID_DATA_TYPES,
-} from "@/utils/user-table-utls/table-utils";
+import { VALID_DATA_TYPES } from "@/utils/user-table-utls/table-utils";
+// The seam's one birth and row write (lane INTEG-CLIENTS): the record store for an
+// organization whose tables moved, the older store otherwise.
+import { addTableRow as addRow, createTable } from "@/features/data-tables/service";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import {
   analyzeData,
@@ -122,7 +120,7 @@ export const JsonToTableDialog: React.FC<JsonToTableDialogProps> = ({
     setError(null);
 
     try {
-      const create = await createTable(supabase, {
+      const create = await createTable({
         tableName: tableName.trim(),
         description:
           description.trim() ||
@@ -159,7 +157,7 @@ export const JsonToTableDialog: React.FC<JsonToTableDialogProps> = ({
             payload[sanitizedKey] = row[origKey];
           }
         }
-        const res = await addRow(supabase, {
+        const res = await addRow({
           tableId: create.tableId,
           data: payload,
         });

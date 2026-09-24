@@ -29,7 +29,7 @@ import type { FieldFormatConfig } from "@/lib/field-formats/types";
 
 import { rewriteFormulaReferences } from "./formulas";
 import * as recordStore from "./data-source/record-store";
-import { recordStoreHomeOf } from "./data-source/table-home";
+import { placeTableInRecordStore, recordStoreHomeOf } from "./data-source/table-home";
 import { recordChangeActions } from "./data-source/record-store-grid";
 import { recordChangeTrigger } from "@ai-matrx/records";
 
@@ -40,11 +40,17 @@ import { unwrapUserTableMutation } from "@/utils/user-tables-rpc";
 import {
   addColumn as addColumnToOlderTable,
   addRow as addRowToOlderTable,
+  createTable as createOlderTable,
   getTableDetails as getOlderTableDetails,
   type AddColumnParams,
   type AddColumnResult,
+  type CreateTableParams,
+  type CreateTableResult,
   type GetTableResult,
 } from "@/utils/user-table-utls/table-utils";
+import { whereANewTableIsBorn } from "./data-source/where-a-table-is-born";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import type {
   BulkOp,
   BulkWriteResponse,
@@ -1194,6 +1200,44 @@ export async function deleteRow(args: {
 }
 
 /**
+ * EVERY TABLE A "SAVE INTO A TABLE" PICKER MAY OFFER (lane INTEG-CLIENTS, CUTOVER-PLAN F1).
+ * The person's older tables AND the active organization's record-store Tables, one list,
+ * de-duplicated by id (a moved table keeps its id, and its archived older copy is not in
+ * `get_user_tables`). Picking a store table works because the save paths `locateTable`
+ * before they write. A store that could not be listed is said, never hidden: the older list
+ * still answers, and the reason is logged with the store's own sentence.
+ */
+export async function listTablesEverywhere(args: { organizationId?: string | null } = {}): Promise<
+  ServiceResult<UserTableListItem[]>
+> {
+  const older = await listUserTables();
+  let organizationId: string;
+  try {
+    organizationId = await ensureOrgId(args.organizationId ?? null);
+  } catch {
+    return older;
+  }
+  const { data: session } = await supabase.auth.getSession();
+  const store = await recordStore.listTables({
+    store: "record",
+    organizationId,
+    userId: session.session?.user?.id ?? null,
+  });
+  if (!store.success) {
+    console.warn(`[data-tables] The record store's tables could not be listed, so only older tables are offered: ${store.error}`);
+    return older;
+  }
+  const seen = new Set<string>();
+  const merged: UserTableListItem[] = [];
+  for (const t of [...store.data, ...(older.success ? older.data : [])]) {
+    if (seen.has(t.id)) continue;
+    seen.add(t.id);
+    merged.push(t as UserTableListItem);
+  }
+  return { success: true, data: merged };
+}
+
+/**
  * The tables a header's switcher lists while `tableId` is open. An older table
  * lists the person's older tables, as it always did; a record-store table lists
  * those AND its organization's record-store Tables, because both open here now.
@@ -1357,6 +1401,48 @@ export async function addTableColumn(
   const home = recordStoreHomeOf(params.tableId);
   if (home) return recordStore.addColumn(home, params);
   return addColumnToOlderTable(supabase, params);
+}
+
+/**
+ * MAKE A NEW TABLE, OUTSIDE THE GRID (lane INTEG-CLIENTS, CUTOVER-PLAN F4/F5). The ONE
+ * birth every "save this as a table" caller uses — a chat answer, a CSV or JSON block, a
+ * canvas table, a page extraction, the zip heatmap, the ts-function registry. It asks where
+ * this organization's tables live (`whereANewTableIsBorn`): a moved organization's table is
+ * born in the record store and PLACED there, so the caller's next `bulkWrite` /
+ * `addTableRow` / `addTableColumn` / `readTableDetails` on the new id reaches the store; an
+ * unmoved organization's table is born in the older store exactly as before. Same result
+ * shape either way — `{ success, tableId, error }` — so no caller changes what it reads.
+ */
+export async function createTable(params: CreateTableParams): Promise<CreateTableResult> {
+  if (!params.tableName.trim()) return { success: false, error: "Table name is required" };
+  let born: Awaited<ReturnType<typeof whereANewTableIsBorn>>;
+  try {
+    born = await whereANewTableIsBorn(params.organizationId ?? null);
+  } catch (err) {
+    // `ensureOrgId` throws when the person closes the organization picker — a decision.
+    return { success: false, error: err instanceof Error ? err.message : String(err) };
+  }
+  if (!born.ok) return { success: false, error: born.error };
+  if (born.store === "older") {
+    return createOlderTable(supabase, { ...params, organizationId: born.organizationId });
+  }
+  const made = await recordStore.createTable(born.home, {
+    tableName: params.tableName.trim(),
+    description: params.description,
+    // The SAME sanitizing the older door's caller contract promises (`createTable` in
+    // table-utils): callers key their rows by `sanitizeFieldName(header)`.
+    fields: (params.fields ?? []).map((f) => ({
+      field_name: sanitizeFieldName(f.field_name),
+      display_name: f.display_name,
+      data_type: f.data_type,
+      field_order: f.field_order,
+      is_required: f.is_required,
+    })),
+  });
+  if (!made.success || !made.tableId) return { success: false, error: made.error ?? "The table was not created." };
+  placeTableInRecordStore(made.tableId, { organizationId: born.home.organizationId, userId: born.home.userId });
+  if (made.warning) console.warn(`[data-tables] ${made.warning}`);
+  return { success: true, tableId: made.tableId };
 }
 
 export async function readTableDetails(tableId: string): Promise<GetTableResult> {

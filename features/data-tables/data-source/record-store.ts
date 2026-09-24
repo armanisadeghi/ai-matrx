@@ -40,7 +40,7 @@ import type {
   RowAction as StoreRowAction,
   TableDecorations as StoreDecorations,
 } from "@ai-matrx/records";
-import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { declareTable, personActor, recordsDataSource, type NewFieldSpec } from "@ai-matrx/records-ui";
 
 import { createClient } from "@/utils/supabase/client";
 import type { FieldChoice } from "@/lib/field-formats/types";
@@ -1374,6 +1374,69 @@ export async function addColumn(
   invalidateRecordStoreTable(args.tableId);
   if (!made.ok) return { success: false, error: made.error.message };
   return { success: true, columnId: made.data };
+}
+
+// ─── a table born outside the grid (lane INTEG-CLIENTS) ─────────────────────
+
+/** The older storage type a "save as a table" caller names → the store's word for the column. */
+function newFieldTypeFor(dataType: string): Pick<NewFieldSpec, "type" | "multi" | "config"> {
+  switch (dataType) {
+    case "number":
+    case "integer":
+      return { type: "number" };
+    case "boolean":
+      return { type: "checkbox" };
+    case "date":
+    case "datetime":
+      return { type: "datetime" };
+    case "json":
+      return { type: "long_text" };
+    case "array":
+      return { type: "text", multi: true };
+    default:
+      return { type: "text" };
+  }
+}
+
+/**
+ * Make a NEW Table in the record store with its columns, through `declareTable` — the
+ * records-ui primitive the /data-v2 "New table" button uses, so a table saved from a chat
+ * answer and a table made on the tables page are the same kind of thing. The older
+ * `description` is written onto the Table record afterwards (the declaration has no slot);
+ * a table whose description was refused is still made and says so in `warning`.
+ */
+export async function createTable(
+  home: RecordStoreHome,
+  args: {
+    tableName: string;
+    description?: string;
+    fields: Array<{ field_name: string; display_name: string; data_type: string; field_order: number; is_required: boolean }>;
+  },
+): Promise<{ success: boolean; tableId?: string; error?: string; warning?: string }> {
+  const client = clientFor(home);
+  const fields: NewFieldSpec[] = [...args.fields]
+    .sort((a, b) => a.field_order - b.field_order)
+    .map((f, i) => ({
+      key: f.field_name,
+      label: f.display_name || f.field_name,
+      sort: (i + 1) * 100,
+      // A title a person must fill before a record may exist would refuse every paste of a
+      // row with an empty first cell; `declareTable` explains why the first field is never
+      // demanded (records-ui DEFAULT_FIELDS). An organization demands it in the field editor.
+      required: false,
+      ...newFieldTypeFor(f.data_type),
+    }));
+  const declared = await declareTable(client, {
+    name: args.tableName,
+    ...(fields.length > 0 ? { fields, titleField: fields[0]!.key } : {}),
+  });
+  if (!declared.ok) return { success: false, error: declared.error.message };
+  let warning: string | undefined;
+  if (args.description && args.description.trim()) {
+    const described = await client.recordUpdate({ record_id: declared.data, patch: { description: args.description.trim() } });
+    if (!described.ok) warning = `The table was made, but its description was not saved: ${described.error.message}`;
+  }
+  return { success: true, tableId: declared.data, ...(warning ? { warning } : {}) };
 }
 
 /** The Add Row form's column list: this table's columns as the store holds them. */

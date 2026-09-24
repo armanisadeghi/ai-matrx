@@ -13,16 +13,10 @@
  *
  * See `features/data-tables/FEATURE.md`.
  */
-import { supabase } from "@/utils/supabase/client";
-
-import { addColumn } from "@/utils/user-table-utls/table-utils";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
-import {
-  isPaginatedDataRow,
-  unwrapGetUserTableDataPaginatedRows,
-} from "@/utils/user-tables-rpc";
 
-import { bulkWrite } from "./service";
+import { addTableColumn, bulkWrite, getTablePage } from "./service";
+import { locateTable } from "./data-source/where-a-table-is-born";
 import { isBulkOpError, isServiceFailure, type BulkOp } from "./types";
 import {
   findDuplicates,
@@ -46,20 +40,13 @@ export interface ExistingRow {
 export async function fetchExistingRows(
   tableId: string,
 ): Promise<ExistingRow[]> {
-  const { data, error } = await supabase.rpc(
-    "get_user_table_data_paginated_v2",
-    {
-      p_table_id: tableId,
-      p_limit: EXISTING_ROW_FETCH_CAP,
-      p_offset: 0,
-      p_sort_field: undefined,
-      p_sort_direction: "asc",
-      p_search_term: undefined,
-    },
-  );
-  if (error) throw error;
-  const rows = unwrapGetUserTableDataPaginatedRows(data);
-  return rows.filter(isPaginatedDataRow);
+  // Through the seam (lane INTEG-CLIENTS): a moved table's rows are read from the
+  // record store, never from the archived older copy the move left behind.
+  const located = await locateTable(tableId);
+  if (!located.ok) throw new Error(located.error);
+  const page = await getTablePage({ tableId, limit: EXISTING_ROW_FETCH_CAP, offset: 0 });
+  if (!page.success) throw new Error(page.error);
+  return page.data.rows;
 }
 
 export interface SaveToTableResult {
@@ -110,7 +97,7 @@ async function addNewColumns(
       fieldName = `${base}_${suffix++}`;
     }
 
-    const addResult = await addColumn(supabase, {
+    const addResult = await addTableColumn({
       tableId,
       fieldName,
       displayName: header,
@@ -159,6 +146,13 @@ export async function appendToTable(
   const result = emptyResult();
 
   try {
+    // Place the table in whichever store holds it BEFORE the first write, so every
+    // seam call below dispatches there (lane INTEG-CLIENTS, CUTOVER-PLAN F6).
+    const located = await locateTable(tableId);
+    if (!located.ok) {
+      result.error = located.error;
+      return result;
+    }
     const { mapping, columnsAdded } = await addNewColumns(
       tableId,
       baseMapping,
@@ -247,6 +241,11 @@ export async function replaceTable(
   const result = emptyResult();
 
   try {
+    const located = await locateTable(tableId);
+    if (!located.ok) {
+      result.error = located.error;
+      return result;
+    }
     const { mapping, columnsAdded } = await addNewColumns(
       tableId,
       baseMapping,

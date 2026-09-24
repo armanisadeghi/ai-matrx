@@ -1,6 +1,8 @@
 /**
- * createDatasetFromTable — create a NEW `udt_datasets` table from already-parsed
- * tabular data (headers + rows), in ONE place.
+ * createDatasetFromTable — create a NEW table from already-parsed tabular data
+ * (headers + rows), in ONE place. Born through the data seam's `createTable`
+ * (lane INTEG-CLIENTS): in the record store for an organization whose tables
+ * moved, in the older store otherwise — and the rows follow it there.
  *
  * The chat table artifact's one-click "Convert to table", any "save this table
  * as a real dataset" caller, and (future) CSV/JSON imports share this — no
@@ -12,13 +14,9 @@
  * write-into-EXISTING-table sibling).
  */
 
-import { supabase } from "@/utils/supabase/client";
-import {
-  createTable,
-  type FieldDefinition,
-} from "@/utils/user-table-utls/table-utils";
+import type { FieldDefinition } from "@/utils/user-table-utls/table-utils";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
-import { bulkWrite } from "./service";
+import { bulkWrite, createTable } from "./service";
 import { isBulkOpError, isServiceFailure, type BulkOp } from "./types";
 import { resolveUniqueDatasetName } from "./resolve-unique-dataset-name";
 
@@ -31,12 +29,14 @@ export interface CreateDatasetFromTableArgs {
   /** Rows keyed by display header (e.g. `ParsedTable.normalizedData`). */
   rows: Array<Record<string, unknown>>;
   isPublic?: boolean;
+  /** The organization the table belongs to; absent → the active one (`ensureOrgId` holds). */
+  organizationId?: string | null;
 }
 
 /** Flat result (mirrors `SaveToTableResult`): `error`/`tableId` always accessible. */
 export interface CreateDatasetResult {
   success: boolean;
-  /** The new `udt_datasets` id (present on success; also on a rows-failed partial). */
+  /** The new table's id (present on success; also on a rows-failed partial). */
   tableId?: string;
   inserted: number;
   error?: string;
@@ -45,7 +45,7 @@ export interface CreateDatasetResult {
 export async function createDatasetFromTable(
   args: CreateDatasetFromTableArgs,
 ): Promise<CreateDatasetResult> {
-  const { name, description, headers, rows, isPublic = false } = args;
+  const { name, description, headers, rows, isPublic = false, organizationId = null } = args;
   if (headers.length === 0)
     return { success: false, inserted: 0, error: "Table has no columns" };
 
@@ -73,12 +73,13 @@ export async function createDatasetFromTable(
     name.trim() || "Untitled table",
   );
 
-  const created = await createTable(supabase, {
+  const created = await createTable({
     tableName: uniqueName,
     description: description ?? "",
     isPublic,
     authenticatedRead: false,
     fields,
+    organizationId,
   });
   if (!created.success || !created.tableId) {
     return {

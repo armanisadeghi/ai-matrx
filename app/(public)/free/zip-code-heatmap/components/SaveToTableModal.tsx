@@ -13,8 +13,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { supabase } from '@/utils/supabase/client';
-import { createTable, addRow } from '@/utils/user-table-utls/table-utils';
+// The seam's one birth and row write (lane INTEG-CLIENTS): the record store for an
+// organization whose tables moved, the older store otherwise.
+import { addTableRow as addRow, createTable } from '@/features/data-tables/service';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ZipCodeData } from '../page';
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -53,7 +54,7 @@ export default function SaveToTableModal({
       setError(null);
 
       // Create the table with two fields: zip_code and count
-      const createResult = await createTable(supabase, {
+      const createResult = await createTable({
         tableName: tableName.trim(),
         description: description.trim() || `Zip code heatmap data - ${data.length} records`,
         isPublic: false,
@@ -84,7 +85,7 @@ export default function SaveToTableModal({
 
       // Insert all rows
       for (const item of data) {
-        const rowResult = await addRow(supabase, {
+        const rowResult = await addRow({
           tableId,
           data: {
             zip_code: item.zipCode,

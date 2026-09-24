@@ -37,14 +37,10 @@ import {
 import { useToastManager } from "@/hooks/useToastManager";
 import { cn } from "@/lib/utils";
 import { MultiStepLoader } from "@/components/ui/multi-step-loader";
-import { supabase } from "@/utils/supabase/client";
-import {
-  createTable,
-  addRow,
-  getTableDetails,
-  type FieldDefinition,
-  type TableField,
-} from "@/utils/user-table-utls/table-utils";
+import type { FieldDefinition, TableField } from "@/utils/user-table-utls/table-utils";
+import { bulkWrite, createTable, listTablesEverywhere, readTableDetails } from "@/features/data-tables/service";
+import { isBulkOpError, isServiceFailure, type BulkOp } from "@/features/data-tables/types";
+import { locateTable } from "@/features/data-tables/data-source/where-a-table-is-born";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -205,17 +201,12 @@ const SaveTableModal: React.FC<SaveTableModalProps> = ({
       setTablesLoading(true);
       setTablesError(null);
       try {
-        const { data, error } = await supabase.rpc("get_user_tables");
-        if (error) throw error;
-        const payload = data as unknown as {
-          success: boolean;
-          error?: string;
-          tables?: UserTableSummary[];
-        };
-        if (!payload.success) {
-          throw new Error(payload.error || "Failed to load tables");
+        // Older tables AND the organization's record-store Tables (lane INTEG-CLIENTS F1).
+        const listed = await listTablesEverywhere();
+        if (!listed.success) throw new Error(listed.error || "Failed to load tables");
+        if (!cancelled) {
+          setTables(listed.data.map((t) => ({ ...t, description: t.description ?? "" })));
         }
-        if (!cancelled) setTables(payload.tables || []);
       } catch (err) {
         if (!cancelled) {
           setTablesError(
@@ -242,7 +233,10 @@ const SaveTableModal: React.FC<SaveTableModalProps> = ({
       setFieldsLoading(true);
       setFieldsError(null);
       try {
-        const result = await getTableDetails(supabase, selectedTableId);
+        // Through the seam (lane INTEG-CLIENTS): a moved table's columns come from the store.
+        const located = await locateTable(selectedTableId);
+        if (!located.ok) throw new Error(located.error);
+        const result = await readTableDetails(selectedTableId);
         if (!result.success || !result.fields) {
           throw new Error(result.error || "Failed to load table details");
         }
@@ -321,7 +315,9 @@ const SaveTableModal: React.FC<SaveTableModalProps> = ({
         }),
       );
 
-      const createResult = await createTable(supabase, {
+      // The seam's one birth (lane INTEG-CLIENTS): the record store for an organization
+      // whose tables moved, the older store otherwise — and the rows follow the table.
+      const createResult = await createTable({
         tableName: tableName.trim(),
         description: tableDescription.trim(),
         isPublic: false,
@@ -341,24 +337,24 @@ const SaveTableModal: React.FC<SaveTableModalProps> = ({
         ]),
       );
 
-      const insertResults = await Promise.all(
-        tableData.map((row) => {
-          const payload: Record<string, unknown> = {};
-          for (const [key, value] of Object.entries(row)) {
-            const fieldName =
-              headerToFieldName.get(key) ?? sanitizeFieldName(key);
-            if (fieldName) payload[fieldName] = value;
-          }
-          return addRow(supabase, { tableId, data: payload });
-        }),
-      );
-
-      const failedCount = insertResults.filter((r) => !r.success).length;
+      const operations: BulkOp[] = tableData.map((row) => {
+        const payload: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(row)) {
+          const fieldName = headerToFieldName.get(key) ?? sanitizeFieldName(key);
+          if (fieldName) payload[fieldName] = value;
+        }
+        return { op: "insert", data: payload };
+      });
+      const written = await bulkWrite({ tableId, operations });
+      if (isServiceFailure(written)) {
+        throw new Error(`Table "${tableName.trim()}" was created, but its rows were not saved: ${written.error}`);
+      }
+      const failedCount = written.data.results.filter((r) => isBulkOpError(r)).length;
       if (failedCount > 0) {
-        const firstError = insertResults.find((r) => !r.success)?.error;
+        const firstError = written.data.results.find((r) => isBulkOpError(r));
         toast.warning(
           `${failedCount} of ${rowCount} row(s) failed to save${
-            firstError ? `: ${firstError}` : ""
+            firstError && isBulkOpError(firstError) ? `: ${firstError.error}` : ""
           }`,
         );
       }

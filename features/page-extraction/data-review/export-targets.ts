@@ -20,17 +20,15 @@ import { CellValueType } from "@univerjs/core";
 import type { ICellData, IWorkbookData, IWorksheetData } from "@univerjs/core";
 import { LocaleType } from "@univerjs/presets";
 
-import { supabase } from "@/utils/supabase/client";
 import {
   createWorkbook,
   saveSnapshot,
 } from "@/features/data-tables/workbook-service";
 import { isServiceFailure } from "@/features/data-tables/types";
-import {
-  addRow,
-  createTable,
-  type FieldDefinition,
-} from "@/utils/user-table-utls/table-utils";
+import type { FieldDefinition } from "@/utils/user-table-utls/table-utils";
+// The seam's one birth and row write (lane INTEG-CLIENTS): the record store for an
+// organization whose tables moved, the older store otherwise.
+import { addTableRow as addRow, createTable } from "@/features/data-tables/service";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import { cellToString, type ExportColumn, type ExportRow } from "./export";
 import type { ColumnType } from "@/features/page-extraction/types";
@@ -168,7 +166,7 @@ export async function pushToDataset(
       is_required: false,
     }));
 
-    const created = await createTable(supabase, {
+    const created = await createTable({
       tableName: name,
       description: "Created from a PDF extraction dataset",
       fields,
@@ -194,7 +192,7 @@ export async function pushToDataset(
             const v = r[c.key];
             if (v !== undefined) data[keyToField.get(c.key) ?? c.key] = v;
           }
-          return addRow(supabase, { tableId: created.tableId!, data });
+          return addRow({ tableId: created.tableId!, data });
         }),
       );
       failures += results.filter((res) => !res.success).length;
