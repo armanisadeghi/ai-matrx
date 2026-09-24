@@ -38,7 +38,18 @@ const pass = (clause, ok, said) => {
 };
 
 async function renderMarkdown(page, md, marker) {
-  await page.goto(`${ORIGIN}/demos/api-tests/block-processing`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  // A navigation the previous step left in flight (the Quick Data window pushes a route) aborts
+  // the next goto with ERR_ABORTED; that is not the screen failing, so it is retried, and said.
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      await page.goto(`${ORIGIN}/demos/api-tests/block-processing`, { waitUntil: "domcontentloaded", timeout: 180000 });
+      break;
+    } catch (e) {
+      if (attempt >= 3 || !String(e).includes("ERR_ABORTED")) throw e;
+      console.log(`RETRY goto block-processing (${attempt}): ${String(e).split("\n")[0]}`);
+      await sleep(3000);
+    }
+  }
   const ta = page.locator("textarea").first();
   await ta.waitFor({ timeout: 120000 });
   await sleep(2500);
@@ -203,7 +214,10 @@ try {
   );
   await test.screenshot({ path: `${OUT}/07-test-seat-picker.png` });
   console.log(`TEST_PICKER=${JSON.stringify(testOptions.v ?? [])}`);
-  pass("test-picker-lists-store-tables", (testOptions.v ?? []).length > 0, `${(testOptions.v ?? []).length} table(s) offered`);
+  // Only a TABLE option carries "<n> rows · <m> cols"; the organization switcher's own options can
+  // still be in the DOM behind the dialog, so they are not counted as tables.
+  const testTables = (testOptions.v ?? []).filter((t) => /\d+ rows? · \d+ cols?/.test(t));
+  pass("test-picker-lists-store-tables", testTables.length > 0, `${testTables.length} table(s) offered: ${testTables.join(" | ")}`);
   await test.keyboard.press("Escape");
 } finally {
   await browser.close();
