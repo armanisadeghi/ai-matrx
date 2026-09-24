@@ -59,7 +59,7 @@ import {
   educationLearnAuthoringManifest,
 } from "@/features/surfaces/manifests/education-learn-authoring.manifest";
 import { eduHref } from "../../constants";
-import { SectionRenderer } from "../../components/sections/SectionRenderer";
+import { SectionRendererPreview } from "../../components/sections/SectionRendererPreview";
 import { SectionBlockEditor } from "./SectionBlockEditor";
 import {
   deleteLearnDocAction,
@@ -964,7 +964,7 @@ function LearnDocEditor({
               </div>
               <div className="scale-[0.85] origin-top">
                 {authoredSections.ok ? (
-                  <SectionRenderer sections={authoredSections.sections ?? []} />
+                  <SectionRendererPreview sections={authoredSections.sections ?? []} />
                 ) : (
                   <div className="p-6 text-sm text-destructive">
                     Fix the incomplete content block to preview.
