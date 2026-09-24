@@ -1,7 +1,12 @@
 -- chair-step: the inverse of uichamp_s3_a_number_knows_last_month_and_its_target.sql. It DROPS
 --   the widened `custom.record_aggregate` (9 arguments), `custom.dashboard_run` (5) and
---   `custom.agg_sql` (9) and CREATES each again byte for byte as the main database held it before
---   (2026-09-23), re-points the two `platform.client_callable_door` rows at the old identities,
+--   `custom.agg_sql` (9) and CREATES each again byte for byte as they stood before the up file:
+--   `record_aggregate` and `agg_sql` as lane S2-PRIME's
+--   filtergroups_a_views_nested_question_is_one_where_clause.sql left them (the up file is applied
+--   on top of S2-PRIME), `dashboard_run` and `dashboard_block_normalize` as production held them
+--   (2026-09-23). Run S2-PRIME's filtergroups_the_compared_aggregate_asks_the_one_fragment_down.sql
+--   FIRST when that follow-up is applied, or the based-on lines below refuse this file by name.
+--   It re-points the two `platform.client_callable_door` rows at the old identities,
 --   puts `custom.dashboard_block_normalize` back, drops the nine helper functions and deletes the
 --   two knob rows. WHAT IT UNDOES: a comparison, a date-grain override and a target are refused
 --   again ("function … does not exist" for the new arguments); buckets are cut in UTC with ISO
@@ -134,7 +139,8 @@ begin
     p_organization_id, p_table_id,
     custom.visible_predicate_sql(custom.query_principal(), p_organization_id, p_table_id,
                                  p_required::public.permission_level, 'r'),
-    custom.record_filter_sql(p_filter),
+    -- S2-PRIME FILTER-GROUPS: the one fragment, in either shape (flat map or Rule expression).
+    custom.record_filter_sql(p_organization_id, p_table_id, p_filter),
     case when cardinality(v_group_sel) = 0 then ''
          else 'group by ' || (select string_agg(i::text, ', ')
                                 from generate_subscripts(v_group_sel, 1) i) end,
@@ -142,9 +148,7 @@ begin
 
   return v_sql;
 end;
-$function$
-
-;
+$function$;
 
 comment on function custom.agg_sql(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text) is
   'W4-AGG / AGT-N-8: the ONE statement the eighth verb runs. A filter value that is a scalar is an equality; one that is an object is a half-open moment window (DASHBOARDS, 2026-09-20) — both in the same WHERE as Visibility, below the aggregate node.';
@@ -167,7 +171,10 @@ begin
   v_map := custom.choice_field_map(p_organization_id, p_table_id);
 
   for v_row in execute custom.agg_sql(p_organization_id, p_table_id, p_group_by, p_measures,
-                                      p_bucket, custom.choice_filter_normalize(v_map, p_filter),
+                                      p_bucket,
+                                      -- S2-PRIME: a Rule expression passes through to the one fragment; a flat map is normalised.
+                                      case when custom.filter_is_rule(p_filter) then p_filter
+                                           else custom.choice_filter_normalize(v_map, p_filter) end,
                                       p_limit, p_required) loop
     groups    := custom.choice_render_groups(v_map, v_row.groups);
     measures  := v_row.measures;
@@ -175,9 +182,7 @@ begin
     return next;
   end loop;
 end;
-$function$
-
-;
+$function$;
 
 comment on function custom.record_aggregate(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text) is
   'W4-AGG / AGT-N-8, THE EIGHTH VERB: group, count, sum, avg, min, max and bucket over one Table, computed INSIDE one query whose Visibility join sits below the aggregate node. A row the principal may not see is never fetched, so it can neither be counted nor be inferred from a total.';

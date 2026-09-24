@@ -14,10 +14,15 @@
 --   anybody's data is rewritten. The EXECUTE grant a signed-in person needs on the two
 --   re-created doors is the NEXT file, `uichamp_s3_a_signed_in_person_may_compare_periods.sql`.
 --   The inverse is `migrations/inverse/uichamp_s3_a_number_knows_last_month_and_its_target_down.sql`.
+-- ORDER (chair, 2026-09-24): lane S2-PRIME's filtergroups_a_views_nested_question_is_one_where_clause.sql
+--   and its chair steps FIRST; then this file and its grant; then S2-PRIME's
+--   filtergroups_the_compared_aggregate_asks_the_one_fragment.sql, which puts the one filter
+--   fragment into the two bodies re-created here. The record_aggregate / agg_sql based-on lines
+--   name S2-PRIME's bodies, so this file is refused by name on a database S2-PRIME has not reached.
 -- lane: S3
 -- lock: custom,platform
--- based-on: custom.record_aggregate(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text) 5be78bb8bcd509e3409e9bbab2f8a84c09493f97af5b48d93b398b460c4d81d4
--- based-on: custom.agg_sql(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text) 2fc059996700007178ba555217f1ffc18d39e67a0324efab1463c6792245c964
+-- based-on: custom.record_aggregate(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text) 904ff6baf243e6d5d8e75f8fe05f57af89562466d26bde6e24f006bd7f525b25
+-- based-on: custom.agg_sql(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text) a1bce9b641ed048a72744d72d6ba18122330f47a77a0aad3a3b5cdf2e9aeaaf2
 -- based-on: custom.dashboard_run(uuid, uuid, jsonb) fd4b265ac01f209d8d90d9168a4b515b1f82ae2b4e242b5465ca7e4078ffbdbd
 -- based-on: custom.dashboard_block_normalize(uuid, uuid, jsonb) 8f58721c64583e3c5a4846481af544e3790cce71c2cd97ccace63e9b23d4b92e
 --
