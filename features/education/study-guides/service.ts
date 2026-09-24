@@ -35,7 +35,7 @@ export interface StudyAnnotationInput {
 
 export class StudyAnnotationLinkError extends Error {
   constructor(public readonly note: Note, cause: unknown) {
-    super("Your note was saved in Study annotations, but could not be linked to this guide. Retry to finish linking it.", { cause });
+    super("Your note was saved, but it could not be linked to this guide. Open the saved note to read or edit it.", { cause });
     this.name = "StudyAnnotationLinkError";
   }
 }
@@ -47,7 +47,7 @@ export async function loadStudyGuideIndex(): Promise<NoteListItem[]> {
     ({ from, to }) => supabase.schema("workbench").from("notes")
       .select("id,created_by,label,folder_name,folder_id,tags,updated_at,position,organization_id,visibility,version", { count: "exact" })
       .eq("created_by", userId).is("deleted_at", null)
-      .is("metadata->studyAnnotation", null)
+      .is("custom_fields->studyAnnotation", null)
       .order("updated_at", { ascending: false }).order("id").range(from, to),
     { label: "workbench.notes study guides" },
   );
@@ -70,7 +70,7 @@ export async function loadStudyAnnotations(noteId: string): Promise<Note[]> {
     const batch = await readAllRows(
       ({ from, to }) => supabase.schema("workbench").from("notes").select("*", { count: "exact" })
         .in("id", ids.slice(offset, offset + 100)).eq("created_by", userId)
-        .is("deleted_at", null).not("metadata->studyAnnotation", "is", null)
+        .is("deleted_at", null).not("custom_fields->studyAnnotation", "is", null)
         .order("created_at", { ascending: false }).order("id").range(from, to),
       { label: "workbench.notes study annotations" },
     );
@@ -86,7 +86,9 @@ export async function saveStudyAnnotation(input: StudyAnnotationInput): Promise<
       "Select an organization before sending this request.",
     );
   }
-  if (!input.quote.trim()) throw new Error("Select a passage first.");
+  if (!input.quote.trim() && (input.kind !== "note" || !input.comment?.trim())) {
+    throw new Error(input.kind === "highlight" ? "Select a passage first." : "Write a note before saving.");
+  }
   const userId = requireUserId();
   const note = input.existingAnnotationId
     ? await NotesAPI.getById(input.existingAnnotationId, { failureMode: "throw" })
@@ -96,7 +98,7 @@ export async function saveStudyAnnotation(input: StudyAnnotationInput): Promise<
       organization_id: input.organizationId,
       folder_name: "Study annotations",
       visibility: "personal",
-      metadata: {
+      custom_fields: {
         studyAnnotation: {
           kind: input.kind,
           quote: input.quote,
@@ -106,9 +108,9 @@ export async function saveStudyAnnotation(input: StudyAnnotationInput): Promise<
     });
   if (!note || note.created_by !== userId) throw new Error("The saved note is no longer available.");
   if (input.existingAnnotationId) {
-    const metadata = note.metadata;
-    const annotation = metadata && typeof metadata === "object" && !Array.isArray(metadata) && "studyAnnotation" in metadata
-      ? metadata.studyAnnotation : null;
+    const fields = note.custom_fields;
+    const annotation = fields && typeof fields === "object" && !Array.isArray(fields) && "studyAnnotation" in fields
+      ? fields.studyAnnotation : null;
     if (note.organization_id !== input.organizationId || !annotation || typeof annotation !== "object"
       || Array.isArray(annotation) || !("kind" in annotation) || !("quote" in annotation)
       || annotation.kind !== input.kind || annotation.quote !== input.quote) {

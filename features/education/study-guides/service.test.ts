@@ -63,7 +63,7 @@ function annotationNote(overrides: Partial<Note> = {}): Note {
     folder_id: null,
     folder_name: "Study annotations",
     last_device_id: null,
-    metadata: { studyAnnotation: { kind: "highlight", quote: "A selected passage" } },
+    metadata: {},
     position: null,
     project_id: null,
     sync_version: 1,
@@ -74,7 +74,7 @@ function annotationNote(overrides: Partial<Note> = {}): Note {
     version: 1,
     visibility: "personal",
     ...overrides,
-    custom_fields: overrides.custom_fields ?? {},
+    custom_fields: overrides.custom_fields ?? { studyAnnotation: { kind: "highlight", quote: "A selected passage" } },
   };
 }
 
@@ -110,6 +110,27 @@ beforeEach(() => {
 });
 
 describe("study guide annotations", () => {
+  it("creates a document-level note without a selected passage", async () => {
+    notesCreate.mockResolvedValue(annotationNote());
+    await saveStudyAnnotation({
+      ...annotationInput,
+      kind: "note",
+      quote: "",
+      comment: "My own summary of this guide",
+      anchor: undefined,
+    });
+    expect(notesCreate).toHaveBeenCalledWith(expect.objectContaining({
+      content: "My own summary of this guide",
+      custom_fields: { studyAnnotation: { kind: "note", quote: "", anchor: null } },
+    }));
+    expect(associationAdd).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not create an empty document-level note", async () => {
+    await expect(saveStudyAnnotation({ ...annotationInput, kind: "note", quote: "", comment: "  " })).rejects.toThrow(/write a note/i);
+    expect(notesCreate).not.toHaveBeenCalled();
+  });
+
   it("refuses a missing organization before creating a note or association", async () => {
     await expect(saveStudyAnnotation({ ...annotationInput, organizationId: "" })).rejects.toThrow(/organization/i);
 

@@ -15,6 +15,7 @@ import {
   PanelRight,
   Loader2,
   NotebookPen,
+  Plus,
   Search,
   Send,
 } from "lucide-react";
@@ -25,6 +26,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { AskTutorButton } from "@/features/education/tutor/components/AskTutorButton";
 import { useOpenFeedbackWindow } from "@/features/overlays/openers/feedbackDialog";
 import { useOpenFlashcardItemWindow } from "@/features/overlays/openers/flashcardItemWindow";
+import { useOpenNoteInWindow } from "@/features/notes/actions/useOpenNoteInWindow";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import type { Note, NoteListItem } from "@/features/notes/types";
@@ -71,7 +73,7 @@ interface AnnotationMetadata {
 }
 
 function annotationMetadata(note: Note): AnnotationMetadata {
-  const value = note.metadata;
+  const value = note.custom_fields;
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const candidate = (value as Record<string, unknown>).studyAnnotation;
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return {};
@@ -278,25 +280,56 @@ function OutlineItem({ item, indentLevel, onJump, hasChildren, expanded, onToggl
 
 function AnnotationCard({ annotation }: { annotation: Note }) {
   const data = annotationMetadata(annotation).studyAnnotation;
-  const quote = data?.quote ?? annotation.content ?? "";
-  return <Link href={`/education/notes/${annotation.id}`} className="block rounded-xl border border-border bg-card p-1.5 shadow-sm transition-colors hover:border-primary/40 hover:bg-accent/30">
+  const quote = data?.quote?.trim() || annotation.content || "";
+  const openNote = useOpenNoteInWindow();
+  return <article className="rounded-xl border border-border bg-card p-1.5 shadow-sm transition-colors hover:border-primary/40 hover:bg-accent/30">
     <div className="flex items-center gap-1.5 text-xs font-medium text-primary"><Highlighter className="h-3.5 w-3.5" aria-hidden />{data?.kind === "highlight" ? "Highlight" : "Your note"}</div>
     <p className="mt-1.5 line-clamp-4 text-sm leading-5 text-foreground">{quote}</p>
     {data?.kind === "note" && annotation.content && annotation.content !== quote && <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{annotation.content}</p>}
-  </Link>;
+    <div className="mt-2 flex items-center gap-2">
+      <Button size="sm" variant="outline" onClick={() => openNote({ noteId: annotation.id, title: annotation.label || "Your note" })}>Open & edit</Button>
+      <Link href={`/education/notes/${annotation.id}`} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">Open in new tab</Link>
+    </div>
+  </article>;
 }
 
-function Inspector({ guide, tab, onTabChange, annotations, terms, loading, error, onRetry }: { guide: Note | null; tab: InspectorTab; onTabChange: (tab: InspectorTab) => void; annotations: Note[]; terms: StudyTerm[]; loading: boolean; error: string | null; onRetry: () => void; mobile?: boolean }) {
+function Inspector({ guide, tab, onTabChange, annotations, terms, loading, error, onRetry, onCreateNote }: { guide: Note | null; tab: InspectorTab; onTabChange: (tab: InspectorTab) => void; annotations: Note[]; terms: StudyTerm[]; loading: boolean; error: string | null; onRetry: () => void; onCreateNote: (content: string) => Promise<void>; mobile?: boolean }) {
   const openCard = useOpenFlashcardItemWindow();
   const [query, setQuery] = useState("");
+  const [writingNote, setWritingNote] = useState(false);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [noteError, setNoteError] = useState<string | null>(null);
+  const [savedNoteId, setSavedNoteId] = useState<string | null>(null);
   const visibleTerms = terms.filter((term) => `${term.term} ${term.definition}`.toLowerCase().includes(query.toLowerCase()));
+  const createNote = async () => {
+    if (noteSaving || !noteDraft.trim()) return;
+    setNoteSaving(true);
+    setNoteError(null);
+    try {
+      await onCreateNote(noteDraft.trim());
+      setNoteDraft("");
+      setWritingNote(false);
+      setSavedNoteId(null);
+    } catch (cause) {
+      setNoteError(cause instanceof Error ? cause.message : "Could not save your note. Try again.");
+      setSavedNoteId(cause instanceof StudyAnnotationLinkError ? cause.note.id : null);
+    } finally {
+      setNoteSaving(false);
+    }
+  };
   return <aside className="matrx-touch-targets flex h-full min-h-0 flex-col bg-muted/20">
     <div className="flex border-b border-border pr-8" role="tablist" aria-label="Study guide details">
       <button type="button" role="tab" aria-selected={tab === "notes"} onClick={() => onTabChange("notes")} className={cn("flex-1 border-b-2 px-1 py-2 text-xs font-medium", tab === "notes" ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>Your Notes</button>
       <button type="button" role="tab" aria-selected={tab === "terms"} onClick={() => onTabChange("terms")} className={cn("flex-1 border-b-2 px-1 py-2 text-xs font-medium", tab === "terms" ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>Key Terms</button>
     </div>
     <div role="tabpanel" aria-label={tab === "notes" ? "Your Notes" : "Key Terms"} className="scroll-page-end-space min-h-0 flex-1 overflow-y-auto p-1.5">
-      {loading ? <div className="space-y-3" aria-label="Loading study details">{[0,1,2].map((item) => <div key={item} className="h-24 animate-pulse rounded border border-border bg-muted" />)}</div> : error ? <div role="alert" className="rounded border border-destructive/30 p-3 text-sm"><p>{error}</p><Button className="mt-3" variant="outline" size="sm" onClick={onRetry}>Try again</Button></div> : tab === "notes" ? <div className="grid gap-3">{annotations.length ? annotations.map((annotation) => <AnnotationCard key={annotation.id} annotation={annotation} />) : <p className="px-1 py-8 text-sm text-muted-foreground">Select a passage to highlight it or save a note here.</p>}</div> : <div className="grid gap-3">
+      {tab === "notes" ? <div className="grid gap-3">
+        {guide && <div className="border-b border-border pb-2"><div className="flex flex-wrap items-center gap-2"><Button size="sm" variant="outline" onClick={() => { setNoteError(null); if (savedNoteId) { setSavedNoteId(null); setNoteDraft(""); } setWritingNote((open) => !open); }} aria-expanded={writingNote}><Plus className="mr-1.5 h-3.5 w-3.5" aria-hidden />New note</Button><Button size="sm" variant="ghost" onClick={onRetry}>Refresh</Button><Link href={`/education/notes/${guide.id}`} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground underline-offset-2 hover:underline">Edit guide</Link></div>
+          {writingNote && <div className="mt-2 grid gap-2"><textarea aria-label="New study guide note" value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Write a note about this guide…" className="min-h-24 w-full resize-y rounded-md border border-input bg-background p-2 text-sm" /><div className="flex gap-2"><Button size="sm" disabled={noteSaving || !noteDraft.trim() || Boolean(savedNoteId)} onClick={() => { void createNote(); }}>{noteSaving ? "Saving…" : "Save note"}</Button><Button size="sm" variant="ghost" disabled={noteSaving} onClick={() => setWritingNote(false)}>Cancel</Button></div>{noteError && <p role="alert" className="text-xs text-destructive">{noteError}</p>}{savedNoteId && <Link href={`/education/notes/${savedNoteId}`} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">Open saved note</Link>}</div>}
+        </div>}
+        {loading ? <div className="space-y-3" aria-label="Loading study details">{[0,1,2].map((item) => <div key={item} className="h-24 animate-pulse rounded border border-border bg-muted" />)}</div> : error ? <div role="alert" className="rounded border border-destructive/30 p-3 text-sm"><p>{error}</p><Button className="mt-3" variant="outline" size="sm" onClick={onRetry}>Try again</Button></div> : annotations.length ? annotations.map((annotation) => <AnnotationCard key={annotation.id} annotation={annotation} />) : <p className="px-1 py-8 text-sm text-muted-foreground">Write a note here, or select a passage to highlight or annotate it.</p>}
+      </div> : loading ? <div className="space-y-3" aria-label="Loading study details">{[0,1,2].map((item) => <div key={item} className="h-24 animate-pulse rounded border border-border bg-muted" />)}</div> : error ? <div role="alert" className="rounded border border-destructive/30 p-3 text-sm"><p>{error}</p><Button className="mt-3" variant="outline" size="sm" onClick={onRetry}>Try again</Button></div> : <div className="grid gap-3">
         <Input aria-label="Search key terms" placeholder="Search terms…" value={query} onChange={(event) => setQuery(event.target.value)} className="h-8 text-sm" />
         {visibleTerms.map((term) => <button key={term.id} type="button" onClick={() => openCard({ front: term.term, back: term.definition, title: term.term })} className="rounded border border-border bg-card p-1.5 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-accent/30"><p className="text-xs font-semibold text-primary">{term.term}</p><p className="mt-1.5 text-xs leading-5 text-muted-foreground">{term.definition || "Open card"}</p></button>)}
         {!visibleTerms.length && <p className="py-5 text-sm text-muted-foreground">{terms.length ? "No terms match that search." : "Link a flashcard deck to see its key terms here."}</p>}
@@ -306,7 +339,7 @@ function Inspector({ guide, tab, onTabChange, annotations, terms, loading, error
   </aside>;
 }
 
-function SelectionActions({ selection, guide, onSave, saving, error }: { selection: SelectionSnapshot | null; guide: Note; onSave: (kind: "highlight" | "note", comment?: string) => Promise<void>; saving: boolean; error: string | null }) {
+function SelectionActions({ selection, guide, onSave, saving, error, savedNoteId }: { selection: SelectionSnapshot | null; guide: Note; onSave: (kind: "highlight" | "note", comment?: string) => Promise<void>; saving: boolean; error: string | null; savedNoteId: string | null }) {
   const [noteOpen, setNoteOpen] = useState(false);
   const [comment, setComment] = useState("");
   const openFeedback = useOpenFeedbackWindow();
@@ -314,10 +347,10 @@ function SelectionActions({ selection, guide, onSave, saving, error }: { selecti
   const tutorSeed = { title: guide.label || "Study guide", material: `Study guide: ${guide.label}\n\nSelected passage:\n${selection.quote}` };
   return <div className="fixed z-50" style={{ left: Math.max(12, Math.min(window.innerWidth - 224, selection.rect.left)), top: Math.max(12, Math.min(window.innerHeight - 260, selection.rect.bottom + 10)) }}>
     <div className="w-52 rounded-lg border border-border bg-popover p-1 shadow-lg">
-      <Button size="sm" variant="ghost" className="w-full justify-start" disabled={saving} onClick={() => { void onSave("highlight").catch(() => {}); }}><Highlighter className="mr-2 h-3.5 w-3.5" aria-hidden />Highlight</Button>
+      <Button size="sm" variant="ghost" className="w-full justify-start" disabled={saving || Boolean(savedNoteId)} onClick={() => { void onSave("highlight").catch(() => {}); }}><Highlighter className="mr-2 h-3.5 w-3.5" aria-hidden />Highlight</Button>
       <Popover open={noteOpen} onOpenChange={setNoteOpen}>
-        <PopoverTrigger asChild><Button size="sm" variant="ghost" className="w-full justify-start"><NotebookPen className="mr-2 h-3.5 w-3.5" aria-hidden />Save a note</Button></PopoverTrigger>
-        <PopoverContent sizing="content" className="p-3" align="start"><p className="text-sm font-medium">Save a note about this passage</p><textarea value={comment} className="mt-2 min-h-20 w-full rounded-md border border-input bg-background p-2 text-base" placeholder="What do you want to remember?" onChange={(event) => setComment(event.target.value)} /><Button className="mt-2 w-full" size="sm" disabled={saving} onClick={() => { void onSave("note", comment).then(() => { setComment(""); setNoteOpen(false); }).catch(() => {}); }}>Save note</Button></PopoverContent>
+        <PopoverTrigger asChild><Button size="sm" variant="ghost" className="w-full justify-start" disabled={Boolean(savedNoteId)}><NotebookPen className="mr-2 h-3.5 w-3.5" aria-hidden />Save a note</Button></PopoverTrigger>
+        <PopoverContent sizing="content" className="p-3" align="start"><p className="text-sm font-medium">Save a note about this passage</p><textarea value={comment} className="mt-2 min-h-20 w-full rounded-md border border-input bg-background p-2 text-base" placeholder="What do you want to remember?" onChange={(event) => setComment(event.target.value)} /><Button className="mt-2 w-full" size="sm" disabled={saving || Boolean(savedNoteId)} onClick={() => { void onSave("note", comment).then(() => { setComment(""); setNoteOpen(false); }).catch(() => {}); }}>Save note</Button></PopoverContent>
       </Popover>
       <div className="my-1 h-px bg-border" />
       <AskTutorButton seed={tutorSeed} label="I don't get this" variant="ghost" className="w-full justify-start" />
@@ -325,7 +358,7 @@ function SelectionActions({ selection, guide, onSave, saving, error }: { selecti
       <div className="my-1 h-px bg-border" />
       <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => openFeedback({ title: "Report an issue with this study guide" })}><Send className="mr-2 h-3.5 w-3.5" aria-hidden />Report an issue</Button>
     </div>
-    {error && <p className="mt-1 max-w-64 rounded border border-destructive/30 bg-destructive/10 px-2 py-1.5 text-xs text-destructive">{error}</p>}
+    {error && <div className="mt-1 max-w-64 rounded border border-destructive/30 bg-destructive/10 px-2 py-1.5 text-xs text-destructive"><p>{error}</p>{savedNoteId && <Link href={`/education/notes/${savedNoteId}`} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block underline">Open saved note</Link>}</div>}
   </div>;
 }
 
@@ -334,8 +367,9 @@ function ReaderContent({ guide, annotations, onSaved, onRetry, jumpRequest, onSe
   const [selection, setSelection] = useState<SelectionSnapshot | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [savedNoteId, setSavedNoteId] = useState<string | null>(null);
   useAnnotationHighlights(readerRef, annotations, guide.id);
-  const capture = () => { setSelection(readerRef.current ? selectionFromReader(readerRef.current) : null); setSaveError(null); onSelectionChange(); };
+  const capture = () => { setSelection(readerRef.current ? selectionFromReader(readerRef.current) : null); setSaveError(null); setSavedNoteId(null); onSelectionChange(); };
   useEffect(() => {
     const clearSelectionMenu = () => setSelection(null);
     window.addEventListener("resize", clearSelectionMenu);
@@ -349,8 +383,10 @@ function ReaderContent({ guide, annotations, onSaved, onRetry, jumpRequest, onSe
       window.getSelection()?.removeAllRanges();
       setSelection(null);
       setSaveError(null);
+      setSavedNoteId(null);
     } catch (cause) {
       setSaveError(cause instanceof Error ? cause.message : "Could not save your annotation. Try again.");
+      setSavedNoteId(cause instanceof StudyAnnotationLinkError ? cause.note.id : null);
       throw cause;
     } finally {
       setSaving(false);
@@ -371,7 +407,7 @@ function ReaderContent({ guide, annotations, onSaved, onRetry, jumpRequest, onSe
       </div>
     </div>
     <style jsx global>{`::highlight(study-guide-${guide.id}) { background: color-mix(in srgb, var(--primary) 28%, transparent); color: inherit; }`}</style>
-    <SelectionActions selection={selection} guide={guide} onSave={save} saving={saving} error={saveError} />
+    <SelectionActions selection={selection} guide={guide} onSave={save} saving={saving} error={saveError} savedNoteId={savedNoteId} />
   </main>;
 }
 
@@ -395,6 +431,7 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
   const [outlineJump, setOutlineJump] = useState<{ index: number; nonce: number } | null>(null);
   const [mobilePanel, setMobilePanel] = useState<"guides" | "details" | null>(null);
   const retryAnnotation = useRef<{ id: string; kind: "highlight" | "note"; quote: string } | undefined>(undefined);
+  const retryDocumentNote = useRef<{ id: string; content: string } | undefined>(undefined);
 
   useEffect(() => {
     let stale = false;
@@ -439,11 +476,23 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
     }
   };
 
+  const createDocumentNote = async (content: string) => {
+    if (!guide?.organization_id) throw new Error("This guide does not have an organization available for notes.");
+    try {
+      const saved = await saveStudyAnnotation({ noteId: guide.id, noteTitle: guide.label || "Study guide", quote: "", comment: content, kind: "note", organizationId: guide.organization_id, existingAnnotationId: retryDocumentNote.current?.content === content ? retryDocumentNote.current.id : undefined });
+      retryDocumentNote.current = undefined;
+      setAnnotations((current) => [saved, ...current.filter((annotation) => annotation.id !== saved.id)]);
+    } catch (cause) {
+      if (cause instanceof StudyAnnotationLinkError) retryDocumentNote.current = { id: cause.note.id, content };
+      throw cause;
+    }
+  };
+
   const readerState = loading ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />Loading study guide</div> : error || (initialGuideId && !guide) ? <AccessGate token="note" id={initialGuideId ?? ""} error={error} onRetry={retryGuide} fallbackHref="/education/study-guides" fallbackLabel="Study guides" /> : guide ? <ReaderContent guide={guide} annotations={annotations} onSaved={saveAnnotation} onRetry={retryGuide} jumpRequest={outlineJump} onSelectionChange={() => { retryAnnotation.current = undefined; }} /> : <div className="flex h-full items-center justify-center px-6 text-center"><div><BookOpen className="mx-auto h-8 w-8 text-primary" aria-hidden /><h1 className="mt-3 text-lg font-semibold">Choose a study guide</h1><p className="mt-1 text-sm text-muted-foreground">Select a guide from the left to start reviewing.</p></div></div>;
 
   const reader = loading || error || !guide ? <div className="scroll-page-end-space h-full min-h-0 overflow-y-auto">{readerState}</div> : readerState;
 
-  if (isMobile) return <PanelControlProvider initialLayouts={[defaultLayout]}><div className="matrx-touch-targets flex h-full min-h-0 flex-col"><div className="flex items-center justify-between border-b border-border bg-background px-3 py-2"><Button size="sm" variant="ghost" onClick={() => setMobilePanel("guides")}>Study guides</Button><Button size="sm" variant="ghost" onClick={() => setMobilePanel("details")}>Notes & terms</Button></div><div className="min-h-0 flex-1">{reader}</div><Drawer open={mobilePanel === "guides"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study guides</DrawerTitle></DrawerHeader><DrawerBody><GuideList guides={guides} activeLabel={guide?.label} activeId={guide?.id ?? initialGuideId} content={guide?.content ?? ""} onJump={(index) => { setOutlineJump((current) => ({ index, nonce: (current?.nonce ?? 0) + 1 })); setMobilePanel(null); }} loading={guidesLoading} error={guidesError} onRetry={retryIndex} /></DrawerBody></DrawerContent></Drawer><Drawer open={mobilePanel === "details"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study details</DrawerTitle></DrawerHeader><DrawerBody><Inspector guide={guide} mobile tab={tab} onTabChange={setTab} annotations={annotations} terms={terms} loading={detailsLoading[tab]} error={detailsError[tab]} onRetry={retryDetails} /></DrawerBody></DrawerContent></Drawer></div></PanelControlProvider>;
+  if (isMobile) return <PanelControlProvider initialLayouts={[defaultLayout]}><div className="matrx-touch-targets flex h-full min-h-0 flex-col"><div className="flex items-center justify-between border-b border-border bg-background px-3 py-2"><Button size="sm" variant="ghost" onClick={() => setMobilePanel("guides")}>Study guides</Button><Button size="sm" variant="ghost" onClick={() => setMobilePanel("details")}>Notes & terms</Button></div><div className="min-h-0 flex-1">{reader}</div><Drawer open={mobilePanel === "guides"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study guides</DrawerTitle></DrawerHeader><DrawerBody><GuideList guides={guides} activeLabel={guide?.label} activeId={guide?.id ?? initialGuideId} content={guide?.content ?? ""} onJump={(index) => { setOutlineJump((current) => ({ index, nonce: (current?.nonce ?? 0) + 1 })); setMobilePanel(null); }} loading={guidesLoading} error={guidesError} onRetry={retryIndex} /></DrawerBody></DrawerContent></Drawer><Drawer open={mobilePanel === "details"} onOpenChange={(open) => !open && setMobilePanel(null)}><DrawerContent className="h-[92dvh]"><DrawerHeader><DrawerTitle>Study details</DrawerTitle></DrawerHeader><DrawerBody><Inspector guide={guide} mobile tab={tab} onTabChange={setTab} annotations={annotations} terms={terms} loading={detailsLoading[tab]} error={detailsError[tab]} onRetry={retryDetails} onCreateNote={createDocumentNote} /></DrawerBody></DrawerContent></Drawer></div></PanelControlProvider>;
 
   return <PanelControlProvider initialLayouts={[defaultLayout]}>
     <div className="relative h-full min-h-0 overflow-hidden">
@@ -458,7 +507,7 @@ function StudyGuideReaderInner({ initialGuideId, defaultLayout }: StudyGuideRead
         </Panel>
         <Handle hideWhenCollapsed={["inspector"]} />
         <RegisteredPanel registerAs="inspector" groupKey="study-guide-reader" id="inspector" collapsible collapsedSize="0%" defaultSize="290px" minSize="220px">
-          <Inspector guide={guide} tab={tab} onTabChange={setTab} annotations={annotations} terms={terms} loading={detailsLoading[tab]} error={detailsError[tab]} onRetry={retryDetails} />
+          <Inspector guide={guide} tab={tab} onTabChange={setTab} annotations={annotations} terms={terms} loading={detailsLoading[tab]} error={detailsError[tab]} onRetry={retryDetails} onCreateNote={createDocumentNote} />
         </RegisteredPanel>
       </ClientGroup>
     </div>
