@@ -17,7 +17,7 @@ import { headers } from "next/headers";
 import MarketingLanding from "@/features/auth/components/module-landing/landings/MarketingLanding";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import { getMarketingRouteMetadata } from "@/features/marketing/lib/route-metadata";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 export async function generateMetadata() {
   const pathname = (await headers()).get("x-pathname") ?? "/marketing";
@@ -29,7 +29,7 @@ export default async function MarketingLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
 
   if (!isAuthenticated) {
     return (

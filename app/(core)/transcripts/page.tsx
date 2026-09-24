@@ -9,12 +9,12 @@
 // Each section paginates independently on the client for efficiency.
 // Guests: marketing landing. Authed: client hub island.
 
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { TranscriptsListPage } from "@/features/transcripts/components/TranscriptsListPage";
 import TranscriptsLanding from "@/features/auth/components/module-landing/landings/TranscriptsLanding";
 
 export default async function TranscriptsIndexPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) return <TranscriptsLanding />;
 
   return <TranscriptsListPage />;

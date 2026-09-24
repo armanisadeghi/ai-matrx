@@ -1,5 +1,5 @@
 import { Inbox } from "lucide-react";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { InboxPage } from "@/features/crm/inbox/components/InboxPage";
@@ -18,7 +18,7 @@ export const metadata = {
  * order's traps list.
  */
 export default async function CrmInboxRoute() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     return (
       <ModuleSignInGate

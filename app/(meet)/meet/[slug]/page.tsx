@@ -13,7 +13,7 @@
 
 import type { Metadata } from "next";
 import { MeetingSurface } from "@/features/meet/components/MeetingSurface";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 export const metadata: Metadata = {
   title: "Meeting — AI Matrx",
@@ -29,6 +29,6 @@ export default async function MeetingPage({
 }) {
   const { slug } = await params;
   // Request-cached — the layout above already validated this session.
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   return <MeetingSurface slug={slug} isAuthenticated={isAuthenticated} />;
 }

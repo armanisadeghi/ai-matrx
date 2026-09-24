@@ -18,7 +18,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ContentPlanListHeader } from "@/features/marketing/content-plan/components/ContentPlanListHeader";
 import { BrandScopedPlanSitesList } from "@/features/marketing/content-plan/components/BrandScopedPlanSitesList";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 export default async function BrandContentPlanPage({
   params,
@@ -26,7 +26,7 @@ export default async function BrandContentPlanPage({
   params: Promise<{ brandId: string }>;
 }) {
   const { brandId } = await params;
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     redirect(
       `/login?next=${encodeURIComponent(marketingRoutes.brandContentPlan(brandId))}`,

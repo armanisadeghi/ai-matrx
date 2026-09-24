@@ -12,7 +12,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { loginHref } from "@/utils/auth/auth-destination";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { EducationHome } from "@/features/education/home/EducationHome";
 
 export const metadata: Metadata = createRouteMetadata("/education", {
@@ -25,7 +25,7 @@ export const metadata: Metadata = createRouteMetadata("/education", {
 });
 
 export default async function EducationOverviewPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect(loginHref("/education/overview"));
   return <EducationHome />;
 }

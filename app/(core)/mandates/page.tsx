@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { legacyFeatureRedirect } from "@/features/mandates/browse/url-compat";
 import { MandatesBrowsePage } from "@/features/mandates/browse/MandatesBrowsePage";
 
@@ -19,7 +19,7 @@ export default async function MandatesRoute({
 }: {
   searchParams: Promise<{ feature?: string | string[]; filters?: string | string[] }>;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/agents");
 
   const legacy = legacyFeatureRedirect(await searchParams);

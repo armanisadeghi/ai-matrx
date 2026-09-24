@@ -2,10 +2,10 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentAppsGrid } from "@/features/agent-apps/components/agent-app-listings/AgentAppsGrid";
 import { AgentAppsListHeader } from "@/features/agent-apps/components/shell/AgentAppsListHeader";
 import AgentAppsLanding from "@/features/auth/components/module-landing/landings/AgentAppsLanding";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 export default async function AgentAppsListPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) return <AgentAppsLanding />;
   return (
     <>

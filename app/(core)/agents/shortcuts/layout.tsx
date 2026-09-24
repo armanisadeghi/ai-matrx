@@ -1,6 +1,6 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/agents", {
@@ -17,7 +17,7 @@ export default async function UserAgentShortcutsLayout({
 }) {
   // Guests never see the shortcuts workspace — bounce to the /agents landing
   // (same server-side convention as /agents/all).
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/agents");
 
   return <>{children}</>;

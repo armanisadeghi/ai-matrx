@@ -4,11 +4,11 @@
 // show somebody who has nowhere to put a Library.
 
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { BringYourExportPage } from "@/features/exports/components/BringYourExportPage";
 
 export default async function ExportsIndexRoute() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/login?next=/exports");
   return <BringYourExportPage />;
 }

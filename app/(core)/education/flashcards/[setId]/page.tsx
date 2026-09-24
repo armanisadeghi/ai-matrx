@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { toolMetadata } from "@/features/education/route-helpers";
 import { SetDetailView } from "@/features/flashcards/components/set-detail/SetDetailView";
 import { loginHref } from "@/utils/auth/auth-destination";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 export const metadata: Metadata = toolMetadata("flashcards");
 
@@ -20,7 +20,7 @@ export default async function FlashcardSetPage({
 }: FlashcardSetPageProps) {
   const { setId } = await params;
   const destination = `/education/flashcards/${setId}`;
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect(loginHref(destination));
   return <SetDetailView setId={setId} />;
 }

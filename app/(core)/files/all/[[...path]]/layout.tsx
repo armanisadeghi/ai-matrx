@@ -15,7 +15,7 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { filesDb } from "@/features/files/filesDb";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { PageShell } from "@/features/files/components/surfaces/PageShell";
 import { readSidebarModeCookie } from "@/features/files/utils/server-cookies";
 
@@ -28,7 +28,7 @@ export default async function CloudFilesAllLayout({
   children,
   params,
 }: LayoutProps) {
-  const { isAuthenticated, user } = await getServerAuth();
+  const { isAuthenticated, user } = await getSessionVerdict();
 
   if (!isAuthenticated || !user) {
     redirect("/files");

@@ -4,7 +4,7 @@
 // exemplar. Authed users render the workspace tree unchanged.
 
 import ScopesLanding from "@/features/auth/components/module-landing/landings/ScopesLanding";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/scopes", {
@@ -19,7 +19,7 @@ export default async function ScopesLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     return <ScopesLanding />;
   }

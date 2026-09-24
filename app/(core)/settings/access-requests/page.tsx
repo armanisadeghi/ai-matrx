@@ -2,7 +2,7 @@ import { KeyRound } from "lucide-react";
 
 import { AccessRequestsSurface } from "@/features/access-gate/components/AccessRequestsSurface";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/settings/access-requests", {
@@ -21,7 +21,7 @@ export const metadata = createRouteMetadata("/settings/access-requests", {
  * filed with no signed-in sender to message from).
  */
 export default async function AccessRequestsPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     return (
       <ModuleSignInGate

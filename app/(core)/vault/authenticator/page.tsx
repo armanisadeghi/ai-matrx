@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AuthenticatorRouteHeader } from "@/features/secrets/components/authenticator/AuthenticatorRouteHeader";
 import { AuthenticatorWorkspace } from "@/features/secrets/components/authenticator/AuthenticatorWorkspace";
@@ -13,7 +13,7 @@ import { AuthenticatorWorkspace } from "@/features/secrets/components/authentica
  * common-docs/systems/clients/matrx-authenticator/FEATURE.md.
  */
 export default async function AuthenticatorRoute() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/login?next=/vault/authenticator");
 
   return (

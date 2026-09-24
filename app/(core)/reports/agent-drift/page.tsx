@@ -3,7 +3,7 @@
 // Agent Drift report (user scope) — red flags across all the caller's agents,
 // with a master-detail drill-in that reuses the Find Usages engine.
 
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { AgentDriftReport } from "@/features/reports/components/agent-drift/AgentDriftReport";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 
@@ -13,7 +13,7 @@ export const metadata = {
 };
 
 export default async function AgentDriftReportPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     return (
       <ModuleSignInGate

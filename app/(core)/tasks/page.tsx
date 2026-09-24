@@ -13,12 +13,12 @@ import { TasksDesktopShell } from "@/features/tasks/components/TasksDesktopShell
 import { TaskUrlSync } from "@/features/tasks/components/TaskUrlSync";
 import { TasksListSurfaceRuntime } from "@/features/tasks/components/TasksListSurfaceRuntime";
 import TasksLanding from "@/features/auth/components/module-landing/landings/TasksLanding";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 const COOKIE_NAME = "panels:tasks:v2";
 
 export default async function TasksPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
 
   if (!isAuthenticated) {
     return <TasksLanding />;

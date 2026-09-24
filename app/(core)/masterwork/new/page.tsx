@@ -11,7 +11,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { NewRulebookFlow } from "@/features/masterwork/intake/NewRulebookFlow";
 import { createRouteMetadata } from "@/utils/route-metadata";
@@ -24,7 +24,7 @@ export const metadata = createRouteMetadata("/masterwork", {
 });
 
 export default async function NewRulebookRoute() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/masterwork");
   return (
     <>

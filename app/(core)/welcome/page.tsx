@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderIconTitle from "@/features/shell/components/header/variants/variants/HeaderIconTitle";
 import { WelcomeClient } from "./WelcomeClient";
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function WelcomePage() {
-  const { user } = await getServerAuth();
+  const { user } = await getSessionVerdict();
   if (!user) {
     redirect("/login?redirectTo=/welcome");
   }

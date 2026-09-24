@@ -4,7 +4,7 @@
 // first). The module is built around this so future reports plug into the
 // registry (features/reports/registry.ts).
 
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ReportsLanding } from "@/features/reports/components/ReportsLanding";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
@@ -15,7 +15,7 @@ export const metadata = {
 };
 
 export default async function ReportsPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     return (
       <ModuleSignInGate

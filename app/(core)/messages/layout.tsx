@@ -6,7 +6,7 @@
 
 import React from "react";
 import { createRouteMetadata } from "@/utils/route-metadata";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import MessagesLanding from "@/features/auth/components/module-landing/landings/MessagesLanding";
 import MessagesLayoutClient from "./MessagesLayoutClient";
 
@@ -21,7 +21,7 @@ export default async function MessagesLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
 
   if (!isAuthenticated) {
     // Guests: full marketing landing, fully server-rendered — never the

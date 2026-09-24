@@ -1,6 +1,6 @@
 import { CalendarClock } from "lucide-react";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/schedules", {
@@ -14,7 +14,7 @@ export default async function SchedulesLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
 
   if (!isAuthenticated) {
     // Guests never mount the schedules workspace (its roster fetch fails

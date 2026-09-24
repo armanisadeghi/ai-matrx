@@ -1,7 +1,7 @@
 import { BellRing } from "lucide-react";
 import { redirect } from "next/navigation";
 
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AttentionQueue } from "@/features/commerce-review/components/AttentionQueue";
 
@@ -12,7 +12,7 @@ import { AttentionQueue } from "@/features/commerce-review/components/AttentionQ
 export const dynamic = "force-dynamic";
 
 export default async function CommerceAttentionPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/login?next=/commerce/attention");
   return (
     <>

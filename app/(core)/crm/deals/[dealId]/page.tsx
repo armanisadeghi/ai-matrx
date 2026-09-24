@@ -1,5 +1,5 @@
 import { Handshake } from "lucide-react";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import { DealRecordPage } from "@/features/crm/components/deals/DealRecordPage";
 
@@ -10,7 +10,7 @@ export default async function CrmDealRoute({
   params: Promise<{ dealId: string }>;
 }) {
   const { dealId } = await params;
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     return (
       <ModuleSignInGate

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChevronRight, PhoneCall } from "lucide-react";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { CallQueuePage } from "@/features/crm/components/outreach-lists/CallQueuePage";
@@ -18,7 +18,7 @@ export default async function CrmOutreachListDialRoute({
   params: Promise<{ listId: string }>;
 }) {
   const { listId } = await params;
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     return (
       <ModuleSignInGate

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 import IntakeRouteClient from "../IntakeRouteClient";
 
@@ -24,7 +24,7 @@ export default async function CommerceIntakeInstantPage({
 }: {
   searchParams: Promise<{ asset?: string }>;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated)
     redirect(await currentRequestLoginHref("/commerce/intake/instant"));
   const { asset } = await searchParams;

@@ -12,12 +12,12 @@
 // signing in — the behavior this placeholder route used to provide directly.
 
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import WorkflowsLanding from "@/features/auth/components/module-landing/landings/WorkflowsLanding";
 
 export default async function WorkflowsIndexRoute() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (isAuthenticated) redirect("/workflows/all");
   return (
     <MarketingPageShell>

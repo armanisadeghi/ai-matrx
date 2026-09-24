@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 import { AllItemsBody, AllItemsHeader } from "./AllItemsRouteClient";
 
@@ -13,7 +13,7 @@ import { AllItemsBody, AllItemsHeader } from "./AllItemsRouteClient";
 export const dynamic = "force-dynamic";
 
 export default async function ProductCaptureAllPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/login?next=/tools/product-capture/all");
   return (
     <>

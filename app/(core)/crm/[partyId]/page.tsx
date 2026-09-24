@@ -1,5 +1,5 @@
 import { Contact } from "lucide-react";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import { PartyRecordPage } from "@/features/crm/components/record/PartyRecordPage";
 
@@ -10,7 +10,7 @@ export default async function CrmPartyRoute({
   params: Promise<{ partyId: string }>;
 }) {
   const { partyId } = await params;
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     return (
       <ModuleSignInGate

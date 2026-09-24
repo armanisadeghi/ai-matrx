@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createClient } from "@/utils/supabase/server";
 import { listSessionsServer } from "@/features/transcript-studio/service/studioService";
 import { StudioHydrator } from "@/features/transcript-studio/route/StudioHydrator";
@@ -35,7 +35,7 @@ export default async function TranscriptionCleanupPage({
 
   // Guests bounce to the public `/transcripts` landing (same convention as
   // the processor page) — the cleanup workspace has nothing to show them.
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     redirect("/transcripts");
   }

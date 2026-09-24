@@ -35,7 +35,7 @@ import { Button } from "@/components/ui/button";
 import { openActionRequest } from "@/features/action-requests/service";
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
 import { createClient } from "@/utils/supabase/server";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 import { ActionRunner, TextMeANewLink } from "./ActionRunner";
 
@@ -54,15 +54,18 @@ export const metadata: Metadata = {
 /**
  * The raw Supabase access token, or `null`.
  *
- * `getServerAuth()` is the VALIDATED identity — it round-trips `getUser()`, so
- * a forged or expired cookie is not a person. `getSession()` is where the raw
+ * `getSessionVerdict()` is the VALIDATED identity — the token's signature is
+ * verified against the project key, so a forged or expired cookie is not a
+ * person. "Could not verify" never reaches here as "no session": the verdict
+ * holds the request on /auth/verifying instead, so a signed-in owner is never
+ * shown "Sign in" over a question their own agent asked (SESSION-VERDICT). `getSession()` is where the raw
  * JWT lives, and on its own it is only what the cookie claims. Reading both and
  * returning the token ONLY when the validated user exists is what makes this
  * safe: we never forward a string we have not checked is a real session, and we
  * never forward anything at all when there is none.
  */
 async function sessionAccessToken(): Promise<string | null> {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) return null;
   const supabase = await createClient();
   const {

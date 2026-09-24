@@ -8,7 +8,7 @@ import Link from "next/link";
 import { Columns2, FileUp, Import, Mic, Eraser } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { redirect } from "next/navigation";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { TranscriptsListHeader } from "@/features/transcripts/components/TranscriptsListHeader";
@@ -60,7 +60,7 @@ const OPTIONS: CreationOption[] = [
 ];
 
 export default async function NewTranscriptPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/transcripts");
 
   return (

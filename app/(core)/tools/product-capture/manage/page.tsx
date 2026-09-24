@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 import { ManageBody, ManageHeader } from "./ManageRouteClient";
 
@@ -19,7 +19,7 @@ export default async function ProductPipelinePage({
 }: {
   searchParams: Promise<{ item?: string }>;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/login?next=/tools/product-capture/manage");
   const { item } = await searchParams;
   return (

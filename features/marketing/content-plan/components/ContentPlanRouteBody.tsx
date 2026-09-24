@@ -14,7 +14,7 @@ import { redirect } from "next/navigation";
 import { readLayoutCookie } from "@/features/resizable-panels/readLayoutCookie";
 import { ContentPlanHeader } from "@/features/marketing/content-plan/components/ContentPlanHeader";
 import { ContentPlanWorkbench } from "@/features/marketing/content-plan/components/ContentPlanWorkbench";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 /** Cookie-persisted tree|panel split (same pattern as /tasks). */
 const LAYOUT_COOKIE = "panels:content-plan";
@@ -25,7 +25,7 @@ export async function ContentPlanRouteBody({
   /** Where to return the viewer after signing in (this view's own URL). */
   loginNext: string;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     redirect(`/login?next=${encodeURIComponent(loginNext)}`);
   }

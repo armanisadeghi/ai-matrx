@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 import IntakeRouteClient from "./IntakeRouteClient";
 
@@ -20,7 +20,7 @@ export default async function CommerceIntakePage({
 }: {
   searchParams: Promise<{ asset?: string }>;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   // The destination (incl. ?asset= deep links) must survive the auth bounce.
   if (!isAuthenticated)
     redirect(await currentRequestLoginHref("/commerce/intake"));

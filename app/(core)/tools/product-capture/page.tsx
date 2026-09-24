@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 import ProductCaptureRouteClient from "./ProductCaptureRouteClient";
 
@@ -22,7 +22,7 @@ export default async function ProductCapturePage({
 }: {
   searchParams: Promise<{ item?: string }>;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/login?next=/tools/product-capture");
   const { item } = await searchParams;
   return (

@@ -6,7 +6,7 @@
 import { redirect } from "next/navigation";
 
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 import { LabelBatchRouteClient } from "./LabelBatchRouteClient";
 
@@ -18,7 +18,7 @@ export default async function LabelBatchPage({
   params: Promise<{ batchId: string }>;
 }) {
   const { batchId } = await params;
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated)
     redirect(await currentRequestLoginHref(`/commerce/labels/${batchId}`));
   return <LabelBatchRouteClient batchId={batchId} />;

@@ -8,7 +8,7 @@
 
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { WebhooksManager } from "@/features/files/webhooks/components/WebhooksManager";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
@@ -16,7 +16,7 @@ import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 export const metadata: Metadata = { title: "Webhooks | Files" };
 
 export default async function FilesWebhooksPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     // Guests never see the workspace shell — bounce to the /files landing.
     redirect("/files");

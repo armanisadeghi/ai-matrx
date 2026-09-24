@@ -1,5 +1,5 @@
 import { Megaphone } from "lucide-react";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { OutreachListsPage } from "@/features/crm/components/outreach-lists/OutreachListsPage";
@@ -12,7 +12,7 @@ export const metadata = {
 
 /** /crm/outreach-lists — the outreach list console (crm.outreach_list). */
 export default async function CrmOutreachListsRoute() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     return (
       <ModuleSignInGate

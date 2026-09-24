@@ -10,7 +10,7 @@
 import { KnowledgeGraphClient } from "./KnowledgeGraphClient";
 import KnowledgeGraphLanding from "@/features/auth/components/module-landing/landings/KnowledgeGraphLanding";
 import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 
 export default async function KnowledgeGraphPage({
@@ -18,7 +18,7 @@ export default async function KnowledgeGraphPage({
 }: {
   searchParams: Promise<{ org?: string; scope?: string; scopeType?: string }>;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) return <KnowledgeGraphLanding />;
 
   const { org, scope, scopeType } = await searchParams;

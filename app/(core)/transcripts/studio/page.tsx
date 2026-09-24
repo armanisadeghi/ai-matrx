@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createClient } from "@/utils/supabase/server";
 import {
   listCleanedSegmentsServer,
@@ -36,7 +36,7 @@ export default async function TranscriptStudioPage({
 
   // Guests bounce to the public `/transcripts` landing (same convention as
   // the processor page) — the studio workspace has nothing to show them.
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     redirect("/transcripts");
   }

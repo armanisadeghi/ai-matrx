@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { MandateWorkspace } from "@/features/mandates/workspace/MandateWorkspace";
 
 /**
@@ -14,7 +14,7 @@ export default async function MandateWorkspaceRoute({
 }: {
   params: Promise<{ mandateKey: string }>;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/agents");
   // The App Router already decodes dynamic segment params — decoding again
   // double-decodes a literal `%` in the mandate key/id.

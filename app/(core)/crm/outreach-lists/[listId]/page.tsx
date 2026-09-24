@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChevronRight, Megaphone } from "lucide-react";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { OutreachListDetailPage } from "@/features/crm/components/outreach-lists/OutreachListDetailPage";
@@ -17,7 +17,7 @@ export default async function CrmOutreachListRoute({
   params: Promise<{ listId: string }>;
 }) {
   const { listId } = await params;
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     return (
       <ModuleSignInGate

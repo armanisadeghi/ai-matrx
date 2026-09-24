@@ -5,12 +5,12 @@
 // `/masterwork` is the Masterwork landing page.
 
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { MasterworkStudioPage } from "@/features/masterwork/browse/components/MasterworkStudioPage";
 
 export default async function AllRulebooksRoute() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/masterwork");
   return (
     <>

@@ -7,11 +7,11 @@
 // nothing honest to show somebody who is not in one.
 
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { BlockLedgerPage } from "@/features/block-ledger/BlockLedgerPage";
 
 export default async function AcquisitionBlocksRoute() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/login?next=/acquisition/blocks");
   return <BlockLedgerPage />;
 }

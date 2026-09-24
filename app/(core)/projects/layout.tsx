@@ -1,6 +1,6 @@
 import { FolderKanban } from "lucide-react";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/projects", {
@@ -15,7 +15,7 @@ export default async function ProjectsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
 
   if (!isAuthenticated) {
     // Guests never mount ProjectsHub (RLS returns nothing without a session,

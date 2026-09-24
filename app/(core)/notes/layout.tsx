@@ -12,7 +12,7 @@ import { cookies } from "next/headers";
 import type { Layout } from "react-resizable-panels";
 import { NotesRouteBody } from "@/features/notes/components/NotesRouteBody";
 import NotesLanding from "@/features/auth/components/module-landing/landings/NotesLanding";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { ScrollAssistantLauncher } from "@/features/agents/components/ambient-assistant/ScrollAssistantLauncher";
 
@@ -57,7 +57,7 @@ export default async function NotesV2Layout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
 
   if (!isAuthenticated) {
     // Guests: full marketing landing, fully server-rendered. The

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Table2 } from "lucide-react";
 import { ExtractionCatalogClient } from "@/features/page-extraction/data-review/ExtractionCatalogClient";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 export const metadata: Metadata = {
   title: "Extraction Data",
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
  * the only review surface to a quick-glance one.
  */
 export default async function ExtractionsCatalogPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     return (
       <ModuleSignInGate

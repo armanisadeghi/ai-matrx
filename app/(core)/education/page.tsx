@@ -9,12 +9,12 @@
 //
 // The redirect is server-side so the pitch never flashes before the workspace.
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { EducationHub } from "@/features/education/components/landing/EducationHub";
 import { EDU_WORKSPACE_HREF } from "@/features/education/constants";
 
 export default async function EducationPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (isAuthenticated) redirect(EDU_WORKSPACE_HREF);
   return <EducationHub />;
 }

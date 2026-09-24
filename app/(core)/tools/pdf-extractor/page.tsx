@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import PdfStudioRouteClient from "./PdfStudioRouteClient";
 import PdfExtractorLanding from "@/features/auth/components/module-landing/landings/PdfExtractorLanding";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 /**
  * /tools/pdf-extractor
@@ -21,7 +21,7 @@ interface PageProps {
 export default async function PdfExtractorStudioPage({
   searchParams,
 }: PageProps) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) return <PdfExtractorLanding />;
   const { file } = await searchParams;
   return (

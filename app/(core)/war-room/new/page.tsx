@@ -3,11 +3,11 @@
 // Guests bounce server-side to the /war-room marketing landing — the create
 // thunk would only fail (RLS) and surface an error panel for them.
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { WarRoomNew } from "@/features/war-room/shared/WarRoomNew";
 
 export default async function NewWarRoomPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     redirect("/war-room");
   }
