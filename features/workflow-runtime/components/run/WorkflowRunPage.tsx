@@ -22,8 +22,8 @@ import { CalendarClock, PenLine, RotateCcw } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { TapTargetButton } from "@ai-matrx/tap-target";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { toast } from "@/lib/toast";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 import {
   fetchRunDefinitionId,
@@ -34,11 +34,6 @@ import type { RunSurfaceConfig } from "../../surface/config";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
 import { RunStartForm } from "../RunStartForm";
 import { RunStage } from "./RunStage";
-import {
-  workflowFailureAgentInput,
-  workflowFailureHuman,
-  workflowFailureInvestigationPrompt,
-} from "./run-copy";
 import { MasterworkRulesProvider } from "@/features/masterwork/rules-context/MasterworkRulesContext";
 
 interface LoadedWorkflow {
@@ -78,7 +73,19 @@ export function WorkflowRunPage({
     definitionIdProp ?? null,
   );
   const [workflow, setWorkflow] = useState<LoadedWorkflow | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  // The one record this page is about could not be shown — which record (the
+  // run on the permalink, else the workflow) and the read error, if any. The
+  // canonical access gate decides what to say.
+  const [failure, setFailure] = useState<{
+    token: "workflow" | "workflow_run";
+    id: string;
+    error?: unknown;
+  } | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const retryLoad = useCallback(() => {
+    setFailure(null);
+    setAttempt((n) => n + 1);
+  }, []);
   const [showForm, setShowForm] = useState(false);
 
   // A run permalink knows its definition — that is how a `?run=` deep link and
@@ -88,19 +95,19 @@ export function WorkflowRunPage({
     let cancelled = false;
     void fetchRunDefinitionId(runId)
       .then((id) => {
-        if (!cancelled) setDefinitionId(id);
+        if (cancelled) return;
+        // No row = the run is gone or not this viewer's; left unhandled this
+        // was a skeleton forever.
+        if (id) setDefinitionId(id);
+        else setFailure({ token: "workflow_run", id: runId });
       })
-      .catch(() => {
-        if (!cancelled) {
-          setLoadError(
-            "This run could not be opened. It may have been removed.",
-          );
-        }
+      .catch((error: unknown) => {
+        if (!cancelled) setFailure({ token: "workflow_run", id: runId, error });
       });
     return () => {
       cancelled = true;
     };
-  }, [definitionId, runId]);
+  }, [definitionId, runId, attempt]);
 
   useEffect(() => {
     if (!definitionId) return;
@@ -117,9 +124,7 @@ export function WorkflowRunPage({
       .then(([loaded, surface]) => {
         if (cancelled) return;
         if (!loaded) {
-          setLoadError(
-            "This workflow could not be opened. It may have been removed, or it belongs to another account.",
-          );
+          setFailure({ token: "workflow", id: definitionId });
           return;
         }
         setWorkflow({
@@ -129,15 +134,13 @@ export function WorkflowRunPage({
           config: surface?.config ?? null,
         });
       })
-      .catch(() => {
-        if (!cancelled) {
-          setLoadError("This workflow could not be opened. Please try again.");
-        }
+      .catch((error: unknown) => {
+        if (!cancelled) setFailure({ token: "workflow", id: definitionId, error });
       });
     return () => {
       cancelled = true;
     };
-  }, [definitionId]);
+  }, [definitionId, attempt]);
 
   /**
    * ADOPTED (Volley 5): a started run is announced by ID, whichever branch of
@@ -212,56 +215,16 @@ export function WorkflowRunPage({
   );
 
   let body: React.ReactNode;
-  if (loadError) {
-    const failureView = () => ({
-      kind: "route" as const,
-      headline: "We couldn't open this",
-      technical: loadError,
-      nextStep: "Back to your workflows",
-      runId,
-      definitionId,
-      workflowName: workflow?.name ?? null,
-      status: "unavailable",
-    });
+  if (failure) {
     body = (
-      <div className="mx-auto w-full max-w-2xl px-4 py-10">
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="flex items-start gap-2">
-            <h1 className="min-w-0 flex-1 text-base font-semibold text-foreground">
-              We couldn&apos;t open this
-            </h1>
-            <CopyButtons
-              size="icon"
-              label="Workflow route error"
-              human={() => workflowFailureHuman(failureView())}
-              agent={() => workflowFailureAgentInput(failureView())}
-              agentVariant={{
-                id: "error",
-                label: "Error",
-                hint: "The route error exactly as rendered",
-                position: "first",
-              }}
-              aiVariants={[
-                {
-                  id: "error-with-prompt",
-                  label: "Error with prompt",
-                  hint: "Add a root-cause investigation brief",
-                  build: () =>
-                    workflowFailureInvestigationPrompt(failureView()),
-                },
-              ]}
-            />
-          </div>
-          <p className="mt-1.5 text-sm text-muted-foreground">{loadError}</p>
-          <button
-            type="button"
-            onClick={() => router.push("/workflows/all")}
-            className="mt-4 inline-flex min-h-9 items-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground"
-          >
-            Back to your workflows
-          </button>
-        </div>
-      </div>
+      <AccessGate
+        token={failure.token}
+        id={failure.id}
+        error={failure.error}
+        onRetry={retryLoad}
+        fallbackHref="/workflows/all"
+        fallbackLabel="Your workflows"
+      />
     );
   } else if (!workflow) {
     body = <LoadingBody />;
