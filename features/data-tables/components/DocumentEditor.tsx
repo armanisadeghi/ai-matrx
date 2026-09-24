@@ -25,7 +25,12 @@ import {
   merge,
   type FUniver,
 } from "@univerjs/presets";
-import type { IDocumentData, Univer } from "@univerjs/core";
+import {
+  createParagraphId,
+  createSectionId,
+  type IDocumentData,
+  type Univer,
+} from "@univerjs/core";
 import { defaultTheme } from "@univerjs/themes";
 import { UniverDocsCorePreset } from "@univerjs/preset-docs-core";
 import docsCoreEnUS from "@univerjs/preset-docs-core/locales/en-US";
@@ -295,17 +300,20 @@ export default function DocumentEditor({
         // via editableRef so a later edit-permission grant needs no remount.
         // D97: only snapshot-affecting MUTATIONs mark the doc dirty —
         // scroll / selection / viewport commands must never trigger a save.
-        apiRef.current.onCommandExecuted((command) => {
-          if (!isSnapshotMutation(command)) return;
-          if (!editableRef.current) return;
-          setSaveStatus("dirty");
-          if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-          saveTimerRef.current = setTimeout(() => {
+        apiRef.current.addEvent(
+          apiRef.current.Event.CommandExecuted,
+          (command) => {
+            if (!isSnapshotMutation(command)) return;
             if (!editableRef.current) return;
-            if (collabRef.current && !collabIsHostRef.current) return;
-            void performSave();
-          }, 2500);
-        });
+            setSaveStatus("dirty");
+            if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+            saveTimerRef.current = setTimeout(() => {
+              if (!editableRef.current) return;
+              if (collabRef.current && !collabIsHostRef.current) return;
+              void performSave();
+            }, 2500);
+          },
+        );
 
         if (collabRef.current) {
           void startCollabSession().catch((err) => {
@@ -472,15 +480,12 @@ export default function DocumentEditor({
         announceUnsaveable("The editor lost its connection to the document.");
         return;
       }
-      const fb = apiRef.current as unknown as {
-        getActiveDocument?: () => { getSnapshot(): IDocumentData } | null;
-      };
-      const doc = fb.getActiveDocument?.();
+      const doc = apiRef.current.getActiveDocument();
       if (!doc) {
         announceUnsaveable("The editor could not read the open document.");
         return;
       }
-      const snapshot = doc.getSnapshot();
+      const snapshot = doc.save();
       setSaveStatus("saving");
 
       const { data: userData } = await getClaimsUser(supabase);
@@ -675,8 +680,10 @@ function defaultEmptyDocument(): Partial<IDocumentData> {
     title: "Untitled document",
     body: {
       dataStream: "\r\n",
-      paragraphs: [{ startIndex: 0 }],
-      sectionBreaks: [{ startIndex: 1 }],
+      paragraphs: [
+        { startIndex: 0, paragraphId: createParagraphId(new Set()) },
+      ],
+      sectionBreaks: [{ startIndex: 1, sectionId: createSectionId(new Set()) }],
     },
     documentStyle: defaultDocumentPageStyle(),
   };

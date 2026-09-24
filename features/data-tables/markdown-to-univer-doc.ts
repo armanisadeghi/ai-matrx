@@ -29,7 +29,11 @@
  * than leaking syntax.
  */
 
-import { BooleanNumber } from "@univerjs/core";
+import {
+  BooleanNumber,
+  createParagraphId,
+  createSectionId,
+} from "@univerjs/core";
 import type {
   IDocumentData,
   IParagraph,
@@ -123,6 +127,7 @@ class DocBuilder {
   private parts: string[] = [];
   private cursor = 0;
   private paragraphs: IParagraph[] = [];
+  private paragraphIds = new Set<string>();
   private textRuns: ITextRun[] = [];
 
   addParagraph(segments: Segment[], opts: ParagraphOpts = {}): void {
@@ -136,7 +141,10 @@ class DocBuilder {
     }
     // Paragraph terminator.
     this.parts.push("\r");
-    this.paragraphs.push({ startIndex: this.cursor });
+    this.paragraphs.push({
+      startIndex: this.cursor,
+      paragraphId: createParagraphId(this.paragraphIds),
+    });
     this.cursor += 1;
   }
 
@@ -148,11 +156,19 @@ class DocBuilder {
     if (this.isEmpty()) {
       // Univer requires at least one paragraph + section break.
       this.parts.push("\r");
-      this.paragraphs.push({ startIndex: this.cursor });
+      this.paragraphs.push({
+        startIndex: this.cursor,
+        paragraphId: createParagraphId(this.paragraphIds),
+      });
       this.cursor += 1;
     }
     this.parts.push("\n");
-    const sectionBreaks: ISectionBreak[] = [{ startIndex: this.cursor }];
+    const sectionBreaks: ISectionBreak[] = [
+      {
+        startIndex: this.cursor,
+        sectionId: createSectionId(new Set()),
+      },
+    ];
     this.cursor += 1;
 
     return {

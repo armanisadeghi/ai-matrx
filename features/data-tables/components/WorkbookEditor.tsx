@@ -264,19 +264,22 @@ export default function WorkbookEditor({
         // via editableRef so a later edit-permission grant needs no remount.
         // D97: only snapshot-affecting MUTATIONs mark the workbook dirty —
         // scroll / selection / viewport commands must never trigger a save.
-        apiRef.current.onCommandExecuted((command) => {
-          if (!isSnapshotMutation(command)) return;
-          if (!editableRef.current) return;
-          setSaveStatus("dirty");
-          if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-          saveTimerRef.current = setTimeout(() => {
+        apiRef.current.addEvent(
+          apiRef.current.Event.CommandExecuted,
+          (command) => {
+            if (!isSnapshotMutation(command)) return;
             if (!editableRef.current) return;
-            // V2: only the elected host writes the canonical snapshot.
-            // Solo / no-collab path: collabIsHost defaults true, so we save.
-            if (collabRef.current && !collabIsHostRef.current) return;
-            void performSave();
-          }, 2500);
-        });
+            setSaveStatus("dirty");
+            if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+            saveTimerRef.current = setTimeout(() => {
+              if (!editableRef.current) return;
+              // V2: only the elected host writes the canonical snapshot.
+              // Solo / no-collab path: collabIsHost defaults true, so we save.
+              if (collabRef.current && !collabIsHostRef.current) return;
+              void performSave();
+            }, 2500);
+          },
+        );
 
         // V2 CRDT collab — opt-in. Mounted only after Univer is ready so we
         // can resolve ICommandService and the local user identity.
@@ -457,7 +460,7 @@ export default function WorkbookEditor({
       if (!apiRef.current) return;
       const workbook = apiRef.current.getActiveWorkbook();
       if (!workbook) return;
-      const snapshot = workbook.getSnapshot();
+      const snapshot = workbook.save();
       setSaveStatus("saving");
 
       const { data: userData } = await getClaimsUser(supabase);
@@ -500,7 +503,7 @@ export default function WorkbookEditor({
     const workbook = apiRef.current.getActiveWorkbook();
     if (!workbook) return;
     try {
-      const snapshot = workbook.getSnapshot();
+      const snapshot = workbook.save();
       downloadUniverAsXlsx(snapshot, {
         filename: workbookName ?? workbookId,
       });
@@ -528,10 +531,7 @@ export default function WorkbookEditor({
         if (!workbook) return null;
         let snapshot: Record<string, unknown> | null = null;
         try {
-          snapshot = workbook.getSnapshot() as unknown as Record<
-            string,
-            unknown
-          >;
+          snapshot = workbook.save() as unknown as Record<string, unknown>;
         } catch {
           snapshot = null;
         }
