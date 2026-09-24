@@ -33,6 +33,14 @@ type RecentResponse =
 const HOUR_PRESETS = [6, 24, 72, 168] as const;
 const SOURCE_PAGE_SIZE = 500;
 
+function sourceWindow(hours: number) {
+  const until = new Date();
+  return {
+    since: new Date(until.getTime() - hours * 3600_000).toISOString(),
+    until: until.toISOString(),
+  };
+}
+
 function value(raw: string | null | undefined): string {
   return raw || "—";
 }
@@ -126,6 +134,7 @@ export default function SystemErrorsPanel() {
       : 24,
   );
   const [unresolvedOnly, setUnresolvedOnly] = useState(false);
+  const [window, setWindow] = useState(() => sourceWindow(hours));
   const [tableQuery, setTableQuery] = useState<MatrxDataTableQueryState>({
     page: 1,
     pageSize: 50,
@@ -146,12 +155,20 @@ export default function SystemErrorsPanel() {
     isFetchingNextPage,
     hasNextPage,
   } = useInfiniteQuery({
-    queryKey: ["system-errors", trimmedKind, hours, unresolvedOnly, requestId],
+    queryKey: [
+      "system-errors",
+      trimmedKind,
+      hours,
+      unresolvedOnly,
+      requestId,
+      window,
+    ],
     initialPageParam: 0,
     queryFn: async ({ pageParam }): Promise<RecentResponse> => {
       const result = await apiGet("/admin/system-errors/recent", {
         query: {
-          since: new Date(Date.now() - hours * 3600_000).toISOString(),
+          since: window.since,
+          until: window.until,
           limit: SOURCE_PAGE_SIZE,
           offset: pageParam,
           kind: trimmedKind || undefined,
@@ -349,16 +366,14 @@ export default function SystemErrorsPanel() {
   const toolbar = useMemo(
     (): MatrxDataTableToolbar => ({
       title: "System Errors",
-      titleCount: {
-        value: rows.length,
-        label:
-          total === undefined ? "loaded" : `loaded / ${total.toLocaleString()}`,
-      },
       search: false,
       customSearch: (
         <Input
           value={kind}
-          onChange={(event) => setKind(event.target.value)}
+          onChange={(event) => {
+            setKind(event.target.value);
+            setWindow(sourceWindow(hours));
+          }}
           placeholder="Source filter by kind…"
           className="h-8 min-w-[220px] sm:w-80"
           aria-label="Source filter by error kind"
@@ -374,6 +389,7 @@ export default function SystemErrorsPanel() {
               setKind("");
               setHours(24);
               setUnresolvedOnly(false);
+              setWindow(sourceWindow(24));
             },
           },
           render: () => (
@@ -385,7 +401,10 @@ export default function SystemErrorsPanel() {
                     size="sm"
                     variant={hours === preset ? "default" : "outline"}
                     className="whitespace-nowrap"
-                    onClick={() => setHours(preset)}
+                    onClick={() => {
+                      setHours(preset);
+                      setWindow(sourceWindow(preset));
+                    }}
                   >
                     {preset}h
                   </Button>
@@ -394,7 +413,10 @@ export default function SystemErrorsPanel() {
                   size="sm"
                   variant={unresolvedOnly ? "default" : "outline"}
                   className="whitespace-nowrap"
-                  onClick={() => setUnresolvedOnly((current) => !current)}
+                  onClick={() => {
+                    setUnresolvedOnly((current) => !current);
+                    setWindow(sourceWindow(hours));
+                  }}
                 >
                   Unresolved only
                 </Button>
@@ -409,9 +431,10 @@ export default function SystemErrorsPanel() {
                         candidate === trimmedKind ? "default" : "outline"
                       }
                       className="whitespace-nowrap"
-                      onClick={() =>
-                        setKind(candidate === "(no kind)" ? "" : candidate)
-                      }
+                      onClick={() => {
+                        setKind(candidate === "(no kind)" ? "" : candidate);
+                        setWindow(sourceWindow(hours));
+                      }}
                     >
                       {candidate} ({count})
                     </Button>
@@ -429,6 +452,7 @@ export default function SystemErrorsPanel() {
       ],
       refresh: {
         onRefresh: async () => {
+          setWindow(sourceWindow(hours));
           await refetch();
         },
       },
@@ -442,6 +466,7 @@ export default function SystemErrorsPanel() {
       rows.length,
       trimmedKind,
       unresolvedOnly,
+      window,
     ],
   );
 
