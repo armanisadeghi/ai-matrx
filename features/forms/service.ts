@@ -66,6 +66,8 @@ export interface PublicFormQuestion {
   ask?: string | null;
   help?: string | null;
   required?: boolean | null;
+  /** The question's condition, as the store holds it. Answered by the store, never here. */
+  showIf?: Record<string, unknown> | null;
 }
 
 /** What `custom.form_public` answers, exactly. */
@@ -154,6 +156,39 @@ export async function submitPublicForm(args: {
   }
   const row = Array.isArray(data) ? data[0] : data;
   return (row as SubmitOutcome | undefined) ?? { submission_id: null, record_id: null, state: "held", message: null };
+}
+
+/** One question's answer from `custom.form_public_asks`. */
+export interface PublicAsk {
+  field_key: string;
+  asked: boolean;
+  /** False when the condition is undecided or could not be worked out — the question is asked. */
+  decided: boolean;
+  /** The store's own sentence when it could not work the condition out. */
+  said: string | null;
+}
+
+/**
+ * WHICH QUESTIONS ARE ASKED NEXT, given the answers so far (lane FORMS-FIX-1).
+ *
+ * Each question's own condition is answered by the STORE — `custom.form_public_asks`
+ * hands it to `custom.rule_eval`, the evaluator the signed-in form uses — so a
+ * stranger's form branches exactly as the owner's preview does. Nothing is
+ * decided here and nothing in the browser. Zero rows means the same as
+ * `publicForm`'s null: missing, unpublished, closed or switched off.
+ */
+export async function publicFormAsks(formId: string, values: Record<string, unknown>): Promise<PublicAsk[]> {
+  if (!UUID.test(formId)) return [];
+  const { data, error } = await storeDoors().rpc("form_public_asks", {
+    p_form_id: formId,
+    p_values: values,
+  });
+  if (error) {
+    const err = new Error(error.message) as Error & { hint?: string };
+    if (error.hint) err.hint = error.hint;
+    throw err;
+  }
+  return (Array.isArray(data) ? data : []) as PublicAsk[];
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

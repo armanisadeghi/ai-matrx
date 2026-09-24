@@ -16,9 +16,21 @@
 
 import { useCallback } from "react";
 import { FormRunner, type FormSubmitOutcome } from "@ai-matrx/records-ui";
-import type { Field } from "@ai-matrx/records";
+import type { Field, RuleExpression } from "@ai-matrx/records";
 
 import type { PublicForm } from "@/features/forms/service";
+
+/**
+ * What the runner's `whichAsked` port answers — records-ui's `FormAsked`, 0.84.9 onwards.
+ * Declared here, and the port handed over through `branching` below, so this page still
+ * compiles against 0.84.8 until the chair publishes; on 0.84.8 the port is ignored and the
+ * runner shows every question WITH its sentence saying it cannot branch, which is honest.
+ * When `@ai-matrx/records-ui` 0.84.9 is live, import `FormAsked` and pass `whichAsked` by
+ * name so a rename is a build failure.
+ */
+type PublicFormAsked =
+  | { ok: true; asks: ReadonlyArray<{ field: string; asked: boolean; said?: string | null }> }
+  | { ok: false; message: string };
 
 export function PublicFormRunner({ form }: { form: PublicForm }) {
   const submit = useCallback(
@@ -62,6 +74,43 @@ export function PublicFormRunner({ form }: { form: PublicForm }) {
     [form.form_id],
   );
 
+  // WHICH QUESTIONS COME NEXT — the store's answer, through the server (lane FORMS-FIX-1).
+  // The owner's "ask this only when …" used to be dropped right here, on the way into the
+  // runner, so a stranger was shown every question. Now the condition travels with the
+  // question and the STORE answers it (`custom.form_public_asks`); this is only the knock.
+  const whichAsked = useCallback(
+    async (values: Record<string, unknown>): Promise<PublicFormAsked> => {
+      try {
+        const response = await fetch(`/api/forms/${form.form_id}/asks`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ values }),
+        });
+        const body = (await response.json()) as
+          | { ok: true; asks: Array<{ field: string; asked: boolean; said?: string | null }> }
+          | { ok: false; message?: string | null };
+        if (!response.ok || body.ok !== true) {
+          return {
+            ok: false,
+            message:
+              (body as { message?: string | null }).message ??
+              "This form could not work out which questions come next, so all of them are shown.",
+          };
+        }
+        return { ok: true, asks: body.asks };
+      } catch {
+        return {
+          ok: false,
+          message:
+            "This form could not reach us to work out which questions come next, so all of them are shown.",
+        };
+      }
+    },
+    [form.form_id],
+  );
+
+  const branching: Record<string, unknown> = { whichAsked };
+
   return (
     <FormRunner
       form={{
@@ -73,6 +122,7 @@ export function PublicFormRunner({ form }: { form: PublicForm }) {
           ask: q.ask ?? null,
           help: q.help ?? null,
           required: q.required ?? null,
+          showIf: (q.showIf as RuleExpression | null | undefined) ?? null,
         })),
         flow: form.presentation?.flow ?? "one-at-a-time",
         theme: form.presentation?.theme ?? null,
@@ -83,6 +133,7 @@ export function PublicFormRunner({ form }: { form: PublicForm }) {
       fields={form.fields as unknown as Field[]}
       honeypotKey={form.honeypot_key}
       onSubmit={submit}
+      {...branching}
     />
   );
 }
