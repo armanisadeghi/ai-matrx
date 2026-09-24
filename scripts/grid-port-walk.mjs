@@ -673,7 +673,8 @@ async function main() {
     if (wants("share")) {
       const level = process.env.GRID_PORT_SHARE_LEVEL || "Viewer";
       await openGrid(page, TABLES.customers, "Maria Delgado");
-      await inGrid(page).getByRole("button", { name: /^Share$/ }).first().click();
+      // On the Sheet this is the table page's Share — the grid draws none of its own.
+      await page.getByRole("button", { name: /^Share$/ }).first().click();
       await page.waitForTimeout(1500);
       const email = page.locator("#user-email").first();
       let shared = false;
@@ -909,13 +910,47 @@ async function main() {
           for (const it of items) for (const type of it.types) window.__copied.push(await (await it.getType(type)).text());
         };
       });
-      // The grid's own export control. On the Sheet the table page draws one of its own
-      // for the records beside it, so the grid's is the one inside the Sheet.
-      await page.locator(`${SURFACE === "sheet" ? "[data-sheet-layout] " : ""}[aria-label^="Copy, transform or export"]`).first().click();
-      await page.waitForTimeout(1200);
-      await page.locator("[data-radix-popper-content-wrapper]").last().getByRole("button", { name: /^(Copy )?CSV$/ }).first().click();
-      await page.waitForTimeout(2500);
-      const copied = (await page.evaluate(() => window.__copied)).join("\n");
+      if (SURFACE === "sheet") {
+        // ONE PLACE: the grid draws no Share and no export of its own; the page does.
+        const sheet = page.locator("[data-sheet-layout]").first();
+        const gridShare = await sheet.getByRole("button", { name: /^Share$/ }).count();
+        const gridExport = await sheet.locator('[aria-label^="Copy, transform or export"]').count();
+        const pageExport = await page.locator('[aria-label^="Copy, transform or export"]').count();
+        pass("export-one-place", gridShare === 0 && gridExport === 0 && pageExport === 1,
+          `grid Share ${gridShare}, grid export ${gridExport}, page export ${pageExport}`);
+        // The grid's right-click "Export this table…" opens the page's export.
+        await page.locator("[data-cell$='::work_order']").filter({ hasText: "WO-4471" }).first().click({ button: "right" });
+        await page.waitForTimeout(900);
+        const item = page.getByRole("menuitem", { name: /Export this table/ }).first();
+        const offered = (await item.count()) > 0;
+        const oldExport = await page.getByRole("menuitem", { name: /^(Print|Email to me|Save as file|HTML preview)/ }).count();
+        if (offered) await item.click();
+        await page.waitForTimeout(1200);
+        // The page's export is the copy-and-transform menu (Copy as / Download / Copy for AI).
+        const opened = /COPY AS|Copy as/.test(await page.locator("[data-radix-popper-content-wrapper]").last().innerText().catch(() => ""))
+          && (await page.locator('[aria-label^="Copy, transform or export"]').first().getAttribute("aria-expanded")) === "true";
+        await page.keyboard.press("Escape");
+        await page.waitForTimeout(500);
+        pass("export-right-click-opens-page", offered && opened && oldExport === 0,
+          offered ? (opened ? "right-click → Export this table… opened the page's export" : "the page's export did not open") : "no Export this table… in the right-click menu");
+      } else {
+        await page.locator('[aria-label^="Copy, transform or export"]').first().click();
+        await page.waitForTimeout(1200);
+      }
+      let copied = "";
+      if (SURFACE === "sheet") {
+        // On the Sheet the CSV is the page's own control, beside its menu: a file download.
+        const [download] = await Promise.all([
+          page.waitForEvent("download", { timeout: 30000 }),
+          page.getByRole("button", { name: /^CSV$/ }).first().click(),
+        ]);
+        const path = await download.path();
+        copied = path ? readFileSync(path, "utf8") : "";
+      } else {
+        await page.locator("[data-radix-popper-content-wrapper]").last().getByRole("button", { name: /^(Copy )?CSV$/ }).first().click();
+        await page.waitForTimeout(2500);
+        copied = (await page.evaluate(() => window.__copied)).join("\n");
+      }
       const lines = copied.split(/\r?\n/).filter(Boolean);
       const hasAll = ["WO-4471", "WO-4472", "WO-4473", "WO-4474", "WO-4475"].every((w) => copied.includes(w));
       const words = /Maria Delgado|Harbor View|Takeda/.test(copied);
@@ -1100,6 +1135,73 @@ async function main() {
     // ── /data REDIRECTS NOTHING (owner's ruling 2026-09-23: "don't redirect anything at all
     // right now"). The older route opens the older viewer; it never lands on /data-v2 and
     // never says a table moved — old and new are compared side by side.
+    // ── DRAWN (the owner's verdict on his copy: "No colors, no custom actions"): what the
+    //    mover carried — color by a choice column, a row rule, a column highlight, a row
+    //    action, a formula, a hand-set order — is DRAWN by the Sheet, from the store as stored.
+    //    The fixture carries them the way the mover writes them (Field ids, choice labels).
+    if (wants("drawn")) {
+      const text = await openGrid(page, TABLES.parity, "Job 120");
+      const rows = page.locator("[data-sheet-layout] table tbody tr, table tbody tr");
+      const tints = await page.evaluate(() => {
+        const out = { red: 0, amber: 0, green: 0, blue: 0, violet: 0, teal: 0, slate: 0, blockedRed: 0, blocked: 0 };
+        for (const tr of document.querySelectorAll("table tbody tr")) {
+          const c = tr.className || "";
+          for (const k of Object.keys(out)) if (c.includes(`bg-${k}-50`) || c.includes(`bg-${k}-100/70`)) out[k] += 1;
+          const status = tr.querySelector("[data-cell$='::status']")?.textContent?.trim();
+          if (status === "Blocked") {
+            out.blocked += 1;
+            if (c.includes("bg-red-50")) out.blockedRed += 1;
+          }
+        }
+        return out;
+      });
+      const tinted = Object.entries(tints).filter(([k]) => !k.startsWith("blocked")).reduce((a, [, v]) => a + v, 0);
+      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-20-drawn-colors.png` });
+      pass("drawn-colorby", tinted > 0 && tints.blocked > 0, `rows tinted by Status: ${JSON.stringify(tints)}`);
+      pass("drawn-rule", tints.blocked > 0 && tints.blockedRed === tints.blocked, `${tints.blockedRed} of ${tints.blocked} Blocked rows red (rule "Status is Blocked")`);
+      const ownerTint = await page.locator("[data-cell$='::owner']").first().evaluate((el) => {
+        const td = el.closest("td");
+        return `${td?.className ?? ""} ${el.className ?? ""}`;
+      }).catch(() => "");
+      pass("drawn-column-highlight", /bg-blue-/.test(ownerTint), `Owner column cell classes carry blue: ${/bg-blue-/.test(ownerTint)}`);
+      const firstRow = rows.first();
+      const runBtn = firstRow.locator('button[title="Run an action on this row"]').first();
+      let offered = false;
+      if ((await runBtn.count()) > 0) {
+        await runBtn.click();
+        await page.waitForTimeout(700);
+        offered = (await page.getByRole("menuitem", { name: /Close out job/ }).count()) > 0;
+        await page.keyboard.press("Escape");
+      }
+      pass("drawn-row-action", offered, offered ? "the row's action button offers Close out job" : "no row action button or no Close out job");
+      const totals = await page.locator("[data-cell$='::total']").allInnerTexts().catch(() => []);
+      const numeric = totals.filter((t) => /\d/.test(t)).length;
+      pass("drawn-formula", totals.length > 0 && numeric > 0, `Total (a formula the store works out): ${numeric} of ${totals.length} cells hold a number`);
+
+      // Hand-set order (G13): move the third row to the top, save, reload, and it stays.
+      const reorder = inGrid(page).getByRole("button", { name: /^Reorder$/ }).first();
+      await reorder.waitFor({ timeout: 15000 }).catch(() => {});
+      const drawn = (await reorder.count()) > 0;
+      pass("drawn-reorder-offered", drawn, drawn ? "Reorder is drawn (the store keeps a hand-set order here)" : "no Reorder");
+      if (drawn) {
+        const jobs = async () => (await page.locator("[data-cell$='::job']").allInnerTexts()).map((t) => t.trim());
+        const before = await jobs();
+        await reorder.click();
+        await page.waitForTimeout(2500);
+        const dialog = page.getByRole("dialog").last();
+        const ups = dialog.locator('button[title="Move up"]');
+        await ups.nth(2).click();
+        await page.waitForTimeout(300);
+        await ups.nth(1).click();
+        await page.waitForTimeout(300);
+        await dialog.getByRole("button", { name: /Save Order/ }).click();
+        await page.waitForTimeout(4000);
+        await openGrid(page, TABLES.parity, "Job 120");
+        const after = await jobs();
+        pass("drawn-reorder-kept", after[0] === before[2] && after[1] === before[0], `before ${before.slice(0, 3).join(", ")} → after reload ${after.slice(0, 3).join(", ")}`);
+      }
+    }
+
     if (wants("noredirect")) {
       await page.goto(`${ORIGIN}/data/${TABLES.calls}`, { waitUntil: "domcontentloaded", timeout: 240000 });
       await page.waitForTimeout(12000);
@@ -1124,13 +1226,17 @@ async function main() {
     // The record store's own answer "this exists and you may not open it" is a 42501 from
     // custom.record_resolve, which PostgREST sends as 403 — the route's no-access lookup.
     const notSharedAnswer = /^403 https:\/\/[a-z0-9]+\.supabase\.co\/rest\/v1\/rpc\/record_resolve$/;
-    const excused = bad.filter((b) => (onClone && b.startsWith("401 ") && python.test(b.slice(4))) || olderFirst.test(b) || notSharedAnswer.test(b));
+    // THE HAND-ORDER PRESENCE PROBE (G13): asked once per organization per page load, for a
+    // view that cannot exist — a present door answers 23503 (PostgREST 409), an absent one 404.
+    const handOrderProbe = /^409 https:\/\/[a-z0-9]+\.supabase\.co\/rest\/v1\/rpc\/read_records_in_view_order$/;
+    const excused = bad.filter((b) => (onClone && b.startsWith("401 ") && python.test(b.slice(4))) || olderFirst.test(b) || notSharedAnswer.test(b) || handOrderProbe.test(b));
     const counted = bad.filter((b) => !excused.includes(b));
     const countedErrors = errors.filter(
       (e) =>
         !(onClone && /status of 401|ambient\.page_guidance failed to resolve: Authentication required/.test(e)) &&
         !(excused.some((b) => b.startsWith("500 ")) && /status of 500/.test(e)) &&
-        !(excused.some((b) => b.startsWith("403 ")) && /status of 403/.test(e)),
+        !(excused.some((b) => b.startsWith("403 ")) && /status of 403/.test(e)) &&
+        !(excused.some((b) => handOrderProbe.test(b)) && /status of 409/.test(e)),
     );
     pass("quiet", countedErrors.length === 0 && counted.length === 0,
       `console errors ${countedErrors.length}, responses>=400 ${counted.length}` +

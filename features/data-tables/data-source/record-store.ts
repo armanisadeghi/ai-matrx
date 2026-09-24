@@ -228,15 +228,37 @@ const NO_VIEW = "00000000-0000-0000-0000-000000000000";
 
 type HandOrder = StoreHandOrder & { viewId: string | null };
 
-async function handOrderViewId(client: RecordsClient, tableId: string): Promise<string | null> {
+async function tableViews(
+  client: RecordsClient,
+  tableId: string,
+): Promise<Array<{ view_id: string; created_at: string; definition?: Record<string, unknown> | null }>> {
   const views = await client.views({ table_id: tableId });
-  if (!views.ok) return null;
+  if (!views.ok) return [];
   // `definition` is on every row the door answers (S0 one saved view); the installed client's
   // type predates it, so it is read as the door's own shape.
-  const manual = (views.data as unknown as Array<{ view_id: string; created_at: string; definition?: Record<string, unknown> | null }>)
-    .filter((v) => v.definition?.order === "manual")
+  return (views.data as unknown as Array<{ view_id: string; created_at: string; definition?: Record<string, unknown> | null }>)
+    .slice()
     .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
-  return manual[0]?.view_id ?? null;
+}
+
+const handOrderPresence = new Map<string, Promise<string | null>>();
+
+/** Null when the store keeps hand-set orders here; else the store's sentence for why not. */
+function handOrderDoorAbsent(home: RecordStoreHome): Promise<string | null> {
+  let known = handOrderPresence.get(home.organizationId);
+  if (!known) {
+    known = readRecordsInViewOrder(home, NO_VIEW, 1, 0).then((probe) => (!probe.ok && probe.absent ? probe.error.message : null));
+    handOrderPresence.set(home.organizationId, known);
+  }
+  return known;
+}
+
+function manualViewId(views: Awaited<ReturnType<typeof tableViews>>): string | null {
+  return views.find((v) => v.definition?.order === "manual")?.view_id ?? null;
+}
+
+async function handOrderViewId(client: RecordsClient, tableId: string): Promise<string | null> {
+  return manualViewId(await tableViews(client, tableId));
 }
 
 async function readHandOrder(
@@ -245,17 +267,20 @@ async function readHandOrder(
   tableId: string,
   rowOrder: unknown,
 ): Promise<HandOrder> {
-  const viewId = await handOrderViewId(client, tableId);
+  const views = await tableViews(client, tableId);
+  const viewId = manualViewId(views);
+  if (!viewId) {
+    // No hand-ordered view yet: is the door on this database at all? Asked ONCE per
+    // organization per page load (a view that cannot exist, so a present door answers 23503
+    // and an absent one PGRST202) — never once per table open.
+    const absent = await handOrderDoorAbsent(home);
+    if (absent) return { status: absent, enabled: false, order: [], viewId: null };
+    return { status: "served", enabled: rowOrder === "manual", order: [], viewId: null };
+  }
   const order: string[] = [];
   for (let offset = 0; ; ) {
-    // With no hand-ordered view yet, the door is still asked (for a view that cannot exist):
-    // "absent" means the store cannot keep an order here; any other answer means it can.
-    const page = await readRecordsInViewOrder(home, viewId ?? NO_VIEW, READ_PAGE, offset);
-    if (!page.ok) {
-      if (page.absent) return { status: page.error.message, enabled: false, order: [], viewId: null };
-      if (!viewId) break;
-      return { status: page.error.message, enabled: false, order: [], viewId };
-    }
+    const page = await readRecordsInViewOrder(home, viewId, READ_PAGE, offset);
+    if (!page.ok) return { status: page.error.message, enabled: false, order: [], viewId };
     if (page.data.length === 0) break;
     for (const row of page.data) if (row.position !== null && row.position !== undefined) order.push(row.id);
     offset += page.data.length;

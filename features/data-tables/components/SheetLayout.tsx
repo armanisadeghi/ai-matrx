@@ -54,13 +54,23 @@ export function SheetLayout({ tableId, organizationId, userId }: SheetLayoutProp
       document.querySelectorAll<HTMLElement>('[aria-label^="Copy, transform or export"]'),
     ).find((el) => !el.closest("[data-sheet-layout]"));
     if (trigger) {
-      // Called from a menu item: the menu is still closing and returns focus as it goes,
-      // which would dismiss a popover opened in the same tick. Open it on the next frame.
-      window.setTimeout(() => {
-        trigger.scrollIntoView({ block: "nearest" });
-        trigger.focus();
-        trigger.click();
-      }, 150);
+      // Called from a menu item: the right-click menu is still closing and hands focus back
+      // as it goes, which dismisses a popover opened meanwhile (walked: a fixed 150 ms opened
+      // it and lost it). So wait until no menu is open any more, then press the trigger.
+      const started = Date.now();
+      const press = () => {
+        const menuOpen = document.querySelector('[role="menu"]') !== null;
+        if (menuOpen && Date.now() - started < 2000) {
+          window.setTimeout(press, 50);
+          return;
+        }
+        window.setTimeout(() => {
+          trigger.scrollIntoView({ block: "nearest" });
+          trigger.focus();
+          trigger.click();
+        }, 80);
+      };
+      window.setTimeout(press, 50);
       return;
     }
     toast({
