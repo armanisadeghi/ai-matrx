@@ -9,6 +9,7 @@
  * The list is modelled on the best password managers: one identity line and
  * one concise supporting line. Values and full metadata belong in detail.
  */
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -249,6 +250,11 @@ export function VaultWorkspace({
         ? selected
         : (filtered[0] ?? null)
       : selected;
+  // A routed item id (/vault/[itemId]) that the loaded vault does not hold:
+  // the detail pane renders AccessGate for it instead of silently showing
+  // "Select a credential" as if nothing had been asked for.
+  const routedItemMissing =
+    !!selectedItemId && !selected && !vault.loading && !vault.error;
   const selectedIdentity = detailItem
     ? credentialIdentity(detailItem, defsByKey.get(detailItem.definition_key))
     : null;
@@ -714,7 +720,14 @@ export function VaultWorkspace({
           </section>
 
           <section className="hidden min-h-0 min-w-0 flex-col lg:flex">
-            {detailItem ? (
+            {routedItemMissing && selectedItemId ? (
+              <AccessGate
+                token="credential_item"
+                id={selectedItemId}
+                fallbackHref="/vault"
+                fallbackLabel="Your vault"
+              />
+            ) : detailItem ? (
               <>
                 <div className="flex min-w-0 items-start gap-3 border-b border-border px-5 py-4">
                   <span className={cn(IDENTITY_TILE_CLASS, "h-9 w-9")}>
