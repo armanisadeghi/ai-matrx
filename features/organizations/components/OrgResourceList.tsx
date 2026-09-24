@@ -79,6 +79,12 @@ export interface OrgResourceListProps {
   emptyTitle: string;
   emptyDescription: string;
   emptyIcon: React.ReactNode;
+  /**
+   * One more control on a card, rendered BESIDE the card link (never inside it — an
+   * interactive control inside an anchor is invalid HTML). The Tables page uses it for
+   * where a table lives and moving it (`WhereItLives`). Absent: nothing is added.
+   */
+  renderCardAside?: ((item: ResourceCardData) => React.ReactNode) | undefined;
 }
 
 export function OrgResourceList({
@@ -92,6 +98,7 @@ export function OrgResourceList({
   emptyTitle,
   emptyDescription,
   emptyIcon,
+  renderCardAside,
 }: OrgResourceListProps) {
   const [peekId, setPeekId] = React.useState<string | null>(null);
 
@@ -282,9 +289,11 @@ export function OrgResourceList({
           <div className={`${CARD_CLASS} h-full`}>{body}</div>
         );
 
+        const aside = renderCardAside?.(item) ?? null;
         return (
           <div key={item.id} className="relative">
             {card}
+            {aside ? <div className="absolute bottom-2 right-9">{aside}</div> : null}
             {peekControl}
           </div>
         );

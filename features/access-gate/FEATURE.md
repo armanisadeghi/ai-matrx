@@ -241,9 +241,14 @@ surface means importing them too, never reimplementing the RPC call.
   full gate (browser-verified: `/organizations/accountspayable` as a
   non-member shows kind + name + honest denial); one it won't still gets
   "this address doesn't match…", never an invented reason. Types are
-  registered EXPLICITLY in the function (organization only today) — read the
-  migration header (`migrations/access_gate_slug_resolver.sql`) before adding
-  one; a slug that is itself content (the `web_page` test) must not go in.
+  registered EXPLICITLY in the function — organization, content_ir_kind,
+  learn_doc, pc_episode, pc_show, app (2026-09-23; the live body is the source
+  of truth, the migration file shows only the first) — read the migration
+  header (`migrations/access_gate_slug_resolver.sql`) before adding one; a
+  slug that is itself content (the `web_page` test) must not go in. Any other
+  slug page gates through `components/SlugAccessGate.tsx` in its segment
+  `not-found.tsx` (tokens tried in the page's own order; `publishFiltered`
+  turns a readable-but-unpublished row into "isn't published", never a denial).
 - **`check:access-errors` only sees quoted strings.** Bare JSX text
   (`<p>This doesn&apos;t exist…</p>`) is invisible to it — that is why the
   research-topic 404 went unreported for so long. The escaped-apostrophe blind
@@ -259,6 +264,15 @@ surface means importing them too, never reimplementing the RPC call.
   `recordUnavailable`, assert some consumer reads `.isError`/`.error`.
 
 ## Change Log
+
+- **2026-09-23** — **Slug pages get the gate.** `access_gate_resolve_slug`
+  gained content_ir_kind, learn_doc, pc_episode, pc_show and app branches
+  (applied through the Supabase MCP; grants unchanged, authenticated only).
+  New shared `SlugAccessGate`; segment `not-found.tsx` now gates
+  `/shapes/[kind]/**`, `/education/learn/[...slug]`, `/podcast/[slug]`,
+  `/podcast/[slug]/blog` and `/p/[slug]` (slug miss). Masterwork kept sources
+  left as is: the rulebook gate already runs first and the source's RLS follows
+  the rulebook, so an absent source is genuinely absent.
 
 - **2026-09-15** — **The resolver stopped telling a super admin they can open
   someone's private conversation.** `access_denied_context` promoted every

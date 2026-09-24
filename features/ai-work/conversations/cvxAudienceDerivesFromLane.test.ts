@@ -31,45 +31,21 @@
  *
  * No credentials → the suite FAILS (unmeasured is not a pass).
  */
-import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import pg from "pg";
 
+import { testDbEnvFrom } from "@/scripts/lib/direct-db-env";
+
 function loadEnv(): pg.ClientConfig {
-  const bag: Record<string, string | undefined> = { ...process.env };
-  for (const path of [
-    resolve(__dirname, "../../../.env.local"),
-    resolve(__dirname, "../../../../aidream/.env"),
-  ]) {
-    let text: string;
-    try {
-      text = readFileSync(path, "utf8");
-    } catch {
-      continue;
-    }
-    for (const line of text.split("\n")) {
-      const m = line.match(/^\s*(SUPABASE_MATRIX_[A-Z_]+)\s*=\s*(.*?)\s*$/);
-      const key = m?.[1];
-      if (key && !bag[key]) bag[key] = (m?.[2] ?? "").replace(/^['"]|['"]$/g, "");
-    }
-  }
-  const need = [
-    "SUPABASE_MATRIX_HOST",
-    "SUPABASE_MATRIX_PORT",
-    "SUPABASE_MATRIX_USER",
-    "SUPABASE_MATRIX_PASSWORD",
-    "SUPABASE_MATRIX_DATABASE_NAME",
-  ];
-  const missing = need.filter((k) => !bag[k]);
-  if (missing.length) {
-    throw new Error(`UNMEASURED: direct DB variables missing: ${missing.join(", ")}`);
-  }
+  // THE ONE DOOR for a live test (scripts/lib/direct-db-env.ts): never the live database by
+  // accident — repointed to MATRX_TEST_DATABASE_URL / SUPABASE_BRANCH_DATABASE_URL, or refused.
+  const db = testDbEnvFrom(resolve(__dirname, "../../.."));
   return {
-    host: bag.SUPABASE_MATRIX_HOST,
-    port: Number(bag.SUPABASE_MATRIX_PORT),
-    user: bag.SUPABASE_MATRIX_USER,
-    password: bag.SUPABASE_MATRIX_PASSWORD,
-    database: bag.SUPABASE_MATRIX_DATABASE_NAME,
+    host: db.host,
+    port: db.port,
+    user: db.user,
+    password: db.password,
+    database: db.database,
     ssl: { rejectUnauthorized: false },
     application_name: "cvx-audience-derives-from-lane-test",
     connectionTimeoutMillis: 15_000,

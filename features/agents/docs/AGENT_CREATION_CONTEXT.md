@@ -7,7 +7,7 @@ When building an agent you need `model_id` (one UUID) and `tools` (array of UUID
 | Model | id |
 |---|---|
 | Claude Sonnet 4.6 (balanced default) | `5970727c-37fc-4a0f-88c6-04ea8ca09ec6` |
-| Claude Opus 4.8 (max quality) | `bdd06a96-37d2-40f3-8951-dff89b47b3b0` |
+| Claude Opus 5.5 (max quality) | `bc43581f-c7a6-4fd5-aa6a-8267074f480e` |
 | Claude Haiku 4.5 (fast/cheap) | `5b467c4b-80f3-420f-a516-05218907521b` |
 | GPT 5 | `7fe2bcd1-3059-423b-9878-0ee2ad6ddb2f` |
 | GPT 5 Mini | `6f4eb19c-74d4-49eb-88b5-ab34e8b2a1dc` |

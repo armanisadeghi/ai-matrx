@@ -614,7 +614,6 @@ function ExecutionsTable({
         {error && <LoadError label="executions" error={error} retry={load} />}
         <Stats
           cards={[
-            [stats.total, "Loaded"],
             [stats.success, "Success loaded", "text-success"],
             [stats.failed, "Failed loaded", "text-destructive"],
           ]}
@@ -657,34 +656,30 @@ function ExecutionsTable({
               ],
               searchPlaceholder: "Search executions…",
               refresh: { onRefresh: load },
-              actions: viewRows.length ? (
-                <CopyButtons
-                  size="icon"
-                  label={`Executions (${viewRows.length})`}
-                  human={() => viewRows.map(humanExecution).join("\n\n")}
-                  json={() => viewRows}
-                  agent={() => ({
-                    kind: "agent-app-executions",
-                    location: "AI Matrx Admin — Agent Apps — Executions",
-                    description:
-                      "Recent executions currently shown after canonical table filters.",
-                    data: viewRows,
-                    attributes: { count: viewRows.length },
-                  })}
-                  export={{
-                    items: [
-                      jsonExportItem(() => viewRows, "JSON (this view)"),
-                      csvExportItem(
-                        () =>
-                          viewRows as unknown as Array<Record<string, unknown>>,
-                        "CSV (this view)",
-                      ),
-                    ],
-                  }}
-                />
-              ) : undefined,
             }}
-            copy={false}
+            copy={{
+              label: "Execution",
+              listLabel: "Executions (this view)",
+              location: "AI Matrx Admin — Agent Apps — Executions",
+              rowKind: "agent-app-execution",
+              listKind: "agent-app-executions",
+              rowDescription: "A single agent-app execution row.",
+              listDescription:
+                "Recent executions currently shown after canonical table filters.",
+              humanRow: humanExecution,
+              agentRow: (row) => row,
+              rowAttributes: (row) => ({ id: row.id, success: row.success }),
+              listAttributes: (visible) => ({ count: visible.length }),
+              export: (visible) => ({
+                items: [
+                  jsonExportItem(() => visible, "JSON (this view)"),
+                  csvExportItem(
+                    () => visible as unknown as Array<Record<string, unknown>>,
+                    "CSV (this view)",
+                  ),
+                ],
+              }),
+            }}
             detail={{ enabled: false }}
             window={{ enabled: false }}
             emptyState={{
@@ -693,22 +688,6 @@ function ExecutionsTable({
                 : "No executions match the current view.",
             }}
             onViewChange={setViewRows}
-            rowActions={(row) => (
-              <CopyButtons
-                size="xs"
-                label={row.app_name ?? row.task_id}
-                human={() => humanExecution(row)}
-                json={() => row}
-                agent={() => ({
-                  kind: "agent-app-execution",
-                  location: "AI Matrx Admin — Agent Apps — Executions",
-                  description: "A single agent-app execution row.",
-                  data: row,
-                  summary: humanExecution(row),
-                  attributes: { id: row.id, success: row.success },
-                })}
-              />
-            )}
           />
         </div>
       </div>
@@ -850,7 +829,6 @@ function ErrorsTable({
         {error && <LoadError label="errors" error={error} retry={load} />}
         <Stats
           cards={[
-            [stats.total, "Loaded"],
             [stats.unresolved, "Unresolved loaded", "text-destructive"],
             [stats.resolved, "Resolved loaded", "text-success"],
           ]}
@@ -893,34 +871,30 @@ function ErrorsTable({
               ],
               searchPlaceholder: "Search errors…",
               refresh: { onRefresh: load },
-              actions: viewRows.length ? (
-                <CopyButtons
-                  size="icon"
-                  label={`Errors (${viewRows.length})`}
-                  human={() => viewRows.map(humanError).join("\n\n")}
-                  json={() => viewRows}
-                  agent={() => ({
-                    kind: "agent-app-errors",
-                    location: "AI Matrx Admin — Agent Apps — Errors",
-                    description:
-                      "Errors currently shown after canonical table filters.",
-                    data: viewRows,
-                    attributes: { count: viewRows.length },
-                  })}
-                  export={{
-                    items: [
-                      jsonExportItem(() => viewRows, "JSON (this view)"),
-                      csvExportItem(
-                        () =>
-                          viewRows as unknown as Array<Record<string, unknown>>,
-                        "CSV (this view)",
-                      ),
-                    ],
-                  }}
-                />
-              ) : undefined,
             }}
-            copy={false}
+            copy={{
+              label: "Error",
+              listLabel: "Errors (this view)",
+              location: "AI Matrx Admin — Agent Apps — Errors",
+              rowKind: "agent-app-error",
+              listKind: "agent-app-errors",
+              rowDescription: "A single agent-app error row.",
+              listDescription:
+                "Errors currently shown after canonical table filters.",
+              humanRow: humanError,
+              agentRow: (row) => row,
+              rowAttributes: (row) => ({ id: row.id, resolved: row.resolved }),
+              listAttributes: (visible) => ({ count: visible.length }),
+              export: (visible) => ({
+                items: [
+                  jsonExportItem(() => visible, "JSON (this view)"),
+                  csvExportItem(
+                    () => visible as unknown as Array<Record<string, unknown>>,
+                    "CSV (this view)",
+                  ),
+                ],
+              }),
+            }}
             detail={{ enabled: false }}
             window={{ enabled: false }}
             emptyState={{
@@ -945,20 +919,6 @@ function ErrorsTable({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <CopyButtons
-                  size="xs"
-                  label={row.app_name ?? row.error_type}
-                  human={() => humanError(row)}
-                  json={() => row}
-                  agent={() => ({
-                    kind: "agent-app-error",
-                    location: "AI Matrx Admin — Agent Apps — Errors",
-                    description: "A single agent-app error row.",
-                    data: row,
-                    summary: humanError(row),
-                    attributes: { id: row.id, resolved: row.resolved },
-                  })}
-                />
               </>
             )}
           />
@@ -978,7 +938,7 @@ function ErrorsTable({
 
 function Stats({ cards }: { cards: Array<[number, string, string?]> }) {
   return (
-    <div className="grid shrink-0 grid-cols-3 gap-3 pb-3">
+    <div className="grid shrink-0 grid-cols-2 gap-3 pb-3">
       {cards.map(([value, label, color]) => (
         <Card key={label}>
           <CardContent className="p-2">

@@ -29,11 +29,17 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import process from "node:process";
 import {
+  findDroppedTriggersRecreated,
+  findDroppedViewsRecreated,
   findReplaceOccurrences,
   liveOverloads,
+  liveTrigger,
+  liveView,
   parseBasedOnLines,
   resolveReplaced,
   type LiveFunction,
+  type LiveTrigger,
+  type LiveView,
   type Query,
 } from "./migration-based-on";
 import { connectDirect, DB_VARS, loadDbEnv, type DbEnv } from "./lib/direct-db";
@@ -53,6 +59,14 @@ const C = {
 
 function line(fn: LiveFunction): string {
   return `-- based-on: ${fn.signature} ${fn.hash}`;
+}
+
+function triggerLine(t: LiveTrigger): string {
+  return `-- based-on: trigger ${t.signature} ${t.hash}`;
+}
+
+function viewLine(v: LiveView): string {
+  return `-- based-on: view ${v.signature} ${v.hash}`;
 }
 
 /** `--based-on-target` / `--target` — WHICH database the hash is measured on. */
@@ -157,10 +171,31 @@ async function main(): Promise<number> {
               `Schema-qualify it and write plain parameter types.`,
           );
       }
-      if (wanted.length === 0) {
+      // PROGRESS-S2: a DROP this file recreates is judged exactly like a replace —
+      // print its `-- based-on: trigger …` / `-- based-on: view …` line too.
+      const wantedTriggers: LiveTrigger[] = [];
+      for (const dt of findDroppedTriggersRecreated(sql)) {
+        if (dt.table === null) {
+          console.error(
+            `${C.red}[FAIL]${C.reset} DROP TRIGGER ${dt.name} at line ${dt.line} does not name a ` +
+              `schema-qualified table (\`DROP TRIGGER ${dt.name} ON <schema>.<table>\`); its live body ` +
+              `cannot be looked up.`,
+          );
+          continue;
+        }
+        const live = await liveTrigger(q, dt.name, dt.table);
+        if (live) wantedTriggers.push(live);
+      }
+      const wantedViews: LiveView[] = [];
+      for (const dv of findDroppedViewsRecreated(sql)) {
+        const live = await liveView(q, dv.name);
+        if (live) wantedViews.push(live);
+      }
+
+      if (wanted.length === 0 && wantedTriggers.length === 0 && wantedViews.length === 0) {
         console.log(
-          `${C.cyan}[INFO]${C.reset} ${target} replaces no function that already exists live — ` +
-            `no \`-- based-on:\` line is needed.`,
+          `${C.cyan}[INFO]${C.reset} ${target} replaces no function, trigger or view that already ` +
+            `exists live — no \`-- based-on:\` line is needed.`,
         );
         return 0;
       }
@@ -168,6 +203,14 @@ async function main(): Promise<number> {
       for (const fn of wanted) {
         const have = already.has(fn.signature.replace(/\s+/g, ""));
         console.log(`${have ? C.dim : C.white}${line(fn)}${C.reset}${have ? `  ${C.dim}(already present — regenerate if stale)${C.reset}` : ""}`);
+      }
+      for (const t of wantedTriggers) {
+        const have = already.has(t.signature.replace(/\s+/g, ""));
+        console.log(`${have ? C.dim : C.white}${triggerLine(t)}${C.reset}${have ? `  ${C.dim}(already present — regenerate if stale)${C.reset}` : ""}`);
+      }
+      for (const v of wantedViews) {
+        const have = already.has(v.signature.replace(/\s+/g, ""));
+        console.log(`${have ? C.dim : C.white}${viewLine(v)}${C.reset}${have ? `  ${C.dim}(already present — regenerate if stale)${C.reset}` : ""}`);
       }
       return 0;
     }

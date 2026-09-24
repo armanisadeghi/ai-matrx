@@ -12,6 +12,8 @@ import { useCallback, useEffect, useState } from "react";
 import { extractErrorMessage } from "@/utils/errors";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import * as Api from "./service";
+import { createClient } from "@/utils/supabase/client";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import type {
   ConnectableMailbox,
   SendingEventRecord,
@@ -147,8 +149,25 @@ export function useSendingIdentity(identityId: string) {
     setLoading(true);
     setError(null);
     setOrganizationRequired(false);
-    Promise.all([Api.getSendingIdentity(identityId), Api.listSendingEvents(identityId, 100)])
-      .then(([detail, rows]) => {
+    // Read the ONE mailbox by id first (RLS decides) — never through the
+    // selected organization. No readable row means the page's access gate
+    // answers (denied / deleted / missing); a readable row carries its own
+    // organization, which the server calls are made in, so a person with no
+    // organization selected still opens what they can see.
+    readOwnOrganization(identityId)
+      .then(async (row) => {
+        if (cancelled) return;
+        if (!row) {
+          setIdentity(null);
+          setEvents(null);
+          setLoading(false);
+          return;
+        }
+        const opts = { organizationId: row.organizationId ?? undefined };
+        const [detail, rows] = await Promise.all([
+          Api.getSendingIdentity(identityId, opts),
+          Api.listSendingEvents(identityId, 100, opts),
+        ]);
         if (cancelled) return;
         setIdentity(detail);
         setEvents(rows);
@@ -239,4 +258,24 @@ export function useSendingIdentity(identityId: string) {
       [identityId, run],
     ),
   };
+}
+
+/**
+ * The mailbox row's own organization, read as the viewer. `null` when the row
+ * is not readable (denied, deleted, missing, or not a uuid).
+ */
+async function readOwnOrganization(
+  identityId: string,
+): Promise<{ organizationId: string | null } | null> {
+  if (!isUuidShape(identityId)) return null;
+  const { data, error } = await createClient()
+    .schema("crm")
+    .from("sending_identity")
+    .select("organization_id")
+    .eq("id", identityId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return { organizationId: (data.organization_id as string | null) ?? null };
 }

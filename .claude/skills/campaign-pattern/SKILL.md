@@ -52,11 +52,10 @@ before writing any brief; a brief written minutes after the vision arrives is th
 disease, not of speed.
 
 ### 3. Order the adversarial review BEFORE commitment
-Verbatim: *"before we take the next step... I want you to have an opus 5 agent who tries to poke
-holes in this list and tell us what things we are missing that we will regret later."* One
-sentence — and it seeded the entire culture: from then on, every plan got attacked before it was
+Historical order: Arman asked for an independent reviewer to poke holes in plans before the team
+proceeded. That order seeded the entire culture: from then on, every plan got attacked before it was
 trusted, and every "done" got attacked before it was believed. Adversarialism was the OWNER'S
-order, so no agent ever treated it as optional. (Mechanics: `plan-attack`.)
+order, so no agent ever treated it as optional. (Mechanics: `plan-attack`.) Current Claude reviewer selection: Opus 5.5.
 
 ### 4. Rule the done-means-done law (the single most load-bearing message)
 Verbatim, from launch: *"I don't want fake tests that take in fake data that the agents
@@ -101,7 +100,15 @@ needed (*"you are focused on the wrong things"*), and otherwise did not interfer
    `scripts/git/commit-own-paths.sh -m "<message>" <your paths>` (in common-docs:
    `meta/scripts/git/commit-own-paths.sh`) — never `git add` then `git commit`: the index is
    shared, and a plain commit carries every lane's staged work"* (`policies/shared-checkout.md`
-   rule 3; a staged deletion swept this way broke main twice on 2026-09-23).
+   rule 3; a staged deletion swept this way broke main twice on 2026-09-23). **And, for any lane
+   whose row names a build lock, the lease law verbatim: "Take leases only with
+   `matrx-frontend/scripts/lib/lease.sh` — `lease.sh take <lock> <lane> <note>` / `renew` /
+   `release`, or `lease.sh with <lock...> -- <command...>` to hold, heartbeat and release around
+   a whole apply. Never hand-write the lock SQL: it is the same `campaign_watch.lock_take` /
+   `lock_renew` / `lock_release` path `pnpm db:apply`, `pnpm db:rehearse` and
+   `scripts/night/lib-night.sh` already call."* (lane LEASE-HELPER, 2026-09-23 — a hand-written
+   lock query once read a column named `status` instead of `outcome`, always read "not held",
+   and a lane applied to the branch twice with no lease held at all; nothing stopped it).
    Freeze contracts before fan-out so lanes can't collide; after the freeze a change is an
    amendment (changelog + register note + type regeneration), never a silent edit. **STEP ZERO
    before any lane scouts for unclaimed work: query `agent.review_queue` for the reviewable

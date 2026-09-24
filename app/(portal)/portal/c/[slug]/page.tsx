@@ -26,10 +26,17 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, FileText } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { PublicLinkNotice } from "@/components/public-link/PublicLinkNotice";
+import {
+  PortalAccentBand,
+  PortalBrandHeading,
+  PortalFooter,
+  PortalLogo,
+} from "@/features/portals/PortalBrand";
+import { portalLook, type PortalLook } from "@/features/portals/look";
 import { PortalSignInForm } from "@/features/portals/PortalSignInForm";
 import { PortalSignOutButton } from "@/features/portals/PortalSignOutButton";
 import {
@@ -41,7 +48,8 @@ import {
   type PortalMembership,
   type PortalTable,
 } from "@/features/portals/service";
-import { readable, shownFields } from "@/features/portals/shown";
+import { isHers, readable, shownFields } from "@/features/portals/shown";
+import { stageLabel } from "@/features/portals/timeline";
 
 // Who is asking decides the whole page, and her rows move.
 export const dynamic = "force-dynamic";
@@ -53,8 +61,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const portal = await portalPublic(slug).catch(() => null);
+  const name = portal ? portalLook(portal.style, portal.organization).name : null;
   return {
-    title: portal ? `${portal.title} · ${portal.organization}` : "Client portal",
+    title: portal ? `${portal.title} · ${name}` : "Client portal",
     // A portal link is sent to the clients it belongs to, never found by
     // strangers searching.
     robots: { index: false, follow: false },
@@ -87,22 +96,25 @@ export default async function ClientPortalPage({
     return <PublicLinkNotice title={portal.title} message={portal.message} />;
   }
 
+  // S6: WHOSE PORTAL THIS IS, before she types anything — the business's own name, logo and
+  // colour, resolved by the store (the organization's brand when the portal set none).
+  const look = portalLook(portal.style, portal.organization);
+
   const viewer = await portalViewer();
   if (!viewer) {
     return (
-      <Shell>
+      <Shell look={look}>
         <section className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {portal.organization}
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
+          <PortalBrandHeading look={look} withWelcome={false} />
+          <h1 className="mt-5 text-2xl font-semibold tracking-tight text-foreground">
             {portal.title}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Sign in to see your jobs and invoices.
+            {look.welcome ?? "Sign in to see your jobs and invoices."}
           </p>
           <PortalSignInForm slug={portal.slug} />
         </section>
+        <PortalFooter look={look} />
       </Shell>
     );
   }
@@ -112,11 +124,9 @@ export default async function ClientPortalPage({
 
   if (!membership) {
     return (
-      <Shell>
+      <Shell look={look}>
         <section className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {portal.organization}
-          </p>
+          <PortalBrandHeading look={look} withWelcome={false} />
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
             {portal.title}
           </h1>
@@ -141,23 +151,32 @@ export default async function ClientPortalPage({
     );
   }
 
+  // Her own portal carries the look it was read with (portal_me), the same answer as above.
+  const her = portalLook(membership.style ?? portal.style, membership.organization);
+  const forms = [...(membership.forms ?? [])].sort((a, b) => a.order - b.order);
+
   return (
-    <Shell align="start">
+    <Shell align="start" look={her}>
       <div className="w-full max-w-3xl">
         <header className="flex items-start justify-between gap-3 pt-2">
-          <div className="min-w-0">
-            <p className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {membership.organization}
-            </p>
-            <h1 className="mt-0.5 truncate text-2xl font-semibold tracking-tight text-foreground">
-              {membership.client}
-            </h1>
-            <p className="mt-0.5 truncate text-sm text-muted-foreground">{membership.title}</p>
+          <div className="flex min-w-0 items-center gap-3">
+            <PortalLogo look={her} />
+            <div className="min-w-0">
+              <p className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {her.name}
+              </p>
+              <h1 className="mt-0.5 truncate text-2xl font-semibold tracking-tight text-foreground">
+                {membership.client}
+              </h1>
+              <p className="mt-0.5 truncate text-sm text-muted-foreground">{membership.title}</p>
+            </div>
           </div>
           <PortalSignOutButton slug={membership.slug} />
         </header>
+        {her.welcome ? <p className="mt-4 px-1 text-sm text-muted-foreground">{her.welcome}</p> : null}
 
         <div className="mt-6 space-y-8 pb-12">
+          {forms.length > 0 ? <FormsSection slug={membership.slug} forms={forms} look={her} /> : null}
           {membership.tables.map((table) => (
             <TableSection key={table.table_id} membership={membership} table={table} />
           ))}
@@ -167,8 +186,46 @@ export default async function ClientPortalPage({
             </p>
           ) : null}
         </div>
+        <PortalFooter look={her} />
       </div>
     </Shell>
+  );
+}
+
+/**
+ * S6: EVERY WAY SHE CAN ASK FOR SOMETHING, in the owner's order — each one opens in the portal,
+ * signed in as her, and what she sends lands on her own list (`custom.portal_form_submit`).
+ */
+function FormsSection({
+  slug,
+  forms,
+  look,
+}: {
+  slug: string;
+  forms: NonNullable<PortalMembership["forms"]>;
+  look: PortalLook;
+}) {
+  return (
+    <section aria-labelledby="portal-forms-heading">
+      <h2 id="portal-forms-heading" className="px-1 text-sm font-semibold tracking-tight text-foreground">
+        Ask for something
+      </h2>
+      <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+        {forms.map((form) => (
+          <li key={form.form_id}>
+            <Link
+              href={`/portal/c/${encodeURIComponent(slug)}/f/${form.form_id}`}
+              data-tap-target
+              className={`flex items-center gap-3 rounded-xl border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent/60 focus-visible:bg-accent/60 focus-visible:outline-none ${look.tintClass ?? "bg-card"}`}
+            >
+              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="min-w-0 flex-1 truncate">{form.label || form.title}</span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -179,9 +236,11 @@ export default async function ClientPortalPage({
 function Shell({
   children,
   align = "center",
+  look,
 }: {
   children: React.ReactNode;
   align?: "center" | "start";
+  look: PortalLook;
 }) {
   return (
     <main
@@ -189,6 +248,7 @@ function Shell({
         align === "center" ? "justify-center py-10" : "justify-start py-6"
       }`}
     >
+      <PortalAccentBand look={look} />
       {children}
     </main>
   );
@@ -202,13 +262,16 @@ async function TableSection({
   membership: PortalMembership;
   table: PortalTable;
 }) {
-  const [fields, records] = await Promise.all([
+  const [fields, readable_] = await Promise.all([
     shownFields(membership.organization_id, table),
     portalRecords({ organizationId: membership.organization_id, tableId: table.table_id }),
   ]);
+  const records = readable_.filter((r) => isHers(r.document, table.names_via, membership.client_record_id));
 
-  const lead = fields[0];
-  const rest = fields.slice(1);
+  // A relation Field holds another record's id, which is not something a person reads; the
+  // headline is the first Field that holds words.
+  const worded = fields.filter((f) => f.type !== "relation");
+  const stageKey = table.stage?.field ?? null;
 
   return (
     <section>
@@ -225,6 +288,11 @@ async function TableSection({
         ) : (
           <ul className="divide-y divide-border">
             {records.map((record) => {
+              // The headline is the first Field that says something for THIS record (a gate-code
+              // update has no "what is wrong"), never the stage and never an empty "Untitled".
+              const lead =
+                worded.find((f) => f.key !== stageKey && readable(record.document[f.key])) ?? worded[0];
+              const rest = worded.filter((f) => f !== lead);
               const headline = lead ? readable(record.document[lead.key]) : "";
               return (
                 <li key={record.id}>
@@ -240,9 +308,10 @@ async function TableSection({
                       {rest.length > 0 ? (
                         <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                           {rest.map((field) => {
-                            const value = readable(record.document[field.key]);
+                            const raw = record.document[field.key];
+                            const value = field.key === stageKey ? stageLabel(table.stage, raw) : readable(raw);
                             if (!value) return null;
-                            return field.key === rest[0]?.key ? (
+                            return field.key === (stageKey ?? rest[0]?.key) ? (
                               <Badge
                                 key={field.key}
                                 variant="secondary"

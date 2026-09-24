@@ -14,7 +14,11 @@ import {
 } from "lucide-react";
 import { useNotesRedux } from "../../hooks/useNotesRedux";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectSharedWithMeNotes } from "../../redux/selectors";
+import {
+  selectNoteContentLoadStatus,
+  selectSharedWithMeNotes,
+} from "../../redux/selectors";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { fetchNoteContent } from "../../redux/thunks";
 import { useNoteAccess } from "../../hooks/useNoteAccess";
 import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
@@ -91,6 +95,13 @@ export default function MobileNotesView({
 
   // Header actions that mutate the note (Clean up) hide for viewers.
   const selectedAccess = useNoteAccess(selectedNoteId);
+  // A deep-linked note whose read rejected (missing, denied, trashed, fault)
+  // renders the canonical gate instead of an empty editor pane.
+  const selectedLoadStatus = useAppSelector(
+    selectNoteContentLoadStatus(selectedNoteId ?? ""),
+  );
+  const selectedUnavailable =
+    Boolean(selectedNoteId) && !selectedNote && selectedLoadStatus === "error";
 
   // Shared list rows come from the get_notes_shared_with_me RPC WITHOUT
   // content — fetch the full note (RLS grants the sharee SELECT) before the
@@ -358,6 +369,17 @@ export default function MobileNotesView({
             currentView === "editor" ? "translate-x-0" : "translate-x-full"
           }`}
         >
+          {selectedUnavailable && selectedNoteId && (
+            <div className="h-full overflow-y-auto">
+              <AccessGate
+                token="note"
+                id={selectedNoteId}
+                onRetry={() => void dispatch(fetchNoteContent(selectedNoteId))}
+                fallbackHref="/notes"
+                fallbackLabel="All notes"
+              />
+            </div>
+          )}
           {selectedNote &&
             (selectedNoteReady ? (
               <MobileNoteEditor

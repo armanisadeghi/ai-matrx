@@ -1,5 +1,6 @@
 /**
- * OLD-TABLES-4 — the headless proof that a MOVED older table works from the admin seat.
+ * OLD-TABLES-4 — the headless proof that a COPIED older table stands SIDE BY SIDE with its
+ * copy, from the admin seat (owner's ruling 2026-09-23: nothing redirects; old and new both open).
  *
  *   node scripts/oldtables4-move-proof.mjs            # starts its own dev server on 3058 if none is up
  *   node scripts/oldtables4-move-proof.mjs --no-server  # a server is already on 3058
@@ -9,8 +10,9 @@
  * the Customers table — and proves every clause of the chair's ruling, each one a PASS or
  * a FAIL with what the screen actually showed:
  *
- *   old-link-redirects   the OLD link /data/<id> lands on the table in its new home
- *   old-link-sentence    ...and the screen says in words that it moved
+ *   old-link-stays       the OLD link /data/<id> stays at /data/<id> and shows its rows
+ *   old-link-older-store ...read from the OLDER store (its own read door; no record-store read)
+ *   old-link-no-sentence ...with no sentence saying the table moved (nothing moved)
  *   unified-table        /data-v2/<id> renders the real rows (WO-4471 is on screen)
  *   views                a view switcher is there
  *   archive              the table's archive is reachable
@@ -36,11 +38,6 @@ const CALLS = "dbc7cd48-7b46-4402-ac9d-e459a95f4598"; // Rincon Plumbing — Ser
 const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-23";
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 const WORDS = ["Maria Delgado", "Harbor View HOA", "Takeda Property Management"];
-// WHERE A MOVED TABLE'S OLD LINK LANDS: /data-v2/<id>, always (owner's ruling, 2026-09-23 —
-// there is no switch on /data; the D3 file lane GRID-PORT kept is gone). The "this-grid"
-// branch below is kept only so the walk reads the same when a later flip changes this line.
-const D3 = "data-v2";
-console.log(`D3: record-store tables open in ${D3}`);
 mkdirSync(OUT, { recursive: true });
 
 async function up() {
@@ -93,36 +90,41 @@ async function main() {
     }
     console.log("organization chosen: admin's Workspace");
 
-    // ── the OLD link ────────────────────────────────────────────────────────────────
+    // ── the OLD link: the older viewer over the older store, as always ───────────────
+    // GRID-PORT removed the /data redirect on the owner's ruling (matrx-frontend 6528af13b4):
+    // /data/<id> never asks the record store, never goes to /data-v2 and never says a table
+    // moved. The walk proves exactly that, beside the new address below.
+    const reads = [];
+    // A store read counts only when it is a read OF THIS TABLE (its id in the request body) —
+    // the shell's own panels read other store tables on every page, and those are not /data's.
+    const onRequest = (r) => {
+      if (!/\/rest\/v1\/rpc\//.test(r.url())) return;
+      const door = r.url().split("/rpc/")[1].split("?")[0];
+      reads.push({ door, ofThisTable: (r.postData() || "").includes(CALLS) });
+    };
+    page.on("request", onRequest);
     await page.goto(`${ORIGIN}/data/${CALLS}`, { waitUntil: "domcontentloaded", timeout: 240000 });
-    await page.waitForURL(new RegExp(`/data-v2/${CALLS}`), { timeout: 120000 }).catch(() => {});
+    await page.waitForFunction(() => document.body.innerText.includes("WO-4471"), null, { timeout: 240000 }).catch(() => {});
     await page.waitForTimeout(3000);
+    page.off("request", onRequest);
     const landed = page.url();
-    await page.screenshot({ path: `${OUT}/oldtables4-1-old-link-lands-in-the-new-home.png` });
-    const arrival = await page.evaluate(() => document.body.innerText);
-    if (D3 === "data-v2") {
-      // D3 = data-v2: the old link hands the person to the new table page, and says so.
-      pass("old-link-redirects", landed.includes(`/data-v2/${CALLS}`), landed);
-      const sentence = (arrival.match(/[^.\n]*\bmoved\b[^.\n]*/i) || [null])[0];
-      pass("old-link-sentence", Boolean(sentence), sentence || "no sentence on arrival says the table moved");
-    } else {
-      // D3 = this-grid (GRID-PORT): the old link opens the STORE's copy in place — the same
-      // address, the real rows, the customers as names — so there is nothing to redirect.
-      await page.waitForFunction(() => document.body.innerText.includes("WO-4471"), null, { timeout: 120000 }).catch(() => {});
-      const here = await page.evaluate(() => document.body.innerText);
-      const inPlace = landed.includes(`/data/${CALLS}`) && here.includes("WO-4471");
-      pass("old-link-opens-in-place", inPlace, `${landed} (${here.includes("WO-4471") ? "rows" : "no rows"})`);
-      const names = WORDS.filter((w) => here.includes(w));
-      pass("old-link-reads-the-store", names.length > 0 && (here.match(UUID) || []).length === 0,
-        `names ${JSON.stringify(names)}, bare uuids ${(here.match(UUID) || []).length}`);
-    }
+    const older = await page.evaluate(() => document.body.innerText);
+    await page.screenshot({ path: `${OUT}/oldtables4-1-old-address-opens-the-older-table.png` });
+    pass("old-link-stays", landed.includes(`/data/${CALLS}`) && !landed.includes("/data-v2/") && older.includes("WO-4471"),
+      `${landed} (${older.includes("WO-4471") ? "rows" : "no rows"})`);
+    const olderDoor = reads.some((r) => /^get_user_table/.test(r.door) && r.ofThisTable);
+    const storeRead = reads.filter((r) => /^(read_records|where_id_opens|record_)/.test(r.door) && r.ofThisTable).map((r) => r.door);
+    pass("old-link-older-store", olderDoor && storeRead.length === 0,
+      `older read door ${olderDoor ? "called" : "NOT called"} for this table; record-store reads of this table ${storeRead.length}${storeRead.length ? " " + JSON.stringify([...new Set(storeRead)]) : ""}`);
+    const sentence = (older.match(/[^.\n]*\bmoved\b[^.\n]*/i) || [null])[0];
+    pass("old-link-no-sentence", !sentence, sentence || "no sentence says the table moved");
 
     // ── the unified table ───────────────────────────────────────────────────────────
     await page.goto(`${ORIGIN}/data-v2/${CALLS}`, { waitUntil: "domcontentloaded", timeout: 240000 });
     await page.waitForFunction(() => document.body.innerText.includes("WO-4471"), null, { timeout: 240000 }).catch(() => {});
     await page.waitForTimeout(3000);
     const text = await page.evaluate(() => document.body.innerText);
-    await page.screenshot({ path: `${OUT}/oldtables4-2-service-calls-on-the-new-table.png` });
+    await page.screenshot({ path: `${OUT}/oldtables4-2-new-address-opens-the-store-copy.png` });
     pass("unified-table", text.includes("WO-4471"), text.includes("WO-4471") ? "WO-4471 on screen" : "no rows rendered");
     const views = await page.locator('[aria-label*="view" i], button:has-text("View"), [role="tab"]:has-text("Grid"), button:has-text("Grid")').count();
     pass("views", views > 0, `${views} view control(s)`);

@@ -88,7 +88,7 @@ export function OutlineView({ mapId, siteId, host, readOnly }: MapViewProps) {
   if (knobsError) return <TopicalMapFailed what="the map settings" error={knobsError} />;
   if (knobsLoading || !knobs) return <TopicalMapLoading what="the map settings" />;
   if (tree.isPending) return <TopicalMapLoading what="this map's topics" />;
-  if (tree.isError) return <TopicalMapFailed what="this map's topics" error={tree.error} />;
+  if (tree.isError) return <TopicalMapFailed what="this map's topics" error={tree.error} mapId={mapId} />;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">

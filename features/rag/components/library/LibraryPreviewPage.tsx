@@ -56,6 +56,7 @@ import { forkProcessedDocument } from "@/features/rag/api/fork";
 import { StatusBadge } from "./StatusBadge";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useLibraryDoc } from "@/features/rag/hooks/useLibrary";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useFilesLibraryProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 import {
   useDocumentSearch,
@@ -112,7 +113,21 @@ export function LibraryPreviewPage({
     doc,
     loading: docLoading,
     error: docError,
+    readError: docReadError,
+    reload: reloadDoc,
   } = useLibraryDoc(documentId);
+  // The read settles with `doc === null` and no error when the document is
+  // missing, deleted, or not readable by this viewer. Only treat "no doc" as
+  // unavailable once a load for THIS id has actually run (the hook's first
+  // render reports loading=false before its effect starts).
+  const [loadStartedFor, setLoadStartedFor] = useState<string | null>(null);
+  if (docLoading && loadStartedFor !== documentId) {
+    setLoadStartedFor(documentId);
+  }
+  const docUnavailable =
+    !docLoading &&
+    !doc &&
+    (docError !== null || loadStartedFor === documentId);
   const [activePageIndex, setActivePageIndex] = useState(
     initialPageNumber && initialPageNumber > 0 ? initialPageNumber - 1 : 0,
   );
@@ -344,13 +359,18 @@ export function LibraryPreviewPage({
           </>
         )}
 
-        {docError && (
-          <div className="m-4 p-3 border border-destructive/50 bg-destructive/5 rounded-md text-sm text-destructive">
-            <strong>Could not load document:</strong> {docError}
-          </div>
+        {docUnavailable && (
+          <AccessGate
+            token="processed_document"
+            id={documentId}
+            error={docReadError ?? (docError ? new Error(docError) : undefined)}
+            onRetry={reloadDoc}
+            fallbackHref="/rag/library"
+            fallbackLabel="Your library"
+          />
         )}
 
-        {!docError && (
+        {!docUnavailable && (
           // `minmax(0, 1fr)` (instead of bare `1fr`) is critical here:
           // CSS Grid defaults the third track to `minmax(auto, 1fr)`,
           // which lets the column grow past the available space when the

@@ -28,6 +28,7 @@ import type { NoteVersion } from "@/features/text-diff/types";
 import type { Note } from "@/features/notes/types";
 import { selectNoteById } from "@/features/notes/redux/selectors";
 import { fetchNoteContent, refetchNoteContent } from "@/features/notes/redux/thunks";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { analyzeDiff } from "@/features/notes/utils/diffAnalysis";
 import { NoteDiffViewer } from "./NoteDiffViewer";
 import {
@@ -66,6 +67,9 @@ export function NoteVersionHistoryPanel({
   const dispatch = useAppDispatch();
   const currentNote = useAppSelector(selectNoteById(noteId));
   const [currentNoteError, setCurrentNoteError] = useState<string | null>(null);
+  // The raw rejection of the note read, kept so the standalone route can hand
+  // it to the canonical AccessGate (fault vs. denied/missing/trashed).
+  const [currentNoteReadError, setCurrentNoteReadError] = useState<unknown>(null);
   const isEmbedded = variant === "embedded";
   const isMobile = useIsMobile();
   const useStackedLayout = isMobile;
@@ -80,9 +84,11 @@ export function NoteVersionHistoryPanel({
   useEffect(() => {
     if (!noteId) return;
     setCurrentNoteError(null);
+    setCurrentNoteReadError(null);
     void dispatch(fetchNoteContent(noteId))
       .unwrap()
       .catch((err: unknown) => {
+        setCurrentNoteReadError(err ?? new Error("note read rejected"));
         setCurrentNoteError(
           err instanceof Error
             ? err.message
@@ -193,6 +199,35 @@ export function NoteVersionHistoryPanel({
     setRightVersion(compareToVersion);
     setActiveTab("compare");
   };
+
+  // /notes/[id]/diff for a note this viewer cannot read: the note read itself
+  // rejected, so the page is about nothing it may show — render the canonical
+  // gate instead of an empty "No version history" or a bare error line.
+  if (!isEmbedded && currentNoteReadError && !currentNote) {
+    return (
+      <div className={cn("h-full overflow-y-auto", className)}>
+        <AccessGate
+          token="note"
+          id={noteId}
+          error={currentNoteReadError}
+          onRetry={() => {
+            setCurrentNoteError(null);
+            setCurrentNoteReadError(null);
+            void dispatch(fetchNoteContent(noteId))
+              .unwrap()
+              .catch((err: unknown) => {
+                setCurrentNoteReadError(err ?? new Error("note read rejected"));
+                setCurrentNoteError(
+                  err instanceof Error ? err.message : "Could not load the current note.",
+                );
+              });
+          }}
+          fallbackHref="/notes"
+          fallbackLabel="All notes"
+        />
+      </div>
+    );
+  }
 
   if (loading) {
     return (

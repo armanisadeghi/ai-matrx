@@ -150,9 +150,9 @@ describe("bootSync — IDB hydration + cold-boot fallback", () => {
         expect(db).not.toBeNull();
         const database = db!;
         const get = jest
-            .spyOn(database.slices, "get")
+            .spyOn(database.slices, "bulkGet")
             .mockImplementation(
-                (() => new Promise<undefined>(() => {})) as unknown as typeof database.slices.get,
+                (() => new Promise<never>(() => {})) as unknown as typeof database.slices.bulkGet,
             );
         jest.useFakeTimers();
         try {
@@ -168,6 +168,47 @@ describe("bootSync — IDB hydration + cold-boot fallback", () => {
             await expect(result.idbHydration).resolves.toEqual([]);
         } finally {
             get.mockRestore();
+            jest.useRealTimers();
+        }
+    });
+
+    it("settles MANY warm-cache slices within one timeout when every IDB read stalls (D345)", async () => {
+        // The app has ~16 warm-cache policies. A per-slice read loop paid the
+        // timeout once per slice (and each reopened connection stalled again),
+        // so a stalled browser IDB summed to ~16s and blew the 8s backstop.
+        // Stall EVERY connection: patch the shared Table prototype, not one
+        // instance, so a reopen after the timeout inherits the stall.
+        const db = await openDb();
+        const tableProto = Object.getPrototypeOf(Object.getPrototypeOf(db!.slices));
+        const hang = () => new Promise<never>(() => {});
+        const get = jest.spyOn(tableProto, "get").mockImplementation(hang);
+        const bulkGet = jest.spyOn(tableProto, "bulkGet").mockImplementation(hang);
+        jest.useFakeTimers();
+        try {
+            const policies = Array.from({ length: 16 }, (_, i) =>
+                definePolicy<WarmState>({
+                    sliceName: `warm${i}`,
+                    preset: "warm-cache",
+                    version: 1,
+                    broadcast: { actions: [`warm${i}/set`] },
+                }),
+            );
+            const store = configureStore({ reducer: { noop: (s: null = null) => s } });
+            const result = await bootSync({
+                store,
+                identity,
+                policies,
+                openChannel: () => fakeChannel(),
+            });
+            let settled = false;
+            void result.idbHydration.then(() => {
+                settled = true;
+            });
+            await jest.advanceTimersByTimeAsync(IDB_OPERATION_TIMEOUT_MS * 2);
+            expect(settled).toBe(true);
+        } finally {
+            get.mockRestore();
+            bulkGet.mockRestore();
             jest.useRealTimers();
         }
     });

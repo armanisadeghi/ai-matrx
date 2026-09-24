@@ -205,7 +205,7 @@ function PagesWorkspaceBody({
       ) : intents.isPending ? (
         <TopicalMapLoading what="this map's pages" />
       ) : intents.isError ? (
-        <TopicalMapFailed what="this map's pages" error={intents.error} />
+        <TopicalMapFailed what="this map's pages" error={intents.error} mapId={mapId} />
       ) : reviewing && !readOnly ? (
         // The deck reviews what the person is LOOKING AT: the proposed intents
         // among the rows the filters left standing, not rows the filter bar

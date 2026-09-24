@@ -46,6 +46,7 @@ import {
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import type { TranscriptAudience } from "@/features/agents/components/shared/transcript-audience";
 import { ChatRoomSkeleton } from "./ChatRoomSkeleton";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { SandboxCanvasOpener } from "./sandbox-insight/SandboxCanvasOpener";
 import { ToolResultCanvasOpener } from "@/features/canvas/tool-results/ToolResultCanvasOpener";
 import { useConversationSandboxBindingSync } from "@/features/agents/hooks/useConversationSandboxBindingSync";
@@ -256,19 +257,40 @@ export function ChatRoomClient({
   );
 
   const [isInitializing, setIsInitializing] = useState(true);
+  // The agent could not be read (denied / deleted / never existed / fault).
+  // A fresh agent room then renders <AccessGate> instead of opening a chat
+  // with an unresolved agent. Kept as the raw error so the gate can tell a
+  // genuine fault (retry) from an access state.
+  const [agentLoadFailure, setAgentLoadFailure] = useState<{
+    agentId: string;
+    error: unknown;
+  } | null>(null);
+  const [agentLoadAttempt, setAgentLoadAttempt] = useState(0);
   useEffect(() => {
     let cancelled = false;
     const init = async () => {
       setIsInitializing(true);
+      setAgentLoadFailure(null);
       try {
         if (!executionPayload.isReady) {
           await dispatch(fetchAgentExecutionMinimal(agentId)).unwrap();
+          // agx_get_execution_minimal answers an unreadable agent (denied /
+          // deleted / never existed) with ZERO rows and no error; the thunk
+          // then returns without loading anything. That null read is the
+          // access question the gate exists for.
+          if (
+            !cancelled &&
+            !selectAgentExecutionPayload(store.getState(), agentId).isReady
+          ) {
+            setAgentLoadFailure({ agentId, error: undefined });
+          }
         }
       } catch (err) {
         console.error(
           "[ChatRoomClient] fetchAgentExecutionMinimal failed",
           err,
         );
+        if (!cancelled) setAgentLoadFailure({ agentId, error: err });
       } finally {
         if (!cancelled) setIsInitializing(false);
       }
@@ -277,7 +299,7 @@ export function ChatRoomClient({
     return () => {
       cancelled = true;
     };
-  }, [agentId, dispatch, executionPayload.isReady]);
+  }, [agentId, dispatch, executionPayload.isReady, agentLoadAttempt, store]);
 
   // ── Fresh-start guard (agent route only) ─────────────────────────────────
   // The agent route means "start a NEW conversation with this agent." The
@@ -687,6 +709,30 @@ export function ChatRoomClient({
   // conversation column — exactly like AgentRunnerPage.
   const canRenderLandingDuringInit =
     !!landingContent && !conversationIdProp && !!conversationId;
+
+  // Only the agent-addressed room (/chat/a/[agentId], /chat/talk/a/[agentId])
+  // is ABOUT the agent; an existing conversation still opens from its own row,
+  // and a mandate room's agentId is display-only (the server picks who answers).
+  if (
+    isFreshRoute &&
+    !mandateKey &&
+    agentLoadFailure &&
+    agentLoadFailure.agentId === agentId &&
+    !executionPayload.isReady
+  ) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden bg-textured">
+        <AccessGate
+          token="agent"
+          id={agentId}
+          error={agentLoadFailure.error}
+          onRetry={() => setAgentLoadAttempt((n) => n + 1)}
+          fallbackHref="/agents/all"
+          fallbackLabel="Your agents"
+        />
+      </div>
+    );
+  }
 
   if ((isInitializing || !conversationId) && !canRenderLandingDuringInit) {
     return (

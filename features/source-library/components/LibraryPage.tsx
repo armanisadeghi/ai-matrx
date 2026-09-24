@@ -24,7 +24,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CircleAlert, RefreshCw } from "lucide-react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { RecordOrganizationSwitchOffer } from "@/features/organizations/components/RecordOrganizationSwitchOffer";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { Button } from "@/components/ui/button";
@@ -67,6 +69,8 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
     // Library really has never synced" from "we do not currently know",
     // which `last_synced_at` alone cannot say.
     const [rowUnavailable, setRowUnavailable] = useState(false);
+    /** The raw failure of the last Library-ROW read, for `<AccessGate error/>`. */
+    const [rowReadError, setRowReadError] = useState<unknown>(null);
     const [metricsError, setMetricsError] = useState<string | null>(null);
     const [metricsProblems, setMetricsProblems] = useState<string[]>([]);
     const [openVideo, setOpenVideo] = useState<VideoRow | null>(null);
@@ -87,27 +91,22 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
 
     const registry = useActionRegistry();
 
-    // Both mount reads name `organizationId` as a dependency for the reason in
-    // hooks/useActionRegistry.ts: it resolves after the first render and every
-    // server call is refused until it does.
     // 🚨 A FAILED READ IS NEVER A SKELETON. Swallowing this error left the
     // header promising numbers that were never coming: on a Library whose
     // catalogue had failed, every tile and the cadence chart sat in a loading
     // skeleton forever, with no message, no timeout and no retry. So the
     // sentence is kept. Numbers we ALREADY hold are still never blanked — the
     // header only switches to the failure copy while it holds nothing.
-    // 🚨 AND A NOT-YET IS NEVER A FAILURE. The transport is fail-closed and
-    // refuses every authenticated call until the active organization resolves,
-    // a beat after first render — so the FIRST read on a cold load always comes
-    // back "Select an organization before sending this request". Recording that
-    // put a sentence on the screen that was wrong twice over (the person has an
-    // organization; nothing failed) and left it there, because the successful
-    // read behind it had no way to overrule a failure already written. Now the
-    // read does not happen at all until there is an organization to make it
-    // with, the code is ignored if it arrives anyway, and a stale answer cannot
-    // overwrite a newer one.
+    // 🚨 AND A NOT-YET IS NEVER A FAILURE — AND NO ORGANIZATION IS NEVER A
+    // WALL. These are READS of one Library (Arman, 2026-09-23: "The permission
+    // is to the person, not the org"). They used to wait for an active
+    // organization and, with none selected, never happened at all — the page
+    // sat empty until an organization was picked. The transport now waits the
+    // bounded beat for a restore in flight and then sends a read naming no
+    // organization; the server decides by the person's access
+    // (`iam.has_access_for`). The not-ready code is still ignored if it arrives,
+    // and a stale answer still cannot overwrite a newer one.
     const refreshMetrics = useCallback(async () => {
-        if (!organizationId) return;
         const attempt = ++metricsAttemptRef.current;
         try {
             const { value: metrics, problems } = await getLibraryMetrics(
@@ -136,6 +135,8 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                     : "The numbers for this Library could not be read from the server.",
             );
         }
+        // `organizationId` is NOT a gate — a switch simply re-reads, so the
+        // numbers on screen are never older than the workspace around them.
     }, [dispatch, libraryId, organizationId]);
 
     const sync = useLibrarySync(libraryId, () => {
@@ -167,6 +168,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
             dispatch(libraryLoaded(row));
             setLoadError(null);
             setRowUnavailable(false);
+            setRowReadError(null);
             return row;
         } catch (error) {
             if (isOrganizationNotReady(error)) return null;
@@ -182,6 +184,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                     : "This Library could not be read from the server.",
             );
             setRowUnavailable(true);
+            setRowReadError(error);
             return null;
         }
     }, [dispatch, libraryId]);
@@ -189,9 +192,6 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
     // Mount reads — the Library row and its metrics, before anything streams.
     useEffect(() => {
         let cancelled = false;
-        // Same not-yet gate as the metrics read: no organization, no call, and
-        // this effect already re-runs the moment one lands.
-        if (!organizationId) return;
         void (async () => {
             if (cancelled) return;
             await loadLibraryRow();
@@ -218,7 +218,6 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
     // is running and spending, and a finished job's panel is history, not an alarm.
     // Anything started in this tab is added by `onJobStarted` regardless of status.
     useEffect(() => {
-        if (!organizationId) return;
         let cancelled = false;
         void (async () => {
             try {
@@ -253,7 +252,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
         return () => {
             cancelled = true;
         };
-    }, [dispatch, libraryId, organizationId]);
+    }, [dispatch, libraryId]);
 
     // 🚨 THE SEAM: THIS TAB'S SYNC SLICE VS. THE SERVER'S LIBRARY ROW. The mount
     // effect above reads the Library row exactly ONCE. When that one read lands
@@ -268,7 +267,6 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
     // and the last-known row says "syncing", this re-asks the one door that
     // can ever change that answer, on its own, until it does.
     useEffect(() => {
-        if (!organizationId) return;
         if (live?.library?.sync_status !== "syncing") return;
         if (sync.sync.phase !== "idle") return;
         let cancelled = false;
@@ -299,7 +297,6 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
     }, [
         dispatch,
         libraryId,
-        organizationId,
         live?.library?.sync_status,
         sync.sync.phase,
         refreshMetrics,
@@ -385,6 +382,24 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
         ],
     );
 
+    // The Library row could not be read and we hold none: the one thing this
+    // page is about is unavailable (denied, deleted, missing, or a real fault).
+    // A failed POLL while a row is already held keeps the notice below instead.
+    if (!library && rowUnavailable) {
+        return (
+            <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+                <AccessGate
+                    token="media_source_library"
+                    id={libraryId}
+                    error={rowReadError ?? undefined}
+                    onRetry={() => void loadLibraryRow()}
+                    fallbackHref="/libraries"
+                    fallbackLabel="Your libraries"
+                />
+            </div>
+        );
+    }
+
     return (
         <>
             <PageHeader>
@@ -404,6 +419,13 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                 config={config}
                 notice={
                     <div className="space-y-3 pb-3">
+                        {/* THE PERSON, NOT THE ORG (2026-09-23): the Library opens
+                            whatever organization is selected; syncing and running
+                            Actions happen in one, so name it and offer the switch. */}
+                        <RecordOrganizationSwitchOffer
+                            organizationId={library?.organization_id}
+                            what="Library"
+                        />
                         {loadError && (
                             <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
                                 <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />

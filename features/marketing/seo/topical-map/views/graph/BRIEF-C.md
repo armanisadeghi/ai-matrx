@@ -1,6 +1,6 @@
 # BRIEF-C — follow-up builder brief for the Graph view (Lane C)
 
-LANE: standard, model `claude-opus-5`, medium effort. The coordinator dispatches this in-process.
+LANE: standard, model `claude-opus-5-5`, medium effort. The coordinator dispatches this in-process.
 You are the BUILDER; the Lane C owner (Fable) reviewed the first landing (`ea8b7994e4`,
 "Topical map Lane C: the graph view — zoom bands, facet axis, convergence") and found the
 defects below. Fix each BY CLASS, in the files this lane owns and nowhere else:

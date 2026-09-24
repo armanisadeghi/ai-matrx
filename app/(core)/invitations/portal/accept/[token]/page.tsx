@@ -52,8 +52,6 @@ import { Card } from "@/components/ui/card";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import { invitationSignUpHref } from "@/utils/auth/invitation-links";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { setOrganization } from "@/lib/redux/slices/appContextSlice";
 import {
   acceptPortalShare,
   peekPortalShare,
@@ -64,7 +62,6 @@ import {
 export default function AcceptPortalInvitationPage() {
   const params = useParams();
   const router = useRouter();
-  const dispatch = useAppDispatch();
   const token = params.token as string;
 
   const [working, setWorking] = useState(false);
@@ -100,17 +97,14 @@ export default function AcceptPortalInvitationPage() {
     setError(null);
     try {
       const answer = await acceptPortalShare(token);
-      // 🚨 SHE IS IN NO ORGANIZATION, SO SHE CAN NEVER CHOOSE ONE — and every
-      // record surface HOLDS a request that carries none. Lane INVITE-DELIVERY
-      // measured that dead end on the table share and closed it the same way.
-      // This is NOT the banned "default organization": that law forbids a
-      // RESOLVER choosing an organization from a cookie, a preference or a
-      // personal org. This is an explicit act by the person, on the organization
-      // the invitation itself named, at the moment they accept it — the same
-      // `appContext/setOrganization` a click in the picker dispatches. It
-      // confers nothing: the grant is what lets her read, and the ladder still
-      // answers every door.
-      dispatch(setOrganization({ id: answer.organization_id, name: answer.organization ?? "" }));
+      // 🚨 HER ORGANIZATION IS NOT MOVED (lane ACCESS-IS-PERSONAL, owner's law 2026-09-23:
+      // "the permission is to the person, not the org … my active org has no impact on what I
+      // can see"). The active organization is a filter the person controls, so accepting never
+      // changes it on its own. This used to dispatch `setOrganization` to the portal's
+      // organization, which she is by definition not a member of (a portal principal is an
+      // outsider the organization let in, VIS-31) — so there is nothing to offer a switch to
+      // either. The portal pages read the organization from the portal's own address
+      // (`/portal/c/<slug>`) and the grant opens them, whatever she is working in.
       setOpened(answer);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -119,7 +113,7 @@ export default function AcceptPortalInvitationPage() {
     } finally {
       setWorking(false);
     }
-  }, [token, look, dispatch]);
+  }, [token, look]);
 
   const signIn = useCallback(() => {
     // Sign-up carries the destination and the TOKEN back here (never the

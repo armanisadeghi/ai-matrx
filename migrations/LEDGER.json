@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-23T11:56:06.150Z",
+  "generated_at": "2026-09-24T05:50:00.510Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -13,6 +13,24 @@
       "filename": "a_table_is_archived_in_chunks_and_survives_a_cut.sql",
       "checksum": "eddc24117aed62b23e6b571ed31cd96dc1cb4c4f76ff9b880d08643e57dce8df",
       "applied_at": "2026-09-22 02:38:00.699942+00"
+    },
+    "migrations/campaign/accesspersonal_a_personal_record_is_not_carried_by_membership.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesspersonal_a_personal_record_is_not_carried_by_membership.sql",
+      "checksum": "b6c644e5c1e219d6015c10ee390d050bd399a3d612d0ec81390d92a0ee2ace67",
+      "applied_at": "2026-09-24 05:49:59.32887+00"
+    },
+    "migrations/campaign/accesspersonal_every_table_i_can_open_in_every_organization.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesspersonal_every_table_i_can_open_in_every_organization.sql",
+      "checksum": "3740e4d7886f6e814eed24502ab30fc9252864134ddc072fcd01c8c2e933288a",
+      "applied_at": "2026-09-24 05:49:36.828883+00"
+    },
+    "migrations/campaign/accesspersonal_the_tables_i_can_open_door_can_be_reached.sql": {
+      "source": "matrx-frontend",
+      "filename": "accesspersonal_the_tables_i_can_open_door_can_be_reached.sql",
+      "checksum": "2f44387f39cd625f2dcc11a5e0dbff112bd34bc9de8fc4266ad0051d6db185ff",
+      "applied_at": "2026-09-24 05:49:49.494882+00"
     },
     "migrations/campaign/anonlanes_five_public_lanes_declare_the_optin.sql": {
       "source": "matrx-frontend",
@@ -73,6 +91,12 @@
       "filename": "argsruled2_an_empty_table_is_told_what_happened_to_it.sql",
       "checksum": "fa6f2628c2297fd8f75c722915256b2d129d1a2920a45f69af20c4e10b60eaf7",
       "applied_at": "2026-09-23 09:56:34.732995+00"
+    },
+    "migrations/campaign/argsruled2_an_owner_may_share_anything_they_own_by_link.sql": {
+      "source": "matrx-frontend",
+      "filename": "argsruled2_an_owner_may_share_anything_they_own_by_link.sql",
+      "checksum": "8b60c1ac08e44e4694bfb325292effb33b95fc71520ff2d63a4fe06a0ce55fe5",
+      "applied_at": "2026-09-24 02:23:36.944636+00"
     },
     "migrations/campaign/argsruled2_every_argument_of_the_last_ten_doors_says_what_it_is.sql": {
       "source": "matrx-frontend",
@@ -2563,6 +2587,18 @@
       "filename": "open_census_a_closed_schema_closes_itself.sql",
       "checksum": "70a5eb72a3e11fbfa23914d346300b2061c7f3e3880b9362a302da443891fb98",
       "applied_at": "2026-09-19 14:06:32.427465+00"
+    },
+    "migrations/campaign/openbyid_one_address_opens_any_id.sql": {
+      "source": "matrx-frontend",
+      "filename": "openbyid_one_address_opens_any_id.sql",
+      "checksum": "9740557b718a3afff5f14dea7ee062d0503b7016c04708d571f0877b9ffda26b",
+      "applied_at": "2026-09-24 05:49:05.321088+00"
+    },
+    "migrations/campaign/openbyid_the_resolver_can_be_reached.sql": {
+      "source": "matrx-frontend",
+      "filename": "openbyid_the_resolver_can_be_reached.sql",
+      "checksum": "ccb85dc403250cfe77929a06da416583097fc1eb056bce40642e0fed341f48a0",
+      "applied_at": "2026-09-24 05:49:16.049464+00"
     },
     "migrations/campaign/orgarch_an_organization_is_archived_never_deleted.sql": {
       "source": "matrx-frontend",

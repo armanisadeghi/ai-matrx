@@ -139,14 +139,16 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
     runs, not in the box that is waiting for one. A freshly started run always replaces the
     remembered id (a re-attach check still in flight stands down against a start generation), and
     the box SAYS which run it is showing. Wall W15, 2026-09-10.
-19. **Every Rulebook door adopts the Rulebook's own organization** — `RulebookLaneRoute` and
-    `RulebookDetailPage` both call `useAdoptRecordOrganization`
-    (`features/organizations/useAdoptRecordOrganization.ts`) and hold their body until it answers.
-    The row carries `organization_id`, so a reload must never leave the Expert's every action
-    dying on "Select an organization before sending this request." (wall W3, 2026-09-10). Nothing
-    is guessed: an unreadable organization row means "not your workspace" and the page falls back
-    to the old fail-closed behaviour, and the adoption ANNOUNCES itself with a toast naming the
-    workspace. Guarded by `components/__tests__/RulebookLaneRoute.organization.test.tsx`.
+19. **Every Rulebook door opens whatever organization is selected, and never moves the selection**
+    (Arman, 2026-09-23: "The permission is to the person, not the org"). `RulebookLaneRoute` and
+    `RulebookDetailPage` render the Rulebook as soon as it is read and show
+    `RecordOrganizationSwitchOffer` (`features/organizations/components/`) — "This Rulebook is in
+    <org> — Switch" — when it lives in an organization other than the selected one, or none is
+    selected. The retired `useAdoptRecordOrganization` silently wrote the Rulebook's organization
+    into the person's working organization (wall W3, 2026-09-10); opening a record must never do
+    that. Reads carry no organization when none is selected (`callApi` / `python-client`); actions
+    still happen in an organization, and the offer is their one-click remedy. Guarded by
+    `components/__tests__/RulebookLaneRoute.organization.test.tsx`.
 
 20. 🚨 **A PER-PIECE RULE IS EVIDENCE, NOT A QUESTION — `standing: "evidence"`.** On 2026-09-12
     the body-of-work lane turned 20 published pieces into 416 per-piece drafts plus 4 synthesized

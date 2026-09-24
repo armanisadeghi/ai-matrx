@@ -50,7 +50,7 @@ import {
   useSurfaceWriteHandlers,
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
-import { useAdoptRecordOrganization } from "@/features/organizations/useAdoptRecordOrganization";
+import { RecordOrganizationSwitchOffer } from "@/features/organizations/components/RecordOrganizationSwitchOffer";
 import { isBlankSlateInterview, subscribeBlankSlate } from "@/features/masterwork/record/blankSlateLane";
 import {
   buildRulebookSurfaceScope,
@@ -182,18 +182,6 @@ function RulebookLaneRouteInstance({
   const canEdit =
     rulebook !== null && userId !== null && rulebook.created_by === userId;
 
-  // THE RULEBOOK SAYS WHICH WORKSPACE THIS IS (wall W3, 2026-09-10). Before
-  // this, a reload of any lane left every action dying on "Select an
-  // organization before sending this request." — the active-org selection is
-  // per-tab-session unless the Expert found the "set as my default" switch in
-  // the avatar menu, and a first-time Expert has never seen it. The row
-  // already carries `organization_id`; nothing here is guessed. The lane holds
-  // its body until the answer is in, so no child (the Conductor's Mandate
-  // resolution above all) can fire an org-scoped request into the gap.
-  const recordOrganization = useAdoptRecordOrganization(
-    rulebook?.organization_id,
-    "Rulebook",
-  );
 
   // ── The `rule_draft` write target ────────────────────────────────────────
   // A declared target MUST have a handler wherever its surface is mounted:
@@ -427,26 +415,6 @@ function RulebookLaneRouteInstance({
     );
   }
 
-  // The workspace answer is not in yet. Rendering the lane now would let its
-  // body fire org-scoped requests into the gap and collect the "Select an
-  // organization" refusal this whole path exists to end — so the lane says
-  // what it is doing instead of failing behind the Expert's back.
-  if (recordOrganization.status === "resolving") {
-    return (
-      <>
-        {header}
-        <div className={shellClass}>
-          <div className="flex h-full flex-1 flex-col items-center justify-center gap-3">
-            <LoadingSpinner />
-            <p className="text-sm text-muted-foreground">
-              Getting your workspace ready…
-            </p>
-          </div>
-        </div>
-      </>
-    );
-  }
-
   return (
     <SurfaceRuntimeProvider
       surfaceName={MASTERWORK_RULEBOOK_SURFACE_NAME}
@@ -455,6 +423,15 @@ function RulebookLaneRouteInstance({
     >
       {header}
       <div className={shellClass}>
+        {/* THE PERSON, NOT THE ORG (2026-09-23): the lane opens whatever
+            organization is selected, and never moves the selection itself.
+            When the Rulebook lives elsewhere it says so and offers the switch —
+            doing things (the plan, the build) still happens in an organization. */}
+        <RecordOrganizationSwitchOffer
+          organizationId={rulebook.organization_id}
+          what="Rulebook"
+          className="mx-auto mb-3 w-full max-w-3xl shrink-0"
+        />
         {body === "fill" ? (
           <div className="mx-auto flex h-full w-full min-h-0 max-w-3xl flex-1 flex-col overflow-hidden">
             {children({ rulebook, canEdit, setRulebook, reload })}

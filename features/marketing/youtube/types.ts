@@ -62,6 +62,11 @@ export type BrandChannelBinding =
       /** The YouTube channel id (`UC…`). */
       channelId: string;
       brandVersion: number;
+      /**
+       * The BRAND'S own organization — where its mirrored videos and analytics
+       * live. Reads use this, never the person's selected organization.
+       */
+      organizationId: string;
     }
   | { state: "unbound"; brandVersion: number }
   | { state: "column_absent"; sentence: string };

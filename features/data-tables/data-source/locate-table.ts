@@ -4,8 +4,8 @@
 // dispatches to the store. Lane INTEG-CLIENTS (CUTOVER-PLAN rev 3 §2 Steps 1–4).
 
 import { createClient } from "@/utils/supabase/client";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { whereThisTableLives } from "@/features/unified-data/whereThisTableLives";
+import { standInOrganizationId } from "@/features/unified-data/objectOrganization";
 
 import { placeTableInRecordStore, recordStoreHomeOf, type RecordStoreHome } from "./table-home";
 import { signedInUserId } from "./where-a-table-is-born";
@@ -23,8 +23,12 @@ export type Located =
 export async function locateTable(tableId: string, organizationId?: string | null): Promise<Located> {
   const placed = recordStoreHomeOf(tableId);
   if (placed) return { ok: true, store: "record", home: placed };
-  const org = await ensureOrgId(organizationId ?? null);
-  const where = await whereThisTableLives(createClient(), org, tableId);
+  // ACCESS IS PERSONAL (owner, 2026-09-23). The table names its own organization
+  // (`custom.where_id_opens`, inside `whereThisTableLives`); the caller's organization —
+  // or, failing that, the one the person is working in — is read ONLY by the announced
+  // stand-in while that door is absent from a database. It is never held for: a table that
+  // exists has an organization, and asking the person to pick one is asking the wrong question.
+  const where = await whereThisTableLives(createClient(), organizationId ?? standInOrganizationId(), tableId);
   if (where.kind === "unknown") {
     return {
       ok: false,
@@ -38,12 +42,7 @@ export async function locateTable(tableId: string, organizationId?: string | nul
     };
   }
   if (where.kind === "record_store") {
-    // The TABLE's organization when the store names it, else the one the caller acts in.
-    const tableOrg =
-      "organizationId" in where && typeof (where as { organizationId?: unknown }).organizationId === "string"
-        ? (where as { organizationId: string }).organizationId
-        : org;
-    const home = { organizationId: tableOrg, userId: await signedInUserId() };
+    const home = { organizationId: where.organizationId, userId: await signedInUserId() };
     placeTableInRecordStore(tableId, home);
     return { ok: true, store: "record", home: { store: "record", ...home } };
   }

@@ -74,7 +74,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_view",
     label: "Active view",
     description:
-      'Which tab of the panel is showing: "resolved" (server truth) or "attached" (client-side entries). Always present while the panel is open.',
+      'Which tab of the panel is showing: "resolved" (server truth), "compare" (the current system beside the record store, every difference classed) or "attached" (client-side entries). Always present while the panel is open.',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 8,
@@ -320,7 +320,7 @@ export interface ActiveContextLayerRef {
  */
 export function createContextPreviewScope(values: {
   // alwaysAvailable: true → required
-  active_view: "resolved" | "attached";
+  active_view: "resolved" | "compare" | "attached";
   preview_status: string;
   // alwaysAvailable: false → optional
   preview_error?: string;

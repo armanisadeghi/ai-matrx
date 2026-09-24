@@ -88,3 +88,29 @@ export function migrateRetype(home: RecordStoreHome, fieldId: string, to: string
     { p_id: fieldId, p_to: to },
   );
 }
+
+// ─── G13: a view keeps the order a person dragged ────────────────────────────
+//
+// `custom.read_records_in_view_order` / `custom.view_record_order_set` (lane GRID-PRIMITIVES,
+// `gridprim_a_view_keeps_the_order_a_person_dragged.sql`). The package's source wraps them as
+// `readInViewOrder` / `viewRecordOrderSet`, but the published client this repo installs does
+// not carry them yet, so they are called by name here.
+// 🚨 SWAP ON PUBLISH: `clientFor(home).readInViewOrder(...)` / `.viewRecordOrderSet(...)`.
+
+/** One page of a hand-ordered view: placed rows by position, then the rest by created time. */
+export function readRecordsInViewOrder(home: RecordStoreHome, viewId: string, limit: number, offset: number) {
+  return callGridDoor<Array<{ id: string; position: number | string | null }>>(home, "read_records_in_view_order", {
+    p_view_id: viewId,
+    p_by_id: false,
+    p_limit: limit,
+    p_offset: offset,
+  });
+}
+
+/** Keep this order on the view: the named rows first, in this order, every position re-spaced. */
+export function viewRecordOrderSet(home: RecordStoreHome, viewId: string, recordIds: readonly string[]) {
+  return callGridDoor<Record<string, unknown>>(home, "view_record_order_set", {
+    p_view_id: viewId,
+    p_record_ids: [...recordIds],
+  });
+}

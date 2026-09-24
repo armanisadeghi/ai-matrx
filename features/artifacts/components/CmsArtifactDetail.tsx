@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectArtifactByEitherId } from "@/lib/redux/selectors/artifactSelectors";
 import { fetchUserArtifactsThunk } from "@/lib/redux/thunks/artifactThunks";
 import { deleteArtifactThunk } from "@/lib/redux/thunks/artifactThunks";
@@ -9,15 +9,18 @@ import {
   ARTIFACT_TYPE_LABELS,
   ARTIFACT_STATUS_LABELS,
 } from "@/features/artifacts/types";
-import type { ArtifactStatus } from "@/features/artifacts/types";
+import type { ArtifactStatus, CxArtifactRow } from "@/features/artifacts/types";
+import { rowToArtifactRecord } from "@/features/artifacts/types";
+import { upsertArtifact } from "@/lib/redux/slices/artifactsSlice";
+import { createClient } from "@/utils/supabase/client";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
+import { fetchAccessDeniedContext } from "@/features/access-gate/service/accessDeniedContext";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ExternalLink,
   Globe,
   Loader2,
-  AlertCircle,
   MessageSquare,
   Clock,
   Tag,
@@ -27,10 +30,10 @@ import {
   Trash2,
   RefreshCw,
 } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LucideIcon } from "lucide-react";
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ArtifactRenderDynamic as ArtifactRender } from "@/features/canvas/artifact-types/ArtifactRenderDynamic";
 import { hasArtifactRenderer } from "@/features/canvas/artifact-types/artifact-renderer-keys";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
@@ -44,7 +47,13 @@ import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
  * Shown inside CmsArtifactDetail when the artifact has a canvas_item_id.
  */
 function CanvasItemPreview({ canvasItemId }: { canvasItemId: string }) {
-  const { row, loading, error } = useCanvasItem(canvasItemId, { resolve: "latest" });
+  // reportUnavailable: false — a missing row must reach <AccessGate> as a
+  // null read (an access question), not as the hook's composed message string,
+  // which the gate would classify as a fault. The gate does its own capture.
+  const { row, loading, error, refetch } = useCanvasItem(canvasItemId, {
+    resolve: "latest",
+    reportUnavailable: false,
+  });
 
   if (loading) {
     return (
@@ -55,11 +64,15 @@ function CanvasItemPreview({ canvasItemId }: { canvasItemId: string }) {
   }
 
   if (error || !row) {
+    // The canonical access gate says which of denied / deleted / never
+    // existed / fault this is, instead of a bare "unavailable".
     return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground py-6 justify-center">
-        <AlertCircle className="h-4 w-4" />
-        <span>Canvas content unavailable</span>
-      </div>
+      <AccessGate
+        token="canvas_item"
+        id={canvasItemId}
+        error={error ?? undefined}
+        onRetry={refetch}
+      />
     );
   }
 
@@ -154,18 +167,47 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
   const artifact = useAppSelector((state) =>
     selectArtifactByEitherId(state, artifactId),
   );
+  const store = useAppStore();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  // What the id turned out to be when it is not one of the viewer's own
+  // artifacts. Keyed to the id so a stale answer never applies to a new route.
+  const [unlisted, setUnlisted] = useState<
+    | { id: string; kind: "canvas-item" }
+    | { id: string; kind: "gate"; token: "artifact" | "canvas_item" }
+    | null
+  >(null);
 
-  // Load if not in store
+  // Load if not in store. The library list holds only the viewer's OWN
+  // artifacts, so absence from it decides nothing: the id is then read BY ID
+  // (RLS decides — a shared artifact opens), and when nothing can be read the
+  // canonical access gate says whether it is denied, deleted or never existed.
   useEffect(() => {
-    if (!artifact) {
-      setIsRefreshing(true);
-      dispatch(fetchUserArtifactsThunk(undefined)).finally(() =>
-        setIsRefreshing(false),
-      );
-    }
-  }, [artifact, dispatch]);
+    if (artifact) return undefined;
+    let active = true;
+    setIsRefreshing(true);
+    void (async () => {
+      await dispatch(fetchUserArtifactsThunk(undefined));
+      if (!active) return;
+      if (selectArtifactByEitherId(store.getState(), artifactId)) return;
+
+      const next = await resolveUnlistedArtifact(artifactId);
+      if (!active) return;
+      if (next.kind === "artifact") {
+        dispatch(upsertArtifact(rowToArtifactRecord(next.row)));
+      } else {
+        setUnlisted({ id: artifactId, ...next });
+      }
+    })().finally(() => {
+      // Unconditional: the artifact landing in the store re-runs this effect
+      // (cleanup flips `active`) before this settles, and a guarded reset left
+      // the page on "Loading artifact…" forever.
+      setIsRefreshing(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [artifact, artifactId, dispatch, store]);
 
   const handleDelete = async () => {
     if (!artifact) return;
@@ -188,7 +230,7 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
     router.push(`/cms/html-pages/${artifact.externalId}`);
   };
 
-  if (isRefreshing) {
+  if (isRefreshing && !artifact) {
     return (
       <>
         <RouteHeader
@@ -205,22 +247,32 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
   }
 
   if (!artifact) {
+    const resolved = unlisted?.id === artifactId ? unlisted : null;
     return (
       <>
         <RouteHeader
           left={<ChevronLeftTapButton href="/artifacts" ariaLabel="Content Library" />}
         />
-        <div className="flex items-center justify-center py-24">
-          <div className="flex flex-col items-center gap-3 text-destructive">
-            <AlertCircle className="h-8 w-8" />
-            <p className="text-sm font-medium">Artifact not found</p>
-            <Link href="/artifacts">
-              <Button variant="outline" size="sm">
-                Back to Library
-              </Button>
-            </Link>
+        {resolved?.kind === "canvas-item" ? (
+          // A canvas item the viewer can read that was never registered as a
+          // library artifact: show the content itself.
+          <Card>
+            <CardContent className="pt-6">
+              <CanvasItemPreview canvasItemId={artifactId} />
+            </CardContent>
+          </Card>
+        ) : resolved?.kind === "gate" ? (
+          <AccessGate
+            token={resolved.token}
+            id={artifactId}
+            fallbackHref="/artifacts"
+            fallbackLabel="Content Library"
+          />
+        ) : (
+          <div className="flex items-center justify-center py-24">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
-        </div>
+        )}
       </>
     );
   }
@@ -461,4 +513,52 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
       </div>
     </>
   );
+}
+
+/**
+ * Read an id that is not in the viewer's own artifact list, BY ID. The id is a
+ * chat.artifact id or a canvas_items id; row-level security decides what the
+ * viewer can read. When neither row is readable, the platform's access
+ * resolver says which table the id belongs to, so the gate asks about the
+ * right kind of record.
+ */
+async function resolveUnlistedArtifact(
+  id: string,
+): Promise<
+  | { kind: "artifact"; row: CxArtifactRow }
+  | { kind: "canvas-item" }
+  | { kind: "gate"; token: "artifact" | "canvas_item" }
+> {
+  if (!isUuidShape(id)) return { kind: "gate", token: "artifact" };
+  const supabase = createClient();
+
+  const artifactRead = await supabase
+    .schema("chat")
+    .from("artifact")
+    .select("*")
+    .or(`id.eq.${id},canvas_item_id.eq.${id}`)
+    .is("deleted_at", null)
+    .limit(1)
+    .maybeSingle();
+  if (artifactRead.data) {
+    return { kind: "artifact", row: artifactRead.data as CxArtifactRow };
+  }
+
+  const canvasRead = await supabase
+    .schema("canvas")
+    .from("canvas_items")
+    .select("id")
+    .eq("id", id)
+    .maybeSingle();
+  if (canvasRead.data) return { kind: "canvas-item" };
+
+  // Ask about the canvas item only when no artifact row has this id; an id
+  // that is neither reads as a missing artifact (this is the artifacts route).
+  const asArtifact = await fetchAccessDeniedContext("artifact", id);
+  if (asArtifact.status !== "missing") return { kind: "gate", token: "artifact" };
+  const asCanvasItem = await fetchAccessDeniedContext("canvas_item", id);
+  return {
+    kind: "gate",
+    token: asCanvasItem.status === "missing" ? "artifact" : "canvas_item",
+  };
 }

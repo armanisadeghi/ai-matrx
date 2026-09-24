@@ -61,9 +61,9 @@ jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({ rpc: (...a: unknown[]) => rpc(...(a as [string, Record<string, string>])) }),
 }));
 
-// EVERY MOCK RETURNS A STABLE REFERENCE. A mock that builds a fresh array or object on each
-// render makes the hook's `organizations`/`conversations` dependency change every render, the
-// effect re-run, and the suite spin for ever — which is a defect in the mock, not in the hook.
+// Stable references keep this suite about scope. The hook no longer re-fetches when the inbox
+// hands back a fresh array (the real messaging store does on every emit) — that is proven in
+// useUserConnections.fetchStorm.test.tsx (MSG-STORM).
 const ME = { id: "u-me" };
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => ME,

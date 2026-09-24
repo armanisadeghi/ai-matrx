@@ -155,7 +155,12 @@ function ColumnSettingsForm({
   });
   const siblings = fields
     .filter((f) => f.field_name !== field.field_name)
-    .map((f) => ({ field_name: f.field_name, display_name: f.display_name }));
+    .map((f) => ({
+      field_name: f.field_name,
+      display_name: f.display_name,
+      data_type: f.data_type,
+      metadata: f.metadata,
+    }));
   const summaryKinds = summaryKindsFor(dataType);
   const typeChanged = dataType !== field.data_type;
 

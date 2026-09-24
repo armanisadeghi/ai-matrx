@@ -1052,6 +1052,61 @@ function deriveCapabilities(
 }
 
 /**
+ * WHERE THIS CREDENTIAL LIVES — read from the credential, never from the person.
+ *
+ * THE OWNER'S LAW (2026-09-23): the permission is to the person, never the
+ * organization; the organization the person is working in never decides
+ * whether ONE credential opens. `/vault/<id>` used to look the id up inside
+ * whichever list scope happened to be showing ("Mine" by default), so a
+ * credential of one of her organizations, or one shared with her, opened as
+ * nothing. This asks the row itself under RLS — the same policies that decide
+ * whether she may read it at all — and names the scope that holds it.
+ *
+ *   found     → the scope the credential is listed in (mine / shared / its organization)
+ *   not-given → RLS returned no row: not hers, or not there (never told apart, on purpose)
+ *   unavailable → we could not ask; never folded into either answer above
+ */
+export type CredentialHome =
+  | { state: "found"; scope: VaultScope }
+  | { state: "not-given" }
+  | { state: "unavailable"; why: string };
+
+export async function resolveCredentialHome(
+  itemId: string,
+): Promise<CredentialHome> {
+  try {
+    const supabase = createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await getClaimsUser(supabase);
+    if (userError || !user) return { state: "unavailable", why: "Not signed in" };
+    const { data, error } = await supabase
+      .schema("users")
+      .from("credential_items")
+      .select("id, user_id, organization_id")
+      .eq("id", itemId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (error) return { state: "unavailable", why: error.message };
+    if (!data) return { state: "not-given" };
+    if (data.organization_id) {
+      return {
+        state: "found",
+        scope: { kind: "organization", organizationId: data.organization_id },
+      };
+    }
+    if (data.user_id === user.id) return { state: "found", scope: { kind: "mine" } };
+    return { state: "found", scope: { kind: "shared" } };
+  } catch (e) {
+    return {
+      state: "unavailable",
+      why: e instanceof Error ? e.message : "The vault did not answer.",
+    };
+  }
+}
+
+/**
  * Masked item list for a declared SCOPE — the canonical FE list path
  * (direct Supabase).
  *

@@ -18,6 +18,7 @@ import { BrainCircuit, Loader2, MonitorPlay, Save } from "lucide-react";
 
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
@@ -66,7 +67,8 @@ export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
     profile: "full",
   });
   const [screenId, setScreenId] = useState<ScreenId>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  // Set when the workflow can't be shown; `error` is the failed read, if any.
+  const [loadFailure, setLoadFailure] = useState<{ error?: unknown } | null>(null);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saveProblem, setSaveProblem] = useState<
@@ -84,9 +86,9 @@ export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
     ])
       .then(([loaded, row]) => {
         if (cancelled) return;
-        setLoadError(null);
+        setLoadFailure(null);
         if (!loaded) {
-          setLoadError("We couldn't open this workflow. It may have been deleted.");
+          setLoadFailure({});
           return;
         }
         setWorkflow({ name: loaded.name, definition: loaded.definition });
@@ -104,9 +106,7 @@ export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setLoadError(
-          err instanceof Error ? err.message : "We couldn't open this workflow.",
-        );
+        setLoadFailure({ error: err });
       });
     return () => {
       cancelled = true;
@@ -227,10 +227,17 @@ export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
     />
   );
 
-  if (loadError) {
+  if (loadFailure) {
     return (
-      <div className="flex h-full items-center justify-center p-6">
-        <p className="max-w-sm text-center text-sm text-muted-foreground">{loadError}</p>
+      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+        <AccessGate
+          token="workflow"
+          id={definitionId}
+          error={loadFailure.error}
+          onRetry={() => setReloadNonce((n) => n + 1)}
+          fallbackHref="/workflows/all"
+          fallbackLabel="Your workflows"
+        />
       </div>
     );
   }

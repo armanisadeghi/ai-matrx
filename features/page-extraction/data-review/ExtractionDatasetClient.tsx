@@ -12,6 +12,7 @@
  * column + wrapping rules as the inline tab (features/page-extraction/utils/columns).
  */
 
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import {
   useCallback,
   useEffect,
@@ -150,13 +151,22 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
   >(null);
   const [busy, setBusy] = useState(false);
 
+  // Whether the dataset (job) read has settled, and its raw failure — a null
+  // row with no error is denied / deleted / missing, and renders AccessGate.
+  const [jobSettled, setJobSettled] = useState(false);
+  const [jobReadError, setJobReadError] = useState<unknown>(null);
+
   const loadJob = useCallback(async () => {
+    setJobReadError(null);
     try {
       const j = await getJob(jobId);
       setJob(j);
       if (j) setNameDraft(j.name);
     } catch (e) {
+      setJobReadError(e);
       setError(e instanceof Error ? e.message : "Could not load dataset");
+    } finally {
+      setJobSettled(true);
     }
   }, [jobId]);
 
@@ -983,7 +993,16 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
         )}
 
         <div className="min-h-0 flex-1 overflow-auto px-3 py-2">
-          {error ? (
+          {jobSettled && !job ? (
+            <AccessGate
+              token="page_extraction_job"
+              id={jobId}
+              error={jobReadError ?? undefined}
+              onRetry={() => void loadJob()}
+              fallbackHref={EXTRACTIONS_ROUTE}
+              fallbackLabel="Your extraction datasets"
+            />
+          ) : error ? (
             <div className="m-4 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
               {error}
             </div>

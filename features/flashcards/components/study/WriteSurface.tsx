@@ -22,6 +22,7 @@ import {
   PenLine,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Input } from "@ai-matrx/design-system";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
@@ -149,15 +150,32 @@ export function WriteSurface({ setId }: { setId: string }) {
               <MatrxMiniLoader />
             </div>
           ) : study.error ? (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-16 text-center">
-              <AlertCircle className="h-6 w-6 text-muted-foreground" />
-              <p className="text-sm font-medium text-foreground">
-                Couldn&apos;t load this set
-              </p>
-              <p className="max-w-md text-xs text-muted-foreground">
-                {study.error}
-              </p>
-            </div>
+            // Denied / deleted / never existed / signed-out all read as the
+            // same failed load — the gate asks the platform which one it is.
+            // Offline, the hook's "this deck isn't downloaded" sentence is the
+            // honest one, so it stays as the fault rendering.
+            <AccessGate
+              token="fc_set"
+              id={setId}
+              error={study.error}
+              renderFault={
+                typeof navigator !== "undefined" && navigator.onLine === false
+                  ? (fault) => (
+                      <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-16 text-center">
+                        <AlertCircle className="h-6 w-6 text-muted-foreground" />
+                        <p className="text-sm font-medium text-foreground">
+                          Couldn&apos;t load this set
+                        </p>
+                        <p className="max-w-md text-xs text-muted-foreground">
+                          {String(fault)}
+                        </p>
+                      </div>
+                    )
+                  : undefined
+              }
+              fallbackHref={EDU_BASE}
+              fallbackLabel="Flashcards"
+            />
           ) : study.cards.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
               <BookOpen className="h-6 w-6 text-muted-foreground" />

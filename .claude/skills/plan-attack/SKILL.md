@@ -15,9 +15,8 @@ timestamp: 2026-09-12T00:00:00Z
 
 # plan-attack
 
-Arman's order (`campaign-pattern`, move 3): *"before we take the next step... I want you to have an
-opus 5 agent who tries to poke holes in this list and tell us what things we are missing that we will
-regret later."* A self-review is not an attack: the author is blind to what they left out.
+Arman's order (`campaign-pattern`, move 3) was to have an independent reviewer poke holes in the
+plan before anyone proceeded. A self-review is not an attack: the author is blind to what they left out.
 
 ## When — scale to the stakes
 
@@ -30,7 +29,7 @@ regret later."* A self-review is not an attack: the author is blind to what they
 
 ## Dispatch rules
 
-- Fresh agent, zero authorship, lane named ([subagent-model-ladder](/policies/subagent-model-ladder.md)).
+- Fresh agent, zero authorship, lane named ([subagent-model-ladder](/policies/subagent-model-ladder.md)). For Claude Code, use Opus 5.5.
   Read-only; it may read code and the live DB.
 - **Pin the plan.** Give the reviewer the commit SHA (or snapshot path) it must judge, and say the
   repo may have moved since: drift between the plan and newer live state is not a finding against

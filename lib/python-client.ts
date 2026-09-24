@@ -440,17 +440,48 @@ function resolveRequestOrganizationId(opts: RequestOptions): string {
  */
 async function resolveRequestOrganizationIdAfterAdmission(
   opts: RequestOptions,
-): Promise<string> {
+  method: string,
+): Promise<string | null> {
   if (opts.organizationId) {
     return requireOrganizationContext(null, opts.organizationId);
   }
   await waitForOrganizationAdmission();
+  // 🚨 A READ IS NEVER REFUSED FOR A MISSING ORGANIZATION (Arman, 2026-09-23:
+  // "The permission is to the person, not the org"). Whether ONE item opens is
+  // decided by the person's access to it, never by which organization is
+  // selected, and "no organization selected" is never an error for a read. So a
+  // GET/HEAD with nothing selected is SENT without `X-Organization-Id` instead
+  // of refused here; the server decides — its read doors admit a JWT caller
+  // org-less (matrx-connect `_is_authenticated_resource_route`) and a route
+  // that still needs one answers its own `organization_required` sentence.
+  // Every WRITE / action (POST, PUT, PATCH, DELETE) keeps the fail-closed
+  // refusal below, unchanged: doing things still happens in an organization.
+  if (isReadMethod(method) && !selectedOrganizationIdOrNull()) return null;
   return resolveRequestOrganizationId(opts);
+}
+
+/** GET and HEAD are reads by HTTP contract; every other method is a write. */
+function isReadMethod(method: string): boolean {
+  const upper = method.toUpperCase();
+  return upper === "GET" || upper === "HEAD";
+}
+
+function selectedOrganizationIdOrNull(): string | null {
+  const store = getStore();
+  return store
+    ? (selectOrganizationId(store.getState() as RootState) ?? null)
+    : null;
 }
 
 export async function buildHeaders(
   opts: RequestOptions,
   includeContentType: boolean,
+  /**
+   * The HTTP method this request will use. A read (GET/HEAD) with no
+   * organization selected is sent without one; every other method — and an
+   * omitted method — stays fail-closed on the organization.
+   */
+  method: string = "POST",
 ): Promise<{ headers: Record<string, string>; requestId: string }> {
   const token = await getAccessTokenOrNull();
   const fingerprint = opts.guestFingerprint ?? getCachedFingerprint();
@@ -486,10 +517,13 @@ export async function buildHeaders(
   // refuse client-side — live: /print/order, then /demos/lulu-pricing, 2026-08-31). An explicit
   // caller-resolved `opts.organizationId` still binds on either lane.
   if (token) {
-    headers = applyOrganizationContextHeader(
-      headers,
-      await resolveRequestOrganizationIdAfterAdmission(opts),
+    const organizationId = await resolveRequestOrganizationIdAfterAdmission(
+      opts,
+      method,
     );
+    if (organizationId) {
+      headers = applyOrganizationContextHeader(headers, organizationId);
+    }
   } else if (opts.organizationId) {
     headers = applyOrganizationContextHeader(
       headers,
@@ -558,7 +592,7 @@ export async function requestRaw(
   );
   let requestId: string | undefined;
   try {
-    const built = await buildHeaders(opts, false);
+    const built = await buildHeaders(opts, false, method);
     requestId = built.requestId;
     const response = await fetch(url, {
       ...init,
@@ -607,7 +641,7 @@ export async function getJson<T>(
     "GET",
   );
   try {
-    const { headers, requestId } = await buildHeaders(opts, false);
+    const { headers, requestId } = await buildHeaders(opts, false, "GET");
     let response: Response;
     try {
       response = await fetchWithTimeout(
@@ -1105,7 +1139,7 @@ export async function downloadBlob(
   path: string,
   opts: RequestOptions = {},
 ): Promise<{ blob: Blob; meta: ResponseMeta; filename: string | null }> {
-  const { headers, requestId } = await buildHeaders(opts, false);
+  const { headers, requestId } = await buildHeaders(opts, false, "GET");
   const response = await fetch(
     buildAndLogTargetUrl(path, opts.baseUrlOverride, "downloadBlob", "GET"),
     { method: "GET", headers, signal: opts.signal },

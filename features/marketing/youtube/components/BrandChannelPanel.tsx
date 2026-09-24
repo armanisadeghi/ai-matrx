@@ -48,6 +48,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { RecordOrganizationSwitchOffer } from "@/features/organizations/components/RecordOrganizationSwitchOffer";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { extractErrorMessage } from "@/utils/errors";
 import {
@@ -404,16 +405,31 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
         )?.id ?? null)
       : null;
 
+  // 🚨 THE BRAND'S ORGANIZATION, NEVER THE SELECTED ONE (Arman, 2026-09-23:
+  // "The permission is to the person, not the org"). The mirrored videos and
+  // analytics live in the brand's own organization; reading them in whichever
+  // organization happens to be selected showed an empty channel (or nothing
+  // at all with none selected). The refresh — an action — still happens in the
+  // selected organization, and the offer below says when that is elsewhere.
+  const brandOrganizationId = bound?.organizationId ?? null;
+
   const videos = useQuery({
-    queryKey: ["marketing", "brand", brandId, "youtube-videos", channelResourceId] as const,
+    queryKey: [
+      "marketing",
+      "brand",
+      brandId,
+      "youtube-videos",
+      channelResourceId,
+      brandOrganizationId,
+    ] as const,
     queryFn: ({ signal }) =>
       readChannelVideos({
-        organizationId: organizationId ?? "",
+        organizationId: brandOrganizationId ?? "",
         userId: userId ?? "",
         channelResourceId,
         signal,
       }),
-    enabled: Boolean(organizationId && userId && channelResourceId),
+    enabled: Boolean(brandOrganizationId && userId && channelResourceId),
   });
 
   const now = new Date();
@@ -428,17 +444,18 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
       "youtube-analytics",
       channelResourceId,
       lane,
+      brandOrganizationId,
     ] as const,
     queryFn: ({ signal }) =>
       readChannelAnalytics({
-        organizationId: organizationId ?? "",
+        organizationId: brandOrganizationId ?? "",
         channelResourceId: channelResourceId ?? "",
         from: windowFrom,
         to: isoDay(now),
         lane,
         signal,
       }),
-    enabled: Boolean(organizationId && channelResourceId),
+    enabled: Boolean(brandOrganizationId && channelResourceId),
   });
 
   const analyticsCapability =
@@ -494,6 +511,8 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
     }
   }
 
+  // Only the REFRESH (an action) needs a selected organization; reading the
+  // channel never does.
   const organizationMissing =
     organizationState === "required" || organizationState === "unavailable";
 
@@ -504,7 +523,7 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
           <MonitorPlay className="h-4 w-4 text-muted-foreground" aria-hidden />
           YouTube channel
         </h2>
-        {bound ? (
+        {bound && organizationId ? (
           <Button
             size="sm"
             variant="outline"
@@ -521,13 +540,21 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
         ) : null}
       </div>
 
-      {organizationMissing ? (
+      {/* Reading the channel never needs a selected organization; the refresh
+          does. When the brand lives elsewhere, or none is selected, say so and
+          offer the one-click switch. */}
+      <RecordOrganizationSwitchOffer
+        organizationId={brandOrganizationId}
+        what="client"
+      />
+      {organizationMissing && organizationState === "unavailable" ? (
         <OrganizationContextNotice
           compact
           state={organizationState}
-          what="This client's YouTube channel"
+          what="Refreshing this client's YouTube channel"
         />
-      ) : binding.isLoading ? (
+      ) : null}
+      {binding.isLoading ? (
         <LoadingSurface label="Looking for this client's YouTube channel…" />
       ) : binding.isError ? (
         <InlineQueryError

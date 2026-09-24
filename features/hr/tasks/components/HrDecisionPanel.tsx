@@ -30,6 +30,7 @@ import {
 } from "@/features/hr/tasks/service";
 import { HR_NOT_PROVIDED } from "@/features/hr/constants";
 import { hrTasksHref } from "@/features/hr/routes";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { HrAccessDenied } from "@/features/hr/shared/HrAccessDenied";
 import {
     HrEmployerSubstitutionNotice,
@@ -123,7 +124,7 @@ export function HrDecisionPanel({
     const [detail, setDetail] = useState<HrInstanceDetail | null>(null);
     const [refusal, setRefusal] = useState<HrRefusal | null>(null);
     const [actionRefusal, setActionRefusal] = useState<HrRefusal | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<unknown>(null);
     const [loading, setLoading] = useState(true);
     const [reason, setReason] = useState("");
     const [busy, setBusy] = useState(false);
@@ -150,6 +151,7 @@ export function HrDecisionPanel({
 
     async function load() {
         setLoading(true);
+        setError(null);
         try {
             const envelope = await fetchHrInstance(instanceId);
             if (isRefusal(envelope)) {
@@ -160,7 +162,8 @@ export function HrDecisionPanel({
                 setRefusal(null);
             }
         } catch (e) {
-            setError(e instanceof Error ? e.message : "This request could not be loaded");
+            // The raw thrown value, so the gate can tell a fault (retry) from an access state.
+            setError(e ?? new Error("This request could not be loaded"));
         } finally {
             setLoading(false);
         }
@@ -321,14 +324,18 @@ export function HrDecisionPanel({
     if (rescueRefusal) return rescueRefusal;
 
     if (error) {
+        // ABSOLUTE, like the refusal frame below: a workflow instance can be an incident
+        // or a corrective action, so "Request access" would confirm a case exists (§5 veto).
         return (
-            <div className="p-6 text-sm">
-                <p className="font-medium text-destructive">This request could not be loaded.</p>
-                <p className="mt-1 text-muted-foreground">{error}</p>
-                <Button className="mt-3" size="sm" variant="outline" onClick={() => void load()}>
-                    Try again
-                </Button>
-            </div>
+            <AccessGate
+                token="hr_workflow_instance"
+                id={instanceId}
+                error={error}
+                onRetry={() => void load()}
+                requestability="absolute"
+                fallbackHref={hrTasksHref(orgRef)}
+                fallbackLabel="All HR tasks"
+            />
         );
     }
 

@@ -45,10 +45,14 @@
  *   - **Bound agents** — when `surfaceName` is set, lists agents from
  *     `agent.definition_surface` (My agents / System / Shared / org), same as the
  *     context menu. Pass `getApplicationScope` for full surface scope at run.
- *   - **Help with this…** — OFF by default (`enableHelpWithThis`). Placeholder
- *     default: General Chat (`helpAgentId` to override).
- *   - **Custom Agent** — OFF by default (`enableCustomAgent`). Same flow; no
- *     preset default until `customAgentId` is set (agent filter TBD).
+ *   - **Help with this…** — OFF by default (`enableHelpWithThis`). Runs a
+ *     MANDATE through the server's mandate door — the platform's general job
+ *     (`chat.default_new_chat`) unless the host passes its own
+ *     `helpMandateKey`. `helpContextItems` travel as that job's offered
+ *     values and as context entries, never inside the person's message.
+ *   - **Custom Agent** — OFF by default (`enableCustomAgent`). Same flow; the
+ *     person picks an agent unless the host preselects a job with
+ *     `customAgentMandateKey`.
  * - **Text stats** — character/word/line counts via a pinned stats bar and a
  *   "Text stats" detail view in the menu. OFF by default; pass
  *   `enableTextStats` on long-form editors where those measurements help.
@@ -159,6 +163,7 @@ import {
   type ProTextareaAgentActionId,
   type ProTextareaMenuMode,
 } from "./proTextareaAgentActions";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 // STATIC by measured ruling (2026-07-28, build-lab bracket): a dynamic({ssr:
 // false}) front door here was tried (v0.4.225 E1) and REVERTED same day. It
 // cut /notes first-load JS by 3MB, but the async chunk-group split of the
@@ -297,12 +302,20 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
   cleanupContextItems?: SessionContextItem[];
   /** "Help with this…" agent action in the "…" menu. OFF by default. */
   enableHelpWithThis?: boolean;
-  /** Override the help default (General Chat until a surface role ships). */
-  helpAgentId?: string | null;
+  /**
+   * The JOB "Help with this…" runs — a mandate key, never an agent id.
+   * Default: the platform's general mandate (`chat.default_new_chat`).
+   */
+  helpMandateKey?: AnyMandateKey;
+  /**
+   * What the host holds for the help run, keyed by the job's offered-value
+   * names. Delivered as offered values + context entries, never as user text.
+   */
   helpContextItems?: SessionContextItem[];
   /** "Custom Agent" action — same flow, separate entry for a future agent filter. */
   enableCustomAgent?: boolean;
-  customAgentId?: string | null;
+  /** Optional job to preselect for "Custom Agent" (otherwise the person picks). */
+  customAgentMandateKey?: AnyMandateKey;
   customAgentContextItems?: SessionContextItem[];
   /**
    * Surface registry name (`matrx-user/notes`, etc.). When set, the "…" menu
@@ -405,10 +418,10 @@ export const ProTextarea = React.forwardRef<
       cleanupAgentId,
       cleanupContextItems,
       enableHelpWithThis = false,
-      helpAgentId,
+      helpMandateKey,
       helpContextItems,
       enableCustomAgent = false,
-      customAgentId,
+      customAgentMandateKey,
       customAgentContextItems,
       surfaceName,
       enableContextMenu = true,
@@ -468,8 +481,8 @@ export const ProTextarea = React.forwardRef<
     const agentActionContext = useRef<ProTextareaAgentActionContext>({
       cleanupAgentId,
       cleanupSurfaceAgentId,
-      helpAgentId,
-      customAgentId,
+      helpMandateKey,
+      customAgentMandateKey,
     });
     const agentContextByAction = useRef<
       Record<ProTextareaAgentActionId, SessionContextItem[]>
@@ -482,8 +495,8 @@ export const ProTextarea = React.forwardRef<
       agentActionContext.current = {
         cleanupAgentId,
         cleanupSurfaceAgentId,
-        helpAgentId,
-        customAgentId,
+        helpMandateKey,
+        customAgentMandateKey,
       };
       agentContextByAction.current = {
         cleanup: cleanupContextItems ?? [],
@@ -495,9 +508,9 @@ export const ProTextarea = React.forwardRef<
       cleanupContextItems,
       cleanupSurfaceAgentId,
       customAgentContextItems,
-      customAgentId,
+      customAgentMandateKey,
       helpContextItems,
-      helpAgentId,
+      helpMandateKey,
     ]);
 
     const [menuOpen, setMenuOpen] = useState(false);
@@ -509,6 +522,11 @@ export const ProTextarea = React.forwardRef<
     const [selectedAgentName, setSelectedAgentName] = useState<string | null>(
       null,
     );
+    // The JOB an embedded action (Help with this… / Custom Agent) runs. Set
+    // from the action's default; cleared the moment the person picks an agent
+    // themselves — their explicit choice runs that agent directly.
+    const [selectedMandateKey, setSelectedMandateKey] =
+      useState<AnyMandateKey | null>(null);
 
     const enabledAgentActionIds = (
       Object.keys(PRO_TEXTAREA_AGENT_ACTIONS) as ProTextareaAgentActionId[]
@@ -827,6 +845,9 @@ export const ProTextarea = React.forwardRef<
         setSelectedAgent(
           definition.resolveDefaultAgentId(agentActionContext.current),
         );
+        setSelectedMandateKey(
+          definition.resolveDefaultMandateKey(agentActionContext.current),
+        );
         setSelectedAgentName(null);
       },
       [agentAction, valueAsString],
@@ -841,17 +862,20 @@ export const ProTextarea = React.forwardRef<
 
     const handleEmbeddedAgentChange = useCallback((agentId: string) => {
       setSelectedAgent(agentId);
+      setSelectedMandateKey(null);
       setSelectedAgentName(null);
     }, []);
 
     const exitEmbeddedAgentView = useCallback(() => {
       setMenuMode("menu");
       setSelectedAgent(null);
+      setSelectedMandateKey(null);
       setSelectedAgentName(null);
     }, []);
 
     const clearEmbeddedAgent = useCallback(() => {
       setSelectedAgent(null);
+      setSelectedMandateKey(null);
       setSelectedAgentName(null);
     }, []);
 
@@ -1329,6 +1353,12 @@ export const ProTextarea = React.forwardRef<
                       <ProTextareaAgentPanel
                         actionId={menuMode}
                         agentId={selectedAgent}
+                        mandateKey={selectedMandateKey}
+                        contextItems={
+                          menuMode === "help"
+                            ? (helpContextItems ?? cleanupContextItems)
+                            : (customAgentContextItems ?? cleanupContextItems)
+                        }
                         agentLabel={selectedAgentName}
                         onAgentIdChange={handleEmbeddedAgentChange}
                         onAgentClear={clearEmbeddedAgent}

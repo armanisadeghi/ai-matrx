@@ -45,14 +45,6 @@ import { toast } from "@/lib/toast";
 
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -782,115 +774,147 @@ function OrgDetailDialog({
 
               {/* 30-day daily series */}
               <section>
-                <h3 className="mb-2 text-sm font-semibold">Last 30 days</h3>
-                {detail.daily_series.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No cost in this window.
-                  </p>
-                ) : (
-                  <div className="rounded-md border border-border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead className="text-right">Cost</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {detail.daily_series.map((d) => (
-                          <TableRow key={d.date}>
-                            <TableCell className="font-mono text-xs">
-                              {d.date}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums">
-                              {fmtUsd(d.cost_usd)}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
+                  <MatrxDataTable
+                    tableId="administration/kg-cost/org-detail/daily-cost"
+                    data={detail.daily_series}
+                    columns={[
+                      {
+                        accessorKey: "date",
+                        header: "Date",
+                        filter: "date",
+                        cell: (row) => (
+                          <span className="font-mono text-xs">{row.date}</span>
+                        ),
+                      },
+                      {
+                        accessorKey: "cost_usd",
+                        header: "Cost",
+                        filter: "number",
+                        align: "right",
+                        cell: (row) => (
+                          <span className="tabular-nums">
+                            {fmtUsd(row.cost_usd)}
+                          </span>
+                        ),
+                      },
+                    ]}
+                    getRowId={(row) => row.date}
+                    density="condensed"
+                    stickyHeader
+                    pageSize={0}
+                    hidePagination
+                    toolbar={{ title: "Last 30 days", search: false }}
+                    emptyState={{ title: "No cost in this window." }}
+                    detail={{ enabled: false }}
+                    window={{ enabled: false }}
+                    coverage={{
+                      noun: "daily cost",
+                      total: detail.daily_series.length,
+                      answeredBy: "source",
+                    }}
+                  />
               </section>
 
               {/* Top sources */}
               <section>
-                <h3 className="mb-2 text-sm font-semibold">
-                  Top sources (30 days)
-                </h3>
-                {detail.top_sources.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No source breakdown available.
-                  </p>
-                ) : (
-                  <div className="rounded-md border border-border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Source</TableHead>
-                          <TableHead className="text-right">Cost</TableHead>
-                          <TableHead className="text-right">Events</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {detail.top_sources.map((s) => (
-                          <TableRow key={s.source}>
-                            <TableCell className="font-mono text-xs">
-                              {s.source}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums">
-                              {fmtUsd(s.cost_usd)}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums">
-                              {s.count}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
+                  <MatrxDataTable
+                    tableId="administration/kg-cost/org-detail/top-sources"
+                    data={detail.top_sources}
+                    columns={[
+                      {
+                        accessorKey: "source",
+                        header: "Source",
+                        filter: "text",
+                        cell: (row) => (
+                          <span className="font-mono text-xs">{row.source}</span>
+                        ),
+                      },
+                      {
+                        accessorKey: "cost_usd",
+                        header: "Cost",
+                        filter: "number",
+                        align: "right",
+                        cell: (row) => (
+                          <span className="tabular-nums">
+                            {fmtUsd(row.cost_usd)}
+                          </span>
+                        ),
+                      },
+                      {
+                        accessorKey: "count",
+                        header: "Events",
+                        filter: "number",
+                        align: "right",
+                        cell: (row) => (
+                          <span className="tabular-nums">{row.count}</span>
+                        ),
+                      },
+                    ]}
+                    getRowId={(row) => row.source}
+                    density="condensed"
+                    stickyHeader
+                    pageSize={0}
+                    hidePagination
+                    toolbar={{ title: "Top sources (30 days)", search: false }}
+                    emptyState={{ title: "No source breakdown available." }}
+                    detail={{ enabled: false }}
+                    window={{ enabled: false }}
+                    coverage={{
+                      noun: "source",
+                      total: detail.top_sources.length,
+                      answeredBy: "source",
+                    }}
+                  />
               </section>
 
               {/* Batch summary */}
               <section>
-                <h3 className="mb-2 text-sm font-semibold">
-                  Batches by status
-                </h3>
-                {detail.batch_summary.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No batch submissions yet.
-                  </p>
-                ) : (
-                  <div className="rounded-md border border-border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Count</TableHead>
-                          <TableHead className="text-right">
-                            Total cost
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {detail.batch_summary.map((b) => (
-                          <TableRow key={b.status}>
-                            <TableCell>
-                              <StatusBadge status={b.status} />
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums">
-                              {b.count}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums">
-                              {fmtUsd(b.total_cost_usd)}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
+                  <MatrxDataTable
+                    tableId="administration/kg-cost/org-detail/batches-by-status"
+                    data={detail.batch_summary}
+                    columns={[
+                      {
+                        accessorKey: "status",
+                        header: "Status",
+                        filter: "select",
+                        cell: (row) => <StatusBadge status={row.status} />,
+                      },
+                      {
+                        accessorKey: "count",
+                        header: "Count",
+                        filter: "number",
+                        align: "right",
+                        cell: (row) => (
+                          <span className="tabular-nums">{row.count}</span>
+                        ),
+                      },
+                      {
+                        accessorKey: "total_cost_usd",
+                        header: "Total cost",
+                        filter: "number",
+                        align: "right",
+                        cell: (row) => (
+                          <span className="tabular-nums">
+                            {fmtUsd(row.total_cost_usd)}
+                          </span>
+                        ),
+                      },
+                    ]}
+                    getRowId={(row) => row.status}
+                    density="condensed"
+                    stickyHeader
+                    pageSize={0}
+                    hidePagination
+                    toolbar={{ title: "Batches by status", search: false }}
+                    emptyState={{ title: "No batch submissions yet." }}
+                    detail={{ enabled: false }}
+                    window={{ enabled: false }}
+                    coverage={{
+                      noun: "batch status",
+                      total: detail.batch_summary.length,
+                      answeredBy: "source",
+                    }}
+                  />
               </section>
             </div>
           </ScrollArea>

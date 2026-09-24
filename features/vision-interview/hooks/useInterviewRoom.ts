@@ -14,7 +14,7 @@
 //      the browser cannot produce for itself and the difference between a
 //      talkable room and six dead tabs.
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { useRoleBindings } from "./useRoleBindings";
@@ -47,12 +47,27 @@ export function useInterviewRoom(sessionId: string) {
   // its mandate — so this runs for EVERY session, run or no run.
   const { retryRoles } = useRoleBindings(sessionId);
 
+  // The room's own read of its session, as a state the page can branch on:
+  // `null` = fine (or still loading); `{ error: undefined }` = the read
+  // settled with no row (deleted, someone else's, never existed);
+  // `{ error }` = the read failed. Swallowing this left the room rendered
+  // broken forever — the page renders the canonical access gate instead.
+  const [unavailable, setUnavailable] = useState<{
+    sessionId: string;
+    error: unknown;
+  } | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const retryHydrate = useCallback(() => setAttempt((n) => n + 1), []);
+
 
   useEffect(() => {
     let disposed = false;
     let unsubscribe: (() => void) | null = null;
 
     dispatch(roomOpened({ sessionId }));
+    // A catch-up re-read that fails after the room already loaded is a blip,
+    // not a closed door — only a failure BEFORE the first load gates the room.
+    let loadedOnce = false;
 
     const hydrate = async () => {
       try {
@@ -65,6 +80,10 @@ export function useInterviewRoom(sessionId: string) {
             listRevisions(sessionId),
           ]);
         if (disposed) return;
+        if (sessionRow) loadedOnce = true;
+        setUnavailable(
+          sessionRow ? null : { sessionId, error: undefined },
+        );
         // ONE batched dispatch for the whole room — never per-row.
         dispatch(
           roomHydrated({
@@ -78,6 +97,7 @@ export function useInterviewRoom(sessionId: string) {
         );
       } catch (err) {
         if (disposed) return;
+        if (!loadedOnce) setUnavailable({ sessionId, error: err });
         captureError({
           source: "supabase-exception",
           message: `[vision-interview] room hydration failed for ${sessionId}: ${
@@ -106,7 +126,17 @@ export function useInterviewRoom(sessionId: string) {
       disposed = true;
       unsubscribe?.();
     };
-  }, [dispatch, sessionId]);
+  }, [dispatch, sessionId, attempt]);
 
-  return { session, hydrated, retryRoles };
+  return {
+    session,
+    hydrated,
+    retryRoles,
+    /** Set when this session can't be shown; `error` is the failed read, if any. */
+    unavailable:
+      unavailable && unavailable.sessionId === sessionId
+        ? { error: unavailable.error }
+        : null,
+    retryHydrate,
+  };
 }

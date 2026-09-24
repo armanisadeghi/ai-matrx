@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import {
   ExternalLink,
   RefreshCw,
@@ -744,7 +745,12 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
   const debug = useStreamDebug();
   const [isNavigating, startNavTransition] = useTransition();
 
-  const { data: source, refresh: refetchSource } = useResearchSource(sourceId);
+  const {
+    data: source,
+    isLoading: sourceLoading,
+    error: sourceError,
+    refresh: refetchSource,
+  } = useResearchSource(sourceId);
   const { data: contentData, refresh: refetchContent } =
     useSourceContent(sourceId);
   const { data: allSources } = useResearchSources(topicId);
@@ -1038,6 +1044,24 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
   }, [refetchContent]);
 
   const isScraping = scrapeStream.isStreaming;
+
+  // The source read settled with no row (deleted, another topic's, no access)
+  // or failed outright — the canonical gate says which, instead of a detail
+  // page full of undefined fields.
+  if (!sourceLoading && (sourceError || !source)) {
+    return (
+      <div className="h-full overflow-hidden">
+        <AccessGate
+          token="research_source"
+          id={sourceId}
+          error={sourceError ?? undefined}
+          onRetry={refetchSource}
+          fallbackHref={`/research/topics/${topicId}/sources`}
+          fallbackLabel="This topic's sources"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col md:flex-row h-full min-h-0">

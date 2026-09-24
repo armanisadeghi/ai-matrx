@@ -157,6 +157,12 @@ interface TableToolbarProps {
   copyControls?: (onChooseReference: () => void) => React.ReactNode;
   /** Mobile-only view controls (sort, saved views, columns) hosted in the same drawer. */
   mobileViewControls?: React.ReactNode;
+  /**
+   * The page around the grid owns Share and export (the /data-v2 table page's chrome, for
+   * every layout — ruling 2026-09-23). The grid's own Share button and Copy / transform /
+   * export control are then absent: the same actions, in one place.
+   */
+  pageOwnsShareAndExport?: boolean;
 }
 
 export default function TableToolbar({
@@ -223,8 +229,12 @@ export default function TableToolbar({
   viewControls,
   copyControls,
   mobileViewControls,
+  pageOwnsShareAndExport = false,
 }: TableToolbarProps) {
   const isMobile = useIsMobile();
+  /** An older table always keeps a hand order; a record-store one only once G13's doors answer. */
+  const handOrderAvailable =
+    !isRecordStoreTable(tableId) || tableInfo?.metadata?.record_store?.hand_order === "served";
   // Show toast when trying to use edit features in read-only mode
   const showReadOnlyToast = () => {
     toast({
@@ -360,11 +370,11 @@ export default function TableToolbar({
         )}
 
         <div className="hidden md:flex shrink-0 items-center w-full md:w-auto justify-end gap-1 md:ml-auto">
-          {/* Row Ordering Controls - only show if not read-only. Absent for a
-              record-store table: the store keeps no hand-made row order yet
-              (lane GRID-PORT finding), and a button that could not save its
-              order would be a dead control. */}
-          {!isReadOnly && !isRecordStoreTable(tableId) && (
+          {/* Row Ordering Controls - only show if not read-only. On a record-store
+              table they are drawn only when the store keeps a hand-set order (G13,
+              `metadata.record_store.hand_order === "served"`); before its doors are
+              on the database a button that could not save its order would be dead. */}
+          {!isReadOnly && handOrderAvailable && (
             <Button
               variant="outline"
               size="sm"
@@ -385,9 +395,10 @@ export default function TableToolbar({
           {cleanupControl}
           {colorsControl}
 
-          {!isMobile ? copyControls?.(chooseReference) : null}
+          {!isMobile && !pageOwnsShareAndExport ? copyControls?.(chooseReference) : null}
           {!isMobile ? <Button variant="outline" size="icon" className="h-7 w-7" aria-label="Get reference" title="Get reference" onClick={chooseReference}><Link className="h-4 w-4" /></Button> : null}
 
+          {!pageOwnsShareAndExport && (
           <ShareButton
             // A record-store table is shared as the record it is (data seam).
             resourceType={isRecordStoreTable(tableId) ? "record" : "dataset"}
@@ -400,6 +411,7 @@ export default function TableToolbar({
             size="sm"
             className="h-7"
           />
+          )}
 
           {/* Settings - only show if not read-only */}
           {!isReadOnly && (
@@ -433,6 +445,7 @@ export default function TableToolbar({
               {mobileViewControls}
             </div>
           ) : null}
+          {!pageOwnsShareAndExport && (
           <ShareButton
             // A record-store table is shared as the record it is (data seam).
             resourceType={isRecordStoreTable(tableId) ? "record" : "dataset"}
@@ -445,6 +458,7 @@ export default function TableToolbar({
             size="sm"
             className="h-11 w-full justify-start"
           />
+          )}
 
           {isReadOnly && (
             <div className="flex items-center gap-2 px-2 py-2 text-sm font-medium text-purple-600 dark:text-purple-400">
@@ -478,7 +492,7 @@ export default function TableToolbar({
                   setShowPasteRowsDialog(true);
                 }}
               />
-              {!isRecordStoreTable(tableId) && (
+              {handOrderAvailable && (
               <MobileActionRow
                 icon={GripVertical}
                 label={
@@ -500,7 +514,7 @@ export default function TableToolbar({
             </>
           )}
           {isMobile ? <MobileActionRow icon={Link} label="Get reference" onClick={chooseReference} /> : null}
-          {isMobile && copyControls ? (
+          {isMobile && copyControls && !pageOwnsShareAndExport ? (
             <div className="border-t border-border px-2 py-2 [&_button]:min-h-11">
               {copyControls(chooseReference)}
             </div>

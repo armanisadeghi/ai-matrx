@@ -28,6 +28,8 @@ export const HYDRATION_BACKSTOP_MS = 8000;
 interface SyncSettledSource {
   hydrationSettled: () => boolean;
   onHydrationSettledChange: (listener: () => void) => () => void;
+  /** Absent on hand-built test stores: then the backstop counts from subscribe. */
+  bootStarted?: () => boolean;
 }
 
 function readSyncSource(store: unknown): SyncSettledSource | null {
@@ -70,23 +72,36 @@ function createSettledTracker(store: unknown): SettledTracker {
     getSnapshot: () => backstopFired || source.hydrationSettled(),
     getServerSnapshot: () => true,
     subscribe: (onChange: () => void) => {
-      const unsubscribe = source.onHydrationSettledChange(onChange);
-      const backstop = globalThis.setTimeout(() => {
-        if (source.hydrationSettled()) return;
-        // LOUD: reaching here means the engine never finished reading
-        // persisted state. Consumers stop waiting and show their honest empty
-        // state rather than a spinner that never ends.
-        console.error(
-          `[sync] persisted hydration did not settle within ${HYDRATION_BACKSTOP_MS}ms — ` +
-            "surfaces waiting on restored state will now show their empty state. " +
-            "This is a defect in the sync engine's boot path, not a normal path.",
-        );
-        backstopFired = true;
+      // The backstop measures the ENGINE, so it arms when boot starts — not at
+      // first render. SyncBootstrap defers boot on purpose (window load, idle,
+      // streamed boundaries) and bounds that wait itself; counting it here
+      // turned a slow page load into a false "defect in the boot path" (D345).
+      let backstop: ReturnType<typeof globalThis.setTimeout> | null = null;
+      const armBackstop = () => {
+        if (backstop !== null || backstopFired) return;
+        if (source.bootStarted && !source.bootStarted()) return;
+        backstop = globalThis.setTimeout(() => {
+          if (source.hydrationSettled()) return;
+          // LOUD: reaching here means the engine never finished reading
+          // persisted state. Consumers stop waiting and show their honest empty
+          // state rather than a spinner that never ends.
+          console.error(
+            `[sync] persisted hydration did not settle within ${HYDRATION_BACKSTOP_MS}ms of boot starting — ` +
+              "surfaces waiting on restored state will now show their empty state. " +
+              "This is a defect in the sync engine's boot path, not a normal path.",
+          );
+          backstopFired = true;
+          onChange();
+        }, HYDRATION_BACKSTOP_MS);
+      };
+      const unsubscribe = source.onHydrationSettledChange(() => {
+        armBackstop();
         onChange();
-      }, HYDRATION_BACKSTOP_MS);
+      });
+      armBackstop();
       return () => {
         unsubscribe();
-        globalThis.clearTimeout(backstop);
+        if (backstop !== null) globalThis.clearTimeout(backstop);
       };
     },
   };

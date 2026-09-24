@@ -116,6 +116,10 @@ const DISCLOSURE_EXEMPT: Array<{ prefix: string; why: string }> = [
     prefix: "app/(core)/chat/",
     why: "Chat is a universal host where the user chooses any agent; none is bound to the surface",
   },
+  {
+    prefix: "components/official/ProTextareaAgentPanel.tsx",
+    why: "the platform text box's embedded runner runs whichever job its HOST passes (helpMandateKey); the host surface discloses that job (e.g. data-tables.manifest.ts agentRoles → data.formula_writing)",
+  },
 ];
 
 /**

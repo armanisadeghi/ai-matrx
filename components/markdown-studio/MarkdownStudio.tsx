@@ -14,8 +14,11 @@ import React, {
   useMemo,
   useRef,
   useState,
+  useTransition,
+  useEffectEvent,
 } from "react";
-import { Bookmark } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Bookmark, Info, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { recordToast, toast } from "@/lib/toast";
 import { detectRenderBlocks } from "@/components/admin/markdown-tester/utils/detect-render-blocks";
@@ -23,7 +26,18 @@ import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog
 import { useMarkdownAutosave } from "@/components/admin/markdown-tester/useMarkdownAutosave";
 import { printMarkdownContent } from "@/features/conversation/utils/markdown-print";
 import { EditorPanel } from "./EditorPanel";
-import { PreviewPanel } from "./PreviewPanel";
+import { PreviewPanel, type PreviewMode } from "./PreviewPanel";
+import { SourcePickerPanel } from "./lab/SourcePickerPanel";
+import {
+  STUDIO_SOURCES,
+  isStudioSourceKind,
+  type LoadedStudioContent,
+  type StudioSourceKind,
+} from "./lab/content-sources";
+import { syncPaneScroll } from "./lab/sync-scroll";
+import type { ContentSource } from "@/features/rich-document/types";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { AnalysisView } from "./AnalysisView";
 import { SampleLibrarySheet } from "./SampleLibrarySheet";
 import { TemplatesPalette } from "./TemplatesPalette";
@@ -47,13 +61,13 @@ export const MARKDOWN_STUDIO_MODES = ["studio", "analysis"] as const;
 type StudioMode = (typeof MARKDOWN_STUDIO_MODES)[number];
 
 const EMPTY = "";
+const RAW_SOURCE: ContentSource = { type: "raw" };
 
 export function MarkdownStudio() {
   const [content, setContent] = useState(EMPTY);
   const [mode, setMode] = useState<StudioMode>("studio");
   const [loadedSampleId, setLoadedSampleId] = useState<string | null>(null);
   const [loadedSampleName, setLoadedSampleName] = useState<string | null>(null);
-  const [isDirty, setIsDirty] = useState(false);
   const [saveDialog, setSaveDialog] = useState<{
     open: boolean;
     intent: "save" | "fork";
@@ -61,6 +75,17 @@ export function MarkdownStudio() {
   const [saving, setSaving] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [sourcePickerOpen, setSourcePickerOpen] = useState(false);
+  const [previewMode, setPreviewMode] = useState<PreviewMode>("rendered");
+  // The real record currently loaded (read-only copy), if any.
+  const [loadedSource, setLoadedSource] = useState<LoadedStudioContent | null>(
+    null,
+  );
+  const [sourceLoading, setSourceLoading] = useState<string | null>(null);
+  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewScrollRef = useRef<HTMLDivElement>(null);
@@ -74,6 +99,9 @@ export function MarkdownStudio() {
 
   // Restore autosave on first mount.
   useEffect(() => {
+    // A deep link names the content to open — never overwrite it with the
+    // autosaved buffer.
+    if (new URLSearchParams(window.location.search).get("source")) return;
     loadAutosave().then((saved) => {
       if (saved) {
         setContent(saved);
@@ -81,29 +109,33 @@ export function MarkdownStudio() {
     });
   }, [loadAutosave]);
 
-  // Track dirty when content diverges from the loaded sample.
-  useEffect(() => {
-    if (!loadedSample) {
-      setIsDirty(content.length > 0);
-      return;
-    }
-    setIsDirty(content !== loadedSample.content);
-  }, [content, loadedSample]);
+  // Dirty = the buffer diverges from the loaded sample (derived, never stored).
+  const isDirty = loadedSample
+    ? content !== loadedSample.content
+    : content.length > 0;
 
   const handleChange = useCallback((value: string) => {
     setContent(value);
   }, []);
 
-  const handleClear = useCallback(() => {
+  const clearSourceParams = () => {
+    if (!searchParams.get("source")) return;
+    startTransition(() => router.replace("/markdown-studio", { scroll: false }));
+  };
+
+  const handleClear = () => {
     setContent(EMPTY);
     setLoadedSampleId(null);
     setLoadedSampleName(null);
-  }, []);
+    setLoadedSource(null);
+    clearSourceParams();
+  };
 
   const handleLoadTemplate = useCallback((template: StudioTemplate) => {
     setContent(template.content);
     setLoadedSampleId(null);
     setLoadedSampleName(template.title);
+    setLoadedSource(null);
     toast.success(`Loaded template: ${template.title}`);
   }, []);
 
@@ -111,7 +143,59 @@ export function MarkdownStudio() {
     setContent(sample.content);
     setLoadedSampleId(sample.id);
     setLoadedSampleName(sample.name);
+    setLoadedSource(null);
   }, []);
+
+  // Real-content sources ────────────────────────────────────────────────
+  // Last `kind:id` a deep link (or a pick) resolved — a re-render or our own
+  // URL update never reloads the same record.
+  const deepLinkHandledRef = useRef<string | null>(null);
+  // READ-ONLY: the record is copied into the buffer; nothing writes back.
+  const loadFromSource = async (kind: StudioSourceKind, id: string) => {
+    const def = STUDIO_SOURCES[kind];
+    setSourceLoading(def.label);
+    try {
+      const loaded = await def.load(id);
+      setContent(loaded.content);
+      setLoadedSampleId(null);
+      setLoadedSampleName(loaded.title);
+      setLoadedSource(loaded);
+      deepLinkHandledRef.current = `${kind}:${id}`;
+      if (
+        searchParams.get("source") !== kind ||
+        searchParams.get("id") !== id
+      ) {
+        startTransition(() =>
+          router.replace(
+            `/markdown-studio?source=${encodeURIComponent(kind)}&id=${encodeURIComponent(id)}`,
+            { scroll: false },
+          ),
+        );
+      }
+    } catch (err) {
+      toast.error(
+        `Could not open that ${def.label.toLowerCase()}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    } finally {
+      setSourceLoading(null);
+    }
+  };
+
+  // Deep link: /markdown-studio?source=<kind>&id=<uuid> opens that record.
+  const deepLinkKind = searchParams.get("source");
+  const deepLinkId = searchParams.get("id");
+  const openDeepLink = useEffectEvent(
+    (kind: StudioSourceKind, id: string) => void loadFromSource(kind, id),
+  );
+  useEffect(() => {
+    if (!isStudioSourceKind(deepLinkKind) || !deepLinkId) return;
+    const key = `${deepLinkKind}:${deepLinkId}`;
+    if (deepLinkHandledRef.current === key) return;
+    deepLinkHandledRef.current = key;
+    openDeepLink(deepLinkKind, deepLinkId);
+  }, [deepLinkKind, deepLinkId]);
 
   // Save flow ───────────────────────────────────────────────────────────
   const openSaveDialog = (intent: "save" | "fork") => {
@@ -173,13 +257,17 @@ export function MarkdownStudio() {
     const pv = previewScrollRef.current;
     if (!ta || !pv) return;
     isSyncingRef.current = true;
-    const taMax = ta.scrollHeight - ta.clientHeight;
-    const pvMax = pv.scrollHeight - pv.clientHeight;
-    if (taMax > 0) pv.scrollTop = (ta.scrollTop / taMax) * pvMax;
+    // Block-paired sync (the admin tester's), proportional fallback.
+    syncPaneScroll({
+      text: content,
+      textarea: ta,
+      preview: pv,
+      direction: "text-to-preview",
+    });
     requestAnimationFrame(() => {
       isSyncingRef.current = false;
     });
-  }, []);
+  }, [content]);
 
   // Keyboard shortcuts: ⌘S save, ⌘E run analysis, ⌘. toggle modes.
   useEffect(() => {
@@ -244,6 +332,11 @@ export function MarkdownStudio() {
 
   const headerActions: HeaderAction[] = useMemo(() => {
     const actions: HeaderAction[] = [
+      {
+        icon: "FolderOpen",
+        label: "Open",
+        onPress: () => setSourcePickerOpen(true),
+      },
       {
         icon: "Printer",
         label: "Print / Save PDF",
@@ -407,7 +500,28 @@ export function MarkdownStudio() {
               from library
             </Badge>
           )}
-          {isDirty && (
+          {loadedSource && (
+            <Badge
+              variant="outline"
+              className="h-4 px-1.5 text-[10px] font-normal border-primary/40 bg-primary/10"
+              title="A read-only copy — editing here never changes the original"
+            >
+              {STUDIO_SOURCES[loadedSource.kind].label} · read-only copy
+            </Badge>
+          )}
+          {loadedSource?.notice && (
+            <span className="flex items-center gap-1 text-muted-foreground">
+              <Info className="h-3 w-3" />
+              {loadedSource.notice}
+            </span>
+          )}
+          {sourceLoading && (
+            <span className="flex items-center gap-1 text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Opening {sourceLoading.toLowerCase()}…
+            </span>
+          )}
+          {isDirty && !loadedSource && (
             <Badge
               variant="outline"
               className="h-4 px-1.5 text-[10px] font-normal border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
@@ -431,7 +545,13 @@ export function MarkdownStudio() {
                 onScroll={handleEditorScroll}
                 textareaRef={textareaRef}
               />
-              <PreviewPanel content={content} ref={previewScrollRef} />
+              <PreviewPanel
+                content={content}
+                contentSource={loadedSource?.contentSource ?? RAW_SOURCE}
+                mode={previewMode}
+                onModeChange={setPreviewMode}
+                ref={previewScrollRef}
+              />
             </div>
           ) : (
             <AnalysisView content={content} contentLabel={contentLabel} />
@@ -445,6 +565,13 @@ export function MarkdownStudio() {
         onOpenChange={setLibraryOpen}
         loadedSampleId={loadedSampleId}
         onLoad={handleLoadSample}
+      />
+      <SourcePickerPanel
+        open={sourcePickerOpen}
+        onOpenChange={setSourcePickerOpen}
+        isAdmin={isAdmin}
+        initialKind={loadedSource?.kind}
+        onPick={(kind, id) => void loadFromSource(kind, id)}
       />
       <TemplatesPalette
         open={templatesOpen}

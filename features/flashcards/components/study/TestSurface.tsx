@@ -17,11 +17,11 @@ import {
   ArrowRight,
   Trophy,
   Layers,
-  AlertCircle,
   BookOpen,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { cn } from "@/lib/utils";
 import PageHeader from "@/features/shell/components/header/PageHeader";
@@ -65,7 +65,15 @@ export function TestSurface({ setId }: { setId: string }) {
               <MatrxMiniLoader />
             </div>
           ) : study.error ? (
-            <ErrorState title="Couldn't load this set" body={study.error} />
+            // Denied / deleted / never existed / signed-out all read as the
+            // same failed load — the gate asks the platform which one it is.
+            <AccessGate
+              token="fc_set"
+              id={setId}
+              error={study.error}
+              fallbackHref={EDU_BASE}
+              fallbackLabel="Flashcards"
+            />
           ) : study.questions.length === 0 ? (
             <EmptyState />
           ) : completed ? (
@@ -242,16 +250,6 @@ function CompletionScreen({
         <Layers className="mr-1.5 h-4 w-4" />
         Back to set
       </Button>
-    </div>
-  );
-}
-
-function ErrorState({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-16 text-center">
-      <AlertCircle className="h-6 w-6 text-muted-foreground" />
-      <p className="text-sm font-medium text-foreground">{title}</p>
-      <p className="max-w-md text-xs text-muted-foreground">{body}</p>
     </div>
   );
 }

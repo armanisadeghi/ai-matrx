@@ -33,16 +33,16 @@
 
 import { use, useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
+import { RecordOrganizationSwitchOffer } from "@/features/organizations/components/RecordOrganizationSwitchOffer";
 import { createClient } from "@/utils/supabase/client";
 import { recordsDataSource } from "@ai-matrx/records-ui";
 
@@ -66,11 +66,12 @@ export default function RenderedDocumentRoute({
     params: Promise<{ renderId: string }>;
 }) {
     const { renderId } = use(params);
-    const dispatch = useAppDispatch();
     const selectedOrganizationId = useAppSelector(selectOrganizationId);
 
     const [document, setDocument] = useState<RenderedDocument | null>(null);
-    const [refusal, setRefusal] = useState<string | null>(null);
+    // Set when the read failed: its raw error, or `error: null` for a zero-row
+    // answer. Null while the document is opening or has opened.
+    const [refusal, setRefusal] = useState<{ error: unknown } | null>(null);
 
     // ONE SWITCH, asked about the organization the DOCUMENT lives in.
     const campaign = useUnifiedDataCampaign({
@@ -93,12 +94,12 @@ export default function RenderedDocumentRoute({
             );
             if (stopped) return;
             if (error) {
-                setRefusal(error.message);
+                setRefusal({ error });
                 return;
             }
             const rows = (Array.isArray(data) ? data : data ? [data] : []) as RenderedDocument[];
             if (rows.length === 0) {
-                setRefusal("There is no document at this address. It may have been removed.");
+                setRefusal({ error: null });
                 return;
             }
             setDocument(rows[0]);
@@ -111,10 +112,6 @@ export default function RenderedDocumentRoute({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [renderId]);
 
-    const elsewhere =
-        document !== null &&
-        document.viewer_is_member &&
-        document.organization_id !== selectedOrganizationId;
     const organizationName = document?.organization_name ?? "its organization";
 
     return (
@@ -124,7 +121,13 @@ export default function RenderedDocumentRoute({
             </PageHeader>
             <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
                 {refusal ? (
-                    <p className="max-w-2xl text-sm text-destructive">{refusal}</p>
+                    // The door's own refusal (or a zero-row answer) goes to the
+                    // canonical gate, which prints a server sentence verbatim.
+                    <AccessGate
+                        token="doc_render"
+                        id={renderId}
+                        error={refusal.error ?? undefined}
+                    />
                 ) : document === null ? (
                     <p className="text-sm text-muted-foreground">Opening this document…</p>
                 ) : campaign.state !== "on" ? (
@@ -133,28 +136,14 @@ export default function RenderedDocumentRoute({
                     <UnifiedDataSwitchNotice gate={campaign} what="Documents" />
                 ) : (
                     <div className="mx-auto max-w-3xl space-y-3">
-                        {elsewhere && (
-                            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
-                                <span>
-                                    This document is in <strong>{organizationName}</strong>, not the
-                                    organization you are working in.
-                                </span>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() =>
-                                        dispatch(
-                                            chooseActiveOrganization({
-                                                id: document.organization_id,
-                                                name: document.organization_name,
-                                            }),
-                                        )
-                                    }
-                                >
-                                    Switch to {organizationName}
-                                </Button>
-                            </div>
-                        )}
+                        {/* THE ONE SWITCH OFFER — never a silent change of the
+                            person's working organization. */}
+                        <RecordOrganizationSwitchOffer
+                            organizationId={document.organization_id}
+                            organizationName={document.organization_name}
+                            isMember={document.viewer_is_member}
+                            what="document"
+                        />
                         <p className="text-xs text-muted-foreground">
                             Made {new Date(document.rendered_at).toLocaleString()} in{" "}
                             {organizationName} from version {document.document_version} of its

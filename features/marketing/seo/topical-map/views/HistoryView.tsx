@@ -150,7 +150,7 @@ export function HistoryView({ mapId, siteId, host, readOnly }: MapViewProps) {
       ) : null}
 
       {tree.isError ? (
-        <TopicalMapFailed what="this map's topics" error={tree.error} />
+        <TopicalMapFailed what="this map's topics" error={tree.error} mapId={mapId} />
       ) : tree.isPending ? (
         <TopicalMapLoading what="this map's topics" />
       ) : proposedCount > 0 ? (
@@ -188,7 +188,7 @@ export function HistoryView({ mapId, siteId, host, readOnly }: MapViewProps) {
       ) : pageSize === null || history.isPending ? (
         <TopicalMapLoading what="this map's history" />
       ) : history.isError ? (
-        <TopicalMapFailed what="this map's history" error={history.error} />
+        <TopicalMapFailed what="this map's history" error={history.error} mapId={mapId} />
       ) : (
         <HistoryList
           mapId={mapId}

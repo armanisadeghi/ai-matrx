@@ -29,6 +29,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
+import { ContextCompareView } from "@/features/agents/components/context-preview/ContextCompareView";
 
 type ScopeSystemTier = "overview" | "scope" | "scope_type" | "context_item";
 type ScopeSystemVariation = "a1" | "a2" | "fk_a" | "fk_b" | "d_elements" | "d_attributes";
@@ -408,6 +409,56 @@ export default function ContextInspectorPage() {
           </CardContent>
         </Card>
       )}
+      <CompareOneScope />
     </div>
+  );
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The current system beside the record store for ONE scope (lane SC-3'): the
+ * same compare the preview panel's "Old vs new" tab shows, for a scope id typed
+ * here. The server resolves the scope under its own organization and computes
+ * the answer for you, the signed-in person.
+ */
+function CompareOneScope() {
+  const [draft, setDraft] = useState("");
+  const [scopeId, setScopeId] = useState<string | null>(null);
+  const valid = UUID_RE.test(draft.trim());
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm">Compare one scope — current system and record store</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <form
+          className="flex flex-col gap-2 sm:flex-row sm:items-end"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (valid) setScopeId(draft.trim());
+          }}
+        >
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <Label htmlFor="compare-scope-id">Scope id</Label>
+            <Input
+              id="compare-scope-id"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="The scope's id, from its page address"
+              className="font-mono text-base md:text-sm"
+            />
+          </div>
+          <Button type="submit" size="sm" disabled={!valid}>
+            Compare
+          </Button>
+        </form>
+        {scopeId && (
+          <div className="flex min-h-[24rem] flex-col rounded-md border border-border">
+            <ContextCompareView key={scopeId} scopeIds={[scopeId]} />
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

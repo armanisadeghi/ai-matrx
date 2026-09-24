@@ -134,7 +134,7 @@ export function GraphToolbar({
       ) : null}
       {map.isError ? (
         <div className="w-full">
-          <TopicalMapFailed what="this map" error={map.error} />
+          <TopicalMapFailed what="this map" error={map.error} mapId={mapId} />
         </div>
       ) : null}
     </div>

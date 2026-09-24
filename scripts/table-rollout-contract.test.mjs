@@ -38,14 +38,14 @@ test("Announcements disclose their loaded window and retain only explicit action
   assert.match(page, /window=\{\{ enabled: false \}\}/);
 });
 
-test("System apps use the canonical table without inventing a source total or generic doors", () => {
+test("System apps use canonical controls and only claim a complete source below its cap", () => {
   const page = source(
     "app/(admin)/administration/agents/system-agents/apps/page.tsx",
   );
   assert.match(page, /<MatrxDataTable/);
   assert.match(
     page,
-    /coverage=\{\{\s*cap: 500,\s*answeredBy: "client"/,
+    /coverage=\{\{\s*total: apps\.length < 500 \? apps\.length : undefined,\s*cap: 500,\s*answeredBy: "client"/,
   );
   assert.match(page, /searchPlaceholder: "Search system apps…"/);
   assert.match(page, /searchText=\{\(app\) => app\.id\}/);
@@ -57,6 +57,8 @@ test("System apps use the canonical table without inventing a source total or ge
   assert.match(page, /setDeleteTarget\(app\)/);
   assert.match(page, /JSON \(visible loaded view\)/);
   assert.match(page, /json=\{\(\) => visibleApps\}/);
-  assert.match(page, /void load\(true\)/);
+  assert.match(page, /refresh: \{\s*onRefresh: \(\) => load\(true\)/);
+  assert.match(page, /add: \{\s*onAdd: \(\) =>/);
+  assert.doesNotMatch(page, /New system app/);
   assert.doesNotMatch(page, /const \[search, setSearch\]/);
 });

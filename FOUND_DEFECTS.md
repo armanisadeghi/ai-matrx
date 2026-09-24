@@ -15,6 +15,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D348 — "Stop sandbox" sits beside "Delete" in the sandbox list and stops a running sandbox with no confirmation (2026-09-23)
+
+On `/sandbox` the row's action icons are packed together, and the stop icon acts at once: a verification agent aiming for Delete hit Stop and shut down admin@admin.com's running default sandbox (`sbx-7b560ae80b61`, persisted volume, nothing lost). Stopping a running sandbox ends whatever is running inside it, so under the destructive/expensive click law it should name that consequence first, and the stop and delete controls need space or a menu between them. Found by the data-tables session while verifying `common-docs/projects/ai-reachable-everywhere/REGISTER.md` ARE-009. Files: `app/(core)/sandbox/page.tsx`.
+
 ### D347 — Ten draft podcast articles are readable anonymously on the public web (2026-09-23)
 
 `podcast.pc_articles`: 10 rows with a draft status are marked public and a live anon read policy serves
@@ -45,6 +49,8 @@ Next: inspect the generated function config and reproduce initialize/tools-list 
 the stream-completion issue fixed. No production change made. Returning signature of CE-001.
 
 ### D345 — The sync engine's persisted hydration hits its 8 s backstop on /notes (2026-09-21)
+
+**FIXED 2026-09-24.** Root cause: boot read the ~16 warm-cache slices from IndexedDB one at a time, each under its own 1 s `IDB_OPERATION_TIMEOUT_MS`; a stalled browser IDB (and every reopened connection after a timeout) paid that second per slice, summing to ~16 s past the 8 s backstop. The earlier bound (778d790366) was proven with ONE slice, so the sum never showed. `hydrateFromIdb` now makes ONE `readSlices` (`bulkGet`) call — worst case open + read ≈ 2 s — and falls back to the localStorage mirror for every slice when it fails. Guard: `engine.boot.idb.test.ts` "settles MANY warm-cache slices…" stalls every connection with 16 slices; red on the old loop, green now. Second path, same day: the backstop counted from first render while `SyncBootstrap` waited on window load + idle with no bound, so a slow page load alone could fire it — boot is now capped at 5 s (announced) and the backstop arms at boot start. Open: why the browser IDB stalls at all is still unknown — the recovered `sync-idb-operation-timeout` Inspector entry (low, not red) now marks each occurrence.
 
 Seen on the dev server, signed in as the test admin, on a plain load of `/notes`: the console error from `lib/sync/useSyncHydrated.ts` — `[sync] persisted hydration did not settle within 8000ms — surfaces waiting on restored state will now show their empty state. This is a defect in the sync engine's boot path, not a normal path.` The sidebar showed "Loading notes…" for the whole eight seconds while the start screen already listed recent notes. The same console shows `idb.write` for `scopesTree` at 73,208 bytes and a `remote.write.scheduled` for it during boot, so the engine is busy writing while hydration waits; whether hydration is blocked behind those writes, or a slice never reports settled, was not determined. Seen while measuring the slow folder create (features/notes/FEATURE.md, 2026-09-21); not investigated further. Reproduce: load `/notes` as the test admin with the console open and wait eight seconds.
 
@@ -3852,6 +3858,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D348** — Stop sandbox acted on one click beside Delete; it now asks first and names what stops (list and detail pages), 2026-09-23.
 
 - **D346** — the two shell Jest failures reported 2026-09-21 were stale; both focused suites passed 2026-09-23 (7 tests, commit `c3edf550f1`).
 

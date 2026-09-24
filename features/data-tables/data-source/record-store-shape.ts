@@ -256,6 +256,20 @@ export function storeValue(
   if (column?.data_type === "json" && value !== null && typeof value === "object") {
     return JSON.stringify(value);
   }
+  // TEXT THAT IS A NUMBER, INTO A NUMBER COLUMN (lane INTEG-CLIENTS, found by the seat walk). A
+  // table pasted from a chat answer, a CSV or a scrape is all text; the older store coerced "3"
+  // into an integer column, the record store refuses it ("Qty takes a number, and it was given a
+  // string"). Only text the older door itself read as a number (its NUMERIC rule) is converted;
+  // anything else goes as it is and the store's refusal is shown — never a silent guess.
+  if ((column?.data_type === "number" || column?.data_type === "integer") && typeof value === "string") {
+    const t = value.trim();
+    if (NUMERIC.test(t)) return Number(t);
+  }
+  if (column?.data_type === "boolean" && typeof value === "string") {
+    const t = value.trim().toLowerCase();
+    if (t === "true") return true;
+    if (t === "false") return false;
+  }
   return value;
 }
 
@@ -358,4 +372,46 @@ export function searchRowsLikeTheOlderStore<T extends Sortable>(rows: readonly T
   const needle = term.toLowerCase();
   if (needle === "") return [...rows];
   return rows.filter((row) => jsonbText(row.data).toLowerCase().includes(needle));
+}
+
+/**
+ * THE TABLE'S DEFAULT SORT, IN THE STORE'S OWN WORDS: `default_sort: [{field, direction}]`.
+ * That is what the store's table declaration and the mover write (TABLE-PARITY gap 3 found
+ * the seam reading and writing `{key}`, so a moved table's saved sort never applied). A
+ * `{key}` entry — written by this seam before the fix — is still read, so no saved sort is lost.
+ */
+export function olderRowOrdering(
+  defaultSort: unknown,
+  fields: readonly Pick<Field, "key">[],
+): { default_sort: { field: string; direction: "asc" | "desc" } } | null {
+  const first = Array.isArray(defaultSort)
+    ? (defaultSort[0] as { field?: unknown; key?: unknown; direction?: unknown } | undefined)
+    : undefined;
+  const name = typeof first?.field === "string" ? first.field : typeof first?.key === "string" ? first.key : null;
+  if (!name || !fields.some((f) => f.key === name)) return null;
+  return { default_sort: { field: name, direction: first?.direction === "desc" ? "desc" : "asc" } };
+}
+
+/** The grid's "Save as default" as the store's `default_sort` value (empty = no saved sort). */
+export function storeDefaultSort(
+  sortField: string | undefined,
+  sortDirection: "asc" | "desc" | undefined,
+): Array<{ field: string; direction: "asc" | "desc" }> {
+  return sortField ? [{ field: sortField, direction: sortDirection ?? "asc" }] : [];
+}
+
+/** What the store said about a Table's hand-set order (G13): "served", or why it cannot keep one. */
+export type StoreHandOrder = { status: string; enabled: boolean; order: string[] };
+
+/**
+ * THE OLDER `row_ordering_config` FOR A STORE TABLE: its default sort, plus `{enabled, order}`
+ * when the Table says `row_order: "manual"` and the store keeps the order (G13's view). Where
+ * the store cannot keep one, only the sort is handed on — the grid then draws no Reorder.
+ */
+export function withHandOrder(
+  sort: Record<string, unknown> | null,
+  hand: StoreHandOrder,
+): Record<string, unknown> | null {
+  if (hand.status !== "served" || !hand.enabled) return sort;
+  return { ...(sort ?? {}), enabled: true, order: [...hand.order] };
 }

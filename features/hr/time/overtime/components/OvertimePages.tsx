@@ -11,7 +11,8 @@
 import { useRouter } from "next/navigation";
 
 import { useHrContext } from "@/features/hr/shared/useHrContext";
-import { hrTimeOvertimeRequestHref } from "@/features/hr/routes";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { hrTimeOvertimeHref, hrTimeOvertimeRequestHref } from "@/features/hr/routes";
 import { useMockCase } from "../../periods/components/PayPeriodsPage";
 import { useOvertimeEvaluation, useOvertimeQueue, useOvertimeRequest } from "../hooks/useOvertimeQueue";
 import { ApproachingWatchlist } from "./ApproachingWatchlist";
@@ -97,6 +98,31 @@ export function OvertimeRequestPage({ requestId }: { requestId: string }) {
    * manager's view of another person's overtime, which is the disclosure, not the write.
    */
   const viewer = hr.capabilities.includes("time.overtime_approve") ? "manager" : "employee";
+
+  // A failed read of the overtime request itself is the platform's refusal frame, never a red line
+  // above an empty page. A typed refusal keeps the engine's own sentence; a transport or
+  // SQL fault goes in as an error so the gate offers retry. ABSOLUTE: an HR record refusal
+  // never offers "Request access" (the §5 subject-exclusion veto).
+  if (failure && !request) {
+    const fault =
+      failure.code === "unknown_error" ||
+      failure.code === "hr_rpc_failed" ||
+      (/^[0-9A-Z]{5}$/.test(failure.code) && failure.code !== "42501");
+    return (
+      <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
+        <AccessGate
+          token="hr_overtime_preapproval"
+          id={requestId}
+          error={fault ? new Error(failure.userMessage) : null}
+          reason={fault ? undefined : failure.userMessage}
+          onRetry={reload}
+          requestability="absolute"
+          fallbackHref={hrTimeOvertimeHref(hr.orgRef)}
+          fallbackLabel="Overtime requests"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">

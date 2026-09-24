@@ -54,7 +54,7 @@ import {
 import { resolveLibraryOrgId } from "@/lib/organizations/systemOrg";
 import { LibraryPublishPanel } from "@/features/rag/components/library/LibraryPublishPanel";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { useAdoptRecordOrganization } from "@/features/organizations/useAdoptRecordOrganization";
+import { RecordOrganizationSwitchOffer } from "@/features/organizations/components/RecordOrganizationSwitchOffer";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -1567,13 +1567,6 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
     setInterviewOpen(true),
   );
 
-  // THE RULEBOOK SAYS WHICH WORKSPACE THIS IS (wall W3, 2026-09-10) — the
-  // same adoption the lane routes make, because this page is the other door
-  // onto the same record and the two must never behave differently.
-  const recordOrganization = useAdoptRecordOrganization(
-    rulebook?.organization_id,
-    "Rulebook",
-  );
 
   const existingIds = useMemo(
     () => new Set((rulebook?.rules ?? []).map((r) => r.id)),
@@ -2284,20 +2277,6 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
     );
   }
 
-  // The workspace answer is not in yet. Every action on this page is
-  // org-scoped, so it waits rather than letting them die on "Select an
-  // organization before sending this request."
-  if (recordOrganization.status === "resolving") {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-3">
-        <LoadingSpinner />
-        <p className="text-sm text-muted-foreground">
-          Getting your workspace ready…
-        </p>
-      </div>
-    );
-  }
-
   // Only approved rules power a Masterwork — the Build excludes drafts and
   // rejected rules, so the button must not promise what it will refuse.
   const kpis = computeKpis(rulebook);
@@ -2348,6 +2327,14 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
           className="mx-auto max-w-4xl space-y-4 px-4 pb-8 sm:px-6"
           data-surface-value="rulebook"
         >
+          {/* THE PERSON, NOT THE ORG (2026-09-23): this Rulebook opens whatever
+              organization is selected and never moves the selection itself.
+              When it lives elsewhere the page says so and offers the switch —
+              actions on it still happen in an organization. */}
+          <RecordOrganizationSwitchOffer
+            organizationId={rulebook.organization_id}
+            what="Rulebook"
+          />
           {/* Rulebook summary */}
           <div className="rounded-lg border border-border bg-card p-4">
             {/* MOBILE: the Rulebook's NAME is the sentence the expert typed,

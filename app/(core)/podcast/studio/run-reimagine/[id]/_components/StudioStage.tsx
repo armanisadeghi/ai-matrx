@@ -40,6 +40,7 @@ import { ResultActions } from "@/features/podcasts/generator/components/ResultAc
 import { TranscriptPanel } from "@/features/podcasts/generator/components/TranscriptPanel";
 import { episodeHref } from "@/features/podcasts/generator/constants";
 import { useStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { RunRecoveryBannerFor } from "@/features/podcasts/studio/components/RunRecoveryBanner";
 import { SourceSummaryPanel } from "@/features/podcasts/studio/components/SourceSummaryPanel";
 import { StageCanvas } from "./StageCanvas";
@@ -82,22 +83,15 @@ export function StudioStage({ runId }: { runId: string }) {
   }
 
   if (notFound) {
+    // Denied / deleted / never existed / signed-out all read as zero rows here.
     return (
-      <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-          <Podcast className="h-7 w-7" />
-        </span>
-        <h1 className="text-xl font-semibold text-foreground">Run not found</h1>
-        <p className="text-sm text-muted-foreground">
-          This studio run doesn&apos;t exist or isn&apos;t yours.
-        </p>
-        <Button asChild variant="outline" className="gap-2">
-          <Link href="/podcast/studio">
-            <ArrowLeft className="h-4 w-4" />
-            Back to studio
-          </Link>
-        </Button>
-      </div>
+      <AccessGate
+        token="pc_studio_run"
+        id={runId}
+        onRetry={refresh}
+        fallbackHref="/podcast/studio"
+        fallbackLabel="Back to studio"
+      />
     );
   }
 

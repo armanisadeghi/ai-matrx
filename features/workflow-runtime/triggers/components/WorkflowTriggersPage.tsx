@@ -21,6 +21,7 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import { toast } from "@/lib/toast";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 import { fetchWorkflowDefinition } from "../../surface/service";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
@@ -43,7 +44,11 @@ export function WorkflowTriggersPage({
 }) {
   const router = useRouter();
   const [workflow, setWorkflow] = useState<LoadedWorkflow | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  // Set when the workflow can't be shown; `error` is the failed read, if any.
+  const [loadFailure, setLoadFailure] = useState<{ error?: unknown } | null>(
+    null,
+  );
+  const [attempt, setAttempt] = useState(0);
   const [adding, setAdding] = useState(false);
   /**
    * The plaintext webhook secret, held ONLY in component state for the one
@@ -71,9 +76,7 @@ export function WorkflowTriggersPage({
       .then((loaded) => {
         if (cancelled) return;
         if (!loaded) {
-          setLoadError(
-            "This workflow could not be opened. It may have been removed, or it belongs to another account.",
-          );
+          setLoadFailure({});
           return;
         }
         setWorkflow({
@@ -82,13 +85,13 @@ export function WorkflowTriggersPage({
           definition: loaded.definition,
         });
       })
-      .catch(() => {
-        if (!cancelled) setLoadError("This workflow could not be opened.");
+      .catch((error: unknown) => {
+        if (!cancelled) setLoadFailure({ error });
       });
     return () => {
       cancelled = true;
     };
-  }, [definitionId]);
+  }, [definitionId, attempt]);
 
   const onCreate = useCallback(
     (args: CreateTriggerArgs, plaintextSecret: string | null) => {
@@ -130,23 +133,19 @@ export function WorkflowTriggersPage({
   );
 
   let body: React.ReactNode;
-  if (loadError) {
+  if (loadFailure) {
     body = (
-      <div className="mx-auto w-full max-w-2xl px-4 py-10">
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <h1 className="text-base font-semibold text-foreground">
-            We couldn&apos;t open this
-          </h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">{loadError}</p>
-          <button
-            type="button"
-            onClick={() => router.push("/workflows/all")}
-            className="mt-4 inline-flex min-h-9 items-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground"
-          >
-            Back to your workflows
-          </button>
-        </div>
-      </div>
+      <AccessGate
+        token="workflow"
+        id={definitionId}
+        error={loadFailure.error}
+        onRetry={() => {
+          setLoadFailure(null);
+          setAttempt((n) => n + 1);
+        }}
+        fallbackHref="/workflows/all"
+        fallbackLabel="Your workflows"
+      />
     );
   } else if (!workflow) {
     body = (

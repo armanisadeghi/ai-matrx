@@ -21,7 +21,7 @@
  */
 
 import React, { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -49,7 +49,10 @@ import {
   MatrxDataTable,
   useTableUrlState,
 } from "@ai-matrx/design-system/data-table";
-import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import type {
+  MatrxColumnDef,
+  MatrxDataTableQueryState,
+} from "@ai-matrx/design-system/data-table/types";
 
 import {
   DETAIL_PAGE_SIZE,
@@ -296,7 +299,125 @@ function ArgsBlock({ args }: { args: unknown }) {
   );
 }
 
-function ToolDetail({
+const DETAIL_COLUMNS: MatrxColumnDef<ToolRefetchDetailRow>[] = [
+  {
+    id: "repeatAt",
+    accessorKey: "repeatAt",
+    header: "When",
+    filter: "date",
+    width: 145,
+    cell: (row) => <span className="whitespace-nowrap">{fmtWhen(row.repeatAt)}</span>,
+  },
+  {
+    id: "repeatIteration",
+    accessorKey: "repeatIteration",
+    header: "Repeat iteration",
+    filter: "number",
+    width: 125,
+    mobileHidden: true,
+    cell: (row) => <span className="tabular-nums">{fmtCount(row.repeatIteration)}</span>,
+  },
+  {
+    id: "conversationId",
+    accessorKey: "conversationId",
+    header: "Conversation",
+    width: 145,
+    cell: (row) => <ConversationCell id={row.conversationId} />,
+  },
+  {
+    id: "sameData",
+    accessorKey: "sameData",
+    header: "Data",
+    filter: "boolean",
+    width: 105,
+    cell: (row) => <SameDataBadge value={row.sameData} />,
+  },
+  {
+    id: "trimmedBeforeRepeat",
+    accessorKey: "trimmedBeforeRepeat",
+    header: "After trim",
+    filter: "boolean",
+    width: 110,
+    cell: (row) => <TrimBadge value={row.trimmedBeforeRepeat} />,
+  },
+  {
+    id: "gapCalls",
+    accessorKey: "gapCalls",
+    header: "Gap (calls)",
+    filter: "number",
+    width: 105,
+    cell: (row) => <span className="tabular-nums">{fmtCount(row.gapCalls)}</span>,
+  },
+  {
+    id: "gapSecs",
+    accessorKey: "gapSecs",
+    header: "Gap (mm:ss)",
+    filter: "number",
+    width: 110,
+    cell: (row) => <span className="tabular-nums">{fmtDuration(row.gapSecs)}</span>,
+  },
+  {
+    id: "gapIterations",
+    accessorKey: "gapIterations",
+    header: "Gap (iterations)",
+    filter: "number",
+    width: 125,
+    mobileHidden: true,
+    cell: (row) => <span className="tabular-nums">{fmtCount(row.gapIterations)}</span>,
+  },
+  {
+    id: "firstAt",
+    accessorKey: "firstAt",
+    header: "First call",
+    filter: "date",
+    width: 145,
+    mobileHidden: true,
+    cell: (row) => <span className="whitespace-nowrap">{fmtWhen(row.firstAt)}</span>,
+  },
+  {
+    id: "firstIteration",
+    accessorKey: "firstIteration",
+    header: "First iteration",
+    filter: "number",
+    width: 120,
+    mobileHidden: true,
+    cell: (row) => <span className="tabular-nums">{fmtCount(row.firstIteration)}</span>,
+  },
+  {
+    id: "firstOutputChars",
+    accessorKey: "firstOutputChars",
+    header: "First chars",
+    filter: "number",
+    width: 105,
+    cell: (row) => <span className="tabular-nums">{fmtCount(row.firstOutputChars)}</span>,
+  },
+  {
+    id: "repeatOutputChars",
+    accessorKey: "repeatOutputChars",
+    header: "Repeat chars",
+    filter: "number",
+    width: 115,
+    mobileHidden: true,
+    cell: (row) => <span className="tabular-nums">{fmtCount(row.repeatOutputChars)}</span>,
+  },
+  {
+    id: "priorIdenticalCalls",
+    accessorKey: "priorIdenticalCalls",
+    header: "Prior identical",
+    filter: "number",
+    width: 120,
+    cell: (row) => <span className="tabular-nums">{fmtCount(row.priorIdenticalCalls)}</span>,
+  },
+  {
+    id: "args",
+    accessorKey: "args",
+    header: "Arguments",
+    width: 130,
+    cell: (row) => <ArgsBlock args={row.args} />,
+  },
+];
+
+export function ToolDetail({
   toolName,
   window: win,
   expectedRepeats,
@@ -306,17 +427,26 @@ function ToolDetail({
   expectedRepeats: number;
 }) {
   const [pages, setPages] = useState(1);
+  const [tableState, setTableState] = useState<MatrxDataTableQueryState>({
+    page: 1,
+    pageSize: DETAIL_PAGE_SIZE,
+    search: "",
+    anyOf: "",
+    columnFilters: {},
+    sort: { id: "repeatAt", direction: "desc" },
+  });
 
   const detail = useQuery<ToolRefetchDetailRow[]>({
     queryKey: ["admin", "tool-refetch", "detail", toolName, win, pages],
     queryFn: () => getToolRefetchDetail(toolName, win, 0, pages * DETAIL_PAGE_SIZE),
+    placeholderData: keepPreviousData,
     retry: (attempt, err) => !(err instanceof RefetchTimeoutError) && attempt < 1,
   });
 
-  if (detail.isPending && !detail.isError) {
+  if (detail.isPending && !detail.data && !detail.isError) {
     return <div className="px-3 py-4 text-xs text-muted-foreground">Loading repeats for {toolName}…</div>;
   }
-  if (detail.error) {
+  if (detail.error && !detail.data) {
     return (
       <div className="flex items-center gap-2 px-3 py-4 text-xs text-rose-700 dark:text-rose-300">
         <AlertTriangle className="h-3.5 w-3.5" />
@@ -338,55 +468,49 @@ function ToolDetail({
   }
 
   return (
-    <div className="space-y-2 px-3 py-3">
-      <table className="w-full text-xs">
-        <thead className="text-[11px] uppercase tracking-wide text-muted-foreground">
-          <tr>
-            <th className="px-2 py-1 text-left">When</th>
-            <th className="px-2 py-1 text-left">Conversation</th>
-            <th className="px-2 py-1 text-left">Data</th>
-            <th className="px-2 py-1 text-left">After trim</th>
-            <th className="px-2 py-1 text-right">Gap (calls)</th>
-            <th className="px-2 py-1 text-right">Gap (mm:ss)</th>
-            <th className="px-2 py-1 text-right">First chars</th>
-            <th className="px-2 py-1 text-right">Prior identical</th>
-            <th className="px-2 py-1 text-left">Arguments</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.repeatToolCallId} className="border-t align-top">
-              <td className="whitespace-nowrap px-2 py-1.5">{fmtWhen(r.repeatAt)}</td>
-              <td className="px-2 py-1.5">
-                <ConversationCell id={r.conversationId} />
-              </td>
-              <td className="px-2 py-1.5">
-                <SameDataBadge value={r.sameData} />
-              </td>
-              <td className="px-2 py-1.5">
-                <TrimBadge value={r.trimmedBeforeRepeat} />
-              </td>
-              <td className="px-2 py-1.5 text-right tabular-nums">{fmtCount(r.gapCalls)}</td>
-              <td className="px-2 py-1.5 text-right tabular-nums">{fmtDuration(r.gapSecs)}</td>
-              <td className="px-2 py-1.5 text-right tabular-nums">{fmtCount(r.firstOutputChars)}</td>
-              <td className="px-2 py-1.5 text-right tabular-nums">{fmtCount(r.priorIdenticalCalls)}</td>
-              <td className="px-2 py-1.5">
-                <ArgsBlock args={r.args} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-        <span>
-          Showing {rows.length.toLocaleString()} of {expectedRepeats.toLocaleString()} repeats.
-        </span>
-        {rows.length >= pages * DETAIL_PAGE_SIZE && (
-          <Button size="sm" variant="outline" onClick={() => setPages((p) => p + 1)} disabled={detail.isFetching}>
-            {detail.isFetching ? "Loading…" : `Load ${DETAIL_PAGE_SIZE} more`}
-          </Button>
-        )}
-      </div>
+    <div className="px-3 py-3">
+      <MatrxDataTable<ToolRefetchDetailRow>
+        data={rows}
+        columns={DETAIL_COLUMNS}
+        getRowId={(row) => row.repeatToolCallId}
+        pageSize={DETAIL_PAGE_SIZE}
+        toolbar={{ search: true, searchPlaceholder: "Search loaded repeats…" }}
+        coverage={{
+          loaded: rows.length,
+          total: expectedRepeats,
+          answeredBy: "client",
+          noun: "repeat",
+        }}
+        query={{
+          mode: "controlled-append",
+          state: tableState,
+          onStateChange: setTableState,
+          sourceProcessing: { search: "local", columnFilters: "local", sort: "local" },
+          scroll: {
+            mode: "suspended",
+            reason: "Repeat detail reads an expensive derived view, so another source page loads only on request.",
+          },
+          pagination: {
+            queryKey: `tool-refetch:${toolName}:${win}`,
+            rows,
+            loading: detail.isPending,
+            isFetchingNextPage: detail.isFetching && pages > 1,
+            error: detail.error instanceof Error ? detail.error : null,
+            hasNextPage:
+              (detail.isFetching || rows.length >= pages * DETAIL_PAGE_SIZE) && rows.length < expectedRepeats,
+            loadNextPage: async () => {
+              setPages((page) => page + 1);
+            },
+            refresh: () => {
+              void detail.refetch();
+            },
+            retrySource: () => {
+              void detail.refetch();
+            },
+            totalItems: expectedRepeats,
+          },
+        }}
+      />
     </div>
   );
 }

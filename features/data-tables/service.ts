@@ -89,17 +89,11 @@ function refused(error: { message: string; code?: string; hint?: string; details
  * THE DATA SEAM (lane GRID-PORT). Every export below asks `table-home.ts` which
  * store holds its table first: a record-store table goes to
  * `data-source/record-store.ts`, anything else runs the older body under it,
- * unchanged. An operation the record-store half does not carry yet REFUSES in
+ * unchanged. An operation the record-store half does not carry REFUSES in
  * words — it never falls through to the older door, which would write to the
  * archived copy the move left behind and report success over a table nobody
  * is looking at.
  */
-function notOnTheRecordStoreYet(what: string): ServiceErr {
-  return {
-    success: false,
-    error: `This table lives in the record store, and this grid cannot ${what} there yet. Open the table at its record-store page to do it.`,
-  };
-}
 
 // ─── READS ───────────────────────────────────────────────────────────────────
 //
@@ -1152,7 +1146,8 @@ export async function setRowOrdering(args: {
   enabled: boolean;
   order: string[];
 }): Promise<ServiceResult<null>> {
-  if (recordStoreHomeOf(args.tableId)) return notOnTheRecordStoreYet("keep a hand-made row order");
+  const home = recordStoreHomeOf(args.tableId);
+  if (home) return recordStore.setRowOrdering(home, args);
   const { data, error } = await supabase.rpc("update_user_table_row_ordering", {
     p_table_id: args.tableId,
     p_enabled: args.enabled,

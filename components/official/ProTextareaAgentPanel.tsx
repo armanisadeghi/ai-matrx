@@ -5,7 +5,11 @@
  *
  * Custom Agent starts on the full inline agent picker (Mine / Shared / System).
  * After selection, switches to the compact chat-style dropdown + AgentRunner.
- * Help with this… skips straight to the runner (General Chat default).
+ * Help with this… skips straight to the runner on its MANDATE: the job is
+ * resolved for display (`useMandate`) and the run goes through the server's
+ * mandate door (`/ai/mandates/{key}`), which decides the Holder. The host's
+ * items ride as the job's offered values + context entries, never as user
+ * text. Picking another agent in the dropdown runs THAT agent directly.
  */
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
@@ -33,12 +37,24 @@ import {
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { ProTextareaAgentActionId } from "./proTextareaAgentActions";
+import { useMandate } from "@/features/mandates/useMandate";
+import { useMandateDisplayName } from "@/features/mandates/useMandateDisplayName";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+import type { SessionContextItem } from "@/features/transcript-studio/types";
+import {
+  proTextareaRunValues,
+  type ProTextareaAgentActionId,
+} from "./proTextareaAgentActions";
 import type { SourceFeature } from "@/types/python-generated/source-attribution";
 
 interface ProTextareaAgentPanelProps {
   actionId: ProTextareaAgentActionId;
+  /** An agent the PERSON chose. Wins over `mandateKey` when set. */
   agentId: string | null;
+  /** The JOB this action runs when the person has not chosen an agent. */
+  mandateKey: AnyMandateKey | null;
+  /** The host's items — offered values + context by mandate, context by agent. */
+  contextItems?: SessionContextItem[];
   agentLabel: string | null;
   onAgentIdChange: (agentId: string) => void;
   onAgentClear: () => void;
@@ -145,13 +161,18 @@ function ProTextareaAgentRunnerSession({
 function ProTextareaAgentRunner({
   actionId,
   agentId,
+  mandateKey,
+  contextItems,
   sourceFeature,
   sourceText,
   onApplySourceText,
   onControlsChange,
 }: {
   actionId: ProTextareaAgentActionId;
+  /** Display identity; with `mandateKey` the server still picks the Holder. */
   agentId: string;
+  mandateKey: AnyMandateKey | null;
+  contextItems: readonly SessionContextItem[];
   sourceFeature: SourceFeature;
   sourceText: string;
   onApplySourceText: (text: string) => void;
@@ -159,11 +180,15 @@ function ProTextareaAgentRunner({
 }) {
   const dispatch = useAppDispatch();
   const panelInstanceId = useId();
-  const surfaceKey = `pro-textarea:${actionId}:${panelInstanceId}:${agentId}`;
+  const surfaceKey = `pro-textarea:${actionId}:${panelInstanceId}:${mandateKey ?? "agent"}:${agentId}`;
 
   const { conversationId } = useAgentLauncher(agentId, {
     surfaceKey,
     sourceFeature,
+    // THE MANDATE DOOR: with a key, turn 1 POSTs /ai/mandates/{key} and the
+    // server resolves the Holder, its settings and the consumption map.
+    ...(mandateKey ? { mandateKey } : {}),
+    runtime: proTextareaRunValues(contextItems, mandateKey !== null),
     apiEndpointMode: "agent",
     autoClearConversation: false,
     config: {
@@ -206,9 +231,13 @@ function ProTextareaAgentRunner({
   );
 }
 
+const NO_CONTEXT_ITEMS: readonly SessionContextItem[] = [];
+
 export function ProTextareaAgentPanel({
   actionId,
   agentId,
+  mandateKey,
+  contextItems,
   agentLabel,
   onAgentIdChange,
   onAgentClear,
@@ -228,8 +257,26 @@ export function ProTextareaAgentPanel({
     setRunControls(controls);
   }, []);
 
-  const isCustomAgentPicker = actionId === "customAgent" && agentId === null;
-  const showRunner = agentId !== null;
+  // By mandate only while the person has not chosen an agent themselves.
+  const activeMandateKey = agentId === null ? mandateKey : null;
+  const mandateState = useMandate(activeMandateKey ?? "");
+  const mandateName = useMandateDisplayName(activeMandateKey ?? "");
+  const runAgentId =
+    agentId ?? (activeMandateKey ? (mandateState.mandate?.agentId ?? null) : null);
+  const mandateWaiting =
+    activeMandateKey !== null &&
+    runAgentId === null &&
+    (mandateState.loading || mandateState.organizationPending);
+  const mandateRefusal =
+    activeMandateKey !== null && runAgentId === null && !mandateWaiting
+      ? (mandateState.error ??
+        "No agent is assigned to this job right now. Choose an agent above to continue.")
+      : null;
+
+  const isCustomAgentPicker =
+    actionId === "customAgent" && agentId === null && activeMandateKey === null;
+  const showRunner = runAgentId !== null;
+  const showPicker = showRunner || activeMandateKey !== null;
 
   const handleBack = () => {
     if (actionId === "customAgent" && agentId) {
@@ -239,7 +286,10 @@ export function ProTextareaAgentPanel({
     onBack();
   };
 
-  const pickerLabel = agentLabel?.trim() || "Select an agent";
+  const pickerLabel =
+    agentLabel?.trim() ||
+    (activeMandateKey ? mandateName : "") ||
+    "Select an agent";
 
   return (
     <div
@@ -248,7 +298,7 @@ export function ProTextareaAgentPanel({
         "h-[550px] min-h-[550px]",
       )}
     >
-      {showRunner && (
+      {showPicker && (
         <div className="shrink-0 border-b border-border px-2 py-1.5">
           <AgentListDropdown
             onSelect={onAgentIdChange}
@@ -266,16 +316,27 @@ export function ProTextareaAgentPanel({
             onSelect={onAgentIdChange}
             className="h-full"
           />
-        ) : showRunner ? (
+        ) : showRunner && runAgentId ? (
           <ProTextareaAgentRunner
-            key={agentId}
+            key={`${activeMandateKey ?? "agent"}:${runAgentId}`}
             actionId={actionId}
-            agentId={agentId}
+            agentId={runAgentId}
+            mandateKey={activeMandateKey}
+            contextItems={contextItems ?? NO_CONTEXT_ITEMS}
             sourceFeature={sourceFeature}
             sourceText={sourceText}
             onApplySourceText={onApplySourceText}
             onControlsChange={handleControlsChange}
           />
+        ) : mandateWaiting ? (
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Finding the agent for {mandateName}…
+          </div>
+        ) : mandateRefusal ? (
+          <div className="flex h-full items-center justify-center px-6 text-center text-sm text-muted-foreground">
+            {mandateRefusal}
+          </div>
         ) : null}
       </div>
 

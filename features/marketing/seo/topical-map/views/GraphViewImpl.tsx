@@ -635,9 +635,9 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
   if (knobsError || !knobs) {
     return <TopicalMapFailed what="the map drawing's settings" error={knobsError} />;
   }
-  if (map.isError) return <TopicalMapFailed what="the map company" error={map.error} />;
+  if (map.isError) return <TopicalMapFailed what="the map company" error={map.error} mapId={mapId} />;
   if (query.isPending) return <TopicalMapLoading what="the map drawing" />;
-  if (query.isError) return <TopicalMapFailed what="the map drawing" error={query.error} />;
+  if (query.isError) return <TopicalMapFailed what="the map drawing" error={query.error} mapId={mapId} />;
   if (model.topics.length === 0) {
     return (
       <TopicalMapEmpty

@@ -61,21 +61,21 @@ describe("SandboxListPage deletion ownership", () => {
     const firstConfirm = [...document.querySelectorAll("button")].find((button) => button.textContent === "Delete Sandbox");
     if (!firstConfirm) throw new Error("first sandbox confirmation was not rendered");
     await act(async () => firstConfirm.click());
-    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
 
     await act(async () => [...container.querySelectorAll("button")].find((button) => button.textContent === "Delete Sandbox B")?.click());
-    expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(document.querySelector('[role="alertdialog"]')).not.toBeNull();
     const secondConfirm = [...document.querySelectorAll("button")].find(
       (button) =>
         button.textContent === "Delete Sandbox" &&
-        button.closest('[role="dialog"]'),
+        button.closest('[role="alertdialog"]'),
     );
     if (!secondConfirm) throw new Error("second sandbox confirmation was not rendered");
     expect(secondConfirm.disabled).toBe(false);
     const cancel = [...document.querySelectorAll("button")].find((button) => button.textContent === "Cancel");
     if (!cancel) throw new Error("second sandbox cancel control was not rendered");
     await act(async () => cancel.click());
-    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
     expect([...container.querySelectorAll("button")].find((button) => button.textContent === "Delete Sandbox B")?.disabled).toBe(false);
   });
 

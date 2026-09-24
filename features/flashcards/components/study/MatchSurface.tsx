@@ -13,13 +13,13 @@ import { formatDurationMs } from "@ai-matrx/kit/format";
 import {
   Trophy,
   Layers,
-  AlertCircle,
   BookOpen,
   Timer,
   Target,
   RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { cn } from "@/lib/utils";
 import PageHeader from "@/features/shell/components/header/PageHeader";
@@ -49,15 +49,15 @@ export function MatchSurface({ setId }: { setId: string }) {
               <MatrxMiniLoader />
             </div>
           ) : game.error ? (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-16 text-center">
-              <AlertCircle className="h-6 w-6 text-muted-foreground" />
-              <p className="text-sm font-medium text-foreground">
-                Couldn&apos;t load this set
-              </p>
-              <p className="max-w-md text-xs text-muted-foreground">
-                {game.error}
-              </p>
-            </div>
+            // Denied / deleted / never existed / signed-out all read as the
+            // same failed load — the gate asks the platform which one it is.
+            <AccessGate
+              token="fc_set"
+              id={setId}
+              error={game.error}
+              fallbackHref={EDU_BASE}
+              fallbackLabel="Flashcards"
+            />
           ) : game.totalCards === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
               <BookOpen className="h-6 w-6 text-muted-foreground" />

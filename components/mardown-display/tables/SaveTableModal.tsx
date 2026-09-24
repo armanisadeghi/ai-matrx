@@ -139,6 +139,7 @@ const SaveTableModal: React.FC<SaveTableModalProps> = ({
   const [useExisting, setUseExisting] = useState(false);
   const [tables, setTables] = useState<UserTableSummary[]>([]);
   const [tablesLoading, setTablesLoading] = useState(false);
+  const tablesRequested = useRef(false);
   const [tablesError, setTablesError] = useState<string | null>(null);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
 
@@ -194,8 +195,16 @@ const SaveTableModal: React.FC<SaveTableModalProps> = ({
   }, [isOpen]);
 
   // Load the user's tables the first time the "existing" section is opened.
+  //
+  // 🚨 THE LOAD MUST NOT DEPEND ON ITS OWN LOADING FLAG (lane INTEG-CLIENTS, found by the seat
+  // walk). It used to list `tablesLoading` among its dependencies and guard on it: setting the
+  // flag re-ran the effect, whose cleanup CANCELLED the load in flight, and the re-run returned
+  // early because the flag was set — so the result was thrown away and the section said
+  // "Loading tables…" forever. A REF records that a load was started — a ref, not state, because
+  // any state set here would re-run the effect and cancel the very load it started.
   useEffect(() => {
-    if (!useExisting || tables.length > 0 || tablesLoading) return undefined;
+    if (!useExisting || tablesRequested.current) return undefined;
+    tablesRequested.current = true;
     let cancelled = false;
     (async () => {
       setTablesLoading(true);
@@ -215,12 +224,14 @@ const SaveTableModal: React.FC<SaveTableModalProps> = ({
         }
       } finally {
         if (!cancelled) setTablesLoading(false);
+        // A load the modal closed on may be asked again the next time it opens.
+        if (cancelled) tablesRequested.current = false;
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [useExisting, tables.length, tablesLoading]);
+  }, [useExisting]);
 
   // Load the chosen table's fields whenever the selection changes.
   useEffect(() => {

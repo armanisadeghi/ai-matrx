@@ -5929,10 +5929,6 @@
       "name": "MAX_PREVIEW"
     },
     {
-      "file": "matrx-frontend/features/organizations/useAdoptRecordOrganization.ts",
-      "name": "ADOPTION_WAIT_MS"
-    },
-    {
       "file": "matrx-frontend/features/overlays/boundary/lazyOverlay.tsx",
       "name": "OVERLAY_LOAD_TIMEOUT_MS"
     },

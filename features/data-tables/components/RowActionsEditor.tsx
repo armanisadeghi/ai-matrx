@@ -526,9 +526,16 @@ function StepRow(props: {
                 expression: (next.options as { formula?: { expression?: string } } | undefined)?.formula?.expression ?? "",
               })
             }
-            siblingFields={fields.map((f) => ({ field_name: f.field_name, display_name: f.display_name }))}
+            siblingFields={fields.map((f) => ({
+              field_name: f.field_name,
+              display_name: f.display_name,
+              data_type: f.data_type,
+              metadata: f.metadata,
+            }))}
             purpose="row-action"
             targetColumnName={field?.display_name}
+            targetColumnType={field?.data_type}
+            sampleRow={row?.data ?? null}
           />
         )}
       </div>

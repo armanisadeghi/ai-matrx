@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Star } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
-import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { UseTemplateButton } from "@/features/agents/agent-creators/templates/UseTemplateButton";
 
 export default async function AgentTemplateDetailPage({
@@ -24,22 +24,27 @@ export default async function AgentTemplateDetailPage({
     .single();
 
   if (error || !template) {
+    // The canonical access gate tells denied / deleted / never existed / fault
+    // apart. The error crosses the server->client boundary as a plain object.
     return (
-      <Card className="h-full w-full bg-textured border-none shadow-lg">
-        <div className="p-8 md:p-12">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-foreground mb-2">
-              We couldn&apos;t open this template
-            </h1>
-            <p className="text-muted-foreground mb-4">
-              {recordUnavailableMessage("template", "unknown")}
-            </p>
-            <Link href="/agents/templates">
-              <Button>Back to Templates</Button>
-            </Link>
-          </div>
-        </div>
-      </Card>
+      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+        <AccessGate
+          token="agent_template"
+          id={id}
+          error={
+            error
+              ? {
+                  message: error.message,
+                  code: error.code,
+                  details: error.details,
+                  hint: error.hint,
+                }
+              : undefined
+          }
+          fallbackHref="/agents/templates"
+          fallbackLabel="Templates"
+        />
+      </div>
     );
   }
 

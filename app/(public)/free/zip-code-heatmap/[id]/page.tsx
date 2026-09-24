@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { MapPin, Loader2, AlertCircle, ArrowLeft, Calendar, User } from 'lucide-react';
+import { MapPin, Loader2, ArrowLeft, Calendar, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AccessGate } from '@/features/access-gate/components/AccessGate';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/utils/supabase/client';
 import { getClaimsUser } from '@/utils/supabase/claimsUser';
-import { recordUnavailable, recordUnavailableMessage } from '@/lib/records/recordUnavailable';
+import { recordUnavailable } from '@/lib/records/recordUnavailable';
 import ZipCodeMap from "../components/ZipCodeMap";
 import ColorLegend from "../components/ColorLegend";
 import type { ColorScaleOptions } from '../components/ColorScaleSelector';
@@ -38,6 +39,8 @@ export default function SharedHeatmapPage() {
   const [heatmap, setHeatmap] = useState<SavedHeatmap | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // The raw thrown value (a genuine fault), so the gate can offer retry instead of an access story.
+  const [loadError, setLoadError] = useState<unknown>(null);
 
   useEffect(() => {
     if (heatmapId) {
@@ -49,6 +52,7 @@ export default function SharedHeatmapPage() {
     try {
       setLoading(true);
       setError(null);
+      setLoadError(null);
 
       // This page is PUBLIC, so this read can run as `anon`, which may read only
       // the columns workbench.heatmap_saves declares to it — `*` is refused
@@ -95,6 +99,7 @@ export default function SharedHeatmapPage() {
         if (!user && authError) {
           console.warn('[free/zip-code-heatmap/[id]] identity could not be verified — showing the retry notice, not a sign-in prompt.');
           setError('We could not verify who you are right now. You have not been signed out — reload in a moment.');
+          setLoadError(authError);
           return;
         }
         if (!user) {
@@ -117,6 +122,7 @@ export default function SharedHeatmapPage() {
     } catch (err) {
       console.error('Error loading heatmap:', err);
       setError('Failed to load heatmap');
+      setLoadError(err);
     } finally {
       setLoading(false);
     }
@@ -138,23 +144,18 @@ export default function SharedHeatmapPage() {
   }
 
   if (error || !heatmap) {
+    // Denied, deleted, missing, signed out, or a genuine fault — the canonical
+    // gate resolves which and offers the way forward.
     return (
-      <div className="h-[calc(100dvh-2.5rem)] flex items-center justify-center bg-textured p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <div className="flex items-center gap-2 text-destructive mb-2">
-              <AlertCircle className="w-5 h-5" />
-              <CardTitle>Error</CardTitle>
-            </div>
-            <CardDescription>{error || recordUnavailableMessage('heatmap', 'unknown')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={handleBackToEditor} className="w-full">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Go to Heatmap Editor
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="h-[calc(100dvh-2.5rem)] overflow-y-auto bg-textured">
+        <AccessGate
+          token="heatmap_save"
+          id={heatmapId}
+          error={loadError}
+          onRetry={() => void loadHeatmap()}
+          fallbackHref="/free/zip-code-heatmap"
+          fallbackLabel="Heatmap editor"
+        />
       </div>
     );
   }

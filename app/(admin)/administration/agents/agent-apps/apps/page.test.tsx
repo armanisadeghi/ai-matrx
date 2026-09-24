@@ -2,7 +2,6 @@ import { getCellValue } from "@ai-matrx/design-system/data-table/filter-engine";
 import type { AgentAppAdminView } from "@/lib/services/agent-apps-admin-service";
 import {
   AGENT_APP_COLUMNS,
-  AGENT_APPS_COVERAGE,
   agentAppSuccessPercent,
   agentAppsScopeFilters,
 } from "./page";
@@ -15,14 +14,6 @@ function column(id: string) {
 }
 
 describe("Agent Apps canonical table contract", () => {
-  it("discloses the latest-1000 client-side window", () => {
-    expect(AGENT_APPS_COVERAGE).toEqual({
-      noun: "agent app",
-      cap: 1000,
-      answeredBy: "client",
-    });
-  });
-
   it("keeps the existing independent filters and metrics as table accessors", () => {
     for (const id of [
       "name",

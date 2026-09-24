@@ -2,14 +2,17 @@
 import { useState } from "react";
 import { deleteRow, isRecordStoreTable } from "@/features/data-tables/service";
 import { isServiceFailure } from "@/features/data-tables/types";
+// A CONFIRMATION of an irreversible act is an AlertDialog: it blocks the page on
+// purpose (policy ai-reachable-everywhere, rule 1). The ordinary Dialog is a
+// non-blocking window on desktop, which a delete confirmation must never be.
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 
 interface DeleteRowModalProps {
@@ -66,11 +69,11 @@ export default function DeleteRowModal({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{rowLabel ? `Delete "${rowLabel}"?` : "Delete Row"}</DialogTitle>
-          <DialogDescription>
+    <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <AlertDialogContent className="sm:max-w-[425px]">
+        <AlertDialogHeader>
+          <AlertDialogTitle>{rowLabel ? `Delete "${rowLabel}"?` : "Delete Row"}</AlertDialogTitle>
+          <AlertDialogDescription>
             {archives
               ? // THE RECORD STORE ARCHIVES — it never destroys a row (REC-23), so
                 // "cannot be undone" would be a false sentence here.
@@ -78,8 +81,8 @@ export default function DeleteRowModal({
               : rowLabel
                 ? `The row "${rowLabel}" will be deleted. This action cannot be undone.`
                 : "Are you sure you want to delete this row? This action cannot be undone."}
-          </DialogDescription>
-        </DialogHeader>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
 
         {error && (
           <div className="bg-red-50 p-2 rounded-md text-red-500 text-sm">
@@ -87,7 +90,7 @@ export default function DeleteRowModal({
           </div>
         )}
 
-        <DialogFooter>
+        <AlertDialogFooter>
           <Button
             type="button"
             variant="outline"
@@ -104,8 +107,8 @@ export default function DeleteRowModal({
           >
             {loading ? "Deleting..." : "Delete"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

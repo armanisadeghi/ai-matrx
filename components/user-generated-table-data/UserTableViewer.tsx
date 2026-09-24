@@ -45,6 +45,7 @@ import {
   ChevronRight,
   Paintbrush,
   Plus,
+  Download,
 } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { VersionHistoryViewer } from "@/features/data-tables/components/VersionHistoryViewer";
@@ -111,7 +112,7 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
 import {
-  agentActionMessage,
+  agentActionOffer,
   buildRowActionOps,
   describeRowAction,
   readRowActions,
@@ -436,9 +437,17 @@ interface UserTableViewerProps {
    * `/data/[id]` route (`DataTableDetailClient`) turns it on.
    */
   emitSurfaceScope?: boolean;
+  /**
+   * THE PAGE AROUND THE GRID OWNS SHARE AND EXPORT (the /data-v2 table page's chrome, for
+   * every layout — ruling 2026-09-23). The grid's own Share and export controls are absent,
+   * and its right-click export items become one "Export this table…" that opens the page's.
+   */
+  pageOwnsShareAndExport?: { openExport: () => void };
 }
 
 const DATA_TABLES_SURFACE_NAME = "matrx-user/data-tables" as const;
+/** The right-click menu's own export actions, which the page's export replaces on the Sheet. */
+const PAGE_OWNED_EXPORT_ACTIONS = ["html-preview", "copy-html-page", "email-to-me", "print", "full-print", "save-as-file"];
 
 
 /** Shared with the saved-view codec so "default page size" means one thing. */
@@ -454,6 +463,7 @@ const UserTableViewer = ({
   onTableInfoChange,
   onTablesChange,
   emitSurfaceScope = false,
+  pageOwnsShareAndExport,
 }: UserTableViewerProps) => {
   const router = useRouter();
   const [scheduleNavigationPending, startScheduleNavigation] = React.useTransition();
@@ -2742,6 +2752,16 @@ const UserTableViewer = ({
       if (action.kind === "agent") {
         const row = rows[0];
         const label = rowLabelText(row, fields, effectiveRowLabel(tableInfo?.metadata, fields), relationWords).text;
+        const offer = agentActionOffer({
+          action,
+          tableId,
+          tableName: tableInfo?.table_name ?? "table",
+          rowLabel: label,
+          row,
+          fields,
+          actingPersonId: currentUserId,
+          actingPersonCanEdit: !isReadOnly,
+        });
         const launchOptions: ManagedAgentOptions = {
           surfaceKey: `data-table-row-action:${tableId}:${row.id}`,
           sourceFeature: "chat",
@@ -2751,19 +2771,21 @@ const UserTableViewer = ({
             allowChat: true,
             showPreExecutionGate: false,
           },
+          // THE ROW TRAVELS AS THE JOB'S OFFER, never as user text: `data.row_action`
+          // (Provision `data.table_row_action`) is supplied the table, the row,
+          // the action and the person as offered values, and the same values
+          // ride as named context so a Holder that declares none of them (the
+          // General Chat seed) still sees them. The author's prompt — the only
+          // human words in play — is the user input.
           runtime: {
-            userInput: agentActionMessage({
-              action,
-              tableName: tableInfo?.table_name ?? "table",
-              rowLabel: label,
-              row,
-              fields,
-            }),
+            userInput: (action.prompt ?? "").trim() || action.name,
+            variables: offer,
+            context: offer,
             surfaceName: "matrx-user/data-tables",
           },
         };
         try {
-          await launchMandate(MANDATE_KEYS.chat__default_new_chat, launchOptions);
+          await launchMandate(MANDATE_KEYS.data__row_action, launchOptions);
         } catch (e) {
           toast({
             title: `Could not start "${action.name}"`,
@@ -2860,6 +2882,7 @@ const UserTableViewer = ({
     },
     [
       cellUndo,
+      currentUserId,
       displayRows,
       fields,
       isReadOnly,
@@ -3674,6 +3697,24 @@ const UserTableViewer = ({
           emitSurfaceScope && "Already open in the Data Workspace",
       },
     }),
+    ...(pageOwnsShareAndExport
+      ? [
+          {
+            id: "page-export",
+            label: "Export",
+            items: [
+              {
+                kind: "item" as const,
+                id: "page-export-open",
+                label: "Export this table…",
+                description: "CSV, XLSX, or copy and transform, from the page",
+                icon: Download,
+                onSelect: () => pageOwnsShareAndExport.openExport(),
+              },
+            ],
+          },
+        ]
+      : []),
   ];
 
   const body = (
@@ -3762,6 +3803,7 @@ const UserTableViewer = ({
 
       {/* Toolbar with search */}
       <TableToolbar
+        pageOwnsShareAndExport={Boolean(pageOwnsShareAndExport)}
         tableId={tableId}
         tableInfo={tableInfo}
         fields={fields}
@@ -4344,6 +4386,7 @@ const UserTableViewer = ({
           }) ?? undefined
         }
         contentSource={{ type: "raw" }}
+        {...(pageOwnsShareAndExport ? { excludedRichActions: PAGE_OWNED_EXPORT_ACTIONS } : {})}
         extraSections={gridMenuSections}
       >
       <div

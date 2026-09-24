@@ -106,11 +106,15 @@ async function openSubmenu(page, name) {
   return true;
 }
 
+/** The grid itself: on the Sheet, the table page around it has controls of its own (Share, CSV). */
+function inGrid(page) {
+  return SURFACE === "sheet" ? page.locator("[data-sheet-layout]").first() : page;
+}
 /** Where a table's grid lives on the surface under walk. */
 function tableUrl(tableId) {
   return SURFACE === "sheet" && tableId !== TABLES.olderExample
     ? `${ORIGIN}/data-v2/${tableId}?view=sheet`
-    : tableUrl(tableId);
+    : `${ORIGIN}/data/${tableId}`;
 }
 /** Is the page showing this table's grid on the surface under walk? */
 function onTable(url, tableId) {
@@ -157,7 +161,7 @@ async function main() {
 
     // ── WRITES: a real edit to a real service call, undone, persisted, put back ─────
     if (wants("write")) {
-      const ROW = "e5d565a8-24aa-471c-94d9-f93e78c91994"; // WO-4475, stage "Scheduled"
+      const ROW = "e5d565a8-24aa-471c-94d9-f93e78c91994"; // WO-4475, stage "Dispatched" (both copies)
       const cell = () => page.locator(`[data-cell="${ROW}::stage"]`).first();
       const stageText = async () => (await cell().innerText().catch(() => "")).trim();
       const typeInto = async (value) => {
@@ -216,16 +220,21 @@ async function main() {
     if (wants("colors")) {
       const ROW = "cfc72430-2dbf-40d6-980d-f6e5efdeab3d"; // WO-4471
       const target = () => page.locator(`[data-cell="${ROW}::stage"]`).first();
+      // A nested submenu opens on pointer and focus timing; a second try is what a person
+      // does — and a highlight the walk made is always taken off again (the oracle compares).
       const pick = async (label) => {
-        await openGrid(page, TABLES.calls, "WO-4471");
-        await target().click({ button: "right" });
-        await page.waitForTimeout(800);
-        if (!(await openSubmenu(page, /^Highlight cell/))) return false;
-        const choice = page.getByRole("menuitem", { name: label }).first();
-        if ((await choice.count()) === 0) return false;
-        await choice.click();
-        await page.waitForTimeout(2500);
-        return true;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          await openGrid(page, TABLES.calls, "WO-4471");
+          await target().click({ button: "right" });
+          await page.waitForTimeout(800);
+          if (!(await openSubmenu(page, /^Highlight cell/))) continue;
+          const choice = page.getByRole("menuitem", { name: label }).first();
+          if ((await choice.count()) === 0) continue;
+          await choice.click();
+          await page.waitForTimeout(2500);
+          return true;
+        }
+        return false;
       };
       const picked = await pick(/^Amber/);
       await openGrid(page, TABLES.calls, "WO-4471");
@@ -271,7 +280,9 @@ async function main() {
       }
       return false;
     };
-    const dialog = () => page.getByRole("dialog").last();
+    // The one open question on screen: an AlertDialog (role "alertdialog") or a Dialog. The
+    // table page around the Sheet may keep other dialog nodes mounted, so only a visible one.
+    const dialog = () => page.locator('[role="alertdialog"]:visible, [role="dialog"]:visible').last();
 
     // ── RULES: the store refuses a value its column's rules forbid ───────────────
     if (wants("rules")) {
@@ -540,6 +551,30 @@ async function main() {
     }
 
     // ── PASTE ROWS: a block from a spreadsheet becomes rows, then goes to the archive ─
+    // ── TIDY: a run that stopped part-way leaves its own rows behind (WO-4476..4478, made
+    // only by this walk). Archive every copy through the grid's own row menu, so the
+    // clauses after it start from the five seeded work orders.
+    if (wants("tidy")) {
+      for (const wo of ["WO-4476", "WO-4477", "WO-4478"]) {
+        for (let i = 0; i < 4; i++) {
+          await openGrid(page, TABLES.calls, "WO-4471");
+          const c = page.locator("[data-cell$='::work_order']").filter({ hasText: wo }).first();
+          if ((await c.count()) === 0) break;
+          await c.click({ button: "right" });
+          await page.waitForTimeout(900);
+          await openSubmenu(page, /^Row ·/);
+          const del = page.getByRole("menuitem", { name: /Delete row/ }).first();
+          if ((await del.count()) === 0) break;
+          await del.click();
+          await page.waitForTimeout(800);
+          await page.locator('[role="alertdialog"]:visible, [role="dialog"]:visible').last().getByRole("button", { name: /^(Delete|Archive)/ }).first().click();
+          await page.waitForTimeout(2500);
+        }
+      }
+      const after = await openGrid(page, TABLES.calls, "WO-4471");
+      pass("tidy", !/WO-447[678]/.test(after), "only the seeded work orders remain");
+    }
+
     if (wants("paste")) {
       await openGrid(page, TABLES.calls, "WO-4471");
       await page.getByRole("button", { name: /^Paste$/ }).first().click();
@@ -564,7 +599,7 @@ async function main() {
         if ((await del.count()) === 0) continue;
         await del.click();
         await page.waitForTimeout(800);
-        await page.getByRole("dialog").last().getByRole("button", { name: /^Delete/ }).first().click();
+        await page.locator('[role="alertdialog"]:visible, [role="dialog"]:visible').last().getByRole("button", { name: /^(Delete|Archive)/ }).first().click();
         await page.waitForTimeout(2500);
       }
       const after = await openGrid(page, TABLES.calls, "WO-4471");
@@ -643,6 +678,7 @@ async function main() {
     if (wants("share")) {
       const level = process.env.GRID_PORT_SHARE_LEVEL || "Viewer";
       await openGrid(page, TABLES.customers, "Maria Delgado");
+      // On the Sheet this is the table page's Share — the grid draws none of its own.
       await page.getByRole("button", { name: /^Share$/ }).first().click();
       await page.waitForTimeout(1500);
       const email = page.locator("#user-email").first();
@@ -879,11 +915,47 @@ async function main() {
           for (const it of items) for (const type of it.types) window.__copied.push(await (await it.getType(type)).text());
         };
       });
-      await page.locator('[aria-label^="Copy, transform or export"]').first().click();
-      await page.waitForTimeout(1200);
-      await page.getByRole("button", { name: /^Copy CSV$/ }).first().click();
-      await page.waitForTimeout(2500);
-      const copied = (await page.evaluate(() => window.__copied)).join("\n");
+      if (SURFACE === "sheet") {
+        // ONE PLACE: the grid draws no Share and no export of its own; the page does.
+        const sheet = page.locator("[data-sheet-layout]").first();
+        const gridShare = await sheet.getByRole("button", { name: /^Share$/ }).count();
+        const gridExport = await sheet.locator('[aria-label^="Copy, transform or export"]').count();
+        const pageExport = await page.locator('[aria-label^="Copy, transform or export"]').count();
+        pass("export-one-place", gridShare === 0 && gridExport === 0 && pageExport === 1,
+          `grid Share ${gridShare}, grid export ${gridExport}, page export ${pageExport}`);
+        // The grid's right-click "Export this table…" opens the page's export.
+        await page.locator("[data-cell$='::work_order']").filter({ hasText: "WO-4471" }).first().click({ button: "right" });
+        await page.waitForTimeout(900);
+        const item = page.getByRole("menuitem", { name: /Export this table/ }).first();
+        const offered = (await item.count()) > 0;
+        const oldExport = await page.getByRole("menuitem", { name: /^(Print|Email to me|Save as file|HTML preview)/ }).count();
+        if (offered) await item.click();
+        await page.waitForTimeout(1200);
+        // The page's export is the copy-and-transform menu (Copy as / Download / Copy for AI).
+        const opened = /COPY AS|Copy as/.test(await page.locator("[data-radix-popper-content-wrapper]").last().innerText().catch(() => ""))
+          && (await page.locator('[aria-label^="Copy, transform or export"]').first().getAttribute("aria-expanded")) === "true";
+        await page.keyboard.press("Escape");
+        await page.waitForTimeout(500);
+        pass("export-right-click-opens-page", offered && opened && oldExport === 0,
+          offered ? (opened ? "right-click → Export this table… opened the page's export" : "the page's export did not open") : "no Export this table… in the right-click menu");
+      } else {
+        await page.locator('[aria-label^="Copy, transform or export"]').first().click();
+        await page.waitForTimeout(1200);
+      }
+      let copied = "";
+      if (SURFACE === "sheet") {
+        // On the Sheet the CSV is the page's own control, beside its menu: a file download.
+        const [download] = await Promise.all([
+          page.waitForEvent("download", { timeout: 30000 }),
+          page.getByRole("button", { name: /^CSV$/ }).first().click(),
+        ]);
+        const path = await download.path();
+        copied = path ? readFileSync(path, "utf8") : "";
+      } else {
+        await page.locator("[data-radix-popper-content-wrapper]").last().getByRole("button", { name: /^(Copy )?CSV$/ }).first().click();
+        await page.waitForTimeout(2500);
+        copied = (await page.evaluate(() => window.__copied)).join("\n");
+      }
       const lines = copied.split(/\r?\n/).filter(Boolean);
       const hasAll = ["WO-4471", "WO-4472", "WO-4473", "WO-4474", "WO-4475"].every((w) => copied.includes(w));
       const words = /Maria Delgado|Harbor View|Takeda/.test(copied);
@@ -933,7 +1005,15 @@ async function main() {
       if (!TABLES.harborCalls) throw new Error("GRID_PORT_HARBOR_CALLS must name Harbor Point's Service calls table");
       const hp = await (await browser.newContext({ viewport: { width: 1600, height: 1000 } })).newPage();
       hp.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
-      hp.on("response", (r) => { if (r.status() >= 400) bad.push(`${r.status()} ${r.url()}`); });
+      hp.on("response", async (r) => {
+        if (r.status() < 400) return;
+        bad.push(`${r.status()} ${r.url()}`);
+        // A store refusal is judged by its words, never just its status.
+        if (/\/rpc\/record_/.test(r.url())) {
+          const said = await r.text().catch(() => "");
+          console.log(`store refused ${r.url().replace(/.*\/rpc\//, "")}: ${said.slice(0, 300)} — asked ${(r.request().postData() ?? "").slice(0, 300)}`);
+        }
+      });
       await signIn(hp);
       await hp.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 240000 });
       const choose = hp.getByText("Choose org", { exact: true }).first();
@@ -949,6 +1029,8 @@ async function main() {
       if (offered) {
         await item.click();
         await hp.waitForURL(/\/schedules\/new/, { timeout: 120000 });
+        // A dev server may still be compiling the form; judge it once it is drawn.
+        await hp.locator("#title").waitFor({ timeout: 240000 }).catch(() => {});
         await hp.waitForTimeout(3000);
         const url = hp.url();
         const formText = await hp.evaluate(() => document.body.innerText);
@@ -957,7 +1039,11 @@ async function main() {
         await hp.locator("#title").fill("Draft the invoice when a service call is complete");
         await hp.getByRole("checkbox").filter({ has: hp.locator("xpath=..") }).first().waitFor().catch(() => {});
         await hp.locator("label").filter({ hasText: "A row is changed" }).locator("button[role=checkbox]").first().click();
-        await hp.locator("#ev-fields").fill("status");
+        // "Only when these columns change" is a list of the table's own columns (ARE-035),
+        // read through the grid's seam; tick Status.
+        const statusBox = hp.locator("label").filter({ hasText: /^Status$/ }).locator("button[role=checkbox]").first();
+        await statusBox.waitFor({ timeout: 60000 });
+        await statusBox.click();
         await hp.locator("#prompt").fill("The service call in this event changed status. If it now reads Complete, draft the invoice from its labor hours and parts used.");
         // The form posts the schedule to the Python server's /scheduler/tasks. The trigger it
         // sends is what this clause judges; on a clone-backed server that server is
@@ -1036,28 +1122,103 @@ async function main() {
       const listen = (r) => { if (/\/rpc\/get_full_table$/.test(r.url())) olderReads.push(r.url()); };
       page.on("request", listen);
       await page.goto(tableUrl(TABLES.calls), { waitUntil: "domcontentloaded", timeout: 240000 });
-      await page.waitForFunction(() => /not been shared with you|in neither|could not find out/.test(document.body.innerText), null, { timeout: 120000 }).catch(() => {});
+      await page.waitForFunction(() => /not been shared with you|not been given this table|in neither|could not find out/.test(document.body.innerText), null, { timeout: 120000 }).catch(() => {});
       await page.waitForTimeout(2000);
       page.off("request", listen);
       const text = await page.evaluate(() => document.body.innerText);
       await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-17-not-shared-with-you.png` });
-      pass("unshared-says-so", /has not been shared with you/.test(text) && /nobody has shared it with you yet/.test(text), (text.match(/This table[^\n]*\n?[^\n]*/) ?? [""])[0].replace(/\s+/g, " ").slice(0, 200));
+      // On the Sheet the table page answers first, in its own words ("You have not been
+      // given this table … Nobody has shared it with you").
+      pass("unshared-says-so", SURFACE === "sheet"
+        ? /You have not been given this table/.test(text) && /Nobody has shared it with you/.test(text)
+        : /has not been shared with you/.test(text) && /nobody has shared it with you yet/.test(text), (text.match(/(This table|You have not been given)[^\n]*\n?[^\n]*/) ?? [""])[0].replace(/\s+/g, " ").slice(0, 200));
       pass("unshared-no-raw-id", !text.includes(TABLES.calls), text.includes(TABLES.calls) ? "the raw id is on the screen" : "no raw id on the screen");
       pass("unshared-no-older-read", olderReads.length === 0, `older get_full_table reads: ${olderReads.length}`);
       pass("unshared-no-deleted-sentence", !/may have been deleted|in neither/.test(text), "no sentence about deletion or 'in neither store'");
     }
 
-    // ── THE OLDER LIST SAYS WHAT MOVED (VERIFIER-16 finding 2) ──────────────────────
-    if (wants("movedlist")) {
+    // ── /data REDIRECTS NOTHING (owner's ruling 2026-09-23: "don't redirect anything at all
+    // right now"). The older route opens the older viewer; it never lands on /data-v2 and
+    // never says a table moved — old and new are compared side by side.
+    // ── DRAWN (the owner's verdict on his copy: "No colors, no custom actions"): what the
+    //    mover carried — color by a choice column, a row rule, a column highlight, a row
+    //    action, a formula, a hand-set order — is DRAWN by the Sheet, from the store as stored.
+    //    The fixture carries them the way the mover writes them (Field ids, choice labels).
+    if (wants("drawn")) {
+      const text = await openGrid(page, TABLES.parity, "Job 120");
+      const rows = page.locator("[data-sheet-layout] table tbody tr, table tbody tr");
+      const tints = await page.evaluate(() => {
+        const out = { red: 0, amber: 0, green: 0, blue: 0, violet: 0, teal: 0, slate: 0, blockedRed: 0, blocked: 0 };
+        for (const tr of document.querySelectorAll("table tbody tr")) {
+          const c = tr.className || "";
+          for (const k of Object.keys(out)) if (c.includes(`bg-${k}-50`) || c.includes(`bg-${k}-100/70`)) out[k] += 1;
+          const status = tr.querySelector("[data-cell$='::status']")?.textContent?.trim();
+          if (status === "Blocked") {
+            out.blocked += 1;
+            if (c.includes("bg-red-50")) out.blockedRed += 1;
+          }
+        }
+        return out;
+      });
+      const tinted = Object.entries(tints).filter(([k]) => !k.startsWith("blocked")).reduce((a, [, v]) => a + v, 0);
+      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-20-drawn-colors.png` });
+      pass("drawn-colorby", tinted > 0 && tints.blocked > 0, `rows tinted by Status: ${JSON.stringify(tints)}`);
+      pass("drawn-rule", tints.blocked > 0 && tints.blockedRed === tints.blocked, `${tints.blockedRed} of ${tints.blocked} Blocked rows red (rule "Status is Blocked")`);
+      const ownerTint = await page.locator("[data-cell$='::owner']").first().evaluate((el) => {
+        const td = el.closest("td");
+        return `${td?.className ?? ""} ${el.className ?? ""}`;
+      }).catch(() => "");
+      pass("drawn-column-highlight", /bg-blue-/.test(ownerTint), `Owner column cell classes carry blue: ${/bg-blue-/.test(ownerTint)}`);
+      const firstRow = rows.first();
+      const runBtn = firstRow.locator('button[title="Run an action on this row"]').first();
+      let offered = false;
+      if ((await runBtn.count()) > 0) {
+        await runBtn.click();
+        await page.waitForTimeout(700);
+        offered = (await page.getByRole("menuitem", { name: /Close out job/ }).count()) > 0;
+        await page.keyboard.press("Escape");
+      }
+      pass("drawn-row-action", offered, offered ? "the row's action button offers Close out job" : "no row action button or no Close out job");
+      const totals = await page.locator("[data-cell$='::total']").allInnerTexts().catch(() => []);
+      const numeric = totals.filter((t) => /\d/.test(t)).length;
+      pass("drawn-formula", totals.length > 0 && numeric > 0, `Total (a formula the store works out): ${numeric} of ${totals.length} cells hold a number`);
+
+      // Hand-set order (G13): move the third row to the top, save, reload, and it stays.
+      const reorder = inGrid(page).getByRole("button", { name: /^Reorder$/ }).first();
+      await reorder.waitFor({ timeout: 15000 }).catch(() => {});
+      const drawn = (await reorder.count()) > 0;
+      pass("drawn-reorder-offered", drawn, drawn ? "Reorder is drawn (the store keeps a hand-set order here)" : "no Reorder");
+      if (drawn) {
+        const jobs = async () => (await page.locator("[data-cell$='::job']").allInnerTexts()).map((t) => t.trim());
+        const before = await jobs();
+        await reorder.click();
+        await page.waitForTimeout(2500);
+        const dialog = page.getByRole("dialog").last();
+        const ups = dialog.locator('button[title="Move up"]');
+        await ups.nth(2).click();
+        await page.waitForTimeout(300);
+        await ups.nth(1).click();
+        await page.waitForTimeout(300);
+        await dialog.getByRole("button", { name: /Save Order/ }).click();
+        await page.waitForTimeout(4000);
+        await openGrid(page, TABLES.parity, "Job 120");
+        const after = await jobs();
+        pass("drawn-reorder-kept", after[0] === before[2] && after[1] === before[0], `before ${before.slice(0, 3).join(", ")} → after reload ${after.slice(0, 3).join(", ")}`);
+      }
+    }
+
+    if (wants("noredirect")) {
+      await page.goto(`${ORIGIN}/data/${TABLES.calls}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+      await page.waitForTimeout(12000);
+      const url = page.url();
+      const text = await page.evaluate(() => document.body.innerText);
+      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-19-data-redirects-nothing.png` });
+      pass("noredirect-stays", url.includes(`/data/${TABLES.calls}`) && !url.includes("/data-v2"), url.replace(ORIGIN, ""));
+      pass("noredirect-no-moved-sentence", !/moved to its new home|have moved to the new data home|has moved/i.test(text), "no sentence about a move");
       await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 240000 });
-      await page.waitForSelector("[data-moved-tables]", { timeout: 60000 }).catch(() => {});
-      const banner = page.locator("[data-moved-tables]").first();
-      const n = Number((await banner.getAttribute("data-moved-tables").catch(() => "0")) ?? "0");
-      const said = (await banner.innerText().catch(() => "")).replace(/\s+/g, " ");
-      const link = await banner.locator('a[href="/data-v2"]').count();
-      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-18-list-says-what-moved.png` });
-      pass("movedlist-count", n > 0 && said.includes(`${n} of your tables have moved`), `the list says: "${said}"`);
-      pass("movedlist-where", link > 0, link > 0 ? "and links to the new data home (/data-v2)" : "no link to where they live");
+      await page.waitForTimeout(8000);
+      const list = await page.evaluate(() => document.body.innerText);
+      pass("noredirect-list-quiet", !/moved to the new data home/.test(list) && (await page.locator("[data-moved-tables]").count()) === 0, "the /data list says nothing about a move");
     }
 
     const onClone = String(process.env.GRID_PORT_ON_CLONE || "") === "1";
@@ -1070,13 +1231,17 @@ async function main() {
     // The record store's own answer "this exists and you may not open it" is a 42501 from
     // custom.record_resolve, which PostgREST sends as 403 — the route's no-access lookup.
     const notSharedAnswer = /^403 https:\/\/[a-z0-9]+\.supabase\.co\/rest\/v1\/rpc\/record_resolve$/;
-    const excused = bad.filter((b) => (onClone && b.startsWith("401 ") && python.test(b.slice(4))) || olderFirst.test(b) || notSharedAnswer.test(b));
+    // THE HAND-ORDER PRESENCE PROBE (G13): asked once per organization per page load, for a
+    // view that cannot exist — a present door answers 23503 (PostgREST 409), an absent one 404.
+    const handOrderProbe = /^409 https:\/\/[a-z0-9]+\.supabase\.co\/rest\/v1\/rpc\/read_records_in_view_order$/;
+    const excused = bad.filter((b) => (onClone && b.startsWith("401 ") && python.test(b.slice(4))) || olderFirst.test(b) || notSharedAnswer.test(b) || handOrderProbe.test(b));
     const counted = bad.filter((b) => !excused.includes(b));
     const countedErrors = errors.filter(
       (e) =>
         !(onClone && /status of 401|ambient\.page_guidance failed to resolve: Authentication required/.test(e)) &&
         !(excused.some((b) => b.startsWith("500 ")) && /status of 500/.test(e)) &&
-        !(excused.some((b) => b.startsWith("403 ")) && /status of 403/.test(e)),
+        !(excused.some((b) => b.startsWith("403 ")) && /status of 403/.test(e)) &&
+        !(excused.some((b) => handOrderProbe.test(b)) && /status of 409/.test(e)),
     );
     pass("quiet", countedErrors.length === 0 && counted.length === 0,
       `console errors ${countedErrors.length}, responses>=400 ${counted.length}` +
@@ -1091,4 +1256,4 @@ async function main() {
   console.log(failed.length ? `FAILED: ${failed.join(", ")}` : "ALL CLAUSES PASS");
   process.exit(failed.length ? 1 : 0);
 }
-main().catch((e) => { console.error("FAILED:", e.message); process.exit(2); });
+main().catch((e) => { console.error("FAILED:", e.message); console.error(String(e.stack ?? "").split("\n").slice(0, 8).join("\n")); process.exit(2); });

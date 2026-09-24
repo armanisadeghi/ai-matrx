@@ -12,6 +12,7 @@ import { getInitiative } from "./service";
 import { InitiativeEditorDialog } from "./InitiativeEditorDialog";
 import type { Initiative } from "./types";
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 export function InitiativeDetail({ id }: { id: string }) {
   const [row, setRow] = useState<Initiative | null>(null);
@@ -41,18 +42,19 @@ export function InitiativeDetail({ id }: { id: string }) {
     };
   }, [id]);
   if (loading) return <LoadingSurface label="Loading initiative…" />;
-  if (loadError)
-    return <QueryError error={loadError} onRetry={() => window.location.reload()} />;
-  if (!row)
+  if (loadError || !row)
     return (
-      <div className="grid h-full place-items-center">
-        <div className="text-center">
-          <h1 className="font-semibold">Initiative not found</h1>
-          <Button asChild variant="link">
-            <Link href="/marketing/initiatives">Back to initiatives</Link>
-          </Button>
-        </div>
-      </div>
+      <AccessGate
+        token="marketing_initiative"
+        id={id}
+        error={loadError}
+        onRetry={() => window.location.reload()}
+        fallbackHref="/marketing/initiatives"
+        fallbackLabel="Back to initiatives"
+        renderFault={(error) => (
+          <QueryError error={error} onRetry={() => window.location.reload()} />
+        )}
+      />
     );
   const budget =
     row.budget_amount == null

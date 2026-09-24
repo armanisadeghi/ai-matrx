@@ -363,32 +363,57 @@ export function describeRowAction(action: RowAction, fields: readonly RowActionF
 }
 
 /**
- * The message an `agent` action sends: the prompt, then the row exactly as
- * stored, named by its label. The table itself reaches the agent through the
- * data-tables surface scope (columns, visible rows, write tools), so the
- * message only needs to say WHICH row and WHAT to do.
+ * What an `agent` action OFFERS its job, `data.row_action` (declared in aidream
+ * `client_mandates.py`, Provision `data.table_row_action`) — keyed by the
+ * Provision's offered-value names. The row, the table and the person travel
+ * HERE, as the job's supplied offer; the action's prompt is the only human text
+ * and rides the turn as user input. Until 2026-09-23 the whole row was folded
+ * into `user_input` as prose — structured data smuggled through the human
+ * channel (THE USER-INPUT LAW).
+ *
+ * `row_json` is the row exactly as stored; `row_fields_summary` is the same row
+ * one line per column in column order, labelled by display name, for a holder
+ * that should not have to parse JSON.
  */
-export function agentActionMessage(args: {
+export function agentActionOffer(args: {
   action: RowAction;
+  tableId: string;
   tableName: string;
   rowLabel: string;
   row: { id: string; data: Record<string, unknown> };
   fields: readonly RowActionField[];
-}): string {
-  const lines = args.fields
-    .slice()
-    .sort((a, b) => (a.field_order ?? 0) - (b.field_order ?? 0))
+  actingPersonId: string | null;
+  actingPersonCanEdit: boolean;
+}): Record<string, string | boolean | Record<string, unknown>> {
+  // `table_columns` is an object ({ columns: [...] }) so every structured value
+  // on this offer is a JSON object, never a bare array.
+  const ordered = args.fields.slice().sort((a, b) => (a.field_order ?? 0) - (b.field_order ?? 0));
+  const summary = ordered
     .map((f) => {
       const v = args.row.data?.[f.field_name];
       const shown = v === null || v === undefined || v === "" ? "(empty)" : typeof v === "object" ? JSON.stringify(v) : String(v);
-      return `- ${f.display_name}: ${shown}`;
-    });
-  return [
-    (args.action.prompt ?? "").trim(),
-    "",
-    `Row "${args.rowLabel || args.row.id}" (id ${args.row.id}) from the table "${args.tableName}":`,
-    ...lines,
-    "",
-    "The table is open in front of me; use the data-table tools here to read more of it or to change cells of this row.",
-  ].join("\n");
+      return `${f.display_name}: ${shown}`;
+    })
+    .join("\n");
+  const prompt = (args.action.prompt ?? "").trim();
+  return {
+    table_id: args.tableId,
+    table_name: args.tableName,
+    table_columns: {
+      columns: ordered.map((f) => ({
+        display_name: f.display_name,
+        field_name: f.field_name,
+        data_type: f.data_type,
+      })),
+    },
+    row_id: args.row.id,
+    row_label: args.rowLabel || args.row.id,
+    row_json: { ...(args.row.data ?? {}) },
+    row_fields_summary: summary,
+    action_name: args.action.name,
+    // Optional values are omitted when blank — a blank is missing, not an answer.
+    ...(prompt ? { action_prompt: prompt } : {}),
+    ...(args.actingPersonId ? { acting_person_id: args.actingPersonId } : {}),
+    acting_person_can_edit: args.actingPersonCanEdit,
+  };
 }

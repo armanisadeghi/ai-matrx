@@ -58,16 +58,20 @@ import type {
   TableMetadata,
 } from "../types";
 import type { RecordStoreHome } from "./table-home";
-import { migrateRetype } from "./record-store-grid";
+import { migrateRetype, readRecordsInViewOrder, viewRecordOrderSet } from "./record-store-grid";
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
 import {
   choiceFromOption,
   jsonbText,
   olderColumnFromField,
   olderRowData,
+  olderRowOrdering,
   searchRowsLikeTheOlderStore,
   sortRowsLikeTheOlderStore,
+  storeDefaultSort,
   storeValue,
+  withHandOrder,
+  type StoreHandOrder,
 } from "./record-store-shape";
 
 /**
@@ -208,6 +212,113 @@ async function readEveryRow(
   return { success: true, data: out };
 }
 
+// ─── G13: the hand-set row order ─────────────────────────────────────────────
+//
+// The older grid kept ONE hand-made order per table (`row_ordering_config = {enabled, order}`).
+// The store keeps an order on a VIEW (G13, `platform.saved_view.metadata.record_positions`) and
+// the Table says whether it is ordered by hand (`row_order: "manual" | "sorted"`). So the Sheet's
+// order is: the Table says `manual`, and the order is the one kept on the Table's hand-ordered
+// view (the oldest of its views whose definition says `order: "manual"`; the Sheet declares one
+// named HAND_ORDER_VIEW the first time a person saves an order). Where the doors are not on the
+// database yet the capability is ABSENT (`hand_order` carries the store's sentence) and the
+// Reorder control is not drawn — never a button that cannot save.
+
+const HAND_ORDER_VIEW = "Hand-set order";
+const NO_VIEW = "00000000-0000-0000-0000-000000000000";
+
+type HandOrder = StoreHandOrder & { viewId: string | null };
+
+async function tableViews(
+  client: RecordsClient,
+  tableId: string,
+): Promise<Array<{ view_id: string; created_at: string; definition?: Record<string, unknown> | null }>> {
+  const views = await client.views({ table_id: tableId });
+  if (!views.ok) return [];
+  // `definition` is on every row the door answers (S0 one saved view); the installed client's
+  // type predates it, so it is read as the door's own shape.
+  return (views.data as unknown as Array<{ view_id: string; created_at: string; definition?: Record<string, unknown> | null }>)
+    .slice()
+    .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+}
+
+const handOrderPresence = new Map<string, Promise<string | null>>();
+
+/** Null when the store keeps hand-set orders here; else the store's sentence for why not. */
+function handOrderDoorAbsent(home: RecordStoreHome): Promise<string | null> {
+  let known = handOrderPresence.get(home.organizationId);
+  if (!known) {
+    known = readRecordsInViewOrder(home, NO_VIEW, 1, 0).then((probe) => (!probe.ok && probe.absent ? probe.error.message : null));
+    handOrderPresence.set(home.organizationId, known);
+  }
+  return known;
+}
+
+function manualViewId(views: Awaited<ReturnType<typeof tableViews>>): string | null {
+  return views.find((v) => v.definition?.order === "manual")?.view_id ?? null;
+}
+
+async function handOrderViewId(client: RecordsClient, tableId: string): Promise<string | null> {
+  return manualViewId(await tableViews(client, tableId));
+}
+
+async function readHandOrder(
+  home: RecordStoreHome,
+  client: RecordsClient,
+  tableId: string,
+  rowOrder: unknown,
+): Promise<HandOrder> {
+  const views = await tableViews(client, tableId);
+  const viewId = manualViewId(views);
+  if (!viewId) {
+    // No hand-ordered view yet: is the door on this database at all? Asked ONCE per
+    // organization per page load (a view that cannot exist, so a present door answers 23503
+    // and an absent one PGRST202) — never once per table open.
+    const absent = await handOrderDoorAbsent(home);
+    if (absent) return { status: absent, enabled: false, order: [], viewId: null };
+    return { status: "served", enabled: rowOrder === "manual", order: [], viewId: null };
+  }
+  const order: string[] = [];
+  for (let offset = 0; ; ) {
+    const page = await readRecordsInViewOrder(home, viewId, READ_PAGE, offset);
+    if (!page.ok) return { status: page.error.message, enabled: false, order: [], viewId };
+    if (page.data.length === 0) break;
+    for (const row of page.data) if (row.position !== null && row.position !== undefined) order.push(row.id);
+    offset += page.data.length;
+    if (offset > READ_CEILING) break;
+  }
+  return { status: "served", enabled: rowOrder === "manual", order, viewId };
+}
+
+/** Turn the hand-set order on with this order, or off (the Table goes back to its sort). */
+export async function setRowOrdering(
+  home: RecordStoreHome,
+  args: { tableId: string; enabled: boolean; order: string[] },
+): Promise<ServiceResult<null>> {
+  const client = clientFor(home);
+  if (!args.enabled) {
+    const off = await client.recordUpdate({ record_id: args.tableId, patch: { row_order: "sorted" } });
+    invalidateRecordStoreTable(args.tableId);
+    return off.ok ? { success: true, data: null } : refused(off.error);
+  }
+  let viewId = await handOrderViewId(client, args.tableId);
+  if (!viewId) {
+    const made = await client.viewDeclare({
+      table_id: args.tableId,
+      spec: { name: HAND_ORDER_VIEW, definition: { layout: "grid" } },
+    });
+    if (!made.ok) return refused(made.error);
+    viewId = made.data;
+  }
+  const kept = await viewRecordOrderSet(home, viewId, args.order);
+  if (!kept.ok) {
+    invalidateRecordStoreTable(args.tableId);
+    return refused(kept.error);
+  }
+  const on = await client.recordUpdate({ record_id: args.tableId, patch: { row_order: "manual" } });
+  invalidateRecordStoreTable(args.tableId);
+  return on.ok ? { success: true, data: null } : refused(on.error);
+}
+
 async function readSnapshot(home: RecordStoreHome, tableId: string): Promise<ServiceResult<Snapshot>> {
   const client = clientFor(home);
   const [tableRead, fieldsRead, levelRead] = await Promise.all([
@@ -232,6 +343,7 @@ async function readSnapshot(home: RecordStoreHome, tableId: string): Promise<Ser
   const metadata: Record<string, unknown> = {};
   if (decorations.ok) metadata.style = olderStyle(decorations.data, fields);
   if (actions.ok) metadata.row_actions = olderRowActions(actions.data.actions, fields);
+  const hand = await readHandOrder(home, client, tableId, document.row_order);
   const titleField = typeof document.title_field === "string" ? document.title_field : null;
   if (titleField && fields.some((f) => f.key === titleField)) {
     metadata.row_label = { kind: "field", field: titleField };
@@ -241,13 +353,14 @@ async function readSnapshot(home: RecordStoreHome, tableId: string): Promise<Ser
   metadata.record_store = {
     colors: decorations.ok ? "served" : decorations.error.message,
     row_actions: actions.ok ? "served" : actions.error.message,
+    hand_order: hand.status,
   };
   return {
     success: true,
     data: {
       table: asDataset(tableId, home, document, level ? String(level) : null, {
         metadata,
-        rowOrdering: olderRowOrdering(document.default_sort, fields),
+        rowOrdering: withHandOrder(olderRowOrdering(document.default_sort, fields), hand),
       }),
       fields,
       columns,
@@ -782,13 +895,6 @@ function storeRowActions(actions: ReadonlyArray<Record<string, unknown>>, fields
   return out;
 }
 
-/** The Table's `default_sort` (the store's own key: `[{key, direction}]`) as the older config. */
-function olderRowOrdering(defaultSort: unknown, fields: readonly Field[]): Record<string, unknown> | null {
-  const first = Array.isArray(defaultSort) ? (defaultSort[0] as { key?: unknown; direction?: unknown } | undefined) : undefined;
-  if (!first || typeof first.key !== "string" || !fields.some((f) => f.key === first.key)) return null;
-  return { default_sort: { field: first.key, direction: first.direction === "desc" ? "desc" : "asc" } };
-}
-
 async function fieldsOf(home: RecordStoreHome, tableId: string): Promise<ServiceResult<Field[]>> {
   const snap = await snapshot(home, tableId);
   if (!snap.success) return snap;
@@ -907,7 +1013,7 @@ export async function setDefaultSort(
   home: RecordStoreHome,
   args: { tableId: string; sortField?: string; sortDirection?: "asc" | "desc" },
 ): Promise<ServiceResult<null>> {
-  const value = args.sortField ? [{ key: args.sortField, direction: args.sortDirection ?? "asc" }] : [];
+  const value = storeDefaultSort(args.sortField, args.sortDirection);
   const written = await clientFor(home).recordUpdate({ record_id: args.tableId, patch: { default_sort: value } });
   invalidateRecordStoreTable(args.tableId);
   if (!written.ok) return refused(written.error);

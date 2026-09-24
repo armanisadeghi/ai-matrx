@@ -114,7 +114,7 @@ export function TextView({ mapId, siteId }: MapViewProps) {
           <TopicalMapLoading what="this map's topics" />
         ) : tree.isError ? (
           <div className="mt-3">
-            <TopicalMapFailed what="this map's topics" error={tree.error} />
+            <TopicalMapFailed what="this map's topics" error={tree.error} mapId={mapId} />
           </div>
         ) : !markdown ? (
           <div className="mt-3">

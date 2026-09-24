@@ -274,9 +274,8 @@ async function openInterviewLane(rulebookId: string): Promise<void> {
 }
 
 /**
- * Let the lane finish opening. `useAdoptRecordOrganization` gives a real
- * session restore a bounded head start before it adopts the record's own
- * organization, so the clock has to move; the promise flushes let the two
+ * Let the lane finish opening. The clock has to move (bounded waits in the
+ * reads); the promise flushes let the two
  * Supabase reads, the knob ladder and the plan write settle.
  */
 async function settle(): Promise<void> {

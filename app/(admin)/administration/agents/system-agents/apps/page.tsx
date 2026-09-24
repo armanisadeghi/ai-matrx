@@ -11,8 +11,6 @@ import {
   ArrowUpRight,
   ExternalLink,
   Loader2,
-  Plus,
-  RefreshCw,
   Trash2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -119,7 +117,8 @@ export default function AdminSystemAppsListPage() {
   }, []);
 
   useEffect(() => {
-    void load(false);
+    const timer = window.setTimeout(() => void load(false), 0);
+    return () => window.clearTimeout(timer);
   }, [load]);
 
   const handleOpenEditor = (id: string) => {
@@ -313,21 +312,8 @@ export default function AdminSystemAppsListPage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex-shrink-0 px-4 py-3 border-b border-border bg-card">
-        <div className="flex items-center justify-end gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <AppLink href="/administration/agents/system-agents/apps/new">
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-1.5" />
-                New system app
-              </Button>
-            </AppLink>
-          </div>
-        </div>
-      </div>
-
       <div className="flex-1 overflow-y-auto">
-        <div className="container mx-auto max-w-[1600px] px-4 py-4">
+        <div className="w-full px-4 py-4">
           {loading ? (
             <Card>
               <CardContent className="p-12 flex items-center justify-center text-muted-foreground">
@@ -353,6 +339,7 @@ export default function AdminSystemAppsListPage() {
                   isFetching={refreshing}
                   pageSize={50}
                   coverage={{
+                    total: apps.length < 500 ? apps.length : undefined,
                     cap: 500,
                     answeredBy: "client",
                     noun: "loaded system app",
@@ -366,8 +353,18 @@ export default function AdminSystemAppsListPage() {
                     title: "System apps",
                     search: true,
                     searchPlaceholder: "Search system apps…",
+                    add: {
+                      onAdd: () =>
+                        pushAppHref(
+                          router,
+                          "/administration/agents/system-agents/apps/new",
+                        ),
+                    },
+                    refresh: {
+                      onRefresh: () => load(true),
+                      label: "Refresh system apps",
+                    },
                     actions: (
-                      <div className="flex items-center gap-1">
                         <CopyButtons
                           size="icon"
                           label="Visible system apps"
@@ -395,11 +392,6 @@ export default function AdminSystemAppsListPage() {
                             ],
                           }}
                         />
-                        <Button variant="outline" size="sm" onClick={() => void load(true)} disabled={refreshing}>
-                          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-                          Refresh
-                        </Button>
-                      </div>
                     ),
                   }}
                   copy={false}

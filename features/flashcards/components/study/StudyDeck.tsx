@@ -39,6 +39,7 @@ import {
   Flame,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { cn } from "@/lib/utils";
 import FlashcardItem from "@/components/mardown-display/blocks/flashcards/FlashcardItem";
@@ -680,6 +681,43 @@ export function StudyDeck(props: StudyDeckProps) {
       <div className="flex h-full items-center justify-center bg-textured">
         <MatrxMiniLoader />
       </div>
+    );
+  }
+
+  // A set-scoped driver (study / learn) failed to open ITS set: denied,
+  // deleted, never existed, or signed out all read as the same failed load, so
+  // the access gate asks the platform which one it is. Cross-set drivers (due
+  // review, weak-area drill) omit setId and keep the plain error below. The one
+  // honest sentence the gate cannot say — "you're offline and this deck isn't
+  // downloaded" — stays as the fault rendering while the device is offline.
+  if (error && setId) {
+    const offline =
+      typeof navigator !== "undefined" && navigator.onLine === false;
+    return (
+      <Shell>
+        <AccessGate
+          token="fc_set"
+          id={setId}
+          error={error}
+          renderFault={
+            offline
+              ? (fault) => (
+                  <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-16 text-center">
+                    <AlertCircle className="h-6 w-6 text-muted-foreground" />
+                    <p className="text-sm font-medium text-foreground">
+                      {errorTitle}
+                    </p>
+                    <p className="max-w-md text-xs text-muted-foreground">
+                      {String(fault)}
+                    </p>
+                  </div>
+                )
+              : undefined
+          }
+          fallbackHref="/education/flashcards"
+          fallbackLabel="Flashcards"
+        />
+      </Shell>
     );
   }
 

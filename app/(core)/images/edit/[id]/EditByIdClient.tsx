@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileName } from "@/features/files/redux/selectors";
 import { useMediaResolution } from "@ai-matrx/media/core";
@@ -31,8 +32,25 @@ interface Props {
  * HEAD-style anonymous probe.)
  */
 export default function EditByIdClient({ cloudFileId, folder }: Props) {
-  const url = useMediaResolution(cloudFileId).resolution?.src ?? null;
+  const media = useMediaResolution(cloudFileId);
+  const url = media.resolution?.src ?? null;
   const fileName = useAppSelector((s) => selectFileName(s, cloudFileId));
+
+  // The resolver refused the file (denied, deleted, missing). Without this the
+  // page spun "Loading image…" forever. The gate asks the platform which state
+  // it is and offers the way forward.
+  if (media.status === "unavailable") {
+    return (
+      <div className="h-full w-full overflow-hidden bg-background">
+        <AccessGate
+          token="file"
+          id={cloudFileId}
+          fallbackHref="/images"
+          fallbackLabel="Your images"
+        />
+      </div>
+    );
+  }
 
   if (!url) {
     return (

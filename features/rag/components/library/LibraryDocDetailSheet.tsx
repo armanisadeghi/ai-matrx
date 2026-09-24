@@ -31,6 +31,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+// The delete confirmation is an AlertDialog so it blocks (policy ai-reachable-everywhere);
+// the rename form stays the ordinary, non-blocking Dialog.
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogFooter,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1062,15 +1072,15 @@ export function LibraryDocDetailSheet({
       </Dialog>
 
       {/* Delete confirm dialog (two modes — processing-only vs full file) */}
-      <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
+      <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
               {confirmDeleteMode === "file"
                 ? "Delete this file entirely?"
                 : "Delete the processing only?"}
-            </DialogTitle>
-            <DialogDescription>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
               {doc && confirmDeleteMode === "file" && (
                 <>
                   {/* THE DOOR LAW on a DESTRUCTIVE confirm: this is about to
@@ -1117,9 +1127,9 @@ export function LibraryDocDetailSheet({
                   <strong>kept</strong> — re-process anytime to rebuild.
                 </>
               )}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
             <Button
               variant="outline"
               onClick={() => setConfirmDeleteOpen(false)}
@@ -1137,9 +1147,9 @@ export function LibraryDocDetailSheet({
                   ? "Delete file"
                   : "Delete processing"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

@@ -29,8 +29,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
+import { resolveFieldFormat } from "@/lib/field-formats/format";
 import type { FieldFormatConfig, FieldFormatId } from "@/lib/field-formats/types";
 
 import { FORMULA_FUNCTIONS, parseFormula } from "../formulas";
@@ -61,14 +63,27 @@ type Props = {
   /** The column's current format config (id must be `formula`). */
   value: FieldFormatConfig;
   onChange: (next: FieldFormatConfig) => void;
-  /** The table's other columns — offered as reference chips. */
-  siblingFields: { field_name: string; display_name: string }[];
+  /**
+   * The table's other columns — offered as reference chips. `data_type` and
+   * `metadata` (when the host holds them) let "Help with this…" tell its job
+   * each column's type and format.
+   */
+  siblingFields: {
+    field_name: string;
+    display_name: string;
+    data_type?: string;
+    metadata?: unknown;
+  }[];
   disabled?: boolean;
   className?: string;
   /** Default `column`. */
   purpose?: FormulaPurpose;
   /** For `row-action`: the column the result is written into. */
   targetColumnName?: string;
+  /** For `row-action`: that column's type — the type the result must be. */
+  targetColumnType?: string;
+  /** One real row of the table, keyed by field_name, when the host holds one. */
+  sampleRow?: Record<string, unknown> | null;
 };
 
 const EMPTY_TEXT: Record<FormulaPurpose, string> = {
@@ -93,6 +108,8 @@ export function FormulaExpressionEditor({
   className,
   purpose = "column",
   targetColumnName,
+  targetColumnType,
+  sampleRow,
 }: Props) {
   const expression = value.options?.formula?.expression ?? "";
   const resultFormat = value.options?.formula?.resultFormat ?? "text";
@@ -170,10 +187,11 @@ export function FormulaExpressionEditor({
             Formula
           </Label>
           {/* The PLATFORM text box (ARE-020): microphone, and the … menu with
-              "Help with this…" carrying the columns, the functions and what
-              the formula is for, so an agent can write it. Prose clean-up is
-              off: it would mangle syntax. The "describe it" primitive
-              (ARE-021) replaces this interim help. */}
+              "Help with this…" running THIS box's job, `data.formula_writing`
+              (declared in aidream client_mandates.py, Provision
+              `data.formula_box`). Each item below travels by its key as an
+              offered value of that job — never inside the person's message.
+              Prose clean-up is off: it would mangle syntax. */}
           <ProTextarea
             id="formula-expression"
             value={expression}
@@ -185,6 +203,7 @@ export function FormulaExpressionEditor({
             className="font-mono text-sm"
             enableCleanup={false}
             enableHelpWithThis
+            helpMandateKey={MANDATE_KEYS.data__formula_writing}
             surfaceName="matrx-user/data-tables"
             helpContextItems={[
               {
@@ -205,8 +224,8 @@ export function FormulaExpressionEditor({
                 value: siblingFields.map((f) => `{${f.display_name}}`).join(", ") || "(none)",
               },
               {
-                id: "formula-functions",
-                key: "formula_functions",
+                id: "formula-language",
+                key: "formula_language",
                 label: "Formula language",
                 value: FORMULA_FUNCTIONS.map((fn) => `${fn.signature} — ${fn.description}`).join("\n") +
                   "\nOperators: + - * / % for numbers, & joins text, = != < <= > >= compare. Text in double quotes.",
@@ -215,7 +234,60 @@ export function FormulaExpressionEditor({
                 id: "formula-current",
                 key: "formula_current",
                 label: "The formula as it stands",
-                value: expression || "(empty)",
+                // Blank is missing, never "(empty)" — an empty box offers nothing.
+                value: expression,
+              },
+              {
+                id: "formula-target-type",
+                key: "target_column_type",
+                label: "The type the result must be",
+                value:
+                  purpose === "row-action"
+                    ? (targetColumnType ?? "")
+                    : purpose === "row-label"
+                      ? "text"
+                      : resultFormat,
+              },
+              {
+                id: "formula-columns-detail",
+                key: "formula_columns_detail",
+                label: "The columns in full",
+                value: JSON.stringify(
+                  siblingFields.map((f) => ({
+                    display_name: f.display_name,
+                    field_name: f.field_name,
+                    ...(f.data_type ? { data_type: f.data_type } : {}),
+                    ...(f.data_type
+                      ? { format: resolveFieldFormat(f.data_type, f.metadata).id }
+                      : {}),
+                  })),
+                ),
+              },
+              {
+                id: "formula-parse-error",
+                key: "formula_parse_error",
+                label: "What is wrong with the formula",
+                value: status.tone === "error" ? status.text : "",
+              },
+              {
+                id: "formula-sample-row",
+                key: "sample_row",
+                label: "A real row of this table",
+                value: sampleRow
+                  ? JSON.stringify(
+                      Object.fromEntries(
+                        siblingFields
+                          .filter((f) => f.field_name in sampleRow)
+                          .map((f) => [f.display_name, sampleRow[f.field_name]]),
+                      ),
+                    )
+                  : "",
+              },
+              {
+                id: "formula-target-name",
+                key: "target_column_name",
+                label: "The column the result is written into",
+                value: purpose === "row-action" ? (targetColumnName ?? "") : "",
               },
             ]}
           />

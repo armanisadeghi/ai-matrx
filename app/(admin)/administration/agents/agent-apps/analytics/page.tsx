@@ -14,11 +14,10 @@
  * shape is the same: overview cards on top, per-app table below.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -27,22 +26,23 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Activity,
-  BarChart3,
   CheckCircle,
   Clock,
   DollarSign,
-  HelpCircle,
-  TrendingUp,
   Users,
-  XCircle,
 } from "lucide-react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import {
   fetchAgentAppsAdmin,
   type AgentAppAdminView,
 } from "@/lib/services/agent-apps-admin-service";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { isUuidValue } from "@/components/official/entity-ref/doors";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { humanAgentApp } from "@/features/agent-apps/format";
 import { UNKNOWN_DISPLAY, formatCount, formatDurationMs, formatPercentFromFraction, formatUsd, isKnownNumber, safeRatio } from "@ai-matrx/kit/format";
@@ -52,31 +52,221 @@ import {
   createAdminAgentAppsScope,
 } from "@/features/surfaces/manifests/admin-agent-apps.manifest";
 
+export const ANALYTICS_COVERAGE = { noun: "app", answeredBy: "client" } as const;
+
+export function analyticsSlugDisplay(slug: string): string {
+  return isUuidValue(slug) ? slug.slice(0, 8) : slug;
+}
+
+export const ANALYTICS_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
+  {
+    id: "name",
+    header: "App",
+    accessorKey: "name",
+    filter: "text",
+    width: 220,
+    cell: (app) => (
+      <EntityRef token="app" id={app.id} name={app.name} showIcon={false} />
+    ),
+  },
+  {
+    id: "slug",
+    header: "Slug",
+    accessorKey: "slug",
+    filter: "text",
+    width: 150,
+    mobileHidden: true,
+    cell: (app) =>
+      isUuidValue(app.slug) ? (
+        <MatrxUuidCell value={app.slug} label="Agent app slug" />
+      ) : (
+        <code className="block truncate text-xs" title={app.slug}>
+          {analyticsSlugDisplay(app.slug)}
+        </code>
+      ),
+  },
+  {
+    id: "status",
+    header: "Status",
+    accessorKey: "status",
+    filter: "select",
+    filterOptions: ["draft", "published", "archived", "suspended"].map(
+      (value) => ({ value, label: value }),
+    ),
+    width: 120,
+    cell: (app) => <Badge variant="outline">{app.status}</Badge>,
+  },
+  {
+    id: "category",
+    header: "Category",
+    accessorFn: (app) => app.category ?? "",
+    filter: "text",
+    width: 140,
+    mobileHidden: true,
+    cell: (app) => app.category ?? UNKNOWN_DISPLAY,
+  },
+  {
+    id: "executions",
+    header: "Executions",
+    accessorKey: "total_executions",
+    filter: "number",
+    width: 110,
+    className: "text-right tabular-nums",
+    cell: (app) => formatCount(app.total_executions),
+  },
+  {
+    id: "unique-users",
+    header: "Users",
+    accessorKey: "unique_users_count",
+    filter: "number",
+    width: 90,
+    className: "text-right tabular-nums",
+    mobileHidden: true,
+    cell: (app) => formatCount(app.unique_users_count),
+  },
+  {
+    id: "success-rate",
+    header: "Success",
+    accessorFn: (app) =>
+      isKnownNumber(app.success_rate) ? app.success_rate * 100 : null,
+    filter: "number",
+    width: 100,
+    className: "text-right tabular-nums",
+    cell: (app) => formatPercentFromFraction(app.success_rate),
+  },
+  {
+    id: "avg-execution-time",
+    header: "Avg. time",
+    accessorKey: "avg_execution_time_ms",
+    filter: "number",
+    width: 115,
+    className: "text-right tabular-nums",
+    mobileHidden: true,
+    cell: (app) =>
+      formatDurationMs(app.avg_execution_time_ms, {
+        style: "compact",
+        fallback: UNKNOWN_DISPLAY,
+      }),
+  },
+  {
+    id: "cost",
+    header: "Cost",
+    accessorKey: "total_cost",
+    filter: "number",
+    width: 100,
+    className: "text-right tabular-nums",
+    cell: (app) => formatUsd(app.total_cost, { digits: 4 }),
+  },
+  {
+    id: "tokens",
+    header: "Tokens",
+    accessorKey: "total_tokens_used",
+    filter: "number",
+    width: 110,
+    className: "text-right tabular-nums",
+    mobileHidden: true,
+    cell: (app) => formatCount(app.total_tokens_used),
+  },
+  {
+    id: "last-execution",
+    header: "Last run",
+    accessorFn: (app) => app.last_execution_at ?? null,
+    filter: "date",
+    width: 150,
+    mobileHidden: true,
+    cell: (app) =>
+      app.last_execution_at ? (
+        <time dateTime={app.last_execution_at} className="text-xs text-muted-foreground">
+          {new Date(app.last_execution_at).toLocaleString()}
+        </time>
+      ) : (
+        UNKNOWN_DISPLAY
+      ),
+  },
+  {
+    id: "featured",
+    header: "Featured",
+    accessorKey: "is_featured",
+    filter: "boolean",
+    width: 100,
+    mobileHidden: true,
+  },
+  {
+    id: "verified",
+    header: "Verified",
+    accessorKey: "is_verified",
+    filter: "boolean",
+    width: 100,
+    mobileHidden: true,
+  },
+  {
+    id: "active",
+    header: "Active",
+    accessorFn: (app) =>
+      isKnownNumber(app.total_executions) ? app.total_executions > 100 : null,
+    filter: "boolean",
+    width: 90,
+    mobileHidden: true,
+    cell: (app) =>
+      !isKnownNumber(app.total_executions) ? (
+        UNKNOWN_DISPLAY
+      ) : app.total_executions > 100 ? (
+        <Badge variant="outline" className="text-green-600 border-green-600">
+          Active
+        </Badge>
+      ) : (
+        "No"
+      ),
+  },
+];
+
 export default function AgentAppsAnalyticsPage() {
   const [apps, setApps] = useState<AgentAppAdminView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [viewApps, setViewApps] = useState<AgentAppAdminView[]>([]);
   const { toast } = useToast();
+  const tableQuery = useTableUrlState({
+    tableId: "admin-agent-apps-analytics",
+    defaultSort: { id: "executions", direction: "desc" },
+    defaultPageSize: 50,
+  });
 
-  const loadData = useCallback(async () => {
+  const loadData = async () => {
     try {
-      setLoading(true);
-      const data = await fetchAgentAppsAdmin({ limit: 200 });
+      if (apps.length > 0) setRefreshing(true);
+      else setLoading(true);
+      // Omitting `limit` deliberately takes the service's readAllRows path.
+      // Analytics coverage therefore describes every app this admin can read,
+      // rather than a convenient but incomplete first page.
+      const data = await fetchAgentAppsAdmin();
       setApps(data);
+      setViewApps(data);
+      setLoadError(null);
     } catch (error) {
       console.error("Error loading agent-app analytics:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to load analytics";
+      setLoadError(message);
       toast({
         title: "Error",
-        description: "Failed to load analytics",
+        description: message,
         variant: "destructive",
       });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, [toast]);
+  };
 
+  const startLoad = useEffectEvent(() => {
+    void loadData();
+  });
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    const timer = window.setTimeout(startLoad, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   // A `?? 0` inside a SUM is the worst version of the lying-screen defect:
   // a row whose cost nobody measured lands in the total as a measured zero
@@ -224,7 +414,7 @@ export default function AgentAppsAnalyticsPage() {
               value={`${executionsPartial.prefix}${formatCount(totals.totalExecutions)}`}
               sub={
                 executionsPartial.caveat ??
-                `Across ${apps.length} app${apps.length === 1 ? "" : "s"}`
+                "Measured execution total"
               }
               copyLabel="Total executions"
               copyAgent={() => ({
@@ -296,166 +486,71 @@ export default function AgentAppsAnalyticsPage() {
             />
           </div>
 
-          <Card>
-            <CardHeader className="flex-row items-start justify-between gap-2">
-              <div>
-                <CardTitle>App Performance</CardTitle>
-                <CardDescription>
-                  Per-app aggregates from `aga_apps`
-                </CardDescription>
-              </div>
-              {apps.length > 0 && (
+          {loadError && (
+            <div role="alert" className="text-sm text-destructive">
+              Could not refresh app analytics: {loadError}{" "}
+              <button type="button" className="underline" onClick={() => void loadData()}>
+                Retry
+              </button>
+            </div>
+          )}
+          <div className="min-h-[32rem]">
+            <MatrxDataTable<AgentAppAdminView>
+              tableId="admin-agent-apps-analytics"
+              data={apps}
+              columns={ANALYTICS_COLUMNS}
+              getRowId={(app) => app.id}
+              isLoading={loading}
+              isFetching={refreshing}
+              stickyHeader
+              pageSize={50}
+              localPagination={{ mode: "progressive" }}
+              query={{ mode: "controlled-local", state: tableQuery.state, onStateChange: tableQuery.onStateChange }}
+              coverage={{ ...ANALYTICS_COVERAGE, total: apps.length }}
+              toolbar={{
+                title: "App performance",
+                search: true,
+                searchPlaceholder: "Search app analytics…",
+                refresh: { onRefresh: loadData, label: "Refresh app analytics" },
+                actions: viewApps.length > 0 ? (
+                  <CopyButtons
+                    size="icon"
+                    label={`App performance (${viewApps.length})`}
+                    human={() => viewApps.map(humanAgentApp).join("\n\n")}
+                    json={() => viewApps}
+                    agent={() => ({
+                      kind: "agent-apps",
+                      location: "AI Matrx Admin — Agent Apps — Analytics",
+                      description: "Per-app performance aggregates currently shown after canonical table filters.",
+                      data: viewApps,
+                      attributes: { count: viewApps.length, totalCount: apps.length },
+                    })}
+                  />
+                ) : undefined,
+              }}
+              detail={{ enabled: false }}
+              window={{ enabled: false }}
+              copy={false}
+              emptyState={{ title: loadError ? "Could not load app analytics." : "No app analytics match the current view." }}
+              onViewChange={setViewApps}
+              rowActions={(app) => (
                 <CopyButtons
-                  size="icon"
-                  label="App performance"
-                  human={() => apps.map(humanAgentApp).join("\n\n")}
-                  json={() => apps}
+                  size="xs"
+                  label={app.name}
+                  human={() => humanAgentApp(app)}
+                  json={() => app}
                   agent={() => ({
-                    kind: "agent-apps",
+                    kind: "agent-app",
                     location: "AI Matrx Admin — Agent Apps — Analytics",
-                    description: "Per-app performance aggregates shown in this table.",
-                    data: apps,
-                    attributes: { count: apps.length },
+                    description: "A single app's performance metrics.",
+                    data: app,
+                    summary: humanAgentApp(app),
+                    attributes: { id: app.id, status: app.status },
                   })}
                 />
               )}
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {apps.map((app) => {
-                  // Three states, not two. `(app.success_rate ?? 0) >= 0.95`
-                  // painted a red X on an app whose success rate nobody has
-                  // measured — an icon asserting failure is the same lie as a
-                  // number asserting zero.
-                  const successOk = isKnownNumber(app.success_rate)
-                    ? app.success_rate >= 0.95
-                    : null;
-                  return (
-                    <div
-                      key={app.id}
-                      className="group/x border border-border rounded-lg p-4 hover:shadow-sm transition-shadow relative"
-                    >
-                      <CopyButtons
-                        size="xs"
-                        label={app.name}
-                        className="absolute top-3 right-3 opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
-                        human={() => humanAgentApp(app)}
-                        json={() => app}
-                        agent={() => ({
-                          kind: "agent-app",
-                          location: "AI Matrx Admin — Agent Apps — Analytics",
-                          description: "A single app's performance card.",
-                          data: app,
-                          summary: humanAgentApp(app),
-                          attributes: { id: app.id, status: app.status },
-                        })}
-                      />
-                      <div className="flex items-start justify-between gap-4 pr-20">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            <h4 className="font-semibold text-foreground">
-                              <EntityRef
-                                token="app"
-                                id={app.id}
-                                name={app.name}
-                                showIcon={false}
-                              />
-                            </h4>
-                            <Badge variant="outline">{app.status}</Badge>
-                            {app.is_featured && (
-                              <Badge variant="outline" className="text-amber-600 border-amber-600">
-                                Featured
-                              </Badge>
-                            )}
-                            {app.is_verified && (
-                              <Badge variant="outline" className="text-blue-600 border-blue-600">
-                                Verified
-                              </Badge>
-                            )}
-                            <EntityRef
-                              token="app"
-                              id={app.id}
-                              name={app.slug}
-                              showIcon={false}
-                            >
-                              <code className="text-xs px-1 py-0.5 bg-muted rounded">
-                                {app.slug}
-                              </code>
-                            </EntityRef>
-                          </div>
-
-                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                            <Stat
-                              icon={<Activity className="w-3 h-3" />}
-                              label="Executions"
-                              value={formatCount(app.total_executions)}
-                            />
-                            <Stat
-                              icon={<Users className="w-3 h-3" />}
-                              label="Unique Users"
-                              value={formatCount(app.unique_users_count)}
-                            />
-                            <Stat
-                              icon={
-                                successOk === null ? (
-                                  <HelpCircle className="w-3 h-3 text-muted-foreground" />
-                                ) : successOk ? (
-                                  <CheckCircle className="w-3 h-3 text-green-600" />
-                                ) : (
-                                  <XCircle className="w-3 h-3 text-red-600" />
-                                )
-                              }
-                              label="Success"
-                              value={formatPercentFromFraction(app.success_rate)}
-                            />
-                            <Stat
-                              icon={<Clock className="w-3 h-3" />}
-                              label="Avg Time"
-                              value={formatDurationMs(app.avg_execution_time_ms, {
-                                style: "compact",
-                                fallback: UNKNOWN_DISPLAY,
-                              })}
-                            />
-                            <Stat
-                              icon={<DollarSign className="w-3 h-3" />}
-                              label="Cost"
-                              value={formatUsd(app.total_cost, { digits: 4 })}
-                            />
-                          </div>
-
-                          {app.last_execution_at && (
-                            <div className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
-                              Last execution:{" "}
-                              {new Date(app.last_execution_at).toLocaleString()}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2 shrink-0">
-                          {(app.total_executions ?? 0) > 100 && (
-                            <Badge
-                              variant="outline"
-                              className="text-green-600 border-green-600"
-                            >
-                              <TrendingUp className="w-3 h-3 mr-1" />
-                              Active
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {apps.length === 0 && (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No analytics data available</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+            />
+          </div>
         </div>
       </ScrollArea>
     </div>
@@ -498,25 +593,5 @@ function OverviewCard({
         agent={copyAgent}
       />
     </Card>
-  );
-}
-
-function Stat({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div>
-      <div className="text-xs text-muted-foreground mb-1">{label}</div>
-      <div className="font-medium flex items-center gap-1">
-        {icon}
-        {value}
-      </div>
-    </div>
   );
 }

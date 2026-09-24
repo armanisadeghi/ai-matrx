@@ -23,10 +23,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createSelector } from "@reduxjs/toolkit";
-import { CircleSlash, Loader2, OctagonX, Pause, Play, RotateCcw } from "lucide-react";
+import { Loader2, OctagonX, Pause, Play, RotateCcw } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import ElapsedTime from "@/components/official-candidate/elapsed-time/ElapsedTime";
 
@@ -68,8 +69,9 @@ import { Intake } from "./Intake";
 
 type Loaded =
   | { state: "loading" }
-  | { state: "missing" }
-  | { state: "error"; message: string }
+  /** `gateId` = the workflow the access gate asks about. */
+  | { state: "missing"; gateId: string }
+  | { state: "error"; gateId: string; error: unknown }
   | {
       state: "ready";
       definitionId: string;
@@ -94,9 +96,9 @@ const makeSelectDurations = (runId: string) =>
   });
 
 export default function SharpRunPage({ id }: { id: string }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [loaded, setLoaded] = useState<Loaded>({ state: "loading" });
+  const [attempt, setAttempt] = useState(0);
 
   // Probe, don't spin: the id is a definition id, else a run id, else a plain
   // honest answer. An access refusal / network failure is its own answer.
@@ -107,7 +109,7 @@ export default function SharpRunPage({ id }: { id: string }) {
     // moment" would promise a retry that can never succeed, so a malformed
     // link is answered as what it is: nothing at this address.
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
-      setLoaded({ state: "missing" });
+      setLoaded({ state: "missing", gateId: id });
       return;
     }
     (async () => {
@@ -138,26 +140,21 @@ export default function SharpRunPage({ id }: { id: string }) {
                 runIdFromPath: id,
               });
             } else {
-              setLoaded({ state: "missing" });
+              // A run whose workflow can't be read gates on THAT workflow.
+              setLoaded({ state: "missing", gateId: definitionId });
             }
           }
           return;
         }
-        if (!cancelled) setLoaded({ state: "missing" });
-      } catch {
-        if (!cancelled) {
-          setLoaded({
-            state: "error",
-            message:
-              "We couldn't reach this workflow right now. It may not be shared with you, or the connection failed — try again in a moment.",
-          });
-        }
+        if (!cancelled) setLoaded({ state: "missing", gateId: id });
+      } catch (error: unknown) {
+        if (!cancelled) setLoaded({ state: "error", gateId: id, error });
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, attempt]);
 
   const runParam = searchParams.get("run");
   const runId =
@@ -179,28 +176,17 @@ export default function SharpRunPage({ id }: { id: string }) {
   if (loaded.state === "missing" || loaded.state === "error") {
     return (
       <Shell title="Workflow">
-        <div className="flex h-full items-center justify-center p-4">
-          <div className="max-w-md rounded-xl border border-border bg-card p-5 text-center">
-            <CircleSlash className="mx-auto h-6 w-6 text-muted-foreground" />
-            <p className="mt-2 text-sm font-medium text-foreground">
-              {loaded.state === "missing"
-                ? "There's nothing at this address"
-                : "We couldn't open this"}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {loaded.state === "missing"
-                ? "This link doesn't match any workflow or run you can see. It may have been removed, or the link was copied incompletely."
-                : loaded.message}
-            </p>
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="mt-3 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
-            >
-              Go back
-            </button>
-          </div>
-        </div>
+        <AccessGate
+          token="workflow"
+          id={loaded.gateId}
+          error={loaded.state === "error" ? loaded.error : undefined}
+          onRetry={() => {
+            setLoaded({ state: "loading" });
+            setAttempt((n) => n + 1);
+          }}
+          fallbackHref="/workflows/all"
+          fallbackLabel="All workflows"
+        />
       </Shell>
     );
   }

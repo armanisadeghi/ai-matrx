@@ -37,6 +37,7 @@ import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
 import { Handle } from "@/features/resizable-panels/Handle";
 import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import {
   activeRoleTabDefaulted,
   selectOpenQuestionCount,
@@ -58,7 +59,8 @@ import { RoomHeader } from "./RoomHeader";
 const LAYOUT_COOKIE = "vision-interview-room-layout-v3";
 
 export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
-  const { retryRoles } = useInterviewRoom(sessionId);
+  const { retryRoles, unavailable, retryHydrate } =
+    useInterviewRoom(sessionId);
   // Stamps dictation audio (already durably saved) onto the human turn the
   // server creates — v2 §13.1 raw-audio capture.
   useTurnAudioAttachment(sessionId);
@@ -76,6 +78,23 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
     defaultedRef.current = true;
     dispatch(activeRoleTabDefaulted({ stage: session.stage }));
   }, [dispatch, hydrated, session]);
+
+  // The session can't be read (missing, deleted, someone else's, or the read
+  // failed) — the canonical gate, never a half-rendered room.
+  if (unavailable) {
+    return (
+      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+        <AccessGate
+          token="interview_session"
+          id={sessionId}
+          error={unavailable.error}
+          onRetry={retryHydrate}
+          fallbackHref="/masterwork/vision-interview"
+          fallbackLabel="Your interviews"
+        />
+      </div>
+    );
+  }
 
   const advanceStage = async () => {
     await resume({ message: "", advanceStage: true });

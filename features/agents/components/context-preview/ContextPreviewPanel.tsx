@@ -48,8 +48,9 @@ import {
   type ContextPreviewState,
 } from "./useContextPreview";
 import { AttachedContextSection } from "./AttachedContextSection";
+import { ContextCompareView } from "./ContextCompareView";
 
-type View = "resolved" | "attached";
+type View = "resolved" | "compare" | "attached";
 
 export interface ContextPreviewPanelProps {
   conversationId?: string;
@@ -596,6 +597,7 @@ export function ContextPreviewPanel({
         {(
           [
             ["resolved", "Resolved"],
+            ["compare", "Old vs new"],
             ["attached", "Attached this turn"],
           ] as const
         ).map(([id, label]) => (
@@ -616,6 +618,8 @@ export function ContextPreviewPanel({
       </div>
       {view === "resolved" ? (
         <ResolvedView preview={preview} agentId={agentId} />
+      ) : view === "compare" ? (
+        <ContextCompareView conversationId={conversationId} agentId={agentId} />
       ) : conversationId ? (
         <AttachedContextSection conversationId={conversationId} />
       ) : (

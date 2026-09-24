@@ -99,11 +99,15 @@ export interface OutsideShareDelivery {
 
 /** Everything the dialog needs to draw itself without guessing anything. */
 export interface OutsideShareState {
-  /** Has this organization opened its outside door at all? */
+  /** False only when an administrator of this organization turned outside sharing off. */
   lane_open: boolean;
   /** May THIS viewer invite an outside person to THIS table? */
   may_invite: boolean;
-  /** May THIS viewer turn the outside lane on? (owner/admin of the org) */
+  /**
+   * Still answered by the store; deliberately NOT drawn (SHARE-GATE-OFF). The
+   * outside lane is on by default and is an administrator's setting, never a
+   * control in the share flow.
+   */
   may_open_lane: boolean;
   /** The level this viewer holds on the table. `null` means none. */
   my_level: string | null;
@@ -280,33 +284,4 @@ export async function acceptOutsideShare(token: string): Promise<{
   });
   if (error) throw new Error(error.message);
   return data as unknown as Awaited<ReturnType<typeof acceptOutsideShare>>;
-}
-
-/**
- * TURNING THE ORGANIZATION'S OUTSIDE DOOR ON. The platform's own knob writer,
- * which admits an owner or an administrator of the organization and nobody
- * else — the screen only draws this when `may_open_lane` said yes, so it is
- * never a control that looks live and is not.
- */
-export async function openOutsideLane(organizationId: string): Promise<void> {
-  const { data, error } = await createClient()
-    .schema("platform")
-    .rpc("knob_override_set", {
-      p_feature: "custom",
-      p_key: "external_principal_enabled",
-      p_scope_kind: "organization",
-      p_scope_id: organizationId,
-      p_organization_id: organizationId,
-      p_value: true,
-      p_note: "Turned on from the Share dialog, to share a table with somebody outside.",
-    });
-  if (error) throw new Error(error.message);
-  const answer = data as { ok?: boolean; detail?: string; reason?: string } | null;
-  if (!answer?.ok) {
-    throw new Error(
-      answer?.detail ??
-        answer?.reason ??
-        "The organization's outside door could not be opened, and the switch did not say why.",
-    );
-  }
 }

@@ -8,8 +8,17 @@ import { OrgResourceList } from "@/features/organizations/components/OrgResource
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase/client";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
+import { recordsDataSource } from "@ai-matrx/records-ui";
+import { WhereItLives } from "@/features/unified-data/where-it-lives/WhereItLives";
 
 const SELECT_COLS = "id, table_name, description, version, updated_at";
+
+/**
+ * Which cards are record-store Tables — only those say where they live and can move
+ * (`WhereItLives`); the older datasets have no such door. Filled by `fetchOwned` before the
+ * list renders its cards.
+ */
+const storeTableIds = new Set<string>();
 
 /**
  * The organization's tables, from BOTH stores (lane INTEG-CLIENTS, CUTOVER-PLAN F12): its live
@@ -35,6 +44,7 @@ const fetchOwned = async (orgId: string) => {
   const seen = new Set(rows.map((r) => String(r.id)));
   const tables = ((store.data as { tables?: unknown } | null)?.tables ?? []) as Array<Record<string, unknown>>;
   const storeRows = tables.filter((t) => t.store === "records" && !seen.has(String(t.id)));
+  for (const t of storeRows) storeTableIds.add(String(t.id));
   return [...storeRows, ...rows].sort((a, b) =>
     String(b.updated_at ?? "").localeCompare(String(a.updated_at ?? "")),
   );
@@ -54,12 +64,19 @@ export default function OrgTablesPage() {
   const params = useParams();
   const orgIdParam = params.orgId as string;
   const [resolvedOrgId, setResolvedOrgId] = React.useState<string | null>(null);
+  const [orgName, setOrgName] = React.useState<string | null>(null);
+  const [dataSource] = React.useState(() => recordsDataSource(supabase as unknown as SupabaseClient));
+  // A table moved from a card re-reads the list (the moved card leaves this organization's page).
+  const [reread, setReread] = React.useState(0);
 
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
       const org = await getOrganizationBySlugOrId(orgIdParam);
-      if (!cancelled && org) setResolvedOrgId(org.id);
+      if (!cancelled && org) {
+        setResolvedOrgId(org.id);
+        setOrgName(org.name ?? null);
+      }
     })();
     return () => {
       cancelled = true;
@@ -76,6 +93,7 @@ export default function OrgTablesPage() {
         </div>
       ) : (
         <OrgResourceList
+          key={reread}
           orgId={resolvedOrgId}
           resourceType="dataset"
           tableName="udt_datasets"
@@ -86,6 +104,17 @@ export default function OrgTablesPage() {
           emptyDescription="Data tables owned by this organization will appear here, along with tables other members share."
           emptyIcon={
             <Table className="h-8 w-8 text-cyan-600 dark:text-cyan-400" />
+          }
+          renderCardAside={(item) =>
+            storeTableIds.has(item.id) ? (
+              <WhereItLives
+                variant="row"
+                dataSource={dataSource}
+                tableId={item.id}
+                knownOrganizationName={orgName}
+                onMoved={() => setReread((n) => n + 1)}
+              />
+            ) : null
           }
         />
       )}

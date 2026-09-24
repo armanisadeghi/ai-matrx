@@ -29,12 +29,35 @@ import { AgentHydrator } from "@/features/agents/route/AgentHydrator";
  * differ" note. A separate fetch path that resolves the version snapshot
  * lands later.
  */
+function isNotFoundError(error: unknown): boolean {
+  const digest =
+    typeof error === "object" && error !== null && "digest" in error
+      ? (error as { digest?: unknown }).digest
+      : undefined;
+  return (
+    typeof digest === "string" &&
+    (digest === "NEXT_NOT_FOUND" ||
+      digest.startsWith("NEXT_HTTP_ERROR_FALLBACK;404"))
+  );
+}
+
 export async function AgentAppHydratorServer({
   appId,
 }: {
   appId: string;
 }) {
-  const app = await getAgentApp(appId);
+  // getAgentApp() throws notFound() on a null read. Thrown from the [id]
+  // LAYOUT, that escapes [id]/not-found.tsx to the root 404, so a missing /
+  // denied app never reached the access gate. Seed nothing instead (as
+  // AgentHydratorServer does); the page's own getAgentApp() call throws the
+  // notFound() that [id]/not-found.tsx turns into <AccessGate>.
+  let app: Awaited<ReturnType<typeof getAgentApp>>;
+  try {
+    app = await getAgentApp(appId);
+  } catch (error) {
+    if (isNotFoundError(error)) return null;
+    throw error;
+  }
   const agent = await getAgent(app.agent_id).catch(() => null);
   return (
     <>

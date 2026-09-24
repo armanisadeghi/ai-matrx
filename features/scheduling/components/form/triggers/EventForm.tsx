@@ -25,9 +25,11 @@ import {
 } from "@/components/ui/select";
 import {
   getTableMetadata,
-  listUserTables,
+  listTablesEverywhere,
+  rowChangeScheduleFor,
   type UserTableListItem,
 } from "@/features/data-tables/service";
+import { locateTable } from "@/features/data-tables/data-source/locate-table";
 import { isServiceFailure } from "@/features/data-tables/types";
 
 import type { EventConfig } from "../../../types";
@@ -67,9 +69,21 @@ export function EventForm({ value, onChange, error }: Props) {
     error: string | null;
   } | null>(null);
 
+  // What a change to the CHOSEN table is called, asked of where that table lives (lane
+  // INTEG-CLIENTS, CUTOVER-PLAN rev 3 F9): an older table's rows say `user_table_row`; a
+  // record-store table's say `custom_record:<id>` (GRIDPRIM G8). `cannotFire` = a store table on
+  // a database without G8, where a schedule on it would never run — said, never saved silently.
+  const [changeWord, setChangeWord] = useState<{
+    tableId: string;
+    entityType: string | null;
+    error: string | null;
+  } | null>(null);
+
   useEffect(() => {
     let cancelled = false;
-    void listUserTables().then((result) => {
+    // BOTH stores (G9's one list): a moved table used to vanish from this picker, and a schedule
+    // made on it before the move listened for older row events that never come again.
+    void listTablesEverywhere().then((result) => {
       if (cancelled) return;
       if (isServiceFailure(result)) setTablesError(result.error);
       else setTables(result.data);
@@ -99,7 +113,25 @@ export function EventForm({ value, onChange, error }: Props) {
   useEffect(() => {
     if (!chosenTableId) return;
     let cancelled = false;
-    void getTableMetadata({ tableId: chosenTableId }).then((result) => {
+    void (async () => {
+      // Locate first: it PLACES a record-store table, so the column read below and the change
+      // word both go to the store the table lives in.
+      const located = await locateTable(chosenTableId);
+      if (cancelled) return;
+      if (!located.ok) {
+        setChangeWord({ tableId: chosenTableId, entityType: null, error: located.error });
+      } else {
+        const word = await rowChangeScheduleFor({ tableId: chosenTableId });
+        if (cancelled) return;
+        setChangeWord({
+          tableId: chosenTableId,
+          entityType: word?.entityType ?? null,
+          error: word
+            ? null
+            : "This table lives in the record store, and this database cannot run a schedule on its changes yet, so this schedule would never run.",
+        });
+      }
+      const result = await getTableMetadata({ tableId: chosenTableId });
       if (cancelled) return;
       setLoadedColumns(
         isServiceFailure(result)
@@ -110,11 +142,24 @@ export function EventForm({ value, onChange, error }: Props) {
               error: null,
             },
       );
-    });
+    })();
     return () => {
       cancelled = true;
     };
   }, [chosenTableId]);
+  // Keep the saved word in step with where the chosen table lives. Actions of the other store's
+  // vocabulary are dropped with it (a `row.updated` never fires on a store table, and back).
+  const liveWord = changeWord && changeWord.tableId === chosenTableId ? changeWord : null;
+  useEffect(() => {
+    if (!liveWord?.entityType || liveWord.entityType === config.entity_type) return;
+    const toStore = liveWord.entityType.startsWith("custom_record:");
+    const allowed = new Set((toStore ? RECORD_EVENT_ACTIONS : ROW_EVENT_ACTIONS).map((a) => a.value));
+    update({
+      entity_type: liveWord.entityType,
+      actions: (config.actions ?? []).filter((a) => allowed.has(a)),
+    });
+  }, [liveWord?.entityType, liveWord?.tableId]);
+  const cannotFire = liveWord?.error ?? null;
   // Only the answer for the table chosen NOW counts; a stale one reads as loading.
   const current = loadedColumns && loadedColumns.tableId === chosenTableId ? loadedColumns : null;
   const columns = current?.columns ?? null;
@@ -126,10 +171,14 @@ export function EventForm({ value, onChange, error }: Props) {
         ? watched.filter((f) => f !== fieldName)
         : [...watched, fieldName],
     });
-  // A schedule on ONE record-store table: that table is the subject (the grid opened this form
-  // for it), and its change words are the store's own.
+  // A schedule on ONE record-store table: its change words are the store's own.
   const onRecordStoreTable = config.entity_type.startsWith("custom_record:");
   const actionChoices = onRecordStoreTable ? RECORD_EVENT_ACTIONS : ROW_EVENT_ACTIONS;
+  // "Any table" can only mean the older store's tables (a record-store table is named one by
+  // one), so the words say so as soon as this person has a record-store table at all.
+  const anyTableLabel = (tables ?? []).some((t) => t.store === "records")
+    ? "Any of my older tables (pick a table to use a newer one)"
+    : "Any of my tables";
   const toggleAction = (action: string) =>
     update({
       actions: actions.includes(action) ? actions.filter((a) => a !== action) : [...actions, action],
@@ -147,23 +196,21 @@ export function EventForm({ value, onChange, error }: Props) {
         </span>
       </div>
 
-      {onRecordStoreTable ? (
-        <div className="space-y-2">
-          <Label>Table</Label>
-          <p className="text-sm text-muted-foreground">The table you opened this from.</p>
-        </div>
-      ) : (
       <div className="space-y-2">
         <Label htmlFor="ev-table">Table</Label>
         <Select
           value={config.table_id ?? ANY_TABLE}
-          onValueChange={(v) => update({ table_id: v === ANY_TABLE ? undefined : v })}
+          onValueChange={(v) =>
+            // "Any table" listens for the older store's row events: a record-store table is
+            // always named one by one, by its own change word (set once the table is located).
+            v === ANY_TABLE ? update({ table_id: undefined, entity_type: "user_table_row" }) : update({ table_id: v })
+          }
         >
           <SelectTrigger id="ev-table" className="max-w-md">
-            <SelectValue placeholder="Any of my tables" />
+            <SelectValue placeholder={anyTableLabel} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ANY_TABLE}>Any of my tables</SelectItem>
+            <SelectItem value={ANY_TABLE}>{anyTableLabel}</SelectItem>
             {(tables ?? []).map((t) => (
               <SelectItem key={t.id} value={t.id}>
                 {t.table_name}
@@ -172,11 +219,11 @@ export function EventForm({ value, onChange, error }: Props) {
           </SelectContent>
         </Select>
         {tablesError && <p className="text-xs text-destructive">Could not load your tables: {tablesError}</p>}
+        {cannotFire && <p className="text-xs text-destructive">{cannotFire}</p>}
         {tables && tables.length === 0 && (
           <p className="text-xs text-muted-foreground">You have no data tables yet; the schedule will fire for any table you create.</p>
         )}
       </div>
-      )}
 
       <div className="space-y-2">
         <Label>When</Label>

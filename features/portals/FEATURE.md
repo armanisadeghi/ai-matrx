@@ -4,9 +4,22 @@ A client of a business ("Ada Brook Cafes") follows a link, signs in with a one-t
 and sees **her** jobs and **her** invoices and nothing else — on a phone first.
 
 - Routes: `app/(portal)/portal/c/[slug]/page.tsx` (sign-in panel / her portal / "you are not on
-  this portal"), `app/(portal)/portal/c/[slug]/r/[recordId]/page.tsx` (one record), its
-  `actions.ts` (edit + comment), and `app/api/portal/[slug]/sign-in/route.ts` (mint and email the
-  link).
+  this portal"), `app/(portal)/portal/c/[slug]/r/[recordId]/page.tsx` (one record, with its status
+  line), its `actions.ts` (edit + comment), `app/(portal)/portal/c/[slug]/f/[formId]/` (one of her
+  portal's forms, sent through `custom.portal_form_submit` as her), and
+  `app/api/portal/[slug]/sign-in/route.ts` (mint and email the link).
+- **The look (lane S6).** `look.ts` turns the store's resolved style (`custom._portal_style`: the
+  portal's own name, welcome, logo, accent and footer links over the organization's brand) into
+  what `PortalBrand.tsx` draws on every portal screen. Colour classes come from the pure
+  `features/data-tables/table-style.ts` — never `@ai-matrx/design-system/data-table`, whose
+  "use client" barrel hands a server component client references instead of strings.
+- **The status line (lane S6).** `timeline.ts` + `PortalStatusTimeline.tsx`: the stages from
+  `portal_me` (`table.stage`, present only when the portal shows the stage Field) and the moments
+  from the EXISTING history door as her (`custom.record_history`, masked by the door).
+- **Her list is hers.** `shown.ts#isHers` keeps a Table's rows to the ones whose `names_via` Field
+  points at her client record, because a person who can read more (an employee who is also a
+  client) would otherwise see everybody's jobs under her name. A masked `names_via` means the door
+  already scoped the list.
 - The route group is the platform's EXISTING no-grants shell: `app/(portal)/layout.tsx` renders
   `<Providers>` and nothing else. Never add a second shell, and never link this surface to
   anything org-scoped — read [`features/continued-access/FEATURE.md`](../continued-access/FEATURE.md).
@@ -37,3 +50,7 @@ and sees **her** jobs and **her** invoices and nothing else — on a phone first
 
 - **2026-09-20** — Built the outsider's screens (lane W6-PORTAL): sign-in panel, portal list,
   record view with in-place edit and comments, and the magic-link route.
+- **2026-09-24** — Lane S6: the portal's own look on every screen (name, welcome, logo, accent,
+  footer links), a forms list opening each form inside the portal (`f/[formId]`), a read-only
+  status line per record, relation Fields never printed as ids, and lists kept to her own client.
+  Walk: `scripts/campaign-tests/uichamp_s6_portal_walk.mjs` over `_s6_walk_fixture.sql` (clone).

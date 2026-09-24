@@ -17,9 +17,12 @@ import {
   olderDataType,
   olderFormat,
   olderRowData,
+  olderRowOrdering,
+  withHandOrder,
   olderValidationRules,
   searchRowsLikeTheOlderStore,
   sortRowsLikeTheOlderStore,
+  storeDefaultSort,
   storeValue,
 } from "../record-store-shape";
 
@@ -151,6 +154,12 @@ describe("a record document reads back as the row the older grid held", () => {
     expect(storeValue({ data_type: "json" }, { a: 1 })).toBe('{"a":1}');
     expect(storeValue({ data_type: "string" }, "Queued")).toBe("Queued");
     expect(storeValue(undefined, 5)).toBe(5);
+    // Text that is a number, into a number column: what a pasted chat table or CSV carries.
+    expect(storeValue({ data_type: "integer" }, " 3 ")).toBe(3);
+    expect(storeValue({ data_type: "number" }, "18.25")).toBe(18.25);
+    expect(storeValue({ data_type: "number" }, "about 3")).toBe("about 3"); // the store refuses it, in words
+    expect(storeValue({ data_type: "boolean" }, "TRUE")).toBe(true);
+    expect(storeValue({ data_type: "string" }, "3")).toBe("3");
   });
 });
 
@@ -187,5 +196,53 @@ describe("sort and search are the older page door's own rules", () => {
     expect(ids(searchRowsLikeTheOlderStore(rows, "BANANA"))).toBe("d");
     expect(ids(searchRowsLikeTheOlderStore(rows, '"t": "apple"'))).toBe("b");
     expect(ids(searchRowsLikeTheOlderStore(rows, ""))).toBe("cabd");
+  });
+});
+
+describe("a table's saved default sort is read and written in the store's own words", () => {
+  // The value the store holds for the moved "Coding Accounts" table (clone, TABLE-PARITY S2):
+  // default_sort: [{field: "reset_date", direction: "asc"}].
+  const stored = [{ field: "reset_date", direction: "asc" }];
+  const fields = [{ key: "account" }, { key: "reset_date" }];
+
+  it("reads the stored {field} sort as the grid's default sort", () => {
+    expect(olderRowOrdering(stored, fields)).toEqual({ default_sort: { field: "reset_date", direction: "asc" } });
+  });
+
+  it("writes Save as default as {field}, which reads back as the same sort", () => {
+    const written = storeDefaultSort("reset_date", "desc");
+    expect(written).toEqual([{ field: "reset_date", direction: "desc" }]);
+    expect(olderRowOrdering(written, fields)).toEqual({ default_sort: { field: "reset_date", direction: "desc" } });
+  });
+
+  it("still reads a {key} entry this seam wrote before the fix", () => {
+    expect(olderRowOrdering([{ key: "account", direction: "desc" }], fields)).toEqual({
+      default_sort: { field: "account", direction: "desc" },
+    });
+  });
+
+  it("answers no sort for a column the table no longer has, or no saved sort", () => {
+    expect(olderRowOrdering([{ field: "gone", direction: "asc" }], fields)).toBeNull();
+    expect(olderRowOrdering([], fields)).toBeNull();
+    expect(storeDefaultSort(undefined, undefined)).toEqual([]);
+  });
+});
+
+describe("a table's hand-set order (G13) reaches the grid as the older row ordering", () => {
+  // Coding Accounts on production: row_order "manual" and a Reset Date default sort. Three
+  // accounts dragged into an order on its hand-ordered view.
+  const sort = { default_sort: { field: "reset_date", direction: "asc" } };
+  const order = ["49154b37-d134-4e1e-992f-7e95ca4b128e", "fbfbea36-cb6e-4eb1-b787-abeca7f0a7e6", "a68a644c-abc7-49be-9d46-621206e25663"];
+
+  it("hands the grid the order, beside the saved sort, when the store keeps it", () => {
+    expect(withHandOrder(sort, { status: "served", enabled: true, order })).toEqual({ ...sort, enabled: true, order });
+    expect(withHandOrder(null, { status: "served", enabled: true, order: [] })).toEqual({ enabled: true, order: [] });
+  });
+
+  it("hands only the sort when the table is sorted, or the store cannot keep an order", () => {
+    expect(withHandOrder(sort, { status: "served", enabled: false, order })).toBe(sort);
+    expect(
+      withHandOrder(sort, { status: "The record store this page is connected to does not have custom.read_records_in_view_order yet", enabled: true, order }),
+    ).toBe(sort);
   });
 });

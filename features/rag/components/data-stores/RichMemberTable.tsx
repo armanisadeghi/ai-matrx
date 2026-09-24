@@ -14,14 +14,16 @@ import {
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+// The remove confirmation is an AlertDialog: it blocks the page on purpose
+// (policy ai-reachable-everywhere; the ordinary Dialog is a non-blocking window on desktop).
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { QuickSearchDialog } from "@/features/rag/components/library/QuickSearchDialog";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { StatusBadge } from "@/features/rag/components/library/StatusBadge";
@@ -347,23 +349,23 @@ export function RichMemberTable({
         processedDocumentId={searchTarget?.processedDocumentId ?? null}
         documentName={searchTarget?.name ?? null}
       />
-      <Dialog
+      <AlertDialog
         open={confirmRemove !== null}
         onOpenChange={(open) => {
           if (!open) setConfirmRemove(null);
         }}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Remove from store?</DialogTitle>
-            <DialogDescription>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove from store?</AlertDialogTitle>
+            <AlertDialogDescription>
               Removes <strong>{confirmRemove?.name}</strong> from this store
               only. The file itself, its pages,{" "}
               {RAG_VOCAB.segmentsShort.toLowerCase()}, and embeddings are{" "}
               <strong>not</strong> deleted.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
             <Button variant="outline" onClick={() => setConfirmRemove(null)}>
               Cancel
             </Button>
@@ -381,9 +383,9 @@ export function RichMemberTable({
                 "Remove"
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

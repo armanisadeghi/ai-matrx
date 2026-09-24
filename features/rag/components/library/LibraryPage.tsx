@@ -76,14 +76,16 @@ import { ProcessingProgressSheet } from "./ProcessingProgressSheet";
 import { LibraryTrashSheet } from "./LibraryTrashSheet";
 import { ActiveJobsStrip } from "./ActiveJobsStrip";
 import { AnimatedKpiCard } from "./AnimatedKpiCard";
+// The bulk-delete confirmation is an AlertDialog: it blocks the page on purpose
+// (policy ai-reachable-everywhere; the ordinary Dialog is a non-blocking window on desktop).
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { createClient } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -896,16 +898,16 @@ export function LibraryPage() {
       />
 
       {/* Bulk-delete confirm dialog */}
-      <Dialog
+      <AlertDialog
         open={bulkConfirmStatus !== null}
         onOpenChange={(o) => {
           if (!o) setBulkConfirmStatus(null);
         }}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete all {bulkConfirmStatus} documents?</DialogTitle>
-            <DialogDescription>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete all {bulkConfirmStatus} documents?</AlertDialogTitle>
+            <AlertDialogDescription>
               {bulkConfirmStatus === "pending" && (
                 <>
                   This will delete every document of yours where ingestion
@@ -917,7 +919,7 @@ export function LibraryPage() {
               {bulkConfirmStatus === "extracted" && (
                 <>
                   This will delete every document where pages were extracted but
-                  ${RAG_VOCAB.segmentation.toLowerCase()} never ran. Re-process
+                  {RAG_VOCAB.segmentation.toLowerCase()} never ran. Re-process
                   to rebuild.
                 </>
               )}
@@ -927,9 +929,9 @@ export function LibraryPage() {
                   partially missing. Re-process to rebuild.
                 </>
               )}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
             <Button
               variant="outline"
               onClick={() => setBulkConfirmStatus(null)}
@@ -945,9 +947,9 @@ export function LibraryPage() {
             >
               {bulkRunning ? "Deleting…" : "Delete all"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       </div>
     </SurfaceRuntimeProvider>
   );

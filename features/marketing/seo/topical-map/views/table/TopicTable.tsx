@@ -187,7 +187,7 @@ export function TopicTable({ mapId, siteId, host, readOnly, knobs }: TopicTableP
   const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
 
   if (tree.isPending) return <TopicalMapLoading what="this map's topics" />;
-  if (tree.isError) return <TopicalMapFailed what="this map's topics" error={tree.error} />;
+  if (tree.isError) return <TopicalMapFailed what="this map's topics" error={tree.error} mapId={mapId} />;
   if (intents.isError) {
     return <TopicalMapFailed what="this map's page destinations" error={intents.error} />;
   }

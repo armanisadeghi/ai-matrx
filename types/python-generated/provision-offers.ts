@@ -672,6 +672,36 @@ export interface DataBuildOrAskOffer {
   organization_id?: string;
 }
 
+/** Offered shape of provision `data.formula_box` (kind `data.formula_box.offer`). */
+export interface DataFormulaBoxOffer {
+  __kind?: "data.formula_box.offer";
+  formula_purpose: string;
+  target_column_name?: string;
+  target_column_type?: string;
+  formula_columns: string;
+  formula_columns_detail: unknown;
+  formula_language: string;
+  formula_current?: string;
+  formula_parse_error?: string;
+  sample_row?: unknown;
+}
+
+/** Offered shape of provision `data.table_row_action` (kind `data.table_row_action.offer`). */
+export interface DataTableRowActionOffer {
+  __kind?: "data.table_row_action.offer";
+  table_id: string;
+  table_name: string;
+  table_columns: unknown;
+  row_id: string;
+  row_label: string;
+  row_json: unknown;
+  row_fields_summary: string;
+  action_name: string;
+  action_prompt?: string;
+  acting_person_id?: string;
+  acting_person_can_edit: boolean;
+}
+
 /** Offered shape of provision `dictionary.workspace` (kind `dictionary.workspace.offer`). */
 export interface DictionaryWorkspaceOffer {
   __kind?: "dictionary.workspace.offer";
@@ -3302,6 +3332,8 @@ export interface ProvisionOffers {
   "crm.party_kind_judgment": CrmPartyKindJudgmentOffer;
   "crm.save_contact_selection": CrmSaveContactSelectionOffer;
   "data.build_or_ask": DataBuildOrAskOffer;
+  "data.formula_box": DataFormulaBoxOffer;
+  "data.table_row_action": DataTableRowActionOffer;
   "dictionary.workspace": DictionaryWorkspaceOffer;
   "distillation.case_narrative": DistillationCaseNarrativeOffer;
   "distillation.timeline_window": DistillationTimelineWindowOffer;
@@ -3565,6 +3597,8 @@ export const PROVISION_OFFER_KINDS = {
   "crm.party_kind_judgment": "crm.party_kind_judgment.offer",
   "crm.save_contact_selection": "crm.save_contact_selection.offer",
   "data.build_or_ask": "data.build_or_ask.offer",
+  "data.formula_box": "data.formula_box.offer",
+  "data.table_row_action": "data.table_row_action.offer",
   "dictionary.workspace": "dictionary.workspace.offer",
   "distillation.case_narrative": "distillation.case_narrative.offer",
   "distillation.timeline_window": "distillation.timeline_window.offer",

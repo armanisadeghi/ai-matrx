@@ -135,7 +135,13 @@ export function RowLabelPicker({ tableId, metadata, fields, sampleRow, disabled,
           <FormulaExpressionEditor
             value={{ id: "formula", options: { formula: { expression: draftExpression, resultFormat: "text" } } }}
             onChange={(next) => setDraftExpression(next.options?.formula?.expression ?? "")}
-            siblingFields={fields.map((f) => ({ field_name: f.field_name, display_name: f.display_name }))}
+            siblingFields={fields.map((f) => ({
+              field_name: f.field_name,
+              display_name: f.display_name,
+              data_type: f.data_type,
+              metadata: f.metadata,
+            }))}
+            sampleRow={sampleRow?.data ?? null}
             disabled={disabled || saving}
             purpose="row-label"
           />

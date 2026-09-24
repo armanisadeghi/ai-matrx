@@ -22,18 +22,11 @@ import { ShieldCheckTapButton } from "@ai-matrx/tap-target/buttons";
 import {
   MatrxDataTable,
   type MatrxColumnDef,
-  type MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table";
+import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import { Globe, Shield, ShieldOff, User } from "lucide-react";
 
-const INITIAL_QUERY: MatrxDataTableQueryState = {
-  page: 1,
-  pageSize: 25,
-  search: "",
-  anyOf: "",
-  columnFilters: {},
-  sort: { id: "last_execution_at", direction: "desc" },
-};
+const RATE_LIMITS_TABLE_ID = "admin-agent-app-rate-limits";
 
 function humanRateLimit(limit: AgentAppRateLimitRow): string {
   const identifier = limit.user_id
@@ -100,7 +93,11 @@ export function RateLimitsClient() {
   const [blockedFilter, setBlockedFilter] = useState<
     "all" | "blocked" | "not-blocked"
   >("blocked");
-  const [query, setQuery] = useState<MatrxDataTableQueryState>(INITIAL_QUERY);
+  const tableQuery = useTableUrlState({
+    tableId: RATE_LIMITS_TABLE_ID,
+    defaultSort: { id: "last_execution_at", direction: "desc" },
+    defaultPageSize: 25,
+  });
 
   const loadData = useCallback(async () => {
     try {
@@ -323,7 +320,10 @@ export function RateLimitsClient() {
           })),
           rate_limits_stats: stats,
           rate_limits_filters: { blocked: blockedFilter },
-          rate_limits_table_query: query as unknown as Record<string, unknown>,
+          rate_limits_table_query: tableQuery.state as unknown as Record<
+            string,
+            unknown
+          >,
         })
       }
     >
@@ -351,7 +351,7 @@ export function RateLimitsClient() {
           ))}
         </div>
         <MatrxDataTable
-          tableId="administration/agents/agent-apps/rate-limits"
+          tableId={RATE_LIMITS_TABLE_ID}
           data={rateLimits}
           columns={columns}
           getRowId={(row) => row.id}
@@ -362,10 +362,14 @@ export function RateLimitsClient() {
           localPagination={{ mode: "progressive" }}
           query={{
             mode: "controlled-local",
-            state: query,
-            onStateChange: setQuery,
+            state: tableQuery.state,
+            onStateChange: tableQuery.onStateChange,
           }}
-          coverage={{ noun: "rate limit", answeredBy: "client", total: rateLimits.length }}
+          coverage={{
+            noun: "rate limit",
+            answeredBy: "client",
+            total: rateLimits.length,
+          }}
           toolbar={{
             title: "Rate limits",
             search: true,

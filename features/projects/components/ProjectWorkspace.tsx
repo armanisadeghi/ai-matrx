@@ -20,7 +20,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   Loader2,
   Settings,
   Pencil,
@@ -45,6 +44,7 @@ import {
 } from "@/features/projects/hooks";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { ProjectReferencesPanel } from "@/features/projects/components/ProjectReferencesPanel";
 import { ProjectDetails } from "@/features/projects/components/ProjectDetails";
@@ -199,30 +199,21 @@ export function ProjectWorkspace() {
   }
 
   if (!project) {
+    // `getProject` returns null for every failure (denied, trashed, missing,
+    // wrong org, fault) — the canonical gate resolves which one it was.
     return (
       <>
         <RouteHeader
           left={<ChevronLeftTapButton href="/projects" ariaLabel="Back" />}
         />
-        <CenterState>
-          <Card className="max-w-md w-full p-8 text-center">
-            <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-              <FolderKanban className="h-7 w-7 text-muted-foreground" />
-            </div>
-            <h2 className="text-xl font-semibold mb-2">Project not found</h2>
-            <p className="text-sm text-muted-foreground mb-6">
-              This project doesn&apos;t exist or you don&apos;t have access.
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push("/projects")}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              All projects
-            </Button>
-          </Card>
-        </CenterState>
+        <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
+          <AccessGate
+            token="project"
+            id={projectParam}
+            fallbackHref="/projects"
+            fallbackLabel="All projects"
+          />
+        </div>
       </>
     );
   }

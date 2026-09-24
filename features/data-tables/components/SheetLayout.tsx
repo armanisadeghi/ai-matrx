@@ -16,7 +16,8 @@
  * (guarded by `a-record-store-table-never-reaches-an-older-door.test.ts`).
  */
 
-import { useLayoutEffect, useState } from "react";
+import { useCallback, useLayoutEffect, useState } from "react";
+import { toast } from "@/components/ui/use-toast";
 import UserTableViewer from "@/components/user-generated-table-data/UserTableViewer";
 import {
   placeTableInRecordStore,
@@ -43,6 +44,41 @@ export function SheetLayout({ tableId, organizationId, userId }: SheetLayoutProp
     setPlaced(true);
   }, [tableId, organizationId, userId]);
 
+  // THE PAGE OWNS SHARE AND EXPORT (ruling 2026-09-23). The grid's own controls are absent;
+  // its right-click "Export this table…" opens the table page's export (CSV, XLSX and the
+  // copy-and-transform menu in the page header). records-ui gives a host layout no door to
+  // that menu yet, so the page's own trigger is found and pressed; if it is not on screen,
+  // the person is told where it is — never a dead item.
+  const openExport = useCallback(() => {
+    const trigger = Array.from(
+      document.querySelectorAll<HTMLElement>('[aria-label^="Copy, transform or export"]'),
+    ).find((el) => !el.closest("[data-sheet-layout]"));
+    if (trigger) {
+      // Called from a menu item: the right-click menu is still closing and hands focus back
+      // as it goes, which dismisses a popover opened meanwhile (walked: a fixed 150 ms opened
+      // it and lost it). So wait until no menu is open any more, then press the trigger.
+      const started = Date.now();
+      const press = () => {
+        const menuOpen = document.querySelector('[role="menu"]') !== null;
+        if (menuOpen && Date.now() - started < 2000) {
+          window.setTimeout(press, 50);
+          return;
+        }
+        window.setTimeout(() => {
+          trigger.scrollIntoView({ block: "nearest" });
+          trigger.focus();
+          trigger.click();
+        }, 80);
+      };
+      window.setTimeout(press, 50);
+      return;
+    }
+    toast({
+      title: "Export is in the page header",
+      description: "Use CSV, XLSX, or the copy-and-transform menu above the table.",
+    });
+  }, []);
+
   if (!placed) return null;
   return (
     <div className="flex h-full min-h-0 flex-col" data-sheet-layout={tableId}>
@@ -51,6 +87,12 @@ export function SheetLayout({ tableId, organizationId, userId }: SheetLayoutProp
         tableId={tableId}
         fillHeight
         hideHeader
+        // The same surface scope the /data/<id> route emits (TABLE-PARITY gap 5): agents
+        // see the table (columns, rules, choices, row label, actions, the selection) and
+        // write a confirmed cell through the seam's own upsertCell, and the row forms get
+        // their Person chooser (PersonChoicesProvider sits inside this branch).
+        emitSurfaceScope
+        pageOwnsShareAndExport={{ openExport }}
       />
     </div>
   );

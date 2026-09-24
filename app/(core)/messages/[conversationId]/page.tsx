@@ -25,6 +25,7 @@ import { ConversationPane } from "@/features/messaging/components/ConversationPa
 import { MessagesThreadHeader } from "@/features/messaging/components/shell/MessagesThreadHeader";
 import { useMessagesSurfaceScope } from "@/features/messaging/lib/useMessagesSurfaceScope";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 export default function ConversationPage() {
   const params = useParams();
@@ -39,7 +40,7 @@ export default function ConversationPage() {
   // Opens the thread and its channel, and keeps them open while this route is
   // mounted. The read receipt rides it — no separate "mark as read" call, and
   // no chance of marking a conversation read that never opened.
-  useConversation(id);
+  const thread = useConversation(id);
   const { conversations } = useConversations();
   const online = useOnlineUserIds(id);
 
@@ -55,6 +56,22 @@ export default function ConversationPage() {
   useEffect(() => {
     dispatch(closeMessaging());
   }, [dispatch]);
+
+  // A conversation that does not exist or that this person cannot read is an
+  // access question, never "No messages yet" and never an endless spinner.
+  // `error.cause` is the raw database error (42501 / PGRST116) the gate
+  // classifies; the gate then asks the platform which case it really is.
+  if (thread.unavailable) {
+    return (
+      <AccessGate
+        token="dm_conversation"
+        id={conversationId}
+        error={thread.error?.cause ?? thread.error}
+        fallbackHref="/messages"
+        fallbackLabel="All messages"
+      />
+    );
+  }
 
   return (
     <SurfaceRuntimeProvider

@@ -9,6 +9,7 @@
  * The list is modelled on the best password managers: one identity line and
  * one concise supporting line. Values and full metadata belong in detail.
  */
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -34,6 +35,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
+// object-org-exempt: only the Organization list tab and item-state keying read it; a routed credential opens by useCredentialHome
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
@@ -57,6 +59,7 @@ import {
   useVault,
   useVaultDefinitions,
   type VaultActions,
+  useCredentialHome,
 } from "../vault-hooks";
 import {
   credentialIdentity,
@@ -113,13 +116,30 @@ export function VaultWorkspace({
   onScopeChange,
 }: VaultWorkspaceProps) {
   const { organizations } = useUserOrganizations();
-  const availableOrganizations = organizations.filter((org) => !org.isPersonal);
+  // ACCESS IS PERSONAL (owner, 2026-09-23): a routed credential opens in the
+  // scope that HOLDS it — read from the credential, never from the
+  // organization the person is working in. The list scope then shows (and
+  // names) where it lives; the scope tabs stay the visible change/all control.
+  const routedHome = useCredentialHome(
+    selectedItemId,
+    principal.type === "user",
+  );
+  const routedHomeScope: VaultScope | null =
+    routedHome?.state === "found" ? routedHome.scope : null;
+  const routedHomeOrganizationId =
+    routedHomeScope?.kind === "organization"
+      ? routedHomeScope.organizationId
+      : null;
+  const availableOrganizations = organizations.filter(
+    (org) => !org.isPersonal || org.id === routedHomeOrganizationId,
+  );
   // Switching to the Organization tab acts in the organization the person
   // SELECTED — never the first one they happen to belong to. A
   // first-membership pick showed (and let them write) another tenant's
   // credentials without anyone choosing it. With no selection the tab says so
   // and changes nothing; the Select beside it stays the explicit picker.
   // common-docs/policies/context-is-carried-never-rebuilt.md
+  // object-org-exempt: picks which organization the visible Organization LIST tab shows; never whether a routed credential opens
   const selectedOrganizationId = useAppSelector(selectOrganizationId);
   const actorId = useAppSelector(selectUserId);
   const routeWorkspaceState = useVaultRouteWorkspaceState();
@@ -249,6 +269,35 @@ export function VaultWorkspace({
         ? selected
         : (filtered[0] ?? null)
       : selected;
+  // A routed item id (/vault/[itemId]) that the loaded vault does not hold:
+  // the detail pane renders AccessGate for it instead of silently showing
+  // "Select a credential" as if nothing had been asked for.
+  // Only when the credential itself says she cannot open it (or we could not
+  // ask) — a credential that lives in another scope is carried there below.
+  const routedItemMissing =
+    !!selectedItemId &&
+    !selected &&
+    !vault.loading &&
+    !vault.error &&
+    (principal.type !== "user" ||
+      routedHome?.state === "not-given" ||
+      routedHome?.state === "unavailable");
+  // Carry a routed credential to the scope that holds it, once per id, so a
+  // later deliberate scope change by the person is never overridden.
+  const carriedTo = useRef<string | null>(null);
+  const routedHomeKey = routedHomeScope ? vaultScopeKey(routedHomeScope) : null;
+  const viewedScopeKey = vaultScopeKey(scope);
+  const homeListable =
+    routedHomeScope?.kind !== "organization" ||
+    availableOrganizations.some((org) => org.id === routedHomeOrganizationId);
+  useEffect(() => {
+    if (principal.type !== "user" || !selectedItemId || !routedHomeScope) return;
+    if (carriedTo.current === selectedItemId) return;
+    if (!homeListable) return;
+    carriedTo.current = selectedItemId;
+    if (routedHomeKey !== viewedScopeKey) setUserScope(routedHomeScope);
+    // setUserScope is a fresh closure each render; the id + keys decide.
+  }, [principal.type, selectedItemId, routedHomeKey, viewedScopeKey, homeListable]);
   const selectedIdentity = detailItem
     ? credentialIdentity(detailItem, defsByKey.get(detailItem.definition_key))
     : null;
@@ -714,7 +763,14 @@ export function VaultWorkspace({
           </section>
 
           <section className="hidden min-h-0 min-w-0 flex-col lg:flex">
-            {detailItem ? (
+            {routedItemMissing && selectedItemId ? (
+              <AccessGate
+                token="credential_item"
+                id={selectedItemId}
+                fallbackHref="/vault"
+                fallbackLabel="Your vault"
+              />
+            ) : detailItem ? (
               <>
                 <div className="flex min-w-0 items-start gap-3 border-b border-border px-5 py-4">
                   <span className={cn(IDENTITY_TILE_CLASS, "h-9 w-9")}>
