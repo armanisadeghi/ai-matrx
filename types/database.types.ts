@@ -1146,6 +1146,54 @@ export type Database = {
         }
         Relationships: []
       }
+      message_template_detail: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          document_id: string
+          id: string
+          metadata: Json
+          organization_id: string
+          role: Database["public"]["Enums"]["message_role"] | null
+          subject: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          document_id: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          role?: Database["public"]["Enums"]["message_role"] | null
+          subject?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          document_id?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          role?: Database["public"]["Enums"]["message_role"] | null
+          subject?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       prompt_remediation: {
         Row: {
           agent_id: string
@@ -19137,13 +19185,512 @@ export type Database = {
   }
   content: {
     Tables: {
-      [_ in never]: never
+      document: {
+        Row: {
+          archived_at: string | null
+          body: string
+          char_count: number
+          content_hash: string
+          content_version: number
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data_class: Database["platform"]["Enums"]["data_class"]
+          deleted_at: string | null
+          document_type_id: string
+          file_path: string | null
+          folder_id: string | null
+          format: string
+          icon: string | null
+          id: string
+          last_conversation_id: string | null
+          last_device_id: string | null
+          last_origin: string
+          metadata: Json
+          organization_id: string
+          payload_hash: string | null
+          preview: string
+          published_at: string | null
+          published_content_version: number | null
+          sealed_at: string | null
+          slug: string | null
+          source_hash: string | null
+          source_uri: string | null
+          summary: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          word_count: number
+        }
+        Insert: {
+          archived_at?: string | null
+          body?: string
+          char_count?: number
+          content_hash: string
+          content_version?: number
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data_class: Database["platform"]["Enums"]["data_class"]
+          deleted_at?: string | null
+          document_type_id: string
+          file_path?: string | null
+          folder_id?: string | null
+          format?: string
+          icon?: string | null
+          id?: string
+          last_conversation_id?: string | null
+          last_device_id?: string | null
+          last_origin?: string
+          metadata?: Json
+          organization_id: string
+          payload_hash?: string | null
+          preview?: string
+          published_at?: string | null
+          published_content_version?: number | null
+          sealed_at?: string | null
+          slug?: string | null
+          source_hash?: string | null
+          source_uri?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          word_count?: number
+        }
+        Update: {
+          archived_at?: string | null
+          body?: string
+          char_count?: number
+          content_hash?: string
+          content_version?: number
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data_class?: Database["platform"]["Enums"]["data_class"]
+          deleted_at?: string | null
+          document_type_id?: string
+          file_path?: string | null
+          folder_id?: string | null
+          format?: string
+          icon?: string | null
+          id?: string
+          last_conversation_id?: string | null
+          last_device_id?: string | null
+          last_origin?: string
+          metadata?: Json
+          organization_id?: string
+          payload_hash?: string | null
+          preview?: string
+          published_at?: string | null
+          published_content_version?: number | null
+          sealed_at?: string | null
+          slug?: string | null
+          source_hash?: string | null
+          source_uri?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          word_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_published_fk"
+            columns: ["id", "published_content_version"]
+            isOneToOne: false
+            referencedRelation: "document_version"
+            referencedColumns: ["document_id", "content_version"]
+          },
+        ]
+      }
+      document_version: {
+        Row: {
+          actor_id: string | null
+          actor_tier: string | null
+          archived_at_capture: string | null
+          body: string | null
+          body_content_version: number
+          change_kind: string
+          content_hash: string
+          content_version: number
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data_class_at_capture: Database["platform"]["Enums"]["data_class"]
+          deleted_at_capture: string | null
+          device_id: string | null
+          document_id: string
+          document_type_id: string
+          folder_id_at_capture: string | null
+          format: string
+          id: string
+          label: string | null
+          metadata: Json
+          note: string | null
+          organization_id: string
+          origin: string
+          payload_hash: string | null
+          sealed_at_capture: string | null
+          source_ref: string | null
+          summary: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility_at_capture: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_tier?: string | null
+          archived_at_capture?: string | null
+          body?: string | null
+          body_content_version: number
+          change_kind: string
+          content_hash: string
+          content_version: number
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data_class_at_capture: Database["platform"]["Enums"]["data_class"]
+          deleted_at_capture?: string | null
+          device_id?: string | null
+          document_id: string
+          document_type_id: string
+          folder_id_at_capture?: string | null
+          format: string
+          id?: string
+          label?: string | null
+          metadata?: Json
+          note?: string | null
+          organization_id: string
+          origin: string
+          payload_hash?: string | null
+          sealed_at_capture?: string | null
+          source_ref?: string | null
+          summary?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility_at_capture: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          actor_id?: string | null
+          actor_tier?: string | null
+          archived_at_capture?: string | null
+          body?: string | null
+          body_content_version?: number
+          change_kind?: string
+          content_hash?: string
+          content_version?: number
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data_class_at_capture?: Database["platform"]["Enums"]["data_class"]
+          deleted_at_capture?: string | null
+          device_id?: string | null
+          document_id?: string
+          document_type_id?: string
+          folder_id_at_capture?: string | null
+          format?: string
+          id?: string
+          label?: string | null
+          metadata?: Json
+          note?: string | null
+          organization_id?: string
+          origin?: string
+          payload_hash?: string | null
+          sealed_at_capture?: string | null
+          source_ref?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility_at_capture?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_version_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      univer_payload: {
+        Row: {
+          content_version: number
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          document_id: string
+          id: string
+          metadata: Json
+          organization_id: string
+          snapshot: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          content_version: number
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          document_id: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          snapshot: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          content_version?: number
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          document_id?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          snapshot?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "univer_payload_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "document"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      _capture_bypassed: { Args: never; Returns: boolean }
+      document_search_vector: {
+        Args: { p_body: string; p_summary: string; p_title: string }
+        Returns: unknown
+      }
+      realtime_topic_admits: { Args: { p_topic: string }; Returns: boolean }
+      univer_save: {
+        Args: {
+          p_document_id: string
+          p_expected_version: number
+          p_origin?: string
+          p_projection: string
+          p_snapshot: Json
+        }
+        Returns: {
+          archived_at: string | null
+          body: string
+          char_count: number
+          content_hash: string
+          content_version: number
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data_class: Database["platform"]["Enums"]["data_class"]
+          deleted_at: string | null
+          document_type_id: string
+          file_path: string | null
+          folder_id: string | null
+          format: string
+          icon: string | null
+          id: string
+          last_conversation_id: string | null
+          last_device_id: string | null
+          last_origin: string
+          metadata: Json
+          organization_id: string
+          payload_hash: string | null
+          preview: string
+          published_at: string | null
+          published_content_version: number | null
+          sealed_at: string | null
+          slug: string | null
+          source_hash: string | null
+          source_uri: string | null
+          summary: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          word_count: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "document"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      version_publish: {
+        Args: { p_content_version?: number; p_document_id: string }
+        Returns: {
+          archived_at: string | null
+          body: string
+          char_count: number
+          content_hash: string
+          content_version: number
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data_class: Database["platform"]["Enums"]["data_class"]
+          deleted_at: string | null
+          document_type_id: string
+          file_path: string | null
+          folder_id: string | null
+          format: string
+          icon: string | null
+          id: string
+          last_conversation_id: string | null
+          last_device_id: string | null
+          last_origin: string
+          metadata: Json
+          organization_id: string
+          payload_hash: string | null
+          preview: string
+          published_at: string | null
+          published_content_version: number | null
+          sealed_at: string | null
+          slug: string | null
+          source_hash: string | null
+          source_uri: string | null
+          summary: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          word_count: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "document"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      version_restore: {
+        Args: {
+          p_content_version: number
+          p_document_id: string
+          p_expected_version: number
+        }
+        Returns: {
+          archived_at: string | null
+          body: string
+          char_count: number
+          content_hash: string
+          content_version: number
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data_class: Database["platform"]["Enums"]["data_class"]
+          deleted_at: string | null
+          document_type_id: string
+          file_path: string | null
+          folder_id: string | null
+          format: string
+          icon: string | null
+          id: string
+          last_conversation_id: string | null
+          last_device_id: string | null
+          last_origin: string
+          metadata: Json
+          organization_id: string
+          payload_hash: string | null
+          preview: string
+          published_at: string | null
+          published_content_version: number | null
+          sealed_at: string | null
+          slug: string | null
+          source_hash: string | null
+          source_uri: string | null
+          summary: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          word_count: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "document"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      version_unpublish: {
+        Args: { p_document_id: string }
+        Returns: {
+          archived_at: string | null
+          body: string
+          char_count: number
+          content_hash: string
+          content_version: number
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data_class: Database["platform"]["Enums"]["data_class"]
+          deleted_at: string | null
+          document_type_id: string
+          file_path: string | null
+          folder_id: string | null
+          format: string
+          icon: string | null
+          id: string
+          last_conversation_id: string | null
+          last_device_id: string | null
+          last_origin: string
+          metadata: Json
+          organization_id: string
+          payload_hash: string | null
+          preview: string
+          published_at: string | null
+          published_content_version: number | null
+          sealed_at: string | null
+          slug: string | null
+          source_hash: string | null
+          source_uri: string | null
+          summary: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          word_count: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "document"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       [_ in never]: never
@@ -99946,6 +100493,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      skill_detail: {
+        Row: {
+          allowed_tools: Json | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          disable_auto_invocation: boolean
+          document_id: string
+          id: string
+          is_active: boolean
+          is_system: boolean
+          metadata: Json
+          model_preference: string | null
+          organization_id: string
+          platform_targets: Json | null
+          semver: string | null
+          skill_type: Database["public"]["Enums"]["skl_skill_type"]
+          trigger_patterns: Json | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          allowed_tools?: Json | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          disable_auto_invocation?: boolean
+          document_id: string
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          metadata?: Json
+          model_preference?: string | null
+          organization_id: string
+          platform_targets?: Json | null
+          semver?: string | null
+          skill_type?: Database["public"]["Enums"]["skl_skill_type"]
+          trigger_patterns?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          allowed_tools?: Json | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          disable_auto_invocation?: boolean
+          document_id?: string
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          metadata?: Json
+          model_preference?: string | null
+          organization_id?: string
+          platform_targets?: Json | null
+          semver?: string | null
+          skill_type?: Database["public"]["Enums"]["skl_skill_type"]
+          trigger_patterns?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
       }
     }
     Views: {
