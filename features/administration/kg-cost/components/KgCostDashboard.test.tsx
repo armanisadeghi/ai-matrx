@@ -173,7 +173,11 @@ describe("KgCostDashboard canonical tables", () => {
       await Promise.resolve();
     });
 
-    for (const [id, title, columns] of [
+    const organizationDetailTables: readonly [
+      id: string,
+      title: string,
+      columns: readonly string[],
+    ][] = [
       [
         "administration/kg-cost/org-detail/daily-cost",
         "Last 30 days",
@@ -189,7 +193,9 @@ describe("KgCostDashboard canonical tables", () => {
         "Batches by status",
         ["status", "count", "total_cost_usd"],
       ],
-    ]) {
+    ];
+
+    for (const [id, title, columns] of organizationDetailTables) {
       const props = table(id);
       expect(props.toolbar).toEqual({ title, search: false });
       expect(props.emptyState?.title).toEqual(expect.any(String));
