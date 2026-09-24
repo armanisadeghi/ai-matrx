@@ -222,6 +222,38 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
       "schema said out loud; there is no table read here.",
   },
   {
+    id: "ledger-who",
+    file: "scripts/ledger-who.ts",
+    kind: "tooling",
+    why:
+      "Lane LEDGER-LANE — `pnpm ledger:who <file>`: prints who applied one " +
+      "public._schema_migrations row (lane, OS user, host, session, git HEAD, window) and every " +
+      "rebase receipt's attribution, over a default_transaction_read_only session. It imports " +
+      "scripts/lib/migration-target only to pick the production/branch/clone connection. A script " +
+      "a developer or the chair runs, never served to a user, so it must not call the gate.",
+  },
+  {
+    id: "ledger-window-census",
+    file: "scripts/ledger-window-census.ts",
+    kind: "tooling",
+    why:
+      "Lane LEDGER-LANE — `pnpm ledger:census-window`: lists every production ledger row applied " +
+      "outside the 1–4 AM Pacific window since a date, with whatever attribution exists, read-only. " +
+      "It imports scripts/lib/migration-target only for the target flag. Developer/chair tooling, " +
+      "never served to a user, so it must not call the gate.",
+  },
+  {
+    id: "ledger-attribution-clone-check",
+    file: "scripts/check-ledger-attribution.ts",
+    kind: "tooling",
+    why:
+      "Lane LEDGER-LANE — `pnpm check:ledger-attribution:clone`: drives pnpm db:apply against the " +
+      "dev clone with a scratch migration and proves the ledger row carries its attribution, then " +
+      "removes the scratch schema and row. It imports scripts/lib/migration-target only for the " +
+      "clone's identity and connection. A proof a developer runs, never served to a user, so it " +
+      "must not call the gate.",
+  },
+  {
     id: "gridprim-g3-formula-parity",
     file: "scripts/campaign-tests/gridprim_g3_formula_parity.ts",
     kind: "tooling",
