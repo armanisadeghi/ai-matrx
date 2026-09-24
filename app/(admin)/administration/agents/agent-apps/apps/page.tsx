@@ -3,7 +3,7 @@
 import { useEffect, useEffectEvent, useState, useTransition } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
-import { Ban, CheckCircle, Clock, Archive } from "lucide-react";
+import { Ban, CheckCircle, Clock, Archive, Plus } from "lucide-react";
 import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -466,107 +466,122 @@ export default function AgentAppsAdminListPage() {
                 title: "Agent Apps",
                 searchPlaceholder: "Search agent apps…",
                 refresh: { onRefresh: load },
-                actions:
-                  visibleApps.length > 0 ? (
-                    <CopyButtons
-                      size="icon"
-                      label={`Agent apps (${visibleApps.length})`}
-                      human={() => visibleApps.map(humanAgentApp).join("\n\n")}
-                      json={() => visibleApps}
-                      agent={() => ({
-                        kind: "agent-apps",
-                        location: "AI Matrx Admin — Agent Apps",
-                        description:
-                          "Every agent app currently shown in the admin table (this view).",
-                        data: visibleApps,
-                        attributes: {
-                          count: visibleApps.length,
-                          totalCount: apps.length,
-                        },
-                      })}
-                      aiVariants={[
-                        {
-                          id: "briefs",
-                          label: "This view briefs",
-                          hint: "One line per app currently shown",
-                          build: () => ({
-                            kind: "agent-apps-briefs",
-                            location: "AI Matrx Admin — Agent Apps",
-                            description:
-                              "One-line briefs for the apps currently shown.",
-                            data: visibleApps.map(appBrief),
-                            attributes: { count: visibleApps.length },
-                          }),
-                        },
-                      ]}
-                      aiCustom={{
-                        label: "Custom export…",
-                        hint: "Toggle only-filtered-view / include description",
-                        options: [
-                          {
-                            kind: "toggle",
-                            key: "onlyFiltered",
-                            label: "Only this view",
-                            hint: "Off = every loaded app (up to 1000)",
-                            default: true,
-                          },
-                          {
-                            kind: "toggle",
-                            key: "includeDescription",
-                            label: "Include description",
-                            hint: "Adds each app's full description text",
-                            default: false,
-                          },
-                        ],
-                        build: (options) => {
-                          const source = options.onlyFiltered
-                            ? visibleApps
-                            : apps;
-                          return {
-                            text: source
-                              .map((app) =>
-                                [
-                                  appBrief(app),
-                                  options.includeDescription && app.description
-                                    ? `  ${app.description}`
-                                    : null,
-                                ]
-                                  .filter(Boolean)
-                                  .join("\n"),
-                              )
-                              .join("\n\n"),
-                            meta: { apps: source.length },
-                          };
-                        },
-                        wrap: (text, options, meta) => ({
-                          kind: "agent-apps-custom-export",
+                actions: (
+                  <div className="flex items-center gap-2">
+                    <Button asChild size="sm">
+                      <AppLink href="/administration/agents/agent-apps/new">
+                        <Plus className="h-4 w-4" />
+                        Create app
+                      </AppLink>
+                    </Button>
+                    {visibleApps.length > 0 ? (
+                      <CopyButtons
+                        size="icon"
+                        label={`Agent apps (${visibleApps.length})`}
+                        human={() =>
+                          visibleApps.map(humanAgentApp).join("\n\n")
+                        }
+                        json={() => visibleApps}
+                        agent={() => ({
+                          kind: "agent-apps",
                           location: "AI Matrx Admin — Agent Apps",
                           description:
-                            "Custom-groomed export of the admin agent-apps table.",
-                          data: text,
+                            "Every agent app currently shown in the admin table (this view).",
+                          data: visibleApps,
                           attributes: {
-                            onlyFiltered: Boolean(options.onlyFiltered),
-                            includeDescription: Boolean(
-                              options.includeDescription,
-                            ),
-                            count: meta?.apps,
+                            count: visibleApps.length,
+                            totalCount: apps.length,
                           },
-                        }),
-                      }}
-                      export={{
-                        items: [
-                          jsonExportItem(() => visibleApps, "JSON (this view)"),
-                          csvExportItem(
-                            () =>
-                              visibleApps as unknown as Array<
-                                Record<string, unknown>
-                              >,
-                            "CSV (this view)",
-                          ),
-                        ],
-                      }}
-                    />
-                  ) : undefined,
+                        })}
+                        aiVariants={[
+                          {
+                            id: "briefs",
+                            label: "This view briefs",
+                            hint: "One line per app currently shown",
+                            build: () => ({
+                              kind: "agent-apps-briefs",
+                              location: "AI Matrx Admin — Agent Apps",
+                              description:
+                                "One-line briefs for the apps currently shown.",
+                              data: visibleApps.map(appBrief),
+                              attributes: { count: visibleApps.length },
+                            }),
+                          },
+                        ]}
+                        aiCustom={{
+                          label: "Custom export…",
+                          hint: "Toggle only-filtered-view / include description",
+                          options: [
+                            {
+                              kind: "toggle",
+                              key: "onlyFiltered",
+                              label: "Only this view",
+                              hint: "Off = every loaded app (up to 1000)",
+                              default: true,
+                            },
+                            {
+                              kind: "toggle",
+                              key: "includeDescription",
+                              label: "Include description",
+                              hint: "Adds each app's full description text",
+                              default: false,
+                            },
+                          ],
+                          build: (options) => {
+                            const source = options.onlyFiltered
+                              ? visibleApps
+                              : apps;
+                            return {
+                              text: source
+                                .map((app) =>
+                                  [
+                                    appBrief(app),
+                                    options.includeDescription &&
+                                    app.description
+                                      ? `  ${app.description}`
+                                      : null,
+                                  ]
+                                    .filter(Boolean)
+                                    .join("\n"),
+                                )
+                                .join("\n\n"),
+                              meta: { apps: source.length },
+                            };
+                          },
+                          wrap: (text, options, meta) => ({
+                            kind: "agent-apps-custom-export",
+                            location: "AI Matrx Admin — Agent Apps",
+                            description:
+                              "Custom-groomed export of the admin agent-apps table.",
+                            data: text,
+                            attributes: {
+                              onlyFiltered: Boolean(options.onlyFiltered),
+                              includeDescription: Boolean(
+                                options.includeDescription,
+                              ),
+                              count: meta?.apps,
+                            },
+                          }),
+                        }}
+                        export={{
+                          items: [
+                            jsonExportItem(
+                              () => visibleApps,
+                              "JSON (this view)",
+                            ),
+                            csvExportItem(
+                              () =>
+                                visibleApps as unknown as Array<
+                                  Record<string, unknown>
+                                >,
+                              "CSV (this view)",
+                            ),
+                          ],
+                        }}
+                      />
+                    ) : null}
+                  </div>
+                ),
               }}
               onViewChange={setViewApps}
               detail={{ enabled: false }}

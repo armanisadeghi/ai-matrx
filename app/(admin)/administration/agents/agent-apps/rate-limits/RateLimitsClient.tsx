@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -99,7 +99,7 @@ export function RateLimitsClient() {
     defaultPageSize: 25,
   });
 
-  const loadData = useEffectEvent(async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const isBlocked =
@@ -115,12 +115,12 @@ export function RateLimitsClient() {
     } finally {
       setLoading(false);
     }
-  });
+  }, [blockedFilter, toast]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void loadData(), 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [loadData]);
 
   const handleUnblock = async (limit: AgentAppRateLimitRow) => {
     const label = limit.user_id
@@ -320,8 +320,10 @@ export function RateLimitsClient() {
           })),
           rate_limits_stats: stats,
           rate_limits_filters: { blocked: blockedFilter },
-          rate_limits_table_query:
-            tableQuery.state as unknown as Record<string, unknown>,
+          rate_limits_table_query: tableQuery.state as unknown as Record<
+            string,
+            unknown
+          >,
         })
       }
     >
@@ -363,7 +365,11 @@ export function RateLimitsClient() {
             state: tableQuery.state,
             onStateChange: tableQuery.onStateChange,
           }}
-          coverage={{ noun: "rate limit", answeredBy: "client", total: rateLimits.length }}
+          coverage={{
+            noun: "rate limit",
+            answeredBy: "client",
+            total: rateLimits.length,
+          }}
           toolbar={{
             title: "Rate limits",
             search: true,
