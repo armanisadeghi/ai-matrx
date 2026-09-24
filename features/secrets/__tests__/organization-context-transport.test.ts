@@ -5,6 +5,8 @@ import {
   createVaultItem,
   previewVaultLoginCsv,
   restoreVaultItem,
+  revealVaultField,
+  VaultRecentAuthRequiredError,
 } from "../vault-service";
 import { VaultImportTransportError } from "../vault-service";
 import { uploadVaultAttachment } from "@/features/files/vault/vaultAttachmentTransport";
@@ -17,7 +19,12 @@ const mockGetSession = jest.fn(async () => ({
 const mockGetClaims = jest.fn<
   Promise<{
     data: {
-      claims: { sub: string; email: string; app_metadata: {}; user_metadata: {} };
+      claims: {
+        sub: string;
+        email: string;
+        app_metadata: {};
+        user_metadata: {};
+      };
     };
     error: null;
   }>,
@@ -230,6 +237,33 @@ describe("Vault and Authenticator organization transport", () => {
       "Content-Type": "application/json",
       "X-Organization-Id": ORGANIZATION_ID,
     });
+  });
+
+  test("reveal distinguishes expired recent auth from an unrelated 401", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ...errorResponse(401),
+      json: async () => ({ detail: { code: "recent_auth_required" } }),
+    } as Response);
+    await expect(
+      revealVaultField("item-1", "password"),
+    ).rejects.toBeInstanceOf(VaultRecentAuthRequiredError);
+    fetchMock.mockResolvedValueOnce({
+      ...errorResponse(401),
+      json: async () => ({
+        detail:
+          "authentication within the last 900s is required — re-authenticate and retry",
+      }),
+    } as Response);
+    await expect(revealVaultField("item-1", "password")).rejects.toBeInstanceOf(
+      VaultRecentAuthRequiredError,
+    );
+    fetchMock.mockResolvedValueOnce({
+      ...errorResponse(401),
+      json: async () => ({ detail: "invalid bearer token" }),
+    } as Response);
+    await expect(revealVaultField("item-1", "password")).rejects.toThrow(
+      "Vault request failed (401)",
+    );
   });
 
   test("import mutation rechecks the frozen actor before sending", async () => {

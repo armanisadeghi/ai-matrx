@@ -3,15 +3,22 @@ import { createRoot, type Root } from "react-dom/client";
 
 const resolveVaultFields = jest.fn();
 const revealVaultField = jest.fn();
+const confirmVaultPasswordIdentity = jest.fn();
+const getVaultExportActor = jest.fn();
 const writeText = jest.fn();
 let selectedOrganizationId = "org-a";
 let authStateListener:
-  | ((event: string, session?: { user: { id: string } } | null) => void)
-  | null = null;
+  ((event: string, session?: { user: { id: string } } | null) => void) | null =
+  null;
 
 jest.mock("@/features/secrets/vault-service", () => ({
   resolveVaultFields: (...args: unknown[]) => resolveVaultFields(...args),
   revealVaultField: (...args: unknown[]) => revealVaultField(...args),
+  confirmVaultPasswordIdentity: (...args: unknown[]) =>
+    confirmVaultPasswordIdentity(...args),
+  getVaultExportActor: (...args: unknown[]) => getVaultExportActor(...args),
+  VaultRecentAuthRequiredError: class VaultRecentAuthRequiredError extends Error {},
+  VaultIdentityConfirmationError: class VaultIdentityConfirmationError extends Error {},
 }));
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => selectedOrganizationId,
@@ -20,7 +27,10 @@ jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     auth: {
       onAuthStateChange: (
-        listener: (event: string, session?: { user: { id: string } } | null) => void,
+        listener: (
+          event: string,
+          session?: { user: { id: string } } | null,
+        ) => void,
       ) => {
         authStateListener = listener;
         return { data: { subscription: { unsubscribe: jest.fn() } } };
@@ -29,7 +39,7 @@ jest.mock("@/utils/supabase/client", () => ({
   }),
 }));
 jest.mock("@/lib/toast", () => ({
-  toast: { error: jest.fn() },
+  toast: { error: jest.fn(), success: jest.fn() },
 }));
 jest.mock("@/features/organizations/hooks", () => ({
   useUserOrganizations: () => ({ organizations: [], loading: false }),
@@ -48,11 +58,13 @@ jest.mock("../vault-hooks", () => ({
 
 import { SecretValue, useFieldSecret } from "../components/SecretValue";
 import { VaultItemDetail } from "../components/VaultItemDetail";
+import { VaultRecentAuthRequiredError } from "../vault-service";
 import type { VaultActions } from "../vault-hooks";
 import type { VaultField, VaultItem, VaultPrincipal } from "../types";
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean })
-  .IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -122,7 +134,9 @@ function itemFor(
 const unavailable = async (): Promise<never> => {
   throw new Error("unexpected vault action");
 };
-const transfer = jest.fn(async (_itemId: string, _to: VaultPrincipal) => undefined);
+const transfer = jest.fn(
+  async (_itemId: string, _to: VaultPrincipal) => undefined,
+);
 const fork = jest.fn(async (_itemId: string, _to: VaultPrincipal) => undefined);
 const actions: VaultActions = {
   createItem: unavailable,
@@ -167,6 +181,14 @@ function render(nextField = field) {
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: () => ({
+      matches: false,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+    }),
+  });
   selectedOrganizationId = "org-a";
   authStateListener = null;
   Object.defineProperty(navigator, "clipboard", {
@@ -351,10 +373,15 @@ describe("useFieldSecret operation lifecycle", () => {
 describe("SecretValue visible-field availability", () => {
   test("resolves and renders an authorized active visible value", async () => {
     resolveVaultFields.mockReset();
-    resolveVaultFields.mockResolvedValueOnce({ "item-a/password": "available-value" });
+    resolveVaultFields.mockResolvedValueOnce({
+      "item-a/password": "available-value",
+    });
     await act(async () => {
       root.render(
-        <SecretValue item={itemFor({ ...field, handling: "visible" })} field={{ ...field, handling: "visible" }} />,
+        <SecretValue
+          item={itemFor({ ...field, handling: "visible" })}
+          field={{ ...field, handling: "visible" }}
+        />,
       );
       await Promise.resolve();
       await Promise.resolve();
@@ -366,22 +393,92 @@ describe("SecretValue visible-field availability", () => {
   });
 
   test.each([
-    ["inactive", { ...field, handling: "visible", is_active: false }, undefined],
-    ["disabled", { ...field, handling: "visible" }, { can_use: false, can_edit: true, can_reveal: true, can_manage: true }],
-    ["denied", { ...field, handling: "visible" }, { can_use: false, can_edit: false, can_reveal: false, can_manage: false }],
-  ] as const)("shows unavailable without loading or controls for a %s visible field", async (_state, nextField, capabilities) => {
-    await act(async () => {
-      root.render(
-        <SecretValue item={itemFor(nextField, capabilities)} field={nextField} />,
-      );
-    });
+    [
+      "inactive",
+      { ...field, handling: "visible", is_active: false },
+      undefined,
+    ],
+    [
+      "disabled",
+      { ...field, handling: "visible" },
+      { can_use: false, can_edit: true, can_reveal: true, can_manage: true },
+    ],
+    [
+      "denied",
+      { ...field, handling: "visible" },
+      { can_use: false, can_edit: false, can_reveal: false, can_manage: false },
+    ],
+  ] as const)(
+    "shows unavailable without loading or controls for a %s visible field",
+    async (_state, nextField, capabilities) => {
+      await act(async () => {
+        root.render(
+          <SecretValue
+            item={itemFor(nextField, capabilities)}
+            field={nextField}
+          />,
+        );
+      });
 
-    expect(host.textContent).toContain("Value unavailable");
-    expect(host.querySelector('[aria-label="Loading value"]')).toBeNull();
-    expect(host.querySelector('[aria-label="Show password"]')).toBeNull();
-    expect(host.querySelector('[aria-label="Copy password"]')).toBeNull();
-    expect(resolveVaultFields).not.toHaveBeenCalled();
-    expect(revealVaultField).not.toHaveBeenCalled();
+      expect(host.textContent).toContain("Value unavailable");
+      expect(host.querySelector('[aria-label="Loading value"]')).toBeNull();
+      expect(host.querySelector('[aria-label="Show password"]')).toBeNull();
+      expect(host.querySelector('[aria-label="Copy password"]')).toBeNull();
+      expect(resolveVaultFields).not.toHaveBeenCalled();
+      expect(revealVaultField).not.toHaveBeenCalled();
+    },
+  );
+});
+
+describe("SecretValue recent-auth recovery", () => {
+  test("explains the refusal and requires confirmation before a fresh reveal click", async () => {
+    const actor = {
+      userId: "user-a",
+      organizationId: "org-a",
+      email: "admin@admin.com",
+    };
+    getVaultExportActor.mockResolvedValue(actor);
+    revealVaultField.mockRejectedValueOnce(new VaultRecentAuthRequiredError());
+    confirmVaultPasswordIdentity.mockResolvedValueOnce(actor);
+    await act(async () =>
+      root.render(<SecretValue item={itemFor(field)} field={field} />),
+    );
+    await act(async () => {
+      host
+        .querySelector<HTMLButtonElement>('[aria-label="Show password"]')
+        ?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(document.body.textContent).toContain(
+      "showing or copying a Vault value needs a recent sign-in",
+    );
+    expect(revealVaultField).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const password = document.querySelector<HTMLInputElement>(
+      "#vault-reveal-password",
+    );
+    expect(password).not.toBeNull();
+    if (!password) throw new Error("Missing confirmation field");
+    await act(async () => {
+      password.value = "test-only-password";
+      document
+        .querySelectorAll<HTMLButtonElement>("button")
+        .forEach((button) => {
+          if (button.textContent?.trim() === "Confirm identity") button.click();
+        });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(confirmVaultPasswordIdentity).toHaveBeenCalledWith(
+      actor,
+      "test-only-password",
+      expect.any(Function),
+    );
+    expect(password.value).toBe("");
+    expect(revealVaultField).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -399,8 +496,8 @@ describe("VaultItemDetail protected-action lifecycle", () => {
         />,
       );
     });
-    const more = Array.from(host.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("More"),
+    const more = Array.from(host.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("More"),
     );
     expect(more).toBeDefined();
     await act(async () => {
@@ -428,7 +525,9 @@ describe("VaultItemDetail protected-action lifecycle", () => {
       );
     });
 
-    expect(host.textContent).not.toContain("Move ownership without copying values");
+    expect(host.textContent).not.toContain(
+      "Move ownership without copying values",
+    );
     expect(transfer).not.toHaveBeenCalled();
     expect(fork).not.toHaveBeenCalled();
   });
