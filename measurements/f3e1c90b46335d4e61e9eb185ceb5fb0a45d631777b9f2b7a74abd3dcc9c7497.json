@@ -1,9 +1,0 @@
-{
-  "file": "rca2_comments_follow_the_parent.sql",
-  "sha256": "f3e1c90b46335d4e61e9eb185ceb5fb0a45d631777b9f2b7a74abd3dcc9c7497",
-  "target": "clone",
-  "firstPolicyDdlToEndMs": 6619,
-  "tables": [],
-  "measuredAt": "2026-09-24T06:54:25.068Z",
-  "note": "First policy statement to the end of the measure-pass transaction, measured on the dev clone by pnpm db:rehearse. That span is the sign-in freeze. Bound to the file's sha256: edit the file and this record stops answering for it."
-}
