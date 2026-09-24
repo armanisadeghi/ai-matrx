@@ -40,6 +40,7 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ElapsedTime } from "@/components/official-candidate/elapsed-time/ElapsedTime";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 import { useWorkflowRun } from "../../hooks/useWorkflowRun";
 import { useWorkflowRunControls } from "../../hooks/useWorkflowRunControls";
@@ -77,7 +78,12 @@ import { pickFollowTarget, planSummary } from "./plan-model";
 type Resolution =
   | { phase: "loading" }
   /** The id opened nothing — a plain, fast answer, never a spinner. */
-  | { phase: "missing"; detail: string }
+  | {
+      phase: "missing";
+      /** The workflow id the gate asks about (the run's own, via a run id). */
+      gateId: string;
+      error?: unknown;
+    }
   | {
       phase: "ready";
       definitionId: string;
@@ -100,6 +106,7 @@ export function RefineRunPage({ id }: { id: string }) {
   const [recentRuns, setRecentRuns] = useState<RecentRunSummary[]>([]);
   /** A `?run=` id that probed as unreachable — fail fast, offer the way out. */
   const [badRunId, setBadRunId] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   // Probe the [id]: a workflow definition first, then a run id — one honest
   // "missing" answer when it is neither.
@@ -136,26 +143,19 @@ export function RefineRunPage({ id }: { id: string }) {
           }
         }
         if (!cancelled) {
-          setResolution({
-            phase: "missing",
-            detail:
-              "Nothing here answers to that id — it may have been removed, or it may not be shared with you.",
-          });
+          // A run whose workflow can't be read gates on THAT workflow.
+          setResolution({ phase: "missing", gateId: definitionId ?? id });
         }
-      } catch {
+      } catch (error: unknown) {
         if (!cancelled) {
-          setResolution({
-            phase: "missing",
-            detail:
-              "We couldn't reach this workflow right now. Check your connection and try again.",
-          });
+          setResolution({ phase: "missing", gateId: id, error });
         }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, attempt]);
 
   const definitionId =
     resolution.phase === "ready" ? resolution.definitionId : null;
@@ -211,9 +211,13 @@ export function RefineRunPage({ id }: { id: string }) {
   if (resolution.phase === "missing") {
     return (
       <Shell name="Workflow">
-        <EdgeCard
-          title="This workflow couldn't be opened"
-          detail={resolution.detail}
+        <AccessGate
+          token="workflow"
+          id={resolution.gateId}
+          error={resolution.error}
+          onRetry={() => setAttempt((n) => n + 1)}
+          fallbackHref="/workflows/all"
+          fallbackLabel="All workflows"
         />
       </Shell>
     );
