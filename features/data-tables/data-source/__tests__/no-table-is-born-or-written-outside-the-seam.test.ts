@@ -37,6 +37,13 @@ const OLDER_RPCS = [
   "add_data_row_to_user_table",
   "append_rows_to_user_table",
   "add_column_to_user_table",
+  // The older READ doors: a picker or reader that calls one lists or reads a moved table's
+  // archived copy (or misses a store table altogether).
+  "get_user_tables",
+  "get_user_table_complete",
+  "get_user_table_data_paginated",
+  "get_user_table_data_paginated_v2",
+  "get_full_table",
 ];
 
 const ALLOWED: Array<{ match: (rel: string) => boolean; why: string }> = [
@@ -47,6 +54,7 @@ const ALLOWED: Array<{ match: (rel: string) => boolean; why: string }> = [
   { match: (r) => r === "features/data-tables/components/LocatedTableViewer.tsx", why: "the locating host itself" },
   { match: (r) => r === "features/data-tables/components/SheetLayout.tsx", why: "the /data-v2 Sheet layout places the table itself (GRID-PORT)" },
   { match: (r) => r.startsWith("app/(core)/data/"), why: "the /data route resolves the table's home itself (GRID-PORT)" },
+  { match: (r) => r === "features/matrx-envelope/referenceResolvers.ts", why: "its older arm runs only after the record store said the table is not its (F10)" },
 ];
 
 /** Every way `text` reaches an older birth/write door, as human-readable findings. */

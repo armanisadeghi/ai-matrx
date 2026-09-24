@@ -23,7 +23,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ZipCodeData } from "../page";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { getTableMetadata, getTablePage, listTablesEverywhere } from "@/features/data-tables/service";
-import { locateTable } from "@/features/data-tables/data-source/where-a-table-is-born";
+import { locateTable } from "@/features/data-tables/data-source/locate-table";
 import { isServiceFailure } from "@/features/data-tables/types";
 
 type PaginatedRow = { data: Record<string, unknown> };

@@ -21,7 +21,7 @@ import { Loader2, ExternalLink, AlertTriangle, ArrowRight } from "lucide-react";
 import { toast } from "@/lib/toast";
 import type { TableField } from "@/utils/user-table-utls/table-utils";
 import { listTablesEverywhere, readTableDetails } from "@/features/data-tables/service";
-import { locateTable } from "@/features/data-tables/data-source/where-a-table-is-born";
+import { locateTable } from "@/features/data-tables/data-source/locate-table";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { autoMapColumns, SKIP } from "@/features/data-tables/reconcile";

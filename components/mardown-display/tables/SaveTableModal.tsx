@@ -40,7 +40,7 @@ import { MultiStepLoader } from "@/components/ui/multi-step-loader";
 import type { FieldDefinition, TableField } from "@/utils/user-table-utls/table-utils";
 import { bulkWrite, createTable, listTablesEverywhere, readTableDetails } from "@/features/data-tables/service";
 import { isBulkOpError, isServiceFailure, type BulkOp } from "@/features/data-tables/types";
-import { locateTable } from "@/features/data-tables/data-source/where-a-table-is-born";
+import { locateTable } from "@/features/data-tables/data-source/locate-table";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";

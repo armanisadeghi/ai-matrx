@@ -43,9 +43,8 @@ let client: SupabaseClient;
 let userId = "";
 
 jest.mock("@/utils/supabase/client", () => ({
-  get supabase() {
-    return client;
-  },
+  // A proxy, because some modules read `supabase.auth` at LOAD time, before sign-in.
+  supabase: new Proxy({}, { get: (_t, k) => (client as unknown as Record<string | symbol, unknown>)?.[k] }),
   createClient: () => client,
 }));
 // The active organization is UI state (the org picker); the suite acts in admin's Workspace.
@@ -211,7 +210,7 @@ describeLive("a table saved or appended to outside the grid lives in its organiz
   it("an organization whose tables have not moved keeps its births and its tables in the older store", async () => {
     // The clone moves organizations as lanes work, so the unmoved organization is FOUND, not named:
     // the first organization holding a live older dataset admin can reach whose tables have not moved.
-    const where = await import("../where-a-table-is-born");
+    const where = { ...(await import("../where-a-table-is-born")), ...(await import("../locate-table")) };
     const { data } = await client
       .schema("workbench" as never)
       .from("udt_datasets" as never)

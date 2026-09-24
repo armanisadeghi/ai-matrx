@@ -19,7 +19,7 @@
 import { useEffect, useState, type ComponentProps } from "react";
 import UserTableViewer from "@/components/user-generated-table-data/UserTableViewer";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import { locateTable } from "@/features/data-tables/data-source/where-a-table-is-born";
+import { locateTable } from "@/features/data-tables/data-source/locate-table";
 
 type ViewerProps = ComponentProps<typeof UserTableViewer>;
 

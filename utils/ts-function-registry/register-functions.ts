@@ -7,7 +7,7 @@ import type { CreateTableParams, AddColumnParams, AddRowParams } from '../user-t
 // Through the data seam (lane INTEG-CLIENTS): a table is born where its organization keeps
 // tables, and an existing one is located before anything reads or writes it.
 import { addTableColumn, addTableRow, createTable, readTableDetails } from '@/features/data-tables/service';
-import { locateTable } from '@/features/data-tables/data-source/where-a-table-is-born';
+import { locateTable } from '@/features/data-tables/data-source/locate-table';
 
 async function located<T>(tableId: string, then: () => Promise<T>): Promise<T | { success: false; error: string }> {
   const where = await locateTable(tableId);

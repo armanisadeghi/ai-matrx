@@ -11,7 +11,6 @@ import {
   X,
 } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
-import { supabase } from "@/utils/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -25,15 +24,13 @@ import { usePickerInputFocus } from "./usePickerInputFocus";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 import type { TableBookmark } from "@/features/agents/types/message-types";
 import {
-  isPaginatedDataRow,
   isUserTableFieldRow,
   isUserTableListRow,
-  unwrapGetUserTableDataPaginatedRows,
-  unwrapGetUserTables,
   type UserTableFieldRow,
   type UserTableListRow,
 } from "@/utils/user-tables-rpc";
-import { getTableMetadata } from "@/features/data-tables/service";
+import { getTableMetadata, getTablePage, listTablesEverywhere } from "@/features/data-tables/service";
+import { locateTable } from "@/features/data-tables/data-source/locate-table";
 import { isServiceFailure } from "@/features/data-tables/types";
 
 // Types
@@ -95,10 +92,12 @@ export function TablesResourcePicker({
       try {
         setLoading(true);
         setError(null);
-        const { data, error } = await supabase.rpc("get_user_tables");
-
-        if (error) throw error;
-        setTables(unwrapGetUserTables(data).filter(isUserTableListRow));
+        // Older tables AND the organization's record-store Tables (lane INTEG-CLIENTS F1/F7):
+        // the server's reference resolver follows a moved table by id (INTEG-SERVER A6).
+        const listed = await listTablesEverywhere();
+        if (!listed.success) throw new Error(listed.error);
+        const rows: unknown[] = listed.data.map((t) => ({ ...t, description: t.description ?? undefined }));
+        setTables(rows.filter(isUserTableListRow));
       } catch (err) {
         console.error("Error fetching tables:", err);
         setError("Failed to load your tables");
@@ -117,29 +116,17 @@ export function TablesResourcePicker({
 
       // Column schema only — the rows this picker previews are fetched
       // separately below, so there is no reason to materialize the dataset.
+      // Located first, so a moved table reads its store, not its archived copy.
+      const located = await locateTable(table.id);
+      if (!located.ok) throw new Error(located.error);
       const meta = await getTableMetadata({ tableId: table.id });
       if (isServiceFailure(meta)) throw new Error(meta.error);
       setFields(meta.data.columns.filter(isUserTableFieldRow));
 
-      // Get rows (first 100)
-      const { data: rowsDataRaw, error: rowsError } = await supabase.rpc(
-        "get_user_table_data_paginated",
-        {
-          p_table_id: table.id,
-          p_limit: 100,
-          p_offset: 0,
-          p_sort_field: undefined,
-          p_sort_direction: "asc",
-          p_search_term: undefined,
-        },
-      );
-
-      if (rowsError) throw rowsError;
-      setRows(
-        unwrapGetUserTableDataPaginatedRows(rowsDataRaw).filter(
-          isPaginatedDataRow,
-        ),
-      );
+      // Get rows (first 100), through the seam.
+      const page = await getTablePage({ tableId: table.id, limit: 100, offset: 0 });
+      if (isServiceFailure(page)) throw new Error(page.error);
+      setRows(page.data.rows);
     } catch (err) {
       console.error("Error loading table details:", err);
       setError("Failed to load table details");

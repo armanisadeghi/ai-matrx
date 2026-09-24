@@ -37,9 +37,8 @@ let client: SupabaseClient;
 let userId = "";
 
 jest.mock("@/utils/supabase/client", () => ({
-  get supabase() {
-    return client;
-  },
+  // A proxy, because some modules read `supabase.auth` at LOAD time, before sign-in.
+  supabase: new Proxy({}, { get: (_t, k) => (client as unknown as Record<string | symbol, unknown>)?.[k] }),
   createClient: () => client,
 }));
 jest.mock("@/lib/organizations/activeOrg", () => ({ getActiveOrgId: () => ORG }));

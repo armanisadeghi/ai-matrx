@@ -16,7 +16,7 @@
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 
 import { addTableColumn, bulkWrite, getTablePage } from "./service";
-import { locateTable } from "./data-source/where-a-table-is-born";
+import { locateTable } from "./data-source/locate-table";
 import { isBulkOpError, isServiceFailure, type BulkOp } from "./types";
 import {
   findDuplicates,

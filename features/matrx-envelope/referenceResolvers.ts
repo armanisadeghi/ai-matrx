@@ -36,7 +36,7 @@ import {
   type TableMetadata,
 } from "@/features/data-tables/types";
 import { getActiveOrgId } from "@/lib/organizations/activeOrg";
-import { locateTable } from "@/features/data-tables/data-source/where-a-table-is-born";
+import { locateTable } from "@/features/data-tables/data-source/locate-table";
 // Static, not `await import()`: this module reaches ~714 entry contexts and the seam adds ~31
 // modules (`pnpm lab:graph`, 2026-09-23) — an async edge here would be a new chunk-group split in
 // every one of them for no deferral worth having (code-splitting rule 6 caveat, D115).
