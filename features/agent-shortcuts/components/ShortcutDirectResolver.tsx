@@ -5,14 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
-import { operationFailed } from "@/utils/errors";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { ShortcutDirectoryMode } from "../utils/shortcut-directory-rows";
 import {
   isShortcutUuid,
-  resolveShortcutDirectUrl,
   resolveShortcutEditUrl,
 } from "../utils/shortcut-directory-rows";
 import { shortcutTable } from "@/lib/supabase/shortcutStorage";
@@ -33,7 +32,10 @@ export function ShortcutDirectResolver({
 }: ShortcutDirectResolverProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  // The raw failure (not a composed sentence) so <AccessGate> can tell a
+  // genuine fault from denied / deleted / never existed.
+  const [failure, setFailure] = useState<{ error: unknown } | null>(null);
+  const [attempt, setAttempt] = useState(0);
   // Separate from `error` on purpose: a wrong address is not a failed lookup,
   // and the two get different words and different controls.
   const [badAddress, setBadAddress] = useState(false);
@@ -42,7 +44,7 @@ export function ShortcutDirectResolver({
     let cancelled = false;
 
     async function resolveShortcut() {
-      setError(null);
+      setFailure(null);
       setBadAddress(false);
 
       // This route sits behind `[shortcutId]`. Reserved/static-looking path
@@ -70,19 +72,19 @@ export function ShortcutDirectResolver({
       if (cancelled) return;
 
       if (fetchError) {
-        setError(operationFailed("open this shortcut", fetchError).message);
+        setFailure({ error: fetchError });
         return;
       }
 
       if (!data) {
-        setError(
-          recordUnavailable({
+        setFailure({
+          error: recordUnavailable({
             entity: "shortcut",
             reason: "unknown",
             recordId: shortcutId,
             relation: "agent.shortcut",
-          }).message,
-        );
+          }),
+        });
         return;
       }
 
@@ -105,7 +107,7 @@ export function ShortcutDirectResolver({
     return () => {
       cancelled = true;
     };
-  }, [mode, router, shortcutId]);
+  }, [mode, router, shortcutId, attempt]);
 
   const directoryHref =
     mode === "admin"
@@ -135,24 +137,17 @@ export function ShortcutDirectResolver({
     );
   }
 
-  if (error) {
+  if (failure) {
     return (
-      <div className="h-full flex flex-col items-center justify-center gap-4 p-6 bg-textured">
-        <Alert variant="destructive" className="max-w-lg">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link href={directoryHref}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to directory
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href={resolveShortcutDirectUrl(shortcutId, mode)}>Retry</Link>
-          </Button>
-        </div>
+      <div className="h-full overflow-hidden">
+        <AccessGate
+          token="agent_shortcut"
+          id={shortcutId}
+          error={failure.error}
+          onRetry={() => setAttempt((n) => n + 1)}
+          fallbackHref={directoryHref}
+          fallbackLabel="Shortcut directory"
+        />
       </div>
     );
   }
