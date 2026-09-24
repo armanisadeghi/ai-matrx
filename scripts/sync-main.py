@@ -210,11 +210,27 @@ def substantial(line):
     return len(t) >= 12 and any(ch.isalnum() for ch in t)
 
 
+_DIFFS = {}
+
+
+def side_changes(base, side):
+    """(added, removed): substantial lines `side` really added / deleted relative to `base`.
+    A line that appears on both lists only changed indentation or moved within the file, so it is
+    dropped from both — it is neither new code nor deleted code."""
+    key = (base, side)
+    if key not in _DIFFS:
+        _, out, _ = git("diff", "-U0", "--no-color", base or empty_blob(), side or empty_blob(), check=False)
+        add = [l[1:].strip() for l in out.splitlines()
+               if l.startswith("+") and not l.startswith("+++") and substantial(l[1:])]
+        rem = [l[1:].strip() for l in out.splitlines()
+               if l.startswith("-") and not l.startswith("---") and substantial(l[1:])]
+        both = set(add) & set(rem)
+        _DIFFS[key] = ([x for x in add if x not in both], [x for x in rem if x not in both])
+    return _DIFFS[key]
+
+
 def added_lines(base, side):
-    """Substantial lines `side` added relative to `base` (blob shas; None = absent)."""
-    _, out, _ = git("diff", "-U0", "--no-color", base or empty_blob(), side or empty_blob(), check=False)
-    return [l[1:].strip() for l in out.splitlines()
-            if l.startswith("+") and not l.startswith("+++") and substantial(l[1:])]
+    return side_changes(base, side)[0]
 
 
 _CHANGED = {}
@@ -273,10 +289,7 @@ def also_found_in(lines, path):
 
 
 def removed_lines(base, side):
-    """Substantial lines `side` deliberately deleted relative to `base`."""
-    _, out, _ = git("diff", "-U0", "--no-color", base or empty_blob(), side or empty_blob(), check=False)
-    return [l[1:].strip() for l in out.splitlines()
-            if l.startswith("-") and not l.startswith("---") and substantial(l[1:])]
+    return side_changes(base, side)[1]
 
 
 def resolve_fake(path, ours, theirs, mb):
@@ -328,66 +341,117 @@ def fmt_gap(sec):
     return ("%dd %dh" % (d, h)) if d else ("%dh %dm" % (h, m)) if h else ("%dm" % m)
 
 
-def last_change(ref, path):
-    """(time, 'sha "subject"', approximate?) for the newest real change to path on ref's side."""
+def side_history(ref, path):
+    """[(sha, time, subject)] for every commit on ref's side that changed path, newest first."""
     _, out, _ = git("log", "--format=%H%x1f%ct%x1f%s", "%s..%s" % (CTX["mb"], ref), "--", path,
                     check=False)
-    rows = [r.split("\x1f") for r in out.splitlines() if r.count("\x1f") == 2]
-    real = [r for r in rows if r[2] != LOCAL_MSG]
-    if real:
-        return int(real[0][1]), '%s "%s"' % (real[0][0][:10], real[0][2]), False
-    if rows:
-        return int(rows[0][1]), '%s "%s" (uncommitted edit; the real edit time is at or before this)' % (
-            rows[0][0][:10], rows[0][2]), True
-    return None, "(no change on this side)", False
+    return [(r[0], int(r[1]), r[2]) for r in (x.split("\x1f") for x in out.splitlines()) if len(r) == 3]
+
+
+def nlines(blob):
+    return len(content(blob).splitlines()) if blob else 0
+
+
+def quote(path):
+    return "'" + path.replace("'", "'\\''") + "'"
 
 
 def facts(path, ours, theirs):
-    """Plain facts about one conflicted file. Returns (block for the .held file, one-line summary)."""
-    lt, lwhat, lapprox = last_change(CTX["ours"], path)
-    if path in MTIMES:
-        lt, lwhat, lapprox = MTIMES[path], "uncommitted edit (file saved on disk at this time)", False
-    gt, gwhat, _ = last_change(CTX["theirs"], path)
-    lines = ["FACTS (computed by sync-main from git; trust these over your own reading)",
-             "LOCAL  last changed: %s  %s" % (fmt_time(lt) if lt else "unknown", lwhat),
-             "GITHUB last changed: %s  %s" % (fmt_time(gt) if gt else "unknown", gwhat)]
-    if lt and gt:
-        if lapprox and lt > gt:
-            newer = "UNSURE: local was saved after GitHub's change, but the real edit time is unknown"
-        elif lt > gt:
-            newer = "LOCAL is newer, by %s" % fmt_gap(lt - gt)
-        elif gt > lt:
-            newer = "GITHUB is newer, by %s" % fmt_gap(gt - lt)
+    """Plain, exact facts about one conflicted file. Returns (block for the .held file, one-line
+    summary for the to-do list). Facts only; the reasoning is the reader's job."""
+    mb = CTX["mb"]
+    base_blob = blob_at(mb, path)
+    _, mbt, _ = git("log", "-1", "--format=%ct", mb)
+    L = ["FACTS (computed by sync-main from git; exact, do not recompute them)", "",
+         "THE TWO VERSIONS",
+         "  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.",
+         "  GITHUB = the version from GitHub. It is LIVE in the repo right now, at %s" % path,
+         "  Both grew from the same COMMON version: commit %s, %s." % (mb[:10], fmt_time(int(mbt))), ""]
+
+    L.append("WHEN EACH SIDE CHANGED THIS FILE (newest first)")
+    latest = {}
+    for name, ref in (("LOCAL", CTX["ours"]), ("GITHUB", CTX["theirs"])):
+        L.append("  %s:" % name)
+        rows = side_history(ref, path)
+        if name == "LOCAL" and path in MTIMES:
+            L.append("    %s  (uncommitted edit; the time the file was last saved on this Mac)" % fmt_time(MTIMES[path]))
+            latest[name] = MTIMES[path]
+        for sha, t, subj in rows:
+            if subj == LOCAL_MSG:
+                L.append("    %s  %s  collected by the sync; the edit itself happened at or before this time"
+                         % (fmt_time(t), sha[:10]))
+            else:
+                L.append('    %s  %s  "%s"' % (fmt_time(t), sha[:10], subj))
+        if not rows and name not in latest:
+            L.append("    (no change on this side)")
+        if name not in latest:
+            real = [r for r in rows if r[2] != LOCAL_MSG]
+            if real:
+                latest[name] = real[0][1]
+    if "LOCAL" in latest and "GITHUB" in latest:
+        gap = latest["LOCAL"] - latest["GITHUB"]
+        if gap > 0:
+            L.append("  LOCAL's latest change is %s AFTER GITHUB's latest change." % fmt_gap(gap))
+        elif gap < 0:
+            L.append("  GITHUB's latest change is %s AFTER LOCAL's latest change." % fmt_gap(gap))
         else:
-            newer = "same time"
+            L.append("  Both sides' latest changes have the same time.")
     else:
-        newer = "unknown"
-    lines.append("NEWER: " + newer)
-    base_blob = blob_at(CTX["mb"], path)
-    summary = [newer.split(",")[0]]
+        L.append("  Which side changed it last is UNKNOWN (the local edit was never committed and its "
+                 "save time was not recorded).")
+    L += ["", "SIZE: common version %d lines, LOCAL %d lines, GITHUB %d lines"
+          % (nlines(base_blob), nlines(ours), nlines(theirs)), ""]
+
+    L.append("WHAT EACH SIDE DID, compared with the common version")
+    for name, blob in (("LOCAL", ours), ("GITHUB", theirs)):
+        if not blob:
+            L.append("  %s deleted the whole file." % name)
+            continue
+        L.append("  %s added %d lines and removed %d lines." % (
+            name, len(added_lines(base_blob, blob)), len(removed_lines(base_blob, blob))))
+    L.append("")
+
+    L.append("CODE ONE SIDE HAS THAT THE OTHER DOES NOT")
+    summary = []
     for holder, hname, side, sname in ((ours, "LOCAL", theirs, "GITHUB"), (theirs, "GITHUB", ours, "LOCAL")):
         if not holder or not side:
             continue
         n, missing, moved = containment(path, content(holder), base_blob, side)
         if n == 0:
-            lines.append("%s added no substantial lines of its own." % sname)
+            L.append("  %s added no lines of its own." % sname)
             continue
-        line = "%s already has %d of the %d lines %s added" % (hname, n - len(missing), n, sname)
+        line = "  %s has %d of the %d lines %s added" % (hname, n - len(missing), n, sname)
         if moved:
-            line += " (the rest were MOVED, all together, into %s)" % moved
-        lines.append(line + ".")
-        summary.append("%s has %d/%d of %s's new lines%s" % (
-            hname.lower(), n - len(missing), n, sname.lower(), " (rest moved to %s)" % moved if moved else ""))
+            line += "; the rest were MOVED, all together, into %s" % moved
+        L.append(line + ".")
+        summary.append("%s lacks %d of %s's %d new lines%s" % (
+            hname, len(missing), sname, n, " (moved to %s)" % moved if moved else ""))
         if missing:
-            lines.append("  Lines %s added that %s does NOT have:" % (sname, hname))
-            lines += ["    | " + m[:140] for m in missing[:15]]
+            L.append("    Lines %s added that %s does NOT have:" % (sname, hname))
+            L += ["      | " + m[:140] for m in missing[:15]]
             if len(missing) > 15:
-                lines.append("    | ... and %d more" % (len(missing) - 15))
+                L.append("      | ... and %d more" % (len(missing) - 15))
             elsewhere = also_found_in(missing, path)
             if elsewhere:
-                lines.append("    (some of these lines also appear in other changed files, which may be a "
-                             "coincidence: %s)" % ", ".join(elsewhere[:4]))
-    return "\n".join(lines) + "\n", "; ".join(summary)
+                L.append("    (some of those lines also appear in other changed files, which may be a "
+                         "coincidence: %s)" % ", ".join(elsewhere[:4]))
+        have = set(l.strip() for l in content(holder).decode("utf-8", "replace").splitlines())
+        undone = [r for r in removed_lines(base_blob, side) if r in have]
+        if undone:
+            L.append("    Lines %s deliberately REMOVED that %s still has: %d" % (sname, hname, len(undone)))
+            L += ["      | " + m[:140] for m in undone[:10]]
+    lt = "LOCAL latest %s" % (fmt_time(latest["LOCAL"]) if "LOCAL" in latest else "unknown")
+    gt = "GITHUB latest %s" % (fmt_time(latest["GITHUB"]) if "GITHUB" in latest else "unknown")
+    L += ["", "COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):",
+          "  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show %s:%s) <(git show %s:%s)"
+          % (CTX["theirs"][:12], quote(path), CTX["ours"][:12], quote(path)), "",
+          "RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):",
+          "  LOCAL : git show %s:%s" % (CTX["ours"][:12], quote(path)),
+          "  GITHUB: git show %s:%s" % (CTX["theirs"][:12], quote(path)), ""]
+    one_line = "%s; %s; %s; recover: git show %s:%s / %s:%s" % (
+        lt, gt, "; ".join(summary) or "no line differences", CTX["ours"][:10], quote(path),
+        CTX["theirs"][:10], quote(path))
+    return "\n".join(L) + "\n", one_line
 
 
 HUNK = re.compile(rb"^<<<<<<< local\n(.*?)^=======\n(.*?)^>>>>>>> github\n", re.S | re.M)
@@ -502,7 +566,9 @@ def decide(path, ours, theirs, ours_mode, theirs_mode, stamp, mb):
 def resolve_all(stamp):
     _, mb, _ = git("merge-base", "HEAD", "MERGE_HEAD")
     mb = mb.strip()
-    CTX.update(ours="HEAD", theirs="MERGE_HEAD", mb=mb)
+    _, o, _ = git("rev-parse", "HEAD")
+    _, t, _ = git("rev-parse", "MERGE_HEAD")
+    CTX.update(ours=o.strip(), theirs=t.strip(), mb=mb)
     _CHANGED.clear()
     _, out, _ = git("diff", "--name-only", "--diff-filter=U", "-z")
     files = [f for f in out.split("\0") if f]
@@ -525,45 +591,68 @@ def resolve_all(stamp):
 LOG_HEADER = """# Git conflicts — goal: ZERO items
 
 Written automatically by `scripts/sync-main.py` whenever it syncs this repo with GitHub and hits
-something it cannot safely decide alone. Nothing here is lost: every local byte is also inside the
-sync's "local work not committed by agents who made them" commit.
+something it cannot safely decide alone.
 
-**Agents: your job is to make this file empty.** Fix an item, then DELETE its line. When a
-`_conflicts/<stamp>/` folder has no files left, delete the folder and its heading. Never keep
-history here — a fixed item is deleted, never ticked, annotated or moved to a "done" list.
+**Agents: your job is to make this file empty — correctly.** Fix an item, then DELETE its line.
+When a `_conflicts/<stamp>/` folder has no files left, delete the folder and its heading. Never
+keep history here: a fixed item is deleted, never ticked or moved to a "done" list.
 
-## How to resolve a held file (do these in order)
+**Nothing here can be lost.** Both versions of every held file are permanently in git; the
+`.held` file and its line below show the exact `git show` command that brings either one back.
+The worst outcome is still dropping someone's work without noticing — so never delete lines from
+either version unless you can say why they are not needed.
 
-1. **Open the `.held` file and read its FACTS block first.** The sync computed them from git:
-   when each side last changed the file, the commit message on each side, which side is NEWER,
-   and exactly which lines each side has that the other does not. Trust these facts over your own
-   reading of dates — do not recompute them.
-2. **Compare the two versions.** The live file at `<path>` is GitHub's. The `.held` file is ours
-   (everything below the `LOCAL VERSION BELOW` line):
-   `diff <path> _conflicts/<stamp>/<path>.held`
-3. **Decide, using the facts:**
-   - The NEWER side usually wins. Take it, then check the lines the facts say it does NOT have:
-     if the newer side rewrote them on purpose (same job, new code), drop them; if they are a
-     separate feature, add them to the newer side.
-   - Both sides added different, unrelated things → combine them by hand.
-   - The facts say UNSURE, or you truly cannot tell → leave the item, add ONE line under
-     "Needs Arman" saying what the choice is.
-4. **Apply:** write the chosen content into the live file at `<path>` (without the `.held`
-   header). Make sure it compiles: `pnpm type-check` for TypeScript — fix anything your choice broke.
-5. **Clean up:** delete the `.held` file, delete its line below, delete the empty folder + heading.
-6. **Verify:** `python3 scripts/check-conflict-markers.py` must print `clean`.
-7. **Finish:** `python3 scripts/sync-main.py` — it commits your fix and syncs with GitHub.
+## How to resolve a held file
 
-(History if you need more than the facts: the sync's merge commit is
-`git log --merges --grep='sync-main' -1`; its `^1` is the local side, `^2` is GitHub's.)
+1. **Read the FACTS block at the top of the `.held` file.** It says exactly which version is
+   which (LOCAL is in the `.held` file; GITHUB is live in the repo), when each side changed the
+   file and with what commit message, what each side added and removed, and what code one side
+   has that the other lacks. These are computed from git. Do not recompute them.
+2. **Compare the two versions** with the COMPARE command in the facts. Its labels are correct.
+3. **Work out what each side was trying to do.** Read the commit messages and the lines each side
+   added and removed.
+4. **Decide which code is the upgrade.** Newer is a clue, never the answer. An upgrade can ADD code
+   (a new feature, a fix) or REMOVE code (a cleanup, code replaced by something better, code moved
+   elsewhere). Ask:
+   - Did one side rewrite, replace or move what the other side has? Then the rewrite is usually
+     the upgrade — but check that it covers what the old code did.
+   - Did the sides do different, unrelated things? Then the right answer keeps BOTH: combine them.
+   - Would your choice drop lines from either side? For every dropped piece, you must be able to
+     say why it is no longer needed. If you cannot, do not drop it.
+5. **Write the result into the live file** at `<path>` (never copy the `.held` header in).
+6. **Prove it works.** `pnpm type-check` for TypeScript; fix anything your choice broke. If it
+   cannot be made to work, go to "When you are not sure" instead.
+7. **Clean up:** delete the `.held` file, delete its line below, delete an empty folder + heading.
+   Then `python3 scripts/check-conflict-markers.py` must print `clean`.
+8. **Commit, saying what you decided and why** — this is the permanent record:
+   `git commit -m "Resolve held conflict <path>: kept <LOCAL|GITHUB|both> because <reason>" -- <path> .matrx/GIT-CONFLICTS.md _conflicts/`
+9. **Sync:** `python3 scripts/sync-main.py`
+
+## When you are not sure — escalate, never guess
+
+Taking your time is fine. Guessing is not. If you cannot say with confidence which code is the
+upgrade, or your choice would drop work you cannot explain:
+
+1. Delete NOTHING. Leave the live file and the `.held` file exactly as they are.
+2. MOVE the item's line from "Held files" (or from the level you picked it up at) to the NEXT
+   level up: Needs a manager → Needs the boss agent → Needs Arman. Write it as:
+   `- _conflicts/<stamp>/<path>.held — <the exact question> — <what you checked> — <who you are>`
+3. Run `python3 scripts/sync-main.py` so the escalation reaches everyone.
+
+Whoever works a level either resolves the item (steps 1–9 above) or moves it one level up with
+their own question and findings added.
 
 ## How to resolve a docs/comments item
 
-The file holds both versions between marker lines (LOCAL first, then GITHUB). Keep the right text
-(usually the newer one, or both merged into one clean passage), delete all three marker lines,
-delete the item's line below, then do steps 6–7 above.
+The file holds both versions between marker lines (LOCAL first, then GITHUB, with their times).
+Keep the right text — often one clean passage combining both — delete all three marker lines,
+delete the item's line below, then do steps 7–9 above.
 
 ## Held files — real conflicts
+
+## Needs a manager
+
+## Needs the boss agent
 
 ## Needs Arman
 

@@ -45,6 +45,8 @@ def main():
                 section = "held"
             elif line.startswith("## Docs and comments"):
                 section = "docs"
+            elif line.startswith("## Needs"):
+                section = "needs"          # escalated: the line carries the full path
             elif line.startswith("## "):
                 section = None
             elif line.startswith("### "):
@@ -53,6 +55,10 @@ def main():
                 item = line[2:].split(" — ")[0].strip()
                 if section == "held":
                     listed_held.add(folder + item + ".held")
+                elif section == "docs":
+                    listed_docs.add(item)
+                elif item.endswith(".held"):
+                    listed_held.add(item)
                 else:
                     listed_docs.add(item)
 
