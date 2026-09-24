@@ -50642,11 +50642,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "When true, only rows with resolved_at IS NULL.",
+              "description": "When true, rows unresolved at the issued snapshot (including rows resolved later).",
               "default": false,
               "title": "Unresolved Only"
             },
-            "description": "When true, only rows with resolved_at IS NULL."
+            "description": "When true, rows unresolved at the issued snapshot (including rows resolved later)."
           }
         ],
         "responses": {

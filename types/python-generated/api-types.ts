@@ -172110,7 +172110,7 @@ export interface operations {
                 source_app?: string | null;
                 /** @description Optional exact source_feature filter, e.g. 'claude-code'. The SMALLER half — the feature inside the app. This is what tells a Claude Code failure from a Codex one, or a chat failure from an agent-builder one. */
                 source_feature?: string | null;
-                /** @description When true, only rows with resolved_at IS NULL. */
+                /** @description When true, rows unresolved at the issued snapshot (including rows resolved later). */
                 unresolved_only?: boolean;
             };
             header?: never;
