@@ -70,8 +70,8 @@ declare
   f_status text; f_city text; f_tech text; f_priority text; f_amount text; f_job text;
   e_labels jsonb; e_keys jsonb;
   v_grid text[]; v_grid_keys text[]; v_members text[]; v_page1 text[]; v_page2 text[]; v_all text[];
-  v_expect_dana constant text[] := array['TT-4101','TT-4102','TT-4104','TT-4112','TT-4115','TT-4116'];
-  v_expect_all  constant text[] := array['TT-4101','TT-4102','TT-4104','TT-4108','TT-4112','TT-4115','TT-4116','TT-4117'];
+  v_expect_dana constant text[] := array['TT-4101','TT-4102','TT-4104','TT-4111','TT-4112','TT-4115','TT-4116'];
+  v_expect_all  constant text[] := array['TT-4101','TT-4102','TT-4104','TT-4108','TT-4111','TT-4112','TT-4115','TT-4116','TT-4117'];
   v_board jsonb; v_agg record; v_n integer; v_caught text; v_doc jsonb; v_server text[];
   v_other_rule uuid; v_deep jsonb; i integer;
 begin
@@ -116,15 +116,19 @@ begin
   if v_grid is distinct from v_expect_dana or v_grid_keys is distinct from v_expect_dana then
     raise exception 'S2-1: the grid answered % (labels) / % (keys); Rosa''s view is %', v_grid, v_grid_keys, v_expect_dana;
   end if;
-  -- TT-4111 (Ojai, Scheduled, no priority yet) is NOT in it: "not (priority is Low)" of an unanswered
-  -- priority is undecided, exactly as custom.rule_eval answers it (part 5 proves the evaluator agrees).
-  raise notice 'S2 part 1 PASS — the grid answers Rosa''s six jobs (TT-4101, 4102, 4104, 4112, 4115, 4116) in both spellings; the two call-backs she was not given are not among them.';
+  -- TT-4111 (Ojai, Scheduled, no priority yet) IS in it (chair ruling 2026-09-24, Airtable's
+  -- "is not"): for a filter, NOT of an unanswered value is true. RED before
+  -- filtergroups_not_of_an_unanswered_value_includes_it_in_a_filter.sql.
+  if not ('TT-4111' = any (v_grid)) then
+    raise exception 'S2-1b: TT-4111 (no priority yet) is left out of "NOT priority is Low"';
+  end if;
+  raise notice 'S2 part 1 PASS — the grid answers Rosa''s seven jobs (TT-4101, 4102, 4104, 4111, 4112, 4115, 4116) in both spellings — TT-4111, with no priority yet, is "not Low"; the two call-backs she was not given are not among them.';
 
   -- ══ 2. THE BOARD ══
   select jsonb_object_agg(b.stage_key, jsonb_build_object('cards', b.cards, 'total', b.total)) into v_board
     from custom.pipeline_board(v_org, v_jobs, 'amount', e_labels) b;
   if (v_board #>> '{open,cards}')::int <> 3 or (v_board #>> '{open,total}')::numeric <> 1255
-     or (v_board #>> '{scheduled,cards}')::int <> 3 or (v_board #>> '{scheduled,total}')::numeric <> 1980
+     or (v_board #>> '{scheduled,cards}')::int <> 4 or (v_board #>> '{scheduled,total}')::numeric <> 2345
      or (v_board #>> '{in_progress,cards}')::int <> 0 or (v_board #>> '{completed,cards}')::int <> 0
      or (v_board #>> '{invoiced,cards}')::int <> 0 then
     raise exception 'S2-2: the board''s headings under Rosa''s view were %', v_board;
@@ -132,16 +136,16 @@ begin
   -- And the three-argument board still counts every job she may see (16 = 18 less the two call-backs).
   select sum(b.cards)::int into v_n from custom.pipeline_board(v_org, v_jobs, 'amount') b;
   if v_n <> 16 then raise exception 'S2-2b: the unfiltered board counts % jobs for Rosa, not 16', v_n; end if;
-  raise notice 'S2 part 2 PASS — the board under her view: Open 3 / $1,255, Scheduled 3 / $1,980, the rest 0; the old three-argument board still counts all 16 she may see.';
+  raise notice 'S2 part 2 PASS — the board under her view: Open 3 / $1,255, Scheduled 4 / $2,345, the rest 0; the old three-argument board still counts all 16 she may see.';
 
   -- ══ 3. THE AGGREGATE ══
   select a.row_count, a.measures into v_agg
     from custom.record_aggregate(v_org, v_jobs, '[]'::jsonb,
            '[{"op":"sum","key":"amount"}]'::jsonb, null, e_labels) a;
-  if v_agg.row_count <> 6 or (v_agg.measures ->> 'sum_amount')::numeric <> 3235 then
-    raise exception 'S2-3: the aggregate under Rosa''s view counted % jobs worth % (want 6, 3235)', v_agg.row_count, v_agg.measures;
+  if v_agg.row_count <> 7 or (v_agg.measures ->> 'sum_amount')::numeric <> 3600 then
+    raise exception 'S2-3: the aggregate under Rosa''s view counted % jobs worth % (want 7, 3600)', v_agg.row_count, v_agg.measures;
   end if;
-  raise notice 'S2 part 3 PASS — her dashboard number: 6 jobs, $3,235 — the grid''s six and the board''s 3 + 3.';
+  raise notice 'S2 part 3 PASS — her dashboard number: 7 jobs, $3,600 — the grid''s seven and the board''s 3 + 4.';
 
   -- ══ 4. THE RULE'S MEMBERS, WALLED AND PAGED ══
   select array_agg(m.document ->> 'job_no' order by m.document ->> 'job_no') into v_members
@@ -154,12 +158,12 @@ begin
   if v_doc ? '_values' or not (v_doc ? 'job_no') then
     raise exception 'S2-4b: a member came back as a stored row, not the read door''s document: %', v_doc;
   end if;
-  -- Paged: two pages of three are the six, with nothing twice.
-  select array_agg(m.document ->> 'job_no') into v_page1 from custom.rule_members_visible(v_org, v_rule, 3, 0) m;
-  select array_agg(m.document ->> 'job_no') into v_page2 from custom.rule_members_visible(v_org, v_rule, 3, 3) m;
-  if cardinality(v_page1) <> 3 or cardinality(v_page2) <> 3 or v_page1 && v_page2
+  -- Paged: a page of four and a page of three are the seven, with nothing twice.
+  select array_agg(m.document ->> 'job_no') into v_page1 from custom.rule_members_visible(v_org, v_rule, 4, 0) m;
+  select array_agg(m.document ->> 'job_no') into v_page2 from custom.rule_members_visible(v_org, v_rule, 4, 4) m;
+  if cardinality(v_page1) <> 4 or cardinality(v_page2) <> 3 or v_page1 && v_page2
      or (select array_agg(x order by x) from unnest(v_page1 || v_page2) x) is distinct from v_expect_dana then
-    raise exception 'S2-4c: pages % and % are not the six members once each', v_page1, v_page2;
+    raise exception 'S2-4c: pages % and % are not the seven members once each', v_page1, v_page2;
   end if;
   -- A stranger is refused at the wall.
   perform set_config('request.jwt.claims', c_stranger_j, true);
@@ -184,7 +188,7 @@ begin
     raise exception 'S2-4f: the server-only rule_members answered a signed-in person';
   exception when insufficient_privilege then null;
   end;
-  raise notice 'S2 part 4 PASS — rule_members_visible: her six, masked documents, two pages of three, a stranger refused, another organization''s Rule and an invented id answered alike ("that rule is not there"), rule_members refused from her seat.';
+  raise notice 'S2 part 4 PASS — rule_members_visible: her seven, masked documents, pages of four and three, a stranger refused, another organization''s Rule and an invented id answered alike ("that rule is not there"), rule_members refused from her seat.';
 
   -- ══ 5. THE COMPILER AND THE EVALUATOR AGREE (the owner sees every job) ══
   perform set_config('request.jwt.claims', c_admin_j, true);
@@ -206,10 +210,15 @@ begin
   select r.id into v_rule from custom.record r where r.organization_id = v_org and r.table_id = custom.rule_kernel_id()
      and r.data ->> 'name' = 'Rosa''s morning board';
   select array_agg(m.data ->> 'job_no' order by m.data ->> 'job_no') into v_server from custom.rule_members(v_org, v_rule) m;
-  if v_server is distinct from array['TT-4101','TT-4102','TT-4104','TT-4108','TT-4112','TT-4115','TT-4116','TT-4117'] then
-    raise exception 'S2-5b: custom.rule_members (the evaluator, row by row) answered %, the compiled filter the eight', v_server;
+  if v_server is distinct from array['TT-4101','TT-4102','TT-4104','TT-4108','TT-4111','TT-4112','TT-4115','TT-4116','TT-4117'] then
+    raise exception 'S2-5b: custom.rule_members (the evaluator, row by row) answered %, the compiled filter the nine', v_server;
   end if;
-  raise notice 'S2 part 5 PASS — with every job visible, the compiled WHERE clause and custom.rule_eval row by row answer the same eight jobs (TT-4111, priority unanswered, is out of both).';
+  raise notice 'S2 part 5 PASS — with every job visible, the compiled WHERE clause and custom.rule_eval row by row answer the same nine jobs (TT-4111, priority unanswered, is in both — membership asks as a filter).';
+  -- A write-refusing Rule still keeps three values: NOT of an unanswered value, asked with no purpose, is undecided.
+  if custom.rule_eval(v_org, jsonb_build_object('op','not','args', jsonb_build_array(jsonb_build_object('op','eq','args', jsonb_build_array(jsonb_build_object('field',(select v::text from fg where k='f_priority')), jsonb_build_object('const','low'))))), '{}'::jsonb) <> 'null'::jsonb then
+    raise exception 'S2-5c: a Rule asked to judge a write answered NOT of an unanswered value as decided';
+  end if;
+  raise notice 'S2 part 5c PASS — asked to judge a write (no purpose), NOT of an unanswered value stays undecided, so a refusal never fires on it.';
 end
 $t5$;
 

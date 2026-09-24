@@ -1,4 +1,4 @@
--- LANE S2-PRIME FILTER-GROUPS — THE RED TWIN. It runs the REAL BYTES of this lane's three inverses
+-- LANE S2-PRIME FILTER-GROUPS — THE RED TWIN. It runs the REAL BYTES of this lane's inverses
 -- inside one transaction that ends in ROLLBACK, and asserts each defect exactly as it stood before
 -- the lane, on Topa Topa Plumbing & Rooter's Jobs (_filtergroups_dispatch.sql). It PASSES when the
 -- inverses put the defects back; filtergroups_green.sql is the same use case after the fix.
@@ -8,6 +8,8 @@
 --   R2  Rosa's nested view handed to the list door is read as a FLAT MAP — `op = 'and' and args = …`
 --       — and silently answers NO jobs, with no error.
 --   R3  The board takes no filter: its headings count all 16 jobs she may see under any view.
+--   R5  (chair ruling 2026-09-24) "NOT priority is Low" leaves TT-4111, a job with no priority yet,
+--       out of the view — custom.rule_eval's NOT kept an unanswered value undecided for a filter too.
 --   R4  The shape guard stops at twelve JSON steps: a field id that is not one of Jobs' fields,
 --       seven groups down, is STORED.
 
@@ -21,6 +23,7 @@
 \endif
 
 begin;
+\i migrations/inverse/filtergroups_not_of_an_unanswered_value_includes_it_in_a_filter_down.sql
 \i migrations/inverse/filtergroups_a_signed_in_person_may_read_a_rules_members_down.sql
 \i migrations/inverse/filtergroups_a_views_nested_question_is_one_where_clause_down.sql
 \i migrations/inverse/filtergroups_the_rule_guard_checks_every_depth_down.sql
@@ -79,6 +82,12 @@ begin
     'name', 'Seven groups down', 'kind', 'predicate', 'uses', jsonb_build_array('membership'),
     'scope_table_id', v_jobs::text, 'applies_to_types', '[]'::jsonb, 'expr', v_deep));
   if v_rule is null then raise exception 'R4: nothing stored'; end if;
+  -- R5, on the evaluator as it was (membership asks with no filter purpose).
+  if custom.rule_truth(custom.rule_eval(v_org, jsonb_build_object('op','not','args', jsonb_build_array(jsonb_build_object('op','eq','args', jsonb_build_array(jsonb_build_object('field', f_priority), jsonb_build_object('const','low'))))),
+       (select r.data from custom.record r join fg on fg.v = r.id and fg.k = 'j11'), jsonb_build_object('purpose','filter'))) is not null then
+    raise exception 'R5 did not reproduce: NOT of TT-4111''s unanswered priority was decided';
+  end if;
+  raise notice 'R5 reproduced — for a filter, NOT (priority is Low) of TT-4111''s unanswered priority is undecided, so the job is left out.';
   raise notice 'R4 reproduced — a Rule whose field seven groups down is not one of Jobs'' fields was stored (%).', v_rule;
 end
 $r$;
