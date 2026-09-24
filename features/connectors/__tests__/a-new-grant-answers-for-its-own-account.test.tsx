@@ -1,6 +1,7 @@
 import React, { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { ConnectorAccount, ConnectorCapabilityRollout } from "../health";
+import { toast } from "@/lib/toast";
 
 jest.mock("@/lib/toast", () => ({
   toast: { info: jest.fn(), success: jest.fn(), error: jest.fn() },
@@ -57,7 +58,10 @@ const connected: ConnectorAccount = {
   lastRefusalSentence: null,
 };
 
-function Fixture({ initial = [] }: { initial?: ConnectorAccount[] }) {
+function Fixture({ initial = [], afterRefetch = [connected] }: {
+  initial?: ConnectorAccount[];
+  afterRefetch?: ConnectorAccount[];
+}) {
   const [accounts, setAccounts] = useState<ConnectorAccount[]>(initial);
   return (
     <ConnectorConsentBody
@@ -68,13 +72,14 @@ function Fixture({ initial = [] }: { initial?: ConnectorAccount[] }) {
       rolloutUnavailable={false}
       errorMessage={null}
       initialProductKeys={["gmail_read"]}
-      refetch={async () => setAccounts([connected])}
+      refetch={async () => setAccounts(afterRefetch)}
     />
   );
 }
 
 it("shows a successful new Gmail reading grant against the returned connection", async () => {
   run.mockResolvedValue({ connectionId: connected.id });
+  jest.mocked(toast.success).mockClear();
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root: Root = createRoot(container);
@@ -93,6 +98,34 @@ it("shows a successful new Gmail reading grant against the returned connection",
     expect(container.textContent).toContain("Ready to use");
     expect(container.textContent).toContain("Gmail reading");
     expect(container.textContent).not.toContain("did not grant this one");
+    expect(toast.success).toHaveBeenCalledWith("Google connected.");
+  } finally {
+    act(() => root.unmount());
+    container.remove();
+    run.mockReset();
+  }
+});
+
+it("does not announce success when the returned connection is absent after refresh", async () => {
+  run.mockResolvedValue({ connectionId: connected.id });
+  jest.mocked(toast.success).mockClear();
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root: Root = createRoot(container);
+  try {
+    await act(async () => root.render(<Fixture afterRefetch={[]} />));
+    const button = [...container.querySelectorAll("button")].find((node) =>
+      (node.textContent ?? "").includes(provider.dialog.cta),
+    );
+    await act(async () => {
+      button!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(container.textContent).toContain("could not confirm this account");
+    expect(container.textContent).toContain("Settings → Connectors");
+    expect(container.textContent).not.toContain("Ready to use");
+    expect(toast.success).not.toHaveBeenCalled();
   } finally {
     act(() => root.unmount());
     container.remove();
