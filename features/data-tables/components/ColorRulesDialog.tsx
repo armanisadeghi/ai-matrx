@@ -52,7 +52,7 @@ import {
   type StyleColor,
   type StyleTarget,
   type TableStyle,
-} from "../table-style";
+} from "@ai-matrx/design-system/data-table/table-style";
 
 /** Radix Select forbids an empty item value, so "no column" needs a sentinel. */
 const NO_COLUMN = "__none__";

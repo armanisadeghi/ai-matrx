@@ -13,7 +13,7 @@ import {
   type ChoiceColorLookup,
   type ColorRule,
   type TableStyle,
-} from "../table-style";
+} from "@ai-matrx/design-system/data-table/table-style";
 
 const noColor: ChoiceColorLookup = () => undefined;
 
@@ -417,7 +417,7 @@ describe("tableStyleIsEmpty", () => {
 });
 
 describe("colorForChoice", () => {
-  const { colorForChoice, STYLE_COLORS } = require("../table-style");
+  const { colorForChoice, STYLE_COLORS } = require("@ai-matrx/design-system/data-table/table-style");
   it("uses the option's declared color when it has one", () => {
     expect(colorForChoice([{ value: "Done", color: "green" }], "Done")).toBe("green");
   });

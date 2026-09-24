@@ -57,7 +57,7 @@ import type {
   ColorBy,
   ColorRule,
   StyleColor,
-} from "../features/data-tables/table-style";
+} from "@ai-matrx/design-system/data-table/table-style";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 

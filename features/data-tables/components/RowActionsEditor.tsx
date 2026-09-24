@@ -50,7 +50,7 @@ import {
 } from "../row-actions";
 import { effectiveRowLabel, rowLabelText, type RowLabelField } from "../row-label";
 import { setTableRowActions } from "../service";
-import { STYLE_COLORS, STYLE_COLOR_LABELS, type StyleColor } from "../table-style";
+import { STYLE_COLORS, STYLE_COLOR_LABELS, type StyleColor } from "@ai-matrx/design-system/data-table/table-style";
 import { isServiceFailure } from "../types";
 import { FormatAwareInput, formatHasOwnInput } from "./FormatAwareInput";
 import { FormulaExpressionEditor } from "./FormulaExpressionEditor";

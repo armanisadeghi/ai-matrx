@@ -172,7 +172,7 @@ import {
   type ChoiceColorLookup,
   type StylePath,
   type TableStyle,
-} from "@/features/data-tables/table-style";
+} from "@ai-matrx/design-system/data-table/table-style";
 import { ColorRulesDialog } from "@/features/data-tables/components/ColorRulesDialog";
 import { isChoiceFormat } from "@/lib/field-formats/choices";
 import { isComputedColumn } from "@/features/data-tables/formulas";

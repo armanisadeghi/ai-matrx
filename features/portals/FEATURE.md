@@ -10,8 +10,8 @@ and sees **her** jobs and **her** invoices and nothing else — on a phone first
   `app/api/portal/[slug]/sign-in/route.ts` (mint and email the link).
 - **The look (lane S6).** `look.ts` turns the store's resolved style (`custom._portal_style`: the
   portal's own name, welcome, logo, accent and footer links over the organization's brand) into
-  what `PortalBrand.tsx` draws on every portal screen. Colour classes come from the pure
-  `features/data-tables/table-style.ts` — never `@ai-matrx/design-system/data-table`, whose
+  what `PortalBrand.tsx` draws on every portal screen. Colour classes come from the server-safe
+  `@ai-matrx/design-system/data-table/table-style` — never `@ai-matrx/design-system/data-table`, whose
   "use client" barrel hands a server component client references instead of strings.
 - **The status line (lane S6).** `timeline.ts` + `PortalStatusTimeline.tsx`: the stages from
   `portal_me` (`table.stage`, present only when the portal shows the stage Field) and the moments

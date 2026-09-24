@@ -212,7 +212,8 @@ creates workbook UI and duplicate internal editor documents.
   hover), field display-name labels via `fieldLabels`, copy-snapshot-as-JSON, Load more
   past the first 50, `onRowChanged` refetch callback. Honours `changed_by = NULL` as
   "System".
-- `features/data-tables/table-style.ts` (colors model: color-by / rules / highlights, pure) +
+- `@ai-matrx/design-system/data-table/table-style` (colors model: color-by / rules / highlights,
+  pure, server-safe; this repo's copy was deleted 2026-09-24) +
   `components/ColorRulesDialog.tsx` (the Colors dialog) + `scripts/seed-udt-example-tables.ts`.
 - `features/data-tables/grid-clipboard.ts` (TSV parse / serialize + `planPaste`, pure) and
   `features/data-tables/grid-context-menu.ts` (the grid's cell / row / column menu sections +
@@ -811,8 +812,8 @@ written by PATH through `public.udt_set_table_style(p_table_id, p_path text[], p
 (migration `udt_table_style_and_example_tables.sql`; editor-gated by
 `workbench.udt_dataset_access`; a null value deletes the key and prunes empty parents).
 Surgical paths are what let two editors highlight different cells without clobbering
-each other. Model, parsing, precedence and class maps: [`table-style.ts`](./table-style.ts)
-(tests in `__tests__/table-style.test.ts`). The grid patches its local copy optimistically
+each other. Model, parsing, precedence and class maps: `@ai-matrx/design-system/data-table/table-style`
+(this repo's consumer tests in `__tests__/table-style.test.ts`). The grid patches its local copy optimistically
 and adopts the server's returned style on success. Copy, export, the agent scope and the
 row data never see colors. Realtime does NOT yet push style changes to other viewers
 (the viewer subscribes to rows only) — a reload shows them.

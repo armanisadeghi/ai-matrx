@@ -10,10 +10,10 @@
 // dark class, so a portal is legible on both grounds and a retired name degrades to "no colour".
 // Pure, no I/O (`__tests__/look.test.ts`).
 
-// The pure palette module, NOT `@ai-matrx/design-system/data-table`: that subpath is one
-// "use client" barrel, so on the server (every portal page is server-rendered) its constants
-// arrive as client references and every accent silently read as "no colour".
-import { ROW_TINT_CLASS, SWATCH_CLASS } from "@/features/data-tables/table-style";
+// The server-safe subpath (design-system 0.39+), NOT `@ai-matrx/design-system/data-table`: that
+// one is a "use client" barrel, so on the server (every portal page is server-rendered) its
+// constants arrive as client references and every accent silently read as "no colour".
+import { ROW_TINT_CLASS, SWATCH_CLASS } from "@ai-matrx/design-system/data-table/table-style";
 
 import type { PortalStyle } from "./service";
 

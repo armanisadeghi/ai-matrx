@@ -48,7 +48,7 @@ import {
   type ResolveCell,
 } from "./formulas";
 import type { BulkOp } from "./types";
-import { isStyleColor, type StyleColor } from "./table-style";
+import { isStyleColor, type StyleColor } from "@ai-matrx/design-system/data-table/table-style";
 
 // ─── model ───────────────────────────────────────────────────────────────────
 

@@ -73,7 +73,7 @@ import {
   STYLE_COLORS,
   STYLE_COLOR_LABELS,
   type StyleColor,
-} from "./table-style";
+} from "@ai-matrx/design-system/data-table/table-style";
 
 // ─── DOM anchors ────────────────────────────────────────────────────────────
 //
