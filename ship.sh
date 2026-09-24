@@ -1,44 +1,63 @@
 #!/usr/bin/env bash
-# ship.sh — One release commit of YOUR named paths + version bump, then push.
+# ship.sh — sync this checkout with GitHub, then release. (Arman, 2026-09-24)
 #
-# Does NOT commit your message first. Runs release.sh with --ship --message and
-# release.sh makes a SINGLE commit:
-#   release: v0.4.106 - Added new chat surface
-#
-# 🚨 THE RELEASE-COMMIT CONTENT LAW (scripts/release-stage.sh): the commit
-# carries EXACTLY package.json (+ package-lock.json) and the paths you name
-# after `--`. It never stages the working tree and never trusts the index —
-# both are shared with dozens of other lanes, and release v0.4.1575
-# (2026-08-31) shipped a broken build because the old `git add -A` here swept
-# another lane's half-edited file into production. With no paths (or paths it
-# cannot commit) it is a bump-only release of what is already committed, plus a
-# WARNING. release.sh never refuses a release.
+#   1. scripts/sync-main.py   commits everything uncommitted ("local work not committed by agents
+#                             who made them"), merges origin/main, sorts every conflict into
+#                             _conflicts/ (auto-fixed / both-versions-kept / held), pushes.
+#   2. scripts/release.sh     bumps the version and pushes the release commit; Vercel builds it.
+#                             Runs whatever happened in step 1.
+#   3. the open items         prints what is open in _conflicts/README.md, if anything, for the
+#                             agent that resolves conflicts.
 #
 # Usage:
-#   ./ship.sh "Added new chat surface" -- features/chat lib/chat-api.ts
-#   ./ship.sh "fix: thing" --minor -- features/thing/Fix.tsx
-#   ./ship.sh "chore: bump deps" --no-migrate -- package.json pnpm-lock.yaml
-#   ./ship.sh "release only what is committed"          # clean tree: bump only
-#   ./ship.sh "preview" --dry-run -- features/chat      # prints the exact file
-#                                                         list the commit would carry
-#
-# Flags before `--` pass through to scripts/release.sh
-# (--patch|--minor|--major|--target|--dry-run|--no-migrate|--no-gates).
-set -euo pipefail
+#   ./ship.sh                                   # sync + release with the default note
+#   ./ship.sh "Added new chat surface"          # sync + release with a note
+#   ./ship.sh "note" --minor --target all       # release.sh flags pass through
+#   ./ship.sh "note" --dry-run                  # NO sync; release.sh --dry-run only
+set -uo pipefail
 
-export RELEASE_STAGE_CALLER_PWD="$PWD"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
+export RELEASE_STAGE_CALLER_PWD="$PWD"
 
-if [[ $# -lt 1 ]]; then
-    echo "Usage: ./ship.sh \"commit message\" [release.sh flags...] -- <paths you own...>" >&2
-    echo "  Example: ./ship.sh \"Added new chat surface\" -- features/chat" >&2
-    echo "  Produces one commit: release: vX.Y.Z - Added new chat surface" >&2
-    echo "  carrying ONLY package.json + the named paths (never the whole tree)." >&2
-    exit 1
+NOTE="sync and release"
+if [[ $# -gt 0 && "$1" != --* ]]; then
+    NOTE="$1"
+    shift
 fi
 
-COMMIT_MSG="$1"
-shift
+DRY_RUN=false
+for arg in "$@"; do [[ "$arg" == "--dry-run" ]] && DRY_RUN=true; done
 
-exec "$ROOT/scripts/release.sh" --ship --message "$COMMIT_MSG" "$@"
+# ── 1. sync ──────────────────────────────────────────────────────────────────
+if $DRY_RUN; then
+    echo "ship.sh: --dry-run, so the sync was skipped (it commits and pushes for real)."
+    SYNC_RC=0
+else
+    python3 "$ROOT/scripts/sync-main.py"
+    SYNC_RC=$?
+    if [[ $SYNC_RC -ne 0 ]]; then
+        echo ""
+        echo "ship.sh: the sync did not finish (exit $SYNC_RC; its reason is printed above). Releasing anyway."
+    fi
+fi
+
+# ── 2. release ───────────────────────────────────────────────────────────────
+echo ""
+"$ROOT/scripts/release.sh" --message "$NOTE" "$@"
+RELEASE_RC=$?
+
+# ── 3. open items ────────────────────────────────────────────────────────────
+echo ""
+if ! $DRY_RUN; then
+    if python3 "$ROOT/scripts/check-conflict-markers.py" >/tmp/ship-conflicts.$$ 2>&1; then
+        echo "ship.sh: nothing open in _conflicts/."
+    else
+        echo "ship.sh: open items in _conflicts/README.md:"
+        sed 's/^/  /' /tmp/ship-conflicts.$$
+    fi
+    rm -f /tmp/ship-conflicts.$$
+fi
+
+echo "ship.sh: sync exit $SYNC_RC, release exit $RELEASE_RC"
+exit $RELEASE_RC
