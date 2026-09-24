@@ -52,11 +52,10 @@ before writing any brief; a brief written minutes after the vision arrives is th
 disease, not of speed.
 
 ### 3. Order the adversarial review BEFORE commitment
-Verbatim: *"before we take the next step... I want you to have an opus 5 agent who tries to poke
-holes in this list and tell us what things we are missing that we will regret later."* One
-sentence — and it seeded the entire culture: from then on, every plan got attacked before it was
+Historical order: Arman asked for an independent reviewer to poke holes in plans before the team
+proceeded. That order seeded the entire culture: from then on, every plan got attacked before it was
 trusted, and every "done" got attacked before it was believed. Adversarialism was the OWNER'S
-order, so no agent ever treated it as optional. (Mechanics: `plan-attack`.)
+order, so no agent ever treated it as optional. (Mechanics: `plan-attack`.) Current Claude reviewer selection: Opus 5.5.
 
 ### 4. Rule the done-means-done law (the single most load-bearing message)
 Verbatim, from launch: *"I don't want fake tests that take in fake data that the agents
