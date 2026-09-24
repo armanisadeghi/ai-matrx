@@ -93,15 +93,6 @@ async function mount(node: React.ReactElement) {
 
 const SURFACES: readonly [string, () => React.ReactElement][] = [
   ["the reference board", () => <MandateReferenceBoardView />],
-  [
-    "a key's source usage",
-    () => (
-      <MandateSourceUsage
-        mandateKey="test.key"
-        fallback={{ declaration: null, importFailed: false }}
-      />
-    ),
-  ],
 ];
 
 beforeEach(() => {
@@ -161,6 +152,43 @@ describe.each(SURFACES)("%s and the organization question", (_name, render) => {
         m.container.querySelector('[data-testid="organization-required-notice"]'),
       ).toBeNull();
       expect(reads.length).toBeGreaterThan(0);
+    } finally {
+      m.unmount();
+    }
+  });
+});
+
+// 🚨 SUPERSEDED FOR ONE KEY (Arman, 2026-09-23 — access belongs to the
+// person): a key's source usage is ONE record read by key. It never waits on,
+// and is never refused for, the selected organization; it used to print the
+// organization notice and send nothing in both states below.
+describe("a key's source usage never waits on the organization", () => {
+  const usage = () => (
+    <MandateSourceUsage
+      mandateKey="test.key"
+      fallback={{ declaration: null, importFailed: false }}
+    />
+  );
+  it.each([
+    ["boot settled with nothing selected", { orgBootstrapResolved: true }],
+    [
+      "the organization read FAILED",
+      {
+        orgBootstrapResolved: true,
+        orgBootstrapFailure: "the organization read failed: Failed to fetch",
+      },
+    ],
+  ] as const)("reads the references when %s", async (_name, state) => {
+    appContext = makeAppContextState(state);
+    const m = await mount(usage());
+    try {
+      expect(reads).toEqual(["references"]);
+      expect(
+        m.container.querySelector('[data-testid="organization-required-notice"]'),
+      ).toBeNull();
+      expect(
+        m.container.querySelector('[data-testid="organization-unavailable-notice"]'),
+      ).toBeNull();
     } finally {
       m.unmount();
     }
