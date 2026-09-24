@@ -2,6 +2,7 @@ import { getCellValue } from "@ai-matrx/design-system/data-table/filter-engine";
 import type { AgentAppAdminView } from "@/lib/services/agent-apps-admin-service";
 import {
   AGENT_APP_COLUMNS,
+  agentAppsCopyConfig,
   agentAppSuccessPercent,
   agentAppsScopeFilters,
 } from "./page";
@@ -14,6 +15,47 @@ function column(id: string) {
 }
 
 describe("Agent Apps canonical table contract", () => {
+  it("uses one canonical Alchemy configuration while retaining the custom view exports", () => {
+    const app: AgentAppAdminView = {
+      id: "app-test",
+      created_by: null,
+      agent_id: "agent-test",
+      mandate_id: null,
+      mandate_key: null,
+      slug: "test",
+      name: "Test",
+      tags: [],
+      status: "draft",
+      visibility: "private",
+      is_verified: false,
+      is_featured: false,
+      rate_limit_per_ip: null,
+      rate_limit_window_hours: null,
+      rate_limit_authenticated: null,
+      total_executions: null,
+      unique_users_count: null,
+      success_rate: null,
+      total_tokens_used: null,
+      total_cost: null,
+      created_at: "2026-09-22T00:00:00Z",
+      updated_at: "2026-09-22T00:00:00Z",
+    };
+    const allApp = { ...app, id: "app-all", name: "All app" };
+    const copy = agentAppsCopyConfig([app], [app, allApp]);
+    expect(copy.showToolbar).not.toBe(false);
+    expect(copy.showRow).not.toBe(false);
+    expect(copy.export?.([app], [app]).items).toHaveLength(2);
+    expect(copy.aiVariants?.([app], [app])[0]?.id).toBe("briefs");
+    const custom = copy.aiCustom?.([app], [app, allApp]);
+    if (!custom) throw new Error("Agent apps custom export was not configured");
+    expect(
+      custom.build({
+        onlyFiltered: false,
+        includeDescription: false,
+      }),
+    ).toEqual(expect.objectContaining({ meta: { apps: 2 } }));
+  });
+
   it("keeps the existing independent filters and metrics as table accessors", () => {
     for (const id of [
       "name",
