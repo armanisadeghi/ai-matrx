@@ -65,6 +65,14 @@ test("the push never waits for migrations: they are awaited only after it lands"
   assert.match(afterPush, /wait "\$SHIP_MIG_PID"/);
 });
 
+test("the lock covers only the bump and the push: released before the migration wait, stolen after 30s", () => {
+  const release = afterPush.indexOf("release_lock_cleanup; RELEASE_LOCK_HELD=false");
+  const migWait = afterPush.indexOf('wait "$SHIP_MIG_PID"');
+  assert.ok(release > 0 && migWait > release, "the ship lock must be released before waiting on migrations");
+  assert.match(code, /waited >= 30\b/);
+  assert.match(code, /ship_finding "WARNING" "Git" "Release lock held/);
+});
+
 test("a bad flag, target or --ship pathspec is a WARNING, never a stop", () => {
   assert.doesNotMatch(everythingBeforePush, /release_stage_validate_paths[^\n]*\n[^\n]*\|\| fail/);
   assert.doesNotMatch(everythingBeforePush, /release_stage_commit[^\n]*\n[^\n]*\|\| fail/);

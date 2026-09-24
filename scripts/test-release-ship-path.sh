@@ -4,7 +4,7 @@
 # Builds a throwaway origin + checkout, then releases under the three conditions
 # that used to stop this script cold: uncommitted files in the checkout, a
 # branch that has diverged from origin, and a foreign push landing in the
-# middle of the release (the stubbed migration applier lands it). It passes only
+# middle of the release (the script's before-push test hook lands it). It passes only
 # if the tag reaches origin, the release commit carries the Vercel prefix, the
 # local commit shipped, the foreign push survived, and the uncommitted file was
 # never touched.
@@ -44,24 +44,22 @@ echo "mine" > mine.txt; git_q add mine.txt; git_q commit -m "mine"
 # Dirty: a tracked file with uncommitted edits, as the shared checkout always has.
 echo "uncommitted work" >> shared.txt
 
-# ── stubs: the aidream applier (its first run lands a foreign push) ──────────
+# ── stubs: the aidream applier (records its call) ────────────────────────────
 mkdir -p "$SANDBOX/aidream/db" "$SANDBOX/bin"
 : > "$SANDBOX/aidream/db/apply_migrations.py"
 cat > "$SANDBOX/bin/uv" <<STUB
 #!/usr/bin/env bash
 echo "\$*" >> "$SANDBOX/uv-calls"
-if [[ "\$*" == *apply_migrations.py* && ! -f "$SANDBOX/raced" ]]; then
-    touch "$SANDBOX/raced"
-    ( cd "$SANDBOX/other" && git pull -q origin main && echo race > race.txt && git add -A \
-        && git -c user.name=t -c user.email=t@t commit -qm race && git push -q origin main ) >/dev/null 2>&1
-fi
 exit 0
 STUB
 chmod +x "$SANDBOX/bin/uv"
 
 # ── release ──────────────────────────────────────────────────────────────────
 set +e
-PATH="$SANDBOX/bin:$PATH" AIDREAM_DIR="$SANDBOX/aidream" RELEASE_AFTER_PHASE=off RELEASE_LOG_CAPTURED=1 \
+# The foreign push lands through the script's before-push hook: migrations run
+# alongside the push now, so they can no longer be the moment of the race.
+RACE_CMD="[ -f '$SANDBOX/raced' ] || { touch '$SANDBOX/raced'; cd '$SANDBOX/other' && git pull -q origin main && echo race > race.txt && git add -A && git -c user.name=t -c user.email=t@t commit -qm race && git push -q origin main; }"
+PATH="$SANDBOX/bin:$PATH" AIDREAM_DIR="$SANDBOX/aidream" RELEASE_AFTER_PHASE=off RELEASE_LOG_CAPTURED=1 RELEASE_TEST_BEFORE_PUSH="$RACE_CMD" \
     bash scripts/release.sh > "$SANDBOX/out" 2>&1
 STATUS=$?
 set -e
@@ -94,7 +92,12 @@ cat > "$SANDBOX/bin/uv" <<STUB
 if [[ "\$*" == *apply_migrations.py* ]]; then
     for _ in \$(seq 1 40); do
         if git --git-dir="$SANDBOX/origin.git" show main:package.json 2>/dev/null | grep -q '"version": "0.1.2"'; then
-            touch "$SANDBOX/pushed-while-migrating"; exit 0
+            touch "$SANDBOX/pushed-while-migrating"
+            for _ in \$(seq 1 20); do
+                [[ -d "$SANDBOX/checkout/.git/matrx-release-ship.lock" ]] || { touch "$SANDBOX/lock-free-while-migrating"; exit 0; }
+                sleep 0.5
+            done
+            exit 0
         fi
         sleep 0.5
     done
@@ -113,7 +116,25 @@ check "a broken invocation still ships v0.1.2"    'git ls-remote --tags origin |
 check "the bad flag is a WARNING, not a refusal"  'grep -q "WARNING.*Unknown flag" "$SANDBOX/out2"'
 check "the bad --ship path is a WARNING"          'grep -q "WARNING.*pathspec could not be committed" "$SANDBOX/out2"'
 check "the push landed while migrations ran"      '[[ -f "$SANDBOX/pushed-while-migrating" ]]'
+check "the lock was free while migrations ran"   '[[ -f "$SANDBOX/lock-free-while-migrating" ]]'
+
+# ── third release: a live process holds the lock and never lets go ───────────
+sleep 600 & HOLDER=$!
+mkdir -p .git/matrx-release-ship.lock; echo "$HOLDER" > .git/matrx-release-ship.lock/pid
+printf '#!/usr/bin/env bash\nexit 0\n' > "$SANDBOX/bin/uv"
+T0=$SECONDS
+set +e
+PATH="$SANDBOX/bin:$PATH" AIDREAM_DIR="$SANDBOX/aidream" RELEASE_AFTER_PHASE=off RELEASE_LOG_CAPTURED=1 \
+    bash scripts/release.sh > "$SANDBOX/out3" 2>&1
+STATUS3=$?
+set -e
+WAITED=$((SECONDS - T0))
+kill "$HOLDER" 2>/dev/null || true
+echo "release ship path — a stuck lock holder"
+check "a stuck lock still ships v0.1.3"          '[[ $STATUS3 -eq 0 ]] && git ls-remote --tags origin | grep -q "refs/tags/v0.1.3$"'
+check "it waited no more than ~30s"               '[[ $WAITED -le 45 ]]'
+check "the takeover is a WARNING"                 'grep -q "WARNING.*Release lock held" "$SANDBOX/out3"'
 if [[ $FAILED -ne 0 ]]; then
-    echo "--- script output ---"; tail -25 "$SANDBOX/out"; echo "--- second run ---"; tail -25 "$SANDBOX/out2" 2>/dev/null
+    echo "--- script output ---"; tail -25 "$SANDBOX/out"; echo "--- second run ---"; tail -25 "$SANDBOX/out2" 2>/dev/null; echo "--- third run ---"; tail -25 "$SANDBOX/out3" 2>/dev/null
     exit 1
 fi

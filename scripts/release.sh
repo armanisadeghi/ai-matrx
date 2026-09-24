@@ -162,11 +162,14 @@ acquire_release_lock() {
         fi
         owner_pid=$(cat "$RELEASE_LOCK_PID_FILE" 2>/dev/null || true)
         if [[ "$owner_pid" =~ ^[0-9]+$ ]] && kill -0 "$owner_pid" 2>/dev/null; then
-            if (( waited >= 600 )); then
+            # The lock covers only fetch → bump → push → tag (seconds), so a
+            # holder past 30s is stuck: take it, say so, and release anyway.
+            if (( waited >= 30 )); then
+                ship_finding "WARNING" "Git" "Release lock held by PID ${owner_pid} for 30s — taken over so this release could ship" ""
                 rm -f -- "$RELEASE_LOCK_PID_FILE"; rmdir -- "$RELEASE_LOCK_DIR" 2>/dev/null || true
-                sleep 1; continue
+                continue
             fi
-            sleep 5; waited=$((waited + 5)); continue
+            sleep 1; waited=$((waited + 1)); continue
         fi
         rm -f -- "$RELEASE_LOCK_PID_FILE"; rmdir -- "$RELEASE_LOCK_DIR" 2>/dev/null || true
     done
@@ -513,6 +516,9 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
             || ship_finding "WARNING" "Git" "This checkout could not fast-forward to $NEW_TAG — pull when convenient" "git pull --no-rebase origin main"
     fi
 
+    # The lock guards only the version bump and the push. Both are done, so let
+    # the next release in now — it must not wait on this one's migrations.
+    release_lock_cleanup; RELEASE_LOCK_HELD=false
     SHIP_BUILD_SECONDS=$((SECONDS - SHIP_START))
     # Migrations run alongside the push, never in front of it: Vercel's build takes
     # minutes and the migration pass about a minute, so waiting for it BEFORE the
