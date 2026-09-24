@@ -1,7 +1,7 @@
 -- lock: custom,platform,context
 -- lane: GRID-PRIMITIVES
--- based-on: context.provision_scope_datasets_trigger() de921f2d68a964b11859744d6c72a1615eea9de02b0f76485e89b5755b8746af
--- chair-step: the inverse of gridprim_a_scope_provisions_its_table_in_the_store.sql. It DROPS custom.scope_table_provision(uuid, uuid, uuid, uuid), deletes its platform.client_callable_door row. It also puts context.provision_scope_datasets_trigger back to its pre-G11 body first.
+-- based-on: context.provision_scope_datasets_trigger() fc58d50d4439b895293d781c0792f3b4cf06d5da18a3aeaa9d5334da538168c2
+-- chair-step: the inverse of gridprim_a_scope_provisions_its_table_in_the_store.sql. It DROPS custom.scope_table_provision(uuid, uuid, uuid, uuid) and custom.organization_home_id(uuid), deletes its platform.client_callable_door row. It also puts context.provision_scope_datasets_trigger back to its pre-G11 body first.
 -- WHAT IT DOES NOT UNDO: a Table a scope was given stays, with its scope_binding and the context value that names it.
 
 set local lock_timeout = '5s';
@@ -36,6 +36,7 @@ end; $function$
 
 
 drop function if exists custom.scope_table_provision(uuid, uuid, uuid, uuid);
+drop function if exists custom.organization_home_id(uuid);
 
 delete from platform.client_callable_door
  where schema_name = 'custom' and declared_by = 'gridprim_a_scope_provisions_its_table_in_the_store.sql';

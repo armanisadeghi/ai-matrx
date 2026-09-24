@@ -40,7 +40,7 @@ declare
   c_stranger_j constant text := '{"sub":"000eaa28-cf5d-402a-8f01-5e2c24191323","role":"authenticated"}';
   v_org uuid; v_appts uuid; v_home uuid; v_older uuid; v_list jsonb; v_res jsonb; v_res2 jsonb;
   v_tbl uuid; v_n integer; v_type uuid; v_scope uuid; v_item uuid; v_tpl uuid; v_t1 uuid; v_t2 uuid; v_val text;
-  v_spec jsonb; v_keep uuid;
+  v_spec jsonb; v_keep uuid; v_scope5 uuid; v_ds5 uuid; v_khome uuid; v_t3 uuid;
 begin
   select v into v_org from gp where k = 'org'; select v into v_appts from gp where k = 'appts';
   select v into v_home from gp where k = 'home';
@@ -48,7 +48,7 @@ begin
   -- fixture: Marisol's older dataset; the exam-room scope, its item and the defects template.
   perform set_config('request.jwt.claims', c_dana_j, true);
   insert into workbench.udt_datasets (table_name, description, user_id, organization_id, created_by, visibility)
-  values ('Boarding kennel log', 'Who is boarding, which run, feeding notes', c_dana, v_org, c_dana, 'personal')
+  values ('Boarding kennel log ' || substr(v_org::text, 1, 8), 'Who is boarding, which run, feeding notes', c_dana, v_org, c_dana, 'personal')
   returning id into v_older;
   perform set_config('request.jwt.claims', c_admin_j, true);
   insert into context.scope_types (organization_id, label_singular, label_plural, slug)
@@ -133,8 +133,8 @@ begin
   raise notice 'G10 PASS — one "Vaccine reminders" table: 3 rows, then +Olive, Juniper moved to 10-18, Rocco archived (not destroyed); "Called owner" survives the refresh.';
 
   -- ══ G11 ══════════════════════════════════════════════════════════════════════════════════
-  v_t1 := custom.scope_table_provision(v_org, v_home, v_item, v_scope);
-  v_t2 := custom.scope_table_provision(v_org, v_home, v_item, v_scope);
+  v_t1 := custom.scope_table_provision(v_org, v_item, v_scope, v_home);
+  v_t2 := custom.scope_table_provision(v_org, v_item, v_scope, v_home);
   if v_t1 is distinct from v_t2 then raise exception 'G11a: a second call made a second table'; end if;
   perform set_config('role', 'postgres', true);
   select count(*) into v_n from custom.record f where f.organization_id = v_org and f.table_id = custom.field_kernel_id()
@@ -153,12 +153,27 @@ begin
   select count(*) into v_n from context.scope_dataset_instances i where i.context_item_id = v_item and i.scope_id = v_scope;
   perform set_config('role', 'authenticated', true);
   if v_n <> 1 then raise exception 'G11e: the unmoved clinic''s Exam room 2 did not get its older table from the trigger (% instances)', v_n; end if;
+  -- Exam room 5 is opened BEFORE the move, so it gets an older table (a pre-move instance).
+  perform set_config('role', 'postgres', true);
+  insert into context.scopes (organization_id, scope_type_id, name, slug)
+  values (v_org, v_type, 'Exam room 5', 'exam-room-5-' || substr(v_org::text, 1, 8)) returning id into v_scope5;
+  select i.dataset_id into v_ds5 from context.scope_dataset_instances i where i.context_item_id = v_item and i.scope_id = v_scope5;
+  perform set_config('role', 'authenticated', true);
+  if v_ds5 is null then raise exception 'G11-setup: the unmoved Exam room 5 got no older table'; end if;
   perform platform.knob_override_set('data_tables', 'older_tables_moved', 'organization', v_org, v_org, 'true'::jsonb,
                                      'Cedar Ridge moved into the record store');
   perform set_config('role', 'postgres', true);
   -- The mover gives a moved organization ONE Home: a record of the organization kernel.
   insert into custom.record (organization_id, table_id, data)
-  values (v_org, custom.organization_kernel_id(), jsonb_build_object('name', 'Cedar Ridge Veterinary Clinic'));
+  values (v_org, custom.organization_kernel_id(), jsonb_build_object('name', 'Cedar Ridge Veterinary Clinic'))
+  returning id into v_khome;
+  -- The mover carries Exam room 5's older table into the store under the SAME id, and
+  -- archives the older one saying where it went (W7's own function).
+  insert into custom.record (id, organization_id, table_id, data_class, data)
+  select v_ds5, v_org, custom.table_kernel_id(), 'table',
+         (t.data - 'scope_binding') || jsonb_build_object('name', 'Exam room 5 — Equipment defects', 'slug', 'moved_' || left(md5(v_ds5::text), 12))
+    from custom.record t where t.organization_id = v_org and t.id = v_t1;
+  perform workbench.udt_dataset_archive(v_ds5, v_ds5, 'Cedar Ridge moved into the record store');
   insert into context.scopes (organization_id, scope_type_id, name, slug)
   values (v_org, v_type, 'Exam room 3', 'exam-room-3-' || substr(v_org::text, 1, 8)) returning id into v_scope;
   select count(*) into v_n from context.scope_dataset_instances i where i.context_item_id = v_item and i.scope_id = v_scope;
@@ -168,13 +183,30 @@ begin
   if v_n <> 0 or v_t2 is null then
     raise exception 'G11e: the moved clinic''s Exam room 3 got % older tables and store Table %', v_n, v_t2;
   end if;
+  -- G11f: no Home named — the organization's own Home (the trigger's, the mover's) is used.
+  perform set_config('role', 'postgres', true);
+  if (select t.data ->> 'parent_id' from custom.record t where t.organization_id = v_org and t.id = v_t2) is distinct from v_khome::text then
+    raise exception 'G11f: Exam room 3''s table does not live in the organization''s Home %', v_khome;
+  end if;
+  perform set_config('role', 'authenticated', true);
+  v_t3 := custom.scope_table_provision(v_org, v_item, v_scope);
+  if v_t3 is distinct from v_t2 then raise exception 'G11f: called without a Home, Exam room 3 answered % not its table %', v_t3, v_t2; end if;
+  -- G11g: Exam room 5's pre-move instance answers with its moved Table — never a second one.
+  v_t3 := custom.scope_table_provision(v_org, v_item, v_scope5);
+  perform set_config('role', 'postgres', true);
+  select count(*) into v_n from custom.record t where t.organization_id = v_org and t.table_id = custom.table_kernel_id()
+     and t.deleted_at is null and t.data -> 'scope_binding' ->> 'scope_id' = v_scope5::text;
+  perform set_config('role', 'authenticated', true);
+  if v_t3 is distinct from v_ds5 or v_n <> 1 then
+    raise exception 'G11g: Exam room 5 answered % (its moved table is %), % tables bound to it', v_t3, v_ds5, v_n;
+  end if;
   perform set_config('request.jwt.claims', c_stranger_j, true);
   begin
-    perform custom.scope_table_provision(v_org, v_home, v_item, v_scope);
+    perform custom.scope_table_provision(v_org, v_item, v_scope, v_home);
     raise exception 'G11d: a stranger provisioned a table in the clinic';
   exception when insufficient_privilege then null;
   end;
-  raise notice 'G11 PASS — "Exam room 2 — Equipment defects": one table, four template columns, the context value names it in the record store; unmoved, a new scope still gets its older table; moved, "Exam room 3" gets a store Table and no older one; a stranger is refused.';
+  raise notice 'G11 PASS — "Exam room 2 — Equipment defects": one table, four template columns, the context value names it in the record store; unmoved, a new scope still gets its older table; moved, "Exam room 3" gets a store Table in the organization''s Home (named or not) and no older one; Exam room 5''s pre-move table is answered with its moved Table, never a second; a stranger is refused.';
   raise notice 'GRIDPRIM G9-G11 GREEN — every part passed.';
 end $t$;
 rollback;
