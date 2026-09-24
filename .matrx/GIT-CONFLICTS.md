@@ -44,8 +44,6 @@ delete the item's line below, then do steps 8–9 above.
 ## Held files — real conflicts
 
 ### _conflicts/2026-09-24-113745/
-- app/(admin)/administration/agents/agent-apps/apps/page.tsx
-- components/mardown-display/markdown-classification/processors/utils/content-splitter-v2.ts
 
 ## Needs Arman
 
