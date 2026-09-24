@@ -1005,5 +1005,30 @@ const nextConfig = {
   },
 };
 
+// ONE DEV SERVER MACHINE-WIDE (Arman, 2026-09-24). Every lane that booted its
+// own `next dev` (own port, own NEXT_DISTDIR) brought 70-130 Turbopack workers
+// and 15-25 GB with it; with type-checks on top, the 256 GB Mac ran out of
+// memory, WindowServer starved, and the kernel watchdog rebooted it twice.
+// `pnpm preview:start` (scripts/agent-dev-server.sh) is the only launcher and
+// sets MATRX_SHARED_PREVIEW=1; every other `next dev` is refused here, before
+// a single worker spawns. Need a different environment? There is no second
+// server — use the shared one; restart it with `pnpm preview:stop` + `start`.
+const { PHASE_DEVELOPMENT_SERVER } = require("next/constants");
+
+function assertSharedDevServer(phase) {
+  if (phase !== PHASE_DEVELOPMENT_SERVER) return;
+  if (process.env.MATRX_SHARED_PREVIEW === "1") return;
+  throw new Error(
+    "[one-dev-server] Refusing to start a second Next.js dev server.\n" +
+      "  There is ONE dev server on this machine: run `pnpm preview:start` and open the\n" +
+      "  http://<your-session>.localhost:3001 URL it prints. Everyone shares it; if it\n" +
+      "  needs a restart, `pnpm preview:stop && pnpm preview:start` (a brief blip for all).\n" +
+      "  Why: extra dev servers exhausted memory and rebooted the Mac twice (2026-09-23/24).",
+  );
+}
+
 copyFiles();
-module.exports = withBundleAnalyzer(nextConfig);
+module.exports = (phase) => {
+  assertSharedDevServer(phase);
+  return withBundleAnalyzer(nextConfig);
+};

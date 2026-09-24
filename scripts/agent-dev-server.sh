@@ -467,6 +467,10 @@ node_exe = shutil.which("node") or "node"
 env = os.environ.copy()
 env["NODE_OPTIONS"] = "--dns-result-order=ipv4first"
 env["NEXT_DISTDIR"] = distdir
+# The ONE-SERVER token. next.config.js refuses to boot `next dev` without it,
+# so no lane, script or raw shell can start a second dev server (Arman,
+# 2026-09-24, after two memory-starvation reboots of the Mac).
+env["MATRX_SHARED_PREVIEW"] = "1"
 # Node's own fetch() (undici) ignores HTTPS_PROXY/HTTP_PROXY by default — it
 # only honors the env proxy vars once NODE_USE_ENV_PROXY=1 is set (Node
 # 22.12+/24.x). This dev server's own /api/dev-login route falls back to a
