@@ -32,6 +32,7 @@ import "server-only";
 
 import { cache } from "react";
 
+import { typedAnswersFor } from "@/features/unified-data/typedAnswers";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 
 /**
@@ -80,7 +81,12 @@ export interface PublicForm {
     intro?: string | null;
     flow?: "one-at-a-time" | "single-page" | null;
     theme?: { accent?: string | null; align?: "left" | "center" | null } | null;
-    thank_you?: { title: string; body?: string | null } | null;
+    /**
+     * What the person sees after sending. `redirect_url` is only ever present when it is a
+     * secure page on the organization's own sites — `custom.form_public` drops it otherwise
+     * (lane S7-PRIME), so the page can follow it without judging it again.
+     */
+    thank_you?: { title?: string | null; body?: string | null; redirect_url?: string | null } | null;
     submit_label?: string | null;
     questions?: PublicFormQuestion[];
   };
@@ -189,6 +195,104 @@ export async function publicFormAsks(formId: string, values: Record<string, unkn
     throw err;
   }
   return (Array.isArray(data) ? data : []) as PublicAsk[];
+}
+
+/**
+ * PREFILL BY LINK (lane S7-PRIME). `/f/<id>?referring_clinic=Harbor+Sports+Medicine` starts
+ * the form with that answer in its question. Only keys the form actually ASKS are taken,
+ * each coerced to its Field's kind exactly as a submitted answer is (a "yes" for a checkbox,
+ * a number for a number); a parameter the form does not ask, or one that cannot be that
+ * kind, is left out rather than refusing the page — the person following a link did not
+ * write it. What is kept is an ordinary answer: shown, changeable, and handed to the same
+ * asks door as anything typed, so the questions that depend on it branch.
+ *
+ * Reserved: `resume` never names a question (it is the saved place, and it travels in the
+ * fragment, never here).
+ */
+export function prefillFromLink(
+  form: PublicForm,
+  params: Record<string, string | string[] | undefined>,
+): { answers: Record<string, unknown>; ignored: string[] } {
+  const asked = new Set((form.presentation?.questions ?? []).map((q) => q.field));
+  const raw: Record<string, unknown> = {};
+  const ignored: string[] = [];
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined) continue;
+    const one = Array.isArray(value) ? value[value.length - 1] : value;
+    if (!asked.has(key) || one === undefined || one === "") {
+      if (key !== "resume") ignored.push(key);
+      continue;
+    }
+    raw[key] = one;
+  }
+  const typed = typedAnswersFor(form.fields, raw);
+  const answers: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(typed.values)) {
+    if (!typed.byKey[key]) answers[key] = value;
+  }
+  ignored.push(...Object.keys(typed.byKey));
+  return { answers, ignored };
+}
+
+/** What `custom.form_draft_save` answers. `draft_secret` is handed out ONCE, on the first save. */
+export interface DraftSaved {
+  draft_secret: string | null;
+  saved_at: string | null;
+  expires_at: string | null;
+  state: "saved" | "submitted" | "closed" | "full" | "too_many";
+  message: string | null;
+}
+
+/**
+ * KEEP A STRANGER'S PLACE (lane S7-PRIME). The answers so far, under a secret only her
+ * browser (or the link she copied) holds. Never a record and never a submission — that
+ * is `custom.form_submit`'s alone, and it uses the place up when she sends. The bucket
+ * and origin come from the request, as for sending.
+ */
+export async function saveFormDraft(args: {
+  formId: string;
+  answers: Record<string, unknown>;
+  secret: string | null;
+  bucket: string;
+  origin: string;
+}): Promise<DraftSaved> {
+  const { data, error } = await storeDoors().rpc("form_draft_save", {
+    p_form_id: args.formId,
+    p_answers: args.answers,
+    p_secret: args.secret,
+    p_bucket: args.bucket,
+    p_origin: args.origin,
+  });
+  if (error) {
+    const err = new Error(error.message) as Error & { hint?: string };
+    if (error.hint) err.hint = error.hint;
+    throw err;
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) throw new Error("custom.form_draft_save answered nothing.");
+  return row as DraftSaved;
+}
+
+/** What `custom.form_draft_read` answers. Zero rows (null here) is the page's own 404. */
+export interface DraftRead {
+  answers: Record<string, unknown> | null;
+  saved_at: string | null;
+  expires_at: string | null;
+  state: "found" | "submitted" | "expired" | "closed" | "not_found";
+  message: string | null;
+}
+
+/** WHERE WAS I. The saved place behind a secret, with the store's sentence when it is gone. */
+export async function readFormDraft(formId: string, secret: string): Promise<DraftRead | null> {
+  if (!UUID.test(formId) || secret.trim() === "") return null;
+  const { data, error } = await storeDoors().rpc("form_draft_read", { p_form_id: formId, p_secret: secret });
+  if (error) {
+    const err = new Error(error.message) as Error & { hint?: string };
+    if (error.hint) err.hint = error.hint;
+    throw err;
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  return (row as DraftRead | undefined) ?? null;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

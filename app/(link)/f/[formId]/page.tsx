@@ -32,7 +32,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { PublicLinkNotice } from "@/components/public-link/PublicLinkNotice";
-import { publicForm } from "@/features/forms/service";
+import { prefillFromLink, publicForm } from "@/features/forms/service";
 
 import { PublicFormRunner } from "./PublicFormRunner";
 
@@ -63,10 +63,13 @@ export async function generateMetadata({
 
 export default async function PublicFormPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ formId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { formId } = await params;
+  const query = await searchParams;
   const form = await publicForm(formId);
   if (!form) notFound();
 
@@ -86,7 +89,10 @@ export default async function PublicFormPage({
     // said once, here, because the runner deliberately no longer repeats it.
     <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center px-5 pb-safe pt-8 matrx-touch-targets">
       <h1 className="text-xl font-medium">{form.title}</h1>
-      <PublicFormRunner form={form} />
+      {/* PREFILL BY LINK (lane S7-PRIME): `?<question key>=<answer>` starts the form with
+          that answer in its question. Resolved HERE, against the form's own questions and
+          Field kinds, so the first paint is already filled in. */}
+      <PublicFormRunner form={form} prefill={prefillFromLink(form, query).answers} />
     </main>
   );
 }
