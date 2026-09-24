@@ -110,7 +110,7 @@ async function openSubmenu(page, name) {
 function tableUrl(tableId) {
   return SURFACE === "sheet" && tableId !== TABLES.olderExample
     ? `${ORIGIN}/data-v2/${tableId}?view=sheet`
-    : tableUrl(tableId);
+    : `${ORIGIN}/data/${tableId}`;
 }
 /** Is the page showing this table's grid on the surface under walk? */
 function onTable(url, tableId) {
@@ -271,7 +271,9 @@ async function main() {
       }
       return false;
     };
-    const dialog = () => page.getByRole("dialog").last();
+    // The one open question on screen: an AlertDialog (role "alertdialog") or a Dialog. The
+    // table page around the Sheet may keep other dialog nodes mounted, so only a visible one.
+    const dialog = () => page.locator('[role="alertdialog"]:visible, [role="dialog"]:visible').last();
 
     // ── RULES: the store refuses a value its column's rules forbid ───────────────
     if (wants("rules")) {
@@ -540,6 +542,30 @@ async function main() {
     }
 
     // ── PASTE ROWS: a block from a spreadsheet becomes rows, then goes to the archive ─
+    // ── TIDY: a run that stopped part-way leaves its own rows behind (WO-4476..4478, made
+    // only by this walk). Archive every copy through the grid's own row menu, so the
+    // clauses after it start from the five seeded work orders.
+    if (wants("tidy")) {
+      for (const wo of ["WO-4476", "WO-4477", "WO-4478"]) {
+        for (let i = 0; i < 4; i++) {
+          await openGrid(page, TABLES.calls, "WO-4471");
+          const c = page.locator("[data-cell$='::work_order']").filter({ hasText: wo }).first();
+          if ((await c.count()) === 0) break;
+          await c.click({ button: "right" });
+          await page.waitForTimeout(900);
+          await openSubmenu(page, /^Row ·/);
+          const del = page.getByRole("menuitem", { name: /Delete row/ }).first();
+          if ((await del.count()) === 0) break;
+          await del.click();
+          await page.waitForTimeout(800);
+          await page.locator('[role="alertdialog"]:visible, [role="dialog"]:visible').last().getByRole("button", { name: /^(Delete|Archive)/ }).first().click();
+          await page.waitForTimeout(2500);
+        }
+      }
+      const after = await openGrid(page, TABLES.calls, "WO-4471");
+      pass("tidy", !/WO-447[678]/.test(after), "only the seeded work orders remain");
+    }
+
     if (wants("paste")) {
       await openGrid(page, TABLES.calls, "WO-4471");
       await page.getByRole("button", { name: /^Paste$/ }).first().click();
@@ -564,7 +590,7 @@ async function main() {
         if ((await del.count()) === 0) continue;
         await del.click();
         await page.waitForTimeout(800);
-        await page.getByRole("dialog").last().getByRole("button", { name: /^Delete/ }).first().click();
+        await page.locator('[role="alertdialog"]:visible, [role="dialog"]:visible').last().getByRole("button", { name: /^(Delete|Archive)/ }).first().click();
         await page.waitForTimeout(2500);
       }
       const after = await openGrid(page, TABLES.calls, "WO-4471");
@@ -1095,4 +1121,4 @@ async function main() {
   console.log(failed.length ? `FAILED: ${failed.join(", ")}` : "ALL CLAUSES PASS");
   process.exit(failed.length ? 1 : 0);
 }
-main().catch((e) => { console.error("FAILED:", e.message); process.exit(2); });
+main().catch((e) => { console.error("FAILED:", e.message); console.error(String(e.stack ?? "").split("\n").slice(0, 8).join("\n")); process.exit(2); });

@@ -17,9 +17,11 @@ import {
   olderDataType,
   olderFormat,
   olderRowData,
+  olderRowOrdering,
   olderValidationRules,
   searchRowsLikeTheOlderStore,
   sortRowsLikeTheOlderStore,
+  storeDefaultSort,
   storeValue,
 } from "../record-store-shape";
 
@@ -187,5 +189,34 @@ describe("sort and search are the older page door's own rules", () => {
     expect(ids(searchRowsLikeTheOlderStore(rows, "BANANA"))).toBe("d");
     expect(ids(searchRowsLikeTheOlderStore(rows, '"t": "apple"'))).toBe("b");
     expect(ids(searchRowsLikeTheOlderStore(rows, ""))).toBe("cabd");
+  });
+});
+
+describe("a table's saved default sort is read and written in the store's own words", () => {
+  // The value the store holds for the moved "Coding Accounts" table (clone, TABLE-PARITY S2):
+  // default_sort: [{field: "reset_date", direction: "asc"}].
+  const stored = [{ field: "reset_date", direction: "asc" }];
+  const fields = [{ key: "account" }, { key: "reset_date" }];
+
+  it("reads the stored {field} sort as the grid's default sort", () => {
+    expect(olderRowOrdering(stored, fields)).toEqual({ default_sort: { field: "reset_date", direction: "asc" } });
+  });
+
+  it("writes Save as default as {field}, which reads back as the same sort", () => {
+    const written = storeDefaultSort("reset_date", "desc");
+    expect(written).toEqual([{ field: "reset_date", direction: "desc" }]);
+    expect(olderRowOrdering(written, fields)).toEqual({ default_sort: { field: "reset_date", direction: "desc" } });
+  });
+
+  it("still reads a {key} entry this seam wrote before the fix", () => {
+    expect(olderRowOrdering([{ key: "account", direction: "desc" }], fields)).toEqual({
+      default_sort: { field: "account", direction: "desc" },
+    });
+  });
+
+  it("answers no sort for a column the table no longer has, or no saved sort", () => {
+    expect(olderRowOrdering([{ field: "gone", direction: "asc" }], fields)).toBeNull();
+    expect(olderRowOrdering([], fields)).toBeNull();
+    expect(storeDefaultSort(undefined, undefined)).toEqual([]);
   });
 });

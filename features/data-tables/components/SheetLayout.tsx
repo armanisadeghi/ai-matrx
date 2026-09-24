@@ -51,6 +51,11 @@ export function SheetLayout({ tableId, organizationId, userId }: SheetLayoutProp
         tableId={tableId}
         fillHeight
         hideHeader
+        // The same surface scope the /data/<id> route emits (TABLE-PARITY gap 5): agents
+        // see the table (columns, rules, choices, row label, actions, the selection) and
+        // write a confirmed cell through the seam's own upsertCell, and the row forms get
+        // their Person chooser (PersonChoicesProvider sits inside this branch).
+        emitSurfaceScope
       />
     </div>
   );
