@@ -323,7 +323,13 @@ export function LeaveEnrollmentSurface({ policyId }: { policyId: string }) {
     <HrSettingsShell
       section="leave-policies"
       loading={loading}
-      error={error}
+      // A refusal, or a policy id this employer's list does not hold (deleted, another
+      // employer's, never existed), is the no-access state — never raw error text and never
+      // an empty "Who is on this policy" page.
+      error={error?.kind === "denied" ? null : error}
+      granted={
+        error?.kind === "denied" || (!loading && !error && !policy) ? false : undefined
+      }
       operation="This policy's enrolment"
       onRetry={() => setReloadToken((n) => n + 1)}
     >
