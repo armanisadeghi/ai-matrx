@@ -2,7 +2,8 @@
  * @jest-environment node
  *
  * THE GUARD THAT KEEPS THE INTEGRATION REPOINT CLOSED (lane INTEG-CLIENTS, CUTOVER-PLAN
- * rev 3 §2 Step 7, the births-and-writes half).
+ * rev 3 §2 Step 7, the births-and-writes half — and the viewer-host half: a host that mounts
+ * the grid by id must locate the table first, through `LocatedTableViewer`).
  *
  * The defect class: a "save this as a table" or "add a row" path outside the grid that
  * reaches the older store's doors itself — `createTable` / `addRow` / `addColumn` /
@@ -43,6 +44,9 @@ const ALLOWED: Array<{ match: (rel: string) => boolean; why: string }> = [
   { match: (r) => r === "utils/user-table-utls/table-utils.ts", why: "the older doors themselves" },
   { match: (r) => r.startsWith("components/user-generated-table-data/"), why: "the /data grid screen (GRID-PORT)" },
   { match: (r) => r.startsWith("app/(dev)/"), why: "dev-only demos (F21)" },
+  { match: (r) => r === "features/data-tables/components/LocatedTableViewer.tsx", why: "the locating host itself" },
+  { match: (r) => r === "features/data-tables/components/SheetLayout.tsx", why: "the /data-v2 Sheet layout places the table itself (GRID-PORT)" },
+  { match: (r) => r.startsWith("app/(core)/data/"), why: "the /data route resolves the table's home itself (GRID-PORT)" },
 ];
 
 /** Every way `text` reaches an older birth/write door, as human-readable findings. */
@@ -57,6 +61,14 @@ export function olderDoorReaches(text: string): string[] {
       .filter((n) => n && !n.startsWith("type "))
       .map((n) => n.split(/\s+as\s+/)[0]!.trim());
     for (const n of names) if (OLDER_BINDINGS.includes(n)) found.push(`imports ${n} from table-utils`);
+  }
+  // Mounting the grid by id without locating the table first reads a moved table's archived
+  // older copy: every host outside the table page goes through `LocatedTableViewer`.
+  if (
+    /import\s+\w+(\s*,\s*\{[^}]*\})?\s+from\s*["'][^"']*user-generated-table-data\/UserTableViewer["']/.test(text) ||
+    /import\(\s*["'][^"']*user-generated-table-data\/UserTableViewer["']\s*\)/.test(text)
+  ) {
+    found.push("mounts UserTableViewer without locating the table (use LocatedTableViewer)");
   }
   for (const rpc of OLDER_RPCS) {
     const call = new RegExp(`\\.rpc\\(\\s*["'\`]${rpc}["'\`]`);
@@ -94,6 +106,11 @@ describe("no table is born or written outside the data seam", () => {
     ]);
     expect(olderDoorReaches(`import type { TableField } from "@/utils/user-table-utls/table-utils";`)).toEqual([]);
     expect(olderDoorReaches(`import { addTableRow as addRow, createTable } from "@/features/data-tables/service";`)).toEqual([]);
+    expect(olderDoorReaches(`import UserTableViewer from "@/components/user-generated-table-data/UserTableViewer";`)).toEqual([
+      "mounts UserTableViewer without locating the table (use LocatedTableViewer)",
+    ]);
+    expect(olderDoorReaches(`const V = lazy(() => import("@/components/user-generated-table-data/UserTableViewer"));`)).toHaveLength(1);
+    expect(olderDoorReaches(`import LocatedTableViewer from "@/features/data-tables/components/LocatedTableViewer";`)).toEqual([]);
   });
 
   it("no runtime file outside the allow-list reaches an older birth or write door", () => {

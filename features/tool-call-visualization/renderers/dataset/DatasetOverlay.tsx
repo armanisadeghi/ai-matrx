@@ -2,7 +2,8 @@
 
 import { useMemo } from "react";
 import { Table2, ExternalLink } from "lucide-react";
-import UserTableViewer from "@/components/user-generated-table-data/UserTableViewer";
+// Located first (lane INTEG-CLIENTS): a moved or record-store table opens from its own store.
+import LocatedTableViewer from "@/features/data-tables/components/LocatedTableViewer";
 import type { ToolRendererProps } from "../../types";
 import { parseDataset } from "./parseDataset";
 
@@ -30,7 +31,7 @@ export function DatasetOverlay({ entry }: ToolRendererProps) {
 
   return (
     <div className="h-full overflow-hidden">
-      <UserTableViewer tableId={ds.id} />
+      <LocatedTableViewer tableId={ds.id} />
     </div>
   );
 }

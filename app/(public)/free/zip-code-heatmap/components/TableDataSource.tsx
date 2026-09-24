@@ -19,44 +19,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/utils/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ZipCodeData } from "../page";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
-import { getTableMetadata } from "@/features/data-tables/service";
+import { getTableMetadata, getTablePage, listTablesEverywhere } from "@/features/data-tables/service";
+import { locateTable } from "@/features/data-tables/data-source/where-a-table-is-born";
 import { isServiceFailure } from "@/features/data-tables/types";
 
-function isUserTablesRpcResult(
-  data: unknown,
-): data is { success: boolean; error?: string; tables?: UserTable[] } {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "success" in data &&
-    typeof (data as { success: unknown }).success === "boolean"
-  );
-}
-
 type PaginatedRow = { data: Record<string, unknown> };
-
-function isUserTableDataPaginatedResult(
-  data: unknown,
-): data is { success: boolean; error?: string; data?: PaginatedRow[] } {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "success" in data &&
-    typeof (data as { success: unknown }).success === "boolean"
-  );
-}
 
 interface UserTable {
   id: string;
   table_name: string;
   description?: string;
-  created_at: string;
-  updated_at: string;
-  visibility: string;
 }
 
 interface TableField {
@@ -99,15 +74,10 @@ export default function TableDataSource({
     try {
       setLoading(true);
       setError(null);
-      const { data, error } = await supabase.rpc("get_user_tables");
-
-      if (error) throw error;
-      if (!isUserTablesRpcResult(data)) {
-        throw new Error("Invalid response from get_user_tables");
-      }
-      if (!data.success) throw new Error(data.error || "Failed to load tables");
-
-      setTables(data.tables || []);
+      // Older tables AND the organization's record-store Tables (lane INTEG-CLIENTS F1/F17).
+      const listed = await listTablesEverywhere();
+      if (!listed.success) throw new Error(listed.error || "Failed to load tables");
+      setTables(listed.data.map((t) => ({ ...t, description: t.description ?? "" })));
     } catch (err) {
       console.error("Error fetching tables:", err);
       setError("Failed to load your tables");
@@ -131,7 +101,9 @@ export default function TableDataSource({
     try {
       setLoadingFields(true);
       // Column schema only. The rows are fetched later, and only for the two
-      // columns the heatmap actually plots.
+      // columns the heatmap actually plots. Located first so a moved table reads its store.
+      const located = await locateTable(tableId);
+      if (!located.ok) throw new Error(located.error);
       const meta = await getTableMetadata({ tableId });
       if (isServiceFailure(meta)) throw new Error(meta.error);
 
@@ -194,27 +166,10 @@ export default function TableDataSource({
       setError(null);
       onLoadingChange(true);
 
-      // Fetch all rows from the table
-      const { data: rowsData, error: rowsError } = await supabase.rpc(
-        "get_user_table_data_paginated",
-        {
-          p_table_id: selectedTable.id,
-          p_limit: 10000, // Get up to 10k rows
-          p_offset: 0,
-          p_sort_field: undefined,
-          p_sort_direction: "asc",
-          p_search_term: undefined,
-        },
-      );
-
-      if (rowsError) throw rowsError;
-      if (!isUserTableDataPaginatedResult(rowsData)) {
-        throw new Error("Invalid response from get_user_table_data_paginated");
-      }
-      if (!rowsData.success)
-        throw new Error(rowsData.error || "Failed to load data");
-
-      const rows = rowsData.data || [];
+      // Every row (up to 10k) through the seam — the table was located when it was picked.
+      const page = await getTablePage({ tableId: selectedTable.id, limit: 10000, offset: 0 });
+      if (isServiceFailure(page)) throw new Error(page.error || "Failed to load data");
+      const rows: PaginatedRow[] = page.data.rows;
 
       // Transform rows into ZipCodeData format
       const zipData: ZipCodeData[] = rows

@@ -19,8 +19,9 @@ import {
   type DatasetTableMenuRow,
 } from "@/features/data-tables/dataset-table-actions";
 
-const UserTableViewer = lazy(
-  () => import("@/components/user-generated-table-data/UserTableViewer"),
+// Located first (lane INTEG-CLIENTS): a moved or record-store table opens from its own store.
+const LocatedTableViewer = lazy(
+  () => import("@/features/data-tables/components/LocatedTableViewer"),
 );
 
 export interface UserTableWindowProps {
@@ -77,7 +78,7 @@ function UserTableWindowBody({
             <Suspense fallback={<MatrxMiniLoader />}>
               {/* The window's chrome already names the table, so suppress the
                   viewer's own title header (no double title). */}
-              <UserTableViewer tableId={tableId} renderCellMarkdown hideHeader />
+              <LocatedTableViewer tableId={tableId} renderCellMarkdown hideHeader />
             </Suspense>
           ) : (
             <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">

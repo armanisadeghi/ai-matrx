@@ -17,7 +17,8 @@ import { createDatasetFromTable } from "@/features/data-tables/create-dataset-fr
 import { deriveDatasetNameForChatTable } from "@/features/data-tables/derive-dataset-name";
 import { useOpenUserTableWindow } from "@/features/overlays/openers/userTableWindow";
 import { StreamingTableRenderer as StreamingTableRenderer } from "@/components/mardown-display/blocks/table/StreamingTableRenderer";
-import UserTableViewer from "@/components/user-generated-table-data/UserTableViewer";
+// Located first (lane INTEG-CLIENTS): a moved or record-store table opens from its own store.
+import LocatedTableViewer from "@/features/data-tables/components/LocatedTableViewer";
 import type { ArtifactRendererProps } from "../types";
 const UDT_SYSTEM = "udt_datasets";
 
@@ -195,7 +196,7 @@ function TableArtifactMaterialized({
     const tableTitle = (typeof row?.title === "string" && row.title) || "Table";
     return (
       <Suspense fallback={<MatrxMiniLoader />}>
-        <UserTableViewer
+        <LocatedTableViewer
           tableId={linkedTableId}
           renderCellMarkdown
           hideHeader

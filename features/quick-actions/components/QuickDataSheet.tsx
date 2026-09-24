@@ -10,8 +10,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import UserTableViewer from "@/components/user-generated-table-data/UserTableViewer";
-import { supabase } from "@/utils/supabase/client";
+// Located first (lane INTEG-CLIENTS): a moved or record-store table opens from its own store.
+import LocatedTableViewer from "@/features/data-tables/components/LocatedTableViewer";
+import { listTablesEverywhere } from "@/features/data-tables/service";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -83,18 +84,11 @@ export function QuickDataSheet({
       setLoading(true);
       setError(null);
 
-      const { data, error: rpcError } = await supabase.rpc("get_user_tables");
-
-      if (rpcError) throw rpcError;
-      const tablesPayload = data as unknown as {
-        success: boolean;
-        error?: string;
-        tables?: UserTable[];
-      };
-      if (!tablesPayload.success)
-        throw new Error(tablesPayload.error || "Failed to load tables");
-
-      const tablesList = tablesPayload.tables || [];
+      // Older tables AND the organization's record-store Tables (lane INTEG-CLIENTS F1/F2);
+      // the viewer below locates the picked table before it reads a row.
+      const listed = await listTablesEverywhere();
+      if (!listed.success) throw new Error(listed.error || "Failed to load tables");
+      const tablesList: UserTable[] = listed.data.map((t) => ({ ...t, description: t.description ?? "" }));
       setTables(tablesList);
 
       // Prefer the explicit `initialTableId` if it matches a loaded table;
@@ -234,7 +228,7 @@ export function QuickDataSheet({
         {/* Table Viewer — full panel width. */}
         <div className="flex-1 overflow-auto relative p-2">
           {selectedTableId && (
-            <UserTableViewer
+            <LocatedTableViewer
               key={selectedTableId}
               tableId={selectedTableId}
             />

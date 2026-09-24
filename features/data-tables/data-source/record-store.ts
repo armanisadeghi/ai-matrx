@@ -365,20 +365,30 @@ export async function hasEditorAccess(home: RecordStoreHome, args: { tableId: st
 export async function listTables(
   home: RecordStoreHome,
 ): Promise<ServiceResult<Array<{ id: string; table_name: string; description: string | null; row_count: number; field_count: number }>>> {
-  const answer = await clientFor(home).tableList();
+  const client = clientFor(home);
+  const answer = await client.tableList();
   if (!answer.ok) return refused(answer.error);
+  const tables = answer.data.filter((t) => !t.is_kernel);
+  // A REAL COUNT, never a zero (lane INTEG-CLIENTS). Every picker prints "N rows" and the
+  // save-into dialog's Replace confirm says "permanently deletes all N rows": a store table
+  // listed as 0 made that sentence a lie. `custom.table_capacity` counts a Table's live
+  // records for a reader who may know the table. One call per Table — the store has no
+  // "tables with their counts" door yet (named for GRID-PRIMITIVES).
+  const counts = await Promise.all(tables.map((t) => client.tableCapacity({ table_id: t.id })));
+  const failed = counts.find((c) => !c.ok);
+  if (failed && !failed.ok) return refused(failed.error);
   return {
     success: true,
-    data: answer.data
-      .filter((t) => !t.is_kernel)
-      .map((t) => ({
+    data: tables.map((t, i) => {
+      const count = counts[i];
+      return {
         id: t.id,
         table_name: t.name,
         description: null,
-        // The Table record names its fields; its rows are not counted without reading them.
-        row_count: 0,
+        row_count: count && count.ok ? count.data.records : 0,
         field_count: Array.isArray(t.fields) ? t.fields.length : 0,
-      })),
+      };
+    }),
   };
 }
 

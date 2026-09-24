@@ -5,7 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
-import UserTableViewer from "@/components/user-generated-table-data/UserTableViewer";
+// Located first (lane INTEG-CLIENTS): a moved or record-store table opens from its own store.
+import LocatedTableViewer from "@/features/data-tables/components/LocatedTableViewer";
 
 interface TableInfo {
   table_id: string;
@@ -52,7 +53,7 @@ const ViewTableModal: React.FC<ViewTableModalProps> = ({
         
         <div className="py-0">          
           <div className="h-[calc(85dvh-140px)] overflow-auto border-border rounded-lg bg-textured">
-            <UserTableViewer tableId={tableInfo.table_id} />
+            <LocatedTableViewer tableId={tableInfo.table_id} />
           </div>
         </div>
         

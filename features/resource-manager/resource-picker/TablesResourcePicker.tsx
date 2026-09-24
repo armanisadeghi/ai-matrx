@@ -18,7 +18,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import UserTableViewer from "@/components/user-generated-table-data/UserTableViewer";
+// Located first (lane INTEG-CLIENTS): a moved or record-store table opens from its own store.
+import LocatedTableViewer from "@/features/data-tables/components/LocatedTableViewer";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { usePickerInputFocus } from "./usePickerInputFocus";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
@@ -573,7 +574,7 @@ export function TablesResourcePicker({
           <div className="flex-1 overflow-auto min-h-0">
             {previewTableId && (
               <div className="h-full px-6 py-4">
-                <UserTableViewer tableId={previewTableId} />
+                <LocatedTableViewer tableId={previewTableId} />
               </div>
             )}
           </div>
