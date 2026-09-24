@@ -54,6 +54,7 @@ import {
   usePreferredDefaultEditorMode,
 } from "../hooks/usePreferredDefaultEditorMode";
 import { NoteEditorCore } from "./NoteEditorCore";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { getNoteLiveContent, setNoteLiveContent } from "../utils/noteLiveContent";
 import { useNotesSurfaceScope } from "../hooks/useNotesSurfaceScope";
 import { useNoteUndoRedo } from "../hooks/useNoteUndoRedo";
@@ -710,29 +711,29 @@ export function NoteContentEditor({
       );
     }
 
+    // The read refused or found nothing: the canonical gate resolves which
+    // (denied, trashed, missing, signed out, or a genuine fault with retry).
     return (
-      <div className="flex-1 flex items-center justify-center text-muted-foreground">
-        <div className="text-center">
-          <p className="text-sm">Note unavailable</p>
-          <p className="text-xs mt-1">
-            It may have been deleted, moved, or temporarily unreachable.
-          </p>
-          <button
-            onClick={() => dispatch(fetchNoteContent(noteId))}
-            className="mt-3 text-xs text-primary hover:text-primary/80 cursor-pointer"
-          >
-            Try again
-          </button>
-          <button
-            onClick={() => {
-              dispatch(markTabInteraction({ instanceId }));
-              dispatch(removeInstanceTab({ instanceId, noteId }));
-            }}
-            className="ml-3 mt-3 text-xs text-primary hover:text-primary/80 cursor-pointer"
-          >
-            Close this tab
-          </button>
-        </div>
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <AccessGate
+          token="note"
+          id={noteId}
+          onRetry={() => void dispatch(fetchNoteContent(noteId))}
+          fallbackHref="/notes"
+          fallbackLabel="All notes"
+          footer={
+            <button
+              type="button"
+              onClick={() => {
+                dispatch(markTabInteraction({ instanceId }));
+                dispatch(removeInstanceTab({ instanceId, noteId }));
+              }}
+              className="text-xs text-primary hover:text-primary/80 cursor-pointer"
+            >
+              Close this tab
+            </button>
+          }
+        />
       </div>
     );
   }
