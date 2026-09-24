@@ -1,5 +1,6 @@
 import { permanentRedirect } from "next/navigation";
 
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { resolveLegacySiteAddress } from "@/features/marketing/lib/shim-resolve-server";
 
@@ -23,7 +24,20 @@ export default async function ContentPlanSiteShim({
     searchParams,
   ]);
   const address = await resolveLegacySiteAddress(siteId);
-  if (!address) permanentRedirect(marketingRoutes.brands());
+  if (!address) {
+    // Unreadable site (denied, deleted, missing) — the canonical gate says
+    // which, instead of silently dropping the person on the brand list.
+    return (
+      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+        <AccessGate
+          token="web_site"
+          id={siteId}
+          fallbackHref={marketingRoutes.brands()}
+          fallbackLabel="Your brands"
+        />
+      </div>
+    );
+  }
   const target = marketingRoutes.brandContentPlanSite(
     address.brandSeg,
     address.siteSeg,
