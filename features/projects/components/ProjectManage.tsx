@@ -11,9 +11,8 @@
 
 import React from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
-  ArrowLeft,
   Loader2,
   Users,
   Mail,
@@ -26,7 +25,6 @@ import {
   Eye,
   Settings as SettingsIcon,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
@@ -38,6 +36,7 @@ import {
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { ProjectContextSection } from "./ProjectContextSection";
 import type { Project } from "@/features/projects/types";
@@ -54,7 +53,6 @@ const UUID_RE =
 
 export function ProjectManage() {
   const params = useParams();
-  const router = useRouter();
   const projectParam = params.projectId as string;
 
   const [project, setProject] = React.useState<Project | null>(null);
@@ -92,14 +90,22 @@ export function ProjectManage() {
     };
   }, [projectParam]);
 
-  const { role, isOwner, canManageMembers, canManageSettings, canDelete } =
-    useProjectUserRole(project?.id);
+  const {
+    role,
+    loading: roleLoading,
+    isOwner,
+    canManageMembers,
+    canManageSettings,
+    canDelete,
+  } = useProjectUserRole(project?.id);
   const { projects: siblingProjects } = useUserProjects();
 
   const applyPatch = (patch: Partial<Project>) =>
     setProject((prev) => (prev ? { ...prev, ...patch } : prev));
 
-  if (resolving) {
+  // The role read runs after the project resolves; waiting on it keeps the
+  // gate below from flashing for a project the viewer can in fact manage.
+  if (resolving || (project && roleLoading)) {
     return (
       <>
         <RouteHeader
@@ -113,29 +119,22 @@ export function ProjectManage() {
   }
 
   if (!project || !role) {
+    // `getProject` returns null for every failure (denied, trashed, missing,
+    // wrong org, fault), and a readable project with no role here is not one
+    // this viewer may manage — the canonical gate resolves and says which.
     return (
       <>
         <RouteHeader
           left={<ChevronLeftTapButton href="/projects" ariaLabel="Back" />}
         />
-        <Center>
-          <Card className="max-w-md w-full p-8 text-center">
-            <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-              <FolderKanban className="h-7 w-7 text-muted-foreground" />
-            </div>
-            <h2 className="text-xl font-semibold mb-2">Project not found</h2>
-            <p className="text-sm text-muted-foreground mb-6">
-              This project doesn&apos;t exist or you don&apos;t have access.
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push("/projects")}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" /> All projects
-            </Button>
-          </Card>
-        </Center>
+        <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
+          <AccessGate
+            token="project"
+            id={project?.id ?? projectParam}
+            fallbackHref="/projects"
+            fallbackLabel="All projects"
+          />
+        </div>
       </>
     );
   }
