@@ -70,12 +70,26 @@ export async function signIn(page, origin, email, password, who = email) {
 
 /** Open the sidebar's organization group, which is a collapsed section until it is clicked. */
 async function openOrganizationGroup(page) {
-  await page.evaluate(() => {
-    const side = document.querySelector("#shell-sidebar-toggle");
-    if (side instanceof HTMLInputElement && !side.checked) side.click();
-    const group = document.querySelector("#menu-group-organization");
-    if (group instanceof HTMLInputElement && !group.checked) group.click();
-  });
+  // The page that sign-in lands on may still be navigating (the login redirect, or a dev
+  // server's first compile reloading it): an evaluate then dies with "Execution context was
+  // destroyed". That is the page moving, not the picker failing — wait for it to settle and
+  // ask again, a bounded number of times, and say so (lane INTEG-CLIENTS, 2026-09-23).
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      await page.waitForLoadState("domcontentloaded", { timeout: 120000 });
+      await page.evaluate(() => {
+        const side = document.querySelector("#shell-sidebar-toggle");
+        if (side instanceof HTMLInputElement && !side.checked) side.click();
+        const group = document.querySelector("#menu-group-organization");
+        if (group instanceof HTMLInputElement && !group.checked) group.click();
+      });
+      break;
+    } catch (e) {
+      if (attempt >= 4 || !/Execution context was destroyed|navigat/i.test(String(e))) throw e;
+      console.log(`[seat-browser] the page was still navigating while opening the organization group (attempt ${attempt}); retrying`);
+      await sleep(2000);
+    }
+  }
   await sleep(1200);
 }
 
