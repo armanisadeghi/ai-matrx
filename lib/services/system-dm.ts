@@ -68,6 +68,15 @@ export async function findOrCreateDirectConversation(
   if (convError || !conv) {
     throw operationFailed("start this conversation", convError ?? undefined);
   }
+  // The RPC currently finds a direct conversation by participant pair before
+  // considering p_organization_id. Never write an organization's task title
+  // into a different organization's existing conversation.
+  if (conv.organization_id !== organizationId) {
+    throw new Error(
+      `Direct conversation ${conversationId} belongs to a different organization; ` +
+        "the get-or-create RPC must match the requested organization before this DM can be sent.",
+    );
+  }
 
   return {
     conversationId: conversationId as string,
