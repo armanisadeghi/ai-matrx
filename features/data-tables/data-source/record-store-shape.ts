@@ -256,6 +256,20 @@ export function storeValue(
   if (column?.data_type === "json" && value !== null && typeof value === "object") {
     return JSON.stringify(value);
   }
+  // TEXT THAT IS A NUMBER, INTO A NUMBER COLUMN (lane INTEG-CLIENTS, found by the seat walk). A
+  // table pasted from a chat answer, a CSV or a scrape is all text; the older store coerced "3"
+  // into an integer column, the record store refuses it ("Qty takes a number, and it was given a
+  // string"). Only text the older door itself read as a number (its NUMERIC rule) is converted;
+  // anything else goes as it is and the store's refusal is shown — never a silent guess.
+  if ((column?.data_type === "number" || column?.data_type === "integer") && typeof value === "string") {
+    const t = value.trim();
+    if (NUMERIC.test(t)) return Number(t);
+  }
+  if (column?.data_type === "boolean" && typeof value === "string") {
+    const t = value.trim().toLowerCase();
+    if (t === "true") return true;
+    if (t === "false") return false;
+  }
   return value;
 }
 

@@ -153,6 +153,12 @@ describe("a record document reads back as the row the older grid held", () => {
     expect(storeValue({ data_type: "json" }, { a: 1 })).toBe('{"a":1}');
     expect(storeValue({ data_type: "string" }, "Queued")).toBe("Queued");
     expect(storeValue(undefined, 5)).toBe(5);
+    // Text that is a number, into a number column: what a pasted chat table or CSV carries.
+    expect(storeValue({ data_type: "integer" }, " 3 ")).toBe(3);
+    expect(storeValue({ data_type: "number" }, "18.25")).toBe(18.25);
+    expect(storeValue({ data_type: "number" }, "about 3")).toBe("about 3"); // the store refuses it, in words
+    expect(storeValue({ data_type: "boolean" }, "TRUE")).toBe(true);
+    expect(storeValue({ data_type: "string" }, "3")).toBe("3");
   });
 });
 
