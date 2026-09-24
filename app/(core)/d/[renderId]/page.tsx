@@ -34,6 +34,7 @@
 import { use, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
@@ -70,7 +71,9 @@ export default function RenderedDocumentRoute({
     const selectedOrganizationId = useAppSelector(selectOrganizationId);
 
     const [document, setDocument] = useState<RenderedDocument | null>(null);
-    const [refusal, setRefusal] = useState<string | null>(null);
+    // Set when the read failed: its raw error, or `error: null` for a zero-row
+    // answer. Null while the document is opening or has opened.
+    const [refusal, setRefusal] = useState<{ error: unknown } | null>(null);
 
     // ONE SWITCH, asked about the organization the DOCUMENT lives in.
     const campaign = useUnifiedDataCampaign({
@@ -93,12 +96,12 @@ export default function RenderedDocumentRoute({
             );
             if (stopped) return;
             if (error) {
-                setRefusal(error.message);
+                setRefusal({ error });
                 return;
             }
             const rows = (Array.isArray(data) ? data : data ? [data] : []) as RenderedDocument[];
             if (rows.length === 0) {
-                setRefusal("There is no document at this address. It may have been removed.");
+                setRefusal({ error: null });
                 return;
             }
             setDocument(rows[0]);
@@ -124,7 +127,13 @@ export default function RenderedDocumentRoute({
             </PageHeader>
             <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
                 {refusal ? (
-                    <p className="max-w-2xl text-sm text-destructive">{refusal}</p>
+                    // The door's own refusal (or a zero-row answer) goes to the
+                    // canonical gate, which prints a server sentence verbatim.
+                    <AccessGate
+                        token="doc_render"
+                        id={renderId}
+                        error={refusal.error ?? undefined}
+                    />
                 ) : document === null ? (
                     <p className="text-sm text-muted-foreground">Opening this document…</p>
                 ) : campaign.state !== "on" ? (
