@@ -6,6 +6,17 @@
 // has to land on the document itself — not on the table it came from, with the
 // person left to find which of several documents the agent meant.
 //
+// 🚨 THE LINK OPENS WHATEVER ORGANIZATION IS SELECTED (2026-09-23). This page
+// used to read the document inside the person's SELECTED organization, so the
+// link failed for its own author whenever another organization happened to be
+// selected, with a sentence guessing that it "may have been made in a different
+// organization". Access is decided by the PERSON, never by the selection
+// (common-docs/policies/organization-is-the-container.md rule 5): the door
+// finds the document by its id alone and answers which organization it lives
+// in. The page opens it, names that organization, and offers the switch to a
+// member. The store switch is read for the DOCUMENT'S organization, not the
+// selected one.
+//
 // IT OPENS IN `RichDocument`, the platform's ONE rich document, so print and
 // save-as-PDF come with it and this page never grows a second renderer that
 // could drift from every other document surface in the app.
@@ -22,26 +33,31 @@
 
 import { use, useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
 import { createClient } from "@/utils/supabase/client";
 import { recordsDataSource } from "@ai-matrx/records-ui";
 
-/** What `custom.doc_render_read` answers — the frozen bytes and what they are of. */
+/** What `custom.doc_render_read` answers — the frozen bytes, what they are of, and where they live. */
 interface RenderedDocument {
     render_id: string;
     template_id: string;
-    template_version: number;
+    document_version: number;
     record_id: string;
     body: string;
     content_hash: string;
     rendered_at: string;
+    organization_id: string;
+    organization_name: string | null;
+    viewer_is_member: boolean;
 }
 
 export default function RenderedDocumentRoute({
@@ -50,24 +66,29 @@ export default function RenderedDocumentRoute({
     params: Promise<{ renderId: string }>;
 }) {
     const { renderId } = use(params);
-    const { organizationId, organizationState } = useOrganizationRequired();
-    // ONE SWITCH: does THIS organization keep its data in the record store?
-    const campaign = useUnifiedDataCampaign({
-        organizationId,
-        organizationState,
-        storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
-    });
+    const dispatch = useAppDispatch();
+    const selectedOrganizationId = useAppSelector(selectOrganizationId);
 
     const [document, setDocument] = useState<RenderedDocument | null>(null);
     const [refusal, setRefusal] = useState<string | null>(null);
 
+    // ONE SWITCH, asked about the organization the DOCUMENT lives in.
+    const campaign = useUnifiedDataCampaign({
+        organizationId: document?.organization_id ?? null,
+        organizationState: document ? "ready" : "resolving",
+        storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
+    });
+
     useEffect(() => {
-        if (!campaign.on || !organizationId) return;
         let stopped = false;
+        setDocument(null);
+        setRefusal(null);
         void (async () => {
+            // p_organization_id is accepted and ignored by the door: the document is found by
+            // its id, and its own organization is the one checked.
             const { data, error } = await recordsDataSource(createClient()).rpc(
                 "doc_render_read",
-                { p_organization_id: organizationId, p_render_id: renderId },
+                { p_organization_id: selectedOrganizationId, p_render_id: renderId },
                 { schema: "custom" },
             );
             if (stopped) return;
@@ -77,12 +98,7 @@ export default function RenderedDocumentRoute({
             }
             const rows = (Array.isArray(data) ? data : data ? [data] : []) as RenderedDocument[];
             if (rows.length === 0) {
-                // ABSENT, NEVER DEAD. A document that is not here says so and says the
-                // two things that make it not here, rather than showing a blank page.
-                setRefusal(
-                    "There is no document at this address in this organization. It may have " +
-                        "been made in a different organization, or removed.",
-                );
+                setRefusal("There is no document at this address. It may have been removed.");
                 return;
             }
             setDocument(rows[0]);
@@ -90,7 +106,16 @@ export default function RenderedDocumentRoute({
         return () => {
             stopped = true;
         };
-    }, [campaign.on, organizationId, renderId]);
+        // The selected organization is deliberately NOT a dependency: switching it must never
+        // re-decide whether this document opens.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [renderId]);
+
+    const elsewhere =
+        document !== null &&
+        document.viewer_is_member &&
+        document.organization_id !== selectedOrganizationId;
+    const organizationName = document?.organization_name ?? "its organization";
 
     return (
         <>
@@ -98,23 +123,43 @@ export default function RenderedDocumentRoute({
                 <HeaderStructured title="Document" />
             </PageHeader>
             <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
-                {organizationState !== "ready" ? (
-                    <OrganizationContextNotice state={organizationState} what="Documents" />
+                {refusal ? (
+                    <p className="max-w-2xl text-sm text-destructive">{refusal}</p>
+                ) : document === null ? (
+                    <p className="text-sm text-muted-foreground">Opening this document…</p>
                 ) : campaign.state !== "on" ? (
                     /* THE ONE NOTICE — resolving, could-not-check and off are three
                        different things (lane SHARE-OUT, item 3). */
                     <UnifiedDataSwitchNotice gate={campaign} what="Documents" />
-                ) : refusal ? (
-                    <p className="max-w-2xl text-sm text-destructive">{refusal}</p>
-                ) : document === null ? (
-                    <p className="text-sm text-muted-foreground">Opening this document…</p>
                 ) : (
                     <div className="mx-auto max-w-3xl space-y-3">
+                        {elsewhere && (
+                            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+                                <span>
+                                    This document is in <strong>{organizationName}</strong>, not the
+                                    organization you are working in.
+                                </span>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                        dispatch(
+                                            chooseActiveOrganization({
+                                                id: document.organization_id,
+                                                name: document.organization_name,
+                                            }),
+                                        )
+                                    }
+                                >
+                                    Switch to {organizationName}
+                                </Button>
+                            </div>
+                        )}
                         <p className="text-xs text-muted-foreground">
-                            Made {new Date(document.rendered_at).toLocaleString()} from version{" "}
-                            {document.template_version} of its wording. These words are frozen as
-                            they were at that moment — that is what a signature on this document
-                            is over.
+                            Made {new Date(document.rendered_at).toLocaleString()} in{" "}
+                            {organizationName} from version {document.document_version} of its
+                            wording. These words are frozen as they were at that moment — that is
+                            what a signature on this document is over.
                         </p>
                         <div className="rounded-md border border-border p-4">
                             {/* THE PLATFORM'S ONE RICH DOCUMENT. Print and save-as-PDF
