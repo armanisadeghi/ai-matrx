@@ -25,7 +25,7 @@
 // 768px (see the `ios-mobile-first` skill), so there is no second layout here
 // and no `useIsMobile` branch to drift.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   Ban,
@@ -89,6 +89,7 @@ import {
   consentOutcomes,
   emptyPlanAnswer,
   type ConsentOutcome,
+  type ConsentPlan,
   type ConsentRequest,
 } from "./consent-plan";
 import {
@@ -572,6 +573,10 @@ export function ConnectorConsentBody({
    * there (N10). Reset with every change of selection or account.
    */
   const [exchangeCompleted, setExchangeCompleted] = useState(false);
+  /** Keep the request that actually ran; a refreshed account makes a new plan. */
+  const [attemptPlan, setAttemptPlan] = useState<ConsentPlan | null>(null);
+  /** A first connection has no selected account until the exchange returns it. */
+  const [attemptAccountId, setAttemptAccountId] = useState<string | null>(null);
   const [failure, setFailure] = useState<ConsentFailureAnswer | null>(null);
   /**
    * D8: the answer a press gets when the press would do nothing. The button
@@ -602,6 +607,8 @@ export function ConnectorConsentBody({
     setAccountId(nextId);
     setAttempted(false);
     setExchangeCompleted(false);
+    setAttemptPlan(null);
+    setAttemptAccountId(null);
     setFailure(null);
     setAnswer(null);
     const nextAccount = accounts.find((row) => row.id === nextId) ?? null;
@@ -616,6 +623,8 @@ export function ConnectorConsentBody({
   const toggle = (product: ConnectorProduct, next: boolean) => {
     setAttempted(false);
     setExchangeCompleted(false);
+    setAttemptPlan(null);
+    setAttemptAccountId(null);
     setFailure(null);
     setAnswer(null);
     setSelected((current) =>
@@ -641,17 +650,19 @@ export function ConnectorConsentBody({
     try {
       const disclosed = await confirmGmailReadDisclosure(plan.request);
       if (!disclosed) return;
-      await runner.run(plan.request, {
+      const result = await runner.run(plan.request, {
         owner:
           forOrganization && activeOrganization
             ? { type: "organization", organizationId: activeOrganization.id }
             : { type: "user" },
         loginHint: account?.label ?? null,
       });
+      setAttemptPlan(plan);
+      setAttemptAccountId(result.connectionId);
+      setAccountId(result.connectionId);
       setExchangeCompleted(true);
       setAttempted(true);
       await refetch();
-      toast.success(`${provider.name} connected.`);
     } catch (cause) {
       if (isGoogleAuthorizationCancelled(cause)) {
         toast.info(`${provider.name} authorization cancelled — nothing changed.`);
@@ -666,6 +677,8 @@ export function ConnectorConsentBody({
       // But the exchange did NOT complete, and no row may call itself granted on
       // the strength of scopes a renewal already had (N10).
       setExchangeCompleted(false);
+      setAttemptPlan(plan);
+      setAttemptAccountId(account?.id ?? null);
       setAttempted(true);
       await refetch();
     } finally {
@@ -676,16 +689,23 @@ export function ConnectorConsentBody({
   // Outcomes are derived from the account as it is NOW, so they recompute for
   // free after the refetch above — no stored copy of a result to go stale, and
   // nothing to show before the person has actually pressed the button.
+  const resultAccount = accounts.find((row) => row.id === attemptAccountId) ?? null;
+  const resultAccountUnavailable =
+    attempted && !busy && exchangeCompleted && !resultAccount;
   const resultRows: ConsentOutcome[] | null =
-    attempted && !busy
+    attempted && !busy && attemptPlan && (!exchangeCompleted || resultAccount)
       ? consentOutcomes({
           provider,
-          plan,
-          account,
+          plan: attemptPlan,
+          account: resultAccount,
           rollout,
           exchange: { completed: exchangeCompleted },
         })
       : null;
+  const hasGrantedResult = resultRows?.some((row) => row.state === "granted") ?? false;
+  useEffect(() => {
+    if (hasGrantedResult) toast.success(`${provider.name} connected.`);
+  }, [hasGrantedResult, provider.name]);
 
   if (isLoading) {
     return (
@@ -890,7 +910,13 @@ export function ConnectorConsentBody({
 
         {failure ? <ConsentFailureNotice failure={failure} /> : null}
 
-        {resultRows?.some((row) => row.state === "granted") ? (
+        {resultAccountUnavailable ? (
+          <p role="alert" className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
+            {provider.name} approval finished, but we could not confirm this account in your connections. Refresh Settings → Connectors before trying again.
+          </p>
+        ) : null}
+
+        {hasGrantedResult ? (
           <div className="rounded-lg border border-success/30 bg-success/[0.06] px-3 py-2.5">
             <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
               <ShieldCheck className="h-4 w-4 text-success" aria-hidden />
@@ -927,7 +953,7 @@ export function ConnectorConsentBody({
               disabled={busy}
               className="h-11 w-full text-sm sm:h-8 sm:w-auto"
             >
-              {resultRows?.some((row) => row.state === "granted")
+              {hasGrantedResult
                 ? "Done"
                 : "Not now"}
             </Button>
