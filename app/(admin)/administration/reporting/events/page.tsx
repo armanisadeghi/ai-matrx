@@ -17,14 +17,11 @@ import {
   Cog,
   ExternalLink,
   FileText,
-  Loader2,
-  RefreshCw,
   Webhook,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { createClient } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -131,7 +128,7 @@ export default function AdminEventsPage() {
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load events");
-      setRows([]);
+      // Keep the last successful window visible during a failed refresh.
     } finally {
       setLoading(false);
       setFetching(false);
@@ -154,6 +151,7 @@ export default function AdminEventsPage() {
         id: "occurred_at",
         accessorKey: "occurred_at",
         header: "When",
+        filter: "date",
         width: 150,
         cell: (r) => (
           <span
@@ -353,10 +351,12 @@ export default function AdminEventsPage() {
           isLoading={loading}
           isFetching={fetching}
           pageSize={50}
+          coverage={{ cap: 200, answeredBy: "client", noun: "event" }}
           emptyState={{
-            title: "No events yet",
-            description:
-              "Trigger one (finish a job, or send a webhook test) and Refresh.",
+            title: error ? "Events unavailable" : "No events yet",
+            description: error
+              ? "The activity source failed. Refresh to retry."
+              : "Trigger one (finish a job, or send a webhook test) and Refresh.",
           }}
           toolbar={{
             search: true,
@@ -393,21 +393,9 @@ export default function AdminEventsPage() {
                     Auto-refresh (5s)
                   </Label>
                 </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => void load()}
-                  disabled={fetching}
-                >
-                  {fetching ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="size-4" />
-                  )}
-                  Refresh
-                </Button>
               </div>
             ),
+            refresh: { onRefresh: load },
           }}
           copy={{
             label: "Activity event",
@@ -415,6 +403,7 @@ export default function AdminEventsPage() {
             location: "/administration/reporting/events",
             rowKind: "activity-event",
             listKind: "activity-events",
+            listDescription: "The newest 200 events at most; search and filters apply to this loaded source window.",
             humanRow: eventRowContent,
             rowAttributes: (r) => ({ id: r.id, action: r.action }),
           }}

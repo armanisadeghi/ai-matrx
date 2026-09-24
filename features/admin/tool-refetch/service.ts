@@ -45,6 +45,21 @@ const COUNTED_TOOL_TYPES: string[] = ["local", "agent", "external"];
 /** Supabase's own hard cap per request. */
 const PAGE_SIZE = 1000;
 
+/** A response at the API ceiling cannot prove that the all-time list ended. */
+export function allTimeCoverage(rowCount: number, refreshedAt: string | null) {
+  const atCap = rowCount >= PAGE_SIZE;
+  const snapshotNote = refreshedAt
+    ? `All-time figures are an hourly snapshot, last refreshed ${new Date(refreshedAt).toLocaleString()}.`
+    : null;
+  return {
+    truncated: atCap,
+    truncationNote: [
+      snapshotNote,
+      atCap ? `The all-time source returned its ${PAGE_SIZE.toLocaleString()}-row ceiling; more tools may exist.` : null,
+    ].filter(Boolean).join(" ") || null,
+  };
+}
+
 /** Ceiling on repeat rows pulled for a windowed rollup. Honesty flag if hit. */
 const MAX_REPEAT_ROWS = 20_000;
 
@@ -211,13 +226,7 @@ async function loadAllTime(): Promise<ToolRefetchSummary> {
       lastRepeatAt: r.last_repeat_at ?? null,
     }));
 
-  return {
-    rows,
-    truncated: false,
-    truncationNote: refreshedAt
-      ? `All-time figures are an hourly snapshot, last refreshed ${new Date(refreshedAt).toLocaleString()}.`
-      : null,
-  };
+  return { rows, ...allTimeCoverage(data?.length ?? 0, refreshedAt) };
 }
 
 /** ── WINDOWED: recompute from the per-repeat rows + a windowed denominator. ─ */

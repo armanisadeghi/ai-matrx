@@ -7,8 +7,19 @@ import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table/types";
-import { ToolDetail } from "./ToolRefetchConsole";
-import type { ToolRefetchDetailRow } from "./service";
+import { ToolDetail, toolRefetchCopyConfig } from "./ToolRefetchConsole";
+import { allTimeCoverage } from "./service";
+import type { ToolRefetchDetailRow, ToolRefetchSummaryRow } from "./service";
+
+describe("all-time report coverage", () => {
+  it("marks an answer at the source ceiling partial without discarding snapshot age", () => {
+    expect(allTimeCoverage(999, null)).toEqual({ truncated: false, truncationNote: null });
+    expect(allTimeCoverage(1000, "2026-09-24T12:00:00.000Z")).toMatchObject({
+      truncated: true,
+      truncationNote: expect.stringContaining("1,000-row ceiling"),
+    });
+  });
+});
 
 let mockDetailQuery: {
   data: ToolRefetchDetailRow[];
@@ -110,6 +121,71 @@ describe("ToolRefetchConsole canonical copy view", () => {
 
     expect(host.querySelector("[data-testid='copy-row-ids']")?.textContent).toBe(
       "name-exact-match,hidden-match",
+    );
+  });
+});
+
+describe("ToolRefetchConsole toolbar Alchemy", () => {
+  const summaryRows: ToolRefetchSummaryRow[] = [
+    {
+      toolName: "web.search",
+      totalCalls: 10,
+      repeats: 3,
+      repeatRate: 0.3,
+      sameDataRepeats: 2,
+      sameDataRate: 0.2,
+      newDataRepeats: 1,
+      unknownDataRepeats: 0,
+      afterTrimRepeats: 1,
+      medianGapCalls: 4,
+      medianGapSecs: 30,
+      charsRefetchedSameData: 72,
+      conversations: 2,
+      lastRepeatAt: "2026-09-24T12:00:00.000Z",
+    },
+  ];
+
+  it("keeps the exact report payloads and subset/export doors in the table toolbar", () => {
+    const copy = toolRefetchCopyConfig(
+      {
+        window: "30d",
+        sortKey: "sameDataRepeats",
+        sortAscending: false,
+        truncated: true,
+        truncationNote: "The scan reached its cap.",
+      },
+    );
+
+    expect(copy.showToolbar).not.toBe(false);
+    expect(copy.listHuman(summaryRows, summaryRows)).toBe(
+      "Tool re-fetch report (30d) — 1 tools\n\nweb.search: 3 repeats of 10 calls (2 same-data, 1 new-data, 0 unknown, 1 after trim) across 2 conversations",
+    );
+    expect(copy.listJson(summaryRows, summaryRows)).toBe(summaryRows);
+    expect(copy.listAgent(summaryRows, summaryRows)).toEqual({
+      kind: "tool-refetch-report",
+      location: "AI Matrx Admin — Tool re-fetch report",
+      description:
+        "Tool re-fetch report for the 30d window: 1 visible tools, sorted by sameDataRepeats descending.",
+      data: summaryRows,
+      summary:
+        "Tool re-fetch report (30d) — 1 tools\n\nweb.search: 3 repeats of 10 calls (2 same-data, 1 new-data, 0 unknown, 1 after trim) across 2 conversations",
+      attributes: {
+        window: "30d",
+        tool_count: 1,
+        truncated: true,
+        sort: "sameDataRepeats:desc",
+      },
+      context: {
+        truncation_note: "The scan reached its cap.",
+        trim_audit_epoch: "2026-09-08",
+      },
+    });
+
+    const exports = copy.export(summaryRows, summaryRows).items;
+    expect(exports.map((item) => item.label)).toEqual(["JSON (raw data)", "CSV"]);
+    expect(exports[0]?.build?.().content).toBe(JSON.stringify(summaryRows, null, 2));
+    expect(String(exports[1]?.build?.().content)).toContain(
+      "Tool,Calls,Repeats,Repeat %,Same-data,Same-data %,New-data,Unknown,After trim,Gap (calls),Gap (mm:ss),Chars re-fetched,Convos",
     );
   });
 });

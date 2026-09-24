@@ -10,7 +10,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Loader2, RefreshCw, XCircle } from "lucide-react";
+import { AlertTriangle, Loader2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
@@ -33,6 +33,7 @@ export default function OrphanLeasesPage() {
   const [rows, setRows] = useState<AdminRunRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   // Read-only evidence. Force-failing a run is an operator gesture with
@@ -45,8 +46,11 @@ export default function OrphanLeasesPage() {
     setFetching(true);
     try {
       setRows(await fetchOrphanLeases());
+      setLoadError(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err));
+      const message = err instanceof Error ? err.message : String(err);
+      setLoadError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
       setFetching(false);
@@ -157,6 +161,7 @@ export default function OrphanLeasesPage() {
         id: "claimed_at",
         accessorKey: "claimed_at",
         header: "Claimed",
+        filter: "date",
         cell: (r) => (
           <span className="text-xs">{humanizeRelative(r.claimed_at)}</span>
         ),
@@ -166,6 +171,7 @@ export default function OrphanLeasesPage() {
         id: "claim_expires_at",
         accessorKey: "claim_expires_at",
         header: "Expired",
+        filter: "date",
         cell: (r) => (
           <span className="text-xs">
             {humanizeRelative(r.claim_expires_at)}
@@ -194,6 +200,7 @@ export default function OrphanLeasesPage() {
           few minutes, something's wrong upstream.
         </span>
       </p>
+      {loadError && <p role="alert" className="text-sm text-destructive">{loadError}</p>}
       <div
         className="min-h-0 flex-1"
         data-surface-value="orphan_lease_row_count"
@@ -213,27 +220,15 @@ export default function OrphanLeasesPage() {
           isLoading={loading}
           isFetching={fetching}
           pageSize={50}
+          coverage={{ cap: 200, answeredBy: "client", noun: "orphan lease" }}
           emptyState={{
-            title: "No orphan leases",
-            description: "System is healthy.",
+            title: loadError ? "Orphan leases unavailable" : "No orphan leases",
+            description: loadError ? "The lease source failed. Refresh to retry." : "System is healthy.",
           }}
           toolbar={{
             search: true,
             searchPlaceholder: "Search orphan leases…",
-            actions: (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => void load()}
-                disabled={fetching}
-              >
-                {fetching ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-              </Button>
-            ),
+            refresh: { onRefresh: load },
           }}
           copy={{
             label: "Orphan lease",
