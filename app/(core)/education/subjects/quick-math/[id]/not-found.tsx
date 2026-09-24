@@ -1,39 +1,26 @@
-import Link from "next/link";
-import { BookOpen, ArrowLeft, Home } from "lucide-react";
-import { Button } from "@/components/ui/button";
+"use client";
 
-export default function QuickMathProblemNotFound() {
+// The 404 boundary for /education/subjects/quick-math/[id].
+//
+// It used to assert "Math Problem Not Found" over a read that equally means
+// denied, deleted, never existed, or signed out. The access gate asks the
+// platform which of those it actually is and offers the way forward.
+
+import { useParams } from "next/navigation";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
+
+export default function QuickMathProblemUnavailable() {
+  const params = useParams();
+  const id = typeof params?.id === "string" ? params.id : "";
+
   return (
-    <div className="min-h-full bg-textured flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full text-center space-y-6">
-        <div className="flex justify-center">
-          <div className="rounded-full bg-muted p-6">
-            <BookOpen className="w-16 h-16 text-muted-foreground" />
-          </div>
-        </div>
-        <h1 className="text-4xl md:text-5xl font-bold">Math Problem Not Found</h1>
-        <p className="text-xl text-muted-foreground">
-          We couldn&apos;t find the math problem you&apos;re looking for.
-        </p>
-        <p className="text-base text-muted-foreground/80">
-          It may have been removed, renamed, or is no longer available. Try
-          browsing the available lessons instead.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-          <Link href="/education/subjects/quick-math">
-            <Button variant="outline" className="flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Quick Math
-            </Button>
-          </Link>
-          <Link href="/education">
-            <Button className="flex items-center gap-2">
-              <Home className="w-4 h-4" />
-              Education Hub
-            </Button>
-          </Link>
-        </div>
-      </div>
+    <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+      <AccessGate
+        token="math_problem"
+        id={id}
+        fallbackHref="/education/subjects/quick-math"
+        fallbackLabel="Quick Math"
+      />
     </div>
   );
 }
