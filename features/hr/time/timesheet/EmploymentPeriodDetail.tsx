@@ -41,7 +41,10 @@ import {
   hrTasksHref,
   hrTimeExceptionsHref,
   hrTimePeriodHref,
+  hrTimesheetsHref,
 } from "@/features/hr/routes";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { HrRpcError } from "../api/rpc";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 
 import { getTimesheet } from "../api/service";
@@ -89,6 +92,32 @@ export function EmploymentPeriodDetail({
     [employmentId, payPeriodId, mockCase],
     ready,
   );
+
+  // A failed read of this person's timesheet is the platform's refusal frame, never a
+  // hand-written notice. A typed refusal keeps the engine's own sentence; a transport or SQL
+  // fault goes in as an error so the gate offers retry. ABSOLUTE: an HR record refusal never
+  // offers "Request access" (the §5 subject-exclusion veto).
+  if (query.error) {
+    const err = query.error;
+    const fault =
+      !(err instanceof HrRpcError) ||
+      err.code === "hr_rpc_failed" ||
+      (/^[0-9A-Z]{5}$/.test(err.code) && err.code !== "42501");
+    return (
+      <div className="mx-auto w-full max-w-6xl space-y-4 px-3 py-4 sm:px-4">
+        <AccessGate
+          token="hr_employment"
+          id={employmentId}
+          error={fault ? err : null}
+          reason={fault ? undefined : err.userMessage}
+          onRetry={query.refetch}
+          requestability="absolute"
+          fallbackHref={hrTimesheetsHref(orgRef)}
+          fallbackLabel="Timesheets"
+        />
+      </div>
+    );
+  }
 
   return (
     <RuleSnapshotProvider>
