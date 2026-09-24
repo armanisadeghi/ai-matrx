@@ -3,7 +3,8 @@
 # (git config core.hooksPath scripts/githooks), the same mechanism aidream already uses.
 # Review before changing.
 #
-# ONE JOB: a migration file production has already run may not enter a commit.
+# ONE JOB: a migration file production has already run may not enter a commit. (It also prints
+# the shared-index warning below, which never refuses.)
 # See scripts/lib/ledger-snapshot.mjs for why this is a COMMIT-time guard and not
 # another release-time report.
 set -u
@@ -15,6 +16,10 @@ LOCAL_HOOK="$(git rev-parse --git-common-dir)/hooks/pre-commit"
 if [ -x "$LOCAL_HOOK" ]; then
     "$LOCAL_HOOK" "$@" || exit $?
 fi
+
+# SHARED-INDEX WARNING (lane GIT-OWN-COMMIT, 2026-09-23): a commit built from the shared index carries
+# every lane's staged paths; this prints them (a warning, not a refusal yet). The safe way is the helper.
+[ -x "$ROOT/scripts/git/commit-own-paths.sh" ] && command -v zsh >/dev/null 2>&1 && "$ROOT/scripts/git/commit-own-paths.sh" --warn-shared-index
 
 if ! command -v node >/dev/null 2>&1; then
     echo "COMMIT REFUSED: the ledgered-migration guard needs node on PATH and could not find it." >&2
