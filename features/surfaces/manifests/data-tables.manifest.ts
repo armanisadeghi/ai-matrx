@@ -319,10 +319,12 @@ const surfaceSpecific: SurfaceValue[] = [
  *  - `cell_value` is the operation this surface exists for ("clean this
  *    value", "reformat this date", "fill in the category"). It is ONE cell,
  *    identified by an explicit `{row_id, field_name}` pair the agent must have
- *    READ off the page, and it lands through `udt_upsert_cell` — a surgical
- *    `jsonb_set` that structurally cannot touch another cell, another row, or
- *    the column definitions. Row history (`udt_dataset_row_versions`, exposed
- *    on this page as Row history) makes it revertible.
+ *    READ off the page, and it lands through the data seam's `upsertCell` —
+ *    one cell, which structurally cannot touch another cell, another row, or
+ *    the column definitions: `udt_upsert_cell` for an older table,
+ *    `custom.record_update` for a record-store one (the seam decides by where
+ *    the table lives; lane INTEG-CLIENTS, CUTOVER-PLAN F15). Row history (the
+ *    older row versions, or the store's own history) makes it revertible.
  *
  * WHY COORDINATES TRAVEL WITH THE VALUE, as one object rather than three
  * targets: row + column + value are ONE decision. Split apart, an agent that
@@ -349,7 +351,7 @@ const surfaceSpecific: SurfaceValue[] = [
  *  - `table_name` and `table_id` — identity. Other tables, saved references
  *    and the Row-history URLs point at this table by name and id.
  *  - `table_schema` / `column_list` — structure. Adding or retyping a column
- *    is a migration wearing a form's clothes: `udt_change_field_type` rewrites
+ *    is a migration wearing a form's clothes: a retype rewrites
  *    every row in the table and un-castable values become null. That is data
  *    loss behind an innocuous-sounding request, and there is no undo.
  *  - `full_table_json`, `visible_data_csv`, `current_row_json` — these are

@@ -29,6 +29,7 @@ const PASSWORD = process.env.AI_ADMIN_PASSWORD ?? "";
 const CLONE_REF = "jxhgzalwckuarngvsdyq";
 const ITEM = "f2acc6cd-c4f0-42ac-9cbc-3ceaeed34c40"; // context item "known_defects" (template-backed table)
 const SCOPE = "cc6a9ba2-fb83-4ea7-bb56-96b9e4ef4d91"; // scope "matrx-frontend (LCP test)", admin's Workspace
+const PRE_MOVE_TABLE = "8c67a085-197d-44c0-b2bb-ceeea9555303"; // its instance, moved with the same id
 const READY = Boolean(URL_ && KEY && EMAIL && PASSWORD);
 
 const holder: { client?: SupabaseClient; userId: string } = { userId: "" };
@@ -74,6 +75,8 @@ describeLive("a moved organization's scope table is its record-store Table", () 
     const res = await scopesService.provisionScopeDataset(ITEM, SCOPE);
     if (isScopesRpcErr(res)) throw new Error(res.error.message);
     const tableId = res.data.datasetId;
+    // The scope was provisioned BEFORE the move: the answer is that same table, now in the store.
+    expect(tableId).toBe(PRE_MOVE_TABLE);
 
     // RED before the repoint: unplaced, so the engine read the archived older copy.
     expect(service.isRecordStoreTable(tableId)).toBe(true);

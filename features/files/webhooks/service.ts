@@ -5,6 +5,7 @@
 // pure UI↔DB, the canonical path. Delivery itself is handled DB-side by the
 // pg_cron pipeline in migrations/files_webhook_dispatcher.sql.
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
 import { filesDb } from "@/features/files/filesDb";
 import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
@@ -171,4 +172,33 @@ export async function listDeliveries(
     .returns<WebhookDelivery[]>();
   if (error) throw new Error(`Failed to load deliveries: ${error.message}`);
   return data ?? [];
+}
+
+
+/**
+ * SEND EVERY CHANGE OF ONE RECORD-STORE TABLE TO A WEBHOOK (lane INTEG-CLIENTS, F19).
+ * `custom.table_webhook_declare` files the webhook in the TABLE's organization with
+ * `resource_types = ['custom_record:<table>']`, so the platform's one dispatcher delivers it and
+ * signs it exactly like every other webhook here; it refuses a non-admin, a non-https address and
+ * a table past `custom/table_webhooks_max`, in words. The secret comes back once.
+ */
+export async function declareTableWebhook(input: {
+  organizationId: string;
+  tableId: string;
+  targetUrl: string;
+  events: string[] | null;
+  description?: string | null;
+}): Promise<{ webhookId: string; secret: string }> {
+  const supabase = createClient();
+  const { data, error } = await (supabase as unknown as SupabaseClient).schema("custom").rpc("table_webhook_declare", {
+    p_organization_id: input.organizationId,
+    p_table_id: input.tableId,
+    p_target_url: input.targetUrl,
+    ...(input.events && input.events.length > 0 ? { p_events: input.events } : {}),
+    ...(input.description ? { p_description: input.description } : {}),
+  });
+  if (error) throw new Error(error.hint ? `${error.message} ${error.hint}` : error.message);
+  const answer = (data ?? {}) as { webhook_id?: string; secret?: string };
+  if (!answer.webhook_id || !answer.secret) throw new Error("The table's webhook was not created.");
+  return { webhookId: answer.webhook_id, secret: answer.secret };
 }

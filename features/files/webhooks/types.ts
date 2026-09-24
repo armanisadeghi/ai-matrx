@@ -103,12 +103,28 @@ export const WEBHOOK_EVENT_CATALOGUE: ReadonlyArray<{
   { group: "Permissions", value: "permission.revoked", label: "Permission revoked" },
   { group: "Jobs", value: "run.completed", label: "Long-running job finished" },
   { group: "Jobs", value: "run.failed", label: "Long-running job failed" },
-  // Data tables — one event per row change (entity_type `user_table_row`,
-  // metadata carries table_id / table_name / changed_fields). Producer:
-  // migrations/udt_row_change_events.sql.
-  { group: "Data tables", value: "row.created", label: "Table row added" },
-  { group: "Data tables", value: "row.updated", label: "Table row changed" },
-  { group: "Data tables", value: "row.archived", label: "Table row archived" },
-  { group: "Data tables", value: "row.restored", label: "Table row restored" },
-  { group: "Data tables", value: "row.deleted", label: "Table row deleted" },
+  // Data tables NOT YET MOVED into the record store — one event per row change (entity_type
+  // `user_table_row`, metadata carries table_id / table_name / changed_fields). Producer:
+  // migrations/udt_row_change_events.sql. A moved or record-store table never emits these; it
+  // is subscribed ONE TABLE AT A TIME (`TABLE_WEBHOOK_EVENTS` below).
+  { group: "Data tables", value: "row.created", label: "Row added (older table)" },
+  { group: "Data tables", value: "row.updated", label: "Row changed (older table)" },
+  { group: "Data tables", value: "row.archived", label: "Row archived (older table)" },
+  { group: "Data tables", value: "row.restored", label: "Row restored (older table)" },
+  { group: "Data tables", value: "row.deleted", label: "Row deleted (older table)" },
+];
+
+/**
+ * THE EVENTS OF ONE RECORD-STORE TABLE (lane INTEG-CLIENTS, CUTOVER-PLAN F19; GRID-PRIMITIVES G4).
+ * A record-store table's changes reach a webhook only when that webhook names the table
+ * (`resource_types` = `custom_record:<table id>`), which `custom.table_webhook_declare` does —
+ * admin on the table, https only, the signing secret returned once. These are that door's
+ * words, exactly; an empty choice hears every one of them.
+ */
+export const TABLE_WEBHOOK_EVENTS: ReadonlyArray<{ value: string; label: string }> = [
+  { value: "record.created", label: "Row added" },
+  { value: "record.updated", label: "Row changed" },
+  { value: "record.archived", label: "Row archived" },
+  { value: "record.restored", label: "Row restored" },
+  { value: "record.purged", label: "Row removed for good" },
 ];

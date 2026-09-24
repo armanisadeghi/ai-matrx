@@ -4,7 +4,8 @@
  * The options editor for a `choice` / `multi_choice` column.
  *
  * NOBODY TYPES A LIST THEY ALREADY HAVE. The column's real values arrive as
- * `suggestions` (from `udt_column_facets`, ordered by how many rows carry
+ * `suggestions` (the column's top values from the data seam's `getTableProfile` — the older
+ * store's profile door or the record store's, by where the table lives — ordered by how many rows carry
  * them) and this editor opens with them ready to accept in one click. Declaring
  * options on an existing column should feel like confirming what is already
  * true, because it is.

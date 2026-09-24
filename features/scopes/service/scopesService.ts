@@ -40,7 +40,6 @@ import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { contextDb } from "@/utils/supabase/contextDb";
 import { whereANewTableIsBorn } from "@/features/data-tables/data-source/where-a-table-is-born";
-import { locateTable } from "@/features/data-tables/data-source/locate-table";
 import { placeTableInRecordStore } from "@/features/data-tables/data-source/table-home";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
@@ -130,10 +129,10 @@ export interface DatasetTableTemplate {
 // consumes the one implementation like every other scopes chokepoint.
 
 /**
- * A moved organization's table for (context item, scope), in the record store. An instance
- * made before the move answers first (its dataset id IS the moved Table's id); otherwise the
- * store's twin makes one in the organization's Home — the same Home the scope trigger uses
- * (the organization kernel's oldest record; `custom.read_records` lists newest first).
+ * A moved organization's table for (context item, scope), in the record store, through the
+ * store's own door `custom.scope_table_provision` (GRID-PRIMITIVES G11, amended in matrx-frontend
+ * 7a35711947): it answers a scope provisioned BEFORE the move with its already-moved Table, makes
+ * one otherwise, and picks the organization's Home itself. The id comes back placed.
  */
 async function provisionScopeTableInTheStore(
   organizationId: string,
@@ -141,46 +140,19 @@ async function provisionScopeTableInTheStore(
   contextItemId: string,
   scopeId: string,
 ): Promise<{ ok: true; tableId: string } | { ok: false; code: "not_found" | "internal"; message: string }> {
-  const { data: instance } = await contextDb(supabase)
-    .from("scope_dataset_instances")
-    .select("dataset_id")
-    .eq("context_item_id", contextItemId)
-    .eq("scope_id", scopeId)
-    .maybeSingle();
-  const earlier = (instance as { dataset_id?: string } | null)?.dataset_id;
-  if (earlier) {
-    const where = await locateTable(earlier, organizationId);
-    if (where.ok && where.store === "record") return { ok: true, tableId: earlier };
-  }
-
-  const store = (supabase as unknown as SupabaseClient).schema("custom");
-  const kernel = await store.rpc("organization_kernel_id");
-  if (kernel.error || typeof kernel.data !== "string") {
-    return { ok: false, code: "internal", message: kernel.error?.message ?? "The record store did not name its organization table." };
-  }
-  const homes = await store.rpc("read_records", {
+  const made = await (supabase as unknown as SupabaseClient).schema("custom").rpc("scope_table_provision", {
     p_organization_id: organizationId,
-    p_table_id: kernel.data,
-    p_limit: 200,
-    p_offset: 0,
-  });
-  const listed = (homes.data ?? []) as Array<{ id: string }>;
-  const home = listed[listed.length - 1]?.id;
-  if (homes.error || !home) {
-    return {
-      ok: false,
-      code: "internal",
-      message: homes.error?.message ?? "This organization has no Home in the record store yet, so its scope table has nowhere to live.",
-    };
-  }
-  const made = await store.rpc("scope_table_provision", {
-    p_organization_id: organizationId,
-    p_home_id: home,
     p_item_id: contextItemId,
     p_scope_id: scopeId,
   });
   if (made.error || typeof made.data !== "string") {
-    return { ok: false, code: "internal", message: made.error?.message ?? "The record store made no table for this scope." };
+    return {
+      ok: false,
+      code: "internal",
+      message: made.error
+        ? `${made.error.message}${made.error.hint ? ` ${made.error.hint}` : ""}`
+        : "The record store made no table for this scope.",
+    };
   }
   placeTableInRecordStore(made.data, { organizationId, userId });
   return { ok: true, tableId: made.data };
@@ -227,10 +199,9 @@ export const scopesService = {
       const userId = requireUserId();
 
       // BY WHERE THE ORGANIZATION KEEPS ITS TABLES (lane INTEG-CLIENTS, CUTOVER-PLAN F11/D5).
-      // A moved organization's scope table lives in the record store: an instance made before
-      // the move is the SAME id there (the mover keeps ids), and a new one is made by the
-      // store's own twin, `custom.scope_table_provision` (GRID-PRIMITIVES G11) — never another
-      // older dataset nobody's screens read. The id comes back PLACED, so the caller's next
+      // A moved organization's scope table lives in the record store, and the store's own door
+      // (`custom.scope_table_provision`, GRID-PRIMITIVES G11) answers it — never another older
+      // dataset nobody's screens read. The id comes back PLACED, so the caller's next
       // read or write (the list-change engine's `getCompleteTable` / `bulkWrite`) reaches it.
       const { data: scope, error: scopeError } = await contextDb(supabase)
         .from("scopes")

@@ -36,7 +36,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { listTablesEverywhere, type UserTableListItem } from "@/features/data-tables/service";
+import {
   createWebhook,
+  declareTableWebhook,
   deleteWebhook,
   listDeliveries,
   listWebhooks,
@@ -46,6 +55,7 @@ import {
   updateWebhook,
 } from "../service";
 import {
+  TABLE_WEBHOOK_EVENTS,
   WEBHOOK_EVENT_CATALOGUE,
   type Webhook,
   type WebhookDelivery,
@@ -362,6 +372,19 @@ export function WebhooksManager() {
   const [justCreatedSecret, setJustCreatedSecret] = useState<string | null>(
     null,
   );
+  // ONE RECORD-STORE TABLE (lane INTEG-CLIENTS, F19): a record-store table's changes reach a
+  // webhook only when the webhook names that table, so "what to listen to" is either the
+  // catalogue below or one table. The list holds only record-store tables of this organization.
+  const ALL_EVENTS_SCOPE = "__catalogue__";
+  const [scope, setScope] = useState<string>(ALL_EVENTS_SCOPE);
+  const [storeTables, setStoreTables] = useState<UserTableListItem[] | null>(null);
+  useEffect(() => {
+    if (!creating || !organizationId || storeTables !== null) return;
+    void listTablesEverywhere({ organizationId }).then((listed) =>
+      setStoreTables(listed.success ? listed.data.filter((t) => t.store === "records") : []),
+    );
+  }, [creating, organizationId, storeTables]);
+  const tableScoped = scope !== ALL_EVENTS_SCOPE;
 
   const reload = useCallback(async () => {
     try {
@@ -383,6 +406,25 @@ export function WebhooksManager() {
     }
     setSubmitting(true);
     try {
+      if (tableScoped && organizationId) {
+        const made = await declareTableWebhook({
+          organizationId,
+          tableId: scope,
+          targetUrl: url.trim(),
+          events: allEvents ? null : Array.from(selected),
+          description: description.trim() || null,
+        });
+        setJustCreatedSecret(made.secret);
+        setUrl("");
+        setDescription("");
+        setSelected(new Set());
+        setAllEvents(true);
+        setScope(ALL_EVENTS_SCOPE);
+        setCreating(false);
+        toast.success("Webhook created for the table");
+        await reload();
+        return;
+      }
       const created = await createWebhook({
         target_url: url.trim(),
         description: description.trim() || null,
@@ -445,7 +487,7 @@ export function WebhooksManager() {
               placeholder="What is this endpoint for?"
             />
           </div>
-          {organizationId && (
+          {organizationId && !tableScoped && (
             <div className="flex items-center gap-2">
               <Checkbox
                 id="wh-org"
@@ -460,6 +502,30 @@ export function WebhooksManager() {
               </Label>
             </div>
           )}
+          {organizationId && storeTables && storeTables.length > 0 && (
+            <div>
+              <Label htmlFor="wh-scope">Listen to</Label>
+              <Select
+                value={scope}
+                onValueChange={(v) => {
+                  setScope(v);
+                  setSelected(new Set());
+                }}
+              >
+                <SelectTrigger id="wh-scope" className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_EVENTS_SCOPE}>Your events (files, sharing, jobs, older tables)</SelectItem>
+                  {storeTables.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      Every change to the table “{t.table_name}”
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div>
             <div className="mb-2 flex items-center gap-2">
               <Checkbox
@@ -471,7 +537,7 @@ export function WebhooksManager() {
             </div>
             {!allEvents && (
               <div className="grid grid-cols-2 gap-1.5 rounded-md border border-border p-2">
-                {WEBHOOK_EVENT_CATALOGUE.map((ev) => (
+                {(tableScoped ? TABLE_WEBHOOK_EVENTS : WEBHOOK_EVENT_CATALOGUE).map((ev) => (
                   <label
                     key={ev.value}
                     className="flex items-center gap-2 text-sm"

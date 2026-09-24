@@ -10,6 +10,8 @@
 import React from "react";
 import { Table } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
+import { locateTable } from "@/features/data-tables/data-source/locate-table";
+import { readTableDetails } from "@/features/data-tables/service";
 import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
@@ -27,6 +29,21 @@ export default function DatasetPeek({ id, open, onClose }: PeekProps) {
     let cancelled = false;
     (async () => {
       setLoading(true);
+      // A record-store table (born there, or moved there with this same id) is read from the
+      // store; its older copy is archived (lane INTEG-CLIENTS, F12).
+      const where = await locateTable(id);
+      if (where.ok && where.store === "record") {
+        const details = await readTableDetails(id);
+        if (!cancelled) {
+          setRow(
+            details.success && details.table
+              ? { description: details.table.description || details.table.name, created_at: null }
+              : null,
+          );
+          setLoading(false);
+        }
+        return;
+      }
       const { data } = await supabase
         .schema("workbench")
         .from("udt_datasets")
