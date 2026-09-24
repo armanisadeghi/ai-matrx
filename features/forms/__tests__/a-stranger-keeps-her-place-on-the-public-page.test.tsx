@@ -118,6 +118,7 @@ describe("prefill by link", () => {
     render(<PublicFormRunner form={FORM} prefill={{ referring_clinic: "Harbor Sports Medicine" }} />);
     const props = seen.at(-1)!;
     expect(props["initialAnswers"]).toEqual({ referring_clinic: "Harbor Sports Medicine" });
+    expect(props["resumed"]).toBe(false);
     expect((props["form"] as { thankYou: unknown }).thankYou).toEqual({
       title: "You are all set",
       body: "Next, book your first visit — it takes a minute.",
@@ -192,6 +193,8 @@ describe("keep my place", () => {
     expect(window.location.hash).toBe("");
     // Her saved answers win over the link's.
     expect(seen.at(-1)!["initialAnswers"]).toEqual({ referring_clinic: "Harbor Sports Medicine", full_name: "Leilani Okafor" });
+    // A saved place opens where she left off; a prefill alone does not.
+    expect(seen.at(-1)!["resumed"]).toBe(true);
     expect(host.textContent).toMatch(/Picked up where you left off/);
     expect(window.localStorage.getItem(`matrx:form-place:${FORM.form_id}`)).toBe(SECRET);
   });

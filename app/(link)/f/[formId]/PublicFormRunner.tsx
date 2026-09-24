@@ -320,7 +320,9 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
       : null;
 
   // THE PORTS 0.84.8 DOES NOT KNOW YET — see the note at the top of this file.
-  const ports: Record<string, unknown> = { whichAsked, initialAnswers, onAnswersChange };
+  // `resumed` opens a saved place on its first unanswered question; a link that only prefills opens
+  // on question one, so she sees what the referral link already said for her.
+  const ports: Record<string, unknown> = { whichAsked, initialAnswers, onAnswersChange, resumed: resumed.kind === "found" };
   const spec: Record<string, unknown> = {
     name: form.title,
     subject: form.table_id,
