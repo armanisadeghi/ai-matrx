@@ -199,6 +199,15 @@ describeLive("a table saved or appended to outside the grid lives in its organiz
     made.push(...added.map((r) => r.id));
   });
 
+  it("the save-into pickers offer a moved table once, from the store, with its real row count", async () => {
+    const listed = await service.listTablesEverywhere({ organizationId: ORG });
+    if (!listed.success) throw new Error(listed.error);
+    const parts = listed.data.filter((t) => t.id === PARTS_ON_ORDER);
+    expect(parts).toHaveLength(1);
+    expect(parts[0]!.row_count).toBe((await storeRows(PARTS_ON_ORDER)).length);
+    expect(parts[0]!.row_count).toBeGreaterThan(0);
+  });
+
   it("an organization whose tables have not moved keeps its births and its tables in the older store", async () => {
     // The clone moves organizations as lanes work, so the unmoved organization is FOUND, not named:
     // the first organization holding a live older dataset admin can reach whose tables have not moved.
