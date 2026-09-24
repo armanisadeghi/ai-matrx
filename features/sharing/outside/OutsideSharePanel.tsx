@@ -14,7 +14,7 @@
 // WHAT IT IS. One section inside the ONE share dialog, for a table in the
 // record store. It draws exactly what the store says it may draw
 // (`custom.table_share_outside` answers `lane_open`, `may_invite`,
-// `may_open_lane`, `my_level` and `levels`), so no control here is ever live
+// `my_level` and `levels`), so no control here is ever live
 // when the door behind it would refuse — and when a control is absent the panel
 // says, in a sentence, who can do the thing instead. Absent or honest, never
 // dead.
@@ -54,12 +54,15 @@ import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils"
 import {
   absoluteInviteUrl,
   inviteOutside,
-  openOutsideLane,
   readOutsideShare,
   resendOutside,
   revokeOutside,
   type OutsideShareState,
 } from "./outsideShareService";
+
+/** The one sentence a shut lane gets. Exported so the test asserts the words. */
+export const LANE_CLOSED_SAY =
+  "This organization's administrator has turned off sharing with people outside it.";
 
 export interface OutsideSharePanelProps {
   organizationId: string;
@@ -213,56 +216,16 @@ export function OutsideSharePanel({
         <Globe2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
         <div className="min-w-0">
           <h3 className="text-sm font-medium">People outside this organization</h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">{state.say}</p>
+          {/* 🚨 NAMING A PERSON IS THE ONLY ACT (owner ruling, SHARE-GATE-OFF,
+              2026-09-23). There is no switch to press here: sharing outside is on
+              by default, and an organization administrator who turned it off did
+              so on purpose in settings. So a shut lane gets ONE sentence and no
+              control — never a button in front of the invite. */}
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {state.lane_open ? state.say : LANE_CLOSED_SAY}
+          </p>
         </div>
       </div>
-
-      {/* THE LANE IS SHUT. The button is drawn only for the people the store said
-          can use it; everybody else read, above, who to ask. */}
-      {!state.lane_open && state.may_open_lane ? (
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={busy === "lane"}
-          onClick={() =>
-            void (async () => {
-              // A change that applies to the WHOLE organization says so first.
-              const ok = await confirm({
-                title: "Let this organization share with people outside it?",
-                description:
-                  "This applies to the whole organization, not just this table: after it, anyone who may share a table can invite somebody with no account here to one. Nobody gains access from this on its own — each invitation is still a separate act, and each one can be taken back.",
-                confirmLabel: "Turn it on",
-              });
-              if (!ok) return;
-              setBusy("lane");
-              try {
-                await openOutsideLane(organizationId);
-                await refresh();
-                // 🚨 IT DID THE THING, SO IT SAYS SO (FIX-11A/F7). Every other
-                // control in this panel answers in a sentence through `run`;
-                // this one changed the paragraph above it and said nothing,
-                // which reads exactly like a press that was never received.
-                toast({
-                  title: "Sharing with people outside is on for this organization.",
-                  description:
-                    "Invite somebody by email below. Nobody has access yet — each invitation is still a separate act.",
-                });
-              } catch (error) {
-                toast({
-                  title: "The outside door did not open",
-                  description: error instanceof Error ? error.message : String(error),
-                  variant: "destructive",
-                });
-              } finally {
-                setBusy(null);
-              }
-            })()
-          }
-        >
-          {busy === "lane" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-          Turn on sharing with people outside
-        </Button>
-      ) : null}
 
       {/* 🚨 WHAT THIS SERVER CAN ACTUALLY DO ABOUT EMAIL, said BEFORE anybody
           presses Invite — never a promise the server cannot keep. The store
