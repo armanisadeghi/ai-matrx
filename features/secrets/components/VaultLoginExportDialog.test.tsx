@@ -8,6 +8,8 @@ import {
   previewVaultLoginCsv,
   VaultLoginExportTransportError,
 } from "../vault-service";
+import { OrganizationContextError } from "@/lib/api/organization-context";
+import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 
 const actor = {
   userId: "user-1",
@@ -18,6 +20,7 @@ let authListener:
   | ((event: string, session?: { user: { id: string } } | null) => void)
   | undefined;
 let selectedOrganization = actor.organizationId;
+let organizationState: OrganizationState = "ready";
 const signInWithPasswordMock = jest.fn();
 const getClaimsMock = jest.fn();
 
@@ -28,6 +31,21 @@ if (!HTMLElement.prototype.scrollIntoView) {
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => selectedOrganization,
 }));
+jest.mock("@/features/organizations/useOrganizationRequired", () => ({
+  useOrganizationRequired: () => ({ organizationState }),
+}));
+jest.mock(
+  "@/features/organizations/components/OrganizationRequiredNotice",
+  () => ({
+    OrganizationContextNotice: ({
+      state,
+      what,
+    }: {
+      state: string;
+      what?: string;
+    }) => <div data-testid="organization-context-notice">{state}:{what}</div>,
+  }),
+);
 jest.mock("@/hooks/use-media-query", () => ({
   useMediaQuery: () => false,
 }));
@@ -86,14 +104,14 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-async function selectNordPass(): Promise<void> {
+async function selectProfile(label: string): Promise<void> {
   const trigger = document.querySelector("#vault-export-profile");
   if (!(trigger instanceof HTMLElement)) throw new Error("profile trigger missing");
   await act(async () => trigger.click());
   const option = [...document.querySelectorAll('[role="option"]')].find((node) =>
-    node.textContent?.includes("NordPass CSV"),
+    node.textContent?.includes(label),
   );
-  if (!(option instanceof HTMLElement)) throw new Error("NordPass option missing");
+  if (!(option instanceof HTMLElement)) throw new Error(`${label} option missing`);
   await act(async () => option.click());
 }
 
@@ -114,6 +132,7 @@ describe("VaultLoginExportDialog", () => {
     root = createRoot(host);
     getActorMock.mockReset();
     selectedOrganization = actor.organizationId;
+    organizationState = "ready";
     previewMock.mockReset();
     downloadMock.mockReset();
     signInWithPasswordMock.mockReset();
@@ -285,6 +304,37 @@ describe("VaultLoginExportDialog", () => {
     expect(button("Download CSV").disabled).toBe(true);
   });
 
+  test.each(["resolving", "required", "unavailable"] as const)(
+    "does not offer login export controls while organization context is %s",
+    async (state) => {
+      organizationState = state;
+      await render();
+
+      expect(document.querySelector("#vault-export-profile")).toBeNull();
+      expect(document.querySelectorAll('[role="checkbox"]')).toHaveLength(0);
+      expect(previewMock).not.toHaveBeenCalled();
+      expect(document.body.textContent).toContain(`${state}:Vault login exports`);
+    },
+  );
+
+  test("returns to the organization gate when context disappears while reviewing", async () => {
+    previewMock.mockImplementation(async () => {
+      organizationState = "required";
+      throw new OrganizationContextError("organization_context_required");
+    });
+    await render();
+    const checkbox = document.querySelector('[role="checkbox"]');
+    if (!(checkbox instanceof HTMLElement)) throw new Error("selection missing");
+    await act(async () => checkbox.click());
+    await act(async () => button("Review selected logins").click());
+    await render();
+
+    expect(document.querySelector("#vault-export-profile")).toBeNull();
+    expect(document.querySelectorAll('[role="checkbox"]')).toHaveLength(0);
+    expect(document.body.textContent).toContain("required:Vault login exports");
+    expect(document.body.textContent).not.toContain("Export preview");
+  });
+
   test("binds the NordPass destination to preview and clears a prior preview when changed", async () => {
     await render();
     const checkbox = document.querySelector('[role="checkbox"]');
@@ -292,7 +342,7 @@ describe("VaultLoginExportDialog", () => {
     await act(async () => checkbox.click());
     await act(async () => button("Review selected logins").click());
     expect(document.body.textContent).toContain("Export preview");
-    await selectNordPass();
+    await selectProfile("NordPass CSV");
     expect(document.body.textContent).not.toContain("Export preview");
     expect(document.body.textContent).toContain(
       "Targets NordPass's documented import template and carries ordinary login fields only.",
@@ -302,6 +352,67 @@ describe("VaultLoginExportDialog", () => {
       { profile: "nordpass_csv_v1", item_ids: ["item-1"] },
       actor,
       expect.any(AbortSignal),
+    );
+  });
+
+  test.each([
+    [
+      "Google Password Manager CSV",
+      "Google's CSV format has no title or notes columns. The preview lists those omissions before download.",
+      "google_password_manager_csv_v1",
+    ],
+    [
+      "Keeper CSV",
+      "Uses Keeper's ordinary-login CSV columns for title, URL, username, password, and notes; folder, shared-folder, and custom-field columns are blank.",
+      "keeper_csv_v1",
+    ],
+    [
+      "LastPass CSV",
+      "Uses LastPass's ordinary-login CSV columns for title, URL, username, password, and notes; grouping, favorite, and TOTP use the ordinary-login defaults.",
+      "lastpass_csv_v1",
+    ],
+  ])("binds %s to a fresh preview", async (label, detail, profile) => {
+    await render();
+    const checkbox = document.querySelector('[role="checkbox"]');
+    if (!(checkbox instanceof HTMLElement)) throw new Error("selection missing");
+    await act(async () => checkbox.click());
+    await act(async () => button("Review selected logins").click());
+    expect(document.body.textContent).toContain("Export preview");
+
+    await selectProfile(label);
+
+    expect(document.body.textContent).not.toContain("Export preview");
+    expect(document.body.textContent).toContain(detail);
+    await act(async () => button("Review selected logins").click());
+    expect(previewMock).toHaveBeenLastCalledWith(
+      { profile, item_ids: ["item-1"] },
+      actor,
+      expect.any(AbortSignal),
+    );
+  });
+
+  test("shows Google title and notes omissions in the export preview", async () => {
+    previewMock.mockResolvedValue({
+      profile: "matrx_login_csv_v1",
+      revision: "b".repeat(64),
+      items: [
+        {
+          item_id: "item-1",
+          title: "Example login",
+          eligible: true,
+          omissions: { title_omitted: 1, item_notes_omitted: 1 },
+        },
+      ],
+    });
+    await render();
+    const checkbox = document.querySelector('[role="checkbox"]');
+    if (!(checkbox instanceof HTMLElement)) throw new Error("selection missing");
+    await act(async () => checkbox.click());
+    await selectProfile("Google Password Manager CSV");
+    await act(async () => button("Review selected logins").click());
+
+    expect(document.body.textContent).toContain(
+      "Omitted: 1 title omitted, 1 item notes omitted",
     );
   });
 

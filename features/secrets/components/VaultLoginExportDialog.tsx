@@ -14,6 +14,9 @@ import {
 } from "@/components/ui/credenza-modal/credenza";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import {
   Select,
   SelectContent,
@@ -50,7 +53,30 @@ const CSV_PROFILES = [
     detail:
       "Targets NordPass's documented import template and carries ordinary login fields only.",
   },
+  {
+    value: "google_password_manager_csv_v1",
+    label: "Google Password Manager CSV",
+    detail:
+      "Google's CSV format has no title or notes columns. The preview lists those omissions before download.",
+  },
+  {
+    value: "keeper_csv_v1",
+    label: "Keeper CSV",
+    detail:
+      "Uses Keeper's ordinary-login CSV columns for title, URL, username, password, and notes; folder, shared-folder, and custom-field columns are blank.",
+  },
+  {
+    value: "lastpass_csv_v1",
+    label: "LastPass CSV",
+    detail:
+      "Uses LastPass's ordinary-login CSV columns for title, URL, username, password, and notes; grouping, favorite, and TOTP use the ordinary-login defaults.",
+  },
 ] as const;
+type VaultLoginCsvProfile = (typeof CSV_PROFILES)[number]["value"];
+
+function isVaultLoginCsvProfile(value: string): value is VaultLoginCsvProfile {
+  return CSV_PROFILES.some((profile) => profile.value === value);
+}
 
 function sameActor(
   left: VaultVerifiedExportActor,
@@ -80,15 +106,14 @@ export function VaultLoginExportDialog({
   items: VaultItem[];
 }) {
   const organizationId = useAppSelector(selectOrganizationId);
+  const { organizationState } = useOrganizationRequired();
   const passwordInput = useRef<HTMLInputElement | null>(null);
   const controller = useRef<AbortController | null>(null);
   const generation = useRef(0);
   const mounted = useRef(true);
   const expectedActor = useRef<VaultVerifiedExportActor | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [profile, setProfile] = useState<VaultLoginCsvPreviewResponse["profile"]>(
-    DEFAULT_CSV_PROFILE,
-  );
+  const [profile, setProfile] = useState<VaultLoginCsvProfile>(DEFAULT_CSV_PROFILE);
   const [preview, setPreview] = useState<VaultLoginCsvPreviewResponse | null>(null);
   const [identityConfirmation, setIdentityConfirmation] =
     useState<VaultVerifiedExportActor | null>(null);
@@ -176,7 +201,7 @@ export function VaultLoginExportDialog({
     setPlaintextAcknowledged(false);
     setError(null);
   };
-  const updateProfile = (next: VaultLoginCsvPreviewResponse["profile"]) => {
+  const updateProfile = (next: VaultLoginCsvProfile) => {
     cancelPending();
     expectedActor.current = null;
     setProfile(next);
@@ -189,6 +214,12 @@ export function VaultLoginExportDialog({
 
   const handleExportError = (cause: unknown) => {
     if (cause instanceof DOMException && cause.name === "AbortError") return;
+    if (isOrganizationRequiredError(cause)) {
+      invalidate(
+        "Your organization selection changed. Choose an organization to start the export again.",
+      );
+      return;
+    }
     if (cause instanceof VaultLoginExportTransportError) {
       if (cause.code === "recent_auth_required") {
         const actor = expectedActor.current;
@@ -328,6 +359,28 @@ export function VaultLoginExportDialog({
     (item) => item.definition_key === WEBSITE_LOGIN_DEFINITION_KEY,
   );
 
+  if (organizationState !== "ready") {
+    return (
+      <Credenza
+        open={open}
+        onOpenChange={(next) => (next ? onOpenChange(true) : close())}
+      >
+        <CredenzaContent className="md:max-w-2xl">
+          <CredenzaHeader>
+            <CredenzaTitle>Export selected logins</CredenzaTitle>
+          </CredenzaHeader>
+          <CredenzaBody className="px-4 pb-6 md:px-0">
+            <OrganizationContextNotice
+              state={organizationState}
+              what="Vault login exports"
+              compact
+            />
+          </CredenzaBody>
+        </CredenzaContent>
+      </Credenza>
+    );
+  }
+
   return (
     <Credenza open={open} onOpenChange={(next) => (next ? onOpenChange(true) : close())}>
       <CredenzaContent className="md:max-w-2xl">
@@ -372,9 +425,9 @@ export function VaultLoginExportDialog({
                 <Label htmlFor="vault-export-profile">CSV destination</Label>
                 <Select
                   value={profile}
-                  onValueChange={(next) =>
-                    updateProfile(next as VaultLoginCsvPreviewResponse["profile"])
-                  }
+                  onValueChange={(next) => {
+                    if (isVaultLoginCsvProfile(next)) updateProfile(next);
+                  }}
                   disabled={running}
                 >
                   <SelectTrigger id="vault-export-profile">
