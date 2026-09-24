@@ -405,7 +405,7 @@ export default function AgentAppsAnalyticsPage() {
               value={`${executionsPartial.prefix}${formatCount(totals.totalExecutions)}`}
               sub={
                 executionsPartial.caveat ??
-                `Across ${apps.length} app${apps.length === 1 ? "" : "s"}`
+                "Measured execution total"
               }
               copyLabel="Total executions"
               copyAgent={() => ({
