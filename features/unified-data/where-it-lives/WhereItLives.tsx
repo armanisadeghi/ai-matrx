@@ -84,7 +84,9 @@ export function WhereItLives({ dataSource, tableId, knownOrganizationName, onMov
     const go = await confirm({
       title: `Move ${home.table.name} to ${to.name}?`,
       description: moveConsequence(home, to),
-      confirmLabel: `Move to ${to.name}`,
+      // Short on purpose: the title names the destination, and a long label pushed Cancel out of
+      // the dialog (walk screenshot sc1p-W3, 2026-09-24).
+      confirmLabel: "Move it",
     });
     if (!go) return;
     setMoving(to.id);
@@ -109,7 +111,7 @@ export function WhereItLives({ dataSource, tableId, knownOrganizationName, onMov
       className={
         variant === "row"
           ? "inline-flex max-w-[14rem] items-center gap-1 rounded px-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
-          : "inline-flex max-w-[16rem] items-center gap-1 rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+          : "inline-flex max-w-[28rem] items-center gap-1 rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
       }
       title={name ? `Lives in ${name}` : label}
     >

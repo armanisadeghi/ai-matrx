@@ -96,7 +96,7 @@ try {
     await dialog.waitFor({ timeout: 30000 });
     const said = (await dialog.innerText()).replace(/\s+/g, " ");
     await page.screenshot({ path: `${OUT}/sc1p-W3-owner-consequence.png` });
-    await dialog.getByRole("button", { name: /^Move to /}).click();
+    await dialog.getByRole("button", { name: /^Move it$/ }).click();
     const { v: landed } = await until("chip says Portland", async () => PORTLAND.test(await chipText(page)), 60000);
     const toastSeen = await page.evaluate(() => document.body.innerText.includes("now lives in"));
     pass(
@@ -141,7 +141,7 @@ try {
     await page.locator(`[data-where-it-lives-move="${IDS.tacoma}"]`).click();
     const dialog = page.locator('[role="alertdialog"], [role="dialog"]').filter({ hasText: "Move Scale tickets to" }).last();
     await dialog.waitFor({ timeout: 30000 });
-    await dialog.getByRole("button", { name: /^Move to /}).click();
+    await dialog.getByRole("button", { name: /^Move it$/ }).click();
     const { v: back } = await until("chip says Tacoma", async () => TACOMA.test(await chipText(page)), 60000);
     pass("W5 owner: moved back to Tacoma Yard", Boolean(back), back ? "Tacoma Yard again" : "still Portland");
 
