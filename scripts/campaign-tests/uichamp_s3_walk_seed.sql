@@ -2,7 +2,8 @@
 -- the target and this file refuses anything but the clone). Rincon Plumbing Co's Ventura branch,
 -- a real-shaped Jobs table for August and September 2026 in Camarillo time, Sunday weeks, a
 -- dashboard "Revenue this month" with a number tile (target $25,000) and a weekly column chart
--- compared with last month, and Marisol Vega (test@test.com) as a member who sees only the jobs
+-- compared with last month, two tiles whose targets are read from goal columns (Quoted, and the
+-- confidential Job cost), and Marisol Vega (test@test.com) as a member who sees only the jobs
 -- shared with her. Found BY SLUG and reused (_fixture_org.sql); the table and the dashboard are
 -- made once and found by name after that. Run:
 --   psql "<clone>" -v expect=clone -f scripts/campaign-tests/uichamp_s3_walk_seed.sql
@@ -102,6 +103,32 @@ begin
     end loop;
   end if;
 
+  -- S3 — THE GOAL COLUMNS (uichamp_s3_a_target_can_be_read_from_a_goal_column.sql): what the shop
+  -- QUOTED each job before the truck rolled, and its own cost of the job (parts + labor), which is
+  -- CONFIDENTIAL — dispatch does not see margins. Added once, to the table made above or found.
+  if not ('quoted_total' = any (custom.dashboard_field_keys(v_org, v_jobs))) then
+    perform custom.field_declare(v_org, v_jobs, jsonb_build_object('key', 'quoted_total', 'label', 'Quoted', 'type', 'currency', 'unit', '$', 'sort', 65));
+    perform custom.field_declare(v_org, v_jobs, jsonb_build_object('key', 'job_cost', 'label', 'Job cost', 'type', 'currency', 'unit', '$', 'sort', 66, 'sensitivity', 'confidential'));
+  end if;
+  if exists (select 1 from custom.record r where r.organization_id = v_org and r.table_id = v_jobs
+                and r.deleted_at is null and not (r.data ? 'quoted_total')) then
+    for v_row in select e from jsonb_array_elements(jsonb_build_array(
+      '["RP-4101",385,150]'::jsonb, '["RP-4104",1300,520]'::jsonb, '["RP-4108",2800,1480]'::jsonb, '["RP-4112",460,210]'::jsonb,
+      '["RP-4115",7200,3900]'::jsonb, '["RP-4119",320,95]'::jsonb, '["RP-4122",1875,610]'::jsonb, '["RP-4126",600,230]'::jsonb,
+      '["RP-4129",3600,2050]'::jsonb, '["RP-4130",950,400]'::jsonb, '["RP-4131",410,160]'::jsonb, '["RP-4133",650,180]'::jsonb,
+      '["RP-4136",2100,940]'::jsonb, '["RP-4140",4400,2600]'::jsonb, '["RP-4143",385,150]'::jsonb, '["RP-4147",2500,1320]'::jsonb,
+      '["RP-4150",950,480]'::jsonb, '["RP-4152",1150,700]'::jsonb, '["RP-4153",6200,2900]'::jsonb, '["RP-4155",430,170]'::jsonb,
+      '["RP-4157",180,60]'::jsonb)) e loop
+      select r.id into v_id from custom.record r
+       where r.organization_id = v_org and r.table_id = v_jobs and r.deleted_at is null
+         and r.data ->> 'job_number' = v_row ->> 0 limit 1;
+      if v_id is not null and not exists (select 1 from custom.record r where r.id = v_id and r.data ? 'quoted_total') then
+        perform custom.record_update(v_org, v_id,
+          jsonb_build_object('quoted_total', (v_row ->> 1)::numeric, 'job_cost', (v_row ->> 2)::numeric), null);
+      end if;
+    end loop;
+  end if;
+
   select d.id into v_dash from custom.record d
    where d.organization_id = v_org and d.table_id = custom.presentation_kernel_id()
      and d.data_class = custom.dashboard_class() and d.deleted_at is null
@@ -116,7 +143,15 @@ begin
       'bucket', '{"key": "completed_on", "by": "week"}'::jsonb,
       'compare', '{"against": "previous_period", "period": "month", "key": "completed_on"}'::jsonb,
       'target', '{"value": 25000, "label": "Monthly target"}'::jsonb),
-    jsonb_build_object('title', 'Jobs by status', 'kind', 'bar', 'group_by', '["status"]'::jsonb)),
+    jsonb_build_object('title', 'Jobs by status', 'kind', 'bar', 'group_by', '["status"]'::jsonb),
+    jsonb_build_object('title', 'Invoiced against quoted', 'kind', 'number', 'span', 4,
+      'measures', '[{"op": "sum", "key": "invoice_total"}]'::jsonb, 'filter', '{"status": "Invoiced"}'::jsonb,
+      'compare', '{"against": "previous_period", "period": "month", "key": "completed_on"}'::jsonb,
+      'target', '{"field": "quoted_total", "label": "Quoted"}'::jsonb),
+    jsonb_build_object('title', 'Invoiced against cost', 'kind', 'number', 'span', 4,
+      'measures', '[{"op": "sum", "key": "invoice_total"}]'::jsonb, 'filter', '{"status": "Invoiced"}'::jsonb,
+      'compare', '{"against": "previous_period", "period": "month", "key": "completed_on"}'::jsonb,
+      'target', '{"field": "job_cost", "label": "Job cost"}'::jsonb)),
     '{}'::jsonb, v_dash);
 
   raise notice 'S3 WALK org=% table=% dashboard=%', v_org, v_jobs, v_dash;
