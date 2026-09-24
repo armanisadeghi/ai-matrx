@@ -161,7 +161,7 @@ async function main() {
 
     // ── WRITES: a real edit to a real service call, undone, persisted, put back ─────
     if (wants("write")) {
-      const ROW = "e5d565a8-24aa-471c-94d9-f93e78c91994"; // WO-4475, stage "Scheduled"
+      const ROW = "e5d565a8-24aa-471c-94d9-f93e78c91994"; // WO-4475, stage "Dispatched" (both copies)
       const cell = () => page.locator(`[data-cell="${ROW}::stage"]`).first();
       const stageText = async () => (await cell().innerText().catch(() => "")).trim();
       const typeInto = async (value) => {
@@ -220,16 +220,21 @@ async function main() {
     if (wants("colors")) {
       const ROW = "cfc72430-2dbf-40d6-980d-f6e5efdeab3d"; // WO-4471
       const target = () => page.locator(`[data-cell="${ROW}::stage"]`).first();
+      // A nested submenu opens on pointer and focus timing; a second try is what a person
+      // does — and a highlight the walk made is always taken off again (the oracle compares).
       const pick = async (label) => {
-        await openGrid(page, TABLES.calls, "WO-4471");
-        await target().click({ button: "right" });
-        await page.waitForTimeout(800);
-        if (!(await openSubmenu(page, /^Highlight cell/))) return false;
-        const choice = page.getByRole("menuitem", { name: label }).first();
-        if ((await choice.count()) === 0) return false;
-        await choice.click();
-        await page.waitForTimeout(2500);
-        return true;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          await openGrid(page, TABLES.calls, "WO-4471");
+          await target().click({ button: "right" });
+          await page.waitForTimeout(800);
+          if (!(await openSubmenu(page, /^Highlight cell/))) continue;
+          const choice = page.getByRole("menuitem", { name: label }).first();
+          if ((await choice.count()) === 0) continue;
+          await choice.click();
+          await page.waitForTimeout(2500);
+          return true;
+        }
+        return false;
       };
       const picked = await pick(/^Amber/);
       await openGrid(page, TABLES.calls, "WO-4471");
