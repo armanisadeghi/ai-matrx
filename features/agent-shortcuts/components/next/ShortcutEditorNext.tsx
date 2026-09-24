@@ -10,6 +10,7 @@ import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 import { useAgentShortcutCrud } from "@/features/agent-shortcuts/hooks/useAgentShortcutCrud";
 import { selectShortcutById } from "@/features/agents/redux/agent-shortcuts/selectors";
@@ -95,7 +96,13 @@ export function ShortcutEditorNext({
    * Proven live: `GET /api/agent-shortcuts/<id>` → 404 with the editor sitting
    * there looking perfectly healthy. A screen is absent or honest.
    */
-  const [loadFailure, setLoadFailure] = useState<string | null>(null);
+  // The raw rejection is kept (not just its message) so <AccessGate> can tell
+  // a genuine fault (retry) from an access state (denied / deleted / missing).
+  const [loadFailure, setLoadFailure] = useState<{ error: unknown } | null>(
+    null,
+  );
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const retryLoad = useCallback(() => setLoadAttempt((n) => n + 1), []);
   useEffect(() => {
     if (isNew) {
       setLoadFailure(null);
@@ -108,12 +115,12 @@ export function ShortcutEditorNext({
         if (live) setLoadFailure(null);
       })
       .catch((e: unknown) => {
-        if (live) setLoadFailure(extractErrorMessage(e));
+        if (live) setLoadFailure({ error: e });
       });
     return () => {
       live = false;
     };
-  }, [dispatch, shortcutId, isNew]);
+  }, [dispatch, shortcutId, isNew, loadAttempt]);
 
   // ── Category tree ─────────────────────────────────────────────────────
   // Picker shows the full set of categories the user can pick from:
@@ -318,23 +325,21 @@ export function ShortcutEditorNext({
 
   const onCancel = () => router.back();
 
-  // The read failed and nothing arrived: say so instead of painting a blank
-  // draft over a record that could not be opened. A Back control only — there
-  // is nothing here to edit, so there is nothing here to press Save on.
+  // The read failed and nothing arrived: the canonical access gate says which
+  // of denied / deleted / never existed / fault this is, instead of painting a
+  // blank draft over a record that could not be opened.
   if (loadFailure && !existing) {
     return (
-      <div className="h-full flex flex-col items-center justify-center gap-3 bg-background px-6 pt-[var(--shell-header-h)] text-center">
-        <AlertTriangle className="h-6 w-6 text-destructive" />
-        <p className="max-w-md text-sm text-foreground">
-          This shortcut could not be opened, so there is nothing to edit here
-          yet — nothing has been changed.
-        </p>
-        <p className="max-w-md text-[12px] leading-relaxed text-muted-foreground">
-          {loadFailure}
-        </p>
-        <Button variant="outline" size="sm" onClick={onCancel}>
-          Back
-        </Button>
+      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+        <AccessGate
+          token="agent_shortcut"
+          id={shortcutId}
+          error={loadFailure.error}
+          onRetry={retryLoad}
+          // agent-link-ok: shortcut editing only ever runs inside the user-shell agent route it navigates within
+          fallbackHref={`/agents/${agentId}/shortcuts`}
+          fallbackLabel="This agent's shortcuts"
+        />
       </div>
     );
   }
