@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState, use } from "react";
-import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { DocumentRulebookNotice } from "@/features/masterwork/components/DocumentRulebookNotice";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
@@ -204,12 +203,16 @@ export default function DocumentPage({
         <RouteHeader
           left={<ChevronLeftTapButton href="/documents" ariaLabel="Back" />}
         />
-        <div className="flex h-full flex-col items-center justify-center gap-2 text-sm">
-          <div className="text-destructive">Could not load document.</div>
-          <div className="text-muted-foreground">{error}</div>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/documents">Back to documents</Link>
-          </Button>
+        {/* The service reports only a message (no PostgREST code), so the
+            gate asks the platform which state this is — denied, deleted,
+            missing, or signed out — rather than guessing from the text. */}
+        <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+          <AccessGate
+            token="udt_document"
+            id={id}
+            fallbackHref="/documents"
+            fallbackLabel="Back to documents"
+          />
         </div>
       </>
     );
