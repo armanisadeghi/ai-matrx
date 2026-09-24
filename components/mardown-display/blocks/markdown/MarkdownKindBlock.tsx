@@ -40,6 +40,11 @@
 import React from "react";
 
 import MarkdownStream from "@/components/MarkdownStream";
+import {
+  RichContentDepthProvider,
+  useRichContentDepth,
+} from "@/components/rich-content/depth";
+import { NestedRichContent } from "@/components/rich-content/standard/NestedRichContent";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import { reconstructRegionValue } from "@ai-matrx/content-ir";
 
@@ -91,6 +96,7 @@ const MarkdownKindBlock: React.FC<MarkdownKindBlockProps> = ({
   isStreamActive,
   className,
 }) => {
+  const { depth } = useRichContentDepth();
   const text = readText(readValue(content, metadata));
 
   // NEVER SWALLOW: no recoverable `text` means the instance did not parse (or
@@ -99,9 +105,25 @@ const MarkdownKindBlock: React.FC<MarkdownKindBlockProps> = ({
   const markdown = text ?? content;
   if (!markdown) return null;
 
+  // DEPTH-BOUNDED: at the top of a document the `markdown` kind IS the
+  // answer, so it gets the full engine (kinds inside it route as in chat),
+  // one level deep. A `markdown` kind met INSIDE nested content renders at
+  // the standard level through the depth guard — a kind that contains a
+  // kind that contains a kind can never recurse the full engine unbounded.
+  if (depth > 0) {
+    return (
+      <NestedRichContent
+        source={markdown}
+        isStreaming={isStreamActive}
+        className={className}
+      />
+    );
+  }
   return (
     <div className={className}>
-      <MarkdownStream content={markdown} isStreamActive={isStreamActive} />
+      <RichContentDepthProvider depth={1}>
+        <MarkdownStream content={markdown} isStreamActive={isStreamActive} />
+      </RichContentDepthProvider>
     </div>
   );
 };

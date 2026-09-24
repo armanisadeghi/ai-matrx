@@ -48,6 +48,10 @@ import { splitAroundEmbeddedKindJson } from "@/features/content-ir/surfaces/embe
 import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
 import { readXmlTag } from "@/components/mardown-display/blocks/xml/readXmlTag";
+import {
+  classifyInnerFenceLine,
+  fenceNestsInnerFences,
+} from "@/components/markdown-core/fence-nesting";
 
 /**
  * All block type strings this splitter can emit — the union of:
@@ -1497,6 +1501,7 @@ function extractCodeBlock(
   openTicks: number,
   startIndex: number,
   lines: string[],
+  allowNesting = true,
 ): ExtractionResult {
   const content: string[] = [];
   let i = startIndex;
@@ -1505,6 +1510,11 @@ function extractCodeBlock(
   const isJson = language === "json";
   let jsonInString = false;
   let jsonEscaped = false;
+  // A ```markdown fence carries its own ```lang … ``` blocks with the same
+  // tick count — see components/markdown-core/fence-nesting.ts.
+  const nests = allowNesting && fenceNestsInnerFences(language);
+  let nestedDepth = 0;
+  let sawNested = false;
 
   // Advance the JSON string-context machine across a slice of the line.
   const advanceJsonState = (line: string, from: number) => {
@@ -1551,11 +1561,20 @@ function extractCodeBlock(
       // the opening fence. An info string (e.g. ```js) or a shorter run is
       // literal content — that's how a code block nests inside a longer ````
       // fence, and it's the only unambiguous way to express nesting.
-      const closeTicks = backtickRunLength(trimmedLine, 0);
-      const isBareFence = trimmedLine.slice(closeTicks).trim() === "";
-      if (isBareFence && closeTicks >= openTicks) {
+      const fenceLine = classifyInnerFenceLine(
+        trimmedLine,
+        openTicks,
+        nests,
+        nestedDepth,
+      );
+      if (fenceLine === "close-outer") {
         break;
       }
+      if (fenceLine === "open-nested") {
+        nestedDepth++;
+        sawNested = true;
+      }
+      if (fenceLine === "close-nested") nestedDepth--;
 
       content.push(line);
       i++;
@@ -1587,7 +1606,7 @@ function extractCodeBlock(
 
       const closeTicks = backtickRunLength(line, backtickIndex);
       const afterFence = line.slice(backtickIndex + closeTicks).trim();
-      if (closeTicks >= openTicks && afterFence === "") {
+      if (closeTicks >= openTicks && afterFence === "" && nestedDepth === 0) {
         const contentBeforeBackticks = line.substring(0, backtickIndex);
         if (contentBeforeBackticks.trim()) {
           content.push(contentBeforeBackticks);
@@ -1604,6 +1623,14 @@ function extractCodeBlock(
     content.push(line);
     i++;
     if (isJson) advanceJsonState(line, 0);
+  }
+
+  // The nesting reading ran off the end of the text: an inner ```lang was
+  // never closed, so it swallowed the outer closer. The complete text is in
+  // hand here, so fall back to strict CommonMark rather than eat the rest of
+  // the message.
+  if (sawNested && nestedDepth > 0 && i >= lines.length) {
+    return extractCodeBlock(language, openTicks, startIndex, lines, false);
   }
 
   return {

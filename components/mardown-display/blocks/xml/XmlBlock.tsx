@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { ChevronRight, ChevronDown, Copy, Check } from "lucide-react";
-import MarkdownCore from "@/components/markdown-core/MarkdownCore";
+import { NestedRichContent } from "@/components/rich-content/standard/NestedRichContent";
 import { cn } from "@/styles/themes/utils";
 import { readXmlTag } from "./readXmlTag";
 
@@ -391,7 +391,11 @@ const XmlBlock: React.FC<XmlBlockProps> = ({
                   className="xml-markdown-content prose prose-sm max-w-none overflow-x-auto font-sans text-foreground dark:prose-invert"
                   style={style}
                 >
-                  <MarkdownCore preset="gfm">{token.text ?? ""}</MarkdownCore>
+                  {/* Prose between tags is content INSIDE content: the same
+                      core at the standard level, one depth deeper (math,
+                      tables, fenced code, nested sections) — bounded by the
+                      depth cap instead of a never-recurse rule. */}
+                  <NestedRichContent source={token.text ?? ""} />
                 </div>
               );
             }

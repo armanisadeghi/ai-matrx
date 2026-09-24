@@ -1,5 +1,6 @@
 "use client";
 
+import { RichContent } from "@/components/rich-content/RichContent";
 import { useState, useCallback } from "react";
 import {
   ChevronDown,
@@ -278,9 +279,14 @@ export function AnalysisCard({
       </button>
 
       {!expanded && analysis.result && (
-        <div className="px-4 pb-3 text-xs text-muted-foreground line-clamp-2">
-          {analysis.result.slice(0, 200)}
-        </div>
+        // The collapsed preview renders the agent's markdown at the inline
+        // level — never a raw character slice that cuts `**` mid-token and
+        // shows `#`/`-` as literal characters. line-clamp does the trimming.
+        <RichContent
+          level="inline"
+          source={analysis.result}
+          className="mx-4 mb-3 line-clamp-2 text-xs text-muted-foreground"
+        />
       )}
 
       {expanded && (
