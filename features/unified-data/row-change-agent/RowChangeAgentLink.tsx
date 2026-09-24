@@ -61,7 +61,7 @@ export function RowChangeAgentLink({
   if (answer.state === "refused") {
     return <span className="text-destructive">Running an agent when a row changes is not available: {answer.why}</span>;
   }
-  const prompt = `A row in the table "${tableName ?? "this table"}" changed. The event variable names the row and the columns that changed. `;
+  const prompt = `${tableName ? `A row in the table "${tableName}"` : "A row in this table"} changed. The event variable names the row and the columns that changed. `;
   const href = `/schedules/new?trigger=event&tableId=${encodeURIComponent(tableId)}&entityType=${encodeURIComponent(answer.entityType)}&prompt=${encodeURIComponent(prompt)}`;
   return (
     <button
