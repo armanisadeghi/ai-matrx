@@ -542,6 +542,43 @@ begin
   end;
   raise notice 'PART 6 PASSED — Bruno sees his 2 calls, not Ada''s new one; a portal he is not on and Ada''s call history are refused.';
 
+  -- ── 6d: THE STORE SWITCHED OFF, SAID TO HER IN HER WORDS ─────────────────────
+  -- The office turns the record store off (out of the seat; asserts nothing while out). Ada's form
+  -- doors refuse with the sentence her sign-in page shows — never the owner's "turn it back on" instructions
+  -- addressed to her, and never a door's machine name.
+  perform set_config('role', v_boss, true);
+  update platform.knob_override set value = 'false'::jsonb
+   where feature = 'custom' and key = 'system_enabled' and organization_id = v_org;
+  v_txt := custom.store_off_sentence(v_org);
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', c_ada_j, true);
+  v_caught := false;
+  begin
+    perform custom.portal_form(v_org, v_portal, v_f_gate);
+  exception when insufficient_privilege then
+    get stacked diagnostics v_msg = message_text;
+    v_caught := true;
+  end;
+  if not v_caught or v_msg is distinct from v_txt
+     or v_msg ~* 'custom\.|role that owns|not taking writes' then
+    raise exception '6d: with the store off, her form door did not say so in her words: %', v_msg;
+  end if;
+  v_caught := false;
+  begin
+    perform custom.portal_form_submit(v_org, v_portal, v_f_gate, jsonb_build_object('unit','Side gate','gate_code','1190'), null);
+  exception when insufficient_privilege then
+    get stacked diagnostics v_msg = message_text;
+    v_caught := true;
+  end;
+  if not v_caught or v_msg ~* 'custom\.|role that owns|not taking writes' then
+    raise exception '6d: with the store off, her send did not say so in her words: %', v_msg;
+  end if;
+  perform set_config('role', v_boss, true);
+  update platform.knob_override set value = 'true'::jsonb
+   where feature = 'custom' and key = 'system_enabled' and organization_id = v_org;
+  perform set_config('role', 'authenticated', true);
+  raise notice 'PART 6d PASSED — with the store off, both form doors refuse her with her sign-in page''s sentence, not the owner''s settings speech.';
+
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 7 — A STRANGER, AND THE SIGN-IN PAGE.
   -- ════════════════════════════════════════════════════════════════════════════
