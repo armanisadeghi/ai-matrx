@@ -41,6 +41,9 @@ delete the item's line below, then do steps 6–7 above.
 
 ## Held files — real conflicts
 
+### _conflicts/replay-2026-09-24-121514/
+- app/(admin)/administration/agents/agent-apps/apps/page.tsx — LOCAL is newer; local has 42/65 of github's new lines; github has 41/70 of local's new lines
+
 ## Needs Arman
 
 ## Docs and comments — both versions kept
