@@ -94,7 +94,9 @@
 --    timeline is drawn from that list and from `custom.record_history`, the existing history
 --    door, which masks every field the portal did not open. `custom.portal_public` (the sign-in
 --    page) gains `style`. `custom.portal_card` (the owner) gains `config` as stored, `style` as
---    resolved, and `forms` with each form's title, Table and state.
+--    resolved, `forms` with each form's title, Table and state, the accent names, and
+--    `logo_candidates` — the organization's own public pictures in Files, which is the list the
+--    builder offers as a logo.
 --
 -- LOCKS. ALTER TABLE custom.portal ADD COLUMN (nullable, no default: ACCESS EXCLUSIVE on
 -- custom.portal for a catalogue write, no rewrite, milliseconds), create / drop / replace
@@ -871,7 +873,23 @@ begin
     'config', coalesce(v_p.config, '{}'::jsonb),
     'style', custom._portal_style(p_organization_id, v_p.config),
     'forms', custom._portal_forms(p_organization_id, v_p.config, false),
-    'accents', to_jsonb(custom.portal_accents()));
+    'accents', to_jsonb(custom.portal_accents()),
+    -- S6: THE PICTURES THAT COULD BE THIS PORTAL'S LOGO — the organization's own PUBLIC pictures
+    -- in Files, newest first, each with the address a client would load. A private file is not
+    -- offered at all, because the store would refuse it (a logo is shown before anybody signs in).
+    'logo_candidates', coalesce((
+      select jsonb_agg(jsonb_build_object('file_id', c.id, 'name', c.file_name, 'url', c.url)
+                       order by c.created_at desc)
+        from (select f.id, f.file_name, f.created_at,
+                     custom._portal_picture_url(p_organization_id, f.id, true) as url
+                from files.files f
+               where f.organization_id = p_organization_id
+                 and f.deleted_at is null
+                 and f.visibility = 'public'
+                 and coalesce(f.mime_type, '') like 'image/%'
+                 and f.storage_uri like 's3://cdn.matrxserver.com/%'
+               order by f.created_at desc
+               limit 50) c), '[]'::jsonb));
 end $function$;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────

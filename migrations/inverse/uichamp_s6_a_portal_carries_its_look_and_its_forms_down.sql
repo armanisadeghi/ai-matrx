@@ -14,7 +14,7 @@
 --   inverse runs FIRST.
 -- lane: S6
 -- lock: custom,platform
--- based-on: custom.portal_card(uuid, uuid) 558f2f83bfab6c7503510981a529dbb1067e3579a0c6a874a3e7b08bc2c1d9fc
+-- based-on: custom.portal_card(uuid, uuid) 6d6174146629aea49ff6165a3cdcb744e17fa063e96ccc5532440dbe04033aea
 -- based-on: custom.portal_me() 33901ffd459808e00527c9d899b4e7d357fedcffc575009d1403845e1c46bc63
 -- based-on: custom.portal_public(text) aadafba9e8a17bfc62ecc82d71a0b2755eaa68d65ea072c7f4bbd1f05a576e26
 

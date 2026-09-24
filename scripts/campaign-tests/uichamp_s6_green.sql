@@ -278,6 +278,12 @@ begin
   if not (v_card -> 'accents') ? 'teal' or jsonb_array_length(v_card -> 'accents') <> 7 then
     raise exception '1c: the card does not offer the design system''s seven accent names: %', v_card -> 'accents';
   end if;
+  -- The builder's logo choices are the organization's own PUBLIC pictures, and nothing else.
+  if not exists (select 1 from jsonb_array_elements(v_card -> 'logo_candidates') c where (c ->> 'file_id')::uuid = v_logo)
+     or exists (select 1 from jsonb_array_elements(v_card -> 'logo_candidates') c
+                 where (c ->> 'file_id')::uuid in (v_private, v_foreign)) then
+    raise exception '1c2: the logo choices are not exactly this organization''s public pictures: %', v_card -> 'logo_candidates';
+  end if;
   -- Re-stating with no p_config (every caller before S6) keeps the look and the forms.
   perform custom.portal_declare(v_org, 'Your service calls', v_managers, v_tables, v_portal);
   v_card := custom.portal_card(v_org, v_portal);
@@ -292,7 +298,7 @@ begin
   if (v_card -> 'style' ->> 'accent') is distinct from 'blue' then
     raise exception '1e: sending only forms dropped the portal''s look: %', v_card -> 'config';
   end if;
-  raise notice 'PART 1 PASSED — the card carries the name, welcome, logo address, blue accent, two footer links and three forms in order; re-stating without p_config, or with forms only, keeps the look.';
+  raise notice 'PART 1 PASSED — the card carries the name, welcome, logo address, blue accent, two footer links and three forms in order; the logo choices are its public pictures only; re-stating without p_config, or with forms only, keeps the look.';
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 2 — WHAT THE STORE REFUSES, EACH BY NAME, AND NOTHING IS WRITTEN.
