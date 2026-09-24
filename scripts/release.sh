@@ -269,14 +269,26 @@ ship_mark() {
     [[ -n "${RELEASE_LOG_FILE:-}" ]] || return 0
     printf '[ship %3ss] %s\n' "$((SECONDS - SHIP_START))" "$*" >>"$RELEASE_LOG_FILE"
 }
+# One section per category, opened and closed, so each kind of finding stands
+# apart (Arman, 2026-09-24). Nothing prints when there is nothing wrong.
 ship_print_findings() {
     [[ ${#SHIP_FINDINGS[@]} -gt 0 ]] || return 0
-    echo ""
-    printf '%-8s %-12s %s\n' "LEVEL" "CATEGORY" "FINDING"
-    local row
+    local row cat seen="|" bar="===================="
     for row in "${SHIP_FINDINGS[@]}"; do
-        IFS='|' read -r f_level f_cat f_text f_remedy <<< "$row"
-        printf '%-8s %-12s %s%s\n' "$f_level" "$f_cat" "$f_text" "${f_remedy:+  → $f_remedy}"
+        IFS='|' read -r _ cat _ _ <<< "$row"
+        [[ "$seen" == *"|$cat|"* ]] && continue
+        seen+="$cat|"
+        echo ""
+        echo "$bar $cat $bar"
+        printf '%-8s %-12s %s\n' "LEVEL" "CATEGORY" "FINDING"
+        local r
+        for r in "${SHIP_FINDINGS[@]}"; do
+            IFS='|' read -r f_level f_cat f_text f_remedy <<< "$r"
+            [[ "$f_cat" == "$cat" ]] || continue
+            printf '%-8s %-12s %s%s\n' "$f_level" "$f_cat" "$f_text" "${f_remedy:+  → $f_remedy}"
+        done
+        echo ""
+        echo "$bar End of $cat $bar"
     done
 }
 # THE RELEASE COMMIT IS BUILT IN THE REPOSITORY DATABASE, NOT IN A WORKING FOLDER.
@@ -327,8 +339,35 @@ ship_apply_migrations() {
     (
         cd "$AIDREAM_DIR"
         export MATRX_FRONTEND_DIR="$REPO_ROOT"
+        export MATRX_MIGRATION_SUMMARY_JSON="$SHIP_MIG_SUMMARY"
         timeout 900 uv run python db/apply_migrations.py --source matrx-frontend --target production --no-generate
     )
+}
+# The applier's summary (aidream db/migration_hold.py) → one ERROR per held file,
+# naming it and saying why in one sentence, plus one WARNING for the files waiting
+# on it and one for chair steps waiting to be named. An applier that died before it
+# could write a summary is one ERROR with its exit code.
+ship_migration_findings() {  # $1 = applier exit status
+    local status="$1" rows="" level title remedy
+    [[ -s "$SHIP_MIG_SUMMARY" ]] && rows="$(node -e '
+const s = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+const short = (f) => String(f).replace(/^[^/]+\//, "");
+const clean = (t) => String(t).replace(/[|\n]/g, " ");
+const list = (xs) => xs.slice(0, 4).map(short).join(", ") + (xs.length > 4 ? ` (+${xs.length - 4} more)` : "");
+for (const h of s.held || [])
+  console.log(`ERROR|${short(h.file)} was not applied: ${clean(h.reason)}|pnpm check:migrations:strict`);
+const w = s.waiting || [];
+if (w.length) console.log(`WARNING|${w.length} migration(s) wait on a held file: ${list(w.map((x) => x.file))}|they apply on the next release once it lands`);
+const c = s.chair_steps || [];
+if (c.length) console.log(`WARNING|${c.length} chair step(s) wait for a senior session to name them: ${list(c)}|--only <file> --confirm-chair-step <file>`);
+' "$SHIP_MIG_SUMMARY" 2>/dev/null)" || rows=""
+    if [[ -n "$rows" ]]; then
+        while IFS='|' read -r level title remedy; do
+            ship_finding "$level" "Migrations" "$title" "$remedy"
+        done <<< "$rows"
+    elif [[ "$status" -ne 0 ]]; then
+        ship_finding "ERROR" "Migrations" "The migration tool stopped (exit ${status}) before it could say which file — see the release log" "pnpm check:migrations:strict"
+    fi
 }
 ship_read_version() { sed -n 's/^  "version": "\([^"]*\)".*/\1/p' "$1" | head -1; }
 ship_write_version() {  # file old new
@@ -413,6 +452,8 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
     acquire_release_lock
 
     SHIP_MIG_PID=""
+    SHIP_MIG_SUMMARY="${RELEASE_LOG_DIR:-$REPO_ROOT/tmp/release-logs}/migrations-${RELEASE_LOG_STAMP:-$$}.json"
+    mkdir -p "$(dirname "$SHIP_MIG_SUMMARY")"; rm -f "$SHIP_MIG_SUMMARY"
     if $NO_MIGRATE; then
         :
     elif [[ ! -f "$AIDREAM_DIR/db/apply_migrations.py" ]]; then
@@ -525,8 +566,10 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
     # push only delayed the build. Same as aidream's release.sh. A failure is an
     # ERROR finding either way. (af0d8c1934 put this here; 95dc1a2637 silently
     # reverted it — scripts/release-fail-forward.test.mjs now fails if it moves.)
-    if [[ -n "$SHIP_MIG_PID" ]] && ! wait "$SHIP_MIG_PID"; then
-        ship_finding "ERROR" "Migrations" "A pending migration failed to apply or was refused — see the release log" "pnpm check:migrations:strict"
+    if [[ -n "$SHIP_MIG_PID" ]]; then
+        SHIP_MIG_STATUS=0
+        wait "$SHIP_MIG_PID" || SHIP_MIG_STATUS=$?
+        ship_migration_findings "$SHIP_MIG_STATUS"
     fi
     ship_mark "migrations done"
     echo "${NEW_TAG}  pushed, build started  (${SHIP_BUILD_SECONDS}s)"

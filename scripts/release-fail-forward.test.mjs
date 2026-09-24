@@ -80,7 +80,10 @@ test("a bad flag, target or --ship pathspec is a WARNING, never a stop", () => {
 });
 
 test("a failed migration, a conflicting local commit and a lost tag are findings, never stops", () => {
-  assert.match(afterPush, /ship_finding "ERROR" "Migrations" "A pending migration failed to apply/);
+  // Each held migration is NAMED with its reason; a dead applier is one ERROR with its exit code.
+  assert.match(afterPush, /ship_migration_findings "\$SHIP_MIG_STATUS"/);
+  assert.match(code, /ERROR\|\$\{short\(h\.file\)\} was not applied: /);
+  assert.match(code, /The migration tool stopped \(exit \$\{status\}\) before it could say which file/);
   assert.match(code, /ship_finding "ERROR" "Git" "Local commits conflict with/);
   assert.match(afterPush, /ship_finding "ERROR" "Git" "Tag \$NEW_TAG did not reach/);
 });
@@ -101,6 +104,11 @@ test("the release commit is assembled with git plumbing on origin/main — no wo
 
 test("nothing in the release path resets any working folder", () => {
   assert.doesNotMatch(code, /git (-C "[^"]*" )?reset --hard/);
+});
+
+test("findings print one section per category, opened and closed", () => {
+  assert.match(code, /echo "\$bar \$cat \$bar"/);
+  assert.match(code, /echo "\$bar End of \$cat \$bar"/);
 });
 
 test("the clean run prints exactly the ship line; INFO never prints", () => {

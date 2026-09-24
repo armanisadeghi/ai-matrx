@@ -134,7 +134,38 @@ echo "release ship path — a stuck lock holder"
 check "a stuck lock still ships v0.1.3"          '[[ $STATUS3 -eq 0 ]] && git ls-remote --tags origin | grep -q "refs/tags/v0.1.3$"'
 check "it waited no more than ~30s"               '[[ $WAITED -le 45 ]]'
 check "the takeover is a WARNING"                 'grep -q "WARNING.*Release lock held" "$SANDBOX/out3"'
+
+# ── fourth release: the applier holds one file and one waits on it ───────────
+# What the terminal shows must NAME the file and the reason, inside its own
+# opened-and-closed Migrations section — never "a migration failed, see the log".
+cat > "$SANDBOX/bin/uv" <<'STUB'
+#!/usr/bin/env bash
+if [[ "$*" == *apply_migrations.py* && -n "${MATRX_MIGRATION_SUMMARY_JSON:-}" ]]; then
+    cat > "$MATRX_MIGRATION_SUMMARY_JSON" <<'JSON'
+{"applied": ["matrx-frontend/ok_one.sql"],
+ "held": [{"file": "matrx-frontend/rcstore_b_document.sql", "kind": "provisioning",
+           "reason": "it builds a new table on the live database, which locks sign-ins while it runs; rehearse it on the test copy, then apply it 1-4 AM PT"}],
+ "waiting": [{"file": "matrx-frontend/rcstore_c_blocks.sql", "waits_on": "matrx-frontend/rcstore_b_document.sql"}],
+ "chair_steps": []}
+JSON
+    exit 2
+fi
+exit 0
+STUB
+chmod +x "$SANDBOX/bin/uv"
+set +e
+PATH="$SANDBOX/bin:$PATH" AIDREAM_DIR="$SANDBOX/aidream" RELEASE_AFTER_PHASE=off RELEASE_LOG_CAPTURED=1 \
+    bash scripts/release.sh > "$SANDBOX/out4" 2>&1
+STATUS4=$?
+set -e
+echo "release ship path — a held migration is named, in its own section"
+check "a held migration still ships v0.1.4"       '[[ $STATUS4 -eq 0 ]] && git ls-remote --tags origin | grep -q "refs/tags/v0.1.4$"'
+check "the Migrations section opens"              'grep -qx "==================== Migrations ====================" "$SANDBOX/out4"'
+check "the held file is named with its reason"    'grep -q "ERROR.*rcstore_b_document.sql was not applied: it builds a new table" "$SANDBOX/out4"'
+check "the waiting file is a WARNING"             'grep -q "WARNING.*1 migration(s) wait on a held file: rcstore_c_blocks.sql" "$SANDBOX/out4"'
+check "the Migrations section closes"             'grep -qx "==================== End of Migrations ====================" "$SANDBOX/out4"'
+check "the vague old sentence is gone"            '! grep -q "failed to apply or was refused" "$SANDBOX/out4"'
 if [[ $FAILED -ne 0 ]]; then
-    echo "--- script output ---"; tail -25 "$SANDBOX/out"; echo "--- second run ---"; tail -25 "$SANDBOX/out2" 2>/dev/null; echo "--- third run ---"; tail -25 "$SANDBOX/out3" 2>/dev/null
+    echo "--- script output ---"; tail -25 "$SANDBOX/out"; echo "--- second run ---"; tail -25 "$SANDBOX/out2" 2>/dev/null; echo "--- third run ---"; tail -25 "$SANDBOX/out3" 2>/dev/null; echo "--- fourth run ---"; tail -25 "$SANDBOX/out4" 2>/dev/null
     exit 1
 fi
