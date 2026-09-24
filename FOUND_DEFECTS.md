@@ -15,6 +15,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D348 — "Stop sandbox" sits beside "Delete" in the sandbox list and stops a running sandbox with no confirmation (2026-09-23)
+
+On `/sandbox` the row's action icons are packed together, and the stop icon acts at once: a verification agent aiming for Delete hit Stop and shut down admin@admin.com's running default sandbox (`sbx-7b560ae80b61`, persisted volume, nothing lost). Stopping a running sandbox ends whatever is running inside it, so under the destructive/expensive click law it should name that consequence first, and the stop and delete controls need space or a menu between them. Found by the data-tables session while verifying `common-docs/projects/ai-reachable-everywhere/REGISTER.md` ARE-009. Files: `app/(core)/sandbox/page.tsx`.
+
 ### D347 — Ten draft podcast articles are readable anonymously on the public web (2026-09-23)
 
 `podcast.pc_articles`: 10 rows with a draft status are marked public and a live anon read policy serves
@@ -3852,6 +3856,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D348** — Stop sandbox acted on one click beside Delete; it now asks first and names what stops (list and detail pages), 2026-09-23.
 
 - **D346** — the two shell Jest failures reported 2026-09-21 were stale; both focused suites passed 2026-09-23 (7 tests, commit `c3edf550f1`).
 

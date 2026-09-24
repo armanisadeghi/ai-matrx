@@ -27,9 +27,9 @@
     "dev-login will evict the other."
   ],
   "portRange": {
-    "$comment": "Widened 3050 -> 3060 by lane FIX-14 (2026-09-22): all fifty of the original slots were allotted, so a new lane had no honest port left and the only alternatives were squatting on a finished lane's row or guessing \u2014 which is the exact failure this map exists to prevent.",
+    "$comment": "Widened 3050 -> 3060 by lane FIX-14 (2026-09-22): all fifty of the original slots were allotted, so a new lane had no honest port left and the only alternatives were squatting on a finished lane's row or guessing \u2014 which is the exact failure this map exists to prevent. Widened 3060 -> 3062 by lane ARGS-RULED-2 (2026-09-24) for its headless Share-dialog walk on the dev clone; every slot was allotted. Widened 3062 -> 3063 by lane ROUTE-RESOLVER (2026-09-24) for its /o/<id> walk on the dev clone.",
     "min": 3001,
-    "max": 3060
+    "max": 3063
   },
   "reserved": [
     {
@@ -98,7 +98,9 @@
     "OLD-TABLES-4": 3058,
     "GRID-PORT": 3059,
     "RECORDS-UI-FIX": 3060,
-    "RECORDS-UI-FIX-APP": 3061
+    "RECORDS-UI-FIX-APP": 3061,
+    "ARGS-RULED-2": 3062,
+    "ROUTE-RESOLVER": 3063
   },
   "noDevServer": {
     "W6-DOCS": "Proves its contract through the document pipeline, not a browser.",

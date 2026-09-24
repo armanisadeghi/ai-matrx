@@ -1,5 +1,6 @@
 "use client";
 
+import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { extractErrorMessage } from "@/utils/errors";
@@ -22,6 +23,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+// The delete confirmation is an AlertDialog so it blocks (policy ai-reachable-everywhere);
+// the create-sandbox form stays the ordinary, non-blocking Dialog.
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+} from "@/components/ui/alert-dialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -189,6 +200,18 @@ export default function SandboxListPage() {
   };
 
   const handleStop = async (instance: SandboxInstance) => {
+    // Stopping ends everything running inside the sandbox, and the Stop icon
+    // sits beside Delete in the row: it asks first and names the consequence
+    // (destructive-and-expensive click law). A stray click once stopped a
+    // running sandbox mid-verification, 2026-09-23.
+    const ok = await confirmDialog({
+      title: `Stop ${instance.name || instance.sandbox_id}?`,
+      description:
+        "Everything running inside it stops now: open terminals, agent runs and servers. Files on its storage are kept, and you can start it again.",
+      confirmLabel: "Stop sandbox",
+      variant: "destructive",
+    });
+    if (!ok) return;
     setStoppingIds((prev) => new Set(prev).add(instance.id));
     await stopInstance(instance.id);
     setStoppingIds((prev) => {
@@ -515,7 +538,7 @@ export default function SandboxListPage() {
           )}
         </DialogContent>
       </Dialog>
-      <Dialog
+      <AlertDialog
         open={!!deleteTarget}
         onOpenChange={(open) => {
           if (!open && !deleteTargetBusy) {
@@ -523,11 +546,11 @@ export default function SandboxListPage() {
           }
         }}
       >
-        <DialogContent>
+        <AlertDialogContent>
           <>
-              <DialogHeader>
-                <DialogTitle>Delete Sandbox</DialogTitle>
-                <DialogDescription>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Sandbox</AlertDialogTitle>
+                <AlertDialogDescription>
                   This is a destructive action.
                   {deleteTarget &&
                   ["ready", "running"].includes(deleteTarget.status)
@@ -541,9 +564,9 @@ export default function SandboxListPage() {
                   create. To wipe persistent storage entirely, use Settings →
                   Sandbox Storage. If you just want to stop this container, use
                   Stop instead.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -560,10 +583,10 @@ export default function SandboxListPage() {
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete Sandbox
                 </Button>
-              </DialogFooter>
+              </AlertDialogFooter>
           </>
-        </DialogContent>
-      </Dialog>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <ConfirmDialog
         open={historyDeleteMode !== null}

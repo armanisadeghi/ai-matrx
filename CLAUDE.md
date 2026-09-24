@@ -7,7 +7,7 @@
 
 1. **Done means verified engineering, then handoff.** Implement the requested outcome, verify changed types and regressions, exercise UI changes in localhost from the user’s seat with real data, obtain independent verification, and commit/push. Deployment, production verification, and full release belong to dedicated agents; they never make a completed engineering task incomplete. Tests alone are not UI proof. `common-docs/policies/reality-is-the-referee.md` · `common-docs/policies/deployment-is-the-deploy-agents-job.md`.
 2. **Attack before you trust.** Hole-poke plans before commitment; adversarially re-verify "done" before believing it. An attack or verification that inherits the builder's frame — his file list, his path, his summary — is neither; it must be able to return what the builder does not already believe.
-3. **Fix the class, never the instance.** Root cause → census the siblings → a guard proven failing-then-passing.
+3. **Fix the class, never the instance.** Root cause → census the siblings → a guard proven failing-then-passing. **Felt it? Fix it:** a bug you hit while using the product yourself is fixed in that session — never just logged, listed, or reported (Arman, 2026-09-23).
 4. **Nothing fails silently.** Every stand-in announces itself with a remedy; a screen is absent or honest — never dead, disabled-looking, or lying.
 5. **Think in platform primitives.** Never scope a capability to the feature that surfaced it; build it in the shared layer so every module and client app inherits it.
 6. **Opinions become knobs.** Behavioral choices are org-configurable settings; organizations decide — never agents, never hardcoded taste.

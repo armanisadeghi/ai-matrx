@@ -34,6 +34,7 @@ import { createRecordsRealtimePort } from "@/features/unified-data/realtime/reco
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
+import { openPath } from "@/lib/deep-link/openPath";
 
 export default function UnifiedDataPage() {
   const router = useRouter();
@@ -125,8 +126,15 @@ export default function UnifiedDataPage() {
               inbox={
                 <ActionInbox
                   className="max-h-64"
+                  /* THE ONE ADDRESS (lane ROUTE-RESOLVER). An approval raised in
+                     another organization's table, or on a table shared in, used to open
+                     here inside whichever organization was selected and say "This table
+                     is not here". `/o/<id>` asks the one door, which opens the record
+                     inside the organization it LIVES in. */
                   onOpenRecord={(recordId, tableId) =>
-                    router.push(`/data-v2/${tableId}?record=${recordId}`)
+                    router.push(
+                      openPath(recordId, { fallback: `/data-v2/${tableId}?record=${recordId}` }),
+                    )
                   }
                 />
               }

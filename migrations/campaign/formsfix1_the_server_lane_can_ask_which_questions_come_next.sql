@@ -1,0 +1,22 @@
+-- chair-step: this GRANTs EXECUTE on ONE function, `custom.form_public_asks(uuid, jsonb, text, text)`, to `service_role`, the role the app's server holds. A GRANT is refused by the additive allow-list by name, so it comes through this route and a person reads exactly what is opened and to whom. No REVOKE, no DROP, no data movement, no existing grant changed, and `anon` gains nothing.
+-- lane: FORMS-FIX-1 (a public form branches the way its owner set it to)
+--
+-- WHAT THIS OPENS, EXACTLY
+-- ------------------------
+--   custom.form_public_asks(uuid, jsonb, text, text)   → service_role, EXECUTE
+--
+-- and nothing else. Schema USAGE on `custom` for service_role was already granted by
+-- `forms_the_server_lane_can_open_the_public_doors.sql`; it is not restated here. The caller is
+-- the app's server (`app/api/forms/[formId]/asks/route.ts`), exactly as for `custom.form_public`
+-- and `custom.form_submit`: the public page is server-rendered and schema `custom` stays revoked
+-- from `anon`, which is W4-ANON's posture, unchanged.
+--
+-- ORDER, AND WHY IT IS LOAD-BEARING. The door row is written by
+-- `formsfix1_a_public_form_asks_the_store_which_questions_come_next.sql`, which runs first. A
+-- GRANT issued before its declaration is silently revoked by
+-- platform.enforce_definer_client_grants' sweep while the runner still reports success (lane
+-- FORTY-FIVE). Declaration first, grant after.
+--
+-- Idempotent: an already-held GRANT is a no-op.
+
+grant execute on function custom.form_public_asks(uuid, jsonb, text, text) to service_role;

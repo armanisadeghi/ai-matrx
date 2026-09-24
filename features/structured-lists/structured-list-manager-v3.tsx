@@ -136,11 +136,20 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+// The delete-list confirmation is an AlertDialog so it blocks (policy ai-reachable-everywhere);
+// the "New group" form stays the ordinary, non-blocking Dialog.
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -1134,18 +1143,18 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
       />
 
       {/* Delete-list confirm dialog */}
-      <Dialog open={deleteListOpen} onOpenChange={setDeleteListOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete this picklist?</DialogTitle>
-            <DialogDescription>
+      <AlertDialog open={deleteListOpen} onOpenChange={setDeleteListOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this picklist?</AlertDialogTitle>
+            <AlertDialogDescription>
               "{activeList?.list_name || "Untitled list"}" and all{" "}
               {items.length} item
               {items.length === 1 ? "" : "s"} will be moved to the trash. Undo
               from the toast, and it comes straight back.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
             <Button variant="outline" onClick={() => setDeleteListOpen(false)}>
               Cancel
             </Button>
@@ -1158,9 +1167,9 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
             >
               Delete
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

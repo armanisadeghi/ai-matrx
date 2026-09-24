@@ -1,5 +1,6 @@
 "use client";
 
+import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { notifyComputeTargetsChanged } from "@/hooks/sandbox/use-compute-targets";
 import { useEffect, useState, useRef, useCallback } from "react";
@@ -31,14 +32,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+// The delete and force-stop confirmations are AlertDialogs: they block the page on purpose
+// (policy ai-reachable-everywhere; the ordinary Dialog is a non-blocking window on desktop).
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+} from "@/components/ui/alert-dialog";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
@@ -479,7 +482,18 @@ export default function SandboxDetailPage() {
           {
             label: lifecycleBusy === "stop" ? "Stopping…" : "Stop",
             icon: Square,
-            onPress: () => void handleStop(),
+            // Stopping ends everything running inside; ask first and say so.
+            onPress: () =>
+              void (async () => {
+                const ok = await confirmDialog({
+                  title: `Stop ${instance?.name || instance?.sandbox_id || "this sandbox"}?`,
+                  description:
+                    "Everything running inside it stops now: open terminals, agent runs and servers. Files on its storage are kept, and you can start it again.",
+                  confirmLabel: "Stop sandbox",
+                  variant: "destructive",
+                });
+                if (ok) await handleStop();
+              })(),
             disabled: lifecycleBusy !== null,
           },
         ]
@@ -1224,11 +1238,11 @@ export default function SandboxDetailPage() {
         </div>
       </footer>
 
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Sandbox</DialogTitle>
-            <DialogDescription>
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Sandbox</AlertDialogTitle>
+            <AlertDialogDescription>
               This is a destructive action.
               {isActive ? " The running container will be destroyed and " : " "}
               the sandbox row will be removed from your list.{" "}
@@ -1239,9 +1253,9 @@ export default function SandboxDetailPage() {
               create. To wipe persistent storage entirely, use Settings →
               Sandbox Storage. If you just want to stop this container, use Stop
               instead.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>
               Cancel
             </Button>
@@ -1251,15 +1265,15 @@ export default function SandboxDetailPage() {
             }}>
               Delete Sandbox
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={forceStopOpen} onOpenChange={setForceStopOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Force stop sandbox?</DialogTitle><DialogDescription>This immediately terminates the running sandbox instead of requesting a graceful stop.</DialogDescription></DialogHeader>
-          <DialogFooter><Button variant="outline" onClick={() => setForceStopOpen(false)}>Cancel</Button><Button variant="destructive" onClick={() => { setForceStopOpen(false); void handleStop(false); }}>Force Stop</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={forceStopOpen} onOpenChange={setForceStopOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Force stop sandbox?</AlertDialogTitle><AlertDialogDescription>This immediately terminates the running sandbox instead of requesting a graceful stop.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><Button variant="outline" onClick={() => setForceStopOpen(false)}>Cancel</Button><Button variant="destructive" onClick={() => { setForceStopOpen(false); void handleStop(false); }}>Force Stop</Button></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       </div>
     </SurfaceRuntimeProvider>
   );
