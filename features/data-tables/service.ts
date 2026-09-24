@@ -1200,6 +1200,21 @@ export async function deleteRow(args: {
 }
 
 /**
+ * The words the relation cells of `rowIds` read in `fieldName` of a RECORD-STORE table
+ * (`custom.relation_words_many`, the grid's own door). An older table's words come from its
+ * own door (`udt_row_words_many`); this export answers an empty map for it, never a guess.
+ */
+export async function readRelationWords(args: {
+  tableId: string;
+  fieldName: string;
+  rowIds: readonly string[];
+}): Promise<Map<string, string>> {
+  const home = recordStoreHomeOf(args.tableId);
+  if (!home) return new Map();
+  return recordStore.relationWords(home, args);
+}
+
+/**
  * EVERY TABLE A "SAVE INTO A TABLE" PICKER MAY OFFER (lane INTEG-CLIENTS, CUTOVER-PLAN F1).
  * The person's older tables AND the active organization's record-store Tables, one list,
  * de-duplicated by id (a moved table keeps its id, and its archived older copy is not in

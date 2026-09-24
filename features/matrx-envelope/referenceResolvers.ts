@@ -35,6 +35,43 @@ import {
   parseTableMetadata,
   type TableMetadata,
 } from "@/features/data-tables/types";
+import { getActiveOrgId } from "@/lib/organizations/activeOrg";
+import { locateTable } from "@/features/data-tables/data-source/where-a-table-is-born";
+// Static, not `await import()`: this module reaches ~714 entry contexts and the seam adds ~31
+// modules (`pnpm lab:graph`, 2026-09-23) — an async edge here would be a new chunk-group split in
+// every one of them for no deferral worth having (code-splitting rule 6 caveat, D115).
+import {
+  getTableMetadata,
+  readRelationWords,
+  readRowsById,
+  readTableDetails,
+} from "@/features/data-tables/service";
+
+/**
+ * IS THIS TABLE IN THE RECORD STORE? (lane INTEG-CLIENTS, CUTOVER-PLAN F10.) A moved table
+ * keeps its id and its older copy is ARCHIVED, so every `udt_*` read below would answer a
+ * moved table from the archive (or not at all, for a table born in the store). A table the
+ * record store holds is read through the data seam instead — the grid's own doors. With no
+ * active organization there is nobody to ask for, and the older read answers as it always did.
+ */
+async function inTheRecordStore(tableId: string | undefined): Promise<boolean> {
+  if (!tableId) return false;
+  const organizationId = getActiveOrgId();
+  if (!organizationId) return false;
+  try {
+    const where = await locateTable(tableId, organizationId);
+    return where.ok && where.store === "record";
+  } catch {
+    return false;
+  }
+}
+
+/** One record-store row's cells, keyed by the grid's column names. */
+async function storeRow(tableId: string, rowId: string): Promise<Record<string, unknown> | undefined> {
+  const rows = await readRowsById({ tableId, rowIds: [rowId] });
+  if (!rows.success) return undefined;
+  return rows.data.find((r) => r.id === rowId)?.data;
+}
 
 export interface ReferenceResolver {
   /**
@@ -145,8 +182,25 @@ async function resolveCell(
   supabase: SupabaseClient,
   rowId: string | undefined,
   column: string | undefined,
+  tableId?: string,
 ): Promise<string | undefined> {
   if (!rowId || !column) return undefined;
+  if (await inTheRecordStore(tableId)) {
+    // The record store's own row and, for a relation column, its own words door — the
+    // agent reads the customer's name, never a bare record id (rev 2 §3.3, carried).
+    const cells = await storeRow(tableId!, rowId);
+    if (!cells) return undefined;
+    const raw = cells[column];
+    const couldBeRelation =
+      typeof raw === "string" ? UUID_TEXT.test(raw.trim()) : Array.isArray(raw);
+    if (!couldBeRelation) return stringify(raw);
+    // The words door names the RECORDS a relation cell points at, by their ids.
+    const ids = (Array.isArray(raw) ? raw : [raw])
+      .filter((v): v is string => typeof v === "string" && UUID_TEXT.test(v.trim()))
+      .map((v) => v.trim());
+    const words = await readRelationWords({ tableId: tableId!, fieldName: column, rowIds: ids });
+    return ids.map((id) => words.get(id) ?? `Record ${id.slice(0, 8)}`).join(", ");
+  }
   const { data, error } = await supabase
     .schema("workbench")
     .from("udt_dataset_rows")
@@ -202,6 +256,36 @@ async function resolveCell(
 }
 
 const UUID_TEXT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The name of a table (the `table` / `dataset` reference), from whichever store holds it.
+ * The id is `table_id` (canonical), `id` (the catalog's generic ref) or `dataset_id` (legacy).
+ */
+function tableNameResolver(): ReferenceResolver {
+  const idOf = (ref: Record<string, string>) => ref.table_id ?? ref.id ?? ref.dataset_id;
+  return {
+    openItemType: "table",
+    openId: idOf,
+    resolveValue: async (supabase, ref) => {
+      const tableId = idOf(ref);
+      if (!tableId) return stringify(ref.label);
+      if (await inTheRecordStore(tableId)) {
+        const details = await readTableDetails(tableId);
+        return details.success ? (stringify(details.table?.name) ?? stringify(details.table?.description)) : undefined;
+      }
+      const { data, error } = await supabase
+        .schema("workbench")
+        .from("udt_datasets")
+        .select("table_name, description")
+        .eq("id", tableId)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (error || !data) return undefined;
+      const row = data as { table_name?: string | null; description?: string | null };
+      return stringify(row.table_name) ?? stringify(row.description);
+    },
+  };
+}
 
 /**
  * The 7-type reference resolver registry (+ the `dataset_cell` legacy alias).
@@ -266,27 +350,19 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   },
 
   // ── Table (udt dataset) family ─────────────────────────────────────────────
-  /** `table` → { table_id }. Live value = the table name. */
-  table: {
-    openItemType: "table",
-    openId: (ref) => ref.table_id,
-    resolveValue: async (supabase, ref) => {
-      if (!ref.table_id) return undefined;
-      const { data, error } = await supabase
-        .schema("workbench")
-        .from("udt_datasets")
-        .select("table_name, description")
-        .eq("id", ref.table_id)
-        .is("deleted_at", null)
-        .maybeSingle();
-      if (error || !data) return undefined;
-      const row = data as {
-        table_name?: string | null;
-        description?: string | null;
-      };
-      return stringify(row.table_name) ?? stringify(row.description);
-    },
-  },
+  /**
+   * `table` → { table_id }. Live value = the table name.
+   *
+   * 🚨 `table` is an ALIAS of `dataset` in the server-published catalog
+   * (`CATALOG_ALIASES`), so this key was never reached: every `@table` chip went to the
+   * catalog-derived `dataset` resolver, which reads `ref.id` from `workbench.udt_datasets`
+   * — nothing for a `{ table_id }` ref, and the ARCHIVED copy for a moved table. Both keys
+   * now share one resolver (lane INTEG-CLIENTS, F10).
+   */
+  // Both open as the item-presentation `table` type (entity token `dataset`); the derived
+  // resolver had cast the noun "dataset", which is not an item type at all.
+  table: tableNameResolver(),
+  dataset: tableNameResolver(),
 
   /** `table_schema` → { table_id }. Live value = column schema summary. */
   table_schema: {
@@ -297,19 +373,25 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
       // ONE call: get_full_table returns the dataset row plus its columns
       // already ordered by field_order, and no row data. (This used to be two
       // parallel queries rebuilding the same thing by hand.)
-      const { data, error } = await supabase.rpc("get_full_table", {
-        ref: { table_id: ref.table_id },
-      });
-      // A resolver's contract is "render the live value or nothing" — it has no
-      // surface to raise into, so an unreachable dataset (P0002) resolves to
-      // undefined exactly like any other failure. It is NOT rewritten into an
-      // absence claim, which is the whole point of the D167 class.
-      if (error) return undefined;
       let meta: TableMetadata;
-      try {
-        meta = parseTableMetadata(data);
-      } catch {
-        return undefined;
+      if (await inTheRecordStore(ref.table_id)) {
+        const read = await getTableMetadata({ tableId: ref.table_id });
+        if (!read.success) return undefined;
+        meta = read.data;
+      } else {
+        const { data, error } = await supabase.rpc("get_full_table", {
+          ref: { table_id: ref.table_id },
+        });
+        // A resolver's contract is "render the live value or nothing" — it has no
+        // surface to raise into, so an unreachable dataset (P0002) resolves to
+        // undefined exactly like any other failure. It is NOT rewritten into an
+        // absence claim, which is the whole point of the D167 class.
+        if (error) return undefined;
+        try {
+          meta = parseTableMetadata(data);
+        } catch {
+          return undefined;
+        }
       }
       const name =
         stringify(meta.table.table_name) ?? stringify(ref.table_name);
@@ -341,6 +423,15 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     openId: (ref) => ref.table_id,
     resolveValue: async (supabase, ref) => {
       if (!ref.table_id || !ref.column_name) return undefined;
+      if (await inTheRecordStore(ref.table_id)) {
+        const read = await getTableMetadata({ tableId: ref.table_id });
+        const column = read.success
+          ? (read.data.columns as Array<{ field_name?: string; display_name?: string }>).find(
+              (c) => c.field_name === ref.column_name,
+            )
+          : undefined;
+        return stringify(column?.display_name) ?? stringify(ref.column_name);
+      }
       const { data, error } = await supabase
         .schema("workbench")
         .from("udt_dataset_fields")
@@ -370,14 +461,19 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     openId: (ref) => ref.table_id,
     resolveValue: async (supabase, ref) => {
       if (!ref.row_id) return undefined;
-      const { data, error } = await supabase
-        .schema("workbench")
-        .from("udt_dataset_rows")
-        .select("data")
-        .eq("id", ref.row_id)
-        .maybeSingle();
-      if (error || !data) return undefined;
-      const cells = (data as { data?: Record<string, unknown> | null }).data;
+      let cells: Record<string, unknown> | null | undefined;
+      if (await inTheRecordStore(ref.table_id)) {
+        cells = await storeRow(ref.table_id!, ref.row_id);
+      } else {
+        const { data, error } = await supabase
+          .schema("workbench")
+          .from("udt_dataset_rows")
+          .select("data")
+          .eq("id", ref.row_id)
+          .maybeSingle();
+        if (error || !data) return undefined;
+        cells = (data as { data?: Record<string, unknown> | null }).data;
+      }
       if (!cells || typeof cells !== "object") return undefined;
       const preview = Object.values(cells)
         .map((v) => stringify(v))
@@ -396,7 +492,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     openItemType: "table",
     openId: (ref) => ref.table_id,
     resolveValue: async (supabase, ref) =>
-      resolveCell(supabase, ref.row_id, ref.column_name),
+      resolveCell(supabase, ref.row_id, ref.column_name, ref.table_id),
   },
 
   /**
@@ -408,7 +504,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     openItemType: "table",
     openId: (ref) => ref.dataset_id ?? ref.table_id,
     resolveValue: async (supabase, ref) =>
-      resolveCell(supabase, ref.row_id, ref.field_name ?? ref.column_name),
+      resolveCell(supabase, ref.row_id, ref.field_name ?? ref.column_name, ref.dataset_id ?? ref.table_id),
   },
 
   // ── RecordRef family (atomic Matrx entities) ───────────────────────────────
