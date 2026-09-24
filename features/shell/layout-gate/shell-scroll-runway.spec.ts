@@ -61,6 +61,7 @@ const TAILWIND_SUBSET = `
   .w-full { width: 100%; }
   .overflow-hidden { overflow: hidden; }
   .overflow-y-auto { overflow-y: auto; }
+  .overflow-x-hidden { overflow-x: hidden; }
   * { box-sizing: border-box; margin: 0; }
 `;
 
@@ -70,13 +71,13 @@ const TAILWIND_SUBSET = `
  * chat route's body — `h-full overflow-hidden`, its thread scrolling inside
  * itself, with the composer pinned at the bottom of that body.
  */
-const PAGE = `
+const PAGE_FOR = (routeBodyClass: string) => `
 <div class="shell-root" data-pathname="/chat">
   <header class="shell-header" data-testid="shell-header">
     <div style="margin-left:auto">Records · Canvas · avatar</div>
   </header>
   <main class="shell-main" data-testid="shell-main">
-    <div class="flex h-full flex-col overflow-hidden" data-testid="route-body">
+    <div class="${routeBodyClass}" data-testid="route-body">
       <div class="flex flex-1 min-h-0 w-full">
         <div class="flex-1 min-h-0 overflow-y-auto" data-testid="thread">
           <div style="height: 3000px">a long conversation</div>
@@ -90,11 +91,27 @@ const PAGE = `
 </div>
 `;
 
-async function mount(page: import("@playwright/test").Page, alarm: string) {
+/**
+ * Every spelling of "I am the viewport and I own my overflow" a route body uses
+ * directly under `.shell-main`. The second is `app/(core)/agents/[id]/layout.tsx`
+ * (wrapping /agents/[id]/run): it SCROLLS itself instead of clipping, and until
+ * 2026-09-24 the shell rule matched only the first, so the run page's composer
+ * slid 72px under the header whenever the attention pill was up.
+ */
+const ROUTE_BODIES = [
+  "flex h-full flex-col overflow-hidden",
+  "h-full overflow-y-auto overflow-x-hidden flex flex-col",
+];
+
+async function mount(
+  page: import("@playwright/test").Page,
+  alarm: string,
+  routeBodyClass: string,
+) {
   await page.setContent(`<!doctype html><html><body></body></html>`);
   await page.addStyleTag({ content: SHELL_CSS });
   await page.addStyleTag({ content: TAILWIND_SUBSET });
-  await page.setContent(PAGE);
+  await page.setContent(PAGE_FOR(routeBodyClass));
   await page.addStyleTag({ content: SHELL_CSS });
   await page.addStyleTag({ content: TAILWIND_SUBSET });
   await page.evaluate((value) => {
@@ -125,19 +142,21 @@ async function rects(page: import("@playwright/test").Page) {
   });
 }
 
-for (const alarm of ["compact", "expanded"]) {
-  test(`a ${alarm} fixed notice gives a full-height route body no scroll slack`, async ({
+for (const [alarm, routeBodyClass] of ["compact", "expanded"].flatMap((a) =>
+  ROUTE_BODIES.map((b) => [a, b] as const),
+)) {
+  test(`a ${alarm} fixed notice gives a full-height route body no scroll slack [${routeBodyClass}]`, async ({
     page,
   }) => {
-    await mount(page, alarm);
+    await mount(page, alarm, routeBodyClass);
     const before = await rects(page);
     expect(before.mainScrollHeight).toBe(before.mainClientHeight);
   });
 
-  test(`a full-height route's chrome survives a scroll attempt (${alarm} notice)`, async ({
+  test(`a full-height route's chrome survives a scroll attempt (${alarm} notice) [${routeBodyClass}]`, async ({
     page,
   }) => {
-    await mount(page, alarm);
+    await mount(page, alarm, routeBodyClass);
 
     // Everything a user's wheel, a focus jump or a scrollIntoView could do.
     await page.evaluate(() => {

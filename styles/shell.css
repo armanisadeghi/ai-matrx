@@ -1624,9 +1624,26 @@ body[style*="pointer-events: none"] .shell-header .pointer-events-auto {
 
    A surface that clips at the viewport can never have content hidden under a
    fixed notice in the first place — its own inner scrollers carry
-   `.scroll-page-end-space` for that. So this rule takes nothing away. */
+   `.scroll-page-end-space` for that. So this rule takes nothing away.
+
+   THE CONTRACT IS "h-full AND OWNS ITS OVERFLOW", not one spelling of it. Until
+   2026-09-24 this matched only `.h-full.overflow-hidden`, so a full-height body
+   that SCROLLS itself (`h-full overflow-y-auto` — the agent layout wrapping
+   /agents/[id]/run, the admin system-agent layout, marketing ads, schedules)
+   still got the runway, and the run page's composer slid up under the header
+   on the first wheel tick. Such a body has nothing for `.shell-main` to scroll;
+   it reserves its own end space inside its own scroller. */
 :root[data-admin-attention]
-  .shell-main:has(> .h-full.overflow-hidden)::after {
+  .shell-main:has(
+    > .h-full:is(
+        .overflow-hidden,
+        .overflow-clip,
+        .overflow-auto,
+        .overflow-y-auto,
+        .overflow-y-hidden,
+        .overflow-y-clip
+      )
+  )::after {
   content: none;
 }
 
