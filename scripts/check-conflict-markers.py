@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""check-conflict-markers — find every leftover sync-main marker in this repo.
+"""check-conflict-markers — list everything scripts/sync-main.py left open in this repo.
 
 Run it from the repo root:   python3 scripts/check-conflict-markers.py
 
-It looks ONLY for the two markers sync-main writes, in tracked and untracked files, and compares
-them with .matrx/GIT-CONFLICTS.md:
-  - a marker that is not listed there  -> "NOT LISTED" (someone deleted the line but not the work)
-  - a listed item whose marker is gone -> "FIXED, DELETE ITS LINE"
-Exit 0 when the repo holds zero markers, 1 otherwise.
+It looks only for the two markers sync-main writes (in tracked and untracked files), for empty
+folders under _conflicts/, and compares what it finds with the list in _conflicts/README.md:
+  - a marker whose item is not listed         -> "NOT LISTED"
+  - a listed item whose marker is gone        -> "DONE, DELETE ITS LINE"
+  - an empty folder under _conflicts/         -> "EMPTY FOLDER, DELETE IT"
+  - _conflicts/ with nothing open in it       -> "NOTHING OPEN, DELETE _conflicts/"
+Exit 0 and "clean" when nothing is open, 1 otherwise.
 """
 import os
 import subprocess
@@ -15,8 +17,8 @@ import sys
 
 HELD_MARK = "matrx-auto-git-conflict-file-work-delete-this-when-resolved"
 DOCS_MARK = "matrx-auto-git-docs-resolution-needed-delete-this-when-resolved"
-LOG_REL = ".matrx/GIT-CONFLICTS.md"
-# the two scripts themselves spell the markers out
+HOLD_ROOT = "_conflicts"
+LOG_REL = "_conflicts/README.md"
 SELF = {"scripts/sync-main.py", "scripts/check-conflict-markers.py"}
 
 
@@ -37,60 +39,35 @@ def main():
             if path and path not in SELF:
                 found.setdefault(path, set()).add(kind)
 
-    listed_held, listed_docs = set(), set()
+    listed = set()
     if os.path.exists(LOG_REL):
-        section, folder = None, ""
         for line in open(LOG_REL):
-            if line.startswith("## Held files"):
-                section = "held"
-            elif line.startswith("## Docs and comments"):
-                section = "docs"
-            elif line.startswith("## Needs"):
-                section = "needs"          # escalated: the line carries the full path
-            elif line.startswith("## "):
-                section = None
-            elif line.startswith("### "):
-                folder = line[4:].strip().rstrip("/") + "/"
-            elif line.startswith("- ") and section:
-                item = line[2:].split(" — ")[0].strip()
-                if section == "held":
-                    listed_held.add(folder + item + ".held")
-                elif section == "docs":
-                    listed_docs.add(item)
-                elif item.endswith(".held"):
-                    listed_held.add(item)
-                else:
-                    listed_docs.add(item)
+            if line.startswith("- "):
+                listed.add(line[2:].split(" — ")[0].strip())
 
     problems = 0
-    # a "### _conflicts/<stamp>/" heading with no items under it is a leftover: delete it
-    if os.path.exists(LOG_REL):
-        rows = open(LOG_REL).read().splitlines()
-        for i, row in enumerate(rows):
-            if row.startswith("### "):
-                nxt = next((r for r in rows[i + 1:] if r.strip()), "")
-                if not nxt.startswith("- "):
-                    print("EMPTY HEADING, DELETE IT in %s: %s" % (LOG_REL, row))
-                    problems += 1
     for path in sorted(found):
-        kinds = found[path]
-        held_note = path.endswith(".held-note.txt")
-        key = path[: -len("-note.txt")] if held_note else path
-        listed = (("held" in kinds and key in listed_held) or ("docs" in kinds and path in listed_docs))
-        print("%-5s %s%s" % ("/".join(sorted(kinds)), path, "" if listed else "   <- NOT LISTED in " + LOG_REL))
+        key = path[: -len("-note.txt")] if path.endswith(".held-note.txt") else path
+        note = "" if key in listed else "   <- NOT LISTED in " + LOG_REL
+        print("%-5s %s%s" % ("/".join(sorted(found[path])), path, note))
         problems += 1
     live = set(found) | {p[: -len("-note.txt")] for p in found if p.endswith(".held-note.txt")}
-    for item in sorted(listed_held - live):
-        print("FIXED, DELETE ITS LINE in %s: %s" % (LOG_REL, item))
+    for item in sorted(listed - live):
+        print("DONE, DELETE ITS LINE in %s: %s" % (LOG_REL, item))
         problems += 1
-    for item in sorted(listed_docs - set(found)):
-        print("FIXED, DELETE ITS LINE in %s: %s" % (LOG_REL, item))
-        problems += 1
+    if os.path.isdir(HOLD_ROOT):
+        for root, dirs, files in os.walk(HOLD_ROOT, topdown=False):
+            if root != HOLD_ROOT and not os.listdir(root):
+                print("EMPTY FOLDER, DELETE IT: %s/" % root)
+                problems += 1
+        if not live and not listed:
+            print("NOTHING OPEN, DELETE %s/ (scripts/sync-main.py also does this on its next run)" % HOLD_ROOT)
+            problems += 1
 
     if problems:
         print("\n%d item(s) need attention." % problems)
         sys.exit(1)
-    print("clean: zero sync-main markers in this repo.")
+    print("clean: nothing from sync-main is open in this repo.")
 
 
 if __name__ == "__main__":
