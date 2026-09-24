@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2262",
+  "version": "0.4.2263",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
@@ -679,7 +679,7 @@
     "@ai-matrx/records": "latest",
     "@ai-matrx/records-ui": "latest",
     "@ai-matrx/tap-target": "latest",
-    "@ai-sdk/google": "^4.0.78",
+    "@ai-sdk/google": "^4.0.79",
     "@anthropic-ai/sdk": "latest",
     "@babel/standalone": "^8.0.5",
     "@cartesia/cartesia-js": "^4.2.0",
@@ -767,8 +767,8 @@
     "@xterm/addon-web-links": "^0.12.0",
     "@xterm/xterm": "^6.0.0",
     "@xyflow/react": "latest",
-    "@zip.js/zip.js": "2.17.0",
-    "ai": "^7.0.112",
+    "@zip.js/zip.js": "2.18.2",
+    "ai": "^7.0.113",
     "ajv": "^8.20.0",
     "canvas": "latest",
     "class-variance-authority": "latest",
