@@ -2,7 +2,7 @@
 -- lane: SC-3
 -- based-on: custom.portal_admits(uuid, uuid) cd7dec7fc4ece14579b738735be7bddf04cf6a260318b2004e21c30d039dce07
 -- based-on: custom.reaches_directly(uuid, text, uuid, permission_level) 7d952bf7c5c5813f51fda6e834b8d8888774ef621046c7d52a37ad9a3a872503
--- based-on: custom.assert_client_may_reach(uuid, text) a8aa28d3bc152ae10d655e69a897c8f6875d760fe39617f4e94568523e0a8379
+-- based-on: custom.assert_client_may_reach(uuid, text) dd5c80c5635dee7a701798b0ebc2d8919523ebdc32766fbab3eedea6a84e831c
 
 CREATE OR REPLACE FUNCTION custom.portal_admits(p_organization_id uuid, p_user_id uuid DEFAULT NULL::uuid)
  RETURNS boolean

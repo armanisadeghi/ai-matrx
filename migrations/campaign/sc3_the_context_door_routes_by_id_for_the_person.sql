@@ -3,7 +3,7 @@
 --   It ADDS three functions — `custom.context_resolve(jsonb)` (P3 a: the turn's bound cells BY
 --   ID, for the person), `custom.resolve_context(text, uuid, uuid[], uuid[])` (P3 b: the
 --   record store's twin of public.resolve_full_context, every contributing record checked for
---   the person) and `custom.context_compare_facts(uuid, uuid[], uuid[])` (P9: the server-lane
+--   the person) and `custom.context_compare_facts(uuid, uuid[], uuid[], jsonb)` (P9: the server-lane
 --   facts the compare page classes a difference with) — with their three
 --   `platform.client_callable_door` rows; it REPLACES one live
 --   body, `custom.context_resolve(uuid, jsonb, text)`, with a one-line hand-off to the by-id
@@ -687,7 +687,7 @@ comment on function custom.resolve_context(text, uuid, uuid[], uuid[]) is
 -- defect). Only the server can know which without telling a person whether an id exists, so
 -- this is a SERVER-LANE door: no client grant, called by aidream's compare builder as the store
 -- owner, and only for ids the old path ALREADY delivered to that person in the same answer.
-create function custom.context_compare_facts(p_user_id uuid, p_record_ids uuid[], p_item_ids uuid[] default null)
+create function custom.context_compare_facts(p_user_id uuid, p_record_ids uuid[], p_item_ids uuid[] default null, p_cells jsonb default null)
 returns jsonb
 language plpgsql
 stable
@@ -697,6 +697,7 @@ as $function$
 declare
   v_records jsonb;
   v_items   jsonb;
+  v_cells   jsonb;
   v_follow  jsonb;
 begin
   select coalesce(jsonb_object_agg(x.id::text, jsonb_build_object(
@@ -714,6 +715,17 @@ begin
     from context.context_items ci
    where ci.id = any (coalesce(p_item_ids, '{}'::uuid[]));
 
+  -- THE CURRENT SYSTEM'S VERSION OF EACH CELL BOTH SIDES DELIVER, so a changed value can be
+  -- classed as the copy catching up (old written later) or not.
+  select coalesce(jsonb_object_agg((c ->> 'item_id') || ':' || (c ->> 'scope_id'), jsonb_build_object(
+           'old_version', v.version, 'old_written_at', v.created_at)), '{}'::jsonb)
+    into v_cells
+    from jsonb_array_elements(coalesce(p_cells, '[]'::jsonb)) c
+    join context.context_item_values v
+      on v.context_item_id = (c ->> 'item_id')::uuid
+     and v.scope_id = (c ->> 'scope_id')::uuid
+     and v.is_current;
+
   -- THE FOLLOW'S LAG (P8, lane SC-2'): what the old-wins follow has not applied yet. Until
   -- SC-2' lands the follow there is no `context.follow` row at all, and the page says so.
   select jsonb_build_object(
@@ -725,14 +737,15 @@ begin
     from custom.io_outbox o
    where o.event_key = 'context.follow';
 
-  return jsonb_build_object('records', v_records, 'items', v_items, 'follow', v_follow);
+  return jsonb_build_object('records', v_records, 'items', v_items, 'cells', v_cells, 'follow', v_follow);
 end;
 $function$;
 
-comment on function custom.context_compare_facts(uuid, uuid[], uuid[]) is
+comment on function custom.context_compare_facts(uuid, uuid[], uuid[], jsonb) is
   'P9, lane SC-3''. SERVER LANE ONLY (no client grant). For the compare page: per record id, '
   'whether the store holds it (live / in the trash) and whether p_user_id reads it on the old '
-  'side; per context item id, whether it is active and its fetch hint; and the follow''s lag. '
+  'side; per context item id, whether it is active and its fetch hint; per (item, scope) pair the '
+  'current system''s version and write time; and the follow''s lag. '
   'Called by aidream''s compare builder only for ids the old path already delivered to that '
   'person. Writes nothing.';
 
@@ -777,8 +790,8 @@ values
    'sc3_the_context_door_routes_by_id_for_the_person.sql',
    null, true, false),
   ('custom', 'context_compare_facts',
-   'p_user_id uuid, p_record_ids uuid[], p_item_ids uuid[]',
-   array['uuid'::regtype, 'uuid[]'::regtype, 'uuid[]'::regtype]::oid[],
+   'p_user_id uuid, p_record_ids uuid[], p_item_ids uuid[], p_cells jsonb',
+   array['uuid'::regtype, 'uuid[]'::regtype, 'uuid[]'::regtype, 'jsonb'::regtype]::oid[],
    'Returns booleans and a fetch hint per id, never a value, a name or a field. p_user_id is the person the compare page is for (the server passes the authenticated caller); p_record_ids and p_item_ids are only ids the old context path already delivered to that person in the same answer. It writes nothing.',
    'sc3_the_context_door_routes_by_id_for_the_person.sql',
    'server_only: aidream''s agent-context compare builder (conversation_context/context_compare.py) calls it as the store owner to class a difference between the two resolvers; no client ever calls it, because telling a person whether an id is in the store is not a question a browser may ask.',

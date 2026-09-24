@@ -1,4 +1,4 @@
--- chair-step: this drops the three doors sc3_the_context_door_routes_by_id_for_the_person.sql added — custom.context_resolve(jsonb), custom.resolve_context(text, uuid, uuid[], uuid[]) and custom.context_compare_facts(uuid, uuid[], uuid[]) — with their three platform.client_callable_door rows, and puts custom.context_resolve(uuid, jsonb, text) back to the exact slug-bridge body it replaced. Run sc3_the_context_doors_can_be_reached_down.sql first when the grants were applied. After it, the server's store-backed context path reads through the slug bridge again, exactly as before.
+-- chair-step: this drops the three doors sc3_the_context_door_routes_by_id_for_the_person.sql added — custom.context_resolve(jsonb), custom.resolve_context(text, uuid, uuid[], uuid[]) and custom.context_compare_facts(uuid, uuid[], uuid[], jsonb) — with their three platform.client_callable_door rows, and puts custom.context_resolve(uuid, jsonb, text) back to the exact slug-bridge body it replaced. Run sc3_the_context_doors_can_be_reached_down.sql first when the grants were applied. After it, the server's store-backed context path reads through the slug bridge again, exactly as before.
 -- lane: SC-3
 -- based-on: custom.context_resolve(uuid, jsonb, text) fd13bee223fb86c7d3d35ba0f884b7624e6d6e334ff40a1557b44402c4e2da87
 
@@ -6,6 +6,7 @@ delete from platform.client_callable_door
  where (schema_name, function_name, identity_args) in
        (('custom', 'context_resolve', 'p_bindings jsonb'),
         ('custom', 'resolve_context', 'p_entity_type text, p_entity_id uuid, p_record_ids uuid[], p_table_ids uuid[]'),
+        ('custom', 'context_compare_facts', 'p_user_id uuid, p_record_ids uuid[], p_item_ids uuid[], p_cells jsonb'),
         ('custom', 'context_compare_facts', 'p_user_id uuid, p_record_ids uuid[], p_item_ids uuid[]'));
 
 CREATE OR REPLACE FUNCTION custom.context_resolve(p_organization_id uuid, p_bindings jsonb, p_scope_slug text DEFAULT 'scopes'::text)
@@ -313,4 +314,6 @@ $function$
 
 drop function if exists custom.resolve_context(text, uuid, uuid[], uuid[]);
 drop function if exists custom.context_resolve(jsonb);
+drop function if exists custom.context_compare_facts(uuid, uuid[], uuid[], jsonb);
+-- (an earlier rehearsal of this lane carried a three-argument shape; gone with it if present)
 drop function if exists custom.context_compare_facts(uuid, uuid[], uuid[]);
