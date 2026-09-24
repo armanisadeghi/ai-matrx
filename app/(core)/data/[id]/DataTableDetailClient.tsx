@@ -16,18 +16,13 @@
 // so the grid takes every available pixel and the pagination bar sits on the
 // bottom edge, instead of a 70dvh grid floating above dead space.
 //
-// AN ID FROM THE OTHER STORE IS NOT A DEAD END. There are two table viewers
-// taking the same shape of id — this one over `workbench.udt_datasets` and
-// `/data-v2` over the record store — and until 2026-09-21 this route answered
-// every record-store table with "We couldn't open this dataset. It may have
-// been deleted, or it may belong to an organization you don't have access to",
-// which was false twice over for a table the person owns one route along. When
-// the older store says the id is not one of its datasets, we ASK the record
-// store (`whereThisTableLives`, through its own client door) and send the person
-// where their table actually is. If it is in neither, the screen says exactly
-// that, naming both places it looked — never a guess about deletion or access.
+// THIS ROUTE IS THE OLDER SIDE, AND ONLY THE OLDER SIDE (owner's ruling, 2026-09-23:
+// "don't redirect anything at all right now"). /data/<id> opens the older viewer over the
+// older store, exactly as it always did; /data-v2/<id> is the new side, side by side, so the
+// two can be compared everywhere. Nothing here asks the record store, sends anyone to
+// /data-v2, or talks about a move. The one flip later moves everything at once.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Database } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -39,9 +34,7 @@ import TableIdentityMenu, {
   type TableSummary,
 } from "@/components/user-generated-table-data/TableIdentityMenu";
 import CreateTableModal from "@/components/user-generated-table-data/CreateTableModal";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { createClient } from "@/utils/supabase/client";
-import { whereThisTableLives } from "@/features/unified-data/whereThisTableLives";
+import { forgetTablePlacement } from "@/features/data-tables/data-source/table-home";
 
 interface DataTableDetailClientProps {
   tableId: string;
@@ -57,81 +50,21 @@ export default function DataTableDetailClient({
   // A rename is written by the menu itself; this keeps the header label in
   // sync without refetching the table just to read back a name we set.
   const [renamedTo, setRenamedTo] = useState<string | null>(null);
-  const { organizationId, organizationState } = useOrganizationRequired();
-  // WHERE THE TABLE LIVES IS ASKED FIRST (VERIFIER-16). The record store answers before
-  // the older store is read, so a table it holds — moved, or never shared with this person —
-  // never reaches the older doors (which answered it with a 500 and a sentence about
-  // deletion). A table the record store holds opens on its own page, /data-v2/<id>, where its
-  // Sheet layout is this same grid over the record store (owner's ruling: no switch on /data;
-  // one flip moves everything later). "older" mounts this page's older viewer.
-  const [lookup, setLookup] = useState<
-    | { kind: "asking" }
-    | { kind: "older"; storeSaid: "nowhere" | { why: string } }
-    | { kind: "no_access" }
-  >({ kind: "asking" });
-  // The older viewer said the id is not one of its datasets (or is one that moved).
-  const [olderSaysNotHere, setOlderSaysNotHere] = useState(false);
+  // The older viewer over the older store: a placement the /data-v2 Sheet made for this id
+  // earlier in the same visit must not carry over and point this viewer at the record store.
+  const [unplaced, setUnplaced] = useState(false);
+  useLayoutEffect(() => {
+    forgetTablePlacement(tableId);
+    setUnplaced(true);
+  }, [tableId]);
+  // The older store said this id is not one of its datasets for this person.
+  const [notFound, setNotFound] = useState(false);
 
   const displayName = renamedTo ?? tableInfo?.table_name ?? "Loading...";
 
   const notHere = useCallback(() => {
-    setOlderSaysNotHere(true);
+    setNotFound(true);
   }, []);
-
-  useEffect(() => {
-    if (lookup.kind !== "asking") return;
-    if (organizationState === "resolving") return; // still looking; say nothing yet
-    if (organizationState === "required") {
-      setLookup({
-        kind: "older",
-        storeSaid: {
-          why: "no organization is chosen yet, and a table in the record store belongs to one — choose an organization and this page will find it",
-        },
-      });
-      return;
-    }
-    if (organizationState === "unavailable" || !organizationId) {
-      setLookup({
-        kind: "older",
-        storeSaid: { why: "your organizations could not be read just now, so the record store could not be asked" },
-      });
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      const found = await whereThisTableLives(createClient(), organizationId, tableId);
-      if (cancelled) return;
-      if (found.kind === "record_store") {
-        router.replace(found.href);
-        return;
-      }
-      if (found.kind === "no_access") {
-        setLookup({ kind: "no_access" });
-        return;
-      }
-      setLookup({ kind: "older", storeSaid: found.kind === "nowhere" ? "nowhere" : { why: found.why } });
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [lookup.kind, organizationId, organizationState, router, tableId]);
-
-  // What the panel says instead of the grid, when it says anything.
-  const elsewhere:
-    | null
-    | { kind: "looking" }
-    | { kind: "no_access" }
-    | { kind: "nowhere" }
-    | { kind: "unknown"; why: string } =
-    lookup.kind === "asking"
-      ? { kind: "looking" }
-      : lookup.kind === "no_access"
-        ? { kind: "no_access" }
-        : lookup.kind === "older" && olderSaysNotHere
-          ? lookup.storeSaid === "nowhere"
-            ? { kind: "nowhere" }
-            : { kind: "unknown", why: lookup.storeSaid.why }
-          : null;
 
   return (
     <>
@@ -161,55 +94,27 @@ export default function DataTableDetailClient({
         }
       />
       <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
-        {elsewhere ? (
+        {notFound ? (
           <div className="flex h-full items-center justify-center p-6">
             <div className="max-w-xl rounded-lg border border-border bg-card p-6 text-card-foreground">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Database className="h-4 w-4" aria-hidden />
-                <span className="text-sm font-medium">
-                  {elsewhere.kind === "looking"
-                    ? "Looking for this table"
-                    : elsewhere.kind === "no_access"
-                      ? "This table has not been shared with you"
-                      : elsewhere.kind === "nowhere"
-                        ? "This table is not in either store"
-                        : "We could not find out where this table is"}
-                </span>
+                <span className="text-sm font-medium">This table is not in your Data tables</span>
               </div>
               <p className="mt-3 text-sm text-muted-foreground">
-                {elsewhere.kind === "looking" ? (
-                  <>Checking where this table lives.</>
-                ) : elsewhere.kind === "no_access" ? (
-                  <>
-                    The table exists in this organization, but nobody has shared it with you yet. Ask the person who
-                    sent you the link, or an owner of this organization, to share it with you &mdash; it will open here
-                    as soon as they do.
-                  </>
-                ) : elsewhere.kind === "nowhere" ? (
-                  <>
-                    We looked in both places a table can live &mdash; this store&rsquo;s datasets and the record
-                    store &mdash; and this link&rsquo;s table is in neither of them for this organization. If somebody
-                    sent you this link, they may have been in a different organization.
-                  </>
-                ) : (
-                  <>
-                    This id is not one of this store&rsquo;s datasets, and we could not ask the record store: {elsewhere.why}.
-                    Nothing has been deleted as far as we know &mdash; this is a question we could not get an answer to.
-                  </>
-                )}
+                We could not find this link&rsquo;s table among the tables you can open here in this
+                organization. If somebody sent you this link, they may have been in a different organization.
               </p>
-              {elsewhere.kind !== "looking" ? (
-                <button
-                  type="button"
-                  className="mt-4 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent"
-                  onClick={() => router.push("/data")}
-                >
-                  Back to tables
-                </button>
-              ) : null}
+              <button
+                type="button"
+                className="mt-4 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent"
+                onClick={() => router.push("/data")}
+              >
+                Back to tables
+              </button>
             </div>
           </div>
-        ) : (
+        ) : !unplaced ? null : (
         <UserTableViewer
           tableId={tableId}
           onDatasetNotHere={notHere}
@@ -221,26 +126,6 @@ export default function DataTableDetailClient({
           // other surfaces, so the provider is opt-in — see the prop's docs.
           emitSurfaceScope
           onTableInfoChange={(info) => {
-            // A TABLE THAT WAS MOVED IS NOT "HERE" EVEN THOUGH ITS ROW STILL IS. The move
-            // archives the older dataset and writes `metadata.moved_to` — it never deletes
-            // it — and this viewer's reads do not filter archived datasets, so an old link
-            // opened the archived copy as if nothing had happened (found by lane
-            // OLD-TABLES-4's headless walk). The pointer is the answer: ask the record
-            // store, exactly as for an id the older store does not know.
-            // An UNARCHIVED table keeps `moved_to` as history and gains `unarchived_at`
-            // (workbench.udt_dataset_unarchive) — that is the undo, and it must open here.
-            // The viewer reports `null` while it is still loading — nothing to judge yet.
-            const meta = info?.metadata as
-              | { moved_to?: { table_id?: string; at?: string }; unarchived_at?: string }
-              | undefined;
-            const movedTo = meta?.moved_to;
-            const stillMoved =
-              Boolean(movedTo?.table_id) &&
-              (!meta?.unarchived_at || String(movedTo?.at ?? "") > String(meta.unarchived_at));
-            if (stillMoved) {
-              notHere();
-              return;
-            }
             setTableInfo(info);
             setRenamedTo(null);
           }}

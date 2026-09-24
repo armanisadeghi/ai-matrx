@@ -1047,17 +1047,21 @@ async function main() {
       pass("unshared-no-deleted-sentence", !/may have been deleted|in neither/.test(text), "no sentence about deletion or 'in neither store'");
     }
 
-    // ── THE OLDER LIST SAYS WHAT MOVED (VERIFIER-16 finding 2) ──────────────────────
-    if (wants("movedlist")) {
+    // ── /data REDIRECTS NOTHING (owner's ruling 2026-09-23: "don't redirect anything at all
+    // right now"). The older route opens the older viewer; it never lands on /data-v2 and
+    // never says a table moved — old and new are compared side by side.
+    if (wants("noredirect")) {
+      await page.goto(`${ORIGIN}/data/${TABLES.calls}`, { waitUntil: "domcontentloaded", timeout: 240000 });
+      await page.waitForTimeout(12000);
+      const url = page.url();
+      const text = await page.evaluate(() => document.body.innerText);
+      await page.screenshot({ path: `${OUT}/gridport-${SEAT}-19-data-redirects-nothing.png` });
+      pass("noredirect-stays", url.includes(`/data/${TABLES.calls}`) && !url.includes("/data-v2"), url.replace(ORIGIN, ""));
+      pass("noredirect-no-moved-sentence", !/moved to its new home|have moved to the new data home|has moved/i.test(text), "no sentence about a move");
       await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 240000 });
-      await page.waitForSelector("[data-moved-tables]", { timeout: 60000 }).catch(() => {});
-      const banner = page.locator("[data-moved-tables]").first();
-      const n = Number((await banner.getAttribute("data-moved-tables").catch(() => "0")) ?? "0");
-      const said = (await banner.innerText().catch(() => "")).replace(/\s+/g, " ");
-      const link = await banner.locator('a[href="/data-v2"]').count();
-      await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-18-list-says-what-moved.png` });
-      pass("movedlist-count", n > 0 && said.includes(`${n} of your tables have moved`), `the list says: "${said}"`);
-      pass("movedlist-where", link > 0, link > 0 ? "and links to the new data home (/data-v2)" : "no link to where they live");
+      await page.waitForTimeout(8000);
+      const list = await page.evaluate(() => document.body.innerText);
+      pass("noredirect-list-quiet", !/moved to the new data home/.test(list) && (await page.locator("[data-moved-tables]").count()) === 0, "the /data list says nothing about a move");
     }
 
     const onClone = String(process.env.GRID_PORT_ON_CLONE || "") === "1";

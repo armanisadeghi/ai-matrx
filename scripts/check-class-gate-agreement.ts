@@ -39,8 +39,8 @@
  *   D2 — CLASS. For EVERY active token, `iam.class_gate_class(token)` equals
  *        `(iam.class_lanes(token)).resolved_class`. Unmeasured is a failure, never a pass: if the
  *        census returns no rows at all, this fails.
- *   D3 — VERDICT. For every active token, the gate's own `share_link` arithmetic
- *        (`class in ('organization','public')`) equals `(iam.class_lanes(token)).share_link_lane`.
+ *   D3 — VERDICT. For every active token, the gate's own `share_link` verdict (true on every class
+ *        since Arman's 2026-09-23 ruling) equals `(iam.class_lanes(token)).share_link_lane`.
  *        D2 alone would stay green if someone re-tabled the lanes in `iam.class_lanes` and left the
  *        gate's hard-coded pair behind; this is the detector that notices.
  *
@@ -142,7 +142,10 @@ export function rowFindings(rows: readonly GateRow[]): string[] {
       );
       continue;
     }
-    const gateAllowsShare = r.gate_class === "organization" || r.gate_class === "public";
+    // Arman, 2026-09-23 (amends VISIBILITY-BY-CLASS §3.4): the gate allows an owner-issued
+    // share link on EVERY class, so its verdict is true whatever the class — and the lane table
+    // must say the same.
+    const gateAllowsShare = true;
     if (gateAllowsShare !== r.share_link_lane) {
       bad.push(
         `${r.token} (${r.variant}): class ${r.gate_class ?? "<null>"} — the gate's share_link verdict is ${gateAllowsShare} but iam.class_lanes.share_link_lane is ${r.share_link_lane}; the lane table and the gate's arithmetic have drifted apart`,
@@ -168,7 +171,7 @@ function selfTest(): number {
   const good: GateRow[] = [
     { token: "agent", variant: "entity", gate_class: "organization", lanes_class: "organization", share_link_lane: true },
     { token: "web_page", variant: "component", gate_class: "organization", lanes_class: "organization", share_link_lane: true },
-    { token: "message", variant: "component", gate_class: "private", lanes_class: "private", share_link_lane: false },
+    { token: "message", variant: "component", gate_class: "private", lanes_class: "private", share_link_lane: true },
   ];
   expect("D2/D3: agreeing rows are clean", rowFindings(good).length, 0);
 
@@ -180,8 +183,8 @@ function selfTest(): number {
   expect("D2: the live pre-DD-216 disagreement is caught", rowFindings(drifted).length, 2);
 
   const laneDrift: GateRow[] = [
-    // the class agrees, but the lane table no longer matches the gate's hard-coded pair
-    { token: "some_token", variant: "entity", gate_class: "confidential", lanes_class: "confidential", share_link_lane: true },
+    // the class agrees, but the lane table no longer matches the gate (it re-closed a class)
+    { token: "some_token", variant: "entity", gate_class: "confidential", lanes_class: "confidential", share_link_lane: false },
   ];
   expect("D3: a re-tabled lane with an agreeing class is caught", rowFindings(laneDrift).length, 1);
 
