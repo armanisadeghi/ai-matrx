@@ -3,9 +3,8 @@
 import { useEffect, useEffectEvent, useState, useTransition } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
-import { Ban, CheckCircle, Clock, Archive, Plus } from "lucide-react";
+import { Ban, CheckCircle, Clock, Archive } from "lucide-react";
 import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -560,16 +559,9 @@ export default function AgentAppsAdminListPage() {
                 title: "Agent Apps",
                 searchPlaceholder: "Search agent apps…",
                 refresh: { onRefresh: load },
-                actions: (
-                  <div className="flex items-center gap-2">
-                    <Button asChild size="sm">
-                      <AppLink href="/administration/agents/agent-apps/new">
-                        <Plus className="h-4 w-4" />
-                        Create app
-                      </AppLink>
-                    </Button>
-                  </div>
-                ),
+                add: {
+                  onAdd: () => pushAppHref(router, "/agent-apps/new"),
+                },
               }}
               onViewChange={setViewApps}
               detail={{ enabled: false }}
