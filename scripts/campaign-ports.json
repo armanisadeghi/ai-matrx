@@ -27,9 +27,9 @@
     "dev-login will evict the other."
   ],
   "portRange": {
-    "$comment": "Widened 3050 -> 3060 by lane FIX-14 (2026-09-22): all fifty of the original slots were allotted, so a new lane had no honest port left and the only alternatives were squatting on a finished lane's row or guessing \u2014 which is the exact failure this map exists to prevent. Widened 3060 -> 3062 by lane ARGS-RULED-2 (2026-09-24) for its headless Share-dialog walk on the dev clone; every slot was allotted. Widened 3062 -> 3063 by lane ROUTE-RESOLVER (2026-09-24) for its /o/<id> walk on the dev clone. Widened 3063 -> 3065 by lane S0-ONE-SAVED-VIEW (2026-09-24) for its records-ui harness walk on the dev clone; every slot was allotted and 3064 was held by an unlisted Next.js server. Widened 3065 -> 3066 by lane S4-BATCH-DOORS (2026-09-24) for its records-ui harness walk of the batch move and batch decide on the dev clone; every slot was allotted. Widened 3066 -> 3067 by lane S6-PORTAL-BRANDING (2026-09-24) for its outsider portal walk (magic link, phone and desktop) on the dev clone; every slot was allotted.",
+    "$comment": "Widened 3050 -> 3060 by lane FIX-14 (2026-09-22): all fifty of the original slots were allotted, so a new lane had no honest port left and the only alternatives were squatting on a finished lane's row or guessing \u2014 which is the exact failure this map exists to prevent. Widened 3060 -> 3062 by lane ARGS-RULED-2 (2026-09-24) for its headless Share-dialog walk on the dev clone; every slot was allotted. Widened 3062 -> 3063 by lane ROUTE-RESOLVER (2026-09-24) for its /o/<id> walk on the dev clone. Widened 3063 -> 3065 by lane S0-ONE-SAVED-VIEW (2026-09-24) for its records-ui harness walk on the dev clone; every slot was allotted and 3064 was held by an unlisted Next.js server. Widened 3065 -> 3066 by lane S4-BATCH-DOORS (2026-09-24) for its records-ui harness walk of the batch move and batch decide on the dev clone; every slot was allotted. Widened 3066 -> 3067 by lane S6-PORTAL-BRANDING (2026-09-24) for its outsider portal walk (magic link, phone and desktop) on the dev clone; every slot was allotted. Widened 3067 -> 3068 by lane SC-3 (2026-09-24) for its headless walk of the agent-context compare mode on the dev clone (with its own aidream on 8068); every slot was allotted.",
     "min": 3001,
-    "max": 3067
+    "max": 3068
   },
   "reserved": [
     {
@@ -39,6 +39,7 @@
     }
   ],
   "lanes": {
+    "SC-3": 3068,
     "IMPORT-2": 3049,
     "REFUSAL-SWEEP": 3057,
     "STORE-OFF": 3050,

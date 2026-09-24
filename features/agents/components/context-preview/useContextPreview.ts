@@ -36,22 +36,41 @@ export interface ContextPreviewState {
   refresh: () => void;
 }
 
+/**
+ * Which resolver answers. `old` — the current context system (what every run
+ * delivers today). `both` — the old side's values, plus `compare` carrying both
+ * resolvers side by side with every difference classed (lane SC-3').
+ */
+export type ContextPreviewPath = "old" | "both";
+
 export function useContextPreview(opts: {
   conversationId?: string;
   agentId?: string;
   /** Fetch only while the preview surface is actually open. */
   enabled: boolean;
+  path?: ContextPreviewPath;
+  /**
+   * Explicit scope ids (the admin inspector's "compare one scope"). When given,
+   * they replace the active selections; the server resolves each scope under its
+   * own organization.
+   */
+  scopeIds?: string[];
 }): ContextPreviewState {
-  const { conversationId, agentId, enabled } = opts;
+  const { conversationId, agentId, enabled, path = "old" } = opts;
+  const explicitScopeIds = opts.scopeIds;
   const dispatch = useAppDispatch();
 
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
   const conversationScope = useAppSelector(
     selectConversationScopeIds(conversationId ?? ""),
   );
+  const explicitKey = explicitScopeIds ? explicitScopeIds.join(",") : null;
   const scopeIds = useMemo(
-    () => Object.values(scopeSelections).filter((v): v is string => !!v),
-    [scopeSelections],
+    () =>
+      explicitKey !== null
+        ? explicitKey.split(",").filter(Boolean)
+        : Object.values(scopeSelections).filter((v): v is string => !!v),
+    [scopeSelections, explicitKey],
   );
 
   // Starts in "loading": the hook fetches on mount (the panel only mounts
@@ -75,6 +94,7 @@ export function useContextPreview(opts: {
           conversation_id: conversationId ?? null,
           agent_id: agentId ?? null,
           scope_ids: scopeIds,
+          ...(path !== "old" ? { path } : {}),
         },
         scopeOverrides: conversationScope.organizationId
           ? { organization_id: conversationScope.organizationId }
@@ -103,6 +123,7 @@ export function useContextPreview(opts: {
     conversationId,
     agentId,
     scopeIds,
+    path,
     conversationScope.organizationId,
     dispatch,
   ]);
