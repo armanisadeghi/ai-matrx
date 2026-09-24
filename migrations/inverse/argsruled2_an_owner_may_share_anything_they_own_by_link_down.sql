@@ -1,6 +1,8 @@
 -- lock: iam,platform
 -- lane: ARGS-RULED-2
--- (based-on lines added after the up lands on the clone)
+-- based-on: iam.class_allows(text, text, uuid) 92583b984249e07cd9c3048b959a7f948c9ca72cb2a296743e41b3db31dc12f8
+-- based-on: iam.class_lanes(text) 5de91cffe7172b7381a8d74c4b6532bec18e9edc407314958cb986d92faf5606
+-- based-on: platform.entity_link_shareable(text) 35817df280a258404c3931d295df80aabd606e036f141eada485cd86dfcdf14f
 --
 -- INVERSE of migrations/campaign/argsruled2_an_owner_may_share_anything_they_own_by_link.sql: the three bodies back as they were
 -- (MAIN, 2026-09-23), the eight registry rows back to not link-shareable, and the two fork-door
@@ -208,3 +210,10 @@ update platform.client_callable_door
    set argument_rules = jsonb_set(argument_rules, '{arguments,p_quiz_id,foreign,owner_refused_too}', '"DD-137b, PENDING ARMAN''S RULING (2026-09-23): quiz_session is classed confidential, and platform.entity_link_shareable refuses link sharing for a confidential class, so platform.shareable_resource_registry cannot mark it link-shareable and this door refuses EVERY caller, the owner included, with the same not_available answer a stranger gets. Recommended ruling: an owner-issued share link on private types (ChatGPT''s shared conversation link). When he rules, remove this token and the contract demands the owner succeed."'::jsonb, true)
  where schema_name = 'public' and function_name = 'fork_shared_quiz' and identity_args = 'p_quiz_id uuid, p_organization_id uuid, p_token text'
    and argument_rules #> '{arguments,p_quiz_id,foreign}' is not null;
+
+-- the two declarations the up added (the bodies are back, and the guard accepts them as they were
+-- because the inverse replaces them in a transaction that also removes nothing else).
+delete from platform.client_callable_door
+ where declared_by = 'migrations/campaign/argsruled2_an_owner_may_share_anything_they_own_by_link.sql (lane ARGS-RULED-2)'
+   and ((schema_name = 'iam' and function_name = 'class_allows')
+        or (schema_name = 'platform' and function_name = 'entity_link_shareable'));
