@@ -31,6 +31,8 @@ import type { ItemMenuConfig } from "@/components/official/item/types";
 import { buildAgentMenu } from "./agentActionRegistry";
 import { agentHref, isSystemAgentRow } from "./agentPaths";
 import type { AgentBrowseRow } from "./types";
+import { getUserMessage } from "@/lib/api/errors";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 export interface AgentRowActionsHost {
   /** Build the full menu for one row. Lazy — pass straight to ItemMenu/ItemRow. */
@@ -211,9 +213,11 @@ export function useAgentRowActions({
         );
         refresh();
       } catch (err) {
-        toast.error("Could not duplicate agent", {
-          description: err instanceof Error ? err.message : undefined,
-        });
+        if (!isOrganizationSelectionCancelled(err)) {
+          toast.error("Could not duplicate agent", {
+            description: getUserMessage(err),
+          });
+        }
       } finally {
         setIsDuplicating(false);
       }

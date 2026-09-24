@@ -76,6 +76,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { agentDefinitionSummary } from "@/features/agents/format";
 import { agentHref } from "@/features/agents/browse/agentPaths";
 import { buildSystemAgentAiPayload } from "@/features/agents/route/buildSystemAgentAiPayload";
+import { useAgentAddressViewer } from "@/features/agents/addressing/useAgentHref";
 
 function extractTextContent(msg: AgentDefinitionMessage): string {
   if (!msg.content || !Array.isArray(msg.content)) return "";
@@ -229,6 +230,9 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
   }, [dispatch]);
 
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
+  // A builtin's own page is reached by members too; its ID link must not
+  // send them into the admin tree.
+  const addressViewer = useAgentAddressViewer();
   const category = useAppSelector((state) =>
     selectAgentCategory(state, agentId),
   );
@@ -554,10 +558,11 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                   token="agent"
                   id={liveAgentId}
                   name={agent.name}
-                  href={agentHref({
-                    id: liveAgentId,
-                    agent_type: agent.agentType,
-                  })}
+                  href={agentHref(
+                    { id: liveAgentId, agent_type: agent.agentType },
+                    "",
+                    addressViewer,
+                  )}
                   showIcon={false}
                   wrap
                   className="font-mono text-foreground/90"

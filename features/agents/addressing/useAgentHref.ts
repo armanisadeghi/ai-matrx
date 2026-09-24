@@ -16,8 +16,12 @@
  * never answers. Only a resolved MISS produces a refusal, with a sentence.
  */
 
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState, useSyncExternalStore } from "react";
+import { ReactReduxContext } from "react-redux";
+import type { RootState } from "@/lib/redux/store";
+import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import {
+  type AgentAddressViewer,
   agentDoorFor,
   agentGoHref,
   reportVersionIdRescued,
@@ -47,6 +51,27 @@ export interface UseAgentHrefInput {
   context?: string;
 }
 
+const noSubscribe = () => () => {};
+
+/**
+ * WHO IS LOOKING, for the address rule (`AgentAddressViewer`). Reads the store
+ * when there is one; a render with no store (an isolated test, a portal
+ * outside the app) gets `undefined`, which keeps the admin-surface default.
+ * Every real page renders inside the store, so every member gets their own
+ * answer.
+ */
+export function useAgentAddressViewer(): AgentAddressViewer | undefined {
+  const store = useContext(ReactReduxContext)?.store;
+  const read = () =>
+    store ? selectIsAdmin(store.getState() as RootState) : undefined;
+  const isAdmin = useSyncExternalStore(
+    store ? store.subscribe : noSubscribe,
+    read,
+    read,
+  );
+  return isAdmin === undefined ? undefined : { isAdmin };
+}
+
 /**
  * Where this agent opens. See `AgentDoor` — `ready` | `resolving` | `unknown`.
  */
@@ -57,12 +82,15 @@ export function useAgentHref({
   context = "an agent link",
 }: UseAgentHrefInput): AgentDoor {
   const knownType = agentType !== undefined && agentType !== null;
+  // A builtin opens in the admin tree only for an admin; everyone else gets
+  // the ordinary agent page (see `AgentAddressViewer`).
+  const viewer = useAgentAddressViewer();
 
   // A caller that holds the row needs no read and no state churn.
   const immediate: AgentDoor | null = !id
     ? { state: "unknown", reason: "No agent id was supplied." }
     : knownType
-      ? agentDoorFor({ agentId: id, agentType: agentType ?? null }, sub)
+      ? agentDoorFor({ agentId: id, agentType: agentType ?? null }, sub, viewer)
       : null;
 
   const [resolved, setResolved] = useState<AgentAddressResult | undefined>(() =>
@@ -98,5 +126,5 @@ export function useAgentHref({
     return { state: "unknown", reason: unresolvedAgentReason(id) };
 
   reportVersionIdRescued(resolved, id, context);
-  return agentDoorFor(resolved, sub);
+  return agentDoorFor(resolved, sub, viewer);
 }

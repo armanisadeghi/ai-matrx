@@ -29,6 +29,7 @@ import type { BaseReduxState } from "@/types/reduxTypes";
 import NavigationLoader from "@/components/loaders/NavigationLoader";
 import AppShell from "@/features/shell/components/AppShell";
 import { readSidebarExpandedCookie } from "@/features/shell/utils/server-cookies";
+import { userShellPathForSystemAgentPath } from "@/features/agents/addressing/agentAddress";
 
 // Admin pages require authentication and cannot be statically generated
 export const dynamic = "force-dynamic";
@@ -86,6 +87,14 @@ export default async function AdminLayout({
   // authorization always lives at the data layer, never this redirect.
   const isAdminGate = await checkIsUserAdmin(supabase, user.id);
   if (!isAdminGate) {
+    // A system agent is readable by every member; only its ADMIN view is
+    // gated. A member who followed a system-agent link here (an old link, a
+    // pasted URL) gets the same agent's ordinary page — never Welcome.
+    const userShell = userShellPathForSystemAgentPath(pathname);
+    if (userShell) {
+      const search = headersList.get("x-search-params") || "";
+      return redirect(`${userShell}${search}`);
+    }
     return redirect("/dashboard");
   }
 

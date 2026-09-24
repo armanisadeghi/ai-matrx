@@ -75,6 +75,8 @@ import {
 } from "@/features/surfaces/manifests/agents-hub.manifest";
 import { getPeekedAgentId } from "./agent-peek-tracker";
 import { SORT_OPTIONS } from "@ai-matrx/agents/catalog/react";
+import { getUserMessage } from "@/lib/api/errors";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 const CONSUMER_ID = "agents-main";
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -309,8 +311,12 @@ export function AgentsGrid() {
       toast.success("Agent duplicated", {
         action: toastDoor("agent", newAgentId),
       });
-    } catch {
-      toast.error("Failed to duplicate agent.");
+    } catch (err) {
+      if (!isOrganizationSelectionCancelled(err)) {
+        toast.error("Could not duplicate agent", {
+          description: getUserMessage(err),
+        });
+      }
     } finally {
       setDuplicatingIds((prev) => {
         const n = new Set(prev);

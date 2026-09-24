@@ -54,6 +54,7 @@ import type { Database } from "@/types/database.types";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import {
   selectModelById,
   type AIModelRecord,
@@ -1287,13 +1288,21 @@ export const duplicateAgent = createAsyncThunk<
   string,
   string | DuplicateAgentOptions,
   ThunkApi
->("agentDefinition/duplicate", async (input, { dispatch }) => {
+>("agentDefinition/duplicate", async (input, { dispatch, getState }) => {
   const { agentId, asSystem } =
     typeof input === "string" ? { agentId: input, asSystem: false } : input;
+
+  // A personal copy lives in the organization the person is working in — the
+  // database never picks one (it refuses a copy with none). A system copy is
+  // placed in the platform org by the database itself.
+  const organizationId = asSystem
+    ? undefined
+    : await ensureOrgId(selectOrganizationId(getState()));
 
   const { data, error } = await supabase.rpc("agx_duplicate_agent", {
     p_agent_id: agentId,
     p_as_system: Boolean(asSystem),
+    p_organization_id: organizationId,
   });
 
   if (error) throw pgErrorToError(error);
@@ -1318,10 +1327,14 @@ export const duplicateAgentVersion = createAsyncThunk<
   ThunkApi
 >(
   "agentDefinition/duplicateVersion",
-  async ({ versionId, asSystem }, { dispatch }) => {
+  async ({ versionId, asSystem }, { dispatch, getState }) => {
+    const organizationId = asSystem
+      ? undefined
+      : await ensureOrgId(selectOrganizationId(getState()));
     const { data, error } = await supabase.rpc("agx_duplicate_version", {
       p_version_id: versionId,
       p_as_system: Boolean(asSystem),
+      p_organization_id: organizationId,
     });
 
     if (error) throw pgErrorToError(error);

@@ -68,9 +68,13 @@ export class OrganizationSelectionCancelled extends Error {
 export function isOrganizationSelectionCancelled(
   error: unknown,
 ): error is OrganizationSelectionCancelled {
+  // A thunk's `.unwrap()` rejects with a SERIALIZED error — a plain object
+  // carrying `name` — so the name is the test, not the prototype.
   return (
     error instanceof OrganizationSelectionCancelled ||
-    (error instanceof Error && error.name === "OrganizationSelectionCancelled")
+    (typeof error === "object" &&
+      error !== null &&
+      (error as { name?: unknown }).name === "OrganizationSelectionCancelled")
   );
 }
 

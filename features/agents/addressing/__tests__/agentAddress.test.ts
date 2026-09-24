@@ -19,6 +19,7 @@ import {
   assertAgentIdNotVersion,
   isSystemAgentType,
   newAgentHref,
+  userShellPathForSystemAgentPath,
 } from "../agentAddress";
 
 const AGENT = "8f0bbfc2-85d9-4913-8cea-b09a50c62be6";
@@ -101,5 +102,67 @@ describe("a version id resolves to the agent, then that version", () => {
         "a binding's holder_id",
       ),
     ).not.toThrow();
+  });
+});
+
+/**
+ * Arman, 2026-09-23: a normal user choosing "Open agent" on a system agent in
+ * chat was sent to the admin tree and bounced to the Welcome page. The viewer
+ * is the third input; a non-admin's builtin lives in the ordinary shell.
+ */
+describe("the viewer decides a builtin's shell", () => {
+  it("a non-admin gets the user shell for a builtin, sub-route and version kept", () => {
+    const nonAdmin = { isAdmin: false };
+    expect(
+      agentPathFor({ agentId: AGENT, agentType: "builtin" }, "", nonAdmin),
+    ).toBe(`${AGENT_BASE_PATH}/${AGENT}`);
+    expect(
+      agentPathFor({ agentId: AGENT, agentType: "builtin" }, "/run", nonAdmin),
+    ).toBe(`${AGENT_BASE_PATH}/${AGENT}/run`);
+    expect(
+      agentDoorFor(
+        { agentId: AGENT, agentType: "builtin", isVersion: true, versionNumber: 4 },
+        "",
+        nonAdmin,
+      ),
+    ).toMatchObject({ href: `${AGENT_BASE_PATH}/${AGENT}/v/4` });
+  });
+
+  it("an admin still gets the System Agents tree", () => {
+    expect(
+      agentPathFor({ agentId: AGENT, agentType: "builtin" }, "", { isAdmin: true }),
+    ).toBe(`${SYSTEM_AGENT_BASE_PATH}/${AGENT}`);
+  });
+
+  it("a user agent is the user shell for everyone", () => {
+    expect(
+      agentPathFor({ agentId: AGENT, agentType: "user" }, "", { isAdmin: true }),
+    ).toBe(`${AGENT_BASE_PATH}/${AGENT}`);
+  });
+});
+
+describe("a non-admin who reaches a System Agents address is forwarded", () => {
+  it("maps the record and its sub-route onto the user shell", () => {
+    expect(
+      userShellPathForSystemAgentPath(`${SYSTEM_AGENT_BASE_PATH}/${AGENT}`),
+    ).toBe(`${AGENT_BASE_PATH}/${AGENT}`);
+    expect(
+      userShellPathForSystemAgentPath(`${SYSTEM_AGENT_BASE_PATH}/${AGENT}/build`),
+    ).toBe(`${AGENT_BASE_PATH}/${AGENT}/build`);
+    expect(
+      userShellPathForSystemAgentPath(`${SYSTEM_AGENT_BASE_PATH}/${AGENT}/v/3`),
+    ).toBe(`${AGENT_BASE_PATH}/${AGENT}/v/3`);
+  });
+
+  it("drops an admin-only sub-route rather than landing on a 404", () => {
+    expect(
+      userShellPathForSystemAgentPath(`${SYSTEM_AGENT_BASE_PATH}/${AGENT}/samples`),
+    ).toBe(`${AGENT_BASE_PATH}/${AGENT}`);
+  });
+
+  it("leaves the list, /new and the rest of administration alone", () => {
+    expect(userShellPathForSystemAgentPath(SYSTEM_AGENT_BASE_PATH)).toBeNull();
+    expect(userShellPathForSystemAgentPath(`${SYSTEM_AGENT_BASE_PATH}/new`)).toBeNull();
+    expect(userShellPathForSystemAgentPath("/administration/users")).toBeNull();
   });
 });

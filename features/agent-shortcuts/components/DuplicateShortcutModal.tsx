@@ -38,6 +38,8 @@ import {
 } from "../constants";
 import type { PlacementType } from "../constants";
 import { useAgentShortcutCrud } from "../hooks/useAgentShortcutCrud";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import { getUserMessage } from "@/lib/api/errors";
 import type {
   AgentShortcut,
   AgentShortcutCategory,
@@ -116,9 +118,8 @@ export function DuplicateShortcutModal({
       onSuccess?.(newId);
       onClose();
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to duplicate shortcut";
-      setError(message);
+      // Closing the organization picker is "not now", never a failure.
+      if (!isOrganizationSelectionCancelled(err)) setError(getUserMessage(err));
     } finally {
       setIsProcessing(false);
     }

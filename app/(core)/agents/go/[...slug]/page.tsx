@@ -10,7 +10,10 @@
  *
  * This route is the synchronous answer: an href anyone can build with nothing
  * but an id, which resolves server-side and sends the browser to the real
- * address — or says, in a sentence, that there is nothing there. No link in
+ * address FOR THIS VIEWER — a builtin opens in the admin tree for a Matrx admin
+ * and in the ordinary `/agents` shell for everyone else (a non-admin sent to
+ * the admin tree lands on Welcome) — or says, in a sentence, that there is
+ * nothing there. No link in
  * this app needs to guess a shell ever again.
  *
  * (The client resolver still upgrades hrefs in place once it knows, so hover,
@@ -23,6 +26,8 @@ import { AlertCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { checkIsUserAdmin } from "@/utils/supabase/userSessionData";
 import { agentPathFor } from "@/features/agents/addressing/agentAddress";
 
 interface ResolveRow {
@@ -64,6 +69,10 @@ export default async function AgentGoPage({
   const row = ((data ?? []) as ResolveRow[])[0];
 
   if (row) {
+    // Only a builtin's address depends on the viewer, so only a builtin pays
+    // for the admin read. The same test the `(admin)` layout gates on.
+    const { user } = row.agent_type === "builtin" ? await getServerAuth() : { user: null };
+    const isAdmin = user ? await checkIsUserAdmin(supabase, user.id) : false;
     // The sub-route comes from OUR route segments, never from a raw string,
     // and is re-validated anyway: an arbitrary value here would be an open
     // redirect inside the app.
@@ -77,6 +86,7 @@ export default async function AgentGoPage({
           versionNumber: row.version_number,
         },
         safeSub,
+        { isAdmin },
       )}${suffix}`,
     );
   }

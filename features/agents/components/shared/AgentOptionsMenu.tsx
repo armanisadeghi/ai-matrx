@@ -77,6 +77,8 @@ import {
   isAdminSystemAgentsContext,
 } from "@/features/agents/components/shared/agent-route-context";
 import { useAgentLifecycleActions } from "@/features/agents/lifecycle/useAgentLifecycleActions";
+import { getUserMessage } from "@/lib/api/errors";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 const INTERFACE_VARIATIONS = [
   "Full Modal",
@@ -324,9 +326,12 @@ export function AgentOptionsMenu({
       setDuplicatedAgentId(newId);
       setDuplicateState("success");
     } catch (err) {
-      setDuplicateError(
-        err instanceof Error ? err.message : "Failed to duplicate agent.",
-      );
+      // Closing the organization picker is "not now", never a failure.
+      if (isOrganizationSelectionCancelled(err)) {
+        setDuplicateOpen(false);
+        return;
+      }
+      setDuplicateError(getUserMessage(err));
       setDuplicateState("error");
     }
   }, [agent?.name, agentId, dispatch, isAdminContext, isBuiltin]);

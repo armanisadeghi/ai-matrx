@@ -10,6 +10,7 @@ import {
   AGENT_BASE_PATH,
   SYSTEM_AGENT_BASE_PATH,
   agentPathFor,
+  type AgentAddressViewer,
 } from "@/features/agents/addressing/agentAddress";
 import { parseMandateContract } from "@/features/mandates/overrides";
 import { missingOutputKeys } from "@/features/mandates/output-contract";
@@ -83,8 +84,9 @@ export function agentHref(
   id: string,
   agentType: string | null,
   sub = "",
+  viewer?: AgentAddressViewer,
 ): string {
-  return agentPathFor({ agentId: id, agentType }, sub);
+  return agentPathFor({ agentId: id, agentType }, sub, viewer);
 }
 
 export interface MandateRow {

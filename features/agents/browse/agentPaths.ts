@@ -33,6 +33,7 @@ import {
   agentHrefFromRow,
   isSystemAgentType,
   newAgentHref,
+  type AgentAddressViewer,
   type AgentPathRow,
 } from "@/features/agents/addressing/agentAddress";
 
@@ -57,6 +58,10 @@ export function agentBasePath(row: AgentPathRow): string {
  * One agent's route. `sub` is appended verbatim and must start with "/"
  * ("/run", "/build", `/v/${version}`); omit it for the record's own page.
  */
-export function agentHref(row: AgentPathRow, sub = ""): string {
-  return agentHrefFromRow(row, sub);
+export function agentHref(
+  row: AgentPathRow,
+  sub = "",
+  viewer?: AgentAddressViewer,
+): string {
+  return agentHrefFromRow(row, sub, viewer);
 }

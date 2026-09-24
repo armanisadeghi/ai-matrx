@@ -25,6 +25,7 @@ import type {
   EntityScopeCounts,
 } from "@/lib/entity-list/types";
 import { scopeOrgId } from "@/lib/list-scope/types";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { WorkflowBrowseRow, WorkflowRowEdit } from "./types";
 
 function pgError(error: { message?: string; code?: string }): Error {
@@ -198,8 +199,9 @@ export async function deleteWorkflow(workflowId: string): Promise<void> {
  * This REPLACED a client-side read-then-insert, which could not implement the
  * ruling and was wrong in two ways: it copied the SOURCE's `organization_id`
  * and `visibility` onto the copy — handing an outsider's row your org id, and
- * silently re-publishing the original's reach. The RPC homes the copy in the
- * duplicator's own org and starts it private. Per no-legacy, the old path is
+ * silently re-publishing the original's reach. The copy is homed in the
+ * organization the duplicator is working in (named here — the database refuses
+ * to pick one) and starts private. Per no-legacy, the old path is
  * deleted rather than kept beside this one.
  */
 export async function duplicateWorkflow(
@@ -207,6 +209,7 @@ export async function duplicateWorkflow(
 ): Promise<{ id: string; name: string }> {
   const { data: newId, error } = await supabase.rpc("wfx_duplicate_definition", {
     p_definition_id: workflowId,
+    p_organization_id: await ensureOrgId(null),
   });
 
   if (error) throw pgError(error);

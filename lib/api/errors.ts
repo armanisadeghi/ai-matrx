@@ -589,6 +589,16 @@ export function getUserMessage(error: unknown): string {
   if (typeof error === "string") {
     return error;
   }
+  // A Redux thunk's `.unwrap()` rejects with a SerializedError — a plain
+  // object, not an Error — whose `message` is the real reason.
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    typeof (error as { message?: unknown }).message === "string" &&
+    (error as { message: string }).message
+  ) {
+    return (error as { message: string }).message;
+  }
   return "Something went wrong";
 }
 

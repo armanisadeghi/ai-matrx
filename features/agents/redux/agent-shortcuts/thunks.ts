@@ -701,7 +701,7 @@ export const fetchUserShortcuts = createAsyncThunk<
 
 /**
  * Duplicates a shortcut via the `agx_duplicate_shortcut` RPC.
- * The copy is personal (owned by current user, no hierarchy).
+ * The copy is owned by the current user, in the organization they are working in.
  * Agent reference is preserved. Keyboard shortcut is cleared. Label gets "(Copy)".
  * Returns the new shortcut id, and loads the copy into the slice.
  */
@@ -715,6 +715,7 @@ export const duplicateShortcut = createAsyncThunk<
 
   const { data, error } = await supabase.rpc(SHORTCUT_RPCS.duplicate, {
     p_shortcut_id: shortcutId,
+    p_organization_id: await ensureOrgId(null),
   });
 
   if (error) throw pgErrorToError(error);

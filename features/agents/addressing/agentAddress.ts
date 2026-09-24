@@ -15,9 +15,10 @@
  * hindsight/subject-doors, mandates/admin/mandate-health), plus ~60 hand-built
  * `/agents/${id}` template literals, plus the entity registry's `hrefFor` that
  * every `EntityRef token="agent"` used — and that one had no idea a builtin
- * agent exists. A builtin agent linked into the user shell is a dead link.
+ * agent exists. (A builtin linked into the user shell was a dead link then; the
+ * user shell has since learned to render one — see point 3.)
  *
- * TWO THINGS DECIDE THE ADDRESS, and a caller usually holds neither:
+ * THREE THINGS DECIDE THE ADDRESS, and a caller usually holds none of them:
  *
  *   1. THE KIND. `agent_type = 'builtin'` lives under the admin System Agents
  *      tree; everything else lives under `/agents`. A caller holding only an
@@ -29,6 +30,14 @@
  *      binding's `holder_version_id`, `is_version` in resolution results. A
  *      version id put in an agent slot produces a link to an agent that does
  *      not exist. A version resolves to its AGENT, then to that version.
+ *
+ *   3. WHO IS LOOKING. The admin tree exists only for Matrx admins; anyone
+ *      else who opens it is sent away. A builtin is still READABLE by every
+ *      member (it is global), and its home for them is the ordinary user shell
+ *      at `/agents/<id>` — a view plus "Duplicate" into their own workspace.
+ *      (Arman, 2026-09-23: a normal user choosing "Open agent" on a system
+ *      agent in chat was bounced to the Welcome page.) So a builtin goes to
+ *      the admin tree only when the viewer is an admin — `AgentAddressViewer`.
  *
  * This module is the PURE half: given what is actually known, produce the
  * path. `agentAddressCache.ts` is the resolving half, `useAgentHref.ts` the
@@ -94,12 +103,57 @@ export function isSystemAgentType(agentType: string | null): boolean {
   return agentType === "builtin";
 }
 
-/** The route prefix an agent of this kind lives under. */
-export function agentBasePathFor(agentType: string | null): string {
-  return isSystemAgentType(agentType)
+/**
+ * Who the link is for. Only a Matrx admin (any `admin.admins` row — the same
+ * test the `(admin)` layout applies) can open the System Agents tree.
+ *
+ * OMITTED means "an admin surface": the row helpers below are called from
+ * admin consoles that already sit behind that gate. A door that can be reached
+ * by ANY member — `/agents/go`, `useAgentHref`, `EntityRef` — must pass the
+ * real viewer. And if a non-admin reaches the admin tree anyway (an old link,
+ * a pasted URL), the `(admin)` layout forwards them with
+ * `userShellPathForSystemAgentPath` instead of bouncing them to Welcome.
+ */
+export interface AgentAddressViewer {
+  isAdmin: boolean;
+}
+
+/** The route prefix an agent of this kind lives under, for this viewer. */
+export function agentBasePathFor(
+  agentType: string | null,
+  viewer?: AgentAddressViewer,
+): string {
+  return isSystemAgentType(agentType) && (viewer?.isAdmin ?? true)
     ? SYSTEM_AGENT_BASE_PATH
     : AGENT_BASE_PATH;
 }
+
+/**
+ * Sub-routes that exist ONLY in the admin System Agents tree. A forwarded
+ * non-admin lands on the agent's own page instead of a 404.
+ */
+const ADMIN_ONLY_AGENT_SUBROUTES = new Set(["samples"]);
+
+/**
+ * Where a NON-admin who reached a System Agents address belongs: the same
+ * agent (and the same sub-route, when the user shell has it) under `/agents`.
+ * Returns null for any path that is not a system-agent record address — the
+ * list, `/new`, and the rest of administration keep the ordinary refusal.
+ */
+export function userShellPathForSystemAgentPath(pathname: string): string | null {
+  const prefix = `${SYSTEM_AGENT_BASE_PATH}/`;
+  if (!pathname.startsWith(prefix)) return null;
+  const [id, ...rest] = pathname.slice(prefix.length).split("/");
+  if (!id || !UUID_SHAPE.test(id)) return null;
+  const sub =
+    rest.length && rest[0] && !ADMIN_ONLY_AGENT_SUBROUTES.has(rest[0])
+      ? `/${rest.join("/")}`
+      : "";
+  return `${AGENT_BASE_PATH}/${id}${sub}`;
+}
+
+const UUID_SHAPE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * THE function. Everything that links to an agent ends up here.
@@ -110,16 +164,24 @@ export function agentBasePathFor(agentType: string | null): string {
  * link lands on that version — the agent first, the version second, which is
  * the only correct reading of a version id.
  */
-export function agentPathFor(address: AgentAddress, sub = ""): string {
-  const base = `${agentBasePathFor(address.agentType)}/${address.agentId}`;
+export function agentPathFor(
+  address: AgentAddress,
+  sub = "",
+  viewer?: AgentAddressViewer,
+): string {
+  const base = `${agentBasePathFor(address.agentType, viewer)}/${address.agentId}`;
   if (sub) return `${base}${sub}`;
   if (address.versionNumber != null) return `${base}/v/${address.versionNumber}`;
   return base;
 }
 
 /** A resolved address as a ready door. */
-export function agentDoorFor(address: AgentAddress, sub = ""): AgentDoor {
-  return { state: "ready", href: agentPathFor(address, sub), address };
+export function agentDoorFor(
+  address: AgentAddress,
+  sub = "",
+  viewer?: AgentAddressViewer,
+): AgentDoor {
+  return { state: "ready", href: agentPathFor(address, sub, viewer), address };
 }
 
 /**
@@ -197,8 +259,12 @@ export interface AgentPathRow {
  * The row form, for the many call sites that already hold the record. Same
  * rule, no read — a row's `agent_type` is the answer.
  */
-export function agentHrefFromRow(row: AgentPathRow, sub = ""): string {
-  return agentPathFor({ agentId: row.id, agentType: row.agent_type }, sub);
+export function agentHrefFromRow(
+  row: AgentPathRow,
+  sub = "",
+  viewer?: AgentAddressViewer,
+): string {
+  return agentPathFor({ agentId: row.id, agentType: row.agent_type }, sub, viewer);
 }
 
 /** Where "New agent" goes for the corpus this page is currently showing. */

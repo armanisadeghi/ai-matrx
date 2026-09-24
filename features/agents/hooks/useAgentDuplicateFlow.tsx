@@ -10,6 +10,8 @@ import {
   type DuplicateOutcomeState,
 } from "@/features/agents/components/shared/AgentDuplicateOutcomeDialog";
 import { isAdminSystemAgentsContext } from "@/features/agents/components/shared/agent-route-context";
+import { getUserMessage } from "@/lib/api/errors";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 interface UseAgentDuplicateFlowOptions {
   basePath?: string;
@@ -64,9 +66,12 @@ export function useAgentDuplicateFlow(
       setNewAgentId(id);
       setState("success");
     } catch (err) {
-      setErrorMessage(
-        err instanceof Error ? err.message : "Failed to duplicate agent.",
-      );
+      // Closing the organization picker is "not now", never a failure.
+      if (isOrganizationSelectionCancelled(err)) {
+        setOpen(false);
+        return;
+      }
+      setErrorMessage(getUserMessage(err));
       setState("error");
     }
   }, [agentId, dispatch, isAdminContext, isBuiltin]);

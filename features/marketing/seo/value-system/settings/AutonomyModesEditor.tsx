@@ -36,6 +36,7 @@ import {
   type SettingsScope,
 } from "./data";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { useAgentAddressViewer } from "@/features/agents/addressing/useAgentHref";
 
 const MODES: Array<{ value: AutonomyMode; label: string; hint: string }> = [
   {
@@ -92,6 +93,7 @@ export function AutonomyModesEditor({
   scope: SettingsScope;
   id: string | null;
 }) {
+  const addressViewer = useAgentAddressViewer();
   const qc = useQueryClient();
   const queryKey = ["seo", "ai-autonomy", scope, id] as const;
   const query = useQuery({
@@ -229,6 +231,8 @@ export function AutonomyModesEditor({
                                 href={agentHref(
                                   assignment.agentId,
                                   assignment.agentType,
+                                  "",
+                                  addressViewer,
                                 )}
                                 openInNewTab
                                 showIcon={false}

@@ -75072,19 +75072,27 @@ export type Database = {
         Returns: undefined
       }
       agx_duplicate_agent: {
-        Args: { p_agent_id: string; p_as_system?: boolean }
+        Args: {
+          p_agent_id: string
+          p_as_system?: boolean
+          p_organization_id?: string
+        }
         Returns: string
       }
       agx_duplicate_shortcut: {
-        Args: { p_shortcut_id: string }
+        Args: { p_organization_id?: string; p_shortcut_id: string }
         Returns: string
       }
       agx_duplicate_shortcut_m: {
-        Args: { p_shortcut_id: string }
+        Args: { p_organization_id?: string; p_shortcut_id: string }
         Returns: string
       }
       agx_duplicate_version: {
-        Args: { p_as_system?: boolean; p_version_id: string }
+        Args: {
+          p_as_system?: boolean
+          p_organization_id?: string
+          p_version_id: string
+        }
         Returns: string
       }
       agx_escape_regex: { Args: { p: string }; Returns: string }
@@ -80388,7 +80396,11 @@ export type Database = {
         }[]
       }
       league_set_opt_in: {
-        Args: { p_display_name?: string; p_opted_in: boolean }
+        Args: {
+          p_display_name?: string
+          p_opted_in: boolean
+          p_organization_id?: string
+        }
         Returns: Database["education"]["Tables"]["league_membership"]["Row"]
         SetofOptions: {
           from: "*"
@@ -82844,10 +82856,13 @@ export type Database = {
         Returns: boolean
       }
       wfx_duplicate_definition: {
-        Args: { p_definition_id: string }
+        Args: { p_definition_id: string; p_organization_id?: string }
         Returns: string
       }
-      wfx_duplicate_version: { Args: { p_version_id: string }; Returns: string }
+      wfx_duplicate_version: {
+        Args: { p_organization_id?: string; p_version_id: string }
+        Returns: string
+      }
       wfx_list_facets: {
         Args: {
           p_archived?: string
