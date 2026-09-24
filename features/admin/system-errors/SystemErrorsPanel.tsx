@@ -399,7 +399,7 @@ export default function SystemErrorsPanel() {
             },
           },
           render: () => (
-            <div className="flex w-full min-w-0 items-center gap-1 overflow-x-auto overscroll-x-contain pb-1 scrollbar-hide">
+            <div className="flex min-w-0 max-w-full items-center gap-1 overflow-x-auto overscroll-x-contain pb-1 scrollbar-hide">
               <div className="flex shrink-0 items-center gap-1">
                 {HOUR_PRESETS.map((preset) => (
                   <Button
