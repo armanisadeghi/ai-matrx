@@ -47,9 +47,38 @@ kill_tree() {
   kill -9 "$1" 2>/dev/null
 }
 
+# Machine-wide queue: at most MATRX_TSC_MAX_CONCURRENT type-checks (default 2,
+# ~26 GB) run at once, across every agent and checkout. The rest WAIT here, so
+# nobody has to know whether one is already running. A slot whose owner died
+# is reclaimed. Slots live in /tmp so every checkout shares them.
+SLOTS_DIR="/tmp/matrx-tsc-slots"
+MAX_SLOTS="${MATRX_TSC_MAX_CONCURRENT:-2}"
+mkdir -p "$SLOTS_DIR" 2>/dev/null
+SLOT=""
+take_slot() {
+  local n owner
+  for (( n = 1; n <= MAX_SLOTS; n++ )); do
+    if mkdir "$SLOTS_DIR/slot-$n" 2>/dev/null; then
+      echo $$ > "$SLOTS_DIR/slot-$n/pid"; SLOT="$SLOTS_DIR/slot-$n"; return 0
+    fi
+    owner=$(cat "$SLOTS_DIR/slot-$n/pid" 2>/dev/null)
+    if [[ -n "$owner" ]] && ! kill -0 "$owner" 2>/dev/null; then
+      rm -rf "$SLOTS_DIR/slot-$n"   # owner is gone: reclaim on the next pass
+    fi
+  done
+  return 1
+}
+WAITED=0
+until take_slot; do
+  (( WAITED % 30 == 0 )) && echo "[tsc-capped] $MAX_SLOTS type-check(s) already running on this machine — waiting for a free slot (${WAITED}s)…" >&2
+  perl -e 'select(undef,undef,undef,2)'; WAITED=$(( WAITED + 2 ))
+done
+release_slot() { [[ -n "$SLOT" ]] && rm -rf "$SLOT"; }
+trap release_slot EXIT
+
 "$BIN" "$@" &
 CHILD=$!
-trap 'kill_tree "$CHILD"; exit 130' INT TERM
+trap 'kill_tree "$CHILD"; release_slot; exit 130' INT TERM
 
 PEAK_KB=0
 while kill -0 "$CHILD" 2>/dev/null; do
