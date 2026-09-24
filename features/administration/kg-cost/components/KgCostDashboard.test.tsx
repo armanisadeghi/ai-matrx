@@ -4,7 +4,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { ReactNode } from "react";
 import type { MatrxDataTableProps } from "@ai-matrx/design-system/data-table";
-import { listOrgCosts } from "../service/kgCostService";
+import { getOrgCostDetail, listOrgCosts } from "../service/kgCostService";
 import { KgCostDashboard } from "./KgCostDashboard";
 
 (
@@ -31,6 +31,7 @@ jest.mock("@/features/organizations/hooks/useOrgAutoRagPreference", () => ({
 jest.mock("../service/kgCostService", () => ({
   getKgCostSummary: jest.fn(() => new Promise(() => {})),
   listOrgCosts: jest.fn(() => new Promise(() => {})),
+  getOrgCostDetail: jest.fn(() => new Promise(() => {})),
   listPendingBatches: jest.fn(() => new Promise(() => {})),
   fetchUnitEconomics: jest.fn(() => new Promise(() => {})),
 }));
@@ -147,6 +148,57 @@ describe("KgCostDashboard canonical tables", () => {
     expect(batch.onRowOpen).toEqual(expect.any(Function));
     expect(organization.rowActions).toEqual(expect.any(Function));
     expect(batch.rowActions).toEqual(expect.any(Function));
+  });
+
+  it("uses compact canonical tables for every populated organization cost breakdown", async () => {
+    jest.mocked(getOrgCostDetail).mockResolvedValueOnce({
+      organization_id: "org-1",
+      organization_name: "Example organization",
+      budget_usd: 10,
+      used_today_usd: 1,
+      window_start: "2026-09-24T00:00:00.000Z",
+      daily_series: [{ date: "2026-09-24", cost_usd: 0.125 }],
+      top_sources: [{ source: "document", cost_usd: 0.1, count: 2 }],
+      batch_summary: [{ status: "completed", count: 1, total_cost_usd: 0.1 }],
+    });
+
+    await act(async () => {
+      root.render(<KgCostDashboard />);
+      table("administration/kg-cost/organizations").onRowOpen?.({
+        organization_id: "org-1",
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    for (const [id, title, columns] of [
+      [
+        "administration/kg-cost/org-detail/daily-cost",
+        "Last 30 days",
+        ["date", "cost_usd"],
+      ],
+      [
+        "administration/kg-cost/org-detail/top-sources",
+        "Top sources (30 days)",
+        ["source", "cost_usd", "count"],
+      ],
+      [
+        "administration/kg-cost/org-detail/batches-by-status",
+        "Batches by status",
+        ["status", "count", "total_cost_usd"],
+      ],
+    ]) {
+      const props = table(id);
+      expect(props.toolbar).toEqual({ title, search: false });
+      expect(props.density).toBe("condensed");
+      expect(props.stickyHeader).toBe(true);
+      expect(props.hidePagination).toBe(true);
+      expect(props.pageSize).toBe(0);
+      expect(props.detail).toEqual({ enabled: false });
+      expect(props.window).toEqual({ enabled: false });
+      expect(props.coverage).toMatchObject({ answeredBy: "source" });
+      expect(props.columns.map((column) => column.accessorKey)).toEqual(columns);
+    }
   });
 
   it("surfaces an organization-read failure with a retry while retaining the table", async () => {
