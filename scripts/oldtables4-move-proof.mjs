@@ -36,10 +36,10 @@ const CALLS = "dbc7cd48-7b46-4402-ac9d-e459a95f4598"; // Rincon Plumbing — Ser
 const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-23";
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 const WORDS = ["Maria Delgado", "Harbor View HOA", "Takeda Property Management"];
-// WHERE A MOVED TABLE'S OLD LINK LANDS is D3 (features/data-tables/data-source/d3.ts), read
-// from the tree the dev server is serving — the walk judges the behaviour that is built.
-const D3 = (readFileSync(resolve(ROOT, "features/data-tables/data-source/d3.ts"), "utf8")
-  .match(/RECORD_STORE_TABLES_OPEN_IN:\s*RecordStoreTablesOpenIn\s*=\s*"([^"]+)"/) || [])[1] || "data-v2";
+// WHERE A MOVED TABLE'S OLD LINK LANDS: /data-v2/<id>, always (owner's ruling, 2026-09-23 —
+// there is no switch on /data; the D3 file lane GRID-PORT kept is gone). The "this-grid"
+// branch below is kept only so the walk reads the same when a later flip changes this line.
+const D3 = "data-v2";
 console.log(`D3: record-store tables open in ${D3}`);
 mkdirSync(OUT, { recursive: true });
 

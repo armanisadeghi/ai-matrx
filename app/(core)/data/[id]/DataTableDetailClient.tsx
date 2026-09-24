@@ -42,13 +42,6 @@ import CreateTableModal from "@/components/user-generated-table-data/CreateTable
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { createClient } from "@/utils/supabase/client";
 import { whereThisTableLives } from "@/features/unified-data/whereThisTableLives";
-import { RECORD_STORE_TABLES_OPEN_IN } from "@/features/data-tables/data-source/d3";
-import {
-  placeTableInRecordStore,
-  recordStoreHomeOf,
-} from "@/features/data-tables/data-source/table-home";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 interface DataTableDetailClientProps {
   tableId: string;
@@ -65,24 +58,17 @@ export default function DataTableDetailClient({
   // sync without refetching the table just to read back a name we set.
   const [renamedTo, setRenamedTo] = useState<string | null>(null);
   const { organizationId, organizationState } = useOrganizationRequired();
-  const userId = useAppSelector(selectUserId);
-  // WHICH STORE THE GRID IS READING (decision D3, `data-source/d3.ts`). A table
-  // the record store holds opens in THIS grid, with the record-store half of the
-  // data seam behind it; the key remounts the viewer onto that half the moment
-  // the table is placed, so nothing it read from the older store survives.
-  const [placedIn, setPlacedIn] = useState<"older" | "record">(() =>
-    recordStoreHomeOf(tableId) ? "record" : "older",
-  );
   // WHERE THE TABLE LIVES IS ASKED FIRST (VERIFIER-16). The record store answers before
   // the older store is read, so a table it holds — moved, or never shared with this person —
   // never reaches the older doors (which answered it with a 500 and a sentence about
-  // deletion). "older" mounts the older viewer; "record" mounts it over the record store.
+  // deletion). A table the record store holds opens on its own page, /data-v2/<id>, where its
+  // Sheet layout is this same grid over the record store (owner's ruling: no switch on /data;
+  // one flip moves everything later). "older" mounts this page's older viewer.
   const [lookup, setLookup] = useState<
     | { kind: "asking" }
     | { kind: "older"; storeSaid: "nowhere" | { why: string } }
-    | { kind: "record" }
     | { kind: "no_access" }
-  >(() => (recordStoreHomeOf(tableId) ? { kind: "record" } : { kind: "asking" }));
+  >({ kind: "asking" });
   // The older viewer said the id is not one of its datasets (or is one that moved).
   const [olderSaysNotHere, setOlderSaysNotHere] = useState(false);
 
@@ -116,13 +102,7 @@ export default function DataTableDetailClient({
       const found = await whereThisTableLives(createClient(), organizationId, tableId);
       if (cancelled) return;
       if (found.kind === "record_store") {
-        if (RECORD_STORE_TABLES_OPEN_IN === "data-v2") {
-          router.replace(found.href);
-          return;
-        }
-        placeTableInRecordStore(tableId, { organizationId, userId: userId ?? null });
-        setPlacedIn("record");
-        setLookup({ kind: "record" });
+        router.replace(found.href);
         return;
       }
       if (found.kind === "no_access") {
@@ -134,7 +114,7 @@ export default function DataTableDetailClient({
     return () => {
       cancelled = true;
     };
-  }, [lookup.kind, organizationId, organizationState, router, tableId, userId]);
+  }, [lookup.kind, organizationId, organizationState, router, tableId]);
 
   // What the panel says instead of the grid, when it says anything.
   const elsewhere:
@@ -231,7 +211,6 @@ export default function DataTableDetailClient({
           </div>
         ) : (
         <UserTableViewer
-          key={`${tableId}:${placedIn}`}
           tableId={tableId}
           onDatasetNotHere={notHere}
           fillHeight
@@ -258,7 +237,7 @@ export default function DataTableDetailClient({
             const stillMoved =
               Boolean(movedTo?.table_id) &&
               (!meta?.unarchived_at || String(movedTo?.at ?? "") > String(meta.unarchived_at));
-            if (stillMoved && placedIn === "older") {
+            if (stillMoved) {
               notHere();
               return;
             }
