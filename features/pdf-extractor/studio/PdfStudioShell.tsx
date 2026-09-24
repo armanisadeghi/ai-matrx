@@ -20,6 +20,7 @@
  * `pdfStudio` Redux slice so new panes/columns share the same contract.
  */
 
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import React, {
   useCallback,
   useEffect,
@@ -221,6 +222,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   // initialDocumentId is present so the skeleton shows immediately on mount
   // instead of the upload EmptyShell.
   const [docLoading, setDocLoading] = useState(!!initialDocumentId);
+  /** The requested document id that could not be loaded, if any. */
+  const [unavailableDocId, setUnavailableDocId] = useState<string | null>(null);
 
   // Per-page rows for the active doc.
   const {
@@ -314,12 +317,15 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       const full = await extractor.fetchDocument(id);
       if (full) {
         setActiveDoc(full);
+        setUnavailableDocId(null);
       } else {
-        toast.error("Could not load that document");
+        // Missing, deleted, or not readable by this viewer — the reader area
+        // renders AccessGate for this id instead of a toast over an empty shell.
+        setUnavailableDocId(id);
       }
       setDocLoading(false);
     },
-    [extractor, toast, dispatch],
+    [extractor, dispatch],
   );
 
   // Initial load if a doc id is in the URL.
@@ -1023,6 +1029,14 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
             />
           ) : docLoading ? (
             <DocLoadingSkeleton />
+          ) : unavailableDocId ? (
+            <AccessGate
+              token="processed_document"
+              id={unavailableDocId}
+              onRetry={() => void selectDocById(unavailableDocId)}
+              fallbackHref="/tools/pdf-extractor"
+              fallbackLabel="Your documents"
+            />
           ) : (
             <EmptyShell
               extractor={extractor}
