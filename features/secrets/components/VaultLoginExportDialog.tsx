@@ -50,7 +50,30 @@ const CSV_PROFILES = [
     detail:
       "Targets NordPass's documented import template and carries ordinary login fields only.",
   },
+  {
+    value: "google_password_manager_csv_v1",
+    label: "Google Password Manager CSV",
+    detail:
+      "Google's CSV format has no title or notes columns. The preview lists those omissions before download.",
+  },
+  {
+    value: "keeper_csv_v1",
+    label: "Keeper CSV",
+    detail:
+      "Uses Keeper's ordinary-login CSV columns for title, URL, username, password, and notes; folder, shared-folder, and custom-field columns are blank.",
+  },
+  {
+    value: "lastpass_csv_v1",
+    label: "LastPass CSV",
+    detail:
+      "Uses LastPass's ordinary-login CSV columns for title, URL, username, password, and notes; grouping, favorite, and TOTP use the ordinary-login defaults.",
+  },
 ] as const;
+type VaultLoginCsvProfile = (typeof CSV_PROFILES)[number]["value"];
+
+function isVaultLoginCsvProfile(value: string): value is VaultLoginCsvProfile {
+  return CSV_PROFILES.some((profile) => profile.value === value);
+}
 
 function sameActor(
   left: VaultVerifiedExportActor,
@@ -86,9 +109,7 @@ export function VaultLoginExportDialog({
   const mounted = useRef(true);
   const expectedActor = useRef<VaultVerifiedExportActor | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [profile, setProfile] = useState<VaultLoginCsvPreviewResponse["profile"]>(
-    DEFAULT_CSV_PROFILE,
-  );
+  const [profile, setProfile] = useState<VaultLoginCsvProfile>(DEFAULT_CSV_PROFILE);
   const [preview, setPreview] = useState<VaultLoginCsvPreviewResponse | null>(null);
   const [identityConfirmation, setIdentityConfirmation] =
     useState<VaultVerifiedExportActor | null>(null);
@@ -176,7 +197,7 @@ export function VaultLoginExportDialog({
     setPlaintextAcknowledged(false);
     setError(null);
   };
-  const updateProfile = (next: VaultLoginCsvPreviewResponse["profile"]) => {
+  const updateProfile = (next: VaultLoginCsvProfile) => {
     cancelPending();
     expectedActor.current = null;
     setProfile(next);
@@ -372,9 +393,9 @@ export function VaultLoginExportDialog({
                 <Label htmlFor="vault-export-profile">CSV destination</Label>
                 <Select
                   value={profile}
-                  onValueChange={(next) =>
-                    updateProfile(next as VaultLoginCsvPreviewResponse["profile"])
-                  }
+                  onValueChange={(next) => {
+                    if (isVaultLoginCsvProfile(next)) updateProfile(next);
+                  }}
                   disabled={running}
                 >
                   <SelectTrigger id="vault-export-profile">

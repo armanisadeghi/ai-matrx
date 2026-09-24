@@ -4657,6 +4657,48 @@
         }
       }
     },
+    "/ai/context/preview/answer-both": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Preview Answer Both",
+        "description": "One question answered once from each context resolver (lane SC-3', P9).",
+        "operationId": "preview_answer_both_ai_context_preview_answer_both_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContextAnswerBothRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContextAnswerBothResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/chat/direct-chat": {
       "post": {
         "tags": [
@@ -139026,6 +139068,722 @@
         "title": "ContextAnchor",
         "description": "Stable identity of the durable entity whose saved context owns a run."
       },
+      "ContextAnswer": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "enum": [
+              "new",
+              "old"
+            ],
+            "title": "Path"
+          },
+          "answer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Tokens"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path"
+        ],
+        "title": "ContextAnswer"
+      },
+      "ContextAnswerBothRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids",
+            "description": "Active context-scope ids selected by the caller and membership-validated server-side."
+          },
+          "active_scope_type_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Scope Type Ids",
+            "description": "Active scope-type ids selected by the caller (type-level selection with no specific scope chosen)."
+          },
+          "context_anchor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextAnchor"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Durable resource identity from which authoritative organization and task context is reloaded."
+          },
+          "store": {
+            "type": "boolean",
+            "title": "Store",
+            "description": "Persist request outputs when true; run ephemerally when false.",
+            "default": true
+          },
+          "target_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Instance Id",
+            "description": "Specific connected desktop instance allowed to claim delegated local tools."
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "entity_is_new": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Is New"
+          },
+          "path": {
+            "type": "string",
+            "enum": [
+              "both",
+              "new",
+              "old"
+            ],
+            "title": "Path",
+            "default": "old"
+          },
+          "question": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Question"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "ContextAnswerBothRequest",
+        "description": "One question, answered once from each resolver (lane SC-3', P9 \"answer on both paths\")."
+      },
+      "ContextAnswerBothResponse": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "compare": {
+            "$ref": "#/components/schemas/ContextCompare"
+          },
+          "answers": {
+            "items": {
+              "$ref": "#/components/schemas/ContextAnswer"
+            },
+            "type": "array",
+            "title": "Answers"
+          },
+          "says": {
+            "type": "string",
+            "title": "Says"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question",
+          "agent_id",
+          "compare",
+          "answers",
+          "says"
+        ],
+        "title": "ContextAnswerBothResponse"
+      },
+      "ContextCompare": {
+        "properties": {
+          "ruling": {
+            "type": "string",
+            "title": "Ruling",
+            "default": "The new side checks every contributing record for the person; an old-path delivery without a check is labeled, not matched."
+          },
+          "old": {
+            "$ref": "#/components/schemas/ContextCompareSide"
+          },
+          "new": {
+            "$ref": "#/components/schemas/ContextCompareSide"
+          },
+          "differences": {
+            "items": {
+              "$ref": "#/components/schemas/ContextCompareDifference"
+            },
+            "type": "array",
+            "title": "Differences"
+          },
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Counts"
+          },
+          "identical_cells": {
+            "type": "integer",
+            "title": "Identical Cells",
+            "default": 0
+          },
+          "defects": {
+            "type": "integer",
+            "title": "Defects",
+            "default": 0
+          },
+          "follow": {
+            "$ref": "#/components/schemas/ContextFollowLag"
+          },
+          "excluded": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Excluded"
+          }
+        },
+        "type": "object",
+        "required": [
+          "old",
+          "new",
+          "follow"
+        ],
+        "title": "ContextCompare"
+      },
+      "ContextCompareCheck": {
+        "properties": {
+          "record_id": {
+            "type": "string",
+            "title": "Record Id"
+          },
+          "via": {
+            "type": "string",
+            "title": "Via"
+          },
+          "admitted": {
+            "type": "boolean",
+            "title": "Admitted"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "says": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Says"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "record_id",
+          "via",
+          "admitted"
+        ],
+        "title": "ContextCompareCheck",
+        "description": "One record the new path considered, and what it decided for this person."
+      },
+      "ContextCompareDifference": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "scope_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Id"
+          },
+          "scope_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Name"
+          },
+          "old_value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "new_value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "old_tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old Tier"
+          },
+          "new_tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Tier"
+          },
+          "difference_class": {
+            "type": "string",
+            "enum": [
+              "copy lag",
+              "declared tier move",
+              "defect",
+              "old path delivered without a check"
+            ],
+            "title": "Difference Class"
+          },
+          "why": {
+            "type": "string",
+            "title": "Why"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_id",
+          "key",
+          "difference_class",
+          "why"
+        ],
+        "title": "ContextCompareDifference"
+      },
+      "ContextCompareSide": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "enum": [
+              "new",
+              "old"
+            ],
+            "title": "Path"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "default": true
+          },
+          "unavailable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailable Reason"
+          },
+          "block": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block"
+          },
+          "block_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Sha256"
+          },
+          "value_fingerprint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Fingerprint"
+          },
+          "scope_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scope Ids"
+          },
+          "scope_labels": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Scope Labels"
+          },
+          "direct": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Direct"
+          },
+          "tool_accessible": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Tool Accessible"
+          },
+          "searchable": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Searchable"
+          },
+          "cell_values": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Cell Values"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/ContextCompareCheck"
+            },
+            "type": "array",
+            "title": "Checks"
+          },
+          "withheld": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Withheld"
+          },
+          "resolve_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolve Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path"
+        ],
+        "title": "ContextCompareSide"
+      },
+      "ContextFollowLag": {
+        "properties": {
+          "running": {
+            "type": "boolean",
+            "title": "Running",
+            "default": false
+          },
+          "pending": {
+            "type": "integer",
+            "title": "Pending",
+            "default": 0
+          },
+          "oldest_pending_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oldest Pending At"
+          },
+          "last_applied_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Applied At"
+          },
+          "says": {
+            "type": "string",
+            "title": "Says"
+          }
+        },
+        "type": "object",
+        "required": [
+          "says"
+        ],
+        "title": "ContextFollowLag"
+      },
       "ContextInputPart": {
         "properties": {
           "metadata": {
@@ -139410,6 +140168,16 @@
               }
             ],
             "title": "Entity Is New"
+          },
+          "path": {
+            "type": "string",
+            "enum": [
+              "both",
+              "new",
+              "old"
+            ],
+            "title": "Path",
+            "default": "old"
           }
         },
         "additionalProperties": false,
@@ -139521,6 +140289,26 @@
           "entity_is_new": {
             "type": "boolean",
             "title": "Entity Is New"
+          },
+          "path": {
+            "type": "string",
+            "enum": [
+              "both",
+              "new",
+              "old"
+            ],
+            "title": "Path",
+            "default": "old"
+          },
+          "compare": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextCompare"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -288533,7 +289321,10 @@
             "type": "string",
             "enum": [
               "matrx_login_csv_v1",
-              "nordpass_csv_v1"
+              "nordpass_csv_v1",
+              "google_password_manager_csv_v1",
+              "keeper_csv_v1",
+              "lastpass_csv_v1"
             ],
             "title": "Profile"
           },
@@ -288610,7 +289401,10 @@
             "type": "string",
             "enum": [
               "matrx_login_csv_v1",
-              "nordpass_csv_v1"
+              "nordpass_csv_v1",
+              "google_password_manager_csv_v1",
+              "keeper_csv_v1",
+              "lastpass_csv_v1"
             ],
             "title": "Profile"
           },
@@ -288638,7 +289432,10 @@
             "type": "string",
             "enum": [
               "matrx_login_csv_v1",
-              "nordpass_csv_v1"
+              "nordpass_csv_v1",
+              "google_password_manager_csv_v1",
+              "keeper_csv_v1",
+              "lastpass_csv_v1"
             ],
             "title": "Profile"
           },

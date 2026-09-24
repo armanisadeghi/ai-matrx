@@ -2120,6 +2120,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/context/preview/answer-both": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Answer Both
+         * @description One question answered once from each context resolver (lane SC-3', P9).
+         */
+        post: operations["preview_answer_both_ai_context_preview_answer_both_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/chat/direct-chat": {
         parameters: {
             query?: never;
@@ -60739,6 +60759,254 @@ export interface components {
              */
             resource_id: string;
         };
+        /** ContextAnswer */
+        ContextAnswer: {
+            /**
+             * Path
+             * @enum {string}
+             */
+            path: "new" | "old";
+            /** Answer */
+            answer?: string | null;
+            /** Error */
+            error?: string | null;
+            /** Model */
+            model?: string | null;
+            /** Duration Ms */
+            duration_ms?: number | null;
+            /** Input Tokens */
+            input_tokens?: number | null;
+            /** Output Tokens */
+            output_tokens?: number | null;
+        };
+        /**
+         * ContextAnswerBothRequest
+         * @description One question, answered once from each resolver (lane SC-3', P9 "answer on both paths").
+         */
+        ContextAnswerBothRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            /**
+             * Scope Ids
+             * @description Active context-scope ids selected by the caller and membership-validated server-side.
+             */
+            scope_ids?: string[] | null;
+            /**
+             * Active Scope Type Ids
+             * @description Active scope-type ids selected by the caller (type-level selection with no specific scope chosen).
+             */
+            active_scope_type_ids?: string[] | null;
+            /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
+            context_anchor?: components["schemas"]["ContextAnchor"] | null;
+            /**
+             * Store
+             * @description Persist request outputs when true; run ephemerally when false.
+             * @default true
+             */
+            store?: boolean;
+            /**
+             * Target Instance Id
+             * @description Specific connected desktop instance allowed to claim delegated local tools.
+             */
+            target_instance_id?: string | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** Agent Id */
+            agent_id?: string | null;
+            /** Entity Is New */
+            entity_is_new?: boolean | null;
+            /**
+             * Path
+             * @default old
+             * @enum {string}
+             */
+            path?: "both" | "new" | "old";
+            /** Question */
+            question: string;
+        };
+        /** ContextAnswerBothResponse */
+        ContextAnswerBothResponse: {
+            /** Question */
+            question: string;
+            /** Agent Id */
+            agent_id: string;
+            compare: components["schemas"]["ContextCompare"];
+            /** Answers */
+            answers: components["schemas"]["ContextAnswer"][];
+            /** Says */
+            says: string;
+        };
+        /** ContextCompare */
+        ContextCompare: {
+            /**
+             * Ruling
+             * @default The new side checks every contributing record for the person; an old-path delivery without a check is labeled, not matched.
+             */
+            ruling?: string;
+            old: components["schemas"]["ContextCompareSide"];
+            new: components["schemas"]["ContextCompareSide"];
+            /** Differences */
+            differences?: components["schemas"]["ContextCompareDifference"][];
+            /** Counts */
+            counts?: {
+                [key: string]: number;
+            };
+            /**
+             * Identical Cells
+             * @default 0
+             */
+            identical_cells?: number;
+            /**
+             * Defects
+             * @default 0
+             */
+            defects?: number;
+            follow: components["schemas"]["ContextFollowLag"];
+            /** Excluded */
+            excluded?: string[];
+        };
+        /**
+         * ContextCompareCheck
+         * @description One record the new path considered, and what it decided for this person.
+         */
+        ContextCompareCheck: {
+            /** Record Id */
+            record_id: string;
+            /** Via */
+            via: string;
+            /** Admitted */
+            admitted: boolean;
+            /** Reason */
+            reason?: string | null;
+            /** Says */
+            says?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Name */
+            name?: string | null;
+        };
+        /** ContextCompareDifference */
+        ContextCompareDifference: {
+            /** Item Id */
+            item_id: string;
+            /** Key */
+            key: string;
+            /** Scope Id */
+            scope_id?: string | null;
+            /** Scope Name */
+            scope_name?: string | null;
+            old_value?: components["schemas"]["JsonValue"] | null;
+            new_value?: components["schemas"]["JsonValue"] | null;
+            /** Old Tier */
+            old_tier?: string | null;
+            /** New Tier */
+            new_tier?: string | null;
+            /**
+             * Difference Class
+             * @enum {string}
+             */
+            difference_class: "copy lag" | "declared tier move" | "defect" | "old path delivered without a check";
+            /** Why */
+            why: string;
+        };
+        /** ContextCompareSide */
+        ContextCompareSide: {
+            /**
+             * Path
+             * @enum {string}
+             */
+            path: "new" | "old";
+            /**
+             * Available
+             * @default true
+             */
+            available?: boolean;
+            /** Unavailable Reason */
+            unavailable_reason?: string | null;
+            /** Block */
+            block?: string | null;
+            /** Block Sha256 */
+            block_sha256?: string | null;
+            /** Value Fingerprint */
+            value_fingerprint?: string | null;
+            /** Scope Ids */
+            scope_ids?: string[];
+            /** Scope Labels */
+            scope_labels?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Direct */
+            direct?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Tool Accessible */
+            tool_accessible?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Searchable */
+            searchable?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Cell Values */
+            cell_values?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Checks */
+            checks?: components["schemas"]["ContextCompareCheck"][];
+            /** Withheld */
+            withheld?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Resolve Ms */
+            resolve_ms?: number | null;
+        };
+        /** ContextFollowLag */
+        ContextFollowLag: {
+            /**
+             * Running
+             * @default false
+             */
+            running?: boolean;
+            /**
+             * Pending
+             * @default 0
+             */
+            pending?: number;
+            /** Oldest Pending At */
+            oldest_pending_at?: string | null;
+            /** Last Applied At */
+            last_applied_at?: string | null;
+            /** Says */
+            says: string;
+        };
         /** ContextInputPart */
         ContextInputPart: {
             /** Metadata */
@@ -60923,6 +61191,12 @@ export interface components {
             agent_id?: string | null;
             /** Entity Is New */
             entity_is_new?: boolean | null;
+            /**
+             * Path
+             * @default old
+             * @enum {string}
+             */
+            path?: "both" | "new" | "old";
         };
         /** ContextPreviewResponse */
         ContextPreviewResponse: {
@@ -60955,6 +61229,13 @@ export interface components {
             entity_id: string;
             /** Entity Is New */
             entity_is_new: boolean;
+            /**
+             * Path
+             * @default old
+             * @enum {string}
+             */
+            path?: "both" | "new" | "old";
+            compare?: components["schemas"]["ContextCompare"] | null;
         };
         /**
          * ContextPreviewSelection
@@ -127249,7 +127530,7 @@ export interface components {
              * Profile
              * @enum {string}
              */
-            profile: "matrx_login_csv_v1" | "nordpass_csv_v1";
+            profile: "matrx_login_csv_v1" | "nordpass_csv_v1" | "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1";
             /** Item Ids */
             item_ids: string[];
             /** Revision */
@@ -127276,7 +127557,7 @@ export interface components {
              * Profile
              * @enum {string}
              */
-            profile: "matrx_login_csv_v1" | "nordpass_csv_v1";
+            profile: "matrx_login_csv_v1" | "nordpass_csv_v1" | "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1";
             /** Item Ids */
             item_ids: string[];
         };
@@ -127286,7 +127567,7 @@ export interface components {
              * Profile
              * @enum {string}
              */
-            profile: "matrx_login_csv_v1" | "nordpass_csv_v1";
+            profile: "matrx_login_csv_v1" | "nordpass_csv_v1" | "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1";
             /** Revision */
             revision: string;
             /** Items */
@@ -137559,6 +137840,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContextPreviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_answer_both_ai_context_preview_answer_both_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContextAnswerBothRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContextAnswerBothResponse"];
                 };
             };
             /** @description Validation Error */
