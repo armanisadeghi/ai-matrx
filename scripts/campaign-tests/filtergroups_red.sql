@@ -24,6 +24,15 @@
 
 begin;
 \i migrations/inverse/filtergroups_not_of_an_unanswered_value_includes_it_in_a_filter_down.sql
+-- ON TOP OF LANE S3 the main inverse refuses (restoring the eight-argument aggregate beside S3's
+-- nine-argument one would make every call ambiguous), so the undo runs in the real order: this
+-- lane's follow-up, then S3's own two inverses, inside this rolled-back transaction.
+select to_regprocedure('custom.agg_sql(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb)') is not null as fg_s3 \gset
+\if :fg_s3
+\i migrations/inverse/filtergroups_the_compared_aggregate_asks_the_one_fragment_down.sql
+\i migrations/inverse/uichamp_s3_a_signed_in_person_may_compare_periods_down.sql
+\i migrations/inverse/uichamp_s3_a_number_knows_last_month_and_its_target_down.sql
+\endif
 \i migrations/inverse/filtergroups_a_signed_in_person_may_read_a_rules_members_down.sql
 \i migrations/inverse/filtergroups_a_views_nested_question_is_one_where_clause_down.sql
 \i migrations/inverse/filtergroups_the_rule_guard_checks_every_depth_down.sql
@@ -47,8 +56,9 @@ declare
   c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
   c_dana_j  constant text := '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}';
   v_org uuid; v_jobs uuid; v_expr jsonb; v_n integer; v_deep jsonb; v_rule uuid; i integer;
-  f_status text; f_city text; f_tech text; f_priority text;
+  f_status text; f_city text; f_tech text; f_priority text; v_j11 jsonb; v_r5 boolean;
 begin
+  select r.data into v_j11 from custom.record r join fg on fg.v = r.id and fg.k = 'j11';
   select v into v_org from fg where k = 'org'; select v into v_jobs from fg where k = 'jobs';
   select v::text into f_status from fg where k = 'f_status'; select v::text into f_city from fg where k = 'f_city';
   select v::text into f_tech from fg where k = 'f_tech'; select v::text into f_priority from fg where k = 'f_priority';
@@ -62,6 +72,10 @@ begin
     jsonb_build_object('op','not','args', jsonb_build_array(
       jsonb_build_object('op','eq','args', jsonb_build_array(jsonb_build_object('field', f_priority), jsonb_build_object('const','Low')))))));
 
+  -- R5, on the evaluator as it was, asked as membership asks (a filter), before the seat.
+  v_r5 := custom.rule_truth(custom.rule_eval(v_org, jsonb_build_object('op','not','args', jsonb_build_array(
+            jsonb_build_object('op','eq','args', jsonb_build_array(jsonb_build_object('field', f_priority), jsonb_build_object('const','low'))))),
+            v_j11, jsonb_build_object('purpose','filter')));
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims', c_dana_j, true);
   select count(*) into v_n from custom.read_records_matching(v_org, v_jobs, v_expr);
@@ -82,9 +96,7 @@ begin
     'name', 'Seven groups down', 'kind', 'predicate', 'uses', jsonb_build_array('membership'),
     'scope_table_id', v_jobs::text, 'applies_to_types', '[]'::jsonb, 'expr', v_deep));
   if v_rule is null then raise exception 'R4: nothing stored'; end if;
-  -- R5, on the evaluator as it was (membership asks with no filter purpose).
-  if custom.rule_truth(custom.rule_eval(v_org, jsonb_build_object('op','not','args', jsonb_build_array(jsonb_build_object('op','eq','args', jsonb_build_array(jsonb_build_object('field', f_priority), jsonb_build_object('const','low'))))),
-       (select r.data from custom.record r join fg on fg.v = r.id and fg.k = 'j11'), jsonb_build_object('purpose','filter'))) is not null then
+  if v_r5 is not null then
     raise exception 'R5 did not reproduce: NOT of TT-4111''s unanswered priority was decided';
   end if;
   raise notice 'R5 reproduced — for a filter, NOT (priority is Low) of TT-4111''s unanswered priority is undecided, so the job is left out.';
