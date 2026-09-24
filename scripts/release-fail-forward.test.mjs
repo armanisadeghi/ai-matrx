@@ -19,16 +19,19 @@ const pushAt = code.indexOf('ship_mark "pushed ${RELEASE_SHA:0:9}');
 const afterStart = code.indexOf("after_watch_rollout()");
 assert.ok(shipStart > 0 && pushAt > shipStart && afterStart > pushAt, "ship path, push, after phase — in that order");
 const beforePush = code.slice(shipStart, pushAt);
+// Everything from the first line of the script to the push: flag parsing and
+// the --ship commit too, not just the ship block.
+const everythingBeforePush = code.slice(0, pushAt);
 const afterPush = code.slice(pushAt, afterStart);
 // A remedy string may NAME a check ("pnpm check:migrations:strict"); only an unquoted token RUNS one.
 const unquoted = (text) => text.replace(/"(?:[^"\\]|\\.)*"/g, '""');
 
 test("nothing but the fetch and the push can stop a release", () => {
-  const fails = [...beforePush.matchAll(/\bfail "([^"]*)"/g)].map((m) => m[1]);
+  const fails = [...everythingBeforePush.matchAll(/\bfail "([^"]*)"/g)].map((m) => m[1]);
   for (const message of fails) {
     assert.match(
       message,
-      /Cannot reach GitHub|assemble the release commit|Could not read the version|Could not write version|Could not assemble the release commit|Lost the push race|Cannot push to GitHub/,
+      /Cannot reach GitHub|assemble the release commit|Could not read the version|Could not write version|Could not assemble the release commit|Lost the push race|Cannot push to GitHub|\$VERSION_FILE not found/,
       `a fail() before the push that is not GitHub or the worktree: ${message}`,
     );
   }
@@ -55,8 +58,21 @@ test("after the push nothing fails: the ERR trap is cleared and errexit is off",
   assert.doesNotMatch(afterPush, /\bexit 1\b/);
 });
 
+test("the push never waits for migrations: they are awaited only after it lands", () => {
+  // af0d8c1934 moved this wait behind the push; 95dc1a2637 silently put it back
+  // in front, delaying every build by the whole migration pass (70s on v0.4.2269).
+  assert.doesNotMatch(beforePush, /wait "\$SHIP_MIG_PID"/);
+  assert.match(afterPush, /wait "\$SHIP_MIG_PID"/);
+});
+
+test("a bad flag, target or --ship pathspec is a WARNING, never a stop", () => {
+  assert.doesNotMatch(everythingBeforePush, /release_stage_validate_paths[^\n]*\n[^\n]*\|\| fail/);
+  assert.doesNotMatch(everythingBeforePush, /release_stage_commit[^\n]*\n[^\n]*\|\| fail/);
+  assert.doesNotMatch(unquoted(everythingBeforePush), /release-stage\.sh" --self-test/);
+});
+
 test("a failed migration, a conflicting local commit and a lost tag are findings, never stops", () => {
-  assert.match(beforePush, /ship_finding "ERROR" "Migrations" "A pending migration failed to apply/);
+  assert.match(afterPush, /ship_finding "ERROR" "Migrations" "A pending migration failed to apply/);
   assert.match(code, /ship_finding "ERROR" "Git" "Local commits conflict with/);
   assert.match(afterPush, /ship_finding "ERROR" "Git" "Tag \$NEW_TAG did not reach/);
 });
@@ -80,7 +96,9 @@ test("nothing in the release path resets any working folder", () => {
 });
 
 test("the clean run prints exactly the ship line; INFO never prints", () => {
-  assert.match(afterPush, /echo "\$\{NEW_TAG\}  pushed, build started  \(\$\(\(SECONDS - SHIP_START\)\)s\)"/);
+  // The seconds are measured at the push, not after the migration wait.
+  assert.match(afterPush, /SHIP_BUILD_SECONDS=\$\(\(SECONDS - SHIP_START\)\)/);
+  assert.match(afterPush, /echo "\$\{NEW_TAG\}  pushed, build started  \(\$\{SHIP_BUILD_SECONDS\}s\)"/);
   assert.doesNotMatch(code, /^\s*info\b/m);
   assert.doesNotMatch(code, /\[INFO\]/);
 });

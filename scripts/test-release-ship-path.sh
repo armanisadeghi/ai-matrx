@@ -84,7 +84,36 @@ check "nothing was stashed"                      '[[ -z "$(git stash list)" ]]'
 check "the checkout was fast-forwarded to the release" '[[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]]'
 check "clean run prints one line"                '[[ $(grep -c . "$SANDBOX/out") -le 2 ]]'
 check "that line is the ship line"               'grep -q "^v0.1.1  pushed, build started  ([0-9]*s)$" "$SANDBOX/out"'
+
+# ── second release: a broken invocation, and a migration pass still running ──
+# A bogus flag, a bogus --target and a --ship path that does not exist must all
+# become WARNINGs, and the push must land WHILE the migration pass is still
+# running (95dc1a2637 silently put the migration wait back in front of the push).
+cat > "$SANDBOX/bin/uv" <<STUB
+#!/usr/bin/env bash
+if [[ "\$*" == *apply_migrations.py* ]]; then
+    for _ in \$(seq 1 40); do
+        if git --git-dir="$SANDBOX/origin.git" show main:package.json 2>/dev/null | grep -q '"version": "0.1.2"'; then
+            touch "$SANDBOX/pushed-while-migrating"; exit 0
+        fi
+        sleep 0.5
+    done
+fi
+exit 0
+STUB
+chmod +x "$SANDBOX/bin/uv"
+set +e
+PATH="$SANDBOX/bin:$PATH" AIDREAM_DIR="$SANDBOX/aidream" RELEASE_AFTER_PHASE=off RELEASE_LOG_CAPTURED=1 \
+    bash scripts/release.sh --bogus-flag --target nowhere --ship -- no/such/path.txt > "$SANDBOX/out2" 2>&1
+STATUS2=$?
+set -e
+echo "release ship path — bad flags, bad --ship path, slow migrations"
+check "a broken invocation still exits 0"         '[[ $STATUS2 -eq 0 ]]'
+check "a broken invocation still ships v0.1.2"    'git ls-remote --tags origin | grep -q "refs/tags/v0.1.2$"'
+check "the bad flag is a WARNING, not a refusal"  'grep -q "WARNING.*Unknown flag" "$SANDBOX/out2"'
+check "the bad --ship path is a WARNING"          'grep -q "WARNING.*pathspec could not be committed" "$SANDBOX/out2"'
+check "the push landed while migrations ran"      '[[ -f "$SANDBOX/pushed-while-migrating" ]]'
 if [[ $FAILED -ne 0 ]]; then
-    echo "--- script output ---"; tail -25 "$SANDBOX/out"
+    echo "--- script output ---"; tail -25 "$SANDBOX/out"; echo "--- second run ---"; tail -25 "$SANDBOX/out2" 2>/dev/null
     exit 1
 fi

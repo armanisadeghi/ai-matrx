@@ -32,18 +32,19 @@
 #   4. assemble the release tree on origin/main with git plumbing (no worktree)
 #   5. merge this checkout's unpushed commits into it (a conflict = ship main
 #      anyway + an ERROR finding; nothing is ever stashed or rebased)
-#   6. wait for the migrations (a failure = ERROR finding, never a stop)
-#   7. bump package.json in that tree, commit-tree, push
+#   6. bump package.json in that tree, commit-tree, push
 #      (a lost push race = fetch, reset to the new main, re-merge, re-bump, retry,
 #       up to five times ← the OTHER thing that can stop a release)
-#   8. push the tag, fast-forward this checkout if it can, print ONE line:
+#   7. push the tag, fast-forward this checkout if it can
+#   8. only NOW wait for the migrations (a failure = ERROR finding, never a
+#      stop — and never a delay in front of the push), then print ONE line:
 #          vX.Y.Z  pushed, build started  (Ns)
 #      plus a findings table only when something is wrong.
 #
 # Nothing else runs before the push: not a check, not a gate, not a lease, not
-# a self-test wall. A failed check, a failed migration, a dirty checkout, a
-# diverged branch, an unmerged local commit — none of them stop the release.
-# They become findings.
+# a self-test wall, not a wait. A failed check, a failed migration, a dirty
+# checkout, a diverged branch, an unmerged local commit, a bad flag, a bad
+# --ship pathspec — none of them stop the release. They become findings.
 #
 # Everything else runs AFTER the push, detached, into the dated log file
 # (RELEASE_PHASE=after): the Vercel rollout watch (scripts/release-outcome.sh),
@@ -133,6 +134,10 @@ AIDREAM_DIR="${AIDREAM_DIR:-$REPO_ROOT/../aidream}"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
+# A bad invocation never stops a release: it becomes a WARNING and the release
+# ships with the sane default (recorded as findings once ship_finding exists).
+EARLY_FINDINGS=()
+early_warning() { EARLY_FINDINGS+=("$1|${2:-}"); }
 fail()    { echo -e "${RED}[FAIL]${NC}  $*" >&2; exit 1; }
 preview() { echo -e "${CYAN}[DRY]${NC}   $*"; }
 
@@ -187,8 +192,8 @@ while [[ $# -gt 0 ]]; do
         --minor)   BUMP_TYPE="minor"; shift ;;
         --major)   BUMP_TYPE="major"; shift ;;
         --message|-m)
-            [[ -n "${2:-}" ]] || fail "--message requires an argument."
-            CUSTOM_MESSAGE="$2"; shift 2 ;;
+            if [[ -n "${2:-}" && "${2:-}" != --* ]]; then CUSTOM_MESSAGE="$2"; shift 2
+            else early_warning "--message had no text — released without a note"; shift; fi ;;
         --ship) SHIP_MODE=true; shift ;;
         --dry-run) DRY_RUN=true; shift ;;
         --no-migrate) NO_MIGRATE=true; shift ;;
@@ -197,12 +202,11 @@ while [[ $# -gt 0 ]]; do
         --with-checks) RUN_CHECKS=true; shift ;;
         --async-gates) shift ;;
         --target)
-            [[ -n "${2:-}" ]] || fail "--target requires an argument (main|admin|demos|all)."
-            case "$2" in
-                main|admin|demos|all) TARGET="$2" ;;
-                *) fail "Invalid --target '$2'. Use main, admin, demos, or all." ;;
-            esac
-            shift 2 ;;
+            case "${2:-}" in
+                main|admin|demos|all) TARGET="$2"; shift 2 ;;
+                *) early_warning "Invalid --target '${2:-}' — released to main" "--target main|admin|demos|all"
+                   [[ -n "${2:-}" && "${2:-}" != --* ]] && shift 2 || shift ;;
+            esac ;;
         -h|--help)
             grep '^#' "$0" | head -24 | sed 's/^# \?//'
             exit 0 ;;
@@ -210,15 +214,17 @@ while [[ $# -gt 0 ]]; do
             shift
             SHIP_PATHS=("$@")
             break ;;
-        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --ship, --target, --dry-run, --no-migrate, --no-gates, --no-watch, --with-checks, or -- <paths you own>." ;;
+        *) early_warning "Unknown flag '$1' was ignored" "--patch --minor --major --message --ship --target --dry-run --no-migrate --no-gates --no-watch --with-checks -- <paths>"
+           shift ;;
     esac
 done
 
 if [[ ${#SHIP_PATHS[@]} -gt 0 ]] && ! $SHIP_MODE; then
-    fail "Paths after '--' only mean something with --ship (./ship.sh). A plain release commits package.json only."
+    SHIP_MODE=true   # naming paths after '--' can only mean "ship these"
 fi
 if $SHIP_MODE && [[ -z "$CUSTOM_MESSAGE" ]]; then
-    fail "--ship requires --message (./ship.sh passes it)."
+    CUSTOM_MESSAGE="ship"
+    early_warning "--ship had no --message — committed the named paths as 'ship'"
 fi
 [[ -f "$VERSION_FILE" ]] || fail "$VERSION_FILE not found."
 
@@ -337,13 +343,22 @@ ship_commit_message() {  # tag → "prefix vX.Y.Z[ - note]"
     else echo "${PREFIX} $1"; fi
 }
 
+for _early in ${EARLY_FINDINGS[@]+"${EARLY_FINDINGS[@]}"}; do
+    ship_finding "WARNING" "Invocation" "${_early%%|*}" "${_early#*|}"
+done
+
 # ── --ship: commit EXACTLY the named paths in this checkout, before anything ─
 # The commit rides into the release through the plumbing merge below. With no
 # named paths there is nothing of yours to commit: it is a bump-only release
 # and every dirty path stays exactly as its owner left it.
+# A pathspec it cannot commit, or a commit that fails, is a WARNING and a
+# bump-only release of what is already committed — never a refused release.
+if [[ "${RELEASE_PHASE:-ship}" == "ship" ]] && $SHIP_MODE && [[ ${#SHIP_PATHS[@]} -gt 0 ]] \
+    && ! ship_quiet release_stage_validate_paths ${SHIP_PATHS[@]+"${SHIP_PATHS[@]}"}; then
+    ship_finding "WARNING" "Git" "--ship pathspec could not be committed (${SHIP_PATHS[*]}) — released what is already committed" "./ship.sh \"msg\" --dry-run -- <paths>"
+    SHIP_PATHS=()
+fi
 if [[ "${RELEASE_PHASE:-ship}" == "ship" ]] && $SHIP_MODE && [[ ${#SHIP_PATHS[@]} -gt 0 ]]; then
-    release_stage_validate_paths ${SHIP_PATHS[@]+"${SHIP_PATHS[@]}"} \
-        || fail "--ship was given a pathspec it cannot commit (see above). Nothing has been changed."
     SHIP_PATHS=("${RELEASE_STAGE_PATHS[@]}")
     RELEASE_STAGE_CALLER_PWD="$REPO_ROOT"
     if $DRY_RUN; then
@@ -352,14 +367,12 @@ if [[ "${RELEASE_PHASE:-ship}" == "ship" ]] && $SHIP_MODE && [[ ${#SHIP_PATHS[@]
     elif [[ -z "$(_rs_status -- "${SHIP_PATHS[@]}")" ]]; then
         ship_finding "WARNING" "Git" "Named paths carry no change against HEAD — bump-only release" ""
     else
-        # The primitive proves it excludes foreign edits before it is trusted (~1s).
-        if ! ship_quiet bash "$SCRIPT_DIR/release-stage.sh" --self-test; then
-            ship_finding "WARNING" "Git" "release-stage self-test failed — the pathspec commit was made anyway" "pnpm check:ship-stage:self-test"
-        fi
         COMMIT_MSG="$CUSTOM_MESSAGE"
-        release_stage_commit "$COMMIT_MSG" -- "${SHIP_PATHS[@]}" \
-            || fail "Could not commit the named paths (see above). Nothing has been pushed."
-        ship_mark "committed named paths: ${SHIP_PATHS[*]}"
+        if ship_quiet release_stage_commit "$COMMIT_MSG" -- "${SHIP_PATHS[@]}"; then
+            ship_mark "committed named paths: ${SHIP_PATHS[*]}"
+        else
+            ship_finding "WARNING" "Git" "Could not commit the named paths (${SHIP_PATHS[*]}) — released what is already committed" "./ship.sh \"msg\" --dry-run -- <paths>"
+        fi
     fi
 fi
 
@@ -436,11 +449,6 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
         grep -q "refs/tags/$1\$" <<< "$SHIP_REMOTE_TAGS"
     }
 
-    if [[ -n "$SHIP_MIG_PID" ]] && ! wait "$SHIP_MIG_PID"; then
-        ship_finding "ERROR" "Migrations" "A pending migration failed to apply or was refused — see the release log" "pnpm check:migrations:strict"
-    fi
-    ship_mark "migrations done"
-
     # A rejected push is a lost race only when origin really moved. A network
     # blip is retried with a pause and does not count against SHIP_PUSH_ATTEMPTS.
     SHIP_PUSHED=false
@@ -505,7 +513,17 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
             || ship_finding "WARNING" "Git" "This checkout could not fast-forward to $NEW_TAG — pull when convenient" "git pull --no-rebase origin main"
     fi
 
-    echo "${NEW_TAG}  pushed, build started  ($((SECONDS - SHIP_START))s)"
+    SHIP_BUILD_SECONDS=$((SECONDS - SHIP_START))
+    # Migrations run alongside the push, never in front of it: Vercel's build takes
+    # minutes and the migration pass about a minute, so waiting for it BEFORE the
+    # push only delayed the build. Same as aidream's release.sh. A failure is an
+    # ERROR finding either way. (af0d8c1934 put this here; 95dc1a2637 silently
+    # reverted it — scripts/release-fail-forward.test.mjs now fails if it moves.)
+    if [[ -n "$SHIP_MIG_PID" ]] && ! wait "$SHIP_MIG_PID"; then
+        ship_finding "ERROR" "Migrations" "A pending migration failed to apply or was refused — see the release log" "pnpm check:migrations:strict"
+    fi
+    ship_mark "migrations done"
+    echo "${NEW_TAG}  pushed, build started  (${SHIP_BUILD_SECONDS}s)"
     ship_print_findings
 
     # Everything that is not needed to make the build runs now, detached.
@@ -605,6 +623,12 @@ fi
 # branches (no worktrees, no branches — Arman, 2026-09-20). It only cleans and
 # screams; it always exits 0 and can never affect the release.
 bash "$SCRIPT_DIR/worktree-janitor.sh" >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1 || true
+
+# The --ship pathspec primitive proves it still excludes foreign edits — after
+# the push, like every other check (it used to sit in front of the commit).
+if ! bash "$SCRIPT_DIR/release-stage.sh" --self-test >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1; then
+    SHIP_FINDINGS_JSON="$ROLLOUT_JSON" ship_finding "WARNING" "Git" "release-stage self-test failed — --ship may carry foreign edits" "pnpm check:ship-stage:self-test"
+fi
 
 # ── Checks: ONE parallel runner, ONE table, findings as JSON (scripts/checks/run.mjs)
 # Rows come from scripts/run-release-gates.sh --list plus the checks the old

@@ -10,9 +10,9 @@
 # after `--`. It never stages the working tree and never trusts the index —
 # both are shared with dozens of other lanes, and release v0.4.1575
 # (2026-08-31) shipped a broken build because the old `git add -A` here swept
-# another lane's half-edited file into production. With a dirty tree and no
-# paths, release.sh refuses and lists the dirt so you can name yours. With a
-# clean tree and no paths it is a bump-only release.
+# another lane's half-edited file into production. With no paths (or paths it
+# cannot commit) it is a bump-only release of what is already committed, plus a
+# WARNING. release.sh never refuses a release.
 #
 # Usage:
 #   ./ship.sh "Added new chat surface" -- features/chat lib/chat-api.ts
