@@ -16,6 +16,8 @@
 import type { ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
 
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
+
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 
 import { topicalMapErrorText, TopicalMapError } from "../errors";
@@ -56,10 +58,34 @@ export function TopicalMapEmpty({
 export function TopicalMapFailed({
   what,
   error,
+  mapId,
 }: {
   what: string;
   error: unknown;
+  /**
+   * Set when the failed read is the MAP itself (its row, topics, drawing,
+   * pages, history). An access state — denied, deleted, missing, signed out —
+   * then renders the canonical AccessGate for `seo_topical_map`; a genuine
+   * fault still renders the function's own sentence below.
+   */
+  mapId?: string;
 }) {
+  if (mapId) {
+    return (
+      <AccessGate
+        token="seo_topical_map"
+        id={mapId}
+        error={error}
+        fallbackHref="/marketing"
+        fallbackLabel="Marketing"
+        renderFault={(fault) => <TopicalMapFault what={what} error={fault} />}
+      />
+    );
+  }
+  return <TopicalMapFault what={what} error={error} />;
+}
+
+function TopicalMapFault({ what, error }: { what: string; error: unknown }) {
   const code = error instanceof TopicalMapError ? error.code : null;
   const detail = error instanceof TopicalMapError ? error.detail : null;
   const hint = error instanceof TopicalMapError ? error.hint : null;
