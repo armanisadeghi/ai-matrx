@@ -49,6 +49,12 @@ export function routeRequiresAuthentication(pathname: string): boolean {
     // Stopping here sends them through the login primitive, which keeps the
     // record as their destination (utils/auth/FEATURE.md).
     pathname === "/detail" ||
-    pathname.startsWith("/detail/")
+    pathname.startsWith("/detail/") ||
+    // `/o/<id>` — the one address every feature mints for an id (lib/deep-link/openPath.ts).
+    // Its whole answer depends on WHO is asking, so a guest goes through the login primitive
+    // with this address kept as the destination instead of reading a "not yours" that is only
+    // true because nobody is signed in.
+    pathname === "/o" ||
+    pathname.startsWith("/o/")
   );
 }
