@@ -89,6 +89,7 @@ import {
   consentOutcomes,
   emptyPlanAnswer,
   type ConsentOutcome,
+  type ConsentPlan,
   type ConsentRequest,
 } from "./consent-plan";
 import {
@@ -572,6 +573,10 @@ export function ConnectorConsentBody({
    * there (N10). Reset with every change of selection or account.
    */
   const [exchangeCompleted, setExchangeCompleted] = useState(false);
+  /** Keep the request that actually ran; a refreshed account makes a new plan. */
+  const [attemptPlan, setAttemptPlan] = useState<ConsentPlan | null>(null);
+  /** A first connection has no selected account until the exchange returns it. */
+  const [attemptAccountId, setAttemptAccountId] = useState<string | null>(null);
   const [failure, setFailure] = useState<ConsentFailureAnswer | null>(null);
   /**
    * D8: the answer a press gets when the press would do nothing. The button
@@ -602,6 +607,8 @@ export function ConnectorConsentBody({
     setAccountId(nextId);
     setAttempted(false);
     setExchangeCompleted(false);
+    setAttemptPlan(null);
+    setAttemptAccountId(null);
     setFailure(null);
     setAnswer(null);
     const nextAccount = accounts.find((row) => row.id === nextId) ?? null;
@@ -616,6 +623,8 @@ export function ConnectorConsentBody({
   const toggle = (product: ConnectorProduct, next: boolean) => {
     setAttempted(false);
     setExchangeCompleted(false);
+    setAttemptPlan(null);
+    setAttemptAccountId(null);
     setFailure(null);
     setAnswer(null);
     setSelected((current) =>
@@ -641,13 +650,16 @@ export function ConnectorConsentBody({
     try {
       const disclosed = await confirmGmailReadDisclosure(plan.request);
       if (!disclosed) return;
-      await runner.run(plan.request, {
+      const result = await runner.run(plan.request, {
         owner:
           forOrganization && activeOrganization
             ? { type: "organization", organizationId: activeOrganization.id }
             : { type: "user" },
         loginHint: account?.label ?? null,
       });
+      setAttemptPlan(plan);
+      setAttemptAccountId(result.connectionId);
+      setAccountId(result.connectionId);
       setExchangeCompleted(true);
       setAttempted(true);
       await refetch();
@@ -666,6 +678,8 @@ export function ConnectorConsentBody({
       // But the exchange did NOT complete, and no row may call itself granted on
       // the strength of scopes a renewal already had (N10).
       setExchangeCompleted(false);
+      setAttemptPlan(plan);
+      setAttemptAccountId(account?.id ?? null);
       setAttempted(true);
       await refetch();
     } finally {
@@ -676,12 +690,13 @@ export function ConnectorConsentBody({
   // Outcomes are derived from the account as it is NOW, so they recompute for
   // free after the refetch above — no stored copy of a result to go stale, and
   // nothing to show before the person has actually pressed the button.
+  const resultAccount = accounts.find((row) => row.id === attemptAccountId) ?? null;
   const resultRows: ConsentOutcome[] | null =
-    attempted && !busy
+    attempted && !busy && attemptPlan && (!exchangeCompleted || resultAccount)
       ? consentOutcomes({
           provider,
-          plan,
-          account,
+          plan: attemptPlan,
+          account: resultAccount,
           rollout,
           exchange: { completed: exchangeCompleted },
         })
