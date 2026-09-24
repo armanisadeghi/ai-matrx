@@ -161,6 +161,7 @@ export function emptyNoteReuseUpdates(
     updates.folder_id = targetFolder.id;
   }
   if (input.metadata !== undefined) updates.metadata = input.metadata;
+  if (input.custom_fields !== undefined) updates.custom_fields = input.custom_fields;
   if (input.position !== undefined) updates.position = input.position;
   if (input.visibility !== undefined) updates.visibility = input.visibility;
   if (input.project_id !== undefined) updates.project_id = input.project_id;
@@ -379,6 +380,7 @@ export async function createNote(input: CreateNoteInput): Promise<Note> {
       folder_id: targetFolder.id,
       tags: input.tags || [],
       metadata: input.metadata || {},
+      custom_fields: input.custom_fields || {},
       position: input.position || 0,
       // Private by default — the `notes.visibility` enum DB default is
       // 'internal' (org-visible), so set it explicitly on create.

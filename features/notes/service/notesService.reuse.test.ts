@@ -28,7 +28,7 @@ describe("emptyNoteReuseUpdates", () => {
   });
 
   it("preserves explicit create metadata, ordering, visibility, and context links", () => {
-    expect(emptyNoteReuseUpdates(existing, { organization_id: ORGANIZATION_ID, metadata: { source: "test" }, position: 4, visibility: "link", project_id: "22222222-2222-4222-8222-222222222222", task_id: "33333333-3333-4333-8333-333333333333" }, targetFolder)).toMatchObject({ metadata: { source: "test" }, position: 4, visibility: "link", project_id: "22222222-2222-4222-8222-222222222222", task_id: "33333333-3333-4333-8333-333333333333" });
+    expect(emptyNoteReuseUpdates(existing, { organization_id: ORGANIZATION_ID, metadata: { source: "test" }, custom_fields: { studyAnnotation: { kind: "note" } }, position: 4, visibility: "link", project_id: "22222222-2222-4222-8222-222222222222", task_id: "33333333-3333-4333-8333-333333333333" }, targetFolder)).toMatchObject({ metadata: { source: "test" }, custom_fields: { studyAnnotation: { kind: "note" } }, position: 4, visibility: "link", project_id: "22222222-2222-4222-8222-222222222222", task_id: "33333333-3333-4333-8333-333333333333" });
   });
 
   it("updates reuse with the admitted folder identity and authoritative name", () => {

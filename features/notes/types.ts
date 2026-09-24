@@ -89,6 +89,7 @@ export type CreateNoteInput = Pick<
     | "folder_id"
     | "tags"
     | "metadata"
+    | "custom_fields"
     | "position"
     | "visibility"
 > & {
@@ -127,6 +128,7 @@ export type NoteContentUpdate = Pick<
   | "content"
   | "tags"
   | "metadata"
+  | "custom_fields"
   | "position"
   | "visibility"
 > & Partial<NoteContextLinks>;
