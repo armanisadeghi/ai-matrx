@@ -50447,6 +50447,24 @@
             "description": "ISO-8601 lower bound on occurred_at. Defaults to 6 hours ago."
           },
           {
+            "name": "snapshot_at",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Server-issued ISO-8601 snapshot watermark reused for every cursor page.",
+              "title": "Snapshot At"
+            },
+            "description": "Server-issued ISO-8601 snapshot watermark reused for every cursor page."
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -50456,6 +50474,38 @@
               "minimum": 1,
               "default": 100,
               "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor_occurred_at",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor Occurred At"
+            }
+          },
+          {
+            "name": "cursor_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor Id"
             }
           },
           {
@@ -298469,6 +298519,42 @@
             "type": "integer",
             "title": "Count"
           },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "snapshot_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Snapshot At"
+          },
+          "next_cursor_occurred_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor Occurred At"
+          },
+          "next_cursor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor Id"
+          },
           "filter_summary": {
             "type": "string",
             "title": "Filter Summary"
@@ -298478,6 +298564,9 @@
         "required": [
           "errors",
           "count",
+          "total",
+          "limit",
+          "snapshot_at",
           "filter_summary"
         ],
         "title": "SystemErrorListResponse"

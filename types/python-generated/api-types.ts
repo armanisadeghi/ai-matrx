@@ -131624,6 +131624,19 @@ export interface components {
             errors: components["schemas"]["SystemErrorRecord"][];
             /** Count */
             count: number;
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /**
+             * Snapshot At
+             * Format: date-time
+             */
+            snapshot_at: string;
+            /** Next Cursor Occurred At */
+            next_cursor_occurred_at?: string | null;
+            /** Next Cursor Id */
+            next_cursor_id?: string | null;
             /** Filter Summary */
             filter_summary: string;
         };
@@ -172078,7 +172091,11 @@ export interface operations {
             query?: {
                 /** @description ISO-8601 lower bound on occurred_at. Defaults to 6 hours ago. */
                 since?: string | null;
+                /** @description Server-issued ISO-8601 snapshot watermark reused for every cursor page. */
+                snapshot_at?: string | null;
                 limit?: number;
+                cursor_occurred_at?: string | null;
+                cursor_id?: string | null;
                 /** @description Optional exact route filter, e.g. 'POST /assets'. */
                 route?: string | null;
                 /** @description Optional error_type filter, e.g. 'SvgRasterizerUnavailable'. */
