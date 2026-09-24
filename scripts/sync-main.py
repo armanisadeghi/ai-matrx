@@ -659,11 +659,18 @@ def update_log(stamp, docs, held):
     git("add", "--", LOG_REL)
 
 
-def open_items():
-    """Lines listed as open in the tracker (any section)."""
-    if not os.path.exists(LOG_REL):
-        return []
-    return [l for l in open(LOG_REL).read().splitlines() if l.startswith("- ")]
+def listed_items(log_path):
+    """Items listed under the item sections of the tracker (Held files, Needs *, Docs and
+    comments). Bullets in the explanatory sections at the top are not items."""
+    items, in_items = [], False
+    if not os.path.exists(log_path):
+        return items
+    for line in open(log_path):
+        if line.startswith("## "):
+            in_items = line.startswith(("## Held files", "## Needs", "## Docs and comments"))
+        elif in_items and line.startswith("- "):
+            items.append(line[2:].split(" — ")[0].strip())
+    return items
 
 
 def prune():

@@ -25,6 +25,20 @@ def git(*args):
     return subprocess.run(["git", *args], capture_output=True, text=True).stdout
 
 
+def listed_items(log_path):
+    """Items listed under the item sections of the tracker (Held files, Needs *, Docs and
+    comments). Bullets in the explanatory sections at the top are not items."""
+    items, in_items = [], False
+    if not os.path.exists(log_path):
+        return items
+    for line in open(log_path):
+        if line.startswith("## "):
+            in_items = line.startswith(("## Held files", "## Needs", "## Docs and comments"))
+        elif in_items and line.startswith("- "):
+            items.append(line[2:].split(" — ")[0].strip())
+    return items
+
+
 def main():
     top = git("rev-parse", "--show-toplevel").strip()
     if not top:
@@ -38,11 +52,7 @@ def main():
             if path and path not in SELF:
                 found.setdefault(path, set()).add(kind)
 
-    listed = set()
-    if os.path.exists(LOG_REL):
-        for line in open(LOG_REL):
-            if line.startswith("- "):
-                listed.add(line[2:].split(" — ")[0].strip())
+    listed = set(listed_items(LOG_REL))
 
     problems = 0
     for path in sorted(found):
