@@ -8,10 +8,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Network, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowLeft, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
@@ -75,6 +76,9 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
   const router = useRouter();
   const [media, setMedia] = useState<StudyMediaRow | null>(null);
   const [loading, setLoading] = useState(true);
+  // The raw failure, never a sentence — the access gate decides what it means.
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const { isOwner } = useAccess("study_media", mediaId);
 
@@ -84,12 +88,13 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
     studyMediaService.getById(mediaId).then((res) => {
       if (!active) return;
       setMedia(res.data);
+      setLoadError(res.data ? null : (res.error ?? null));
       setLoading(false);
     });
     return () => {
       active = false;
     };
-  }, [mediaId]);
+  }, [mediaId, reloadKey]);
 
   async function handleDelete() {
     if (!media) return;
@@ -205,19 +210,15 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
         surfaceName="matrx-user/education-mind-maps"
         getScope={getScope}
       >
-        <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-3 p-10 text-center">
-          <Network className="h-8 w-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
-            This mind map doesn&apos;t exist or you don&apos;t have access.
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push("/education/mind-maps")}
-          >
-            Back to Mind Maps
-          </Button>
-        </div>
+        {/* Denied / deleted / never existed / signed-out all read as zero rows here. */}
+        <AccessGate
+          token="study_media"
+          id={mediaId}
+          error={loadError}
+          onRetry={() => setReloadKey((k) => k + 1)}
+          fallbackHref="/education/mind-maps"
+          fallbackLabel="Mind Maps"
+        />
       </SurfaceRuntimeProvider>
     );
   }
