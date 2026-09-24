@@ -31,6 +31,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LucideIcon } from "lucide-react";
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ArtifactRenderDynamic as ArtifactRender } from "@/features/canvas/artifact-types/ArtifactRenderDynamic";
 import { hasArtifactRenderer } from "@/features/canvas/artifact-types/artifact-renderer-keys";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
@@ -44,7 +45,13 @@ import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
  * Shown inside CmsArtifactDetail when the artifact has a canvas_item_id.
  */
 function CanvasItemPreview({ canvasItemId }: { canvasItemId: string }) {
-  const { row, loading, error } = useCanvasItem(canvasItemId, { resolve: "latest" });
+  // reportUnavailable: false — a missing row must reach <AccessGate> as a
+  // null read (an access question), not as the hook's composed message string,
+  // which the gate would classify as a fault. The gate does its own capture.
+  const { row, loading, error, refetch } = useCanvasItem(canvasItemId, {
+    resolve: "latest",
+    reportUnavailable: false,
+  });
 
   if (loading) {
     return (
@@ -55,11 +62,15 @@ function CanvasItemPreview({ canvasItemId }: { canvasItemId: string }) {
   }
 
   if (error || !row) {
+    // The canonical access gate says which of denied / deleted / never
+    // existed / fault this is, instead of a bare "unavailable".
     return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground py-6 justify-center">
-        <AlertCircle className="h-4 w-4" />
-        <span>Canvas content unavailable</span>
-      </div>
+      <AccessGate
+        token="canvas_item"
+        id={canvasItemId}
+        error={error ?? undefined}
+        onRetry={refetch}
+      />
     );
   }
 
