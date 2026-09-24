@@ -39,6 +39,8 @@ import type { UserSearchCandidate } from "@/features/user-search/types";
 // LAST, so "Ana Maria Rivera" is AR — this surface previously took first +
 // second and printed "AM".
 import { getInitials } from "@ai-matrx/kit/format";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 
 interface NewConversationDialogProps {
   open: boolean;
@@ -78,6 +80,10 @@ export function NewConversationDialog({
 
   const user = useAppSelector(selectUser);
   const currentUserId = user?.id;
+  // Reading conversations never needs an organization; a NEW one is filed
+  // under the selected one, so it is asked for here, at the moment of creation
+  // (access belongs to the person, 2026-09-23).
+  const { organizationState } = useOrganizationRequired();
 
   // THE ONE surface that is about conversations, so it is the one that folds in the people you
   // have had conversations with. Every other picker names its organization instead (FIX-7B).
@@ -230,6 +236,8 @@ export function NewConversationDialog({
   const handleSelectUser = useCallback(
     async (selectedUser: UserBasicInfo | ConnectionUser) => {
       if (!currentUserId || isCreating) return;
+      // The notice above the list says why and carries the picker.
+      if (organizationState !== "ready") return;
 
       setIsCreating(true);
       setCreatingUserId(selectedUser.user_id);
@@ -258,6 +266,7 @@ export function NewConversationDialog({
       onCreated,
       onOpenChange,
       isCreating,
+      organizationState,
     ],
   );
 
@@ -339,6 +348,13 @@ export function NewConversationDialog({
               <Loader2 className="absolute right-12 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
             )}
           </div>
+
+          <OrganizationContextNotice
+            state={organizationState}
+            what="Starting a conversation"
+            compact
+            className="mb-3 flex-shrink-0 rounded-md border border-border"
+          />
 
           {/* Error Display */}
           {error && (
