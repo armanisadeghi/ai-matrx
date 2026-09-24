@@ -19,6 +19,7 @@
 // existing (conversationId prop → load the transcript, launcher gated off).
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { createSelector } from "@reduxjs/toolkit";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
@@ -383,6 +384,13 @@ function EducationTutorClientInner({
   // ── Existing-conversation load (only on /education/tutor/[id]) ────────────
   const loadAbortRef = useRef<AbortController | null>(null);
   const loadedKeyRef = useRef<string | null>(null);
+  // The raw failure of the existing-conversation load, keyed to the id it was
+  // for — the access gate decides whether it is a denial or a fault.
+  const [loadFailure, setLoadFailure] = useState<{
+    conversationId: string;
+    error: unknown;
+  } | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   useEffect(() => {
     if (!conversationIdProp || isInitializing || !authReady) return undefined;
     if (loadedKeyRef.current === conversationIdProp) return undefined;
@@ -430,6 +438,8 @@ function EducationTutorClientInner({
         if (loadedKeyRef.current === conversationIdProp)
           loadedKeyRef.current = null;
         console.error("[EducationTutorClient] loadConversation failed", err);
+        if (!ctrl.signal.aborted)
+          setLoadFailure({ conversationId: conversationIdProp, error: err });
       }
     })();
     return () => {
@@ -437,6 +447,7 @@ function EducationTutorClientInner({
     };
   }, [
     agentId,
+    loadAttempt,
     conversationIdProp,
     dispatch,
     isInitializing,
@@ -679,6 +690,30 @@ function EducationTutorClientInner({
   const [, setPersonalityStylePref] = useSetting<TutorPersonalityStyle>(
     "userPreferences.tutor.personalityStyle",
   );
+
+  // The existing conversation could not be opened: denied, deleted, never
+  // existed, or signed out all fail the same load — the gate asks which.
+  if (
+    conversationIdProp &&
+    loadFailure &&
+    loadFailure.conversationId === conversationIdProp
+  ) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden bg-textured">
+        <AccessGate
+          token="conversation"
+          id={conversationIdProp}
+          error={loadFailure.error}
+          onRetry={() => {
+            setLoadFailure(null);
+            setLoadAttempt((n) => n + 1);
+          }}
+          fallbackHref="/education/tutor"
+          fallbackLabel="AI Tutor"
+        />
+      </div>
+    );
+  }
 
   if (isInitializing || !conversationId) {
     return (
