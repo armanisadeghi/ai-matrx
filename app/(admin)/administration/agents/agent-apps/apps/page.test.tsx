@@ -41,19 +41,39 @@ describe("Agent Apps canonical table contract", () => {
       updated_at: "2026-09-22T00:00:00Z",
     };
     const allApp = { ...app, id: "app-all", name: "All app" };
-    const copy = agentAppsCopyConfig([app], [app, allApp]);
+    const copy = agentAppsCopyConfig();
+    const visibleNow = [{ ...app, id: "app-visible-now", name: "Visible now" }];
+    const allNow = [...visibleNow, allApp];
     expect(copy.showToolbar).not.toBe(false);
     expect(copy.showRow).not.toBe(false);
-    expect(copy.export?.([app], [app]).items).toHaveLength(2);
-    expect(copy.aiVariants?.([app], [app])[0]?.id).toBe("briefs");
-    const custom = copy.aiCustom?.([app], [app, allApp]);
+    expect(copy.listAttributes?.(visibleNow, allNow)).toEqual({
+      count: 1,
+      totalCount: 2,
+    });
+
+    const brief = copy.aiVariants?.(visibleNow, allNow)[0];
+    expect(brief?.id).toBe("briefs");
+    expect(brief?.build?.()).toEqual(
+      expect.objectContaining({ data: [expect.stringContaining("Visible now")] }),
+    );
+
+    const exports = copy.export?.(visibleNow, allNow).items;
+    if (!exports) throw new Error("Agent apps exports were not configured");
+    expect(exports).toHaveLength(2);
+    expect(String(exports[0]?.build?.().content)).toContain("app-visible-now");
+    expect(String(exports[1]?.build?.().content)).toContain("app-visible-now");
+
+    const custom = copy.aiCustom?.(visibleNow, allNow);
     if (!custom) throw new Error("Agent apps custom export was not configured");
     expect(
       custom.build({
-        onlyFiltered: false,
+        onlyFiltered: true,
         includeDescription: false,
       }),
-    ).toEqual(expect.objectContaining({ meta: { apps: 2 } }));
+    ).toEqual(expect.objectContaining({
+      text: expect.stringContaining("Visible now"),
+      meta: { apps: 1 },
+    }));
   });
 
   it("keeps the existing independent filters and metrics as table accessors", () => {

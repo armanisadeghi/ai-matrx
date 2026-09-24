@@ -60,9 +60,6 @@ delete the item's line below, then do steps 7–9 above.
 
 ## Held files — real conflicts
 
-### _conflicts/replay-2026-09-24-122648/
-- app/(admin)/administration/agents/agent-apps/apps/page.tsx — LOCAL latest 2026-09-24 11:15; GITHUB latest 2026-09-23 21:05; LOCAL lacks 7 of GITHUB's 9 new lines; GITHUB lacks 27 of LOCAL's 29 new lines; recover: git show fd52446b09:'app/(admin)/administration/agents/agent-apps/apps/page.tsx' / 2487e28356:'app/(admin)/administration/agents/agent-apps/apps/page.tsx'
-
 ## Needs a manager
 
 ## Needs the boss agent
