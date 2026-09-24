@@ -44,11 +44,11 @@ const HEALTH_FILTER_OPTIONS = (
   label: value === "drift" ? "Drift (pinned behind)" : HEALTH_META[value].label,
 }));
 
-// The rpc's `version` filter vocabulary (mnd_list_scoped): following the
-// agent's newest version, pinned and current, or pinned behind.
+// The rpc's `version` filter vocabulary (mnd_list_scoped): no pin (follows
+// the agent's newest version), pinned (current or unresolved), pinned behind.
 const VERSION_FILTER_OPTIONS = [
   { value: "latest", label: "Latest" },
-  { value: "pinned", label: "Pinned (current)" },
+  { value: "pinned", label: "Pinned" },
   { value: "behind", label: "Pinned behind" },
 ];
 
@@ -200,12 +200,16 @@ export function mandateColumnsFor(
             >
               {row.drift}
             </Badge>
+          ) : row.resolved_use_latest ? (
+            <Muted>latest</Muted>
           ) : row.pinned_version_number !== null ? (
             <span className="font-mono text-[11px]">
               v{row.pinned_version_number}
             </span>
           ) : (
-            <Muted>latest</Muted>
+            // Pinned, but the pinned version row did not resolve — never
+            // "latest"; Status carries the reason (version unreachable).
+            <Muted>pinned (unresolved)</Muted>
           ),
       },
     },
