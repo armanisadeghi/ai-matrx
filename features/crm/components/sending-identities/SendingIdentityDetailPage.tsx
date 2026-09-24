@@ -36,6 +36,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { GuidedChecklist } from "@/lib/guided-setup/components/GuidedChecklist";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useSendingIdentity } from "@/features/crm/sending-identities/hooks";
 import { sendingIdentityChecklist } from "@/features/crm/sending-identities/sendingIdentityChecklist";
 import { STATUS_COPY } from "@/features/crm/sending-identities/types";
@@ -133,6 +134,7 @@ export function SendingIdentityDetailPage({ identityId }: { identityId: string }
     pause,
     resume,
     refreshHealth,
+    reload,
   } = useSendingIdentity(identityId);
   const dnsRef = useRef<HTMLDivElement | null>(null);
   const [showAllEvents, setShowAllEvents] = useState(false);
@@ -219,19 +221,22 @@ export function SendingIdentityDetailPage({ identityId }: { identityId: string }
     );
   }
 
-  if (error && !identity) {
+  if (!identity) {
+    // A failed or empty read of one mailbox: the gate asks the platform which
+    // state this is (denied, deleted, missing, signed out). The hook keeps only
+    // the message, so no raw error is passed.
     return (
-      <div className="mx-auto max-w-4xl px-4 pt-[calc(var(--shell-header-h)+1rem)]">
-        <Card className="border-destructive/40">
-          <CardContent className="p-4">
-            <p className="text-sm text-destructive">{error}</p>
-          </CardContent>
-        </Card>
+      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+        <AccessGate
+          token="crm_sending_identity"
+          id={identityId}
+          onRetry={error ? reload : undefined}
+          fallbackHref="/crm/sending-identities"
+          fallbackLabel="Your sending identities"
+        />
       </div>
     );
   }
-
-  if (!identity) return null;
 
   const statusCopy = STATUS_COPY[identity.status];
   const systemPaused =
