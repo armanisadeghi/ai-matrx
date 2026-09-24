@@ -47,6 +47,7 @@ import {
     readContractPin,
 } from './aidream-contract-pin.mjs';
 import { normalizeOpenApiDocument } from './typegen-openapi-normalize.mjs';
+import { parse as parseLossless, stringify as stringifyLossless } from 'lossless-json';
 import { compareAgainstReference, generateReference } from './check-api-types-fresh.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -110,11 +111,11 @@ const BUNDLE_FILES = {
  * `check:api-types-fresh` re-derives the committed file through the SAME code.
  */
 function normalizeDuplicateOperationIds(openapiPath) {
-    const document = JSON.parse(readFileSync(openapiPath, 'utf-8'));
+    const document = parseLossless(readFileSync(openapiPath, 'utf-8'));
     const { operationIds, enums } = normalizeOpenApiDocument(document);
     // Always rewritten: the staged file must be the EXACT document the generator
     // reads, because `check:api-types-fresh` re-derives it through this same code.
-    writeFileSync(openapiPath, `${JSON.stringify(document, null, 2)}\n`, 'utf-8');
+    writeFileSync(openapiPath, `${stringifyLossless(document, null, 2)}\n`, 'utf-8');
     if (enums > 0) console.log(`  ✓ Canonicalized ${enums} enum ordering(s).\n`);
     return operationIds;
 }

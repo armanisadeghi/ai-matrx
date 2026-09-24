@@ -18,9 +18,9 @@
  *     parsed, then compared as JSON values, key order included). Not bytes: the
  *     committed file is serialized by Python (`json.dumps(..., ensure_ascii=False,
  *     indent=2)`) while this check re-serializes the same document through Node
- *     for the generator. Escaping and float spelling can differ with no contract
- *     difference at all, and a guard that fails on that teaches people to ignore
- *     it.
+ *     for the generator. JSON whitespace and string escaping may differ without
+ *     changing the contract. Numeric tokens stay lossless so a 64-bit bound can
+ *     never be rounded into a falsely fresh contract.
  *   • `types/python-generated/api-types.ts` — BYTE-IDENTICAL. It is produced by
  *     exactly one program (`openapi-typescript`) from the document above, so any
  *     byte difference is a hand edit, a contract change, or a generator upgrade.
@@ -50,6 +50,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { parse as parseLossless, stringify as stringifyLossless } from 'lossless-json';
 import { normalizeOpenApiDocument } from './typegen-openapi-normalize.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -110,10 +111,10 @@ export function generateReference(aidreamRoot = AIDREAM_ROOT) {
             ]);
         }
 
-        const document = JSON.parse(readFileSync(emitted, 'utf-8'));
+        const document = parseLossless(readFileSync(emitted, 'utf-8'));
         normalizeOpenApiDocument(document);
         const openapiPath = join(dir, 'openapi.json');
-        writeFileSync(openapiPath, `${JSON.stringify(document, null, 2)}\n`, 'utf-8');
+        writeFileSync(openapiPath, `${stringifyLossless(document, null, 2)}\n`, 'utf-8');
 
         const apiTypesPath = join(dir, 'api-types.ts');
         execFileSync(GENERATOR, [openapiPath, '--default-non-nullable', 'false', '-o', apiTypesPath], {
@@ -156,15 +157,15 @@ export function compareAgainstReference(committedDir, reference) {
     if (!existsSync(committedOpenApiPath)) {
         findings.push({ file: 'openapi.json', what: 'is missing entirely.' });
     } else {
-        const committed = JSON.stringify(JSON.parse(readFileSync(committedOpenApiPath, 'utf-8')));
-        const expected = JSON.stringify(JSON.parse(readFileSync(reference.openapiPath, 'utf-8')));
+        const committed = stringifyLossless(parseLossless(readFileSync(committedOpenApiPath, 'utf-8')));
+        const expected = stringifyLossless(parseLossless(readFileSync(reference.openapiPath, 'utf-8')));
         if (committed !== expected) {
             findings.push({
                 file: 'openapi.json',
                 what: 'does not describe the aidream checkout (compared as JSON values, not bytes).',
                 schemas: schemaLevelDifferences(
-                    JSON.parse(readFileSync(reference.openapiPath, 'utf-8')),
-                    JSON.parse(readFileSync(committedOpenApiPath, 'utf-8')),
+                    parseLossless(readFileSync(reference.openapiPath, 'utf-8')),
+                    parseLossless(readFileSync(committedOpenApiPath, 'utf-8')),
                 ),
             });
         }
@@ -281,10 +282,10 @@ function selfTest(reference) {
 
         // Edit 2 — the same two properties out of openapi.json, which is what
         // poisoned the drop guard's baseline for the rest of the night.
-        const doc = JSON.parse(readFileSync(join(scratch, 'openapi.json'), 'utf-8'));
+        const doc = parseLossless(readFileSync(join(scratch, 'openapi.json'), 'utf-8'));
         delete doc.components.schemas.DirectiveConfirmRequest.properties.conversation_id;
         delete doc.components.schemas.DirectiveConfirmResult.properties.message;
-        writeFileSync(join(scratch, 'openapi.json'), `${JSON.stringify(doc, null, 2)}\n`, 'utf-8');
+        writeFileSync(join(scratch, 'openapi.json'), `${stringifyLossless(doc, null, 2)}\n`, 'utf-8');
 
         const findings = compareAgainstReference(scratch, reference);
         assert(findings.length === 2, 'RED: both hand-edited generated files are refused');
@@ -301,6 +302,26 @@ function selfTest(reference) {
             Boolean(findings.find((f) => f.file === 'api-types.ts')?.difference),
             'RED: the api-types.ts refusal points at the first line that differs',
         );
+
+        // A previous JSON.parse/stringify pass rounded this 64-bit schema bound
+        // by 193 while the freshness check still passed. The actual source
+        // contract and the committed contract must preserve the full integer.
+        const exactMaximum = '9223372036854775807';
+        const roundedMaximum = '9223372036854776000';
+        const referenceText = readFileSync(reference.openapiPath, 'utf-8');
+        assert(referenceText.includes(exactMaximum), 'GREEN: 64-bit schema maximum survives generation exactly');
+        if (referenceText.includes(exactMaximum)) {
+            copyFileSync(join(COMMITTED_DIR, 'openapi.json'), join(scratch, 'openapi.json'));
+            copyFileSync(join(COMMITTED_DIR, 'api-types.ts'), join(scratch, 'api-types.ts'));
+            const rounded = readFileSync(join(scratch, 'openapi.json'), 'utf-8')
+                .replaceAll(exactMaximum, roundedMaximum);
+            writeFileSync(join(scratch, 'openapi.json'), rounded, 'utf-8');
+            const precisionFindings = compareAgainstReference(scratch, reference);
+            assert(
+                precisionFindings.length === 1 && precisionFindings[0].file === 'openapi.json',
+                'RED: a rounded 64-bit schema maximum is refused',
+            );
+        }
     } finally {
         rmSync(scratch, { recursive: true, force: true });
     }
