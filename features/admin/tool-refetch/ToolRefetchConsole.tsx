@@ -571,7 +571,6 @@ export function ToolRefetchConsole() {
 
   const visibleTotals = useMemo(() => {
     return {
-      tools: visibleRows.length,
       repeats: visibleRows.reduce((n, r) => n + r.repeats, 0),
       sameData: visibleRows.reduce((n, r) => n + r.sameDataRepeats, 0),
       chars: visibleRows.reduce((n, r) => n + r.charsRefetchedSameData, 0),
@@ -675,7 +674,7 @@ export function ToolRefetchConsole() {
           ))}
           {!loading && !error && !timedOut && (
             <span className="ml-2 text-xs text-muted-foreground">
-              {fmtCount(visibleTotals.tools)} shown of {fmtCount(rows.length)} tools · {fmtCount(visibleTotals.repeats)} repeats ·{" "}
+              {fmtCount(visibleTotals.repeats)} repeats ·{" "}
               {fmtCount(visibleTotals.sameData)} same-data · {fmtCount(visibleTotals.chars)} chars re-fetched
               {win === "all" ? " (all-time rollup view)" : " (recomputed for this window)"}
             </span>
