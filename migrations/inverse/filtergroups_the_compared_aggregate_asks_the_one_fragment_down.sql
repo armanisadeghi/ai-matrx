@@ -1,7 +1,7 @@
 -- lock: custom
 -- lane: S2-PRIME
 -- based-on: custom.agg_sql(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb) 65e80741f5894f795c539f6c6c15a95becf901deefa153d6ba765efddc135232
--- based-on: custom.record_aggregate(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb) 0ee530a8f43ab13b6f9ff42ab5ca3de0b6663b712a98c1040e2ce05b6a311fd0
+-- based-on: custom.record_aggregate(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb) c99d610f2934a8afbf10c288f6ed4c5a31e809c31acaeeb92f4cbb43d3208562
 -- chair-step: the inverse of filtergroups_the_compared_aggregate_asks_the_one_fragment.sql. It puts
 -- back, byte for byte, lane S3's bodies of custom.agg_sql(…, p_window) and
 -- custom.record_aggregate(…, p_compare). What it undoes: the aggregate asks the flat compiler
@@ -243,7 +243,9 @@ begin
            coalesce((p.e ->> 'row_count')::bigint, 0),
            custom.agg_delta(coalesce(c.e -> 'measures', custom.agg_zero(p.e -> 'measures')),
                             coalesce(p.e -> 'measures', custom.agg_zero(c.e -> 'measures'))),
-           v_cmp
+           -- The row's bucket POSITION rides with the windows, so a screen can name a
+           -- position the current window has not reached yet ("week 6") without counting rows.
+           v_cmp || jsonb_build_object('position', coalesce(c.e -> 'match' -> '#', p.e -> 'match' -> '#'))
       from (select e from jsonb_array_elements(v_cur) e) c
       full join (select e from jsonb_array_elements(v_pri) e) p
         on (c.e -> 'match') = (p.e -> 'match')

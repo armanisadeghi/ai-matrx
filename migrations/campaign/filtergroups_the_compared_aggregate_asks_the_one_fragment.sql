@@ -14,7 +14,7 @@
 -- guard: custom/system_enabled
 -- lock: custom
 -- based-on: custom.agg_sql(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb) 02cd908334062135eaa14bb1ad6707f7f53f85561f4fd4a009404ecaf42758b1
--- based-on: custom.record_aggregate(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb) bbea03b03580ebae126f932e9f878af3691029e3a7d95d3be3640f71a9d0da08
+-- based-on: custom.record_aggregate(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb) f8e6cc4fa4f54c43f19785397ded0dadc2cda824bf8a5545abfaf37e30dc7e3c
 --
 -- LANE S2-PRIME FILTER-GROUPS, AUTHORED ON S3. The dispatcher's nested view — (Open or Scheduled)
 -- and (Ojai or Maria) and not Low — has to count on her dashboard the same six jobs the grid and
@@ -22,7 +22,8 @@
 -- compiler, which now REFUSES a Rule expression by name ("this filter is a Rule expression, and it
 -- has to be asked of a table") rather than silently counting nothing; this file points it at the
 -- one fragment again. If S3's bytes change before production, the based-on lines refuse this file
--- by name and it is re-authored on the new bodies.
+-- by name and it is re-authored on the new bodies. (Re-authored once already: S3 re-ran its own
+-- rule 27 at 03:10 UTC with a changed record_aggregate, sha256 bbea03b0… → f8e6cc4f….)
 --
 -- LOCKS. create or replace function only. Not window-class.
 
@@ -266,7 +267,9 @@ begin
            coalesce((p.e ->> 'row_count')::bigint, 0),
            custom.agg_delta(coalesce(c.e -> 'measures', custom.agg_zero(p.e -> 'measures')),
                             coalesce(p.e -> 'measures', custom.agg_zero(c.e -> 'measures'))),
-           v_cmp
+           -- The row's bucket POSITION rides with the windows, so a screen can name a
+           -- position the current window has not reached yet ("week 6") without counting rows.
+           v_cmp || jsonb_build_object('position', coalesce(c.e -> 'match' -> '#', p.e -> 'match' -> '#'))
       from (select e from jsonb_array_elements(v_cur) e) c
       full join (select e from jsonb_array_elements(v_pri) e) p
         on (c.e -> 'match') = (p.e -> 'match')
