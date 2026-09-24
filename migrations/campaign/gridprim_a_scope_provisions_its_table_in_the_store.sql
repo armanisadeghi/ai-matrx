@@ -57,6 +57,7 @@ declare
   v_n        integer := 0;
 begin
   perform custom.assert_store_door(p_organization_id, 'custom.scope_table_provision');
+  -- The service-role key is refused here ON PURPOSE: the server writes as the store owner or as the person (ruled 2026-09-24).
   perform custom.assert_client_may_reach(p_organization_id, 'custom.scope_table_provision');
 
   select * into v_scope from context.scopes where id = p_scope_id and deleted_at is null;
@@ -133,7 +134,7 @@ end
 $fn$;
 
 comment on function custom.scope_table_provision(uuid, uuid, uuid, uuid) is
-  'GRID-PRIMITIVES G11: the record store''s twin of context.provision_scope_dataset — one Table per (context item, scope) built from the item''s dataset template (fields, required, help), the binding kept on the Table as scope_binding, and the item''s value for that scope written as a directive_v1_reference_table naming the Table with store "records". A second call answers the first Table.';
+  'GRID-PRIMITIVES G11: the record store''s twin of context.provision_scope_dataset — one Table per (context item, scope) built from the item''s dataset template (fields, required, help), the binding kept on the Table as scope_binding, and the item''s value for that scope written as a directive_v1_reference_table naming the Table with store "records". A second call answers the first Table. The service-role key is refused ON PURPOSE (42501, the organization wall): the store''s standing rule is that the server writes as the store owner (aidream''s ORM) or as the person, never as a row-security-bypassing role with no subject — ruled 2026-09-24.';
 
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
