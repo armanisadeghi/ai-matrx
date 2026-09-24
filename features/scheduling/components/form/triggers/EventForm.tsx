@@ -15,7 +15,6 @@ import { useEffect, useState } from "react";
 import { Info } from "lucide-react";
 
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -24,7 +23,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { listUserTables, type UserTableListItem } from "@/features/data-tables/service";
+import {
+  getTableMetadata,
+  listUserTables,
+  type UserTableListItem,
+} from "@/features/data-tables/service";
 import { isServiceFailure } from "@/features/data-tables/types";
 
 import type { EventConfig } from "../../../types";
@@ -56,6 +59,13 @@ interface Props {
 export function EventForm({ value, onChange, error }: Props) {
   const [tables, setTables] = useState<UserTableListItem[] | null>(null);
   const [tablesError, setTablesError] = useState<string | null>(null);
+  // The chosen table's columns, so "only when these columns change" is a
+  // picker, never typed machine names (register ARE-035).
+  const [loadedColumns, setLoadedColumns] = useState<{
+    tableId: string;
+    columns: { field_name: string; display_name: string }[] | null;
+    error: string | null;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +95,37 @@ export function EventForm({ value, onChange, error }: Props) {
     onChange(merged);
   };
   const actions = config.actions ?? [];
+  const chosenTableId = config.table_id;
+  useEffect(() => {
+    if (!chosenTableId) return;
+    let cancelled = false;
+    void getTableMetadata({ tableId: chosenTableId }).then((result) => {
+      if (cancelled) return;
+      setLoadedColumns(
+        isServiceFailure(result)
+          ? { tableId: chosenTableId, columns: null, error: result.error }
+          : {
+              tableId: chosenTableId,
+              columns: result.data.columns.map((c) => ({ field_name: c.field_name, display_name: c.display_name })),
+              error: null,
+            },
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [chosenTableId]);
+  // Only the answer for the table chosen NOW counts; a stale one reads as loading.
+  const current = loadedColumns && loadedColumns.tableId === chosenTableId ? loadedColumns : null;
+  const columns = current?.columns ?? null;
+  const columnsError = current?.error ?? null;
+  const watched = config.changed_fields ?? [];
+  const toggleColumn = (fieldName: string) =>
+    update({
+      changed_fields: watched.includes(fieldName)
+        ? watched.filter((f) => f !== fieldName)
+        : [...watched, fieldName],
+    });
   // A schedule on ONE record-store table: that table is the subject (the grid opened this form
   // for it), and its change words are the store's own.
   const onRecordStoreTable = config.entity_type.startsWith("custom_record:");
@@ -151,23 +192,27 @@ export function EventForm({ value, onChange, error }: Props) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="ev-fields">Only when these columns change (optional)</Label>
-        <Input
-          id="ev-fields"
-          value={(config.changed_fields ?? []).join(", ")}
-          onChange={(e) =>
-            update({
-              changed_fields: e.target.value
-                .split(",")
-                .map((s) => s.trim())
-                .filter(Boolean),
-            })
-          }
-          placeholder="status, reset_date"
-          className="max-w-md"
-        />
+        <Label>Only when these columns change (optional)</Label>
+        {!chosenTableId ? (
+          <p className="text-xs text-muted-foreground">
+            Pick a table above to choose its columns. With any table, every change counts.
+          </p>
+        ) : columnsError ? (
+          <p className="text-xs text-destructive">Could not load this table&apos;s columns: {columnsError}</p>
+        ) : !columns ? (
+          <p className="text-xs text-muted-foreground">Loading this table&apos;s columns…</p>
+        ) : (
+          <div className="grid gap-1.5 sm:grid-cols-2">
+            {columns.map((c) => (
+              <label key={c.field_name} className="flex items-center gap-2 text-sm">
+                <Checkbox checked={watched.includes(c.field_name)} onCheckedChange={() => toggleColumn(c.field_name)} />
+                {c.display_name}
+              </label>
+            ))}
+          </div>
+        )}
         <p className="text-xs text-muted-foreground">
-          Machine column names, comma-separated. Applies to changed rows only.
+          Nothing ticked means a change to any column counts. Applies to changed rows only.
         </p>
       </div>
 
