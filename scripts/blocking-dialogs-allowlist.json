@@ -10,56 +10,6 @@
       "file": "components/ui/matrx/dialog.tsx",
       "kind": "forced-modal",
       "reason": "Same file: its Root forwards the caller's modal prop. See the direct-radix entry."
-    },
-    {
-      "file": "components/admin/query-history/query-history-overlay.tsx",
-      "kind": "confirmation-on-dialog",
-      "reason": "BACKLOG 2026-09-23 (register ARE-009): a confirmation built on the ordinary Dialog, which no longer blocks. Convert to ConfirmDialog/AlertDialog and delete this entry."
-    },
-    {
-      "file": "features/organizations/admin/components/RemoveMemberDialog.tsx",
-      "kind": "confirmation-on-dialog",
-      "reason": "BACKLOG 2026-09-23 (register ARE-009): a confirmation built on the ordinary Dialog, which no longer blocks. Convert to ConfirmDialog/AlertDialog and delete this entry."
-    },
-    {
-      "file": "features/rag/components/library/LibraryPage.tsx",
-      "kind": "confirmation-on-dialog",
-      "reason": "BACKLOG 2026-09-23 (register ARE-009): a confirmation built on the ordinary Dialog, which no longer blocks. Convert to ConfirmDialog/AlertDialog and delete this entry."
-    },
-    {
-      "file": "features/rag/components/data-stores/RichMemberTable.tsx",
-      "kind": "confirmation-on-dialog",
-      "reason": "BACKLOG 2026-09-23 (register ARE-009): a confirmation built on the ordinary Dialog, which no longer blocks. Convert to ConfirmDialog/AlertDialog and delete this entry."
-    },
-    {
-      "file": "features/structured-lists/StructuredListManagerV1.tsx",
-      "kind": "confirmation-on-dialog",
-      "reason": "BACKLOG 2026-09-23 (register ARE-009): a confirmation built on the ordinary Dialog, which no longer blocks. Convert to ConfirmDialog/AlertDialog and delete this entry."
-    },
-    {
-      "file": "features/structured-lists/structured-list-manager-v3.tsx",
-      "kind": "confirmation-on-dialog",
-      "reason": "BACKLOG 2026-09-23 (register ARE-009): a confirmation built on the ordinary Dialog, which no longer blocks. Convert to ConfirmDialog/AlertDialog and delete this entry."
-    },
-    {
-      "file": "app/(core)/sandbox/[id]/page.tsx",
-      "kind": "confirmation-on-dialog",
-      "reason": "BACKLOG 2026-09-23 (register ARE-009): a confirmation built on the ordinary Dialog, which no longer blocks. Convert to ConfirmDialog/AlertDialog and delete this entry."
-    },
-    {
-      "file": "app/(core)/sandbox/page.tsx",
-      "kind": "confirmation-on-dialog",
-      "reason": "BACKLOG 2026-09-23 (register ARE-009): a confirmation built on the ordinary Dialog, which no longer blocks. Convert to ConfirmDialog/AlertDialog and delete this entry."
-    },
-    {
-      "file": "features/rag/components/library/LibraryDocDetailSheet.tsx",
-      "kind": "confirmation-on-dialog",
-      "reason": "BACKLOG 2026-09-23 (register ARE-009): a confirmation built on the ordinary Dialog, which no longer blocks. Convert to ConfirmDialog/AlertDialog and delete this entry."
-    },
-    {
-      "file": "features/settings/pages/SandboxStorageSettingsPage.tsx",
-      "kind": "confirmation-on-dialog",
-      "reason": "BACKLOG 2026-09-23 (register ARE-009): a confirmation built on the ordinary Dialog, which no longer blocks. Convert to ConfirmDialog/AlertDialog and delete this entry."
     }
   ]
 }
