@@ -83,6 +83,12 @@ export interface HubCapability {
    * been shared with this person (VERIFIER-16, the member in admin's Workspace).
    */
   emptyWhenSharedOnly?: string | undefined;
+  /**
+   * The heading sentence instead, for that same member. The count beside the title is what SHE
+   * can open, so "everything this organization keeps" beside it is false (VERIFIER-17 H3: "Tables
+   * 1 — Everything this organization keeps records in" over an organization keeping 26).
+   */
+  whatWhenSharedOnly?: string | undefined;
   /** The store door this listing reads, named on screen so nobody has to guess. */
   door: string;
   /** Which kind `custom.hub_changed_by` answers for these, or null when the store cannot say. */
@@ -183,7 +189,10 @@ export const HUB_CAPABILITIES: readonly HubCapability[] = [
   {
     id: "tables",
     title: "Tables",
-    what: "Everything this organization keeps records in.",
+    // THE COUNT BESIDE IT IS WHAT THIS PERSON CAN OPEN, so the sentence says exactly that.
+    what: "The tables you can open in this organization.",
+    whatWhenSharedOnly:
+      "The tables shared with you here. This organization shows each member only what is shared with them.",
     empty: "No tables yet. Make one below, or drop a spreadsheet on it and the store reads the columns.",
     emptyWhenSharedOnly: SHARED_ONLY_EMPTY,
     door: "custom.read_records over the Table kernel",

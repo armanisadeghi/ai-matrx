@@ -24,7 +24,7 @@
 
 import { useCallback, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Database } from "lucide-react";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import UserTableViewer, {
@@ -95,25 +95,11 @@ export default function DataTableDetailClient({
       />
       <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
         {notFound ? (
-          <div className="flex h-full items-center justify-center p-6">
-            <div className="max-w-xl rounded-lg border border-border bg-card p-6 text-card-foreground">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Database className="h-4 w-4" aria-hidden />
-                <span className="text-sm font-medium">This table is not in your Data tables</span>
-              </div>
-              <p className="mt-3 text-sm text-muted-foreground">
-                We could not find this link&rsquo;s table among the tables you can open here in this
-                organization. If somebody sent you this link, they may have been in a different organization.
-              </p>
-              <button
-                type="button"
-                className="mt-4 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent"
-                onClick={() => router.push("/data")}
-              >
-                Back to tables
-              </button>
-            </div>
-          </div>
+          // THE CANONICAL NO ACCESS PAGE (ACTIVE-ORG-PAGES, VERIFIER-17 H3). The older store's
+          // door answered "not available to this account" — RLS hid the row, which never
+          // consulted the active organization — so the page says what is true through the one
+          // access surface, and never guesses that the sender "was in a different organization".
+          <AccessGate token="dataset" id={tableId} fallbackHref="/data" fallbackLabel="Your tables" />
         ) : !unplaced ? null : (
         <UserTableViewer
           tableId={tableId}
