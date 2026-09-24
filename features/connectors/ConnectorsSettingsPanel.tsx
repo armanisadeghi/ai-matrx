@@ -59,7 +59,7 @@ import {
   type ConnectorAccount,
   type ConnectorProductHealth,
 } from "./health";
-import { buildConsentPlan, emptyPlanAnswer } from "./consent-plan";
+import { buildConsentPlan, consentOutcomes, emptyPlanAnswer } from "./consent-plan";
 import {
   consentFailureAnswer,
   useGoogleConnectorState,
@@ -170,14 +170,36 @@ function ProviderConnectorsPanel({
     try {
       const disclosed = await confirmGmailReadDisclosure(plan.request);
       if (!disclosed) return;
-      await runner.run(plan.request, {
+      const result = await runner.run(plan.request, {
         owner:
           account.ownerKind === "organization" && account.organizationId
             ? { type: "organization", organizationId: account.organizationId }
             : { type: "user" },
         loginHint: account.label,
       });
-      await state.refetch();
+      const freshAccounts = await state.refetch();
+      const freshAccount = freshAccounts?.find((row) => row.id === result.connectionId);
+      if (!freshAccount) {
+        setFailure({
+          sentence: `${provider.name} approval finished, but we could not confirm this account in your connections. Refresh Settings → Connectors before trying again.`,
+          details: null,
+        });
+        return;
+      }
+      const refused = consentOutcomes({
+        provider,
+        plan,
+        account: freshAccount,
+        rollout: state.rollout,
+        exchange: { completed: true },
+      }).filter((outcome) => outcome.state === "refused");
+      if (refused.length > 0) {
+        setFailure({
+          sentence: refused.map((outcome) => `${outcome.product.name}: ${outcome.message}`).join(" "),
+          details: null,
+        });
+        return;
+      }
       toast.success(verb === "Connect" ? "Connected." : "Reconnected.");
     } catch (cause) {
       if (isGoogleAuthorizationCancelled(cause)) {

@@ -375,7 +375,7 @@ export interface ConnectorConsentBodyProps {
   isLoading: boolean;
   rolloutUnavailable: boolean;
   errorMessage: string | null;
-  refetch: () => Promise<void>;
+  refetch: () => Promise<unknown>;
   /** Seed the account being added to; defaults to the first usable one. */
   initialAccountId?: string | null;
   /** Pre-switch-on these rows (a surface that knows what the person is using). */
@@ -702,7 +702,8 @@ export function ConnectorConsentBody({
           exchange: { completed: exchangeCompleted },
         })
       : null;
-  const hasGrantedResult = resultRows?.some((row) => row.state === "granted") ?? false;
+  const grantedRows = resultRows?.filter((row) => row.state === "granted") ?? [];
+  const hasGrantedResult = grantedRows.length > 0;
   useEffect(() => {
     if (hasGrantedResult) toast.success(`${provider.name} connected.`);
   }, [hasGrantedResult, provider.name]);
@@ -923,9 +924,7 @@ export function ConnectorConsentBody({
               Ready to use
             </p>
             <ul className="mt-1 space-y-1">
-              {resultRows
-                .filter((row) => row.state === "granted")
-                .map((row) => (
+              {grantedRows.map((row) => (
                   <li
                     key={row.product.key}
                     className="flex items-center justify-between gap-2 text-xs"
