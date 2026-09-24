@@ -24,6 +24,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CircleAlert, RefreshCw } from "lucide-react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
@@ -67,6 +68,8 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
     // Library really has never synced" from "we do not currently know",
     // which `last_synced_at` alone cannot say.
     const [rowUnavailable, setRowUnavailable] = useState(false);
+    /** The raw failure of the last Library-ROW read, for `<AccessGate error/>`. */
+    const [rowReadError, setRowReadError] = useState<unknown>(null);
     const [metricsError, setMetricsError] = useState<string | null>(null);
     const [metricsProblems, setMetricsProblems] = useState<string[]>([]);
     const [openVideo, setOpenVideo] = useState<VideoRow | null>(null);
@@ -167,6 +170,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
             dispatch(libraryLoaded(row));
             setLoadError(null);
             setRowUnavailable(false);
+            setRowReadError(null);
             return row;
         } catch (error) {
             if (isOrganizationNotReady(error)) return null;
@@ -182,6 +186,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                     : "This Library could not be read from the server.",
             );
             setRowUnavailable(true);
+            setRowReadError(error);
             return null;
         }
     }, [dispatch, libraryId]);
@@ -384,6 +389,24 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
             syncReportsRows,
         ],
     );
+
+    // The Library row could not be read and we hold none: the one thing this
+    // page is about is unavailable (denied, deleted, missing, or a real fault).
+    // A failed POLL while a row is already held keeps the notice below instead.
+    if (!library && rowUnavailable) {
+        return (
+            <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+                <AccessGate
+                    token="media_source_library"
+                    id={libraryId}
+                    error={rowReadError ?? undefined}
+                    onRetry={() => void loadLibraryRow()}
+                    fallbackHref="/libraries"
+                    fallbackLabel="Your libraries"
+                />
+            </div>
+        );
+    }
 
     return (
         <>
