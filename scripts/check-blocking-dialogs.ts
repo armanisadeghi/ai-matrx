@@ -15,6 +15,11 @@
  *      flagged.
  *   2. a file importing `@radix-ui/react-dialog` directly — a hand-built dialog
  *      silently skips the window default — outside the allowlist.
+ *   3. a CONFIRMATION built on the ordinary Dialog: a `DialogTitle` that reads
+ *      like one (Delete, Remove, Discard, Are you sure, Permanently, Revoke …).
+ *      Since the Dialog became a non-blocking window, such a confirmation no
+ *      longer blocks — found live on the data table's "Delete row?" on
+ *      2026-09-23. A confirmation is `ConfirmDialog` / `AlertDialog`.
  *
  * Every allowlist entry carries a reason; an entry that no longer matches
  * anything fails too, so the list only shrinks.
@@ -30,7 +35,7 @@ const ROOT = process.cwd();
 const SCAN_DIRS = ["app", "components", "features", "lib", "hooks", "providers"];
 const ALLOWLIST_PATH = "scripts/blocking-dialogs-allowlist.json";
 
-type Allow = { file: string; kind: "forced-modal" | "direct-radix"; reason: string };
+type Allow = { file: string; kind: "forced-modal" | "direct-radix" | "confirmation-on-dialog"; reason: string };
 type Finding = { file: string; line: number; kind: Allow["kind"]; text: string };
 
 /** Opening tags of a Dialog root, possibly spanning lines. */
@@ -38,6 +43,9 @@ const DIALOG_OPEN_TAG = /<(Dialog|DialogPrimitive\.Root)(\s[^>]*?)?>/gs;
 /** A `modal` prop that is not literally `{false}`. */
 const FORCED_MODAL = /(^|\s)modal(?!\s*=\s*\{\s*false\s*\})(\s*=\s*\{[^}]*\}|\s*=\s*"[^"]*"|(?=[\s/>]|$))/;
 const DIRECT_RADIX = /from\s+["']@radix-ui\/react-dialog["']/;
+/** A DialogTitle whose text reads like a confirmation of an irreversible act. */
+const CONFIRM_TITLE =
+  /<DialogTitle\b[^>]*>[^<]*\b(Delete|Remove|Discard|Are you sure|Permanently|Revoke|Overwrite|Destroy|Erase)\b/;
 
 export function findViolations(file: string, source: string): Finding[] {
   const findings: Finding[] = [];
@@ -46,6 +54,13 @@ export function findViolations(file: string, source: string): Finding[] {
     if (FORCED_MODAL.test(attrs)) {
       const line = source.slice(0, match.index).split("\n").length;
       findings.push({ file, line, kind: "forced-modal", text: match[0].replace(/\s+/g, " ").slice(0, 120) });
+    }
+  }
+  if (source.includes("<DialogContent")) {
+    const title = source.match(CONFIRM_TITLE);
+    if (title && title.index !== undefined) {
+      const line = source.slice(0, title.index).split("\n").length;
+      findings.push({ file, line, kind: "confirmation-on-dialog", text: title[0].slice(0, 120) });
     }
   }
   const radix = source.match(DIRECT_RADIX);
@@ -83,6 +98,21 @@ function selfTest(): number {
     { name: "no modal is fine", src: `<Dialog open onOpenChange={x}>`, expect: 0 },
     { name: "DialogContent is not a root", src: `<DialogContent modal>`, expect: 0 },
     { name: "AlertDialog is a confirmation", src: `<AlertDialog open>`, expect: 0 },
+    {
+      name: "a confirmation on the ordinary Dialog",
+      src: `<Dialog open><DialogContent><DialogTitle>Delete this row?</DialogTitle></DialogContent></Dialog>`,
+      expect: 1,
+    },
+    {
+      name: "an ordinary titled dialog is fine",
+      src: `<Dialog open><DialogContent><DialogTitle>Column settings</DialogTitle></DialogContent></Dialog>`,
+      expect: 0,
+    },
+    {
+      name: "a confirmation on AlertDialog is fine",
+      src: `<AlertDialog open><AlertDialogContent><AlertDialogTitle>Delete this row?</AlertDialogTitle></AlertDialogContent></AlertDialog>`,
+      expect: 0,
+    },
   ];
   let failed = 0;
   for (const c of cases) {
@@ -114,7 +144,13 @@ function main(): number {
   const stale = allow.filter((a) => !used.has(`${a.file}::${a.kind}`));
   for (const f of offending) {
     console.error(
-      `${f.file}:${f.line}  ${f.kind === "forced-modal" ? "forces a BLOCKING dialog" : "builds a dialog straight on Radix"} — ${f.text}`,
+      `${f.file}:${f.line}  ${
+        f.kind === "forced-modal"
+          ? "forces a BLOCKING dialog"
+          : f.kind === "direct-radix"
+            ? "builds a dialog straight on Radix"
+            : "is a CONFIRMATION built on the non-blocking Dialog — use ConfirmDialog / AlertDialog"
+      } — ${f.text}`,
     );
   }
   for (const a of stale) console.error(`${ALLOWLIST_PATH}: stale entry ${a.file} (${a.kind}) — delete it`);
