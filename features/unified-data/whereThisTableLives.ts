@@ -22,8 +22,11 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { resolveObjectOrganization } from "./objectOrganization";
+
 export type OtherStore =
-  | { kind: "record_store"; href: string }
+  /** The record store holds it, in `organizationId` — the TABLE'S organization, never the caller's. */
+  | { kind: "record_store"; href: string; organizationId: string }
   /**
    * The record store HOLDS this table and this person has not been given it. The store says
    * so itself (`custom.record_resolve` refuses 42501, "ask whoever holds it to share it with
@@ -53,10 +56,36 @@ export type OtherStore =
  */
 export async function whereThisTableLives(
   client: SupabaseClient,
-  organizationId: string,
+  /**
+   * ONLY the stand-in's organization (ACCESS-IS-PERSONAL): read solely while
+   * `custom.where_id_opens` is absent from this database. With the door present the
+   * table names its own organization and this argument is not consulted — "my active org has
+   * no impact on what I can see" (owner, 2026-09-23).
+   */
+  organizationId: string | null,
   tableId: string,
 ): Promise<OtherStore> {
   const store = client.schema("custom" as never);
+
+  // THE TABLE NAMES ITS OWN ORGANIZATION. Zero rows is "not a record-store table this person
+  // was given" — which, here, is "ask the older store"; the older viewer then says, honestly,
+  // that it is in neither.
+  const own = await resolveObjectOrganization(
+    {
+      rpc: (fn, args, opts) =>
+        client.schema((opts?.schema ?? "custom") as never).rpc(fn as never, args as never) as never,
+    },
+    tableId,
+  );
+  if (own.state === "found" && own.kind === "table") {
+    return { kind: "record_store", href: `/data-v2/${tableId}?moved=older-table`, organizationId: own.organizationId };
+  }
+  if (own.state === "found" || own.state === "not-given") return { kind: "nowhere" };
+  if (own.state === "unavailable") return { kind: "unknown", why: own.why };
+  // own.state === "stand-in": the door is absent here — the older path below, as before.
+  if (!organizationId) {
+    return { kind: "unknown", why: "no organization is chosen, and this database cannot yet say which organization a table lives in" };
+  }
 
   const kernel = await store.rpc("table_kernel_id" as never, {} as never);
   if (kernel.error || typeof kernel.data !== "string") {
@@ -72,7 +101,7 @@ export async function whereThisTableLives(
   if (((found.data ?? []) as Array<{ id?: string }>).some((row) => row.id === tableId)) {
     // The flag is how the new home knows to say, once, that the table moved — a redirect
     // that lands silently leaves a person wondering why their table looks different.
-    return { kind: "record_store", href: `/data-v2/${tableId}?moved=older-table` };
+    return { kind: "record_store", href: `/data-v2/${tableId}?moved=older-table`, organizationId };
   }
 
   const resolved = await store.rpc("record_resolve" as never, {

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1232,
+  "routeCount": 1234,
   "routes": [
     {
       "pattern": "/",
@@ -4711,6 +4711,11 @@
       "source": "app/(core)/notifications/page.tsx"
     },
     {
+      "pattern": "/o/[id]",
+      "status": "live",
+      "source": "app/(core)/o/[id]/page.tsx"
+    },
+    {
       "pattern": "/oauth/callback/[app]",
       "status": "live",
       "source": "app/oauth/callback/[app]/page.tsx"
@@ -5484,6 +5489,11 @@
       "pattern": "/reset-password",
       "status": "live",
       "source": "app/(auth-pages)/reset-password/page.tsx"
+    },
+    {
+      "pattern": "/resources/term-lists",
+      "status": "live",
+      "source": "app/(core)/resources/term-lists/page.tsx"
     },
     {
       "pattern": "/s/[token]",

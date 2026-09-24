@@ -24,7 +24,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ArchivedDisclosure,
   ArchivedPortals,
@@ -41,6 +41,7 @@ import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 
 /** The organization's member-visibility setting, at its one registry address. */
 const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" } as const;
@@ -54,6 +55,7 @@ import {
   type HubReadContext,
 } from "./capabilities";
 import { HubListing, type HubListingState } from "./HubListing";
+import { AllOrganizationsTables, OrganizationScopeStrip } from "./OrganizationScope";
 import * as doors from "./doors";
 
 /** An archived Table, with the one thing a person wants to do to it. */
@@ -93,6 +95,25 @@ export interface OrganizationHubProps {
 
 export function OrganizationHub({ organizationId, dataSource, inbox }: OrganizationHubProps) {
   const router = useRouter();
+  /**
+   * THE FILTER IS NAMED, AND "ALL" IS ONE CLICK (lane ACCESS-IS-PERSONAL, owner's law
+   * 2026-09-23): this LIST is the active organization's, so the page says which one and offers
+   * the way out. `?scope=all` is the unfiltered list, on the address so it can be sent.
+   */
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const organizationName = useAppSelector(selectOrganizationName);
+  const showingAll = searchParams.get("scope") === "all";
+  const setScope = useCallback(
+    (all: boolean) => {
+      const next = new URLSearchParams(searchParams.toString());
+      if (all) next.set("scope", "all");
+      else next.delete("scope");
+      const query = next.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [router, pathname, searchParams],
+  );
   const client = useRecordsClient();
   const tablesRead = useTables();
   const userIdForFacts = useAppSelector(selectUserId);
@@ -347,8 +368,26 @@ export function OrganizationHub({ organizationId, dataSource, inbox }: Organizat
     return all.slice(0, 3);
   }, [filtered]);
 
+  const scopeStrip = (
+    <OrganizationScopeStrip
+      organizationName={organizationName}
+      showingAll={showingAll}
+      onShowAll={() => setScope(true)}
+      onShowOne={() => setScope(false)}
+    />
+  );
+  if (showingAll) {
+    return (
+      <div data-hub-root className="space-y-4">
+        {scopeStrip}
+        <AllOrganizationsTables dataSource={dataSource} />
+      </div>
+    );
+  }
+
   return (
     <div data-hub-root className="space-y-4">
+      {scopeStrip}
       {/* START HERE — the walkthrough, and the three newest things, which are read
           off the same doors as everything below rather than written down here. */}
       <section className="rounded-lg border border-border bg-card">

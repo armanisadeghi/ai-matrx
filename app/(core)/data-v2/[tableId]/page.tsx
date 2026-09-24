@@ -24,11 +24,12 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { getOrganizationMembers } from "@/features/organizations/service";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { createClient } from "@/utils/supabase/client";
 import { useSharedTable } from "@/features/unified-data/hub/useSharedTable";
+import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
+import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
@@ -138,7 +139,6 @@ export default function UnifiedDataTableRoute({
     [router, pathname, searchParams],
   );
   const userId = useAppSelector(selectUserId);
-  const { organizationId, organizationState } = useOrganizationRequired();
   /**
    * THE ONE DATA SEAM, built once. It was built inline in `config` before,
    * which made a new client on every render and gave this route no way to ask
@@ -160,10 +160,60 @@ export default function UnifiedDataTableRoute({
    * person's own organization selection is never touched.
    */
   const askedOrganizationId = searchParams.get("org");
-  const shared = useSharedTable(dataSource, tableId, askedOrganizationId, organizationId);
-  /** The organization this page reads as: the owner's when the share is real, else the person's own. */
-  const readingOrganizationId =
-    shared.state === "shared" ? shared.organizationId : organizationId;
+  /**
+   * WHOSE TABLE THIS IS, ASKED OF THE TABLE — ACCESS IS PERSONAL (owner, 2026-09-23).
+   *
+   * 🚨 THE DEFECT THIS CLOSES (VERIFIER-15 M8, VERIFIER-16 verdict 2). This page mounted the
+   * store for the organization the person had PICKED, and every door decides the organization
+   * wall first — so a member of Rincon Plumbing Co, working in another of her organizations,
+   * opened a Rincon table and read "This table is not in the organization you are working in …
+   * or it may have been deleted". The access was hers; the page handed the door the wrong
+   * organization. "The permission is to the person, not the org. ALWAYS … For any RECORD I try
+   * to see, the active org is meaningless."
+   *
+   * So the page asks `custom.where_id_opens(<table>)` — the organization the table lives
+   * in, answered only when this person may open it — and reads as THAT. Switching
+   * organization never re-decides whether this opens; the active organization is not read here
+   * at all (`pnpm check:object-pages-read-the-objects-organization`). `?org=` is no longer
+   * trusted or needed: the table names its own organization.
+   */
+  const object = useObjectOrganization(dataSource, tableId);
+  /**
+   * A TABLE ANOTHER ORGANIZATION GAVE THIS PERSON. The store already admitted her (the door
+   * above answered); `useSharedTable` asks `custom.tables_shared_with_me`, which lists only
+   * organizations she is NOT a member of — so "shared" here means "an outsider, let in by a
+   * share", and it adds whose it is and at what level for the one line that says so. Only
+   * while the door is absent from a database (the stand-in) does `?org=` still carry a share,
+   * exactly as it did before this lane.
+   */
+  const shareHint =
+    object.state === "found"
+      ? object.organizationId
+      : object.state === "stand-in"
+        ? askedOrganizationId
+        : null;
+  const shared = useSharedTable(
+    dataSource,
+    tableId,
+    shareHint,
+    object.state === "stand-in" ? object.activeOrganizationId : null,
+  );
+  /** The organization this page reads as: the TABLE'S. */
+  const readingOrganizationId: string | null =
+    object.state === "found"
+      ? object.organizationId
+      : object.state === "stand-in"
+        ? shared.state === "shared"
+          ? shared.organizationId
+          : object.activeOrganizationId
+        : null;
+  const readingState: OrganizationState =
+    object.state === "stand-in" ? object.organizationState : readingOrganizationId ? "ready" : "resolving";
+  /**
+   * She reads it as a member of its organization (her roster is hers to read) — known only
+   * once the share door has said this is NOT a share of an outsider's.
+   */
+  const readsAsMember = shared.state === "none";
   // ONE SWITCH: does THIS organization keep its data in the record store? Set
   // once, for everybody, on the unified data ramp screen. There is no second,
   // per-person switch any more (lane NAV-FIX, 19 September).
@@ -174,7 +224,7 @@ export default function UnifiedDataTableRoute({
     // `iam.has_org_access`), so a shared table asks the OWNER's switch and gets
     // a real answer rather than "you are not in that organization".
     organizationId: readingOrganizationId,
-    organizationState,
+    organizationState: readingState,
     storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
   });
 
@@ -191,16 +241,15 @@ export default function UnifiedDataTableRoute({
     // Somebody else's organization's roster is not this person's to read, and
     // the package's own "no members" sentence is the honest answer on a shared
     // table. Their own organization answers normally.
-    if (shared.state === "shared") return [];
-    if (!organizationId) return [];
-    const roster = await getOrganizationMembers(organizationId);
+    if (!readsAsMember || !readingOrganizationId) return [];
+    const roster = await getOrganizationMembers(readingOrganizationId);
     return roster.map((member) => ({
       userId: member.userId,
       name: member.user?.displayName ?? null,
       email: member.user?.email ?? null,
       avatarUrl: member.user?.avatarUrl ?? null,
     }));
-  }, [organizationId, shared.state]);
+  }, [readingOrganizationId, readsAsMember]);
 
   /**
    * A NUMBER ON THE CANVAS CLICKS THROUGH — `@ai-matrx/records-ui`'s
@@ -316,9 +365,39 @@ export default function UnifiedDataTableRoute({
         <HeaderStructured title="Data" />
       </PageHeader>
       <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
-        {organizationState !== "ready" ? (
-          <OrganizationContextNotice state={organizationState} what="Data records" />
-        ) : shared.state === "checking" ? (
+        {object.state === "resolving" ? (
+          <p className="text-sm text-muted-foreground">Opening the table&hellip;</p>
+        ) : object.state === "not-given" ? (
+          /* THE HONEST REFUSAL. The store answers "not given to you" and "not there" the
+             same way on purpose — a guessed link learns nothing — so the sentence says both,
+             and says what to do. It never mentions the organization she is working in,
+             because that has nothing to do with it. */
+          <div className="flex flex-col items-start gap-2 rounded-md border border-dashed p-6">
+            <p className="text-sm font-medium">You have not been given this table</p>
+            <p className="max-w-prose text-xs text-muted-foreground">
+              Nobody has shared it with you, or it no longer exists &mdash; the store gives the
+              same answer for both, so a link can never reveal a table you were not given. Ask
+              the person who sent you the link to share it with you, and it will open here as
+              soon as they do. Which organization you are working in makes no difference.
+            </p>
+            <Button size="sm" variant="outline" onClick={() => router.push("/data-v2")}>
+              Back to your tables
+            </Button>
+          </div>
+        ) : object.state === "unavailable" ? (
+          <div className="flex flex-col items-start gap-2 rounded-md border border-dashed p-6">
+            <p className="text-sm font-medium">We could not find out where this table is</p>
+            <p className="max-w-prose text-xs text-muted-foreground">
+              The record store did not answer, so nothing was opened. This is not an answer about
+              your access. {object.why}
+            </p>
+            <Button size="sm" variant="outline" onClick={object.retry}>
+              Try again
+            </Button>
+          </div>
+        ) : object.state === "stand-in" && object.organizationState !== "ready" ? (
+          <OrganizationContextNotice state={object.organizationState} what="Data records" />
+        ) : object.state === "stand-in" && shared.state === "checking" ? (
           /* The address says this table belongs to another organization. Until
              the store has said whether that share is real, nothing is mounted —
              mounting the person's own organization meanwhile is exactly the
@@ -326,7 +405,7 @@ export default function UnifiedDataTableRoute({
           <p className="text-sm text-muted-foreground">
             Opening the table&hellip;
           </p>
-        ) : shared.state === "not-shared" ? (
+        ) : object.state === "stand-in" && shared.state === "not-shared" ? (
           <div className="flex flex-col items-start gap-2 rounded-md border border-dashed p-6">
             <p className="text-sm font-medium">This shared table cannot open right now</p>
             <p className="max-w-prose text-xs text-muted-foreground">{shared.why}</p>

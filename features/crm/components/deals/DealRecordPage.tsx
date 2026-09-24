@@ -391,7 +391,7 @@ export function DealRecordPage({ dealId }: Props) {
                     no per-entity code: the SAME line the contact page carries,
                     with a different token. Absent (not an empty box) until this
                     organization declares a field on deals. */}
-                <EntityCustomFields entityToken="crm_deal" recordId={deal.id} />
+                <EntityCustomFields entityToken="crm_deal" recordId={deal.id} organizationId={deal.organization_id} />
 
                 <SectionCard
                   title="Stage history"

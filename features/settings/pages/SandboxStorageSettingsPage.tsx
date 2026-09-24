@@ -31,14 +31,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
+// The storage-delete confirmation is an AlertDialog: it blocks the page on purpose
+// (policy ai-reachable-everywhere; the ordinary Dialog is a non-blocking window on desktop).
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { useUserPersistence } from "@/hooks/sandbox/use-user-persistence";
 import type { SandboxTier, UserPersistenceInfo } from "@/types/sandbox";
@@ -280,7 +282,7 @@ export default function SandboxStoragePage() {
         </div>
       )}
 
-      <Dialog
+      <AlertDialog
         open={pendingDelete !== null}
         onOpenChange={(open) => {
           if (!open && !deleting) {
@@ -289,14 +291,14 @@ export default function SandboxStoragePage() {
           }
         }}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
               {pendingDelete
                 ? `Delete ${TIER_LABELS[pendingDelete]} storage?`
                 : "Delete persistent storage?"}
-            </DialogTitle>
-            <DialogDescription>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
               This permanently deletes everything in your{" "}
               <code className="font-mono">/home/agent</code> volume on the
               hosted volume. Anything you didn&apos;t push to a git remote is
@@ -306,14 +308,14 @@ export default function SandboxStoragePage() {
                 /sandbox
               </Link>{" "}
               first.
-            </DialogDescription>
-          </DialogHeader>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
           {deleteError && (
             <div className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
               {deleteError}
             </div>
           )}
-          <DialogFooter>
+          <AlertDialogFooter>
             <Button
               variant="outline"
               disabled={deleting}
@@ -336,9 +338,9 @@ export default function SandboxStoragePage() {
               )}
               Yes, delete
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

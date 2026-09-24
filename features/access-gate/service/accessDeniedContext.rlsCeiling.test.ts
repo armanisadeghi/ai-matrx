@@ -27,6 +27,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import pg from "pg";
 
+import { testDbEnvFrom } from "@/scripts/lib/direct-db-env";
+
 const MIGRATION = resolve(
   __dirname,
   "../../../migrations/access_gate_resolver_reports_the_real_rls_ceiling.sql",
@@ -67,29 +69,15 @@ const CASES = [
 ] as const;
 
 function loadEnv(): pg.ClientConfig {
-  const bag: Record<string, string | undefined> = { ...process.env };
-  const aidream = resolve(__dirname, "../../../../aidream/.env");
-  for (const line of readFileSync(aidream, "utf8").split("\n")) {
-    const m = line.match(/^\s*(SUPABASE_MATRIX_[A-Z_]+)\s*=\s*(.*?)\s*$/);
-    if (m && !bag[m[1]!]) bag[m[1]!] = (m[2] ?? "").replace(/^['"]|['"]$/g, "");
-  }
-  const need = [
-    "SUPABASE_MATRIX_HOST",
-    "SUPABASE_MATRIX_PORT",
-    "SUPABASE_MATRIX_USER",
-    "SUPABASE_MATRIX_PASSWORD",
-    "SUPABASE_MATRIX_DATABASE_NAME",
-  ];
-  const missing = need.filter((k) => !bag[k]);
-  if (missing.length) {
-    throw new Error(`UNMEASURED: direct DB variables missing: ${missing.join(", ")}`);
-  }
+  // THE ONE DOOR for a live test (scripts/lib/direct-db-env.ts): never the live database by
+  // accident — repointed to MATRX_TEST_DATABASE_URL / SUPABASE_BRANCH_DATABASE_URL, or refused.
+  const db = testDbEnvFrom(resolve(__dirname, "../../.."));
   return {
-    host: bag.SUPABASE_MATRIX_HOST,
-    port: Number(bag.SUPABASE_MATRIX_PORT),
-    user: bag.SUPABASE_MATRIX_USER,
-    password: bag.SUPABASE_MATRIX_PASSWORD,
-    database: bag.SUPABASE_MATRIX_DATABASE_NAME,
+    host: db.host,
+    port: db.port,
+    user: db.user,
+    password: db.password,
+    database: db.database,
     ssl: { rejectUnauthorized: false },
     application_name: "access-gate-rls-ceiling-test",
     connectionTimeoutMillis: 15_000,

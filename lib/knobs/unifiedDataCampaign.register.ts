@@ -475,6 +475,12 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "THE unified table page: views, the four layouts, peek with history and comments, settings, the action inbox, import and export. Served to users, so it reads the switch.",
     },
     {
+        id: "object-organization",
+        file: "features/unified-data/objectOrganization.ts",
+        kind: "door_gated",
+        why: "ACCESS IS PERSONAL (lane ACCESS-IS-PERSONAL, owner's law 2026-09-23). The one resolver every object page asks before any other door: custom.where_id_opens(p_id) (lane ROUTE-RESOLVER's door, the one platform.resolve_id stands on) answers the organization an object lives in, read FROM THE OBJECT, only when the signed-in person could already open it. It takes no organization, so there is no organization whose switch it could ask; every caller then asks UNIFIED_DATA_CAMPAIGN of the organization it was told (the table page, the capture sheet, the approval card), and every door that follows reads custom/system_enabled itself. It writes nothing. While the door is absent from a database it answers a stand-in that says so in the console, and the caller does exactly what it did before.",
+    },
+    {
         id: "where-this-table-lives",
         file: "features/unified-data/whereThisTableLives.ts",
         kind: "door_gated",

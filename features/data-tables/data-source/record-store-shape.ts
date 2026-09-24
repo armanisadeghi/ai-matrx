@@ -359,3 +359,29 @@ export function searchRowsLikeTheOlderStore<T extends Sortable>(rows: readonly T
   if (needle === "") return [...rows];
   return rows.filter((row) => jsonbText(row.data).toLowerCase().includes(needle));
 }
+
+/**
+ * THE TABLE'S DEFAULT SORT, IN THE STORE'S OWN WORDS: `default_sort: [{field, direction}]`.
+ * That is what the store's table declaration and the mover write (TABLE-PARITY gap 3 found
+ * the seam reading and writing `{key}`, so a moved table's saved sort never applied). A
+ * `{key}` entry — written by this seam before the fix — is still read, so no saved sort is lost.
+ */
+export function olderRowOrdering(
+  defaultSort: unknown,
+  fields: readonly Pick<Field, "key">[],
+): { default_sort: { field: string; direction: "asc" | "desc" } } | null {
+  const first = Array.isArray(defaultSort)
+    ? (defaultSort[0] as { field?: unknown; key?: unknown; direction?: unknown } | undefined)
+    : undefined;
+  const name = typeof first?.field === "string" ? first.field : typeof first?.key === "string" ? first.key : null;
+  if (!name || !fields.some((f) => f.key === name)) return null;
+  return { default_sort: { field: name, direction: first?.direction === "desc" ? "desc" : "asc" } };
+}
+
+/** The grid's "Save as default" as the store's `default_sort` value (empty = no saved sort). */
+export function storeDefaultSort(
+  sortField: string | undefined,
+  sortDirection: "asc" | "desc" | undefined,
+): Array<{ field: string; direction: "asc" | "desc" }> {
+  return sortField ? [{ field: sortField, direction: sortDirection ?? "asc" }] : [];
+}

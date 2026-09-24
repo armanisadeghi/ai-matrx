@@ -18,19 +18,25 @@
 // session, and the doors decide. The link is an address, not a secret: a crew member who
 // drops their phone in a skip has leaked nothing.
 //
-// WHY THE ORGANIZATION IS NOT ASKED FOR. `custom.capture_open` takes the organization id,
-// and the phone has one: whichever organization the person is in. If they are in the wrong
-// one the door answers with no row and the screen says so in words — it does not guess, and
-// it does not show a picker to somebody standing at a bin.
+// WHY THE ORGANIZATION IS NOT ASKED FOR — AND NOT TAKEN FROM THE PHONE EITHER (lane
+// ACCESS-IS-PERSONAL, owner's law 2026-09-23: "the permission is to the person, not the org").
+// `custom.capture_open` takes the organization id. It used to be handed whichever organization
+// the person happened to be working in, so a crew member of Rincon who last worked in her
+// franchise group got "no such sheet" at the bin. The SHEET names its own organization now:
+// `custom.where_id_opens(<sheet>)` answers it, only for somebody who may open the sheet's
+// Table, and the door is handed that. Nobody standing at a bin is shown a picker, and nobody
+// is refused for having picked the wrong thing earlier.
 
-import { use } from "react";
+import { use, useMemo } from "react";
 import Link from "next/link";
+import { Button } from "@ai-matrx/design-system";
 import { CaptureRun, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
+import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
 import { createClient } from "@/utils/supabase/client";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
@@ -44,7 +50,12 @@ export default function CrewCaptureRoute({
 }) {
   const { sheetId } = use(params);
   const userId = useAppSelector(selectUserId);
-  const { organizationId, organizationState } = useOrganizationRequired();
+  const dataSource = useMemo(() => recordsDataSource(createClient()), []);
+  const sheet = useObjectOrganization(dataSource, sheetId);
+  const organizationId: string | null =
+    sheet.state === "found" ? sheet.organizationId : sheet.state === "stand-in" ? sheet.activeOrganizationId : null;
+  const organizationState: OrganizationState =
+    sheet.state === "stand-in" ? sheet.organizationState : organizationId ? "ready" : "resolving";
   // ONE SWITCH, the same one every other unified-data screen reads: does THIS
   // organization keep its data in the record store? A crew member arriving on a link
   // from an organization that has not turned it on is told in one sentence, not shown a
@@ -57,7 +68,28 @@ export default function CrewCaptureRoute({
 
   return (
     <main className="min-h-dvh bg-background">
-      {organizationState !== "ready" ? (
+      {sheet.state === "resolving" ? (
+        <p className="p-4 text-sm text-muted-foreground">Opening the capture sheet&hellip;</p>
+      ) : sheet.state === "not-given" ? (
+        <div className="space-y-2 p-4">
+          <p className="text-sm font-medium">You have not been given this capture sheet</p>
+          <p className="text-xs text-muted-foreground">
+            It opens for anyone who can open its table. Nobody has given you that table, or the
+            sheet no longer exists. Ask whoever sent you this link to share the table with you.
+          </p>
+        </div>
+      ) : sheet.state === "unavailable" ? (
+        <div className="space-y-2 p-4">
+          <p className="text-sm font-medium">We could not open this capture sheet</p>
+          <p className="text-xs text-muted-foreground">
+            The record store did not answer, so nothing was opened. This is not an answer about
+            your access. {sheet.why}
+          </p>
+          <Button size="sm" variant="outline" onClick={sheet.retry}>
+            Try again
+          </Button>
+        </div>
+      ) : organizationState !== "ready" ? (
         <div className="p-4">
           <OrganizationContextNotice state={organizationState} what="Capture" />
         </div>
@@ -71,7 +103,7 @@ export default function CrewCaptureRoute({
         <RecordsMount
           letTheStoreDecideRights
           config={{
-            dataSource: recordsDataSource(createClient()),
+            dataSource,
             actor: personActor(userId),
             organizationId: organizationId!,
           }}

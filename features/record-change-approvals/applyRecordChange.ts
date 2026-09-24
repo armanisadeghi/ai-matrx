@@ -39,8 +39,7 @@
 import { recordsDataSource } from "@ai-matrx/records-ui";
 
 import { createClient } from "@/utils/supabase/client";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { resolveObjectOrganization, standInOrganizationId } from "@/features/unified-data/objectOrganization";
 import {
   UNIFIED_DATA_CAMPAIGN,
   UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE,
@@ -77,12 +76,22 @@ interface DecisionAnswer {
  * the unified record store? Asked before any door, exactly as every other
  * served reach into the store asks it.
  */
-async function reachOrRefusal(): Promise<
+async function reachOrRefusal(objectId: string): Promise<
   | { organizationId: string; rpc: ReturnType<typeof recordsDataSource>["rpc"] }
   | { refused: string }
 > {
-  const state = getStoreSingleton()?.getState();
-  const organizationId = state ? selectActiveOrganizationId(state) : null;
+  // ACCESS IS PERSONAL (owner, 2026-09-23). The approval — or the table — names its own
+  // organization; the one the person happens to be working in decides nothing. A person who
+  // may decide an approval in Rincon decides it from wherever she is.
+  const dataSource = recordsDataSource(createClient());
+  const own = await resolveObjectOrganization(dataSource, objectId);
+  if (own.state === "not-given") {
+    return { refused: "This change is not one you have been given, or it is no longer there." };
+  }
+  if (own.state === "unavailable") {
+    return { refused: `Could not ask the record store where this change lives, so nothing was done. ${own.why}` };
+  }
+  const organizationId = own.state === "found" ? own.organizationId : standInOrganizationId();
   if (!(await UNIFIED_DATA_CAMPAIGN.enabled(organizationId))) {
     return { refused: UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE };
   }
@@ -98,7 +107,7 @@ async function reachOrRefusal(): Promise<
   // ships; until then, going through the same data source with the same schema
   // is the honest option — the alternative is a card that refuses a live door
   // because a build artefact has not caught up.
-  return { organizationId, rpc: recordsDataSource(createClient()).rpc };
+  return { organizationId, rpc: dataSource.rpc };
 }
 
 /** What a door refusal reads like when the person, not a log, is the audience. */
@@ -129,7 +138,7 @@ async function decide(
         "for and what to do.",
     };
   }
-  const reached = await reachOrRefusal();
+  const reached = await reachOrRefusal(wait.approvalId);
   if ("refused" in reached) return { status: "refused", detail: reached.refused };
 
   const response = (await reached.rpc(
@@ -185,7 +194,7 @@ export async function declineRecordChange(
  * nothing about the table rather than showing an id.
  */
 export async function tableNameFor(tableId: string): Promise<string | null> {
-  const reached = await reachOrRefusal();
+  const reached = await reachOrRefusal(tableId);
   if ("refused" in reached) return null;
   const response = (await reached.rpc(
     "read_record",

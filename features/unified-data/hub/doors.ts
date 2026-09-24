@@ -249,3 +249,27 @@ export function changedBy(
     organizationId,
   );
 }
+
+export interface TableICanOpenRow {
+  table_id: string;
+  table_name: string;
+  organization_id: string;
+  organization_name: string;
+  /** False for an outsider the organization let in by a share. */
+  member: boolean;
+  /** The record's own `visibility` column: personal · internal · link · public. */
+  visibility: string;
+  updated_at: string | null;
+}
+
+/**
+ * EVERY TABLE THIS PERSON CAN OPEN, IN EVERY ORGANIZATION SHE CAN REACH —
+ * `custom.tables_i_can_open()` (lane ACCESS-IS-PERSONAL). The hub's "All my
+ * organizations" list: the active organization filters a list only while the page says
+ * which one, and this is the "select all" (owner's law, 2026-09-23). It takes no
+ * organization; the door skips every organization whose store is off, so there is no
+ * single switch to ask here.
+ */
+export function tablesICanOpen(dataSource: RecordsDataSource): Promise<DoorAnswer<TableICanOpenRow[]>> {
+  return call<TableICanOpenRow[]>(dataSource, "tables_i_can_open", {});
+}

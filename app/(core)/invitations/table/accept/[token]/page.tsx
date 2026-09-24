@@ -54,8 +54,6 @@ import { Card } from "@/components/ui/card";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import { invitationSignUpHref } from "@/utils/auth/invitation-links";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { setOrganization } from "@/lib/redux/slices/appContextSlice";
 import {
   acceptOutsideShare,
   peekTableShare,
@@ -67,7 +65,6 @@ type Opened = Awaited<ReturnType<typeof acceptOutsideShare>>;
 export default function AcceptTableSharePage() {
   const params = useParams();
   const router = useRouter();
-  const dispatch = useAppDispatch();
   const token = params.token as string;
 
   const [working, setWorking] = useState(false);
@@ -98,26 +95,13 @@ export default function AcceptTableSharePage() {
     setError(null);
     try {
       const answer = await acceptOutsideShare(token);
-      // 🚨 SHE IS IN NO ORGANIZATION, SO SHE CAN NEVER CHOOSE ONE — and every
-      // record surface HOLDS a request that carries none. Measured headless on
-      // 2026-09-21: the customer accepted, landed on the table's route, and read
-      // *"Data records need an organization … no organization is selected for
-      // this session"* with a picker that had nothing in it. The hold is right
-      // for a member with several organizations and a dead end for an outside
-      // principal, who has exactly one reachable organization and no membership
-      // to pick it from.
-      //
-      // This is NOT the banned "default organization". That law forbids a
-      // resolver choosing an organization for somebody from a cookie, a saved
-      // preference or their personal org. This is the opposite: an EXPLICIT act
-      // by the person, on an organization the invitation itself named, at the
-      // moment they accept it — the same `appContext/setOrganization` a click in
-      // the picker dispatches, mirrored to the shared cookie by the same
-      // middleware. It confers nothing: the grant is what lets her read, and the
-      // ladder still answers every door.
-      dispatch(
-        setOrganization({ id: answer.organization_id, name: answer.organization }),
-      );
+      // 🚨 HER ORGANIZATION IS NOT MOVED (lane ACCESS-IS-PERSONAL, owner's law 2026-09-23:
+      // "the permission is to the person, not the org … my active org has no impact on what I
+      // can see"). This used to dispatch `setOrganization` to the OWNER'S organization, because
+      // the table page mounted the store for whichever organization was picked and an outsider
+      // has none to pick. The table page now asks the table which organization it lives in
+      // (`custom.object_organization`), so the grant alone opens it and her own selection stays
+      // exactly where she left it — which is what "yours is unchanged" on that page says.
       setOpened(answer);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -126,7 +110,7 @@ export default function AcceptTableSharePage() {
     } finally {
       setWorking(false);
     }
-  }, [token, look, dispatch]);
+  }, [token, look]);
 
   const signIn = useCallback(async () => {
     // Sign-up carries the destination and the TOKEN back here (never the
@@ -194,14 +178,11 @@ export default function AcceptTableSharePage() {
         </div>
         <h2 className="mb-2 text-xl font-semibold">{opened.table} is open to you</h2>
         <p className="mb-6 text-sm text-muted-foreground">{opened.say}</p>
-        {/* 🚨 THE LINK NAMES THE ORGANIZATION IT IS ABOUT (lane HUB-FIX). The
-            accept above dispatches `setOrganization` and this pushes in the same
-            gesture — a Redux write and a route change racing each other, and the
-            loser is a person landing on "This table is not here" seconds after
-            being told the table is open to them. The address carries the owning
-            organization the way `platform.link_carries_its_organization` makes
-            every notification link name its own, and the table route reads it,
-            so the screen cannot depend on which of the two won. */}
+        {/* THE LINK NAMES THE ORGANIZATION IT IS ABOUT (lane HUB-FIX), the way
+            `platform.link_carries_its_organization` makes every notification link
+            name its own. The table route no longer needs it — the table names its
+            own organization (lane ACCESS-IS-PERSONAL) — but a link that says whose
+            it is stays honest when copied. */}
         <Button
           onClick={() =>
             router.push(`/data-v2/${opened.table_id}?org=${opened.organization_id}`)

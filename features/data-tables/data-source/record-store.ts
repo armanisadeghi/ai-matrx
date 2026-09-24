@@ -65,8 +65,10 @@ import {
   jsonbText,
   olderColumnFromField,
   olderRowData,
+  olderRowOrdering,
   searchRowsLikeTheOlderStore,
   sortRowsLikeTheOlderStore,
+  storeDefaultSort,
   storeValue,
 } from "./record-store-shape";
 
@@ -782,13 +784,6 @@ function storeRowActions(actions: ReadonlyArray<Record<string, unknown>>, fields
   return out;
 }
 
-/** The Table's `default_sort` (the store's own key: `[{key, direction}]`) as the older config. */
-function olderRowOrdering(defaultSort: unknown, fields: readonly Field[]): Record<string, unknown> | null {
-  const first = Array.isArray(defaultSort) ? (defaultSort[0] as { key?: unknown; direction?: unknown } | undefined) : undefined;
-  if (!first || typeof first.key !== "string" || !fields.some((f) => f.key === first.key)) return null;
-  return { default_sort: { field: first.key, direction: first.direction === "desc" ? "desc" : "asc" } };
-}
-
 async function fieldsOf(home: RecordStoreHome, tableId: string): Promise<ServiceResult<Field[]>> {
   const snap = await snapshot(home, tableId);
   if (!snap.success) return snap;
@@ -907,7 +902,7 @@ export async function setDefaultSort(
   home: RecordStoreHome,
   args: { tableId: string; sortField?: string; sortDirection?: "asc" | "desc" },
 ): Promise<ServiceResult<null>> {
-  const value = args.sortField ? [{ key: args.sortField, direction: args.sortDirection ?? "asc" }] : [];
+  const value = storeDefaultSort(args.sortField, args.sortDirection);
   const written = await clientFor(home).recordUpdate({ record_id: args.tableId, patch: { default_sort: value } });
   invalidateRecordStoreTable(args.tableId);
   if (!written.ok) return refused(written.error);
