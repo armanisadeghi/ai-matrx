@@ -25,7 +25,7 @@ export default async function MarketingCollectionRunPage({
     .schema("seo")
     .from("collection_run")
     .select(
-      "id, provider, capability, operation, status, requested_at, completed_at, result",
+      "id, organization_id, provider, capability, operation, status, requested_at, completed_at, result",
     )
     .eq("id", runId)
     .maybeSingle();
