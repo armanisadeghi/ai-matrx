@@ -32,6 +32,7 @@ dotenv.config({ path: path.resolve(__dirname, "../../../../../aidream/.env"), ov
 
 import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 import { defaultFormatForBase } from "@/lib/field-formats/registry";
+import { withComputedColumns } from "@/features/data-tables/formulas";
 
 const URL_ = process.env.GRID_PORT_SUPABASE_URL ?? "";
 const KEY = process.env.GRID_PORT_SUPABASE_PUBLISHABLE_KEY ?? "";
@@ -80,6 +81,13 @@ function norm(value: unknown): unknown {
     );
   }
   return value;
+}
+
+/** A formula's result read as a number when it is one: "19193920" and 19193920 are one answer. */
+function normFormula(value: unknown): unknown {
+  const n = norm(value);
+  if (typeof n === "string" && n.trim() !== "" && Number.isFinite(Number(n))) return Number(n);
+  return n;
 }
 
 const describeLive = READY ? describe : describe.skip;
@@ -199,15 +207,23 @@ describeLive("a moved table reads the same through both halves of the grid's sea
       }
       const storeRows = new Map(sp.data.rows.map((r: Row) => [r.id, r]));
       const declared = new Set(o.data.columns.map((c) => c.field_name));
-      for (const or of op.data.rows as Row[]) {
+      // A FORMULA column stores nothing in the older store — the older grid computes it in the
+      // browser (`withComputedColumns`) — while the record store computes it itself. So the older
+      // side is compared AS THE OLDER GRID DRAWS IT: its own computation, not its empty cell
+      // (lane INTEG-CLIENTS; this is what "the browser computes nothing for a store table" means).
+      const olderDrawn = withComputedColumns(
+        op.data.rows as Row[],
+        o.data.columns as unknown as Parameters<typeof withComputedColumns>[1],
+      ).rows as Row[];
+      for (const or of olderDrawn) {
         const sr = storeRows.get(or.id);
         if (!sr) {
           seamDiffs.push(`${t.name}: row ${or.id} missing from the store read`);
           continue;
         }
         for (const key of declared) {
-          const a = norm(or.data[key]);
-          const b = norm(sr.data[key]);
+          const a = normFormula(or.data[key]);
+          const b = normFormula(sr.data[key]);
           if (JSON.stringify(a) !== JSON.stringify(b)) {
             const column = o.data.columns.find((c) => c.field_name === key);
             const format = ((column?.metadata ?? {}) as { format?: { id?: string } }).format?.id;
@@ -242,7 +258,10 @@ describeLive("a moved table reads the same through both halves of the grid's sea
           if (!o.success || !s.success) continue;
           const a = (o.data.rows as Row[]).map((r) => r.id).join(",");
           const b = (s.data.rows as Row[]).map((r) => r.id).join(",");
-          if (a !== b && !brokenRelation.has(`${t.id}:${c.field_name}`)) orderDiffs.push(`${t.name}.${c.field_name} ${dir}`);
+          // The older DOOR sorts a formula column by its empty stored cell (every row ties), so there
+          // is no older order to match; the store sorts by the value it computed.
+          const isFormula = ((c.metadata ?? {}) as { format?: { id?: string } }).format?.id === "formula";
+          if (a !== b && !isFormula && !brokenRelation.has(`${t.id}:${c.field_name}`)) orderDiffs.push(`${t.name}.${c.field_name} ${dir}`);
         }
       }
       // Search: the first word of the first row's first text value.
