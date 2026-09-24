@@ -334,9 +334,14 @@ export const gameService = {
     displayName: string,
   ): Promise<EngageResult<LeagueMembershipRow>> {
     try {
+      // The caller NAMES the organization the membership belongs to — the
+      // database never picks one (aidream 0929). ensureOrgId holds for the
+      // org picker when no organization is active.
+      const orgId = await ensureOrgId(null);
       const { data, error } = await supabase.rpc("league_set_opt_in", {
         p_opted_in: optedIn,
         p_display_name: displayName,
+        p_organization_id: orgId,
       });
       if (error) return fail("setLeagueOptIn", error);
       return { data, error: null };
