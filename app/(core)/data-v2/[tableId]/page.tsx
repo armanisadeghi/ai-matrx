@@ -33,6 +33,7 @@ import { createRecordsRealtimePort } from "@/features/unified-data/realtime/reco
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
+import { SheetLayout } from "@/features/data-tables/components/SheetLayout";
 
 export default function UnifiedDataTableRoute({
   params,
@@ -129,7 +130,7 @@ export default function UnifiedDataTableRoute({
    * you want the Back button to walk you through one layout at a time.
    */
   const onViewChanged = useCallback(
-    (view: PageView) => {
+    (view: PageView | string) => {
       const next = new URLSearchParams(searchParams.toString());
       next.set("view", view);
       router.replace(`${pathname}?${next.toString()}`, { scroll: false });
@@ -361,6 +362,22 @@ export default function UnifiedDataTableRoute({
               // hands it here; this returns the platform's ONE chat column bound to
               // that record. Never a second chat (the canvas ruling).
               chat: (ctx) => <RecordScopedChat ctx={ctx} organizationId={readingOrganizationId} />,
+              // THE SHEET. The classic /data grid, ported onto the one data seam, is the
+              // fifth layout of this one table page (owner's ruling 2026-09-23: no switch
+              // on /data, no new route). It reads and writes the record store only.
+              layouts: [
+                {
+                  id: "sheet",
+                  label: "Sheet",
+                  render: ({ tableId: sheetTableId }) => (
+                    <SheetLayout
+                      tableId={sheetTableId}
+                      organizationId={readingOrganizationId!}
+                      userId={userId ?? null}
+                    />
+                  ),
+                },
+              ],
             }}
           >
             {/* WHOSE TABLE THIS IS, SAID OUT LOUD AND ONCE. A person reading
