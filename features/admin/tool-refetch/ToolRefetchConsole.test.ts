@@ -7,6 +7,25 @@ import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table/types";
+import { ToolDetail } from "./ToolRefetchConsole";
+import type { ToolRefetchDetailRow } from "./service";
+
+let mockDetailQuery: {
+  data: ToolRefetchDetailRow[];
+  isPending: boolean;
+  isError: boolean;
+  isFetching: boolean;
+  error: null;
+  refetch: jest.Mock;
+};
+const mockDetailQueryKeys: unknown[][] = [];
+
+jest.mock("@tanstack/react-query", () => ({
+  useQuery: (options: { queryKey: unknown[] }) => {
+    mockDetailQueryKeys.push(options.queryKey);
+    return mockDetailQuery;
+  },
+}));
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -91,5 +110,91 @@ describe("ToolRefetchConsole canonical copy view", () => {
     expect(host.querySelector("[data-testid='copy-row-ids']")?.textContent).toBe(
       "name-exact-match,hidden-match",
     );
+  });
+});
+
+describe("ToolDetail canonical repeat grid", () => {
+  let host: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    host = document.createElement("div");
+    document.body.append(host);
+    root = createRoot(host);
+    mockDetailQueryKeys.length = 0;
+    mockDetailQuery = {
+      data: Array.from({ length: 50 }, (_, index) => ({
+        repeatToolCallId: `repeat-${index}`,
+        conversationId: index === 0 ? "12345678-1234-1234-1234-123456789abc" : null,
+        toolName: "web.search",
+        repeatAt: "2026-09-24T12:00:00.000Z",
+        repeatIteration: index + 2,
+        repeatOutputChars: 40,
+        firstAt: "2026-09-24T11:59:00.000Z",
+        firstIteration: 1,
+        firstOutputChars: 20,
+        priorIdenticalCalls: index + 1,
+        sameData: index % 2 === 0,
+        gapCalls: 2,
+        gapSecs: 60,
+        gapIterations: 1,
+        trimmedBeforeRepeat: false,
+        args: { query: "repeat" },
+      })),
+      isPending: false,
+      isError: false,
+      isFetching: false,
+      error: null,
+      refetch: jest.fn(),
+    };
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    host.remove();
+  });
+
+  it("uses the canonical append footer for an honest loaded window and retains every repeat field", async () => {
+    await act(async () => {
+      root.render(createElement(ToolDetail, { toolName: "web.search", window: "30d", expectedRepeats: 75 }));
+    });
+
+    expect(host.textContent).toContain("50 loaded of 75");
+    expect(host.textContent).toContain("Load more");
+    expect(host.textContent).not.toContain("Showing 50 of 75 repeats.");
+    expect(Array.from(host.querySelectorAll("th")).map((cell) => cell.textContent)).toEqual(
+      expect.arrayContaining([
+        "When",
+        "Repeat iteration",
+        "Conversation",
+        "Data",
+        "After trim",
+        "Gap (calls)",
+        "Gap (mm:ss)",
+        "Gap (iterations)",
+        "First call",
+        "First iteration",
+        "First chars",
+        "Repeat chars",
+        "Prior identical",
+        "Arguments",
+      ]),
+    );
+
+    const loadMore = Array.from(host.querySelectorAll("button")).find(
+      (button) => button.textContent === "Load more",
+    );
+    expect(loadMore).toBeDefined();
+    await act(async () => {
+      loadMore?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(mockDetailQueryKeys.at(-1)).toEqual([
+      "admin",
+      "tool-refetch",
+      "detail",
+      "web.search",
+      "30d",
+      2,
+    ]);
   });
 });
