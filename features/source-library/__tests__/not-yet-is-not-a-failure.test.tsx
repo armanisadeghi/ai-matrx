@@ -18,10 +18,10 @@
  *
  * RED PROOFS (run any and the named block fails):
  *
- *   J1 — in `components/LibraryPage.tsx`, delete `if (!organizationId) return;`
- *        from `refreshMetrics`.
- *        → "nothing is asked of the server before there is an organization to
- *          ask with" fails: the read fires with no organization.
+ *   J1 — (2026-09-23, THE PERSON, NOT THE ORG) put `if (!organizationId) return;`
+ *        back into `refreshMetrics` / the mount read.
+ *        → "a Library opens with NO organization selected" fails: with none
+ *          selected the page asked nothing and sat empty until one was picked.
  *
  *   J2 — delete the `isOrganizationNotReady(error)` branch in the same catch.
  *        → "the transport's own not-yet never becomes a sentence" fails with
@@ -90,6 +90,11 @@ jest.mock("next/navigation", () => ({
     useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
     useSearchParams: () => new URLSearchParams(),
 }));
+// The switch offer has its own suite; here it would need the auth slice.
+jest.mock("@/features/organizations/components/RecordOrganizationSwitchOffer", () => ({
+    __esModule: true,
+    RecordOrganizationSwitchOffer: () => null,
+}));
 jest.mock("../hooks/useActionRegistry", () => ({
     __esModule: true,
     useActionRegistry: () => ({ actions: [], error: null, remedy: null, reload: jest.fn() }),
@@ -132,7 +137,6 @@ function mediaError(message: string, code: string, status?: number) {
 
 const LIBRARY_ID = "9978e2a8-71d1-40e2-80da-c0243dd1baab";
 const ORG = "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f";
-const OTHER_ORG = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
 
 /** Exactly what the transport hands a caller before the org has resolved. */
 const notYet = () =>
@@ -201,19 +205,11 @@ afterEach(() => {
 
 const SENTENCE = "Select an organization before sending this request.";
 
-describe("K · a cold load asks nothing until it has an organization to ask with", () => {
-    it("nothing is asked of the server before there is an organization to ask with", async () => {
-        getLibrary.mockRejectedValue(notYet());
-        getLibraryMetrics.mockRejectedValue(notYet());
-
-        const node = await mountWithoutOrganization();
-
-        expect(getLibraryMetrics).not.toHaveBeenCalled();
-        expect(getLibrary).not.toHaveBeenCalled();
-        expect(node.textContent).not.toContain(SENTENCE);
-    });
-
-    it("the read happens the moment the organization lands", async () => {
+describe("K · a Library opens with no organization selected, and a not-yet is never a sentence", () => {
+    // THE PERSON, NOT THE ORG (Arman, 2026-09-23): "no organization selected"
+    // is never an error for a read. This block used to prove the opposite —
+    // that nothing was asked until an organization landed.
+    it("a Library opens with NO organization selected", async () => {
         getLibrary.mockResolvedValue({
             id: LIBRARY_ID, name: "Good Mythical Morning", handle: "@gmm",
             sync_status: "idle", sync_error: null, item_count: 950,
@@ -223,16 +219,15 @@ describe("K · a cold load asks nothing until it has an organization to ask with
         getLibraryMetrics.mockResolvedValue(metricsPayload());
 
         const node = await mountWithoutOrganization();
-        await resolveOrganization();
 
+        expect(getLibrary).toHaveBeenCalled();
         expect(getLibraryMetrics).toHaveBeenCalled();
+        expect(store.getState().appContext.organization_id).toBeNull();
         expect(node.textContent).not.toContain(SENTENCE);
         expect(node.textContent).toContain("Catalogued in this Library");
     });
 
     it("the transport's own not-yet never becomes a sentence", async () => {
-        // The gate is deliberately bypassed here — the org IS set, and the
-        // transport refuses anyway (a real race the gate cannot close).
         getLibrary.mockRejectedValue(notYet());
         getLibraryMetrics.mockRejectedValue(notYet());
 
@@ -265,7 +260,6 @@ describe("L · three consecutive reads in one session, and the newest one wins",
             .mockImplementationOnce(() => Promise.resolve(metricsPayload()));
 
         const node = await mountWithoutOrganization();
-        await resolveOrganization();
         expect(node.textContent).toContain("the first read failed");
 
         const retry = () =>
@@ -310,11 +304,8 @@ describe("L · three consecutive reads in one session, and the newest one wins",
                 Promise.reject(mediaError("the newest read failed", "network_error")),
             );
 
-        const node = await mountWithoutOrganization();
-        await resolveOrganization();                       // read 1, still in flight
-        await act(async () => {                            // an org switch — read 2
-            store.dispatch(setOrganization({ id: OTHER_ORG, name: "another workspace" }));
-        });
+        const node = await mountWithoutOrganization();     // read 1, still in flight
+        await resolveOrganization();                       // an org lands — read 2
         expect(node.textContent).toContain("the newest read failed");
 
         await act(async () => {

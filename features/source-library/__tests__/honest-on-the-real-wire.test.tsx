@@ -79,6 +79,11 @@ jest.mock("../api", () => ({
 }));
 
 const push = jest.fn();
+// The switch offer has its own suite; here it would need the auth slice.
+jest.mock("@/features/organizations/components/RecordOrganizationSwitchOffer", () => ({
+    __esModule: true,
+    RecordOrganizationSwitchOffer: () => null,
+}));
 jest.mock("next/navigation", () => ({
     __esModule: true,
     useRouter: () => ({ push, replace: jest.fn(), back: jest.fn() }),
