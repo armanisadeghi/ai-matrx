@@ -11,8 +11,7 @@
 
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle } from "lucide-react";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,9 +19,11 @@ import { Input } from "@ai-matrx/design-system";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
   MatrxColumnDef,
+  MatrxDataTableQueryState,
   MatrxDataTableToolbar,
 } from "@ai-matrx/design-system/data-table/types";
 import { apiGet } from "@/lib/api/typed-client";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { components } from "@/types/python-generated/api-types";
 
 type SystemErrorRow = components["schemas"]["SystemErrorRecord"];
@@ -30,7 +31,7 @@ type RecentResponse =
   components["schemas"]["aidream__api__routers__admin_system_errors__SystemErrorListResponse"];
 
 const HOUR_PRESETS = [6, 24, 72, 168] as const;
-const SOURCE_CAP = 1_000;
+const SOURCE_PAGE_SIZE = 500;
 
 function value(raw: string | null | undefined): string {
   return raw || "—";
@@ -60,6 +61,59 @@ function displayDate(raw: string | null | undefined): string {
   return raw ? new Date(raw).toLocaleString() : "—";
 }
 
+function renderEvidenceDetail(row: SystemErrorRow) {
+  return (
+    <div className="space-y-3 text-sm">
+      <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
+        <span className="text-muted-foreground">Request ID</span>
+        <span className="break-all font-mono">{value(row.request_id)}</span>
+        <span className="text-muted-foreground">Conversation ID</span>
+        <span className="min-w-0 break-all font-mono">
+          {row.conversation_id ? (
+            <EntityRef
+              token="conversation"
+              id={row.conversation_id}
+              name={row.conversation_id}
+              showIcon={false}
+              openInNewTab
+              wrap
+            />
+          ) : (
+            "—"
+          )}
+        </span>
+        <span className="text-muted-foreground">Agent ID</span>
+        <span className="min-w-0 break-all font-mono">
+          {row.agent_id ? (
+            <EntityRef
+              token="agent"
+              id={row.agent_id}
+              name={row.agent_id}
+              showIcon={false}
+              openInNewTab
+              wrap
+            />
+          ) : (
+            "—"
+          )}
+        </span>
+        <span className="text-muted-foreground">Resolution note</span>
+        <span className="whitespace-pre-wrap">
+          {value(row.resolution_note)}
+        </span>
+      </div>
+      <div>
+        <p className="mb-1 text-xs font-medium text-muted-foreground">
+          Traceback
+        </p>
+        <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-3 text-xs">
+          {row.traceback ?? "(no traceback recorded)"}
+        </pre>
+      </div>
+    </div>
+  );
+}
+
 export default function SystemErrorsPanel() {
   // An alarm's link must land on exactly its own evidence, never a broad list.
   const searchParams = useSearchParams();
@@ -72,15 +126,34 @@ export default function SystemErrorsPanel() {
       : 24,
   );
   const [unresolvedOnly, setUnresolvedOnly] = useState(false);
+  const [tableQuery, setTableQuery] = useState<MatrxDataTableQueryState>({
+    page: 1,
+    pageSize: 50,
+    search: "",
+    anyOf: "",
+    columnFilters: {},
+    sort: null,
+  });
 
   const trimmedKind = kind.trim();
-  const { data, isFetching, isLoading, error, refetch } = useQuery({
+  const {
+    data,
+    isFetching,
+    isLoading,
+    error,
+    refetch,
+    fetchNextPage,
+    isFetchingNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
     queryKey: ["system-errors", trimmedKind, hours, unresolvedOnly, requestId],
-    queryFn: async (): Promise<RecentResponse> => {
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }): Promise<RecentResponse> => {
       const result = await apiGet("/admin/system-errors/recent", {
         query: {
           since: new Date(Date.now() - hours * 3600_000).toISOString(),
-          limit: SOURCE_CAP,
+          limit: SOURCE_PAGE_SIZE,
+          offset: pageParam,
           kind: trimmedKind || undefined,
           request_id: requestId || undefined,
           unresolved_only: unresolvedOnly || undefined,
@@ -88,10 +161,17 @@ export default function SystemErrorsPanel() {
       });
       return result.data;
     },
+    getNextPageParam: (lastPage) =>
+      lastPage.offset + lastPage.count < lastPage.total
+        ? lastPage.offset + lastPage.count
+        : undefined,
   });
 
-  const rows = data?.errors ?? [];
-  const summaryText = data?.filter_summary ?? "";
+  const rows = useMemo(
+    () => data?.pages.flatMap((page) => page.errors) ?? [],
+    [data],
+  );
+  const total = data?.pages[0]?.total;
   const errorMessage =
     error instanceof Error ? error.message : error ? String(error) : null;
   const byKind = useMemo(() => {
@@ -269,7 +349,11 @@ export default function SystemErrorsPanel() {
   const toolbar = useMemo(
     (): MatrxDataTableToolbar => ({
       title: "System Errors",
-      titleCount: { value: rows.length, label: "loaded" },
+      titleCount: {
+        value: rows.length,
+        label:
+          total === undefined ? "loaded" : `loaded / ${total.toLocaleString()}`,
+      },
       search: false,
       customSearch: (
         <Input
@@ -285,64 +369,63 @@ export default function SystemErrorsPanel() {
           type: "custom",
           id: "system-error-source-filters",
           filter: {
-            active: hours !== 24 || unresolvedOnly,
+            active: Boolean(trimmedKind) || hours !== 24 || unresolvedOnly,
             onReset: () => {
+              setKind("");
               setHours(24);
               setUnresolvedOnly(false);
             },
           },
           render: () => (
-            <div className="flex flex-wrap items-center gap-1">
-              {HOUR_PRESETS.map((preset) => (
+            <div className="flex w-full min-w-0 items-center gap-1 overflow-x-auto overscroll-x-contain pb-1 scrollbar-hide">
+              <div className="flex shrink-0 items-center gap-1">
+                {HOUR_PRESETS.map((preset) => (
+                  <Button
+                    key={preset}
+                    size="sm"
+                    variant={hours === preset ? "default" : "outline"}
+                    className="whitespace-nowrap"
+                    onClick={() => setHours(preset)}
+                  >
+                    {preset}h
+                  </Button>
+                ))}
                 <Button
-                  key={preset}
                   size="sm"
-                  variant={hours === preset ? "default" : "outline"}
-                  onClick={() => setHours(preset)}
+                  variant={unresolvedOnly ? "default" : "outline"}
+                  className="whitespace-nowrap"
+                  onClick={() => setUnresolvedOnly((current) => !current)}
                 >
-                  {preset}h
+                  Unresolved only
                 </Button>
-              ))}
-              <Button
-                size="sm"
-                variant={unresolvedOnly ? "default" : "outline"}
-                onClick={() => setUnresolvedOnly((current) => !current)}
-              >
-                Unresolved only
-              </Button>
+              </div>
+              {byKind.length > 1 ? (
+                <div className="flex shrink-0 items-center gap-1 border-l border-border pl-1">
+                  {byKind.map(([candidate, count]) => (
+                    <Button
+                      key={candidate}
+                      size="sm"
+                      variant={
+                        candidate === trimmedKind ? "default" : "outline"
+                      }
+                      className="whitespace-nowrap"
+                      onClick={() =>
+                        setKind(candidate === "(no kind)" ? "" : candidate)
+                      }
+                    >
+                      {candidate} ({count})
+                    </Button>
+                  ))}
+                </div>
+              ) : null}
+              {requestId ? (
+                <span className="shrink-0 whitespace-nowrap px-1 text-xs text-muted-foreground">
+                  Evidence request: {requestId}
+                </span>
+              ) : null}
             </div>
           ),
         },
-        ...(byKind.length > 1
-          ? [
-              {
-                type: "custom" as const,
-                id: "system-error-kind-shortcuts",
-                filter: {
-                  active: Boolean(trimmedKind),
-                  onReset: () => setKind(""),
-                },
-                render: () => (
-                  <div className="flex flex-wrap gap-1">
-                    {byKind.map(([candidate, count]) => (
-                      <Button
-                        key={candidate}
-                        size="sm"
-                        variant={
-                          candidate === trimmedKind ? "default" : "outline"
-                        }
-                        onClick={() =>
-                          setKind(candidate === "(no kind)" ? "" : candidate)
-                        }
-                      >
-                        {candidate} ({count})
-                      </Button>
-                    ))}
-                  </div>
-                ),
-              },
-            ]
-          : []),
       ],
       refresh: {
         onRefresh: async () => {
@@ -350,28 +433,20 @@ export default function SystemErrorsPanel() {
         },
       },
     }),
-    [byKind, hours, kind, refetch, rows.length, trimmedKind, unresolvedOnly],
+    [
+      byKind,
+      hours,
+      kind,
+      refetch,
+      requestId,
+      rows.length,
+      trimmedKind,
+      unresolvedOnly,
+    ],
   );
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
-      <p className="flex items-start gap-2 text-xs text-muted-foreground">
-        <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
-        <span>
-          The durable <code>public.system_error</code> ledger. The source
-          returns its newest {SOURCE_CAP.toLocaleString()} rows matching these
-          source filters; table search, columns, sorting, and copy operate on
-          that loaded window.
-        </span>
-      </p>
-      {requestId ? (
-        <p className="text-xs text-muted-foreground">
-          Request evidence: <code>{requestId}</code>
-        </p>
-      ) : null}
-      {summaryText ? (
-        <p className="text-xs text-muted-foreground">{summaryText}</p>
-      ) : null}
       {errorMessage ? (
         <p
           role="alert"
@@ -389,8 +464,40 @@ export default function SystemErrorsPanel() {
           isLoading={isLoading}
           isFetching={isFetching}
           pageSize={50}
+          query={{
+            mode: "controlled-append",
+            state: tableQuery,
+            onStateChange: setTableQuery,
+            sourceProcessing: {
+              search: "local",
+              columnFilters: "local",
+              sort: "local",
+              sourceTotal: total,
+            },
+            pagination: {
+              queryKey: "system-errors",
+              rows,
+              loading: isLoading,
+              isFetchingNextPage,
+              error:
+                error instanceof Error
+                  ? error
+                  : error
+                    ? new Error(String(error))
+                    : null,
+              hasNextPage: Boolean(hasNextPage),
+              loadNextPage: async () => {
+                await fetchNextPage();
+              },
+              refresh: () => {
+                void refetch();
+              },
+              totalItems: total,
+            },
+          }}
           coverage={{
-            cap: SOURCE_CAP,
+            loaded: rows.length,
+            total,
             answeredBy: "client",
             noun: "system error",
           }}
@@ -409,7 +516,8 @@ export default function SystemErrorsPanel() {
             location: "/administration/utilities/system-errors",
             rowKind: "system-error",
             listKind: "system-errors",
-            listDescription: `The newest ${SOURCE_CAP.toLocaleString()} source rows at most matching the selected time, kind, request, and unresolved filters; table search and columns apply locally.`,
+            listDescription:
+              "Every matching source row is fetched as you scroll; table search and columns apply locally.",
             humanRow: summarize,
             rowAttributes: (row) => ({
               id: row.id,
@@ -421,36 +529,12 @@ export default function SystemErrorsPanel() {
           detail={{
             title: (row) => row.error_type || row.kind || "System error",
             description: (row) => displayDate(row.occurred_at),
-            render: (row) => (
-              <div className="space-y-3 text-sm">
-                <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
-                  <span className="text-muted-foreground">Request ID</span>
-                  <span className="break-all font-mono">
-                    {value(row.request_id)}
-                  </span>
-                  <span className="text-muted-foreground">Conversation ID</span>
-                  <span className="break-all font-mono">
-                    {value(row.conversation_id)}
-                  </span>
-                  <span className="text-muted-foreground">Agent ID</span>
-                  <span className="break-all font-mono">
-                    {value(row.agent_id)}
-                  </span>
-                  <span className="text-muted-foreground">Resolution note</span>
-                  <span className="whitespace-pre-wrap">
-                    {value(row.resolution_note)}
-                  </span>
-                </div>
-                <div>
-                  <p className="mb-1 text-xs font-medium text-muted-foreground">
-                    Traceback
-                  </p>
-                  <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-3 text-xs">
-                    {row.traceback ?? "(no traceback recorded)"}
-                  </pre>
-                </div>
-              </div>
-            ),
+            render: renderEvidenceDetail,
+          }}
+          window={{
+            renderView: renderEvidenceDetail,
+            renderEdit: false,
+            defaultTab: "view",
           }}
         />
       </div>
