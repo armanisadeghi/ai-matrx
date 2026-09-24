@@ -3,10 +3,11 @@
 /**
  * System Errors — the durable `public.system_error` ledger, read over the API.
  *
- * The source supplies at most its newest 1,000 matching rows. Kind, time-window,
- * request-id, and unresolved status stay source filters because alarm links must
- * narrow the evidence before it is read; the canonical table owns local search,
- * column filters, sorting, progressive reveal, detail, and copy for that window.
+ * The source supplies a server-frozen window of every matching row. Kind,
+ * time-window, request-id, and unresolved status stay source filters because
+ * alarm links must narrow the evidence before it is read; the canonical table
+ * owns local search, column filters, sorting, progressive reveal, detail, and
+ * copy for that window.
  */
 
 import { useMemo, useState } from "react";
@@ -33,13 +34,13 @@ type RecentResponse =
 const HOUR_PRESETS = [6, 24, 72, 168] as const;
 const SOURCE_PAGE_SIZE = 500;
 
-function sourceWindow(hours: number) {
-  const until = new Date();
-  return {
-    since: new Date(until.getTime() - hours * 3600_000).toISOString(),
-    until: until.toISOString(),
-  };
-}
+type SystemErrorPageCursor = {
+  snapshotAt?: string;
+  occurredAt?: string;
+  id?: string;
+};
+
+const INITIAL_PAGE_CURSOR: SystemErrorPageCursor = {};
 
 function value(raw: string | null | undefined): string {
   return raw || "—";
@@ -134,7 +135,7 @@ export default function SystemErrorsPanel() {
       : 24,
   );
   const [unresolvedOnly, setUnresolvedOnly] = useState(false);
-  const [window, setWindow] = useState(() => sourceWindow(hours));
+  const [sourceRevision, setSourceRevision] = useState(0);
   const [tableQuery, setTableQuery] = useState<MatrxDataTableQueryState>({
     page: 1,
     pageSize: 50,
@@ -150,7 +151,6 @@ export default function SystemErrorsPanel() {
     isFetching,
     isLoading,
     error,
-    refetch,
     fetchNextPage,
     isFetchingNextPage,
     hasNextPage,
@@ -161,16 +161,19 @@ export default function SystemErrorsPanel() {
       hours,
       unresolvedOnly,
       requestId,
-      window,
+      sourceRevision,
     ],
-    initialPageParam: 0,
+    initialPageParam: INITIAL_PAGE_CURSOR,
     queryFn: async ({ pageParam }): Promise<RecentResponse> => {
       const result = await apiGet("/admin/system-errors/recent", {
         query: {
-          since: window.since,
-          until: window.until,
+          // The server derives the cutoff from its issued snapshot, avoiding
+          // browser-clock gaps at the newest edge of the evidence window.
+          since_hours: hours,
           limit: SOURCE_PAGE_SIZE,
-          offset: pageParam,
+          snapshot_at: pageParam.snapshotAt,
+          cursor_occurred_at: pageParam.occurredAt,
+          cursor_id: pageParam.id,
           kind: trimmedKind || undefined,
           request_id: requestId || undefined,
           unresolved_only: unresolvedOnly || undefined,
@@ -178,9 +181,13 @@ export default function SystemErrorsPanel() {
       });
       return result.data;
     },
-    getNextPageParam: (lastPage) =>
-      lastPage.offset + lastPage.count < lastPage.total
-        ? lastPage.offset + lastPage.count
+    getNextPageParam: (lastPage): SystemErrorPageCursor | undefined =>
+      lastPage.next_cursor_occurred_at && lastPage.next_cursor_id
+        ? {
+            snapshotAt: lastPage.snapshot_at,
+            occurredAt: lastPage.next_cursor_occurred_at,
+            id: lastPage.next_cursor_id,
+          }
         : undefined,
   });
 
@@ -372,7 +379,7 @@ export default function SystemErrorsPanel() {
           value={kind}
           onChange={(event) => {
             setKind(event.target.value);
-            setWindow(sourceWindow(hours));
+            setSourceRevision((revision) => revision + 1);
           }}
           placeholder="Source filter by kind…"
           className="h-8 min-w-[220px] sm:w-80"
@@ -389,7 +396,7 @@ export default function SystemErrorsPanel() {
               setKind("");
               setHours(24);
               setUnresolvedOnly(false);
-              setWindow(sourceWindow(24));
+              setSourceRevision((revision) => revision + 1);
             },
           },
           render: () => (
@@ -403,7 +410,7 @@ export default function SystemErrorsPanel() {
                     className="whitespace-nowrap"
                     onClick={() => {
                       setHours(preset);
-                      setWindow(sourceWindow(preset));
+                      setSourceRevision((revision) => revision + 1);
                     }}
                   >
                     {preset}h
@@ -415,7 +422,7 @@ export default function SystemErrorsPanel() {
                   className="whitespace-nowrap"
                   onClick={() => {
                     setUnresolvedOnly((current) => !current);
-                    setWindow(sourceWindow(hours));
+                    setSourceRevision((revision) => revision + 1);
                   }}
                 >
                   Unresolved only
@@ -433,7 +440,7 @@ export default function SystemErrorsPanel() {
                       className="whitespace-nowrap"
                       onClick={() => {
                         setKind(candidate === "(no kind)" ? "" : candidate);
-                        setWindow(sourceWindow(hours));
+                        setSourceRevision((revision) => revision + 1);
                       }}
                     >
                       {candidate} ({count})
@@ -451,23 +458,12 @@ export default function SystemErrorsPanel() {
         },
       ],
       refresh: {
-        onRefresh: async () => {
-          setWindow(sourceWindow(hours));
-          await refetch();
+        onRefresh: () => {
+          setSourceRevision((revision) => revision + 1);
         },
       },
     }),
-    [
-      byKind,
-      hours,
-      kind,
-      refetch,
-      requestId,
-      rows.length,
-      trimmedKind,
-      unresolvedOnly,
-      window,
-    ],
+    [byKind, hours, kind, requestId, trimmedKind, unresolvedOnly],
   );
 
   return (
@@ -514,7 +510,7 @@ export default function SystemErrorsPanel() {
                 await fetchNextPage();
               },
               refresh: () => {
-                void refetch();
+                setSourceRevision((revision) => revision + 1);
               },
               totalItems: total,
             },
