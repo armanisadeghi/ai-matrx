@@ -71593,6 +71593,7 @@ export type Database = {
         Args: { p_id: string; p_type: string }
         Returns: Json
       }
+      resolve_id: { Args: { p_id: string; p_side?: string }; Returns: Json }
       resolve_retention_policy: {
         Args: {
           p_entity_token: string
