@@ -37,7 +37,14 @@ console.log(`signed in as ${signed.data.user?.email}`);
 const answered = await supabase.schema("custom").rpc("view_declare", {
   p_organization_id: FACE_ORG,
   p_table_id: FACE_TABLE,
-  p_spec: { view_id: FACE_VIEW, definition: { layout } },
+  // THE WHOLE VIEW, not one key: `view_declare` replaces the definition and the name (measured
+  // 2026-09-24 — a spec of `{definition:{layout}}` renamed the default "All records" to "Saved view"
+  // and dropped its is_default, and the page then seeded a second default).
+  p_spec: {
+    view_id: FACE_VIEW,
+    name: process.env.FACE_VIEW_NAME ?? "All records",
+    definition: { layout, sorts: [], filters: {}, is_default: true, table_id: FACE_TABLE },
+  },
 });
 if (answered.error) {
   console.error(`view_declare refused: ${answered.error.message}`);
