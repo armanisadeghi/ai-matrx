@@ -26,6 +26,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+// The delete confirmation is an AlertDialog so it blocks (policy ai-reachable-everywhere);
+// the edit form stays the ordinary, non-blocking Dialog.
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -525,20 +535,20 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
       />
       
       {/* Delete confirmation dialog */}
-      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Query</DialogTitle>
-            <DialogDescription>
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Query</AlertDialogTitle>
+            <AlertDialogDescription>
               Are you sure you want to delete this query? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
           <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-md my-2">
             <code className="text-xs block overflow-x-auto whitespace-pre-wrap break-words font-mono">
               {selectedQuery?.query}
             </code>
           </div>
-          <DialogFooter>
+          <AlertDialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
               Cancel
             </Button>
@@ -549,9 +559,9 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
             >
               Delete
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       {/* Edit query dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>

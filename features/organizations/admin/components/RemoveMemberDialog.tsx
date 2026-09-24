@@ -22,14 +22,16 @@ import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { orgAdminMemberHref } from "../routes";
+// A confirmation of an irreversible act is an AlertDialog: it blocks the page on purpose
+// (policy ai-reachable-everywhere; the ordinary Dialog is a non-blocking window on desktop).
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { removeMember } from "../service";
 import type { OrgMemberResource } from "../types";
 
@@ -98,15 +100,15 @@ export function RemoveMemberDialog({
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Remove member</DialogTitle>
-          <DialogDescription>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="max-w-lg">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Remove member</AlertDialogTitle>
+          <AlertDialogDescription>
             Remove {sourceName} from this organization. They lose access to this
             organization immediately.
-          </DialogDescription>
-        </DialogHeader>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
 
         <div className="space-y-4 py-1">
           {/*
@@ -134,7 +136,7 @@ export function RemoveMemberDialog({
           </div>
         </div>
 
-        <DialogFooter>
+        <AlertDialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
             Cancel
           </Button>
@@ -146,8 +148,8 @@ export function RemoveMemberDialog({
             )}
             Remove member
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
