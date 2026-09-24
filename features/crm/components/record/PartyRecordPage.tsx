@@ -338,7 +338,7 @@ export function PartyRecordPage({ partyId }: Props) {
                     no per-entity code: a field an organization adds to
                     contacts appears here the same afternoon. Absent (not an
                     empty box) until this org declares one. */}
-                <EntityCustomFields entityToken="party" recordId={party.id} />
+                <EntityCustomFields entityToken="party" recordId={party.id} organizationId={party.organization_id} />
                 {!isPerson && party.primary_domain && (
                   <OutreachContactCandidatesCard outletPartyId={party.id} />
                 )}

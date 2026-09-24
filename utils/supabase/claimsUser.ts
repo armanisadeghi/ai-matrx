@@ -24,6 +24,7 @@
 import {
   AuthError,
   AuthSessionMissingError,
+  type JWK,
   type JwtPayload,
   type SupabaseClient,
   type UserAppMetadata,
@@ -68,8 +69,16 @@ export type ClaimsCapableClient = {
 export async function getClaimsUser(
   client: ClaimsCapableClient,
   jwt?: string,
+  /**
+   * Known public signing keys to verify against BEFORE any JWKS fetch
+   * (`projectSigningKeys.ts`). A key not listed falls through to the fetched
+   * JWKS, so this can only remove a network call, never change a verdict.
+   */
+  options?: { jwks: { keys: JWK[] } },
 ): Promise<{ data: { user: ApiClaimsUser | null }; error: AuthError | null }> {
-  const { data, error } = await client.auth.getClaims(jwt);
+  const { data, error } = options
+    ? await client.auth.getClaims(jwt, options)
+    : await client.auth.getClaims(jwt);
   // supabase-js reports "there is no session here" as AuthSessionMissingError.
   // That is an answer, not an outage.
   if (error) {

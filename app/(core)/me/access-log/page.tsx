@@ -19,7 +19,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
 
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import {
@@ -28,7 +28,7 @@ import {
 } from "@/features/emergency-access/components/AccessLogFeed";
 
 export default async function MyAccessLogPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     redirect(await currentRequestLoginHref("/me/access-log"));
   }

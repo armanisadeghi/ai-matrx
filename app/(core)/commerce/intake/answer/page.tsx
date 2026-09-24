@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 import { AnswerBody, AnswerHeader } from "./AnswerRouteClient";
 
@@ -13,7 +13,7 @@ import { AnswerBody, AnswerHeader } from "./AnswerRouteClient";
 export const dynamic = "force-dynamic";
 
 export default async function IntakeAnswerPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/login?next=/commerce/intake/answer");
   return (
     <>

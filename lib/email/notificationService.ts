@@ -362,12 +362,13 @@ export async function sendMessageNotificationEmail(options: {
  */
 export async function sendDueDateReminderEmail(options: {
   userId: string;
+  organizationId: string;
   taskTitle: string;
   taskId: string;
   dueDate: Date;
   urgency: "upcoming" | "due_today" | "overdue";
 }): Promise<NotificationResult> {
-  const { userId, taskTitle, taskId, dueDate, urgency } = options;
+  const { userId, organizationId, taskTitle, taskId, dueDate, urgency } = options;
 
   // Check user preferences
   const preferences = await getUserEmailPreferences(userId);
@@ -387,7 +388,10 @@ export async function sendDueDateReminderEmail(options: {
 
   // Generate task URL
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://aimatrx.com";
-  const taskUrl = `${baseUrl}/tasks?task=${taskId}`;
+  const taskUrl = await linkCarriesItsOrganization(
+    `${baseUrl}/tasks?task=${taskId}`,
+    organizationId,
+  );
 
   // Render React Email template
   const dueDateFormatted = dueDate.toLocaleDateString("en-US", {

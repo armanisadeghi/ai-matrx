@@ -1,0 +1,40 @@
+import { Editor, getSchema } from "@tiptap/core";
+import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { createRichEditorExtensions } from "../components/rich-editor/core/extensions";
+import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "../components/rich-editor/core/visual-document";
+const ext = createRichEditorExtensions(); const schema = getSchema(ext);
+const env = loadDbEnv() as any; const cx = await connectDirect(env, "dbg");
+await cx.query("set session characteristics as transaction read only");
+const [rid, part] = process.argv[2].split("#");
+let text: string;
+if (part) { const { rows } = await cx.query("select messages from agent.definition where id = $1", [rid]); const [mi, pi] = part.split(".").map(Number); const c = rows[0].messages[mi].content; text = typeof c === "string" ? c : c[pi].text; }
+else { const { rows } = await cx.query("select body from skill.definition where id = $1", [rid]); text = rows[0].body; }
+const { json, plan } = buildVisualDocument(text, schema);
+const ed = new Editor({ element: null, extensions: ext, content: json });
+const base = captureBaseline(ed.state.doc, plan);
+let pos=-1; let info:any=null;
+ed.state.doc.forEach((top, off) => { if (pos!==-1 || top.type.name!=="sourceBlock") return; top.forEach((c, co) => { if (pos===-1 && c.type.name==="paragraph") { pos = off+1+co+1+c.content.size; info = {b: top.attrs.b, id: c.attrs.mdId, raw: plan.childRaw.get(c.attrs.mdId), para: JSON.stringify(c.toJSON()).slice(0,600)}; } }); });
+const before = ed.state.doc;
+{ const tr = ed.state.tr.insert(pos, ed.schema.text(" [edited]")); console.log("filter ok", ed.state.filterTransaction(tr), "trdocchanged", tr.docChanged); for (const pl of ed.state.plugins) { const f = (pl as any).spec.filterTransaction; if (f && !f.call(pl, tr, ed.state)) console.log("BLOCKED BY", (pl as any).key); } }
+const r = ed.commands.command(({tr}) => { tr.insert(pos, ed.schema.text(" [edited]")); return true; });
+console.log("cmd", r, "changed", !ed.state.doc.eq(before), "pos", pos, "docsize", before.content.size, "has", ed.state.doc.textContent.includes("[edited]"));
+const out = serializeVisualDocument(ed.state.doc, base);
+const blk = plan.blocks[info.b];
+console.log("block raw:", JSON.stringify(blk.raw.slice(0, 300)));
+console.log("child raw:", JSON.stringify(info.raw));
+console.log("para json:", info.para);
+const nb = out.slice(blk.start, blk.start + blk.raw.length + 9);
+console.log("new block:", JSON.stringify(nb.slice(0, 320)));
+ed.state.doc.forEach((t)=>{ if (t.attrs.b===info.b) t.forEach((c)=>console.log("child", c.type.name, c.attrs.mdId, JSON.stringify(plan.childRaw.get(c.attrs.mdId)?.slice(0,50)), JSON.stringify(plan.adjacency.get(c.attrs.mdId)))); });
+console.log("first block", plan.blocks[0].kind, plan.blocks[0].islandType, JSON.stringify(plan.blocks[0].raw.slice(0,40)));
+const idx = out.indexOf(" [edited]");
+const expOff = blk.start + info.raw.length;
+console.log("edited at", idx, "expected", expOff, "block start", blk.start);
+console.log("around:", JSON.stringify(out.slice(idx-60, idx+30)));
+console.log("orig around:", JSON.stringify(text.slice(expOff-60, expOff+30)));
+const exp = text.slice(0, idx) + " [edited]" + text.slice(idx);
+let d = 0; while (d < out.length && out[d] === exp[d]) d++;
+console.log("first diff at", d, "out len", out.length, "exp len", exp.length);
+console.log("out :", JSON.stringify(out.slice(d-40, d+40)));
+console.log("exp :", JSON.stringify(exp.slice(d-40, d+40)));
+await cx.end();

@@ -38,7 +38,17 @@ export interface TableHome {
   heldBy: string[];
   /** Every other organization this person belongs to. */
   destinations: TableHomeDestination[];
-  carries: { fields: number; records: number; inTrash: number; choiceLists: number; withIt: number };
+  carries: {
+    fields: number;
+    records: number;
+    inTrash: number;
+    choiceLists: number;
+    withIt: number;
+    /** SC-1-TAILS: tables that ride along because they live inside it or inside its rows. */
+    tablesInside: number;
+    /** SC-1-TAILS: links between its rows and rows that stay, which will reach back across the wall. */
+    linksAcross: number;
+  };
 }
 
 export type TableHomeAnswer =
@@ -105,6 +115,8 @@ export function parseTableHome(raw: unknown): TableHome | null {
       inTrash: num(carries.in_trash),
       choiceLists: num(carries.choice_lists),
       withIt: num(carries.with_it),
+      tablesInside: num(carries.tables_inside),
+      linksAcross: num(carries.links_across),
     },
   };
 }
@@ -182,20 +194,36 @@ export async function moveTable(
   };
 }
 
-/** The consequence of a move, said before it happens (destructive-and-expensive-actions law). */
+/**
+ * The consequence of a move, said before it happens (destructive-and-expensive-actions law).
+ *
+ * The same sentence as `@ai-matrx/records`' `moveConsequence` (lane SC-1-TAILS moved this builder's
+ * home into the packages: `WhereItLives` in `@ai-matrx/records-ui`, the reader and this sentence in
+ * `@ai-matrx/records`). This copy goes when the app installs those releases and its three call
+ * sites import the package's chip — see PROGRESS-SC-1-TAILS.md.
+ */
+function plural(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
 export function moveConsequence(home: TableHome, to: TableHomeDestination): string {
   const c = home.carries;
-  const parts = [
-    `${c.fields} ${c.fields === 1 ? "column" : "columns"}`,
-    `${c.records} ${c.records === 1 ? "row" : "rows"}`,
-  ];
+  const parts = [plural(c.fields, "column", "columns"), plural(c.records, "row", "rows")];
   if (c.inTrash > 0) parts.push(`${c.inTrash} in the trash`);
   const extra = c.choiceLists + c.withIt;
   return (
     `${home.table.name} moves to ${to.name} with its ${parts.join(", ")}` +
-    (extra > 0 ? `, and ${extra} ${extra === 1 ? "thing" : "things"} built only on it (choice lists, rules, dashboards, templates)` : "") +
-    `, its comments, forms, saved views and history. People who see it only because they are in ` +
-    `${home.organization.name} stop seeing it; people it was shared with by name keep it. ` +
-    `You can move it back from the same place.`
+    (c.tablesInside > 0
+      ? `, the ${plural(c.tablesInside, "table", "tables")} that live${c.tablesInside === 1 ? "s" : ""} inside it or its rows (with their own rows)`
+      : "") +
+    (extra > 0
+      ? `, and ${plural(extra, "thing", "things")} built only on it (choice lists, rules, dashboards, templates)`
+      : "") +
+    `, its comments, forms, saved views and history. ` +
+    (c.linksAcross > 0
+      ? `${plural(c.linksAcross, "link", "links")} to rows that stay in ${home.organization.name} keep${c.linksAcross === 1 ? "s" : ""} pointing there, across the two organizations. `
+      : "") +
+    `People who see it only because they are in ${home.organization.name} stop seeing it; people it ` +
+    `was shared with by name keep it. You can move it back from the same place.`
   );
 }

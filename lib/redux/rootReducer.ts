@@ -162,7 +162,6 @@ import { default as contextStateReducer } from "@/features/agents/redux/executio
 import { default as observationalMemoryReducer } from "@/features/agents/redux/execution-system/observational-memory/observational-memory.slice";
 import { cacheBypassReducer } from "@/features/agents/redux/execution-system/message-crud/cache-bypass.slice";
 import { default as messagesReducer } from "@/features/agents/redux/execution-system/messages/messages.slice";
-import messageActionsReducer from "@/features/agents/redux/execution-system/message-actions/message-actions.slice";
 import { default as conversationFocusReducer } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { surfacesReducer } from "@/features/agents/redux/surfaces/surfaces.slice";
 import { surfacesCatalogReducer } from "@/features/surfaces/redux/surfacesCatalogSlice";
@@ -357,7 +356,6 @@ export const slimReducerMap = {
   netRequests: netRequestsReducer,
   netHealth: netHealthReducer,
   messages: messagesReducer,
-  messageActions: messageActionsReducer,
   observability: observabilityReducer,
   contextState: contextStateReducer,
 

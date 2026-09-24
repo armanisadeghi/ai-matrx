@@ -1,7 +1,7 @@
 import React from "react";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import SandboxesLanding from "@/features/auth/components/module-landing/landings/SandboxesLanding";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 export const metadata = createRouteMetadata("/sandbox", {
   title: "Sandboxes",
@@ -19,7 +19,7 @@ export default async function SandboxLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) return <SandboxesLanding />;
   return children;
 }

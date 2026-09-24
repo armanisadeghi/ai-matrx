@@ -1315,6 +1315,19 @@ function VaultNavButton({
   );
 }
 
+/**
+ * The second line of a credential in any list. An empty credential is a fact, said plainly (lane
+ * ERRORS-HONEST): it reads "Nothing saved in it yet" instead of a host or kind line that looks like
+ * a saved login.
+ */
+function credentialSupportingLine(
+  item: VaultItem,
+  identity: ReturnType<typeof credentialIdentity>,
+): string | null {
+  if (item.fields.length === 0 && item.attachments.length === 0) return "Nothing saved in it yet";
+  return identity.subtitle ?? identity.host ?? identity.kindLabel;
+}
+
 function VaultWorkspaceListRow({
   item,
   definition,
@@ -1334,8 +1347,7 @@ function VaultWorkspaceListRow({
 }) {
   const identity = credentialIdentity(item, definition);
   const Icon = identity.icon;
-  const supportingLine =
-    identity.subtitle ?? identity.host ?? identity.kindLabel;
+  const supportingLine = credentialSupportingLine(item, identity);
 
   return (
     <div
@@ -1488,8 +1500,7 @@ function VaultItemCard({
 }) {
   const identity = credentialIdentity(item, definition);
   const Icon = identity.icon;
-  const supportingLine =
-    identity.subtitle ?? identity.host ?? identity.kindLabel;
+  const supportingLine = credentialSupportingLine(item, identity);
 
   return (
     <div

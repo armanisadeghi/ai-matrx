@@ -1,7 +1,7 @@
 import { Globe } from "lucide-react";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 export const metadata = createRouteMetadata("/cms", {
   title: "Content",
@@ -19,7 +19,7 @@ export default async function CmsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     return (
       <ModuleSignInGate

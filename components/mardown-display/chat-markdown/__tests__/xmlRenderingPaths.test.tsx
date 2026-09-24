@@ -1,6 +1,16 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
+// XML prose now renders through the shared prose leaf (BasicMarkdownContent),
+// whose table scroll area observes its size; jsdom has no ResizeObserver.
+if (typeof globalThis.ResizeObserver === "undefined") {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+}
+
 let mockDbSegments: Array<Record<string, unknown>> = [];
 let mockOutputSchema: unknown | null = null;
 let receivedOutputSchemas: unknown[] = [];
@@ -222,9 +232,13 @@ describe("XML fallback across MarkdownStream rendering paths", () => {
       '[data-block-type="code"][data-language="xml"]',
     );
     expect(xmlBlocks).toHaveLength(1);
-    expect(container.querySelectorAll('[aria-label="Copy XML"]')).toHaveLength(
-      1,
-    );
+    // One top-level XML card. The ```xml fence inside its prose renders one
+    // level deeper as its OWN nested card (same as a top-level ```xml fence),
+    // so only copy buttons outside any card body belong to top-level cards.
+    const topLevelCopies = [
+      ...container.querySelectorAll('[aria-label="Copy XML"]'),
+    ].filter((button) => !button.closest("[data-xml-card-body]"));
+    expect(topLevelCopies).toHaveLength(1);
     expect(xmlBlocks[0]?.textContent).toContain(
       '{"__kind":"artifact","content":"stays literal"}',
     );

@@ -88,50 +88,38 @@ beforeEach(() => {
 });
 
 describe("a workflow's schedules and the organization question", () => {
-  it("says we could not check when the read FAILED — never 'pick one'", async () => {
+  // 🚨 SUPERSEDED 2026-09-23 (access belongs to the person): reading one
+  // workflow's schedules never waits on, and is never refused for, the
+  // selected organization. Each state below used to send NOTHING and print an
+  // organization sentence; each must now send the read.
+  it("reads the schedules when the organization read FAILED", async () => {
     appContext = makeAppContextState({
       orgBootstrapResolved: true,
       orgBootstrapFailure: "the organization read failed: Failed to fetch",
     });
     const probe = await read();
     try {
-      expect(probe.current.loadError).toContain("could not check");
-      // The claim nobody verified.
-      expect(probe.current.loadError).not.toMatch(/picker/i);
-      // And not the forever skeleton either.
+      expect(apiCalls).toHaveLength(1);
+      expect(probe.current.loadError).toBeNull();
       expect(probe.current.loading).toBe(false);
-      expect(apiCalls).toHaveLength(0);
     } finally {
       probe.unmount();
     }
   });
 
-  it("still refuses honestly when boot settled with nothing selected", async () => {
+  it("reads the schedules when boot settled with nothing selected", async () => {
     appContext = makeAppContextState({ orgBootstrapResolved: true });
     const probe = await read();
     try {
-      expect(probe.current.loadError).toContain("No organization is selected");
-      expect(probe.current.loadError).toContain("picker");
-      expect(probe.current.loading).toBe(false);
-      expect(apiCalls).toHaveLength(0);
-    } finally {
-      probe.unmount();
-    }
-  });
-
-  it("keeps waiting, silently, while boot has not answered", async () => {
-    appContext = makeAppContextState();
-    const probe = await read();
-    try {
+      expect(apiCalls).toHaveLength(1);
       expect(probe.current.loadError).toBeNull();
-      expect(probe.current.loading).toBe(true);
-      expect(apiCalls).toHaveLength(0);
+      expect(probe.current.loading).toBe(false);
     } finally {
       probe.unmount();
     }
   });
 
-  it("reads the triggers once an organization is selected", async () => {
+  it("reads the schedules once an organization is selected", async () => {
     appContext = makeAppContextState({
       organization_id: "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
       orgBootstrapResolved: true,

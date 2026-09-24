@@ -6,12 +6,12 @@
 // which is the list surface built on the canonical entity-list template.
 
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import MasterworkLanding from "@/features/auth/components/module-landing/landings/MasterworkLanding";
 
 export default async function MasterworkRoute() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (isAuthenticated) redirect("/masterwork/all");
   return (
     <MarketingPageShell>

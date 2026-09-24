@@ -1,7 +1,7 @@
 import { FileCheck2 } from "lucide-react";
 import { redirect } from "next/navigation";
 
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { DraftReviewQueue } from "@/features/commerce-review/components/DraftReviewQueue";
 
@@ -13,7 +13,7 @@ import { DraftReviewQueue } from "@/features/commerce-review/components/DraftRev
 export const dynamic = "force-dynamic";
 
 export default async function CommerceDraftsPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/login?next=/commerce/drafts");
   return (
     <>

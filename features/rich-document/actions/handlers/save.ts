@@ -28,7 +28,13 @@ import {
   getErrorMessage,
   requireAuth,
   buildTaskTitle,
+  contentFileName,
+  deriveContentTitle,
 } from "../utils";
+import { CHAT_SAVES_FOLDER } from "@/features/notes/constants/defaultFolders";
+import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectMessagePosition } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { buildTaskSeedFromMessage } from "@/features/agents/components/messages-display/message-options/buildTaskSeedFromMessage";
 import type { ContentSource } from "../../types";
 
 /**
@@ -106,8 +112,10 @@ registerAction({
       const organizationId = await ensureOrganizationContext({
         organizationId: ctx.organizationId,
       });
+      // Identical to Save to Notes, minus the questions: folder is Scratch,
+      // title auto-derived, saved immediately.
       await NotesAPI.create({
-        label: "New Note",
+        label: deriveContentTitle(ctx) ?? "New Note",
         content: ctx.content,
         folder_name: "Scratch",
         tags: [],
@@ -135,22 +143,26 @@ registerAction({
       !requireAuth(
         ctx,
         "save-to-notes",
-        "Save to Notes",
-        "Sign in to save notes and organize your content.",
+        "Save as Note",
+        "Sign in to save this content as a note.",
       )
     )
       return;
+    // The quick-save window is the gold standard (refine editor, folder,
+    // derived title) — every source uses it. Chat saves land in Chat Saves.
     ctx.dispatch(
       openOverlay({
-        overlayId: "saveToNotes",
-        instanceId: ctx.instanceKey("save-notes"),
+        overlayId: "quickNoteSaveWindow",
         data: {
           initialContent: ctx.content,
-          defaultFolder: undefined,
+          defaultFolder:
+            ctx.source.type === "chat-message" ? CHAT_SAVES_FOLDER : undefined,
+          defaultNoteName: deriveContentTitle(ctx),
           initialEditorMode: undefined,
         },
       }),
     );
+    ctx.onClose();
   },
 });
 
@@ -255,14 +267,17 @@ registerAction({
   order: 4,
   run: (ctx) => {
     try {
-      const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      const name = contentFileName(
+        ctx,
+        ctx.source.type === "chat-message" ? "message" : ctx.source.type,
+      );
       const blob = new Blob([ctx.content], {
         type: "text/markdown;charset=utf-8",
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${ctx.source.type}-${ts}.md`;
+      a.download = `${name}.md`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -302,7 +317,7 @@ registerAction({
         await import("@/features/data-tables/export-targets");
       const res = await pushMarkdownToDocument(
         ctx.content,
-        undefined,
+        deriveContentTitle(ctx),
         organizationId,
       );
       if (!res.ok || !res.href) {
@@ -327,7 +342,7 @@ registerAction({
 
 registerAction({
   id: "save-to-task",
-  label: "Create task from content",
+  label: "Create Task",
   icon: CheckSquare,
   iconColor: "text-blue-500 dark:text-blue-400",
   category: "save",
@@ -344,6 +359,31 @@ registerAction({
       )
     )
       return;
+    // A chat message seeds through the ONE message→task builder (conversation
+    // label as the title, cleaned previews as association labels).
+    if (ctx.source.type === "chat-message") {
+      const { conversationId, messageId } = ctx.source;
+      const state = ctx.getState();
+      ctx.dispatch(
+        setPendingSource(
+          buildTaskSeedFromMessage({
+            content: ctx.content,
+            messageId: messageId || null,
+            conversationId: conversationId || null,
+            conversationTitle: conversationId
+              ? selectConversationTitle(conversationId)(state)
+              : null,
+            messagePosition:
+              conversationId && messageId
+                ? selectMessagePosition(conversationId, messageId)(state)
+                : undefined,
+            metadata: ctx.metadata,
+          }),
+        ),
+      );
+      ctx.onClose();
+      return;
+    }
     const preview = ctx.content.slice(0, 400);
     const seedTitle = buildTaskTitle(ctx.content);
     const entityLink = sourceToEntityType(ctx.source);

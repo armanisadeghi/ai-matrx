@@ -62,6 +62,7 @@ jest.mock("../vault-hooks", () => ({
     actions: {},
   }),
   useVaultDefinitions: () => ({ definitions: [] }),
+  useCredentialHome: () => null,
 }));
 
 jest.mock("./VaultContextMenu", () => ({

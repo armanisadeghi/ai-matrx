@@ -45,12 +45,7 @@ const REPO_ROOT = join(__dirname, "..", "..", "..");
 /** The files fixed as a class on 2026-09-11, plus the four earlier instances. */
 const FIXED_CENSUS = [
   "features/mandates/admin/MandatesConsole.tsx",
-  "features/mandates/input-surface.ts",
   "features/mandates/admin/MandateReferenceBoardView.tsx",
-  "features/mandates/admin/MandateSourceUsage.tsx",
-  "features/workflow-runtime/triggers/useWorkflowTriggers.ts",
-  "features/workflow-runtime/served-form/useServedRunForm.ts",
-  "features/workflow-runtime/kind-emissions/useResultSchema.ts",
   "features/commerce-intake/components/IntakeAnswerQueue.tsx",
   "features/product-capture/components/pipeline/AnswerQueue.tsx",
   "features/product-capture/components/AllItemsTable.tsx",

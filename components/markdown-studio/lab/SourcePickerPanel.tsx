@@ -26,6 +26,7 @@ import { Input } from "@ai-matrx/design-system";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { cn } from "@/lib/utils";
+import { RichContent } from "@/components/rich-content/RichContent";
 import {
   STUDIO_SOURCES,
   STUDIO_SOURCE_KINDS,
@@ -198,10 +199,20 @@ export function SourcePickerPanel({
                 onClick={() => pick(item.id)}
                 className="w-full rounded-md px-2.5 py-2 text-left transition-colors hover:bg-muted/60"
               >
-                <div className="truncate text-sm font-medium">{item.label}</div>
+                <div className="line-clamp-1 text-sm font-medium">
+                  {item.rich ? (
+                    <RichContent source={item.label} level="inline" />
+                  ) : (
+                    item.label
+                  )}
+                </div>
                 {item.sublabel && (
-                  <div className="truncate text-xs text-muted-foreground">
-                    {item.sublabel}
+                  <div className="line-clamp-1 text-xs text-muted-foreground">
+                    {item.rich ? (
+                      <RichContent source={item.sublabel} level="inline" />
+                    ) : (
+                      item.sublabel
+                    )}
                   </div>
                 )}
               </button>

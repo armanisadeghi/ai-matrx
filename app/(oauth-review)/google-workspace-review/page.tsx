@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { GoogleWorkspaceReviewRoot } from "@/features/google-workspace/GoogleWorkspaceReviewRoot";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 const REVIEW_PICKER_QUERY = "AI Matrx OAuth Review";
@@ -12,7 +12,7 @@ export const metadata = createRouteMetadata("/google-workspace-review", {
 });
 
 export default async function GoogleWorkspaceReviewPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     redirect(
       `/login?redirectTo=${encodeURIComponent("/google-workspace-review")}`,

@@ -5,12 +5,12 @@
 // cannot submit.
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { MeetingsWorkspace } from "@/features/meet/components/MeetingsWorkspace";
 import { SignedOutMeetings } from "@/features/meet/components/SignedOutMeetings";
 
 export default async function MeetingsPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) return <SignedOutMeetings />;
 
   return (

@@ -10,7 +10,11 @@
 // here writes. The studio buffer is a COPY: editing it never touches the
 // source record.
 
-import type { ContentSource } from "@/features/rich-document/types";
+import type {
+  ContentSource,
+  RichDocumentActionsProp,
+} from "@/features/rich-document/types";
+import { buildChatMessageActions } from "@/features/rich-document/chat/chatMessageActions";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import {
@@ -47,6 +51,12 @@ export interface StudioSourceListItem {
   id: string;
   label: string;
   sublabel?: string;
+  /**
+   * Label/sublabel are rich text (flashcard math like `\\(H_2O\\)`): render
+   * them through <RichContent level="inline">, never as raw strings, and
+   * never character-truncate them (a cut lands mid-formula). Layout clamps.
+   */
+  rich?: boolean;
 }
 
 export interface LoadedStudioContent {
@@ -56,6 +66,13 @@ export interface LoadedStudioContent {
   content: string;
   /** The RichDocument source the action toolkit receives. */
   contentSource: ContentSource;
+  /**
+   * The source's action configuration — for a chat message, the SAME builder
+   * the /chat bars use, so the proving route shows exactly that action set.
+   */
+  sourceActions?: RichDocumentActionsProp;
+  /** The title is rich text — render it through <RichContent level="inline">. */
+  titleIsRich?: boolean;
   /** Human note shown beside the title (e.g. "structured payload shown as JSON"). */
   notice?: string;
 }
@@ -90,6 +107,11 @@ function matches(search: string, ...fields: (string | null | undefined)[]) {
 function preview(text: string, max = 90): string {
   const flat = text.replace(/\s+/g, " ").trim();
   return flat.length > max ? `${flat.slice(0, max)}…` : flat;
+}
+
+/** Whitespace-flattened, NOT truncated — for rich labels the layout clamps. */
+function flatten(text: string | null | undefined): string {
+  return (text ?? "").replace(/\s+/g, " ").trim();
 }
 
 function formatWhen(iso: string | null | undefined): string | undefined {
@@ -162,16 +184,25 @@ async function loadAssistantMessage(id: string): Promise<LoadedStudioContent> {
   if (!data) throw new Error(`No chat message with id ${id} is visible to you.`);
   const record = messageRowToRecord(data);
   const { text, isStructuredRaw } = extractInspectableText(record);
+  // THE ONE chat → registry builder — the same one the /chat bars call.
+  const chat = buildChatMessageActions({
+    conversationId: data.conversation_id,
+    messageId: data.id,
+    role: data.role === "user" ? "user" : "assistant",
+    messageContent: text,
+    contentIsStructuredRaw: isStructuredRaw,
+    metadata:
+      data.metadata && typeof data.metadata === "object" && !Array.isArray(data.metadata)
+        ? (data.metadata as Record<string, unknown>)
+        : null,
+  });
   return {
     kind: "chat-message",
     id,
     title: `${data.role === "assistant" ? "Assistant" : data.role} message · ${formatWhen(data.created_at) ?? id}`,
-    content: text,
-    contentSource: {
-      type: "chat-message",
-      messageId: data.id,
-      conversationId: data.conversation_id,
-    },
+    content: chat.content,
+    contentSource: chat.source,
+    sourceActions: chat.actions,
     notice: isStructuredRaw
       ? "This message has no text — its stored payload is shown as JSON."
       : undefined,
@@ -230,8 +261,9 @@ async function listCards(search: string): Promise<StudioSourceListItem[]> {
     .slice(0, STUDIO_SOURCE_RECENT_LIMIT)
     .map((c) => ({
       id: c.id,
-      label: preview(c.front || "(empty front)"),
-      sublabel: c.back ? preview(c.back, 70) : undefined,
+      label: flatten(c.front) || "(empty front)",
+      sublabel: c.back ? flatten(c.back) : undefined,
+      rich: true,
     }));
 }
 
@@ -247,7 +279,8 @@ async function loadCardSide(
   return {
     kind: side === "front" ? "flashcard-front" : "flashcard-back",
     id,
-    title: `Flashcard ${side} · ${preview(card.front ?? "", 40)}`,
+    title: `Flashcard ${side} · ${flatten(card.front ?? "")}`,
+    titleIsRich: true,
     content: text,
     contentSource: { type: "raw" },
     notice: text ? undefined : `This card's ${side} is empty.`,

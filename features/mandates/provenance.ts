@@ -116,7 +116,12 @@ export function useMandateProvenance(mandateKey: string | null): {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!mandateKey || !activeOrganizationId) return;
+    // 🚨 READING NEVER WAITS ON AN ORGANIZATION (Arman, 2026-09-23 — access
+    // belongs to the person). This used to return early with no org selected,
+    // leaving "Reading where this Mandate came from…" on screen forever. The
+    // server answers — a report, or a refusal printed verbatim below — and the
+    // org id stays a dependency only so the answer is re-read when one lands.
+    if (!mandateKey) return;
     let cancelled = false;
     setLoading(true);
     void fetchMandateProvenance(dispatch, mandateKey)

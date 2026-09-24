@@ -21,6 +21,8 @@ const CATEGORY_META: Record<ActionCategory, CategoryMeta> = {
   save: { label: "Actions", weight: 4 },
   share: { label: "Share", weight: 5 },
   feedback: { label: "Feedback", weight: 6 },
+  listen: { label: "Listen", weight: 6.2 },
+  study: { label: "Study", weight: 6.4 },
   admin: { label: "Server API (test)", weight: 7 },
   app: { label: "App", weight: 8 },
 };

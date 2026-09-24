@@ -1,4 +1,4 @@
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { WhatsAppDemoClient } from "./WhatsAppDemoClient";
 
 interface PageProps {
@@ -11,7 +11,7 @@ export default async function WhatsAppDemoPage({ searchParams }: PageProps) {
   // Add ?mock=1 to view with curated demo data instead.
   const initialMode = params.mock === "1" ? "mock" : "live";
 
-  const { user } = await getServerAuth();
+  const { user } = await getSessionVerdict();
 
   return (
     <WhatsAppDemoClient

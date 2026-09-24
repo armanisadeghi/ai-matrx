@@ -37,6 +37,9 @@ import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { SheetLayout } from "@/features/data-tables/components/SheetLayout";
+import { runRowAgentAction, type RowAgentActionTarget } from "@/features/unified-data/row-agent-action/rowAgentAction";
+import { toast } from "@/lib/toast";
+import { RowChangeAgentLink } from "@/features/unified-data/row-change-agent/RowChangeAgentLink";
 
 export default function UnifiedDataTableRoute({
   params,
@@ -181,15 +184,12 @@ export default function UnifiedDataTableRoute({
    */
   const object = useObjectOrganization(dataSource, tableId);
   /**
-   * The NAME of the table's organization while `custom.table_home` is not on this database:
-   * the person's own organization list, matched by the id the TABLE named. Never the active
-   * organization; absent when the table lives in an organization she is not a member of.
+   * The NAME of the table's organization while `custom.table_home` has not answered (or is not
+   * on this database): the person's own organization list matched by the id the TABLE named,
+   * else — for a table shared with her from outside — the owner organization the share door
+   * names. Never the active organization.
    */
   const { organizations: myOrganizations } = useUserOrganizations();
-  const knownOrganizationName =
-    object.state === "found"
-      ? (myOrganizations.find((o) => o.id === object.organizationId)?.name ?? null)
-      : null;
   /**
    * A TABLE ANOTHER ORGANIZATION GAVE THIS PERSON. The store already admitted her (the door
    * above answered); `useSharedTable` asks `custom.tables_shared_with_me`, which lists only
@@ -210,6 +210,11 @@ export default function UnifiedDataTableRoute({
     shareHint,
     object.state === "stand-in" ? object.activeOrganizationId : null,
   );
+  const knownOrganizationName =
+    object.state === "found"
+      ? (myOrganizations.find((o) => o.id === object.organizationId)?.name ??
+        (shared.state === "shared" ? shared.organizationName : null))
+      : null;
   /** The organization this page reads as: the TABLE'S. */
   const readingOrganizationId: string | null =
     object.state === "found"
@@ -371,6 +376,37 @@ export default function UnifiedDataTableRoute({
     [launchMandate],
   );
 
+  /**
+   * A TABLE'S AGENT BUTTON — `@ai-matrx/records-ui`'s `runAgentAction` port (TABLE-PARITY M3,
+   * lane GRID-TAILS). Unbound, the default grid draws no agent button at all; bound, a
+   * `kind: "agent"` row action ("Draft reminder") on a row starts the SAME job the older grid
+   * starts — `data.row_action`, the row as its offer, the author's prompt as the only user
+   * input — read as the person, through the table's own organization.
+   */
+  const onRunAgentAction = useCallback(
+    (target: RowAgentActionTarget) => {
+      if (!readingOrganizationId) return;
+      void runRowAgentAction({
+        target,
+        dataSource,
+        actor: personActor(userId),
+        organizationId: readingOrganizationId,
+        actingPersonId: userId ?? null,
+        launchMandate,
+        onRefused: (title, why) => toast.error(title, { description: why }),
+      });
+    },
+    [dataSource, launchMandate, readingOrganizationId, userId],
+  );
+  /**
+   * 🚨 SPREAD ONLY UNTIL `@ai-matrx/records-ui` 0.85.0 IS INSTALLED. The port ships in 0.85.0
+   * (lane DEFAULT-GRID-PARITY); 0.84.8's host type does not declare it, so a named property
+   * would not compile. A spread is still type-checked for every property the installed type
+   * DOES declare, so once 0.85.0 is installed a wrong shape here fails the build.
+   * SWAP ON INSTALL: `runAgentAction: onRunAgentAction,` inside `host={{…}}`.
+   */
+  const agentPorts = { runAgentAction: onRunAgentAction };
+
   return (
     <>
       <PageHeader>
@@ -389,6 +425,17 @@ export default function UnifiedDataTableRoute({
               knownOrganizationName={knownOrganizationName}
               onMoved={() => object.retry()}
             />
+            {/* TABLE-PARITY N2: absent until the store says a row change here reaches a schedule. */}
+            {campaign.state === "on" ? (
+              <span className="ml-auto">
+                <RowChangeAgentLink
+                  tableId={tableId}
+                  tableName={null}
+                  organizationId={object.organizationId}
+                  userId={userId ?? null}
+                />
+              </span>
+            ) : null}
           </div>
         ) : null}
         {object.state === "resolving" ? (
@@ -462,6 +509,7 @@ export default function UnifiedDataTableRoute({
               members,
               onAskForOne,
               openRecords: onOpenRecordsFromANumber,
+              ...agentPorts,
               share: recordStoreShare,
               // AGT-N-9 / PRODUCTS row 11. The package builds the record SCOPE and
               // hands it here; this returns the platform's ONE chat column bound to

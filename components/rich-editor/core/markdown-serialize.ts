@@ -1,0 +1,369 @@
+// components/rich-editor/core/markdown-serialize.ts
+//
+// ProseMirror → markdown, for the ONLY blocks the person actually changed.
+// Unchanged blocks never come through here — the visual document writes them
+// back as their stored bytes (visual-document.ts). This serializer's contract:
+//
+//   1. NO ESCAPES, EVER. Text is written exactly as typed. A backslash, `&amp;`
+//      or `\*` appears in the output only if it is in the text itself. (Typing
+//      markdown in visual mode therefore produces that markdown — the way
+//      markdown shortcuts work in every modern editor.)
+//   2. THE AUTHOR'S SPELLING. Every node/mark carries the spelling the source
+//      used (`md*` attributes, extensions.ts): `*` vs `-` bullets, `**` vs `__`,
+//      `1)` vs `1.`, heading style, quote prefix, link tail, code-span ticks.
+//      Nodes the person created fall back to the platform defaults below.
+//   3. ISLANDS ARE BYTES. `islandBlock`, `sourceLocked` and `inlineIsland`
+//      write their `raw` attribute verbatim — never re-derived.
+//   4. ORIGINAL SPACING. Between two siblings that were adjacent in the source,
+//      the original line breaks are reused (`adjacency`); a new adjacency gets
+//      the separator markdown needs (a blank line between blocks).
+//
+// The load (markdown-parse.ts) admits a construct to visual editing only when
+// this serializer reproduces its stored bytes exactly, so contract 2 is
+// measured, not hoped for.
+
+import type { Mark, Node as PMNode } from "@tiptap/pm/model";
+
+export interface Adjacency {
+  /** The exact bytes that followed this node in the source (its line breaks). */
+  readonly trail: string;
+  /** The id of the sibling that followed it, if any. */
+  readonly next: string | null;
+}
+
+export interface SerializeContext {
+  readonly adjacency: ReadonlyMap<string, Adjacency>;
+  /** Ids already written in this pass — a duplicate (copy/paste) is new text. */
+  readonly claimed: Set<string>;
+  /**
+   * Exact stored bytes for an unchanged node, when the caller holds them.
+   * Returning null means "serialize it".
+   */
+  readonly reuse?: (id: string, node: PMNode) => string | null;
+}
+
+export function createSerializeContext(
+  adjacency: ReadonlyMap<string, Adjacency> = new Map(),
+  reuse?: SerializeContext["reuse"],
+): SerializeContext {
+  return { adjacency, claimed: new Set(), reuse };
+}
+
+type ContainerKind = "wrapper" | "blockquote" | "listItem" | "doc";
+
+const DEFAULT_BULLET = "-";
+const DEFAULT_BOLD = "**";
+const DEFAULT_ITALIC = "*";
+const DEFAULT_STRIKE = "~~";
+
+function attr<T>(node: PMNode | Mark, key: string): T | null {
+  const value = (node.attrs as Record<string, unknown>)[key];
+  return value === undefined || value === null ? null : (value as T);
+}
+
+/** Claim a node's source id for this pass; null when it has none or was taken. */
+function claim(node: PMNode, ctx: SerializeContext): string | null {
+  const id = attr<string>(node, "mdId");
+  if (!id || ctx.claimed.has(id)) return null;
+  ctx.claimed.add(id);
+  return id;
+}
+
+function separator(
+  prevId: string | null,
+  id: string | null,
+  fallback: string,
+  ctx: SerializeContext,
+): string {
+  if (prevId && id) {
+    const adjacency = ctx.adjacency.get(prevId);
+    if (adjacency && adjacency.next === id) return adjacency.trail;
+  }
+  return fallback;
+}
+
+function isDroppableEmpty(node: PMNode): boolean {
+  return node.isTextblock && node.content.size === 0;
+}
+
+/** Serialize a container's block children with original spacing. */
+export function serializeChildren(
+  parent: PMNode,
+  kind: ContainerKind,
+  ctx: SerializeContext,
+): string {
+  let out = "";
+  let prevId: string | null = null;
+  let first = true;
+  parent.forEach((child) => {
+    const id = claim(child, ctx);
+    const reused = id && ctx.reuse ? ctx.reuse(id, child) : null;
+    const body = reused ?? serializeBlock(child, ctx);
+    if (body === "" && isDroppableEmpty(child)) return;
+    if (!first) {
+      const fallback =
+        kind === "listItem" &&
+        (child.type.name === "bulletList" || child.type.name === "orderedList")
+          ? "\n"
+          : "\n\n";
+      out += separator(prevId, id, fallback, ctx);
+    }
+    out += body;
+    first = false;
+    prevId = id;
+  });
+  // A stored block can end in bytes after its last construct (trailing spaces
+  // on the final line): they belong to the block, so they stay with it while
+  // its original last child is still last.
+  if (kind === "wrapper" && prevId) {
+    const adjacency = ctx.adjacency.get(prevId);
+    if (adjacency && adjacency.next === null) out += adjacency.trail;
+  }
+  return out;
+}
+
+/** Serialize one block node (fresh — the caller decides about reuse). */
+export function serializeBlock(node: PMNode, ctx: SerializeContext): string {
+  switch (node.type.name) {
+    case "paragraph":
+      return serializeInline(node);
+    case "heading":
+      return serializeHeading(node);
+    case "bulletList":
+    case "orderedList":
+      return serializeList(node, ctx);
+    case "listItem":
+      return serializeListItem(node, DEFAULT_BULLET, ctx);
+    case "blockquote":
+      return serializeBlockquote(node, ctx);
+    case "horizontalRule":
+      return attr<string>(node, "mdRaw") ?? "---";
+    case "sourceLocked":
+    case "islandBlock":
+      return String(node.attrs.raw ?? "");
+    case "sourceBlock":
+      return serializeChildren(node, "wrapper", ctx);
+    case "doc":
+      return serializeChildren(node, "doc", ctx);
+    default:
+      return node.textContent;
+  }
+}
+
+function serializeHeading(node: PMNode): string {
+  const level = Number(node.attrs.level) || 1;
+  const text = serializeInline(node);
+  let open = attr<string>(node, "mdOpen");
+  let close = attr<string>(node, "mdClose") ?? "";
+  if (open !== null) {
+    const setext = close.startsWith("\n");
+    if (setext) {
+      if (level > 2) open = null;
+      else {
+        const underline = level === 1 ? "=" : "-";
+        const lineLength = Math.max(3, close.length - 1);
+        const expected = close.slice(1).trimEnd();
+        if (!expected.split("").every((char) => char === underline)) {
+          close = "\n" + underline.repeat(lineLength);
+        }
+        return open + text + close;
+      }
+    } else {
+      const atx = /^ {0,3}(#{1,6})(?=[ \t]|$)/.exec(open);
+      if (!atx || (atx[1] ?? "").length !== level) open = null;
+    }
+  }
+  if (open === null) {
+    open = `${"#".repeat(level)} `;
+    close = "";
+  }
+  return open + text.replace(/\n/g, " ") + close;
+}
+
+function nextMarker(
+  ordered: boolean,
+  prev: string | null,
+  start: number,
+  index: number,
+): string {
+  if (!ordered) return prev && /^[-*+]$/.test(prev) ? prev : DEFAULT_BULLET;
+  if (prev) {
+    const match = /^(\d+)([.)])$/.exec(prev);
+    if (match) return `${Number(match[1]) + 1}${match[2]}`;
+  }
+  return `${start + index}.`;
+}
+
+function serializeList(list: PMNode, ctx: SerializeContext): string {
+  const ordered = list.type.name === "orderedList";
+  const start = Number(list.attrs.start ?? 1) || 1;
+  let out = "";
+  let prevId: string | null = null;
+  let prevMarker: string | null = null;
+  let index = 0;
+  list.forEach((item) => {
+    const id = claim(item, ctx);
+    const stored = attr<string>(item, "mdMarker");
+    const marker =
+      stored && (ordered ? /^\d+[.)]$/.test(stored) : /^[-*+]$/.test(stored))
+        ? stored
+        : nextMarker(ordered, prevMarker, start, index);
+    const body = serializeListItem(item, marker, ctx);
+    if (index > 0) out += separator(prevId, id, "\n", ctx);
+    out += body;
+    prevId = id;
+    prevMarker = marker;
+    index += 1;
+  });
+  return out;
+}
+
+function serializeListItem(
+  item: PMNode,
+  marker: string,
+  ctx: SerializeContext,
+): string {
+  const lead = attr<string>(item, "mdLead") ?? "";
+  const after = attr<string>(item, "mdAfter") ?? " ";
+  const task = attr<string>(item, "mdTask") ?? "";
+  const body = serializeChildren(item, "listItem", ctx);
+  const head = lead + marker;
+  if (body === "") return task ? `${head}${after || " "}${task}`.trimEnd() : head;
+  const indent =
+    attr<number>(item, "mdIndent") ?? (lead + marker + (after || " ")).length;
+  const pad = " ".repeat(indent);
+  const lines = body.split("\n");
+  let out = head + (after || " ") + task + (lines[0] ?? "");
+  for (const line of lines.slice(1)) out += `\n${line === "" ? "" : pad + line}`;
+  return out;
+}
+
+function serializeBlockquote(node: PMNode, ctx: SerializeContext): string {
+  const prefix = attr<string>(node, "mdPrefix") ?? "> ";
+  const body = serializeChildren(node, "blockquote", ctx);
+  return body
+    .split("\n")
+    .map((line) => (line === "" ? prefix.trimEnd() : prefix + line))
+    .join("\n");
+}
+
+// ── Inline ─────────────────────────────────────────────────────────────────
+
+const MARK_RANK: Record<string, number> = {
+  link: 0,
+  bold: 1,
+  italic: 2,
+  strike: 3,
+  code: 4,
+};
+
+function leafText(node: PMNode): string {
+  if (node.isText) return node.text ?? "";
+  if (node.type.name === "inlineIsland") return String(node.attrs.raw ?? "");
+  if (node.type.name === "hardBreak") return attr<string>(node, "mdRaw") ?? "\n";
+  return node.textContent;
+}
+
+function longestBacktickRun(text: string): number {
+  let longest = 0;
+  for (const match of text.matchAll(/`+/g)) {
+    longest = Math.max(longest, match[0].length);
+  }
+  return longest;
+}
+
+function markDelimiters(mark: Mark, runText: string): [string, string] {
+  switch (mark.type.name) {
+    case "bold": {
+      const marker = attr<string>(mark, "mdMarker") ?? DEFAULT_BOLD;
+      return [marker, marker];
+    }
+    case "italic": {
+      const marker = attr<string>(mark, "mdMarker") ?? DEFAULT_ITALIC;
+      return [marker, marker];
+    }
+    case "strike": {
+      const marker = attr<string>(mark, "mdMarker") ?? DEFAULT_STRIKE;
+      return [marker, marker];
+    }
+    case "code": {
+      const open = attr<string>(mark, "mdOpen");
+      const close = attr<string>(mark, "mdClose");
+      if (open !== null && close !== null) return [open, close];
+      const ticks = "`".repeat(longestBacktickRun(runText) + 1);
+      const pad = runText.startsWith("`") || runText.endsWith("`") ? " " : "";
+      return [ticks + pad, pad + ticks];
+    }
+    case "link": {
+      const href = String(mark.attrs.href ?? "");
+      const form = attr<string>(mark, "mdForm");
+      const hrefUnchanged = href === attr<string>(mark, "mdTailHref");
+      if (
+        (form === "angle" || form === "bare") &&
+        hrefUnchanged &&
+        runText === attr<string>(mark, "mdText")
+      ) {
+        return form === "angle" ? ["<", ">"] : ["", ""];
+      }
+      const storedTail = attr<string>(mark, "mdTail");
+      const title = attr<string>(mark, "title");
+      const tail =
+        form === "inline" && storedTail !== null && hrefUnchanged
+          ? storedTail
+          : `(${href}${title ? ` "${title}"` : ""})`;
+      return ["[", `]${tail}`];
+    }
+    default:
+      return ["", ""];
+  }
+}
+
+interface OpenMark {
+  mark: Mark;
+  close: string;
+}
+
+/** Serialize a textblock's inline content — marks nested as the source nested them. */
+export function serializeInline(parent: PMNode): string {
+  const items: PMNode[] = [];
+  parent.forEach((child) => items.push(child));
+  const runEnd = (from: number, mark: Mark): number => {
+    let end = from;
+    while (end < items.length && mark.isInSet(items[end]?.marks ?? [])) end += 1;
+    return end;
+  };
+  const runText = (from: number, to: number): string =>
+    items
+      .slice(from, to)
+      .map((node) => leafText(node))
+      .join("");
+
+  let out = "";
+  const stack: OpenMark[] = [];
+  items.forEach((node, index) => {
+    const marks = node.marks;
+    let keep = 0;
+    while (keep < stack.length && stack[keep]?.mark.isInSet(marks)) keep += 1;
+    for (let k = stack.length - 1; k >= keep; k -= 1) out += stack[k]?.close ?? "";
+    stack.length = keep;
+
+    const toOpen = marks
+      .filter((mark) => !stack.some((open) => open.mark.eq(mark)))
+      .map((mark) => ({ mark, end: runEnd(index, mark) }));
+    toOpen.sort((a, b) => {
+      if (a.end !== b.end) return b.end - a.end;
+      const da = attr<number>(a.mark, "mdDepth") ?? Number.MAX_SAFE_INTEGER;
+      const db = attr<number>(b.mark, "mdDepth") ?? Number.MAX_SAFE_INTEGER;
+      if (da !== db) return da - db;
+      return (MARK_RANK[a.mark.type.name] ?? 9) - (MARK_RANK[b.mark.type.name] ?? 9);
+    });
+    for (const { mark, end } of toOpen) {
+      const [open, close] = markDelimiters(mark, runText(index, end));
+      out += open;
+      stack.push({ mark, close });
+    }
+    out += leafText(node);
+  });
+  for (let k = stack.length - 1; k >= 0; k -= 1) out += stack[k]?.close ?? "";
+  return out;
+}

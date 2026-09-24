@@ -24,6 +24,7 @@ import { canPhotographAnswer } from "./useTakeAssessment";
 import type { GradedAnswer } from "../../data/grading";
 import type { AssessmentItemRow, AttemptResult, QuestionType } from "../../data/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { RichContent } from "@/components/rich-content/RichContent";
 
 function optionsOf(item: AssessmentItemRow): string[] {
   const raw = item.options;
@@ -86,8 +87,10 @@ export function QuestionView({
         <ConfidenceBadge confidence={trust?.confidence} className="ml-auto" />
       </div>
 
+      {/* Prompts carry markdown + math (a chemistry item's \(H_2O\)); the
+          inline level renders them as phrasing content inside the <p>. */}
       <p className="mt-2 text-lg font-medium leading-snug text-foreground">
-        {item.prompt}
+        <RichContent level="inline" source={item.prompt} />
       </p>
 
       {/* Answer capture */}
@@ -123,7 +126,11 @@ export function QuestionView({
                   >
                     {selected && <span className="h-2 w-2 rounded-full bg-primary" />}
                   </span>
-                  <span className="text-foreground">{opt}</span>
+                  <RichContent
+                    level="inline"
+                    source={opt}
+                    className="text-foreground"
+                  />
                 </button>
               );
             })}

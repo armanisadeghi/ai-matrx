@@ -10,6 +10,9 @@
 
 import "./copy";
 import "./save";
+import "./capture";
+import "./share";
+import "./listen";
 import "./contact";
 import "./export";
 import "./print";

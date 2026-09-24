@@ -29,7 +29,7 @@ import {
   DEFAULT_STREAM_SIM_SETTINGS,
   type StreamSimSettings,
 } from "./stream-chunks";
-import { useStreamSimulation } from "./useStreamSimulation";
+import { progressForText, useStreamSimulation } from "./useStreamSimulation";
 
 export interface JsonExtractionPanelProps {
   content: string;
@@ -149,7 +149,7 @@ export function JsonExtractionPanel({ content }: JsonExtractionPanelProps) {
         <StreamSimControls
           settings={simSettings}
           onSettingsChange={setSimSettings}
-          progress={sim}
+          progress={progressForText(sim, content)}
           onRun={runStreamSimulation}
           onStop={sim.stop}
           disabled={!content.trim()}

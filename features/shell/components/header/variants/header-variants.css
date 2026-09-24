@@ -202,6 +202,19 @@
   line-height: 1;
 }
 
+/* Phone widths: the shell's far-edge buttons leave the center too narrow for
+   every label, and a clipped label ("Analysi") reads as broken. Inactive
+   thumbs go icon-only (the button keeps its aria-label + title); the active
+   thumb keeps its label so the current view is always named. */
+@media (max-width: 480px) {
+  .hdr-toggle-thumb:not(.hdr-toggle-thumb-active) {
+    padding: 0 0.5rem;
+  }
+  .hdr-toggle-thumb:not(.hdr-toggle-thumb-active) .hdr-toggle-label {
+    display: none;
+  }
+}
+
 /* ---------------------------------------------------------------------------
    5. HeaderIconTitle (Variant 4)
    --------------------------------------------------------------------------- */

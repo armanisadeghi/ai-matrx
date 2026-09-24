@@ -1,7 +1,7 @@
 import { readLayoutCookie } from "@/features/resizable-panels/readLayoutCookie";
 import { AgentConnectionsRouteShell } from "@/features/agent-connections/components/AgentConnectionsRouteShell";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 const COOKIE_NAME = "panels:agent-connections:v1";
@@ -26,7 +26,7 @@ export default async function AgentConnectionsLayout({
   // Server-side guest branch (module-landing-pages doctrine): the workspace is
   // an authed, Redux-backed client tree — never render it for anonymous
   // visitors. No marketing landing exists yet, so guests get the shared gate.
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     return (
       <ModuleSignInGate

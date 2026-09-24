@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { WorkflowsListHeader } from "@/features/workflow-runtime/browse/components/WorkflowsListHeader";
 import { WorkflowBrowsePage } from "@/features/workflow-runtime/browse/components/WorkflowBrowsePage";
@@ -16,7 +16,7 @@ import { WorkflowBrowsePage } from "@/features/workflow-runtime/browse/component
  * seed fetched before the user's scope/sort/page is known would be thrown away.
  */
 export default async function WorkflowsListRoute() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/workflows");
 
   return (

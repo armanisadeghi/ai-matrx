@@ -58,7 +58,7 @@ export default async function MarketingPageShortLink({
   const pageResponse = await db
     .from("page")
     .select(
-      "id, site_id, url, path, status, target_keyword, http_status_last, first_seen, last_seen, latest_snapshot_id",
+      "id, organization_id, site_id, url, path, status, target_keyword, http_status_last, first_seen, last_seen, latest_snapshot_id",
     )
     .eq("id", pageId)
     .is("deleted_at", null)
@@ -166,7 +166,7 @@ export default async function MarketingPageShortLink({
             Entity tables are reachable by exactly this line and no per-entity
             code. Absent, not an empty box, until a field is declared. */}
         <section className="rounded-xl border border-border bg-card p-5 shadow-sm empty:hidden">
-          <EntityCustomFields entityToken="web_page" recordId={page.id} />
+          <EntityCustomFields entityToken="web_page" recordId={page.id} organizationId={page.organization_id} />
         </section>
 
         <section className="rounded-xl border border-border bg-card p-5 shadow-sm">

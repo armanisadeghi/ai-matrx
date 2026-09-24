@@ -5,12 +5,12 @@
 // the client Capture Studio + recent-captures lens.
 
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import CameraPage from "@/features/media-capture/components/CameraPage";
 import { loginHref } from "@/utils/auth/auth-destination";
 
 export default async function CameraRoutePage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect(loginHref("/camera"));
 
   return <CameraPage />;

@@ -6,7 +6,15 @@
 
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { extractErrorMessage } from "@/utils/errors";
-import type { RichDocumentActionContext } from "../types";
+import {
+  selectConversationTitle,
+} from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectMessagePosition } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { buildConversationMessageTitle } from "@/features/agents/utils/conversation-message-title";
+import type {
+  ChatMessageExtensions,
+  RichDocumentActionContext,
+} from "../types";
 
 /** Storage key for "do this action after the user signs in" payloads. */
 export const PENDING_ACTION_KEY = "matrx_pending_post_auth_action";
@@ -144,4 +152,84 @@ export function buildTaskTitle(content: string): string {
   return firstLine
     ? `Task Related To: ${firstLine}${firstLine.length >= 60 ? "…" : ""}`
     : "Task Related To AI message";
+}
+
+// ============================================================================
+// SOURCE HELPERS — shared by the handlers that migrated from the chat-only
+// messageActionRegistry. Chat facts come from ctx.source + the chat extension;
+// every other source answers null / undefined and the handler degrades.
+// ============================================================================
+
+/** The chat extension, when this context is a chat message. */
+export function chatExtensions(
+  ctx: RichDocumentActionContext,
+): ChatMessageExtensions | null {
+  return ctx.extensions?.type === "chat-message" ? ctx.extensions : null;
+}
+
+/** Conversation + message ids for provenance; nulls for non-chat sources. */
+export function chatIds(ctx: RichDocumentActionContext): {
+  conversationId: string | null;
+  messageId: string | null;
+} {
+  if (ctx.source.type !== "chat-message") {
+    return {
+      conversationId:
+        ctx.source.type === "working-document" ? ctx.source.conversationId : null,
+      messageId: null,
+    };
+  }
+  return {
+    conversationId: ctx.source.conversationId || null,
+    messageId: ctx.source.messageId || null,
+  };
+}
+
+/** True when the chat message is the user's own turn. */
+export function isChatUserMessage(ctx: RichDocumentActionContext): boolean {
+  return chatExtensions(ctx)?.role === "user";
+}
+
+/**
+ * Canonical title for anything created FROM this content. Chat: "{conversation
+ * title} Message {n}" (the shared builder); every other source: undefined —
+ * callers supply their destination-appropriate fallback.
+ */
+export function deriveContentTitle(
+  ctx: RichDocumentActionContext,
+): string | undefined {
+  const { conversationId, messageId } = chatIds(ctx);
+  if (!conversationId || ctx.source.type !== "chat-message") return undefined;
+  const state = ctx.getState();
+  const conversationTitle = selectConversationTitle(conversationId)(state);
+  const messagePosition = messageId
+    ? selectMessagePosition(conversationId, messageId)(state)
+    : undefined;
+  return buildConversationMessageTitle(conversationTitle, messagePosition);
+}
+
+/** Filesystem-safe filename fragment from a derived title. */
+export function toSafeFileName(title: string): string {
+  return title.replace(/[\\/:*?"<>|]+/g, "-").trim();
+}
+
+/** `{title}` when one derives, else `{fallbackPrefix}-{timestamp}`. */
+export function contentFileName(
+  ctx: RichDocumentActionContext,
+  fallbackPrefix = "message",
+): string {
+  const title = deriveContentTitle(ctx);
+  const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  return title ? toSafeFileName(title) : `${fallbackPrefix}-${ts}`;
+}
+
+/**
+ * Chat write-back is off for structured payloads (the JSON raw view must never
+ * be saved back as a text block) and for user turns outside their own
+ * three-outcome editor (a silent save with no resubmit choice reads as a bug).
+ */
+export function chatWriteBackBlocked(ctx: RichDocumentActionContext): boolean {
+  const ext = chatExtensions(ctx);
+  if (!ext) return false;
+  return ext.contentIsStructuredRaw || ext.role === "user";
 }

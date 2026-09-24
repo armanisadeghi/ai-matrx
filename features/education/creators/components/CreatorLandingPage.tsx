@@ -3,6 +3,7 @@
 // & Course JSON-LD. Interactivity lives in leaf client islands (EnrollButton).
 // House style: MarketingPageShell, semantic colors, Lucide icons, no emoji.
 import Link from "next/link";
+import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
 import {
   ArrowUpRight,
   BookOpen,
@@ -189,7 +190,9 @@ export function CreatorLandingPage({ page }: { page: CreatorPublicPage }) {
               {page.displayName}
             </h1>
             {page.tagline ? (
-              <p className="mt-2 text-lg text-muted-foreground">{page.tagline}</p>
+              <p className="mt-2 text-lg text-muted-foreground">
+                <RichContentServer level="inline" source={page.tagline} />
+              </p>
             ) : null}
             {page.links.length > 0 ? (
               <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
@@ -210,9 +213,9 @@ export function CreatorLandingPage({ page }: { page: CreatorPublicPage }) {
           </div>
         </div>
         {page.bio ? (
-          <p className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground">
-            {page.bio}
-          </p>
+          <div className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground">
+            <RichContentServer level="standard" source={page.bio} />
+          </div>
         ) : null}
         <p className="mt-6 inline-flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
           <BrainCircuit className="h-4 w-4 text-primary" />

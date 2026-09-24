@@ -9,7 +9,7 @@
  * `requestId` so they can target the specific request tied to a message
  * (via `_streamRequestId`) instead of the latest request on the conversation.
  *
- * Opened from the message action menu (`messageActionRegistry`) via
+ * Opened from the message action menu (the rich-document action registry, `analyze-response`) via
  * `openOverlay({ overlayId: "messageAnalysisWindow", data: { conversationId, requestId?, messageId? } })`.
  */
 

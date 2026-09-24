@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Merge } from "lucide-react";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import { DuplicateReviewPage } from "@/features/crm/components/dedup/DuplicateReviewPage";
 
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
  * comparison, merge/dismiss decisions, and recent merges with exact undo.
  */
 export default async function CrmDuplicatesRoute() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     return (
       <ModuleSignInGate

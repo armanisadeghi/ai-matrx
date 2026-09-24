@@ -7,6 +7,7 @@ import {
   Link as LinkIcon,
   Loader2,
   Check,
+  Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -19,7 +20,8 @@ import { buildContentBlocksForSave } from "@/features/cx-conversation/utils/buil
 import { useMediaLoadRecovery } from "@ai-matrx/media/core";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import { chatConversationsActions } from "./_legacy-stubs";
-import { AssistantActionBar } from "@/features/cx-chat/components/messages/AssistantActionBar";
+import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
+import { MessageTimestamp } from "@/features/agents/components/messages-display/MessageTimestamp";
 import type { ConversationMessage } from "./_legacy-stubs";
 
 // ============================================================================
@@ -281,18 +283,37 @@ export function AssistantMessage({
 
               {!isStreamActive && !isOverlay && message.content && (
                 <div className={buttonMargin}>
-                  <AssistantActionBar
-                    content={message.content}
-                    messageId={message.id}
-                    sessionId={sessionId}
-                    hasUnsavedChanges={hasUnsavedChanges}
-                    isSaving={isSaving}
-                    rawContent={message.rawContent as unknown[]}
-                    onQuickSave={handleQuickSave}
-                    onFullPrint={handleFullPrint}
-                    isCapturing={isCapturing}
-                    timestamp={message.createdAt ?? message.timestamp}
-                  />
+                  {/* The ONE action registry — the same actions every
+                      document gets (RC-B6). This legacy renderer has no
+                      cx_message write-back wiring, so the content rides as a
+                      raw source: write-back actions are absent, not dead; the
+                      quick-save below is its own edit path. */}
+                  <div className="flex items-center gap-2">
+                    <RichDocumentActions
+                      content={message.content}
+                      source={{ type: "raw" }}
+                      actions={{ callbacks: { onFullPrint: handleFullPrint } }}
+                    />
+                    {hasUnsavedChanges && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleQuickSave}
+                        className="h-8 gap-1 px-2 text-xs text-primary"
+                        aria-label="Save changes"
+                      >
+                        {isSaving ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                        Save
+                      </Button>
+                    )}
+                    <MessageTimestamp
+                      timestamp={message.createdAt ?? message.timestamp}
+                    />
+                  </div>
                 </div>
               )}
             </>

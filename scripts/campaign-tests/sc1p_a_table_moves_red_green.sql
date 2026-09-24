@@ -24,6 +24,8 @@
 --       custom.read_records in Portland; one history version says 'table_move'; the earlier
 --       history of a row answers in Portland
 --   M7  after the move the clerk (Tacoma only) no longer reaches it — not given
+--   M8  an OUTSIDER the table is shared with by name (the clerk, given viewer on it, not a member
+--       of Portland) reads the organization BY NAME and may not move it — never "unknown"
 
 \set ON_ERROR_STOP on
 \timing off
@@ -247,9 +249,10 @@ do $m4$
 declare
   c_admin   constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
   c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
-  v_far uuid; v_t uuid; v_home jsonb; v_d jsonb;
+  v_far uuid; v_t uuid; v_pdx uuid; v_home jsonb; v_d jsonb;
 begin
   select v into v_far from mv where k = 'far'; select v into v_t from mv where k = 't';
+  select v into v_pdx from mv where k = 'pdx';
   perform set_config('role', 'postgres', true);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
   values (v_far, 'organization', v_far, c_admin, 'member', 'active');
@@ -265,7 +268,24 @@ begin
     raise exception 'M4: the move went into an organization that already has a table by that name';
   exception when object_not_in_prerequisite_state then null;
   end;
-  raise notice 'sc1p move suite: M4 GREEN — all seven GREEN';
+  raise notice 'sc1p move suite: M4 GREEN';
+
+  -- M8: the outsider seat. Portland shares the table with the Tacoma clerk by name.
+  perform set_config('role', 'postgres', true);
+  insert into iam.permissions (resource_type, resource_id, granted_to_user_id, permission_level, created_by, status)
+  values ('record', v_t, '4060701e-706a-4c76-b3ca-0bbc69fa5a14', 'viewer', c_admin, 'active');
+  -- (Outside sharing is on by default — SHARE-GATE-OFF. With an organization's switch off the
+  -- store does not open the table to her at all, and custom.table_home is null with it.)
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}', true);
+  v_home := custom.table_home(v_t);
+  if v_home is null or v_home #>> '{organization,name}' not like 'Cascade Electronics Recovery - Portland Depot%' then
+    raise exception 'M8: an outsider the table is shared with does not read where it lives by name: %', v_home;
+  end if;
+  if (v_home ->> 'may_move')::boolean then
+    raise exception 'M8: an outsider may move a table she was only shared';
+  end if;
+  raise notice 'sc1p move suite: M8 GREEN — all eight GREEN';
 end
 $m4$;
 

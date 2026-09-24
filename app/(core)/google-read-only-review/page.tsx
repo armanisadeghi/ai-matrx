@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { ReadOnlySweepWorkspace } from "@/features/marketing/google/ReadOnlySweepWorkspace";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/google-read-only-review", {
@@ -11,7 +11,7 @@ export const metadata = createRouteMetadata("/google-read-only-review", {
 });
 
 export default async function GoogleReadOnlyReviewPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     redirect(
       `/login?redirectTo=${encodeURIComponent("/google-read-only-review")}`,

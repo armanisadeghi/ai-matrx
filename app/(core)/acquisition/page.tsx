@@ -12,11 +12,11 @@
 
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { AcquisitionConsolePage } from "@/features/acquisition-console/AcquisitionConsolePage";
 
 export default async function AcquisitionConsoleRoute() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/login?next=/acquisition");
   return (
     // `useSearchParams` (the Rulebook filter) needs a boundary to stream past.

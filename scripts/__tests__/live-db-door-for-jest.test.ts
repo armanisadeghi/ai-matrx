@@ -45,7 +45,7 @@ function liveRoot(extra = ""): string {
   return root;
 }
 
-const noEnv: NodeJS.ProcessEnv = {};
+const noEnv: NodeJS.ProcessEnv = { NODE_ENV: "test" };
 
 describe("the live-database door for jest", () => {
   it("the operator loader still answers the live database (db:apply is not a test)", () => {
@@ -54,7 +54,7 @@ describe("the live-database door for jest", () => {
   });
 
   it("a live env is repointed to the declared test target", () => {
-    const got = testDbEnvFrom(liveRoot(), { env: { MATRX_TEST_DATABASE_URL: CLONE_URL }, now: AT_NOON });
+    const got = testDbEnvFrom(liveRoot(), { env: { NODE_ENV: "test", MATRX_TEST_DATABASE_URL: CLONE_URL }, now: AT_NOON });
     expect(got.user).toBe("postgres.jxhgzalwckuarngvsdyq");
     expect(got.from).toMatch(/MATRX_TEST_DATABASE_URL/);
   });
@@ -69,12 +69,12 @@ describe("the live-database door for jest", () => {
   });
 
   it("live on purpose needs a reason and the 1–4 AM Pacific window", () => {
-    expect(() => testDbEnvFrom(liveRoot(), { env: { MATRX_LIVE_DB: "1" }, now: AT_TWO })).toThrow(/REASON/);
+    expect(() => testDbEnvFrom(liveRoot(), { env: { NODE_ENV: "test", MATRX_LIVE_DB: "1" }, now: AT_TWO })).toThrow(/REASON/);
     expect(() =>
-      testDbEnvFrom(liveRoot(), { env: { MATRX_LIVE_DB: "1", MATRX_LIVE_DB_REASON: "rehearsal" }, now: AT_NOON }),
+      testDbEnvFrom(liveRoot(), { env: { NODE_ENV: "test", MATRX_LIVE_DB: "1", MATRX_LIVE_DB_REASON: "rehearsal" }, now: AT_NOON }),
     ).toThrow(/Pacific/);
     const live = testDbEnvFrom(liveRoot(), {
-      env: { MATRX_LIVE_DB: "1", MATRX_LIVE_DB_REASON: "rehearsal" },
+      env: { NODE_ENV: "test", MATRX_LIVE_DB: "1", MATRX_LIVE_DB_REASON: "rehearsal" },
       now: AT_TWO,
     });
     expect(live.user).toBe(LIVE_USER);
@@ -84,6 +84,7 @@ describe("the live-database door for jest", () => {
     const root = mkdtempSync(join(tmpdir(), "live-db-door-"));
     const got = testDbEnvFrom(root, {
       env: {
+        NODE_ENV: "test",
         SUPABASE_MATRIX_HOST: "127.0.0.1",
         SUPABASE_MATRIX_PORT: "55432",
         SUPABASE_MATRIX_USER: "postgres",

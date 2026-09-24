@@ -4,7 +4,13 @@
 //
 // THE ONE LINE A STANDARD ENTITY PAGE ADDS (SCR-12 / REC-40 / REC-34).
 //
-//   <EntityCustomFields entityToken="crm_deal" recordId={deal.id} />
+//   <EntityCustomFields entityToken="crm_deal" recordId={deal.id} organizationId={deal.organization_id} />
+//
+// 🚨 THE ORGANIZATION IS THE ROW'S, NEVER THE PERSON'S (lane ACCESS-IS-PERSONAL, owner's law
+// 2026-09-23: "for any RECORD I try to see, the active org is meaningless"). This read the
+// organization the person was working in, so a deal of Rincon opened from another of her
+// organizations showed that OTHER organization's custom fields — or none. The page already
+// holds the row, and the row holds its organization; it hands it in.
 //
 // That is the whole contract, and it is the same line on all 643 tables the
 // registry types Entity or Detail. There is no per-entity code here, on the
@@ -26,7 +32,6 @@
 import { CustomFieldsSection, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { createClient } from "@/utils/supabase/client";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
@@ -36,14 +41,22 @@ export interface EntityCustomFieldsProps {
   entityToken: string;
   /** The id of the row this page is showing. */
   recordId: string;
+  /** The ROW'S organization (`row.organization_id`). Nothing renders until it is known. */
+  organizationId: string | null | undefined;
   /** The heading. Defaults to the section's own. */
   title?: string;
   className?: string;
 }
 
-export function EntityCustomFields({ entityToken, recordId, title, className }: EntityCustomFieldsProps) {
+export function EntityCustomFields({
+  entityToken,
+  recordId,
+  organizationId: rowOrganizationId,
+  title,
+  className,
+}: EntityCustomFieldsProps) {
   const userId = useAppSelector(selectUserId);
-  const organizationId = useAppSelector(selectActiveOrganizationId);
+  const organizationId = rowOrganizationId ?? null;
   // ONE switch: does this organization keep its data in the record store? Set
   // once, for everybody, on the unified data ramp screen (lane NAV-FIX).
   const campaign = useUnifiedDataCampaign({

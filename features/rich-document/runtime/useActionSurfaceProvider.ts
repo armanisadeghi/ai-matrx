@@ -22,8 +22,10 @@
 // or React elements ever enter Redux.
 
 import * as React from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import type { RootState } from "@/lib/redux/store";
 import {
   registerProvider,
   unregisterProvider,
@@ -111,7 +113,9 @@ function buildContext(args: {
   source: ContentSource;
   callbacks: RichDocumentActionsProp["callbacks"] | undefined;
   extensions: SourceExtensions | undefined;
+  host: Pick<RichDocumentActionsProp, "metadata" | "isCreator" | "surfaceKey"> | undefined;
   dispatch: ReturnType<typeof useAppDispatch>;
+  getState: () => RootState;
   isAuthenticated: boolean;
   isAdmin: boolean;
   organizationId: string | null;
@@ -128,13 +132,14 @@ function buildContext(args: {
   return {
     content: args.content,
     source: args.source,
-    metadata: null, // Phase 1 populates from source-specific selectors
+    metadata: args.host?.metadata ?? null,
     dispatch: args.dispatch,
+    getState: args.getState,
     organizationId: args.organizationId,
     isAuthenticated: args.isAuthenticated,
     isAdmin: args.isAdmin,
-    isCreator: false, // Phase 1 wires from source-specific selector
-    surfaceKey: null, // Phase 1 — surface routing wires through props
+    isCreator: args.host?.isCreator ?? false,
+    surfaceKey: args.host?.surfaceKey ?? null,
     onClose: () => {
       /* no-op; variants override when they own a menu */
     },
@@ -182,10 +187,13 @@ export function useActionSurfaceProvider(
   } = args;
 
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const isAuthenticated = useAppSelector((state) =>
     Boolean(state.userAuth?.id),
   );
-  const isAdmin = useAppSelector((state) => Boolean(state.userAuth?.isAdmin));
+  // The Server API (test) family is a super-admin surface — the platform's
+  // default admin gate, same as the chat menu it replaced.
+  const isAdmin = useAppSelector(selectIsSuperAdmin);
   const organizationId = useAppSelector(selectOrganizationId);
 
   // Per-instance provider ID — stable across renders.
@@ -201,6 +209,7 @@ export function useActionSurfaceProvider(
   const extensionsRef = React.useRef<SourceExtensions | undefined>(
     actionsProp?.extensions,
   );
+  const hostRef = React.useRef(actionsProp);
   const dispatchRef = React.useRef(dispatch);
   const isAuthRef = React.useRef(isAuthenticated);
   const isAdminRef = React.useRef(isAdmin);
@@ -209,6 +218,7 @@ export function useActionSurfaceProvider(
     sourceRef.current = source;
     callbacksRef.current = actionsProp?.callbacks;
     extensionsRef.current = actionsProp?.extensions;
+    hostRef.current = actionsProp;
     dispatchRef.current = dispatch;
     isAuthRef.current = isAuthenticated;
     isAdminRef.current = isAdmin;
@@ -222,7 +232,9 @@ export function useActionSurfaceProvider(
       source: sourceRef.current,
       callbacks: callbacksRef.current,
       extensions: extensionsRef.current,
+      host: hostRef.current,
       dispatch: dispatchRef.current,
+      getState: store.getState,
       isAuthenticated: isAuthRef.current,
       isAdmin: isAdminRef.current,
       organizationId,
@@ -234,7 +246,9 @@ export function useActionSurfaceProvider(
     source,
     callbacks: actionsProp?.callbacks,
     extensions: actionsProp?.extensions,
+    host: actionsProp,
     dispatch,
+    getState: store.getState,
     isAuthenticated,
     isAdmin,
     organizationId,

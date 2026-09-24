@@ -12,7 +12,7 @@
 // printers run in the browser.
 
 import { BookText } from "lucide-react";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
@@ -26,7 +26,7 @@ export const metadata = createRouteMetadata("/print", {
 });
 
 export default async function PrintOrderLayout({ children }: { children: React.ReactNode }) {
-    const { isAuthenticated } = await getServerAuth();
+    const { isAuthenticated } = await getSessionVerdict();
     if (!isAuthenticated) {
         return (
             <ModuleSignInGate

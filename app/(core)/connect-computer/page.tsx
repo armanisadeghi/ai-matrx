@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ConnectComputerPage } from "@/features/residential-egress/components/ConnectComputerPage";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
@@ -15,7 +15,7 @@ export const metadata = createRouteMetadata("/connect-computer", {
 });
 
 export default async function ConnectComputerRoute() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   // The helper sends people here as `/connect-computer?code=ABCD-1234`. A
   // signed-out visitor must come BACK to that exact URL, code and all — so the
   // bounce rebuilds the request from the canonical proxy headers through the

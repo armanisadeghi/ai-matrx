@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronLeft, Plus } from "lucide-react";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import TopicList from "@/features/research/components/landing/TopicList";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
@@ -10,7 +10,7 @@ export default async function ResearchTopicsPage() {
   // Guests bounce to the public `/research` marketing landing — the topics
   // list is a signed-in workspace (an empty shell with a New button that can
   // only fail is worse than the landing).
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     redirect("/research");
   }

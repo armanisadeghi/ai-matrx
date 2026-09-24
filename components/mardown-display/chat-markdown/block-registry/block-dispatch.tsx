@@ -42,6 +42,7 @@
  * statically that wasn't already static in BlockRenderer.
  */
 
+import { NestedRichContent } from "@/components/rich-content/standard/NestedRichContent";
 import React from "react";
 import { BlockComponents } from "./BlockComponentRegistry";
 import { looksLikeDiff } from "../diff-blocks/diff-style-registry";
@@ -821,9 +822,25 @@ const expectUnifiedArtifactStage: BlockRenderFn = (ctx) => {
   return block.content ? ctx.renderBasicMarkdown(block.content) : null;
 };
 
-/** Shared registration for the generic XML control tags — plain markdown. */
+/** Top-level prose — the shared BasicMarkdownContent leaf. */
 const renderControlTagMarkdown: BlockRenderFn = (ctx) =>
   ctx.block.content ? ctx.renderBasicMarkdown(ctx.block.content) : null;
+
+/**
+ * Generic XML control sections (<info>, <task>, <plan>, …). Their body is
+ * content INSIDE content, so it renders through the depth-bounded nested
+ * renderer at the `standard` level: a ```python fence, a table, a
+ * ```markdown document or another section inside an <info> renders as
+ * itself, one level deeper, and falls back to text at the depth cap.
+ */
+const renderNestedSection: BlockRenderFn = ({ block, index, isStreamActive }) =>
+  block.content ? (
+    <NestedRichContent
+      key={index}
+      source={block.content}
+      isStreaming={isStreamActive}
+    />
+  ) : null;
 
 /** Canonical readable fallback for structured handlers missing serverData. */
 function renderJsonFallback(block: RenderBlock, index: number) {
@@ -1135,12 +1152,12 @@ const PROTOCOL_BLOCK_DISPATCH = {
     );
   },
 
-  info: renderControlTagMarkdown,
-  task: renderControlTagMarkdown,
-  database: renderControlTagMarkdown,
-  private: renderControlTagMarkdown,
-  plan: renderControlTagMarkdown,
-  event: renderControlTagMarkdown,
+  info: renderNestedSection,
+  task: renderNestedSection,
+  database: renderNestedSection,
+  private: renderNestedSection,
+  plan: renderNestedSection,
+  event: renderNestedSection,
 
   tool: (ctx) => {
     // `tool` here is the generic XML-tagged `<tool>...</tool>` markdown
@@ -1149,7 +1166,7 @@ const PROTOCOL_BLOCK_DISPATCH = {
     // same visibility flag so the surface is silent about tools end
     // to end.
     if (ctx.hideToolResults) return null;
-    return renderControlTagMarkdown(ctx);
+    return renderNestedSection(ctx);
   },
 
   matrx: ({ block, index }) => (

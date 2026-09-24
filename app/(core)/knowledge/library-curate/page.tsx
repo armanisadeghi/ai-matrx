@@ -11,7 +11,7 @@
 
 import { LibraryCuratePage } from "@/features/rag/components/library-curate/LibraryCuratePage";
 import KnowledgeLanding from "@/features/auth/components/module-landing/landings/KnowledgeLanding";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/knowledge/library-curate", {
@@ -22,7 +22,7 @@ export const metadata = createRouteMetadata("/knowledge/library-curate", {
 });
 
 export default async function Page() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) return <KnowledgeLanding />;
   return <LibraryCuratePage />;
 }

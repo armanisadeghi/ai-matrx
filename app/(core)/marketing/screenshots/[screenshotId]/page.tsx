@@ -21,7 +21,7 @@ export default async function MarketingScreenshotPage({
   const supabase = await createClient();
   const response = await webDb(supabase)
     .from("screenshot")
-    .select("id, kind, file_id, captured_at, width, height")
+    .select("id, organization_id, kind, file_id, captured_at, width, height")
     .eq("id", screenshotId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -62,7 +62,7 @@ export default async function MarketingScreenshotPage({
       </section>
 
       <div className="mx-auto mt-4 max-w-3xl">
-        <EntityCustomFields entityToken="web_screenshot" recordId={screenshot.id} />
+        <EntityCustomFields entityToken="web_screenshot" recordId={screenshot.id} organizationId={screenshot.organization_id} />
       </div>
     </main>
   );

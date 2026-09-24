@@ -31,6 +31,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { InlineCopyButton } from "@/components/matrx/buttons/InlineCopyButton";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
+import { resolveRunWait } from "@/lib/api/run-wait";
+import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
+import { getUserId } from "@/utils/auth/getUserId";
 import { extractErrorMessage } from "@/utils/errors";
 import type { components } from "@/types/python-generated/api-types";
 import { useContextPreview } from "./useContextPreview";
@@ -82,15 +85,21 @@ function show(value: unknown): string {
   }
 }
 
-/** Lines one block carries that the other does not — the highlight set. */
+/**
+ * Lines one block carries that the other does not — the highlight set. System
+ * context (dates, times) is computed a few milliseconds apart on each side and
+ * the server leaves it out of the diff and says so, so its lines are never
+ * highlighted either.
+ */
 function lineDiff(a: string, b: string): { onlyA: Set<string>; onlyB: Set<string> } {
   const la = a.split("\n").map((l) => l.trimEnd());
   const lb = b.split("\n").map((l) => l.trimEnd());
   const sa = new Set(la);
   const sb = new Set(lb);
+  const counts = (l: string) => l.trim() !== "" && !l.endsWith("[system]");
   return {
-    onlyA: new Set(la.filter((l) => l.trim() && !sb.has(l))),
-    onlyB: new Set(lb.filter((l) => l.trim() && !sa.has(l))),
+    onlyA: new Set(la.filter((l) => counts(l) && !sb.has(l))),
+    onlyB: new Set(lb.filter((l) => counts(l) && !sa.has(l))),
   };
 }
 
@@ -329,18 +338,27 @@ function AnswerBoth({
     if (!q) return;
     setRunning(true);
     setError(null);
-    void dispatch(
-      callApi({
-        path: "/ai/context/preview/answer-both",
-        method: "POST",
-        body: {
-          conversation_id: conversationId ?? null,
-          agent_id: agentId,
-          question: q,
-          ...(scopeIds ? { scope_ids: scopeIds } : {}),
-        },
-      }),
-    ).then((res) => {
+    // Two real agent turns answer before the server sends a byte, so the 15-second JSON default
+    // would cut every answer off. The wait is the organization's run-wait knob for a text reply
+    // (agents.run_wait.text_seconds) — the same wait a chat turn gets — never a number chosen here.
+    void resolveRunWait(peekSelectedOrganizationId(), getUserId() ?? null, "text")
+      .then((wait) =>
+        dispatch(
+          callApi({
+            path: "/ai/context/preview/answer-both",
+            method: "POST",
+            body: {
+              conversation_id: conversationId ?? null,
+              agent_id: agentId,
+              question: q,
+              ...(scopeIds ? { scope_ids: scopeIds } : {}),
+            },
+            connectTimeoutMs: wait.firstResponseMs,
+            totalTimeoutMs: null,
+          }),
+        ),
+      )
+      .then((res) => {
       setRunning(false);
       if (res.error) {
         const detail = res.error.serverDetail ? extractErrorMessage(res.error.serverDetail) : "";
@@ -391,9 +409,9 @@ function AnswerBoth({
                       {p === "old" ? "Current system" : "Record store"}
                     </span>
                     <span className="text-[10px] tabular-nums text-muted-foreground">
-                      {a?.model ?? ""}
-                      {typeof a?.duration_ms === "number" ? ` · ${(a.duration_ms / 1000).toFixed(1)} s` : ""}
-                      {typeof a?.input_tokens === "number" ? ` · ${a.input_tokens.toLocaleString()} in` : ""}
+                      {a?.model && !/^[0-9a-f-]{36}$/i.test(a.model) ? a.model : ""}
+                      {typeof a?.duration_ms === "number" ? ` ${(a.duration_ms / 1000).toFixed(1)} s` : ""}
+                      {typeof a?.input_tokens === "number" ? ` · ${a.input_tokens.toLocaleString()} tokens in` : ""}
                     </span>
                   </div>
                   {a?.error ? (

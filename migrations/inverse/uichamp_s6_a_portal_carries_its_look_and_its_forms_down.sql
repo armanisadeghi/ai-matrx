@@ -17,6 +17,9 @@
 -- based-on: custom.portal_card(uuid, uuid) 6d6174146629aea49ff6165a3cdcb744e17fa063e96ccc5532440dbe04033aea
 -- based-on: custom.portal_me() d23760fcd768faa9da61d1bcaecdba38b956623a513f989b771f87e49e61eff4
 -- based-on: custom.portal_public(text) aadafba9e8a17bfc62ecc82d71a0b2755eaa68d65ea072c7f4bbd1f05a576e26
+-- based-on: custom.portal_declare(uuid, text, uuid, jsonb, uuid, text, text, jsonb) 11e7ff34b5675631d61ff340d8cc778e284d554bcfef5abe453fd68110f8500e
+-- based-on: custom.portal_form(uuid, uuid, uuid) 42fd00f01ab9e9460e22ffe888f6e7f777d1b08b2af30e61e4933bb5b4caae3e
+-- based-on: custom.portal_form_submit(uuid, uuid, uuid, jsonb, text) c4df1625598f3e0d2073a9e457504264c2e44473e18bea3f33adfea6d44231c1
 
 set local lock_timeout = '5s';
 set local statement_timeout = '120s';
@@ -29,7 +32,9 @@ drop function custom.portal_form_submit(uuid, uuid, uuid, jsonb, text);
 drop function custom.portal_form(uuid, uuid, uuid);
 drop function custom.portal_declare(uuid, text, uuid, jsonb, uuid, text, text, jsonb);
 
-CREATE OR REPLACE FUNCTION custom.portal_declare(p_organization_id uuid, p_title text, p_client_table_id uuid, p_tables jsonb, p_portal_id uuid DEFAULT NULL::uuid, p_slug text DEFAULT NULL::text, p_sign_in_method text DEFAULT 'magic_link'::text)
+-- CREATE, not CREATE OR REPLACE: the eight-argument door is dropped just above and the
+-- seven-argument one does not exist while S6 is applied, so this is a birth, not a replace.
+CREATE FUNCTION custom.portal_declare(p_organization_id uuid, p_title text, p_client_table_id uuid, p_tables jsonb, p_portal_id uuid DEFAULT NULL::uuid, p_slug text DEFAULT NULL::text, p_sign_in_method text DEFAULT 'magic_link'::text)
  RETURNS uuid
  LANGUAGE plpgsql
  SECURITY DEFINER

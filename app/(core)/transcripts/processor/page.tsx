@@ -11,12 +11,12 @@
 
 import { Suspense } from "react";
 import { TranscriptsLayout } from "@/features/transcripts/components/TranscriptsLayout";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { redirect } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 export default async function TranscriptsProcessorPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     // Guests bounce to the public `/transcripts` landing (the savior page
     // already gates them with the marketing landing).

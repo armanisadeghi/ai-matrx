@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { resolveIntakeAssetRouteTarget } from "@/features/commerce-intake/asset-route";
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 import { AssetDetailBody, AssetDetailHeader } from "./AssetDetailRouteClient";
 
@@ -22,7 +22,7 @@ export default async function IntakeAssetPage({
   if (target.kind === "redirect") redirect(target.href);
   if (target.kind === "not-found") notFound();
 
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   // The asset deep link is the destination — it must survive the auth bounce.
   if (!isAuthenticated)
     redirect(

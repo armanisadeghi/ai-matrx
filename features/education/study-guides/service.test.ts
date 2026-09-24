@@ -27,8 +27,10 @@ jest.mock("@/utils/supabase/client", () => ({ supabase: { schema } }));
 
 import {
   loadStudyAnnotations,
+  loadStudyGuideIndex,
   saveStudyAnnotation,
 } from "./service";
+import { STUDY_NOTES_FOLDER } from "@/features/education/notes/study-notes-folder";
 import type { Note } from "@/features/notes/types";
 
 const annotationInput = {
@@ -180,5 +182,17 @@ describe("study guide annotation reads", () => {
     })).rejects.toThrow(/no longer matches/);
     expect(notesCreate).not.toHaveBeenCalled();
     expect(associationAdd).not.toHaveBeenCalled();
+  });
+});
+
+describe("study guide library", () => {
+  it("lists only my study-folder notes — an ordinary draft is not a study guide", async () => {
+    const recorded = queryRecorder([]);
+    schema.mockReturnValue({ from: jest.fn(() => recorded.query) });
+
+    await loadStudyGuideIndex();
+
+    expect(recorded.calls).toContainEqual({ method: "eq", args: ["created_by", "learner-1"] });
+    expect(recorded.calls).toContainEqual({ method: "eq", args: ["folder_name", STUDY_NOTES_FOLDER] });
   });
 });

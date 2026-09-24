@@ -9,7 +9,7 @@
 //
 // Usage (server-side branch, same shape as the notes/layout.tsx exemplar):
 //
-//   const { isAuthenticated } = await getServerAuth();
+//   const { isAuthenticated } = await getSessionVerdict(); // never getServerAuth(): see utils/supabase/sessionVerdict.ts
 //   if (!isAuthenticated) {
 //     return <ModuleSignInGate title="Projects" route="/projects"
 //       description="Plan and track work across your organization." />;

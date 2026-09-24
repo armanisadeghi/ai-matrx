@@ -8,13 +8,13 @@
 // cached — the parent layout already paid for it) so neither tree leaks into
 // the other's bundle.
 
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import PrintLanding from "@/features/auth/components/module-landing/landings/PrintLanding";
 import { PrintHub } from "@/features/print/hub/PrintHub";
 
 export default async function PrintHubRoute() {
-    const { isAuthenticated } = await getServerAuth();
+    const { isAuthenticated } = await getSessionVerdict();
 
     if (!isAuthenticated) {
         return (

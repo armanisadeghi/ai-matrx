@@ -37,4 +37,10 @@ export interface MarkdownCoreProps {
   children: string;
   preset?: MarkdownPreset;
   components?: Components;
+  /**
+   * The text is still streaming in: heal half-arrived syntax before parse.
+   * Omit to inherit from the nearest MarkdownStreamingProvider (false outside
+   * a live stream); finished text is never healed.
+   */
+  streaming?: boolean;
 }

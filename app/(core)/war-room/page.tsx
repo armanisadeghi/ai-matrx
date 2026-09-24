@@ -7,11 +7,11 @@
 // page uses) so a logged-in user is never shown the marketing pitch.
 
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import WarRoomLanding from "@/features/auth/components/module-landing/landings/WarRoomLanding";
 
 export default async function WarRoomPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (isAuthenticated) {
     redirect("/war-room/all");
   }

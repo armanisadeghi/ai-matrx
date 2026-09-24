@@ -2,7 +2,7 @@ import { cache } from "react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import type { UserListWithItems } from "@/features/user-lists/types";
 import { ListDetailClient } from "@/features/user-lists/components/ListDetailClient";
@@ -49,7 +49,7 @@ export default async function ListDetailPage({ params }: PageProps) {
   const { id } = await params;
   const [list, { user }] = await Promise.all([
     getListWithItems(id),
-    getServerAuth(),
+    getSessionVerdict(),
   ]);
 
   if (!list) notFound();

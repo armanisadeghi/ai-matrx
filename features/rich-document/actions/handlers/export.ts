@@ -16,7 +16,7 @@ import { acknowledgedPreparedSource, prepareContentEdit, savePreparedContentEdit
 
 registerAction({
   id: "html-preview",
-  label: "HTML preview",
+  label: "Publish HTML",
   icon: Eye,
   iconColor: "text-indigo-500 dark:text-indigo-400",
   category: "export",
@@ -25,7 +25,10 @@ registerAction({
   order: 0,
   run: async (ctx) => {
     const instanceId = ctx.instanceKey("html-preview");
-    const canSave = Boolean(ctx.sourceAdapter.edit);
+    // A structured chat payload's JSON view must never be saved back as text.
+    const canSave =
+      Boolean(ctx.sourceAdapter.edit) &&
+      !(ctx.extensions?.type === "chat-message" && ctx.extensions.contentIsStructuredRaw);
     const prepared = canSave ? await prepareContentEdit(ctx) : { source: ctx.source, content: ctx.content };
     let preparedSource = prepared.source;
 
@@ -79,6 +82,7 @@ registerAction({
         },
       }),
     );
+    ctx.onClose();
   },
 });
 

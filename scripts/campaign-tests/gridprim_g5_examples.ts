@@ -16,8 +16,8 @@ import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
-import { exampleSpec } from "../../../aidream/apps/shared/records/src/grid";
-import { loadAllUseCases } from "../../../aidream/apps/shared/records/src/use-cases/registry";
+import { exampleSpec } from "@ai-matrx/records";
+import { loadAllUseCases } from "@ai-matrx/records/use-cases";
 import { branchRefOverride, cloneRefOverride, loadBranchDbEnv, loadBranchRef, loadCloneDbEnv, loadCloneRef } from "../lib/migration-target";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");

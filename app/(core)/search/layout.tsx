@@ -12,7 +12,7 @@
 // cached — the parent layout already paid for it), so the workspace tree and
 // the landing tree never leak into each other's bundle.
 
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import SearchLanding from "@/features/auth/components/module-landing/landings/SearchLanding";
 import { createRouteMetadata } from "@/utils/route-metadata";
@@ -31,7 +31,7 @@ export default async function SearchLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
 
   if (!isAuthenticated) {
     return (

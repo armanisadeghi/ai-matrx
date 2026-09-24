@@ -1,6 +1,6 @@
 import { ChevronRight, MailCheck } from "lucide-react";
 import Link from "next/link";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { SendingIdentityDetailPage } from "@/features/crm/components/sending-identities/SendingIdentityDetailPage";
@@ -12,7 +12,7 @@ export default async function SendingIdentityRoute({
   params: Promise<{ identityId: string }>;
 }) {
   const { identityId } = await params;
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     return (
       <ModuleSignInGate

@@ -66,7 +66,7 @@ const MarkdownTester: React.FC<MarkdownTesterProps> = ({ className }) => {
   const isSyncingRef = useRef(false);
 
   const [loadedSampleId, setLoadedSampleId] = useState<string | null>(null);
-  const { loadAutosave } = useMarkdownAutosave(inputContent);
+  const { loadAutosave } = useMarkdownAutosave("admin-tester", inputContent);
 
   useEffect(() => {
     loadAutosave().then((saved) => {

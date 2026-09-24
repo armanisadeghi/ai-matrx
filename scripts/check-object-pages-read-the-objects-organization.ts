@@ -85,6 +85,44 @@ const FORBIDDEN: readonly RegExp[] = [
   /\bselectOrganizationName\b/,
 ];
 
+/**
+ * A GUESSED REFUSAL — an object page telling the person a record "may have been in a different
+ * organization" instead of showing the canonical No Access page. The store's read rules never
+ * consult the active organization, so the sentence is false by construction (VERIFIER-17 H3: the
+ * older /data/<id> page said it over a table of the very organization she was working in).
+ */
+const GUESSED_REFUSAL = /(different organization|not in the organization you are working in)/i;
+
+/** Every file under `app/` whose path has a dynamic segment — any object page, any store. */
+export function allObjectRouteFiles(root: string, appDir = "app"): string[] {
+  const files: string[] = [];
+  try {
+    walk(join(root, appDir), files);
+  } catch {
+    return [];
+  }
+  return files.filter((f) => /\[[^\]]+\]/.test(relative(root, f))).map((f) => relative(root, f));
+}
+
+export function guessedRefusals(root: string): Finding[] {
+  const findings: Finding[] = [];
+  for (const file of allObjectRouteFiles(root)) {
+    const lines = readFileSync(join(root, file), "utf8").split("\n");
+    lines.forEach((raw, i) => {
+      if (/^\s*(\*|\/\*|\/\/)/.test(raw)) return; // prose in a comment
+      const code = raw.replace(/\/\/.*$/, "");
+      if (!GUESSED_REFUSAL.test(code)) return;
+      findings.push({
+        file,
+        line: i + 1,
+        text: raw.trim(),
+        why: "guesses at an organization in front of a person — render <AccessGate token id/> (the canonical No Access page); the read rules never consult the active organization",
+      });
+    });
+  }
+  return findings;
+}
+
 const OPENS_THE_STORE = /from\s+["'](@ai-matrx\/records-ui|@ai-matrx\/records|@\/features\/unified-data\/[^"']*)["']/;
 const EXEMPT = /\/\/\s*object-org-exempt:(.*)$/;
 
@@ -264,6 +302,13 @@ function selfTest(): number {
   const excusedHeld = scan(dir, [], { "app/(core)/data-v2/[tableId]/page.tsx": "fixture reason long enough" }).findings;
   expect("GREEN-4 a recorded exception holds its file", !excusedHeld.some((f) => f.file.includes("[tableId]")));
 
+  // GUESSED REFUSAL: an object page telling her the sender "was in a different organization".
+  write("app/(core)/data/[id]/Client.tsx", `export const X = () => <p>If somebody sent you this link, they may have been in a different organization.</p>;\n`);
+  write("app/(core)/data/[id]/Honest.tsx", `// a comment may say "different organization" when it explains the rule\nexport const Y = () => <AccessGate token="dataset" id={id} />;\n`);
+  const red6 = guessedRefusals(dir);
+  expect("RED-6 an object page guessing 'a different organization' fails", red6.some((f) => f.file.endsWith("Client.tsx")));
+  expect("GREEN-6 an object page rendering AccessGate (and a comment) passes", !red6.some((f) => f.file.endsWith("Honest.tsx")));
+
   // MUST ASK THE OBJECT: a workspace that finds a routed id only inside the showing list.
   write("features/x/workspace.tsx", `const selected = items.find((i) => i.id === routedId);\n`);
   write("features/x/asks.tsx", `const home = useCredentialHome(routedId);\n`);
@@ -281,5 +326,6 @@ if (require.main === module) {
     process.exit(selfTest());
   }
   const { scanned, findings } = scan(ROOT, OBJECT_HELPERS, EXCUSED, MUST_ASK_THE_OBJECT);
+  findings.push(...guessedRefusals(ROOT));
   process.exit(report(findings, scanned));
 }

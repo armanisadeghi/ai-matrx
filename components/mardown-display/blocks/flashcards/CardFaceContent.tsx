@@ -2,9 +2,9 @@
 
 // CardFaceContent — the ONE way to render a flashcard face's text anywhere
 // that is not the full flip card. Per THE CANONICAL COMPONENT LAW this is the
-// per-field child of FlashcardItem: same rendering engine
-// (ConfigurableMarkdownContent → markdown + KaTeX), compact style presets for
-// small slots. A face rendered as raw text ({card.front}) is a defect — a
+// per-field child of FlashcardItem: the same core every surface uses
+// (<RichContent level="inline"> → markdown + KaTeX, phrasing-only), compact
+// styling for small slots. A face rendered as raw text ({card.front}) is a defect — a
 // calculus student sees literal \frac{dy}{dx} — so every surface that shows a
 // face (Write/Test prompts, Match tiles, sidebar rows, CardPeek) renders
 // through this component instead.
@@ -17,11 +17,11 @@
 // The flip card itself (FlashcardItem) keeps its own auto-scaling style built
 // from the shared helpers below — one source of face-style truth.
 
-import {
-  ConfigurableMarkdownContent,
-  type MarkdownStyleConfig,
-} from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
+import type { MarkdownStyleConfig } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
 import { cn } from "@/lib/utils";
+// Inside the chat engine's graph: the inline level directly, never the
+// router (its standard/full edges would stack under MarkdownStream).
+import { RichContentInline } from "@/components/rich-content/RichContentInline";
 
 export type CardFaceVariant = "prompt" | "inline";
 
@@ -118,73 +118,30 @@ export function makeCardFaceStyle(
   };
 }
 
-/** Compact neutral style shared by the small-slot variants. */
-function makeSlotStyle(
-  variant: CardFaceVariant,
-  className?: string,
-): MarkdownStyleConfig {
-  const isPrompt = variant === "prompt";
-  return {
-    typography: {
-      fontSizeLtr: isPrompt ? "text-lg" : "",
-      fontSizeRtl: isPrompt ? "text-lg" : "",
-      leading: "leading-snug",
-      tracking: "tracking-normal",
-    },
-    colors: {
-      headingColor: "text-foreground",
-      emColorLight: "text-foreground",
-      emColorDark: "dark:text-foreground",
-      editButtonColor: "text-transparent",
-      editButtonHoverColor: "hover:text-transparent",
-    },
-    spacing: {
-      wrapperMy: "my-0",
-      paragraphMb: isPrompt ? "mb-1" : "mb-0",
-      listMb: isPrompt ? "mb-1" : "mb-0",
-      listPl: "pl-5",
-      listItemMb: "mb-0",
-      preMy: "my-1",
-      imgMy: isPrompt ? "my-2" : "my-0.5",
-      hrMy: "my-1",
-      mathParagraphMb: isPrompt ? "mb-1" : "mb-0",
-      blankLineHeight: "h-[0.3em]",
-    },
-    headings: {
-      // A face that happens to contain heading markup must not explode a
-      // small slot — headings render as emphasized body text.
-      h1: isPrompt ? "text-lg font-semibold mb-1" : "font-semibold mb-0",
-      h2: isPrompt ? "text-lg font-semibold mb-1" : "font-semibold mb-0",
-      h3: isPrompt ? "text-base font-semibold mb-0.5" : "font-semibold mb-0",
-      h4: isPrompt ? "text-base font-semibold mb-0.5" : "font-semibold mb-0",
-    },
-    wrapperClassName: cn(
-      isPrompt
-        ? "text-lg font-medium leading-snug text-foreground text-left w-full"
-        : "min-w-0 leading-snug",
-      className,
-    ),
-  };
-}
-
 export function CardFaceContent({
   content,
   variant = "prompt",
   className,
 }: {
-  /** The face text — markdown + LaTeX (inline `\(…\)`, display `$$…$$`).
-   *  Single-`$` inline math is deliberately OFF engine-wide (currency safety). */
+  /** The face text — markdown + LaTeX (inline `\(…\)`, display `$$…$$`),
+   *  in the ONE math dialect every surface shares. */
   content: string;
   variant?: CardFaceVariant;
   /** Extra wrapper classes — e.g. "line-clamp-2" for clamped rows. */
   className?: string;
 }) {
+  // The `inline` level of the one rich-content core: markdown + math, no
+  // blocks, phrasing-only — safe inside a Match tile <button>, a list row or
+  // a clamped cell. A heading in a face reads as emphasized body text.
   return (
-    <ConfigurableMarkdownContent
-      content={content}
-      isStreamActive={false}
-      showCopyButton={false}
-      styleConfig={makeSlotStyle(variant, className)}
+    <RichContentInline
+      source={content}
+      className={cn(
+        variant === "prompt"
+          ? "block w-full text-left text-lg font-medium leading-snug text-foreground"
+          : "min-w-0 leading-snug",
+        className,
+      )}
     />
   );
 }

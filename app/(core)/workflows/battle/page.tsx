@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { Swords } from "lucide-react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { WorkflowBattlePage } from "@/features/workflow-comparison/components/WorkflowBattlePage";
@@ -10,7 +10,7 @@ import { WorkflowBattlePage } from "@/features/workflow-comparison/components/Wo
  * The workflow twin of /agents/battle. Feature: features/workflow-comparison.
  */
 export default async function WorkflowBattleRoute() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/workflows");
 
   return (

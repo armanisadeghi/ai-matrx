@@ -19,14 +19,14 @@ import { redirect } from "next/navigation";
 import { KeyRound, ShieldAlert } from "lucide-react";
 
 import { createClient } from "@/utils/supabase/server";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { PendingDoorQueue } from "@/features/emergency-access/components/PendingDoorQueue";
 import { listPendingEmergencyDoorRequests } from "@/features/emergency-access/service";
 
 export default async function EmergencyAccessPage() {
-  const { isAuthenticated, user } = await getServerAuth();
+  const { isAuthenticated, user } = await getSessionVerdict();
   if (!isAuthenticated || !user) {
     redirect(
       await currentRequestLoginHref("/organizations/emergency-access"),

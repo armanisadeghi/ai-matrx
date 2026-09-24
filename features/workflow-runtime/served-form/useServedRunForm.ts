@@ -20,10 +20,6 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  ORGANIZATION_UNAVAILABLE_DESCRIPTION,
-  useOrganizationRequired,
-} from "@/features/organizations/useOrganizationRequired";
 import { callApi, type ApiCallConfig } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
 
@@ -87,22 +83,16 @@ export function useServedRunForm(
    * Depending on the id re-runs the fetch the moment context arrives.
    */
   const organizationId = useAppSelector(selectOrganizationId);
-  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class useMandateInputSurface
-  // fixed (V3 F4). "Wait, never fail" is right only while the bootstrap is still
-  // resolving; on a session with NO organization selected, `loading` stayed the
-  // state forever and the form never said why. Once the bootstrap has resolved
-  // with no org, that is a settled fact: say it, with the action that fixes it.
-  // 🚨 AND THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved`
-  // goes TRUE when the read FAILED too (`setOrgBootstrapFailure` sets it), so
-  // reading it alone said "choose an organization" to a person nobody had read
-  // the memberships of. The gate's discriminant separates the two.
-  const { organizationState } = useOrganizationRequired();
+  // 🚨 READING NEVER WAITS ON AN ORGANIZATION (Arman, 2026-09-23 — access
+  // belongs to the person). The run form is the workflow's, read by id; the
+  // server checks the person's access and never the selection, and callApi
+  // sends a GET with no organization after its bounded restore wait. The id
+  // above stays a dependency only so a read refreshes when one arrives.
   const [state, setState] = useState<ServedRunFormState>({
     status: "loading",
   });
 
   useEffect(() => {
-    if (!organizationId) return; // not sendable yet — wait, never fail
     if (definitionId === null) return; // the host holds the answer
     let live = true;
     setState({ status: "loading" });
@@ -130,27 +120,6 @@ export function useServedRunForm(
     };
   }, [dispatch, definitionId, organizationId]);
 
-  // Derived at render, never set in the effect (react-hooks/set-state-in-effect):
-  // the settled fact needs no extra render pass and can never go stale.
-  if (organizationState === "unavailable" && definitionId !== null) {
-    return {
-      status: "error",
-      message: ORGANIZATION_UNAVAILABLE_DESCRIPTION,
-      issues: [],
-      serverExplained: false,
-      doesNotCompile: false,
-    };
-  }
-  if (organizationState === "required" && definitionId !== null) {
-    return {
-      status: "error",
-      message:
-        "No organization is selected, so this run form cannot be read — choose one from the organization picker in the header and this fills in.",
-      issues: [],
-      serverExplained: false,
-      doesNotCompile: false,
-    };
-  }
   return state;
 }
 

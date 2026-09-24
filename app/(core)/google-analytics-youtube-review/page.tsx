@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { GoogleAnalyticsYouTubeReviewRoot } from "@/features/marketing/google/GoogleAnalyticsYouTubeReviewRoot";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata(
@@ -15,7 +15,7 @@ export const metadata = createRouteMetadata(
 );
 
 export default async function GoogleAnalyticsYouTubeReviewPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     redirect(
       `/login?redirectTo=${encodeURIComponent("/google-analytics-youtube-review")}`,

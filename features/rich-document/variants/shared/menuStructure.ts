@@ -38,22 +38,35 @@ export interface MenuSection {
  */
 export const MENU_STRUCTURE: MenuSection[] = [
   {
+    // The doors a reader must see without scrolling or guessing (defect D6:
+    // "Add to Rulebook" once sat twenty rows below the fold and read as
+    // missing). Every family of near-identical variants is ONE submenu row.
     submenu: null,
     actionIds: [
+      "add-to-rulebook",
+      "save-to-task",
       "copy",
       "save-to-notes",
-      "save-to-task",
-      "open-fullscreen-editor",
+      "summarize-and-listen",
+      "summarize-for-listening",
+      "convert-to-study",
     ],
   },
   {
-    submenu: "Save",
+    submenu: "Save as",
     icon: Save,
     actionIds: [
+      "save-as-message-template",
       "save-to-scratch",
-      "save-to-code",
-      "save-code-to-scratch",
+      "add-to-docs",
       "save-as-file",
+      "save-to-code",
+      "save-to-files",
+      "save-code-to-scratch",
+      "save-as-pdf",
+      "save-shape-instance",
+      "save-to-contact",
+      "set-context-value",
     ],
   },
   {
@@ -67,15 +80,16 @@ export const MENU_STRUCTURE: MenuSection[] = [
     ],
   },
   {
-    submenu: "Export",
+    submenu: "Share & export",
     icon: Share2,
     actionIds: [
       "html-preview",
+      "share-webpage",
+      "send-google-doc",
       "email-to-me",
       "print",
       "full-print",
       "convert-to-broker",
-      "add-to-docs",
     ],
   },
   {
@@ -90,7 +104,15 @@ export const MENU_STRUCTURE: MenuSection[] = [
   {
     submenu: "Edit",
     icon: Edit,
-    actionIds: ["edit", "edit-history", "fork-at-message", "delete-message"],
+    actionIds: [
+      "edit",
+      "edit-and-resubmit",
+      "open-fullscreen-editor",
+      "edit-history",
+      "fork-at-message",
+      "fork-and-regenerate",
+      "delete-message",
+    ],
   },
   {
     submenu: "Creator tools",
@@ -98,7 +120,7 @@ export const MENU_STRUCTURE: MenuSection[] = [
     actionIds: ["analyze-response", "debug-stream"],
   },
   {
-    submenu: "Admin",
+    submenu: "Server API (test)",
     icon: Shield,
     actionIds: [
       "server-api-admin-fork-at",

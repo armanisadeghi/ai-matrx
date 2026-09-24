@@ -1,5 +1,5 @@
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
-import { TranscriptSegment } from "./AdvancedTranscriptViewer";
+import type { TranscriptSegment } from "./AdvancedTranscriptViewer";
 
 export type ParsedTranscript = {
   /** Main title: `# …` or standalone `**…**` (exact text, not modified). */

@@ -1,0 +1,320 @@
+#!/usr/bin/env npx tsx
+/**
+ * THE EDITOR ROUND-TRIP CORPUS — the rich-content editor (RC-B4) judged over EVERY stored row,
+ * through the editor's OWN load/save path, headless (a real Tiptap `Editor`, no DOM).
+ *
+ * "Switching between their rich text and our previews and displays will never make the core
+ * data change unless we make that change into the rule." (Arman, 2026-09-23)
+ *
+ * Per stored text:
+ *   visual_noop      open in the visual editor → write it back with no edit = the stored bytes
+ *   view_switch      visual → source → visual again → write back = the stored bytes
+ *   noop_save        the save gate (planSave) on that result: unchanged, nothing to store
+ *   edit_local       type " [edited]" at the end of the first editable paragraph:
+ *                      · bytes outside that paragraph's block are identical
+ *                      · the result is EXACTLY the stored text with those 9 characters inserted
+ *                        where the paragraph ends (nothing else in the block moved)
+ *                      · the save gate accepts it with no island question
+ *                      · every island (kinds, XML, fences, math, {{vars}}, tags, anchors, HTML)
+ *                        is still there byte-for-byte
+ *                      · no backslash was introduced
+ *
+ * Rows come from the shared corpus reader (scripts/lib/rich-content-corpus.ts) — the same rows
+ * the tokenizer gate (check-source-roundtrip-corpus.ts) judges. READ ONLY. Nothing a person
+ * wrote is printed: failures report the row id and the reason only.
+ *
+ * Usage:
+ *   npx tsx scripts/check-rich-editor-roundtrip-corpus.ts            # every source
+ *   … --only notes                    # one source
+ *   … --limit 2000                    # first N rows per source (a quick run)
+ *   … --json <file>                   # full report as JSON
+ *
+ * Exit 0 only when every row passes every check.
+ */
+import { writeFileSync } from "node:fs";
+import { Editor, getSchema, type JSONContent } from "@tiptap/core";
+import type { Node as PMNode } from "@tiptap/pm/model";
+import { listIslands, tokenizeSource } from "@ai-matrx/content-ir/source";
+import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { exitAfterDrain, installBlockingStdio } from "./lib/exit-after-drain";
+import {
+  CORPUS_SOURCES,
+  readCorpusSource,
+  type CorpusSourceName,
+} from "./lib/rich-content-corpus";
+import { createRichEditorExtensions } from "../components/rich-editor/core/extensions";
+import {
+  buildVisualDocument,
+  captureBaseline,
+  serializeVisualDocument,
+  type VisualPlan,
+} from "../components/rich-editor/core/visual-document";
+import { planSave } from "../components/rich-editor/core/save-plan";
+
+const args = process.argv.slice(2);
+const argValue = (flag: string): string | undefined => {
+  const index = args.indexOf(flag);
+  return index === -1 ? undefined : args[index + 1];
+};
+const only = argValue("--only") as CorpusSourceName | undefined;
+const jsonOut = argValue("--json");
+const limit = argValue("--limit") ? Number(argValue("--limit")) : Number.POSITIVE_INFINITY;
+const SLOW_MS = 2000;
+const EDIT = " [edited]";
+
+const extensions = createRichEditorExtensions();
+const schema = getSchema(extensions);
+
+interface SourceStats {
+  rows: number;
+  passed: number;
+  editedRows: number;
+  proseBlocks: number;
+  lockedBlocks: number;
+  lockedChildren: number;
+  editableChildren: number;
+  islandBlocks: number;
+  failures: Array<{ id: string; reason: string }>;
+  slow: Array<{ id: string; ms: number }>;
+}
+
+const lockReasons = new Map<string, number>();
+
+function openEditor(json: JSONContent): Editor {
+  return new Editor({ element: null, extensions, content: json });
+}
+
+function countBackslashes(text: string): number {
+  let count = 0;
+  for (let i = 0; i < text.length; i += 1) if (text.charCodeAt(i) === 92) count += 1;
+  return count;
+}
+
+function islandMultiset(text: string): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const island of listIslands(tokenizeSource(text))) {
+    const key = `${island.islandType}\u0000${island.raw}`;
+    out.set(key, (out.get(key) ?? 0) + 1);
+  }
+  return out;
+}
+
+interface EditTarget {
+  /** ProseMirror position just inside the paragraph's end. */
+  pos: number;
+  /** Source offset where the paragraph's stored bytes end. */
+  offset: number;
+  blockStart: number;
+  blockEnd: number;
+}
+
+/** The first editable paragraph that is a direct child of a stored prose block. */
+function findEditTarget(doc: PMNode, plan: VisualPlan): EditTarget | null {
+  let target: EditTarget | null = null;
+  doc.forEach((top, topOffset) => {
+    if (target || top.type.name !== "sourceBlock") return;
+    const b = top.attrs.b;
+    const block = typeof b === "number" ? plan.blocks[b] : undefined;
+    if (!block) return;
+    let consumed = 0;
+    top.forEach((child, childOffset) => {
+      if (target) return;
+      const id = typeof child.attrs.mdId === "string" ? child.attrs.mdId : null;
+      const raw = id ? plan.childRaw.get(id) : undefined;
+      if (raw === undefined) return;
+      if (child.type.name === "paragraph") {
+        target = {
+          pos: topOffset + 1 + childOffset + 1 + child.content.size,
+          offset: block.start + consumed + raw.length,
+          blockStart: block.start,
+          blockEnd: block.end,
+        };
+        return;
+      }
+      consumed += raw.length + (plan.adjacency.get(id ?? "")?.trail ?? "").length;
+    });
+  });
+  return target;
+}
+
+function tally(json: JSONContent): void {
+  const visit = (node: JSONContent) => {
+    if (node.type === "sourceLocked") {
+      const reason = String(node.attrs?.reason ?? "source");
+      lockReasons.set(reason, (lockReasons.get(reason) ?? 0) + 1);
+    }
+    node.content?.forEach(visit);
+  };
+  visit(json);
+}
+
+/** Every check for one stored text. Returns the failure reason, or null. */
+function judge(text: string, stats: SourceStats): string | null {
+  const first = buildVisualDocument(text, schema);
+  stats.proseBlocks += first.plan.stats.proseBlocks;
+  stats.lockedBlocks += first.plan.stats.lockedBlocks;
+  stats.lockedChildren += first.plan.stats.lockedChildren;
+  stats.editableChildren += first.plan.stats.editableChildren;
+  stats.islandBlocks += first.plan.stats.islandBlocks;
+  tally(first.json);
+
+  const editor = openEditor(first.json);
+  try {
+    const baseline = captureBaseline(editor.state.doc, first.plan);
+    const visual = serializeVisualDocument(editor.state.doc, baseline);
+    if (visual !== text) return "visual_noop_changed_bytes";
+
+    const second = buildVisualDocument(visual, schema);
+    const again = openEditor(second.json);
+    let switched: string;
+    try {
+      switched = serializeVisualDocument(again.state.doc, captureBaseline(again.state.doc, second.plan));
+    } finally {
+      again.destroy();
+    }
+    if (switched !== text) return "view_switch_changed_bytes";
+
+    const noop = planSave(text, switched);
+    if (noop.changed || noop.text !== text || noop.error) return "noop_save_not_identity";
+
+    const target = findEditTarget(editor.state.doc, first.plan);
+    if (!target) return null;
+    const { pos, offset, blockStart, blockEnd } = target;
+    stats.editedRows += 1;
+    editor.commands.command(({ tr }) => {
+      tr.insert(pos, editor.schema.text(EDIT));
+      return true;
+    });
+    const edited = serializeVisualDocument(editor.state.doc, baseline);
+    const tailLength = text.length - blockEnd;
+    if (
+      edited.slice(0, blockStart) !== text.slice(0, blockStart) ||
+      edited.slice(edited.length - tailLength) !== text.slice(blockEnd)
+    ) {
+      return "edit_changed_bytes_outside_block";
+    }
+    if (edited !== text.slice(0, offset) + EDIT + text.slice(offset)) {
+      return "edit_changed_bytes_inside_block";
+    }
+    const plan = planSave(text, edited);
+    if (plan.error) return "edit_save_refused";
+    if (plan.needsConsent.length) return "edit_touched_island";
+    const before = islandMultiset(text);
+    const after = islandMultiset(edited);
+    for (const [key, count] of before) {
+      if ((after.get(key) ?? 0) < count) return "edit_lost_island";
+    }
+    if (countBackslashes(edited) !== countBackslashes(text)) return "edit_added_escape";
+    return null;
+  } finally {
+    editor.destroy();
+  }
+}
+
+async function main(): Promise<number> {
+  installBlockingStdio();
+  const env = loadDbEnv();
+  if ("missing" in env) {
+    console.error(
+      `UNMEASURED: no database connection — set ${env.missing.join(", ")} (looked in ${env.looked.join(", ") || "nothing"}).`,
+    );
+    return 2;
+  }
+  console.log(`Database connection from ${env.from}; session READ ONLY.`);
+  const cx = await connectDirect(env, "rich-editor-roundtrip-corpus");
+  await cx.query("set session characteristics as transaction read only");
+  await cx.query("set statement_timeout = '120s'");
+
+  const report: Record<string, SourceStats> = {};
+  const started = Date.now();
+  try {
+    for (const source of CORPUS_SOURCES) {
+      if (only && only !== source) continue;
+      const stats: SourceStats = {
+        rows: 0,
+        passed: 0,
+        editedRows: 0,
+        proseBlocks: 0,
+        lockedBlocks: 0,
+        lockedChildren: 0,
+        editableChildren: 0,
+        islandBlocks: 0,
+        failures: [],
+        slow: [],
+      };
+      report[source] = stats;
+      for await (const row of readCorpusSource(cx, source)) {
+        if (stats.rows >= limit) break;
+        stats.rows += 1;
+        const t0 = Date.now();
+        let reason: string | null;
+        try {
+          reason = judge(row.text, stats);
+        } catch (error) {
+          reason = `threw:${error instanceof Error ? error.message.slice(0, 80) : "unknown"}`;
+        }
+        const ms = Date.now() - t0;
+        if (ms > SLOW_MS) stats.slow.push({ id: row.id, ms });
+        if (reason) stats.failures.push({ id: row.id, reason });
+        else stats.passed += 1;
+        if (stats.rows % 20000 === 0) console.log(`  ${source}: ${stats.rows} rows…`);
+      }
+      const editable = stats.editableChildren + stats.lockedChildren;
+      console.log(
+        `${source.padEnd(18)} rows ${String(stats.rows).padStart(7)}  passed ${String(stats.passed).padStart(7)}  failures ${String(stats.failures.length).padStart(4)}  edited ${stats.editedRows}  prose blocks ${stats.proseBlocks} (${stats.lockedBlocks} held as source)  constructs ${editable} (${stats.lockedChildren} held as source)  islands ${stats.islandBlocks}`,
+      );
+    }
+  } finally {
+    await cx.end();
+  }
+
+  const totals = Object.values(report).reduce(
+    (acc, s) => ({
+      rows: acc.rows + s.rows,
+      passed: acc.passed + s.passed,
+      edited: acc.edited + s.editedRows,
+    }),
+    { rows: 0, passed: 0, edited: 0 },
+  );
+  const byReason = new Map<string, number>();
+  for (const stats of Object.values(report)) {
+    for (const failure of stats.failures) {
+      byReason.set(failure.reason, (byReason.get(failure.reason) ?? 0) + 1);
+    }
+  }
+  console.log(
+    `\nTOTAL rows ${totals.rows}, passed ${totals.passed}, failing ${totals.rows - totals.passed}, edit-checked ${totals.edited}  (${Math.round((Date.now() - started) / 1000)}s)`,
+  );
+  for (const [reason, count] of [...byReason].sort((a, b) => b[1] - a[1])) {
+    console.log(`  ${reason}: ${count}`);
+  }
+  for (const [source, stats] of Object.entries(report)) {
+    for (const failure of stats.failures.slice(0, 200)) {
+      console.log(`  FAIL ${source} ${failure.id} ${failure.reason}`);
+    }
+    for (const slow of stats.slow.slice(0, 50)) console.log(`  SLOW ${source} ${slow.id} ${slow.ms}ms`);
+  }
+  console.log("\nHeld as source (shown rendered, edited as source, written back verbatim):");
+  for (const [reason, count] of [...lockReasons].sort((a, b) => b[1] - a[1])) {
+    console.log(`  ${reason}: ${count}`);
+  }
+  if (jsonOut) {
+    writeFileSync(
+      jsonOut,
+      JSON.stringify(
+        { at: new Date().toISOString(), totals, report, lockReasons: Object.fromEntries(lockReasons) },
+        null,
+        2,
+      ),
+    );
+    console.log(`Report written to ${jsonOut}`);
+  }
+  return totals.rows === totals.passed ? 0 : 1;
+}
+
+main()
+  .then((code) => exitAfterDrain(code))
+  .catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    exitAfterDrain(2);
+  });

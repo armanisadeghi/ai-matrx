@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { FileUp } from "lucide-react";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ImportWizard } from "@/features/crm/components/import/ImportWizard";
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
  * → commit. Nothing writes until the user confirms the preview.
  */
 export default async function CrmImportRoute() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     return (
       <ModuleSignInGate

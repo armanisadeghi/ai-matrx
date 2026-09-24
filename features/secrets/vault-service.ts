@@ -66,7 +66,14 @@ import {
   type VaultScope,
   type VaultTransferResponse,
 } from "./types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+import {
+  emptyReadAlarm,
+  holdingsDoorIsAbsent,
+  type Holdings,
+  type HoldingRow,
+} from "./empty-read";
 import type { components } from "@/types/python-generated/api-types";
 
 const assertVaultData = makeAssertData("load your vault");
@@ -1106,6 +1113,42 @@ export async function resolveCredentialHome(
   }
 }
 
+// TYPING NOTE: `users.credential_item_holdings` arrives with
+// migrations/campaign/errorshonest_s8_a_credential_says_how_much_it_holds.sql, which the chair applies
+// to production; until `pnpm db-types` carries it, this facade types the one call (the commerce
+// services' pattern). Delete it once database.types.ts names the function.
+type HoldingsDatabase = {
+  users: {
+    Tables: Record<string, never>;
+    Views: Record<string, never>;
+    Functions: {
+      credential_item_holdings: { Args: { p_item_ids: string[] }; Returns: HoldingRow[] };
+    };
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
+  };
+};
+
+/** The database's count of what each credential holds — see features/secrets/empty-read.ts. */
+async function askCredentialHoldings(
+  supabase: ReturnType<typeof createClient>,
+  itemIds: string[],
+): Promise<Holdings> {
+  try {
+    const { data, error } = await (supabase as unknown as SupabaseClient<HoldingsDatabase, "users">)
+      .schema("users")
+      .rpc("credential_item_holdings", { p_item_ids: itemIds });
+    if (error) {
+      return holdingsDoorIsAbsent(error.code)
+        ? { state: "absent", why: `${error.code}: ${error.message}` }
+        : { state: "unavailable", why: error.message };
+    }
+    return { state: "answered", rows: (data ?? []) as HoldingRow[] };
+  } catch (e) {
+    return { state: "unavailable", why: e instanceof Error ? e.message : "the vault did not answer" };
+  }
+}
+
 /**
  * Masked item list for a declared SCOPE — the canonical FE list path
  * (direct Supabase).
@@ -1190,30 +1233,32 @@ export async function fetchVaultItems(
     .order("created_at", { ascending: true });
   assertVaultData(attachmentRows, attachmentsError);
 
-  // 🚨 AN EMPTY READ IS NOT AN EMPTY VAULT (DD-160).
+  // 🚨 AN EMPTY READ IS NOT AN EMPTY VAULT (DD-160) — AND AN EMPTY CREDENTIAL IS NOT A FAILED READ.
   //
   // RLS does not error when it refuses a row — it returns `[]` with
   // `error === null`. From 2026-07 until 2026-09-12 a RESTRICTIVE
   // `platform_admin_select_only` policy on `users.user_secrets` and
   // `users.credential_attachments` ANDed every non-staff read to false, so the
   // OWNER of a credential read their items and none of their fields, and this
-  // function reported success and rendered an item with nothing in it. Nobody
-  // saw an error for two months because there was none to see.
+  // function reported success and rendered an item with nothing in it.
   //
-  // A credential item exists to hold something. Items with no readable field
-  // AND no readable attachment, ACROSS THE WHOLE SCOPE, is not a vault that
-  // happens to be empty — it is a read that was filtered out from under us.
-  // Say so, name both possibilities, and name the remedy.
-  const fieldCount = (fieldRows ?? []).length;
-  const attachmentCount = (attachmentRows ?? []).length;
-  if (fieldCount === 0 && attachmentCount === 0) {
-    throw new Error(
-      `Your vault has ${items.length} ${items.length === 1 ? "item" : "items"} but none of their ` +
-        `fields or files could be read. Either every one of these items is genuinely still empty, ` +
-        `or the database refused the read without reporting an error — the second is a known ` +
-        `failure mode of this screen (DD-160). Nothing has been lost: reload, and if the items are ` +
-        `still blank, report it rather than re-entering the credentials.`,
-    );
+  // From the client the two cases are the same empty array, so this used to
+  // GUESS from the whole scope — and blanked Pinecrest Records' list, whose only
+  // credential (its Bandcamp label login) simply held nothing yet. It now asks
+  // the database how much each empty-reading credential holds
+  // (`users.credential_item_holdings`, counts only) and alarms only for one that
+  // holds something the read did not return — features/secrets/empty-read.ts.
+  const readableItemIds = new Set<string>();
+  for (const row of (fieldRows ?? []) as VaultFieldMaskedRow[]) {
+    if (row.credential_item_id) readableItemIds.add(row.credential_item_id);
+  }
+  for (const row of (attachmentRows ?? []) as VaultAttachmentMaskedRow[]) {
+    readableItemIds.add(row.credential_item_id);
+  }
+  const emptyItemIds = items.filter((i) => !readableItemIds.has(i.id)).map((i) => i.id);
+  if (emptyItemIds.length > 0) {
+    const alarm = emptyReadAlarm(items.length, emptyItemIds, await askCredentialHoldings(supabase, emptyItemIds));
+    if (alarm) throw new Error(alarm);
   }
 
   // My own grants refine capabilities for rows I don't own (self-read policy).

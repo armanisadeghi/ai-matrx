@@ -35,19 +35,24 @@
 import "server-only";
 import Link from "next/link";
 import { headers } from "next/headers";
-import { ArrowLeft, Lock, LogIn } from "lucide-react";
+import { ArrowLeft, Lock, LogIn, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { readSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import {
   captureAuthDestination,
   loginHref,
 } from "@/utils/auth/auth-destination";
 
 export async function ForbiddenSurface() {
-  const [{ isAuthenticated }, headerList] = await Promise.all([
-    getServerAuth(),
+  const [verdict, headerList] = await Promise.all([
+    readSessionVerdict(),
     headers(),
   ]);
+  // A boundary answers IN PLACE (a redirect would lose the page), so it reads
+  // the three-state verdict. "Could not verify" is neither "no access" nor
+  // "sign in": it gets its own sentence and a way back to the same page.
+  const unverified = verdict.state === "unverified";
+  const { isAuthenticated } = verdict;
   // `proxy.ts` stamps the request path; it is the only way a boundary can know
   // where the user was trying to go.
   const pathname = headerList.get("x-pathname") || "/dashboard";
@@ -63,20 +68,31 @@ export async function ForbiddenSurface() {
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-lg font-semibold text-foreground">
-              {isAuthenticated
-                ? "You don't have access to this page"
-                : "Sign in to open this page"}
+              {unverified
+                ? "We could not confirm who you are just now"
+                : isAuthenticated
+                  ? "You don't have access to this page"
+                  : "Sign in to open this page"}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              {isAuthenticated
-                ? "Your account can't open it. If someone shared it with you, ask them to share it with this account."
-                : "We can't tell you anything about it until we know who you are."}
+              {unverified
+                ? "You have not been signed out. This usually clears in a few seconds — open the page again."
+                : isAuthenticated
+                  ? "Your account can't open it. If someone shared it with you, ask them to share it with this account."
+                  : "We can't tell you anything about it until we know who you are."}
             </p>
           </div>
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-2">
-          {isAuthenticated ? null : (
+          {unverified ? (
+            <Button asChild size="sm">
+              <Link href={`${pathname}${search}`}>
+                <RotateCw className="mr-1.5 h-4 w-4" aria-hidden />
+                Open it again
+              </Link>
+            </Button>
+          ) : isAuthenticated ? null : (
             <Button asChild size="sm">
               <Link href={signInHref}>
                 <LogIn className="mr-1.5 h-4 w-4" aria-hidden />

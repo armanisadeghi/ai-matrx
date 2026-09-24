@@ -12,7 +12,7 @@
  * history entry in the process (so restoring is itself reversible).
  *
  * Mounted as a controlled child of `AssistantActionBar` (so the dialog
- * survives after `MessageOptionsMenu` closes), opened via the
+ * survives after the ⋯ menu closes), opened via the
  * `onRequestEditHistory` callback on the menu action context.
  */
 

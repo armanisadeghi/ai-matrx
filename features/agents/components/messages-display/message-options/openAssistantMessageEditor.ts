@@ -14,7 +14,7 @@
  * pre-2026-08-30 behavior, where the editor rendered NOTHING for media-array
  * content and the creator could not see what the agent returned).
  *
- * Kept in its own module (not messageActionRegistry) so the action bar can
+ * Kept in its own module (not the action registry) so the action bar can
  * import it without pulling the whole registry into its chunk — the registry
  * is deliberately lazy-loaded behind the ⋯ menu.
  */

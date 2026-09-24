@@ -19,11 +19,13 @@ describe("protected workspace routes", () => {
     "/projects/042f5378-e46e-4d59-be7b-54664e3016bb/settings",
     "/tasks",
     "/tasks/f750e2e5-889b-4250-a7d1-c47bb89655c5",
+    "/o/3c1f6f0e-2a4b-4d8e-9f10-5b6c7d8e9f01",
+    "/o/3c1f6f0e-2a4b-4d8e-9f10-5b6c7d8e9f01?side=old",
   ])("stops a guest before rendering %s", (pathname) => {
     expect(routeRequiresAuthentication(pathname.split("?")[0])).toBe(true);
   });
 
-  it.each(["/project", "/task", "/taskboard", "/projects-public"])(
+  it.each(["/project", "/task", "/taskboard", "/projects-public", "/open/chat/abc", "/oauth", "/organizations"])(
     "does not overmatch neighboring route %s",
     (pathname) => {
       expect(routeRequiresAuthentication(pathname)).toBe(false);

@@ -33,6 +33,9 @@ import {
   type MemoryPalace,
 } from "@/features/content-ir/kinds/memory-aid";
 import { cn } from "@/lib/utils";
+// Inside the chat engine's graph: the inline level directly, never the
+// router (its standard/full edges would stack under MarkdownStream).
+import { RichContentInline } from "@/components/rich-content/RichContentInline";
 
 /** One label map for every technique either memory shape can carry. */
 export const TECHNIQUE_LABEL: Record<HintTechnique, string> = {
@@ -98,7 +101,7 @@ export default function MemoryAidBlock({
     <div className={cn("space-y-5", className)}>
       {aid.strategy_note && (
         <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-          {aid.strategy_note}
+          <RichContentInline source={aid.strategy_note} />
         </p>
       )}
 
@@ -137,11 +140,11 @@ export function MnemonicsSection({ mnemonics }: { mnemonics: Mnemonic[] }) {
               )}
             </div>
             <p className="text-base font-semibold text-foreground">
-              {m.device}
+              <RichContentInline source={m.device} />
             </p>
             {m.explanation && (
               <p className="mt-1 text-sm text-muted-foreground">
-                {m.explanation}
+                <RichContentInline source={m.explanation} />
               </p>
             )}
           </div>
@@ -166,14 +169,18 @@ export function AnalogiesSection({ analogies }: { analogies: Analogy[] }) {
             className="rounded-xl border border-border bg-card p-3"
           >
             {a.concept && (
-              <p className="text-sm font-medium text-foreground">{a.concept}</p>
+              <p className="text-sm font-medium text-foreground">
+                <RichContentInline source={a.concept} />
+              </p>
             )}
             <p className="mt-0.5 text-base text-foreground">
               <span className="text-muted-foreground">is like </span>
-              {a.analogy}
+              <RichContentInline source={a.analogy} />
             </p>
             {a.mapping && (
-              <p className="mt-1 text-sm text-muted-foreground">{a.mapping}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                <RichContentInline source={a.mapping} />
+              </p>
             )}
           </div>
         ))}
@@ -208,7 +215,9 @@ export function MemoryPalaceSection({ palace }: { palace: MemoryPalace }) {
                   )}
                 </p>
                 {l.image && (
-                  <p className="text-sm text-muted-foreground">{l.image}</p>
+                  <p className="text-sm text-muted-foreground">
+                    <RichContentInline source={l.image} />
+                  </p>
                 )}
               </div>
             </li>

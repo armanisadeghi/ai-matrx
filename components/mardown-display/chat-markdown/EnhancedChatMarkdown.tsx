@@ -72,6 +72,7 @@ import {
 import { InlineAssistantError } from "./internal-handlers/InlineAssistantError";
 import { PlainTextFallback } from "./internal-handlers/PlainTextFallback";
 import { SafeBlockRenderer } from "./internal-handlers/SafeBlockRenderer";
+import { MarkdownStreamingProvider } from "@/components/markdown-core/streaming-context";
 import { useBoundAgentOutputSchema } from "@/components/mardown-display/blocks/json/useBoundAgentOutputSchema";
 import { MarkdownErrorBoundary } from "./internal-handlers/MarkdownErrorBoundary";
 
@@ -1355,88 +1356,102 @@ export const EnhancedChatMarkdownInternal: React.FC<
 
   try {
     return (
-      <div className="mb-1 w-full min-w-0 text-left overflow-x-clip">
-        <div className={containerStyles}>
-          {hasUnifiedSpecial && requestId
-            ? workGroupedSlots.map((slot, i) =>
-                slot.kind === "agent_work" ? (
-                  <AgentWorkGroup
-                    key={`agent-work-${slot.items[0]?.seq ?? i}`}
-                    sessionKey={`agent-work:${requestId}:${slot.items[0]?.seq ?? i}`}
-                    order={i}
-                    durationMs={slot.durationMs}
-                    stepCount={slot.stepCount}
-                    conversationId={conversationId}
-                  >
-                    {flattenWorkSlots(slot.items).map((s, k) =>
-                      renderGroupedSlot(s, i * 1000 + k),
-                    )}
-                  </AgentWorkGroup>
-                ) : (
-                  renderGroupedSlot(slot, i)
-                ),
-              )
-            : hasDbInterleavedSpecial
-              ? workGroupedSegments.map((segment, segIdx) =>
-                  "kind" in segment && segment.kind === "agent_work" ? (
+      // A live stream heals half-arrived markdown in every MarkdownCore leaf
+      // below (links, images, emphasis) — finished messages are untouched.
+      <MarkdownStreamingProvider value={!!isStreamActive}>
+        <div className="mb-1 w-full min-w-0 text-left overflow-x-clip">
+          <div className={containerStyles}>
+            {hasUnifiedSpecial && requestId
+              ? workGroupedSlots.map((slot, i) =>
+                  slot.kind === "agent_work" ? (
                     <AgentWorkGroup
-                      key={`agent-work-${messageId ?? ""}-${segIdx}`}
-                      sessionKey={`agent-work:${messageId ?? conversationId ?? ""}:${segIdx}`}
-                      order={segIdx}
-                      durationMs={segment.durationMs}
-                      stepCount={segment.stepCount}
+                      key={`agent-work-${slot.items[0]?.seq ?? i}`}
+                      sessionKey={`agent-work:${requestId}:${slot.items[0]?.seq ?? i}`}
+                      order={i}
+                      durationMs={slot.durationMs}
+                      stepCount={slot.stepCount}
                       conversationId={conversationId}
                     >
-                      {flattenWorkSegments(segment.items).map((s, k) =>
-                        renderGroupedSegment(s, segIdx * 1000 + k),
+                      {flattenWorkSlots(slot.items).map((s, k) =>
+                        renderGroupedSlot(s, i * 1000 + k),
                       )}
                     </AgentWorkGroup>
                   ) : (
-                    renderGroupedSegment(segment, segIdx)
+                    renderGroupedSlot(slot, i)
                   ),
                 )
-              : processedBlocks.map((block, index) =>
-                  renderBlock(block, index, index === lastReasoningBlockIndex),
-                )}
+              : hasDbInterleavedSpecial
+                ? workGroupedSegments.map((segment, segIdx) =>
+                    "kind" in segment && segment.kind === "agent_work" ? (
+                      <AgentWorkGroup
+                        key={`agent-work-${messageId ?? ""}-${segIdx}`}
+                        sessionKey={`agent-work:${messageId ?? conversationId ?? ""}:${segIdx}`}
+                        order={segIdx}
+                        durationMs={segment.durationMs}
+                        stepCount={segment.stepCount}
+                        conversationId={conversationId}
+                      >
+                        {flattenWorkSegments(segment.items).map((s, k) =>
+                          renderGroupedSegment(s, segIdx * 1000 + k),
+                        )}
+                      </AgentWorkGroup>
+                    ) : (
+                      renderGroupedSegment(segment, segIdx)
+                    ),
+                  )
+                : processedBlocks.map((block, index) =>
+                    renderBlock(
+                      block,
+                      index,
+                      index === lastReasoningBlockIndex,
+                    ),
+                  )}
+          </div>
+
+          {!hideCopyButton && (
+            <MarkdownErrorBoundary
+              fallback={null}
+              onError={(error) =>
+                console.error("[MarkdownStream] CopyButton error:", error)
+              }
+            >
+              <InlineCopyButton
+                markdownContent={currentContent}
+                size="xs"
+                position="center-right"
+                isMarkdown={true}
+                constrainToParent={true}
+              />
+            </MarkdownErrorBoundary>
+          )}
+
+          {allowFullScreenEditor && (
+            <MarkdownErrorBoundary
+              fallback={null}
+              onError={(error) =>
+                console.error("[MarkdownStream] FullScreenEditor error:", error)
+              }
+            >
+              <FullScreenMarkdownEditor
+                isOpen={isEditorOpen}
+                initialContent={currentContent}
+                onSave={handleSaveEdit}
+                onCancel={handleCancelEdit}
+                analysisData={analysisData}
+                messageId={messageId}
+                tabs={[
+                  "write",
+                  "matrx_split",
+                  "markdown",
+                  "wysiwyg",
+                  "preview",
+                ]}
+                initialTab="matrx_split"
+              />
+            </MarkdownErrorBoundary>
+          )}
         </div>
-
-        {!hideCopyButton && (
-          <MarkdownErrorBoundary
-            fallback={null}
-            onError={(error) =>
-              console.error("[MarkdownStream] CopyButton error:", error)
-            }
-          >
-            <InlineCopyButton
-              markdownContent={currentContent}
-              size="xs"
-              position="center-right"
-              isMarkdown={true}
-              constrainToParent={true}
-            />
-          </MarkdownErrorBoundary>
-        )}
-
-        {allowFullScreenEditor && (
-          <MarkdownErrorBoundary
-            fallback={null}
-            onError={(error) =>
-              console.error("[MarkdownStream] FullScreenEditor error:", error)
-            }
-          >
-            <FullScreenMarkdownEditor
-              isOpen={isEditorOpen}
-              initialContent={currentContent}
-              onSave={handleSaveEdit}
-              onCancel={handleCancelEdit}
-              analysisData={analysisData}
-              messageId={messageId}
-              tabs={["write", "matrx_split", "markdown", "wysiwyg", "preview"]}
-              initialTab="matrx_split"
-            />
-          </MarkdownErrorBoundary>
-        )}
-      </div>
+      </MarkdownStreamingProvider>
     );
   } catch (error) {
     console.error("[MarkdownStream] Critical error in render:", error);

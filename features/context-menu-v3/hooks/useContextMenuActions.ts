@@ -41,7 +41,7 @@ import { getRelatedSurfaces } from "@/features/surfaces/runtime/fetchRelatedSurf
 import { useOpenSurfaceContextWindow } from "@/features/overlays/openers/surfaceContextWindow";
 import { useOpenSurfaceAgentBindWindow } from "@/features/overlays/openers/surfaceAgentBindWindow";
 import { getIconComponent } from "@ai-matrx/icons";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   selectIsDebugMode,
@@ -323,6 +323,7 @@ export function useContextMenuActions(
   } = props;
 
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const entity = props.entity;
 
   const resolvedPlacementMode: Record<PlacementKey, PlacementVisibility> = {
@@ -488,6 +489,7 @@ export function useContextMenuActions(
     source: richDocSource,
     metadata: null,
     dispatch,
+    getState: store.getState,
     organizationId,
     isAuthenticated: Boolean(currentUserId),
     isAdmin,

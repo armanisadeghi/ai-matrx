@@ -10,7 +10,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
 import { createClient } from "@/utils/supabase/server";
 
@@ -45,7 +45,7 @@ export default async function LabelResolverPage({
   // double-decodes a literal `%` in the printed code.
   const value = code.trim();
 
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     // The scanned label is the destination — it survives the auth bounce.
     redirect(await currentRequestLoginHref(`/l/${encodeURIComponent(value)}`));

@@ -1,5 +1,6 @@
 -- lock: custom
 -- lane: S2-PRIME
+-- based-on: custom._rule_shape_guard() c4260ebb20eb10c9c3b376d67c16a623e9375a64e4e22f66d78693c367df6068
 -- chair-step: the inverse of filtergroups_the_rule_guard_checks_every_depth.sql. It puts back, byte
 -- for byte, the body of custom._rule_shape_guard() whose three jsonpath walks stop at twelve JSON
 -- steps. What it undoes: a Rule whose field id or node sits more than six groups down is stored

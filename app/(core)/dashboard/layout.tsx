@@ -1,7 +1,7 @@
 import React from "react";
 import { redirect } from "next/navigation";
 import { createRouteMetadata } from "@/utils/route-metadata";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { isNewUser, WELCOME_ROUTE } from "@/utils/onboarding";
 
 export const metadata = createRouteMetadata("/dashboard", {
@@ -18,7 +18,7 @@ export default async function DashboardLayout({
   // simpler /welcome screen instead of the full dashboard. The flag lives on
   // user_metadata, so this reuses the request-cached getUser() — no extra
   // query. Once the flag flips, this falls through and the dashboard renders.
-  const { user } = await getServerAuth();
+  const { user } = await getSessionVerdict();
   if (user && isNewUser(user)) {
     redirect(WELCOME_ROUTE);
   }

@@ -34,6 +34,10 @@ import { resolveActions } from "./actions/registry";
 // the dependency is self-documenting.)
 import "./actions/handlers";
 import { useActionSurfaceProvider } from "./runtime/useActionSurfaceProvider";
+import {
+  convertOriginForSource,
+  useConvertContentHost,
+} from "./hosts/ConvertContentHost";
 import { ActionBar } from "./variants/ActionBar";
 import { MiniActionBar } from "./variants/MiniActionBar";
 import { MenuVariant } from "./variants/MenuVariant";
@@ -188,10 +192,33 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
   // shared hook (reused headless by RichDocumentActionProvider). `ctx` is the
   // render-time context (safe during render); `getCtx` is the ref-based
   // factory for click handlers; `resolvedActions` drives the inline variants.
+  // Convert-to-study needs a host that outlives the menu that asked. A
+  // surface that brings its own (the chat bar) keeps it; every other
+  // document gets this one — the action then works wherever content renders.
+  const convertHost = useConvertContentHost({
+    origin: actionsProp?.callbacks?.onRequestConvert
+      ? null
+      : convertOriginForSource(
+          source,
+          source.type === "note" ? "Note" : "Chat response",
+        ),
+    text: content ?? "",
+  });
+  const hostedActions: RichDocumentActionsProp | undefined =
+    convertHost.onRequestConvert
+      ? {
+          ...actionsProp,
+          callbacks: {
+            ...actionsProp?.callbacks,
+            onRequestConvert: convertHost.onRequestConvert,
+          },
+        }
+      : actionsProp;
+
   const { ctx, getCtx, resolvedActions } = useActionSurfaceProvider({
     content,
     source,
-    actions: actionsProp,
+    actions: hostedActions,
     actionsVariant: effectiveActionsVariant,
     actionsSurfaceId,
   });
@@ -328,6 +355,9 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
         a.category !== "copy" &&
         a.category !== "export" &&
         a.category !== "save" &&
+        // v3 owns the Listen submenu (Speak · Summarize · Summarize & listen)
+        // with the surface's own spoken_summary role — never a second one.
+        a.category !== "listen" &&
         a.id !== "save-as-file" &&
         // Context-menu v3 already owns these three Compare verbs. Ferrying
         // their RichDocument twins creates a second Compare submenu.
@@ -390,8 +420,11 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
         contextData={{ content: ctx.content }}
         excludedRichActions={cmExcludes}
         richDocCtxExtras={{
-          callbacks: actionsProp?.callbacks,
+          callbacks: hostedActions?.callbacks,
           extensions: actionsProp?.extensions,
+          metadata: actionsProp?.metadata ?? null,
+          isCreator: actionsProp?.isCreator ?? false,
+          surfaceKey: actionsProp?.surfaceKey ?? null,
         }}
         extraSections={extraSections}
       >
@@ -417,6 +450,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
       {!isAbsolute && actionsPosition === "above" ? actionsNode : null}
       {engine}
       {!isAbsolute && actionsPosition !== "above" ? actionsNode : null}
+      {convertHost.dialog}
     </div>
   );
 }

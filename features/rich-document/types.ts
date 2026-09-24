@@ -10,7 +10,7 @@
 // per-source action compatibility matrix.
 
 import type { LucideIcon } from "lucide-react";
-import type { AppDispatch } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Note } from "@/features/notes/types";
 import type { NoteSaveReceipt } from "@/features/notes/service/noteSaveErrors";
 
@@ -147,6 +147,23 @@ export type RichDocumentActionId =
   // Stubs
   | "convert-to-broker"
   | "add-to-docs"
+  // Capture — formerly chat-only (messageActionRegistry), now every source
+  | "add-to-rulebook"
+  | "set-context-value"
+  | "save-as-message-template"
+  | "save-to-files"
+  | "save-as-pdf"
+  | "save-shape-instance"
+  | "convert-to-study"
+  // Share
+  | "share-webpage"
+  | "send-google-doc"
+  // Listen
+  | "summarize-for-listening"
+  | "summarize-and-listen"
+  // Chat user-message edit paths
+  | "edit-and-resubmit"
+  | "fork-and-regenerate"
   // Server-API admin family (expands internally)
   | "server-api-admin";
 
@@ -159,6 +176,8 @@ export type ActionCategory =
   | "share"
   | "creator"
   | "app"
+  | "listen"
+  | "study"
   | "admin";
 
 // ============================================================================
@@ -168,20 +187,40 @@ export type ActionCategory =
 // ============================================================================
 
 export type SourceExtensions =
-  | {
-      type: "chat-message";
-      streamRequestId: string | null;
-      contentHistoryCount: number;
-      showFullPrint: boolean;
-      isCapturing: boolean;
-      groupMessageIds: string[];
-    }
+  | ChatMessageExtensions
   | { type: "note"; isOwner: boolean }
   | { type: "prompt-result"; canReRun: boolean }
   | { type: "artifact"; canEdit: boolean }
   | { type: "scraper-result" }
   | { type: "working-document" }
   | { type: "raw" };
+
+/**
+ * What a chat message carries beyond its identity. `ctx.content` is what the
+ * reader SEES (the whole multi-iteration turn when the host groups one);
+ * `messageContent` is the ONE cx_message row the write-back actions (edit,
+ * HTML publish save) mutate. Built by `buildChatMessageActions` — the single
+ * builder every chat host and the proving route share.
+ */
+export interface ChatMessageExtensions {
+  type: "chat-message";
+  role: "assistant" | "user";
+  /** Single-message text of `source.messageId` (write-back target). */
+  messageContent: string;
+  /** True when the text is the JSON raw view of a structured payload. */
+  contentIsStructuredRaw: boolean;
+  /** Text-bearing row the assistant editor saves to (grouped turns). */
+  editTarget: {
+    content: string;
+    messageId: string;
+    isStructuredRaw: boolean;
+  } | null;
+  streamRequestId: string | null;
+  contentHistoryCount: number;
+  showFullPrint: boolean;
+  isCapturing: boolean;
+  groupMessageIds: string[];
+}
 
 // ============================================================================
 // CONTENT SOURCE ADAPTER — per-source handlers for source-specific operations
@@ -256,6 +295,10 @@ export interface RichDocumentActionContextCallbacks {
   onFullPrint?: () => void;
   /** Open the host-owned destructive-vs-fork dialog (chat only today). */
   onRequestDelete?: () => void;
+  /** Open the host-owned edit-history dialog (chat only today). */
+  onRequestEditHistory?: () => void;
+  /** Open the host-owned ConvertContentDialog (the ONE convert-source dialog). */
+  onRequestConvert?: () => void;
 }
 
 export interface RichDocumentActionContext {
@@ -264,6 +307,8 @@ export interface RichDocumentActionContext {
   source: ContentSource;
   metadata: Record<string, unknown> | null;
   dispatch: AppDispatch;
+  /** Synchronous store read — titles, the answered question, org, roles. */
+  getState: () => RootState;
   /** Active organization supplied by the action host for note writes. */
   organizationId: string | null;
   isAuthenticated: boolean;
@@ -373,6 +418,12 @@ export interface RichDocumentActionsProp {
   callbacks?: RichDocumentActionContextCallbacks;
   /** Source-specific extensions to merge into the context. */
   extensions?: SourceExtensions;
+  /** Source metadata (cx_message.metadata, …) — rides into saves/exports. */
+  metadata?: Record<string, unknown> | null;
+  /** Viewer owns the agent that produced the content (creator tools). */
+  isCreator?: boolean;
+  /** UI surface the host belongs to — fork/delete outcomes route through it. */
+  surfaceKey?: string | null;
 }
 
 // ============================================================================

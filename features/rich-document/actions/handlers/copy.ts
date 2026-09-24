@@ -8,6 +8,7 @@ import { Copy, FileText, FileType, Brain } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { registerAction } from "../registry";
+import { extractFlatText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { getErrorMessage } from "../utils";
 
 registerAction({
@@ -79,18 +80,23 @@ registerAction({
   supportedSources: ["chat-message"],
   renderSlot: "overflow",
   order: 3,
-  visible: (ctx) => {
-    // Hide on user messages — only assistant turns carry thinking blocks.
-    // We can't distinguish role from the source alone today; the chat
-    // surface only mounts this action against assistant messages (the
-    // legacy registry already lived under assistantOnlyItems). Once we
-    // generalize role-awareness into a source extension we can tighten
-    // this; for now we trust the consumer to omit/include via `exclude`.
-    if (ctx.source.type !== "chat-message") return false;
-    return true;
-  },
-  run: async ({ content }) => {
-    await copyToClipboard(content, {
+  // Only assistant turns carry reasoning traces.
+  visible: (ctx) =>
+    ctx.source.type === "chat-message" &&
+    ctx.extensions?.type === "chat-message" &&
+    ctx.extensions.role === "assistant",
+  run: async (ctx) => {
+    // The reasoning lives on the stored record, not in the rendered text —
+    // read it from the store (the whole record, thinking included).
+    const record =
+      ctx.source.type === "chat-message"
+        ? ctx.getState().messages.byConversationId[ctx.source.conversationId]
+            ?.byId?.[ctx.source.messageId]
+        : undefined;
+    const fullContent = record
+      ? extractFlatText(record, { includeThinking: true })
+      : ctx.content;
+    await copyToClipboard(fullContent, {
       isMarkdown: true,
       includeThinking: true,
       onSuccess: () => toast.success("Copied with thinking"),

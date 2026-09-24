@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentsListHeader } from "@/features/agents/components/shell/AgentsListHeader";
 import { AgentBrowsePage } from "@/features/agents/browse/components/AgentBrowsePage";
@@ -14,7 +14,7 @@ import { AgentBrowsePage } from "@/features/agents/browse/components/AgentBrowse
  * sort, filters, and page are the query contract.
  */
 export default async function AgentsListRoute() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/agents");
 
   return (

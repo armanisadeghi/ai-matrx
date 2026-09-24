@@ -1,5 +1,5 @@
 import { Contact } from "lucide-react";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { CrmListPage } from "@/features/crm/components/CrmListPage";
@@ -16,7 +16,7 @@ import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-displa
  * away (see app/(core)/agents/all/page.tsx).
  */
 export default async function CrmRoute() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     return (
       <ModuleSignInGate

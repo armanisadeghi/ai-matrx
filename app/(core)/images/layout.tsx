@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { headers } from "next/headers";
 import { createRouteMetadata } from "@/utils/route-metadata";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { BrowseImageProvider } from "@/features/image-manager/browse/BrowseImageProvider";
@@ -39,7 +39,7 @@ export default async function ImagesLayout({
 }) {
   const [requestHeaders, { isAuthenticated }] = await Promise.all([
     headers(),
-    getServerAuth(),
+    getSessionVerdict(),
   ]);
   const route = findImagesRoute(
     requestHeaders.get("x-pathname") ?? IMAGES_ROOT_PATH,

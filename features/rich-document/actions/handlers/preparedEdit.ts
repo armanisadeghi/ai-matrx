@@ -32,6 +32,11 @@ export async function prepareContentEdit(
       toast.dismiss(toastId);
     }
   }
+  // A chat message writes back to ONE cx_message row — seed the editor with
+  // that row's text, never the aggregated multi-iteration turn the reader sees.
+  if (ctx.source.type === "chat-message" && ctx.extensions?.type === "chat-message") {
+    return { source: ctx.source, content: ctx.extensions.messageContent };
+  }
   return { source: ctx.source, content: ctx.content };
 }
 

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 import ScannerRouteClient from "./ScannerRouteClient";
 
@@ -14,7 +14,7 @@ import ScannerRouteClient from "./ScannerRouteClient";
 export const dynamic = "force-dynamic";
 
 export default async function PdfScannerPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/login?next=/tools/scanner");
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background pt-[var(--shell-header-h)]">

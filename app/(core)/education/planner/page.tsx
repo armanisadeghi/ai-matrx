@@ -6,12 +6,12 @@ import { redirect } from "next/navigation";
 import { toolMetadata } from "@/features/education/route-helpers";
 import { PlannerWorkspace } from "@/features/education/study/planner/components/PlannerWorkspace";
 import { loginHref } from "@/utils/auth/auth-destination";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 export const metadata: Metadata = toolMetadata("planner");
 
 export default async function PlannerToolPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect(loginHref("/education/planner"));
   return <PlannerWorkspace backHref="/education" />;
 }

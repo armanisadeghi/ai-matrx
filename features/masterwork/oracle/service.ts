@@ -13,7 +13,7 @@ import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
  * keeping, it lands in a Rulebook as a DRAFT rule the Expert reviews like any
  * other draft. Two entry points share this ONE implementation:
  *
- *   - "Add to Rulebook" in the message ⋯ menu (messageActionRegistry)
+ *   - "Add to Rulebook" in the ONE action registry (rich-document)
  *   - the thumbs follow-up nudge (RulebookNudge in AssistantActionBar)
  *
  * Both open the `addToRulebookDialog` overlay, which calls

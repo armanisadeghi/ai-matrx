@@ -379,6 +379,7 @@ export function TemplateViewPage({
               <EntityCustomFields
                 entityToken="message_template"
                 recordId={template.id}
+                organizationId={template.organization_id}
               />
             </div>
           ) : (

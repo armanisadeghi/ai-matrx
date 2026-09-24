@@ -26,6 +26,7 @@
  * it). That keeps dialog ownership in one place per message bubble.
  */
 
+import { buildChatMessageActions } from "@/features/rich-document/chat/chatMessageActions";
 import React, { useState, lazy, Suspense, useCallback } from "react";
 import { Copy, Check, Edit, Send, MoreHorizontal } from "lucide-react";
 import {
@@ -86,9 +87,11 @@ function serializeSaveError(error: unknown): {
   };
 }
 
-const MessageOptionsMenu = lazy(() =>
-  import("../message-options/MessageOptionsMenu").then((m) => ({
-    default: m.MessageOptionsMenu,
+// The ⋯ menu is the ONE action registry (features/rich-document) rendered
+// through AdvancedMenu — the same actions a document gets on every surface.
+const RegistryActionMenu = lazy(() =>
+  import("@/features/rich-document/variants/RegistryActionMenu").then((m) => ({
+    default: m.RegistryActionMenu,
   })),
 );
 
@@ -326,18 +329,21 @@ export function UserActionBar({
 
       {showOptions && showOptionsMenu && (
         <Suspense fallback={null}>
-          <MessageOptionsMenu
-            role="user"
+          <RegistryActionMenu
             isOpen={showOptionsMenu}
             onClose={() => setShowOptionsMenu(false)}
-            content={content}
-            contentIsStructuredRaw={structuredRaw}
-            messageId={messageId}
-            conversationId={conversationId}
-            metadata={metadata}
+            title="Your message"
             anchorElement={moreOptionsAnchor}
-            surfaceKey={surfaceKey}
-            onRequestDelete={() => setDeleteDialogOpen(true)}
+            {...buildChatMessageActions({
+              conversationId,
+              messageId,
+              role: "user",
+              messageContent: content,
+              contentIsStructuredRaw: structuredRaw,
+              metadata,
+              surfaceKey: surfaceKey ?? null,
+              callbacks: { onRequestDelete: () => setDeleteDialogOpen(true) },
+            })}
           />
         </Suspense>
       )}

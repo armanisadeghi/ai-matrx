@@ -3,7 +3,7 @@
 import React, { useState, lazy, Suspense } from "react";
 import { cn } from "@/styles/themes/utils";
 import { Copy, Check, Eye, Code2, FileText } from "lucide-react";
-import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { NestedRichContent } from "@/components/rich-content/standard/NestedRichContent";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 
 const CodeBlock = lazy(
@@ -91,11 +91,10 @@ const MarkdownPreviewBlock: React.FC<MarkdownPreviewBlockProps> = ({
       {/* Content */}
       {mode === "preview" ? (
         <div className="px-4 py-3">
-          <BasicMarkdownContent
-            content={content}
-            isStreamActive={isStreamActive}
-            showCopyButton={false}
-          />
+          {/* The fenced document renders through the same core, one level
+              deeper — its own ```code fences, tables, math and sections
+              render as themselves (depth-bounded; streaming-safe). */}
+          <NestedRichContent source={content} isStreaming={isStreamActive} />
         </div>
       ) : (
         <Suspense fallback={<MatrxMiniLoader />}>

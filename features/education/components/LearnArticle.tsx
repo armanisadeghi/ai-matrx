@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import { AuthedWorkspaceCTA } from "@/features/auth/components/module-landing/AuthedWorkspaceCTA";
+import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
 import { SectionRenderer } from "./sections/SectionRenderer";
 import { getAxisEntry } from "../data/registry";
 import { EDU_TOOL_BY_SLUG } from "../data/tools";
@@ -93,7 +94,7 @@ export function LearnArticle({ doc }: { doc: LearnDoc }) {
           {doc.title}
         </h1>
         <p className="mt-4 text-lg text-muted-foreground leading-relaxed">
-          {doc.summary}
+          <RichContentServer level="inline" source={doc.summary} />
         </p>
         <p className="mt-4 text-xs text-muted-foreground/60">
           Updated {doc.updated}

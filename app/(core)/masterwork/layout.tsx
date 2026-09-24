@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 export const metadata = createRouteMetadata("/masterwork", {
   title: "Masterwork",
@@ -32,7 +32,7 @@ export default async function MasterworkLayout({
 
   if (hasGuestLanding) return <TouchFloor>{children}</TouchFloor>;
 
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     redirect(await currentRequestLoginHref("/masterwork"));
   }

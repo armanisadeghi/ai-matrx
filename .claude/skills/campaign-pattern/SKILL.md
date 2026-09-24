@@ -96,10 +96,10 @@ needed (*"you are focused on the wrong things"*), and otherwise did not interfer
    laws, and the model ladder: every dispatch NAMES its lane and model — Opus/Terra the default
    worker, Sonnet/Luna when obviously easy, Fable/Astra only where the chair itself would struggle;
    effort medium unless the task needs sustained reasoning — `policies/subagent-model-ladder.md`).
-   Every brief also carries the commit law verbatim: *"Commit only with
-   `scripts/git/commit-own-paths.sh -m "<message>" <your paths>` (in common-docs:
-   `meta/scripts/git/commit-own-paths.sh`) — never `git add` then `git commit`: the index is
-   shared, and a plain commit carries every lane's staged work"* (`policies/shared-checkout.md`
+   Every brief also carries the commit law verbatim: *"Commit locally, often, only
+   with `git commit -m "<message>" -- <your paths>` — never push, never a branch or worktree;
+   the release run pulls, merges and pushes. Never `git add` then a bare `git commit`: the
+   index is shared, and a plain commit carries every lane's staged work"* (`policies/shared-checkout.md`
    rule 3; a staged deletion swept this way broke main twice on 2026-09-23). **And, for any lane
    whose row names a build lock, the lease law verbatim: "Take leases only with
    `matrx-frontend/scripts/lib/lease.sh` — `lease.sh take <lock> <lane> <note>` / `renew` /
@@ -151,7 +151,7 @@ needed (*"you are focused on the wrong things"*), and otherwise did not interfer
    **Type errors at any gate** (frontend `pnpm type-check`, `@ai-matrx/*`
    `pnpm typecheck`, dashboard `tsc`) are a fan-out under the frontend
    `type-safety` skill: one file per small agent, they never run `tsc`,
-   they commit each assigned file with `commit-own-paths.sh` as they finish, the
+   they commit each assigned file locally with `git commit -- <file>` as they finish, the
    coordinator verifies centrally, at most six at a time. They are
    not a release halt and not a cast sweep.
 5. **Bank lessons as laws.** Method traps (liveness oracles, session traps, seam classes) go into

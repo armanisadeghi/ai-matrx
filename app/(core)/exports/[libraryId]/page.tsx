@@ -4,7 +4,7 @@
 // of everything in it, and the one action.
 
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ExportLibraryPage } from "@/features/exports/components/ExportLibraryPage";
 
 export default async function ExportLibraryRoute({
@@ -13,7 +13,7 @@ export default async function ExportLibraryRoute({
   params: Promise<{ libraryId: string }>;
 }) {
   const { libraryId } = await params;
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     redirect(`/login?next=${encodeURIComponent(`/exports/${libraryId}`)}`);
   }

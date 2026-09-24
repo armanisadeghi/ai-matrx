@@ -329,7 +329,7 @@ export interface ContextMenuV3CoreProps {
    */
   richDocCtxExtras?: Pick<
     import("@/features/rich-document/types").RichDocumentActionContext,
-    "callbacks" | "extensions"
+    "callbacks" | "extensions" | "metadata" | "isCreator" | "surfaceKey"
   >;
 
   // ── Placement layout ────────────────────────────────────────────────────
@@ -460,7 +460,7 @@ export interface MenuContentProps {
   excludedRichActions?: string[];
   richDocCtxExtras?: Pick<
     import("@/features/rich-document/types").RichDocumentActionContext,
-    "callbacks" | "extensions"
+    "callbacks" | "extensions" | "metadata" | "isCreator" | "surfaceKey"
   >;
 
   // captured selection (from the shell, at open)

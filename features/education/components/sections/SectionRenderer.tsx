@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
 import { StatusPill } from "./StatusPill";
 import type {
   EduSection,
@@ -288,10 +289,10 @@ export function SectionRenderer({ sections }: { sections: EduSection[] }) {
                     {section.heading}
                   </h2>
                 ) : null}
-                <div className="mx-auto max-w-3xl text-muted-foreground leading-relaxed space-y-4">
-                  {section.body.split("\n\n").map((para, j) => (
-                    <p key={j}>{para}</p>
-                  ))}
+                {/* Authored markdown + math, rendered on the server through
+                    the one rich-content core — in the HTML crawlers index. */}
+                <div className="mx-auto max-w-3xl text-muted-foreground leading-relaxed">
+                  <RichContentServer level="standard" source={section.body} />
                 </div>
               </Band>
             );

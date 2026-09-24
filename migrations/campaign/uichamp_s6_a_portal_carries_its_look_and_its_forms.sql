@@ -1019,6 +1019,13 @@ declare
   v_state  text := 'open';
   v_msg    text;
 begin
+  -- A CLIENT IS TOLD IN A CLIENT'S WORDS. `assert_store_door`'s refusal is written for the
+  -- business ("open Database Settings … turn it back on", "the role that owns custom.record") and
+  -- would reach a property manager on her own portal; `store_off_sentence` is the one the portal's
+  -- sign-in page already shows her. The store door still runs after it, for every other refusal.
+  if not custom.store_is_open(p_organization_id) then
+    raise exception '%', custom.store_off_sentence(p_organization_id) using errcode = '42501';
+  end if;
   perform custom.assert_store_door(p_organization_id, 'custom.portal_form');
   perform custom.assert_client_may_reach(p_organization_id, 'custom.portal_form');
   v_pp := custom._portal_principal_here(p_organization_id, p_portal_id, 'custom.portal_form');
@@ -1106,6 +1113,13 @@ declare
   v_stood    boolean := false;
   v_msg      text;
 begin
+  -- A CLIENT IS TOLD IN A CLIENT'S WORDS. `assert_store_door`'s refusal is written for the
+  -- business ("open Database Settings … turn it back on", "the role that owns custom.record") and
+  -- would reach a property manager on her own portal; `store_off_sentence` is the one the portal's
+  -- sign-in page already shows her. The store door still runs after it, for every other refusal.
+  if not custom.store_is_open(p_organization_id) then
+    raise exception '%', custom.store_off_sentence(p_organization_id) using errcode = '42501';
+  end if;
   perform custom.assert_store_door(p_organization_id, 'custom.portal_form_submit');
   perform custom.assert_client_may_reach(p_organization_id, 'custom.portal_form_submit');
   v_pp := custom._portal_principal_here(p_organization_id, p_portal_id, 'custom.portal_form_submit');

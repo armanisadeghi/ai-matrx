@@ -134,6 +134,22 @@ export function StreamSimControls({
             </Badge>
             <Badge variant="outline">{progress.progress.toFixed(0)}%</Badge>
             <Badge variant="outline">{progress.elapsedMs.toFixed(0)}ms</Badge>
+            {progress.chunksProcessed > 1 && progress.targetDelayMs > 0 && (
+              <Badge
+                variant="outline"
+                className={cn(
+                  progress.msPerChunk > progress.targetDelayMs * 1.25 &&
+                    "border-amber-500/40 text-amber-700 dark:text-amber-300",
+                )}
+                title={
+                  progress.msPerChunk > progress.targetDelayMs * 1.25
+                    ? "Rendering each chunk takes longer than the configured delay, so this is the real rate."
+                    : "Actual time per chunk, rendering included."
+                }
+              >
+                {progress.msPerChunk.toFixed(0)}ms/chunk (set {progress.targetDelayMs})
+              </Badge>
+            )}
             {progress.isRunning && (
               <Loader2 className="h-3 w-3 animate-spin text-primary" />
             )}

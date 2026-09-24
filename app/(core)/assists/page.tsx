@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AssistsManager } from "@/features/assists/manager/AssistsManager";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { loginHref } from "@/utils/auth/auth-destination";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
@@ -12,7 +12,7 @@ export const metadata = createRouteMetadata("/assists", {
 });
 
 export default async function AssistsPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect(loginHref("/assists"));
 
   return (

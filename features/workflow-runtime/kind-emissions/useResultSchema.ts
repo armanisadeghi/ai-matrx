@@ -19,10 +19,6 @@ import { useEffect, useState } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  ORGANIZATION_UNAVAILABLE_DESCRIPTION,
-  useOrganizationRequired,
-} from "@/features/organizations/useOrganizationRequired";
 import { callApi } from "@/lib/api/call-api";
 
 import { parseResultSchema, type DeclaredResultSchema } from "./result-schema";
@@ -59,22 +55,17 @@ export function useResultSchema(definitionId: string): ResultSchemaState {
    * not sendable before.
    */
   const organizationId = useAppSelector(selectOrganizationId);
-  // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class useMandateInputSurface
-  // fixed (V3 F4). Waiting is right only until the bootstrap resolves; on a
-  // session with NO organization selected this read stayed "loading" forever.
-  // Once resolved with no org, that is a settled fact: say it, with the remedy.
-  // 🚨 AND THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved`
-  // goes TRUE when the read FAILED too (`setOrgBootstrapFailure` sets it), so
-  // reading it alone said "choose an organization" to a person nobody had read
-  // the memberships of. The gate's discriminant separates the two.
-  const { organizationState } = useOrganizationRequired();
+  // 🚨 READING NEVER WAITS ON AN ORGANIZATION (Arman, 2026-09-23 — access
+  // belongs to the person). The server checks the person's access to this
+  // workflow and never the selection, and callApi sends a GET with no
+  // organization after its bounded restore wait. The id above stays a
+  // dependency only so a read refreshes when one arrives.
   const [answered, setAnswered] = useState<Answered>({
     forId: definitionId,
     state: { status: "loading" },
   });
 
   useEffect(() => {
-    if (!organizationId) return; // not sendable yet — wait, never fail
     let live = true;
     void (async () => {
       const result = await dispatch(
@@ -102,17 +93,6 @@ export function useResultSchema(definitionId: string): ResultSchemaState {
     };
   }, [dispatch, definitionId, organizationId]);
 
-  // Derived at render, never set in the effect (react-hooks/set-state-in-effect).
-  if (organizationState === "unavailable") {
-    return { status: "error", message: ORGANIZATION_UNAVAILABLE_DESCRIPTION };
-  }
-  if (organizationState === "required") {
-    return {
-      status: "error",
-      message:
-        "No organization is selected, so what this workflow makes cannot be read — choose one from the organization picker in the header and this fills in.",
-    };
-  }
   return answered.forId === definitionId
     ? answered.state
     : { status: "loading" };

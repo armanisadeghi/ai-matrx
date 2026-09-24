@@ -36,10 +36,6 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
-  ORGANIZATION_UNAVAILABLE_DESCRIPTION,
-  useOrganizationRequired,
-} from "@/features/organizations/useOrganizationRequired";
-import {
   parseServedInput,
   type ServedInput,
 } from "@/features/workflow-runtime/served-form/served-input";
@@ -193,43 +189,18 @@ export function useMandateInputSurface(
   // fails permanently with no retry. Depending on the id re-runs it the moment
   // context lands.
   const organizationId = useAppSelector(selectOrganizationId);
-  // 🚨 H2 / V3 F4 — "NO ORG YET" IS NOT "STILL READING".
-  // `callApi` refuses every request until an organization is active, and this
-  // effect used to simply `return` on that condition — so with no org selected
-  // the state stayed `loading` FOREVER and the column printed "Reading what
-  // this job offers…" with no remedy (measured at 20s by the correctness
-  // adversary, on a page that knew the real reason the whole time and printed
-  // it only after a write). Once the bootstrap has RESOLVED and there is still
-  // no org, that is a settled fact about this session, and it is said out loud
-  // with the action that fixes it. Before the bootstrap resolves, "loading" is
-  // the truth and no error flashes.
-  // 🚨 AND THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved`
-  // is set TRUE by `setOrgBootstrapFailure` too, so reading it alone told a
-  // member of thirteen organizations to pick one after a single failed read.
-  // The gate's discriminant keeps "you have not chosen" apart from "we could
-  // not check", and each says its own sentence.
-  const { organizationState } = useOrganizationRequired();
+  // 🚨 READING NEVER WAITS ON AN ORGANIZATION (Arman, 2026-09-23 — access
+  // belongs to the person). The server resolves this job's input surface for
+  // the caller and takes the organization only as the mandate ladder's
+  // optional organization rung; callApi sends a GET with no organization after
+  // its bounded restore wait. The id above stays a dependency so the answer is
+  // re-read with that rung when one is selected.
   const [state, setState] = useState<MandateInputSurfaceState>({
     status: "loading",
   });
 
   useEffect(() => {
     if (!mandateKey) return;
-    if (!organizationId) {
-      if (organizationState === "required") {
-        setState({
-          status: "error",
-          message:
-            "No organization is selected, so this job's inputs cannot be read — choose one from the organization picker in the header and this fills in.",
-        });
-      } else if (organizationState === "unavailable") {
-        setState({
-          status: "error",
-          message: ORGANIZATION_UNAVAILABLE_DESCRIPTION,
-        });
-      }
-      return;
-    }
     let live = true;
     setState({ status: "loading" });
     void (async () => {
@@ -260,7 +231,7 @@ export function useMandateInputSurface(
     return () => {
       live = false;
     };
-  }, [dispatch, mandateKey, organizationId, organizationState]);
+  }, [dispatch, mandateKey, organizationId]);
 
   return state;
 }

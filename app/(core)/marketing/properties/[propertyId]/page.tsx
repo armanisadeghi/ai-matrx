@@ -23,7 +23,7 @@ export default async function MarketingPropertyPage({
   const supabase = await createClient();
   const response = await webDb(supabase)
     .from("property")
-    .select("id, kind, display_name, handle, url, status, updated_at")
+    .select("id, organization_id, kind, display_name, handle, url, status, updated_at")
     .eq("id", propertyId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -95,7 +95,7 @@ export default async function MarketingPropertyPage({
       </section>
 
       <div className="mx-auto mt-4 max-w-3xl">
-        <EntityCustomFields entityToken="web_property" recordId={property.id} />
+        <EntityCustomFields entityToken="web_property" recordId={property.id} organizationId={property.organization_id} />
       </div>
     </main>
   );

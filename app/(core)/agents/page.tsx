@@ -7,11 +7,11 @@
 // logged-in user is never shown the marketing pitch.
 
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import AgentsLanding from "@/features/auth/components/module-landing/landings/AgentsLanding";
 
 export default async function AgentsPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (isAuthenticated) {
     redirect("/agents/all");
   }

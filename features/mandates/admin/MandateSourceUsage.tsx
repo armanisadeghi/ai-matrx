@@ -35,8 +35,6 @@ import { AlertTriangle, Loader2, OctagonAlert } from "lucide-react";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { SINGLE_SITE_SENTENCE, fetchMandateReferences, formatRepoList, unreportedSentence, type MandateReferenceReport, type MandateReferenceRow } from "./references";
 
 export interface SourceUsageFallback {
@@ -95,27 +93,17 @@ export function MandateSourceUsage({
   fallback: SourceUsageFallback;
 }) {
   const dispatch = useAppDispatch();
-  // See the same note on MandateReferenceBoardView: `callApi` needs an
-  // explicitly selected organization, and the app context hydrates async.
+  // 🚨 READING NEVER WAITS ON AN ORGANIZATION (Arman, 2026-09-23 — access
+  // belongs to the person). This key's references are one record read by key;
+  // callApi sends a GET with no organization after its bounded restore wait.
+  // The id stays a dependency only so the read refreshes when one arrives.
   const organizationId = useAppSelector(selectOrganizationId);
-  // 🚨 "NO ORG YET" IS NOT "STILL READING" — same class as MandatesConsole.
-  // `loading` starts `true`; a bare early return left "Waiting for your
-  // organization to load" spinning forever on a session with none selected.
-  // Once the bootstrap has resolved with no organization, stop and say why.
-  // 🚨 THE FOURTH STATE (R37) — see MandateReferenceBoardView. `resolved &&
-  // !organizationId` is ALSO true when the read failed, and that is not a
-  // request to choose.
-  const { organizationState } = useOrganizationRequired();
-  const organizationUnanswered =
-    organizationState === "required" || organizationState === "unavailable";
   const [report, setReport] = useState<MandateReferenceReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reading, setReading] = useState(true);
-  // Derived at render, never set in the effect (react-hooks/set-state-in-effect).
-  const loading = reading && !organizationUnanswered;
+  const loading = reading;
 
   const load = useCallback(() => {
-    if (!organizationId) return;
     let cancelled = false;
     setReading(true);
     setError(null);
@@ -147,33 +135,18 @@ export function MandateSourceUsage({
   const usesFallbackDeclaration =
     report !== null && definedIn.length === 0 && fallback.declaration !== null;
 
-  useMandateAlchemyTabCapture("source", loading || !organizationId && !organizationUnanswered
+  useMandateAlchemyTabCapture("source", loading
     ? { status: "loading" }
     : { status: "ready", data: normalizeTransferJson({
         mandate_key: mandateKey,
         report,
-        error: error ?? (organizationUnanswered ? "Organization context is unavailable; references have not been read." : null),
+        error,
         fallback_declaration: usesFallbackDeclaration ? fallback : null,
       }) }, "references");
 
   return (
     <div className="min-w-0 space-y-4">
-      {organizationUnanswered ? (
-        <OrganizationContextNotice
-          state={organizationState}
-          compact
-          className="rounded-md border border-border"
-          description="No organization is selected, so this key's references cannot be read — choose one from the organization picker in the header and this fills in."
-        />
-      ) : !organizationId ? (
-        <div
-          role="status"
-          className="flex items-center gap-2 rounded-md border border-border p-3 text-sm text-muted-foreground"
-        >
-          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-          Waiting for your organization to load.
-        </div>
-      ) : loading ? (
+      {loading ? (
         <div
           role="status"
           className="flex items-center gap-2 rounded-md border border-border p-3 text-sm text-muted-foreground"

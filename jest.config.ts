@@ -48,6 +48,9 @@ const config: Config = {
         // stub's header. Mapped before the `@/` alias like the asset mocks.
         "^react-syntax-highlighter(/.*)?$":
             "<rootDir>/test-utils/syntax-highlighter-mock.tsx",
+        // `remend` (the streaming markdown healer) ships an import-only
+        // `exports` map, which Jest's resolver does not read.
+        "^remend$": "<rootDir>/node_modules/remend/dist/index.js",
         // Our own published `@ai-matrx/*` packages ship an `exports` subpath
         // map. Jest's default resolver does NOT honour `exports`, so a shipped
         // import like `@ai-matrx/agents/stream/ndjson` resolves to nothing and
@@ -119,7 +122,7 @@ const config: Config = {
     // Babel 8 publishes ESM, including the AST helpers exercised by the
     // viewport-breakpoint migration tests. Transform it with the same loader.
     transformIgnorePatterns: [
-      "/node_modules/(?!\\.pnpm/|@ai-matrx|@babel|human-id|uuid|unist|hast|mdast|micromark|react-markdown|is-plain-obj|escape-string-regexp|remark|rehype|unified|vfile|property-information|space-separated-tokens|comma-separated-tokens|web-namespaces|zwitch|html-void-elements|html-url-attributes|ccount|character-entities|character-reference-invalid|decode-named-character-reference|stringify-entities|parse-entities|trim-lines|bail|trough|devlop|longest-streak|markdown-table|estree|mathml-tag-names|parse5).+\\.js$",
+      "/node_modules/(?!\\.pnpm/|@ai-matrx|@babel|human-id|uuid|unist|hast|mdast|micromark|remend|react-markdown|is-plain-obj|escape-string-regexp|remark|rehype|unified|vfile|property-information|space-separated-tokens|comma-separated-tokens|web-namespaces|zwitch|html-void-elements|html-url-attributes|ccount|character-entities|character-reference-invalid|decode-named-character-reference|stringify-entities|parse-entities|trim-lines|bail|trough|devlop|longest-streak|markdown-table|estree|mathml-tag-names|parse5).+\\.js$",
     ],
     testPathIgnorePatterns: [
         "/node_modules/",

@@ -54,7 +54,12 @@ import {
   selectShowAssistantMessageOptions,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { cn } from "@/lib/utils";
-import dynamic from "next/dynamic";
+import { buildChatMessageActions } from "@/features/rich-document/chat/chatMessageActions";
+import {
+  convertOriginForSource,
+  useConvertContentHost,
+} from "@/features/rich-document/hosts/ConvertContentHost";
+import { selectAgentIsConfirmedOwner } from "@/features/agents/redux/agent-definition/selectors";
 import { DeleteMessageDialog } from "../message-options/DeleteMessageDialog";
 import { EditHistoryDialog } from "../message-options/EditHistoryDialog";
 import { extractErrorMessage } from "@/utils/errors";
@@ -69,18 +74,6 @@ import {
   isChatRoutePath,
   resolveContinueInChatConversationId,
 } from "./continue-in-chat";
-
-// The canonical convert-source dialog (features/education/convert — the ONE
-// dispatch for "turn this content into study artifacts"). Heavy (entitlement
-// guard + compliance gate + eight generator rows) — code-split and mounted
-// only after the user actually picks "Convert to flashcards / quiz…".
-const ConvertContentDialog = dynamic(
-  () =>
-    import("@/features/education/convert/ConvertContentDialog").then(
-      (m) => m.ConvertContentDialog,
-    ),
-  { ssr: false },
-);
 
 function serializeSaveError(error: unknown): {
   logPayload: Record<string, unknown>;
@@ -121,9 +114,11 @@ function serializeSaveError(error: unknown): {
   };
 }
 
-const MessageOptionsMenu = lazy(() =>
-  import("../message-options/MessageOptionsMenu").then((m) => ({
-    default: m.MessageOptionsMenu,
+// The ⋯ menu is the ONE action registry (features/rich-document) rendered
+// through AdvancedMenu — the same actions a document gets on every surface.
+const RegistryActionMenu = lazy(() =>
+  import("@/features/rich-document/variants/RegistryActionMenu").then((m) => ({
+    default: m.RegistryActionMenu,
   })),
 );
 
@@ -174,11 +169,6 @@ export function AssistantActionBar({
   const [editHistoryOpen, setEditHistoryOpen] = useState(false);
   const [moreOptionsAnchor, setMoreOptionsAnchor] =
     useState<HTMLButtonElement | null>(null);
-  // True once the user has opened Convert at least once — gates BOTH mount and
-  // the dynamic chunk load (never pay for the education convert stack until a
-  // convert is actually requested).
-  const [convertOpen, setConvertOpen] = useState(false);
-  const [convertMounted, setConvertMounted] = useState(false);
   // Single subscription to the message record. Everything below derives.
   const record = useAppSelector(selectMessageById(conversationId, messageId));
   const reservedConversationId = useAppSelector(
@@ -200,6 +190,11 @@ export function AssistantActionBar({
     selectConversationTitle(conversationId),
   );
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
+  // Creator tools (analyze / debug stream) show only to the agent's confirmed
+  // owner — false while access metadata is pending, so they never flash.
+  const isCreator = useAppSelector((s) =>
+    agentId ? selectAgentIsConfirmedOwner(s, agentId) : false,
+  );
   const continueInChatConversationId = resolveContinueInChatConversationId(
     conversationId,
     reservedConversationId,
@@ -430,6 +425,43 @@ export function AssistantActionBar({
     });
   };
 
+  // The ratified click-to-convert pattern's chat affordance: the turn's
+  // markdown converts into study artifacts via the ONE convert-source dialog.
+  // Lineage links the artifact back to this conversation.
+  const convertHost = useConvertContentHost({
+    origin: convertOriginForSource(
+      { type: "chat-message", conversationId, messageId },
+      buildConversationMessageTitle(conversationTitle, messagePosition) ??
+        "Chat response",
+    ),
+    text: copySpeakContent,
+  });
+
+  // THE ONE chat → registry builder (shared with the proving route).
+  const registryConfig = buildChatMessageActions({
+    conversationId,
+    messageId,
+    role: "assistant",
+    messageContent: content,
+    contentIsStructuredRaw: inspectable.isStructuredRaw,
+    turnContent: aggregatedContent,
+    editTarget,
+    metadata,
+    streamRequestId: record?._streamRequestId ?? null,
+    contentHistoryCount,
+    groupMessageIds,
+    isCreator,
+    surfaceKey: surfaceKey ?? null,
+    showFullPrint: Boolean(onFullPrint),
+    isCapturing: Boolean(isCapturing),
+    callbacks: {
+      onFullPrint,
+      onRequestDelete: () => setDeleteDialogOpen(true),
+      onRequestEditHistory: () => setEditHistoryOpen(true),
+      onRequestConvert: convertHost.onRequestConvert,
+    },
+  });
+
   return (
     <>
       <div
@@ -545,29 +577,14 @@ export function AssistantActionBar({
 
       {showOptions && showOptionsMenu && (
         <Suspense fallback={null}>
-          <MessageOptionsMenu
-            role="assistant"
+          <RegistryActionMenu
             isOpen={showOptionsMenu}
             onClose={() => setShowOptionsMenu(false)}
-            content={content}
-            contentIsStructuredRaw={inspectable.isStructuredRaw}
-            turnContent={aggregatedContent}
-            messageId={messageId}
-            editTarget={editTarget}
-            conversationId={conversationId}
-            metadata={metadata}
+            title="Message options"
             anchorElement={moreOptionsAnchor}
-            showFullPrint={!!onFullPrint}
-            onFullPrint={onFullPrint}
-            isCapturing={isCapturing}
-            surfaceKey={surfaceKey}
-            onRequestDelete={() => setDeleteDialogOpen(true)}
-            onRequestEditHistory={() => setEditHistoryOpen(true)}
-            contentHistoryCount={contentHistoryCount}
-            onRequestConvert={() => {
-              setConvertMounted(true);
-              setConvertOpen(true);
-            }}
+            content={registryConfig.content}
+            source={registryConfig.source}
+            actions={registryConfig.actions}
           />
         </Suspense>
       )}
@@ -588,27 +605,7 @@ export function AssistantActionBar({
         messageId={messageId}
       />
 
-      {/* The ratified click-to-convert pattern's chat affordance: the turn's
-          markdown (table / list) converts into real study artifacts on
-          explicit click via the ONE convert-source dialog. Lineage links the
-          artifact back to this conversation. */}
-      {convertMounted && (
-        <ConvertContentDialog
-          open={convertOpen}
-          onOpenChange={setConvertOpen}
-          origin={{
-            kind: "paste",
-            entityType: "conversation",
-            entityId: conversationId,
-            title:
-              buildConversationMessageTitle(
-                conversationTitle,
-                messagePosition,
-              ) ?? "Chat response",
-          }}
-          text={copySpeakContent}
-        />
-      )}
+      {convertHost.dialog}
     </>
   );
 }

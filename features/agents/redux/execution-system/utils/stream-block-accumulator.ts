@@ -14,6 +14,10 @@
  * accumulator never re-reads completed blocks.
  */
 
+import {
+  classifyInnerFenceLine,
+  fenceNestsInnerFences,
+} from "@/components/markdown-core/fence-nesting";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import {
   classifyLine,
@@ -126,6 +130,12 @@ type BlockSubState =
       kind: "code_fence";
       language: string;
       fenceTicks: number;
+      /**
+       * Open inner ```lang fences inside a ```markdown fence — the nesting
+       * rule in components/markdown-core/fence-nesting.ts (shared with
+       * content-splitter-v2 so live and reloaded messages split the same).
+       */
+      nestedFences: number;
       /** Set to true once we've found the JSON root key and upgraded the block type. */
       earlyTypeResolved: boolean;
     }
@@ -900,6 +910,7 @@ export class StreamBlockAccumulator {
           kind: "code_fence",
           language: fence.language,
           fenceTicks: fence.ticks,
+          nestedFences: 0,
           earlyTypeResolved: false,
         };
         // JSON fences also feed the kind parser (fence lines are chrome, not
@@ -1193,12 +1204,15 @@ export class StreamBlockAccumulator {
   ): void {
     switch (this.subState.kind) {
       case "code_fence": {
-        const fence = extractFenceInfo(trimmed);
-        if (
-          fence &&
-          fence.ticks >= this.subState.fenceTicks &&
-          trimmed.slice(fence.ticks).trim() === ""
-        ) {
+        const fenceLine = classifyInnerFenceLine(
+          trimmed,
+          this.subState.fenceTicks,
+          fenceNestsInnerFences(this.subState.language),
+          this.subState.nestedFences,
+        );
+        if (fenceLine === "open-nested") this.subState.nestedFences++;
+        if (fenceLine === "close-nested") this.subState.nestedFences--;
+        if (fenceLine === "close-outer") {
           // Fence is closing. For any JSON fence, run type detection on the
           // full accumulated content. This handles cases where early detection
           // failed (e.g. model split `{` and `"diagram":` across lines).

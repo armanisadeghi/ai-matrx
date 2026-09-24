@@ -39,6 +39,31 @@
 
 set lock_timeout = '4s';
 
+-- THE TWO GATES THIS FILE REPLACES DECLARE WHO CALLS THEM. Both are SECURITY DEFINER, both predate
+-- the provision shape guard, and neither had a platform.client_callable_door row — so replacing
+-- their bodies must say, in data, that no client calls them (the guard refuses the COMMIT
+-- otherwise, measured on the clone 2026-09-23). No client holds EXECUTE on either (measured on the
+-- MAIN database 2026-09-23: postgres only).
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, declared_by, reason,
+   signed_in_callers, anonymous_callers, non_client_lane)
+select n.nspname, p.proname, pg_get_function_identity_arguments(p.oid), platform.door_argtypes(p.proargtypes),
+       'migrations/campaign/argsruled2_an_owner_may_share_anything_they_own_by_link.sql (lane ARGS-RULED-2)',
+       v.reason, false, false, v.lane
+  from (values
+    ('iam.class_allows(text,text,uuid)'::regprocedure,
+     'p_token is a REGISTRY TOKEN and p_action a verb (read, rewrite_owner, reparent, share_link, bulk_export); p_row_org only labels the audit row a refusal writes. It reads platform.entity_types through iam.class_gate_class and decides what a CLASS admits, never anything about an individual record, so there is no entity-id argument to bind to a caller.',
+     'server_only: iam.class_allows is the class gate the definer doors ask from INSIDE their own bodies (public.create_share_link today), so it always runs with the calling door''s borrowed rights and never on a client''s own. No client holds EXECUTE on it (measured on the MAIN database 2026-09-23), and none should: it is the platform''s access contract, not a door.'),
+    ('platform.entity_link_shareable(text)'::regprocedure,
+     'p_token is a REGISTRY TOKEN, not an entity id: the function returns whether that token''s class admits an owner-issued share link (NULL for a component, which inherits its parent''s). It reads platform.entity_types only and decides nothing about any row.',
+     'server_only: platform.entity_link_shareable is read by platform._share_registry_class_interlock, the BEFORE trigger on platform.shareable_resource_registry, which runs as the table owner. No client holds EXECUTE on it (measured on the MAIN database 2026-09-23), and none needs to.')
+  ) as v(fn, reason, lane)
+  join pg_proc p on p.oid = v.fn
+  join pg_namespace n on n.oid = p.pronamespace
+ where not exists (select 1 from platform.client_callable_door d
+                    where d.schema_name = n.nspname and d.function_name = p.proname
+                      and d.identity_argtypes = platform.door_argtypes(p.proargtypes));
+
 create or replace function iam.class_allows(p_token text, p_action text, p_row_org uuid DEFAULT NULL::uuid)
  RETURNS boolean
  LANGUAGE plpgsql

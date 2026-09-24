@@ -58,6 +58,8 @@ const SURFACE_SLUG_TO_FEATURE: Record<string, SourceFeature> = {
   "agent-connections": "agents-other",
   "connections-skills": "agents-other",
   "education-tutor": "education-tutor",
+  // Study guides are authored and persisted by the canonical Notes system.
+  "education-study-guides": "notes",
   "education-flashcards": "education-flashcards",
   "education-flashcard-set": "education-flashcards",
   "education-fastfire": "education-fastfire",

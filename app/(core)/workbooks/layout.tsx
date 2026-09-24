@@ -2,7 +2,7 @@ import React from "react";
 
 import { createRouteMetadata } from "@/utils/route-metadata";
 import WorkbooksLanding from "@/features/auth/components/module-landing/landings/WorkbooksLanding";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 export const metadata = createRouteMetadata("/workbooks", {
   title: "Workbooks",
@@ -21,7 +21,7 @@ export default async function WorkbooksLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) return <WorkbooksLanding />;
   return (
     <div className="w-full h-full bg-background text-foreground scrollbar-none">

@@ -1,6 +1,6 @@
 import { ListChecks } from "lucide-react";
 import { createRouteMetadata } from "@/utils/route-metadata";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 
 export const metadata = createRouteMetadata("/lists", {
@@ -15,7 +15,7 @@ export default async function ListsV1Layout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     // Guests: the picklist editor is a signed-in workspace — its data reads
     // would surface RLS errors. Marketing lives at /lists.

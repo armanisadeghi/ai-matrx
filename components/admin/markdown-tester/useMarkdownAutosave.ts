@@ -12,7 +12,18 @@ import { openDB, type IDBPDatabase } from "idb";
 const DB_NAME = "markdown-tester";
 const DB_VERSION = 1;
 const STORE_NAME = "snippets";
-const AUTOSAVE_KEY = "__autosave__";
+/**
+ * One scratch slot per surface. The admin tester and the Markdown Studio
+ * shared ONE record and overwrote each other's unsaved drafts (RC-B1 verify
+ * D6) — so the slot is now a required argument, never a default. The admin
+ * tester keeps the original record id so its existing draft survives.
+ */
+export const MARKDOWN_AUTOSAVE_SLOTS = {
+  "admin-tester": "__autosave__",
+  "markdown-studio": "__autosave__:markdown-studio",
+} as const;
+
+export type MarkdownAutosaveSlot = keyof typeof MARKDOWN_AUTOSAVE_SLOTS;
 const AUTOSAVE_DEBOUNCE_MS = 1000;
 
 interface AutosaveRecord {
@@ -26,7 +37,7 @@ async function getDb(): Promise<IDBPDatabase> {
     upgrade(db) {
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         // Same store shape as the original snippet store; we just only
-        // use the `__autosave__` record now.
+        // use the per-surface autosave records now.
         db.createObjectStore(STORE_NAME, { keyPath: "id" });
       }
     },
@@ -43,8 +54,10 @@ export interface UseMarkdownAutosaveResult {
  * after a page refresh.
  */
 export function useMarkdownAutosave(
+  slot: MarkdownAutosaveSlot,
   currentContent: string,
 ): UseMarkdownAutosaveResult {
+  const recordId = MARKDOWN_AUTOSAVE_SLOTS[slot];
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dbRef = useRef<IDBPDatabase | null>(null);
 
@@ -61,7 +74,7 @@ export function useMarkdownAutosave(
       try {
         const db = await ensureDb();
         const record: AutosaveRecord = {
-          id: AUTOSAVE_KEY,
+          id: recordId,
           content: currentContent,
           updatedAt: Date.now(),
         };
@@ -74,19 +87,19 @@ export function useMarkdownAutosave(
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [currentContent, ensureDb]);
+  }, [currentContent, ensureDb, recordId]);
 
   const loadAutosave = useCallback(async (): Promise<string | null> => {
     try {
       const db = await ensureDb();
-      const record = (await db.get(STORE_NAME, AUTOSAVE_KEY)) as
+      const record = (await db.get(STORE_NAME, recordId)) as
         | AutosaveRecord
         | undefined;
       return record?.content ?? null;
     } catch {
       return null;
     }
-  }, [ensureDb]);
+  }, [ensureDb, recordId]);
 
   return { loadAutosave };
 }

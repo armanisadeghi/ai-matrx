@@ -1,5 +1,5 @@
 import { Handshake } from "lucide-react";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { DealsPage } from "@/features/crm/components/deals/DealsPage";
@@ -10,7 +10,7 @@ import { DealsPage } from "@/features/crm/components/deals/DealsPage";
  * list is scope-driven and server-paginated (see /crm's page.tsx).
  */
 export default async function CrmDealsRoute() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     return (
       <ModuleSignInGate

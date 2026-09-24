@@ -12,7 +12,7 @@
 // compact in-place card.
 
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { getAgentListSeed } from "@/lib/agents/data";
 import { AgentListHydrator } from "@/features/agents/route/AgentListHydrator";
 import { AgentsGrid } from "@/features/agents/components/agent-listings/AgentsGrid";
@@ -20,7 +20,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentsListHeader } from "@/features/agents/components/shell/AgentsListHeader";
 
 export default async function AgentsClassicGalleryPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
 
   if (!isAuthenticated) {
     redirect("/agents");

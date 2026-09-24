@@ -9,6 +9,7 @@ import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import { registerAction } from "../registry";
+import { chatWriteBackBlocked } from "../utils";
 import { getErrorMessage, serializeError } from "../utils";
 import { acknowledgedPreparedSource, prepareContentEdit, savePreparedContentEdit } from "./preparedEdit";
 
@@ -22,7 +23,9 @@ registerAction({
   renderSlot: "overflow",
   order: 10,
   run: async (ctx) => {
-    const canSave = Boolean(ctx.sourceAdapter.edit);
+    // Chat structured payloads and user turns stay read-only here: a user turn
+    // saves through its own three-outcome editor (edit-and-resubmit).
+    const canSave = Boolean(ctx.sourceAdapter.edit) && !chatWriteBackBlocked(ctx);
     const prepared = canSave ? await prepareContentEdit(ctx) : { source: ctx.source, content: ctx.content };
     let preparedSource = prepared.source;
 

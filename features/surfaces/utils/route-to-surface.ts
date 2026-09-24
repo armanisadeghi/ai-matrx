@@ -172,6 +172,7 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/transcripts/studio", surface: "matrx-user/transcript-studio" },
   { prefix: "/transcripts", surface: "matrx-user/transcripts" },
   // Education: specific tools BEFORE the hub prefix.
+  { prefix: "/education/study-guides", surface: "matrx-user/education-study-guides" },
   { prefix: "/education/tutor", surface: "matrx-user/education-tutor" },
   {
     prefix: "/education/flashcards",

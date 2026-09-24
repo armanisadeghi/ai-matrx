@@ -18,15 +18,34 @@
 // surfaces, interactive blocks) — that is MarkdownStream/RichDocument.
 // ─────────────────────────────────────────────────────────────────────────
 
-import dynamic from "next/dynamic";
-export type {
-  MarkdownCoreProps,
-  MarkdownPreset,
-} from "./markdown-core-types";
+//
+// STREAMING: while text is still arriving (`streaming` prop, or a live
+// MarkdownStreamingProvider above — the chat engine sets one), the source is
+// healed before parse (stream-heal.ts): unclosed emphasis/code/math closed,
+// half-arrived links shown as text, half-arrived images never rendered and so
+// never fetched. Finished text is never touched.
 
-const MarkdownCore = dynamic(() => import("./MarkdownCoreImpl"), {
+import dynamic from "next/dynamic";
+import type { MarkdownCoreProps } from "./markdown-core-types";
+import { healStreamingMarkdown } from "./stream-heal";
+import { useMarkdownStreaming } from "./streaming-context";
+export type { MarkdownCoreProps, MarkdownPreset } from "./markdown-core-types";
+
+const MarkdownCoreLeaf = dynamic(() => import("./MarkdownCoreImpl"), {
   ssr: false,
   loading: () => null,
 });
 
-export default MarkdownCore;
+export default function MarkdownCore({
+  streaming,
+  children,
+  ...rest
+}: MarkdownCoreProps) {
+  const inLiveStream = useMarkdownStreaming();
+  const isStreaming = streaming ?? inLiveStream;
+  return (
+    <MarkdownCoreLeaf {...rest}>
+      {isStreaming ? healStreamingMarkdown(children) : children}
+    </MarkdownCoreLeaf>
+  );
+}

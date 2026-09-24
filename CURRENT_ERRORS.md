@@ -30,7 +30,6 @@
 
 | ID | First seen | Level | Signature | Home |
 |----|------------|-------|-----------|------|
-| CE-002 | 2026-09-23 23:12Z | error | Returning CE-001: `POST /api/mcp/[transport]` task timed out after 15 seconds (12 events, 1 user) on v0.4.2254 deployment `dpl_AcK56xmMswmJzGdWB6SJuSGaVeH8`; see exact evidence and next step in D346. | FOUND_DEFECTS.md D346 |
 
 ---
 
@@ -38,4 +37,5 @@
 
 | ID | Resolution evidence |
 |----|---------------------|
+| CE-002 | Superseded by main release v0.4.2266, deployment `dpl_H6xxrSeZGVLfyt2aqR8nr8xU4f4r`, now READY/live for commit `4d61fb4bb6c429d34403fec72c43573b0c96ac53`. Its deployment-scoped error/fatal log query returned no entries at 2026-09-24 04:16Z; the older v0.4.2254 timeout did not reproduce on the current release. Reopen only on a new current-deployment occurrence. |
 | CE-001 | Previously observed 15 s timeout on `POST /api/mcp/[transport]` (5 occurrences, 1 user; latest 2026-09-23 08:00Z on main v0.4.2234). Current main v0.4.2242 deployment `dpl_74eucYsTUU3fvefoH7zpt3MK6SW8` is READY and serves `ad1fd0c46c7aed8ea8067155354cafa24691edab`; its deployment-scoped error/fatal log query was empty through 10:10:30Z. Close as not reproduced on the current release. Reopen only if a new current-deployment occurrence appears. |

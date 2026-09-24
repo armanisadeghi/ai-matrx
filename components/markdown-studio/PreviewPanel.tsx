@@ -16,7 +16,7 @@
 
 "use client";
 
-import React, { forwardRef, useState } from "react";
+import React, { forwardRef, useEffect, useState } from "react";
 import {
   Boxes,
   Braces,
@@ -32,7 +32,10 @@ import { cn } from "@/lib/utils";
 import { runV2Parser } from "@/components/admin/markdown-tester/utils/run-v2-parser";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import { RichDocumentActionSurface } from "@/features/rich-document/RichDocumentActionSurface";
-import type { ContentSource } from "@/features/rich-document/types";
+import type {
+  ContentSource,
+  RichDocumentActionsProp,
+} from "@/features/rich-document/types";
 import { StreamingSpeakerButton } from "@/features/tts/components/StreamingSpeakerButton";
 import { getBlockTypeStyle } from "./block-type-colors";
 import { StreamSimControls } from "./lab/StreamSimControls";
@@ -40,7 +43,10 @@ import {
   DEFAULT_STREAM_SIM_SETTINGS,
   type StreamSimSettings,
 } from "./lab/stream-chunks";
-import { useStreamSimulation } from "./lab/useStreamSimulation";
+import {
+  progressForText,
+  useStreamSimulation,
+} from "./lab/useStreamSimulation";
 import { SpeechTextPanel } from "./lab/SpeechTextPanel";
 import {
   BlockProcessingPanel,
@@ -65,44 +71,45 @@ const MODE_META: Record<PreviewMode, { label: string; icon: LucideIcon }> = {
   json: { label: "JSON", icon: Braces },
 };
 
-/**
- * Actions that WRITE BACK to the source record. The studio holds a read-only
- * copy, so these stay off here — every other action a chat message or note
- * gets is live.
- */
-export const STUDIO_WRITE_BACK_ACTIONS = [
-  "edit",
-  "delete-message",
-  "server-api-admin-fork-at",
-  "server-api-admin-fork-before",
-  "server-api-admin-hide-from-model",
-  "server-api-admin-delete-this",
-  "server-api-admin-delete-from-here",
-  "server-api-admin-delete-dryrun",
-  "server-api-admin-replace-with-summary",
-  "server-api-admin-restore-compaction",
-];
-
 export const STUDIO_ACTION_SURFACE_ID = "markdown-studio-preview";
 
 interface PreviewPanelProps {
   content: string;
   /** What the content IS — drives which actions apply. Raw when typed. */
   contentSource: ContentSource;
+  /**
+   * The source's own action configuration (a chat message's comes from the
+   * same builder the /chat bars use). Every action the source supports is
+   * live here — write-back ones act on the real record, seeded from it.
+   */
+  sourceActions?: RichDocumentActionsProp;
   mode: PreviewMode;
   onModeChange: (mode: PreviewMode) => void;
 }
 
 export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
-  function PreviewPanel({ content, contentSource, mode, onModeChange }, ref) {
+  function PreviewPanel(
+    { content, contentSource, sourceActions, mode, onModeChange },
+    ref,
+  ) {
     const [serverMode, setServerMode] = useState<BlockProcessingMode>("stream");
     const [showStreamControls, setShowStreamControls] = useState(false);
     const [simSettings, setSimSettings] = useState<StreamSimSettings>(
       DEFAULT_STREAM_SIM_SETTINGS,
     );
     // Non-null while a replay owns the rendered view.
-    const [streamText, setStreamText] = useState<string | null>(null);
+    const [replayText, setStreamText] = useState<string | null>(null);
     const sim = useStreamSimulation();
+    // Replay state describes ONLY the buffer it streamed: new content (a load,
+    // an edit) drops the old run's partial text and stats (RC-B1 verify D4).
+    const simProgress = progressForText(sim, content);
+    const streamText = simProgress === sim ? replayText : null;
+    const isReplaying = sim.isRunning && simProgress === sim;
+
+    // A run whose buffer was replaced underneath it stops.
+    useEffect(() => {
+      if (sim.isRunning && sim.text !== content) sim.stop();
+    }, [content, sim]);
 
     const hasContent = content.trim().length > 0;
     const blocks = mode === "blocks" && hasContent ? runV2Parser(content) : [];
@@ -133,15 +140,20 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
                   key={m}
                   type="button"
                   onClick={() => onModeChange(m)}
+                  aria-label={MODE_META[m].label}
+                  title={MODE_META[m].label}
                   className={cn(
-                    "inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium transition-colors",
+                    "inline-flex min-h-8 items-center gap-1 whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-medium transition-colors sm:min-h-0",
                     mode === m
                       ? "bg-foreground text-background"
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  <Icon className="h-3 w-3" />
-                  {MODE_META[m].label}
+                  <Icon className="h-3 w-3 shrink-0" />
+                  {/* Phones: inactive tabs are icon-only; the active one stays named. */}
+                  <span className={cn(mode !== m && "hidden sm:inline")}>
+                    {MODE_META[m].label}
+                  </span>
                 </button>
               );
             })}
@@ -153,15 +165,16 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
                 type="button"
                 onClick={() => setShowStreamControls((v) => !v)}
                 className={cn(
-                  "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
+                  "inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
                   showStreamControls || streamText !== null
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:text-foreground",
                 )}
                 title="Replay this content as a stream"
+                aria-label="Replay this content as a stream"
               >
                 <Waves className="h-3.5 w-3.5" />
-                Stream
+                <span className="hidden sm:inline">Stream</span>
               </button>
               <StreamingSpeakerButton
                 text={content}
@@ -204,13 +217,13 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
               className="flex-1"
               settings={simSettings}
               onSettingsChange={setSimSettings}
-              progress={sim}
+              progress={simProgress}
               onRun={runReplay}
               onStop={sim.stop}
               disabled={!hasContent}
               runLabel="Replay as stream"
             />
-            {streamText !== null && !sim.isRunning && (
+            {streamText !== null && !isReplaying && (
               <button
                 type="button"
                 onClick={endReplay}
@@ -227,11 +240,11 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
             <div ref={ref} className="flex-1 overflow-auto p-4">
               <RichDocument
                 content={renderedText}
-                isStreamActive={sim.isRunning}
+                isStreamActive={isReplaying}
                 source={contentSource}
                 actionsVariant="remote"
                 actionsSurfaceId={STUDIO_ACTION_SURFACE_ID}
-                actions={{ exclude: STUDIO_WRITE_BACK_ACTIONS }}
+                actions={sourceActions}
                 enableContextMenu
                 hideCopyButton
                 allowFullScreenEditor={false}

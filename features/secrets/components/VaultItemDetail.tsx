@@ -479,7 +479,11 @@ export function VaultItemDetail({
       {/* The credential itself — always first, always the loudest thing here */}
       {item.fields.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-          No active fields on this credential.
+          {item.attachments.length > 0
+            ? "No active fields on this credential."
+            : caps.can_edit
+              ? "Nothing is saved in this credential yet — no field and no file. Choose Edit credential to add what it should hold."
+              : "Nothing is saved in this credential yet — no field and no file. Whoever keeps it can add what it should hold."}
         </p>
       ) : (
         <section

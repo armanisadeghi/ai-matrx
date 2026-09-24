@@ -140,7 +140,7 @@ function context(
 ): RichDocumentActionContext {
   return {
     content: "selection only", source, metadata: null,
-    dispatch: store.dispatch as AppDispatch, organizationId: ORG, isAuthenticated: true, isAdmin: false, isCreator: false,
+    dispatch: store.dispatch as AppDispatch, getState: store.getState, organizationId: ORG, isAuthenticated: true, isAdmin: false, isCreator: false,
     surfaceKey: null, onClose: () => {}, instanceKey: (prefix) => `note:${prefix}`, sourceAdapter: noteAdapter,
     extensions: { type: "note", isOwner: true },
   };

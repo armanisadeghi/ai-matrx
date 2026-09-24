@@ -2,7 +2,7 @@ import { CodeWorkspaceRoute } from "@/features/code/host/CodeWorkspaceRoute";
 import { CodeHeaderControls } from "@/features/code/shell/CodeHeaderControls";
 import CodeLanding from "@/features/auth/components/module-landing/landings/CodeLanding";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createClient } from "@/utils/supabase/server";
 import { decorateSandboxRow } from "@/lib/sandbox/decorate-sandbox-row";
 import type { SandboxInstance } from "@/types/sandbox";
@@ -16,7 +16,7 @@ export default async function CodeWorkspacePage({
   searchParams: Promise<{ sandbox?: string | string[] }>;
 }) {
   const [{ isAuthenticated, user }, params] = await Promise.all([
-    getServerAuth(),
+    getSessionVerdict(),
     searchParams,
   ]);
   if (!isAuthenticated) return <CodeLanding />;

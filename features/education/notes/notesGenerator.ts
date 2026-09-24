@@ -25,6 +25,9 @@ import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import type { TrustEnvelope } from "@/features/education/trust/types";
 import { NOTES_MANDATES } from "./mandates";
 import { recordSourceLineage } from "@/features/education/convert/recordSourceLineage";
+// Folder generated study notes land in, so they group in the sidebar and
+// form the study-guide library.
+import { STUDY_NOTES_FOLDER } from "./study-notes-folder";
 import {
   looseKey,
   segmentedGenerate,
@@ -37,8 +40,6 @@ import type {
   ConvertResult,
 } from "@/features/education/convert/types";
 
-/** Folder generated study notes land in, so they group in the sidebar. */
-const STUDY_NOTES_FOLDER = "Study Notes";
 
 interface KeyTerm {
   term: string;

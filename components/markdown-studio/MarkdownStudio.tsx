@@ -14,12 +14,13 @@ import React, {
   useMemo,
   useRef,
   useState,
-  useTransition,
   useEffectEvent,
 } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Bookmark, Info, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { recordToast, toast } from "@/lib/toast";
 import { detectRenderBlocks } from "@/components/admin/markdown-tester/utils/detect-render-blocks";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
@@ -35,6 +36,7 @@ import {
   type StudioSourceKind,
 } from "./lab/content-sources";
 import { syncPaneScroll } from "./lab/sync-scroll";
+import { syncStudioSourceUrl } from "./lab/studio-url";
 import type { ContentSource } from "@/features/rich-document/types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
@@ -76,6 +78,8 @@ export function MarkdownStudio() {
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [sourcePickerOpen, setSourcePickerOpen] = useState(false);
+  // Below lg only one pane shows; opening real content jumps to the preview.
+  const [mobilePane, setMobilePane] = useState<"source" | "preview">("source");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("rendered");
   // The real record currently loaded (read-only copy), if any.
   const [loadedSource, setLoadedSource] = useState<LoadedStudioContent | null>(
@@ -83,15 +87,13 @@ export function MarkdownStudio() {
   );
   const [sourceLoading, setSourceLoading] = useState<string | null>(null);
   const isAdmin = useAppSelector(selectIsSuperAdmin);
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const [, startTransition] = useTransition();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewScrollRef = useRef<HTMLDivElement>(null);
 
   const { create, update, samples } = useUserMarkdownSamples();
-  const { loadAutosave } = useMarkdownAutosave(content);
+  const { loadAutosave } = useMarkdownAutosave("markdown-studio", content);
   const loadedSample = useMemo(
     () => samples.find((s) => s.id === loadedSampleId) ?? null,
     [loadedSampleId, samples],
@@ -118,10 +120,7 @@ export function MarkdownStudio() {
     setContent(value);
   }, []);
 
-  const clearSourceParams = () => {
-    if (!searchParams.get("source")) return;
-    startTransition(() => router.replace("/markdown-studio", { scroll: false }));
-  };
+  const clearSourceParams = () => syncStudioSourceUrl(null);
 
   const handleClear = () => {
     setContent(EMPTY);
@@ -136,6 +135,7 @@ export function MarkdownStudio() {
     setLoadedSampleId(null);
     setLoadedSampleName(template.title);
     setLoadedSource(null);
+    syncStudioSourceUrl(null);
     toast.success(`Loaded template: ${template.title}`);
   }, []);
 
@@ -144,6 +144,7 @@ export function MarkdownStudio() {
     setLoadedSampleId(sample.id);
     setLoadedSampleName(sample.name);
     setLoadedSource(null);
+    syncStudioSourceUrl(null);
   }, []);
 
   // Real-content sources ────────────────────────────────────────────────
@@ -160,18 +161,9 @@ export function MarkdownStudio() {
       setLoadedSampleId(null);
       setLoadedSampleName(loaded.title);
       setLoadedSource(loaded);
+      setMobilePane("preview");
       deepLinkHandledRef.current = `${kind}:${id}`;
-      if (
-        searchParams.get("source") !== kind ||
-        searchParams.get("id") !== id
-      ) {
-        startTransition(() =>
-          router.replace(
-            `/markdown-studio?source=${encodeURIComponent(kind)}&id=${encodeURIComponent(id)}`,
-            { scroll: false },
-          ),
-        );
-      }
+      syncStudioSourceUrl({ kind, id });
     } catch (err) {
       toast.error(
         `Could not open that ${def.label.toLowerCase()}: ${
@@ -488,10 +480,16 @@ export function MarkdownStudio() {
         style={{ paddingTop: "var(--shell-header-h)" }}
       >
         {/* Status strip — current sample name, dirty indicator */}
-        <div className="flex items-center gap-2 border-b border-border/50 bg-muted/20 px-4 py-1.5 text-[11px]">
+        <div className="flex min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap border-b border-border/50 bg-muted/20 px-4 py-1.5 text-[11px] [&>*]:shrink-0">
           <Bookmark className="h-3 w-3 text-muted-foreground" />
-          <span className="text-muted-foreground">Loaded:</span>
-          <span className="font-medium">{contentLabel}</span>
+          <span className="hidden text-muted-foreground sm:inline">Loaded:</span>
+          <span className="min-w-0 !shrink truncate font-medium" title={contentLabel}>
+            {loadedSource?.titleIsRich ? (
+              <RichContent source={contentLabel} level="inline" />
+            ) : (
+              contentLabel
+            )}
+          </span>
           {loadedSample && (
             <Badge
               variant="outline"
@@ -504,13 +502,13 @@ export function MarkdownStudio() {
             <Badge
               variant="outline"
               className="h-4 px-1.5 text-[10px] font-normal border-primary/40 bg-primary/10"
-              title="A read-only copy — editing here never changes the original"
+              title="A copy — typing here never changes the original. The Edit actions in the ⋯ menu open the original itself."
             >
               {STUDIO_SOURCES[loadedSource.kind].label} · read-only copy
             </Badge>
           )}
           {loadedSource?.notice && (
-            <span className="flex items-center gap-1 text-muted-foreground">
+            <span className="hidden items-center gap-1 text-muted-foreground md:flex">
               <Info className="h-3 w-3" />
               {loadedSource.notice}
             </span>
@@ -537,7 +535,38 @@ export function MarkdownStudio() {
         {/* ── Body ─────────────────────────────────────────────────── */}
         <main className="flex-1 min-h-0 overflow-hidden">
           {mode === "studio" ? (
-            <div className="grid h-full grid-cols-1 gap-3 p-3 lg:grid-cols-2">
+            <div className="flex h-full flex-col gap-2 p-3 lg:grid lg:grid-cols-2 lg:gap-3">
+              {/* Phones get ONE full-height pane at a time — two stacked panes
+                  left the editor about two lines tall (RC-B1 verify D5). */}
+              <div
+                role="tablist"
+                aria-label="Studio pane"
+                className="flex shrink-0 items-center gap-0.5 self-start rounded-md border border-border bg-background/40 p-0.5 lg:hidden"
+              >
+                {(["source", "preview"] as const).map((pane) => (
+                  <button
+                    key={pane}
+                    type="button"
+                    role="tab"
+                    aria-selected={mobilePane === pane}
+                    onClick={() => setMobilePane(pane)}
+                    className={cn(
+                      "min-h-9 whitespace-nowrap rounded px-3 text-xs font-medium transition-colors",
+                      mobilePane === pane
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {pane === "source" ? "Source" : "Preview"}
+                  </button>
+                ))}
+              </div>
+              <div
+                className={cn(
+                  "min-h-0 flex-1 lg:block lg:h-full",
+                  mobilePane === "source" ? "flex flex-col" : "hidden",
+                )}
+              >
               <EditorPanel
                 content={content}
                 onChange={handleChange}
@@ -545,13 +574,22 @@ export function MarkdownStudio() {
                 onScroll={handleEditorScroll}
                 textareaRef={textareaRef}
               />
+              </div>
+              <div
+                className={cn(
+                  "min-h-0 flex-1 lg:block lg:h-full",
+                  mobilePane === "preview" ? "flex flex-col" : "hidden",
+                )}
+              >
               <PreviewPanel
                 content={content}
                 contentSource={loadedSource?.contentSource ?? RAW_SOURCE}
+                sourceActions={loadedSource?.sourceActions}
                 mode={previewMode}
                 onModeChange={setPreviewMode}
                 ref={previewScrollRef}
               />
+              </div>
             </div>
           ) : (
             <AnalysisView content={content} contentLabel={contentLabel} />

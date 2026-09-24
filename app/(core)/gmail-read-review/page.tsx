@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { GmailReadReview } from "@/features/google-workspace/GmailReadReview";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/gmail-read-review", {
@@ -10,7 +10,7 @@ export const metadata = createRouteMetadata("/gmail-read-review", {
 });
 
 export default async function GmailReadReviewPage() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) {
     redirect(`/login?redirectTo=${encodeURIComponent("/gmail-read-review")}`);
   }

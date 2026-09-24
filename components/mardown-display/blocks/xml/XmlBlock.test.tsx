@@ -1,6 +1,16 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
+// XML prose now renders through the shared prose leaf (BasicMarkdownContent),
+// whose table scroll area observes its size; jsdom has no ResizeObserver.
+if (typeof globalThis.ResizeObserver === "undefined") {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+}
+
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 // MarkdownCore is intentionally exercised through its real implementation;
@@ -79,12 +89,15 @@ describe("XmlBlock Markdown text rendering", () => {
     expect(container.querySelector("ul")?.textContent).toContain(
       "many sessions",
     );
-    expect(container.querySelector("pre code")?.textContent).toContain(
-      "literal-rich-payload",
-    );
-    expect(container.querySelector("pre code")?.textContent).toContain(
-      '"__kind":"artifact"',
-    );
+    // The ```xml fence inside the prose is content INSIDE content: it renders
+    // one level deeper through the same core — as its own XML card, exactly
+    // as a top-level ```xml fence does — and its payload stays literal text:
+    // no <script> element, no kind promotion.
+    const nested = [
+      ...container.querySelectorAll('[data-rich-content="standard"]'),
+    ].map((el) => el.textContent ?? "");
+    expect(nested.some((t) => t.includes("literal-rich-payload"))).toBe(true);
+    expect(nested.some((t) => t.includes('"__kind":"artifact"'))).toBe(true);
     expect(container.querySelector("script")).toBeNull();
     expect(container.textContent).toContain("comment with <unparsed> tags");
     expect(container.textContent).toContain(
@@ -193,9 +206,11 @@ describe("XmlBlock Markdown text rendering", () => {
     expect(container.querySelector("strong")?.textContent).toBe(
       "still streaming",
     );
-    expect(container.querySelector("pre code")?.textContent).toContain(
-      "<literal />",
-    );
+    // The unclosed inner fence is a pending nested XML card — the tag reads
+    // as XML, never as raw fence markup.
+    expect(container.textContent).not.toContain("```");
+    expect(container.querySelectorAll("[data-xml-card-body]").length).toBe(2);
+    expect(container.textContent).toContain("literal");
   });
 
   it("keeps deeply-indented fences and indented code opaque inside arbitrary XML wrappers", () => {
@@ -214,13 +229,14 @@ describe("XmlBlock Markdown text rendering", () => {
       );
     });
 
-    const codeBlocks = [...container.querySelectorAll("pre code")].map(
-      (code) => code.textContent,
-    );
-    expect(codeBlocks.some((code) => code?.includes("<not-a-tag />"))).toBe(
-      true,
-    );
-    expect(codeBlocks).toContain("<also-not-a-tag />\n");
+    // Indented code and the ```xml fence stay opaque: the indented line reads
+    // as literal text (never an element), the fence becomes a nested XML card
+    // whose tag is a token, not markup.
+    expect(container.textContent).toContain('const source = "<not-a-tag />";');
+    expect(container.querySelector("not-a-tag")).toBeNull();
+    expect(container.querySelectorAll("[data-xml-card-body]").length).toBe(2);
+    expect(container.textContent).toContain("also-not-a-tag");
+    expect(container.querySelector("also-not-a-tag")).toBeNull();
     expect(container.querySelector("script")).toBeNull();
   });
 

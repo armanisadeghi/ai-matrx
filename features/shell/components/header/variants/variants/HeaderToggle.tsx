@@ -73,6 +73,8 @@ export default function HeaderToggle<T extends string = string>({
               type="button"
               role="tab"
               aria-selected={isActive}
+              aria-label={option.label}
+              title={option.label}
             >
               {option.icon && (
                 <LucideIcon

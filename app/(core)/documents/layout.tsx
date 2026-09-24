@@ -2,7 +2,7 @@ import React from "react";
 
 import { createRouteMetadata } from "@/utils/route-metadata";
 import DocumentsLanding from "@/features/auth/components/module-landing/landings/DocumentsLanding";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 export const metadata = createRouteMetadata("/documents", {
   title: "Documents",
@@ -21,7 +21,7 @@ export default async function DocumentsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) return <DocumentsLanding />;
   return <div className="w-full h-full scrollbar-none">{children}</div>;
 }

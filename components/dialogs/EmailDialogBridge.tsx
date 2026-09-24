@@ -24,8 +24,8 @@ import { EmailInputDialog } from "./EmailInputDialog";
  *
  * Used by unauthenticated "Email to me" flows in:
  *   - components/content-actions/contentActionRegistry.ts
- *   - features/cx-chat/actions/messageActionRegistry.ts
- *   - features/agents/components/messages-display/message-options/messageActionRegistry.ts
+ *   - features/rich-document/actions/handlers/export.ts (the ONE action
+ *     registry — every chat message and document menu)
  */
 interface EmailDialogOverlayData {
   content: string;
