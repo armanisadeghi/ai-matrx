@@ -65,10 +65,19 @@ export async function listSendingIdentities(
   return data;
 }
 
+/**
+ * `organizationId` — the mailbox's OWN organization, when the caller has read
+ * it off the row. Reading one record never depends on which organization is
+ * selected; the transport still sends an organization, so the record's own is
+ * the honest one to send.
+ */
 export async function getSendingIdentity(
   id: string,
+  opts: { organizationId?: string } = {},
 ): Promise<SendingIdentityDetail> {
-  const { data } = await apiGet(buildPath(IDENTITY_PATH, { identity_id: id }));
+  const { data } = await apiGet(buildPath(IDENTITY_PATH, { identity_id: id }), {
+    organizationId: opts.organizationId,
+  });
   return data;
 }
 
@@ -213,10 +222,11 @@ export async function refreshIdentityHealth(
 export async function listSendingEvents(
   id: string,
   limit = 100,
+  opts: { organizationId?: string } = {},
 ): Promise<SendingEventRecord[]> {
   const { data } = await apiGet(
     buildPath("/sending-identities/{identity_id}/events", { identity_id: id }),
-    { query: { limit } },
+    { query: { limit }, organizationId: opts.organizationId },
   );
   return data;
 }

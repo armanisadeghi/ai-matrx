@@ -99,6 +99,14 @@ const COMPOSER_DRAFT_MAX = 8000;
 export interface EducationTutorClientProps {
   /** Set only when opening an EXISTING conversation (/education/tutor/[id]). */
   conversationId?: string;
+  /**
+   * The existing conversation's OWN agent (`chat.conversation.initial_agent_id`),
+   * read by the route with the row. Reading a conversation never waits on the
+   * selected organization: when the tutor mandate cannot resolve (no
+   * organization selected yet), the conversation still opens with the agent it
+   * was held with.
+   */
+  conversationAgentId?: string | null;
   /** Optional item to ground a fresh conversation in (AskTutor entry). */
   seed?: TutorGroundingSeed;
   /** Build the deep-link URL for a conversation id (default /education/tutor/<id>). */
@@ -126,6 +134,14 @@ export function EducationTutorClient(props: EducationTutorClientProps) {
   // mandateKey — pre-resolving drops config_overrides on this path.
   const { mandate, loading, error } = useMandate(TUTOR_MANDATE_KEY);
 
+  if (error && props.conversationId && props.conversationAgentId) {
+    return (
+      <EducationTutorClientInner
+        {...props}
+        agentId={props.conversationAgentId}
+      />
+    );
+  }
   if (error) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 bg-textured p-6 text-center">
