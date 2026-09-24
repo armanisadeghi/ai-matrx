@@ -111,7 +111,7 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
 import {
-  agentActionMessage,
+  agentActionOffer,
   buildRowActionOps,
   describeRowAction,
   readRowActions,
@@ -2742,6 +2742,16 @@ const UserTableViewer = ({
       if (action.kind === "agent") {
         const row = rows[0];
         const label = rowLabelText(row, fields, effectiveRowLabel(tableInfo?.metadata, fields), relationWords).text;
+        const offer = agentActionOffer({
+          action,
+          tableId,
+          tableName: tableInfo?.table_name ?? "table",
+          rowLabel: label,
+          row,
+          fields,
+          actingPersonId: currentUserId,
+          actingPersonCanEdit: !isReadOnly,
+        });
         const launchOptions: ManagedAgentOptions = {
           surfaceKey: `data-table-row-action:${tableId}:${row.id}`,
           sourceFeature: "chat",
@@ -2751,19 +2761,21 @@ const UserTableViewer = ({
             allowChat: true,
             showPreExecutionGate: false,
           },
+          // THE ROW TRAVELS AS THE JOB'S OFFER, never as user text: `data.row_action`
+          // (Provision `data.table_row_action`) is supplied the table, the row,
+          // the action and the person as offered values, and the same values
+          // ride as named context so a Holder that declares none of them (the
+          // General Chat seed) still sees them. The author's prompt — the only
+          // human words in play — is the user input.
           runtime: {
-            userInput: agentActionMessage({
-              action,
-              tableName: tableInfo?.table_name ?? "table",
-              rowLabel: label,
-              row,
-              fields,
-            }),
+            userInput: (action.prompt ?? "").trim() || action.name,
+            variables: offer,
+            context: offer,
             surfaceName: "matrx-user/data-tables",
           },
         };
         try {
-          await launchMandate(MANDATE_KEYS.chat__default_new_chat, launchOptions);
+          await launchMandate(MANDATE_KEYS.data__row_action, launchOptions);
         } catch (e) {
           toast({
             title: `Could not start "${action.name}"`,
@@ -2860,6 +2872,7 @@ const UserTableViewer = ({
     },
     [
       cellUndo,
+      currentUserId,
       displayRows,
       fields,
       isReadOnly,

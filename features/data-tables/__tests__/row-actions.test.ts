@@ -1,5 +1,5 @@
 import {
-  agentActionMessage,
+  agentActionOffer,
   buildRowActionOps,
   compileRowAction,
   describeRowAction,
@@ -149,17 +149,48 @@ describe("row actions", () => {
     );
   });
 
-  it("an agent message carries the prompt, the row by label, and every column", () => {
-    const msg = agentActionMessage({
-      action: { id: "z", name: "Ask", kind: "agent", prompt: "Summarize this account." },
+  it("an agent action offers the row as values of its job, never as user text", () => {
+    const offer = agentActionOffer({
+      action: { id: "z", name: "Ask", kind: "agent", prompt: "  Summarize this account. " },
+      tableId: "t1",
       tableName: "Coding Accounts",
       rowLabel: "Main",
       row,
       fields,
+      actingPersonId: "u1",
+      actingPersonCanEdit: false,
     });
-    expect(msg.startsWith("Summarize this account.")).toBe(true);
-    expect(msg).toContain('Row "Main" (id r1) from the table "Coding Accounts"');
-    expect(msg).toContain("- Status: EXHAUSTED");
-    expect(msg).toContain("- Days left: (empty)");
+    expect(offer.table_id).toBe("t1");
+    expect(offer.table_name).toBe("Coding Accounts");
+    const columns = (offer.table_columns as { columns: { field_name: string; display_name: string; data_type: string }[] }).columns;
+    expect(columns.map((c) => c.field_name)).toEqual(
+      fields.slice().sort((a, b) => (a.field_order ?? 0) - (b.field_order ?? 0)).map((f) => f.field_name),
+    );
+    expect(columns[0]).toHaveProperty("data_type");
+    expect(offer.row_id).toBe("r1");
+    expect(offer.row_label).toBe("Main");
+    expect(offer.row_json).toEqual(row.data);
+    expect(offer.row_fields_summary).toContain("Status: EXHAUSTED");
+    expect(offer.row_fields_summary).toContain("Days left: (empty)");
+    expect(offer.action_name).toBe("Ask");
+    expect(offer.action_prompt).toBe("Summarize this account.");
+    expect(offer.acting_person_id).toBe("u1");
+    expect(offer.acting_person_can_edit).toBe(false);
+  });
+
+  it("an agent action with no prompt and no known person offers neither", () => {
+    const offer = agentActionOffer({
+      action: { id: "z", name: "Ask", kind: "agent", prompt: "" },
+      tableId: "t1",
+      tableName: "Coding Accounts",
+      rowLabel: "",
+      row,
+      fields,
+      actingPersonId: null,
+      actingPersonCanEdit: true,
+    });
+    expect("action_prompt" in offer).toBe(false);
+    expect("acting_person_id" in offer).toBe(false);
+    expect(offer.row_label).toBe("r1");
   });
 });

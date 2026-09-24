@@ -35,6 +35,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { FIELD_DATA_TYPES } from "@/features/data-tables/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -414,6 +415,35 @@ is_read_only tells you whether you may write at all; on a shared table you can r
     surfaceSpecific,
   ),
   writeTargets,
+  // THE TWO FIXED AI JOBS this surface already runs — disclosed in the top
+  // Agents menu only (agent-disclosure skill), never as page content. Both are
+  // MANDATES (the Holder is DB-owned and moves without a deploy); both are
+  // seeded on General Chat until Arman's vision sessions shape purpose-built
+  // holders (register ARE-020 / ARE-021).
+  agentRoles: [
+    {
+      name: "formula_writing",
+      label: "Formula help",
+      description:
+        "Writes or fixes a formula from the formula box's \"Help with this…\", using this table's real columns and the formula language.",
+      kind: "single",
+      mandateKey: MANDATE_KEYS.data__formula_writing,
+      defaultAgentId: null,
+      autoRun: "never",
+      sortOrder: 100,
+    },
+    {
+      name: "row_action",
+      label: "Row actions",
+      description:
+        "Runs one of this table's saved agent row actions on the row it was pressed for, with that row, the table and the person running it.",
+      kind: "single",
+      mandateKey: MANDATE_KEYS.data__row_action,
+      defaultAgentId: null,
+      autoRun: "never",
+      sortOrder: 110,
+    },
+  ],
 };
 
 /**
