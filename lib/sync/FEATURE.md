@@ -37,6 +37,13 @@ hydration errors.
   fired the 8s "persisted hydration did not settle" error on /notes (D345).
   Never reintroduce a per-slice IDB loop on the boot path; the guard in
   `engine.boot.idb.test.ts` stalls 16 slices and fails if you do.
+  Second path to the same error, closed the same day: the 8s backstop counted
+  from first render, while `SyncBootstrap` defers boot to window load + idle
+  with no bound. Now boot is capped at `BOOT_DEFER_CAP_MS` (5s, announced with
+  a `[sync] boot deferred` warning; idle carries a 1s timeout), and the
+  backstop arms only when `store._sync.bootStarted()` turns true — it measures
+  the engine, never the page load. Guards: `SyncBootstrap.test.tsx` (cap) and
+  `__tests__/useSyncHydrated.test.tsx`, both red on the old code.
 - 2026-09-12 — The engine can now be ASKED whether persisted state has finished
   loading: `store._sync.hydrationSettled()` / `onHydrationSettledChange()`, and
   the `useSyncHydrated()` hook over them. Until this existed no consumer could

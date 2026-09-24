@@ -19,7 +19,7 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppStore: () => ({ _sync: { boot } }),
 }));
 
-import { SyncBootstrap } from "./SyncBootstrap";
+import { BOOT_DEFER_CAP_MS, SyncBootstrap } from "./SyncBootstrap";
 
 function HydrationSentinel() {
   useLayoutEffect(() => {
@@ -103,5 +103,37 @@ describe("SyncBootstrap", () => {
       idleCallback?.({ didTimeout: false, timeRemaining: () => 10 });
     });
     expect(boot).toHaveBeenCalledTimes(1);
+  });
+
+  it("boots at the defer cap when the safe boundary never arrives (D345)", async () => {
+    // A boundary that stays pending (or a load/idle that never comes) used to
+    // leave persisted state unread for as long as the page stayed slow.
+    jest.useFakeTimers();
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      container.appendChild(document.createComment("$?"));
+      await act(async () => {
+        root = hydrateRoot(container, <Subject />);
+      });
+      await act(async () => {
+        idleCallback?.({ didTimeout: false, timeRemaining: () => 10 });
+      });
+      expect(boot).not.toHaveBeenCalled();
+
+      await act(async () => {
+        jest.advanceTimersByTime(BOOT_DEFER_CAP_MS);
+      });
+      expect(boot).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining("[sync] boot deferred"));
+
+      // A later idle turn must not boot twice.
+      await act(async () => {
+        idleCallback?.({ didTimeout: false, timeRemaining: () => 10 });
+      });
+      expect(boot).toHaveBeenCalledTimes(1);
+    } finally {
+      warn.mockRestore();
+      jest.useRealTimers();
+    }
   });
 });

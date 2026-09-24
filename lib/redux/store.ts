@@ -133,7 +133,13 @@ export interface StoreSyncContext {
    * signed-in person's records are read only on that second pass.
    */
   hydrationSettled: () => boolean;
-  /** Subscribe to `hydrationSettled` transitions. Returns an unsubscribe. */
+  /**
+   * True once `boot()` has been called. `SyncBootstrap` defers boot on
+   * purpose (window load + idle), so "not settled" before this is scheduling,
+   * not an engine fault — the hydration backstop only counts from here.
+   */
+  bootStarted: () => boolean;
+  /** Subscribe to `hydrationSettled` / `bootStarted` transitions. Returns an unsubscribe. */
   onHydrationSettledChange: (listener: () => void) => () => void;
 }
 
@@ -254,6 +260,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
   let identityWatchAttached = false;
 
   // --- Hydration-settled signal (see StoreSyncContext.hydrationSettled) ---
+  let bootStarted = false;
   let bootFinished = false;
   let resyncsInFlight = 0;
   const settledListeners = new Set<() => void>();
@@ -334,9 +341,14 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
           notifySettled();
         });
 
+      if (!bootStarted) {
+        bootStarted = true;
+        notifySettled();
+      }
       return bootPromise;
     },
     hydrationSettled: () => bootFinished && resyncsInFlight === 0,
+    bootStarted: () => bootStarted,
     onHydrationSettledChange: (listener: () => void) => {
       settledListeners.add(listener);
       return () => {
