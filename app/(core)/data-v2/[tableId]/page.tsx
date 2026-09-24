@@ -29,6 +29,8 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { createClient } from "@/utils/supabase/client";
 import { useSharedTable } from "@/features/unified-data/hub/useSharedTable";
 import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
+import { WhereItLives } from "@/features/unified-data/where-it-lives/WhereItLives";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
@@ -178,6 +180,16 @@ export default function UnifiedDataTableRoute({
    * trusted or needed: the table names its own organization.
    */
   const object = useObjectOrganization(dataSource, tableId);
+  /**
+   * The NAME of the table's organization while `custom.table_home` is not on this database:
+   * the person's own organization list, matched by the id the TABLE named. Never the active
+   * organization; absent when the table lives in an organization she is not a member of.
+   */
+  const { organizations: myOrganizations } = useUserOrganizations();
+  const knownOrganizationName =
+    object.state === "found"
+      ? (myOrganizations.find((o) => o.id === object.organizationId)?.name ?? null)
+      : null;
   /**
    * A TABLE ANOTHER ORGANIZATION GAVE THIS PERSON. The store already admitted her (the door
    * above answered); `useSharedTable` asks `custom.tables_shared_with_me`, which lists only
@@ -365,6 +377,20 @@ export default function UnifiedDataTableRoute({
         <HeaderStructured title="Data" />
       </PageHeader>
       <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
+        {/* WHICH ORGANIZATION THIS TABLE LIVES IN, BY NAME, FROM THE TABLE — and, for its owner,
+            where else it can go (owner, 2026-09-23: "I am not seeing how I can see what org this
+            data is in"). The one builder every object page and list row renders. */}
+        {object.state === "found" ? (
+          <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <span>Lives in</span>
+            <WhereItLives
+              dataSource={dataSource}
+              tableId={tableId}
+              knownOrganizationName={knownOrganizationName}
+              onMoved={() => object.retry()}
+            />
+          </div>
+        ) : null}
         {object.state === "resolving" ? (
           <p className="text-sm text-muted-foreground">Opening the table&hellip;</p>
         ) : object.state === "not-given" ? (

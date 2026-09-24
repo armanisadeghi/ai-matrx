@@ -96,19 +96,18 @@ begin
     if v_table is null then
       return new;
     end if;
-    v_key := 'ccf:' || new.organization_id::text || ':' || v_table::text;
-    v_hit := platform.memo_k_get(v_key);
-    if v_hit is null then
-      select case when t.data ? 'scope_binding' then '' else coalesce(t.data ->> 'kept_for', '') end
-             || chr(31) || coalesce(nullif(t.data ->> 'name', ''), 'this table')
-        into v_hit
-        from custom.record t
-       where t.organization_id = new.organization_id
-         and t.id = v_table
-         and t.table_id = custom.table_kernel_id();
-      v_hit := coalesce(v_hit, chr(31));
-      perform platform.memo_k_put(v_key, v_hit);
-    end if;
+    -- ONE PRIMARY-KEY READ, NO MEMO. The store's memo (platform.memo_k_*) is WRITE-PERF-4's, and
+    -- its inverse takes it away; a trigger that reached it would stand over a missing body after
+    -- that rollback (check:inverses-leave-the-ground-standing, clause a). The read is the
+    -- (organization_id, id) primary key of one partition.
+    select case when t.data ? 'scope_binding' then '' else coalesce(t.data ->> 'kept_for', '') end
+           || chr(31) || coalesce(nullif(t.data ->> 'name', ''), 'this table')
+      into v_hit
+      from custom.record t
+     where t.organization_id = new.organization_id
+       and t.id = v_table
+       and t.table_id = custom.table_kernel_id();
+    v_hit := coalesce(v_hit, chr(31));
     v_kept := split_part(v_hit, chr(31), 1);
     v_name := split_part(v_hit, chr(31), 2);
   end if;

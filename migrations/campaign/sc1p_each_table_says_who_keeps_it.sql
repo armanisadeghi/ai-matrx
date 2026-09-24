@@ -108,7 +108,15 @@ as $fn$
             from (select custom.table_kept_for_derived(
                            p_data, p_is_kernel,
                            case when p_is_kernel then false
-                                else coalesce(custom.table_is_options_table(p_organization_id, p_table_id), false) end) as word) w) d
+                                -- the Field graph, asked here and not through custom.table_is_options_table: that
+                                -- function is WRITE-PERF-4's and its inverse removes it
+                                -- (check:inverses-leave-the-ground-standing, clause d).
+                                else exists (select 1 from custom.record f
+                                              where f.organization_id = p_organization_id
+                                                and f.table_id = custom.field_kernel_id()
+                                                and f.deleted_at is null
+                                                and f.data ->> 'type' = 'list'
+                                                and f.data -> 'config' ->> 'options_table_id' = p_table_id::text) end) as word) w) d
 $fn$;
 
 comment on function custom.table_placement(uuid, uuid, jsonb, boolean) is

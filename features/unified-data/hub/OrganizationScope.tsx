@@ -24,6 +24,7 @@ import type { RecordsDataSource } from "@ai-matrx/records";
 
 import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
 import * as doors from "./doors";
+import { WhereItLives } from "../where-it-lives/WhereItLives";
 
 export function OrganizationScopeStrip({
   organizationName,
@@ -88,6 +89,8 @@ type AllState =
 
 export function AllOrganizationsTables({ dataSource }: { dataSource: RecordsDataSource }) {
   const [state, setState] = useState<AllState>({ phase: "reading" });
+  // A table moved from a row re-reads the list, so it shows under its new organization.
+  const [reread, setReread] = useState(0);
   useEffect(() => {
     let alive = true;
     void doors.tablesICanOpen(dataSource).then((answered) => {
@@ -115,7 +118,7 @@ export function AllOrganizationsTables({ dataSource }: { dataSource: RecordsData
     return () => {
       alive = false;
     };
-  }, [dataSource]);
+  }, [dataSource, reread]);
 
   if (state.phase === "reading") {
     return <p className="text-xs text-muted-foreground">Reading the tables in every organization you can open&hellip;</p>;
@@ -150,14 +153,22 @@ export function AllOrganizationsTables({ dataSource }: { dataSource: RecordsData
           </header>
           <ul className="divide-y divide-border">
             {group.tables.map((table) => (
-              <li key={table.table_id} className="px-3 py-1.5">
+              <li key={table.table_id} className="flex items-center gap-2 px-3 py-1.5">
                 <Link
                   href={`/data-v2/${table.table_id}`}
                   data-hub-all-table={table.table_id}
-                  className="text-xs text-foreground underline-offset-2 hover:underline"
+                  className="min-w-0 flex-1 truncate text-xs text-foreground underline-offset-2 hover:underline"
                 >
                   {table.table_name}
                 </Link>
+                {/* WHERE IT LIVES, ON THE ROW, and — for its owner — where else it can go. */}
+                <WhereItLives
+                  variant="row"
+                  dataSource={dataSource}
+                  tableId={table.table_id}
+                  knownOrganizationName={group.organizationName}
+                  onMoved={() => setReread((n) => n + 1)}
+                />
               </li>
             ))}
           </ul>
