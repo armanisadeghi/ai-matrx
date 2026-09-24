@@ -23,7 +23,7 @@ import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import SessionIntegrityBanner from "./SessionIntegrityBanner";
 
 export default async function SessionIntegrityGate() {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated, authUnavailable } = await getServerAuth();
   // A signed-in server render has no split to report.
   if (isAuthenticated) return null;
   const headersList = await headers();
@@ -41,6 +41,10 @@ export default async function SessionIntegrityGate() {
       ambiguousAuthCookies={
         headersList.get(AMBIGUOUS_AUTH_COOKIE_HEADER) === "1"
       }
+      // "Could not tell" is not "saw nobody". A cold first load spends the
+      // identity budget; the cookies are fine and the banner must not say
+      // otherwise (VERIFIER-17 M1).
+      serverAuthUnavailable={authUnavailable}
     />
   );
 }

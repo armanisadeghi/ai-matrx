@@ -62,4 +62,33 @@ describe("sessionIntegrityNotice", () => {
     });
     expect(notice?.description).toMatch(/did not recognise the session/i);
   });
+
+  /**
+   * VERIFIER-17 M1 (2026-09-24). The first load of a cold function spent the
+   * server's 2.5s identity budget, so `getServerAuth()` answered
+   * `authUnavailable` — "we could not tell", NOT "nobody". The gate read that
+   * as "the server saw nobody while this tab has somebody" and told a
+   * signed-in person on a public booking page that her session cookies were
+   * inconsistent. Nothing was wrong with her cookies; the next load was clean.
+   */
+  it("says nothing about cookies when the server could not reach a verdict", () => {
+    expect(
+      sessionIntegrityNotice({
+        splitCookieJar: false,
+        ambiguousAuthCookies: false,
+        clientHasSession: true,
+        serverAuthUnavailable: true,
+      }),
+    ).toBeNull();
+  });
+
+  it("still speaks for a sign-out WE made, whatever the server could verify", () => {
+    const notice = sessionIntegrityNotice({
+      splitCookieJar: false,
+      ambiguousAuthCookies: true,
+      clientHasSession: false,
+      serverAuthUnavailable: true,
+    });
+    expect(notice?.title).toMatch(/We signed you out of this browser/i);
+  });
 });

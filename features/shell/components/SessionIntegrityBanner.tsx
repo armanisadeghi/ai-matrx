@@ -55,6 +55,11 @@ interface SessionIntegrityBannerProps {
    * without one, or the intervention is completely silent.
    */
   ambiguousAuthCookies?: boolean;
+  /**
+   * The server could not REACH a verdict on who this is (`getServerAuth()`'s
+   * `authUnavailable`) — so "the server saw nobody" is unknown, not true.
+   */
+  serverAuthUnavailable?: boolean;
 }
 
 export { sessionIntegrityNotice } from "./sessionIntegrityNotice";
@@ -62,6 +67,7 @@ export { sessionIntegrityNotice } from "./sessionIntegrityNotice";
 export default function SessionIntegrityBanner({
   splitCookieJar,
   ambiguousAuthCookies = false,
+  serverAuthUnavailable = false,
 }: SessionIntegrityBannerProps) {
   // Only rendered when the SERVER resolved nobody (the gate returns null
   // otherwise), so the only question left is whether this tab has a session —
@@ -85,6 +91,7 @@ export default function SessionIntegrityBanner({
     splitCookieJar,
     ambiguousAuthCookies,
     clientHasSession,
+    serverAuthUnavailable,
   });
   if (!notice) return null;
 

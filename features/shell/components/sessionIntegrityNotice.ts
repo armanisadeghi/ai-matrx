@@ -20,11 +20,24 @@
  *  · split jar  — the same name arrived at two Domain scopes; the tab still
  *                 holds a session the server could not read.
  *  · neither    — the server saw nobody while this tab has somebody.
+ *
+ *  · unavailable — NOT a fourth sentence: silence. The server could not REACH
+ *                 a verdict (its 2.5s identity budget was spent — a cold
+ *                 function on a first load does it), which is not "the server
+ *                 saw nobody". Nothing is wrong with the cookies, so a cookie
+ *                 sentence would be false (VERIFIER-17 M1, 2026-09-24: a
+ *                 signed-in admin was told her cookies were inconsistent on the
+ *                 first load of a public booking page). Surfaces that need the
+ *                 identity say their own honest line — `(core)/layout.tsx`
+ *                 holds the shell with "You have not been signed out" — and
+ *                 `getServerAuth` logs the cause server-side.
  */
 export function sessionIntegrityNotice(input: {
   splitCookieJar: boolean;
   ambiguousAuthCookies: boolean;
   clientHasSession: boolean;
+  /** `getServerAuth().authUnavailable`: the server could not tell, not "nobody". */
+  serverAuthUnavailable?: boolean;
 }): { title: string; description: string } | null {
   if (input.ambiguousAuthCookies) {
     return {
@@ -35,6 +48,9 @@ export function sessionIntegrityNotice(input: {
     };
   }
   if (!input.clientHasSession) return null;
+  // A split jar is named by the proxy itself, so it stands on its own evidence;
+  // only the inferred "server saw nobody" sentence depends on a server verdict.
+  if (input.serverAuthUnavailable && !input.splitCookieJar) return null;
   return {
     title: "This browser's session cookies are inconsistent — sign in again",
     description: input.splitCookieJar
