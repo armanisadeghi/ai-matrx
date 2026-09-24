@@ -101,17 +101,35 @@ describe("python-client organization admission (sender-side, fail-closed)", () =
     expect(headers["X-Organization-Id"]).toBe(OTHER_ORG_ID);
   });
 
-  it("REFUSAL: getJson never calls fetch when no organization is reachable", async () => {
-    const fetchMock = jest.fn();
+  // THE PERSON, NOT THE ORG (Arman, 2026-09-23): "no organization selected"
+  // is never an error for a READ. A GET goes out naming no organization and
+  // the server's read door decides; writes stay fail-closed (the POST
+  // refusal below is the paired control).
+  it("READ: getJson sends WITHOUT an organization when none is selected", async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
     global.fetch = fetchMock as unknown as typeof fetch;
 
     await expect(
-      getJson("/files/test/asset", {
+      getJson<{ ok: boolean }>("/files/test/asset", {
         baseUrlOverride: "https://files.example.test",
       }),
-    ).rejects.toThrow(OrganizationContextError);
+    ).resolves.toMatchObject({ data: { ok: true } });
 
-    expect(fetchMock).not.toHaveBeenCalled();
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(
+      (init.headers as Record<string, string>)["X-Organization-Id"],
+    ).toBeUndefined();
+  });
+
+  it("READ: buildHeaders for a GET with nothing selected names no organization", async () => {
+    const { headers } = await buildHeaders({}, false, "GET");
+    expect(headers["X-Organization-Id"]).toBeUndefined();
+    expect(headers.Authorization).toBe("Bearer test-token");
   });
 
   it("CONTROL: getJson calls fetch with the org header once an organization is selected", async () => {

@@ -156,8 +156,38 @@ describe("callApi organization context", () => {
     ).toThrow("must match the request context organization");
   });
 
-  it("does not let a personal organization fallback reach the network", async () => {
+  it("does not let a personal organization fallback reach the network (a write is refused)", async () => {
     const fetchMock = jest.fn();
+    global.fetch = fetchMock;
+    const state = requestState(null, ORGANIZATION_ID);
+
+    const result = await callApi({
+      path: "/ai/agents/{agent_id}",
+      method: "POST",
+      pathParams: { agent_id: "agent-test" },
+      body: { user_input: "hello" },
+      _testOverrides: { forceBaseUrl: "https://server.test" },
+    })(jest.fn(), () => state, undefined);
+
+    expect(result.error).toMatchObject({
+      type: "validation_error",
+      code: "organization_context_required",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // THE PERSON, NOT THE ORG (Arman, 2026-09-23). "No organization selected" is
+  // never an error for a READ: a GET with nothing selected goes out WITHOUT an
+  // organization — and still never borrows the personal one — so the server's
+  // read door decides whether this item opens.
+  it("sends a READ with no organization selected, naming none (and never the personal one)", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      headers: new Headers(),
+      json: async () => ({ status: "healthy" }),
+    } as Response);
     global.fetch = fetchMock;
     const state = requestState(null, ORGANIZATION_ID);
 
@@ -167,11 +197,35 @@ describe("callApi organization context", () => {
       _testOverrides: { forceBaseUrl: "https://server.test" },
     })(jest.fn(), () => state, undefined);
 
-    expect(result.error).toMatchObject({
-      type: "validation_error",
-      code: "organization_context_required",
-    });
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.error).toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const headers = (init.headers ?? {}) as Record<string, string>;
+    expect(headers["X-Organization-Id"]).toBeUndefined();
+    expect(String(url)).not.toContain(ORGANIZATION_ID);
+  });
+
+  it("CONTROL: a READ with an organization selected still names it", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      headers: new Headers(),
+      json: async () => ({ status: "healthy" }),
+    } as Response);
+    global.fetch = fetchMock;
+    const state = requestState(OTHER_ORGANIZATION_ID, ORGANIZATION_ID);
+
+    const result = await callApi({
+      path: "/health",
+      method: "GET",
+      _testOverrides: { forceBaseUrl: "https://server.test" },
+    })(jest.fn(), () => state, undefined);
+
+    expect(result.error).toBeUndefined();
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const headers = init.headers as Record<string, string>;
+    expect(headers["X-Organization-Id"]).toBe(OTHER_ORGANIZATION_ID);
   });
 
   it("does not start a stream without explicit organization context", async () => {

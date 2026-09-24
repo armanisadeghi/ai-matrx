@@ -649,6 +649,25 @@ function buildUrl(
  * behaviour is exactly what it always was: fail closed. This call exists only
  * so a request whose organization one of those seams JUST resolved uses it.
  */
+/** GET and HEAD are reads by HTTP contract; every other method is a write. */
+function isReadMethod(method: string): boolean {
+  const upper = method.toUpperCase();
+  return upper === "GET" || upper === "HEAD";
+}
+
+/**
+ * True when, after the platform's bounded wait for a restore in flight, no
+ * organization is selected. Never picks one; only answers the question.
+ */
+async function readHasNoOrganization(getState: () => RootState): Promise<boolean> {
+  if (selectOrganizationId(getState())) return false;
+  const { waitForOrganizationAdmission } = await import(
+    "@/lib/api/organization-admission"
+  );
+  const admission = await waitForOrganizationAdmission();
+  return admission !== "ready" && !selectOrganizationId(getState());
+}
+
 async function ensureOrganizationContextForCall(
   selectedOrganizationId: string | null | undefined,
   overrideOrganizationId: string | undefined,
@@ -1394,8 +1413,22 @@ export function callApi<
         config.scopeOverrides?.organization_id;
       const isOrganizationlessGuest =
         isGuestLane && !guestOverrideOrganizationId;
+      // 🚨 A READ IS NEVER REFUSED FOR A MISSING ORGANIZATION (Arman,
+      // 2026-09-23: "The permission is to the person, not the org"). Whether
+      // ONE item opens is the person's access, never the selection, and "no
+      // organization selected" is never an error for a read. A signed-in GET
+      // with nothing selected — after the bounded wait for a restore in flight,
+      // so a real selection still rides along — is SENT without an
+      // organization instead of refused; the server's read doors decide, and a
+      // route that still needs one answers with its own sentence. Writes and
+      // actions keep the fail-closed path below unchanged.
+      const isOrganizationlessRead =
+        !isGuestLane &&
+        !config.scopeOverrides?.organization_id &&
+        isReadMethod(config.method) &&
+        (await readHasNoOrganization(getState));
 
-      const resolvedOrganizationId = isOrganizationlessGuest
+      const resolvedOrganizationId = isOrganizationlessGuest || isOrganizationlessRead
         ? undefined
         : isGuestLane
           ? requireOrganizationContext(null, guestOverrideOrganizationId)
@@ -1411,7 +1444,7 @@ export function callApi<
           ...config.scopeOverrides,
           organization_id: resolvedOrganizationId,
         },
-        { guestWithoutOrganization: isOrganizationlessGuest },
+        { guestWithoutOrganization: isOrganizationlessGuest || isOrganizationlessRead },
       );
       if (scope.organization_id !== undefined) {
         assertQueryOrganizationMatchesContext(
