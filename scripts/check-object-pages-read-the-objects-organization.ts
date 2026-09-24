@@ -47,8 +47,7 @@ const ROOT = join(__dirname, "..");
 /** Modules that open ONE named object and are not routes. */
 export const OBJECT_HELPERS: readonly string[] = [
   "features/unified-data/whereThisTableLives.ts",
-  // `locateTable` is moving to features/data-tables/data-source/locate-table.ts (lane
-  // INTEG-CLIENTS, in flight 2026-09-24); add that path here the moment it is on main.
+  "features/data-tables/data-source/locate-table.ts",
   "features/record-change-approvals/applyRecordChange.ts",
   "features/unified-data/components/EntityCustomFields.tsx",
 ];
