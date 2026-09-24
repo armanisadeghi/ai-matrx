@@ -30,7 +30,7 @@ regret later."* A self-review is not an attack: the author is blind to what they
 
 ## Dispatch rules
 
-- Fresh agent, zero authorship, lane named ([subagent-model-ladder](/policies/subagent-model-ladder.md)).
+- Fresh agent, zero authorship, lane named ([subagent-model-ladder](/policies/subagent-model-ladder.md)). For Claude Code, use Opus 5.5.
   Read-only; it may read code and the live DB.
 - **Pin the plan.** Give the reviewer the commit SHA (or snapshot path) it must judge, and say the
   repo may have moved since: drift between the plan and newer live state is not a finding against

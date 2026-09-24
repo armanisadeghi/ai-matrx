@@ -190,7 +190,7 @@ layer, before blaming the subject.
   two arms, is not a grade under this doctrine — see CORE.md §4 and advantage-stack.md §4.
 - **Subagent model/effort (Arman, 2026-09-12):** Sonnet 5 subagents for discovery and any big task
   that doesn't need complex code — this explicitly includes driving a whole trial (reading,
-  comparing, distilling, running real cases, judging outputs, logging walls); Opus 5 for complex
+  comparing, distilling, running real cases, judging outputs, logging walls); Opus 5.5 for complex
   code and important fixes, dispatched BY the Sonnet driver when a wall needs one; Fable/default
   reserved for heavy reasoning and planning, never for driving a trial. See the restatement above
   and `common-docs/policies/subagent-model-ladder.md`.

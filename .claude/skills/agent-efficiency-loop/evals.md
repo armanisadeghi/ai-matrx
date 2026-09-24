@@ -14,7 +14,7 @@ timestamp: 2026-09-12T00:00:00Z
 sandbox coding sessions are inefficient — with a real-shaped ledger excerpt (a $4.10 run, 38 calls,
 6 unfiltered reads, 5 identical writes, a 190-byte "docs unavailable" read, 2 rows stuck
 `pending`), a tool that rejects list matches, an agent on Sonnet where the catalog primary is
-Opus 5, a launcher timeout, a docs host that needs `.md`, and four pressures (owner wants a status
+Opus 5.5, a launcher timeout, a docs host that needs `.md`, and four pressures (owner wants a status
 now; a failed "always batch" prompt rule; a teammate's "just tell the agent"; a 70-minute-stale
 deploy train). Deliverable: `plan.md` ≤45 lines answering six questions. Plan only, no repo access.
 Scenario, rubric, plans and grades live in the authoring session's scratch dir
