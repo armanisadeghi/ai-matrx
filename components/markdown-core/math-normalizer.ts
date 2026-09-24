@@ -24,6 +24,8 @@
 // wholesale.
 // ─────────────────────────────────────────────────────────────────────────
 
+import { isSingleDollarMath } from "@ai-matrx/content-ir/source";
+
 /** remark-math options for EVERY math-capable renderer. */
 export const REMARK_MATH_OPTIONS = { singleDollarTextMath: false } as const;
 
@@ -149,24 +151,9 @@ function segment(md: string): Segment[] {
   return out;
 }
 
-const TEX_SIGNAL = /\\[A-Za-z]+|[\\^_{}=<>+]/;
-const LONE_VARIABLE = /^[A-Za-z](?:'|[0-9])?$/;
-
-/**
- * Pandoc's rule — the opening `$` is not followed by whitespace, the closing
- * `$` is not preceded by whitespace and not followed by a digit — plus a math
- * signal: a TeX command or operator (`\alpha`, `^`, `_`, `{`, `=`, …), or a
- * lone variable (`$x$`, `$n$`, `$x'$`). Content that opens with a digit needs
- * a real TeX signal, so a price range can never read as math.
- */
-function isSingleDollarMath(content: string, after: string | undefined): boolean {
-  if (!content || content.length > 400) return false;
-  if (/^\s/.test(content) || /\s$/.test(content)) return false;
-  if (after !== undefined && /[0-9]/.test(after)) return false;
-  if (LONE_VARIABLE.test(content)) return true;
-  if (/^[0-9]/.test(content)) return /\\[A-Za-z]+|[\\^_{}]/.test(content);
-  return TEX_SIGNAL.test(content);
-}
+// THE single-dollar rule lives in the content-IR kernel so the renderer and
+// the source tokenizer (editor islands) can never disagree about which `$…$`
+// is math. Pandoc's rule plus a math signal — see `isSingleDollarMath` there.
 
 function convertSingleDollar(text: string): string {
   let out = "";
