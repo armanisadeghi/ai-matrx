@@ -38,6 +38,11 @@ const CHANNEL_ID = "UC_x5XG1OV2P6uZZ5FSM9Ttw";
 const RESOURCE_ID = "cccccccc-1111-2222-3333-444444444444";
 const NOW = new Date();
 
+/** The brand's OWN organization — deliberately not the selected one below. */
+const BRAND_ORG_ID = "7ead0000-0000-4a00-8a00-00000000c001";
+const readVideoOrgs: string[] = [];
+const readAnalyticsOrgs: string[] = [];
+
 const world = {
   binding: { state: "unbound", brandVersion: 1 } as BrandChannelBinding,
   connections: [] as Record<string, unknown>[],
@@ -61,9 +66,20 @@ jest.mock("../binding", () => ({
 
 jest.mock("../service", () => ({
   MAX_REFRESH_WINDOW_DAYS: 90,
-  readChannelVideos: async () => world.videos,
-  readChannelAnalytics: async ({ lane }: { lane: string }) =>
-    lane === "channel" ? world.days : [],
+  readChannelVideos: async ({ organizationId }: { organizationId: string }) => {
+    readVideoOrgs.push(organizationId);
+    return world.videos;
+  },
+  readChannelAnalytics: async ({
+    lane,
+    organizationId,
+  }: {
+    lane: string;
+    organizationId: string;
+  }) => {
+    readAnalyticsOrgs.push(organizationId);
+    return lane === "channel" ? world.days : [];
+  },
   refreshYouTubeChannel: jest.fn(async () => ({
     channelId: CHANNEL_ID,
     startDate: "2026-06-22",
@@ -93,6 +109,12 @@ jest.mock("@/lib/redux/hooks", () => ({
     String(selector).includes("organization")
       ? "5dc930e9-bd65-44a1-8369-af773f6e1a5b"
       : "dddddddd-1111-2222-3333-444444444444",
+}));
+
+// The switch offer has its own suite; here it would read memberships.
+jest.mock("@/features/organizations/components/RecordOrganizationSwitchOffer", () => ({
+  RecordOrganizationSwitchOffer: ({ organizationId }: { organizationId: string | null }) =>
+    organizationId ? <span data-switch-offer={organizationId} /> : null,
 }));
 
 jest.mock("@/components/official/entity-ref/EntityRef", () => ({
@@ -422,6 +444,7 @@ describe("bound, but nothing has ever been synced", () => {
       connectionId: CONNECTION_ID,
       channelId: CHANNEL_ID,
       brandVersion: 1,
+      organizationId: BRAND_ORG_ID,
     };
     world.resources = [
       {
@@ -455,6 +478,7 @@ describe("bound, with two windows collected alike", () => {
       connectionId: CONNECTION_ID,
       channelId: CHANNEL_ID,
       brandVersion: 1,
+      organizationId: BRAND_ORG_ID,
     };
     world.resources = [
       {
@@ -467,6 +491,27 @@ describe("bound, with two windows collected alike", () => {
     ];
     world.videos = [VIDEO];
     world.days = [...days(30, 0, 200), ...days(30, 30, 100)];
+  });
+
+  // THE PERSON, NOT THE ORG (Arman, 2026-09-23): the client's channel is read
+  // in the BRAND'S organization, never the selected one — reading it in the
+  // selected one showed an empty channel whenever another was picked.
+  it("reads the videos and analytics in the brand's own organization, not the selected one", async () => {
+    readVideoOrgs.length = 0;
+    readAnalyticsOrgs.length = 0;
+    const m = await mount();
+    try {
+      expect(m.text).toContain("4,821 views");
+      expect(readVideoOrgs.length).toBeGreaterThan(0);
+      expect(new Set(readVideoOrgs)).toEqual(new Set([BRAND_ORG_ID]));
+      expect(new Set(readAnalyticsOrgs)).toEqual(new Set([BRAND_ORG_ID]));
+      // …and names where the client lives, with the switch.
+      expect(
+        m.container.querySelector("[data-switch-offer]")?.getAttribute("data-switch-offer"),
+      ).toBe(BRAND_ORG_ID);
+    } finally {
+      m.unmount();
+    }
   });
 
   it("prints the percentage, the freshness line and the video as a door", async () => {
@@ -504,6 +549,7 @@ describe("bound, with a window that was only partly collected", () => {
       connectionId: CONNECTION_ID,
       channelId: CHANNEL_ID,
       brandVersion: 1,
+      organizationId: BRAND_ORG_ID,
     };
     world.resources = [
       {
@@ -537,6 +583,7 @@ describe("the analytics rollout gate", () => {
       connectionId: CONNECTION_ID,
       channelId: CHANNEL_ID,
       brandVersion: 1,
+      organizationId: BRAND_ORG_ID,
     };
     world.resources = [
       {
@@ -584,6 +631,7 @@ describe("the per-video lane", () => {
       connectionId: CONNECTION_ID,
       channelId: CHANNEL_ID,
       brandVersion: 1,
+      organizationId: BRAND_ORG_ID,
     };
     world.resources = [
       {

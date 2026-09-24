@@ -63,13 +63,24 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 interface BrandBindingRow {
   id: string;
   version: number;
+  organizationId: string;
   integrations: unknown;
 }
 
 function narrowRow(value: unknown): BrandBindingRow | null {
   if (!isRecord(value)) return null;
-  if (typeof value.id !== "string" || typeof value.version !== "number") return null;
-  return { id: value.id, version: value.version, integrations: value.integrations };
+  if (
+    typeof value.id !== "string" ||
+    typeof value.version !== "number" ||
+    typeof value.organization_id !== "string"
+  )
+    return null;
+  return {
+    id: value.id,
+    version: value.version,
+    organizationId: value.organization_id,
+    integrations: value.integrations,
+  };
 }
 
 /** A jsonb document as the schema module wants it, or an empty one. */
@@ -88,7 +99,7 @@ export async function readBrandChannelBinding(
   const query = supabase
     .schema("web")
     .from("brand")
-    .select("id, version, integrations" as "id, version")
+    .select("id, version, organization_id, integrations" as "id, version, organization_id")
     .eq("id", brandId)
     .is("deleted_at", null);
   const response = (await (signal
@@ -115,7 +126,13 @@ export async function readBrandChannelBinding(
   if (!draft.enabled || !connectionId || !channelId) {
     return { state: "unbound", brandVersion: row.version };
   }
-  return { state: "bound", connectionId, channelId, brandVersion: row.version };
+  return {
+    state: "bound",
+    connectionId,
+    channelId,
+    brandVersion: row.version,
+    organizationId: row.organizationId,
+  };
 }
 
 /** The draft this module writes for a bound channel. */
@@ -199,7 +216,7 @@ async function readBrandChannelBindingDocument(
   const response = (await supabase
     .schema("web")
     .from("brand")
-    .select("id, version, integrations" as "id, version")
+    .select("id, version, organization_id, integrations" as "id, version, organization_id")
     .eq("id", brandId)
     .is("deleted_at", null)
     .maybeSingle()) as unknown as { data: unknown; error: PostgrestError | null };

@@ -59,6 +59,8 @@ beforeEach(() => {
   state.row = null;
 });
 
+const BRAND_ORG_ID = "4c425bfe-9a08-402f-9496-488580623f42";
+
 describe("the column is not applied yet", () => {
   it("is its own state, with the remedy — never `unbound`", async () => {
     state.error = { code: "42703", message: "column brand.integrations does not exist" };
@@ -79,18 +81,20 @@ describe("the column is not applied yet", () => {
 
 describe("the column is applied", () => {
   it("reads a bound channel as the two facts the refresh needs", async () => {
-    state.row = { id: BRAND_ID, version: 4, integrations: boundDocument() };
+    state.row = { id: BRAND_ID, version: 4, organization_id: BRAND_ORG_ID, integrations: boundDocument() };
     const binding = await readBrandChannelBinding(BRAND_ID);
     expect(binding).toEqual({
       state: "bound",
       connectionId: CONNECTION_ID,
       channelId: CHANNEL_ID,
       brandVersion: 4,
+      // The brand's OWN organization — where its channel data is read.
+      organizationId: BRAND_ORG_ID,
     });
   });
 
   it("reads an empty document as unbound, carrying the version a bind will guard on", async () => {
-    state.row = { id: BRAND_ID, version: 4, integrations: {} };
+    state.row = { id: BRAND_ID, version: 4, organization_id: BRAND_ORG_ID, integrations: {} };
     expect(await readBrandChannelBinding(BRAND_ID)).toEqual({
       state: "unbound",
       brandVersion: 4,
@@ -100,7 +104,7 @@ describe("the column is applied", () => {
   it("reads a DISABLED binding as unbound — a switched-off row is not a channel", async () => {
     const document = boundDocument();
     document.marketing.providers.youtube_channel.enabled = false;
-    state.row = { id: BRAND_ID, version: 9, integrations: document };
+    state.row = { id: BRAND_ID, version: 9, organization_id: BRAND_ORG_ID, integrations: document };
     expect(await readBrandChannelBinding(BRAND_ID)).toEqual({
       state: "unbound",
       brandVersion: 9,
@@ -110,7 +114,7 @@ describe("the column is applied", () => {
   it("reads a half-written binding as unbound rather than refreshing with a blank id", async () => {
     const document = boundDocument();
     document.marketing.providers.youtube_channel.resource_ref = "";
-    state.row = { id: BRAND_ID, version: 2, integrations: document };
+    state.row = { id: BRAND_ID, version: 2, organization_id: BRAND_ORG_ID, integrations: document };
     expect(await readBrandChannelBinding(BRAND_ID)).toEqual({
       state: "unbound",
       brandVersion: 2,
