@@ -131,9 +131,6 @@ const config: Config = {
         "/.wt/",
         "/.matrx/",
         "/.coldwalk",
-        // Parked aidream clones under work/ (4.4 GB on 2026-09-22) carry their
-        // own test files; never run them as this repo's suites.
-        "/work/",
         // This is an explicit Playwright gate that requires a running app and
         // Chromium; Jest owns the unit suite and must not attempt to load it.
         "/features/content-ir/sandbox/browser/",
@@ -158,6 +155,10 @@ const config: Config = {
         // on the mere fact that something rendered. They are run BY NAME
         // (`npx jest <path>`) and would otherwise make `pnpm test` red for ever.
         "\\.red\\.test\\.tsx?$",
+        // Parked aidream clones under work/ (4.4 GB on 2026-09-22) carry their
+        // own test files; never run them as this repo's suites. ANCHORED to
+        // <rootDir>: a bare "/work/" also matches CI's checkout path
+        // (/home/runner/work/ai-matrx/...) and ignored every suite there.
         "<rootDir>/work/",
     ],
     // Parked checkouts must not enter the HASTE MAP either: two aidream clones

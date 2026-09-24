@@ -32,51 +32,12 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAdminLevel } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useUserOrganizations } from "@/features/organizations/hooks";
-import type { ListScope, ListScopeKind } from "@/lib/list-scope/types";
+import type { ListScopeKind } from "@/lib/list-scope/types";
 import { mandateListConfig } from "./listConfig";
 import { MandateCoverageProvider } from "./CoverageBadge";
 import { MandateHomeNamesProvider } from "./MandateHome";
 import { MandateCoverageNotice, useCoverageList } from "./useCoverageList";
 import type { MandateHomeOrganization } from "./service";
-
-/**
- * What the tab in front of the reader actually contains, in words. The shared
- * tab strip has one generic label for the organization axis and an "All"
- * entry inside it, so the two states are spelled out here rather than left to
- * be inferred from a count.
- */
-function HomeNotice({
-  scope,
-  organizations,
-  refused,
-}: {
-  scope: ListScope;
-  organizations: readonly MandateHomeOrganization[];
-  /** The door refused this home — see below. */
-  refused: boolean;
-}) {
-  // 🚨 ABSENT, NEVER FALSE (one-resolution R-O1). Every sentence below
-  // DESCRIBES WHAT IS IN THE LIST. When the door refused this home there is no
-  // list to describe, and printing "Every job the platform itself ships…" over
-  // a refusal told the reader she was looking at a corpus she had just been
-  // told she may not see. The refusal itself is the honest header.
-  if (refused) return null;
-  const narrowedTo =
-    scope.kind === "orgs" && scope.organizationId
-      ? organizations.find((org) => org.id === scope.organizationId)
-      : undefined;
-  const text =
-    scope.kind === "system"
-      ? "Every job the platform itself ships. Changing one of these changes it for everyone on AI Matrx."
-      : narrowedTo
-        ? `Jobs added by ${narrowedTo.name}. The platform's own jobs are under All.`
-        : "Every job the platform ships, plus the jobs your organizations have added.";
-  return (
-    <p className="rounded-lg border border-border/60 bg-card px-3 py-2 text-[12px] text-muted-foreground">
-      {text}
-    </p>
-  );
-}
 
 export function MandatesBrowsePage() {
   // The door's system gate is `public.is_platform_admin()`, which is TRUE for
@@ -141,16 +102,7 @@ export function MandatesBrowsePage() {
             config={{ ...mandateListConfig, service, serviceKey }}
             scopes={scopes}
             defaultScope={{ kind: "orgs", organizationId: null }}
-            notice={(list) => (
-              <div className="space-y-2">
-                <HomeNotice
-                  scope={list.query.scope}
-                  organizations={organizations}
-                  refused={Boolean(list.error && !list.error.retryable)}
-                />
-                <MandateCoverageNotice list={list} />
-              </div>
-            )}
+            notice={(list) => <MandateCoverageNotice list={list} />}
           />
         </MandateCoverageProvider>
       </MandateHomeNamesProvider>

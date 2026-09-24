@@ -95,9 +95,10 @@ export const mandateListConfig: EntityListConfig<MandateListRow> = {
     canListSystemHome: false,
   }),
   columns: MANDATE_COLUMNS,
-  // 2 — the Home column (FIX-R3/W1). Bumped so existing users get the new
-  // default column set instead of silently never seeing it.
-  prefsVersion: 2,
+  // 2 — the Home column (FIX-R3/W1). 3 — Job and Fulfilled by split into one
+  // column per value (Key, Decided by, Version). Bumped so existing users get
+  // the new default column set instead of silently never seeing it.
+  prefsVersion: 3,
   getRowId: (row) => row.id,
   getRowName: (row) => row.label,
   // THE DOOR LAW: the Job cell is a real anchor onto the dedicated route.
