@@ -15,6 +15,14 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D347 — Ten draft podcast articles are readable anonymously on the public web (2026-09-23)
+
+`podcast.pc_articles`: 10 rows with a draft status are marked public and a live anon read policy serves
+them, so unfinished drafts are visible to anyone without an account. Found by the rich-content
+unification census (common-docs `projects/rich-content-unification/evidence/store-attack-buildability.md`).
+Expected: public read serves only published articles. Not fixed there (out of that campaign's scope);
+owner: podcast feature. Verify the anon policy and the status values live before changing.
+
 ### D346 — MCP requests time out after 15 seconds on the current main deployment (2026-09-23)
 
 Vercel deployment `dpl_AcK56xmMswmJzGdWB6SJuSGaVeH8` (`239ef8910b`, v0.4.2254) logged 12
