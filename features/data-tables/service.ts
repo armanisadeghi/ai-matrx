@@ -21,6 +21,7 @@
  *
  * See `features/data-tables/FEATURE.md` for architectural context.
  */
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { mapPgError } from "@ai-matrx/records/core";
 
 import { supabase } from "@/utils/supabase/client";
@@ -204,6 +205,8 @@ export type UserTableListItem = {
    * move when a cell or a column changes.
    */
   last_activity_at?: string;
+  /** Which store holds it — `custom.table_list_everywhere` says so; `get_user_tables` does not. */
+  store?: "older" | "records";
 };
 
 /**
@@ -1219,19 +1222,34 @@ export async function readRelationWords(args: {
  * The person's older tables AND the active organization's record-store Tables, one list,
  * de-duplicated by id (a moved table keeps its id, and its archived older copy is not in
  * `get_user_tables`). Picking a store table works because the save paths `locateTable`
- * before they write. A store that could not be listed is said, never hidden: the older list
- * still answers, and the reason is logged with the store's own sentence.
+ * before they write.
  */
 export async function listTablesEverywhere(args: { organizationId?: string | null } = {}): Promise<
   ServiceResult<UserTableListItem[]>
 > {
-  const older = await listUserTables();
   let organizationId: string;
   try {
     organizationId = await ensureOrgId(args.organizationId ?? null);
   } catch {
-    return older;
+    return listUserTables();
   }
+  // THE ONE LIST, from the database (GRID-PRIMITIVES G9): `custom.table_list_everywhere` answers
+  // `get_user_tables`' shape for BOTH stores — this person's live older datasets in this
+  // organization plus every Table here they may open, each with its real row count and `store`.
+  const everywhere = await (supabase as unknown as SupabaseClient)
+    .schema("custom")
+    .rpc("table_list_everywhere", { p_organization_id: organizationId });
+  if (!everywhere.error) {
+    const payload = everywhere.data as { success?: boolean; tables?: unknown } | null;
+    return { success: true, data: Array.isArray(payload?.tables) ? (payload.tables as UserTableListItem[]) : [] };
+  }
+  if (!DOOR_ABSENT.has(everywhere.error.code ?? "")) return refused(everywhere.error);
+
+  // DOOR NOT ON THIS DATABASE YET (G9 reaches production in the 2026-09-24 window). The same
+  // answer composed here — the older list plus the store's Tables with their counts — so no
+  // picker loses a moved table meanwhile. Retire this arm once the door is everywhere.
+  console.warn("[data-tables] custom.table_list_everywhere is not on this database yet; composing the list from both stores.");
+  const older = await listUserTables();
   const { data: session } = await supabase.auth.getSession();
   const store = await recordStore.listTables({
     store: "record",
@@ -1251,6 +1269,9 @@ export async function listTablesEverywhere(args: { organizationId?: string | nul
   }
   return { success: true, data: merged };
 }
+
+/** PostgREST / Postgres codes for "that function is not on this database". */
+const DOOR_ABSENT = new Set(["PGRST202", "42883"]);
 
 /**
  * The tables a header's switcher lists while `tableId` is open. An older table
@@ -1495,19 +1516,3 @@ export async function rowChangeScheduleFor(args: {
   return { entityType: recordChangeTrigger(args.tableId).entity_type, actions: answer.data.actions };
 }
 
-/**
- * How many of the tables this person can see MOVED into the record store (lane OLD-TABLES-4:
- * the older copy is archived with `metadata.moved_to`), for the older /data list to say so
- * instead of silently showing fewer tables (VERIFIER-16). An unarchived table keeps its
- * pointer as history but is live again, so it is not counted.
- */
-export async function countMovedTables(): Promise<ServiceResult<number>> {
-  const { count, error } = await supabase
-    .schema("workbench")
-    .from("udt_datasets")
-    .select("id", { count: "exact", head: true })
-    .not("deleted_at", "is", null)
-    .not("metadata->moved_to", "is", null);
-  if (error) return refused(error);
-  return { success: true, data: count ?? 0 };
-}
