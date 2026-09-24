@@ -1,5 +1,6 @@
 "use client";
 
+import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { notifyComputeTargetsChanged } from "@/hooks/sandbox/use-compute-targets";
 import { useEffect, useState, useRef, useCallback } from "react";
@@ -481,7 +482,18 @@ export default function SandboxDetailPage() {
           {
             label: lifecycleBusy === "stop" ? "Stopping…" : "Stop",
             icon: Square,
-            onPress: () => void handleStop(),
+            // Stopping ends everything running inside; ask first and say so.
+            onPress: () =>
+              void (async () => {
+                const ok = await confirmDialog({
+                  title: `Stop ${instance?.name || instance?.sandbox_id || "this sandbox"}?`,
+                  description:
+                    "Everything running inside it stops now: open terminals, agent runs and servers. Files on its storage are kept, and you can start it again.",
+                  confirmLabel: "Stop sandbox",
+                  variant: "destructive",
+                });
+                if (ok) await handleStop();
+              })(),
             disabled: lifecycleBusy !== null,
           },
         ]

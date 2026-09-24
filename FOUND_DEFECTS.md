@@ -3857,6 +3857,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D348** — Stop sandbox acted on one click beside Delete; it now asks first and names what stops (list and detail pages), 2026-09-23.
+
 - **D346** — the two shell Jest failures reported 2026-09-21 were stale; both focused suites passed 2026-09-23 (7 tests, commit `c3edf550f1`).
 
 - **D343** — `GET /media/libraries` published `visibility`, `adapter` and `q` in API-CONTRACT.md §3 and DECLARED none of them, so FastAPI dropped all three and answered 200 with the whole unfiltered list: `/libraries`' search box did not narrow, its four lane tabs served identical rows, D10's per-lane counts were four identical totals, and the Acquisition Console's Library rows linked bare because no parameter could be honoured. FIXED 2026-09-20 in both halves — aidream `d7093434f6` (all three declared through one `apply_library_filter`, unknown values refused 400, `total` counts the filtered set, contract 0.6.0; the `…/metrics` and `…/videos` siblings swept with it) and this repo's `urlState: true` on `createLibraryListConfig`, `adapter` on the wire, lane counts under the same narrowing, and `librariesHref` on every console Library row. Guard: `features/source-library/__tests__/the-libraries-link-is-a-query-the-list-runs.test.ts` (11 cases, 8 red against the pre-fix behaviour).

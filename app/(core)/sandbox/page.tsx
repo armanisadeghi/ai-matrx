@@ -1,5 +1,6 @@
 "use client";
 
+import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { extractErrorMessage } from "@/utils/errors";
@@ -199,6 +200,18 @@ export default function SandboxListPage() {
   };
 
   const handleStop = async (instance: SandboxInstance) => {
+    // Stopping ends everything running inside the sandbox, and the Stop icon
+    // sits beside Delete in the row: it asks first and names the consequence
+    // (destructive-and-expensive click law). A stray click once stopped a
+    // running sandbox mid-verification, 2026-09-23.
+    const ok = await confirmDialog({
+      title: `Stop ${instance.name || instance.sandbox_id}?`,
+      description:
+        "Everything running inside it stops now: open terminals, agent runs and servers. Files on its storage are kept, and you can start it again.",
+      confirmLabel: "Stop sandbox",
+      variant: "destructive",
+    });
+    if (!ok) return;
     setStoppingIds((prev) => new Set(prev).add(instance.id));
     await stopInstance(instance.id);
     setStoppingIds((prev) => {
