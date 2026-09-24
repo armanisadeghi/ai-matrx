@@ -1,5 +1,10 @@
 -- lock: custom,platform
 -- lane: S2-PRIME
+-- based-on: custom.record_filter_sql(jsonb) 112145453359398a5fbda4dada03b5fc38d1972b0d39afb7024a18dfbd44224b
+-- based-on: custom.read_records_matching(uuid, uuid, jsonb, boolean, integer, integer) 5fab07143d4daf1e276485852c06e48242a3af53f85358fc8230b2f793048a93
+-- based-on: custom.record_aggregate(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text) 904ff6baf243e6d5d8e75f8fe05f57af89562466d26bde6e24f006bd7f525b25
+-- based-on: custom.agg_sql(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text) a1bce9b641ed048a72744d72d6ba18122330f47a77a0aad3a3b5cdf2e9aeaaf2
+-- based-on: custom.pipeline_board(uuid, uuid, text) fee01c9e6f34cb388347d583213d1522ccca03ecc9a600977471b1a2e1aefef4
 -- chair-step: the inverse of filtergroups_a_views_nested_question_is_one_where_clause.sql. It puts
 -- back, byte for byte, the five bodies that file replaced (custom.record_filter_sql(jsonb),
 -- read_records_matching, record_aggregate, agg_sql and pipeline_board(uuid, uuid, text)), deletes the three platform.client_callable_door rows it declared, and DROPS
@@ -13,6 +18,22 @@
 
 set local lock_timeout = '5s';
 set local statement_timeout = '60s';
+
+-- NOT ON TOP OF LANE S3. S3's uichamp_s3_a_number_knows_last_month_and_its_target.sql DROPS the
+-- eight-argument custom.agg_sql / custom.record_aggregate and creates nine-argument ones; putting
+-- the eight-argument bodies back beside them would make every call with eight arguments or fewer
+-- ambiguous ("function … is not unique") for every dashboard in the database. Run S3's inverse
+-- (and filtergroups_the_compared_aggregate_asks_the_one_fragment_down.sql) first.
+do $s3$
+begin
+  if to_regprocedure('custom.agg_sql(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb)') is not null
+     or to_regprocedure('custom.record_aggregate(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb)') is not null then
+    raise exception 'lane S3''s nine-argument aggregate is on this database, so the eight-argument bodies cannot be put back beside it'
+      using errcode = '55000',
+            hint = 'Run uichamp_s3_a_number_knows_last_month_and_its_target_down.sql (and filtergroups_the_compared_aggregate_asks_the_one_fragment_down.sql before it) first. Nothing was changed.';
+  end if;
+end
+$s3$;
 
 CREATE OR REPLACE FUNCTION custom.record_filter_sql(p_filter jsonb)
  RETURNS text
