@@ -8,7 +8,6 @@ folders under _conflicts/, and compares what it finds with the list in _conflict
   - a marker whose item is not listed         -> "NOT LISTED"
   - a listed item whose marker is gone        -> "DONE, DELETE ITS LINE"
   - an empty folder under _conflicts/         -> "EMPTY FOLDER, DELETE IT"
-  - _conflicts/ with nothing open in it       -> "NOTHING OPEN, DELETE _conflicts/"
 Exit 0 and "clean" when nothing is open, 1 otherwise.
 """
 import os
@@ -60,9 +59,6 @@ def main():
             if root != HOLD_ROOT and not os.listdir(root):
                 print("EMPTY FOLDER, DELETE IT: %s/" % root)
                 problems += 1
-        if not live and not listed:
-            print("NOTHING OPEN, DELETE %s/ (scripts/sync-main.py also does this on its next run)" % HOLD_ROOT)
-            problems += 1
 
     if problems:
         print("\n%d item(s) need attention." % problems)

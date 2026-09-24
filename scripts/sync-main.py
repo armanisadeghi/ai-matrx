@@ -595,9 +595,8 @@ def resolve_all(stamp):
 # ── the to-do file ──────────────────────────────────────────────────────────────────────────
 LOG_HEADER = """# Merge conflicts from scripts/sync-main.py
 
-This folder exists only while items from `scripts/sync-main.py` are open. When the last item is
-done, the whole `_conflicts/` folder is deleted (`scripts/sync-main.py` also removes it, and any
-empty folders inside it, on its next run).
+This folder is permanent. When every list below is empty, nothing from `scripts/sync-main.py` is
+open in this repo. (`scripts/sync-main.py` removes empty folders left inside it on every run.)
 
 ## What the items are
 - **Held file** — `_conflicts/<stamp>/<path>.held`. LOCAL and GITHUB changed the same code.
@@ -668,26 +667,22 @@ def open_items():
 
 
 def prune():
-    """Housekeeping, announced: delete empty folders under _conflicts/, and the whole folder when
-    nothing in it is open any more. Git does not track empty folders, so they are pure leftovers."""
-    if not os.path.isdir(HOLD_ROOT):
-        return
-    removed = 0
-    for root, dirs, files in os.walk(HOLD_ROOT, topdown=False):
-        if root != HOLD_ROOT and not os.listdir(root):
-            os.rmdir(root)
-            removed += 1
-    if removed:
-        say("pruned %d empty folder(s) left under %s/" % (removed, HOLD_ROOT))
-    held_left = [f for _, _, fs in os.walk(HOLD_ROOT) for f in fs if f.endswith(".held")]
-    if not held_left and not open_items():
-        for name in os.listdir(HOLD_ROOT):
-            path = os.path.join(HOLD_ROOT, name)
-            if os.path.isfile(path):
-                os.remove(path)
-        os.rmdir(HOLD_ROOT)
-        git("add", "-A", "--", HOLD_ROOT)
-        say("nothing is open: removed %s/" % HOLD_ROOT)
+    """Housekeeping, announced: delete empty folders under _conflicts/ (git does not track empty
+    folders, so they are pure leftovers), and create _conflicts/README.md if it is missing. The
+    folder and its README are permanent: an empty list means nothing is open."""
+    if os.path.isdir(HOLD_ROOT):
+        removed = 0
+        for root, dirs, files in os.walk(HOLD_ROOT, topdown=False):
+            if root != HOLD_ROOT and not os.listdir(root):
+                os.rmdir(root)
+                removed += 1
+        if removed:
+            say("pruned %d empty folder(s) left under %s/" % (removed, HOLD_ROOT))
+    if not os.path.exists(LOG_REL):
+        os.makedirs(HOLD_ROOT, exist_ok=True)
+        with open(LOG_REL, "w") as f:
+            f.write(LOG_HEADER)
+        say("created %s" % LOG_REL)
 
 
 def replay(args):
