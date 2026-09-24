@@ -33,7 +33,6 @@
 
 import { use, useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import PageHeader from "@/features/shell/components/header/PageHeader";
@@ -41,9 +40,9 @@ import HeaderStructured from "@/features/shell/components/header/variants/varian
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
+import { RecordOrganizationSwitchOffer } from "@/features/organizations/components/RecordOrganizationSwitchOffer";
 import { createClient } from "@/utils/supabase/client";
 import { recordsDataSource } from "@ai-matrx/records-ui";
 
@@ -67,7 +66,6 @@ export default function RenderedDocumentRoute({
     params: Promise<{ renderId: string }>;
 }) {
     const { renderId } = use(params);
-    const dispatch = useAppDispatch();
     const selectedOrganizationId = useAppSelector(selectOrganizationId);
 
     const [document, setDocument] = useState<RenderedDocument | null>(null);
@@ -114,10 +112,6 @@ export default function RenderedDocumentRoute({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [renderId]);
 
-    const elsewhere =
-        document !== null &&
-        document.viewer_is_member &&
-        document.organization_id !== selectedOrganizationId;
     const organizationName = document?.organization_name ?? "its organization";
 
     return (
@@ -142,28 +136,14 @@ export default function RenderedDocumentRoute({
                     <UnifiedDataSwitchNotice gate={campaign} what="Documents" />
                 ) : (
                     <div className="mx-auto max-w-3xl space-y-3">
-                        {elsewhere && (
-                            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
-                                <span>
-                                    This document is in <strong>{organizationName}</strong>, not the
-                                    organization you are working in.
-                                </span>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() =>
-                                        dispatch(
-                                            chooseActiveOrganization({
-                                                id: document.organization_id,
-                                                name: document.organization_name,
-                                            }),
-                                        )
-                                    }
-                                >
-                                    Switch to {organizationName}
-                                </Button>
-                            </div>
-                        )}
+                        {/* THE ONE SWITCH OFFER — never a silent change of the
+                            person's working organization. */}
+                        <RecordOrganizationSwitchOffer
+                            organizationId={document.organization_id}
+                            organizationName={document.organization_name}
+                            isMember={document.viewer_is_member}
+                            what="document"
+                        />
                         <p className="text-xs text-muted-foreground">
                             Made {new Date(document.rendered_at).toLocaleString()} in{" "}
                             {organizationName} from version {document.document_version} of its

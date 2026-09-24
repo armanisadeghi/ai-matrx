@@ -1,20 +1,21 @@
 /**
- * WALL W3 (Expert Book Challenge, 2026-09-10) — A LANE ADOPTS ITS RECORD'S
- * WORKSPACE.
+ * THE PERSON, NOT THE ORG (Arman, 2026-09-23) — A LANE NEVER MOVES THE
+ * PERSON'S WORKING ORGANIZATION, AND OFFERS THE SWITCH INSTEAD.
  *
- * What was live: after a reload of any `/masterwork/[id]/<lane>` route, every
- * action died with the toast "Select an organization before sending this
- * request." The Rulebook row carries `organization_id`; the page never adopted
- * it, and the picker lives behind a switch in the avatar menu a first-time
- * Expert has never seen.
+ * What was live: `useAdoptRecordOrganization` (wall W3, 2026-09-10) wrote the
+ * Rulebook's organization into the GLOBAL selection whenever none was selected,
+ * so merely opening a Rulebook silently changed the organization every other
+ * page in the app worked in. And the lane held its body behind "Getting your
+ * workspace ready…" until it did.
  *
- * This suite drives the REAL store and the REAL adoption primitive
- * (`features/organizations/useAdoptRecordOrganization`). Only transport is
- * stubbed: the two Supabase reads (the Rulebook, the organization row) and the
- * presentational shell the lane renders its header into.
+ * The law: the lane opens whatever is selected (or nothing), never writes the
+ * selection, and when the Rulebook lives elsewhere it says so with a one-click
+ * "Switch to <org>" (`RecordOrganizationSwitchOffer`). Only transport is
+ * stubbed: the Rulebook read, the memberships read, and the presentational
+ * shell.
  *
  * Run it against the pre-fix `RulebookLaneRoute` and the first test fails at
- * `appContext.organization_id` — it stays null, which is the defect.
+ * `appContext.organization_id` — it becomes the Rulebook's, which is the defect.
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -32,6 +33,7 @@ const ORG_ID = "44444444-4444-4444-8444-444444444444";
 const getRulebook = jest.fn();
 const getOrganization = jest.fn();
 const toastInfo = jest.fn();
+let memberships: { id: string; name: string }[] = [];
 
 jest.mock("../../service", () => ({
   getRulebook: (...args: unknown[]) => getRulebook(...args),
@@ -40,6 +42,10 @@ jest.mock("../../service", () => ({
 
 jest.mock("@/features/organizations/service", () => ({
   getOrganization: (...args: unknown[]) => getOrganization(...args),
+}));
+
+jest.mock("@/features/organizations/hooks", () => ({
+  useUserOrganizations: () => ({ organizations: memberships }),
 }));
 
 jest.mock("@/lib/toast", () => ({
@@ -83,6 +89,7 @@ beforeEach(() => {
   getRulebook.mockReset();
   getOrganization.mockReset();
   toastInfo.mockReset();
+  memberships = [];
 });
 
 afterEach(() => {
@@ -115,9 +122,8 @@ async function renderLane() {
       </Provider>,
     );
   });
-  // The adoption primitive gives a real restore a bounded head start before it
-  // adopts (ADOPTION_WAIT_MS). Nothing is restoring in this store, so drive the
-  // clock past it and let the organization read settle.
+  // Drive the clock past any bounded wait and let the reads settle, so a
+  // late write to the selection would be caught.
   await act(async () => {
     jest.advanceTimersByTime(2_000);
   });
@@ -127,24 +133,30 @@ async function renderLane() {
   });
 }
 
-it("adopts the Rulebook's own organization when the Expert has none selected", async () => {
+it("never writes the Rulebook's organization into the selection when none is selected — it offers the switch", async () => {
   getRulebook.mockResolvedValue(rulebookRow(ORG_ID));
-  getOrganization.mockResolvedValue({ id: ORG_ID, name: "Newsroom Desk" });
+  memberships = [{ id: ORG_ID, name: "Newsroom Desk" }];
 
   expect(store.getState().appContext.organization_id).toBeNull();
 
   await renderLane();
 
-  expect(getOrganization).toHaveBeenCalledWith(ORG_ID);
-  expect(store.getState().appContext.organization_id).toBe(ORG_ID);
-  expect(store.getState().appContext.organization_name).toBe("Newsroom Desk");
-  // IT ANNOUNCES ITSELF — a silent context switch is the banned behaviour.
-  expect(toastInfo).toHaveBeenCalled();
-  expect(String(toastInfo.mock.calls[0][0])).toContain("Newsroom Desk");
+  expect(store.getState().appContext.organization_id).toBeNull();
+  expect(toastInfo).not.toHaveBeenCalled();
+  // The lane opens at once — no "Getting your workspace ready…" hold.
   expect(container.textContent).toContain("lane body");
+  expect(container.textContent).toContain("This Rulebook is in Newsroom Desk");
+
+  // The switch is the person's own click, and it is exactly one.
+  const button = [...container.querySelectorAll("button")].find((b) =>
+    b.textContent?.includes("Switch to Newsroom Desk"),
+  );
+  expect(button).toBeDefined();
+  act(() => button!.click());
+  expect(store.getState().appContext.organization_id).toBe(ORG_ID);
 });
 
-it("never overwrites a workspace the Expert actively chose", async () => {
+it("never overwrites a workspace the Expert actively chose, and names where the Rulebook lives", async () => {
   const chosen = "66666666-6666-4666-8666-666666666666";
   act(() => {
     store.dispatch({
@@ -153,24 +165,42 @@ it("never overwrites a workspace the Expert actively chose", async () => {
     });
   });
   getRulebook.mockResolvedValue(rulebookRow(ORG_ID));
-  getOrganization.mockResolvedValue({ id: ORG_ID, name: "Newsroom Desk" });
+  memberships = [
+    { id: ORG_ID, name: "Newsroom Desk" },
+    { id: chosen, name: "My Own Desk" },
+  ];
 
   await renderLane();
 
   expect(store.getState().appContext.organization_id).toBe(chosen);
-  expect(getOrganization).not.toHaveBeenCalled();
   expect(toastInfo).not.toHaveBeenCalled();
   expect(container.textContent).toContain("lane body");
+  expect(container.textContent).toContain("not the organization you are working in");
 });
 
-it("refuses to adopt an organization this user cannot read, and still renders", async () => {
+it("CONTROL: no offer when the Rulebook is already in the selected organization", async () => {
+  act(() => {
+    store.dispatch({
+      type: "appContext/setOrganization",
+      payload: { id: ORG_ID, name: "Newsroom Desk" },
+    });
+  });
   getRulebook.mockResolvedValue(rulebookRow(ORG_ID));
-  // RLS-scoped to members: an unreadable row IS "not your workspace".
-  getOrganization.mockResolvedValue(null);
+  memberships = [{ id: ORG_ID, name: "Newsroom Desk" }];
+
+  await renderLane();
+
+  expect(container.textContent).toContain("lane body");
+  expect(container.textContent).not.toContain("Switch to");
+});
+
+it("opens a Rulebook from an organization the person is not a member of, with no offer", async () => {
+  getRulebook.mockResolvedValue(rulebookRow(ORG_ID));
+  memberships = [];
 
   await renderLane();
 
   expect(store.getState().appContext.organization_id).toBeNull();
-  expect(toastInfo).not.toHaveBeenCalled();
   expect(container.textContent).toContain("lane body");
+  expect(container.textContent).not.toContain("Switch to");
 });

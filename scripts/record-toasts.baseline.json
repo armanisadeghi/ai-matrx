@@ -191,7 +191,6 @@
     "features/notes/components/NotesLayout.tsx::`Folder \"${folderName}\" created`",
     "features/notes/components/NotesLayout.tsx::`Moved \"${note.label}\" to \"${newFolder}\"`",
     "features/notes/components/NotesLayout.tsx::`Renamed folder \"${oldName}\" to \"${newName}\"`",
-    "features/organizations/useAdoptRecordOrganization.ts::`Working in ${organization.name}`",
     "features/page-extraction/components/SavedJobsList.tsx::`Deleted \"${job.name}\"`",
     "features/page-extraction/data-review/ExportMenu.tsx::`${label} copied`",
     "features/page-extraction/hooks/useExtractionRunLauncher.tsx::`Running as \"${clone.name}\"`",
