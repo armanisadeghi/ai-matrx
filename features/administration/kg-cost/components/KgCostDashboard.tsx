@@ -774,11 +774,6 @@ function OrgDetailDialog({
 
               {/* 30-day daily series */}
               <section>
-                {detail.daily_series.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No cost in this window.
-                  </p>
-                ) : (
                   <MatrxDataTable
                     tableId="administration/kg-cost/org-detail/daily-cost"
                     data={detail.daily_series}
@@ -808,8 +803,8 @@ function OrgDetailDialog({
                     stickyHeader
                     pageSize={0}
                     hidePagination
-                    copy={false}
                     toolbar={{ title: "Last 30 days", search: false }}
+                    emptyState={{ title: "No cost in this window." }}
                     detail={{ enabled: false }}
                     window={{ enabled: false }}
                     coverage={{
@@ -818,16 +813,10 @@ function OrgDetailDialog({
                       answeredBy: "source",
                     }}
                   />
-                )}
               </section>
 
               {/* Top sources */}
               <section>
-                {detail.top_sources.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No source breakdown available.
-                  </p>
-                ) : (
                   <MatrxDataTable
                     tableId="administration/kg-cost/org-detail/top-sources"
                     data={detail.top_sources}
@@ -866,8 +855,8 @@ function OrgDetailDialog({
                     stickyHeader
                     pageSize={0}
                     hidePagination
-                    copy={false}
                     toolbar={{ title: "Top sources (30 days)", search: false }}
+                    emptyState={{ title: "No source breakdown available." }}
                     detail={{ enabled: false }}
                     window={{ enabled: false }}
                     coverage={{
@@ -876,16 +865,10 @@ function OrgDetailDialog({
                       answeredBy: "source",
                     }}
                   />
-                )}
               </section>
 
               {/* Batch summary */}
               <section>
-                {detail.batch_summary.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No batch submissions yet.
-                  </p>
-                ) : (
                   <MatrxDataTable
                     tableId="administration/kg-cost/org-detail/batches-by-status"
                     data={detail.batch_summary}
@@ -922,8 +905,8 @@ function OrgDetailDialog({
                     stickyHeader
                     pageSize={0}
                     hidePagination
-                    copy={false}
                     toolbar={{ title: "Batches by status", search: false }}
+                    emptyState={{ title: "No batch submissions yet." }}
                     detail={{ enabled: false }}
                     window={{ enabled: false }}
                     coverage={{
@@ -932,7 +915,6 @@ function OrgDetailDialog({
                       answeredBy: "source",
                     }}
                   />
-                )}
               </section>
             </div>
           </ScrollArea>

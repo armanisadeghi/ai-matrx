@@ -21,7 +21,7 @@
  */
 
 import React, { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -439,13 +439,14 @@ export function ToolDetail({
   const detail = useQuery<ToolRefetchDetailRow[]>({
     queryKey: ["admin", "tool-refetch", "detail", toolName, win, pages],
     queryFn: () => getToolRefetchDetail(toolName, win, 0, pages * DETAIL_PAGE_SIZE),
+    placeholderData: keepPreviousData,
     retry: (attempt, err) => !(err instanceof RefetchTimeoutError) && attempt < 1,
   });
 
-  if (detail.isPending && !detail.isError) {
+  if (detail.isPending && !detail.data && !detail.isError) {
     return <div className="px-3 py-4 text-xs text-muted-foreground">Loading repeats for {toolName}…</div>;
   }
-  if (detail.error) {
+  if (detail.error && !detail.data) {
     return (
       <div className="flex items-center gap-2 px-3 py-4 text-xs text-rose-700 dark:text-rose-300">
         <AlertTriangle className="h-3.5 w-3.5" />
@@ -493,10 +494,10 @@ export function ToolDetail({
             queryKey: `tool-refetch:${toolName}:${win}`,
             rows,
             loading: detail.isPending,
-            isFetchingNextPage: detail.isFetching && !detail.isPending,
+            isFetchingNextPage: detail.isFetching && pages > 1,
             error: detail.error instanceof Error ? detail.error : null,
             hasNextPage:
-              rows.length >= pages * DETAIL_PAGE_SIZE && rows.length < expectedRepeats,
+              (detail.isFetching || rows.length >= pages * DETAIL_PAGE_SIZE) && rows.length < expectedRepeats,
             loadNextPage: async () => {
               setPages((page) => page + 1);
             },

@@ -21,6 +21,7 @@ let mockDetailQuery: {
 const mockDetailQueryKeys: unknown[][] = [];
 
 jest.mock("@tanstack/react-query", () => ({
+  keepPreviousData: (data: unknown) => data,
   useQuery: (options: { queryKey: unknown[] }) => {
     mockDetailQueryKeys.push(options.queryKey);
     return mockDetailQuery;
@@ -196,5 +197,18 @@ describe("ToolDetail canonical repeat grid", () => {
       "30d",
       2,
     ]);
+  });
+
+  it("keeps loaded repeat rows visible while the next source window is fetching", async () => {
+    await act(async () => {
+      root.render(createElement(ToolDetail, { toolName: "web.search", window: "30d", expectedRepeats: 75 }));
+    });
+    mockDetailQuery = { ...mockDetailQuery, isPending: true, isFetching: true };
+    await act(async () => {
+      root.render(createElement(ToolDetail, { toolName: "web.search", window: "30d", expectedRepeats: 75 }));
+    });
+    expect(host.querySelectorAll("th").length).toBeGreaterThan(0);
+    expect(host.textContent).toContain("50 repeats loaded so far");
+    expect(host.textContent).not.toContain("Loading repeats for web.search");
   });
 });

@@ -164,6 +164,8 @@ describe("KgCostDashboard canonical tables", () => {
 
     await act(async () => {
       root.render(<KgCostDashboard />);
+    });
+    await act(async () => {
       table("administration/kg-cost/organizations").onRowOpen?.({
         organization_id: "org-1",
       });
@@ -190,10 +192,12 @@ describe("KgCostDashboard canonical tables", () => {
     ]) {
       const props = table(id);
       expect(props.toolbar).toEqual({ title, search: false });
+      expect(props.emptyState?.title).toEqual(expect.any(String));
       expect(props.density).toBe("condensed");
       expect(props.stickyHeader).toBe(true);
       expect(props.hidePagination).toBe(true);
       expect(props.pageSize).toBe(0);
+      expect(props.copy).toBeUndefined();
       expect(props.detail).toEqual({ enabled: false });
       expect(props.window).toEqual({ enabled: false });
       expect(props.coverage).toMatchObject({ answeredBy: "source" });
