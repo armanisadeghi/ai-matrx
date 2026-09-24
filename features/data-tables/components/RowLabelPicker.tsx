@@ -137,6 +137,7 @@ export function RowLabelPicker({ tableId, metadata, fields, sampleRow, disabled,
             onChange={(next) => setDraftExpression(next.options?.formula?.expression ?? "")}
             siblingFields={fields.map((f) => ({ field_name: f.field_name, display_name: f.display_name }))}
             disabled={disabled || saving}
+            purpose="row-label"
           />
           <div className="flex items-center justify-between gap-2">
             <p className="min-w-0 truncate text-xs text-muted-foreground">

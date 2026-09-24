@@ -406,11 +406,18 @@ function ActionForm(props: {
         </div>
       )}
 
-      {problems.length > 0 && action.name.trim() && (
-        <p className="text-xs text-destructive">{problems[0].message}</p>
-      )}
-
-      <div className="flex justify-end gap-2">
+      {/* One reason, beside the button it disables (ARE-032). The preview
+          above already names a formula error, so it is not repeated here. */}
+      <div className="flex items-center justify-end gap-2">
+        {problems.length > 0 && (
+          <p className="mr-auto min-w-0 text-xs text-destructive">
+            {!action.name.trim()
+              ? "Name the button to save it."
+              : preview && !preview.ok && problems[0].message.endsWith(preview.error.replace(/^"[^"]*": /, ""))
+                ? "Fix the change marked above to save."
+                : problems[0].message}
+          </p>
+        )}
         <Button type="button" size="sm" variant="ghost" onClick={props.onCancel} disabled={props.saving}>Cancel</Button>
         <Button type="button" size="sm" onClick={props.onSave} disabled={props.saving || problems.length > 0}>
           {props.saving && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
@@ -520,6 +527,8 @@ function StepRow(props: {
               })
             }
             siblingFields={fields.map((f) => ({ field_name: f.field_name, display_name: f.display_name }))}
+            purpose="row-action"
+            targetColumnName={field?.display_name}
           />
         )}
       </div>
