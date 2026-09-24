@@ -24,6 +24,8 @@
 
 import { useState } from "react";
 
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { hrTimePeriodsHref } from "@/features/hr/routes";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { ExportRunList } from "@/features/hr/exports/components/ExportRunList";
 import { ExportRunPanel } from "@/features/hr/exports/components/ExportRunPanel";
@@ -55,6 +57,31 @@ export function PeriodDetailPage({ payPeriodId }: { payPeriodId: string }) {
   const role = resolveRole(hr.capabilities);
   const organizationId = hr.active?.organization_id ?? null;
   const todayLocalDate = new Date().toISOString().slice(0, 10);
+
+  // A failed read of the pay period itself is the platform's refusal frame, never a red line
+  // above an empty page. A typed refusal keeps the engine's own sentence; a transport or
+  // SQL fault goes in as an error so the gate offers retry. ABSOLUTE: an HR record refusal
+  // never offers "Request access" (the §5 subject-exclusion veto).
+  if (failure && !period) {
+    const fault =
+      failure.code === "unknown_error" ||
+      failure.code === "hr_rpc_failed" ||
+      (/^[0-9A-Z]{5}$/.test(failure.code) && failure.code !== "42501");
+    return (
+      <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
+        <AccessGate
+          token="hr_pay_period"
+          id={payPeriodId}
+          error={fault ? new Error(failure.userMessage) : null}
+          reason={fault ? undefined : failure.userMessage}
+          onRetry={reload}
+          requestability="absolute"
+          fallbackHref={hrTimePeriodsHref(hr.orgRef)}
+          fallbackLabel="Pay periods"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
