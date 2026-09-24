@@ -103,10 +103,12 @@ async function owner(browser) {
     said: refused.v ? (refused.v.match(/[^\n]*own sites[^\n]*/i)?.[0] ?? "").slice(0, 220) : null,
   });
   await shot(page, "s7-owner-02-foreign-redirect-refused");
+  const kept = await area.getByLabel("Then go to (optional)").inputValue().catch(() => null);
+  clause("the builder stays on screen after the refusal, her address still typed (a refusal never takes the builder away)", kept === FOREIGN, { kept });
 
   await area.getByLabel("Then go to (optional)").fill(BOOKING);
   await page.getByRole("button", { name: /^Save$/ }).first().click();
-  const saved = await until("saved", async () => (/\bSaved\.\b/.test(await text(page)) ? true : null), 60000);
+  const saved = await until("saved", async () => (/\bSaved\./.test(await text(page)) ? true : null), 60000);
   clause("the practice's own booking page saves", saved.v === true);
   await shot(page, "s7-owner-03-booking-page-saved");
   await context.close();
