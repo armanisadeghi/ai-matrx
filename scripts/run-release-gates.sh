@@ -874,6 +874,8 @@ else
         "One agent-list read (package-owned)|pnpm check:agent-list-reads"
         "One \"is this run over?\" predicate (runIsOver)|pnpm check:run-is-over"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts"
+        "No blocking dialogs (AI stays reachable)|pnpm check:blocking-dialogs"
+        "No blocking dialogs — self-test|pnpm check:blocking-dialogs:self-test"
         # See the strict lane above for why this class is a shipped-code hazard.
         "Unified-data campaign entry points are registered and gated|pnpm check:campaign-entry-points"
         # In BOTH lists on purpose, for the reason stated twice above: the release's own
