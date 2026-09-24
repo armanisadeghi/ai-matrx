@@ -106,6 +106,10 @@ async function openSubmenu(page, name) {
   return true;
 }
 
+/** The grid itself: on the Sheet, the table page around it has controls of its own (Share, CSV). */
+function inGrid(page) {
+  return SURFACE === "sheet" ? page.locator("[data-sheet-layout]").first() : page;
+}
 /** Where a table's grid lives on the surface under walk. */
 function tableUrl(tableId) {
   return SURFACE === "sheet" && tableId !== TABLES.olderExample
@@ -669,7 +673,7 @@ async function main() {
     if (wants("share")) {
       const level = process.env.GRID_PORT_SHARE_LEVEL || "Viewer";
       await openGrid(page, TABLES.customers, "Maria Delgado");
-      await page.getByRole("button", { name: /^Share$/ }).first().click();
+      await inGrid(page).getByRole("button", { name: /^Share$/ }).first().click();
       await page.waitForTimeout(1500);
       const email = page.locator("#user-email").first();
       let shared = false;
@@ -905,9 +909,11 @@ async function main() {
           for (const it of items) for (const type of it.types) window.__copied.push(await (await it.getType(type)).text());
         };
       });
-      await page.locator('[aria-label^="Copy, transform or export"]').first().click();
+      // The grid's own export control. On the Sheet the table page draws one of its own
+      // for the records beside it, so the grid's is the one inside the Sheet.
+      await page.locator(`${SURFACE === "sheet" ? "[data-sheet-layout] " : ""}[aria-label^="Copy, transform or export"]`).first().click();
       await page.waitForTimeout(1200);
-      await page.getByRole("button", { name: /^Copy CSV$/ }).first().click();
+      await page.locator("[data-radix-popper-content-wrapper]").last().getByRole("button", { name: /^(Copy )?CSV$/ }).first().click();
       await page.waitForTimeout(2500);
       const copied = (await page.evaluate(() => window.__copied)).join("\n");
       const lines = copied.split(/\r?\n/).filter(Boolean);
@@ -959,7 +965,15 @@ async function main() {
       if (!TABLES.harborCalls) throw new Error("GRID_PORT_HARBOR_CALLS must name Harbor Point's Service calls table");
       const hp = await (await browser.newContext({ viewport: { width: 1600, height: 1000 } })).newPage();
       hp.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
-      hp.on("response", (r) => { if (r.status() >= 400) bad.push(`${r.status()} ${r.url()}`); });
+      hp.on("response", async (r) => {
+        if (r.status() < 400) return;
+        bad.push(`${r.status()} ${r.url()}`);
+        // A store refusal is judged by its words, never just its status.
+        if (/\/rpc\/record_/.test(r.url())) {
+          const said = await r.text().catch(() => "");
+          console.log(`store refused ${r.url().replace(/.*\/rpc\//, "")}: ${said.slice(0, 300)} — asked ${(r.request().postData() ?? "").slice(0, 300)}`);
+        }
+      });
       await signIn(hp);
       await hp.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 240000 });
       const choose = hp.getByText("Choose org", { exact: true }).first();
@@ -975,6 +989,8 @@ async function main() {
       if (offered) {
         await item.click();
         await hp.waitForURL(/\/schedules\/new/, { timeout: 120000 });
+        // A dev server may still be compiling the form; judge it once it is drawn.
+        await hp.locator("#title").waitFor({ timeout: 240000 }).catch(() => {});
         await hp.waitForTimeout(3000);
         const url = hp.url();
         const formText = await hp.evaluate(() => document.body.innerText);
@@ -983,7 +999,11 @@ async function main() {
         await hp.locator("#title").fill("Draft the invoice when a service call is complete");
         await hp.getByRole("checkbox").filter({ has: hp.locator("xpath=..") }).first().waitFor().catch(() => {});
         await hp.locator("label").filter({ hasText: "A row is changed" }).locator("button[role=checkbox]").first().click();
-        await hp.locator("#ev-fields").fill("status");
+        // "Only when these columns change" is a list of the table's own columns (ARE-035),
+        // read through the grid's seam; tick Status.
+        const statusBox = hp.locator("label").filter({ hasText: /^Status$/ }).locator("button[role=checkbox]").first();
+        await statusBox.waitFor({ timeout: 60000 });
+        await statusBox.click();
         await hp.locator("#prompt").fill("The service call in this event changed status. If it now reads Complete, draft the invoice from its labor hours and parts used.");
         // The form posts the schedule to the Python server's /scheduler/tasks. The trigger it
         // sends is what this clause judges; on a clone-backed server that server is
@@ -1062,12 +1082,16 @@ async function main() {
       const listen = (r) => { if (/\/rpc\/get_full_table$/.test(r.url())) olderReads.push(r.url()); };
       page.on("request", listen);
       await page.goto(tableUrl(TABLES.calls), { waitUntil: "domcontentloaded", timeout: 240000 });
-      await page.waitForFunction(() => /not been shared with you|in neither|could not find out/.test(document.body.innerText), null, { timeout: 120000 }).catch(() => {});
+      await page.waitForFunction(() => /not been shared with you|not been given this table|in neither|could not find out/.test(document.body.innerText), null, { timeout: 120000 }).catch(() => {});
       await page.waitForTimeout(2000);
       page.off("request", listen);
       const text = await page.evaluate(() => document.body.innerText);
       await page.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-17-not-shared-with-you.png` });
-      pass("unshared-says-so", /has not been shared with you/.test(text) && /nobody has shared it with you yet/.test(text), (text.match(/This table[^\n]*\n?[^\n]*/) ?? [""])[0].replace(/\s+/g, " ").slice(0, 200));
+      // On the Sheet the table page answers first, in its own words ("You have not been
+      // given this table … Nobody has shared it with you").
+      pass("unshared-says-so", SURFACE === "sheet"
+        ? /You have not been given this table/.test(text) && /Nobody has shared it with you/.test(text)
+        : /has not been shared with you/.test(text) && /nobody has shared it with you yet/.test(text), (text.match(/(This table|You have not been given)[^\n]*\n?[^\n]*/) ?? [""])[0].replace(/\s+/g, " ").slice(0, 200));
       pass("unshared-no-raw-id", !text.includes(TABLES.calls), text.includes(TABLES.calls) ? "the raw id is on the screen" : "no raw id on the screen");
       pass("unshared-no-older-read", olderReads.length === 0, `older get_full_table reads: ${olderReads.length}`);
       pass("unshared-no-deleted-sentence", !/may have been deleted|in neither/.test(text), "no sentence about deletion or 'in neither store'");
