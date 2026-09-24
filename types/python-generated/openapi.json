@@ -50447,6 +50447,26 @@
             "description": "ISO-8601 lower bound on occurred_at. Defaults to 6 hours ago."
           },
           {
+            "name": "since_hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 720,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Source window in hours. Its lower bound is calculated from the server-issued snapshot, so browser clock skew cannot omit newest rows.",
+              "title": "Since Hours"
+            },
+            "description": "Source window in hours. Its lower bound is calculated from the server-issued snapshot, so browser clock skew cannot omit newest rows."
+          },
+          {
             "name": "snapshot_at",
             "in": "query",
             "required": false,

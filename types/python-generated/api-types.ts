@@ -172091,6 +172091,8 @@ export interface operations {
             query?: {
                 /** @description ISO-8601 lower bound on occurred_at. Defaults to 6 hours ago. */
                 since?: string | null;
+                /** @description Source window in hours. Its lower bound is calculated from the server-issued snapshot, so browser clock skew cannot omit newest rows. */
+                since_hours?: number | null;
                 /** @description Server-issued ISO-8601 snapshot watermark reused for every cursor page. */
                 snapshot_at?: string | null;
                 limit?: number;

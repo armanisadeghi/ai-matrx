@@ -337,7 +337,6 @@ export default function SystemErrorsPanel() {
         accessorKey: "id",
         header: "ID",
         cellKind: "uuid",
-        hidden: true,
       },
       {
         id: "request_id",
@@ -425,11 +424,14 @@ export default function SystemErrorsPanel() {
                     setSourceRevision((revision) => revision + 1);
                   }}
                 >
-                  Unresolved only
+                  Unresolved at snapshot
                 </Button>
               </div>
               {byKind.length > 1 ? (
                 <div className="flex shrink-0 items-center gap-1 border-l border-border pl-1">
+                  <span className="whitespace-nowrap text-xs text-muted-foreground">
+                    Loaded kinds
+                  </span>
                   {byKind.map(([candidate, count]) => (
                     <Button
                       key={candidate}
@@ -495,7 +497,14 @@ export default function SystemErrorsPanel() {
               sourceTotal: total,
             },
             pagination: {
-              queryKey: "system-errors",
+              queryKey: JSON.stringify([
+                "system-errors",
+                trimmedKind,
+                hours,
+                unresolvedOnly,
+                requestId,
+                sourceRevision,
+              ]),
               rows,
               loading: isLoading,
               isFetchingNextPage,
