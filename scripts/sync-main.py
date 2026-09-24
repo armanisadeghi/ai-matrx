@@ -367,6 +367,12 @@ def main():
     push = "--no-push" not in sys.argv[1:]
     _, top, _ = git("rev-parse", "--show-toplevel")
     os.chdir(top.strip())
+    # Show where we started, so the terminal holds the before-state if anything goes wrong.
+    say("==================== git status (before sync) ====================")
+    subprocess.run(["git", "status"])
+    _, start, _ = git("rev-parse", "HEAD")
+    say("==================== starting point: %s ====================" % start.strip())
+    say("(to see this exact state again later: git log %s)\n" % start.strip()[:10])
     _, br, _ = git("symbolic-ref", "-q", "--short", "HEAD", check=False)
     if br.strip() != BRANCH:
         die("this checkout is on '%s', not %s." % (br.strip() or "a detached HEAD", BRANCH))
