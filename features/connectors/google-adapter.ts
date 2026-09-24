@@ -272,7 +272,8 @@ export interface ConnectorProviderState {
   rolloutUnavailable: boolean;
   isError: boolean;
   errorMessage: string | null;
-  refetch: () => Promise<void>;
+  /** The refreshed inventory, or null when it could not be read. */
+  refetch: () => Promise<ConnectorAccount[] | null>;
 }
 
 /** Live Google state for the connector surfaces, in provider-agnostic shapes. */
@@ -302,7 +303,9 @@ export function useGoogleConnectorState(): ConnectorProviderState {
   }
 
   const refetch = useCallback(async () => {
-    await Promise.all([inventory.refetch(), capabilities.refetch()]);
+    const [latest] = await Promise.all([inventory.refetch(), capabilities.refetch()]);
+    if (latest.isError || !latest.data) return null;
+    return latest.data.connections.map(googleAccount);
   }, [inventory, capabilities]);
 
   return {
