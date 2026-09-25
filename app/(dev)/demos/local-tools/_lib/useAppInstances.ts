@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/utils/supabase/client';
+import { tryWriteOne } from '@/utils/supabase/writeOne';
 import { operationFailed } from '@/utils/errors';
 
 // ---------------------------------------------------------------------------
@@ -298,15 +299,19 @@ export function useAppInstances() {
 
     // Update tunnel fields in Supabase
     const saveTunnelUrl = useCallback(async (instanceId: string, tunnelUrl: string, tunnelWsUrl: string) => {
-        const { error: err } = await supabase
-            .from('app_instances')
-            .update({
-                tunnel_url: tunnelUrl || null,
-                tunnel_ws_url: tunnelWsUrl || null,
-                tunnel_active: !!tunnelUrl,
-                tunnel_updated_at: new Date().toISOString(),
-            })
-            .eq('id', instanceId);
+        const { error: err } = await tryWriteOne(
+            supabase
+                .from('app_instances')
+                .update({
+                    tunnel_url: tunnelUrl || null,
+                    tunnel_ws_url: tunnelWsUrl || null,
+                    tunnel_active: !!tunnelUrl,
+                    tunnel_updated_at: new Date().toISOString(),
+                })
+                .eq('id', instanceId)
+                .select('id'),
+            { action: 'save', noun: 'tunnel address' },
+        );
 
         if (err) throw operationFailed('save the tunnel address', err);
         await fetch_();

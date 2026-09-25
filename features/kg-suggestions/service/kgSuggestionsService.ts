@@ -23,6 +23,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { operationFailed } from "@/utils/errors";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -253,12 +254,16 @@ async function markDecided(
   if (opts.note !== undefined) {
     patch.decision_note = opts.note?.trim() ? opts.note.trim() : null;
   }
-  const { error } = await supabase
-    .schema("rag")
-    .from(tableFor(row))
-    .update(patch)
-    .eq("id", row.id)
-    .eq("user_id", userId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("rag")
+      .from(tableFor(row))
+      .update(patch)
+      .eq("id", row.id)
+      .eq("user_id", userId)
+      .select("id"),
+    { action: "save", noun: "suggestion" },
+  );
   if (error) throw operationFailed("save your decision on this suggestion", error);
 }
 
@@ -296,17 +301,21 @@ export async function markKgSuggestionAccepted(
  */
 export async function restoreKgSuggestion(row: KgSuggestionRow): Promise<void> {
   const userId = assertKgSuggestionOwned(row);
-  const { error } = await supabase
-    .schema("rag")
-    .from(tableFor(row))
-    .update({
-      status: "pending",
-      decided_at: null,
-      decided_by: null,
-      suppressed_until: null,
-    })
-    .eq("id", row.id)
-    .eq("user_id", userId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("rag")
+      .from(tableFor(row))
+      .update({
+        status: "pending",
+        decided_at: null,
+        decided_by: null,
+        suppressed_until: null,
+      })
+      .eq("id", row.id)
+      .eq("user_id", userId)
+      .select("id"),
+    { action: "restore", noun: "suggestion" },
+  );
   if (error) throw operationFailed("restore this suggestion", error);
 }
 
@@ -316,12 +325,16 @@ export async function setKgSuggestionStarred(
   starred: boolean,
 ): Promise<void> {
   const userId = assertKgSuggestionOwned(row);
-  const { error } = await supabase
-    .schema("rag")
-    .from(tableFor(row))
-    .update({ is_starred: starred })
-    .eq("id", row.id)
-    .eq("user_id", userId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("rag")
+      .from(tableFor(row))
+      .update({ is_starred: starred })
+      .eq("id", row.id)
+      .eq("user_id", userId)
+      .select("id"),
+    { action: "update", noun: "suggestion" },
+  );
   if (error) throw operationFailed("update this suggestion", error);
 }
 

@@ -18,6 +18,7 @@
 // hook keeps the draft and marks the item `failed`. Nothing here swallows.
 
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { associationsDataSource } from "@/features/scopes/host/associationsStore";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
@@ -100,6 +101,7 @@ interface CommentRow {
   suggested_text?: string | null;
   version?: number | null;
   client_request_id?: string | null;
+  edited_at?: string | null;
 }
 
 function isCommentRow(v: unknown): v is CommentRow {
@@ -158,12 +160,14 @@ export async function listCommentThreads(source: AnnotationSource): Promise<Comm
       replies: [],
       commentId: row.id,
       version: typeof row.version === "number" ? row.version : null,
+      editedAt: row.edited_at ?? null,
     });
   }
   for (const row of replies) {
     const parent = row.parent_id ? roots.get(row.parent_id) : undefined;
     const reply: CommentReply = {
       version: typeof row.version === "number" ? row.version : null,
+      editedAt: row.edited_at ?? null,
       id: row.id,
       body: row.body ?? "",
       author: authorOf(row),
@@ -437,11 +441,15 @@ async function currentVersion(documentId: string): Promise<number> {
 
 /** Soft-delete the annotation; its edge is tombstoned with it. The source is untouched. */
 export async function deleteHighlight(documentId: string): Promise<void> {
-  const { error } = await supabase
-    .schema("content")
-    .from("document")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", documentId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("content")
+      .from("document")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", documentId)
+      .select("id"),
+    { action: "remove", noun: "highlight" },
+  );
   if (error) throw sentence("removing your highlight", error);
 }
 

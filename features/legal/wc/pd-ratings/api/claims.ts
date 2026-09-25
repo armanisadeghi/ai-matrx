@@ -15,6 +15,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { operationFailed } from "@/utils/errors";
 
 export interface SavedClaimRow {
@@ -71,11 +72,15 @@ export function useDeleteClaim() {
   const qc = useQueryClient();
   return useMutation<void, Error, { userId: string; claimId: string }>({
     mutationFn: async ({ claimId }) => {
-      const { error } = await supabase
-        .schema(SCHEMA as never)
-        .from(TABLE as never)
-        .delete()
-        .eq("id", claimId);
+      const { error } = await tryWriteOne(
+        supabase
+          .schema(SCHEMA as never)
+          .from(TABLE as never)
+          .delete()
+          .eq("id", claimId)
+          .select("id"),
+        { action: "delete", noun: "saved case" },
+      );
       if (error) throw operationFailed("delete this saved case", error);
     },
     onSuccess: (_, { userId }) => {

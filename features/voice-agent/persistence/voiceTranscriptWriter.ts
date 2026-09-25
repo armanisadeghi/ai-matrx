@@ -14,6 +14,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import {
@@ -286,13 +287,17 @@ export async function finalizeConversation(
     latency_sample_count: opts.latency.count,
   };
 
-  const { error } = await supabase
-    .schema("chat").from("conversation")
-    .update({
-      message_count: opts.totalTurns,
-      metadata: { voice: voiceMeta } as Json,
-    })
-    .eq("id", opts.conversationId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("chat").from("conversation")
+      .update({
+        message_count: opts.totalTurns,
+        metadata: { voice: voiceMeta } as Json,
+      })
+      .eq("id", opts.conversationId)
+      .select("id"),
+    { action: "save", noun: "conversation" },
+  );
 
   if (error) {
     console.error(

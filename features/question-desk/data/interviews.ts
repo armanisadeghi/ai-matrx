@@ -9,6 +9,7 @@
 import { readAllRows } from "@ai-matrx/data/db";
 import type { ArchiveFilterValue } from "@ai-matrx/design-system";
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import type {
   DecisionInterviewRow,
   DecisionQuestionRow,
@@ -130,10 +131,14 @@ export async function setInterviewArchived(
   interviewId: string,
   archived: boolean,
 ): Promise<void> {
-  const { error } = await db()
-    .from("decision_interview")
-    .update({ archived_at: archived ? new Date().toISOString() : null })
-    .eq("id", interviewId);
+  const { error } = await tryWriteOne(
+    db()
+      .from("decision_interview")
+      .update({ archived_at: archived ? new Date().toISOString() : null })
+      .eq("id", interviewId)
+      .select("id"),
+    { action: archived ? "archive" : "restore", noun: "interview" },
+  );
   if (error) {
     throw new QuestionDeskReadError(
       `${archived ? "Archiving" : "Unarchiving"} this interview failed: ${error.message}`,
@@ -146,6 +151,7 @@ export async function markInterviewOpened(
   interview: DecisionInterviewRow,
 ): Promise<void> {
   if (interview.opened_at) return;
+  // write-lands-exempt: first-open stamp guarded by .is("opened_at", null); zero rows means another tab already stamped it
   const { error } = await db()
     .from("decision_interview")
     .update({ opened_at: new Date().toISOString(), status: "in_progress" })

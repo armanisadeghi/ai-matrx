@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { readAllRows } from "@ai-matrx/data/db";
 import { operationFailed } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
@@ -46,11 +47,15 @@ export async function updateReviewQueueRow(
   patch: ReviewQueueUpdate,
 ): Promise<void> {
   const supabase = createClient();
-  const { error } = await supabase
-    .schema("agent")
-    .from("review_queue")
-    .update(patch)
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("agent")
+      .from("review_queue")
+      .update(patch)
+      .eq("id", id)
+      .select("id"),
+    { action: "save", noun: "review item" },
+  );
 
   if (error) throw operationFailed("save this review update", error);
 }
