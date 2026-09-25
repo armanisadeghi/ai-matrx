@@ -14,7 +14,6 @@
 
 import React from "react";
 import type { Element } from "hast";
-import type { ExtraProps } from "react-markdown";
 import type { MarkdownComponents as Components } from "@/components/markdown-core/markdown-core-types";
 import { InlineCodeSnippet } from "@/components/mardown-display/chat-markdown/InlineCodeSnippet";
 import { MarkdownTableScrollArea } from "@/components/mardown-display/tables/MarkdownTableScrollArea";
@@ -25,6 +24,9 @@ import {
   getDirectionFontSize,
 } from "./prose-prepare";
 import { PROSE_INLINE_ELEMENTS } from "./prose-inline-elements";
+
+/** The extra prop the core passes every element renderer (react-markdown's `ExtraProps`). */
+type ExtraProps = { node?: Element };
 
 /** Props react-markdown passes to a `<code>` renderer/element — the only fields this file reads off `child.props`. */
 type MarkdownCodeElementProps = React.HTMLAttributes<HTMLElement> &

@@ -61,6 +61,12 @@ export interface LegacyPiece {
 }
 
 const CORE_EDGE = "components/markdown-core/MarkdownCoreImpl.tsx";
+/** The one core's other lawful homes: the shared preset table and its server twin (RC-B2b). */
+const CORE_FILES = [
+  CORE_EDGE,
+  "components/markdown-core/markdown-core-presets.ts",
+  "components/markdown-core/MarkdownCoreServer.tsx",
+];
 
 const RENDER_VIA_CORE =
   "Render through the ONE markdown core: `BasicMarkdownContent` / `MarkdownStream` " +
@@ -85,7 +91,7 @@ const md = (id: string, label: string, pattern: string): LegacyPiece => ({
   category: "markdown-package",
   status: "banned",
   matcher: { kind: "package", pattern },
-  allowedFiles: [CORE_EDGE],
+  allowedFiles: CORE_FILES,
   replacement: RENDER_VIA_CORE,
 });
 
@@ -110,7 +116,7 @@ export const LEGACY_PIECES: LegacyPiece[] = [
     ...md("pkg:marked", "marked", "^marked(/|$)"),
     // The one editor's parse edge: `marked`'s LEXER as a byte-mapped tokenizer for the
     // visual mode's fidelity gate (rich-content PLAN §3.6). It renders nothing.
-    allowedFiles: [CORE_EDGE, "components/rich-editor/core/markdown-parse.ts"],
+    allowedFiles: [...CORE_FILES, "components/rich-editor/core/markdown-parse.ts"],
   },
   md("pkg:markdown-it", "markdown-it", "^markdown-it(-|/|$)"),
 
