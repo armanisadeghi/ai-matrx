@@ -12,18 +12,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AlertTriangle, Loader2, Search } from "lucide-react";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+} from "@ai-matrx/design-system/data-table";
 import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
 
-import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
 import { BoolBadge } from "./StatusBadge";
 import { SchemaTableFields } from "./SchemaTableFields";
 import type { TableImpactRow } from "../types";
 import { errorMessageFrom, readJsonObject } from "../utils/apiClient";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
-  TABLE_IMPACT_TABLE_COPY,
   tableImpactRunToAgentInput,
   tableImpactRunToHuman,
 } from "../utils/aiExport";
@@ -109,44 +111,51 @@ export function TableImpactPanel() {
 
   const brokenCount = rows.filter((r) => r.currently_broken).length;
 
-  const impactSnapshot = useMemo(
-    () =>
-      schema.trim() && table.trim() && hasRun
-        ? {
-            schema: schema.trim(),
-            table: table.trim(),
-            rows,
-          }
-        : null,
-    [schema, table, hasRun, rows],
-  );
-
-  const columns: AuditColumnDef<TableImpactRow>[] = useMemo(
+  const columns: MatrxColumnDef<TableImpactRow>[] = useMemo(
     () => [
       {
-        key: "function_sig",
+        id: "function_sig",
+        header: "Function",
         label: "Function",
-        type: "text",
-        getValue: (r) => r.function_sig,
-        width: "minmax(280px, 1fr)",
-        monospace: true,
-        copyable: true,
-        noValueList: true,
+        accessorFn: (r) => r.function_sig,
+        filter: "text",
+        width: 280,
+        cell: (r) => {
+          const value = r.function_sig ?? "—";
+          return (
+            <div className="flex min-w-0 items-center gap-1">
+              <span className="truncate font-mono" title={value}>
+                {value}
+              </span>
+              {r.function_sig ? (
+                <CopyButtons
+                  size="icon"
+                  label="Function signature"
+                  human={r.function_sig}
+                  agent={r.function_sig}
+                  hide={["ai", "export"]}
+                />
+              ) : null}
+            </div>
+          );
+        },
       },
       {
-        key: "dependency",
+        id: "dependency",
+        header: "Dependency",
         label: "Dependency",
-        type: "enum",
-        getValue: (r) => r.dependency,
-        width: "150px",
+        accessorFn: (r) => r.dependency,
+        filter: "select",
+        width: 150,
       },
       {
-        key: "currently_broken",
+        id: "currently_broken",
+        header: "Broken?",
         label: "Broken?",
-        type: "enum",
-        getValue: (r) => String(r.currently_broken),
-        width: "110px",
-        render: (r) => (
+        accessorFn: (r) => r.currently_broken,
+        filter: "boolean",
+        width: 110,
+        cell: (r) => (
           <BoolBadge
             value={r.currently_broken}
             invert
@@ -156,13 +165,20 @@ export function TableImpactPanel() {
         ),
       },
       {
-        key: "referenced_columns",
+        id: "referenced_columns",
+        header: "Referenced columns",
         label: "Referenced columns",
-        type: "text",
-        getValue: (r) => (r.referenced_columns ?? []).join(", "),
-        width: "minmax(220px, 1fr)",
-        monospace: true,
-        noValueList: true,
+        accessorFn: (r) => (r.referenced_columns ?? []).join(", "),
+        filter: "text",
+        width: 260,
+        cell: (r) => {
+          const value = (r.referenced_columns ?? []).join(", ") || "—";
+          return (
+            <span className="block truncate font-mono" title={value}>
+              {value}
+            </span>
+          );
+        },
       },
     ],
     [],
@@ -199,14 +215,6 @@ export function TableImpactPanel() {
           )}
           Run preflight
         </Button>
-        {impactSnapshot && impactSnapshot.rows.length > 0 ? (
-          <CopyButtons
-            size="sm"
-            label={`Table impact · ${impactSnapshot.schema}.${impactSnapshot.table}`}
-            human={() => tableImpactRunToHuman(impactSnapshot)}
-            agent={() => tableImpactRunToAgentInput(impactSnapshot)}
-          />
-        ) : null}
       </div>
 
       {hasRun && !readError && brokenCount > 0 ? (
@@ -225,20 +233,77 @@ export function TableImpactPanel() {
       ) : null}
 
       <div className="min-h-0 flex-1 overflow-hidden px-4 pb-4">
-        <AdminAuditTable
-          rows={rows}
+        <MatrxDataTable<TableImpactRow>
+          data={rows}
           columns={columns}
-          loading={loading}
-          csvFilename="canonicalization-table-impact.csv"
-          defaultSort={{ key: "currently_broken", dir: "desc" }}
-          emptyMessage={
-            readError
-              ? "Preflight unavailable. Retry the read before changing this table."
-              : hasRun
-              ? "No dependent functions found."
-              : "Choose a table above and run preflight."
+          getRowId={(row) =>
+            [
+              row.function_sig ?? "",
+              row.dependency ?? "",
+              String(row.currently_broken),
+              (row.referenced_columns ?? []).join(","),
+            ].join("|")
           }
-          copyForAi={TABLE_IMPACT_TABLE_COPY}
+          isLoading={loading}
+          pageSize={50}
+          virtualize={{ enabled: true, rowHeight: 34, overscan: 12, threshold: 1 }}
+          urlState={{
+            id: "canonicalization-table-impact",
+            defaultSort: { id: "currently_broken", direction: "desc" },
+          }}
+          coverage={{ loaded: rows.length, noun: "dependent function" }}
+          toolbar={{ search: true, searchPlaceholder: "Search dependent functions…" }}
+          emptyState={{
+            title: readError
+              ? "Preflight unavailable"
+              : hasRun
+                ? "No dependent functions found"
+                : "Choose a table and run preflight",
+            description: readError
+              ? "Retry the read before changing this table."
+              : hasRun
+                ? "No functions reference this table in the current preflight result."
+                : "Choose a schema and table above to inspect its dependent functions.",
+          }}
+          detail={{ enabled: false }}
+          copy={{
+            label: "Table impact row",
+            listLabel: "Table impact",
+            location: "/administration/database/canonicalization/table-impact",
+            rowKind: "canonicalization-table-impact-row",
+            listKind: "canonicalization-table-impact-rows",
+            rowDescription:
+              "One dependent function row from audit.table_impact(schema, table).",
+            listDescription: "Blast-radius rows visible after filters.",
+            humanRow: (row) =>
+              [
+                `Function: ${row.function_sig ?? "?"}`,
+                `Dependency: ${row.dependency ?? "?"}`,
+                `Currently broken: ${row.currently_broken ? "yes" : "no"}`,
+                `Referenced columns: ${(row.referenced_columns ?? []).join(", ") || "—"}`,
+              ].join("\n"),
+            listHuman: (visible) =>
+              tableImpactRunToHuman({
+                schema: schema.trim(),
+                table: table.trim(),
+                rows: visible,
+              }),
+            listAgent: (visible) =>
+              tableImpactRunToAgentInput({
+                schema: schema.trim(),
+                table: table.trim(),
+                rows: visible,
+              }),
+            rowAttributes: (row) => ({
+              broken: row.currently_broken,
+              dependency: row.dependency,
+            }),
+            listAttributes: (visible, all) => ({
+              count: visible.length,
+              total: all.length,
+              broken: visible.filter((row) => row.currently_broken).length,
+            }),
+          }}
         />
       </div>
     </div>
