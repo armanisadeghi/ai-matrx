@@ -144,7 +144,10 @@ function selectedAppContextReducer(
 }
 
 function makeStore(organizationId: string | null = "org-selected-for-test") {
-  const initialAppContext = { ...selectedAppContext, organization_id: organizationId };
+  const initialAppContext: ReturnType<typeof appContextReducer> = {
+    ...selectedAppContext,
+    organization_id: organizationId,
+  };
   return configureStore({
     reducer: {
       // Read-only in this flow — a frozen stub slice holding the agent.
@@ -164,8 +167,10 @@ function makeStore(organizationId: string | null = "org-selected-for-test") {
       adminPreferences: adminPreferencesReducer,
       userPreferences: userPreferencesReducer,
       editorState: editorStateReducer,
-      appContext: (state = initialAppContext, action: UnknownAction) =>
-        selectedAppContextReducer(state, action),
+      appContext: (
+        state: ReturnType<typeof appContextReducer> = initialAppContext,
+        action: UnknownAction,
+      ) => selectedAppContextReducer(state, action),
       overlay: overlayReducer,
     },
   });
