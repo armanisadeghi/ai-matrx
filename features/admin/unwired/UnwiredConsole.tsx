@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { AlertTriangle, ExternalLink, PlugZap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -22,15 +22,14 @@ import {
   UNWIRED_STALE_AFTER_DAYS,
   unwiredFindingContent,
 } from "./copy";
+import { useNow } from "@/hooks/useNow";
 
 function findingKey(finding: UnwiredFinding): string {
   return `${finding.repository}:${finding.file}:${finding.line}:${finding.symbol}`;
 }
 
-const subscribeToNothing = () => () => {};
-
-function ageInDays(iso: string): number {
-  const elapsed = Date.now() - new Date(iso).getTime();
+function ageInDays(iso: string, now: number): number {
+  const elapsed = now - new Date(iso).getTime();
   return Number.isFinite(elapsed) ? Math.max(0, Math.floor(elapsed / 86_400_000)) : 0;
 }
 
@@ -42,7 +41,8 @@ interface UnwiredConsoleProps {
 
 export function UnwiredConsole({ report, history, problems }: UnwiredConsoleProps) {
   const [clickedFinding, setClickedFinding] = useState<UnwiredFinding | null>(null);
-  const scanAge = useSyncExternalStore(subscribeToNothing, () => ageInDays(report.generatedAt), () => null);
+  const now = useNow();
+  const scanAge = now === 0 ? null : ageInDays(report.generatedAt, now);
   const prior = history.length > 1 ? (history.at(-2) ?? null) : null;
 
   const columns: MatrxColumnDef<UnwiredFinding>[] = [
