@@ -25,6 +25,7 @@ export default function TopicIntelligencePage() {
   const agents = useAppSelector(selectAllAgentsArray);
   const [removedChoices, setRemovedChoices] = useState<Record<string, string>>({});
   const [topicAgents, setTopicAgents] = useState<Record<string, { name: string; available: boolean }>>({});
+  const [agentLookupFailed, setAgentLookupFailed] = useState(false);
 
   useEffect(() => {
     dispatch(fetchAgentsListFull()).catch(() => {
@@ -45,20 +46,22 @@ export default function TopicIntelligencePage() {
     let cancelled = false;
     const ids = chosenKey.split(",");
     void supabase.schema("agent").from("definition")
-      .select("id,name,is_archived,deleted_at")
+      .select("id,name,is_active,is_archived,deleted_at")
       .in("id", ids)
       .then(({ data, error }) => {
         if (cancelled) return;
         if (error) {
           // A failed lookup is unknown, not evidence that the agent is missing.
           setTopicAgents({});
+          setAgentLookupFailed(true);
           return;
         }
+        setAgentLookupFailed(false);
         const byId: Record<string, { name: string; available: boolean }> = {};
         for (const id of ids) byId[id] = { name: "Selected agent", available: false };
         for (const agent of data ?? []) byId[agent.id] = {
           name: agent.name,
-          available: !agent.is_archived && !agent.deleted_at,
+          available: agent.is_active && !agent.is_archived && !agent.deleted_at,
         };
         setTopicAgents(byId);
       });
@@ -73,7 +76,7 @@ export default function TopicIntelligencePage() {
       holderName: topicAgents[agentId]?.name ?? agents.find((agent) => agent.id === agentId)?.name ?? "Selected agent",
       health: topicAgents[agentId]
         ? topicAgents[agentId].available ? "available" : "unavailable"
-        : "checking",
+        : agentLookupFailed ? "unknown" : "checking",
       manageHref: `/research/topics/${topicId}/agents`,
       contextLabel: "This topic",
     };

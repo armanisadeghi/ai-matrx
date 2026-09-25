@@ -235,7 +235,7 @@ export function FeatureIntelligence({
               runOverride={topicChoice}
               onHover={setHoverKey}
               onDuplicate={() => void actions.duplicateAndModify(row, {
-                effectiveTopicAgentId: topicChoice?.holderId,
+                effectiveTopicAgentId: topicChoice?.health === "available" ? topicChoice.holderId : undefined,
                 afterBind: topicChoice && clearRunOverride
                   ? () => clearRunOverride(row.mandateKey)
                   : undefined,

@@ -40,7 +40,7 @@ export interface RunOverride {
   /** "This topic". */
   contextLabel: string;
   /** A topic choice can outlive the agent it names. */
-  health?: "checking" | "available" | "unavailable";
+  health?: "checking" | "available" | "unavailable" | "unknown";
 }
 
 function decidedWords(row: FeatureIntelligenceRow, orgLevel: boolean): string {
@@ -184,7 +184,7 @@ export function IntelligenceJobCard({
               ) : (
                 <Copy className="mr-1.5 h-3.5 w-3.5" />
               )}
-              Duplicate &amp; modify
+              {runOverride && runOverride.health !== "available" ? "Duplicate mandate choice" : "Duplicate & modify"}
             </Button>
           ) : null}
           <Button size="sm" variant="outline" onClick={onUseOwn} disabled={busy}>
@@ -233,7 +233,7 @@ export function IntelligenceJobCard({
             </span>
           );
         })}
-        {runOverride ? <span className={cn("rounded-full border px-2 py-0.5 font-medium", runOverride.health === "unavailable" ? "border-destructive/40 bg-destructive/5 text-destructive" : "border-primary/40 bg-primary/5 text-primary")}>This topic: {runOverride.health === "unavailable" ? "Agent unavailable" : runOverride.health === "checking" ? "Checking agent" : "Active"}</span> : null}
+        {runOverride ? <span className={cn("rounded-full border px-2 py-0.5 font-medium", runOverride.health === "unavailable" ? "border-destructive/40 bg-destructive/5 text-destructive" : runOverride.health === "unknown" ? "border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-300" : "border-primary/40 bg-primary/5 text-primary")}>This topic: {runOverride.health === "unavailable" ? "Agent unavailable" : runOverride.health === "unknown" ? "Status unavailable" : runOverride.health === "checking" ? "Checking agent" : "Active"}</span> : null}
         {ladder.error ? <span className="text-destructive">Could not read the mandate layers: {ladder.error}</span> : null}
       </div>
 
@@ -275,7 +275,7 @@ export function IntelligenceJobCard({
           <>
             <dt className="text-xs font-medium text-muted-foreground sm:pt-0.5">Runs on {runOverride.contextLabel.toLowerCase()}</dt>
             <dd className="text-[13px]">
-              {runOverride.health === "unavailable" ? <span className="text-destructive">The selected agent cannot be opened. Remove this topic choice to use the mandate assignment.</span> : <><EntityRef token="agent" id={runOverride.holderId} name={runOverride.holderName} showIcon={false} /><span className="text-muted-foreground"> — this topic choice takes precedence over the mandate choice.</span></>}{" "}
+              {runOverride.health === "unavailable" ? <span className="text-destructive">The selected agent cannot be opened. Remove this topic choice to use the mandate assignment.</span> : <><EntityRef token="agent" id={runOverride.holderId} name={runOverride.holderName} showIcon={false} /><span className="text-muted-foreground"> — {runOverride.health === "unknown" ? "this topic choice is recorded, but its agent could not be checked." : "this topic choice takes precedence over the mandate choice."}</span></>}{" "}
               <Link href={runOverride.manageHref} className="text-primary hover:underline">Manage topic choice</Link>
             </dd>
           </>
