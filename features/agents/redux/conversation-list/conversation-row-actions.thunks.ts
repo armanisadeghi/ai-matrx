@@ -22,6 +22,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
@@ -123,10 +124,14 @@ export const renameConversation = createAsyncThunk<
       }),
     );
 
-    const { error } = await supabase
-      .schema("chat").from("conversation")
-      .update({ title: nextTitle, updated_at: new Date().toISOString() })
-      .eq("id", conversationId);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("chat").from("conversation")
+        .update({ title: nextTitle, updated_at: new Date().toISOString() })
+        .eq("id", conversationId)
+        .select("id"),
+      { action: "rename", noun: "conversation" },
+    );
 
     if (error) {
       // Revert every mirror.
@@ -499,14 +504,18 @@ export const setConversationSandbox = createAsyncThunk<
       app_instance_id: ref && isLocalPc ? ref.rowId : null,
     };
 
-    const { error } = await supabase
-      .schema("chat").from("conversation")
-      .update({
-        ...columnPatch,
-        metadata,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", conversationId);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("chat").from("conversation")
+        .update({
+          ...columnPatch,
+          metadata,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", conversationId)
+        .select("id"),
+      { action: "change", noun: "conversation" },
+    );
 
     if (error) {
       dispatch(

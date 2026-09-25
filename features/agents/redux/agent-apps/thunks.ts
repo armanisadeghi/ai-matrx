@@ -30,6 +30,7 @@ import { agentAppActions } from "./slice";
 import { agentAppPublicationPatch } from "@/features/agent-apps/lib/publication";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 interface ThunkApi {
   dispatch: AppDispatch;
   state: RootState;
@@ -206,11 +207,15 @@ export const saveApp = createAsyncThunk<void, string, ThunkApi>(
       organization_id: columnPatch.organization_id ?? undefined,
     };
 
-    const { error } = await supabase
-      .schema("app")
-      .from("definition")
-      .update(dbPatch)
-      .eq("id", appId);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("app")
+        .from("definition")
+        .update(dbPatch)
+        .eq("id", appId)
+        .select("id"),
+      { action: "save", noun: "app" },
+    );
 
     if (error) {
       dispatch(
@@ -244,11 +249,15 @@ export const saveAppField = createAsyncThunk<
     organization_id: columnPatch.organization_id ?? undefined,
   };
 
-  const { error } = await supabase
-    .schema("app")
-    .from("definition")
-    .update(dbPatch)
-    .eq("id", appId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("app")
+      .from("definition")
+      .update(dbPatch)
+      .eq("id", appId)
+      .select("id"),
+    { action: "save", noun: "app" },
+  );
 
   if (error) {
     dispatch(agentAppActions.setAppError({ id: appId, error: error.message }));
@@ -274,11 +283,15 @@ export const setAgentAppPublication = createAsyncThunk<
   ThunkApi
 >("agentApp/setPublication", async ({ appId, published }, { dispatch }) => {
   const patch = agentAppPublicationPatch(published);
-  const { error } = await supabase
-    .schema("app")
-    .from("definition")
-    .update(patch)
-    .eq("id", appId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("app")
+      .from("definition")
+      .update(patch)
+      .eq("id", appId)
+      .select("id"),
+    { action: published ? "publish" : "unpublish", noun: "app" },
+  );
 
   if (error) {
     dispatch(agentAppActions.setAppError({ id: appId, error: error.message }));

@@ -42,6 +42,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import type { AgentSummary } from "@ai-matrx/agents/catalog";
 import { getAgentCatalog } from "@/lib/agents/catalog";
 import { runWithSessionRetry } from "@/lib/supabase/authRetry";
@@ -1248,11 +1249,15 @@ export const createAgent = createAsyncThunk<
 export const deleteAgent = createAsyncThunk<void, string, ThunkApi>(
   "agentDefinition/delete",
   async (agentId, { dispatch }) => {
-    const { error } = await supabase
-      .schema("agent")
-      .from("definition")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", agentId);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("agent")
+        .from("definition")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", agentId)
+        .select("id"),
+      { action: "delete", noun: "agent" },
+    );
 
     if (error) throw pgErrorToError(error);
 

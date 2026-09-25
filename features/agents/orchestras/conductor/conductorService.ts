@@ -9,6 +9,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import {
   ok,
   err,
@@ -296,13 +297,17 @@ export const conductorService = {
         i === sysIdx ? { ...m, content: newContent } : m,
       );
 
-      const { error: upErr } = await supabase
-        .schema("agent")
-        .from("definition")
-        .update({
-          messages: newMessages as DefinitionUpdate["messages"],
-        } as DefinitionUpdate)
-        .eq("id", conductorId);
+      const { error: upErr } = await tryWriteOne(
+        supabase
+          .schema("agent")
+          .from("definition")
+          .update({
+            messages: newMessages as DefinitionUpdate["messages"],
+          } as DefinitionUpdate)
+          .eq("id", conductorId)
+          .select("id"),
+        { action: "save", noun: "agent" },
+      );
       if (upErr) return err(...mapPgErrorPair(upErr));
       return ok(null);
     } catch (e) {
@@ -313,11 +318,15 @@ export const conductorService = {
   /** Rename an agent (used to name the generated conductor). */
   async rename(agentId: string, name: string): Promise<ScopesRpcResult<null>> {
     try {
-      const { error } = await supabase
-        .schema("agent")
-        .from("definition")
-        .update({ name } as DefinitionUpdate)
-        .eq("id", agentId);
+      const { error } = await tryWriteOne(
+        supabase
+          .schema("agent")
+          .from("definition")
+          .update({ name } as DefinitionUpdate)
+          .eq("id", agentId)
+          .select("id"),
+        { action: "rename", noun: "agent" },
+      );
       if (error) return err(...mapPgErrorPair(error));
       return ok(null);
     } catch (e) {
@@ -341,13 +350,17 @@ export const conductorService = {
         { role: "system", content: [{ type: "text", text: systemText }] },
         { role: "user", content: [{ type: "text", text: userText }] },
       ];
-      const { error } = await supabase
-        .schema("agent")
-        .from("definition")
-        .update({
-          messages: messages as DefinitionUpdate["messages"],
-        } as DefinitionUpdate)
-        .eq("id", agentId);
+      const { error } = await tryWriteOne(
+        supabase
+          .schema("agent")
+          .from("definition")
+          .update({
+            messages: messages as DefinitionUpdate["messages"],
+          } as DefinitionUpdate)
+          .eq("id", agentId)
+          .select("id"),
+        { action: "save", noun: "agent" },
+      );
       if (error) return err(...mapPgErrorPair(error));
       return ok(null);
     } catch (e) {
@@ -410,13 +423,17 @@ export const conductorService = {
         i === sysIdx ? { ...m, content: newContent } : m,
       );
 
-      const { error: upErr } = await supabase
-        .schema("agent")
-        .from("definition")
-        .update({
-          messages: newMessages as DefinitionUpdate["messages"],
-        } as DefinitionUpdate)
-        .eq("id", conductorId);
+      const { error: upErr } = await tryWriteOne(
+        supabase
+          .schema("agent")
+          .from("definition")
+          .update({
+            messages: newMessages as DefinitionUpdate["messages"],
+          } as DefinitionUpdate)
+          .eq("id", conductorId)
+          .select("id"),
+        { action: "save", noun: "agent" },
+      );
       if (upErr) return err(...mapPgErrorPair(upErr));
       return ok(null);
     } catch (e) {

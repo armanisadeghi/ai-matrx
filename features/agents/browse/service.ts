@@ -15,6 +15,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import type { Database, Json } from "@/types/database.types";
 import type { AgentBrowseRow, AgentRowEdit } from "./types";
 import {
@@ -184,12 +185,16 @@ export async function saveAgentRowEdits(
   // database-selected default. Also constrain the target to that same tenant.
   patch.organization_id = organizationId;
 
-  const { error } = await supabase
-    .schema("agent")
-    .from("definition")
-    .update(patch)
-    .eq("id", agentId)
-    .eq("organization_id", organizationId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("agent")
+      .from("definition")
+      .update(patch)
+      .eq("id", agentId)
+      .eq("organization_id", organizationId)
+      .select("id"),
+    { action: "save", noun: "agent" },
+  );
 
   if (error) throw pgError(error);
 }
