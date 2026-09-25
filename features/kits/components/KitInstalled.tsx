@@ -84,13 +84,13 @@ function BindingPreviewCard({
       setAnswer({ state: "error", message: err instanceof Error ? err.message : String(err) });
       return;
     }
-    void dispatch(previewBinding(organizationId, binding)).then((a) => {
+    void dispatch(previewBinding(organizationId, binding, variable)).then((a) => {
       if (!cancelled) setAnswer(a);
     });
     return () => {
       cancelled = true;
     };
-  }, [dispatch, organizationId, spec, install.steps, attempt]);
+  }, [dispatch, organizationId, spec, variable, install.steps, attempt]);
 
   return (
     <div className="p-4">
@@ -121,7 +121,10 @@ function BindingPreviewCard({
             <div className="mb-1.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
               {answer.preview.row_count !== null && (
                 <span>
-                  {answer.preview.row_count} {answer.preview.row_count === 1 ? "row" : "rows"} read
+                  {answer.preview.row_count} {answer.preview.row_count === 1 ? "row" : "rows"} delivered
+                  {answer.preview.total_rows !== null && answer.preview.total_rows !== answer.preview.row_count
+                    ? ` of ${answer.preview.total_rows}`
+                    : ""}
                 </span>
               )}
               {answer.preview.truncated && (
@@ -134,6 +137,18 @@ function BindingPreviewCard({
             <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-border bg-muted/40 p-3 font-mono text-[11.5px] leading-relaxed text-foreground">
               {answer.preview.text || "(empty — the table has no rows yet)"}
             </pre>
+            {!answer.preview.present && answer.preview.absent_reason && (
+              <p className="mt-2 flex items-start gap-1.5 text-xs text-warning">
+                <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                <span className="text-foreground/80">Nothing delivered: {answer.preview.absent_reason}</span>
+              </p>
+            )}
+            {answer.preview.withheld.length > 0 && (
+              <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
+                <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-warning" />
+                <span>Hidden from you, so not shown here: {answer.preview.withheld.join(", ")}</span>
+              </p>
+            )}
             {answer.preview.notes.length > 0 && (
               <ul className="mt-2 space-y-1">
                 {answer.preview.notes.map((n) => (

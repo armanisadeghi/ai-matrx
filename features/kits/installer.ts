@@ -274,6 +274,7 @@ function fieldSpecs(manifest: KitManifest, tableKey: string, steps: KitInstallSt
     if (f.multi) spec.multi = true;
     if (f.config) spec.config = f.config;
     if (f.options) spec.options = f.options;
+    if (f.allowedTypes) spec.allowedTypes = f.allowedTypes;
     if (f.unit) spec.unit = f.unit;
     if (f.kind) spec.kind = f.kind;
     if (f.relation_table_key) {

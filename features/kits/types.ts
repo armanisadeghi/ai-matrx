@@ -17,6 +17,8 @@ export interface KitFieldSpec {
   multi?: boolean;
   config?: Record<string, unknown>;
   options?: string[];
+  /** An `entity_reference` column: the platform record kinds it may point at (e.g. `ai_model`). */
+  allowedTypes?: string[];
   unit?: string;
   kind?: "date" | "datetime";
   /** A relation to ANOTHER table of this kit, by its manifest key — resolved at install. */
@@ -163,8 +165,16 @@ export interface InstallStepView {
 /** What the preview door answers (PLAN.md § P1), read defensively. */
 export interface BindingPreview {
   text: string;
+  /** False when `text` is a named absence (see `absent_reason`). */
+  present: boolean;
   row_count: number | null;
+  /** Rows that matched before the cap. */
+  total_rows: number | null;
   truncated: boolean;
+  absent_reason: string | null;
+  /** Cap, template and freshness notes — shown, never only traced. */
   notes: string[];
+  /** Field keys masked for this reader — named, never shown. */
+  withheld: string[];
   trace: unknown;
 }
