@@ -59,17 +59,41 @@ function loadEnv(): pg.ClientConfig {
  *   internal  lane 'auto' or 'subagent';
  *   chat      lane 'chat' or 'matrx'.
  */
-const DISAGREEMENTS = `
+/**
+ * The conversation shapes the classifier has to tell apart, as real rows carry
+ * them — including the exact 662-row drift (a `human`-origin MCP agent run, an
+ * aidream system row, a podcast build) and a chat bound to a coding session.
+ * Judged BESIDE every conversation the database holds, so the guard measures
+ * something even on a clone with no conversations (2026-09-24: the dev clone
+ * has none, and this suite had been proving nothing against an empty table).
+ */
+const SHAPES = `
+  select * from (values
+    ('shape: a person''s chat',                 null::text,    'matrx-frontend',    'chat',          'human',       'chat'),
+    ('shape: a notes-side conversation',        null,          'matrx-frontend',    'notes',         'human',       'chat'),
+    ('shape: a subagent run',                   null,          'matrx-frontend',    'agent-runner',  'human',       'subagent'),
+    ('shape: a child agent',                    null,          'aidream',           'chat',          'child_agent', 'chat'),
+    ('shape: the code plugin',                  null,          'code-plugin',       'chat',          'human',       'chat'),
+    ('shape: a human-origin MCP agent run',     null,          'mcp-agent-service', 'chat',          'human',       'chat'),
+    ('shape: an aidream system row',            null,          'aidream-system',    'system',        'human',       'chat'),
+    ('shape: a podcast build',                  null,          'matrx-frontend',    'podcast',       'human',       'podcast'),
+    ('shape: a chat bound to a coding session', 'claude-code', 'matrx-frontend',    'chat',          'human',       'chat')
+  ) as s(id, provider, source_app, source_feature, origin_class, conversation_type)
+`;
+
+const JUDGED = `
   with b as (
     select
-      c.id,
-      c.source_app, c.source_feature, c.origin_class, c.conversation_type,
+      c.id::text as id,
       (select cs.provider
          from chat.coding_session cs
         where cs.conversation_id = c.id and cs.deleted_at is null
         order by cs.last_seen_at desc nulls last, cs.created_at desc, cs.id
-        limit 1) as provider
+        limit 1) as provider,
+      c.source_app, c.source_feature, c.origin_class, c.conversation_type
     from chat.conversation c
+    union all
+    ${SHAPES}
   ),
   judged as (
     select
@@ -80,7 +104,18 @@ const DISAGREEMENTS = `
                              b.origin_class, b.conversation_type) as lane
     from b
   )
-  select j.id::text as id, j.audience, j.lane, (j.provider is not null) as bound
+`;
+
+/**
+ * THE DOCUMENTED MAPPING, written here and nowhere else in this file, so the
+ * assertion cannot be satisfied by cvx_audience agreeing with itself:
+ *   external  lane 'plugin', or a live coding-session binding (provider);
+ *   internal  lane 'auto' or 'subagent';
+ *   chat      lane 'chat' or 'matrx'.
+ */
+const DISAGREEMENTS = `
+  ${JUDGED}
+  select j.id, j.audience, j.lane, (j.provider is not null) as bound
   from judged j
   where j.audience is distinct from (
     case
@@ -92,9 +127,16 @@ const DISAGREEMENTS = `
   limit 20
 `;
 
+/** Which lanes the shapes reach — a shape list that stops reaching one is caught. */
+const SHAPE_LANES = `
+  ${JUDGED}
+  select distinct j.lane from judged j where j.id like 'shape: %' order by 1
+`;
+
 type Row = { id: string; audience: string; lane: string; bound: boolean };
 
 let live: Row[] = [];
+let shapeLanes: string[] = [];
 let perturbed: Row[] = [];
 let audienceBody = "";
 let overloads: { args: string }[] = [];
@@ -106,6 +148,7 @@ beforeAll(async () => {
   try {
     await client.query("set statement_timeout = '120s'");
     live = (await client.query<Row>(DISAGREEMENTS)).rows;
+    shapeLanes = (await client.query<{ lane: string }>(SHAPE_LANES)).rows.map((r) => r.lane);
 
     audienceBody = (
       await client.query<{ src: string }>(
@@ -167,7 +210,11 @@ beforeAll(async () => {
 }, 180_000);
 
 describe("public.cvx_audience is exactly the documented function of chat.conversation_lane", () => {
-  it("classifies every live conversation the way the lane says", () => {
+  it("the judged shapes reach every lane, so the mapping is measured end to end", () => {
+    expect(shapeLanes).toEqual(["auto", "chat", "matrx", "plugin", "subagent"]);
+  });
+
+  it("classifies every conversation (and every shape) the way the lane says", () => {
     expect(
       live.map((r) => `${r.id} audience=${r.audience} lane=${r.lane} bound=${r.bound}`),
     ).toEqual([]);
