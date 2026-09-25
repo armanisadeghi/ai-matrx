@@ -324,7 +324,8 @@ describe("per-file requests — the file's own organization, not the picker's", 
 
   it("a server that still gates the org-less lane is asked once, then the tab stops asking (no refusal storm)", async () => {
     ensureResponse();
-    const refused = { ok: false, status: 400, json: async () => ({ detail: { code: "organization_required" } }), clone() { return this; } };
+    // The gate's HOISTED envelope, exactly as matrx-connect's AuthMiddleware answers it.
+    const refused = { ok: false, status: 400, json: async () => ({ error: "organization_required", code: "organization_required" }), clone() { return this; } };
     const fetchMock = jest.fn(async () => refused);
     global.fetch = fetchMock as unknown as typeof fetch;
     await __filesFetchForTest("https://files.matrxserver.com/files/session", {
@@ -339,5 +340,11 @@ describe("per-file requests — the file's own organization, not the picker's", 
       headers: { Authorization: "Bearer jwt-token" },
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    // …per host: the main server (on its own release) is still asked.
+    await __filesFetchForTest("https://server.app.matrxserver.com/files/session", {
+      method: "POST",
+      headers: { Authorization: "Bearer jwt-token" },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

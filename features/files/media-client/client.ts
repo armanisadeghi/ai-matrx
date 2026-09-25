@@ -140,11 +140,12 @@ async function filesFetch(
   // Every other JWT request (uploads, edits, runs) still needs one. If the server answers
   // `organization_required` to such a request anyway (a service not yet on that release), the
   // tab stops sending them — a refusal storm is the 2026-08-31 outage, never again.
-  if (!organizationId && !orgLessLaneRefusedByServer && admittedWithoutOrganization(input, init)) {
+  const origin = requestOrigin(input);
+  if (!organizationId && !orgLessLaneRefusedBy.has(origin) && admittedWithoutOrganization(input, init)) {
     resetUnresolvedOrganizationReport();
     const res = await globalThis.fetch(input, { ...init, headers });
     if (res.status === 400 && (await saysOrganizationRequired(res))) {
-      orgLessLaneRefusedByServer = true;
+      orgLessLaneRefusedBy.add(origin);
       reportUnresolvedOrganizationOnce();
     }
     return res;
@@ -175,8 +176,17 @@ async function filesFetch(
   return globalThis.fetch(input, { ...init, headers });
 }
 
-/** Set once the files service refused an org-less identity/read request with `organization_required`. */
-let orgLessLaneRefusedByServer = false;
+/** Hosts that refused an org-less identity/read request with `organization_required` (per tab). */
+const orgLessLaneRefusedBy = new Set<string>();
+
+function requestOrigin(input: RequestInfo | URL): string {
+  const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+  try {
+    return new URL(url).origin;
+  } catch {
+    return "";
+  }
+}
 
 const SESSION_PATH = /\/files\/session\/?(?:[?#]|$)/;
 
@@ -190,8 +200,14 @@ function admittedWithoutOrganization(input: RequestInfo | URL, init?: RequestIni
 
 async function saysOrganizationRequired(res: Response): Promise<boolean> {
   try {
-    const body = (await res.clone().json()) as { detail?: { code?: string; error?: string } };
-    return body?.detail?.code === "organization_required" || body?.detail?.error === "organization_required";
+    // The admission gate answers the HOISTED envelope ({ code, error, … } at the root); a route
+    // refusal may still carry { detail: { … } }. Either names the situation.
+    const body = (await res.clone().json()) as {
+      code?: string;
+      error?: string;
+      detail?: { code?: string; error?: string };
+    };
+    return [body?.code, body?.error, body?.detail?.code, body?.detail?.error].includes("organization_required");
   } catch {
     return false;
   }
@@ -199,7 +215,7 @@ async function saysOrganizationRequired(res: Response): Promise<boolean> {
 
 /** Test seam: forget that the server refused the org-less lane. */
 export function __resetOrgLessLaneForTest(): void {
-  orgLessLaneRefusedByServer = false;
+  orgLessLaneRefusedBy.clear();
 }
 
 /** Test seam: the one transport every package door passes through. */
