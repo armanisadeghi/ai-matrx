@@ -87,11 +87,12 @@ export function RemoteImageGate({
       aria-label={alt ? `Image “${alt}” from ${host}, not loaded` : `Image from ${host}, not loaded`}
       className={
         (block ? "my-2 flex w-full " : "mx-0.5 inline-flex max-w-full ") +
-        "items-center gap-1.5 rounded-md border border-dashed border-border bg-muted/40 px-2 py-1 align-middle text-xs text-muted-foreground"
+        // wraps in a narrow column: the host name gives way, the controls never get cut
+        "flex-wrap items-center gap-x-1.5 gap-y-0.5 rounded-md border border-dashed border-border bg-muted/40 px-2 py-1 align-middle text-xs text-muted-foreground"
       }
     >
       <ImageOff className="h-3.5 w-3.5 shrink-0" aria-hidden />
-      <span className="min-w-0 truncate">
+      <span className="min-w-0 max-w-full truncate">
         {alt ? `“${alt}” — ` : ""}image from {host}
       </span>
       <button

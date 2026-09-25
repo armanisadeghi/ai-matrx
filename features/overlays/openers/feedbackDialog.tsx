@@ -17,8 +17,28 @@ import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 
 const OVERLAY_ID = "feedbackDialog" as const;
 
+/**
+ * What the report is ABOUT, when the person opened it from a specific thing —
+ * e.g. a selected passage of a document ("Report an issue" in the annotation
+ * toolbar). Shown read-only in the window and filed as `metadata.report_subject`.
+ */
+export interface FeedbackSubject {
+  kind: "text_passage";
+  /** Registered token + id of the record the passage belongs to. */
+  sourceToken: string;
+  sourceId: string;
+  sourceTitle: string;
+  /** The exact selected text. */
+  quote: string;
+  /** The passage identity (a text_anchor payload), so the report points at the exact spot. */
+  anchor?: Record<string, unknown> | null;
+  /** In-app path back to the source. */
+  href?: string;
+}
+
 export interface OpenFeedbackWindowOptions {
   title?: string;
+  subject?: FeedbackSubject;
 }
 
 export interface FeedbackWindowHandle {
@@ -34,6 +54,7 @@ export function useOpenFeedbackWindow() {
           overlayId: OVERLAY_ID,
           data: {
             title: opts.title,
+            subject: opts.subject,
           },
         }),
       );

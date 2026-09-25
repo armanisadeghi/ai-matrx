@@ -1,1 +1,0 @@
-{ "extends": "./tsconfig.typecheck.json", "include": [], "files": ["components/mardown-display/chat-markdown/settle-stream-blocks.ts", "components/mardown-display/chat-markdown/__tests__/settle-stream-blocks.test.ts", "components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx"] }

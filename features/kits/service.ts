@@ -109,17 +109,18 @@ export async function fetchKits(client: Client, organizationId: string): Promise
 export async function fetchKit(
   client: Client,
   key: string,
-): Promise<{ kit: KitEntry | null; error: string | null }> {
+): Promise<{ kit: KitEntry | null; error: string | null; inactive?: boolean }> {
   const { data, error } = await client
     .from("catalog_entries")
-    .select("key, payload, sort_order, organization_id, created_by")
+    .select("key, payload, sort_order, organization_id, created_by, is_active")
     .eq("app", KIT_CATALOG.app)
     .eq("kind", KIT_CATALOG.kind)
     .eq("key", key)
-    .eq("is_active", true)
     .maybeSingle();
   if (error) return { kit: null, error: error.message };
   if (!data) return { kit: null, error: null };
+  // Taken out of the gallery: said plainly by the page, never a "no such kit".
+  if (!data.is_active) return { kit: null, error: null, inactive: true };
   const manifest = parseKitManifest(data.key, data.payload);
   if (!manifest) {
     return { kit: null, error: `The catalog entry for "${key}" is not a valid kit manifest.` };

@@ -1,0 +1,1 @@
+{ "extends": "./tsconfig.typecheck.json", "include": [], "files": ["lib/redux/preferences/adminDebugSlice.ts","lib/redux/preferences/adminDebugSlice.absent-slice.test.tsx","hooks/useDebugContext.ts","components/agent-copy/page-capture/usePageCapture.tsx","components/admin/controls/LargeIndicator.tsx","components/admin/state-analyzer/stateViewerTabs.tsx"] }

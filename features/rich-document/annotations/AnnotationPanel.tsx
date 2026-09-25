@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { RichContent } from "@/components/rich-content/RichContent";
+import { CollapsibleText } from "@/components/official/CollapsibleText";
 import { announceMentions, SWATCH, useSidecar } from "./AnnotationSidecar";
 import { HIGHLIGHT_COLORS } from "./constants";
 import { MentionComposer } from "./MentionComposer";
@@ -187,7 +188,7 @@ export function AnnotationPanel({ className }: { className?: string }) {
               : "Nothing here with this filter."}
           </p>
         ) : (
-          <div className="grid gap-2">
+          <div className="grid min-w-0 grid-cols-1 gap-2">
             {visible.map((item) => <ItemCard key={item.key} item={item} active={item.key === activeKey} />)}
           </div>
         )}
@@ -238,16 +239,17 @@ function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
       aria-current={active || undefined}
       onClick={() => (item.anchor && !orphaned ? reveal(item.key) : setActiveKey(item.key))}
       className={cn(
-        "cursor-default rounded-lg border bg-card p-2 text-sm shadow-sm transition-colors",
+        "min-w-0 cursor-default overflow-hidden break-words rounded-lg border bg-card p-2 text-sm shadow-sm transition-colors",
         active ? "border-primary/60 ring-1 ring-primary/30" : "border-border hover:border-primary/30",
         item.resolvedAt && "opacity-70",
       )}
     >
-      <header className="flex items-center gap-1.5 text-xs">
+      <header className="flex min-w-0 items-center gap-1.5 text-xs">
         <Icon className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
         <span className="font-medium text-foreground">{label}</span>
         <span className="truncate text-muted-foreground">
           {item.kind === "comment" || item.kind === "suggestion" ? `${item.author.name} · ${when(item.createdAt)}` : when(item.createdAt)}
+          {item.editedAt ? <EditedMark at={item.editedAt} /> : null}
         </span>
         {item.resolvedAt && <span className="ml-auto shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">Resolved</span>}
         {item.saveState === "pending" && (
@@ -329,15 +331,7 @@ function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
       {item.replies.length > 0 && (
         <div className="mt-2 grid gap-1.5 border-l-2 border-border pl-2">
           {item.replies.map((r) => (
-            <div key={r.id}>
-              <p className="text-[11px] text-muted-foreground">{r.author.name} · {when(r.createdAt)}</p>
-              <CommentBody body={r.body} />
-              {r.mine && (
-                <button type="button" className="text-[11px] text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); void run(api.deleteComment(r.id)); }}>
-                  Delete
-                </button>
-              )}
-            </div>
+            <ReplyRow key={r.id} reply={r} run={run} />
           ))}
         </div>
       )}
@@ -346,6 +340,90 @@ function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
         <ThreadActions item={item} canApply={!!source.save} run={run} />
       )}
     </article>
+  );
+}
+
+function EditedMark({ at }: { at: string }) {
+  return (
+    <span className="ml-1 text-muted-foreground" title={`Edited ${when(at)}`}>
+      · edited
+    </span>
+  );
+}
+
+/**
+ * One reply: the author can edit it through the SAME compare-and-swap door as a
+ * top-level comment (conflicts shown, text kept on failure) or delete it.
+ */
+function ReplyRow({
+  reply,
+  run,
+}: {
+  reply: ResolvedItem["replies"][number];
+  run: (p: Promise<string | null>, ok?: string) => Promise<void>;
+}) {
+  const { api, source } = useSidecar();
+  const [editing, setEditing] = useState(false);
+  const [conflict, setConflict] = useState<{ mine: string; theirs: string } | null>(null);
+  const base = { body: reply.body, version: reply.version };
+  return (
+    <div onClick={(e) => e.stopPropagation()}>
+      <p className="text-[11px] text-muted-foreground">
+        {reply.author.name} · {when(reply.createdAt)}
+        {reply.editedAt ? <EditedMark at={reply.editedAt} /> : null}
+      </p>
+      {editing ? (
+        <>
+          <MentionComposer
+            source={source}
+            autoFocus
+            mentions={api.state.capabilities.collaborationDoors}
+            initialValue={reply.body}
+            submitLabel="Save"
+            onCancel={() => { setEditing(false); setConflict(null); }}
+            onSubmit={async (text) => {
+              try {
+                await api.editComment(reply.id, text, base);
+                setEditing(false);
+              } catch (e) {
+                if (e instanceof EditConflictError) {
+                  setConflict({ mine: text, theirs: e.currentBody });
+                  return false;
+                }
+                throw e;
+              }
+            }}
+          />
+          {conflict && (
+            <div role="alert" className="mt-1 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs">
+              <p className="font-medium text-foreground">Someone changed this reply while you were editing it.</p>
+              <p className="mt-0.5 whitespace-pre-wrap text-foreground">{conflict.theirs || "(empty)"}</p>
+              <div className="mt-1 flex gap-1">
+                <Button size="sm" className="h-7 px-2 text-xs" onClick={async () => {
+                  try { await api.editComment(reply.id, conflict.mine, base, true); setConflict(null); setEditing(false); }
+                  catch (e) { toast.error(e instanceof Error ? e.message : String(e)); }
+                }}>Replace theirs with mine</Button>
+                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => { setConflict(null); setEditing(false); }}>Keep theirs</Button>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <CommentBody body={reply.body} />
+          {reply.mine && (
+            <div className="flex gap-2">
+              <button type="button" className="text-[11px] text-muted-foreground hover:text-foreground" onClick={() => setEditing(true)}>
+                Edit
+              </button>
+              <button type="button" className="text-[11px] text-muted-foreground hover:text-destructive" onClick={() => void run(api.deleteComment(reply.id))}>
+                Delete
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 
@@ -552,9 +630,29 @@ function PrivateNote({ item }: { item: ResolvedItem }) {
 }
 
 /** Comment text: people and dates as chips; everything else (incl. [[record]] wikilinks) through the ONE renderer. */
+/** Lines a comment shows before "Show more" (a long paste never floods the thread). */
+export const COMMENT_COLLAPSED_LINES = 8;
+
 export function CommentBody({ body, className }: { body: string; className?: string }) {
+  const [expanded, setExpanded] = useState(false);
   return (
-    <div className={cn("text-sm leading-5 text-foreground", className)}>
+    <CollapsibleText
+      expanded={expanded}
+      onExpandedChange={setExpanded}
+      collapsedLines={COMMENT_COLLAPSED_LINES}
+      expandLabel="Show more"
+      collapseLabel="Show less"
+      showLabel
+      className={cn("text-sm leading-5 text-foreground", className)}
+    >
+      <CommentTokens body={body} />
+    </CollapsibleText>
+  );
+}
+
+function CommentTokens({ body }: { body: string }) {
+  return (
+    <>
       {tokenizeMentions(body).map((t, i) =>
         t.type === "person" ? (
           <span key={i} className="mx-0.5 inline-flex items-center gap-0.5 rounded bg-primary/10 px-1 text-primary">
@@ -568,7 +666,7 @@ export function CommentBody({ body, className }: { body: string; className?: str
           <RichContent key={i} level="inline" source={t.text} />
         ),
       )}
-    </div>
+    </>
   );
 }
 

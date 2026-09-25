@@ -13885,6 +13885,23 @@
             }
           },
           {
+            "name": "before_revision",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before Revision"
+            }
+          },
+          {
             "name": "X-Organization-Id",
             "in": "header",
             "required": true,
@@ -99396,10 +99413,17 @@
       "AgentBlocksStartRequest": {
         "properties": {
           "organization_id": {
-            "type": "string",
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Organization Id",
-            "description": "Required organization explicitly selected for this new AI conversation."
+            "description": "Organization explicitly selected for this new AI conversation. Required except for fingerprint guests, whose organization is resolved by the AI funnel."
           },
           "project_id": {
             "anyOf": [
@@ -99684,7 +99708,6 @@
         },
         "type": "object",
         "required": [
-          "organization_id",
           "store",
           "conversation_id",
           "is_new"
@@ -100057,10 +100080,17 @@
       "AgentStartRequest": {
         "properties": {
           "organization_id": {
-            "type": "string",
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Organization Id",
-            "description": "Required organization explicitly selected for this new AI conversation."
+            "description": "Organization explicitly selected for this new AI conversation. Required except for fingerprint guests, whose organization is resolved by the AI funnel."
           },
           "project_id": {
             "anyOf": [
@@ -100583,7 +100613,6 @@
         },
         "type": "object",
         "required": [
-          "organization_id",
           "store",
           "conversation_id",
           "is_new"
@@ -127221,10 +127250,17 @@
             "title": "Tts Quality"
           },
           "organization_id": {
-            "type": "string",
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Organization Id",
-            "description": "Required organization explicitly selected for this new AI conversation."
+            "description": "Organization explicitly selected for this new AI conversation. Required except for fingerprint guests, whose organization is resolved by the AI funnel."
           },
           "project_id": {
             "anyOf": [
@@ -127791,7 +127827,6 @@
         "type": "object",
         "required": [
           "store",
-          "organization_id",
           "conversation_id",
           "is_new",
           "ai_model_id",
@@ -233294,10 +233329,17 @@
       "PromptStartRequest": {
         "properties": {
           "organization_id": {
-            "type": "string",
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Organization Id",
-            "description": "Required organization explicitly selected for this new AI conversation."
+            "description": "Organization explicitly selected for this new AI conversation. Required except for fingerprint guests, whose organization is resolved by the AI funnel."
           },
           "project_id": {
             "anyOf": [
@@ -233676,7 +233718,6 @@
         },
         "type": "object",
         "required": [
-          "organization_id",
           "store",
           "conversation_id",
           "is_new"
@@ -292545,13 +292586,37 @@
             "const": "unavailable",
             "title": "Value Availability",
             "default": "unavailable"
+          },
+          "next_before_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Before Revision"
+          },
+          "omitted_count": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Omitted Count"
+          },
+          "incomplete": {
+            "type": "boolean",
+            "title": "Incomplete"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
           "entries",
-          "count"
+          "count",
+          "omitted_count",
+          "incomplete"
         ],
         "title": "VaultPasswordHistoryResponse",
         "description": "Metadata only; a future explicit reveal contract owns old values."

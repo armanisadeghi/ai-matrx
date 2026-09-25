@@ -194,19 +194,41 @@ export const {
 
 // ── Selectors ────────────────────────────────────────────────────────────────
 
-// Raw slice accessors — used as inputs to derived selectors
-const selectAdminDebugSlice = (state: WithAdminDebug) => state.adminDebug;
-const selectIndicators = (state: WithAdminDebug) => state.adminDebug.indicators;
+// Raw slice accessors — used as inputs to derived selectors.
+//
+// The slice is optional on purpose: debug publishing (useDebugContext) now runs
+// inside shared components like the Share dialog, and any store that is not the
+// app's root store (a test harness, an embedded surface, a package host) may not
+// mount `adminDebug`. Reading debug state must never crash the component that
+// merely offers it — an absent slice reads as the slice's declared initial
+// state (debug mode off, no data), and says so once outside production.
+type WithAdminDebug = { adminDebug?: AdminDebugState };
 
-type WithAdminDebug = { adminDebug: AdminDebugState };
+let warnedAbsentSlice = false;
+const selectAdminDebugSlice = (state: WithAdminDebug): AdminDebugState => {
+  const slice = state.adminDebug;
+  if (slice) return slice;
+  if (!warnedAbsentSlice && process.env.NODE_ENV !== "production") {
+    warnedAbsentSlice = true;
+    console.warn(
+      "[adminDebug] store has no `adminDebug` slice — debug selectors read the " +
+        "initial state (debug mode off). Remedy: mount adminDebugReducer under " +
+        "`adminDebug` if this store should publish admin debug context.",
+    );
+  }
+  return initialState;
+};
+const selectIndicators = (state: WithAdminDebug) =>
+  selectAdminDebugSlice(state).indicators;
 
 export const selectIsDebugMode = (state: WithAdminDebug) =>
-  state.adminDebug.isDebugMode;
+  selectAdminDebugSlice(state).isDebugMode;
 export const selectRouteContext = (state: WithAdminDebug) =>
-  state.adminDebug.routeContext;
-export const selectDebugData = (state: WithAdminDebug) => state.adminDebug.debugData;
+  selectAdminDebugSlice(state).routeContext;
+export const selectDebugData = (state: WithAdminDebug) =>
+  selectAdminDebugSlice(state).debugData;
 export const selectDebugKey = (key: string) => (state: WithAdminDebug) =>
-  state.adminDebug.debugData[key];
+  selectAdminDebugSlice(state).debugData[key];
 
 /** Full slice snapshot — only use for the "Copy Context" serialization path, not in reactive components. */
 export const selectAdminDebug = selectAdminDebugSlice;
@@ -215,10 +237,10 @@ export const selectAdminDebug = selectAdminDebugSlice;
 export const selectDebugIndicators = selectIndicators;
 
 export const selectPromptDebugIndicator = (state: WithAdminDebug) =>
-  state.adminDebug.indicators.promptDebug;
+  selectIndicators(state).promptDebug;
 export const selectResourceDebugIndicator = (state: WithAdminDebug) =>
-  state.adminDebug.indicators.resourceDebug;
+  selectIndicators(state).resourceDebug;
 export const selectExecutionStateDebug = (state: WithAdminDebug) =>
-  state.adminDebug.indicators.executionStateDebug;
+  selectIndicators(state).executionStateDebug;
 
 export default adminDebugSlice.reducer;

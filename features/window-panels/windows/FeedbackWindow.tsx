@@ -67,6 +67,8 @@ import { VoiceTextarea } from "@/components/official/VoiceTextarea";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { useOpenImageAnnotationWindow } from "@/features/overlays/openers/imageAnnotationWindow";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import type { FeedbackSubject } from "@/features/overlays/openers/feedbackDialog";
+import { describeSubject, subjectMetadata } from "./feedback-subject";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -169,11 +171,14 @@ export interface FeedbackWindowProps extends Omit<
   | "footerRight"
 > {
   title?: string;
+  /** What the report is about (a selected passage) — shown and filed with it. */
+  subject?: FeedbackSubject;
 }
 
 export function FeedbackWindow({
   title = "Submit Feedback",
   id = "feedback-window",
+  subject,
   ...windowProps
 }: FeedbackWindowProps) {
   const dispatch = useAppDispatch();
@@ -182,7 +187,7 @@ export function FeedbackWindow({
     dispatch(closeOverlay({ overlayId: "feedbackDialog" }));
   }, [dispatch]);
 
-  const form = useFeedbackForm({ onClose });
+  const form = useFeedbackForm({ onClose, subject });
 
   // Surface provider wraps the panel so `matrx-user/feedback` is live for
   // exactly as long as the window is open. Nested here, it out-depths the
@@ -271,7 +276,7 @@ function FeedbackFooterRight({ form }: { form: FeedbackFormState }) {
 
 type FeedbackFormState = ReturnType<typeof useFeedbackForm>;
 
-function useFeedbackForm({ onClose }: { onClose: () => void }) {
+function useFeedbackForm({ onClose, subject }: { onClose: () => void; subject?: FeedbackSubject }) {
   const pathname = usePathname();
   const reduxUser = useAppSelector(selectUser);
   const isAdmin = useAppSelector(selectIsAdmin);
@@ -654,7 +659,10 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
         // The organization the person is acting in — a Server Action carries
         // no header, so the selection travels as an argument.
         organization_id: selectedOrganizationId ?? "",
-        description: description.trim(),
+        // A report about a passage carries it twice: readable at the top of the
+        // description for whoever triages it, and structured for tools.
+        description: subject ? `${describeSubject(subject)}\n\n${description.trim()}` : description.trim(),
+        ...(subject ? { metadata: { report_subject: subjectMetadata(subject) } } : {}),
         image_file_ids:
           uploadedImageFileIds.length > 0 ? uploadedImageFileIds : undefined,
         // Admin-only fields. Server silently drops these for non-admins, but we
@@ -822,6 +830,8 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
   }, []);
 
   return {
+    // what the report is about (a selected passage), when opened from one
+    subject,
     // routing / identity
     pathname,
     reduxUser,
@@ -1046,6 +1056,16 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
           User: <span className="text-foreground/70">{username}</span>
         </span>
       </div>
+
+      {form.subject ? (
+        <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs" data-feedback-subject="">
+          <p className="font-medium text-foreground">About this passage in “{form.subject.sourceTitle}”</p>
+          <blockquote className="mt-1 line-clamp-4 border-l-2 border-primary/50 pl-2 text-muted-foreground">
+            {form.subject.quote}
+          </blockquote>
+          <p className="mt-1 text-[10px] text-muted-foreground">The passage and its exact position are sent with your report.</p>
+        </div>
+      ) : null}
 
       {/* Description */}
       <div className="space-y-1">

@@ -660,6 +660,7 @@ const NoteInfoWindow = lazyOverlay(
 );
 // Type-only: the controller must not pull the research module graph in.
 import type { ContextBundle as ContextBundleForPreview } from "@/features/research/resources/types";
+import type { FeedbackSubject } from "@/features/overlays/openers/feedbackDialog";
 
 const ResearchContextPreviewWindow = lazyOverlay(
   () =>
@@ -4695,6 +4696,11 @@ export default function OverlayController() {
         return (
           <FeedbackWindow
             title={typeof data?.title === "string" ? data.title : undefined}
+            subject={
+              data?.subject && typeof data.subject === "object"
+                ? (data.subject as FeedbackSubject)
+                : undefined
+            }
           />
         );
       })()}

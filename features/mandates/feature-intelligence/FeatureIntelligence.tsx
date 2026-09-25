@@ -17,6 +17,7 @@ import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectOrganizationId,
+  selectOrgBootstrapResolved,
   selectOrganizationName,
   selectPersonalOrganizationId,
 } from "@/lib/redux/slices/appContextSlice";
@@ -72,6 +73,7 @@ export function FeatureIntelligence({
   className,
 }: FeatureIntelligenceProps) {
   const activeOrgId = useAppSelector(selectOrganizationId);
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
   const activeOrgName = useAppSelector(selectOrganizationName);
   const personalOrgId = useAppSelector(selectPersonalOrganizationId);
   const userId = useAppSelector(selectUserId);
@@ -89,7 +91,13 @@ export function FeatureIntelligence({
     organizationId: activeOrgId,
     userId,
     context,
-    enabled: !roleLoading || !activeOrgId,
+    // Read once, for the settled seat: not before the organization bootstrap
+    // has answered (a read with no org is thrown away the moment it arrives),
+    // and the role only matters on the organization level — waiting on it at
+    // the person level refetched every job the moment it flickered.
+    enabled:
+      (orgBootstrapResolved || Boolean(activeOrgId)) &&
+      (seatLevel === "person" || !activeOrgId || !roleLoading),
   });
   const actions = useIntelligenceActions({
     level: seatLevel,

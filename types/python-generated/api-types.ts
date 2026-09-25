@@ -43592,9 +43592,9 @@ export interface components {
         AgentBlocksStartRequest: {
             /**
              * Organization Id
-             * @description Required organization explicitly selected for this new AI conversation.
+             * @description Organization explicitly selected for this new AI conversation. Required except for fingerprint guests, whose organization is resolved by the AI funnel.
              */
-            organization_id: string;
+            organization_id?: string | null;
             /**
              * Project Id
              * @description Optional associated project selected by the caller.
@@ -43841,9 +43841,9 @@ export interface components {
         AgentStartRequest: {
             /**
              * Organization Id
-             * @description Required organization explicitly selected for this new AI conversation.
+             * @description Organization explicitly selected for this new AI conversation. Required except for fingerprint guests, whose organization is resolved by the AI funnel.
              */
-            organization_id: string;
+            organization_id?: string | null;
             /**
              * Project Id
              * @description Optional associated project selected by the caller.
@@ -55854,9 +55854,9 @@ export interface components {
             tts_quality?: ("fast" | "high_quality") | null;
             /**
              * Organization Id
-             * @description Required organization explicitly selected for this new AI conversation.
+             * @description Organization explicitly selected for this new AI conversation. Required except for fingerprint guests, whose organization is resolved by the AI funnel.
              */
-            organization_id: string;
+            organization_id?: string | null;
             /**
              * Project Id
              * @description Optional associated project selected by the caller.
@@ -102874,9 +102874,9 @@ export interface components {
         PromptStartRequest: {
             /**
              * Organization Id
-             * @description Required organization explicitly selected for this new AI conversation.
+             * @description Organization explicitly selected for this new AI conversation. Required except for fingerprint guests, whose organization is resolved by the AI funnel.
              */
-            organization_id: string;
+            organization_id?: string | null;
             /**
              * Project Id
              * @description Optional associated project selected by the caller.
@@ -128820,6 +128820,12 @@ export interface components {
              * @constant
              */
             value_availability?: "unavailable";
+            /** Next Before Revision */
+            next_before_revision?: number | null;
+            /** Omitted Count */
+            omitted_count: number;
+            /** Incomplete */
+            incomplete: boolean;
         };
         /** VaultResolveRef */
         VaultResolveRef: {
@@ -145444,6 +145450,7 @@ export interface operations {
         parameters: {
             query?: {
                 limit?: number;
+                before_revision?: number | null;
             };
             header: {
                 "X-Organization-Id": string;

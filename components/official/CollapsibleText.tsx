@@ -28,6 +28,12 @@ interface CollapsibleTextProps {
   className?: string;
   expandLabel?: string;
   collapseLabel?: string;
+  /**
+   * Show the label as visible text on the toggle ("Show more" / "Show less"),
+   * as comment threads do (Linear, Notion). Default: icon-only, labelled for
+   * assistive tech.
+   */
+  showLabel?: boolean;
 }
 
 export function CollapsibleText({
@@ -38,6 +44,7 @@ export function CollapsibleText({
   className,
   expandLabel = "Expand text",
   collapseLabel = "Collapse text",
+  showLabel = false,
 }: CollapsibleTextProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [collapsedHeight, setCollapsedHeight] = useState(0);
@@ -67,6 +74,39 @@ export function CollapsibleText({
   }, [children, collapsedLines]);
 
   const isCollapsed = isOverflowing && !expanded;
+
+  if (showLabel) {
+    return (
+      <div className="relative min-w-0">
+        <div
+          ref={contentRef}
+          className={cn(
+            "overflow-hidden whitespace-pre-wrap break-words",
+            isCollapsed &&
+              "[mask-image:linear-gradient(to_bottom,black_55%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_55%,transparent_100%)]",
+            className,
+          )}
+          style={isCollapsed && collapsedHeight > 0 ? { maxHeight: `${collapsedHeight}px` } : undefined}
+        >
+          {children}
+        </div>
+        {isOverflowing ? (
+          <button
+            type="button"
+            aria-expanded={!isCollapsed}
+            onClick={(event) => {
+              event.stopPropagation();
+              onExpandedChange(isCollapsed);
+            }}
+            className="mt-0.5 inline-flex min-h-6 items-center gap-0.5 rounded text-xs font-medium text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            {isCollapsed ? <ChevronDown className="h-3.5 w-3.5" aria-hidden /> : <ChevronUp className="h-3.5 w-3.5" aria-hidden />}
+            {isCollapsed ? expandLabel : collapseLabel}
+          </button>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-w-0">

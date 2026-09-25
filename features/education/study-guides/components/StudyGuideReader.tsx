@@ -168,7 +168,21 @@ function StudyPassageActions({ guide, selection, close }: { guide: Note; selecti
   return <>
     <AskTutorButton seed={tutorSeed} label="I don't get this" variant="ghost" className="w-full justify-start" />
     <AskTutorButton seed={tutorSeed} label="Ask a question" variant="ghost" className="w-full justify-start" />
-    <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => { close(); openFeedback({ title: "Report an issue with this study guide" }); }}><Send className="mr-2 h-3.5 w-3.5" aria-hidden />Report an issue</Button>
+    <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => {
+      close();
+      openFeedback({
+        title: "Report an issue with this study guide",
+        subject: {
+          kind: "text_passage",
+          sourceToken: "note",
+          sourceId: guide.id,
+          sourceTitle: guide.label || "Study guide",
+          quote: selection.anchor.exact,
+          anchor: { ...selection.anchor },
+          href: `/education/study-guides/${guide.id}`,
+        },
+      });
+    }}><Send className="mr-2 h-3.5 w-3.5" aria-hidden />Report an issue</Button>
   </>;
 }
 

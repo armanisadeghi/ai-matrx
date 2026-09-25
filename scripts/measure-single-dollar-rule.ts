@@ -1,0 +1,239 @@
+#!/usr/bin/env npx tsx
+/**
+ * MEASURE a single-dollar math rule against the real corpus before adopting it (RC-B3).
+ *
+ * THE single-dollar rule (`isSingleDollarMath` in `@ai-matrx/content-ir/source`) decides
+ * whether `$…$` is inline math or currency — on screen, in every export, in the editor's
+ * islands. A rule change moves real stored answers between "math" and "text", so it is
+ * measured here first: every `$…$` span in assistant chat messages and notes is judged by
+ * the published rule and by each candidate, and every span whose verdict FLIPS is counted.
+ *
+ * The scan is the tokenizer's: prose only (code by `findCodeRanges`), `$$` pairs skipped
+ * (`pairDisplayMath`), backslash escapes skipped, one line, content ≤ 400 characters, and a
+ * failed opener moves on by one character — so a later `$` can open.
+ *
+ * PRIVACY: nothing a person wrote is ever printed — the console gets counts and span
+ * SHAPES only (letters → a, digits → 9). `--samples <file>` writes flipped spans with a
+ * little context to a local file for a reviewer, and only from ASSISTANT messages (model
+ * output, not a person's words); notes contribute counts and shapes only.
+ *
+ * Usage:
+ *   npx tsx scripts/measure-single-dollar-rule.ts
+ *   … --samples /path/outside/the/repo.jsonl
+ *   … --module <path to a candidate build of @ai-matrx/content-ir/source>
+ *
+ * READ ONLY: the session is set read-only before the first query.
+ */
+import { writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { exitAfterDrain, installBlockingStdio } from "./lib/exit-after-drain";
+
+type SourceModule = typeof import("@ai-matrx/content-ir/source");
+type Rule = (content: string, after: string | undefined) => boolean;
+
+const args = process.argv.slice(2);
+const argValue = (flag: string): string | undefined => {
+  const index = args.indexOf(flag);
+  return index === -1 ? undefined : args[index + 1];
+};
+const samplesOut = argValue("--samples");
+const modulePath = argValue("--module");
+
+const TEX = /\\[A-Za-z]+|[\\^_{}]/;
+
+/** Pandoc `tex_math_dollars` (what remark-math approximates): no math signal required. */
+const pandoc: Rule = (content, after) =>
+  content.length > 0 &&
+  content.length <= 400 &&
+  !/^\s/.test(content) &&
+  !/\s$/.test(content) &&
+  !(after !== undefined && /[0-9]/.test(after));
+
+/** Pandoc, but content that opens with a digit still needs a real TeX signal (a price). */
+const pandocDigitGuard: Rule = (content, after) =>
+  pandoc(content, after) && (!/^[0-9]/.test(content) || TEX.test(content));
+
+/** Every `$…$` span the scan finds with this rule: [open, closeExclusive]. */
+function spans(m: SourceModule, text: string, rule: Rule): Array<[number, number]> {
+  const out: Array<[number, number]> = [];
+  if (!text.includes("$")) return out;
+  const code = m.findCodeRanges(text);
+  const pairs = m.pairDisplayMath(text);
+  let c = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    while (c < code.length && code[c]!.end <= i) c += 1;
+    if (c < code.length && code[c]!.start <= i) {
+      i = code[c]!.end - 1;
+      continue;
+    }
+    const ch = text[i];
+    if (ch === "\\") {
+      i += 1;
+      continue;
+    }
+    if (ch !== "$") continue;
+    if (text[i + 1] === "$") {
+      const close = pairs.get(i);
+      i = close === undefined ? i + 1 : close + 1;
+      continue;
+    }
+    const bound = Math.min(text.length, i + 403);
+    let close = -1;
+    for (let k = i + 1; k < bound; k += 1) {
+      const d = text[k];
+      if (d === "\n") break;
+      if (d === "\\") {
+        k += 1;
+        continue;
+      }
+      if (d === "$") {
+        close = k;
+        break;
+      }
+    }
+    if (close === -1 || text[close + 1] === "$") continue;
+    if (rule(text.slice(i + 1, close), text[close + 1])) {
+      out.push([i, close + 1]);
+      i = close;
+    }
+  }
+  return out;
+}
+
+const shape = (s: string) => s.replace(/[A-Za-z]/g, "a").replace(/[0-9]/g, "9").slice(0, 40);
+
+interface Tally {
+  rows: number;
+  rowsWithDollar: number;
+  current: number;
+  byCandidate: Record<string, { spans: number; gained: number; lost: number; rowsChanged: number }>;
+}
+
+async function main(): Promise<number> {
+  installBlockingStdio();
+  const m: SourceModule = modulePath
+    ? ((await import(pathToFileURL(resolve(modulePath)).href)) as SourceModule)
+    : await import("@ai-matrx/content-ir/source");
+  const candidates: Record<string, Rule> = { pandoc, pandoc_digit_guard: pandocDigitGuard };
+
+  const env = loadDbEnv();
+  if ("missing" in env) {
+    console.error(`UNMEASURED: no database connection — set ${env.missing.join(", ")}.`);
+    return 2;
+  }
+  console.log(`Database connection from ${env.from}; session READ ONLY.`);
+  const cx = await connectDirect(env, "measure-single-dollar-rule");
+  await cx.query("set session characteristics as transaction read only");
+  await cx.query("set statement_timeout = '120s'");
+
+  const sources: Record<string, { sql: string; assistant: boolean }> = {
+    assistant_messages: {
+      sql: `select id::text as id, content from chat.message where role = 'assistant' and id > $1::uuid order by id limit 500`,
+      assistant: true,
+    },
+    notes: {
+      sql: `select id::text as id, content from workbench.notes where content is not null and id > $1::uuid order by id limit 500`,
+      assistant: false,
+    },
+  };
+  const tallies: Record<string, Tally> = {};
+  const shapes = new Map<string, number>();
+  const samples: string[] = [];
+  try {
+    for (const [source, plan] of Object.entries(sources)) {
+      const tally: Tally = { rows: 0, rowsWithDollar: 0, current: 0, byCandidate: {} };
+      for (const name of Object.keys(candidates)) tally.byCandidate[name] = { spans: 0, gained: 0, lost: 0, rowsChanged: 0 };
+      tallies[source] = tally;
+      let after = "00000000-0000-0000-0000-000000000000";
+      for (;;) {
+        const { rows } = await cx.query<{ id: string; content: unknown }>(plan.sql, [after]);
+        if (rows.length === 0) break;
+        for (const row of rows) {
+          const texts = textsOf(row.content);
+          for (const text of texts) {
+            tally.rows += 1;
+            if (!text.includes("$")) continue;
+            tally.rowsWithDollar += 1;
+            const now = spans(m, text, m.isSingleDollarMath);
+            tally.current += now.length;
+            const nowKeys = new Set(now.map(([a, b]) => `${a}:${b}`));
+            for (const [name, rule] of Object.entries(candidates)) {
+              const next = spans(m, text, rule);
+              const nextKeys = new Set(next.map(([a, b]) => `${a}:${b}`));
+              const t = tally.byCandidate[name]!;
+              t.spans += next.length;
+              let changed = false;
+              for (const [a, b] of next) {
+                if (nowKeys.has(`${a}:${b}`)) continue;
+                t.gained += 1;
+                changed = true;
+                if (name === "pandoc") record(source, plan.assistant, row.id, text, a, b, "gained");
+              }
+              for (const [a, b] of now) {
+                if (nextKeys.has(`${a}:${b}`)) continue;
+                t.lost += 1;
+                changed = true;
+                if (name === "pandoc") record(source, plan.assistant, row.id, text, a, b, "lost");
+              }
+              if (changed) t.rowsChanged += 1;
+            }
+          }
+        }
+        after = rows[rows.length - 1]!.id;
+        if (rows.length < 500) break;
+      }
+      console.log(`${source}: rows ${tally.rows}, rows with $ ${tally.rowsWithDollar}, current math spans ${tally.current}`);
+      for (const [name, t] of Object.entries(tally.byCandidate)) {
+        console.log(`  ${name.padEnd(20)} spans ${t.spans}  gained ${t.gained}  lost ${t.lost}  rows changed ${t.rowsChanged}`);
+      }
+    }
+  } finally {
+    await cx.end();
+  }
+
+  function record(source: string, assistant: boolean, id: string, text: string, a: number, b: number, change: string) {
+    const content = text.slice(a + 1, b - 1);
+    const key = `${source} ${change} ${shape(content)}`;
+    shapes.set(key, (shapes.get(key) ?? 0) + 1);
+    if (!assistant || !samplesOut) return;
+    // Model output only: the span, a little context either side, and the verdict-relevant
+    // neighbours — enough for a reviewer to say "currency" or "math".
+    samples.push(
+      JSON.stringify({
+        id,
+        change,
+        before: text.slice(Math.max(0, a - 30), a),
+        span: text.slice(a, b),
+        after: text.slice(b, b + 30),
+      }),
+    );
+  }
+
+  console.log("\nFlipped span shapes (pandoc vs current; letters → a, digits → 9), top 60:");
+  for (const [key, count] of [...shapes].sort((x, y) => y[1] - x[1]).slice(0, 60)) console.log(`  ${String(count).padStart(5)}  ${key}`);
+  if (samplesOut) {
+    writeFileSync(samplesOut, samples.join("\n") + "\n");
+    console.log(`\n${samples.length} assistant-message samples written to ${samplesOut}`);
+  }
+  return 0;
+}
+
+function textsOf(content: unknown): string[] {
+  if (typeof content === "string") return [content];
+  if (!Array.isArray(content)) return [];
+  const out: string[] = [];
+  for (const part of content) {
+    if (part && typeof part === "object" && (part as { type?: unknown }).type === "text") {
+      const text = (part as { text?: unknown }).text;
+      if (typeof text === "string") out.push(text);
+    }
+  }
+  return out;
+}
+
+main().then(exitAfterDrain, (error) => {
+  console.error(error instanceof Error ? error.message : String(error));
+  exitAfterDrain(1);
+});

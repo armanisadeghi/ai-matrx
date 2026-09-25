@@ -12,8 +12,8 @@ export default async function KitDetailPage({ params }: { params: Promise<{ key:
   const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect(loginHref(`/kits/${key}`));
   const supabase = await createClient();
-  const { kit, error } = await fetchKit(supabase, key);
-  if (!kit) return <KitMissing kitKey={key} error={error} />;
+  const { kit, error, inactive } = await fetchKit(supabase, key);
+  if (!kit) return <KitMissing kitKey={key} error={error} inactive={inactive} />;
   const [sourceAgents, refNames] = await Promise.all([
     fetchSourceAgents(supabase, kit.manifest.agents.map((a) => a.source_agent_id)),
     fetchRefNames(supabase, entityRefsIn(kit.manifest)),

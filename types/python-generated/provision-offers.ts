@@ -2060,6 +2060,7 @@ export interface MasterworkUnfoldingVerdictOffer {
 export interface MasterworksBenchOffer {
   __kind?: "masterworks.bench.offer";
   case: string;
+  subject?: string;
 }
 
 /** Offered shape of provision `masterworks.vanilla_arm` (kind `masterworks.vanilla_arm.offer`). */
@@ -2126,6 +2127,40 @@ export interface MeetMeetingRecordOffer {
   recording_state?: string;
   note_taker_state?: string;
   writer_correction?: string;
+}
+
+/** Offered shape of provision `meet.transcription` (kind `meet.transcription.offer`). */
+export interface MeetTranscriptionOffer {
+  __kind?: "meet.transcription.offer";
+  audio: string | {
+  [key: string]: unknown;
+  file_id?: string;
+  url?: string;
+  file_uri?: string;
+  mime_type?: string;
+};
+}
+
+/** Offered shape of provision `memory.observer` (kind `memory.observer.offer`). */
+export interface MemoryObserverOffer {
+  __kind?: "memory.observer.offer";
+  material: string;
+  additional_instructions?: string;
+  compression_guidance_level_1?: string;
+  compression_guidance_level_2?: string;
+  compression_guidance_level_3?: string;
+  compression_guidance_level_4?: string;
+}
+
+/** Offered shape of provision `memory.reflector` (kind `memory.reflector.offer`). */
+export interface MemoryReflectorOffer {
+  __kind?: "memory.reflector.offer";
+  material: string;
+  additional_instructions?: string;
+  compression_guidance_level_1?: string;
+  compression_guidance_level_2?: string;
+  compression_guidance_level_3?: string;
+  compression_guidance_level_4?: string;
 }
 
 /** Offered shape of provision `messaging.conversation` (kind `messaging.conversation.offer`). */
@@ -3687,6 +3722,9 @@ export interface ProvisionOffers {
   "media.youtube_transcription": MediaYoutubeTranscriptionOffer;
   "media_catalog.item_vetting": MediaCatalogItemVettingOffer;
   "meet.meeting_record": MeetMeetingRecordOffer;
+  "meet.transcription": MeetTranscriptionOffer;
+  "memory.observer": MemoryObserverOffer;
+  "memory.reflector": MemoryReflectorOffer;
   "messaging.conversation": MessagingConversationOffer;
   "ner.deep_chunk_extraction": NerDeepChunkExtractionOffer;
   "ner.document_orientation": NerDocumentOrientationOffer;
@@ -3982,6 +4020,9 @@ export const PROVISION_OFFER_KINDS = {
   "media.youtube_transcription": "media.youtube_transcription.offer",
   "media_catalog.item_vetting": "media_catalog.item_vetting.offer",
   "meet.meeting_record": "meet.meeting_record.offer",
+  "meet.transcription": "meet.transcription.offer",
+  "memory.observer": "memory.observer.offer",
+  "memory.reflector": "memory.reflector.offer",
   "messaging.conversation": "messaging.conversation.offer",
   "ner.deep_chunk_extraction": "ner.deep_chunk_extraction.offer",
   "ner.document_orientation": "ner.document_orientation.offer",

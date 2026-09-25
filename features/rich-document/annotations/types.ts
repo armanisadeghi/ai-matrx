@@ -52,6 +52,8 @@ export interface CommentReply {
   author: AnnotationAuthor;
   createdAt: string;
   mine: boolean;
+  /** When the author last changed the text (null = never; resolve/reopen never set it). */
+  editedAt?: string | null;
 }
 
 export interface LinkedTarget {
@@ -73,6 +75,8 @@ export interface AnnotationItem {
   author: AnnotationAuthor;
   mine: boolean;
   createdAt: string;
+  /** When the author last changed the text (null = never). */
+  editedAt?: string | null;
   /** Comment text, or a highlight's private note. */
   body: string;
   color?: HighlightColor;

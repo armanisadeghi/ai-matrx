@@ -28,6 +28,8 @@
 --      p_client_request_id and answers a repeat with the FIRST row's id — a Retry after a lost
 --      response never writes a second comment (verify-RC-B11 F2). The realtime row carries it, so
 --      a tab recognises its own echo by id, never by a time window (F6).
+--   9. EDITED MARKER: platform.comments.edited_at, stamped by cmt_edit only when the body actually
+--      changes (a resolve or reopen also moves updated_at, so updated_at cannot say "edited").
 --   8. CAS EDIT: cmt_edit(p_id, p_body, p_expected_version) refuses 40001 with the current text
 --      when somebody changed the comment since the editor opened it (F6). cmt_list returns version.
 --   6. association pairs document→note (annotates) and fc_card→note (anchored_to), mirroring the
@@ -48,6 +50,9 @@ comment on column platform.comments.suggested_text is
   'RC-B11: a SUGGESTION — the proposed replacement for the anchored passage (empty string = delete it). Accepting applies it through the document''s splice save (only that block changes) and resolves the thread; rejecting deletes the comment. Null = an ordinary comment.';
 
 alter table platform.comments add column if not exists client_request_id uuid;
+alter table platform.comments add column if not exists edited_at timestamptz;
+comment on column platform.comments.edited_at is
+  'RC-B11: when the author last changed the text (cmt_edit, body actually different). Null = never edited. Resolving or reopening does not touch it.';
 comment on column platform.comments.client_request_id is
   'RC-B11: the id the writing client minted for this create. cmt_add answers a repeat of the same (author, id) with the first row — Retry after a lost response never duplicates — and a tab recognises its own realtime echo by it.';
 create unique index if not exists comments_author_client_request_uidx
@@ -187,7 +192,7 @@ returns table(id uuid, organization_id uuid, entity_type text, entity_id uuid, p
               created_at timestamptz, updated_at timestamptz, created_by uuid, author_email text,
               author_display_name text, author_avatar_url text,
               anchor jsonb, resolved_at timestamptz, resolved_by uuid, suggested_text text,
-              version integer, client_request_id uuid)
+              version integer, client_request_id uuid, edited_at timestamptz)
 language sql
 stable security definer
 set search_path to 'public'
@@ -199,7 +204,7 @@ as $function$
          coalesce(u.raw_user_meta_data->>'full_name', u.raw_user_meta_data->>'name', u.email),
          u.raw_user_meta_data->>'avatar_url',
          c.anchor, c.resolved_at, c.resolved_by, c.suggested_text,
-         c.version, c.client_request_id
+         c.version, c.client_request_id, c.edited_at
     from platform.comments c
     left join auth.users u on u.id = c.created_by
    where c.entity_type = p_entity_type and c.entity_id = p_entity_id
@@ -237,7 +242,8 @@ declare
 begin
   -- RC-A2: authorship alone is not enough -- the author must still hold commenter on the record.
   update platform.comments c
-     set body = p_body, updated_by = (select auth.uid())
+     set body = p_body, updated_by = (select auth.uid()),
+         edited_at = case when c.body is distinct from p_body then now() else c.edited_at end
    where c.id = p_id and c.deleted_at is null and c.created_by = (select auth.uid())
      and iam.has_access(c.entity_type, c.entity_id, 'commenter'::public.permission_level)
      and (p_expected_version is null or c.version = p_expected_version)
