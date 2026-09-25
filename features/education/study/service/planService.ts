@@ -18,6 +18,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { StudyResult } from "../types";
@@ -292,10 +293,14 @@ export const planService = {
         .eq("plan_id", planId);
       if (delDays.error) return fail("regeneratePlan(delDays)", delDays.error);
 
-      const { error: updErr } = await EDU()
-        .from("study_plan")
-        .update(planPayload(draft) as never)
-        .eq("id", planId);
+      const { error: updErr } = await tryWriteOne(
+        EDU()
+          .from("study_plan")
+          .update(planPayload(draft) as never)
+          .eq("id", planId)
+          .select("id"),
+        { action: "update", noun: "study plan" },
+      );
       if (updErr) return fail("regeneratePlan(update)", updErr);
 
       const childRes = await insertDraftChildren(planId, draft, organizationId);

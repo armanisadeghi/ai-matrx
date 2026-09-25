@@ -10,6 +10,7 @@
 
 import { withDisplayTitle } from "@/components/markdown-core/plain-title";
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
@@ -188,10 +189,14 @@ export const studyMediaService = {
 
   async softDelete(id: string): Promise<MediaResult<null>> {
     try {
-      const { error } = await EDU()
-        .from("study_media")
-        .update({ deleted_at: new Date().toISOString() })
-        .eq("id", id);
+      const { error } = await tryWriteOne(
+        EDU()
+          .from("study_media")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("id", id)
+          .select("id"),
+        { action: "delete", noun: "media item" },
+      );
       if (error) return fail("softDelete", error);
       return { data: null, error: null };
     } catch (e) {

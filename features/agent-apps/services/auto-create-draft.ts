@@ -19,6 +19,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne, writeOne } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { operationFailed } from "@/utils/errors";
 import type { Json } from "@/types/database.types";
@@ -195,11 +196,15 @@ async function pruneEmptyCodeSnapshot(appId: string): Promise<void> {
     const only = remaining[0] as { id: string; version_number: number };
     if (only.version_number === 1) return;
 
-    await supabase
-      .schema("app")
-      .from("definition_version")
-      .update({ version_number: 1 })
-      .eq("id", only.id);
+    await writeOne(
+      supabase
+        .schema("app")
+        .from("definition_version")
+        .update({ version_number: 1 })
+        .eq("id", only.id)
+        .select("id"),
+      { action: "update", noun: "app version" },
+    );
   } catch (error) {
     console.warn("[autoCreateDraft] Version-snapshot prune failed:", error);
   }
@@ -218,11 +223,15 @@ export async function saveDraftCode(
 
   let lastError: unknown = null;
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    const { error } = await supabase
-      .schema("app")
-      .from("definition")
-      .update({ component_code: code, metadata: metadata as Json })
-      .eq("id", handle.appId);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("app")
+        .from("definition")
+        .update({ component_code: code, metadata: metadata as Json })
+        .eq("id", handle.appId)
+        .select("id"),
+      { action: "save", noun: "app" },
+    );
 
     if (!error) {
       await pruneEmptyCodeSnapshot(handle.appId);
@@ -246,14 +255,18 @@ export async function saveDraftCode(
 export async function finalizeDraft(handle: DraftHandle): Promise<void> {
   const { metadata } = mergeMetadata(handle, { stage: "complete" });
 
-  const { error } = await supabase
-    .schema("app")
-    .from("definition")
-    .update({
-      metadata: metadata as Json,
-      ...agentAppPublicationPatch(true),
-    })
-    .eq("id", handle.appId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("app")
+      .from("definition")
+      .update({
+        metadata: metadata as Json,
+        ...agentAppPublicationPatch(true),
+      })
+      .eq("id", handle.appId)
+      .select("id"),
+    { action: "publish", noun: "app" },
+  );
 
   if (error) throw operationFailed("publish this app", error);
 }
@@ -273,11 +286,15 @@ export async function recordDraftFailure(
     ...(failure.rawResponse ? { raw_response: failure.rawResponse } : {}),
   });
 
-  const { error } = await supabase
-    .schema("app")
-    .from("definition")
-    .update({ metadata: metadata as Json })
-    .eq("id", handle.appId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("app")
+      .from("definition")
+      .update({ metadata: metadata as Json })
+      .eq("id", handle.appId)
+      .select("id"),
+    { action: "save", noun: "app" },
+  );
 
   if (error) {
     console.error("[autoCreateDraft] Failed to record draft failure:", error);
