@@ -47,6 +47,7 @@ import {
 } from "@tiptap/extension-list";
 import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import { Dropcursor, Focus, Gapcursor, Placeholder, UndoRedo } from "@tiptap/extensions";
+import { MarkdownTextPaste } from "./paste-markdown";
 
 /** A fidelity attribute: never rendered, never inherited by a split. */
 const mdAttr = () => ({ default: null, rendered: false, keepOnSplit: false });
@@ -327,7 +328,7 @@ export interface RichEditorExtensionOptions {
 export function createRichEditorExtensions(
   options: RichEditorExtensionOptions = {},
 ): Extensions {
-  return [
+  const list: Extensions = [
     Document.extend({ content: "(block | topblock)+" }),
     Paragraph,
     Text,
@@ -362,5 +363,14 @@ export function createRichEditorExtensions(
     Gapcursor,
     Dropcursor,
     Placeholder.configure({ placeholder: options.placeholder ?? "Write…" }),
+    MarkdownTextPaste,
   ];
+  // NO PASTE RULES, anywhere. Tiptap runs every mark's paste rule over the
+  // whole changed range of a paste or a DROP — and a block drag's changed range
+  // spans every block between where it left and where it landed. The link rule
+  // re-marked an untouched `ops@example.com` with fresh attributes, which wrote
+  // it back as `[ops@example.com](mailto:…)`; the emphasis rules would do the
+  // same to a stored `\*literal\*`. Pasted text is parsed as markdown by
+  // MarkdownTextPaste instead (one parser, the same structure as typing it).
+  return list.map((extension) => extension.extend({ addPasteRules: () => [] }));
 }

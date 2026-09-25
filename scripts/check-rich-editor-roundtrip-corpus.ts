@@ -18,6 +18,13 @@
  *                      · every island (kinds, XML, fences, math, {{vars}}, tags, anchors, HTML)
  *                        is still there byte-for-byte
  *                      · no backslash was introduced
+ *   move_blocks      (3+ top-level blocks) drag the first block below the third through the
+ *                    editor's OWN plugins, tagged as a drop exactly like ProseMirror's drop
+ *                    handler — so every appendTransaction plugin runs (Tiptap's paste rules once
+ *                    rewrote untouched links this way):
+ *                      · every block that did not move is still its baseline node (source
+ *                        identity: it will be written back as its stored bytes)
+ *                      · dragging it back returns the stored bytes exactly
  *
  * Rows come from the shared corpus reader (scripts/lib/rich-content-corpus.ts) — the same rows
  * the tokenizer gate (check-source-roundtrip-corpus.ts) judges. READ ONLY. Nothing a person
@@ -34,6 +41,7 @@
 import { writeFileSync } from "node:fs";
 import { Editor, getSchema, type JSONContent } from "@tiptap/core";
 import type { Node as PMNode } from "@tiptap/pm/model";
+import { EditorState, NodeSelection } from "@tiptap/pm/state";
 import { listIslands, tokenizeSource } from "@ai-matrx/content-ir/source";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
 import { exitAfterDrain, installBlockingStdio } from "./lib/exit-after-drain";
@@ -69,6 +77,7 @@ interface SourceStats {
   rows: number;
   passed: number;
   editedRows: number;
+  movedRows: number;
   proseBlocks: number;
   lockedBlocks: number;
   lockedChildren: number;
@@ -137,6 +146,44 @@ function findEditTarget(doc: PMNode, plan: VisualPlan): EditTarget | null {
   return target;
 }
 
+function topOffset(doc: PMNode, index: number): number {
+  let pos = 0;
+  for (let i = 0; i < index; i += 1) pos += doc.child(i).nodeSize;
+  return pos;
+}
+
+/** ProseMirror's own drop of a dragged top-level block: delete it, insert it at the mapped point. */
+function dropTop(state: EditorState, from: number, to: number): EditorState {
+  const selected = state.apply(state.tr.setSelection(NodeSelection.create(state.doc, topOffset(state.doc, from))));
+  const node = selected.doc.child(from);
+  const tr = selected.tr;
+  tr.deleteSelection();
+  const pos = tr.mapping.map(topOffset(selected.doc, to));
+  tr.replaceRangeWith(pos, pos, node);
+  return selected.apply(tr.setMeta("uiEvent", "drop"));
+}
+
+/** Move the first block below the third and back, through every plugin. Returns a reason or null. */
+function judgeMove(editor: Editor, baseline: ReturnType<typeof captureBaseline>, text: string): string | null {
+  const doc = editor.state.doc;
+  if (doc.childCount < 3) return null;
+  const state = EditorState.create({ doc, plugins: editor.extensionManager.plugins });
+  const moved = dropTop(state, 0, 3);
+  if (moved.doc.childCount !== doc.childCount) return "move_changed_block_count";
+  // The moved block now sits at index 2; every other block must be its baseline node.
+  for (let i = 0; i < moved.doc.childCount; i += 1) {
+    if (i === 2) continue;
+    const node = moved.doc.child(i);
+    const b = node.attrs.b;
+    const original = typeof b === "number" ? baseline.topNodes.get(b) : undefined;
+    const expected = doc.child(i < 2 ? i + 1 : i);
+    if (!(original ? original.eq(node) : expected.eq(node))) return "move_rewrote_untouched_block";
+  }
+  const back = dropTop(moved, 2, 0);
+  if (serializeVisualDocument(back.doc, baseline) !== text) return "move_back_changed_bytes";
+  return null;
+}
+
 function tally(json: JSONContent): void {
   const visit = (node: JSONContent) => {
     if (node.type === "sourceLocked") {
@@ -176,6 +223,12 @@ function judge(text: string, stats: SourceStats): string | null {
 
     const noop = planSave(text, switched);
     if (noop.changed || noop.text !== text || noop.error) return "noop_save_not_identity";
+
+    if (editor.state.doc.childCount >= 3) {
+      stats.movedRows += 1;
+      const moveReason = judgeMove(editor, baseline, text);
+      if (moveReason) return moveReason;
+    }
 
     const target = findEditTarget(editor.state.doc, first.plan);
     if (!target) return null;
@@ -234,6 +287,7 @@ async function main(): Promise<number> {
         rows: 0,
         passed: 0,
         editedRows: 0,
+        movedRows: 0,
         proseBlocks: 0,
         lockedBlocks: 0,
         lockedChildren: 0,
@@ -261,7 +315,7 @@ async function main(): Promise<number> {
       }
       const editable = stats.editableChildren + stats.lockedChildren;
       console.log(
-        `${source.padEnd(18)} rows ${String(stats.rows).padStart(7)}  passed ${String(stats.passed).padStart(7)}  failures ${String(stats.failures.length).padStart(4)}  edited ${stats.editedRows}  prose blocks ${stats.proseBlocks} (${stats.lockedBlocks} held as source)  constructs ${editable} (${stats.lockedChildren} held as source)  islands ${stats.islandBlocks}`,
+        `${source.padEnd(18)} rows ${String(stats.rows).padStart(7)}  passed ${String(stats.passed).padStart(7)}  failures ${String(stats.failures.length).padStart(4)}  edited ${stats.editedRows}  moved ${stats.movedRows}  prose blocks ${stats.proseBlocks} (${stats.lockedBlocks} held as source)  constructs ${editable} (${stats.lockedChildren} held as source)  islands ${stats.islandBlocks}`,
       );
     }
   } finally {
@@ -273,8 +327,9 @@ async function main(): Promise<number> {
       rows: acc.rows + s.rows,
       passed: acc.passed + s.passed,
       edited: acc.edited + s.editedRows,
+      moved: acc.moved + s.movedRows,
     }),
-    { rows: 0, passed: 0, edited: 0 },
+    { rows: 0, passed: 0, edited: 0, moved: 0 },
   );
   const byReason = new Map<string, number>();
   for (const stats of Object.values(report)) {
@@ -283,7 +338,7 @@ async function main(): Promise<number> {
     }
   }
   console.log(
-    `\nTOTAL rows ${totals.rows}, passed ${totals.passed}, failing ${totals.rows - totals.passed}, edit-checked ${totals.edited}  (${Math.round((Date.now() - started) / 1000)}s)`,
+    `\nTOTAL rows ${totals.rows}, passed ${totals.passed}, failing ${totals.rows - totals.passed}, edit-checked ${totals.edited}, move-checked ${totals.moved}  (${Math.round((Date.now() - started) / 1000)}s)`,
   );
   for (const [reason, count] of [...byReason].sort((a, b) => b[1] - a[1])) {
     console.log(`  ${reason}: ${count}`);

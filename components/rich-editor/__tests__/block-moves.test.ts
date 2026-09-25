@@ -143,3 +143,56 @@ describe("a grip drag-drop moves only the order", () => {
     expect(save()).toBe(reorder(MOVE_BLOCKS, 1, MOVE_BLOCKS.length).join("\n\n"));
   });
 });
+
+describe("plain-text paste is parsed as markdown (the same structure as typing it in Source)", () => {
+  // jsdom has no ClipboardEvent; ProseMirror's pasteText only needs the type to construct.
+  beforeAll(() => {
+    if (typeof globalThis.ClipboardEvent === "undefined") {
+      (globalThis as { ClipboardEvent?: unknown }).ClipboardEvent = class extends Event {
+        readonly clipboardData = null;
+      };
+    }
+  });
+  const BASE = "Questions go to the shift lead, or email ops@example.com.\n\nPrices are \\*estimates\\*.\n\nLast line.";
+
+  function pasteAtEndOf(editor: Editor, needle: string, text: string): void {
+    let target = -1;
+    editor.state.doc.descendants((node, pos) => {
+      if (target === -1 && node.isTextblock && node.textContent.includes(needle)) target = pos + 1 + node.content.size;
+      return target === -1;
+    });
+    editor.commands.setTextSelection(target);
+    editor.view.pasteText(text);
+  }
+
+  it("a pasted list, XML section and variable land as a list, one island and a chip — written back byte-for-byte", () => {
+    const { editor, save } = open(BASE);
+    const pasted = "- [ ] Badge photo\n- [x] Safety video\n\n<safety_rules>\nNever stand under a raised load.\n</safety_rules>\n\nYour lead is {{shift_lead}}.";
+    // Paste into a fresh empty paragraph after the last line, as a person would after pressing Enter.
+    pasteAtEndOf(editor, "Last line.", "");
+    editor.commands.setTextSelection(editor.state.doc.content.size - 2);
+    editor.commands.enter();
+    editor.view.pasteText(pasted);
+    const types: string[] = [];
+    editor.state.doc.descendants((node) => {
+      types.push(node.type.name);
+      return true;
+    });
+    expect(types).toContain("bulletList");
+    expect(types).toContain("islandBlock");
+    expect(types).toContain("inlineIsland");
+    expect(save()).toBe(`${BASE}\n\n${pasted}`);
+  });
+
+  it("a one-line paste joins the line the cursor is in", () => {
+    const { editor, save } = open(BASE);
+    pasteAtEndOf(editor, "Last line", " Ask **Devin** about {{dock_door}}.");
+    expect(save()).toBe(`${BASE} Ask **Devin** about {{dock_door}}.`);
+  });
+
+  it("a paste never rewrites the untouched blocks around it (no paste rules re-marking links or escapes)", () => {
+    const { editor, save } = open(BASE);
+    pasteAtEndOf(editor, "Last line", " https://example.com/new and *new* text");
+    expect(save()).toBe(`${BASE} https://example.com/new and *new* text`);
+  });
+});
