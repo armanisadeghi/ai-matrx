@@ -66,6 +66,9 @@ import {
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useTools } from "@/hooks/useTools";
 import { supabase } from "@/utils/supabase/client";
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
+import { usePendingWrites } from "@/lib/errors/usePendingWrites";
+import { putToolActive, setToolsActive } from "./mcp-tools/tool-active-writes";
 import { formatText } from "@ai-matrx/kit/text-case";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { cn } from "@/styles/themes/utils";
@@ -865,23 +868,19 @@ export function McpToolsManager() {
     [router],
   );
 
+  // PENDING, NEVER OPTIMISTIC (GATES-TAIL-2): the switch keeps its position and shows busy until
+  // the tool route answers; a refusal is said in words with a remedy.
+  const pendingWrites = usePendingWrites();
   const handleToggleActive = async (toolId: string, isActive: boolean) => {
-    try {
-      const response = await fetch(`/api/admin/tools/${toolId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_active: isActive }),
-      });
-      if (!response.ok) throw new Error("Failed to update");
-      setTools((prev) =>
-        prev.map((t) => (t.id === toolId ? { ...t, is_active: isActive } : t)),
-      );
-    } catch {
-      toast({ title: "Error updating tool", variant: "destructive" });
-      setTools((prev) =>
-        prev.map((t) => (t.id === toolId ? { ...t, is_active: !isActive } : t)),
-      );
-    }
+    const name = tools.find((t) => t.id === toolId)?.name ?? "this tool";
+    const result = await pendingWrites.run(toolId, () => putToolActive(toolId, isActive), {
+      action: `${isActive ? "activate" : "deactivate"} ${name}`,
+      remedy: "Try again, or reload the catalog.",
+    });
+    if (!result.ok) return;
+    setTools((prev) =>
+      prev.map((t) => (t.id === toolId ? { ...t, is_active: isActive } : t)),
+    );
   };
 
   const handleDeleteTool = (toolId: string, toolName: string) => {
@@ -919,20 +918,14 @@ export function McpToolsManager() {
     if (!ok) return;
     setBulkBusy(true);
     try {
-      const { error: updErr } = await supabase
-        .schema("tool")
-        .from("definition")
-        .update({ is_active: active })
-        .in("id", targetIds);
-      if (updErr) throw updErr;
+      await setToolsActive(targetIds, active);
       toast({ title: `${noun} ${active ? "activated" : "deactivated"}` });
       await refetch();
       setSelectedToolIds(new Set());
     } catch (err) {
-      toast({
-        title: "Bulk update failed",
-        description: err instanceof Error ? err.message : "Unknown error",
-        variant: "destructive",
+      toastWriteFailure(err, {
+        action: `${active ? "activate" : "deactivate"} ${noun}`,
+        remedy: "Nothing changed. Try again, or reload the catalog.",
       });
     } finally {
       setBulkBusy(false);
@@ -969,11 +962,7 @@ export function McpToolsManager() {
       await refetch();
       setSelectedToolIds(new Set());
     } catch (err) {
-      toast({
-        title: "Bulk delete failed",
-        description: err instanceof Error ? err.message : "Unknown error",
-        variant: "destructive",
-      });
+      toastWriteFailure(err, { action: `delete ${noun}`, remedy: "Try again, or reload the catalog." });
     } finally {
       setBulkBusy(false);
     }
@@ -1015,10 +1004,9 @@ export function McpToolsManager() {
       toast({ title: "Deleted" });
       await refetch();
     } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Unknown error",
-        variant: "destructive",
+      toastWriteFailure(err, {
+        action: `delete ${deleteConfirmation.toolName ?? "this tool"}`,
+        remedy: "Try again, or reload the catalog.",
       });
     } finally {
       setDeleteConfirmation({ isOpen: false, toolId: null, toolName: null });
@@ -1700,7 +1688,14 @@ export function McpToolsManager() {
                             <Switch
                               checked={tool.is_active ?? false}
                               onCheckedChange={(v) =>
-                                handleToggleActive(tool.id, v)
+                                void handleToggleActive(tool.id, v)
+                              }
+                              disabled={pendingWrites.isPending(tool.id)}
+                              aria-busy={pendingWrites.isPending(tool.id) || undefined}
+                              aria-label={
+                                pendingWrites.isPending(tool.id)
+                                  ? `Saving ${tool.name}`
+                                  : `${tool.is_active ? "Deactivate" : "Activate"} ${tool.name}`
                               }
                               className="scale-75"
                             />
