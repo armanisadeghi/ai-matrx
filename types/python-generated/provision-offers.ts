@@ -606,6 +606,24 @@ export interface ConversationAnalysisOffer {
   conversation_id: string;
 }
 
+/** Offered shape of provision `conversation.label_agent_run` (kind `conversation.label_agent_run.offer`). */
+export interface ConversationLabelAgentRunOffer {
+  __kind?: "conversation.label_agent_run.offer";
+  conversation_content: string;
+  recent_titles: string;
+  agent_name: string;
+  agent_description: string;
+  user_variables: string;
+  user_prompt: string;
+}
+
+/** Offered shape of provision `conversation.label_chat` (kind `conversation.label_chat.offer`). */
+export interface ConversationLabelChatOffer {
+  __kind?: "conversation.label_chat.offer";
+  conversation_content: string;
+  recent_titles: string;
+}
+
 /** Offered shape of provision `crm.chasebox_draft_review` (kind `crm.chasebox_draft_review.offer`). */
 export interface CrmChaseboxDraftReviewOffer {
   __kind?: "crm.chasebox_draft_review.offer";
@@ -2038,6 +2056,12 @@ export interface MasterworkUnfoldingVerdictOffer {
   context?: unknown;
 }
 
+/** Offered shape of provision `masterworks.bench` (kind `masterworks.bench.offer`). */
+export interface MasterworksBenchOffer {
+  __kind?: "masterworks.bench.offer";
+  case: string;
+}
+
 /** Offered shape of provision `masterworks.vanilla_arm` (kind `masterworks.vanilla_arm.offer`). */
 export interface MasterworksVanillaArmOffer {
   __kind?: "masterworks.vanilla_arm.offer";
@@ -2257,6 +2281,24 @@ export interface OrchestrationToolFailureStandoffOffer {
   failure_limit: number;
   is_unattended: boolean;
   already_intervened: boolean;
+}
+
+/** Offered shape of provision `pdf.chunk_clean_ocr_text` (kind `pdf.chunk_clean_ocr_text.offer`). */
+export interface PdfChunkCleanOcrTextOffer {
+  __kind?: "pdf.chunk_clean_ocr_text.offer";
+  text: string;
+}
+
+/** Offered shape of provision `pdf.chunk_flashcards_json` (kind `pdf.chunk_flashcards_json.offer`). */
+export interface PdfChunkFlashcardsJsonOffer {
+  __kind?: "pdf.chunk_flashcards_json.offer";
+  text: string;
+}
+
+/** Offered shape of provision `pdf.chunk_flashcards_typescript` (kind `pdf.chunk_flashcards_typescript.offer`). */
+export interface PdfChunkFlashcardsTypescriptOffer {
+  __kind?: "pdf.chunk_flashcards_typescript.offer";
+  text: string;
 }
 
 /** Offered shape of provision `pdf.content_cleaning` (kind `pdf.content_cleaning.offer`). */
@@ -2526,6 +2568,7 @@ export interface ProofRunsJudgeCaseOffer {
   rubric: string;
   actual_output: string;
   context?: string;
+  web_search?: string;
 }
 
 /** Offered shape of provision `purpose.unit_config` (kind `purpose.unit_config.offer`). */
@@ -2604,6 +2647,13 @@ export interface RagKindsGroundedSynthesisOffer {
   __kind?: "rag_kinds.grounded_synthesis.offer";
   question: string;
   contexts: string;
+}
+
+/** Offered shape of provision `records.enrichment` (kind `records.enrichment.offer`). */
+export interface RecordsEnrichmentOffer {
+  __kind?: "records.enrichment.offer";
+  column: string;
+  records: unknown;
 }
 
 /** Offered shape of provision `research.capture_coverage` (kind `research.capture_coverage.offer`). */
@@ -3510,6 +3560,8 @@ export interface ProvisionOffers {
   "content_plan.plan_shape": ContentPlanPlanShapeOffer;
   "content_plan.research_wave": ContentPlanResearchWaveOffer;
   "conversation.analysis": ConversationAnalysisOffer;
+  "conversation.label_agent_run": ConversationLabelAgentRunOffer;
+  "conversation.label_chat": ConversationLabelChatOffer;
   "crm.chasebox_draft_review": CrmChaseboxDraftReviewOffer;
   "crm.journalist_beat_analysis": CrmJournalistBeatAnalysisOffer;
   "crm.media_list_ranker": CrmMediaListRankerOffer;
@@ -3630,6 +3682,7 @@ export interface ProvisionOffers {
   "masterwork.triad_deal": MasterworkTriadDealOffer;
   "masterwork.understudy_run": MasterworkUnderstudyRunOffer;
   "masterwork.unfolding_verdict": MasterworkUnfoldingVerdictOffer;
+  "masterworks.bench": MasterworksBenchOffer;
   "masterworks.vanilla_arm": MasterworksVanillaArmOffer;
   "media.youtube_transcription": MediaYoutubeTranscriptionOffer;
   "media_catalog.item_vetting": MediaCatalogItemVettingOffer;
@@ -3651,6 +3704,9 @@ export interface ProvisionOffers {
   "observability.tool_trace_triage_window": ObservabilityToolTraceTriageWindowOffer;
   "orchestras.member_roster": OrchestrasMemberRosterOffer;
   "orchestration.tool_failure_standoff": OrchestrationToolFailureStandoffOffer;
+  "pdf.chunk_clean_ocr_text": PdfChunkCleanOcrTextOffer;
+  "pdf.chunk_flashcards_json": PdfChunkFlashcardsJsonOffer;
+  "pdf.chunk_flashcards_typescript": PdfChunkFlashcardsTypescriptOffer;
   "pdf.content_cleaning": PdfContentCleaningOffer;
   "personal_staff.escalation": PersonalStaffEscalationOffer;
   "personal_staff.front_line": PersonalStaffFrontLineOffer;
@@ -3681,6 +3737,7 @@ export interface ProvisionOffers {
   "rag.page_cleaning": RagPageCleaningOffer;
   "rag.retrieval_query": RagRetrievalQueryOffer;
   "rag_kinds.grounded_synthesis": RagKindsGroundedSynthesisOffer;
+  "records.enrichment": RecordsEnrichmentOffer;
   "research.capture_coverage": ResearchCaptureCoverageOffer;
   "research.cross_cutting_discovery": ResearchCrossCuttingDiscoveryOffer;
   "research.final_assembly": ResearchFinalAssemblyOffer;
@@ -3798,6 +3855,8 @@ export const PROVISION_OFFER_KINDS = {
   "content_plan.plan_shape": "content_plan.plan_shape.offer",
   "content_plan.research_wave": "content_plan.research_wave.offer",
   "conversation.analysis": "conversation.analysis.offer",
+  "conversation.label_agent_run": "conversation.label_agent_run.offer",
+  "conversation.label_chat": "conversation.label_chat.offer",
   "crm.chasebox_draft_review": "crm.chasebox_draft_review.offer",
   "crm.journalist_beat_analysis": "crm.journalist_beat_analysis.offer",
   "crm.media_list_ranker": "crm.media_list_ranker.offer",
@@ -3918,6 +3977,7 @@ export const PROVISION_OFFER_KINDS = {
   "masterwork.triad_deal": "masterwork.triad_deal.offer",
   "masterwork.understudy_run": "masterwork.understudy_run.offer",
   "masterwork.unfolding_verdict": "masterwork.unfolding_verdict.offer",
+  "masterworks.bench": "masterworks.bench.offer",
   "masterworks.vanilla_arm": "masterworks.vanilla_arm.offer",
   "media.youtube_transcription": "media.youtube_transcription.offer",
   "media_catalog.item_vetting": "media_catalog.item_vetting.offer",
@@ -3939,6 +3999,9 @@ export const PROVISION_OFFER_KINDS = {
   "observability.tool_trace_triage_window": "observability.tool_trace_triage_window.offer",
   "orchestras.member_roster": "orchestras.member_roster.offer",
   "orchestration.tool_failure_standoff": "orchestration.tool_failure_standoff.offer",
+  "pdf.chunk_clean_ocr_text": "pdf.chunk_clean_ocr_text.offer",
+  "pdf.chunk_flashcards_json": "pdf.chunk_flashcards_json.offer",
+  "pdf.chunk_flashcards_typescript": "pdf.chunk_flashcards_typescript.offer",
   "pdf.content_cleaning": "pdf.content_cleaning.offer",
   "personal_staff.escalation": "personal_staff.escalation.offer",
   "personal_staff.front_line": "personal_staff.front_line.offer",
@@ -3969,6 +4032,7 @@ export const PROVISION_OFFER_KINDS = {
   "rag.page_cleaning": "rag.page_cleaning.offer",
   "rag.retrieval_query": "rag.retrieval_query.offer",
   "rag_kinds.grounded_synthesis": "rag_kinds.grounded_synthesis.offer",
+  "records.enrichment": "records.enrichment.offer",
   "research.capture_coverage": "research.capture_coverage.offer",
   "research.cross_cutting_discovery": "research.cross_cutting_discovery.offer",
   "research.final_assembly": "research.final_assembly.offer",
