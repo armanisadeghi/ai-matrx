@@ -23,6 +23,8 @@ export type SeamCheck = {
   says: string;
   met: boolean;
   detail: string | null;
+  /** For a fact the cutover census measures (every release re-runs it): when it was last measured. */
+  measured_at?: string | null;
 };
 
 export type Seam = {

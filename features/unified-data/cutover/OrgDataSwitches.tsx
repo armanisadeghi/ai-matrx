@@ -160,6 +160,11 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
                       <span>
                         <span className={c.met ? "" : "font-medium"}>{sentence(c.says)}</span>{" "}
                         {c.detail && <span className="text-muted-foreground">{c.detail}</span>}
+                        {c.measured_at && (
+                          <span className="block text-muted-foreground">
+                            Last measured {whenText(c.measured_at)}; measured again with every release.
+                          </span>
+                        )}
                       </span>
                     </li>
                   ))}
