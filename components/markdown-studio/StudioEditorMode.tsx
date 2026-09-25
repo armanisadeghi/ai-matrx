@@ -110,7 +110,7 @@ export function StudioEditorMode({
       <Link
         href={`/notes/${copy.id}`}
         target="_blank"
-        className="flex h-8 items-center gap-1 rounded-md px-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+        className="flex h-8 min-w-11 items-center justify-center gap-1 rounded-md px-2 text-muted-foreground hover:bg-muted hover:text-foreground"
         title="Open the proving copy in Notes"
       >
         <ExternalLink className="h-3.5 w-3.5" />
@@ -120,7 +120,7 @@ export function StudioEditorMode({
         type="button"
         onClick={() => void archiveCopy()}
         disabled={busy !== null}
-        className="flex h-8 items-center gap-1 rounded-md px-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+        className="flex h-8 min-w-11 items-center justify-center gap-1 rounded-md px-2 text-muted-foreground hover:bg-muted hover:text-foreground"
         title="Archive the proving copy (soft delete — recoverable from the notes trash)"
       >
         {busy === "archive" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Archive className="h-3.5 w-3.5" />}
