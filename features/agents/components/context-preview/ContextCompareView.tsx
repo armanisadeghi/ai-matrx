@@ -985,17 +985,17 @@ export function ContextCompareView({
           <>
             <Tabs value={activeTab} onValueChange={chooseTab} className="pt-2" data-compare-tabs={activeTab}>
               <div className="overflow-x-auto px-4 scrollbar-none">
-                <TabsList className="h-8 w-max">
-                  <TabsTrigger value="diff" className="h-6 px-2.5 text-xs" data-compare-tab="diff">
+                <TabsList className="inline-flex h-8 w-max flex-nowrap">
+                  <TabsTrigger value="diff" className="h-6 shrink-0 whitespace-nowrap px-2.5 text-xs" data-compare-tab="diff">
                     Diff
                   </TabsTrigger>
-                  <TabsTrigger value="today" className="h-6 px-2.5 text-xs" data-compare-tab="today">
+                  <TabsTrigger value="today" className="h-6 shrink-0 whitespace-nowrap px-2.5 text-xs" data-compare-tab="today">
                     What the model gets today
                   </TabsTrigger>
-                  <TabsTrigger value="store" className="h-6 px-2.5 text-xs" data-compare-tab="store">
+                  <TabsTrigger value="store" className="h-6 shrink-0 whitespace-nowrap px-2.5 text-xs" data-compare-tab="store">
                     Record store
                   </TabsTrigger>
-                  <TabsTrigger value="selection" className="h-6 px-2.5 text-xs" data-compare-tab="selection">
+                  <TabsTrigger value="selection" className="h-6 shrink-0 whitespace-nowrap px-2.5 text-xs" data-compare-tab="selection">
                     Selection
                   </TabsTrigger>
                 </TabsList>
