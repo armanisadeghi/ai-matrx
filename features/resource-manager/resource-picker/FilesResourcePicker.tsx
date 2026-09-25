@@ -66,7 +66,7 @@ import {
   selectIsFolderFullyLoaded,
 } from "@/features/files/redux/selectors";
 import { loadFolderContents } from "@/features/files/redux/thunks";
-import { isExcludedFromRecents } from "@/features/files/utils/folder-conventions";
+import { isRecentActivityFile } from "@/features/files/utils/user-visible";
 import type {
   CloudFileRecord,
   CloudFolderRecord,
@@ -797,7 +797,7 @@ export function FilesResourcePicker({
   // Recent files — same rules as the files list Recents view.
   const recentFiles = useMemo(() => {
     const pool = allFiles.filter(
-      (f) => !f.deletedAt && !isExcludedFromRecents(f.filePath),
+      (f) => !f.deletedAt && isRecentActivityFile(f),
     );
     pool.sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""));
     return pool.slice(0, RECENTS_CAP);

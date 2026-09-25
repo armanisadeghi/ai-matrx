@@ -6,8 +6,17 @@
  * The rule that decides whether a cloud row is the user's own file (as opposed
  * to machine infrastructure) is declared ONCE, in the database:
  *
- *   files.is_user_visible_path(text)   — files   (system-files/, generations/, .matrx-tmp/)
- *   public.is_system_path(text)        — folders (system-files/, generations/)
+ *   files.is_user_visible_path(text)        — files   (system-files/, generations/, .matrx-tmp/,
+ *                                             machine namespaces coding-sessions/, tool-images/)
+ *   files.is_user_visible(files.files)      — + not derived, not a produced artifact (artifact_kind)
+ *   files.is_user_visible_folder_path(text) — folders (system + machine namespaces)
+ *   files.is_recent_activity(files.files)   — RECENTS: visible, not device-written
+ *                                             (origin_device_id), not machine output under
+ *                                             the person's roots
+ *
+ * Declared once in aidream packages/matrx-files/matrx_files/user_visible.py. The
+ * rule and how a machine writer registers: common-docs
+ * systems/files/user-files-vs-machine-files.md.
  *
  * `public.get_user_file_tree` and the daemon's sync feed both call those, so
  * anything that arrives through the RPC is ALREADY filtered — callers must not
@@ -26,8 +35,9 @@
  * somebody changes the SQL rule and not this file, that test goes red. Never
  * edit the logic here without running it.
  *
- * What this rule is NOT: it is not "should this appear in Recents" (that is
- * `isSystemManagedContentPath`) and it is not a permission check (RLS is).
+ * What this rule is NOT: a permission check (RLS is). Recents is a strict
+ * SUBSET of it — `isRecentActivityFile` / `isRecentActivityPath` below, mirrors
+ * of `files.is_recent_activity*`, and the ONLY Recents rule in the browser.
  *
  * FastFire note: top-level `FastFire/**` used to be hidden here by a rule the
  * server never had, so the desktop daemon would sync those bytes to disk while
@@ -40,12 +50,29 @@
 /** Top-level path segments the database treats as machine infrastructure. */
 const SYSTEM_SEGMENTS = ["system-files", "generations"] as const;
 const TMP_SEGMENT = ".matrx-tmp";
+/** Mirror of `MACHINE_NAMESPACES` — top-level segments only machines write into. */
+const MACHINE_SEGMENTS = ["coding-sessions", "tool-images"] as const;
+/** Mirror of `RECENT_EXCLUDED_ROOTS` — machine output filed under the person's roots. */
+const RECENT_EXCLUDED_ROOTS = [
+  "Images/Generated",
+  "Generated",
+  "Agent Apps/blocks",
+  "Images/agent-blocks",
+  "Transcripts/Recordings",
+  "FastFire/sessions",
+  "FastFire/responses",
+] as const;
+
+/** `ltrim(p,'/')` — the database's own leading-slash shape. */
+function stripLeadingSlashes(path: string): string {
+  let i = 0;
+  while (i < path.length && path[i] === "/") i += 1;
+  return path.slice(i);
+}
 
 /** `split_part(ltrim(p,'/'),'/',1)` — the database's own first-segment shape. */
 function firstSegment(path: string): string {
-  let i = 0;
-  while (i < path.length && path[i] === "/") i += 1;
-  const rest = path.slice(i);
+  const rest = stripLeadingSlashes(path);
   const slash = rest.indexOf("/");
   return slash === -1 ? rest : rest.slice(0, slash);
 }
@@ -60,21 +87,23 @@ export function isUserVisibleFilePath(
   if (path === null || path === undefined) return false;
   const head = firstSegment(path);
   if ((SYSTEM_SEGMENTS as readonly string[]).includes(head)) return false;
+  if ((MACHINE_SEGMENTS as readonly string[]).includes(head)) return false;
   return head !== TMP_SEGMENT;
 }
 
 /**
- * Mirror of `NOT public.is_system_path(text)` — the FOLDER rule as
- * `get_user_file_tree` spells it. Deliberately NOT the same as the file rule:
- * the tree keeps `.matrx-tmp` folders out of scope for the predicate and uses
- * the protected-system test instead. Mirroring the divergence is honest;
- * inventing a stricter client rule is what this module exists to stop.
+ * Mirror of `files.is_user_visible_folder_path(text)` — the FOLDER rule.
+ * Deliberately NOT the same as the file rule: `.matrx-tmp` folders stay in
+ * scope (unchanged since the tree first spelled it). Mirroring the divergence
+ * is honest; inventing a stricter client rule is what this module exists to stop.
  */
 export function isUserVisibleFolderPath(
   path: string | null | undefined,
 ): boolean {
   if (path === null || path === undefined) return false;
-  return !(SYSTEM_SEGMENTS as readonly string[]).includes(firstSegment(path));
+  const head = firstSegment(path);
+  if ((SYSTEM_SEGMENTS as readonly string[]).includes(head)) return false;
+  return !(MACHINE_SEGMENTS as readonly string[]).includes(head);
 }
 
 /** The shape a realtime `files.files` payload carries (published columns). */
@@ -82,6 +111,8 @@ export interface UserVisibleFileRowShape {
   file_path: string | null;
   parent_file_id: string | null;
   derivation_kind: string | null;
+  /** A machine-produced artifact (e.g. 'coding_session_artifact'). */
+  artifact_kind?: string | null;
 }
 
 /**
@@ -95,5 +126,44 @@ export function isUserVisibleFileRow(row: UserVisibleFileRowShape): boolean {
     return false;
   if (row.derivation_kind !== null && row.derivation_kind !== undefined)
     return false;
+  if (row.artifact_kind !== null && row.artifact_kind !== undefined)
+    return false;
   return isUserVisibleFilePath(row.file_path);
+}
+
+/**
+ * Mirror of `files.is_recent_activity_path(text)` — the path half of RECENTS:
+ * a user-visible path that is not machine output filed under the person's
+ * roots. Also the Recents rule for a FOLDER row.
+ */
+export function isRecentActivityPath(
+  path: string | null | undefined,
+): boolean {
+  if (!isUserVisibleFilePath(path)) return false;
+  const trimmed = stripLeadingSlashes(path as string);
+  return !RECENT_EXCLUDED_ROOTS.some(
+    (root) => trimmed === root || trimmed.startsWith(`${root}/`),
+  );
+}
+
+/** The fields Recents needs from a file record (domain or row shape). */
+export interface RecentActivityFileShape {
+  filePath: string | null | undefined;
+  /** The registered device that wrote the row; null for an in-app write. */
+  originDeviceId?: string | null;
+  parentFileId?: string | null;
+  derivationKind?: string | null;
+}
+
+/**
+ * Mirror of `files.is_recent_activity(files.files)` — RECENTS: the file is the
+ * person's recent activity in the app. A file a desktop sync client wrote
+ * (`originDeviceId`) is the person's file, but never their recent activity
+ * (folder-sync DECISIONS R3).
+ */
+export function isRecentActivityFile(file: RecentActivityFileShape): boolean {
+  if (file.originDeviceId) return false;
+  if (file.parentFileId) return false;
+  if (file.derivationKind) return false;
+  return isRecentActivityPath(file.filePath);
 }

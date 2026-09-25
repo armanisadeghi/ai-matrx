@@ -5,6 +5,8 @@
  * regressions from reaching that guard.
  */
 import {
+  isRecentActivityFile,
+  isRecentActivityPath,
   isUserVisibleFilePath,
   isUserVisibleFolderPath,
   isUserVisibleFileRow,
@@ -14,8 +16,13 @@ describe("isUserVisibleFilePath", () => {
   it.each([
     ["My Files/report.pdf", true],
     ["Inbox/note.md", true],
-    ["coding-sessions/a/log.jsonl", true],
-    ["tool-images/1/v/t.jpg", true],
+    // Machine namespaces: only machines write here; never the person's files
+    // (Arman, 2026-09-24).
+    ["coding-sessions/a/log.jsonl", false],
+    ["coding-sessions", false],
+    ["tool-images/1/v/t.jpg", false],
+    ["/coding-sessions/a", false],
+    ["My Files/coding-sessions/a", true],
     // FastFire is a registered machine-written prefix, NOT a hidden one
     // (SPEC-SERVER §1.4 S18) — the browser used to hide it and the daemon
     // synced it, which is the disagreement this rule deleted.
@@ -45,6 +52,8 @@ describe("isUserVisibleFolderPath", () => {
     expect(isUserVisibleFolderPath("system-files")).toBe(false);
     expect(isUserVisibleFolderPath("generations/x")).toBe(false);
     expect(isUserVisibleFolderPath(".matrx-tmp")).toBe(true);
+    expect(isUserVisibleFolderPath("coding-sessions/claude_code")).toBe(false);
+    expect(isUserVisibleFolderPath("tool-images")).toBe(false);
     expect(isUserVisibleFolderPath("My Files")).toBe(true);
   });
 });
@@ -64,9 +73,53 @@ describe("isUserVisibleFileRow", () => {
       false,
     );
   });
+  it("rejects a machine-produced artifact wherever it lands", () => {
+    expect(
+      isUserVisibleFileRow({
+        ...base,
+        artifact_kind: "coding_session_artifact",
+      }),
+    ).toBe(false);
+  });
   it("rejects a system path", () => {
     expect(
       isUserVisibleFileRow({ ...base, file_path: "system-files/a" }),
+    ).toBe(false);
+  });
+});
+
+describe("Recents — mirror of files.is_recent_activity", () => {
+  const person = { filePath: "My Files/report.pdf", originDeviceId: null };
+  it("admits a file the person uploaded in the app", () => {
+    expect(isRecentActivityFile(person)).toBe(true);
+  });
+  it("never admits a file a device (desktop sync) wrote", () => {
+    expect(isRecentActivityFile({ ...person, originDeviceId: "dev-1" })).toBe(
+      false,
+    );
+  });
+  it("never admits a machine namespace or machine output under the person's roots", () => {
+    for (const filePath of [
+      "coding-sessions/claude_code/s/log.md",
+      "tool-images/1/shot.png",
+      "Images/Generated/cat.png",
+      "Generated/a.png",
+      "Agent Apps/blocks/b.png",
+      "Images/agent-blocks/c.png",
+      "Transcripts/Recordings/x.m4a",
+      "FastFire/sessions/s.wav",
+      "FastFire/responses/r.wav",
+      "system-files/variants/x.png",
+    ])
+      expect(isRecentActivityFile({ ...person, filePath })).toBe(false);
+  });
+  it("matches whole segments, not prefixes", () => {
+    expect(isRecentActivityPath("Images/GeneratedX/cat.png")).toBe(true);
+    expect(isRecentActivityPath("FastFire/decks/d.json")).toBe(true);
+  });
+  it("never admits a derivative", () => {
+    expect(
+      isRecentActivityFile({ ...person, derivationKind: "variant" }),
     ).toBe(false);
   });
 });

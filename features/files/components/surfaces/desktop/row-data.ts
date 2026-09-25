@@ -33,8 +33,9 @@ import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { toEpochMs } from "@/utils/datetime";
 import {
-  isExcludedFromRecents,
-} from "@/features/files/utils/folder-conventions";
+  isRecentActivityFile,
+  isRecentActivityPath,
+} from "@/features/files/utils/user-visible";
 import type { CloudFilesSection } from "./section";
 import type { FilterChipKey } from "./FilterChips";
 
@@ -182,10 +183,10 @@ export function buildRows({
     if (!file.deletedAt && section === "trash") return false;
 
 
-    // Recents shows what the user worked on — never system/AI-generated output
-    // (scraper captures, variants, Image Studio generations, temp staging).
-    if (filter === "recents" && isExcludedFromRecents(file.filePath))
-      return false;
+    // Recents is the person's own recent activity — the DATABASE's rule
+    // (`files.is_recent_activity`), mirrored: never machine output, never a
+    // file a device (desktop sync) wrote.
+    if (filter === "recents" && !isRecentActivityFile(file)) return false;
 
     if (section === "photos") {
       const mime = (file.mimeType ?? "").toLowerCase();
@@ -248,7 +249,7 @@ export function buildRows({
   const filterFolders = (folder: CloudFolderRecord): boolean => {
     if (folder.deletedAt && section !== "trash") return false;
     if (!folder.deletedAt && section === "trash") return false;
-    if (filter === "recents" && isExcludedFromRecents(folder.folderPath))
+    if (filter === "recents" && !isRecentActivityPath(folder.folderPath))
       return false;
     if (section === "photos") return false; // photos view never shows folders
     if (section === "shared") {

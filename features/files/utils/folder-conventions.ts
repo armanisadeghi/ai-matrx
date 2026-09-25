@@ -466,86 +466,15 @@ export function isSystemPath(path: string | null | undefined): boolean {
  */
 
 /**
- * True when a path holds **system-managed user content** — files that
- * legitimately belong to the user and stay browsable in the Files tree,
- * but are machine-named, background-produced, and high-volume, so they
- * must never appear in the Recents stream.
- *
- * Distinct from `isSystemPath` (fully-hidden backend infra) and
- * `isGeneratedContentPath` (AI output under legacy user roots): these are
- * predefined output folders under USER roots that a user CAN open on
- * purpose but should not see flooding their first screen.
- *
- *  - `tool-images/<id>/v/...` — per-tool generated image variants.
- *  - `Transcripts/Recordings/...` — LEGACY recording location. Recordings
- *    now live under `system-files/transcripts/...` (hidden by `isSystemPath`),
- *    but the backend relocation hook has been seen to miss uploads that
- *    carry the correct `origin: "transcripts"` metadata, so we keep this
- *    legacy path as a defensive Recents guard. (Loud-recovery note: a file
- *    actually present here means a backend relocation miss.)
- *  - `FastFire/sessions/...` + `FastFire/responses/...` — FastFire
- *    voice-drill session + per-card response recordings (same class as
- *    transcript recordings: machine-produced, managed via Education UI).
+ * RECENTS IS THE DATABASE'S RULE TOO. `isExcludedFromRecents`,
+ * `isGeneratedContentPath` and `isSystemManagedContentPath` lived here as a
+ * client-only Recents rule; they are deleted (2026-09-24). Their roots moved
+ * into the one declaration (`files.is_recent_activity*`, aidream
+ * matrx_files/user_visible.py RECENT_EXCLUDED_ROOTS) and the browser applies
+ * its parity-guarded mirror, `isRecentActivityFile` / `isRecentActivityPath`
+ * in `features/files/utils/user-visible.ts`. Rule + registry: common-docs
+ * systems/files/user-files-vs-machine-files.md.
  */
-export function isSystemManagedContentPath(
-  path: string | null | undefined,
-): boolean {
-  if (!path) return false;
-  const roots = [
-    CloudFolders.TOOL_IMAGES, // "tool-images"
-    CloudFolders.TRANSCRIPT_RECORDINGS_LEGACY, // "Transcripts/Recordings" (defensive)
-    CloudFolders.FASTFIRE_SESSIONS, // "FastFire/sessions"
-    CloudFolders.FASTFIRE_RESPONSES, // "FastFire/responses"
-  ];
-  return roots.some((root) => path === root || path.startsWith(`${root}/`));
-}
-
-/**
- * True when a path holds system- or AI-generated content rather than something
- * the user created or uploaded by hand. Distinct from `isSystemPath` (which is
- * the backend-owned `system-files/` infra namespace): these live under USER
- * roots for legacy reasons — the Image Studio writes generated variants to
- * `Images/Generated/...` and agent-block assets land under `Agent Apps/blocks`
- * / `Images/agent-blocks`. The durable fix is migrating these writers to the
- * backend `generations/` registry root (tracked separately); until then this
- * predicate keeps that output out of Recents by path.
- */
-export function isGeneratedContentPath(
-  path: string | null | undefined,
-): boolean {
-  if (!path) return false;
-  const roots = [
-    CloudFolders.IMAGES_GENERATED, // "Images/Generated"
-    CloudFolders.GENERATED, // "Generated"
-    CloudFolders.AGENT_BLOCKS, // "Agent Apps/blocks"
-    "Images/agent-blocks", // legacy agent-block image output
-  ];
-  return roots.some((root) => path === root || path.startsWith(`${root}/`));
-}
-
-/**
- * True when a file/folder path must be excluded from the **Recents** stream.
- * Recents is for things the user actually worked on — never background output.
- * Covers:
- *  - backend infra (`isSystemPath`: `system-files/` — which now includes
- *    transcript recordings at `system-files/transcripts/...` — `generations/`,
- *    `.matrx-tmp/`),
- *  - system/AI-generated user-root content (`isGeneratedContentPath`:
- *    `Images/Generated`, `Generated`, agent-block assets), and
- *  - system-managed user-root content (`isSystemManagedContentPath`:
- *    `tool-images` variants + the legacy `Transcripts/Recordings` guard) —
- *    high-volume machine-named files that flood Recents but stay browsable
- *    in the tree.
- */
-export function isExcludedFromRecents(
-  path: string | null | undefined,
-): boolean {
-  return (
-    isSystemPath(path) ||
-    isGeneratedContentPath(path) ||
-    isSystemManagedContentPath(path)
-  );
-}
 
 /**
  * True if the folder path matches one of our canonical conventions (either

@@ -13,7 +13,8 @@
  *   A. MIRROR PARITY — every path in the corpus below, plus every distinct
  *      top-level prefix that actually exists in this account, gets the SAME
  *      answer from `features/files/utils/user-visible.ts` as from the live
- *      `files.is_user_visible_path` / `public.is_system_path` functions.
+ *      `files.is_user_visible_path` / `files.is_user_visible_folder_path` /
+ *      `files.is_recent_activity_path` functions.
  *
  *   B. RENDERED-SET PARITY — the set of file ids the BROWSER renders equals
  *      the set the predicate admits. The browser's rendered set is what
@@ -48,6 +49,7 @@ import { config as loadEnv } from "dotenv";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import {
+  isRecentActivityPath,
   isUserVisibleFilePath,
   isUserVisibleFolderPath,
 } from "./user-visible";
@@ -77,6 +79,16 @@ const PATH_CORPUS = [
   "system-files-not-really/a.txt",
   ".matrx-tmpish/a.txt",
   "Inbox/note.md",
+  "/coding-sessions/x.md",
+  "My Files/coding-sessions/x.md",
+  "Images/Generated/cat.png",
+  "Images/Generated",
+  "Images/GeneratedX/cat.png",
+  "Generated/a.png",
+  "Agent Apps/blocks/b.png",
+  "Images/agent-blocks/c.png",
+  "/Transcripts/Recordings/x.m4a",
+  "FastFire/responses/r.wav",
 ];
 
 /** Paths per round trip. A knob, not a constant (limits are knobs). */
@@ -172,6 +184,7 @@ async function main(): Promise<void> {
     file_path: string | null;
     parent_file_id: string | null;
     derivation_kind: string | null;
+    artifact_kind: string | null;
     metadata: Record<string, unknown> | null;
   }> = [];
   const ROW_PAGE = 1000;
@@ -179,7 +192,9 @@ async function main(): Promise<void> {
     const { data, error } = await supabase
       .schema("files")
       .from("files")
-      .select("id, file_path, parent_file_id, derivation_kind, metadata")
+      .select(
+        "id, file_path, parent_file_id, derivation_kind, artifact_kind, metadata",
+      )
       .eq("created_by", userId)
       .is("deleted_at", null)
       .order("id", { ascending: true })
@@ -212,22 +227,37 @@ async function main(): Promise<void> {
       fail(
         `files.is_user_visible_paths returned no verdict for ${JSON.stringify(path)} — the batch RPC dropped a path, which would silently shrink this comparison.`,
       );
-    const { data: sqlSystem, error: e2 } = await supabase.rpc("is_system_path", {
-      p_path: path,
-    });
-    if (e2) fail(`public.is_system_path('${path}') failed: ${e2.message}`);
+    const { data: sqlFolder, error: e2 } = await filesSchema.rpc(
+      "is_user_visible_folder_path",
+      { p_folder_path: path },
+    );
+    if (e2)
+      fail(`files.is_user_visible_folder_path('${path}') failed: ${e2.message}`);
+    const { data: sqlRecent, error: e3 } = await filesSchema.rpc(
+      "is_recent_activity_path",
+      { p_file_path: path },
+    );
+    if (e3)
+      fail(`files.is_recent_activity_path('${path}') failed: ${e3.message}`);
 
     const tsFile = isUserVisibleFilePath(path);
     const tsFolder = isUserVisibleFolderPath(path);
+    const tsRecent = isRecentActivityPath(path);
     if (tsFile !== sqlFile) {
       console.error(
         `  file rule mismatch on ${JSON.stringify(path)}: TS=${tsFile} SQL=${sqlFile}`,
       );
       mismatches += 1;
     }
-    if (tsFolder !== !sqlSystem) {
+    if (tsFolder !== Boolean(sqlFolder)) {
       console.error(
-        `  folder rule mismatch on ${JSON.stringify(path)}: TS=${tsFolder} SQL=${!sqlSystem}`,
+        `  folder rule mismatch on ${JSON.stringify(path)}: TS=${tsFolder} SQL=${Boolean(sqlFolder)}`,
+      );
+      mismatches += 1;
+    }
+    if (tsRecent !== Boolean(sqlRecent)) {
+      console.error(
+        `  recents rule mismatch on ${JSON.stringify(path)}: TS=${tsRecent} SQL=${Boolean(sqlRecent)}`,
       );
       mismatches += 1;
     }
@@ -269,7 +299,11 @@ async function main(): Promise<void> {
 
   const candidates = rows.filter((row) => {
     if (typeof row.file_path !== "string") return false;
-    if (row.parent_file_id !== null || row.derivation_kind !== null)
+    if (
+      row.parent_file_id !== null ||
+      row.derivation_kind !== null ||
+      row.artifact_kind !== null
+    )
       return false;
     // The RPC's SECOND conjunct: `NOT files.is_crawl_artifact(id)`. Its
     // metadata branch is readable from here; its web.snapshot / web.screenshot

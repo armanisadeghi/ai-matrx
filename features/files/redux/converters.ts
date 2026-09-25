@@ -131,6 +131,7 @@ export function dbRowToCloudFile(row: CloudFileReadRow): CloudFile {
     // identified as duplicates / never had their canonical extract set.
     duplicateOfFileId: row.duplicate_of_file_id ?? null,
     canonicalProcessedDocumentId: row.canonical_processed_document_id ?? null,
+    originDeviceId: row.origin_device_id ?? null,
   };
 }
 
@@ -477,6 +478,7 @@ export function parseCloudTreeRow(raw: unknown): CloudTreeRow | null {
     created_at: created,
     updated_at: updated,
     deleted_at: str(row, "deleted_at"),
+    origin_device_id: str(row, "origin_device_id"),
   };
 }
 

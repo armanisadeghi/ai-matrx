@@ -138,6 +138,8 @@ describe("file handler resolver", () => {
       width: null,
       height: null,
       duration_ms: null,
+      origin_device_id: null,
+      artifact_kind: null,
     });
 
     const resolved = await resolve(

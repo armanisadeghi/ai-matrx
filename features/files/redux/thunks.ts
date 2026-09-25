@@ -376,6 +376,7 @@ export const loadUserFileTree = createAsyncThunk<
             createdAt: row.created_at,
             updatedAt: row.updated_at,
             deletedAt: row.deleted_at,
+            originDeviceId: row.origin_device_id,
           });
         } else {
           folders.push({
@@ -1709,6 +1710,7 @@ export const loadTrash = createAsyncThunk<void, { userId: string }, ThunkApi>(
           createdAt: row.created_at,
           updatedAt: row.updated_at,
           deletedAt: row.deleted_at,
+          originDeviceId: row.origin_device_id,
         });
       } else {
         folders.push({

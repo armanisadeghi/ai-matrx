@@ -151,9 +151,10 @@ export type CloudFileUpdate = FilesTables["files"]["Update"];
  * files". Subtracting one name from the generated Row type therefore described
  * a row the client cannot actually read: on 2026-09-13 the table gained
  * `origin_device_id` and `client_modified_at` (folder-sync 028, no client
- * grant) and every selected row stopped matching this type (2 errors, and the
- * tempting "fix" — adding them to the select — would have 403'd every file read
- * in the app). Deriving from the query makes the select list the single truth.
+ * grant then) and every selected row stopped matching this type. Deriving from
+ * the query makes the select list the single truth. (2026-09-24: `authenticated`
+ * now holds SELECT on `origin_device_id` and `artifact_kind`, verified live, and
+ * both are in the select list — Recents needs the first.)
  *
  * Same deal for `file_versions` via `FILE_VERSIONS_TABLE_COLUMNS`.
  */
@@ -324,6 +325,13 @@ export interface CloudFile {
   derivationKind?: string | null;
   derivationMetadata?: Record<string, unknown> | null;
   /**
+   * The registered device (`public.app_instances.id`) that wrote this row — a
+   * desktop sync client — or null for an in-app write. A device's write is the
+   * person's file but never their recent activity: Recents keys on this via
+   * `isRecentActivityFile` (mirror of `files.is_recent_activity`).
+   */
+  originDeviceId?: string | null;
+  /**
    * When set, this row is a deliberate parallel copy of `duplicateOfFileId`
    * (the keeper). Set by:
    *   - the dedup consolidation script (soft-deletes the duplicate row +
@@ -435,6 +443,8 @@ export interface CloudTreeFileRow {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  /** Device that wrote the row (desktop sync), null for an in-app write. */
+  origin_device_id: string | null;
 }
 
 export interface CloudTreeFolderRow {
