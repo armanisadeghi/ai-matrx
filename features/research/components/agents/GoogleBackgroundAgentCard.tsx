@@ -15,8 +15,8 @@ import { toast } from "@/lib/toast";
 import {
   getGoogleBackgroundInteraction,
   startGoogleBackgroundInteraction,
+  GOOGLE_BACKGROUND_JOBS,
   type GoogleBackgroundInteractionView,
-  type GoogleBackgroundModel,
 } from "../../service/google-background";
 
 const TERMINAL = new Set(["completed", "failed", "cancelled"]);
@@ -40,9 +40,8 @@ function collectStrings(
 
 export function GoogleBackgroundAgentCard({ topicId }: { topicId: string }) {
   const storageKey = `research:google-background:${topicId}`;
-  const [model, setModel] = useState<GoogleBackgroundModel>(
-    "deep-research-preview-04-2026",
-  );
+  // The person picks a JOB; its mandate picks the model (server-side).
+  const [jobIndex, setJobIndex] = useState(0);
   const [input, setInput] = useState("");
   const [view, setView] = useState<GoogleBackgroundInteractionView | null>(
     null,
@@ -99,7 +98,7 @@ export function GoogleBackgroundAgentCard({ topicId }: { topicId: string }) {
     setError(null);
     try {
       const next = await startGoogleBackgroundInteraction({
-        model,
+        mandate_key: GOOGLE_BACKGROUND_JOBS[jobIndex].mandateKey,
         input: input.trim(),
         idempotency_key: crypto.randomUUID(),
       });
@@ -163,25 +162,18 @@ export function GoogleBackgroundAgentCard({ topicId }: { topicId: string }) {
 
       {!view || TERMINAL.has(view.status) ? (
         <div className="grid gap-3 sm:grid-cols-[18rem_minmax(0,1fr)]">
-          {/* canonical-model-picker-exempt: Google background-agent wire enum, not an ai.model_definition id */}
           <label className="space-y-1 text-xs font-medium">
             Agent
             <select
-              value={model}
-              onChange={(event) =>
-                setModel(event.target.value as GoogleBackgroundModel)
-              }
+              value={jobIndex}
+              onChange={(event) => setJobIndex(Number(event.target.value))}
               className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
             >
-              <option value="deep-research-preview-04-2026">
-                Deep Research
-              </option>
-              <option value="deep-research-max-preview-04-2026">
-                Deep Research Max
-              </option>
-              <option value="antigravity-preview-05-2026">
-                Antigravity sandbox agent
-              </option>
+              {GOOGLE_BACKGROUND_JOBS.map((job, index) => (
+                <option key={job.mandateKey} value={index}>
+                  {job.label}
+                </option>
+              ))}
             </select>
           </label>
           <label className="space-y-1 text-xs font-medium">

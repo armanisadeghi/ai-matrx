@@ -44,7 +44,7 @@ describe("googleRealtimeClient accessToken (decoupled from organization admissio
     // organization kernel at all (it only wires callbacks; accessToken()
     // runs later, inside connect()).
     expect(() =>
-      createGoogleRealtimeClient("live", { model: "gemini-test" }),
+      createGoogleRealtimeClient("live", {}),
     ).not.toThrow();
   });
 
@@ -54,7 +54,7 @@ describe("googleRealtimeClient accessToken (decoupled from organization admissio
       error: null,
     } as never);
 
-    const client = createGoogleRealtimeClient("live", { model: "gemini-test" });
+    const client = createGoogleRealtimeClient("live", {});
     await expect(client.connect()).rejects.toThrow(
       "A signed-in session is required for Google realtime models.",
     );
@@ -66,7 +66,7 @@ describe("googleRealtimeClient accessToken (decoupled from organization admissio
       error: null,
     } as never);
 
-    const client = createGoogleRealtimeClient("live", { model: "gemini-test" });
+    const client = createGoogleRealtimeClient("live", {});
     // The real WebSocket constructor isn't available/meaningful in this
     // node-environment test — what matters is that resolving the token
     // itself never throws (organization-mandatory or otherwise). A thrown

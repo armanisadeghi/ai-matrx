@@ -4,8 +4,13 @@ export type GoogleRealtimeChannel = "live" | "music";
 export type GoogleRealtimeConnectionState =
   "idle" | "connecting" | "ready" | "reconnecting" | "closed" | "error";
 
+/**
+ * 🚨 NO `model`. The server resolves the channel's MANDATE (`voice.gemini_live`
+ * for "live", `audio.live_music` for "music") and runs its Holder agent's
+ * model; a setup frame that names a model is refused (close 4400). Until
+ * 2026-09-25 the browser picked the model from hard-coded lists.
+ */
 export interface GoogleRealtimeSetup {
-  model: string;
   options?: Record<string, unknown>;
 }
 
@@ -115,7 +120,6 @@ export function createGoogleRealtimeClient(
         JSON.stringify({
           type: "setup",
           access_token: token,
-          model: setup.model,
           ...(Object.keys(options).length > 0 ? { options } : {}),
         }),
       );

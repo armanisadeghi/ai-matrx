@@ -44,7 +44,17 @@ const open = async (p, query = "") => {
   if (await dismiss.waitFor({ state: "visible", timeout: 3000 }).then(() => true).catch(() => false)) await dismiss.click();
 };
 try {
-  report.seat = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
+  // A shared dev server compiles the sign-in path on first use and can outlast the helper's
+  // 60-second wait; the next attempt meets a compiled route. Bounded, and said in the report.
+  for (let attempt = 1; ; attempt++) {
+    try {
+      report.seat = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
+      report.signInAttempts = attempt;
+      break;
+    } catch (error) {
+      if (attempt >= 4) throw error;
+    }
+  }
 
   // ── 1. The cold screen. ──
   where = "cold";

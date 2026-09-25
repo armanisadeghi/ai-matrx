@@ -266,6 +266,12 @@ export const MODEL_CHOICE_RULES: ModelRule[] = [
     fix: "the Google embedding lab picks a raw embedding model and is DEV-ONLY: mount it only under app/(dev)/ (see app/(dev)/demos/embedding-lab).",
   },
   {
+    id: "google-session-model-literal",
+    re: /["'`](?:gemini-[\w.-]*live[\w.-]*|gemini-[\w.-]*native-audio[\w.-]*|gemini-robotics[\w.-]*|lyria-[\w.-]*|deep-research-[\w.-]*|antigravity-[\w.-]*|gemini-embedding-[\w.-]*)["'`]/,
+    allowFiles: ["features/rag/api/google-embeddings.ts", "features/rag/components/GoogleEmbeddingLab.tsx"],
+    fix: "Gemini Live, Lyria music and the Google background agents run their MANDATE's Holder model, resolved on aidream (services/google_specialized.py: voice.gemini_live, audio.live_music, research_client.google_*). The client sends a job/mandate key, never a model. (Embedding lab files are the dev-only exception.)",
+  },
+  {
     id: "direct-provider-sdk-import",
     re: /from\s+["'](?:openai|@anthropic-ai\/sdk|@ai-sdk\/[\w-]+|@google\/genai|@google\/generative-ai|groq-sdk)["']/,
     fix: "no provider SDK in the frontend — every AI call goes through a mandate on aidream (POST /ai/mandates/{key}). Deleted 2026-09-25: lib/ai/providers, lib/ai/adapters, actions/ai.ts, actions/quiz.ts, app/api/generate-quiz.",
@@ -313,6 +319,7 @@ function selfTest(): void {
     "xai-realtime-model-literal": 'const M = "grok-voice-latest";',
     "observational-memory-model-override": 'request.memory_model = "google/gemini-2.5-flash";',
     "embedding-lab-in-product": 'import { GoogleEmbeddingLab } from "@/features/rag/components/GoogleEmbeddingLab";',
+    "google-session-model-literal": 'const client = createGoogleRealtimeClient("live", { model: "gemini-3.1-flash-live-preview" });',
     "direct-provider-sdk-import": 'import { google } from "@ai-sdk/google";',
   };
   let failed = 0;

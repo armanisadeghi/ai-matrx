@@ -1,9 +1,33 @@
 import { getJson, postJson } from "@/lib/python-client";
+import {
+  dbAuthoredMandateKey,
+  type AnyMandateKey,
+} from "@/features/mandates/mandate-key";
 
-export type GoogleBackgroundModel =
-  | "deep-research-preview-04-2026"
-  | "deep-research-max-preview-04-2026"
-  | "antigravity-preview-05-2026";
+/**
+ * The JOBS the background-agent card can start. The person picks a job; the
+ * job's MANDATE (declared in aidream `services/google_specialized.py`) picks
+ * the model on the server. Until 2026-09-25 this was a union of raw Google
+ * model ids sent as `model` — a model choice outside the mandate system.
+ *
+ * `dbAuthoredMandateKey`: declared in aidream but newer than the installed
+ * `@ai-matrx/agents`; allowlisted in scripts/mandate-keys-allowlist.json.
+ * Switch to MANDATE_KEYS.research_client__google_* once the package publishes.
+ */
+export const GOOGLE_BACKGROUND_JOBS = [
+  {
+    mandateKey: dbAuthoredMandateKey("research_client.google_deep_research"),
+    label: "Deep Research",
+  },
+  {
+    mandateKey: dbAuthoredMandateKey("research_client.google_deep_research_max"),
+    label: "Deep Research Max",
+  },
+  {
+    mandateKey: dbAuthoredMandateKey("research_client.google_sandbox_task"),
+    label: "Antigravity sandbox agent",
+  },
+] as const;
 
 export interface GoogleBackgroundInteractionView {
   execution_id: string;
@@ -16,7 +40,8 @@ export interface GoogleBackgroundInteractionView {
 }
 
 export async function startGoogleBackgroundInteraction(body: {
-  model: GoogleBackgroundModel;
+  /** One of GOOGLE_BACKGROUND_JOBS' mandate keys. */
+  mandate_key: AnyMandateKey;
   input: string;
   idempotency_key: string;
 }): Promise<GoogleBackgroundInteractionView> {

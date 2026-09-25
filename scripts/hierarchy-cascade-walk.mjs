@@ -71,7 +71,15 @@ const sharingTab = async () => {
 const fieldText = async () => (await page.locator('[data-engagement-picker="field"]').first().textContent())?.trim();
 
 try {
-  report.seat = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
+  // The shared preview can be slow under machine load; a person would press again.
+  for (let attempt = 1; ; attempt++) {
+    try {
+      report.seat = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
+      break;
+    } catch (e) {
+      if (attempt >= 4) throw e;
+    }
+  }
 
   // ── 1. Agent app settings ──
   where = "agent-app";

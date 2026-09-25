@@ -9,15 +9,11 @@ import { VoiceOrb } from "./VoiceOrb";
 import { VoiceStatusPill } from "./VoiceStatusPill";
 import { useGoogleLiveSession } from "../hooks/useGoogleLiveSession";
 
-const LIVE_MODELS = [
-  ["gemini-3.1-flash-live-preview", "Gemini 3.1 Flash Live"],
-  ["gemini-3.5-live-translate-preview", "Gemini 3.5 Live Translate"],
-  ["gemini-2.5-flash-native-audio-preview-12-2025", "Gemini 2.5 Native Audio"],
-  ["gemini-robotics-er-2-streaming-preview", "Gemini Robotics Streaming"],
-] as const;
+// No model list: the session runs the `voice.gemini_live` mandate's Holder
+// model, resolved on the server (2026-09-25; it was a hard-coded 4-model
+// picker — a model choice outside the mandate system).
 
 export function GoogleLiveSurface() {
-  const [model, setModel] = useState<string>(LIVE_MODELS[0][0]);
   const [thinkingLevel, setThinkingLevel] = useState<
     "minimal" | "low" | "medium" | "high"
   >("minimal");
@@ -26,13 +22,9 @@ export function GoogleLiveSurface() {
   >("TURN_INCLUDES_ONLY_ACTIVITY");
   const [responseMode, setResponseMode] = useState<"AUDIO" | "TEXT">("AUDIO");
   const session = useGoogleLiveSession({
-    model,
     thinkingLevel,
     turnCoverage,
-    responseModalities:
-      model === "gemini-robotics-er-2-streaming-preview"
-        ? ["TEXT"]
-        : [responseMode],
+    responseModalities: [responseMode],
   });
   const active = session.status !== "idle" && session.status !== "error";
 
@@ -47,20 +39,6 @@ export function GoogleLiveSurface() {
           Voice playground
         </Link>
         <div className="flex min-w-0 items-center gap-2">
-          {/* canonical-model-picker-exempt: Google Live wire model, not an ai.model_definition id */}
-          <select
-            aria-label="Google Live model"
-            value={model}
-            disabled={active}
-            onChange={(event) => setModel(event.target.value)}
-            className="h-8 max-w-64 rounded-md border border-border bg-background px-2 text-xs disabled:opacity-60"
-          >
-            {LIVE_MODELS.map(([id, label]) => (
-              <option key={id} value={id}>
-                {label}
-              </option>
-            ))}
-          </select>
           <select
             aria-label="Thinking level"
             value={thinkingLevel}
@@ -94,14 +72,8 @@ export function GoogleLiveSurface() {
           </select>
           <select
             aria-label="Response modality"
-            value={
-              model === "gemini-robotics-er-2-streaming-preview"
-                ? "TEXT"
-                : responseMode
-            }
-            disabled={
-              active || model === "gemini-robotics-er-2-streaming-preview"
-            }
+            value={responseMode}
+            disabled={active}
             onChange={(event) =>
               setResponseMode(event.target.value as "AUDIO" | "TEXT")
             }

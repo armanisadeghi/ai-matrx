@@ -97,9 +97,8 @@ export function GoogleMusicMixer() {
       return;
     }
     setError(null);
-    const next = createGoogleRealtimeClient("music", {
-      model: "lyria-realtime-exp",
-    });
+    // The model is the `audio.live_music` mandate's Holder's, chosen server-side.
+    const next = createGoogleRealtimeClient("music", {});
     const session = beginPlaybackSession({
       source: "music-realtime",
       label: "Lyria realtime music",

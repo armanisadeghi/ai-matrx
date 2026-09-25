@@ -14,7 +14,6 @@ export interface GoogleLiveTranscriptTurn {
 }
 
 export interface GoogleLiveOptions {
-  model?: string;
   thinkingLevel?: "minimal" | "low" | "medium" | "high";
   turnCoverage?: "TURN_INCLUDES_ONLY_ACTIVITY" | "TURN_INCLUDES_ALL_INPUT";
   responseModalities?: Array<"TEXT" | "AUDIO">;
@@ -22,7 +21,7 @@ export interface GoogleLiveOptions {
   systemInstruction?: string;
 }
 
-const DEFAULT_MODEL = "gemini-3.1-flash-live-preview";
+// No model here: the server runs the `voice.gemini_live` mandate's Holder model.
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -175,7 +174,6 @@ export function useGoogleLiveSession(options: GoogleLiveOptions = {}) {
     playbackRef.current.warmupSync();
 
     const client = createGoogleRealtimeClient("live", {
-      model: options.model ?? DEFAULT_MODEL,
       options: {
         thinking_level: options.thinkingLevel ?? "minimal",
         turn_coverage: options.turnCoverage ?? "TURN_INCLUDES_ONLY_ACTIVITY",

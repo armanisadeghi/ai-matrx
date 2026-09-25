@@ -145,6 +145,7 @@ async function pickFromMenu(page, word) {
   await sleep(4000);
 }
 
+let walkError = null;
 try {
   // 1. admin opens → the Sheet; switches to Kanban, then Calendar; reloads → the Sheet.
   const admin = await seat("admin");
@@ -187,14 +188,28 @@ try {
   facts.memberWrites = member.writes;
   check((await storedDefault()) === "calendar", "store: the member's Kanban look left the default the Calendar", await storedDefault());
   facts.layoutWritesAccepted = layoutWrites.length;
+} catch (err) {
+  walkError = err;
+  console.error(`walk stopped: ${err?.message ?? err}`);
+  failures.push(`walk stopped: ${String(err?.message ?? err).split("\n")[0]}`);
 } finally {
-  await browser.close();
+  await browser.close().catch(() => {});
   if (!process.argv.includes("--keep")) {
-    let pass = await call("table_archive", { p_organization_id: ORG, p_table_id: tableId, p_chunk: 0, p_include_table: true });
-    while (!pass.done) pass = await call("table_archive", { p_organization_id: ORG, p_table_id: tableId, p_chunk: 50, p_include_table: true });
-    console.log(`cleanup: ${pass.message}`);
-    facts.archived = pass.message;
+    // A network blip must never leave the disposable table behind: retry the archive.
+    for (let tries = 1; tries <= 5; tries += 1) {
+      try {
+        let pass = await call("table_archive", { p_organization_id: ORG, p_table_id: tableId, p_chunk: 0, p_include_table: true });
+        while (!pass.done) pass = await call("table_archive", { p_organization_id: ORG, p_table_id: tableId, p_chunk: 50, p_include_table: true });
+        console.log(`cleanup: ${pass.message}`);
+        facts.archived = pass.message;
+        break;
+      } catch (err) {
+        console.error(`cleanup try ${tries}: ${err.message}`);
+        await sleep(5000 * tries);
+      }
+    }
   }
+  facts.error = walkError ? String(walkError?.message ?? walkError) : null;
   writeFileSync(`${OUT}/walk.json`, JSON.stringify(facts, null, 2));
 }
 if (failures.length) {

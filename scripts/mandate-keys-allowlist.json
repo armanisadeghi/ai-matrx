@@ -58,5 +58,20 @@
     "file": "features/marketing/seo/topical-map/panel/topicCuration.ts",
     "key": "seo.topic_curation",
     "reason": "Declared in aidream d2b14cee (2026-09-18, the Topical Map Topic Agent); package republish pending \u2014 @ai-matrx/agents on npm predates the regenerated key set. Remove this row and swap the literal for MANDATE_KEYS.seo__topic_curation once the package publishes the key."
+  },
+  {
+    "file": "features/research/service/google-background.ts",
+    "key": "research_client.google_deep_research",
+    "reason": "Declared 2026-09-25 in aidream services/google_specialized.py (the research topic's Google background-agent jobs; the server resolves the mandate and its Holder picks the model, replacing a client-sent raw model id). The installed @ai-matrx/agents predates it. Reaches the request through dbAuthoredMandateKey(); remove this row and switch to MANDATE_KEYS once the package republishes."
+  },
+  {
+    "file": "features/research/service/google-background.ts",
+    "key": "research_client.google_deep_research_max",
+    "reason": "Declared 2026-09-25 in aidream services/google_specialized.py (the research topic's Google background-agent jobs; the server resolves the mandate and its Holder picks the model, replacing a client-sent raw model id). The installed @ai-matrx/agents predates it. Reaches the request through dbAuthoredMandateKey(); remove this row and switch to MANDATE_KEYS once the package republishes."
+  },
+  {
+    "file": "features/research/service/google-background.ts",
+    "key": "research_client.google_sandbox_task",
+    "reason": "Declared 2026-09-25 in aidream services/google_specialized.py (the research topic's Google background-agent jobs; the server resolves the mandate and its Holder picks the model, replacing a client-sent raw model id). The installed @ai-matrx/agents predates it. Reaches the request through dbAuthoredMandateKey(); remove this row and switch to MANDATE_KEYS once the package republishes."
   }
 ]
