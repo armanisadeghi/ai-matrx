@@ -42,28 +42,6 @@ const COMPUTED_KEYS = new Set<string>([
 /** The platform knob naming the System items every agent receives without naming them. */
 const SYSTEM_ITEM_DEFAULTS_KNOB = { feature: "context", key: "system_item_defaults" } as const;
 
-/**
- * 🚨 A DECLARED GAP, NOT A HATCH. `public.resolve_full_context` gained its fifth argument
- * `p_system_item_refs text[]` in
- * `migrations/campaign/cvn2_a_system_item_is_read_only_when_it_is_named.sql` (lane
- * CONTEXT-VALUES-NAMED-2) and `types/database.types.ts` is regenerated wholesale by
- * `pnpm db-types`, shared by every lane in this checkout. Until it carries the argument, the one
- * call this route makes is described here, by name and argument, so its shape is still checked.
- * When the generated types carry it, delete this and call `.rpc()` directly.
- */
-type ResolveFullContextRpc = {
-  rpc(
-    fn: "resolve_full_context",
-    args: {
-      p_user_id: string;
-      p_entity_type: string;
-      p_entity_id: string;
-      p_scope_ids?: string[];
-      p_system_item_refs: string[];
-    },
-  ): PromiseLike<{ data: Json | null; error: { message: string } | null }>;
-};
-
 type ValueType = Database["public"]["Enums"]["context_value_type"];
 type Sensitivity = Database["public"]["Enums"]["context_sensitivity"];
 type FeedType = Database["public"]["Enums"]["context_feed_type"];
@@ -220,7 +198,7 @@ async function buildPreview(
     );
   const defaults = knob.value.filter((k): k is string => typeof k === "string");
 
-  const { data, error } = await (admin as unknown as ResolveFullContextRpc).rpc(
+  const { data, error } = await admin.rpc(
     "resolve_full_context",
     {
       p_user_id: userId,

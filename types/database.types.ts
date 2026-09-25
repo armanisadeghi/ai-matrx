@@ -27874,6 +27874,15 @@ export type Database = {
         Args: { p_max_age?: string }
         Returns: number
       }
+      regenerate_study_plan: {
+        Args: {
+          p_blocks?: Json
+          p_days?: Json
+          p_plan: Json
+          p_plan_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
