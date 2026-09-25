@@ -36,8 +36,13 @@ mkdirSync(OUT, { recursive: true });
 
 async function headerFacts(page) {
   return page.evaluate(() => {
-    const title = document.querySelector(".hdr-structured-title");
-    const ctx = document.querySelector(".hdr-structured-context");
+    // The page mounts a "Data" fallback header until the table's own one takes over; measure the
+    // title that is actually on screen (the last mounted, with a box).
+    const titles = Array.from(document.querySelectorAll(".hdr-structured-title")).filter(
+      (el) => el.getBoundingClientRect().width > 0,
+    );
+    const title = titles[titles.length - 1] ?? null;
+    const ctx = title?.parentElement?.querySelector(".hdr-structured-context") ?? null;
     const t = title?.getBoundingClientRect();
     const c = ctx?.getBoundingClientRect();
     return {

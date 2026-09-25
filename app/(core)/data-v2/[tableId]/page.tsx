@@ -24,6 +24,8 @@ import { recordStoreShare } from "@/features/sharing/components/RecordStoreShare
 import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
+import type { HeaderAction } from "@/features/shell/components/header/variants/types";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { getOrganizationMembers } from "@/features/organizations/service";
@@ -43,7 +45,6 @@ import { runRowAgentAction, type RowAgentActionTarget } from "@/features/unified
 import { toast } from "@/lib/toast";
 import {
   ROW_CHANGE_AGENT_LABEL,
-  RowChangeAgentLink,
   useRowChangeAgentOffer,
 } from "@/features/unified-data/row-change-agent/RowChangeAgentLink";
 
@@ -52,7 +53,7 @@ import {
  * DATA-V2-FACE: `TablePage`'s `leading` and `menuExtras`, the table menu, the designated
  * opening). Until that release is installed the page keeps the where-it-lives row it had, so the
  * organization stays named; once it is, the row is gone and the chip rides the table's own row.
- * SWAP ON INSTALL: delete this constant and the `!FACE_AWARE` stand-in row below, and pass
+ * SWAP ON INSTALL: delete this constant and `standInHeaderActions` below, and pass
  * `menuExtras` by name inside `<TablePage>` (the organization rides the page header, so
  * `leading` is not passed — lane DATA-V2-FACE-2).
  */
@@ -63,7 +64,15 @@ const FACE_AWARE = typeof (recordsUiPackage as Record<string, unknown>)["tableOp
  * the thing he knows, not like "Data"). Read inside the mount, through the same `useTable` every
  * package screen reads, and set through the shell's one header primitive.
  */
-function TableTitle({ tableId, context }: { tableId: string; context?: ReactNode }) {
+function TableTitle({
+  tableId,
+  context,
+  actions,
+}: {
+  tableId: string;
+  context?: ReactNode;
+  actions?: HeaderAction[];
+}) {
   const table = useTable(tableId);
   const name = table.data?.name?.trim();
   return (
@@ -71,7 +80,11 @@ function TableTitle({ tableId, context }: { tableId: string; context?: ReactNode
       {/* ONE ROW (lane DATA-V2-FACE-2): the table's whole name, and beside it, quiet, the
           organization it lives in — Linear's team beside the issue title. On a phone the
           organization sits under the name so the name keeps the width. */}
-      <HeaderStructured title={name && name !== "" ? name : "Data"} context={context} />
+      <HeaderStructured
+        title={name && name !== "" ? name : "Data"}
+        context={context}
+        {...(actions && actions.length > 0 ? { actions } : {})}
+      />
     </PageHeader>
   );
 }
@@ -465,6 +478,36 @@ export default function UnifiedDataTableRoute({
         ) : null}
       </span>
     ) : null;
+  /**
+   * STAND-IN until the installed records-ui carries the table menu's `menuExtras` (see FACE_AWARE):
+   * the run-an-agent offer rides the header's own action slot on a wide screen, so there is no row of
+   * its own above the table. Absent unless the store offers it; a refusal says why.
+   */
+  const isMobile = useIsMobile();
+  const standInHeaderActions: HeaderAction[] =
+    // On a phone the name keeps the header's width; the offer returns there in the table menu.
+    FACE_AWARE || campaign.state !== "on" || isMobile
+      ? []
+      : rowChangeOffer.state === "offered"
+        ? [
+            {
+              icon: "Zap",
+              label: ROW_CHANGE_AGENT_LABEL,
+              onPress: () => router.push((rowChangeOffer as { href: string }).href),
+            },
+          ]
+        : rowChangeOffer.state === "refused"
+          ? [
+              {
+                icon: "Zap",
+                label: ROW_CHANGE_AGENT_LABEL,
+                onPress: () =>
+                  toast.error("Running an agent when a row changes is not available", {
+                    description: (rowChangeOffer as { why: string }).why,
+                  }),
+              },
+            ]
+          : [];
   /** The organization rides the page header beside the name, so the table's own row takes no `leading`. */
   const facePorts = {
     menuExtras:
@@ -497,23 +540,6 @@ export default function UnifiedDataTableRoute({
         <HeaderStructured title="Data" />
       </PageHeader>
       <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
-        {/* STAND-IN until the installed records-ui carries the table menu's `menuExtras` — see
-            FACE_AWARE. Only the run-an-agent link rides it, and only when the store offers it: the
-            organization is in the header now, so there is no row at all otherwise. */}
-        {!FACE_AWARE && object.state === "found" && campaign.state === "on" &&
-        (rowChangeOffer.state === "offered" || rowChangeOffer.state === "refused") ? (
-          <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
-            {/* TABLE-PARITY N2: absent until the store says a row change here reaches a schedule. */}
-            <span className="ml-auto">
-              <RowChangeAgentLink
-                tableId={tableId}
-                tableName={null}
-                organizationId={object.organizationId}
-                userId={userId ?? null}
-              />
-            </span>
-          </div>
-        ) : null}
         {object.state === "resolving" ? (
           <p className="text-sm text-muted-foreground">Opening the table&hellip;</p>
         ) : object.state === "not-given" ? (
@@ -615,7 +641,7 @@ export default function UnifiedDataTableRoute({
                 somebody else's table must never be left to work out why their
                 own organization's things are not around it. One row, the
                 organization's name, and what they hold. */}
-            <TableTitle tableId={tableId} context={whereItLives} />
+            <TableTitle tableId={tableId} context={whereItLives} actions={standInHeaderActions} />
             {/* SIDE BY SIDE IS A FACT, NOT A BANNER (owner, 2026-09-24): no notice that this table
                 also lives in the older system, and no "shared with you" paragraph — the table's
                 row names its organization and the level it was shared at. */}

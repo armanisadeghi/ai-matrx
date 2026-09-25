@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-25T00:27:06.961Z",
+  "generated_at": "2026-09-25T00:44:56.305Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -1657,6 +1657,30 @@
       "filename": "entitytail_the_retrofit_reaches_the_last_table.sql",
       "checksum": "b0342cb80fa9e0b84aa9eb8d4378343a56ae723e866aafa900d825dd1686e5f7",
       "applied_at": "2026-09-20 14:22:40.140782+00"
+    },
+    "migrations/campaign/errorshonest_s1_one_way_to_say_not_found.sql": {
+      "source": "matrx-frontend",
+      "filename": "errorshonest_s1_one_way_to_say_not_found.sql",
+      "checksum": "f838d6ee0b2f464474c4bf758fdfc66313aae1ce3c469ab45ea47b27b7c4ec90",
+      "applied_at": "2026-09-25 00:41:26.205643+00"
+    },
+    "migrations/campaign/errorshonest_s2_the_public_doors_say_not_found.sql": {
+      "source": "matrx-frontend",
+      "filename": "errorshonest_s2_the_public_doors_say_not_found.sql",
+      "checksum": "af50e9b739c40c92f6c8881f45220b7870d040e9a53617bc052aa0f3f14da9e5",
+      "applied_at": "2026-09-25 00:43:04.571062+00"
+    },
+    "migrations/campaign/errorshonest_s3_the_seo_doors_say_not_found.sql": {
+      "source": "matrx-frontend",
+      "filename": "errorshonest_s3_the_seo_doors_say_not_found.sql",
+      "checksum": "39123c239205f68f7bde1f17318418321f09fa72b2f1529b6583213a9408270c",
+      "applied_at": "2026-09-25 00:44:17.011778+00"
+    },
+    "migrations/campaign/errorshonest_s4_the_communication_doors_say_not_found.sql": {
+      "source": "matrx-frontend",
+      "filename": "errorshonest_s4_the_communication_doors_say_not_found.sql",
+      "checksum": "654c5259b2c082fbec459f10e9e099249e4fa16cf16482edc51352252ba8b8e1",
+      "applied_at": "2026-09-25 00:44:53.183294+00"
     },
     "migrations/campaign/esign_a_server_lane_door_acts_as_the_person_who_asked.sql": {
       "source": "matrx-frontend",
