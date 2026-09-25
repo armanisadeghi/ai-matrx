@@ -487,7 +487,7 @@ export function AccessRequestsSurface() {
                     </div>
 
                     {row.message && (
-                      <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+                      <p className="whitespace-pre-line rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground [overflow-wrap:anywhere]">
                         {row.message}
                       </p>
                     )}
