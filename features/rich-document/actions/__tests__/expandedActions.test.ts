@@ -140,6 +140,6 @@ describe("the expanded action set", () => {
       expect.arrayContaining(["text-cleanup", "text-help", "text-custom-agent"]),
     );
     void getAction("text-cleanup")!.run(ctx);
-    expect(onRequestTextAgentAction).toHaveBeenCalledWith("cleanup");
+    expect(onRequestTextAgentAction).toHaveBeenCalledWith("cleanup", ctx);
   });
 });
