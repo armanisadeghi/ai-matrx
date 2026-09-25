@@ -1,12 +1,16 @@
--- chair-step: this REPLACES the body of ONE live function, history.vault_write_revision(uuid, uuid, uuid, integer, jsonb), changing ONE statement: its `raise exception … using errcode = 'P0002'` becomes `perform platform.refuse_not_found(<the same sentence>, <the same hint>, <the same detail>)`. Called directly the refusal is byte-for-byte what it was (SQLSTATE P0002); through PostgREST it answers HTTP 404 with code P0002 instead of HTTP 500. No table, column, policy, trigger or grant is touched; nothing is written. Needs errorshonest_s1_one_way_to_say_not_found.sql first. Inverse: migrations/inverse/errorshonest_s9_the_vault_history_writer_says_not_found_down.sql restores the body verbatim.
+-- chair-step: this REPLACES the body of ONE live function, history.vault_write_revision(uuid, uuid, uuid, integer, jsonb), changing ONE statement: its raise with errcode P0002 becomes perform platform.refuse_not_found(the same sentence). Called directly the refusal is byte-for-byte what it was (SQLSTATE P0002); through PostgREST it answers HTTP 404 with code P0002 instead of HTTP 500. It grants vault_history_writer (the owner the writer runs as) EXECUTE on platform.refuse_not_found, and takes the owner membership only inside the transaction, as 1034 did, asserting the 1035 and 1036 membership invariant before COMMIT. No table, column, policy or trigger is touched; nothing is written. Needs errorshonest_s1_one_way_to_say_not_found.sql first. Inverse: migrations/inverse/errorshonest_s9_the_vault_history_writer_says_not_found_down.sql restores the body verbatim.
 -- lane: ERRORS-HONEST
 -- based-on: history.vault_write_revision(uuid, uuid, uuid, integer, jsonb) 91a8de7db88465766b6dadcaebc22ade8f7915a75d67fbd36235ec7753800551
 --
--- LANE ERRORS-HONEST — the one function that started raising P0002 after the 2026-09-24 morning census:
--- 1034/1035/1036_vault_history_private_writer_*.sql landed it on production the same day, and
--- `pnpm check:not-found-is-honest --target production` named it. BASED ON PRODUCTION'S BODY: the dev
--- clone and the rehearsal branch do not carry 1034–1036 yet, so this file cannot be rehearsed there
--- until they do (recorded in PROGRESS-ERRORS-HONEST.md).
+-- LANE ERRORS-HONEST. The one function that started raising P0002 after the 2026-09-24 morning
+-- census: 1034, 1035 and 1036 (vault history private writer) landed it on production the same day,
+-- and pnpm check:not-found-is-honest --target production named it. Based on the production body.
+
+-- The function is owned by vault_history_writer (1034). Only a member that inherits the owner may
+-- replace it, and the admin-only membership 1035 and 1036 allow cannot inherit. So, exactly as 1034
+-- did, that membership exists only inside this transaction and is removed before COMMIT, and the
+-- invariant 1035 and 1036 assert is asserted again at the end.
+GRANT vault_history_writer TO CURRENT_USER WITH INHERIT TRUE;
 
 CREATE OR REPLACE FUNCTION history.vault_write_revision(p_item_id uuid, p_actor_id uuid, p_organization_id uuid, p_expected_revision integer, p_row_data jsonb)
  RETURNS TABLE(history_revision integer, snapshot_id uuid, occurred_at timestamp with time zone)
@@ -34,3 +38,13 @@ BEGIN
   UPDATE users.credential_items SET history_revision=v_next WHERE id=p_item_id;
   RETURN QUERY SELECT v_next,v_snapshot_id,v_now;
 END $function$;
+
+-- The writer runs as its owner (SECURITY DEFINER), so the owner must be able to say not-found.
+GRANT EXECUTE ON FUNCTION platform.refuse_not_found(text, text, text) TO vault_history_writer;
+
+REVOKE vault_history_writer FROM CURRENT_USER;
+DO $writer_membership_eh_up$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_auth_members m WHERE m.roleid='vault_history_writer'::regrole AND (m.member<>CURRENT_USER::regrole OR m.inherit_option OR m.set_option)) THEN
+    RAISE EXCEPTION 'vault_history_writer has an unexpected effective member after errorshonest_s9' USING ERRCODE='P0001';
+  END IF;
+END $writer_membership_eh_up$;

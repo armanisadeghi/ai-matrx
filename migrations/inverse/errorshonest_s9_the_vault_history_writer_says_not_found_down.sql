@@ -1,6 +1,12 @@
--- chair-step: this restores the live body of history.vault_write_revision(uuid, uuid, uuid, integer, jsonb) that errorshonest_s9_the_vault_history_writer_says_not_found.sql replaced, byte-for-byte as read from production on 2026-09-24. Undoing it returns its not-found refusal to HTTP 500 through PostgREST; called directly nothing changes.
+-- chair-step: this restores the live body of history.vault_write_revision(uuid, uuid, uuid, integer, jsonb) that errorshonest_s9_the_vault_history_writer_says_not_found.sql replaced, byte-for-byte as read from production on 2026-09-24. Undoing it returns its not-found refusal to HTTP 500 through PostgREST; called directly nothing changes. It takes the owner membership only inside the transaction and asserts the 1035 and 1036 invariant before COMMIT; the EXECUTE grant on platform.refuse_not_found to vault_history_writer is left standing, harmless without a caller.
 -- lane: ERRORS-HONEST
 -- based-on: history.vault_write_revision(uuid, uuid, uuid, integer, jsonb) 40139d40a4865a7c8fc9756587127641f6325f2ec3b19da72696f070f324e131
+
+-- The function is owned by vault_history_writer (1034). Only a member that inherits the owner may
+-- replace it, and the admin-only membership 1035 and 1036 allow cannot inherit. So, exactly as 1034
+-- did, that membership exists only inside this transaction and is removed before COMMIT, and the
+-- invariant 1035 and 1036 assert is asserted again at the end.
+GRANT vault_history_writer TO CURRENT_USER WITH INHERIT TRUE;
 
 CREATE OR REPLACE FUNCTION history.vault_write_revision(p_item_id uuid, p_actor_id uuid, p_organization_id uuid, p_expected_revision integer, p_row_data jsonb)
  RETURNS TABLE(history_revision integer, snapshot_id uuid, occurred_at timestamp with time zone)
@@ -28,3 +34,10 @@ BEGIN
   UPDATE users.credential_items SET history_revision=v_next WHERE id=p_item_id;
   RETURN QUERY SELECT v_next,v_snapshot_id,v_now;
 END $function$;
+
+REVOKE vault_history_writer FROM CURRENT_USER;
+DO $writer_membership_eh_down$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_auth_members m WHERE m.roleid='vault_history_writer'::regrole AND (m.member<>CURRENT_USER::regrole OR m.inherit_option OR m.set_option)) THEN
+    RAISE EXCEPTION 'vault_history_writer has an unexpected effective member after errorshonest_s9' USING ERRCODE='P0001';
+  END IF;
+END $writer_membership_eh_down$;
