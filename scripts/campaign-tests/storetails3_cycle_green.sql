@@ -134,16 +134,28 @@ begin
   end if;
   perform platform.memo_clear();   -- the triggers that forget a changed Field were off for that write
 
-  v_t0 := clock_timestamp();
+  -- (i) the guard itself: asked for a (record, column) it is already in the middle of, it refuses
+  --     with the sentence instead of recursing.
+  perform set_config('custom.derived_stack', '|' || (select v from st3 where k = 'q_voltway') || ':room_total_seen|', true);
   begin
-    perform custom.rollup_value(v_org, v_kitchen, (select f.data from custom.record f where f.organization_id = v_org and f.id = v_qt.id));
-    raise exception 'C3: working out the stored circle answered instead of refusing';
+    perform custom.far_value(v_org, (select v from st3 where k = 'q_voltway'), 'room_total_seen', v_qt.data);
+    raise exception 'C3: asked again for a column it is in the middle of working out, the evaluator answered';
   exception when sqlstate '42P17' then
     get stacked diagnostics v_msg = message_text;
     if v_msg not like '%is worked out from itself round a circle%' then
       raise exception 'C3: the stored circle was refused without the sentence: %', v_msg;
     end if;
   end;
+  perform set_config('custom.derived_stack', '', true);
+  -- (ii) the whole read of the stored circle ends at once (the sentence is the WARNING the
+  --      column's empty cell carries), never "stack depth limit exceeded", never a timeout.
+  v_t0 := clock_timestamp();
+  if custom.rollup_value(v_org, v_kitchen, v_qt.data || jsonb_build_object('config', v_qt.data -> 'config' || '{"of": "room_total_seen"}'::jsonb)) is not null then
+    raise exception 'C3: the stored circle worked out to a number';
+  end if;
+  if clock_timestamp() - v_t0 > interval '5 seconds' then
+    raise exception 'C3: the stored circle took % to give up', clock_timestamp() - v_t0;
+  end if;
   perform set_config('role', 'authenticated', true);
   select d.document into v_doc from custom.read_records(v_org, v_rooms, false, 50, 0) d where d.document ->> 'room_name' = 'Kitchen';
   if v_doc ->> 'room_name' is distinct from 'Kitchen' or (v_doc ->> 'budget_with_contingency')::numeric is distinct from 19800 then

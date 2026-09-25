@@ -235,7 +235,17 @@ begin
   -- of them again, the answer would need itself: refuse with the sentence, never recurse.
   if position(v_mark in v_stack) > 0 then
     raise exception 'The column "%" is worked out from itself round a circle (it reads "%" on another record, which leads back to it), so it has no answer and is left empty.',
-      coalesce(nullif(p_reader ->> 'label', ''), p_reader ->> 'key', 'this column'), p_key
+      coalesce(nullif(p_reader ->> 'label', ''), p_reader ->> 'key', 'this column'),
+      coalesce((select nullif(f.data ->> 'label', '')
+                  from custom.record r
+                  join custom.record f
+                    on f.organization_id = r.organization_id
+                   and f.table_id = custom.field_kernel_id()
+                   and f.deleted_at is null
+                   and f.data ->> 'entity_definition_id' = r.table_id::text
+                   and f.data ->> 'key' = p_key
+                 where r.organization_id = p_organization_id and r.id = p_record_id
+                 limit 1), p_key)
       using errcode = '42P17',
             hint = 'STORE-TAILS-3: point one of the lookups or rollups in that circle at a column outside it. New circles are refused when they are declared; this one was stored before that rule.';
   end if;
