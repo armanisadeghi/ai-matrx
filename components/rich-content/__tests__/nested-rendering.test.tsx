@@ -295,7 +295,8 @@ describe("streaming partial input", () => {
     const partial = `Draft:\n\n${F}markdown\n# Week 39\n\n${F}bash\npnpm routes:export --we`;
     await render(<RichContent level="standard" source={partial} isStreaming />);
     expect(container.textContent).not.toContain(F);
-    expect(container.querySelector("h1")?.textContent).toBe("Week 39");
+    // The heading may carry the core's quiet "#" anchor link after its text.
+    expect(container.querySelector("h1")?.textContent).toMatch(/^Week 39#?$/);
     const code = container.querySelector('[data-code-block="bash"], pre');
     expect(code?.textContent).toContain("pnpm routes:export --we");
   });
