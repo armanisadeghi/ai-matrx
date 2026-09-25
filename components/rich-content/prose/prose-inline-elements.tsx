@@ -185,18 +185,33 @@ export const PROSE_INLINE_ELEMENTS = {
       </code>
     );
   },
-  img: ({ node, ...props }) => (
-    // Inline images flow rather than fill the width, so multiple images on
-    // one line sit side by side and wrap. Standalone images on their own
-    // line take the dedicated full-width ImageBlock path (the splitter
-    // only leaves an image here when it shares a line with other content).
-    <img
-      className="inline-block h-auto max-w-full rounded-md my-2 mr-2 object-contain align-top"
-      style={{ maxHeight: 700 }}
-      {...props}
-      alt={props.alt || "Image"}
-    />
-  ),
+  img: ({ node, ...props }) =>
+    // The core's URL sanitizer turns a refused address (javascript:,
+    // vbscript:, data:text/html…) into an empty src. An <img src=""> draws a
+    // broken image and re-requests the page, so a refused image is never
+    // drawn: it says so, with its alt text (guard:
+    // components/rich-content/__tests__/refused-image-url.test.tsx).
+    typeof props.src === "string" && props.src.trim() !== "" ? (
+      // Inline images flow rather than fill the width, so multiple images on
+      // one line sit side by side and wrap. Standalone images on their own
+      // line take the dedicated full-width ImageBlock path (the splitter
+      // only leaves an image here when it shares a line with other content).
+      <img
+        className="inline-block h-auto max-w-full rounded-md my-2 mr-2 object-contain align-top"
+        style={{ maxHeight: 700 }}
+        {...props}
+        alt={props.alt || "Image"}
+      />
+    ) : (
+      <span
+        data-rc-refused-image=""
+        className="rounded border border-dashed border-border px-1 text-xs text-muted-foreground"
+      >
+        {props.alt
+          ? `Image not shown (“${props.alt}”) — its address is not allowed.`
+          : "Image not shown — its address is not allowed."}
+      </span>
+    ),
   br: ({ node, ...props }) => <br />,
   span: ({ node, className, children, ...props }) => {
     // Regular span - no special handling needed
