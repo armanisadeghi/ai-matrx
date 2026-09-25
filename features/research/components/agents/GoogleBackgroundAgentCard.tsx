@@ -247,7 +247,7 @@ export function GoogleBackgroundAgentCard({ topicId }: { topicId: string }) {
               key={index}
               className="rounded-lg border border-border/60 bg-background p-4"
             >
-              <MarkdownStream content={report} />
+              <MarkdownStream imagePolicy="ai" content={report} />
             </article>
           ))}
           {links.length > 0 ? (

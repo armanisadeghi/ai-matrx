@@ -42,9 +42,13 @@
  */
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { setRequestEditedText } from "../active-requests/active-requests.slice";
+import {
+  clearRequestEditedText,
+  setRequestEditedText,
+} from "../active-requests/active-requests.slice";
 import { updateMessageRecord } from "../messages/messages.slice";
 import { saveAnswerEdit } from "./save-answer-edit.thunk";
+import { refetchSingleMessage } from "./refetch-single-message.thunk";
 import { toast } from "@/lib/toast";
 import { buildContentBlocksForSave } from "@/features/cx-chat/utils/buildContentBlocksForSave";
 import { stripCitationMarkers } from "../messages/message-citations";
@@ -58,6 +62,9 @@ interface PendingEdit {
   latestText: string;
   /** The display text the FIRST edit of this window was applied to. */
   baseText: string;
+  /** What the live render showed before this window (restored on refusal). */
+  requestId?: string;
+  priorEditedText: string | null;
 }
 
 // Module-level debounce map. Keyed by messageId so each message has its
@@ -112,6 +119,13 @@ export const commitInlineContentEdit =
           extractFlatText(getState().messages.byConversationId[conversationId]?.byId?.[messageId]),
       );
 
+    const pending = pendingByMessageId.get(messageId);
+    const priorEditedText = pending
+      ? pending.priorEditedText
+      : requestId
+        ? (getState().activeRequests.byRequestId[requestId]?.editedText ?? null)
+        : null;
+
     // ── 1. Sync the renderer immediately ────────────────────────────
     if (requestId) {
       dispatch(setRequestEditedText({ requestId, text: newText }));
@@ -152,10 +166,10 @@ export const commitInlineContentEdit =
       // it), never the loaded Redux copy: for an answer streamed this session
       // the Redux copy is the client's own shape, and writing it back dropped
       // the server's thinking / tool parts (RC-B5, 2026-09-25).
-      void persistInlineEdit(dispatch, conversationId, messageId, entry.baseText, entry.latestText);
+      void persistInlineEdit(dispatch, conversationId, messageId, entry);
     }, DB_DEBOUNCE_MS);
 
-    pendingByMessageId.set(messageId, { timer, latestText: newText, baseText });
+    pendingByMessageId.set(messageId, { timer, latestText: newText, baseText, requestId, priorEditedText });
   };
 
 /**
@@ -181,22 +195,46 @@ export const flushPendingInlineEdit =
     })();
     if (!record) return;
 
-    void persistInlineEdit(dispatch, record.conversationId, messageId, entry.baseText, entry.latestText);
+    void persistInlineEdit(dispatch, record.conversationId, messageId, entry);
   };
 
 async function persistInlineEdit(
   dispatch: AppDispatch,
   conversationId: string,
   messageId: string,
-  previous: string,
-  next: string,
+  entry: PendingEdit,
 ): Promise<void> {
-  // The edit was made on DISPLAY text: splice only its changed span into the
+  // The edit was made on DISPLAY text: splice only its changed spans into the
   // stored text (never write the display text — it is whitespace-normalized).
   const result = await dispatch(
-    saveAnswerEdit({ conversationId, messageId, displayEdit: { previous, next } }),
+    saveAnswerEdit({
+      conversationId,
+      messageId,
+      displayEdit: { previous: entry.baseText, next: entry.latestText },
+    }),
   );
-  if (saveAnswerEdit.rejected.match(result)) {
-    toast.error(`Your change to this answer was not saved: ${result.payload?.message ?? result.error.message ?? "unknown error"}`);
+  if (!saveAnswerEdit.rejected.match(result)) return;
+
+  // REFUSED: the screen must show what is STORED, never the unsaved draft
+  // (a screen that lies — verify-RC-B5 round 3 F2). Put the row back from the
+  // database and the live render back to what it showed before this edit;
+  // the draft stays recoverable from the toast.
+  await dispatch(refetchSingleMessage({ conversationId, messageId }));
+  if (entry.requestId) {
+    dispatch(
+      entry.priorEditedText === null
+        ? clearRequestEditedText({ requestId: entry.requestId })
+        : setRequestEditedText({ requestId: entry.requestId, text: entry.priorEditedText }),
+    );
   }
+  const draft = entry.latestText;
+  toast.error("Your change was not saved — the answer shows what is saved.", {
+    description: result.payload?.message ?? result.error.message ?? undefined,
+    action: {
+      label: "Copy my edit",
+      onClick: () => {
+        void navigator.clipboard?.writeText(draft);
+      },
+    },
+  });
 }

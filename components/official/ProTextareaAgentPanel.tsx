@@ -21,7 +21,14 @@ import {
 import { AgentRunner } from "@/features/agents/components/smart/AgentRunner";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useConversationDocumentsBridge } from "@/features/agents/hooks/useWorkingDocument";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { textInputVariable } from "@/features/agents/utils/text-input-variable";
+import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { setHostVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import {
+  extractFlatText,
+  selectLatestAssistantMessageId,
+} from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { selectInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
@@ -44,6 +51,7 @@ import type { SessionContextItem } from "@/features/transcript-studio/types";
 import {
   proTextareaRunValues,
   type ProTextareaAgentActionId,
+  agentRunResult,
 } from "./proTextareaAgentActions";
 import type { SourceFeature } from "@/types/python-generated/source-attribution";
 
@@ -115,13 +123,23 @@ function ProTextareaAgentRunnerSession({
     selectWorkingDocContent(conversationId, "working"),
   );
 
+  const store = useAppStore();
   useEffect(() => {
     const prev = prevStatusRef.current;
     prevStatusRef.current = status;
     if (status === "complete" && (prev === "running" || prev === "streaming")) {
-      onApplySourceText(workingContent);
+      // THE RESULT, read the way Clean up reads it: an agent that edited the
+      // working document hands back the document; an agent that ANSWERED with
+      // the revised text hands back its final answer. Reading only the working
+      // document lost every answer-shaped result ("identical", verify-RC-B5 r3).
+      const state = store.getState();
+      const answerId = selectLatestAssistantMessageId(conversationId)(state);
+      const answer = answerId
+        ? extractFlatText(state.messages.byConversationId[conversationId]?.byId?.[answerId]).trim()
+        : "";
+      onApplySourceText(agentRunResult(sourceText, workingContent, answer));
     }
-  }, [status, workingContent, onApplySourceText]);
+  }, [status, workingContent, onApplySourceText, store, conversationId, sourceText]);
 
   const handleRun = useCallback(() => {
     if (isExecuting) return;
@@ -132,10 +150,19 @@ function ProTextareaAgentRunnerSession({
         content: sourceText,
       }),
     );
+    // THE PAYLOAD, bound the way Clean up binds it: the text rides as DATA in
+    // the agent's declared text variable (the one rule, textInputVariable) —
+    // not only as a working document an agent may never read. Without it a
+    // custom agent ran on its default sample ("Translate for customers"
+    // translated a stock sentence, verify-RC-B5 r3).
+    const target = textInputVariable(selectInstanceVariableDefinitions(conversationId)(store.getState()));
+    if (target) {
+      dispatch(setHostVariableValues({ conversationId, values: { [target.name]: sourceText } }));
+    }
     // Canonical send path (no surfaceKey ⇒ never splits ⇒ this continuous
     // conversation can never be orphaned).
     void dispatch(smartExecute({ conversationId }));
-  }, [conversationId, dispatch, isExecuting, sourceText]);
+  }, [conversationId, dispatch, isExecuting, sourceText, store]);
 
   useEffect(() => {
     onControlsChange({

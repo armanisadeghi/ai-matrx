@@ -47,5 +47,5 @@ export function MandateTryResultView({
   if (!text) {
     return <p className="text-sm text-muted-foreground">The run finished with an empty answer.</p>;
   }
-  return <MarkdownStream content={text} hideCopyButton={false} />;
+  return <MarkdownStream imagePolicy="ai" content={text} hideCopyButton={false} />;
 }

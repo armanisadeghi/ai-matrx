@@ -36,7 +36,7 @@
 --      RC-A3 document pairs, so a reader over a Notes source (the study guide, until its body
 --      moves into content.document) files annotations on the canonical path. Non-conveying.
 --
--- based-on: public.cmt_add(text, uuid, text, uuid, uuid) 80b8435586172e7a5b92c83432aaf715ce53ede14abc7a521706142e3216ed03
+-- based-on: public.cmt_add(text, uuid, text, uuid, uuid) 4f69b21840f1cb176e2658ea611ee9028564af8fe0876780bc86e9dc120e57d9
 -- based-on: public.cmt_list(text, uuid) 8bf23bcbb4951e65237c71091da14dd97fb912155caf3ceacc050590d74263e8
 -- based-on: public.cmt_edit(uuid, text) f46ae8a89e46c695970b36cca87a2ed34f3f0272b8a3ccb5345152dc2a95a2b0
 
@@ -90,6 +90,14 @@ declare
   v_problem text;
   v_id uuid;
 begin
+  -- 🚨 RC-A2b (2026-09-25): a comment is never the record a comment is on. A reply goes through
+  -- the record's own thread (p_parent_id). Refused by TYPE, before any lookup, so it confirms
+  -- nothing about any id (verify-RC-A2 F3; kept here because this file recreates cmt_add).
+  if exists (select 1 from platform.entity_types et
+              where et.token = p_entity_type and et.rls_variant = 'detail') then
+    raise exception 'cmt_add: a comment cannot be filed on a % — reply in its thread instead: cmt_add(<the record type>, <the record id>, body, p_parent_id => <the comment id>)',
+      p_entity_type using errcode = '22023';
+  end if;
   -- Deny before resolving organization or looking up the row (RC-A2: no existence oracle).
   if not iam.has_access(p_entity_type, p_entity_id, 'commenter'::public.permission_level) then
     raise exception 'cmt_add: you cannot comment on this record (%/%) -- commenting needs the commenter level on it. Ask its owner to share it with you at commenter or above.',

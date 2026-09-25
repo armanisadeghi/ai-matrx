@@ -493,7 +493,7 @@ const customActions: HeaderAction[] = [
               Single Editor
             </h3>
             <div className="border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden">
-              <ContentEditor
+              <ContentEditor imagePolicy="self"
                 value={content}
                 onChange={setContent}
                 // availableModes={['plain', 'wysiwyg', 'markdown', 'preview']}
@@ -516,7 +516,7 @@ const customActions: HeaderAction[] = [
               ContentEditorStack - Multiple Editors
             </h3>
             <div className="space-y-3">
-              <ContentEditorStack
+              <ContentEditorStack imagePolicy="self"
                 contents={stackContents}
                 onContentsChange={setStackContents}
                 availableModes={["plain", "preview"]}
@@ -580,7 +580,7 @@ const customActions: HeaderAction[] = [
               to keep a small preview strip with a bottom fade and a round
               expand chevron.
             </p>
-            <ContentEditor
+            <ContentEditor imagePolicy="self"
               value={fadeContent}
               onChange={setFadeContent}
               collapsible

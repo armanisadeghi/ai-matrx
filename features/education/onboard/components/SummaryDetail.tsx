@@ -142,7 +142,7 @@ export function SummaryDetail({ id }: { id: string }) {
       )}
 
       <div className="prose-sm max-w-none">
-        <MarkdownStream content={markdown} hideCopyButton />
+        <MarkdownStream imagePolicy="ai" content={markdown} hideCopyButton />
       </div>
 
       {/* Where this came from + the rest of the kit made from the same upload. */}

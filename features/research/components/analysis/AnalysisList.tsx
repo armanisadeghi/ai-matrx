@@ -378,7 +378,7 @@ function DetailPanel({
                 reason={analysis.error || "Analysis stopped early."}
               />
             )}
-            <MarkdownStream content={analysis.result} />
+            <MarkdownStream imagePolicy="ai" content={analysis.result} />
           </article>
         ) : isFailed ? (
           <div className="p-6 flex flex-col items-center justify-center min-h-[300px] gap-4 text-center">

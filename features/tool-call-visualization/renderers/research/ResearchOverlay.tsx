@@ -91,7 +91,7 @@ export const ResearchReportTab: React.FC<ToolRendererProps> = ({ entry }) => {
                     </div>
                 )}
                 <div className="p-5">
-                    <RichDocument
+                    <RichDocument imagePolicy="ai"
                         content={parsed.report}
                         source={{ type: "raw" } as ContentSource}
                         actionsVariant="mini-bar"
@@ -155,7 +155,7 @@ const ReadCard: React.FC<{ read: SearchRead; index: number; copied: number | nul
                 </a>
                 {read.text && (
                     <div className="text-sm">
-                        <BasicMarkdownContent
+                        <BasicMarkdownContent imagePolicy="other"
                             content={expanded || !isLong ? read.text : `${read.text.slice(0, 500)}…`}
                         />
                         {isLong && (
@@ -315,7 +315,7 @@ export const ResearchFullTextTab: React.FC<ToolRendererProps> = ({ entry }) => {
                 {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
             </button>
             <div className="p-5">
-                <MarkdownStream content={fullText} hideCopyButton className="text-sm" />
+                <MarkdownStream imagePolicy="ai" content={fullText} hideCopyButton className="text-sm" />
             </div>
         </div>
     );

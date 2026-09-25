@@ -172,7 +172,7 @@ const FsReadCard: React.FC<
         {...shell}
     >
         <div className="max-h-80 overflow-auto px-4 py-2 [&_pre]:!my-0">
-            <BasicMarkdownContent
+            <BasicMarkdownContent imagePolicy="other"
                 content={"```" + fenceLang(path) + "\n" + content + "\n```"}
                 showCopyButton={false}
             />

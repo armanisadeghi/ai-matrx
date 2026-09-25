@@ -24,6 +24,7 @@ import type {
   RichDocumentActionsPosition,
   RichDocumentActionsBehavior,
 } from "@/features/rich-document/types";
+import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 
 // Lazy — only pulled into the bundle when a caller opts into actions by
 // passing `actionsSource`. Consumers that don't use the action surface pay
@@ -127,6 +128,12 @@ export interface MatrxSplitProps {
   contentResetKey?: string;
   /** One finite request to reveal a trim edge in both panes. */
   scrollIntent?: ScrollEdgeIntent;
+  /**
+   * WHO WROTE the content shown — "self" | "other" | "ai" (or "inherit").
+   * Decides whether remote images load by themselves; forwarded to the
+   * renderer (components/rich-content/prose/remote-image-policy.tsx).
+   */
+  imagePolicy?: ImagePolicyDeclaration;
 }
 
 /**
@@ -181,6 +188,7 @@ export function MatrxSplit({
   actionsExclude,
   contentResetKey,
   scrollIntent,
+  imagePolicy,
 }: MatrxSplitProps) {
   const previewChange = onPreviewChange ?? onChange;
   const isMobile = useIsMobile();
@@ -192,7 +200,7 @@ export function MatrxSplit({
   const renderPreviewBody = () => {
     if (actionsSource) {
       return (
-        <RichDocument
+        <RichDocument imagePolicy={imagePolicy}
           key={contentResetKey}
           content={previewValue}
           source={actionsSource}
@@ -216,7 +224,7 @@ export function MatrxSplit({
       );
     }
     return (
-      <MarkdownStream
+      <MarkdownStream imagePolicy={imagePolicy}
         key={contentResetKey}
         content={previewValue}
         isStreamActive={false}

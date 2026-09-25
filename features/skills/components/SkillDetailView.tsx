@@ -181,7 +181,7 @@ export function SkillDetailView({
             </div>
             {skill.body && skill.body.trim() ? (
               <div className="min-w-0 overflow-x-auto rounded-md border border-border bg-card px-3 py-2">
-                <MarkdownStream content={skill.body} />
+                <MarkdownStream imagePolicy="other" content={skill.body} />
               </div>
             ) : (
               <p className="rounded-md border border-dashed border-border px-3 py-2 text-[11px] text-muted-foreground/70">

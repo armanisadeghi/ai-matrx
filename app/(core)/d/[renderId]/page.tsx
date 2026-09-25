@@ -153,7 +153,7 @@ export default function RenderedDocumentRoute({
                         <div className="rounded-md border border-border p-4">
                             {/* THE PLATFORM'S ONE RICH DOCUMENT. Print and save-as-PDF
                                 live in its own overflow menu. */}
-                            <RichDocument
+                            <RichDocument imagePolicy="other"
                                 content={document.body}
                                 source={{ type: "raw" }}
                                 actionsVariant="mini-bar"

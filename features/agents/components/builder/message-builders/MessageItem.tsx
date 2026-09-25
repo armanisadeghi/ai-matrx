@@ -785,7 +785,7 @@ export function MessageItem({
             title="Click to edit"
           >
             {currentText ? (
-              <MarkdownStream
+              <MarkdownStream imagePolicy="other"
                 content={currentText}
                 hideCopyButton
                 className="text-sm"

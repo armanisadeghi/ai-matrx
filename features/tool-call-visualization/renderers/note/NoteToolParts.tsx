@@ -212,7 +212,7 @@ export function NotePreview({
         {/* MarkdownStream is the canonical renderer — it processes render
             blocks (mermaid, tables, flashcards, …), unlike the thin
             BasicMarkdownContent wrapper. */}
-        <MarkdownStream
+        <MarkdownStream imagePolicy="ai"
           content={content as string}
           isStreamActive={false}
           hideCopyButton

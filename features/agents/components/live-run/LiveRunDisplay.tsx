@@ -146,7 +146,7 @@ export function LiveRunDisplay({
                 isStreamActive={isActive}
               />
             ) : (
-              <MarkdownStream
+              <MarkdownStream imagePolicy="ai"
                 requestId={requestId}
                 // Some adopted streams have no canonical conversation/message
                 // row. They keep the renderer-only fallback; conversation-backed
@@ -209,7 +209,7 @@ export function LiveRunDisplay({
             bodyClassName,
           )}
         >
-          <MarkdownStream
+          <MarkdownStream imagePolicy="ai"
             requestId={requestId}
             // Same reason as the bare variant above: the display flags are
             // conversation-keyed.

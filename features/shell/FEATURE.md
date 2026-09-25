@@ -61,6 +61,8 @@ sign out.
 
 ## Change log
 
+- `2026-09-25` — Removed the retired top-right elevated profile menu from both shells and floating panels; `ShellUserBlock` remains the profile control.
+
 - **2026-09-21** — The account menu's collapsed groups are now HIDDEN, not just
   clipped. `MenuGroup`'s `grid-rows-[0fr]` disclosure kept every collapsed row
   in the hit-test tree and the tab order, so a group low in the panel parked
@@ -69,8 +71,8 @@ sign out.
   `elementFromPoint` with `LABEL.shell-user-menu-backdrop`, unscrollable (a
   clipped child adds nothing to `scrollHeight`) and unclickable (three real
   mouse clicks timed out). Fixed with `invisible peer-checked:visible` on the
-  disclosure; `.shell-user-menu-panel` / `.elevated-shell-user-menu-panel` now
-  also subtract the safe-area insets from their viewport bound. Gate:
+  disclosure; `.shell-user-menu-panel` subtracts the safe-area insets from its
+  viewport bound. Gate:
   `features/shell/layout-gate/user-menu-reachability.spec.ts`, which runs at
   1280x720, **1440x900** (added to `playwright.shell-layout.config.ts` for
   this defect) and 390x844.

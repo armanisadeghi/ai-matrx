@@ -247,7 +247,7 @@ export const MarkdownFidelityAttributes = Extension.create({
         types: ["table"],
         attributes: { mdId: mdAttr(), mdDelim: mdAttr(), mdAligns: mdAttr(), mdPipes: mdAttr() },
       },
-      { types: ["tableRow"], attributes: { mdRaw: mdAttr(), mdCells: mdAttr() } },
+      { types: ["tableRow"], attributes: { mdRaw: mdAttr(), mdCells: mdAttr(), mdSegs: mdAttr() } },
       { types: ["horizontalRule", "hardBreak"], attributes: { mdRaw: mdAttr() } },
       {
         types: ["bold", "italic", "strike"],

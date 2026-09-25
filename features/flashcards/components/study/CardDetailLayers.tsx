@@ -199,7 +199,7 @@ export function CardDetailLayers({
                 {layer.label}
               </div>
               <div className="text-sm leading-relaxed text-foreground">
-                <ConfigurableMarkdownContent
+                <ConfigurableMarkdownContent imagePolicy="ai"
                   content={layer.text}
                   isStreamActive={false}
                   showCopyButton={false}

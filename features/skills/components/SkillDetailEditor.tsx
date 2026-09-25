@@ -849,7 +849,7 @@ function BodyEditor({
               Nothing to preview yet.
             </span>
           ) : (
-            <MarkdownStream content={value} />
+            <MarkdownStream imagePolicy="other" content={value} />
           )}
         </div>
       ) : (

@@ -146,7 +146,15 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-09-25` — **Canvas controls stay clickable when the sheet opens.**
+  The profile menu lives in the bottom-left `ShellUserBlock`; the retired
+  top-right elevated menu overlapped the canvas Put Away button. The canvas
+  and floating panels no longer claim it, and both shells no longer mount it.
+  `canvas-user-menu-above-sheet.spec.ts` guards the former claim and mount paths.
+
 - `2026-09-19` — **The avatar menu stays clickable while the canvas is open.**
+  Superseded by the 2026-09-25 removal above: the profile menu now lives in
+  the bottom-left shell block. The elevated menu described below no longer exists.
   The canvas sheet is z-10000 over the top-right corner. The pane-header
   dropdown opened (visible) but hung into the pane body and lost hit-testing,
   and every menu item hardcoded `htmlFor="shell-user-menu"` so a click toggled
@@ -266,11 +274,10 @@ path updates the node's `STATE.md` in the same session.
   open, so every shell-header button to its left moved 44px sideways on every
   open and close — measured on production-equivalent build at 1280x720,
   Records at `x = 887.59` closed against `x = 931.59` open, on the chat route
-  AND on `/artifacts`. The canvas pane's header owns the control while the
-  canvas is open, but its BOX must stay: the component now renders an inert
-  `data-canvas-header-slot="reserved"` placeholder there, the same trick
-  `:root[data-canvas-open="true"] .shell-user-menu-wrapper` already uses for
-  the avatar. Re-measured after: every one of the nine header button rects and
+  AND on `/artifacts`. The canvas pane's header owns the Put Away control while
+  the shell header keeps its fixed Canvas button slot in every state. The
+  profile menu lives bottom-left and needs no top-right stand-in. Re-measured
+  after: every one of the nine header button rects and
   the header box itself are byte-identical open vs closed, on both routes, and
   the canvas surface is `sheet` at `[512, 0, 768, 720]` on both.
   Guard: the layout gate's case 2, with `MATRX_LAYOUT_GATE_MUTATION=unmount-slot`

@@ -129,7 +129,7 @@ export function AgentStreamingResponse({
   // the raw markdown so the user sees something instead of a void.
   if (!span && !extracted) {
     return (
-      <MarkdownStream
+      <MarkdownStream imagePolicy="ai"
         content={content}
         isStreamActive={isStreamActive}
         hideCopyButton
@@ -146,7 +146,7 @@ export function AgentStreamingResponse({
   return (
     <div className="space-y-3">
       {before && (
-        <MarkdownStream
+        <MarkdownStream imagePolicy="ai"
           content={before}
           isStreamActive={false}
           hideCopyButton
@@ -158,7 +158,7 @@ export function AgentStreamingResponse({
         extracted={extracted}
       />
       {after && (
-        <MarkdownStream content={after} isStreamActive={false} hideCopyButton />
+        <MarkdownStream imagePolicy="ai" content={after} isStreamActive={false} hideCopyButton />
       )}
     </div>
   );
@@ -488,7 +488,7 @@ function MessageCard({
       </div>
       <div className="px-2 py-1.5 bg-background">
         <div className="prose prose-xs dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-          <MarkdownStream
+          <MarkdownStream imagePolicy="ai"
             content={content}
             isStreamActive={isStreamActive}
             hideCopyButton

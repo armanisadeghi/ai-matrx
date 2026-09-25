@@ -146,7 +146,7 @@ export const SubagentReportBlock: React.FC<SubagentReportBlockProps> = ({
                             style={{ maxHeight: PARTIAL_MAX_PX }}
                         >
                             {hasReport ? (
-                                <MarkdownStream
+                                <MarkdownStream imagePolicy="ai"
                                     content={report}
                                     isStreamActive
                                     hideCopyButton
@@ -175,7 +175,7 @@ export const SubagentReportBlock: React.FC<SubagentReportBlockProps> = ({
                             }
                         >
                             <div className="p-4">
-                                <RichDocument
+                                <RichDocument imagePolicy="ai"
                                     content={report}
                                     source={{ type: "raw" } as ContentSource}
                                     actionsVariant="mini-bar"

@@ -297,7 +297,7 @@ export function AssistCard({
                 </p>
               }
             >
-              <BasicMarkdownContent
+              <BasicMarkdownContent imagePolicy="ai"
                 content={assist.body}
                 showCopyButton={false}
               />

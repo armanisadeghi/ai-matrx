@@ -192,7 +192,7 @@ export function ChunkCard({ chunk, pageRun, onJumpToPage }: ChunkCardProps) {
                   isRunning && "border-l-2 border-primary/50 pl-2",
                 )}
               >
-                <MarkdownStream
+                <MarkdownStream imagePolicy="ai"
                   content={outputText}
                   isStreamActive={isRunning}
                   hideCopyButton

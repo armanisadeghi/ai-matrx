@@ -1476,7 +1476,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
                 console.error("[MarkdownStream] FullScreenEditor error:", error)
               }
             >
-              <FullScreenMarkdownEditor
+              <FullScreenMarkdownEditor imagePolicy="inherit"
                 isOpen={isEditorOpen}
                 initialContent={currentContent}
                 onSave={handleSaveEdit}

@@ -112,7 +112,7 @@ export function SynthesisVersionHistory({
                 </summary>
                 <div className="border-t border-border/40 px-2.5 py-2">
                   {v.result && v.result.trim().length > 0 ? (
-                    <MarkdownStream content={v.result} />
+                    <MarkdownStream imagePolicy="ai" content={v.result} />
                   ) : (
                     // An empty body is a real "produced nothing" outcome, not a
                     // loading state — render it as such.

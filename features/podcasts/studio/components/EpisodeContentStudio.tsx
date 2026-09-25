@@ -170,7 +170,7 @@ export function EpisodeContentStudio({ episodeId }: { episodeId: string }) {
             {(draft != null || article) && (
               <div className="border-t border-border px-4 py-3">
                 <div className="prose prose-sm prose-neutral max-h-80 max-w-none overflow-y-auto dark:prose-invert">
-                  <MarkdownStream
+                  <MarkdownStream imagePolicy="ai"
                     content={draft ?? article?.content_markdown ?? ""}
                     isStreamActive={isBusy}
                   />

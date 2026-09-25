@@ -205,7 +205,7 @@ export function AnnotateView({
           )}
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
             <AnnotatedContent>
-              <RichDocument
+              <RichDocument imagePolicy="other"
                 content={doc.body}
                 source={{ type: "raw" }}
                 actionsVariant="icon-only"

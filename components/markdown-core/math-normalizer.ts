@@ -24,7 +24,7 @@
 // wholesale.
 // ─────────────────────────────────────────────────────────────────────────
 
-import { isSingleDollarMath } from "@ai-matrx/content-ir/source";
+import { fenceLineKinds, findCodeRanges, isSingleDollarMath } from "@ai-matrx/content-ir/source";
 
 /** remark-math options for EVERY math-capable renderer. */
 export const REMARK_MATH_OPTIONS = { singleDollarTextMath: false } as const;
@@ -45,7 +45,6 @@ export const REHYPE_KATEX_OPTIONS = {
 
 type Segment = { text: string; protected: boolean; math?: boolean };
 
-const FENCE_OPEN = /^( {0,3})(`{3,}|~{3,})[^\n]*$/;
 
 /**
  * Split markdown into protected (code fences, code spans, `$$…$$` math) and
@@ -64,29 +63,22 @@ function segment(md: string): Segment[] {
   };
 
   const lines = md.split(/(?<=\n)/);
+  // Pass 1: fenced code blocks by line — THE one code-range rule
+  // (@ai-matrx/content-ir/source), never a private fence regex.
+  const kinds = fenceLineKinds(md);
   let i = 0;
-  // Pass 1: fenced code blocks by line.
   const blocks: Segment[] = [];
   let textRun = "";
   while (i < lines.length) {
     const line = lines[i]!;
-    const open = FENCE_OPEN.exec(line.replace(/\n$/, ""));
-    if (open) {
-      const marker = open[2]!;
-      const char = marker[0]!;
+    if (kinds[i] === "open") {
       let fence = line;
       i += 1;
-      while (i < lines.length) {
-        const l = lines[i]!;
-        fence += l;
+      while (i < lines.length && (kinds[i] === "body" || kinds[i] === "close")) {
+        const closes = kinds[i] === "close";
+        fence += lines[i]!;
         i += 1;
-        const trimmed = l.replace(/\n$/, "").trim();
-        if (
-          trimmed.length >= marker.length &&
-          trimmed.split("").every((ch) => ch === char)
-        ) {
-          break;
-        }
+        if (closes) break;
       }
       if (textRun) blocks.push({ text: textRun, protected: false });
       textRun = "";
@@ -105,8 +97,19 @@ function segment(md: string): Segment[] {
       continue;
     }
     const s = block.text;
+    // Code spans by THE one rule (left to right, escapes honoured).
+    const spans = findCodeRanges(s).filter((r) => r.kind === "span");
+    let nextSpan = 0;
     let j = 0;
     while (j < s.length) {
+      while (nextSpan < spans.length && spans[nextSpan]!.start < j) nextSpan += 1;
+      const span = spans[nextSpan];
+      if (span && span.start === j) {
+        pushProtected(s.slice(span.start, span.end));
+        j = span.end;
+        nextSpan += 1;
+        continue;
+      }
       const ch = s[j]!;
       if (ch === "\\" && j + 1 < s.length) {
         buf += ch + s[j + 1];
@@ -114,33 +117,11 @@ function segment(md: string): Segment[] {
         continue;
       }
       if (ch === "`") {
+        // An unpaired backtick run is literal text.
         let n = 0;
         while (s[j + n] === "`") n += 1;
-        const run = "`".repeat(n);
-        let k = j + n;
-        let close = -1;
-        while (k < s.length) {
-          const idx = s.indexOf(run, k);
-          if (idx === -1) break;
-          if (s[idx + n] === "`") {
-            // Longer run — not our closer; skip past it.
-            let m = idx;
-            while (s[m] === "`") m += 1;
-            k = m;
-            continue;
-          }
-          // Code spans never cross a blank line (a block boundary).
-          if (/\n[ \t]*\n/.test(s.slice(j + n, idx))) break;
-          close = idx;
-          break;
-        }
-        if (close === -1) {
-          buf += run;
-          j += n;
-          continue;
-        }
-        pushProtected(s.slice(j, close + n));
-        j = close + n;
+        buf += s.slice(j, j + n);
+        j += n;
         continue;
       }
       if (ch === "$" && s[j + 1] === "$") {

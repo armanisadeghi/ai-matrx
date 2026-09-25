@@ -373,7 +373,7 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
             same complete-envelope assembler and the same route, which is how
             `/shapes` draws a saved instance. Never a second renderer. */}
         {run.requestId ? (
-          <MarkdownStream
+          <MarkdownStream imagePolicy="ai"
             requestId={run.requestId}
             isStreamActive={run.running}
             hideCopyButton

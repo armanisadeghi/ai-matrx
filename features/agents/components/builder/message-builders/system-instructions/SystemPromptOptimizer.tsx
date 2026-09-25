@@ -337,7 +337,7 @@ export function SystemPromptOptimizer({
                         <span className="text-sm">Processing...</span>
                       </div>
                     ) : (
-                      <MarkdownStream
+                      <MarkdownStream imagePolicy="ai"
                         content={streamingText}
                         isStreamActive={isOptimizing}
                         hideCopyButton={false}

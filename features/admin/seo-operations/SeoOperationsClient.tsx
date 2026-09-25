@@ -675,7 +675,7 @@ export function WorkbenchPanel() {
           <div className="grid gap-4 rounded-md border border-border p-4">
             <section className="grid gap-1">
               <h2 className="text-sm font-semibold text-foreground">Answer</h2>
-              <MarkdownStream
+              <MarkdownStream imagePolicy="ai"
                 content={command.result.answer}
                 isStreamActive={false}
                 hideCopyButton

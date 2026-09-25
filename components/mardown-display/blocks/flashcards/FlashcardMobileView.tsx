@@ -351,7 +351,7 @@ const FitTextFace: React.FC<FitTextFaceProps> = ({
         className="w-full"
         style={{ fontSize: `${fontSize}px` }}
       >
-        <ConfigurableMarkdownContent
+        <ConfigurableMarkdownContent imagePolicy="inherit"
           content={content}
           isStreamActive={isStreamActive}
           showCopyButton={false}

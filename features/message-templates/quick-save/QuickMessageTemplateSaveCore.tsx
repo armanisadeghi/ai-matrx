@@ -256,7 +256,7 @@ export function QuickMessageTemplateSaveCore({
         </div>
       ) : null}
 
-      <RefinableContentEditor
+      <RefinableContentEditor imagePolicy="other"
         refine={refine}
         readOnly={Boolean(savedTemplate)}
         placeholder="Refine the message template content…"

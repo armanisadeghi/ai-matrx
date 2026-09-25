@@ -32,7 +32,6 @@ import { Sheet, SheetContent, SheetTitle } from "@ai-matrx/design-system";
 import { CanvasSurfaceCard } from "./CanvasSurface";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { claimDynamicPanelAvatarCover } from "@/components/matrx/resizable/elevatedShellUserMenuStore";
 
 const MIN_WIDTH = 480;
 const MAX_WIDTH = 1400;
@@ -84,26 +83,6 @@ export function CanvasSideSheetImpl() {
       document.body.style.cursor = "";
     }
   }, [isResizing]);
-
-  // Hide the shell-header avatar while open — the glass-layer stand-in
-  // (ElevatedShellUserMenuRoot) takes the corner so the dropdown sits ABOVE
-  // this sheet (z-10000). An in-tree dropdown hangs into the pane body and
-  // loses hits; that is the same class MatrxDynamicPanel already solved.
-  useEffect(() => {
-    if (isOpen) {
-      document.documentElement.dataset.canvasOpen = "true";
-    } else {
-      delete document.documentElement.dataset.canvasOpen;
-    }
-    return () => {
-      delete document.documentElement.dataset.canvasOpen;
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    return claimDynamicPanelAvatarCover();
-  }, [isOpen]);
 
   if (!currentItem) return null;
 

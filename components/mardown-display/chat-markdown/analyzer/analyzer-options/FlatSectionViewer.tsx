@@ -234,7 +234,7 @@ const FlatSectionViewer = ({ data, bookmark }: FlatSectionViewerProps) => {
                         Markdown applied
                       </span>
                     </div>
-                    <BasicMarkdownContent 
+                    <BasicMarkdownContent imagePolicy="self" 
                       content={preprocessContentForLineBreaks(selectedSection.content)}
                       showCopyButton={false}
                     />

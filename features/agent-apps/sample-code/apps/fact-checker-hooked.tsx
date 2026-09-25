@@ -175,7 +175,7 @@ export default function FactCheckerHooked({
           </CardHeader>
           <CardContent className="pt-5">
             {response ? (
-              <MarkdownStream content={response} isStreamActive={isStreaming} />
+              <MarkdownStream imagePolicy="ai" content={response} isStreamActive={isStreaming} />
             ) : (
               <div className="flex flex-col items-center justify-center py-12 space-y-3">
                 <Loader2 className="w-8 h-8 animate-spin text-sky-600 dark:text-sky-400" />

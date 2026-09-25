@@ -376,7 +376,7 @@ export function QuickNoteSaveCore({
       )}
 
       {/* Toolbar + trim sliders + editor — the shared refine primitive */}
-      <RefinableContentEditor
+      <RefinableContentEditor imagePolicy="other"
         refine={refine}
         initialEditorMode={initialEditorMode}
         readOnly={!!savedNote}

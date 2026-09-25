@@ -33,7 +33,7 @@ import {
   useMediaLoadRecovery,
 } from "@ai-matrx/media/core";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
-import { RemoteImageGate } from "@/components/rich-content/prose/remote-image-policy";
+import { RemoteImageGate, withImagePolicy, type ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
 
 /**
@@ -357,6 +357,12 @@ export interface ConfigurableMarkdownContentProps {
   styleConfig?: MarkdownStyleConfig;
   /** Per-element renderer overrides. Fully replaces the built-in renderer for that element. */
   componentOverrides?: MarkdownComponentOverrides;
+  /**
+   * WHO WROTE this text — "ai" | "other" | "self", or "inherit" when rendered
+   * inside a surface that already declared. Decides whether remote images load
+   * by themselves (components/rich-content/prose/remote-image-policy.tsx).
+   */
+  imagePolicy?: ImagePolicyDeclaration;
 }
 
 // ---------------------------------------------------------------------------
@@ -373,6 +379,7 @@ export const ConfigurableMarkdownContent: React.FC<
   showCopyButton = true,
   styleConfig,
   componentOverrides,
+  imagePolicy,
 }) => {
   const [isHovering, setIsHovering] = useState(false);
 
@@ -1002,7 +1009,7 @@ export const ConfigurableMarkdownContent: React.FC<
     }
   `;
 
-  return (
+  const rendered = (
     <div
       className={cn(
         "relative group math-content-wrapper overflow-x-hidden min-w-0 break-words",
@@ -1046,6 +1053,7 @@ export const ConfigurableMarkdownContent: React.FC<
       )}
     </div>
   );
+  return <>{withImagePolicy(imagePolicy, rendered)}</>;
 };
 
 export default ConfigurableMarkdownContent;

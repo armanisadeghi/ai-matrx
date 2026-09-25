@@ -82,7 +82,7 @@ export function LiveTurnCard({ role, stream, round }: LiveTurnCardProps) {
         ) : (
           !isThinking && (
             <div className="mt-0.5 text-sm">
-              <BasicMarkdownContent
+              <BasicMarkdownContent imagePolicy="ai"
                 content={visible}
                 isStreamActive
                 showCopyButton={false}

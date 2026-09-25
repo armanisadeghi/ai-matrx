@@ -682,7 +682,7 @@ const ListResult: React.FC<{ result: RandomWheelResult }> = ({ result }) => {
             </pre>
           ) : (
             <div className="text-sm text-foreground/90 break-words">
-              <BasicMarkdownContent content={text} showCopyButton={false} />
+              <BasicMarkdownContent imagePolicy="ai" content={text} showCopyButton={false} />
             </div>
           )}
         </div>
@@ -704,7 +704,7 @@ const WebResult: React.FC<{ result: RandomWheelResult }> = ({ result }) => {
       </div>
       {text.trim().length > 0 && (
         <div className="rounded-lg border border-border bg-card p-3 text-sm text-foreground/90 break-words max-h-72 overflow-y-auto">
-          <BasicMarkdownContent content={text} showCopyButton={false} />
+          <BasicMarkdownContent imagePolicy="other" content={text} showCopyButton={false} />
         </div>
       )}
       {sources.length > 0 && (

@@ -6,7 +6,7 @@ import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 
 export function MatrxSplitTab({ state, actions }: MarkdownTabProps) {
     return (
-        <MatrxSplit
+        <MatrxSplit imagePolicy="other"
             value={state.currentMarkdown}
             onChange={(value) => actions.setCurrentMarkdown(value)}
             placeholder="Start writing markdown..."

@@ -40,7 +40,6 @@ import {
 } from "react-resizable-panels";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { CSSProperties } from "react";
-import { claimDynamicPanelAvatarCover } from "./elevatedShellUserMenuStore";
 
 type PanelPosition = "left" | "right" | "top" | "bottom";
 
@@ -152,21 +151,6 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
     setLastInitialPosition(initialPosition);
     setCurrentPosition(initialPosition);
   }
-
-  /** Right/top/fullscreen/mobile panels sit above the shell header stacking
-   *  context — claim the glass-layer avatar stand-in so the user menu stays
-   *  visible and clickable. Left/bottom desktop docks leave the corner free. */
-  const coversAvatarCorner =
-    isExpanded &&
-    (isMobile ||
-      isFullScreen ||
-      currentPosition === "right" ||
-      currentPosition === "top");
-
-  React.useEffect(() => {
-    if (!coversAvatarCorner) return undefined;
-    return claimDynamicPanelAvatarCover();
-  }, [coversAvatarCorner]);
 
   React.useEffect(() => {
     const group = panelGroupRef.current;

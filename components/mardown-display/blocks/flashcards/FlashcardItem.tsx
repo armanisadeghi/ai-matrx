@@ -290,7 +290,7 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
                   className="flex-1 min-h-0 max-h-[55%]"
                 />
               )}
-              <ConfigurableMarkdownContent
+              <ConfigurableMarkdownContent imagePolicy="inherit"
                 content={front}
                 isStreamActive={false}
                 showCopyButton={false}
@@ -369,7 +369,7 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
                     className="max-h-32 mb-1.5"
                   />
                 )}
-                <ConfigurableMarkdownContent
+                <ConfigurableMarkdownContent imagePolicy="inherit"
                   content={backContent}
                   isStreamActive={back === null}
                   showCopyButton={false}

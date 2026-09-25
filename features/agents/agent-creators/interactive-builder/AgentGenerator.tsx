@@ -115,7 +115,7 @@ class GeneratorErrorBoundary extends Component<
             </span>
           </div>
           <div className="flex-1 overflow-y-auto p-3">
-            <MarkdownStream
+            <MarkdownStream imagePolicy="ai"
               content={this.props.fallbackContent}
               isStreamActive={this.props.isStreamActive}
               hideCopyButton={false}

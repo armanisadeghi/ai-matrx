@@ -601,7 +601,7 @@ export default function BlockProcessingClient() {
                       <code className="font-mono">MarkdownStream</code>{" "}
                       (client-side parser, no API).
                     </p>
-                    <MarkdownStream
+                    <MarkdownStream imagePolicy="self"
                       content={content}
                       isStreamActive={false}
                       hideCopyButton={false}
@@ -678,7 +678,7 @@ export default function BlockProcessingClient() {
                           </button>
                         )}
                     </p>
-                    <MarkdownStream
+                    <MarkdownStream imagePolicy="self"
                       content=""
                       events={processedEvents}
                       isStreamActive={isRunning || isReplaying}

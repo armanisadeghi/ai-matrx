@@ -89,7 +89,7 @@ export function WrittenProgressFace({
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-sm">
-                <BasicMarkdownContent content={e.summary} showCopyButton={false} />
+                <BasicMarkdownContent imagePolicy="ai" content={e.summary} showCopyButton={false} />
               </div>
               <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
                 <span>{new Date(e.occurredAt).toLocaleTimeString()}</span>

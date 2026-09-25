@@ -283,7 +283,7 @@ export function FullPromptOptimizer({
                         </p>
                       </div>
                       <div className="flex-1 overflow-y-auto p-4">
-                        <MarkdownStream
+                        <MarkdownStream imagePolicy="ai"
                           content={streamingText}
                           isStreamActive={true}
                           hideCopyButton={true}
@@ -338,7 +338,7 @@ export function FullPromptOptimizer({
 
                   {/* Always show the full raw response */}
                   <div className="flex-1 overflow-y-auto p-4 bg-white/50 dark:bg-gray-900/50">
-                    <MarkdownStream
+                    <MarkdownStream imagePolicy="ai"
                       content={streamingText}
                       isStreamActive={false}
                       hideCopyButton={false}

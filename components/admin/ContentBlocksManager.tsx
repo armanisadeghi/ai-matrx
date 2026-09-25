@@ -1678,7 +1678,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                         </div>
                         <div className="flex-1 min-w-0 min-h-[300px] border border-border rounded-lg px-3 py-1 bg-textured overflow-auto">
                           <div>
-                            <MarkdownStream content={editData.template || ""} />
+                            <MarkdownStream imagePolicy="self" content={editData.template || ""} />
                           </div>
                         </div>
                       </div>
@@ -1762,7 +1762,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                               )}
                             {processedEvents.length > 0 && (
                               <div className="prose prose-sm dark:prose-invert max-w-none">
-                                <MarkdownStream
+                                <MarkdownStream imagePolicy="self"
                                   content=""
                                   events={processedEvents}
                                   isStreamActive={

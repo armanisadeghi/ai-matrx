@@ -20,8 +20,8 @@
 
 import { resolveCalloutType } from "./callout-types";
 import { CONTAINER_DIRECTIVES } from "./names";
+import { fenceLineKinds } from "@ai-matrx/content-ir/source";
 
-const FENCE = /^[ \t]{0,3}(`{3,}|~{3,})/;
 const MKDOCS_OPEN = /^(!!!|\?\?\?\+?)[ \t]+([A-Za-z][\w-]*)(?:[ \t]+[\w-]+)*(?:[ \t]+"((?:[^"\\]|\\.)*)")?[ \t]*$/;
 const DOCUSAURUS_TITLED = /^(:{3,})([A-Za-z][\w-]*)[ \t]+([^\s{[][^\n]*?)[ \t]*$/;
 /** One indent level of an admonition body: 4 spaces, a tab, or the 8 nbsp prose preparation turns 4 spaces into. */
@@ -46,21 +46,14 @@ export function rewriteContainerSpellings(source: string): string {
     return source;
   }
   const lines = source.split("\n");
+  // Code is found by THE one code-range rule (@ai-matrx/content-ir/source).
+  const kinds = fenceLineKinds(source);
   const out: string[] = [];
-  let fence: string | null = null;
   let changed = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i] ?? "";
-    const f = FENCE.exec(line);
-    if (f) {
-      const marker = f[1] as string;
-      if (fence === null) fence = marker;
-      else if (marker[0] === fence[0] && marker.length >= fence.length) fence = null;
-      out.push(line);
-      continue;
-    }
-    if (fence !== null) {
+    if (kinds[i] !== "prose") {
       out.push(line);
       continue;
     }

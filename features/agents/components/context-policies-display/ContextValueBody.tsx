@@ -88,7 +88,7 @@ export function ContextValueBody({
   if (classified.kind === "markdown-text" && classified.text) {
     return (
       <div className="select-text text-xs">
-        <MarkdownStream content={classified.text} hideCopyButton />
+        <MarkdownStream imagePolicy="other" content={classified.text} hideCopyButton />
       </div>
     );
   }

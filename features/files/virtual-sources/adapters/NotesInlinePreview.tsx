@@ -32,6 +32,8 @@ import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
 import type { InlinePreviewProps } from "@/features/files/virtual-sources/types";
 import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
+import { useAppSelector } from "@/lib/redux/hooks";
 
 // Lazy-load the editor — it pulls in MarkdownStream + TuiEditor which are
 // heavy. Cloud-files preview pane stays light until the user actually clicks
@@ -72,6 +74,7 @@ const DEFAULT_MODE: EditorMode = "split";
 
 export function NotesInlinePreview({ id }: InlinePreviewProps) {
   const [note, setNote] = useState<Note | null>(null);
+  const viewerId = useAppSelector((state) => state.userAuth.id);
   const [content, setContent] = useState<string>("");
   // A load failure is never explained here: a zero-row read is denied /
   // deleted / stale-id / signed-out, and this panel cannot tell them apart.
@@ -218,7 +221,7 @@ export function NotesInlinePreview({ id }: InlinePreviewProps) {
         </div>
       </div>
       <div className="min-h-0 flex-1">
-        <NoteEditorCore
+        <NoteEditorCore imagePolicy={authoredBy(note?.created_by, viewerId)}
           content={content}
           onChange={handleChange}
           editorMode={editorMode}

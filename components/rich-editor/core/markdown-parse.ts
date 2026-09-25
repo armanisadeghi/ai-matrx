@@ -365,6 +365,9 @@ function blockJSON(token: Token, state: ParseState): JSONContent | null {
           mdCells: JSON.stringify(
             cells.map((cell) => restorePlaceholders(inlineRaw(cell.tokens), state.islands)),
           ),
+          // The row's exact bytes split on its unescaped pipes: an untouched cell
+          // is written back as ITS segment, never re-serialized (markdown-serialize.ts).
+          mdSegs: JSON.stringify(splitRowSegments(restorePlaceholders(line, state.islands))),
         },
         content: cells.map((cell, index) => cellJSON(cell, isHeader, index)),
       });
@@ -385,6 +388,11 @@ function blockJSON(token: Token, state: ParseState): JSONContent | null {
     default:
       return null;
   }
+}
+
+/** A table row's bytes split on its unescaped pipes (edge segments included). */
+export function splitRowSegments(line: string): string[] {
+  return line.split(/(?<!\\)\|/);
 }
 
 const ALERT_MARKER = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?=\n|$)/i;

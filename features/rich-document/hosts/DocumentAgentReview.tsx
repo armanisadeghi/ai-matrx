@@ -48,7 +48,7 @@ import {
   prepareContentEdit,
   savePreparedContentEdit,
 } from "../actions/handlers/preparedEdit";
-import { spliceProposal } from "../review/proposedEdit";
+import { explainSpliceRefusal, spliceProposal } from "../review/proposedEdit";
 import type { ChatAnswerSaveReceipt, ContentSource, RichDocumentActionContext } from "../types";
 
 export interface DocumentAgentReviewProps {
@@ -103,7 +103,7 @@ export function DocumentAgentReview({
     try {
       splice = spliceProposal(prepared.content, proposal);
     } catch (error) {
-      spliceError = getErrorMessage(error, "This change cannot be applied as a splice.");
+      spliceError = explainSpliceRefusal(error);
     }
   }
 
@@ -253,7 +253,7 @@ export function DocumentAgentReview({
           <DialogDescription>
             {proposal !== null
               ? "Review the change. Apply saves only the parts that differ; Discard leaves the saved text exactly as it is."
-              : "The agent works on the saved version. Nothing changes until you review and apply."}
+              : "The agent works on the text as it was when you opened this. Nothing changes until you review and apply — and Apply first checks that the saved answer has not changed since."}
           </DialogDescription>
         </DialogHeader>
         <div className="min-h-0 flex-1 overflow-auto">{body}</div>

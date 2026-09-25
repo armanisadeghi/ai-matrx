@@ -44,7 +44,7 @@ export function Walkthrough({ className }: { className?: string }) {
   return (
     <ScrollArea className={cn("h-full", className)}>
       <div className="p-4">
-        <BasicMarkdownContent content={WALKTHROUGH} showCopyButton={false} />
+        <BasicMarkdownContent imagePolicy="other" content={WALKTHROUGH} showCopyButton={false} />
       </div>
     </ScrollArea>
   );

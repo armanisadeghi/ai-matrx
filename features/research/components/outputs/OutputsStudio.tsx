@@ -410,7 +410,7 @@ function DomainReportsCard({
             </button>
           </div>
           <div className="px-3 py-3 max-h-[460px] overflow-y-auto">
-            <MarkdownStream content={viewingMarkdown} />
+            <MarkdownStream imagePolicy="ai" content={viewingMarkdown} />
             <div className="flex justify-end mt-2">
               <ContentActionBar
                 content={viewingMarkdown}
@@ -1027,7 +1027,7 @@ function BlogOutputCard({
               </button>
             </div>
             <div className="px-3 py-3 max-h-[460px] overflow-y-auto">
-              <MarkdownStream content={viewingMarkdown} />
+              <MarkdownStream imagePolicy="ai" content={viewingMarkdown} />
               <div className="flex justify-end mt-2">
                 <ContentActionBar
                   content={viewingMarkdown}

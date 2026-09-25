@@ -319,7 +319,7 @@ export default function DirectChatClient() {
           </div>
           <div className="flex-1 overflow-y-auto bg-textured p-3 rounded-md min-h-0">
             {streamText ? (
-              <MarkdownStream
+              <MarkdownStream imagePolicy="ai"
                 content={streamText}
                 isStreamActive={isStreaming}
                 className="text-xs"

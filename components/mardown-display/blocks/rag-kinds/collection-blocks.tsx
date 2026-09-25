@@ -246,7 +246,7 @@ export function RagSynthesizeResultBlock({ serverData, className }: RagBlockProp
 
       {answer && (
         <div className="rounded-lg border border-border bg-card p-3">
-          <BasicMarkdownContent content={answer} />
+          <BasicMarkdownContent imagePolicy="inherit" content={answer} />
         </div>
       )}
 

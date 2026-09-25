@@ -172,7 +172,7 @@ export const GenericEmitRenderer: React.FC<EmitRendererProps> = ({
     <div className="space-y-2">
       {title && (
         <div className="text-sm font-semibold text-foreground">
-          <MarkdownStream content={title} />
+          <MarkdownStream imagePolicy="ai" content={title} />
         </div>
       )}
       <ResultValue value={value} density="full" />

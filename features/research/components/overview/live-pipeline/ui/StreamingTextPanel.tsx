@@ -56,7 +56,7 @@ export function StreamingTextPanel({
       </div>
       <div ref={scrollRef} className="max-h-[32rem] overflow-y-auto p-3">
         <div>
-          <MarkdownStream
+          <MarkdownStream imagePolicy="ai"
             content={text}
             isStreamActive={isStreaming}
             hideCopyButton

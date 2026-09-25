@@ -91,7 +91,7 @@ export function RunSetDisplay({
             <p className="mb-1 text-[11px] font-medium text-muted-foreground">
               {entry.label}
             </p>
-            <MarkdownStream
+            <MarkdownStream imagePolicy="ai"
               serverProcessedBlocks={[entry.block]}
               hideCopyButton
             />

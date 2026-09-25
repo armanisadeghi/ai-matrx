@@ -38,7 +38,7 @@ export function EpisodeShowNotes({
         </CollapsibleTrigger>
         <CollapsibleContent>
           <div className="prose prose-sm prose-neutral max-w-none border-t border-border px-3 py-3 dark:prose-invert">
-            <BasicMarkdownContent content={article.content_markdown} showCopyButton={false} />
+            <BasicMarkdownContent imagePolicy="ai" content={article.content_markdown} showCopyButton={false} />
           </div>
         </CollapsibleContent>
       </Collapsible>

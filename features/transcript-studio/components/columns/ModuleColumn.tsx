@@ -271,7 +271,7 @@ function ModuleSegmentRender({
         onDelete={onDelete}
       >
         <div className="pr-12">
-          <MarkdownStream content={content} hideCopyButton />
+          <MarkdownStream imagePolicy="ai" content={content} hideCopyButton />
         </div>
       </EditableTextSegmentRow>
     </SegmentWrapper>

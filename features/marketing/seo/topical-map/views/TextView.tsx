@@ -132,7 +132,7 @@ export function TextView({ mapId, siteId }: MapViewProps) {
             className="mt-3 min-h-0 flex-1 overflow-auto rounded-lg bg-muted/40 p-4"
             aria-label="The map as a markdown tree"
           >
-            <MarkdownStream
+            <MarkdownStream imagePolicy="ai"
               content={markdown}
               isStreamActive={false}
               hideCopyButton

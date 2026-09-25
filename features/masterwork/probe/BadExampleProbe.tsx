@@ -494,7 +494,7 @@ export function BadExampleProbe({
                 Google Sheet / Edit, so the Expert could file our knowingly-wrong
                 document as if it were a real record. `specimen` declares what
                 this is to every renderer underneath. */}
-            <RichDocument
+            <RichDocument imagePolicy="ai"
               content={current.example_body ?? ""}
               source={{ type: "raw" }}
               actionsVariant="none"

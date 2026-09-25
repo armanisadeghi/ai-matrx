@@ -122,7 +122,7 @@ function LiveKindResult({
         </div>
         {requestId ? (
           <div className="max-h-48 overflow-y-auto">
-            <MarkdownStream
+            <MarkdownStream imagePolicy="ai"
               requestId={requestId}
               isStreamActive
               hideCopyButton

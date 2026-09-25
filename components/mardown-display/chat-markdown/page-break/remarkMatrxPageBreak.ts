@@ -35,6 +35,7 @@ import {
   // the screen divides exactly where paper does.
   isBreakLine,
 } from "@ai-matrx/print/directives";
+import { fenceLineKinds } from "@ai-matrx/content-ir/source";
 
 interface MdastNode {
   type: string;
@@ -57,19 +58,12 @@ interface SourceFile {
 export function isolatePageBreakLines(source: string): string {
   if (!source) return source;
   const lines = source.split("\n");
-  let fence: string | null = null;
+  // Fenced code keeps its directives literal — THE one code-range rule.
+  const kinds = fenceLineKinds(source);
   let changed = false;
   const out: string[] = [];
-  for (const line of lines) {
-    const f = /^\s*(`{3,}|~{3,})/.exec(line);
-    if (f) {
-      const marker = f[1] as string;
-      if (fence === null) fence = marker;
-      else if (marker[0] === fence[0] && marker.length >= fence.length) fence = null;
-      out.push(line);
-      continue;
-    }
-    if (fence === null && isBreakLine(line)) {
+  for (const [i, line] of lines.entries()) {
+    if (kinds[i] === "prose" && isBreakLine(line)) {
       if (out.length > 0 && (out[out.length - 1] ?? "").trim() !== "") out.push("");
       out.push(line, "");
       changed = true;

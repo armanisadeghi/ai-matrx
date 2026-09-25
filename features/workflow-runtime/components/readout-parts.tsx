@@ -432,7 +432,7 @@ export function InvocationBody({
       );
     }
     return (
-      <MarkdownStream
+      <MarkdownStream imagePolicy="ai"
         content={stripProtocolTags(invocation.textTail)}
         isStreamActive={working}
         hideCopyButton
@@ -506,7 +506,7 @@ export function InvocationBody({
   }
   if (invocation.textTail) {
     return (
-      <MarkdownStream
+      <MarkdownStream imagePolicy="ai"
         content={stripProtocolTags(invocation.textTail)}
         hideCopyButton
       />

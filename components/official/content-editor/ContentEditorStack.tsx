@@ -5,6 +5,7 @@ import React from 'react';
 import { ContentEditor } from './ContentEditor';
 import type { EditorMode, HeaderAction } from './types';
 import { cn } from '@/lib/utils';
+import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 
 export interface ContentEditorStackProps {
   // Content array
@@ -36,6 +37,12 @@ export interface ContentEditorStackProps {
   showModeSelector?: boolean;
   spacing?: 'sm' | 'md' | 'lg';
   className?: string;
+  /**
+   * WHO WROTE the content shown — "self" | "other" | "ai" (or "inherit").
+   * Decides whether remote images load by themselves; forwarded to the
+   * renderer (components/rich-content/prose/remote-image-policy.tsx).
+   */
+  imagePolicy?: ImagePolicyDeclaration;
 }
 
 const spacingClasses = {
@@ -62,7 +69,8 @@ export function ContentEditorStack({
   placeholder,
   showModeSelector,
   spacing = 'md',
-  className
+  className,
+  imagePolicy,
 }: ContentEditorStackProps) {
   
   // Handle individual content change
@@ -82,7 +90,7 @@ export function ContentEditorStack({
   return (
     <div className={cn(spacingClasses[spacing], className)}>
       {contents.map((content, index) => (
-        <ContentEditor
+        <ContentEditor imagePolicy={imagePolicy}
           key={index}
           value={content}
           onChange={handleContentChange(index)}

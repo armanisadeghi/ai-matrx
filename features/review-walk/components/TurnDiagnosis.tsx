@@ -119,7 +119,7 @@ function RawValue({ value }: { value: unknown }) {
   const { text, clipped } = stringifyClipped(value);
   return (
     <div>
-      <MarkdownStream
+      <MarkdownStream imagePolicy="ai"
         content={"```json\n" + text + "\n```"}
         isStreamActive={false}
         hideCopyButton
@@ -137,7 +137,7 @@ function Md({ content }: { content: string }) {
   const { text, clipped } = stringifyClipped(content);
   return (
     <div>
-      <MarkdownStream content={text} isStreamActive={false} hideCopyButton />
+      <MarkdownStream imagePolicy="ai" content={text} isStreamActive={false} hideCopyButton />
       {clipped && (
         <div className="mt-1 text-[10px] text-muted-foreground">
           Clipped for display — the stored payload is larger.

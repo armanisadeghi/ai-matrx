@@ -104,7 +104,9 @@ export default function RouteHeader({
         <div
           ref={leftRef}
           data-route-header-left
-          className="relative z-10 flex min-w-0 items-center"
+          // The title yields on ONE line: clipped and ellipsised, never wrapped
+          // a letter per line under the actions (375px sample, 2026-09-25).
+          className="relative z-10 flex min-w-0 items-center overflow-hidden whitespace-nowrap [&_h1]:truncate [&_h2]:truncate [&>span]:min-w-0 [&>span]:truncate"
         >
           {left}
         </div>

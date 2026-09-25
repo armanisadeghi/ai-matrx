@@ -10,6 +10,7 @@
 
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
 import { splitFrontmatter } from "@/components/markdown-core/syntax/frontmatter";
+import { fenceLineKinds } from "@ai-matrx/content-ir/source";
 
 /** Private-use sentinel for a standalone `===` line. The `p` renderer swaps a
  *  paragraph whose only child is this token for a thick blue rule. */
@@ -27,28 +28,11 @@ export const THICK_HR_SENTINEL = "\uE000THICK_HR\uE000";
  */
 export function isolateThickHorizontalRules(source: string): string {
   const lines = source.split("\n");
-  let fenceMarker: string | null = null;
-  const out: string[] = [];
-  for (const line of lines) {
-    const opened = /^[ \t]{0,3}(`{3,}|~{3,})/.exec(line);
-    if (fenceMarker === null && opened?.[1]) {
-      fenceMarker = opened[1];
-      out.push(line);
-      continue;
-    }
-    if (fenceMarker !== null) {
-      const trimmed = line.trim();
-      if (
-        trimmed.startsWith(fenceMarker) &&
-        trimmed.slice(fenceMarker.length).trim() === ""
-      ) {
-        fenceMarker = null;
-      }
-      out.push(line);
-      continue;
-    }
-    out.push(/^[ \t]*={3,}[ \t]*$/.test(line) ? THICK_HR_SENTINEL : line);
-  }
+  // Fenced code stays untouched — THE one code-range rule.
+  const kinds = fenceLineKinds(source);
+  const out = lines.map((line, i) =>
+    kinds[i] === "prose" && /^[ \t]*={3,}[ \t]*$/.test(line) ? THICK_HR_SENTINEL : line,
+  );
   return out
     .join("\n")
     .replace(
@@ -109,7 +93,6 @@ export const getDirectionFontSize = (direction: "rtl" | "ltr") => {
     : "text-sm"; // Smaller for LTR (English)
 };
 
-const FENCE_LINE = /^[ \t]{0,3}(`{3,}|~{3,})/;
 const FENCE_TOKEN = /\uE001F(\d+)\uE001/g;
 
 /**
@@ -121,29 +104,30 @@ const FENCE_TOKEN = /\uE001F(\d+)\uE001/g;
 export function protectFencedCode(source: string): { text: string; restore: (s: string) => string } | null {
   if (!source.includes("```") && !source.includes("~~~")) return null;
   const lines = source.split("\n");
+  // THE one code-range rule; an unclosed fence (a stream still arriving) runs to the end.
+  const kinds = fenceLineKinds(source);
   const out: string[] = [];
   const fences: string[] = [];
-  let open: { marker: string; lines: string[] } | null = null;
-  for (const line of lines) {
-    const f = FENCE_LINE.exec(line);
-    if (open) {
-      open.lines.push(line);
-      if (f && (f[1] as string)[0] === open.marker[0] && (f[1] as string).length >= open.marker.length && /^[ \t]*[`~]+[ \t]*$/.test(line)) {
-        out.push(`\uE001F${fences.length}\uE001`);
-        fences.push(open.lines.join("\n"));
-        open = null;
-      }
+  for (let i = 0; i < lines.length; ) {
+    if (kinds[i] !== "open") {
+      out.push(lines[i] as string);
+      i += 1;
       continue;
     }
-    if (f) {
-      open = { marker: f[1] as string, lines: [line] };
-      continue;
+    const region = [lines[i] as string];
+    i += 1;
+    while (i < lines.length && (kinds[i] === "body" || kinds[i] === "close")) {
+      const closes = kinds[i] === "close";
+      region.push(lines[i] as string);
+      i += 1;
+      if (closes) break;
     }
-    out.push(line);
-  }
-  if (open) {
-    out.push(`\uE001F${fences.length}\uE001`);
-    fences.push(open.lines.join("\n"));
+    // The token keeps the opener's indentation, so a fence inside a list item
+    // still reads as that item's continuation until it is restored.
+    const indent = /^[ \t]*/.exec(region[0] as string)?.[0] ?? "";
+    region[0] = (region[0] as string).slice(indent.length);
+    out.push(`${indent}\uE001F${fences.length}\uE001`);
+    fences.push(region.join("\n"));
   }
   if (fences.length === 0) return null;
   return {

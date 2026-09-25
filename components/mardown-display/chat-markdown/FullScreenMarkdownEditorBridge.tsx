@@ -198,7 +198,7 @@ export function FullScreenMarkdownEditorBridge({
   }, [callbackGroupId, onClose]);
 
   return (
-    <FullScreenMarkdownEditor
+    <FullScreenMarkdownEditor imagePolicy={mode === "assistant-message" ? "ai" : "other"}
       isOpen={isOpen}
       initialContent={content}
       onSave={handleSave}

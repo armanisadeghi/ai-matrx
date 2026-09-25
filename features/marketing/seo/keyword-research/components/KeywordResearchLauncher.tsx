@@ -281,7 +281,7 @@ export default function KeywordResearchLauncher({
               // The ONE canonical renderer, driven by the adopted requestId.
               // Every research + classification payload routes to its real
               // kind component through the same pipeline chat uses.
-              <MarkdownStream
+              <MarkdownStream imagePolicy="ai"
                 requestId={run.requestId}
                 isStreamActive={run.status === "running"}
                 hideCopyButton

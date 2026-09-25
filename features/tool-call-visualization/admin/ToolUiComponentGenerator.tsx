@@ -1491,7 +1491,7 @@ export function ToolUiComponentGenerator({
             </div>
             <div className="p-4 min-h-[200px] max-h-full overflow-y-auto">
               {agent.accumulatedText || rawResponse ? (
-                <MarkdownStream
+                <MarkdownStream imagePolicy="ai"
                   content={agent.accumulatedText || rawResponse}
                   isStreamActive={agent.isStreaming}
                 />

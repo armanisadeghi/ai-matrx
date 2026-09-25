@@ -129,7 +129,7 @@ export default function AgentAssistantMarkdownDebugWindow({
             </div>
             <div className="flex-1 min-h-0 overflow-auto p-2">
               {baseMarkdown ? (
-                <MarkdownStream
+                <MarkdownStream imagePolicy="ai"
                   content={baseMarkdown}
                   hideCopyButton
                   allowFullScreenEditor={false}
@@ -146,7 +146,7 @@ export default function AgentAssistantMarkdownDebugWindow({
             </div>
             <div className="flex-1 min-h-0 overflow-auto p-2">
               {draftMarkdown ? (
-                <MarkdownStream
+                <MarkdownStream imagePolicy="ai"
                   content={draftMarkdown}
                   hideCopyButton
                   allowFullScreenEditor={false}

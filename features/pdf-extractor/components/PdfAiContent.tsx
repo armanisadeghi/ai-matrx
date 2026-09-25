@@ -30,7 +30,7 @@ export function PdfAiContent({
   className?: string;
 }) {
   return (
-    <MarkdownStream
+    <MarkdownStream imagePolicy="ai"
       content={content}
       isStreamActive={isStreaming}
       hideCopyButton

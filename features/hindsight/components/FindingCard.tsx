@@ -208,7 +208,7 @@ export function FindingCard({
             <div
               className={cn(variant === "card" && "max-h-24 overflow-hidden")}
             >
-              <MarkdownStream content={finding.reasoning} hideCopyButton />
+              <MarkdownStream imagePolicy="ai" content={finding.reasoning} hideCopyButton />
             </div>
           )}
           {(finding.evidence ?? []).length > 0 && (
@@ -262,7 +262,7 @@ export function FindingCard({
                     : "overflow-visible",
                 )}
               >
-                <MarkdownStream content={body} hideCopyButton />
+                <MarkdownStream imagePolicy="ai" content={body} hideCopyButton />
               </div>
               {variant === "card" && showWindowDoor && (
                 <Button

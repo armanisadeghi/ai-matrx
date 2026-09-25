@@ -287,7 +287,7 @@ const AnswerCard: React.FC<{ report: string; compact?: boolean }> = ({ report, c
                 compact && "line-clamp-6",
             )}
         >
-            <BasicMarkdownContent
+            <BasicMarkdownContent imagePolicy="ai"
                 content={compact ? report.slice(0, 900) : report}
                 showCopyButton={false}
             />

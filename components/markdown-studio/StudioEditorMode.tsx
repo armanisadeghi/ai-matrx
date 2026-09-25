@@ -141,7 +141,7 @@ export function StudioEditorMode({
   );
 
   return (
-    <RichEditor
+    <RichEditor imagePolicy="self"
       value={copy ? copy.content : opened}
       onSave={save}
       onChange={onContentChange}

@@ -143,7 +143,7 @@ describe("tables", () => {
       tr.insertText(" R.", pos + 5);
       return true;
     });
-    expect(save()).toBe(PICKUP_TABLE.replace("| Barranca |     2 | Devin   |", "| Barranca | 2 | Devin R. |"));
+    expect(save()).toBe(PICKUP_TABLE.replace("| Devin   |\n\nTotals", "| Devin R. |\n\nTotals"));
   });
 
   it("re-aligning a spaced delimiter row keeps its spaces and the other cells", () => {
@@ -155,6 +155,81 @@ describe("tables", () => {
       return true;
     });
     expect(save()).toBe(spaced.replace("| :--- |", "| :--: |"));
+  });
+
+  // verify-RC-B4 R3-1: marked strips `\|` inside a cell before inline parsing, so
+  // the cell's TEXT holds a bare "|". An untouched cell was written back as that
+  // text — the pipe unescaped, the row split, and a second edit dropped the tail.
+  const DOCK_RULES = "| Dock | Rule |\n|---|---|\n| D1 | open for A \\| B carriers only |\n| D2 | closed |";
+
+  it("editing a cell beside an escaped pipe keeps the neighbour's bytes verbatim", () => {
+    const { editor, save } = open(DOCK_RULES);
+    const pos = find(editor.state.doc, (node) => node.isText === true && node.text === "D1");
+    editor.commands.command(({ tr }) => {
+      tr.insertText("a", pos + 2);
+      return true;
+    });
+    const first = save();
+    expect(first).toBe(DOCK_RULES.replace("| D1 |", "| D1a |"));
+    editor.commands.command(({ tr }) => {
+      tr.insertText("b", pos + 3);
+      return true;
+    });
+    expect(save()).toBe(DOCK_RULES.replace("| D1 |", "| D1ab |"));
+  });
+
+  it("editing the escaped cell itself keeps its pipe escaped", () => {
+    const { editor, save } = open(DOCK_RULES);
+    const pos = find(editor.state.doc, (node) => node.isText === true && (node.text ?? "").startsWith("open for A"));
+    const node = editor.state.doc.nodeAt(pos);
+    editor.commands.command(({ tr }) => {
+      tr.insertText(" today", pos + (node?.nodeSize ?? 0));
+      return true;
+    });
+    expect(save()).toBe(DOCK_RULES.replace("B carriers only |", "B carriers only today |"));
+  });
+
+  it("a row that already holds more cells than the header keeps the extra ones on an edit", () => {
+    // The shape the old serializer left behind: `\|` lost, so the row stores 3 cells under a 2-column header.
+    const damaged = "| Dock | Rule |\n|---|---|\n| D1 | open for A | B carriers only |";
+    const { editor, save } = open(damaged);
+    const pos = find(editor.state.doc, (node) => node.isText === true && node.text === "D1");
+    editor.commands.command(({ tr }) => {
+      tr.insertText("b", pos + 2);
+      return true;
+    });
+    expect(save()).toBe(damaged.replace("| D1 |", "| D1b |"));
+  });
+
+  it("filling a short row's missing cell appends one segment and keeps the rest", () => {
+    const short = "| A | B | C |\n|---|---|---|\n| 1 |";
+    const { editor, save } = open(short);
+    let target = -1;
+    editor.state.doc.descendants((node, pos) => {
+      if (node.type.name === "tableRow" && node.textContent === "1") {
+        const third = node.child(2);
+        let at = pos + 1 + node.child(0).nodeSize + node.child(1).nodeSize;
+        at += 2; // into the cell's paragraph
+        if (third) target = at;
+      }
+      return target === -1;
+    });
+    editor.commands.command(({ tr }) => {
+      tr.insertText("3", target);
+      return true;
+    });
+    expect(save()).toBe("| A | B | C |\n|---|---|---|\n| 1 | | 3 |");
+  });
+
+  it("a one-cell edit moves only that cell — no re-padding, no wider delimiter row", () => {
+    const compact = "|Site|Totes|\n|---|---|\n|Alton|6|\n|Barranca|2|";
+    const { editor, save } = open(compact);
+    const pos = find(editor.state.doc, (node) => node.isText === true && node.text === "Alton");
+    editor.commands.command(({ tr }) => {
+      tr.insertText("a", pos + 5);
+      return true;
+    });
+    expect(save()).toBe(compact.replace("|Alton|", "|Altona|"));
   });
 
   it("adding a row keeps every stored row byte-for-byte", () => {
@@ -200,7 +275,7 @@ describe("tables", () => {
       tr.insertText(" | Devin", pos + 7);
       return true;
     });
-    expect(save()).toContain("| Alton | 6 | Marisol \\| Devin |\n| Barranca |     2 | Devin   |");
+    expect(save()).toContain("| Alton    |     6 | Marisol \\| Devin |\n| Barranca |     2 | Devin   |");
   });
 });
 

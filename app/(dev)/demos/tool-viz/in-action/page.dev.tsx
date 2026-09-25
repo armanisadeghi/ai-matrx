@@ -759,7 +759,7 @@ function RevealedMarkdown({
   // MarkdownStream → EnhancedChatMarkdown. No requestId/messageId → the static
   // (DB-loaded) markdown path, byte-identical spacing to a committed turn.
   return (
-    <MarkdownStream
+    <MarkdownStream imagePolicy="ai"
       content={content}
       hideCopyButton
       allowFullScreenEditor={false}

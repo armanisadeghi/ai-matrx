@@ -73,7 +73,7 @@ export function CollabNoteMessage({
         </span>
       </div>
       <div className="px-2.5 py-2 text-sm">
-        <BasicMarkdownContent content={body} showCopyButton={false} />
+        <BasicMarkdownContent imagePolicy="ai" content={body} showCopyButton={false} />
       </div>
     </div>
   );

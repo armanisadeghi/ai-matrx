@@ -989,13 +989,13 @@ function CardEditor({
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                   Blanked
                 </div>
-                <ConfigurableMarkdownContent
+                <ConfigurableMarkdownContent imagePolicy="ai"
                   content={clozePreview?.front || "*empty*"}
                 />
                 <div className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                   Revealed
                 </div>
-                <ConfigurableMarkdownContent
+                <ConfigurableMarkdownContent imagePolicy="ai"
                   content={clozePreview?.back || "*empty*"}
                 />
               </div>
@@ -1028,7 +1028,7 @@ function CardEditor({
             </label>
             {preview ? (
               <div className="min-h-[76px] rounded-md border border-border bg-muted/30 p-2">
-                <ConfigurableMarkdownContent content={front || "*empty*"} />
+                <ConfigurableMarkdownContent imagePolicy="ai" content={front || "*empty*"} />
               </div>
             ) : (
               <ProTextarea
@@ -1045,7 +1045,7 @@ function CardEditor({
             </label>
             {preview ? (
               <div className="min-h-[76px] rounded-md border border-border bg-muted/30 p-2">
-                <ConfigurableMarkdownContent content={back || "*empty*"} />
+                <ConfigurableMarkdownContent imagePolicy="ai" content={back || "*empty*"} />
               </div>
             ) : (
               <ProTextarea

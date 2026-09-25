@@ -27,6 +27,8 @@
  * `getMarkdown()` caller and the WYSIWYG → markdown mode switch get it.
  */
 
+import { findCodeRanges } from "@ai-matrx/content-ir/source";
+
 type OpType = "eq" | "del" | "ins";
 /** del = only in the first text, ins = only in the second. */
 export interface DiffOp {
@@ -209,57 +211,42 @@ const ASCII_PUNCT = /[!-/:-@[-`{-~]/;
  */
 function protectedMask(text: string): Uint8Array {
     const mask = new Uint8Array(text.length);
+    // Fenced code and inline code spans: THE one code-range rule
+    // (@ai-matrx/content-ir/source), never a private fence/backtick scanner.
+    for (const range of findCodeRanges(text)) mask.fill(1, range.start, range.end);
     const lines = splitLines(text);
     let pos = 0;
-    let fence: { ch: string; len: number } | null = null;
     let mathBlock = false;
     for (const line of lines) {
         const body = line.replace(/\n$/, "");
         const lineEnd = pos + line.length;
-        if (fence) {
-            mask.fill(1, pos, lineEnd);
-            const close = /^ {0,3}(`{3,}|~{3,})\s*$/.exec(body);
-            if (close && close[1][0] === fence.ch && close[1].length >= fence.len) fence = null;
+        if (mask[pos] === 1 && body.length > 0) {
+            // Inside (or opening) a fence — already protected.
         } else if (mathBlock) {
             mask.fill(1, pos, lineEnd);
             if (body.trim() === "$$") mathBlock = false;
+        } else if (body.trim() === "$$") {
+            mathBlock = true;
+            mask.fill(1, pos, lineEnd);
         } else {
-            const open = /^ {0,3}(`{3,}|~{3,})/.exec(body);
-            if (open) {
-                fence = { ch: open[1][0], len: open[1].length };
-                mask.fill(1, pos, lineEnd);
-            } else if (body.trim() === "$$") {
-                mathBlock = true;
-                mask.fill(1, pos, lineEnd);
-            } else {
-                markInline(body, pos, mask);
-            }
+            markInlineMath(body, pos, mask);
         }
         pos = lineEnd;
     }
     return mask;
 }
 
-function markInline(body: string, base: number, mask: Uint8Array) {
+/** Inline `$…$` math on one line; positions already protected (code spans) are skipped. */
+function markInlineMath(body: string, base: number, mask: Uint8Array) {
     let i = 0;
     while (i < body.length) {
+        if (mask[base + i] === 1) {
+            i++;
+            continue;
+        }
         const c = body[i];
         if (c === "\\") {
             i += 2;
-            continue;
-        }
-        if (c === "`") {
-            let n = 1;
-            while (body[i + n] === "`") n++;
-            const ticks = "`".repeat(n);
-            let j = body.indexOf(ticks, i + n);
-            while (j !== -1 && (body[j + n] === "`" || body[j - 1] === "`")) j = body.indexOf(ticks, j + 1);
-            if (j !== -1) {
-                mask.fill(1, base + i, base + j + n);
-                i = j + n;
-                continue;
-            }
-            i += n;
             continue;
         }
         if (c === "$" && body[i + 1] !== "$" && body[i + 1] && body[i + 1] !== " ") {

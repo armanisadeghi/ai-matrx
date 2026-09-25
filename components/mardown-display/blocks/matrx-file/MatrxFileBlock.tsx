@@ -62,19 +62,19 @@ export function MatrxFileBlock({
 
   // Not ours after all (or nothing parseable) → degrade to plain markdown.
   if (!match) {
-    return <BasicMarkdownContent content={content} />;
+    return <BasicMarkdownContent imagePolicy="inherit" content={content} />;
   }
 
   return (
     <div className="matrx-file-block">
-      {parsed.pre.trim() ? <BasicMarkdownContent content={parsed.pre} /> : null}
+      {parsed.pre.trim() ? <BasicMarkdownContent imagePolicy="inherit" content={parsed.pre} /> : null}
       <UniversalInlineFile
         match={match}
         originalUrl={parsed.url}
         label={parsed.label}
       />
       {parsed.post.trim() ? (
-        <BasicMarkdownContent content={parsed.post} />
+        <BasicMarkdownContent imagePolicy="inherit" content={parsed.post} />
       ) : null}
     </div>
   );

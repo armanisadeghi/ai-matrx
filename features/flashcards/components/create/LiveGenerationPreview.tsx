@@ -23,7 +23,7 @@ export function LiveGenerationPreview({
 
   return (
     <div data-message-content>
-      <MarkdownStream
+      <MarkdownStream imagePolicy="ai"
         requestId={requestId}
         isStreamActive
         hideCopyButton

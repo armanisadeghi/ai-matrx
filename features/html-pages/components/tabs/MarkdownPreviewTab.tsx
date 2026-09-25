@@ -14,7 +14,7 @@ export function MarkdownPreviewTab({
     <div className="w-full h-full overflow-auto bg-background dark:bg-background">
       <div className="flex justify-center min-h-full">
         <div className="max-w-[750px] w-full p-6 border-x-3 border-gray-500 dark:border-gray-500 shadow-sm min-h-full">
-          <RichDocument
+          <RichDocument imagePolicy="other"
             content={state.currentMarkdown}
             source={{ type: "raw" } as ContentSource}
             contentClassName="bg-transparent dark:bg-transparent p-4"

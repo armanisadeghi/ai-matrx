@@ -275,7 +275,7 @@ export function SourceInspectorPane({
           <ScrollArea className="h-full">
             <div className="p-3">
               <PageTextState loading={pageLoading} empty={!page?.cleanedText}>
-                <BasicMarkdownContent content={page?.cleanedText ?? ""} />
+                <BasicMarkdownContent imagePolicy="other" content={page?.cleanedText ?? ""} />
               </PageTextState>
             </div>
           </ScrollArea>

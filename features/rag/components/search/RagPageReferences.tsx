@@ -942,7 +942,7 @@ export function RagPageReferences({
                 />
               ) : null}
               {selectedPreview?.key === "clean" && page?.cleanedText ? (
-                <BasicMarkdownContent content={page.cleanedText} />
+                <BasicMarkdownContent imagePolicy="other" content={page.cleanedText} />
               ) : null}
               {selectedPreview?.key === "raw" && page?.rawText ? (
                 <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-foreground">
@@ -1069,7 +1069,7 @@ function DerivativeDetail({ group }: { group: DerivativePageGroup }) {
           key={chunk.id}
           className="rounded-md border border-border/70 bg-muted/10 px-2.5 py-2 text-xs leading-relaxed"
         >
-          <BasicMarkdownContent content={chunk.content_text} />
+          <BasicMarkdownContent imagePolicy="other" content={chunk.content_text} />
         </div>
       ))}
       {group.total > 12 ? (

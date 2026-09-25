@@ -40,7 +40,7 @@ import { IdListChip } from "../../result-fields/ShortId";
 
 /** Render a raw SQL string as a fenced ```sql block (reuses syntax highlight). */
 const SqlCodeBlock: React.FC<{ sql: string }> = ({ sql }) => (
-    <BasicMarkdownContent content={"```sql\n" + sql.trim() + "\n```"} showCopyButton={false} />
+    <BasicMarkdownContent imagePolicy="ai" content={"```sql\n" + sql.trim() + "\n```"} showCopyButton={false} />
 );
 
 /** Render an arbitrary value as a fenced ```json block. */
@@ -51,7 +51,7 @@ const JsonCodeBlock: React.FC<{ value: unknown }> = ({ value }) => {
     } catch {
         text = String(value);
     }
-    return <BasicMarkdownContent content={"```json\n" + text + "\n```"} showCopyButton={false} />;
+    return <BasicMarkdownContent imagePolicy="other" content={"```json\n" + text + "\n```"} showCopyButton={false} />;
 };
 
 /** Coerce a possibly-JSON-string payload into a value <ResultValue> can render. */

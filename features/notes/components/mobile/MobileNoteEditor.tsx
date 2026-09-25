@@ -34,6 +34,7 @@ import {
 import { NoteSaveFailureBanner } from "../NoteSaveFailureBanner";
 import { NoteDraftRecoveryBanner } from "../NoteDraftRecoveryBanner";
 import { useNoteConflictChoreography } from "../../hooks/useNoteConflictChoreography";
+import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
 
 export type MobileEditorMode = "plain" | "wysiwyg" | "preview";
 
@@ -513,7 +514,7 @@ export default function MobileNoteEditor({
         {effectiveMode === "preview" && (
           <div className="min-h-[calc(100dvh-200px)] prose prose-sm dark:prose-invert max-w-none">
             {localContent.trim() ? (
-              <RichDocument
+              <RichDocument imagePolicy={authoredBy(note.created_by, editingActorId)}
                 content={localContent}
                 source={editableContentSource ?? noteIdentityContentSource(noteId, `mobile-preview:${noteId}`)}
                 actionsVariant="mini-bar"

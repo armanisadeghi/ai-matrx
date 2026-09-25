@@ -556,7 +556,7 @@ const IntelligentViewer = ({ data, bookmark }: IntelligentViewerProps) => {
                                 </div>
                             ) : selectedSection ? (
                                 selectedSection.content ? (
-                                    <BasicMarkdownContent content={selectedSection.content} showCopyButton={false} />
+                                    <BasicMarkdownContent imagePolicy="self" content={selectedSection.content} showCopyButton={false} />
                                 ) : (
                                     // Fallback to JSON display for unknown structures
                                     <div className="space-y-4">

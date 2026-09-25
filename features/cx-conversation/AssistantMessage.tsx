@@ -266,7 +266,7 @@ export function AssistantMessage({
           !(isStreamActive && !message.content && isTtsRequest) && (
             <>
               <div ref={captureRef}>
-                <MarkdownStream
+                <MarkdownStream imagePolicy="ai"
                   content={message.content}
                   events={message.streamEvents}
                   isStreamActive={

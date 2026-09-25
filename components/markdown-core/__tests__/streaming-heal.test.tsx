@@ -141,6 +141,7 @@ jest.mock(
 );
 
 import { EnhancedChatMarkdownInternal } from "@/components/mardown-display/chat-markdown/EnhancedChatMarkdown";
+import { ImagePolicyProvider } from "@/components/rich-content/prose/remote-image-policy";
 
 interface StreamCase {
   name: string;
@@ -236,12 +237,15 @@ describe("streaming healing in the markdown core", () => {
   async function renderAnswer(content: string, isStreamActive: boolean) {
     await act(async () => {
       root.render(
-        <EnhancedChatMarkdownInternal
-          content={content}
-          isStreamActive={isStreamActive}
-          hideCopyButton
-          allowFullScreenEditor={false}
-        />,
+        // The viewer's own text: remote images load, so the test sees every fetch.
+        <ImagePolicyProvider value="self">
+          <EnhancedChatMarkdownInternal
+            content={content}
+            isStreamActive={isStreamActive}
+            hideCopyButton
+            allowFullScreenEditor={false}
+          />
+        </ImagePolicyProvider>,
       );
     });
   }

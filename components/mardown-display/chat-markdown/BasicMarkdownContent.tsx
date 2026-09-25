@@ -40,6 +40,7 @@ import {
   proseFrameClass,
   renderProseTable,
 } from "@/components/rich-content/prose/prose-block-elements";
+import { withImagePolicy, type ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 
 interface BasicMarkdownContentProps {
   content: string;
@@ -49,6 +50,12 @@ interface BasicMarkdownContentProps {
   showCopyButton?: boolean;
   /** Admin-only table fallback diagnostics (see TableRenderPathDiagnostic). */
   tableRenderDiagnostic?: Omit<TableRenderDiagnosticContext, "renderPath">;
+  /**
+   * WHO WROTE this text — "ai" | "other" | "self", or "inherit" when rendered
+   * inside a surface that already declared. Decides whether remote images load
+   * by themselves (components/rich-content/prose/remote-image-policy.tsx).
+   */
+  imagePolicy?: ImagePolicyDeclaration;
 }
 
 export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
@@ -58,6 +65,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
   messageId,
   showCopyButton = true,
   tableRenderDiagnostic,
+  imagePolicy,
 }) => {
   const [isHovering, setIsHovering] = useState(false);
 
@@ -129,7 +137,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
     [tableRenderDiagnostic, content],
   );
 
-  return (
+  const rendered = (
     <div
       className={proseFrameClass(textDirection)}
       dir={textDirection}
@@ -165,6 +173,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
       )}
     </div>
   );
+  return <>{withImagePolicy(imagePolicy, rendered)}</>;
 };
 
 export default BasicMarkdownContent;

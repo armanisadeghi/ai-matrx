@@ -17,6 +17,7 @@ jest.mock("@/components/markdown-core/MarkdownCore", () => ({
 }));
 
 import { DurableMarkdownImg } from "../ConfigurableMarkdownContent";
+import { ImagePolicyProvider } from "@/components/rich-content/prose/remote-image-policy";
 
 const FILE_ID = "30b9e3cc-9f1a-4787-bae6-3b47f22d9675";
 const ENDPOINT = `https://files.matrxserver.com/files/${FILE_ID}/download`;
@@ -78,7 +79,8 @@ describe("DurableMarkdownImg", () => {
     const external = "https://example.com/chart.png";
 
     act(() => {
-      root.render(<DurableMarkdownImg src={external} alt="external chart" />);
+      // Written by the viewer, so the remote image loads (remote-image-policy.tsx).
+      root.render(<ImagePolicyProvider value="self"><DurableMarkdownImg src={external} alt="external chart" /></ImagePolicyProvider>);
     });
 
     expect(useMediaBlob).toHaveBeenCalledWith(null);

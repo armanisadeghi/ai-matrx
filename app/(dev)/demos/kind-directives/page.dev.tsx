@@ -152,7 +152,7 @@ export default function KindDirectivesDemoPage() {
             <h2 className="text-sm font-medium text-foreground">{row.title}</h2>
             <p className="mb-3 text-xs text-muted-foreground">{row.note}</p>
             <div className="rounded-md border border-border bg-background p-3">
-              <MarkdownStream content={row.markdown} />
+              <MarkdownStream imagePolicy="self" content={row.markdown} />
             </div>
           </section>
         ))}

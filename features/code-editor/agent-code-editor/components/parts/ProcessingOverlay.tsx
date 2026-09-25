@@ -34,7 +34,7 @@ export function ProcessingOverlay({
             <p className="text-muted-foreground mb-1 text-[9px] uppercase tracking-wider font-semibold">
               Live Response
             </p>
-            <MarkdownStream content={streamingText} />
+            <MarkdownStream imagePolicy="ai" content={streamingText} />
           </div>
         </div>
       )}

@@ -201,7 +201,7 @@ function ReaderContent({ guide, onRetry, onEdit, getScope, jumpRequest }: { guid
         {!/^\s*#\s/.test(guide.content ?? "") && <div className="mb-7 border-b border-border pb-5"><p className="text-xs font-medium uppercase tracking-wide text-primary">Study guide</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{guide.label || "Untitled guide"}</h1></div>}
         <NonEditableContextMenu sourceFeature="notes" surfaceName="matrx-user/education-study-guides" getApplicationScope={getScope} contentSource={noteIdentityContentSource(guide.id)} entity={{ type: "note", id: guide.id, title: guide.label || "Untitled guide" }} contextData={{ content: guide.content ?? "", guideId: guide.id }} extraSections={[{ id: "study-guide-selection", label: "Study guide", primary: true, items: [{ kind: "item", id: "retry-study-guide", label: "Refresh study guide", icon: BookOpen, onSelect: onRetry }] }]}>
           <AnnotatedContent className="study-guide-reader-content" extraActions={(selection, close) => <StudyPassageActions guide={guide} selection={selection} close={close} />}>
-            <RichDocument content={guide.content ?? ""} source={noteIdentityContentSource(guide.id)} actionsVariant="icon-only" actionsPosition="top-right" actionsBehavior="hover-only" />
+            <RichDocument imagePolicy="ai" content={guide.content ?? ""} source={noteIdentityContentSource(guide.id)} actionsVariant="icon-only" actionsPosition="top-right" actionsBehavior="hover-only" />
           </AnnotatedContent>
         </NonEditableContextMenu>
       </div>

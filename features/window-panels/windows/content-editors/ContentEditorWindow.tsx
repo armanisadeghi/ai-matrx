@@ -101,7 +101,7 @@ export function ContentEditorWindow({
         contextData={{ content: "" }}
         resolveContextOnOpen={() => ({ content: value })}
       >
-        <ContentEditor
+        <ContentEditor imagePolicy="self"
           value={value}
           onChange={handleChange}
           onSave={handleSave}

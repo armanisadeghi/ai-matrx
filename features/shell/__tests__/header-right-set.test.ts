@@ -24,7 +24,7 @@
  * in `Header.tsx` → case 2 goes RED; delete `GuestInboxButton` → case 3 RED.
  */
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 const REPO = path.resolve(__dirname, "..", "..", "..");
@@ -88,40 +88,12 @@ describe("the header right set", () => {
     expect(css).toContain(".shell-user-block {");
   });
 
-  it("lets the glass layer RE-POSITION that one menu, never re-implement it", () => {
-    // 🚨 WHY THIS CLAUSE REPLACED A BLACKLIST OF `elevated-shell-user-menu`.
-    //
-    // edbdcfe551 deleted the glass-layer stand-in with the canvas one, and this
-    // file forbade both class families by name. 59f6843894 ("avatar menu stays
-    // clickable above the canvas") then brought the glass layer BACK on
-    // purpose, with its own Playwright gate: the canvas sheet sits at z-10000
-    // over the top-right corner, so while it is open the menu there was visible
-    // and DEAD — a control that looks pressable and does nothing, which law 4
-    // forbids outright. Forbidding the class name would have meant deleting
-    // that fix, so the rule is stated where it actually bites: the stand-in
-    // must be the SAME menu moved, not a second one written.
-    const elevated = read(
-      "components/matrx/resizable/ElevatedShellUserMenu.tsx",
-    );
-    // It mounts the canonical trigger and panel components — no local copy.
-    for (const part of [
-      "header-right-menu/UserMenuTrigger",
-      "header-right-menu/UserMenuPanel",
-      "header-right-menu/GuestUserMenuTrigger",
-    ]) {
-      expect(elevated).toContain(part);
-    }
-    // A signed-out visitor gets the sign-in icon, not a second menu with a
-    // signup pill. The guest panel stays out of this stand-in.
-    expect(elevated).not.toContain("GuestUserMenuPanel");
-    expect(elevated).toContain('placement="corner"');
-    // And it shares the ONE open/close checkbox rather than declaring a second
-    // id — two ids would be two menus that can be open at once, and every
-    // `htmlFor="shell-user-menu"` item would stop dismissing this one.
-    expect(elevated).toContain('htmlFor="shell-user-menu"');
-    expect(elevated).not.toContain('id="shell-user-menu"');
-    // One mount point, claimed and released by the covering surface — never one
-    // per panel (its own header says so).
-    expect(elevated).toContain("elevatedShellUserMenuStore");
+  it("keeps the retired top-right profile stand-in absent", () => {
+    expect(read("app/(public)/layout.tsx")).not.toContain("ElevatedShellUserMenuRoot");
+    expect(read("features/shell/components/AppShell.tsx")).not.toContain("ElevatedShellUserMenuRoot");
+    expect(read("components/matrx/resizable/MatrxDynamicPanel.tsx")).not.toContain("claimDynamicPanelAvatarCover");
+    expect(existsSync(path.join(REPO, "components/matrx/resizable/ElevatedShellUserMenu.tsx"))).toBe(false);
+    expect(existsSync(path.join(REPO, "components/matrx/resizable/elevatedShellUserMenuStore.ts"))).toBe(false);
+    expect(read("styles/shell.css")).not.toContain(".elevated-shell-user-menu-root");
   });
 });

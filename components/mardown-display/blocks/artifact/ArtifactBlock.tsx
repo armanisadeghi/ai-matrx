@@ -225,7 +225,7 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
     if (!isComplete && isStreamActive) {
       return (
         <div className="p-3 text-sm">
-          <BasicMarkdownContent
+          <BasicMarkdownContent imagePolicy="inherit"
             content={content}
             isStreamActive={isStreamActive}
           />
@@ -261,7 +261,7 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
     // Fallback: render as markdown for any unregistered type.
     return (
       <div className="p-3 text-sm">
-        <BasicMarkdownContent
+        <BasicMarkdownContent imagePolicy="inherit"
           content={content}
           isStreamActive={isStreamActive}
         />
@@ -336,7 +336,7 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
 /** Fallback: render markdown preview while parser is loading */
 const MarkdownPreview: React.FC<{ content: string }> = ({ content }) => (
   <div className="p-3 text-sm">
-    <BasicMarkdownContent content={content} />
+    <BasicMarkdownContent imagePolicy="inherit" content={content} />
   </div>
 );
 

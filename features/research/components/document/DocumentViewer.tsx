@@ -174,7 +174,7 @@ export default function DocumentViewer() {
         </div>
         {streamingDocText && (
           <article>
-            <MarkdownStream content={streamingDocText} />
+            <MarkdownStream imagePolicy="ai" content={streamingDocText} />
           </article>
         )}
       </div>

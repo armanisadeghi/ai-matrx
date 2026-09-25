@@ -291,7 +291,7 @@ export function SaveTemplateModal({
                     {/* Preview */}
                     <div className="flex-1 p-3 bg-muted/30 overflow-y-auto">
                         <div className="prose prose-sm dark:prose-invert max-w-none">
-                            <MarkdownStream 
+                            <MarkdownStream imagePolicy="self" 
                                 content={content || ''} 
                             />
                         </div>

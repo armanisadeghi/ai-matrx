@@ -179,7 +179,7 @@ function ContributionCard({
                       {turn.speaker}
                     </p>
                   ) : null}
-                  <MarkdownStream content={turn.text} hideCopyButton />
+                  <MarkdownStream imagePolicy="self" content={turn.text} hideCopyButton />
                 </div>
               )}
             </li>
@@ -187,7 +187,7 @@ function ContributionCard({
         </ul>
       ) : c.text ? (
         <div className="mt-2 text-sm text-foreground">
-          <MarkdownStream content={c.text} hideCopyButton />
+          <MarkdownStream imagePolicy="self" content={c.text} hideCopyButton />
         </div>
       ) : null}
 

@@ -23,11 +23,12 @@
 // the end of the text).
 // ─────────────────────────────────────────────────────────────────────────
 
+import { FenceReader, fenceOpenerOf } from "@ai-matrx/content-ir/source";
 export interface XmlBalanceState {
   /** Open same-name sections, counting the container itself (starts at 1). */
   depth: number;
-  /** Backtick/tilde run of the fenced code block we are inside, if any. */
-  fence: string | null;
+  /** The fenced code block we are inside, read by THE one closer (@ai-matrx/content-ir/source). */
+  fence: FenceReader | null;
 }
 
 export function initialXmlBalance(): XmlBalanceState {
@@ -45,8 +46,6 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-const FENCE_LINE = /^\s{0,3}(`{3,}|~{3,})/;
-
 /**
  * Scan ONE line inside an open `<tagName>` section, in source order.
  *
@@ -60,20 +59,13 @@ export function findBalancedXmlClose(
   state: XmlBalanceState,
   { trackFences = true, nest = true }: XmlBalanceOptions = {},
 ): number {
-  const fence = trackFences ? FENCE_LINE.exec(line) : null;
   if (state.fence) {
-    if (
-      fence &&
-      fence[1][0] === state.fence[0] &&
-      fence[1].length >= state.fence.length &&
-      line.trim() === fence[1]
-    ) {
-      state.fence = null;
-    }
+    if (state.fence.feed(line)) state.fence = null;
     return -1;
   }
-  if (fence) {
-    state.fence = fence[1];
+  const opener = trackFences ? fenceOpenerOf(line) : null;
+  if (opener) {
+    state.fence = new FenceReader(opener);
     return -1;
   }
   const tag = new RegExp(

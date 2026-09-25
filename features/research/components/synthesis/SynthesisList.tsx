@@ -215,7 +215,7 @@ function SynthesisCard({
                 contextData={synthesisContextData}
               >
                 <div>
-                  <MarkdownStream content={synthesis.result} />
+                  <MarkdownStream imagePolicy="ai" content={synthesis.result} />
                 </div>
               </NonEditableContextMenu>
               <div className="flex justify-end">
@@ -248,7 +248,7 @@ function SynthesisCard({
                 contextData={synthesisContextData}
               >
                 <div>
-                  <MarkdownStream
+                  <MarkdownStream imagePolicy="ai"
                     content={structuredToMarkdown(synthesis.result_structured)}
                   />
                 </div>
@@ -720,7 +720,7 @@ export default function SynthesisList() {
             </div>
             {streamingText && (
               <div className="px-3 py-3">
-                <MarkdownStream content={streamingText} isStreamActive />
+                <MarkdownStream imagePolicy="ai" content={streamingText} isStreamActive />
               </div>
             )}
           </div>

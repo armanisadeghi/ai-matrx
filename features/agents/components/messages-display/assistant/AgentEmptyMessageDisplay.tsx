@@ -74,7 +74,7 @@ export function AgentEmptyMessageDisplay({
   if (isLongDescription && displayDescription) {
     return (
       <div className="flex flex-col h-full justify-start text-left px-6 py-8 max-w-3xl mx-auto w-full">
-        <MarkdownStream content={displayDescription} hideCopyButton={true} />
+        <MarkdownStream imagePolicy="other" content={displayDescription} hideCopyButton={true} />
         {instruction && (
           <p className="text-sm text-muted-foreground mt-3">{instruction}</p>
         )}
@@ -98,7 +98,7 @@ export function AgentEmptyMessageDisplay({
       <div className="space-y-3 mx-auto">
         <p className="text-lg font-medium">{displayName ?? "Ready to run"}</p>
         {displayDescription && (
-          <MarkdownStream content={displayDescription} hideCopyButton={true} />
+          <MarkdownStream imagePolicy="other" content={displayDescription} hideCopyButton={true} />
         )}
         {instruction && (
           <p className="text-sm text-muted-foreground mt-1">{instruction}</p>

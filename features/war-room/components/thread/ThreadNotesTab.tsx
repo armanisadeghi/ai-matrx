@@ -22,6 +22,7 @@ import {
   type EditorMode,
 } from "@/features/notes/components/NoteEditorCore";
 import {
+  selectNoteById,
   selectNoteContent,
   selectNoteEditorMode,
 } from "@/features/notes/redux/selectors";
@@ -40,6 +41,7 @@ import {
 } from "@/features/war-room/redux/thunks";
 import { useThreadNoteSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
 import { cn } from "@/lib/utils";
+import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
 
 const MODES: { id: EditorMode; label: string; Icon: typeof Type }[] = [
   { id: "plain", label: "Text", Icon: Type },
@@ -185,6 +187,8 @@ function ThreadNoteEditor({
 }) {
   const dispatch = useAppDispatch();
   const content = useAppSelector(selectNoteContent(noteId));
+  const threadNote = useAppSelector(selectNoteById(noteId));
+  const viewerId = useAppSelector((state) => state.userAuth.id);
   const storedMode = useAppSelector(selectNoteEditorMode(noteId));
   const mode = ((storedMode as EditorMode) || "plain") as EditorMode;
 
@@ -197,7 +201,7 @@ function ThreadNoteEditor({
 
   if (compact) {
     return (
-      <NoteEditorCore
+      <NoteEditorCore imagePolicy={authoredBy(threadNote?.created_by, viewerId)}
         content={content ?? ""}
         onChange={onChange}
         onChangeFlush={onChange}
@@ -211,7 +215,7 @@ function ThreadNoteEditor({
   }
 
   return (
-    <NoteEditorCore
+    <NoteEditorCore imagePolicy={authoredBy(threadNote?.created_by, viewerId)}
       content={content ?? ""}
       onChange={onChange}
       onChangeFlush={onChange}

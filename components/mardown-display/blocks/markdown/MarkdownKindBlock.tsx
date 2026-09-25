@@ -122,7 +122,7 @@ const MarkdownKindBlock: React.FC<MarkdownKindBlockProps> = ({
   return (
     <div className={className}>
       <RichContentDepthProvider depth={1}>
-        <MarkdownStream content={markdown} isStreamActive={isStreamActive} />
+        <MarkdownStream imagePolicy="inherit" content={markdown} isStreamActive={isStreamActive} />
       </RichContentDepthProvider>
     </div>
   );

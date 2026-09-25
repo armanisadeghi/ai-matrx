@@ -315,7 +315,7 @@ export function WorkingDocumentEditor({
       onContentInserted={() => {}}
     >
       <div className={className ?? "h-full min-h-0"}>
-        <NoteEditorCore
+        <NoteEditorCore imagePolicy="ai"
           content={draft}
           onChange={handleChange}
           onChangeFlush={handleFlush}

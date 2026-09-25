@@ -614,7 +614,7 @@ export function AgentAssistantMessage({
             />
           ) : (
           <div data-message-content>
-            <MarkdownStream
+            <MarkdownStream imagePolicy="ai"
               requestId={effectiveRequestId}
               streamSlotStart={streamSlotStart ?? record?._streamSlotStart}
               streamSlotEnd={streamSlotEnd ?? record?._streamSlotEnd}
@@ -627,6 +627,12 @@ export function AgentAssistantMessage({
               allowFullScreenEditor={false}
               serverProcessedBlocks={serverProcessedBlocks}
               onContentChange={handleInlineContentChange}
+              // The render follows the STORE, never a renderer-local draft:
+              // an in-body edit shows through the optimistic Redux update,
+              // and a refused save puts the stored row back on screen
+              // (commitInlineContentEdit) — a local copy would keep showing
+              // text that was never saved.
+              applyLocalEdits={false}
             />
           </div>
           )}

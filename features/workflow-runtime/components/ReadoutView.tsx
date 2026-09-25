@@ -676,7 +676,7 @@ function readoutContent({
       );
     case "static":
       return (
-        <RichDocument
+        <RichDocument imagePolicy="ai"
           content={source.markdown}
           source={{ type: "raw" }}
           actionsVariant="mini-bar"

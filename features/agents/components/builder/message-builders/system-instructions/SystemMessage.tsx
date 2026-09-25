@@ -701,7 +701,7 @@ export function SystemMessage({
               title="Click to edit"
             >
               {developerMessage ? (
-                <MarkdownStream
+                <MarkdownStream imagePolicy="other"
                   content={developerMessage}
                   hideCopyButton
                   className="text-sm"

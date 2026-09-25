@@ -123,7 +123,7 @@ async function render(node: React.ReactElement): Promise<HTMLElement> {
   return container;
 }
 
-const full = (s: string) => <BasicMarkdownContent content={s} showCopyButton={false} />;
+const full = (s: string) => <BasicMarkdownContent imagePolicy="self" content={s} showCopyButton={false} />;
 const standard = (s: string) => <StandardBlocks source={s} />;
 const core = (s: string) => <MarkdownCoreImpl preset="gfm">{s}</MarkdownCoreImpl>;
 

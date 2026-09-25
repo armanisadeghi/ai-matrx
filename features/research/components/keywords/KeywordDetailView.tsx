@@ -222,7 +222,7 @@ export function KeywordDetailView({
                 className="rounded-xl border border-border/50 bg-card/60 p-3"
               >
                 {s.result ? (
-                  <MarkdownStream content={s.result} />
+                  <MarkdownStream imagePolicy="ai" content={s.result} />
                 ) : (
                   <p className="text-[11px] text-muted-foreground">
                     Completed with no text output.

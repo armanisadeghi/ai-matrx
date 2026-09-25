@@ -270,7 +270,7 @@ const ReadingPane: React.FC<{ reads: SearchRead[] }> = ({ reads }) => {
                             </div>
                             {current.text ? (
                                 <div className="text-sm">
-                                    <BasicMarkdownContent content={current.text} />
+                                    <BasicMarkdownContent imagePolicy="other" content={current.text} />
                                 </div>
                             ) : (
                                 <p className="text-sm text-muted-foreground">No page content captured.</p>
@@ -359,7 +359,7 @@ export const SearchOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
                             <span className="text-sm font-semibold text-foreground">AI Matrx answer</span>
                         </div>
                         <div className="text-sm leading-relaxed text-foreground/90">
-                            <BasicMarkdownContent content={report} />
+                            <BasicMarkdownContent imagePolicy="ai" content={report} />
                         </div>
                     </div>
                 )}

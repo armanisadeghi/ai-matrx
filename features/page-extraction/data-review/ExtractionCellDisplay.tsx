@@ -95,7 +95,7 @@ export function ExtractionCellDisplay({
       <div
         className="extraction-cell-markdown max-h-10 overflow-hidden text-xs leading-relaxed [&_.math-content-wrapper]:my-0 [&_.math-content-wrapper]:text-xs [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs [&_li]:my-0 [&_ol]:my-1 [&_p]:my-1 [&_ul]:my-1"
       >
-        <BasicMarkdownContent content={value} showCopyButton={false} />
+        <BasicMarkdownContent imagePolicy="other" content={value} showCopyButton={false} />
       </div>
       {onView ? (
         <button

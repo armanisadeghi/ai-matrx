@@ -31,11 +31,4 @@ describe("user-menu items close the active checkbox", () => {
     expect(text).not.toContain('htmlFor="shell-user-menu"');
   });
 
-  it("the canvas front door claims the elevated avatar cover", () => {
-    const impl = readFileSync(
-      path.join(process.cwd(), "features/canvas/core/CanvasSideSheetImpl.tsx"),
-      "utf8",
-    );
-    expect(impl).toContain("claimDynamicPanelAvatarCover");
-  });
 });

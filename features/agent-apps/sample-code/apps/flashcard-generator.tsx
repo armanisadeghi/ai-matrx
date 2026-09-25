@@ -194,7 +194,7 @@ export default function FlashcardGenerator({ onExecute, response, isExecuting, i
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6 bg-textured">
-            <MarkdownStream content={response} />
+            <MarkdownStream imagePolicy="ai" content={response} />
             
             {isStreaming && (
               <div className="flex items-center gap-2 mt-6 pt-4 border-t border-border">

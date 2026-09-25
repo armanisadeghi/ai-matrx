@@ -181,7 +181,7 @@ export function DiscussPanel({
           </div>
           {lastResult.reply && (
             <div className="mt-1 text-sm">
-              <MarkdownStream
+              <MarkdownStream imagePolicy="ai"
                 content={lastResult.reply}
                 isStreamActive={false}
                 hideCopyButton

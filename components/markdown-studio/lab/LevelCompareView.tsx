@@ -44,7 +44,7 @@ export function LevelCompareView({ content }: LevelCompareViewProps) {
             </span>
           </header>
           <div className="flex-1 p-3 text-sm @4xl:min-h-0 @4xl:overflow-auto">
-            <RichContent source={content} level={level} />
+            <RichContent imagePolicy="self" source={content} level={level} />
           </div>
         </section>
       ))}

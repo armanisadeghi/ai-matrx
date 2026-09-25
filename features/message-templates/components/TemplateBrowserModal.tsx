@@ -343,7 +343,7 @@ export function TemplateBrowserModal({
             </div>
             <ScrollArea className="flex-1 p-4">
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                <RichDocument
+                <RichDocument imagePolicy="other"
                   content={selectedTemplate.content || ""}
                   source={{ type: "raw" } as ContentSource}
                   actionsVariant="icon-only"

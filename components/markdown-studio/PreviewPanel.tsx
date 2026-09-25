@@ -270,7 +270,7 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
             <div ref={ref} className="flex-1 overflow-auto p-4" data-matrx-doc-root="">
               <DocumentPropertiesPanel source={renderedText} className="mb-3" />
               <MaybeSourceEdit source={content} save={isReplaying ? undefined : onContentChange}>
-                <RichDocument
+                <RichDocument imagePolicy="self"
                   content={renderedText}
                   isStreamActive={isReplaying}
                   source={contentSource}

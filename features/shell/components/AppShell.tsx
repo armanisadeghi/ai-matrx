@@ -25,7 +25,6 @@ import MobileMenuPathSync from "@/features/shell/components/MobileMenuPathSync";
 import VisualViewportSync from "@/features/shell/components/VisualViewportSync";
 import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCookieSync";
 import DeferredIslands from "@/features/shell/islands/DeferredIslands";
-import { ElevatedShellUserMenuRoot } from "@/components/matrx/resizable/ElevatedShellUserMenu";
 import type { UserData } from "@/utils/userDataMapper";
 import type { BaseReduxState } from "@/types/reduxTypes";
 // CJS flag — also read by next.config.js to alias Sidebar/etc. to stubs.
@@ -92,7 +91,6 @@ export default function AppShell({
 
       <GlassPortal>
         <MobileDock isAuthenticated={isAuthenticated} />
-        <ElevatedShellUserMenuRoot />
       </GlassPortal>
 
       <NavActiveSync />

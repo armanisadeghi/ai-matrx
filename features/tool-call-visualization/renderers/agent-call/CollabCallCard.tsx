@@ -111,7 +111,7 @@ export function CollabCallCard(props: ToolRendererProps) {
       {/* Live child stream — the specialist's tokens, contained + attributed */}
       {showLiveStream && (
         <div className="mx-3 mb-2 max-h-64 overflow-y-auto rounded-md border border-border bg-background/60 px-3 py-2">
-          <BasicMarkdownContent
+          <BasicMarkdownContent imagePolicy="ai"
             content={liveText}
             isStreamActive={childStream?.status === "running"}
             showCopyButton={false}

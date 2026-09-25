@@ -73,7 +73,7 @@ export function ThreadMessageRow({
             </span>
           </div>
           <div className="text-sm">
-            <MarkdownStream
+            <MarkdownStream imagePolicy={isHuman ? "self" : "ai"}
               content={message.text ?? ""}
               isStreamActive={false}
               hideCopyButton
@@ -101,7 +101,7 @@ export function ThreadMessageRow({
         </span>
       </div>
       <div className="text-sm">
-        <MarkdownStream
+        <MarkdownStream imagePolicy={isHuman ? "self" : "ai"}
           content={message.text ?? ""}
           isStreamActive={false}
           hideCopyButton

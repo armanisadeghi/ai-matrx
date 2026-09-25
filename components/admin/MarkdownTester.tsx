@@ -473,7 +473,7 @@ const MarkdownTester: React.FC<MarkdownTesterProps> = ({ className }) => {
                         className="flex-1 overflow-auto p-3"
                         ref={previewScrollRef}
                       >
-                        <MarkdownStream
+                        <MarkdownStream imagePolicy="self"
                           content={renderedContent}
                           isStreamActive={false}
                           hideCopyButton={true}

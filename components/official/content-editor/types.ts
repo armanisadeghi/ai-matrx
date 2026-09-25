@@ -3,6 +3,7 @@
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import type { ContentSource } from "@/features/rich-document/types";
 import type { ContextMenuEntityRef } from "@/features/context-menu-v3/types";
+import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 
 export type EditorMode =
   "plain" | "wysiwyg" | "markdown" | "matrx-split" | "preview";
@@ -65,6 +66,12 @@ export interface ContentEditorProps {
   surfaceName?: string;
   contentSource?: ContentSource;
   entity?: ContextMenuEntityRef;
+  /**
+   * WHO WROTE the content shown — "self" | "other" | "ai" (or "inherit").
+   * Decides whether remote images load by themselves; forwarded to the
+   * renderer (components/rich-content/prose/remote-image-policy.tsx).
+   */
+  imagePolicy?: ImagePolicyDeclaration;
 }
 
 export interface EditorModeConfig {

@@ -19,6 +19,7 @@
 
 import { DirectiveContainerTracker } from "../directive-container";
 import { TITLED_IMAGE_LINE } from "../image-figure";
+import { fenceLineKinds } from "@ai-matrx/content-ir/source";
 
 export interface NumberedTarget {
   kind: "fig" | "tbl" | "eq" | "sec";
@@ -35,7 +36,6 @@ export interface DocumentNumbering {
   footnotes: Map<string, number>;
 }
 
-const FENCE = /^[ \t]{0,3}(`{3,}|~{3,})/;
 const FIGURE_OPEN = /^[ \t]{0,3}:{3,}(figure|table)(?:\[((?:[^\]\\]|\\.)*)\])?(?:\{([^}]*)\})?/i;
 const SECTION = /^#{1,6}[ \t]+(.*?)[ \t]*\{#(sec:[\w:.-]+)\}[ \t]*$/;
 const LABEL = /\\label\{([^{}]+)\}/g;
@@ -68,20 +68,9 @@ export function computeDocumentNumbering(source: string): DocumentNumbering {
   const footnotes = new Map<string, number>();
   if (!source) return { byLabel, byCaption, footnotes };
 
-  // Prose only: fenced code never numbers anything.
-  const prose: string[] = [];
-  let fence: string | null = null;
-  for (const line of source.split("\n")) {
-    const f = FENCE.exec(line);
-    if (f) {
-      const marker = f[1] as string;
-      if (fence === null) fence = marker;
-      else if (marker[0] === fence[0] && marker.length >= fence.length) fence = null;
-      prose.push("");
-      continue;
-    }
-    prose.push(fence === null ? line : "");
-  }
+  // Prose only: fenced code never numbers anything (THE one code-range rule).
+  const kinds = fenceLineKinds(source);
+  const prose = source.split("\n").map((line, i) => (kinds[i] === "prose" ? line : ""));
 
   let figures = 0;
   let tables = 0;

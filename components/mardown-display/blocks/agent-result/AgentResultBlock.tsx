@@ -306,10 +306,10 @@ const AgentResultBlock: React.FC<AgentResultBlockProps> = ({
         onTheFloor ? (
           <StructuredValueView value={jsonValue} />
         ) : (
-          <MarkdownStream content={fenceJson(jsonText)} />
+          <MarkdownStream imagePolicy="inherit" content={fenceJson(jsonText)} />
         )
       ) : finalText ? (
-        <MarkdownStream content={finalText} />
+        <MarkdownStream imagePolicy="inherit" content={finalText} />
       ) : (
         <p className="text-xs text-muted-foreground">
           This step ran, and handed its result to the next one.

@@ -20,6 +20,7 @@ import {
   NoteEditorCore,
   type EditorMode,
 } from "@/features/notes/components/NoteEditorCore";
+import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 
 const VIEW_MODES: Array<{
   value: EditorMode;
@@ -42,6 +43,12 @@ export interface BasicContentEditorProps {
   className?: string;
   /** Bump to reset in-editor state after an external content swap. */
   resetKey?: string;
+  /**
+   * WHO WROTE the content shown — "self" | "other" | "ai" (or "inherit").
+   * Decides whether remote images load by themselves; forwarded to the
+   * renderer (components/rich-content/prose/remote-image-policy.tsx).
+   */
+  imagePolicy?: ImagePolicyDeclaration;
 }
 
 export function BasicContentEditor({
@@ -53,6 +60,7 @@ export function BasicContentEditor({
   placeholder = "Enter content…",
   className,
   resetKey,
+  imagePolicy,
 }: BasicContentEditorProps) {
   const [editorMode, setEditorMode] = useState<EditorMode>(initialEditorMode);
 
@@ -92,7 +100,7 @@ export function BasicContentEditor({
         )}
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-border bg-background">
-          <NoteEditorCore
+          <NoteEditorCore imagePolicy={imagePolicy}
             content={content}
             onChange={onChange}
             onChangeFlush={onChangeFlush ?? onChange}

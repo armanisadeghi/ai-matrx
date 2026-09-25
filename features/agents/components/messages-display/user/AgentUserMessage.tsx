@@ -79,7 +79,7 @@ export function AgentUserMessageContent({
         parts={attachmentParts}
       />
       {trimmedText ? (
-        <MarkdownStream
+        <MarkdownStream imagePolicy="other"
           content={trimmedText}
           className="text-xs text-foreground"
           hideCopyButton

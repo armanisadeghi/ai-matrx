@@ -27,6 +27,7 @@ import {
   type EditorMode,
 } from "@/features/notes/components/NoteEditorCore";
 import type { RefinableContent } from "./useRefinableContent";
+import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 
 const VIEW_MODES: Array<{
   value: EditorMode;
@@ -53,6 +54,12 @@ export interface RefinableContentEditorProps {
   resetKeySuffix?: string;
   /** Extra toolbar controls, rendered before the char-count badge. */
   toolbarEnd?: React.ReactNode;
+  /**
+   * WHO WROTE the content shown — "self" | "other" | "ai" (or "inherit").
+   * Decides whether remote images load by themselves; forwarded to the
+   * renderer (components/rich-content/prose/remote-image-policy.tsx).
+   */
+  imagePolicy?: ImagePolicyDeclaration;
 }
 
 export function RefinableContentEditor({
@@ -63,6 +70,7 @@ export function RefinableContentEditor({
   className,
   resetKeySuffix,
   toolbarEnd,
+  imagePolicy,
 }: RefinableContentEditorProps) {
   const [editorMode, setEditorMode] = useState<EditorMode>(initialEditorMode);
 
@@ -203,7 +211,7 @@ export function RefinableContentEditor({
         )}
 
         <div className="flex-1 min-h-0 flex flex-col border border-border rounded-md overflow-hidden bg-background">
-          <NoteEditorCore
+          <NoteEditorCore imagePolicy={imagePolicy}
             content={workingContent}
             onChange={setEditedContent}
             onChangeFlush={setEditedContent}

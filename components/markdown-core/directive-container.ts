@@ -8,19 +8,20 @@
 // a container body that holds blocks through NestedRichContent).
 //
 // Close: a bare colon run at least as long as the innermost open container's.
-// Colons inside a code fence never close anything. Mirrors the content-ir
-// tokenizer's `directive` island (aidream apps/shared/content-ir-core).
+// Colons inside a code fence never close anything — the fence is read by THE
+// one code-range rule (@ai-matrx/content-ir/source `fenceOpenerOf` +
+// `FenceReader`). Mirrors the content-ir tokenizer's `directive` island.
 // ─────────────────────────────────────────────────────────────────────────
 
+import { FenceReader, fenceOpenerOf } from "@ai-matrx/content-ir/source";
 /** A line that opens a container directive: 3+ colons, then a name. */
 export const DIRECTIVE_CONTAINER_OPEN = /^[ \t]{0,3}(:{3,})[A-Za-z][\w-]*/;
 
 const CLOSE = /^[ \t]{0,3}(:{3,})[ \t]*$/;
-const FENCE = /^[ \t]{0,3}(`{3,}|~{3,})/;
 
 export class DirectiveContainerTracker {
   private readonly stack: number[];
-  private fence: string | null = null;
+  private fence: FenceReader | null = null;
 
   constructor(openingLine: string) {
     const m = DIRECTIVE_CONTAINER_OPEN.exec(openingLine);
@@ -29,14 +30,15 @@ export class DirectiveContainerTracker {
 
   /** Feed the next line (after the opener). True once the outermost container has closed on this line. */
   consume(line: string): boolean {
-    const f = FENCE.exec(line);
-    if (f) {
-      const marker = f[1] as string;
-      if (this.fence === null) this.fence = marker;
-      else if (marker[0] === this.fence[0] && marker.length >= this.fence.length && line.trim() === line.trim().replace(/[^`~]/g, "")) this.fence = null;
+    if (this.fence) {
+      if (this.fence.feed(line)) this.fence = null;
       return false;
     }
-    if (this.fence !== null) return false;
+    const opener = fenceOpenerOf(line);
+    if (opener) {
+      this.fence = new FenceReader(opener);
+      return false;
+    }
     const open = DIRECTIVE_CONTAINER_OPEN.exec(line);
     if (open) {
       this.stack.push((open[1] as string).length);

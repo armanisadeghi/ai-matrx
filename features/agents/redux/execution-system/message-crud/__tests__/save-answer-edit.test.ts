@@ -46,20 +46,41 @@ jest.mock("@/utils/supabase/client", () => ({
       rpc(...args);
       return { returns: rpcReturns };
     },
-    schema: () => ({
-      from: () => ({
-        select: () => ({
-          eq: () => ({
-            single: async () => ({ data: { content: dbContent ?? reduxContent }, error: null }),
-          }),
-        }),
-      }),
-    }),
+    schema: () => {
+      const row = () => ({
+        id: "m-rc-b5",
+        conversation_id: "c-rc-b5",
+        role: "assistant",
+        content: dbContent ?? reduxContent,
+        content_history: null,
+        user_content: null,
+        position: 2,
+        source: "server",
+        status: "active",
+        is_visible_to_model: true,
+        is_visible_to_user: true,
+        metadata: {},
+        created_at: "2026-09-25T00:00:00.000Z",
+        deleted_at: null,
+      });
+      const chain: Record<string, unknown> = {};
+      chain.select = () => chain;
+      chain.eq = () => chain;
+      chain.is = () => chain;
+      chain.single = async () => ({ data: { content: dbContent ?? reduxContent }, error: null });
+      chain.maybeSingle = async () => ({ data: row(), error: null });
+      return { from: () => chain };
+    },
   },
 }));
 
 jest.mock("../invalidate-conversation-cache.thunk", () => ({
   invalidateConversationCache: () => ({ type: "test/invalidate-cache" }),
+}));
+
+const toastError = jest.fn();
+jest.mock("@/lib/toast", () => ({
+  toast: { error: (...a: unknown[]) => toastError(...a), success: jest.fn(), info: jest.fn(), warning: jest.fn() },
 }));
 
 jest.mock("@/lib/output-feedback/service", () => ({
@@ -559,5 +580,33 @@ describe("verify-RC-B5 round 2: separate hunks, each mapped on its own, islands 
   test("a stale base (the answer no longer shows as the editor's text) is refused", () => {
     const result = spliceDisplayEdit(storedText, "Some other text.", "Some other text!");
     expect("error" in result).toBe(true);
+  });
+});
+
+describe("verify-RC-B5 round 3 F2: a refused in-body edit never stays on screen", () => {
+  test("the stored row comes back, and the draft is recoverable from the toast", async () => {
+    const stored = [{ type: "text", text: "Run the register check on each pilot register." }];
+    const s = store(stored);
+    const shown = extractFlatText(record(stored));
+    // Another tab saved first: the database no longer shows as this screen.
+    dbContent = [{ type: "text", text: "Run the till check on each pilot register." }];
+    s.dispatch(
+      commitInlineContentEdit({
+        conversationId: CONVERSATION_ID,
+        messageId: MESSAGE_ID,
+        newText: shown.replace("pilot register", "pilot terminal"),
+        previousText: shown,
+      }),
+    );
+    s.dispatch(flushPendingInlineEdit(MESSAGE_ID));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(rpc).not.toHaveBeenCalled();
+    const row = s.getState().messages.byConversationId[CONVERSATION_ID].byId[MESSAGE_ID];
+    expect(extractFlatText(row)).toBe("Run the till check on each pilot register.");
+    expect(toastError).toHaveBeenCalled();
+    const options = toastError.mock.calls[toastError.mock.calls.length - 1][1] as {
+      action: { label: string; onClick: () => void };
+    };
+    expect(options.action.label).toBe("Copy my edit");
   });
 });

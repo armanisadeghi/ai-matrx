@@ -112,7 +112,7 @@ export function MasterworkResultBlock({
     <div className="space-y-4" data-masterwork-result="block">
       {result.deliverable ? (
         <div data-masterwork-result="deliverable">
-          <MarkdownStream content={cite(result.deliverable)} />
+          <MarkdownStream imagePolicy="inherit" content={cite(result.deliverable)} />
         </div>
       ) : null}
 
@@ -130,7 +130,7 @@ export function MasterworkResultBlock({
 
       {result.ruling ? (
         <div data-masterwork-result="ruling">
-          <MarkdownStream content={cite(result.ruling)} />
+          <MarkdownStream imagePolicy="inherit" content={cite(result.ruling)} />
         </div>
       ) : null}
 

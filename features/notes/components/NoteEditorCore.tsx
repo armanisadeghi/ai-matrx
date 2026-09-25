@@ -40,6 +40,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
 import { noteIdentityContentSource } from "../richDocumentSource";
+import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 
 function assignRef<T>(ref: React.Ref<T> | undefined, node: T | null) {
   if (!ref) return;
@@ -192,6 +193,12 @@ export interface NoteEditorCoreProps {
    * body never grows a second footer that floats mid-pane.
    */
   enableTextStats?: boolean;
+  /**
+   * WHO WROTE the content shown — "self" | "other" | "ai" (or "inherit").
+   * Decides whether remote images load by themselves; forwarded to the
+   * renderer (components/rich-content/prose/remote-image-policy.tsx).
+   */
+  imagePolicy?: ImagePolicyDeclaration;
 }
 
 /**
@@ -229,6 +236,7 @@ export function NoteEditorCore({
   surfaceName,
   getApplicationScope,
   enableTextStats = false,
+  imagePolicy,
 }: NoteEditorCoreProps) {
   // Full-page surfaces pad the bottom by 85dvh so the last line can scroll to
   // the middle; embedded/tile surfaces must NOT (it balloons content past the
@@ -395,7 +403,7 @@ export function NoteEditorCore({
 
       {/* ── Split View (MatrxSplit) ─────────────────────────────────── */}
       {editorMode === "split" && (
-        <MatrxSplit
+        <MatrxSplit imagePolicy={imagePolicy}
           value={content}
           readOnly={readOnly}
           onChange={readOnly ? () => {} : onChange}
@@ -439,7 +447,7 @@ export function NoteEditorCore({
             previewClassName,
           )}
         >
-          <RichDocument
+          <RichDocument imagePolicy={imagePolicy}
             key={resetKey}
             content={content}
             source={richSource}

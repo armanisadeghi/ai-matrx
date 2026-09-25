@@ -417,7 +417,7 @@ function DefaultFallback({
 
       {ctx.response && (
         <div className="bg-textured">
-          <MarkdownStream
+          <MarkdownStream imagePolicy="ai"
             content={ctx.response}
             isStreamActive={ctx.isStreaming}
             onError={(err) => setLocalError(err)}

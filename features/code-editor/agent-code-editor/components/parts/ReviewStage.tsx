@@ -160,7 +160,7 @@ export function ReviewStage({
             className="h-full m-0 p-0 overflow-hidden"
           >
             <div className="h-full overflow-auto p-3">
-              <MarkdownStream
+              <MarkdownStream imagePolicy="ai"
                 content={rawAIResponse}
                 hideCopyButton={false}
                 allowFullScreenEditor={false}

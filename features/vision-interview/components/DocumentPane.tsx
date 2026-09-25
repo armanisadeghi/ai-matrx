@@ -211,7 +211,7 @@ export function DocumentPane() {
         ) : document ? (
           <>
             {preamble && (
-              <RichDocument
+              <RichDocument imagePolicy="ai"
                 content={preamble}
                 source={{ type: "raw" }}
                 hideCopyButton
@@ -235,7 +235,7 @@ export function DocumentPane() {
                       {section.title}
                     </AccordionTrigger>
                     <AccordionContent className="pb-3">
-                      <RichDocument
+                      <RichDocument imagePolicy="ai"
                         content={section.body}
                         source={{ type: "raw" }}
                         hideCopyButton

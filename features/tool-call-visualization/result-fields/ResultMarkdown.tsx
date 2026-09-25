@@ -31,7 +31,7 @@ export const ResultMarkdown: React.FC<ResultMarkdownProps> = ({ content, density
     if (density === "full") {
         return (
             <div className={cn("min-w-0", className)}>
-                <BasicMarkdownContent content={content} showCopyButton={false} />
+                <BasicMarkdownContent imagePolicy="ai" content={content} showCopyButton={false} />
             </div>
         );
     }
@@ -44,7 +44,7 @@ export const ResultMarkdown: React.FC<ResultMarkdownProps> = ({ content, density
     if (!isLong) {
         return (
             <div className={cn("min-w-0", className)}>
-                <BasicMarkdownContent content={content} showCopyButton={false} />
+                <BasicMarkdownContent imagePolicy="ai" content={content} showCopyButton={false} />
             </div>
         );
     }
@@ -56,13 +56,13 @@ export const ResultMarkdown: React.FC<ResultMarkdownProps> = ({ content, density
                     className="relative overflow-hidden"
                     style={{ maxHeight: `${INLINE_CLAMP_LINES * 1.6}rem` }}
                 >
-                    <BasicMarkdownContent content={content} showCopyButton={false} />
+                    <BasicMarkdownContent imagePolicy="ai" content={content} showCopyButton={false} />
                     {/* Fade the clipped edge so it's clearly truncated, not cut. */}
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent" />
                 </div>
             )}
             <CollapsibleContent>
-                <BasicMarkdownContent content={content} showCopyButton={false} />
+                <BasicMarkdownContent imagePolicy="ai" content={content} showCopyButton={false} />
             </CollapsibleContent>
             <button
                 type="button"

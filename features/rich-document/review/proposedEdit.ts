@@ -9,6 +9,7 @@
 // never be silently disturbed (the splice refuses with "integrity").
 
 import {
+  SourceSpliceError,
   spliceSave,
   tokenizeSource,
   type SourceEdit,
@@ -71,4 +72,17 @@ export function spliceProposal(
   const { edit } = reduceToBlockEdit(original, proposed);
   if (!edit) return null;
   return spliceSave(original, [edit]);
+}
+
+/**
+ * A splice refusal in words a person reads — never offsets or function names
+ * ("edit [0, 776) changes … island at [141, 233); islands change only through
+ * islandEdit()" was shown verbatim, verify-RC-B5 round 3 F7).
+ */
+export function explainSpliceRefusal(error: unknown): string {
+  const code = error instanceof SourceSpliceError ? error.code : null;
+  if (code === "island_edit" || code === "integrity") {
+    return "This change would alter protected content — code, math, a table, a section or hidden reasoning — which is only changed in its own editor.";
+  }
+  return "This change could not be placed exactly into the saved text.";
 }

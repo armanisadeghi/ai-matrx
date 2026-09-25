@@ -21,8 +21,7 @@
 // rows are not rewritten.
 // ─────────────────────────────────────────────────────────────────────────
 
-const FENCE = /^\s{0,3}(`{3,}|~{3,})/;
-
+import { fenceLineKinds } from "@ai-matrx/content-ir/source";
 /** The first line of content that can name it (front matter / fences skipped). */
 function firstContentLine(source: string): string {
   const lines = source.split(/\r?\n/);
@@ -31,18 +30,11 @@ function firstContentLine(source: string): string {
     const end = lines.findIndex((l, k) => k > 0 && /^(---|\.\.\.)\s*$/.test(l));
     if (end > 0) i = end + 1;
   }
-  let fence: string | null = null;
+  // Fenced code names nothing (THE one code-range rule).
+  const kinds = fenceLineKinds(source);
   for (; i < lines.length; i += 1) {
     const line = lines[i];
-    const f = FENCE.exec(line);
-    if (fence) {
-      if (f && f[1][0] === fence[0] && f[1].length >= fence.length && line.trim() === f[1]) fence = null;
-      continue;
-    }
-    if (f) {
-      fence = f[1];
-      continue;
-    }
+    if (kinds[i] !== "prose") continue;
     // Setext underline / thematic break lines name nothing.
     if (/^\s*([-=*_])(\s*\1){2,}\s*$/.test(line)) continue;
     if (line.trim()) return line;

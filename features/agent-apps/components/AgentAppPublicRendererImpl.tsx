@@ -733,7 +733,7 @@ function CustomComponentRenderer({
 
               {responseText && (
                 <div className="bg-textured">
-                  <MarkdownStream
+                  <MarkdownStream imagePolicy="ai"
                     content={responseText}
                     isStreamActive={isExecuting && !isStreamComplete}
                     onError={(err) =>

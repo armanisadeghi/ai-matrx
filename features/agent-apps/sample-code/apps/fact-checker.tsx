@@ -190,7 +190,7 @@ export default function FactCheckerApp({
           <CardContent className="pt-5 border-none shadow-none">
             {response ? (
               <>
-                <MarkdownStream content={response} />
+                <MarkdownStream imagePolicy="ai" content={response} />
                 {isStreaming && (
                   <div className="flex items-center gap-2 mt-6 pt-4">
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-sky-600 dark:text-sky-400" />

@@ -198,7 +198,7 @@ function MessageCard({ role, content }: { role?: string; content: string }) {
         </ToggleGroup>
       </div>
       {mode === "md" ? (
-        <RichDocument
+        <RichDocument imagePolicy="other"
           content={content || "—"}
           source={{ type: "raw" } as ContentSource}
           isStreamActive={false}
@@ -591,7 +591,7 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                 </button>
               </div>
               {agent.description && (
-                <MarkdownStream
+                <MarkdownStream imagePolicy="other"
                   content={agent.description}
                   hideCopyButton
                   className="text-sm text-muted-foreground leading-relaxed"

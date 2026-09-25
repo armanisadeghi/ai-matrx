@@ -139,7 +139,7 @@ function renderTyped(
       if (!text) return undefined;
       return (
         <div className={cn("prose-sm max-w-none", className)}>
-          <BasicMarkdownContent content={text} />
+          <BasicMarkdownContent imagePolicy="other" content={text} />
         </div>
       );
     case "percent":

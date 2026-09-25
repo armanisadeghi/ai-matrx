@@ -132,7 +132,10 @@ function LoadedAnswerEditor({
   const onSave = async (text: string) => {
     const result = await dispatch(saveAnswerEdit({ conversationId, messageId, newText: text, openedText: openedOn }));
     if (saveAnswerEdit.rejected.match(result)) {
-      throw new Error(result.payload?.message ?? result.error.message ?? "The answer was not saved.");
+      // The editor words it "Not saved: <reason>. Your text is still here" —
+      // hand it the reason without its own closing period (no "again..").
+      const reason = result.payload?.message ?? result.error.message ?? "the answer was not saved";
+      throw new Error(reason.replace(/[.!\s]+$/, ""));
     }
     // Back to the preview once the editor has proven the write.
     window.setTimeout(close, 0);
@@ -181,7 +184,7 @@ function LoadedAnswerEditor({
           : "max-h-[min(80dvh,56rem)] min-h-56 rounded-lg border border-border",
       )}
     >
-      <RichEditor
+      <RichEditor imagePolicy="ai"
         value={openedOn}
         onChange={onDraft}
         onSave={onSave}

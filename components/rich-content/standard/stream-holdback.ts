@@ -20,29 +20,27 @@
 // here. Fenced code is left alone (its content is literal).
 // ─────────────────────────────────────────────────────────────────────────
 
-const FENCE_LINE = /^\s{0,3}(`{3,}|~{3,})/;
+import { fenceLineKinds } from "@ai-matrx/content-ir/source";
 const TABLE_ROW = /^\s*\|/;
 const TABLE_DELIMITER = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/;
 const TEX_SIGNAL = /\\[A-Za-z]+|[\\^_{}]/;
 
 /** Offset where an open fenced code block starts, or -1 when none is open. */
 function openFenceStart(source: string): number {
-  let open: { marker: string; at: number } | null = null;
+  // THE one code-range rule (@ai-matrx/content-ir/source): the text ends inside
+  // a fence when its last fence line is an opener or body with no closer.
+  const kinds = fenceLineKinds(source);
+  let open = -1;
+  let openAt = -1;
   let offset = 0;
-  for (const line of source.split("\n")) {
-    const fence = FENCE_LINE.exec(line);
-    if (fence) {
-      if (!open) open = { marker: fence[1], at: offset };
-      else if (
-        fence[1][0] === open.marker[0] &&
-        fence[1].length >= open.marker.length &&
-        line.trim() === fence[1]
-      )
-        open = null;
-    }
+  source.split("\n").forEach((line, i) => {
+    if (kinds[i] === "open") {
+      open = i;
+      openAt = offset;
+    } else if (kinds[i] !== "body") open = -1;
     offset += line.length + 1;
-  }
-  return open ? open.at : -1;
+  });
+  return open === -1 ? -1 : openAt;
 }
 
 function holdBackTable(text: string): string {

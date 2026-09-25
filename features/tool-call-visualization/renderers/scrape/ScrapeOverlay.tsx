@@ -162,7 +162,7 @@ export const ScrapeOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
 
                             {current.content ? (
                                 <div className="text-sm">
-                                    <BasicMarkdownContent content={current.content} />
+                                    <BasicMarkdownContent imagePolicy="other" content={current.content} />
                                 </div>
                             ) : (
                                 <p className="text-sm text-muted-foreground">

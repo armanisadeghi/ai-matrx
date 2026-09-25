@@ -374,7 +374,7 @@ function MessageRow({ message }: { message: CxMessage }) {
       {/* Main content */}
       {textContent ? (
         <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
-          <MarkdownStream
+          <MarkdownStream imagePolicy={message.role === "assistant" ? "ai" : "other"}
             content={textContent}
             isStreamActive={false}
             hideCopyButton={false}

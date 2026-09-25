@@ -74,6 +74,7 @@ import { OutlinePanel } from "./panels/OutlinePanel";
 import { ShortcutsDialog } from "./panels/ShortcutsDialog";
 import { KindPicker } from "./panels/KindPicker";
 import { islandMeta, inlineIslandLabel } from "./islands/island-meta";
+import { withImagePolicy, type ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 
 export type RichEditorView = "visual" | "source" | "preview";
 const VIEWS: RichEditorView[] = ["visual", "source", "preview"];
@@ -123,6 +124,12 @@ export interface RichEditorProps {
    * host can simply return to its reading view.
    */
   onNothingToSave?: () => void;
+  /**
+   * WHO WROTE the content shown — "self" | "other" | "ai" (or "inherit").
+   * Decides whether remote images load by themselves; forwarded to the
+   * renderer (components/rich-content/prose/remote-image-policy.tsx).
+   */
+  imagePolicy?: ImagePolicyDeclaration;
 }
 
 function describeDelta(delta: IslandDelta): string {
@@ -174,6 +181,7 @@ export default function RichEditorImpl({
   cancelLabel = "Cancel",
   defaultOutlineOpen,
   onNothingToSave,
+  imagePolicy,
 }: RichEditorProps) {
   const isMobile = useIsMobile();
   const [stored, setStored] = useState(value);
@@ -373,7 +381,7 @@ export default function RichEditorImpl({
     view === "preview" ? (
       <div className="h-full overflow-y-auto">
         <div className="mx-auto max-w-3xl px-6 py-6 sm:px-10">
-          <RichDocument
+          <RichDocument imagePolicy="inherit"
             content={current}
             source={contentSource}
             enableContextMenu
@@ -477,7 +485,7 @@ export default function RichEditorImpl({
       </button>
     ) : null;
 
-  return (
+  const editor = (
     <RichEditorContext.Provider value={contextValue}>
       <div
         className={cn("relative flex h-full min-h-0 flex-col bg-textured", className)}
@@ -749,6 +757,7 @@ export default function RichEditorImpl({
       />
     </RichEditorContext.Provider>
   );
+  return <>{withImagePolicy(imagePolicy, editor)}</>;
 }
 
 function ToolbarButton({

@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { PlainTextMetricsBar } from "@/components/text/PlainTextMetricsBar";
+import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 
 const MarkdownAnalyzer = lazy(() => import("./analyzer/MarkdownAnalyzer"));
 
@@ -158,6 +159,12 @@ interface FullScreenMarkdownEditorProps {
   showCancelButton?: boolean;
   tabs?: TabId[];
   initialTab?: TabId;
+  /**
+   * WHO WROTE the content shown — "self" | "other" | "ai" (or "inherit").
+   * Decides whether remote images load by themselves; forwarded to the
+   * renderer (components/rich-content/prose/remote-image-policy.tsx).
+   */
+  imagePolicy?: ImagePolicyDeclaration;
 }
 
 // ─── Copy Helpers ─────────────────────────────────────────────────────────────
@@ -1033,6 +1040,7 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
   showCancelButton = true,
   tabs = ALL_TAB_IDS,
   initialTab = "write",
+  imagePolicy,
 }) => {
   const [editedContent, setEditedContent] = useState(initialContent ?? "");
   const [isSaving, setIsSaving] = useState(false);
@@ -1166,7 +1174,7 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
       label: TAB_LABELS.matrx_split,
       content: wrapInBoundary(
         "matrx_split",
-        <MatrxSplit
+        <MatrxSplit imagePolicy={imagePolicy}
           value={editedContent}
           onChange={handleContentChange}
           placeholder="Start writing markdown..."
@@ -1233,7 +1241,7 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
                   : "max-w-[750px] p-6 border-x-3 border-gray-500 dark:border-gray-500 shadow-sm",
               )}
             >
-              <MarkdownStream
+              <MarkdownStream imagePolicy={imagePolicy}
                 content={editedContent}
                 isStreamActive={false}
                 analysisData={analysisData}

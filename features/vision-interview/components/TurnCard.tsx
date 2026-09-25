@@ -198,7 +198,7 @@ export function TurnCard({ turn }: { turn: InterviewTurnRow }) {
               />
             </div>
           )}
-          <RichDocument
+          <RichDocument imagePolicy={isHuman ? "self" : "ai"}
             content={content}
             source={{ type: "raw" }}
             hideCopyButton

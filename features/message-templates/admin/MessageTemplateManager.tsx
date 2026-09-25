@@ -1095,7 +1095,7 @@ export function MessageTemplateManager({
                             PREVIEW
                           </div>
                           <div className="prose prose-sm dark:prose-invert max-w-none">
-                            <MarkdownStream content={editData.content || ""} />
+                            <MarkdownStream imagePolicy="other" content={editData.content || ""} />
                           </div>
                         </div>
                       </div>
@@ -1202,7 +1202,7 @@ export function MessageTemplateManager({
                               )}
                             {processedEvents.length > 0 && (
                               <div className="prose prose-sm dark:prose-invert max-w-none">
-                                <MarkdownStream
+                                <MarkdownStream imagePolicy="other"
                                   content=""
                                   events={processedEvents}
                                   isStreamActive={

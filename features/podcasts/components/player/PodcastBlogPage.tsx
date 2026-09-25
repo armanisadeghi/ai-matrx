@@ -77,7 +77,7 @@ export function PodcastBlogPage({ episode, article }: PodcastBlogPageProps) {
 
       {/* First half of the body (or the whole body on a short article). */}
       <div className="prose prose-neutral mt-8 max-w-none dark:prose-invert">
-        <BasicMarkdownContent content={before} showCopyButton={false} />
+        <BasicMarkdownContent imagePolicy="ai" content={before} showCopyButton={false} />
       </div>
 
       {/* Embedded player — the article's midpoint. Reads "listen while you
@@ -106,7 +106,7 @@ export function PodcastBlogPage({ episode, article }: PodcastBlogPageProps) {
       {/* Second half of the body (empty on a short article). */}
       {after && (
         <div className="prose prose-neutral max-w-none dark:prose-invert">
-          <BasicMarkdownContent content={after} showCopyButton={false} />
+          <BasicMarkdownContent imagePolicy="ai" content={after} showCopyButton={false} />
         </div>
       )}
 

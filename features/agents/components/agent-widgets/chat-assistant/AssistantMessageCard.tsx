@@ -23,7 +23,7 @@ export function AssistantMessageCard({
             <Webhook className="w-3 h-3 text-primary" />
           </div>
           <div className="min-w-0 flex-1 text-xs leading-relaxed [&_p]:m-0 [&_pre]:text-[10px] [&_code]:text-[10px] overflow-hidden">
-            <RichDocument
+            <RichDocument imagePolicy="ai"
               content={content}
               source={{ type: "raw" } as ContentSource}
               isStreamActive={isStreaming}

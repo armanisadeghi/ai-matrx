@@ -497,7 +497,7 @@ function RepairPane({
             </div>
             {rawOutput ? (
               <div className="max-h-72 overflow-y-auto select-text text-xs">
-                <BasicMarkdownContent content={rawOutput} />
+                <BasicMarkdownContent imagePolicy="ai" content={rawOutput} />
               </div>
             ) : (
               <p className="text-xs text-muted-foreground">

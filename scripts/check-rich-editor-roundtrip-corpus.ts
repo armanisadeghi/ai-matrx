@@ -25,6 +25,12 @@
  *                      · every block that did not move is still its baseline node (source
  *                        identity: it will be written back as its stored bytes)
  *                      · dragging it back returns the stored bytes exactly
+ *   table_cells      for every editable stored table: append " X" to each cell of the first body
+ *                    row and of every row holding an escaped or structural cell (`\|`, `\`,
+ *                    code, links, islands, math, HTML):
+ *                      · exactly one line of the document changes (the edited row)
+ *                      · in that row only the edited cell's segment changes, and it is the old
+ *                        cell plus " X" — every neighbour keeps its bytes, escapes and padding
  *
  * Rows come from the shared corpus reader (scripts/lib/rich-content-corpus.ts) — the same rows
  * the tokenizer gate (check-source-roundtrip-corpus.ts) judges. READ ONLY. Nothing a person
@@ -78,6 +84,7 @@ interface SourceStats {
   passed: number;
   editedRows: number;
   movedRows: number;
+  cellEdits: number;
   proseBlocks: number;
   lockedBlocks: number;
   lockedChildren: number;
@@ -184,6 +191,56 @@ function judgeMove(editor: Editor, baseline: ReturnType<typeof captureBaseline>,
   return null;
 }
 
+const STRUCTURAL = /[\\`[\]{}$<|]/;
+const MAX_CELL_EDITS = 60;
+
+function rowSegments(line: string): string[] {
+  return line.split(/(?<!\\)\|/);
+}
+
+/** Append " X" to cells of tables; only that cell's bytes may change. Returns a reason or null. */
+function judgeTableCells(editor: Editor, baseline: ReturnType<typeof captureBaseline>, text: string, stats: SourceStats): string | null {
+  const doc = editor.state.doc;
+  const targets: number[] = [];
+  doc.descendants((node, pos) => {
+    if (node.type.name !== "table") return true;
+    let rowPos = pos + 1;
+    node.forEach((row, _offset, rowIndex) => {
+      const raw = String(row.attrs.mdRaw ?? "");
+      if (rowIndex === 1 || STRUCTURAL.test(raw)) {
+        // Only cells the row actually stores (a short row's padding cells have no bytes yet).
+        const segs = rowSegments(raw);
+        const stored = segs.length - (segs.length > 1 && (segs[0] ?? "").trim() === "" ? 1 : 0) - (segs.length > 1 && (segs[segs.length - 1] ?? "").trim() === "" ? 1 : 0);
+        let cellPos = rowPos + 1;
+        row.forEach((cell, _o, cellIndex) => {
+          // End of the cell's paragraph content.
+          if (cell.firstChild && cellIndex < stored) targets.push(cellPos + 1 + 1 + cell.firstChild.content.size);
+          cellPos += cell.nodeSize;
+        });
+      }
+      rowPos += row.nodeSize;
+    });
+    return false;
+  });
+  const lines = text.split("\n");
+  for (const target of targets.slice(0, MAX_CELL_EDITS)) {
+    stats.cellEdits += 1;
+    const edited = serializeVisualDocument(editor.state.tr.insert(target, editor.schema.text(" X")).doc, baseline);
+    const out = edited.split("\n");
+    if (out.length !== lines.length) return "table_cell_edit_changed_line_count";
+    const changed = out.map((line, index) => (line === lines[index] ? -1 : index)).filter((index) => index >= 0);
+    if (changed.length !== 1) return "table_cell_edit_changed_other_lines";
+    const before = rowSegments(lines[changed[0] as number] ?? "");
+    const after = rowSegments(out[changed[0] as number] ?? "");
+    if (before.length !== after.length) return "table_cell_edit_changed_cell_count";
+    const diff = before.map((seg, index) => (seg === after[index] ? -1 : index)).filter((index) => index >= 0);
+    if (diff.length !== 1) return "table_cell_edit_changed_neighbour_cell";
+    const k = diff[0] as number;
+    if ((after[k] ?? "").trim() !== `${(before[k] ?? "").trim()} X`.trim()) return "table_cell_edit_wrong_cell_bytes";
+  }
+  return null;
+}
+
 function tally(json: JSONContent): void {
   const visit = (node: JSONContent) => {
     if (node.type === "sourceLocked") {
@@ -223,6 +280,9 @@ function judge(text: string, stats: SourceStats): string | null {
 
     const noop = planSave(text, switched);
     if (noop.changed || noop.text !== text || noop.error) return "noop_save_not_identity";
+
+    const tableReason = judgeTableCells(editor, baseline, text, stats);
+    if (tableReason) return tableReason;
 
     if (editor.state.doc.childCount >= 3) {
       stats.movedRows += 1;
@@ -288,6 +348,7 @@ async function main(): Promise<number> {
         passed: 0,
         editedRows: 0,
         movedRows: 0,
+        cellEdits: 0,
         proseBlocks: 0,
         lockedBlocks: 0,
         lockedChildren: 0,
@@ -328,8 +389,9 @@ async function main(): Promise<number> {
       passed: acc.passed + s.passed,
       edited: acc.edited + s.editedRows,
       moved: acc.moved + s.movedRows,
+      cells: acc.cells + s.cellEdits,
     }),
-    { rows: 0, passed: 0, edited: 0, moved: 0 },
+    { rows: 0, passed: 0, edited: 0, moved: 0, cells: 0 },
   );
   const byReason = new Map<string, number>();
   for (const stats of Object.values(report)) {
@@ -338,7 +400,7 @@ async function main(): Promise<number> {
     }
   }
   console.log(
-    `\nTOTAL rows ${totals.rows}, passed ${totals.passed}, failing ${totals.rows - totals.passed}, edit-checked ${totals.edited}, move-checked ${totals.moved}  (${Math.round((Date.now() - started) / 1000)}s)`,
+    `\nTOTAL rows ${totals.rows}, passed ${totals.passed}, failing ${totals.rows - totals.passed}, edit-checked ${totals.edited}, move-checked ${totals.moved}, table-cell edits ${totals.cells}  (${Math.round((Date.now() - started) / 1000)}s)`,
   );
   for (const [reason, count] of [...byReason].sort((a, b) => b[1] - a[1])) {
     console.log(`  ${reason}: ${count}`);

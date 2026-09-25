@@ -177,7 +177,7 @@ export function ContentEditorListWindow({
         resolveContextOnOpen={() => ({ content: activeDoc?.value ?? "" })}
       >
         {activeDoc ? (
-          <ContentEditor
+          <ContentEditor imagePolicy="self"
             key={activeDoc.id}
             value={activeDoc.value}
             onChange={handleChange}

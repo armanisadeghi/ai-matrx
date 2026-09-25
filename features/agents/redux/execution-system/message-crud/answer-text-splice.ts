@@ -432,9 +432,10 @@ export function spliceDisplayEdit(
   let text: string;
   try {
     text = spliceSave(stored, edits).text;
-  } catch (error) {
+  } catch {
     return {
-      error: `Saving would disturb protected content, so nothing was saved (${error instanceof Error ? error.message : String(error)}).`,
+      error:
+        "Saving would change protected content (code, math, a table, a section or hidden reasoning), so nothing was saved. Change it inside that block, or in the editor.",
     };
   }
   if (displayOfStoredAnswer(text) !== nextDisplay) {

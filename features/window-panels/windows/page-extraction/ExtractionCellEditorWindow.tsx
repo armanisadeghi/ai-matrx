@@ -165,7 +165,7 @@ export default function ExtractionCellEditorWindow({
         {structuredValue ? (
           <JsonViewer data={structuredValue} className="min-h-0 flex-1" maxHeight="100%" />
         ) : (
-          <BasicContentEditor
+          <BasicContentEditor imagePolicy="other"
             content={draft}
             onChange={setDraft}
             onChangeFlush={setDraft}

@@ -227,7 +227,7 @@ export function BlockProcessingPanel({
         </p>
       )}
       {events.length > 0 && (
-        <MarkdownStream
+        <MarkdownStream imagePolicy="self"
           content=""
           events={events}
           className="bg-textured"

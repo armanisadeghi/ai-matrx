@@ -36,7 +36,7 @@ export function DocumentOverlay({ entry }: ToolRendererProps) {
 
   return (
     <div className="h-full overflow-y-auto bg-card px-4 py-4 md:px-8">
-      <RichDocument content={doc.text} source={{ type: "raw" }} />
+      <RichDocument imagePolicy="ai" content={doc.text} source={{ type: "raw" }} />
     </div>
   );
 }

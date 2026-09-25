@@ -700,7 +700,7 @@ export function ToolComponentPreview({
               </div>
               <div className="p-4 max-h-[500px] overflow-y-auto">
                 {agent.accumulatedText ? (
-                  <MarkdownStream
+                  <MarkdownStream imagePolicy="ai"
                     content={agent.accumulatedText}
                     isStreamActive={agent.isStreaming}
                   />

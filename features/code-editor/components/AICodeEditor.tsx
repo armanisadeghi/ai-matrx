@@ -194,7 +194,7 @@ export function AICodeEditor({
                         <p className="text-muted-foreground mb-1 text-[9px] uppercase tracking-wider font-semibold">
                           Live Response
                         </p>
-                        <MarkdownStream content={streamingText} />
+                        <MarkdownStream imagePolicy="ai" content={streamingText} />
                       </div>
                     </div>
                   )}
@@ -320,7 +320,7 @@ export function AICodeEditor({
                     className="h-full m-0 p-0 overflow-hidden"
                   >
                     <div className="h-full overflow-auto p-3">
-                      <MarkdownStream
+                      <MarkdownStream imagePolicy="ai"
                         content={rawAIResponse}
                         hideCopyButton={false}
                         allowFullScreenEditor={false}

@@ -861,7 +861,7 @@ function ProviderTranscriptMessage({
               attachmentParts={[]}
             />
           ) : (
-            <MarkdownStream
+            <MarkdownStream imagePolicy="ai"
               content={message.display.text}
               className="text-sm text-foreground"
               hideCopyButton={false}

@@ -803,7 +803,7 @@ function AnswerBoth({
                     // The platform's markdown renderer — the one a chat answer goes through — so an
                     // answer reads as it would in chat, never as raw text with asterisks.
                     <div className="mt-1 min-w-0 break-words text-sm text-foreground" data-answer-markdown>
-                      <MarkdownStream content={a?.answer ?? ""} hideCopyButton />
+                      <MarkdownStream imagePolicy="ai" content={a?.answer ?? ""} hideCopyButton />
                     </div>
                   )}
                   {typeof a?.system_byte_length === "number" && (

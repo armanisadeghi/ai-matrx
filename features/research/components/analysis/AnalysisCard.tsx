@@ -89,7 +89,7 @@ export function AnalysisCard({
           </span>
         </div>
         <div className="px-4 py-3">
-          <MarkdownStream content={streamingText} isStreamActive />
+          <MarkdownStream imagePolicy="ai" content={streamingText} isStreamActive />
         </div>
       </div>
     );
@@ -296,7 +296,7 @@ export function AnalysisCard({
               reason={analysis.error || "Analysis stopped early."}
             />
           )}
-          <MarkdownStream content={analysis.result ?? ""} />
+          <MarkdownStream imagePolicy="ai" content={analysis.result ?? ""} />
 
           {tokenUsage && (
             <div className="flex items-center gap-4 text-[10px] text-muted-foreground border-t border-border pt-2">

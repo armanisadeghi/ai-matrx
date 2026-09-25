@@ -270,7 +270,7 @@ export function TextSectionsWindow({
                         : "w-full",
                     )}
                   >
-                    <MarkdownStream content={shownContent} />
+                    <MarkdownStream imagePolicy="other" content={shownContent} />
                   </div>
                 )}
                 {(view === "raw" || view === "split") && (

@@ -176,3 +176,14 @@ export function isProTextareaAgentActionEnabled(
       return false;
   }
 }
+
+/**
+ * What an agent run over a text PRODUCED (Help with this…, Custom agent): the
+ * working document when the agent edited it, otherwise the agent's final
+ * answer — the same thing Clean up reads. Reading only the working document
+ * reported "identical" for every agent that answered with the revised text.
+ */
+export function agentRunResult(sourceText: string, workingContent: string, finalAnswer: string): string {
+  if (workingContent !== sourceText) return workingContent;
+  return finalAnswer.trim() ? finalAnswer.trim() : workingContent;
+}

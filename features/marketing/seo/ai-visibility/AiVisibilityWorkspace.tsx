@@ -171,7 +171,7 @@ function ProviderCard({
           // canonical markdown renderer. Bounded + faded rather than line-clamped:
           // line-clamp cannot clamp the block children markdown produces.
           <div className="relative max-h-24 overflow-hidden text-xs leading-relaxed text-foreground/90">
-            <BasicMarkdownContent content={answer} showCopyButton={false} />
+            <BasicMarkdownContent imagePolicy="ai" content={answer} showCopyButton={false} />
             <div
               aria-hidden
               className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-card to-transparent"
@@ -1067,7 +1067,7 @@ export function AiVisibilityWorkspace({
           defaultWidth={620}
         >
           <div className="p-5 text-sm leading-relaxed">
-            <BasicMarkdownContent content={openAnswer.answer} showCopyButton />
+            <BasicMarkdownContent imagePolicy="ai" content={openAnswer.answer} showCopyButton />
           </div>
         </SidePanelSurface>
       ) : null}

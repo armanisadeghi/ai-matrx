@@ -265,6 +265,44 @@ function freshCell(text: string): string {
   return text.replace(/\n/g, " ").replace(/(?<!\\)\|/g, "\\|");
 }
 
+/**
+ * The stored row with ONLY the edited cells rewritten — the splice principle
+ * inside a table row. Every untouched cell is its own source segment, byte for
+ * byte (padding, escapes, `\|` included); an edited cell keeps the segment's
+ * leading spaces and as much of its trailing padding as still fits, and its
+ * text is escaped so it can never split the row. A row with MORE stored cells
+ * than the header keeps the extra ones verbatim (renderers ignore them; they
+ * are still the author's bytes); a SHORT row gains a segment only for a cell
+ * the person actually filled. Null only when there are no stored segments.
+ */
+function respliceRow(segs: unknown[] | null, stored: unknown[] | null, texts: readonly string[]): string | null {
+  if (!segs || !stored || stored.length !== texts.length || !segs.every((seg) => typeof seg === "string")) return null;
+  const parts = segs as string[];
+  const first = parts.length > 1 && (parts[0] ?? "").trim() === "" ? 1 : 0;
+  const closed = parts.length > 1 && (parts[parts.length - 1] ?? "").trim() === "";
+  const end = closed ? parts.length - 1 : parts.length;
+  const cells = parts.slice(first, end);
+  const rewrite = (seg: string, text: string) => {
+    const lead = /^\s*/.exec(seg)?.[0] ?? "";
+    const core = seg.slice(lead.length).trimEnd();
+    const trail = seg.slice(lead.length + core.length);
+    const fresh = freshCell(text);
+    const pad = Math.max(trail.length > 0 ? 1 : 0, core.length + trail.length - fresh.length);
+    return `${lead}${fresh}${" ".repeat(pad)}`;
+  };
+  texts.forEach((text, index) => {
+    if (stored[index] === text) return;
+    if (index < cells.length) cells[index] = rewrite(cells[index] ?? "", text);
+    else {
+      while (cells.length < index) cells.push(" ");
+      cells.push(` ${freshCell(text)} `);
+    }
+  });
+  const edge = first ? [parts[0] ?? ""] : [];
+  const tail = closed ? [parts[parts.length - 1] ?? ""] : cells.length > end - first ? [""] : [];
+  return [...edge, ...cells, ...tail].join("|");
+}
+
 function delimiterFor(align: ColumnAlign, width?: number): string {
   if (width === undefined) {
     if (align === "left") return ":---";
@@ -339,10 +377,9 @@ function serializeTable(table: PMNode): string {
     if (raw !== null && stored && JSON.stringify(stored) === JSON.stringify(texts)) {
       line = raw;
     } else {
-      const body = texts.map((text, cellIndex) =>
-        stored && stored[cellIndex] === text ? text : freshCell(text),
-      );
-      line = `${lead ? "| " : ""}${body.join(" | ")}${trail ? " |" : ""}`;
+      line =
+        respliceRow(parseJsonArray(attr<string>(row, "mdSegs")), stored, texts) ??
+        `${lead ? "| " : ""}${texts.map(freshCell).join(" | ")}${trail ? " |" : ""}`;
     }
     lines.push(line);
     if (index === 0) {

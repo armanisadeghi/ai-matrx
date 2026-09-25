@@ -54,7 +54,7 @@ export function JsonTextBody({ text }: { text: string }) {
   try {
     parsed = JSON.parse(text) as unknown;
   } catch {
-    return <MarkdownStream content={text} />;
+    return <MarkdownStream imagePolicy="ai" content={text} />;
   }
   return <StructuredValueView value={parsed} />;
 }
@@ -73,7 +73,7 @@ export function SettledOutputBody({
     return looksLikeJsonDocument(agent.finalText) ? (
       <JsonTextBody text={agent.finalText} />
     ) : (
-      <MarkdownStream content={agent.finalText} />
+      <MarkdownStream imagePolicy="ai" content={agent.finalText} />
     );
   }
   return (

@@ -42,7 +42,7 @@ export function IslandPreview({ raw, islandType, className }: IslandPreviewProps
   }
   return (
     <div className={cn("rich-editor-island-render min-w-0", className)}>
-      <MarkdownStream content={raw} hideCopyButton allowFullScreenEditor={false} />
+      <MarkdownStream imagePolicy="inherit" content={raw} hideCopyButton allowFullScreenEditor={false} />
     </div>
   );
 }

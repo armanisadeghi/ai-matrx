@@ -2325,7 +2325,7 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                                 <div className="rounded-md border border-border p-3">
                                     {/* THE PLATFORM'S ONE RICH DOCUMENT. Print and
                                         save-as-PDF live in its own overflow menu. */}
-                                    <RichDocument
+                                    <RichDocument imagePolicy="other"
                                         content={
                                             renders.find((render) => render.render_id === openRender)?.body ?? ""
                                         }

@@ -153,7 +153,7 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
                         <span className="text-xs font-medium text-primary">Consolidating {tag ? `“${tag.name}”` : 'tag'}…</span>
                     </div>
                     <div className="px-3 py-3">
-                        <MarkdownStream content={streamingText} isStreamActive />
+                        <MarkdownStream imagePolicy="ai" content={streamingText} isStreamActive />
                     </div>
                 </div>
             )}
@@ -166,7 +166,7 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
                             {consolidation.status === 'failed' && (
                                 <StoppedEarlyNote reason={consolidation.error || 'Consolidation stopped early.'} />
                             )}
-                            <MarkdownStream content={consolidation.result} />
+                            <MarkdownStream imagePolicy="ai" content={consolidation.result} />
                             <div className="flex justify-end">
                                 <ContentActionBar
                                     content={consolidation.result}
@@ -186,7 +186,7 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
                             {consolidation.status === 'failed' && (
                                 <StoppedEarlyNote reason={consolidation.error || 'Consolidation stopped early.'} />
                             )}
-                            <MarkdownStream content={structuredToMarkdown(consolidation.result_structured)} />
+                            <MarkdownStream imagePolicy="ai" content={structuredToMarkdown(consolidation.result_structured)} />
                         </div>
                     ) : consolidation && consolidation.error ? (
                         <div className="flex items-start gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-2.5 py-1.5 text-xs text-destructive">

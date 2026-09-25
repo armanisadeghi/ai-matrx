@@ -133,7 +133,7 @@ export function StandardBlock({
   if (type === "text" || type === "table") {
     if (!content.trim()) return null;
     return (
-      <BasicMarkdownContent
+      <BasicMarkdownContent imagePolicy="inherit"
         content={content}
         isStreamActive={isStreaming}
         showCopyButton={false}

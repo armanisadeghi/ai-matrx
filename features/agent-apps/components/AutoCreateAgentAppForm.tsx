@@ -1571,7 +1571,7 @@ function StreamPanel({
       <CardContent className="p-0">
         {text ? (
           <div className="p-3">
-            <MarkdownStream
+            <MarkdownStream imagePolicy="ai"
               content={text}
               isStreamActive={isActive}
               hideCopyButton
@@ -1676,7 +1676,7 @@ function ErrorCard({
             {showFullResponse && (
               <div className="rounded-md border border-border bg-muted/30 max-h-[500px] overflow-y-auto p-3">
                 {/* MarkdownStream includes built-in copy button and full-screen editor */}
-                <MarkdownStream content={fullResponse} isStreamActive={false} />
+                <MarkdownStream imagePolicy="ai" content={fullResponse} isStreamActive={false} />
               </div>
             )}
           </div>

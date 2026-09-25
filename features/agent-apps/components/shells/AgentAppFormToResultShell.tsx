@@ -329,7 +329,7 @@ function DefaultResultRenderer({
     );
   }
   return (
-    <MarkdownStream
+    <MarkdownStream imagePolicy="ai"
       content={response}
       isStreamActive={isStreaming}
       requestId={requestId ?? undefined}

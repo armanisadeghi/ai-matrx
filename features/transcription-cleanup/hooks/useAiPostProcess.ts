@@ -63,22 +63,10 @@ import type { InstanceContextEntry } from "@/features/agents/types/instance.type
 import type { SessionContextItem } from "@/features/transcript-studio/types";
 import { extractErrorMessage } from "@/utils/errors";
 
+import { textInputVariable } from "@/features/agents/utils/text-input-variable";
+
 export const CLEANUP_SURFACE_NAME = "matrx-user/transcripts-cleanup";
 
-/** Variable names (lowercased) that receive the input text, in priority order. */
-const TEXT_VARIABLE_NAMES = [
-  "transcribed_text",
-  "transcript",
-  "raw_transcript",
-  "raw_transcript_text",
-  "transcription",
-  "content",
-  "text",
-  "input",
-  "input_text",
-  "source_text",
-  "raw_text",
-];
 
 export type AiProcessPhase =
   | "idle"
@@ -241,10 +229,7 @@ export function useAiPostProcess() {
           ([, v]) => v === text,
         )?.[0];
         if (!landedVar) {
-          const byName = TEXT_VARIABLE_NAMES.map((n) =>
-            defs.find((d) => d.name.toLowerCase() === n),
-          ).find(Boolean);
-          const target = byName ?? (defs.length === 1 ? defs[0] : undefined);
+          const target = textInputVariable(defs);
           if (target) {
             variableValues[target.name] = text;
             landedVar = target.name;

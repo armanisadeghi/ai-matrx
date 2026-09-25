@@ -308,7 +308,7 @@ export function SetContextValueCore({
         )}
 
         <div className="flex-1 min-h-0 flex flex-col border border-border rounded-md overflow-hidden bg-background">
-          <NoteEditorCore
+          <NoteEditorCore imagePolicy="self"
             content={workingContent}
             onChange={setEditedContent}
             onChangeFlush={setEditedContent}

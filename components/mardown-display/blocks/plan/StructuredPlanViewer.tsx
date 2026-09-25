@@ -134,7 +134,7 @@ const StructuredPlanViewer: React.FC<StructuredPlanViewerProps> = ({
         
         <CardContent className="pt-2">
           <div className="structured-plan-content">
-            <BasicMarkdownContent content={content} />
+            <BasicMarkdownContent imagePolicy="inherit" content={content} />
           </div>
         </CardContent>
       </Card>

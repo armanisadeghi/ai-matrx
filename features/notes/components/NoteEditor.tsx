@@ -71,6 +71,7 @@ const TuiEditorContent = dynamic(
 // the read-only preview uses NonEditableContextMenu.
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
 
 declare global {
   interface Window {
@@ -914,7 +915,7 @@ export function NoteEditor({
         )}
 
         {editorMode === "matrx-split" && (
-          <MatrxSplit
+          <MatrxSplit imagePolicy={authoredBy(note?.created_by, editingActorId)}
             value={localContent}
             onChange={handleContentChange}
             textareaRef={textareaRef}
@@ -934,7 +935,7 @@ export function NoteEditor({
             <ScrollArea className="absolute inset-0 w-full h-full">
               <div className="p-6 pb-[50dvh] bg-textured">
                 {localContent.trim() ? (
-                  <RichDocument
+                  <RichDocument imagePolicy={authoredBy(note?.created_by, editingActorId)}
                     content={localContent}
                     source={
                       note?.id && note.id !== "__phantom__"

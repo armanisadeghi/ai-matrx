@@ -1,75 +1,49 @@
 /**
- * THE AVATAR MENU MUST RECEIVE CLICKS WHILE THE CANVAS IS OPEN.
- *
- * THE BREAK: CanvasSideSheet is z-10000 over the top-right corner. A dropdown
- * painted inside the pane header hangs into the pane body and loses
- * hit-testing — the menu is visible, clicks land on the canvas. The class is
- * the same one MatrxDynamicPanel already solved: claim the glass-layer
- * stand-in and stack it ABOVE the covering surface.
- *
- * This gate reads the elevated menu's z-index out of `styles/shell.css` and
- * measures `elementFromPoint` in a real engine. Expected value: the menu
- * item. Reachable only if that z-index is greater than the canvas sheet's
- * 10000.
- *
- * `MATRX_LAYOUT_GATE_MUTATION=under-canvas` forces z-index 110 (the old
- * elevated value, above a dynamic panel but under the canvas). The case
- * goes RED — the point hits the sheet, not the item.
- *
- * Run: pnpm test:shell-layout
+ * The canvas close control must receive clicks at the top-right corner.
+ * The retired elevated profile trigger used to mount at z-10001 when the
+ * canvas opened, directly over this control at z-10000. Check every former
+ * claimant and mount point so the browser fixture models the actual system.
  */
 
 import { readFileSync } from "node:fs";
 import path from "node:path";
-
 import { expect, test } from "@playwright/test";
 
-const SHELL_CSS = readFileSync(
-  path.join(process.cwd(), "styles", "shell.css"),
+const CANVAS_SOURCE = readFileSync(
+  path.join(process.cwd(), "features/canvas/core/CanvasSideSheetImpl.tsx"),
+  "utf8",
+);
+const PANEL_SOURCE = readFileSync(
+  path.join(process.cwd(), "components/matrx/resizable/MatrxDynamicPanel.tsx"),
+  "utf8",
+);
+const PUBLIC_LAYOUT_SOURCE = readFileSync(
+  path.join(process.cwd(), "app/(public)/layout.tsx"),
+  "utf8",
+);
+const APP_SHELL_SOURCE = readFileSync(
+  path.join(process.cwd(), "features/shell/components/AppShell.tsx"),
   "utf8",
 );
 
-const MUTATION = process.env.MATRX_LAYOUT_GATE_MUTATION ?? "";
-
-function elevatedMenuZIndex(): number {
-  if (MUTATION === "under-canvas") return 110;
-  const match = SHELL_CSS.match(
-    /\.elevated-shell-user-menu-root\s*\{[^}]*z-index:\s*(\d+)/,
-  );
-  if (!match) {
-    throw new Error(
-      "styles/shell.css must declare z-index on .elevated-shell-user-menu-root",
-    );
-  }
-  return Number(match[1]);
-}
-
-test("a click on the elevated avatar menu hits the item, not the canvas", async ({
-  page,
-}) => {
-  const z = elevatedMenuZIndex();
+test("the canvas put-away control is not covered by the retired profile trigger", async ({ page }) => {
+  const claimsAvatar =
+    CANVAS_SOURCE.includes("claimDynamicPanelAvatarCover") ||
+    PANEL_SOURCE.includes("claimDynamicPanelAvatarCover") ||
+    PUBLIC_LAYOUT_SOURCE.includes("ElevatedShellUserMenuRoot") ||
+    APP_SHELL_SOURCE.includes("ElevatedShellUserMenuRoot");
   await page.setContent(`<!doctype html><html><body>
-    <div
-      data-testid="canvas-sheet"
-      style="position:fixed;top:0;right:0;width:480px;height:100vh;z-index:10000;background:#fff"
-    ></div>
-    <div class="elevated-shell-user-menu-root" style="position:fixed;top:0;right:0;z-index:${z}">
-      <button data-testid="menu-item" style="display:block;width:200px;height:36px;margin-top:48px">
-        Preferences
+    <div style="position:fixed;top:0;right:0;width:768px;height:100vh;z-index:10000;background:white">
+      <button data-testid="canvas-put-away" style="position:absolute;top:0;right:0;width:44px;height:44px">
+        Put away canvas
       </button>
     </div>
+    ${claimsAvatar ? '<button data-testid="retired-profile-trigger" style="position:fixed;top:0;right:0;width:44px;height:44px;z-index:10001">Profile</button>' : ''}
   </body></html>`);
 
-  const hit = await page.evaluate(() => {
-    const item = document.querySelector("[data-testid=menu-item]");
-    if (!(item instanceof HTMLElement)) return null;
-    const r = item.getBoundingClientRect();
-    const el = document.elementFromPoint(
-      r.left + r.width / 2,
-      r.top + r.height / 2,
-    );
-    return el instanceof HTMLElement ? (el.dataset.testid ?? el.tagName) : null;
+  const hit = await page.getByTestId("canvas-put-away").evaluate((button) => {
+    const rect = button.getBoundingClientRect();
+    return document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2) === button;
   });
-
-  expect(hit).toBe("menu-item");
+  expect(hit).toBe(true);
 });

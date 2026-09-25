@@ -107,6 +107,7 @@ import { useNoteArtifactMaterialization } from "../hooks/useNoteArtifactMaterial
 import { noteIdentityContentSource } from "../richDocumentSource";
 import { usePreparedNoteContentSource } from "../usePreparedNoteContentSource";
 import { useNoteConflictChoreography } from "../hooks/useNoteConflictChoreography";
+import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
 
 interface NoteContentEditorProps {
   noteId: string;
@@ -844,7 +845,7 @@ export function NoteContentEditor({
             {findReplaceState?.isOpen && (
               <FindReplaceBar noteId={noteId} textareaRef={textareaRef} />
             )}
-            <NoteEditorCore
+            <NoteEditorCore imagePolicy={authoredBy(noteExists?.created_by, conflictActorId)}
               content={localContent}
               onChange={handleChange}
               onChangeFlush={handleChangeFlush}

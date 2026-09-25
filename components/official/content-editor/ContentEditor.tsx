@@ -108,6 +108,7 @@ export function ContentEditor({
   surfaceName,
   contentSource,
   entity,
+  imagePolicy,
 }: ContentEditorProps) {
   // Internal state
   const [localContent, setLocalContent] = useState(value);
@@ -494,7 +495,7 @@ export function ContentEditor({
           {/* Matrx Split Mode */}
           {currentMode === "matrx-split" && (
             <div style={{ height: "500px", minHeight: "500px" }}>
-              <MatrxSplit
+              <MatrxSplit imagePolicy={imagePolicy}
                 value={localContent}
                 onChange={handleContentChange}
                 placeholder={placeholder}
@@ -514,7 +515,7 @@ export function ContentEditor({
               <div className="w-full p-6 bg-textured overflow-visible">
                 {localContent.trim() ? (
                   <div className="overflow-visible">
-                    <MarkdownStream content={localContent} />
+                    <MarkdownStream imagePolicy={imagePolicy} content={localContent} />
                   </div>
                 ) : (
                   <div className="text-center py-12 text-zinc-400 dark:text-zinc-500">

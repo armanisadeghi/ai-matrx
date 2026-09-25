@@ -575,7 +575,7 @@ export function TaskQuickCreateCore({
         <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-3">
           <div className="lg:flex-[3] flex flex-col min-h-0 min-w-0 gap-1">
             <Label className="text-xs shrink-0">Description</Label>
-            <RefinableContentEditor
+            <RefinableContentEditor imagePolicy="other"
               refine={refine}
               initialEditorMode="plain"
               placeholder="Optional — more detail about this task"

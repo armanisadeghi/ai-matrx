@@ -225,7 +225,7 @@ export function ContextValueInput({
         )}
         style={{ height: editorHeight }}
       >
-        <BasicContentEditor
+        <BasicContentEditor imagePolicy="self"
           content={current}
           onChange={onChange}
           onChangeFlush={(next) => {

@@ -56,9 +56,9 @@ import { isPageBreakLine } from "@ai-matrx/print/directives";
 import { readXmlTag } from "@/components/mardown-display/blocks/xml/readXmlTag";
 import { FENCE_META_KEY, splitFenceInfo } from "@/components/markdown-core/fence-meta";
 import {
-  classifyInnerFenceLine,
-  fenceNestsInnerFences,
-  trimFenceLine,
+  closeFence,
+  fenceOpenerOf,
+  XmlContainerTracker,
 } from "@ai-matrx/content-ir/source";
 import { indexOutsideInlineCode } from "./inline-code-span";
 import {
@@ -931,105 +931,12 @@ interface UnrecognizedXmlStart {
 }
 
 /**
- * Stateful scanner shared by the one-shot splitter and incremental stream host.
- * It only balances the unknown root tag and deliberately ignores lookalike tags
- * inside fenced code, inline code spans, comments, and CDATA.
+ * The generic-container balance scanner is THE content-ir one
+ * (`XmlContainerTracker`, @ai-matrx/content-ir/source): it ignores lookalike
+ * tags inside fenced code (THE one code-range rule), inline code spans,
+ * comments and CDATA — the editor's tokenizer runs the same class, so the two
+ * can never end a section on different lines (RC-B10).
  */
-function isEscapedBacktick(line: string, offset: number): boolean {
-  let slashes = 0;
-  for (let i = offset - 1; line[i] === "\\"; i--) slashes++;
-  return slashes % 2 === 1;
-}
-
-class XmlContainerTracker implements UnrecognizedXmlContainerTracker {
-  private depth = 0;
-  private inComment = false;
-  private inCdata = false;
-  private inlineTicks = 0;
-  private fenceMarker: { char: "`" | "~"; ticks: number } | null = null;
-
-  constructor(readonly rootTag: string) {}
-
-  consumeLine(line: string, startOffset = 0): number | null {
-    const fence = /^[ \t]*(`{3,}|~{3,})(.*)$/.exec(line);
-    if (!this.inComment && !this.inCdata && this.inlineTicks === 0 && fence) {
-      const marker = fence[1];
-      const char = marker[0] as "`" | "~";
-      const suffix = fence[2];
-      if (marker.length >= 3) {
-        if (!this.fenceMarker) {
-          this.fenceMarker = { char, ticks: marker.length };
-          return null;
-        }
-        if (
-          char === this.fenceMarker.char &&
-          marker.length >= this.fenceMarker.ticks &&
-          suffix.trim() === ""
-        ) {
-          this.fenceMarker = null;
-        }
-        return null;
-      }
-    }
-    if (this.fenceMarker) return null;
-
-    for (let i = startOffset; i < line.length; i++) {
-      // A code span owns all bytes until its matching delimiter. In particular,
-      // comment/CDATA-looking bytes inside it cannot change XML scanner state.
-      if (this.inlineTicks > 0) {
-        if (line[i] === "`") {
-          let end = i;
-          while (line[end] === "`") end++;
-          if (end - i === this.inlineTicks) this.inlineTicks = 0;
-          i = end - 1;
-        }
-        continue;
-      }
-      if (this.inComment) {
-        const end = line.indexOf("-->", i);
-        if (end === -1) return null;
-        this.inComment = false;
-        i = end + 2;
-        continue;
-      }
-      if (this.inCdata) {
-        const end = line.indexOf("]]>", i);
-        if (end === -1) return null;
-        this.inCdata = false;
-        i = end + 2;
-        continue;
-      }
-      if (line.startsWith("<!--", i)) {
-        this.inComment = true;
-        i += 3;
-        continue;
-      }
-      if (line.startsWith("<![CDATA[", i)) {
-        this.inCdata = true;
-        i += 8;
-        continue;
-      }
-      if (line[i] === "`" && !isEscapedBacktick(line, i)) {
-        let end = i;
-        while (line[end] === "`") end++;
-        this.inlineTicks = end - i;
-        i = end - 1;
-        continue;
-      }
-      if (line[i] !== "<") continue;
-      const tag = readXmlTag(line, i);
-      if (!tag) continue;
-      const tagEnd = i + tag.raw.length;
-      if (tag.tagName === this.rootTag) {
-        if (tag.isClosing) this.depth--;
-        else if (!tag.isSelfClosing) this.depth++;
-        if (this.depth === 0) return tagEnd;
-      }
-      i = tagEnd - 1;
-    }
-    return null;
-  }
-}
 
 /** Protect tag attributes while an opening tag is still arriving. */
 export function isUnclosedGenericXmlOpening(source: string): boolean {
@@ -1508,17 +1415,16 @@ function detectCodeBlock(line: string): {
   meta?: string;
   ticks?: number;
 } {
-  const trimmed = line.trim();
-
-  // Count the opening run of backticks. CommonMark requires >= 3, and the
-  // length of this run is load-bearing: the block only closes on a later bare
-  // fence with at least this many backticks (so a longer ```` fence can wrap
-  // inner ``` blocks). Mirrors extractFenceInfo() in the Redux stream parser.
-  let ticks = 0;
-  while (ticks < trimmed.length && trimmed[ticks] === "`") ticks++;
-  if (ticks < 3) {
+  // THE one fence rule (@ai-matrx/content-ir/source): a backtick fence opens
+  // where the trimmed line starts with ``` at any indent. The run's length is
+  // load-bearing: only a later bare fence at least this long closes it. The
+  // renderer's splitter does not open ~~~ fences (remark draws those).
+  const opener = fenceOpenerOf(line);
+  if (!opener || opener.char !== "`") {
     return { isCodeBlock: false };
   }
+  const trimmed = line.trim();
+  const ticks = opener.ticks;
 
   const { language, meta } = splitFenceInfo(trimmed.slice(ticks));
 
@@ -1526,185 +1432,42 @@ function detectCodeBlock(line: string): {
 }
 
 /**
- * Checks whether a triple-backtick sequence at `backtickPos` in `line` is
- * inside a JSON string literal, given the cumulative string-context state
- * (`inString`, `escaped`) carried over from previous lines.
- *
- * Returns { isInsideString, inString, escaped } so the caller can thread the
- * state across lines.
+ * A backtick fence's body and where it ends — THE one closer
+ * (`closeFence`, @ai-matrx/content-ir/source): the nested-fence rule for
+ * ```markdown with the strict-CommonMark retry, the line-end closer (`}````),
+ * and JSON-string awareness for ```json. `startIndex` is the first body line.
  */
-function isBacktickInsideJsonString(
-  line: string,
-  backtickPos: number,
-  inString: boolean,
-  escaped: boolean,
-): { isInsideString: boolean; inString: boolean; escaped: boolean } {
-  for (let idx = 0; idx < backtickPos; idx++) {
-    const ch = line[idx];
-    if (escaped) {
-      escaped = false;
-      continue;
-    }
-    if (ch === "\\" && inString) {
-      escaped = true;
-      continue;
-    }
-    if (ch === '"') {
-      inString = !inString;
-    }
-  }
-  return { isInsideString: inString, inString, escaped };
-}
-
-/** Length of the run of backticks starting at `pos` in `str`. */
-function backtickRunLength(str: string, pos: number): number {
-  let n = 0;
-  while (pos + n < str.length && str[pos + n] === "`") n++;
-  return n;
-}
-
 function extractCodeBlock(
   language: string | undefined,
   openTicks: number,
   startIndex: number,
   lines: string[],
-  allowNesting = true,
-): ExtractionResult {
-  const content: string[] = [];
-  let i = startIndex;
-  // Track JSON string context across lines so we don't mistake ``` inside a
-  // string value for the closing fence.
-  const isJson = language === "json";
-  let jsonInString = false;
-  let jsonEscaped = false;
-  // A ```markdown fence carries its own ```lang … ``` blocks with the same
-  // tick count — THE rule is @ai-matrx/content-ir/source (source/fence-nesting.ts).
-  const nests = allowNesting && fenceNestsInnerFences(language);
-  let nestedDepth = 0;
-  let sawNested = false;
-
-  // Advance the JSON string-context machine across a slice of the line.
-  const advanceJsonState = (line: string, from: number) => {
-    for (let idx = from; idx < line.length; idx++) {
-      const ch = line[idx];
-      if (jsonEscaped) {
-        jsonEscaped = false;
-        continue;
-      }
-      if (ch === "\\" && jsonInString) {
-        jsonEscaped = true;
-        continue;
-      }
-      if (ch === '"') jsonInString = !jsonInString;
-    }
-  };
-
-  while (i < lines.length) {
-    const line = lines[i];
-    // The shared rule's whitespace, never String#trim (verify-RC-B3 residual R4).
-    const trimmedLine = trimFenceLine(line);
-
-    // Closing fence at the start of the line (the normal, CommonMark case).
-    if (trimmedLine.startsWith("```")) {
-      if (isJson) {
-        const { isInsideString, inString, escaped } =
-          isBacktickInsideJsonString(
-            line,
-            line.indexOf("```"),
-            jsonInString,
-            jsonEscaped,
-          );
-        if (isInsideString) {
-          content.push(line);
-          i++;
-          jsonInString = inString;
-          jsonEscaped = escaped;
-          advanceJsonState(line, line.indexOf("```"));
-          continue;
-        }
-      }
-
-      // CommonMark fence rule (identical to the Redux StreamBlockAccumulator):
-      // the block closes only on a *bare* run of backticks at least as long as
-      // the opening fence. An info string (e.g. ```js) or a shorter run is
-      // literal content — that's how a code block nests inside a longer ````
-      // fence, and it's the only unambiguous way to express nesting.
-      const fenceLine = classifyInnerFenceLine(
-        trimmedLine,
-        openTicks,
-        nests,
-        nestedDepth,
-      );
-      if (fenceLine === "close-outer") {
-        break;
-      }
-      if (fenceLine === "open-nested") {
-        nestedDepth++;
-        sawNested = true;
-      }
-      if (fenceLine === "close-nested") nestedDepth--;
-
-      content.push(line);
-      i++;
-      if (isJson) advanceJsonState(line, 0);
-      continue;
-    }
-
-    // Inline closing fence (e.g. `}``` `). Only a bare run of >= openTicks
-    // backticks with nothing meaningful after it closes the block.
-    const backtickIndex = line.indexOf("```");
-    if (backtickIndex !== -1) {
-      if (isJson) {
-        const { isInsideString, inString, escaped } =
-          isBacktickInsideJsonString(
-            line,
-            backtickIndex,
-            jsonInString,
-            jsonEscaped,
-          );
-        if (isInsideString) {
-          content.push(line);
-          i++;
-          jsonInString = inString;
-          jsonEscaped = escaped;
-          advanceJsonState(line, backtickIndex);
-          continue;
-        }
-      }
-
-      const closeTicks = backtickRunLength(line, backtickIndex);
-      const afterFence = trimFenceLine(line.slice(backtickIndex + closeTicks));
-      if (closeTicks >= openTicks && afterFence === "" && nestedDepth === 0) {
-        const contentBeforeBackticks = line.substring(0, backtickIndex);
-        if (contentBeforeBackticks.trim()) {
-          content.push(contentBeforeBackticks);
-        }
-        break;
-      }
-
-      content.push(line);
-      i++;
-      if (isJson) advanceJsonState(line, 0);
-      continue;
-    }
-
-    content.push(line);
-    i++;
-    if (isJson) advanceJsonState(line, 0);
+): ExtractionResult & { closedCleanly: boolean } {
+  const end = closeFence(
+    { count: lines.length, line: (k) => lines[k] ?? "" },
+    startIndex - 1,
+    { char: "`", ticks: openTicks, lang: language ?? "" },
+  );
+  if (!end.closed) {
+    return {
+      content: lines.slice(startIndex).join("\n"),
+      nextIndex: lines.length + 1,
+      metadata: { language },
+      closedCleanly: false,
+    };
   }
-
-  // The nesting reading ran off the end of the text: an inner ```lang was
-  // never closed, so it swallowed the outer closer. The complete text is in
-  // hand here, so fall back to strict CommonMark rather than eat the rest of
-  // the message.
-  if (sawNested && nestedDepth > 0 && i >= lines.length) {
-    return extractCodeBlock(language, openTicks, startIndex, lines, false);
-  }
-
+  const closer = lines[end.line] ?? "";
+  // A bare closing fence line (the normal case) vs the line-end closer, whose
+  // text before the backticks is code.
+  const bare = fenceOpenerOf(closer)?.char === "`";
+  const before = bare ? "" : closer.slice(0, closer.indexOf("`".repeat(3)));
+  const body = lines.slice(startIndex, end.line);
+  if (before.trim()) body.push(before);
   return {
-    content: content.join("\n"),
-    nextIndex: i + 1, // Skip closing ```
+    content: body.join("\n"),
+    nextIndex: end.line + 1,
     metadata: { language },
+    closedCleanly: bare,
   };
 }
 
@@ -2260,9 +2023,7 @@ export const splitContentIntoBlocksWith = (
         // COMPLETE iff extraction stopped on a literal closing-fence line (an
         // EOF-truncated fence keeps legacy rendering). Complete-only; loud
         // fail-open inside the hook.
-        const closedCleanly =
-          extraction.nextIndex <= lines.length &&
-          (lines[extraction.nextIndex - 1] ?? "").trim().startsWith("```");
+        const closedCleanly = extraction.closedCleanly;
         let fenceMetadata: Record<string, unknown> | undefined;
         if (closedCleanly) {
           const fenceEnvelope = envelopes.fenceRegion(
