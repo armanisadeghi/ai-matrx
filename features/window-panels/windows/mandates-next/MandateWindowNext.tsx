@@ -24,6 +24,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Loader2, Search, SquareArrowOutUpRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
@@ -34,10 +35,10 @@ import {
   type MandateDefinitionRow,
 } from "@/features/mandates/admin/service";
 import { onMandateCacheInvalidated } from "@/features/mandates/service";
-import { splitMandateKey } from "@/features/mandates/mandate-key";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
+import { useMandateDisplayName } from "@/features/mandates/useMandateDisplayName";
 import { mandateRoute } from "@/features/mandates/browse/types";
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
+import { featureLabelOf } from "@/features/mandates/admin-list/rows";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { cn } from "@/lib/utils";
 import { MandateRecordBody } from "@/features/mandates/record-next/MandateRecordBody";
@@ -48,6 +49,7 @@ import {
   visibleRecordTabs,
   type RecordTabId,
 } from "@/features/mandates/record-next/record-tabs";
+import { windowSelectionOf } from "./window-selection";
 
 export interface MandateWindowNextProps {
   isOpen?: boolean;
@@ -88,7 +90,8 @@ function MandateWindowNextInner({
   const userId = useAppSelector(selectUserId);
   const { organizations } = useUserOrganizations();
   const [rows, setRows] = useState<MandateDefinitionRow[] | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloads, setReloads] = useState(0);
   const [selectedKey, setSelectedKey] = useState<string | null>(
     initialMandateKey ?? null,
   );
@@ -116,14 +119,14 @@ function MandateWindowNextInner({
         .then((next) => {
           if (cancelled) return;
           setRows(next.mandates);
-          setLoadError(null);
+          setLoadFailed(false);
         })
         .catch((err: unknown) => {
           if (cancelled) return;
+          // The technical reason goes to the console; the person gets one
+          // short sentence and a Retry (a raw transport error is not words).
           console.error("[mandate-window-next] load failed", err);
-          setLoadError(
-            err instanceof Error ? err.message : "Could not load mandates.",
-          );
+          setLoadFailed(true);
         });
     };
     read();
@@ -132,7 +135,7 @@ function MandateWindowNextInner({
       cancelled = true;
       off();
     };
-  }, []);
+  }, [reloads]);
 
   const orgNames = new Map(organizations.map((o) => [o.id, o.name]));
   const orgName = (id: string | null) => (id ? (orgNames.get(id) ?? null) : null);
@@ -148,10 +151,9 @@ function MandateWindowNextInner({
       .filter((row) => scope === "all" || scopeOf(row, userId) === scope)
       .filter((row) => {
         if (!query) return true;
-        const feature = splitMandateKey(row.mandate_key).feature;
         return [
           mandateDisplayName(row.mandate_key, row.label),
-          formatVariableDisplayName(feature),
+          featureLabelOf(row.mandate_key, null),
           row.mandate_key,
         ]
           .join(" ")
@@ -164,18 +166,27 @@ function MandateWindowNextInner({
         ),
       );
 
-  // Selection is DERIVED: the chosen key when it exists, else the first row.
-  const selected =
-    (rows ?? []).find((row) => row.mandate_key === selectedKey) ??
-    visible[0] ??
-    null;
-  const selectedName = selected
-    ? mandateDisplayName(selected.mandate_key, selected.label)
-    : "Mandates";
-  const fullPageHref = selected
+  // The open mandate is ONLY the one chosen (or opened on). Scope, search and
+  // reloads of the list never move it — see ./window-selection.ts.
+  const selection = windowSelectionOf(rows, selectedKey);
+  const selected = selection.status === "found" ? selection.row : null;
+  const openKey =
+    selection.status === "found"
+      ? selection.row.mandate_key
+      : selection.status === "pending"
+        ? selection.key
+        : null;
+  const derivedName = useMandateDisplayName(openKey ?? "", selected?.label);
+  const selectedName =
+    selection.status === "not-found"
+      ? "Mandate not found"
+      : openKey
+        ? derivedName
+        : "Mandates";
+  const fullPageHref = openKey
     ? isSuperAdmin
-      ? mandateRecordPreviewHref(selected.mandate_key, tab)
-      : mandateRoute({ mandate_key: selected.mandate_key })
+      ? mandateRecordPreviewHref(openKey, tab)
+      : mandateRoute({ mandate_key: openKey })
     : null;
 
   const sidebar = (
@@ -218,11 +229,9 @@ function MandateWindowNextInner({
       </div>
       <div className="flex-1 min-h-0 space-y-px overflow-y-auto p-1">
         {visible.map((row) => {
-          const feature = formatVariableDisplayName(
-            splitMandateKey(row.mandate_key).feature,
-          );
+          const feature = featureLabelOf(row.mandate_key, null);
           const bucket = scopeOf(row, userId);
-          const active = row.mandate_key === selected?.mandate_key;
+          const active = row.id === selected?.id;
           return (
             <button
               key={row.id}
@@ -254,7 +263,20 @@ function MandateWindowNextInner({
             No mandate matches.
           </p>
         ) : null}
-        {!rows && !loadError ? (
+        {loadFailed && !rows ? (
+          <div className="flex flex-col items-start gap-1.5 px-2 py-3 text-[11px] text-muted-foreground">
+            The list could not be read.
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 px-2 text-[11px]"
+              onClick={() => setReloads((n) => n + 1)}
+            >
+              Retry
+            </Button>
+          </div>
+        ) : null}
+        {!rows && !loadFailed ? (
           <div className="flex items-center gap-1.5 px-2 py-3 text-[11px] text-muted-foreground">
             <Loader2 className="h-3 w-3 animate-spin" /> Reading mandates
           </div>
@@ -296,14 +318,16 @@ function MandateWindowNextInner({
       minHeight={380}
       overlayId="mandateWindowNext"
       onCollectData={() => ({
-        initialMandateKey: selected?.mandate_key ?? null,
+        initialMandateKey: openKey,
         initialTab: tab,
       })}
       sidebar={sidebar}
       sidebarDefaultSize={230}
       sidebarMinSize={180}
       urlSyncKey="mandate_next"
-      urlSyncId={selected?.mandate_key ?? "mandate-window-next"}
+      // The real key from the first frame — never a placeholder while the list
+      // loads (a reload in that window would reopen on nothing).
+      urlSyncId={openKey ?? "mandate-window-next"}
       urlSyncArgs={{ t: tab }}
       footer={<div ref={setFooterEl} className="flex w-full items-center justify-end" />}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
@@ -317,22 +341,20 @@ function MandateWindowNextInner({
           />
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
-          {loadError ? (
-            <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-              {loadError}
-            </p>
-          ) : !rows ? (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Reading mandates
-            </div>
-          ) : !selected ? (
+          {selection.status === "not-found" ? (
+            <p className="text-xs text-muted-foreground">Mandate not found</p>
+          ) : !openKey ? (
             <p className="text-xs text-muted-foreground">
-              No mandate is visible to you yet.
+              {rows && rows.length === 0
+                ? "No mandate is visible to you yet."
+                : "Pick a mandate from the list."}
             </p>
           ) : (
+            // The record reads itself by key, so it never waits on (or dies
+            // with) the list beside it.
             <MandateRecordBody
-              key={selected.id}
-              mandateKeyOrId={selected.mandate_key}
+              key={openKey}
+              mandateKeyOrId={openKey}
               host="window"
               activeTab={tab}
               onTabChange={setTab}
