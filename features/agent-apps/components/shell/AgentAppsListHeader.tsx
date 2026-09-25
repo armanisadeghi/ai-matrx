@@ -12,7 +12,7 @@ export function AgentAppsListHeader() {
       <span className="text-sm font-semibold text-foreground">Agent Apps</span>
       <div className="ml-auto flex items-center gap-1">
         {/* THE DOOR LAW — the agent that writes an app's code is a Mandate
-            (`agent_apps.prompt_app_dev`) the builder may swap for their own,
+            (agent_apps.prompt_app_dev) the builder may swap for their own,
             with no deploy. Deep-linked to the `agent_apps` domain: the bare
             list is 264 mandates across 45 domains. */}
         <MandateDoorLink feature="agent_apps" label="App builder agents" />

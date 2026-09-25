@@ -22,6 +22,23 @@ import { MARKETING_PLACES } from "@/features/marketing/intelligence-places";
 import { PODCAST_PLACES } from "@/features/podcasts/intelligence-places";
 import { EDUCATION_PLACES } from "@/features/education/intelligence-places";
 import { MASTERWORK_PLACES } from "@/features/masterwork/intelligence-places";
+import { COMMERCE_INTAKE_PLACES } from "@/features/commerce-intake/intelligence-places";
+import { PRODUCT_CAPTURE_PLACES } from "@/features/product-capture/intelligence-places";
+import { PERSONAL_STAFF_PLACES } from "@/features/personal-staff/intelligence-places";
+import { TASKS_PLACES } from "@/features/tasks/intelligence-places";
+import { PROJECTS_PLACES } from "@/features/projects/intelligence-places";
+import { SURFACES_CLIENT_PLACES } from "@/features/surfaces/intelligence-places";
+import { MANDATES_PLACES } from "@/features/bindings/intelligence-places";
+import { CONTENT_IR_PLACES } from "@/features/content-ir/intelligence-places";
+import { AGENT_APPS_PLACES } from "@/features/agent-apps/intelligence-places";
+import { CODE_EDITOR_PLACES } from "@/features/code-editor/intelligence-places";
+import { MESSAGING_PLACES } from "@/features/messaging/intelligence-places";
+import { CONVERSATION_PLACES } from "@/features/ai-work/intelligence-places";
+import { AMBIENT_PLACES } from "@/features/agents/components/ambient-assistant/intelligence-places";
+import { ALCHEMY_PLACES } from "@/components/agent-copy/intelligence-places";
+import { DICTIONARY_PLACES } from "@/features/dictionary/intelligence-places";
+import { TOOL_VIZ_PLACES } from "@/features/tool-call-visualization/intelligence-places";
+import { ORCHESTRAS_PLACES } from "@/features/agents/orchestras/intelligence-places";
 import type { FeaturePlaces } from "./types";
 
 export const DECLARED_FEATURES: readonly FeaturePlaces[] = [
@@ -41,6 +58,23 @@ export const DECLARED_FEATURES: readonly FeaturePlaces[] = [
   VOICE_PLACES,
   TRANSCRIPT_STUDIO_PLACES,
   MASTERWORK_PLACES,
+  COMMERCE_INTAKE_PLACES,
+  PRODUCT_CAPTURE_PLACES,
+  PERSONAL_STAFF_PLACES,
+  TASKS_PLACES,
+  PROJECTS_PLACES,
+  SURFACES_CLIENT_PLACES,
+  MANDATES_PLACES,
+  CONTENT_IR_PLACES,
+  AGENT_APPS_PLACES,
+  CODE_EDITOR_PLACES,
+  MESSAGING_PLACES,
+  CONVERSATION_PLACES,
+  AMBIENT_PLACES,
+  ALCHEMY_PLACES,
+  DICTIONARY_PLACES,
+  TOOL_VIZ_PLACES,
+  ORCHESTRAS_PLACES,
 ];
 
 export function declaredPlacesFor(feature: string): FeaturePlaces | null {
