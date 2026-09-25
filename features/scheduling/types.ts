@@ -154,6 +154,8 @@ export type SchedulableKind = "agent" | "tool";
 export interface SchTaskRow {
   id: string;
   user_id: string;
+  /** The schedule's own organization (NOT NULL in `scheduler.sch_task`). */
+  organization_id: string;
   kind: SchedulableKind;
   metadata: Record<string, unknown> | null;
   title: string;
