@@ -39,7 +39,10 @@ export function HtmlTileBody({
 }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.3);
-  const [loaded, setLoaded] = useState(tier !== "offscreen");
+  // True once the page has been out of view long enough to unload. Derived
+  // with `tier` below, so returning to view reloads without an effect write.
+  const [expired, setExpired] = useState(false);
+  const loaded = tier !== "offscreen" || !expired;
 
   useEffect(() => {
     const box = boxRef.current;
@@ -50,12 +53,12 @@ export function HtmlTileBody({
   }, []);
 
   useEffect(() => {
-    if (tier !== "offscreen") {
-      setLoaded(true);
-      return;
-    }
-    const t = setTimeout(() => setLoaded(false), UNLOAD_AFTER_MS);
-    return () => clearTimeout(t);
+    if (tier !== "offscreen") return;
+    const t = setTimeout(() => setExpired(true), UNLOAD_AFTER_MS);
+    return () => {
+      clearTimeout(t);
+      setExpired(false);
+    };
   }, [tier]);
 
   return (

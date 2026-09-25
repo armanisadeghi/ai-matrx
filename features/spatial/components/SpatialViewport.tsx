@@ -19,6 +19,7 @@
 
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import {
   type Camera,
   cameraFromHash,
@@ -101,8 +102,9 @@ export function SpatialViewport({
     const unsub = store.subscribeFrame(() => {
       if (t) clearTimeout(t);
       t = setTimeout(() => {
-        const url = `${window.location.pathname}${window.location.search}#${cameraToHash(store.getCamera())}`;
-        window.history.replaceState(window.history.state, "", url);
+        replaceAddressWithoutNavigating(
+          `${window.location.pathname}${window.location.search}#${cameraToHash(store.getCamera())}`,
+        );
       }, 350);
     });
     return () => {
