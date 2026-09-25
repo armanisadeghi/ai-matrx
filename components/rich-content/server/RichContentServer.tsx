@@ -38,7 +38,11 @@ import {
 import { cn } from "@/lib/utils";
 import { RichContentDepthProvider } from "../depth";
 import { StandardBlock } from "../standard/StandardBlocks";
-import { DEFAULT_RICH_CONTENT_DEPTH_CAP } from "../rich-content-types";
+import {
+  DEFAULT_RICH_CONTENT_DEPTH_CAP,
+  type RichContentVariant,
+} from "../rich-content-types";
+import { RichContentVariantRoot } from "../prose/variant-root";
 import { detectTextDirection, preprocessProse } from "../prose/prose-prepare";
 import {
   INLINE_LEVEL_ELEMENTS,
@@ -59,6 +63,8 @@ export interface RichContentServerProps {
   className?: string;
   /** Nested-rendering depth cap (standard). */
   depthCap?: number;
+  /** Typography variant (standard); `reading` for long-form public pages. */
+  variant?: RichContentVariant;
 }
 
 /** XML control sections whose body is prose — the same set StandardBlock nests. */
@@ -218,17 +224,20 @@ export function RichContentServer({
   level,
   className,
   depthCap = DEFAULT_RICH_CONTENT_DEPTH_CAP,
+  variant,
 }: RichContentServerProps) {
   if (level === "inline") {
     return <InlineServer source={source} className={className} />;
   }
   return (
-    <StandardServer
-      source={source}
-      depth={0}
-      cap={depthCap}
-      className={className}
-    />
+    <RichContentVariantRoot variant={variant}>
+      <StandardServer
+        source={source}
+        depth={0}
+        cap={depthCap}
+        className={className}
+      />
+    </RichContentVariantRoot>
   );
 }
 

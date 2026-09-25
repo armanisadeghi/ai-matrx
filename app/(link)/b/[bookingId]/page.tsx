@@ -29,6 +29,7 @@
 // that set: the person holding this link was sent it by the business whose
 // calendar it is, so the door names the switch instead of disappearing.
 
+import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -86,7 +87,9 @@ export default async function PublicBookingPage({
     <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center px-5 pb-safe pt-8 matrx-touch-targets">
       <h1 className="text-xl font-medium">{page.title}</h1>
       {page.presentation?.intro ? (
-        <p className="mt-1 text-sm text-muted-foreground">{page.presentation.intro}</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          <RichContentServer level="inline" source={page.presentation.intro} />
+        </p>
       ) : null}
       <BookingPicker page={page} />
     </main>

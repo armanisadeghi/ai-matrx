@@ -17,20 +17,33 @@
 
 import { guardMarkdownDelimiters } from "@ai-matrx/kit/delimiter-guard";
 import MarkdownCoreImpl from "@/components/markdown-core/MarkdownCoreImpl";
+import { cn } from "@/lib/utils";
 import { detectTextDirection, preprocessProse } from "./prose/prose-prepare";
+import {
+  INLINE_LEVEL_ELEMENTS,
+  INLINE_LEVEL_WRAPPER_CLASS,
+} from "./prose/inline-level-elements";
 import {
   PROSE_BLOCK_ELEMENTS,
   PROSE_FRAME_CSS,
   proseFrameClass,
 } from "./prose/prose-block-elements";
 import { DelimiterViolationReport } from "./server/DelimiterViolationReport";
+import { RichContentVariantRoot } from "./prose/variant-root";
+import type { RichContentVariant } from "./rich-content-types";
 
-export function RichContentStaticProse({ source }: { source: string }) {
+export function RichContentStaticProse({
+  source,
+  variant,
+}: {
+  source: string;
+  variant?: RichContentVariant;
+}) {
   if (!source.trim()) return null;
   const direction = detectTextDirection(source);
   const { text, violations } = guardMarkdownDelimiters(preprocessProse(source));
   return (
-    <>
+    <RichContentVariantRoot variant={variant}>
       <div className={proseFrameClass(direction)} dir={direction}>
         <style dangerouslySetInnerHTML={{ __html: PROSE_FRAME_CSS }} />
         <MarkdownCoreImpl preset="chat" components={PROSE_BLOCK_ELEMENTS}>
@@ -41,6 +54,40 @@ export function RichContentStaticProse({ source }: { source: string }) {
         <DelimiterViolationReport
           violations={violations}
           renderPath="RichContentStaticProse"
+        />
+      ) : null}
+    </RichContentVariantRoot>
+  );
+}
+
+/**
+ * The `inline` level, statically (SSR'd) — phrasing only, valid inside a <p>.
+ * Markup identical to RichContentServer level="inline" (parity guard).
+ * Never inside a link: a markdown link would nest an anchor.
+ */
+export function RichContentStaticInline({
+  source,
+  className,
+}: {
+  source: string;
+  className?: string;
+}) {
+  if (!source.trim()) return null;
+  const { text, violations } = guardMarkdownDelimiters(preprocessProse(source));
+  return (
+    <>
+      <span
+        data-rich-content="inline"
+        className={cn(INLINE_LEVEL_WRAPPER_CLASS, className)}
+      >
+        <MarkdownCoreImpl preset="chat" components={INLINE_LEVEL_ELEMENTS}>
+          {text}
+        </MarkdownCoreImpl>
+      </span>
+      {violations.length > 0 ? (
+        <DelimiterViolationReport
+          violations={violations}
+          renderPath="RichContentStaticInline"
         />
       ) : null}
     </>

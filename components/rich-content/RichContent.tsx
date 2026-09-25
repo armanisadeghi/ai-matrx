@@ -19,6 +19,7 @@ import dynamic from "next/dynamic";
 import MarkdownStream from "@/components/MarkdownStream";
 import { RichContentDepthProvider } from "./depth";
 import { RichContentInline } from "./RichContentInline";
+import { RichContentVariantRoot } from "./prose/variant-root";
 import type { RichContentProps } from "./rich-content-types";
 
 const RichContentStandardImpl = dynamic(
@@ -32,6 +33,7 @@ export function RichContent({
   isStreaming,
   className,
   depthCap,
+  variant,
 }: RichContentProps) {
   if (level === "inline") {
     return <RichContentInline source={source} className={className} />;
@@ -43,6 +45,7 @@ export function RichContent({
         isStreaming={isStreaming}
         className={className}
         depthCap={depthCap}
+        variant={variant}
       />
     );
   }
@@ -53,12 +56,16 @@ export function RichContent({
       className={className}
     />
   );
-  return depthCap === undefined ? (
-    full
-  ) : (
-    <RichContentDepthProvider depth={0} cap={depthCap}>
-      {full}
-    </RichContentDepthProvider>
+  return (
+    <RichContentVariantRoot variant={variant}>
+      {depthCap === undefined ? (
+        full
+      ) : (
+        <RichContentDepthProvider depth={0} cap={depthCap}>
+          {full}
+        </RichContentDepthProvider>
+      )}
+    </RichContentVariantRoot>
   );
 }
 

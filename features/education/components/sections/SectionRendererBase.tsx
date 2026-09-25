@@ -42,12 +42,17 @@ function Band({
   );
 }
 
+/** Renders authored phrasing text (markdown + math) — the server or client inline level. */
+type RenderInline = (source: string) => React.ReactNode;
+
 function SectionHead({
   heading,
   subheading,
+  inline,
 }: {
   heading?: string;
   subheading?: string;
+  inline: RenderInline;
 }) {
   if (!heading && !subheading) return null;
   return (
@@ -55,7 +60,7 @@ function SectionHead({
       {heading ? <h2 className={HEADING}>{heading}</h2> : null}
       {subheading ? (
         <p className="mt-4 text-muted-foreground text-lg max-w-2xl mx-auto">
-          {subheading}
+          {inline(subheading)}
         </p>
       ) : null}
     </div>
@@ -65,9 +70,11 @@ function SectionHead({
 function FeatureGrid({
   items,
   columns = 3,
+  inline,
 }: {
   items: EduFeatureItem[];
   columns?: 2 | 3;
+  inline: RenderInline;
 }) {
   return (
     <div
@@ -92,7 +99,7 @@ function FeatureGrid({
             ) : null}
             <h3 className="text-base font-semibold mb-2">{item.title}</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              {item.description}
+              {inline(item.description)}
             </p>
             {item.href ? (
               <div className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary">
@@ -113,7 +120,7 @@ function FeatureGrid({
   );
 }
 
-function Steps({ steps }: { steps: EduStep[] }) {
+function Steps({ steps, inline }: { steps: EduStep[]; inline: RenderInline }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
       {steps.map((step) => (
@@ -124,7 +131,7 @@ function Steps({ steps }: { steps: EduStep[] }) {
           <div>
             <h3 className="font-semibold text-base mb-1">{step.title}</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              {step.description}
+              {inline(step.description)}
             </p>
           </div>
         </div>
@@ -133,7 +140,13 @@ function Steps({ steps }: { steps: EduStep[] }) {
   );
 }
 
-function StatusCards({ cards }: { cards: EduStatusCard[] }) {
+function StatusCards({
+  cards,
+  inline,
+}: {
+  cards: EduStatusCard[];
+  inline: RenderInline;
+}) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       {cards.map((card) => {
@@ -159,7 +172,7 @@ function StatusCards({ cards }: { cards: EduStatusCard[] }) {
             </div>
             {card.description ? (
               <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-                {card.description}
+                {inline(card.description)}
               </p>
             ) : null}
             {card.bullets && card.bullets.length > 0 ? (
@@ -170,7 +183,7 @@ function StatusCards({ cards }: { cards: EduStatusCard[] }) {
                     className="flex items-center gap-2 text-sm text-muted-foreground"
                   >
                     <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
-                    {b}
+                    {inline(b)}
                   </li>
                 ))}
               </ul>
@@ -217,13 +230,13 @@ function StatBar({ stats }: { stats: EduStat[] }) {
   );
 }
 
-function Faq({ items }: { items: EduFaqItem[] }) {
+function Faq({ items, inline }: { items: EduFaqItem[]; inline: RenderInline }) {
   return (
     <div className="mx-auto max-w-3xl divide-y divide-border rounded-2xl border border-border bg-card">
       {items.map((item) => (
         <div key={item.q} className="p-5 sm:p-6">
           <h3 className="font-semibold text-base mb-1.5">{item.q}</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">{item.a}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">{inline(item.a)}</p>
         </div>
       ))}
     </div>
@@ -235,9 +248,11 @@ function Cta({
   body,
   primary,
   secondary,
+  inline,
 }: {
   heading: string;
   body?: string;
+  inline: RenderInline;
   primary: EduLink;
   secondary?: EduLink;
 }) {
@@ -246,7 +261,7 @@ function Cta({
       <h2 className={HEADING}>{heading}</h2>
       {body ? (
         <p className="mt-4 text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
-          {body}
+          {inline(body)}
         </p>
       ) : (
         <div className="mb-8" />
@@ -276,9 +291,12 @@ function Cta({
 export function SectionRendererBase({
   sections,
   renderProse,
+  renderInline,
 }: {
   sections: EduSection[];
   renderProse: (source: string) => React.ReactNode;
+  /** Short authored text (descriptions, answers, subheadings). */
+  renderInline: RenderInline;
 }) {
   return (
     <>
@@ -301,22 +319,22 @@ export function SectionRendererBase({
           case "feature-grid":
             return (
               <Band key={i} alt={alt} wide>
-                <SectionHead heading={section.heading} subheading={section.subheading} />
-                <FeatureGrid items={section.items} columns={section.columns} />
+                <SectionHead heading={section.heading} subheading={section.subheading} inline={renderInline} />
+                <FeatureGrid items={section.items} columns={section.columns} inline={renderInline} />
               </Band>
             );
           case "steps":
             return (
               <Band key={i} alt={alt}>
-                <SectionHead heading={section.heading} subheading={section.subheading} />
-                <Steps steps={section.steps} />
+                <SectionHead heading={section.heading} subheading={section.subheading} inline={renderInline} />
+                <Steps steps={section.steps} inline={renderInline} />
               </Band>
             );
           case "status-cards":
             return (
               <Band key={i} alt={alt} wide>
-                <SectionHead heading={section.heading} subheading={section.subheading} />
-                <StatusCards cards={section.cards} />
+                <SectionHead heading={section.heading} subheading={section.subheading} inline={renderInline} />
+                <StatusCards cards={section.cards} inline={renderInline} />
               </Band>
             );
           case "stat-bar":
@@ -328,8 +346,8 @@ export function SectionRendererBase({
           case "faq":
             return (
               <Band key={i} alt={alt}>
-                <SectionHead heading={section.heading} />
-                <Faq items={section.items} />
+                <SectionHead heading={section.heading} inline={renderInline} />
+                <Faq items={section.items} inline={renderInline} />
               </Band>
             );
           case "cta":
@@ -340,6 +358,7 @@ export function SectionRendererBase({
                   body={section.body}
                   primary={section.primary}
                   secondary={section.secondary}
+                  inline={renderInline}
                 />
               </Band>
             );

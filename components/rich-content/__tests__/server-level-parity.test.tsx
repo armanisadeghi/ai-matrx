@@ -49,7 +49,11 @@ import { RichContentServer } from "@/components/rich-content/server/RichContentS
 import { RichContentInline } from "@/components/rich-content/RichContentInline";
 import { StandardBlocks } from "@/components/rich-content/standard/StandardBlocks";
 import { RichContentDepthProvider } from "@/components/rich-content/depth";
-import { RichContentStaticProse } from "@/components/rich-content/RichContentStaticProse";
+import {
+  RichContentStaticInline,
+  RichContentStaticProse,
+} from "@/components/rich-content/RichContentStaticProse";
+import RichContentStandardImpl from "@/components/rich-content/RichContentStandardImpl";
 import { ProseServer } from "@/components/rich-content/server/RichContentServer";
 import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 
@@ -191,5 +195,30 @@ describe("server level renders the same HTML as the client levels", () => {
     expect(server).toContain('class="katex"');
     expect(staticSsr).toBe(server);
     expect(client).toBe(server);
+  });
+
+  it("reading variant: same markup, one wrapper — server, client standard and static prose agree", () => {
+    const server = serverHtml(
+      <RichContentServer level="standard" variant="reading" source={STUDY_GUIDE} />,
+    );
+    const client = clientHtml(
+      <RichContentStandardImpl variant="reading" source={STUDY_GUIDE} />,
+    );
+    expect(server).toContain('data-rc-variant="reading"');
+    expect(server).toBe(client);
+    // Never a second renderer: stripping the variant wrapper leaves the
+    // default markup byte-for-byte.
+    const plain = serverHtml(<RichContentServer level="standard" source={STUDY_GUIDE} />);
+    const probe = document.createElement("div");
+    probe.innerHTML = server;
+    const root = probe.querySelector('[data-rc-variant="reading"]') as HTMLElement;
+    root.querySelector(":scope > style")?.remove();
+    expect(root.innerHTML).toBe(plain);
+  });
+
+  it("static inline (SSR'd client) equals the server inline level", () => {
+    const server = serverHtml(<RichContentServer level="inline" source={FLASHCARD_FRONT} />);
+    const staticSsr = serverHtml(<RichContentStaticInline source={FLASHCARD_FRONT} />);
+    expect(staticSsr).toBe(server);
   });
 });

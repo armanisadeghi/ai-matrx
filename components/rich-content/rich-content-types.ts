@@ -30,6 +30,15 @@ export type RichContentLevel = "inline" | "standard" | "full";
  */
 export const DEFAULT_RICH_CONTENT_DEPTH_CAP = 3;
 
+/**
+ * Typography variant — never a second renderer (prose/variant-root.tsx).
+ *  - `default`  chat density.
+ *  - `reading`  long-form reading: larger body, ~70ch measure, comfortable
+ *               line-height, heading scale. For learn articles, share pages,
+ *               public resources.
+ */
+export type RichContentVariant = "default" | "reading";
+
 export interface RichContentProps {
   /** The source text — markdown, math, XML sections, fences. */
   source: string;
@@ -39,4 +48,6 @@ export interface RichContentProps {
   className?: string;
   /** Nested-rendering depth cap (standard / full). */
   depthCap?: number;
+  /** Typography variant (standard / full); default `default`. */
+  variant?: RichContentVariant;
 }

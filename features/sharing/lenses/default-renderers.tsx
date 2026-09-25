@@ -44,8 +44,20 @@ export function resourceTitle(result: ResolvedShareToken): string {
   );
 }
 
-function Markdown({ content }: { content: string }) {
-  return <RichContentStaticProse source={content} />;
+/** `reading` for a document body; card faces keep the default density. */
+function Markdown({
+  content,
+  reading = false,
+}: {
+  content: string;
+  reading?: boolean;
+}) {
+  return (
+    <RichContentStaticProse
+      source={content}
+      variant={reading ? "reading" : "default"}
+    />
+  );
 }
 
 /** Text/markdown types (note, message_template): title + markdown body. */
@@ -57,7 +69,7 @@ export function MarkdownRenderer({ result }: { result: ResolvedShareToken }) {
         {resourceTitle(result)}
       </h1>
       {content ? (
-        <Markdown content={content} />
+        <Markdown content={content} reading />
       ) : (
         <p className="text-muted-foreground">This item is empty.</p>
       )}
@@ -135,7 +147,7 @@ export function GenericRenderer({ result }: { result: ResolvedShareToken }) {
           {result.displayLabel ?? "Shared item"}
         </div>
         <h1 className="text-2xl font-semibold text-foreground mb-4">{title}</h1>
-        <Markdown content={content} />
+        <Markdown content={content} reading />
       </article>
     );
   }

@@ -4,7 +4,10 @@ import React from "react";
 import Link from "next/link";
 // Public text renders through the one rich-content core, statically, so it
 // is in the server-rendered HTML (MarkdownCore itself is ssr:false).
-import { RichContentStaticProse } from "@/components/rich-content/RichContentStaticProse";
+import {
+  RichContentStaticInline,
+  RichContentStaticProse,
+} from "@/components/rich-content/RichContentStaticProse";
 import { ArrowUpRight, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { resolveShareSourceSurface } from "@/features/sharing/lenses/source-surface";
@@ -12,8 +15,20 @@ import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateTo
 import { isForkable } from "@/utils/permissions/shareLinks";
 import type { PublicResource } from "../../loadPublicResource";
 
-function Markdown({ content }: { content: string }) {
-  return <RichContentStaticProse source={content} />;
+/** `reading` for a document body; card faces keep the default density. */
+function Markdown({
+  content,
+  reading = false,
+}: {
+  content: string;
+  reading?: boolean;
+}) {
+  return (
+    <RichContentStaticProse
+      source={content}
+      variant={reading ? "reading" : "default"}
+    />
+  );
 }
 
 function str(row: Record<string, unknown>, key: string): string {
@@ -33,7 +48,9 @@ function FlashcardSetRenderer({ resource }: { resource: PublicResource }) {
         </span>
       </div>
       {resource.description && (
-        <p className="mb-8 text-lg text-muted-foreground">{resource.description}</p>
+        <p className="mb-8 text-lg text-muted-foreground">
+          <RichContentStaticInline source={resource.description} />
+        </p>
       )}
       <ol className="space-y-3">
         {cards.map((card, i) => (
@@ -97,7 +114,7 @@ function MarkdownRenderer({ resource }: { resource: PublicResource }) {
   const content = str(resource.row, "content");
   return (
     <article className="mx-auto w-full max-w-3xl">
-      {content ? <Markdown content={content} /> : <p className="text-muted-foreground">This item is empty.</p>}
+      {content ? <Markdown content={content} reading /> : <p className="text-muted-foreground">This item is empty.</p>}
     </article>
   );
 }
@@ -110,7 +127,11 @@ function GenericRenderer({ resource }: { resource: PublicResource }) {
       <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
         {resource.displayLabel}
       </div>
-      {resource.description && <p className="text-muted-foreground">{resource.description}</p>}
+      {resource.description && (
+        <p className="text-muted-foreground">
+          <RichContentStaticInline source={resource.description} />
+        </p>
+      )}
     </div>
   );
 }

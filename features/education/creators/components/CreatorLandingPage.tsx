@@ -109,7 +109,9 @@ function ClassCard({ item, handle }: { item: FeaturedClass; handle: string }) {
       </div>
       <h3 className="text-lg font-semibold text-foreground">{item.title}</h3>
       {item.description ? (
-        <p className="mt-1.5 text-sm text-muted-foreground">{item.description}</p>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          <RichContentServer level="inline" source={item.description} />
+        </p>
       ) : null}
       <div className="mt-5">
         <EnrollButton

@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { ArrowRight, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
 import type { EduLink } from "../../types";
 
 interface EduHeroProps {
@@ -60,7 +61,7 @@ export function EduHero({
         </h1>
         {description ? (
           <p className="mt-6 mx-auto max-w-2xl text-[clamp(1rem,0.95rem+0.25vw,1.25rem)] text-muted-foreground leading-relaxed">
-            {description}
+            <RichContentServer level="inline" source={description} />
           </p>
         ) : null}
         {chips && chips.length > 0 ? (

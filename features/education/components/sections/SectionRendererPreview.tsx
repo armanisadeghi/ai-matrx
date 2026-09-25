@@ -9,7 +9,8 @@ export function SectionRendererPreview({ sections }: { sections: EduSection[] })
   return (
     <SectionRendererBase
       sections={sections}
-      renderProse={(source) => <RichContent level="standard" source={source} />}
+      renderProse={(source) => <RichContent level="standard" variant="reading" source={source} />}
+      renderInline={(source) => <RichContent level="inline" source={source} />}
     />
   );
 }
