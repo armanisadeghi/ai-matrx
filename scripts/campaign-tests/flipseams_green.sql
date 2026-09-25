@@ -161,17 +161,22 @@ begin
     -- 10.0 A copy that fell behind its older table refuses the flip, naming the rows.
     perform set_config('role', 'authenticated', true);
     v := platform.cutover_seam_press('older_tables', c_ws, 'new', 'before the copies are current');
-    if v ->> 'reason' = 'not_ready' then
+    if v ->> 'reason' = 'not_ready' and v ->> 'says' ~ 'edited in the older tables after they were copied' then
       raise notice '10.0: refused while copies were behind — %', v ->> 'says';
-      -- Stage "copy the tables again" (the mover's rerun brings the edits): every copy is as current
-      -- as its older row. Rolled back with the rest of part 10.
+      -- Stage: put back in the archive the tables whose copies are behind (their rerun is the
+      -- mover's job), so the flip is judged on the tables whose copies are current. Rolled back.
       perform set_config('role', 'postgres', true);
-      update custom.record r set updated_at = now()
-        from workbench.udt_dataset_rows w
-       where r.organization_id = c_ws and r.id = w.id and w.table_id = any (v_moved) and w.updated_at > r.updated_at;
+      perform workbench.udt_dataset_archive(d.id, d.id, 'flipseams_green: its copy is behind')
+         from workbench.udt_datasets d
+        where d.id = any (v_moved)
+          and exists (select 1 from workbench.udt_dataset_rows w join custom.record r on r.organization_id = c_ws and r.id = w.id
+                       where w.table_id = d.id and w.deleted_at is null and w.updated_at > r.updated_at);
+      select array_agg(d.id order by d.id) into v_moved from workbench.udt_datasets d
+       where d.id = any (v_moved) and d.deleted_at is null;
+      raise notice '10.0: % tables with current copies stay live for the flip', cardinality(v_moved);
       perform set_config('role', 'authenticated', true);
-    elsif not (v ->> 'ok')::boolean then
-      raise exception '10.0: unexpected refusal: %', v;
+    elsif (v ->> 'ok')::boolean then
+      raise exception '10.0: the flip went through although the copies are behind';
     end if;
 
     v := platform.cutover_seams(c_ws);

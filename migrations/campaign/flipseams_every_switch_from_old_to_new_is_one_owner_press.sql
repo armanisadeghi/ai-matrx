@@ -133,7 +133,7 @@ create table if not exists platform.cutover_seam_press (
   refusal          text,
   says             text,
   pressed_by       uuid references auth.users(id),
-  pressed_at       timestamptz not null default now(),
+  pressed_at       timestamptz not null default clock_timestamp(),  -- per press, not per transaction
   readiness        jsonb,
   did              jsonb not null default '{}'::jsonb,
   note             text,
