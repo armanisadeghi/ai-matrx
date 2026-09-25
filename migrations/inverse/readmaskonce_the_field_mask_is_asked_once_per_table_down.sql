@@ -1,5 +1,14 @@
--- Inverse of migrations/campaign/readmaskonce_the_field_mask_is_asked_once_per_table.sql (lane READ-MASK-ONCE): the nine bodies exactly as
--- they were on production before it (pg_get_functiondef, 2026-09-25), then custom.read_mask_for dropped.
+-- chair-step: the inverse of migrations/campaign/readmaskonce_the_field_mask_is_asked_once_per_table.sql (lane READ-MASK-ONCE) — puts the nine bodies back exactly as production held them before it (pg_get_functiondef, 2026-09-25), removes custom.read_mask_for's door row, then drops custom.read_mask_for. Nothing of anybody's data is touched.
+-- based-on: custom.agg_fields_readable_assert(uuid, uuid, text[], text) de0959039821fbbfd4f5fd9e1d125e127c703ef6eee8a5293606df6fd2b22576
+-- based-on: custom.enrich_cells(uuid, uuid, text[], uuid[]) 4f75225af62fc5350ca74c03324de51d9674cc2f14bae70386e998eb987a1653
+-- based-on: custom.enrich_due(uuid, uuid, integer, boolean) dbc0c199594f2a1133a1e960d8077854468f68acedd2d5fca6ca3939131536db
+-- based-on: custom.read_mask(uuid, uuid, text) 12d82f297d20436aba2c9dcca0d697eaff3651e8d84828bf82ba20f8c191cd73
+-- based-on: custom.read_records_archived(uuid, uuid, text, boolean, integer, integer) e495daa738a89a30246f3c51cc772c165f35ddaf9714a3291274a3c55a6d1f0b
+-- based-on: custom.read_records_matching(uuid, uuid, jsonb, boolean, integer, integer) 575636c1b65e4546ab0a856121cf98f19b1ed6f6aa99d4b12c2d3ef15bf3df5a
+-- based-on: custom.read_records(uuid, uuid, boolean, integer, integer) 6daaabadd53c8f8bfbf6bc14bdf59158575ea00b06d50b0ce36c162d6db4386f
+-- based-on: custom.record_card(uuid, uuid, uuid) 3f8b672a6649db216f3cf78042e45ab3d509a60e140d05803846ce8471c381a5
+-- based-on: custom.record_filter_sql(uuid, uuid, jsonb) 40ca156112d4b239e1f42165f90d942f98c62940cdb2f632ff59f445e84c2a74
+
 set local lock_timeout = '30s';
 
 CREATE OR REPLACE FUNCTION custom.read_mask(p_organization_id uuid, p_record_id uuid, p_action text DEFAULT 'read'::text)
@@ -795,4 +804,6 @@ begin
   end if;
 end;
 $function$;
+delete from platform.client_callable_door
+ where schema_name = 'custom' and function_name = 'read_mask_for';
 drop function if exists custom.read_mask_for(uuid, uuid, uuid, public.permission_level, text);

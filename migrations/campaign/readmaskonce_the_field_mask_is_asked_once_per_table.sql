@@ -117,6 +117,17 @@ begin
   return v_out;
 end;
 $function$;
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
+   non_client_lane, signed_in_callers, anonymous_callers)
+values
+  ('custom', 'read_mask_for',
+   'p_user_id uuid, p_organization_id uuid, p_table_id uuid, p_level permission_level, p_action text',
+   array['uuid'::regtype, 'uuid'::regtype, 'uuid'::regtype, 'public.permission_level'::regtype, 'text'::regtype]::oid[],
+   'p_user_id is the reader the CALLING door already resolved (auth.uid(), or the viewer custom.record_card was handed); p_organization_id and p_table_id are the organization and Table that door already walled and admitted; p_level is the rung that door already worked out. It decides nothing about access: it answers which Fields of that Table that reader may see at that rung, exactly as iam.visible_field_ids does, and every NULL (no reader, no level) narrows to what iam.may_touch_field grants on its own.',
+   'readmaskonce_the_field_mask_is_asked_once_per_table.sql',
+   'server_only: called only inside the record store''s own definer doors (custom.read_mask, custom.read_records, custom.read_records_matching, custom.read_records_archived, custom.record_card, custom.enrich_cells, custom.enrich_due) and the two invoker helpers they run (custom.record_filter_sql, custom.agg_fields_readable_assert); a client reaches the mask only through those doors, so it needs no grant of its own.',
+   false, false);
 -- No client EXECUTE: a new SECURITY DEFINER function is born with PUBLIC's default EXECUTE cleared
 -- (ddl_guard definer_default_public_execute_cleared_at_birth) and nothing here grants it. Only the
 -- store's own definer doors call it.
