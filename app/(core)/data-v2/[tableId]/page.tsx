@@ -11,8 +11,7 @@
 import { use, useCallback, useMemo, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import * as recordsUiPackage from "@ai-matrx/records-ui";
-import { RecordsMount, TablePage, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { RecordsMount, TablePage, WhereItLives, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { useTable } from "@ai-matrx/records/react";
 import type { AgentBuildAsk, OpenRecordsAsk, PageView } from "@ai-matrx/records-ui";
 import type { RecordFilter } from "@ai-matrx/records";
@@ -25,7 +24,6 @@ import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScop
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import type { HeaderAction } from "@/features/shell/components/header/variants/types";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { getOrganizationMembers } from "@/features/organizations/service";
@@ -33,7 +31,6 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { createClient } from "@/utils/supabase/client";
 import { useSharedTable } from "@/features/unified-data/hub/useSharedTable";
 import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
-import { WhereItLives } from "@/features/unified-data/where-it-lives/WhereItLives";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
@@ -47,17 +44,6 @@ import {
   ROW_CHANGE_AGENT_LABEL,
   useRowChangeAgentOffer,
 } from "@/features/unified-data/row-change-agent/RowChangeAgentLink";
-
-/**
- * 🚨 WHETHER THE INSTALLED `@ai-matrx/records-ui` DRAWS THE TABLE'S ONE-ROW FACE (lane
- * DATA-V2-FACE: `TablePage`'s `leading` and `menuExtras`, the table menu, the designated
- * opening). Until that release is installed the page keeps the where-it-lives row it had, so the
- * organization stays named; once it is, the row is gone and the chip rides the table's own row.
- * SWAP ON INSTALL: delete this constant and `standInHeaderActions` below, and pass
- * `menuExtras` by name inside `<TablePage>` (the organization rides the page header, so
- * `leading` is not passed — lane DATA-V2-FACE-2).
- */
-const FACE_AWARE = typeof (recordsUiPackage as Record<string, unknown>)["tableOpening"] === "function";
 
 /**
  * THE PAGE'S TITLE IS THE TABLE'S OWN NAME (owner, 2026-09-24: a table he knows must look like
@@ -461,8 +447,8 @@ export default function UnifiedDataTableRoute({
   const whereItLives =
     object.state === "found" ? (
       <span className="inline-flex min-w-0 items-center gap-1.5" data-table-lives-in="">
+        {/* records-ui's own chip (0.85.6), inside the page's RecordsMount (TableTitle is). */}
         <WhereItLives
-          dataSource={dataSource}
           tableId={tableId}
           knownOrganizationName={knownOrganizationName}
           onMoved={() => object.retry()}
@@ -474,38 +460,11 @@ export default function UnifiedDataTableRoute({
       </span>
     ) : null;
   /**
-   * STAND-IN until the installed records-ui carries the table menu's `menuExtras` (see FACE_AWARE):
-   * the run-an-agent offer rides the header's own action slot on a wide screen, so there is no row of
-   * its own above the table. Absent unless the store offers it; a refusal says why.
+   * THE TABLE MENU'S EXTRA ITEM: "When a row changes, run an agent" — absent unless the store
+   * offers it; a refusal says why. The organization rides the page header beside the name, so the
+   * table's own row takes no `leading` (lane DATA-V2-FACE-2).
    */
-  const isMobile = useIsMobile();
-  const standInHeaderActions: HeaderAction[] =
-    // On a phone the name keeps the header's width; the offer returns there in the table menu.
-    FACE_AWARE || campaign.state !== "on" || isMobile
-      ? []
-      : rowChangeOffer.state === "offered"
-        ? [
-            {
-              icon: "Zap",
-              label: ROW_CHANGE_AGENT_LABEL,
-              onPress: () => router.push((rowChangeOffer as { href: string }).href),
-            },
-          ]
-        : rowChangeOffer.state === "refused"
-          ? [
-              {
-                icon: "Zap",
-                label: ROW_CHANGE_AGENT_LABEL,
-                onPress: () =>
-                  toast.error("Running an agent when a row changes is not available", {
-                    description: (rowChangeOffer as { why: string }).why,
-                  }),
-              },
-            ]
-          : [];
-  /** The organization rides the page header beside the name, so the table's own row takes no `leading`. */
-  const facePorts = {
-    menuExtras:
+  const menuExtras =
       rowChangeOffer.state === "offered"
         ? [
             {
@@ -525,8 +484,7 @@ export default function UnifiedDataTableRoute({
                   }),
               },
             ]
-          : [],
-  };
+          : [];
 
   return (
     <>
@@ -636,7 +594,7 @@ export default function UnifiedDataTableRoute({
                 somebody else's table must never be left to work out why their
                 own organization's things are not around it. One row, the
                 organization's name, and what they hold. */}
-            <TableTitle tableId={tableId} context={whereItLives} actions={standInHeaderActions} />
+            <TableTitle tableId={tableId} context={whereItLives} />
             {/* SIDE BY SIDE IS A FACT, NOT A BANNER (owner, 2026-09-24): no notice that this table
                 also lives in the older system, and no "shared with you" paragraph — the table's
                 row names its organization and the level it was shared at. */}
@@ -671,7 +629,7 @@ export default function UnifiedDataTableRoute({
               onViewChanged={onViewChanged}
               activeRail={activeRail}
               activeItemId={activeItemId}
-              {...(FACE_AWARE ? facePorts : {})}
+              menuExtras={menuExtras}
             />
           </RecordsMount>
         )}
