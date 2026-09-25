@@ -76,6 +76,15 @@ jest.mock("@/components/rich-content/standard/NestedRichContent", () => {
   return { __esModule: true, NestedRichContent: ({ source }: { source: string }) => <StandardBlocks source={source} />, default: () => null };
 });
 
+jest.mock("@/components/markdown-core/syntax/elements/people-resolver", () => ({
+  resolvePerson: (userId: string) =>
+    Promise.resolve(
+      userId === "9f1c0000-0000-4000-8000-000000000001"
+        ? { userId, name: "Dana Ruiz", email: "dana@kilnworks.example", avatarUrl: null, role: "member" }
+        : null,
+    ),
+}));
+
 import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { RichContentInline } from "@/components/rich-content/RichContentInline";
 import { StandardBlocks } from "@/components/rich-content/standard/StandardBlocks";
@@ -528,5 +537,23 @@ describe("footnotes are numbered document-wide (verify-RC-B8 round 2)", () => {
         ["user-content-fn-glaze", 2],
       ]),
     );
+  });
+});
+
+
+describe("@-mentions (RC-B11's stored form) render as chips that open", () => {
+  it("a visible person is a chip, an unknown one is plain text, a date a chip, a record the wikilink", async () => {
+    const scope = await render(
+      full(
+        "Ask @[Dana](user:9f1c0000-0000-4000-8000-000000000001) and @[Former staff](user:9f1c0000-0000-4000-8000-000000000009) by @[Tue, Sep 30](date:2026-09-30) about @[Kiln schedule](note:11111111-1111-4111-8111-111111111111).",
+      ),
+    );
+    const person = scope.querySelector('a[data-mention="person"]') as HTMLAnchorElement;
+    expect(person.getAttribute("href")).toBe("mailto:dana@kilnworks.example");
+    expect(text(person)).toBe("Dana Ruiz");
+    expect(text(scope.querySelector('[data-mention="unresolved"]')!)).toBe("@Former staff");
+    expect(scope.querySelector('time[data-mention="date"]')?.getAttribute("datetime")).toBe("2026-09-30");
+    expect(scope.querySelector("[data-wikilink]")).not.toBeNull();
+    expect(text(scope)).not.toMatch(/\]\((user|date|note):/);
   });
 });

@@ -26,6 +26,7 @@ import { isTocLine } from "@ai-matrx/print/directives";
 import { extractFrontmatter } from "./frontmatter";
 import { captionKey, type DocumentNumbering } from "./document-numbering";
 import { transformContainers } from "./containers";
+import { transformMentions } from "./mentions";
 import { transformInline, type InlineContext, type XrefTarget } from "./inline-syntax";
 import { el, rawOf, text, toText, walkParents, type MNode, type SyntaxFile } from "./mdast-helpers";
 
@@ -428,6 +429,7 @@ export default function remarkMatrxSyntax(options: RemarkMatrxSyntaxOptions = {}
     resolveMathRefs(tree, xrefs);
     const { defined, referenced } = footnoteIds(tree);
     const ctx: InlineContext = { xrefs, footnotes: defined };
+    transformMentions(tree);
     transformInline(tree, ctx);
     unwrapStandaloneEmbeds(tree);
     applyAbbreviations(tree, abbrs);

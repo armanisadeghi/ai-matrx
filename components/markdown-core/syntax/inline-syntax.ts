@@ -179,7 +179,7 @@ export function scanInline(value: string, ctx: InlineContext): MNode[] | null {
 
 const SKIP_TYPES = new Set(["link", "linkReference", "inlineCode", "code", "math", "inlineMath", "html", "matrxMark", "matrxSup", "matrxSub"]);
 /** Elements whose text is already final (a wikilink's name, an unresolved `@fig:x`). */
-const SKIP_ELEMENTS = new Set(["matrx-wikilink", "matrx-embed", "matrx-xref", "a", "kbd", "code", "matrx-csv"]);
+const SKIP_ELEMENTS = new Set(["matrx-wikilink", "matrx-embed", "matrx-xref", "matrx-mention", "a", "kbd", "code", "matrx-csv"]);
 
 /** Run the inline scanner over every eligible text node in the tree. */
 export function transformInline(node: MNode, ctx: InlineContext): void {
