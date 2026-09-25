@@ -8,7 +8,8 @@
  * Consumed by the multi-tab Knowledge search experience in
  * `features/rag/components/search/`.
  */
-import { buildHeaders, postJson, resolveBaseUrl } from "@/lib/python-client";
+import { buildHeaders, getJson, postJson, resolveBaseUrl } from "@/lib/python-client";
+import { adminDoorOpen, adminDoorPath } from "@/lib/api/adminDoor";
 import { apiPost } from "@/lib/api/typed-client";
 import type { components } from "@/types/python-generated/api-types";
 
@@ -60,8 +61,18 @@ export async function ragInventory(
   // and would drop the historical `{}` payload this call has always sent.
   // Response type is still contract-derived (InventoryResponse alias above).
   const qs = opts.adminBypassAcl ? "?admin_bypass_acl=true" : "";
+  // THE ADMIN DOOR (lib/api/adminDoor.ts): inside the admin section the
+  // inventory — and the ACL bypass, which lives ONLY there — is the super-admin
+  // GET twin. On a user page the bypass flag is meaningless and never sent.
+  if (adminDoorOpen()) {
+    const { data } = await getJson<InventoryResponse>(
+      `/admin/rag/search-lab/inventory${qs}`,
+      { signal: opts.signal },
+    );
+    return data;
+  }
   const { data } = await postJson<InventoryResponse, Record<string, never>>(
-    `/rag/search-lab/inventory${qs}`,
+    "/rag/search-lab/inventory",
     {},
     { signal: opts.signal },
   );
@@ -89,6 +100,14 @@ export async function ragDiagnose(
   body: DiagnoseRequest,
   opts: { signal?: AbortSignal } = {},
 ): Promise<DiagnoseResponse> {
+  if (adminDoorOpen()) {
+    const { data } = await postJson<DiagnoseResponse, DiagnoseRequest>(
+      "/admin/rag/search-lab/diagnose",
+      body,
+      { signal: opts.signal },
+    );
+    return data;
+  }
   const { data } = await apiPost("/rag/search-lab/diagnose", body, {
     signal: opts.signal,
   });
@@ -137,7 +156,7 @@ export async function* ragDiagnoseStream(
   body: DiagnoseRequest,
   opts: { signal?: AbortSignal } = {},
 ): AsyncGenerator<DiagnoseEvent, void, void> {
-  const url = `${resolveBaseUrl()}/rag/search-lab/diagnose/stream`;
+  const url = `${resolveBaseUrl()}${adminDoorPath("/rag/search-lab/diagnose/stream")}`;
   const { headers } = await buildHeaders({ signal: opts.signal }, true);
   const res = await fetch(url, {
     method: "POST",

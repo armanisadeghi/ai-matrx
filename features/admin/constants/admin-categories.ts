@@ -296,6 +296,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/knowledge/kg-inspector",
         isNew: true,
       },
+      {
+        title: "Search Lab",
+        description:
+          "The knowledge search lab with admin reach: every store's inventory, full pipeline diagnosis, and ACL bypass.",
+        iconName: "Search",
+        link: "/administration/knowledge/search-lab",
+        isNew: true,
+      },
     ],
   },
   {

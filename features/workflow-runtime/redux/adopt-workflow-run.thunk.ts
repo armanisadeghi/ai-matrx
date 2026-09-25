@@ -30,6 +30,8 @@
  * durable outcome is the content truth (LIVE_RUN_RETENTION doctrine).
  */
 
+// GET /runs/{id} reads the super-admin twin inside the admin section (lib/api/adminDoor.ts).
+import { adminDoorPath } from "@/lib/api/adminDoor";
 import type { AppThunk } from "@/lib/redux/store";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { selectAccessToken } from "@/lib/redux/selectors/userSelectors";
@@ -384,7 +386,7 @@ export function adoptWorkflowRun(
           // Transport shutdown and final hydration are intentionally
           // independent: the event wire can close immediately while this
           // bounded read completes against durable state.
-          void fetchJson<RunRow>(`/runs/${runId}`)
+          void fetchJson<RunRow>(adminDoorPath(`/runs/${runId}`))
             .then((row) => {
               if (!tree.stopped) dispatch(seedRunRow({ runId, row }));
             })
@@ -533,7 +535,7 @@ export function adoptWorkflowRun(
 
       void (async () => {
         try {
-          const row = await fetchJson<RunRow>(`/runs/${runId}`);
+          const row = await fetchJson<RunRow>(adminDoorPath(`/runs/${runId}`));
           if (stopped) return;
 
           const cursor = await replayDurableLog(runId, depth);
@@ -592,7 +594,7 @@ export function adoptWorkflowRun(
             if (stopped || transportMode !== "polling") return;
             void (async () => {
               try {
-                const fresh = await fetchJson<RunRow>(`/runs/${runId}`);
+                const fresh = await fetchJson<RunRow>(adminDoorPath(`/runs/${runId}`));
                 if (!stopped)
                   dispatch(refreshHeartbeatTails({ runId, row: fresh }));
               } catch {

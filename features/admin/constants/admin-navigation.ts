@@ -336,6 +336,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/knowledge/kg-cost"),
           destination("/administration/knowledge/batch"),
           destination("/administration/knowledge/kg-inspector"),
+          destination("/administration/knowledge/search-lab"),
         ],
       },
       {

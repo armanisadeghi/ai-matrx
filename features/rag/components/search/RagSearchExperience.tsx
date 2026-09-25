@@ -97,7 +97,8 @@ import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { AnimatedKpiCard } from "@/features/rag/components/library/AnimatedKpiCard";
 import { ActiveContextPanel } from "@/features/scopes/components/active-context/ActiveContextPanel";
 import { ActiveScopeChips } from "@/features/scopes/components/active-context/ActiveScopeChips";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
@@ -187,7 +188,12 @@ function useScopeControls(initialStoreId: string | null = null) {
   // restores its data-store scope (and the auto-run uses it) without a race.
   const [storeId, setStoreId] = useState<string | null>(initialStoreId);
   const [kindFilter, setKindFilter] = useState<SourceKindFilter>("all");
-  const [adminBypass, setAdminBypass] = useState(false);
+  // ADMIN POWER: the ACL bypass exists only inside the admin section
+  // (/administration/knowledge/search-lab — utils/supabase/adminLane.ts). On a
+  // user page the control is absent and the flag is never sent.
+  const canBypassAcl = useAppSelector(selectIsSuperAdmin);
+  const [adminBypassChoice, setAdminBypass] = useState(false);
+  const adminBypass = canBypassAcl && adminBypassChoice;
   const [rerank, setRerank] = useState(true);
   const [multiQuery, setMultiQuery] = useState(1);
   const [useHyde, setUseHyde] = useState(false);
@@ -205,6 +211,7 @@ function useScopeControls(initialStoreId: string | null = null) {
     kindFilter,
     setKindFilter,
     sourceKinds,
+    canBypassAcl,
     adminBypass,
     setAdminBypass,
     rerank,
@@ -564,13 +571,15 @@ function ScopeSidebar({
             className="w-14 px-1.5 py-1 text-base rounded border bg-background"
           />
         </label>
-        <label className="flex items-center gap-2 text-xs cursor-pointer text-amber-700 dark:text-amber-400">
-          <Checkbox
-            checked={scope.adminBypass}
-            onCheckedChange={(v) => scope.setAdminBypass(v === true)}
-          />
-          <span>Admin: bypass ACL</span>
-        </label>
+        {scope.canBypassAcl && (
+          <label className="flex items-center gap-2 text-xs cursor-pointer text-amber-700 dark:text-amber-400">
+            <Checkbox
+              checked={scope.adminBypass}
+              onCheckedChange={(v) => scope.setAdminBypass(v === true)}
+            />
+            <span>Admin: bypass ACL</span>
+          </label>
+        )}
       </div>
     </aside>
   );

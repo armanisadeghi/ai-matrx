@@ -10,6 +10,8 @@
  * pattern `features/rag/api/search-lab.ts` uses for `/knowledge/search-lab/inventory`.
  */
 import { apiDelete, apiGet, apiPatch, apiPost, buildPath } from "@/lib/api/typed-client";
+import { adminDoorOpen } from "@/lib/api/adminDoor";
+import { getJson } from "@/lib/python-client";
 import { postJson } from "@/lib/python-client";
 
 import type {
@@ -36,7 +38,16 @@ import type {
   UnitToken,
 } from "./types";
 
+// Inside the admin section these three reads use the super-admin twins under
+// `/admin` (every enrollment/review on the platform, same shapes); on a user
+// page they read the caller's own (lib/api/adminDoor.ts).
+
 export async function listEnrollments(status?: string): Promise<Enrollment[]> {
+  if (adminDoorOpen()) {
+    const qs = status ? `?status=${encodeURIComponent(status)}` : "";
+    const { data } = await getJson<Enrollment[]>(`/admin/hindsight/enrollments${qs}`);
+    return data;
+  }
   const { data } = await apiGet("/hindsight/enrollments", {
     query: status ? { status } : undefined,
   });
@@ -49,6 +60,12 @@ export async function enroll(body: EnrollRequest): Promise<Enrollment> {
 }
 
 export async function getEnrollment(id: string): Promise<EnrollmentDetail> {
+  if (adminDoorOpen()) {
+    const { data } = await getJson<EnrollmentDetail>(
+      `/admin/hindsight/enrollments/${encodeURIComponent(id)}`,
+    );
+    return data;
+  }
   const { data } = await apiGet(
     buildPath("/hindsight/enrollments/{enrollment_id}", { enrollment_id: id }),
   );
@@ -112,6 +129,12 @@ export async function getPendingExamples(id: string): Promise<PendingExamples> {
 }
 
 export async function getReview(id: string): Promise<ReviewDetail> {
+  if (adminDoorOpen()) {
+    const { data } = await getJson<ReviewDetail>(
+      `/admin/hindsight/reviews/${encodeURIComponent(id)}`,
+    );
+    return data;
+  }
   const { data } = await apiGet(
     buildPath("/hindsight/reviews/{review_id}", { review_id: id }),
   );

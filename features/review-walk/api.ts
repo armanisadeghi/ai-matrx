@@ -11,6 +11,8 @@
  */
 import { BackendApiError } from "@/lib/api/errors";
 import { apiGet, apiPost } from "@/lib/api/typed-client";
+import { adminDoorOpen } from "@/lib/api/adminDoor";
+import { getJson } from "@/lib/python-client";
 
 import type {
   DescendOut,
@@ -33,6 +35,13 @@ export async function descend(
   unitKind: WalkUnitKind,
   unitId: string,
 ): Promise<DescendOut> {
+  // THE ADMIN DOOR (lib/api/adminDoor.ts): inside the admin section the walk
+  // descends into anyone's conversation or run; on a user page, only your own.
+  if (adminDoorOpen()) {
+    const qs = new URLSearchParams({ unit_kind: unitKind, unit_id: unitId });
+    const { data } = await getJson<DescendOut>(`/admin/review/descend?${qs}`);
+    return data;
+  }
   const { data } = await apiGet("/review/descend", {
     query: { unit_kind: unitKind, unit_id: unitId },
   });
