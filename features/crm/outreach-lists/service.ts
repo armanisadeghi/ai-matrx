@@ -628,11 +628,15 @@ export async function releaseClaim(args: {
   memberId: string;
   userId: string;
 }): Promise<void> {
-  const { error } = await crm()
-    .from("outreach_list_member")
-    .update({ claimed_by: null, claimed_until: null })
-    .eq("id", args.memberId)
-    .eq("claimed_by", args.userId);
+  const { error } = await tryWriteOne(
+    crm()
+      .from("outreach_list_member")
+      .update({ claimed_by: null, claimed_until: null })
+      .eq("id", args.memberId)
+      .eq("claimed_by", args.userId)
+      .select("id"),
+    { action: "update", noun: "list member", compareAndSet: true },
+  );
   if (error) throw pgError(error);
 }
 
@@ -641,17 +645,21 @@ export async function skipMember(args: {
   memberId: string;
   userId: string;
 }): Promise<void> {
-  const { error } = await crm()
-    .from("outreach_list_member")
-    .update({
-      claimed_by: null,
-      claimed_until: null,
-      next_attempt_at: new Date(
-        Date.now() + SKIP_DEFER_MINUTES * 60_000,
-      ).toISOString(),
-    })
-    .eq("id", args.memberId)
-    .eq("claimed_by", args.userId);
+  const { error } = await tryWriteOne(
+    crm()
+      .from("outreach_list_member")
+      .update({
+        claimed_by: null,
+        claimed_until: null,
+        next_attempt_at: new Date(
+          Date.now() + SKIP_DEFER_MINUTES * 60_000,
+        ).toISOString(),
+      })
+      .eq("id", args.memberId)
+      .eq("claimed_by", args.userId)
+      .select("id"),
+    { action: "update", noun: "list member", compareAndSet: true },
+  );
   if (error) throw pgError(error);
 }
 
@@ -713,16 +721,20 @@ export async function markMemberSuppressed(args: {
   userId: string;
   reason: string;
 }): Promise<void> {
-  const { error } = await crm()
-    .from("outreach_list_member")
-    .update({
-      status: "suppressed",
-      notes: args.reason,
-      claimed_by: null,
-      claimed_until: null,
-    })
-    .eq("id", args.memberId)
-    .eq("claimed_by", args.userId);
+  const { error } = await tryWriteOne(
+    crm()
+      .from("outreach_list_member")
+      .update({
+        status: "suppressed",
+        notes: args.reason,
+        claimed_by: null,
+        claimed_until: null,
+      })
+      .eq("id", args.memberId)
+      .eq("claimed_by", args.userId)
+      .select("id"),
+    { action: "update", noun: "list member", compareAndSet: true },
+  );
   if (error) throw pgError(error);
 }
 
