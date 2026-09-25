@@ -32,6 +32,9 @@ export function GmailReadReview() {
   const gmailReading = capabilities.data?.find(
     (capability) => capability.key === "gmail_read",
   );
+  const gmailChanges = capabilities.data?.find(
+    (capability) => capability.key === "gmail_modify",
+  );
   // The shared query is invalidated after consent succeeds. Keep the review
   // screen subscribed so a newly connected mailbox is usable without reload.
   const accounts = (inventory.data?.connections ?? []).filter(
@@ -39,7 +42,8 @@ export function GmailReadReview() {
       row.owner_type === "user" &&
       row.owner_user_id === userId &&
       row.health === "connected" &&
-      row.scopes.includes(GOOGLE_SCOPE.gmailReadonly),
+      (row.scopes.includes(GOOGLE_SCOPE.gmailReadonly) ||
+        row.scopes.includes(GOOGLE_SCOPE.gmailModify)),
   );
   const [selectedConnectionId, setSelectedConnectionId] = useState("");
   const connectionId = accounts.some((row) => row.id === selectedConnectionId)
@@ -110,7 +114,7 @@ export function GmailReadReview() {
       (action === "add_label" || action === "remove_label") &&
       !requestedLabelId
     ) {
-      setError("Enter a Gmail label ID first.");
+      setError("Choose a Gmail label first.");
       return;
     }
     setBusy(true);
@@ -225,6 +229,18 @@ export function GmailReadReview() {
           ) : (
             "Gmail reading availability could not be verified. Try again shortly."
           )}
+          {gmailChanges?.eligible ? (
+            <>
+              {" "}
+              <button
+                type="button"
+                className="underline"
+                onClick={() => openConsent({ initialProductKeys: ["gmail_modify"] })}
+              >
+                Connect Gmail changes
+              </button>
+            </>
+          ) : null}
         </p>
       ) : (
         <form
@@ -374,6 +390,11 @@ export function GmailReadReview() {
                     {label}
                   </Button>
                 ))}
+                {knownLabelIds && !knownLabelIds.includes("INBOX") ? (
+                  <Button type="button" variant="outline" disabled={busy} onClick={() => void onModify("restore_inbox")}>
+                    Restore to inbox
+                  </Button>
+                ) : null}
               </div>
               <div className="mt-4">
                 {labels === null ? (
@@ -417,9 +438,14 @@ export function GmailReadReview() {
               </div>
             </section>
           ) : (
-            <p className="mt-4 border-t pt-4 text-sm text-muted-foreground">
-              This account has Gmail reading access. Message changes require a separate Gmail change grant.
-            </p>
+            <div className="mt-4 border-t pt-4 text-sm text-muted-foreground">
+              <p>This account has Gmail reading access. Message changes require a separate Gmail change grant.</p>
+              {gmailChanges?.eligible ? (
+                <Button type="button" variant="outline" className="mt-2" onClick={() => openConsent({ initialProductKeys: ["gmail_modify"] })}>
+                  Enable Gmail changes
+                </Button>
+              ) : null}
+            </div>
           )}
         </article>
       ) : null}

@@ -62,7 +62,7 @@ beforeEach(() => {
   mockCapabilities.mockReset();
   mockOpenConsent.mockReset();
   mockCapabilities.mockReturnValue({
-    data: [{ key: "gmail_read", eligible: true }],
+    data: [{ key: "gmail_read", eligible: true }, { key: "gmail_modify", eligible: true }],
     isLoading: false,
     isError: false,
   });
@@ -142,6 +142,41 @@ it("shows a newly authorized personal mailbox after the shared inventory refresh
   expect(container.textContent).not.toContain("No personal Google account");
   expect(container.textContent).toContain("reviewer@example.com");
   expect(container.querySelectorAll("select option")).toHaveLength(1);
+});
+
+it("offers a separate Gmail changes consent for a personal read-only account", async () => {
+  await act(async () => root.render(<GmailReadReview />));
+  const input = container.querySelector<HTMLInputElement>("#gmail-read-query")!;
+  mockSearch.mockResolvedValue({
+    messages: [{ id: "message-1", subject: "Note", from_address: "sender@example.com", date: "Today", snippet: "Preview" }],
+    has_more: false,
+    access_mode: "on_demand_read_only",
+  });
+  mockRead.mockResolvedValue({
+    id: "message-1", label_ids: ["INBOX"], subject: "Note", from_address: "sender@example.com", to_address: "reviewer@example.com", date: "Today", snippet: "Preview", text_body: "Body", truncated: false, access_mode: "on_demand_read_only",
+  });
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "in:inbox");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await act(async () => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+  await act(async () => container.querySelector<HTMLButtonElement>("section[aria-label='Gmail search results'] button")!.click());
+  const enable = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find((button) => button.textContent?.trim() === "Enable Gmail changes");
+  expect(enable).toBeDefined();
+  await act(async () => enable!.click());
+  expect(mockOpenConsent).toHaveBeenCalledWith({ initialProductKeys: ["gmail_modify"] });
+  expect(mockModify).not.toHaveBeenCalled();
+});
+
+it("lists a first-time personal modify-only connection without requiring a second read scope", async () => {
+  mockInventory.mockReturnValue({
+    data: { connections: [{ ...owned, scopes: [GOOGLE_SCOPE.gmailModify] }], resources: [] },
+    isLoading: false,
+    isError: false,
+  });
+  await act(async () => root.render(<GmailReadReview />));
+  expect(container.textContent).toContain("reviewer@example.com");
+  expect(container.textContent).not.toContain("No personal Google account");
 });
 
 afterEach(async () => {

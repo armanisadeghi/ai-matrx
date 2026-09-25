@@ -65,3 +65,40 @@ export async function confirmGmailReadDisclosure(
     cancelLabel: "Back",
   });
 }
+
+/** A separate affirmative boundary for Google's broader Gmail modify grant. */
+export async function confirmGmailChangesDisclosure(
+  request: ConsentRequest,
+): Promise<boolean> {
+  if (!request.capabilityKeys.includes("gmail_modify")) return true;
+
+  return confirm({
+    title: "Allow AI Matrx to change Gmail messages?",
+    description: (
+      <div className="space-y-3 text-left">
+        <p>
+          Google&apos;s Gmail change permission can technically read, compose,
+          send, and change mail. AI Matrx will use this grant here only when you
+          choose an action on a message you opened: archive or restore it, mark
+          it read or unread, star or unstar it, or add or remove a label.
+        </p>
+        <p>
+          These actions write directly to the Google account you choose. AI
+          Matrx does not automatically change messages and does not offer
+          Gmail Snooze. Sending email remains a separate reviewed product.
+        </p>
+        <p>
+          Disconnecting the account stops future Gmail access. It does not
+          reverse changes you already made in Gmail.
+        </p>
+        <p>
+          <Link href="/privacy-policy" className="font-medium text-primary underline underline-offset-2">
+            Read the Privacy Policy
+          </Link>
+        </p>
+      </div>
+    ),
+    confirmLabel: "Allow Gmail changes",
+    cancelLabel: "Back",
+  });
+}

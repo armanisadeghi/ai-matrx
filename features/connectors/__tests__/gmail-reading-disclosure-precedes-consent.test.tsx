@@ -70,6 +70,7 @@ jest.mock("../google-adapter", () => ({
 import { ConnectorConsentBody } from "../ConnectorConsentDialog";
 import type { ConnectorCapabilityRollout } from "../health";
 import { GOOGLE_CONNECTOR_PROVIDER } from "../provider-config";
+import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 
 const provider = GOOGLE_CONNECTOR_PROVIDER;
 const LIVE: ConnectorCapabilityRollout[] = [
@@ -183,5 +184,37 @@ describe("Gmail reading disclosure", () => {
     expect(run).toHaveBeenCalledTimes(1);
     expect(run.mock.calls[0]?.[0].capabilityKeys).toContain("gmail_send");
     expect(run.mock.calls[0]?.[0].capabilityKeys).not.toContain("gmail_read");
+  });
+});
+
+describe("Gmail changes disclosure", () => {
+  it("explains Google's broader grant and blocks OAuth when declined", async () => {
+    confirmDisclosure.mockResolvedValue(false);
+    mount("gmail_modify");
+    await pressConnect();
+    expect(run).not.toHaveBeenCalled();
+    const options = confirmDisclosure.mock.calls[0]?.[0] as {
+      title: string;
+      description: React.ReactNode;
+      confirmLabel: string;
+    };
+    expect(options.title).toBe("Allow AI Matrx to change Gmail messages?");
+    expect(options.confirmLabel).toBe("Allow Gmail changes");
+    const disclosure = renderToStaticMarkup(<>{options.description}</>);
+    expect(disclosure).toContain("read, compose");
+    expect(disclosure).toContain("send, and change mail");
+    expect(disclosure).toContain("does not offer");
+    expect(disclosure).toContain("Gmail Snooze");
+  });
+
+  it("requests the separate modify capability only after affirmative consent", async () => {
+    confirmDisclosure.mockResolvedValue(true);
+    mount("gmail_modify");
+    await pressConnect();
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(run.mock.calls[0]?.[0].capabilityKeys).toContain("gmail_modify");
+    expect(run.mock.calls[0]?.[0].capabilityKeys).not.toContain("gmail_read");
+    expect(run.mock.calls[0]?.[0].scopes).not.toContain(GOOGLE_SCOPE.gmailReadonly);
+    expect(run.mock.calls[0]?.[0].scopes).toContain(GOOGLE_SCOPE.gmailModify);
   });
 });

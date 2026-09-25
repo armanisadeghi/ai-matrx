@@ -178,6 +178,8 @@ const GOOGLE_SCOPE_LANGUAGE: Record<string, string> = {
     "Send an email as you, after you have reviewed it. No inbox access",
   [GOOGLE_SCOPE.gmailReadonly]:
     "Search and read messages in the Google account you choose. No changes or sends",
+  [GOOGLE_SCOPE.gmailModify]:
+    "Google permits reading, composing, sending, and changing Gmail. AI Matrx uses this grant only for changes you choose on an opened message",
   [GOOGLE_SCOPE.webmastersReadonly]:
     "Read Search Console performance for sites you own",
   [GOOGLE_SCOPE.analyticsReadonly]: "Read your Google Analytics reports",
@@ -310,6 +312,23 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       firstAction: {
         kind: "route",
         label: "Search your Gmail",
+        href: "/gmail-read-review",
+      },
+    },
+    {
+      key: "gmail_modify",
+      name: "Gmail changes",
+      promise:
+        "Change an opened message only when you choose Archive, Restore to inbox, Read, Unread, Star, or a label action. No automatic changes or Gmail Snooze.",
+      group: WORKSPACE_GROUP,
+      icon: Mail,
+      capabilityKeys: ["gmail_modify"],
+      scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.gmailModify],
+      attachableResourceTypes: [],
+      stopsOnRevoke: "changes to messages in this Gmail account",
+      firstAction: {
+        kind: "route",
+        label: "Open Gmail",
         href: "/gmail-read-review",
       },
     },
