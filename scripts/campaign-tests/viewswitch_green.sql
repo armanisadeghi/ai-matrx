@@ -175,7 +175,8 @@ begin
   if v_n <> 1 or not v_row then
     raise exception 'V8 RED: % default views after designating the board (board row default %)', v_n, v_row;
   end if;
-  perform set_config('request.jwt.claims', c_member, true);
+  -- VIEW-LOOK (2026-09-25): a change onto an existing view is "Save to view" — editor on the table
+  -- (viewlook_green L2) — so the owner saves it; the member's own look is custom.view_look_set.
   perform custom.view_declare(v_org, v_calls, jsonb_build_object('view_id', v_view,
     'definition', jsonb_build_object('layout', 'grid')));
   select definition into v_def from platform.saved_view where id = v_view;

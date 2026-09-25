@@ -192,14 +192,15 @@ begin
   -- (custom.view_look_set) until someone who may EDIT the table saves it onto the view. So a
   -- change to a view that already exists needs editor on the table — or the view is the caller's
   -- own and is not the table's default. Saving a NEW view is unchanged (viewer).
-  if v_id is not null
-     and not custom.query_is_store_owner()
-     and custom.query_principal() is not null
-     and not (v_row.created_by is not distinct from custom.query_principal() and not v_was_default)
-     and not custom.has_visibility(custom.query_principal(), 'record', p_table_id, 'editor'::public.permission_level) then
-    raise exception 'Only someone who can edit this table saves a change onto its view "%" for everyone, so your change was not saved onto it.', v_row.name
-      using errcode = '42501',
-            hint = 'Your own look at this view is kept for you alone (custom.view_look_set) and "Reset to view" returns to it; someone who can edit the table presses "Save to view". Nothing was written.';
+  if v_id is not null then
+    if not custom.query_is_store_owner()
+       and custom.query_principal() is not null
+       and not (v_row.created_by is not distinct from custom.query_principal() and not v_was_default)
+       and not custom.has_visibility(custom.query_principal(), 'record', p_table_id, 'editor'::public.permission_level) then
+      raise exception 'Only someone who can edit this table saves a change onto its view "%" for everyone, so your change was not saved onto it.', v_row.name
+        using errcode = '42501',
+              hint = 'Your own look at this view is kept for you alone (custom.view_look_set) and "Reset to view" returns to it; someone who can edit the table presses "Save to view". Nothing was written.';
+    end if;
   end if;
 
   -- `filters` is the FLAT map the digests and the notifier read (custom.agg_view_admits); a Rule
