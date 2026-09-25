@@ -379,6 +379,11 @@ describe("VaultLoginExportDialog", () => {
       "Uses Firefox's ordinary-login URL, username, and password columns. The preview lists any title or notes omissions before download.",
       "firefox_csv_v1",
     ],
+    [
+      "RoboForm CSV",
+      "Uses RoboForm's documented ordinary-login template for name, URL, login, password, and note. Folder placement stays blank.",
+      "roboform_csv_v1",
+    ],
   ])("binds %s to a fresh preview", async (label, detail, profile) => {
     await render();
     const checkbox = document.querySelector('[role="checkbox"]');

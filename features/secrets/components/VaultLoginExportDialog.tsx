@@ -77,6 +77,12 @@ const CSV_PROFILES = [
     detail:
       "Uses Firefox's ordinary-login URL, username, and password columns. The preview lists any title or notes omissions before download.",
   },
+  {
+    value: "roboform_csv_v1",
+    label: "RoboForm CSV",
+    detail:
+      "Uses RoboForm's documented ordinary-login template for name, URL, login, password, and note. Folder placement stays blank.",
+  },
 ] as const;
 type VaultLoginCsvProfile = (typeof CSV_PROFILES)[number]["value"];
 

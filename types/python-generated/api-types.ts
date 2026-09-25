@@ -128684,7 +128684,7 @@ export interface components {
              * Profile
              * @enum {string}
              */
-            profile: "firefox_csv_v1" | "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1" | "matrx_login_csv_v1" | "nordpass_csv_v1";
+            profile: "firefox_csv_v1" | "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1" | "matrx_login_csv_v1" | "nordpass_csv_v1" | "roboform_csv_v1";
             /** Item Ids */
             item_ids: string[];
             /** Revision */
@@ -128711,7 +128711,7 @@ export interface components {
              * Profile
              * @enum {string}
              */
-            profile: "firefox_csv_v1" | "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1" | "matrx_login_csv_v1" | "nordpass_csv_v1";
+            profile: "firefox_csv_v1" | "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1" | "matrx_login_csv_v1" | "nordpass_csv_v1" | "roboform_csv_v1";
             /** Item Ids */
             item_ids: string[];
         };
@@ -128721,7 +128721,7 @@ export interface components {
              * Profile
              * @enum {string}
              */
-            profile: "firefox_csv_v1" | "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1" | "matrx_login_csv_v1" | "nordpass_csv_v1";
+            profile: "firefox_csv_v1" | "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1" | "matrx_login_csv_v1" | "nordpass_csv_v1" | "roboform_csv_v1";
             /** Revision */
             revision: string;
             /** Items */

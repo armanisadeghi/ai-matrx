@@ -292215,7 +292215,8 @@
               "keeper_csv_v1",
               "lastpass_csv_v1",
               "matrx_login_csv_v1",
-              "nordpass_csv_v1"
+              "nordpass_csv_v1",
+              "roboform_csv_v1"
             ],
             "title": "Profile"
           },
@@ -292296,7 +292297,8 @@
               "keeper_csv_v1",
               "lastpass_csv_v1",
               "matrx_login_csv_v1",
-              "nordpass_csv_v1"
+              "nordpass_csv_v1",
+              "roboform_csv_v1"
             ],
             "title": "Profile"
           },
@@ -292328,7 +292330,8 @@
               "keeper_csv_v1",
               "lastpass_csv_v1",
               "matrx_login_csv_v1",
-              "nordpass_csv_v1"
+              "nordpass_csv_v1",
+              "roboform_csv_v1"
             ],
             "title": "Profile"
           },
