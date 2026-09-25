@@ -232,7 +232,10 @@ function EnabledCell({ row }: { row: MandateAdminRow }) {
   return (
     <div onClick={(e) => e.stopPropagation()} className="inline-flex">
       <Switch
-        aria-label={`Enable ${row.name}`}
+        // The label says what the click DOES from the state it is in — an
+        // "Enable X" label on a switch that is already on was a lie.
+        aria-label={row.isEnabled ? `Turn off ${row.name}` : `Turn on ${row.name}`}
+        title={row.isEnabled ? `On — click to turn off ${row.name}` : `Off — click to turn on ${row.name}`}
         checked={row.isEnabled}
         onCheckedChange={(enabled) => {
           // The write fires the mandate cache bus; the page reloads on it.

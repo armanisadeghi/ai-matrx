@@ -17,7 +17,7 @@
 
 import { Suspense, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Trash2, Workflow } from "lucide-react";
+import { Bot, Trash2, Workflow } from "lucide-react";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
@@ -45,6 +45,7 @@ import {
   MANDATE_LIST_PREVIEW_HREF,
   parseRecordTabFrom,
   recordTabsForLevel,
+  tabRowOf,
   type RecordLevel,
   type RecordTabId,
 } from "./record-tabs";
@@ -160,13 +161,14 @@ function MandateRecordPageInner({
                   canManageOrg={canManageOrg}
                   listHref={listHref}
                   readOnly={readOnly}
+                  canCreateAgent={tabs.some((tab) => tab.id === "create-agent")}
                   onTabChange={onTabChange}
                 />
                 {/* The admin route is super-admin gated by its layout, so
                     every tab shows there; a member page shows only the tabs
                     its seat may use (record-tabs.ts `recordTabsForLevel`). */}
                 <RecordTabStrip
-                  tabs={tabs}
+                  tabs={tabRowOf(tabs)}
                   value={activeTab}
                   onChange={onTabChange}
                   className="mb-3"
@@ -209,6 +211,7 @@ function RecordHeader({
   canManageOrg,
   listHref,
   readOnly,
+  canCreateAgent,
   onTabChange,
 }: {
   name: string;
@@ -221,6 +224,8 @@ function RecordHeader({
   canManageOrg: boolean;
   listHref: string;
   readOnly: boolean;
+  /** The seat may open the protected "Create Agent" body (a header action). */
+  canCreateAgent: boolean;
   onTabChange: (tab: RecordTabId) => void;
 }) {
   const router = useRouter();
@@ -286,10 +291,20 @@ function RecordHeader({
         </div>
       }
       actions={[
-        // Workflow parity: a job is filled by an agent OR a workflow. "New
-        // agent" is its own tab; a workflow starts here — pre-wired with this
+        // Workflow parity: a job is filled by an agent OR a workflow — both
+        // start here. "New agent" opens the protected Create Agent body; a
+        // workflow starts here — pre-wired with this
         // job's inputs and output kind, opened in the studio — and is then
         // picked on the Binding tab once it has steps.
+        ...(canCreateAgent && !readOnly
+          ? [
+              {
+                label: "New agent",
+                icon: Bot,
+                onPress: () => onTabChange("create-agent"),
+              },
+            ]
+          : []),
         ...(readOnly
           ? []
           : [

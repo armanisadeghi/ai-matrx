@@ -13,7 +13,11 @@ import { memberCountsFromAnswer, memberScopeArgs } from "../service";
 import { memberRowFromWire, type MandateMemberWireRow } from "../rpc";
 import { canRemoveMemberRow } from "../listConfig";
 import { memberMandateRecordHref, newSoftMandateHref } from "../routes";
-import { recordTabsForLevel } from "@/features/mandates/record-next/record-tabs";
+import {
+  parseRecordTabFrom,
+  recordTabsForLevel,
+  tabRowOf,
+} from "@/features/mandates/record-next/record-tabs";
 import { isMandateListPath } from "@/features/mandates/record-next/useRecordBackHref";
 import { softMandateBody } from "@/features/mandates/authoring-level/service";
 import { levelDraftKey } from "@/features/mandates/authoring-level/level-draft";
@@ -155,6 +159,23 @@ describe("record tabs per seat", () => {
     expect(ids("person")).toContain("test");
     expect(ids("organization")).toContain("test");
     expect(ids("organization", true)).toContain("test");
+  });
+  it("a member seat has ONE Overrides tab — the simple one, named plainly", () => {
+    for (const level of ["person", "organization"] as const) {
+      const tabs = recordTabsForLevel(level);
+      expect(tabs.map((t) => t.id)).not.toContain("overrides");
+      expect(tabs.find((t) => t.id === "overrides-simple")?.label).toBe("Overrides");
+      expect(tabs.map((t) => t.label)).not.toContain("Overrides (simple)");
+      expect(parseRecordTabFrom("overrides", tabs)).toBe("overrides-simple");
+    }
+    expect(ids("system")).toEqual(expect.arrayContaining(["overrides", "overrides-simple"]));
+  });
+  it("New agent is a header action, never a tab in the row", () => {
+    for (const level of ["system", "person", "organization"] as const) {
+      const tabs = recordTabsForLevel(level);
+      expect(tabs.map((t) => t.id)).toContain("create-agent");
+      expect(tabRowOf(tabs).map((t) => t.id)).not.toContain("create-agent");
+    }
   });
   it("a read-only org member sees definition, binding, test and notes only", () => {
     expect(ids("organization", true)).toEqual(["definition", "holder", "test", "notes"]);

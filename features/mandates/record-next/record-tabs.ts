@@ -50,12 +50,18 @@ export interface RecordTab {
   icon: LucideIcon;
   /** Only where the old workspace showed it: the admin route / super admins. */
   admin?: boolean;
+  /**
+   * Reached from a header ACTION, never from the tab row (review 2026-09-25:
+   * "New agent" is something you do, not a place you read). The id stays a
+   * valid `?tab=` so its protected body mounts exactly as before.
+   */
+  action?: boolean;
 }
 
 export const RECORD_TABS: readonly RecordTab[] = [
   { id: "definition", label: "Definition", icon: FileText },
   { id: "holder", label: "Binding", icon: Link2 },
-  { id: "create-agent", label: "New agent", icon: Bot },
+  { id: "create-agent", label: "New agent", icon: Bot, action: true },
   { id: "overrides", label: "Overrides", icon: SlidersHorizontal },
   { id: "overrides-simple", label: "Overrides (simple)", icon: ListChecks },
   { id: "display", label: "Display", icon: MonitorCog },
@@ -67,6 +73,11 @@ export const RECORD_TABS: readonly RecordTab[] = [
 ];
 
 export const DEFAULT_RECORD_TAB: RecordTabId = "definition";
+
+/** The tabs in the ROW — every tab except the ones reached by a header action. */
+export function tabRowOf(tabs: readonly RecordTab[]): readonly RecordTab[] {
+  return tabs.filter((tab) => !tab.action);
+}
 
 /** The tabs a viewer sees. `admin` tabs only when the host shows admin tools. */
 export function visibleRecordTabs(showAdmin: boolean): readonly RecordTab[] {
@@ -87,7 +98,13 @@ export function parseRecordTabFrom(
   tabs: readonly RecordTab[],
 ): RecordTabId {
   const found = tabs.find((tab) => tab.id === value);
-  return found ? found.id : DEFAULT_RECORD_TAB;
+  if (found) return found.id;
+  // A member seat has ONE Overrides tab (the simple one); an old
+  // `?tab=overrides` link lands on it rather than on Definition.
+  if (value === "overrides" && tabs.some((tab) => tab.id === "overrides-simple")) {
+    return "overrides-simple";
+  }
+  return DEFAULT_RECORD_TAB;
 }
 
 /**
@@ -117,7 +134,11 @@ export function recordTabsForLevel(
   if (options.readOnly) {
     return RECORD_TABS.filter((tab) => READ_ONLY_TAB_IDS.includes(tab.id));
   }
-  return RECORD_TABS.filter((tab) => !tab.admin || tab.id === "test");
+  // ONE Overrides tab per level (review 2026-09-25): a member seat keeps the
+  // simple one, named plainly; the admin route keeps both side by side.
+  return RECORD_TABS.filter(
+    (tab) => (!tab.admin || tab.id === "test") && tab.id !== "overrides",
+  ).map((tab) => (tab.id === "overrides-simple" ? { ...tab, label: "Overrides" } : tab));
 }
 
 /** Where the record's Back goes when this tab did not come from a mandate list. */
