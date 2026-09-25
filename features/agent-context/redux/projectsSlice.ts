@@ -194,12 +194,27 @@ export const deleteProjectThunk = createAsyncThunk(
   async (projectId: string) => {
     // Soft delete, never a hard one: `workspace.projects` is a registered
     // entity with `deleted_at` and every reader filters it (db-rules §8).
-    const { error } = await workspaceDb(supabase)
-      .from("projects")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", projectId)
-      .is("deleted_at", null);
-    if (error) throw error;
+    await writeOne(
+      workspaceDb(supabase)
+        .from("projects")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", projectId)
+        .is("deleted_at", null)
+        .select("id, deleted_at"),
+      {
+        action: "delete",
+        noun: "project",
+        alreadyDone: {
+          reread: () =>
+            workspaceDb(supabase)
+              .from("projects")
+              .select("id, deleted_at")
+              .eq("id", projectId)
+              .maybeSingle(),
+          isDone: (row) => row.deleted_at != null,
+        },
+      },
+    );
     return projectId;
   },
 );

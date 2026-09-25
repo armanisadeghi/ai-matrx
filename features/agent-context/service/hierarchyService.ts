@@ -519,23 +519,53 @@ export const hierarchyService = {
   // and the database refuses a client DELETE (DD-119, db-rules §8). Its subtasks
   // follow through the declared cascade edge.
   async deleteTask(id: string): Promise<void> {
-    const { error } = await workspaceDb(supabase)
-      .from("tasks")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id)
-      .is("deleted_at", null);
-    if (error) throw error;
+    await writeOne(
+      workspaceDb(supabase)
+        .from("tasks")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .is("deleted_at", null)
+        .select("id, deleted_at"),
+      {
+        action: "delete",
+        noun: "task",
+        alreadyDone: {
+          reread: () =>
+            workspaceDb(supabase)
+              .from("tasks")
+              .select("id, deleted_at")
+              .eq("id", id)
+              .maybeSingle(),
+          isDone: (row) => row.deleted_at != null,
+        },
+      },
+    );
   },
 
   // Soft delete, same rule as a task: `workspace.projects` is a registered
   // entity with `deleted_at` and every reader filters it (db-rules §8).
   async deleteProject(id: string): Promise<void> {
-    const { error } = await workspaceDb(supabase)
-      .from("projects")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id)
-      .is("deleted_at", null);
-    if (error) throw error;
+    await writeOne(
+      workspaceDb(supabase)
+        .from("projects")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .is("deleted_at", null)
+        .select("id, deleted_at"),
+      {
+        action: "delete",
+        noun: "project",
+        alreadyDone: {
+          reread: () =>
+            workspaceDb(supabase)
+              .from("projects")
+              .select("id, deleted_at")
+              .eq("id", id)
+              .maybeSingle(),
+          isDone: (row) => row.deleted_at != null,
+        },
+      },
+    );
   },
 
   /**

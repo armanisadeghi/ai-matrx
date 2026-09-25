@@ -8,7 +8,7 @@ import {
   MessageTemplateUpdate,
 } from "@/features/message-templates/types/message-templates-db";
 import { createClient } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { makeAssertData, operationFailed } from "@/utils/errors";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -222,7 +222,11 @@ export async function deleteTemplate(id: string): Promise<void> {
     { action: "delete", noun: "template" },
   );
 
-  if (error) throw operationFailed("delete this template", error);
+  if (error) {
+    throw error instanceof WriteDidNotLandError
+      ? error
+      : operationFailed("delete this template", error);
+  }
 }
 
 // Toggle public status of a template

@@ -27,7 +27,7 @@ import { callApi } from "@/lib/api/call-api";
 import { operationFailed } from "@/utils/errors";
 import type { RootState } from "@/lib/redux/store";
 import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import {
   createCodeFile,
@@ -388,7 +388,11 @@ export const deleteSkill = createAsyncThunk<
         .select("id"),
       { action: "delete", noun: "skill" },
     );
-    if (error) throw operationFailed("delete this skill", error);
+    if (error) {
+      throw error instanceof WriteDidNotLandError
+        ? error
+        : operationFailed("delete this skill", error);
+    }
   }
 
   dispatch(skillsActions.skillRemoved(skillId));

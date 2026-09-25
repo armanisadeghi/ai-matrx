@@ -9,6 +9,7 @@ import type {
 } from "./types";
 import { jsonToAgentConfigStrings } from "./types";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
+import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 
 const supabase = createClient();
 
@@ -106,14 +107,35 @@ export async function updateTemplate(
 export async function deleteTemplate(id: string): Promise<void> {
   // Soft delete, never a hard one (owner ruling 2026-09-20; db-rules §8):
   // `fetchTemplates` and `fetchTemplateById` both filter `deleted_at`.
-  const { error } = await supabase
-    .schema("research")
-    .from("rs_template")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id)
-    .is("deleted_at", null);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("research")
+      .from("rs_template")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .is("deleted_at", null)
+      .select("id, deleted_at"),
+    {
+      action: "delete",
+      noun: "template",
+      alreadyDone: {
+        reread: () =>
+          supabase
+            .schema("research")
+            .from("rs_template")
+            .select("id, deleted_at")
+            .eq("id", id)
+            .maybeSingle(),
+        isDone: (row) => row.deleted_at != null,
+      },
+    },
+  );
 
-  if (error) throw new Error(`Failed to delete template: ${error.message}`);
+  if (error) {
+    throw error instanceof WriteDidNotLandError
+      ? error
+      : new Error(`Failed to delete template: ${error.message}`);
+  }
 }
 
 export async function updateTemplateAgentConfig(

@@ -284,12 +284,27 @@ export const deleteTaskThunk = createAsyncThunk(
   // and the database refuses a client DELETE (DD-119, db-rules §8). Its subtasks
   // follow through the declared cascade edge.
   async (taskId: string) => {
-    const { error } = await workspaceDb(supabase)
-      .from("tasks")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", taskId)
-      .is("deleted_at", null);
-    if (error) throw error;
+    await writeOne(
+      workspaceDb(supabase)
+        .from("tasks")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", taskId)
+        .is("deleted_at", null)
+        .select("id, deleted_at"),
+      {
+        action: "delete",
+        noun: "task",
+        alreadyDone: {
+          reread: () =>
+            workspaceDb(supabase)
+              .from("tasks")
+              .select("id, deleted_at")
+              .eq("id", taskId)
+              .maybeSingle(),
+          isDone: (row) => row.deleted_at != null,
+        },
+      },
+    );
     return taskId;
   },
 );

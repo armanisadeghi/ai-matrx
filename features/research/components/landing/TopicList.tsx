@@ -30,6 +30,7 @@ import {
 import { StatusBadge } from "../shared/StatusBadge";
 import type { ResearchTopic } from "../../types";
 import { supabase } from "@/utils/supabase/client";
+import { writeOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -455,16 +456,34 @@ export default function TopicList() {
     try {
       // Soft delete, never a hard one (owner ruling 2026-09-20; db-rules
       // §8): the readers of `research.rs_topic` filter `deleted_at`.
-      const { error } = await supabase
-        .schema("research").from("rs_topic")
-        .update({ deleted_at: new Date().toISOString() })
-        .eq("id", deleteTarget.id)
-        .is("deleted_at", null);
-      if (error) throw error;
+      const topicId = deleteTarget.id;
+      await writeOne(
+        supabase
+          .schema("research").from("rs_topic")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("id", topicId)
+          .is("deleted_at", null)
+          .select("id, deleted_at"),
+        {
+          action: "delete",
+          noun: "topic",
+          alreadyDone: {
+            reread: () =>
+              supabase
+                .schema("research").from("rs_topic")
+                .select("id, deleted_at")
+                .eq("id", topicId)
+                .maybeSingle(),
+            isDone: (row) => row.deleted_at != null,
+          },
+        },
+      );
       toast.success("Topic deleted.");
       refresh();
-    } catch {
-      toast.error("Failed to delete topic.");
+    } catch (err) {
+      toast.error(
+        err instanceof WriteDidNotLandError ? err.message : "Failed to delete topic.",
+      );
     } finally {
       setDeleting(false);
       setDeleteTarget(null);
