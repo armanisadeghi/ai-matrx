@@ -1218,13 +1218,25 @@ export async function remediateBrokenMapping(
 
   // Bindings live on `platform.associations` edges — value_mappings is the
   // TYPED payload (`payload_kind='surface_binding'`, Edge Payload System;
-  // the DB trigger re-validates this write). Runs server-side with the admin
-  // client (super-admin gated route) — the browser has no direct grant on
-  // platform.associations.
+  // the DB trigger re-validates this write).
+  //
+  // `sb` is the SIGNED-IN admin's own client, never the service-role client.
+  // A service-role write names no actor (tier `code`, no `app.actor_system`),
+  // so `platform._stamp_actor_tier` refuses it with 23514 — this route failed
+  // on every call until 2026-09-25. And `platform.associations` refuses every
+  // direct client INSERT/UPDATE/DELETE (`associations_client_*_refused`), so
+  // the write goes through the registered door, `public.assoc_add`: it upserts
+  // on (source, target, role) and replaces the payload when `p_payload_kind`
+  // is set. Reads pass `assoc_select` (platform admin). The admin's session
+  // stamps `human` + their id; assoc_add's access ladder (`iam.has_access` on
+  // both endpoints) decides, so an admin cannot rewrite a binding on an agent
+  // they have no access to — that refusal is reported as Forbidden (403).
   const { data: row, error: readErr } = await sb
     .schema("platform")
     .from("associations")
-    .select("id, payload")
+    .select(
+      "id, payload, source_type, source_id, target_type, target_id, organization_id, role, label, position, metadata",
+    )
     .eq("id", bindingId)
     .eq("source_type", "agent")
     .eq("target_type", "surface")
@@ -1232,7 +1244,8 @@ export async function remediateBrokenMapping(
     .is("deleted_at", null)
     .single();
   if (readErr) throw readErr;
-  const payload = (row?.payload ?? {}) as Record<string, unknown>;
+  if (!row) throw new Error(`No live agent→surface binding ${bindingId}.`);
+  const payload = (row.payload ?? {}) as Record<string, unknown>;
   const current = (payload.value_mappings ?? {}) as Record<string, unknown>;
   const next = { ...current };
 
@@ -1247,15 +1260,35 @@ export async function remediateBrokenMapping(
       remediation.target,
     );
   }
-  const { error: writeErr } = await sb
-    .schema("platform")
-    .from("associations")
-    .update({
-      payload_kind: "surface_binding",
-      payload: { ...payload, value_mappings: next },
-    })
-    .eq("id", bindingId);
-  if (writeErr) throw writeErr;
+  // assoc_add REPLACES `metadata` on conflict, so the edge's own label,
+  // position and metadata are passed back unchanged — only the payload moves.
+  const { data: writtenId, error: writeErr } = await sb.rpc("assoc_add", {
+    p_source_type: row.source_type,
+    p_source_id: row.source_id,
+    p_target_type: row.target_type,
+    p_target_id: row.target_id,
+    p_org_id: row.organization_id,
+    p_label: row.label,
+    p_metadata: row.metadata,
+    p_role: row.role,
+    p_position: row.position,
+    p_payload_kind: "surface_binding",
+    p_payload: { ...payload, value_mappings: next },
+  } as never);
+  if (writeErr) {
+    if (writeErr.code === "42501") {
+      throw new Error(
+        `Forbidden: the database refused this binding edit for your account (${writeErr.message}). ` +
+          "Remediate it as someone with access to the agent, or ask its owner to fix the mapping.",
+      );
+    }
+    throw writeErr;
+  }
+  if (writtenId !== bindingId) {
+    throw new Error(
+      `Remediation wrote edge ${String(writtenId)} but binding ${bindingId} was addressed — the edge key did not round-trip.`,
+    );
+  }
   return { ok: true, applied: true, newMappings: next };
 }
 

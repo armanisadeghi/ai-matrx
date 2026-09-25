@@ -2,6 +2,10 @@
  * The inspector's ordered drill-down (lane CONTEXT-INSPECTOR-GUIDED): each step
  * clears the steps after it, the address round-trips, and the preview request
  * narrows with the depth — the SAME request for both sides of the compare.
+ *
+ * Lane CONTEXT-INSPECTOR-2: the request IS the server's `ContextSelection`. The
+ * type step sends the type (the server expands it for both sides, no cap) —
+ * red against lane 1, which sent the first 25 of the type's scope ids.
  */
 import {
   chooseStep,
@@ -10,7 +14,8 @@ import {
   previewRequest,
   selectionDepth,
   selectionSearch,
-  TYPE_PREVIEW_LIMIT,
+  agentSearch,
+  parseAgent,
 } from "./selection";
 
 // Castellano & Reyes, LLP → Clients → Meridian Risk Services → Contact Phone
@@ -60,7 +65,7 @@ describe("the address", () => {
     const selection = parseSelection(`scope=${MERIDIAN}`);
     expect(selection).toEqual({ ...EMPTY_SELECTION, scope: MERIDIAN });
     expect(selectionDepth(selection)).toBeNull();
-    expect(previewRequest(selection, null)).toBeNull();
+    expect(previewRequest(selection)).toBeNull();
   });
 
   it("ignores anything that is not an id", () => {
@@ -68,40 +73,54 @@ describe("the address", () => {
   });
 });
 
-describe("previewRequest narrows with each step", () => {
-  it("organization: no scope, in that organization", () => {
-    expect(previewRequest({ ...EMPTY_SELECTION, org: ORG }, null)).toEqual({
+describe("?agent= is set by the picker, and kept by every step", () => {
+  const AGENT = "5fd365ca-7d0e-4e1c-8b9b-a79131b38f20";
+  it("writes, reads and drops the agent without touching the selection", () => {
+    const withAgent = agentSearch(AGENT, `org=${ORG}&scopeType=${CLIENTS}`);
+    expect(parseAgent(withAgent)).toBe(AGENT);
+    expect(parseSelection(withAgent)).toMatchObject({ org: ORG, scopeType: CLIENTS });
+    expect(parseAgent(agentSearch(null, withAgent))).toBeNull();
+    expect(parseAgent("agent=not-an-agent")).toBeNull();
+  });
+});
+
+describe("previewRequest is the server's ContextSelection at every depth", () => {
+  it("organization: the organization alone", () => {
+    expect(previewRequest({ ...EMPTY_SELECTION, org: ORG })).toEqual({
       depth: "org",
-      organizationId: ORG,
-      scopeIds: [],
-      itemId: null,
-      typeScopeCount: null,
+      selection: { organization_id: ORG, scope_type_id: null, scope_id: null, context_item_id: null },
     });
   });
 
-  it("scope type: waits for the type's scopes, then sends them as scope ids (capped)", () => {
-    const sel = { ...EMPTY_SELECTION, org: ORG, scopeType: CLIENTS };
-    expect(previewRequest(sel, null)).toBeNull();
-    expect(previewRequest(sel, [MERIDIAN, GOLDEN_STATE])?.scopeIds).toEqual([MERIDIAN, GOLDEN_STATE]);
-    const many = Array.from({ length: TYPE_PREVIEW_LIMIT + 5 }, (_, i) =>
-      `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,
-    );
-    const capped = previewRequest(sel, many);
-    expect(capped?.scopeIds).toHaveLength(TYPE_PREVIEW_LIMIT);
-    expect(capped?.typeScopeCount).toBe(TYPE_PREVIEW_LIMIT + 5);
+  it("scope type: the TYPE — never a list of its scope ids, so nothing can cap it", () => {
+    const request = previewRequest({ ...EMPTY_SELECTION, org: ORG, scopeType: CLIENTS });
+    expect(request).toEqual({
+      depth: "scopeType",
+      selection: { organization_id: ORG, scope_type_id: CLIENTS, scope_id: null, context_item_id: null },
+    });
+    expect(JSON.stringify(request)).not.toMatch(/scope_ids|scopeIds/);
   });
 
-  it("scope: that one scope; item: the same scope, narrowed to the item", () => {
+  it("scope: that one scope under its type; item: the same, with the item", () => {
     const scope = { org: ORG, scopeType: CLIENTS, scope: MERIDIAN, item: null };
-    expect(previewRequest(scope, [MERIDIAN, GOLDEN_STATE])).toMatchObject({
+    expect(previewRequest(scope)).toEqual({
       depth: "scope",
-      scopeIds: [MERIDIAN],
-      itemId: null,
+      selection: { organization_id: ORG, scope_type_id: CLIENTS, scope_id: MERIDIAN, context_item_id: null },
     });
-    expect(previewRequest({ ...scope, item: PHONE }, [MERIDIAN])).toMatchObject({
-      depth: "item",
-      scopeIds: [MERIDIAN],
-      itemId: PHONE,
+    expect(previewRequest({ ...scope, item: PHONE })?.selection).toEqual({
+      organization_id: ORG,
+      scope_type_id: CLIENTS,
+      scope_id: MERIDIAN,
+      context_item_id: PHONE,
+    });
+  });
+
+  it("sends only the unbroken chain (a ?scope= link waits for its back-fill)", () => {
+    expect(previewRequest({ ...EMPTY_SELECTION, org: ORG, scope: MERIDIAN })?.selection).toEqual({
+      organization_id: ORG,
+      scope_type_id: null,
+      scope_id: null,
+      context_item_id: null,
     });
   });
 });

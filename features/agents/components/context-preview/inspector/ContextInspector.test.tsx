@@ -1,8 +1,10 @@
 /**
  * The guided inspector (lane CONTEXT-INSPECTOR-GUIDED): each step loads from
  * the previous choice only, the compare re-resolves at every depth with the
- * selection the steps describe, and a `?scope=` link back-fills its
- * organization and type from the scope itself.
+ * selection the steps describe — the server's `ContextSelection`, the type as
+ * the TYPE (lane CONTEXT-INSPECTOR-2: lane 1 sent the type's first 25 scope
+ * ids) — and a `?scope=` link back-fills its organization and type from the
+ * scope itself before the compare is asked anything.
  *
  * Mocked: the scopes chokepoint, the person's organizations and the compare
  * (whose own request/response suite is ContextCompareView.test.tsx). The
@@ -34,7 +36,7 @@ const compareProps: Array<Record<string, unknown>> = [];
 jest.mock("../ContextCompareView", () => ({
   ContextCompareView: (props: Record<string, unknown>) => {
     compareProps.push(props);
-    return <div data-compare-mock={JSON.stringify(props.scopeIds)} />;
+    return <div data-compare-mock={JSON.stringify(props.selection)} />;
   },
 }));
 
@@ -156,15 +158,25 @@ it("each step loads from the previous choice only, and the preview narrows at ev
   await act(async () => undefined);
   expect(svc.listScopeTypesForOrganization).toHaveBeenCalledWith(CASTELLANO);
   expect(svc.listScopesOfType).not.toHaveBeenCalled();
-  expect(lastCompare()).toMatchObject({ scopeIds: [], organizationId: CASTELLANO });
+  expect(lastCompare()).toMatchObject({
+    selection: { organization_id: CASTELLANO, scope_type_id: null, scope_id: null, context_item_id: null },
+  });
   expect(trigger("scope")?.textContent).toContain("Choose a scope type first");
 
-  // 2. Scope type → that type's scopes; preview: every scope of the type.
+  // 2. Scope type → that type's scopes listed; preview: the TYPE (the server hands both sides
+  //    every scope of it — the page never lists, slices or caps them).
   await act(async () => setSelection({ ...EMPTY_SELECTION, org: CASTELLANO, scopeType: CLIENTS }));
   await act(async () => undefined);
   expect(svc.listScopesOfType).toHaveBeenCalledWith(CASTELLANO, CLIENTS);
   expect(svc.listContextItems).not.toHaveBeenCalled();
-  expect(lastCompare()).toMatchObject({ scopeIds: [GOLDEN_STATE, MERIDIAN], organizationId: CASTELLANO });
+  expect(lastCompare()).toMatchObject({
+    selection: { organization_id: CASTELLANO, scope_type_id: CLIENTS, scope_id: null, context_item_id: null },
+  });
+  expect(JSON.stringify(lastCompare())).not.toMatch(/scopeIds|scope_ids/);
+  expect(host.querySelector("[data-inspector-caption]")?.textContent).toBe(
+    "All 2 Clients selected at once.",
+  );
+  expect(host.textContent).not.toMatch(/The first \d+ of/);
 
   // 3. Scope → that scope's items and values; preview: that one scope.
   await act(async () =>
@@ -173,7 +185,10 @@ it("each step loads from the previous choice only, and the preview narrows at ev
   await act(async () => undefined);
   expect(svc.listContextItems).toHaveBeenCalledWith(CLIENTS);
   expect(svc.listContextValues).toHaveBeenCalledWith(MERIDIAN);
-  expect(lastCompare()).toMatchObject({ scopeIds: [MERIDIAN], focus: undefined });
+  expect(lastCompare()).toMatchObject({
+    selection: { organization_id: CASTELLANO, scope_type_id: CLIENTS, scope_id: MERIDIAN, context_item_id: null },
+    focus: undefined,
+  });
 
   // 4. Context item → the value, read-only, and the preview narrowed to the item.
   await act(async () =>
@@ -184,7 +199,7 @@ it("each step loads from the previous choice only, and the preview narrows at ev
     "(619) 555-0177",
   );
   expect(lastCompare()).toMatchObject({
-    scopeIds: [MERIDIAN],
+    selection: { organization_id: CASTELLANO, scope_type_id: CLIENTS, scope_id: MERIDIAN, context_item_id: PHONE },
     focus: { itemId: PHONE, key: "contact_phone", label: "Contact Phone" },
   });
   // There is no free-text box anywhere: every step is a choice.
@@ -217,7 +232,17 @@ it("?scope= alone back-fills the organization and type from the scope itself", a
     next: { org: CASTELLANO, scopeType: CLIENTS, scope: MERIDIAN, item: null },
     replace: true,
   });
-  expect(lastCompare()).toMatchObject({ scopeIds: [MERIDIAN], organizationId: CASTELLANO });
+  // Every compare asked was the back-filled scope under its own organization and type —
+  // never an organization-less or type-less half-selection.
+  expect(compareProps.length).toBeGreaterThan(0);
+  for (const props of compareProps) {
+    expect(props.selection).toEqual({
+      organization_id: CASTELLANO,
+      scope_type_id: CLIENTS,
+      scope_id: MERIDIAN,
+      context_item_id: null,
+    });
+  }
   expect(trigger("org")?.textContent).toContain("Castellano & Reyes, LLP");
 });
 

@@ -15,7 +15,7 @@
 // Super-admin only.
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/utils/supabase/adminClient";
+import { createClient } from "@/utils/supabase/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import {
   remediateBrokenMapping,
@@ -87,8 +87,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // agent↔surface binding edges is RLS-protected; super-admin gated above, use admin client.
-    const supabase = createAdminClient();
+    // The signed-in admin's OWN client — never the service-role client, whose
+    // write names no actor and is refused (23514) by platform._stamp_actor_tier.
+    // The write goes through the registered door `assoc_add` (see the service).
+    const supabase = await createClient();
     const result = await remediateBrokenMapping(supabase, args);
     return NextResponse.json({ result });
   } catch (e) {

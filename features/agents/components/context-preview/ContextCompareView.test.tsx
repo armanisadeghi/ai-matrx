@@ -29,6 +29,20 @@ jest.mock(
 jest.mock("@/components/matrx/buttons/InlineCopyButton", () => ({
   InlineCopyButton: () => null,
 }));
+// THE agent picker, stood in: one option per agent it would list.
+jest.mock("@ai-matrx/agents/catalog/react", () => ({
+  AgentListDropdown: (props: { onSelect: (id: string) => void; label: string; consumerId?: string }) => (
+    <button type="button" data-agent-picker={props.consumerId} onClick={() => props.onSelect(INTAKE_AGENT)}>
+      {props.label}
+    </button>
+  ),
+}));
+jest.mock("@/features/agents/redux/agent-definition/selectors", () => ({
+  selectAllAgents: () => ({ [INTAKE_AGENT]: { name: "Client Intake Reviewer" } }),
+}));
+jest.mock("@/features/agents/redux/agent-definition/thunks", () => ({
+  fetchAgentsList: () => ({ type: "agents/list" }),
+}));
 
 import { callApi } from "@/lib/api/call-api";
 import { ContextCompareView, focusLines } from "./ContextCompareView";
@@ -40,6 +54,9 @@ import { ContextCompareView, focusLines } from "./ContextCompareView";
 const door = callApi as unknown as jest.Mock<Promise<{ data?: unknown }>, [unknown]>;
 
 const DISPATCH = "5fd365ca-7d0e-4e1c-8b9b-a79131b38f20";
+const INTAKE_AGENT = "c0ffee00-1d2e-4f3a-8b5c-6d7e8f9a0b1c";
+const CASTELLANO = "7cd12da2-2213-4378-8fba-a9e2dc4ea657";
+const CLIENTS = "0b6f1c1e-6a1f-4c55-9d7e-1f2a3b4c5d6e";
 
 const compare = {
   ruling:
@@ -89,7 +106,7 @@ const compare = {
   excluded: [],
 };
 
-async function mount(props: { agentId?: string }) {
+async function mount(props: React.ComponentProps<typeof ContextCompareView>) {
   const host = document.createElement("div");
   document.body.appendChild(host);
   const root: Root = createRoot(host);
@@ -147,6 +164,48 @@ describe("ContextCompareView", () => {
     await without.unmount();
 
     const withAgent = await mount({ agentId: "agent-1" });
+    expect(withAgent.host.querySelector("textarea")).not.toBeNull();
+    await withAgent.unmount();
+  });
+});
+
+describe("the inspector's selection and agent (lane CONTEXT-INSPECTOR-2)", () => {
+  beforeEach(() => {
+    door.mockReset();
+    door.mockResolvedValue({ data: { compare, injected_block: null } });
+  });
+
+  it("sends the one ContextSelection — a type as the type — under its own organization", async () => {
+    const selection = {
+      organization_id: CASTELLANO,
+      scope_type_id: CLIENTS,
+      scope_id: null,
+      context_item_id: null,
+    };
+    const view = await mount({ selection });
+    const req = door.mock.calls[0][0] as {
+      body: Record<string, unknown>;
+      scopeOverrides?: { organization_id?: string };
+    };
+    expect(req.body.selection).toEqual(selection);
+    expect(req.body).not.toHaveProperty("scope_ids");
+    expect(req.scopeOverrides).toEqual({ organization_id: CASTELLANO });
+    await view.unmount();
+  });
+
+  it("puts THE agent picker on 'answer on both paths' when the host lets the person choose", async () => {
+    const chosen: Array<string | null> = [];
+    const view = await mount({ onAgentChange: (id) => chosen.push(id) });
+    const picker = view.host.querySelector('[data-agent-picker="context-inspector-answer-both"]');
+    expect(picker?.textContent).toBe("Choose an agent");
+    expect(view.host.querySelector("textarea")).toBeNull();
+    expect(view.host.textContent).not.toContain("Open this panel from a chat");
+    await act(async () => (picker as HTMLButtonElement).click());
+    expect(chosen).toEqual([INTAKE_AGENT]);
+    await view.unmount();
+
+    const withAgent = await mount({ agentId: INTAKE_AGENT, onAgentChange: () => undefined });
+    expect(withAgent.host.querySelector("[data-agent-picker]")?.textContent).toBe("Client Intake Reviewer");
     expect(withAgent.host.querySelector("textarea")).not.toBeNull();
     await withAgent.unmount();
   });
