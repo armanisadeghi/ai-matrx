@@ -7,12 +7,15 @@
 //
 // This module is a tiny client cache over that store so every surface (the ⋯
 // menu label, the pin badge, the pinned filter, the long-press sheet) reads
-// one answer. Optimistic toggle with LOUD rollback — a pin that claims it
-// saved and did not is a screen that lies.
+// one answer. PENDING, NEVER OPTIMISTIC (GATES-TAIL-2): a toggle marks the
+// message pending (the badge reads "Pinning…"), and the pin appears only once
+// the store agreed — a pin that claims it saved and did not is a screen that
+// lies. A refusal is said in words with a remedy (toastWriteFailure).
 
 import { useSyncExternalStore } from "react";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { toast } from "@/lib/toast";
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 
 export const MESSAGE_PIN_ENTITY_TYPE = "message";
 
@@ -20,6 +23,7 @@ const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 let pinned = new Set<string>();
+let pending = new Set<string>();
 const hydrated = new Set<string>();
 const listeners = new Set<() => void>();
 
@@ -41,6 +45,20 @@ function subscribe(listener: () => void): () => void {
 }
 
 const getSnapshot = () => pinned;
+const getPendingSnapshot = () => pending;
+
+function setPendingLocal(id: string, value: boolean): void {
+  const next = new Set(pending);
+  if (value) next.add(id);
+  else next.delete(id);
+  pending = next;
+  emit();
+}
+
+/** True while a pin/unpin write for this message is in flight. */
+export function isMessagePinPending(messageId: string): boolean {
+  return pending.has(messageId);
+}
 
 type RpcResult<T> = { ok: true; data: T } | { ok: false; error: { message?: string } | unknown };
 
@@ -83,20 +101,31 @@ export async function togglePinnedMessage(messageId: string): Promise<boolean> {
     return false;
   }
   const willPin = !pinned.has(messageId);
-  setPinnedLocal(messageId, willPin);
-  const res = (await favoritesService.setPinned(
-    MESSAGE_PIN_ENTITY_TYPE,
-    messageId,
-    willPin,
-  )) as RpcResult<null>;
+  // A press while the write is in flight is not a second write; the state it will land in is
+  // not known yet, so it answers the current one.
+  if (pending.has(messageId)) return pinned.has(messageId);
+  setPendingLocal(messageId, true);
+  let res: RpcResult<null>;
+  try {
+    res = (await favoritesService.setPinned(
+      MESSAGE_PIN_ENTITY_TYPE,
+      messageId,
+      willPin,
+    )) as RpcResult<null>;
+  } catch (error) {
+    res = { ok: false, error };
+  } finally {
+    setPendingLocal(messageId, false);
+  }
   if (isErr(res)) {
-    setPinnedLocal(messageId, !willPin);
     console.error("[message-pins] pin write failed", res);
-    toast.error(willPin ? "Couldn't pin this message" : "Couldn't unpin this message", {
-      description: "Nothing changed. Try again in a moment.",
+    toastWriteFailure((res as { error: unknown }).error, {
+      action: willPin ? "pin this message" : "unpin this message",
+      remedy: "Nothing changed. Try again in a moment.",
     });
     return !willPin;
   }
+  setPinnedLocal(messageId, willPin);
   return willPin;
 }
 
@@ -105,8 +134,14 @@ export function usePinnedMessageIds(): ReadonlySet<string> {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
+/** The live set of message ids whose pin write is in flight. */
+export function usePendingPinMessageIds(): ReadonlySet<string> {
+  return useSyncExternalStore(subscribe, getPendingSnapshot, getPendingSnapshot);
+}
+
 export function __resetPinnedMessagesForTests(): void {
   pinned = new Set();
+  pending = new Set();
   hydrated.clear();
   emit();
 }

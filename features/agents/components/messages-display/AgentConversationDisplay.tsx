@@ -69,6 +69,7 @@ import { Pin } from "lucide-react";
 import {
   hydratePinnedMessages,
   togglePinnedMessage,
+  usePendingPinMessageIds,
   usePinnedMessageIds,
 } from "@/features/agents/message-pins/pinned-messages-store";
 import { ConversationToolbar } from "./conversation-tools/ConversationToolbar";
@@ -123,6 +124,8 @@ export function AgentConversationDisplay({
   const [findOpen, setFindOpen] = useState(false);
   const [pinnedOnly, setPinnedOnly] = useState(false);
   const pinnedIds = usePinnedMessageIds();
+  // A pin write in flight reads "Pinning…"/"Unpinning…" — pending, never optimistic (GATES-TAIL-2).
+  const pendingPinIds = usePendingPinMessageIds();
 
   const isActive =
     phase === "connecting" ||
@@ -442,6 +445,7 @@ export function AgentConversationDisplay({
     const ids = groupMessageIds(group);
     const primaryId = ids[ids.length - 1];
     const pinned = ids.some((id) => pinnedIds.has(id));
+    const pinPending = ids.some((id) => pendingPinIds.has(id));
     const who =
       group.kind === "user"
         ? "Your message"
@@ -466,20 +470,22 @@ export function AgentConversationDisplay({
         aria-label={`${who}${pinned ? ", pinned" : ""}`}
         className="relative rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
-        {pinned && primaryId && (
+        {(pinned || pinPending) && primaryId && (
           <button
             type="button"
             data-find-ignore=""
+            disabled={pinPending}
+            aria-busy={pinPending || undefined}
             onClick={() => {
               const pinnedId = ids.find((id) => pinnedIds.has(id));
               if (pinnedId) void togglePinnedMessage(pinnedId);
             }}
-            aria-label="Pinned — click to unpin"
-            title="Pinned — click to unpin"
+            aria-label={pinPending ? (pinned ? "Unpinning" : "Pinning") : "Pinned — click to unpin"}
+            title={pinPending ? (pinned ? "Unpinning…" : "Pinning…") : "Pinned — click to unpin"}
             className={`mb-1 inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 hover:bg-amber-500/20 dark:text-amber-300 ${group.kind === "user" ? "float-right" : ""}`}
           >
             <Pin className="h-3 w-3" aria-hidden="true" />
-            Pinned
+            {pinPending ? (pinned ? "Unpinning…" : "Pinning…") : "Pinned"}
           </button>
         )}
         {body}
