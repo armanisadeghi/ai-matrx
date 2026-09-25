@@ -85,6 +85,10 @@ jest.mock("@/components/markdown-core/syntax/elements/people-resolver", () => ({
     ),
 }));
 
+jest.mock("@/features/organizations/peek/ResourcePeekHost", () => ({
+  ResourcePeekHost: ({ kind, id }: { kind: string; id: string }) => <div data-peek-kind={kind} data-peek-id={id} />,
+}));
+
 import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { RichContentInline } from "@/components/rich-content/RichContentInline";
 import { StandardBlocks } from "@/components/rich-content/standard/StandardBlocks";
@@ -548,9 +552,13 @@ describe("@-mentions (RC-B11's stored form) render as chips that open", () => {
         "Ask @[Dana](user:9f1c0000-0000-4000-8000-000000000001) and @[Former staff](user:9f1c0000-0000-4000-8000-000000000009) by @[Tue, Sep 30](date:2026-09-30) about @[Kiln schedule](note:11111111-1111-4111-8111-111111111111).",
       ),
     );
-    const person = scope.querySelector('a[data-mention="person"]') as HTMLAnchorElement;
-    expect(person.getAttribute("href")).toBe("mailto:dana@kilnworks.example");
+    const person = scope.querySelector('button[data-mention="person"]') as HTMLButtonElement;
     expect(text(person)).toBe("Dana Ruiz");
+    // The chip opens the platform's person peek — not a mailto.
+    await act(async () => person.click());
+    const peek = scope.querySelector("[data-peek-kind]")!;
+    expect(peek.getAttribute("data-peek-kind")).toBe("user");
+    expect(peek.getAttribute("data-peek-id")).toBe("9f1c0000-0000-4000-8000-000000000001");
     expect(text(scope.querySelector('[data-mention="unresolved"]')!)).toBe("@Former staff");
     expect(scope.querySelector('time[data-mention="date"]')?.getAttribute("datetime")).toBe("2026-09-30");
     expect(scope.querySelector("[data-wikilink]")).not.toBeNull();

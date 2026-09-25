@@ -33,6 +33,7 @@ import ProjectPeek from "./kinds/ProjectPeek";
 import OrganizationPeek from "./kinds/OrganizationPeek";
 import PartyPeek from "./kinds/PartyPeek";
 import SeoMapTopicPeek from "./kinds/SeoMapTopicPeek";
+import UserPeek from "./kinds/UserPeek";
 import type { PeekProps } from "./types";
 import { PEEK_KINDS } from "./kinds-list";
 
@@ -64,6 +65,8 @@ export const PEEK_REGISTRY: Record<
   // so every surface naming a Person could only send the reader away.
   party: PartyPeek,
   seo_map_topic: SeoMapTopicPeek,
+  // A platform user (member) — visibility is the viewer's active org's members.
+  user: UserPeek,
   // Add new kinds here as their peek components land.
 };
 

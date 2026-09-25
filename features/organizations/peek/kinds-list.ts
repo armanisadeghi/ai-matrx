@@ -50,6 +50,9 @@ export const PEEK_KINDS = [
   // offered no in-place door on any surface that names a Person.
   "party",
   "seo_map_topic",
+  // A platform USER (member) by account id — @-mention chips, comment authors,
+  // "shared by". Visibility = the viewer's active organization's members.
+  "user",
 ] as const;
 
 const PEEK_KIND_SET: ReadonlySet<string> = new Set(PEEK_KINDS);

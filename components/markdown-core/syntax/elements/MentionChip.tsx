@@ -2,13 +2,16 @@
 
 // A mention chip — `@[Dana](user:<uuid>)` / `@[Tue, Sep 30](date:2026-09-30)`
 // (RC-B11's stored form). A person resolves against the members the viewer
-// may see (people-resolver.ts): found → a chip that opens an email to them;
-// not found (outside the viewer's organization, signed out, refused) → the
-// label as plain text, honestly — never a chip that goes nowhere.
+// may see (people-resolver.ts): found → a chip that opens the platform's
+// person peek (`user` in features/organizations/peek — profile, role, email
+// as a secondary action); not found (outside the viewer's organization,
+// signed out, refused) → the label as plain text, honestly — never a chip
+// that goes nowhere.
 
 import { useContext, useEffect, useState, type ReactNode } from "react";
 import { ReactReduxContext } from "react-redux";
 import { AtSign, CalendarDays } from "lucide-react";
+import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import type { MentionedPerson } from "./people-resolver";
 
 type Resolver = typeof import("./people-resolver");
@@ -27,6 +30,7 @@ export function MentionChip(props: { "data-kind"?: string; "data-id"?: string; "
   const label = String(props["data-label"] ?? "");
   const orgId = useActiveOrgId();
   const [person, setPerson] = useState<{ key: string; value: MentionedPerson | null } | null>(null);
+  const [peekOpen, setPeekOpen] = useState(false);
   const key = `${orgId ?? ""}|${id}`;
 
   useEffect(() => {
@@ -70,18 +74,18 @@ export function MentionChip(props: { "data-kind"?: string; "data-id"?: string; "
       {settled.name}
     </>
   );
-  return settled.email ? (
-    <a
-      href={`mailto:${settled.email}`}
-      data-mention="person"
-      title={`${settled.name} · ${settled.email}${settled.role ? ` · ${settled.role}` : ""}`}
-      className="mx-0.5 inline-flex items-center gap-0.5 rounded bg-primary/10 px-1 text-primary no-underline hover:bg-primary/20"
-    >
-      {chip}
-    </a>
-  ) : (
-    <span data-mention="person" title={settled.name} className="mx-0.5 inline-flex items-center gap-0.5 rounded bg-primary/10 px-1 text-primary">
-      {chip}
-    </span>
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setPeekOpen(true)}
+        data-mention="person"
+        title={`${settled.name}${settled.role ? ` · ${settled.role}` : ""}`}
+        className="mx-0.5 inline-flex items-center gap-0.5 rounded bg-primary/10 px-1 align-baseline text-primary hover:bg-primary/20"
+      >
+        {chip}
+      </button>
+      {peekOpen ? <ResourcePeekHost kind="user" id={settled.userId} onClose={() => setPeekOpen(false)} /> : null}
+    </>
   );
 }
