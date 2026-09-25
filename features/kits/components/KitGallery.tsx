@@ -12,7 +12,7 @@ import { fetchKits } from "../service";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import { cn } from "@/utils/cn";
-import { KIT_WORD, KITS_HERO } from "../constants";
+import { KIT_WORD, KITS_CHANGED_EVENT, KITS_HERO } from "../constants";
 import type { KitEntry } from "../types";
 import { KitCard } from "./KitCard";
 import { ErrorNotice } from "./ErrorNotice";
@@ -40,6 +40,11 @@ function useOrgKits() {
       cancelled = true;
     };
   }, [organizationId, attempt]);
+  useEffect(() => {
+    const onChanged = () => setAttempt((n) => n + 1);
+    window.addEventListener(KITS_CHANGED_EVENT, onChanged);
+    return () => window.removeEventListener(KITS_CHANGED_EVENT, onChanged);
+  }, []);
   return { ...state, organizationId, retry: () => setAttempt((n) => n + 1) };
 }
 

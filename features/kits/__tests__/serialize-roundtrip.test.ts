@@ -107,7 +107,11 @@ function install(m: KitManifest): Snapshot {
         name: t.name,
         description: t.description,
         fields: t.fields.map(stored),
-        rows: t.records.map((r, i) => ({ id: `rec-${i}`, document: { ...r, _values: {} } })),
+        // The store decorates an entity reference with a display `label` on read.
+        rows: t.records.map((r, i) => ({
+          id: `rec-${i}`,
+          document: { ...r, model: { ...(r.model as object), label: "decorated" }, _values: {} },
+        })),
       },
     ],
     workflows: [

@@ -228,6 +228,12 @@ function rowToSeed(
       if (mapped && (!Array.isArray(mapped) || mapped.length > 0)) out[spec.key] = mapped;
       continue;
     }
+    if (spec.type === "entity_reference") {
+      // The store decorates a read with a display label; a kit carries the reference only.
+      const ref = (x: unknown) => (isRecord(x) && typeof x.token === "string" && typeof x.id === "string" ? { token: x.token, id: x.id } : x);
+      out[spec.key] = Array.isArray(v) ? v.map(ref) : ref(v);
+      continue;
+    }
     out[spec.key] = v;
   }
   return out;

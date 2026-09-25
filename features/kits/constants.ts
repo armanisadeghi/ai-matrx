@@ -45,3 +45,6 @@ export const BINDING_PREVIEW_PATH = "/agents/variable-bindings/preview";
 export const KIT_SAVE = {
   seedRowCap: 200,
 } as const;
+
+/** Fired on `window` after a kit is saved, edited or unpublished, so open galleries re-read. */
+export const KITS_CHANGED_EVENT = "matrx:kits-changed";

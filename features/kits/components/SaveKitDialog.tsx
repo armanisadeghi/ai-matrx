@@ -26,7 +26,7 @@ import { useOpenShareModal } from "@/features/overlays/openers/shareModal";
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "@/lib/toast";
 import { cn } from "@/utils/cn";
-import { KIT_ROUTES, KIT_SAVE, KIT_WORD } from "../constants";
+import { KIT_ROUTES, KIT_SAVE, KIT_WORD, KITS_CHANGED_EVENT } from "../constants";
 import { kitRecordsClient } from "../installer";
 import { publishKit, updateKit } from "../publish";
 import { buildManifest, draftGuide, type Snapshot } from "../serialize";
@@ -241,6 +241,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
         setSavedKey(key);
       }
       toast.success(`"${built.manifest.name}" is saved for ${orgName}.`);
+      window.dispatchEvent(new CustomEvent(KITS_CHANGED_EVENT));
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -506,7 +507,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
                     {built.manifest.tables.length} {built.manifest.tables.length === 1 ? "table" : "tables"} ·{" "}
                     {built.manifest.tables.reduce((n, t) => n + t.records.length, 0)} example rows · 1 agent ·{" "}
                     {built.manifest.workflows.length} {built.manifest.workflows.length === 1 ? "workflow" : "workflows"} ·{" "}
-                    {built.manifest.agents[0]?.bindings.length ?? 0} connected variables
+                    {(built.manifest.agents[0]?.bindings.length ?? 0) === 1 ? "1 connected variable" : `${built.manifest.agents[0]?.bindings.length ?? 0} connected variables`}
                   </p>
                 </div>
               </div>
