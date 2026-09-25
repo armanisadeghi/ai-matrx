@@ -20,6 +20,7 @@
 // conversation — sharing one would make the second run steal the first's
 // window and destroy its instance mid-stream.
 
+import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
@@ -99,8 +100,9 @@ export function headingTitle(markdown: string): string | null {
   for (const line of markdown.split("\n", 20)) {
     const t = line.trim();
     if (!t) continue;
-    const h1 = /^#\s+(.+)$/.exec(t);
-    return h1 ? h1[1].trim() || null : null;
+    // Only an H1 owns the title; its text goes through the ONE plain-text
+    // title projection (so `# **Episode 12**` names "Episode 12").
+    return /^#\s+\S/.test(t) ? plainTitleFromMarkdown(t) || null : null;
   }
   return null;
 }

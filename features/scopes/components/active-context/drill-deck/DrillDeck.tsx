@@ -20,6 +20,7 @@ import {
   taskNodeOf,
   typeNodeOf,
   useColumnQuery,
+  useProjectTasks,
   useTypeItems,
   useUniverse,
   type CreatePayload,
@@ -37,6 +38,7 @@ import {
   InlineCreate,
   KindGlyph,
   NodeLabel,
+  nodeTitle,
   PickerFooter,
   SkeletonRows,
 } from "../quick-pick/parts";
@@ -106,6 +108,9 @@ export function DrillDeckCore({
     [selectableKinds],
   );
 
+  const projectTasks = useProjectTasks(
+    engagementRungs && deck.t === "project" ? deck.node.id : null,
+  );
   const scopeDeck = deck.t === "scope" ? deck.node : null;
   const itemsQ = useTypeItems(scopeDeck?.typeId ?? null);
 
@@ -139,10 +144,13 @@ export function DrillDeckCore({
             .length,
         });
       } else if (deck.t === "project") {
-        for (const task of u.tasks) {
-          if (task.projectId === deck.node.id) {
-            out.push({ key: task.id, node: taskNodeOf(task, orgName) });
-          }
+        // The project's own tasks, read on demand (the person's whole list is
+        // a capped read), plus any the universe already holds.
+        const seen = new Set<string>();
+        for (const task of [...projectTasks.tasks, ...u.tasks]) {
+          if (task.projectId !== deck.node.id || seen.has(task.id)) continue;
+          seen.add(task.id);
+          out.push({ key: task.id, node: taskNodeOf(task, orgName) });
         }
       } else if (deck.t === "orgTasks") {
         for (const task of u.tasks) {
@@ -211,7 +219,7 @@ export function DrillDeckCore({
       }
     }
     return out;
-  }, [deck, engagementRungs, allowedKinds, includeEngagements, itemsQ.items, orgName, u]);
+  }, [deck, engagementRungs, allowedKinds, includeEngagements, itemsQ.items, orgName, projectTasks.tasks, u]);
 
   const title =
     deck.t === "root"
@@ -429,6 +437,7 @@ export function DrillDeckCore({
                     }
                   }}
                   disabled={!drill && !selectable}
+                  title={node ? nodeTitle(node) : row.railLabel}
                   className={cn(
                     "flex min-w-0 flex-1 items-center gap-2 py-2 pr-1.5 text-left text-sm hover:bg-muted disabled:cursor-default disabled:hover:bg-transparent",
                     node && selectable

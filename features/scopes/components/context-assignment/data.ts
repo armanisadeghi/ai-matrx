@@ -20,7 +20,10 @@
 // never fetch directly from the component.
 
 import { getUserProjects } from "@/features/projects/service";
-import { getUserTasks } from "@/features/tasks/services/taskService";
+import {
+  getProjectTasks,
+  getUserTasks,
+} from "@/features/tasks/services/taskService";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import type { ContextItemRow } from "@/features/scopes/types";
 
@@ -170,6 +173,24 @@ export function setRowScopes(entityType: string, entityId: string, scopeIds: str
  * real task, or a row's context was edited) so the next engagement refetches.
  * Pass nothing to clear all.
  */
+/** One project's tasks, read on demand — the engagement pickers' Tasks column.
+ *  The person's whole task list (`fetchAssignableTasks`) is a capped
+ *  organization-wide read; a project's own list is complete. */
+export async function fetchProjectTasks(
+  projectId: string,
+): Promise<AssignableTask[]> {
+  return cached(`tasks:project:${projectId}`, async () => {
+    const rows = await getProjectTasks(projectId);
+    return rows.map((t) => ({
+      id: t.id,
+      title: (t as { title?: string }).title ?? "Untitled task",
+      projectId: (t as { project_id?: string | null }).project_id ?? projectId,
+      orgId: (t as { organization_id?: string | null }).organization_id ?? null,
+      status: (t as { status?: string | null }).status ?? null,
+    }));
+  });
+}
+
 export function invalidateAssignableData(
   kind?: "projects" | "tasks" | "items" | "bulk",
   id?: string,
@@ -179,7 +200,10 @@ export function invalidateAssignableData(
     return;
   }
   if (kind === "projects") cache.delete("projects");
-  if (kind === "tasks") cache.delete("tasks");
+  if (kind === "tasks") {
+    cache.delete("tasks");
+    for (const k of [...cache.keys()]) if (k.startsWith("tasks:project:")) cache.delete(k);
+  }
   if (kind === "items") {
     if (id) cache.delete(`items:${id}`);
     else for (const k of [...cache.keys()]) if (k.startsWith("items:")) cache.delete(k);

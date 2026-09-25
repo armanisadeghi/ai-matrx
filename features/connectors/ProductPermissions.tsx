@@ -95,7 +95,7 @@ export function ProductPermissionsDisclosure({
       </button>
 
       {open ? (
-        <div id={panelId} className="mt-1.5 rounded-md bg-muted/40 p-2">
+        <div id={panelId} className="mt-1.5 border-l border-border py-1 pl-2 sm:rounded-md sm:border-0 sm:bg-muted/40 sm:p-2">
           <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
             What {providerName} is asked for
           </p>

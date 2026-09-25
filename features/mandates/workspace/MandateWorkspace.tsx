@@ -1,4 +1,6 @@
 "use client";
+import { ContractMismatchList } from "@/features/mandates/components/ContractMismatchNotice";
+import { unmetContractChecks } from "@/features/mandates/contract-check";
 import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 // features/mandates/workspace/MandateWorkspace.tsx
@@ -615,6 +617,14 @@ function OneMandateWorkspace({
             nameOfOrg,
             resolution,
           )}
+        />
+        {/* 🚨 THE BANNER SLOT ALSO SCREAMS A SAVED CONTRACT MISMATCH — a
+            Holder whose output kind / keys do not match this job was saved
+            (never blocked, Arman 2026-09-25) and is named here, red, with the
+            server's own sentence. */}
+        <ContractMismatchList
+          className="mb-4"
+          mismatches={unmetContractChecks(data.mandate, data.bindings)}
         />
         <MandateAlchemyCaptureProvider>
         <Tabs

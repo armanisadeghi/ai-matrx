@@ -63,6 +63,11 @@ async function focusType(label) {
   const b = page.locator('[data-miller-row="scope-tags"] button[aria-current]').filter({ hasText: label }).first();
   await b.click();
 }
+const sharingTab = async () => {
+  const tab = page.getByRole("tab", { name: "Sharing" });
+  await tab.waitFor({ state: "visible", timeout: 240000 });
+  await tab.click();
+};
 const fieldText = async () => (await page.locator('[data-engagement-picker="field"]').first().textContent())?.trim();
 
 try {
@@ -72,6 +77,7 @@ try {
   where = "agent-app";
   const appUrl = `${ORIGIN}/agent-apps/${APP_ID}/settings`;
   await page.goto(appUrl, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await sharingTab();
   await page.waitForSelector('[data-engagement-picker="field"]', { timeout: 240000 });
   await dismissBanners();
   step({ site: "agent-app", before: await fieldText() });
@@ -87,6 +93,7 @@ try {
   step({ site: "agent-app", picked: true, shot: await shot("agent-app-picked") });
   await page.keyboard.press("Escape");
   await page.reload({ waitUntil: "domcontentloaded" });
+  await sharingTab();
   await page.waitForSelector('[data-engagement-picker="field"]', { timeout: 240000 });
   await until("persisted chain", async () => (await fieldText())?.includes(TASK), 60000);
   const afterReload = await fieldText();
@@ -103,6 +110,7 @@ try {
   await sleep(2000);
   await page.keyboard.press("Escape");
   await page.reload({ waitUntil: "domcontentloaded" });
+  await sharingTab();
   await page.waitForSelector('[data-engagement-picker="field"]', { timeout: 240000 });
   await sleep(3000);
   const undone = await fieldText();

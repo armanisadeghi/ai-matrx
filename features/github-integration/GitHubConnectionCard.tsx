@@ -163,8 +163,8 @@ export function GitHubConnectionCard({
   const addAccessBlock = (
     <div
       className={cn(
-        "rounded-md border border-dashed border-border px-2.5 py-2",
-        compact ? "bg-background" : "bg-muted/20",
+        "border-t border-border px-0 py-2 sm:rounded-md sm:border sm:border-dashed sm:px-2.5",
+        compact ? "sm:bg-background" : "sm:bg-muted/20",
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -174,12 +174,13 @@ export function GitHubConnectionCard({
         <Button
           variant="outline"
           size="sm"
-          className="h-11 sm:h-7"
+          className="h-11 max-w-full px-2 text-sm sm:h-7"
           onClick={() => void github.install()}
           disabled={github.busy || github.loading}
         >
           <Plus className="h-3.5 w-3.5" />
-          Add an organization or more repositories
+          <span className="sm:hidden">Add repository access</span>
+          <span className="hidden sm:inline">Add an organization or more repositories</span>
           <ExternalLink className="h-3 w-3" />
         </Button>
       </div>
@@ -192,7 +193,7 @@ export function GitHubConnectionCard({
 
   return (
     <Card className={connected ? "border-emerald-500/40" : undefined}>
-      <CardContent className={compact ? "p-3" : "p-4"}>
+      <CardContent className="p-3 sm:p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
           <div className="flex min-w-0 flex-1 items-start gap-3">
             {connected && account?.avatarUrl ? (
@@ -261,13 +262,13 @@ export function GitHubConnectionCard({
               )}
             </div>
           </div>
-          <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:shrink-0 sm:flex-wrap sm:justify-end sm:gap-1.5">
+          <div className="flex flex-wrap gap-2 sm:w-auto sm:shrink-0 sm:justify-end sm:gap-1.5">
             {connected ? (
               <>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-11 w-full sm:h-8 sm:w-auto"
+                  className="h-11 sm:h-8"
                   onClick={() => void github.sync()}
                   disabled={github.busy}
                 >
@@ -282,7 +283,7 @@ export function GitHubConnectionCard({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-11 w-full sm:h-8 sm:w-auto"
+                    className="h-11 sm:h-8"
                     onClick={() => void handleDisconnect()}
                     disabled={github.busy}
                   >
@@ -293,7 +294,7 @@ export function GitHubConnectionCard({
             ) : (
               <Button
                 size="sm"
-                className="h-11 w-full sm:h-8 sm:w-auto"
+                className="h-11 sm:h-8"
                 onClick={() => void github.connect()}
                 disabled={github.loading || github.busy}
               >

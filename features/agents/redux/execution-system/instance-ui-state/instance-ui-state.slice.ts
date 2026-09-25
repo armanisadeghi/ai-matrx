@@ -105,12 +105,9 @@ export interface InstanceUIStateSlice {
    */
   memoryToggleTarget: boolean;
 
-  /**
-   * Admin-only — optional `memory_model` override sent with the memory
-   * toggle. When null, the backend falls back to `MATRX_OM_DEFAULT_MODEL`.
-   * Example values: "google/gemini-2.5-flash", "openai/gpt-5-mini".
-   */
-  memoryModel: string | null;
+  // No `memoryModel`: the Observer/Reflector model is the server's
+  // observational-memory mandate's Holder, never a client-sent override
+  // (BYPASS-CENSUS, removed 2026-09-25).
 
   /**
    * Admin-only — `memory_scope` sent with the memory toggle.
@@ -127,7 +124,6 @@ const initialState: InstanceUIStateSlice = {
   isSnapshot: false,
   isMemoryToggleRequested: false,
   memoryToggleTarget: true,
-  memoryModel: null,
   memoryScope: "thread",
 };
 
@@ -1001,10 +997,6 @@ const instanceUIStateSlice = createSlice({
       state.isMemoryToggleRequested = false;
     },
 
-    setMemoryModel(state, action: PayloadAction<string | null>) {
-      state.memoryModel = action.payload;
-    },
-
     setMemoryScope(state, action: PayloadAction<"thread" | "resource">) {
       state.memoryScope = action.payload;
     },
@@ -1128,7 +1120,6 @@ export const {
   setUseSnapshot,
   requestMemoryToggle,
   clearMemoryToggleRequest,
-  setMemoryModel,
   setMemoryScope,
 } = instanceUIStateSlice.actions;
 

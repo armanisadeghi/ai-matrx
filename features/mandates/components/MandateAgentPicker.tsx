@@ -213,7 +213,7 @@ export function MandateAgentPicker({
           await override.apply(candidateId);
         } else {
           const existingForProvision = data.myBinding?.config_overrides;
-          await putMandateBinding(
+          const report = await putMandateBinding(
             dispatch,
             mandateKey,
             { principalType: "user" },
@@ -237,6 +237,16 @@ export function MandateAgentPicker({
                 : {}),
             },
           );
+          if (
+            announceContractMismatch(
+              report.contractCheck?.state === "unmet"
+                ? report.contractCheck.summary
+                : null,
+            )
+          ) {
+            load();
+            return;
+          }
         }
         toast.success("This step now runs your agent.");
         load();
@@ -261,17 +271,16 @@ export function MandateAgentPicker({
               ),
             },
           );
-      if (!check.passing) {
-        setPreflight(
-          `That agent can't run this step — missing: ${[
+      // 🚨 A MISMATCH NEVER BLOCKS THE SAVE (Arman, 2026-09-25): it is said
+      // loudly, and the save goes ahead.
+      let savedMismatch: string | null = check.passing
+        ? null
+        : `That agent does not match this step's contract — missing: ${[
             ...check.missingVariables,
             ...check.missingPolicies,
           ]
             .map((r) => r.name)
-            .join(", ")}`,
-        );
-        return;
-      }
+            .join(", ")}. Saved anyway; fix the agent so it receives them.`;
       if (override) {
         await override.apply(candidateId);
       } else {
@@ -284,7 +293,7 @@ export function MandateAgentPicker({
               ),
             )
           : null;
-        await putMandateBinding(
+        const report = await putMandateBinding(
           dispatch,
           mandateKey,
           { principalType: "user" },
@@ -298,6 +307,13 @@ export function MandateAgentPicker({
               : {}),
           },
         );
+        if (report.contractCheck?.state === "unmet") {
+          savedMismatch = report.contractCheck.summary;
+        }
+      }
+      if (announceContractMismatch(savedMismatch)) {
+        load();
+        return;
       }
       toast.success("This step now runs your agent.");
       load();
@@ -309,6 +325,17 @@ export function MandateAgentPicker({
       setSaving(false);
     }
   };
+
+  /** Saved, but red: said on the page AND in the confirmation. */
+  function announceContractMismatch(sentence: string | null): boolean {
+    if (!sentence) return false;
+    setPreflight(sentence);
+    toast.warning("Saved — but this agent does not match the step's contract.", {
+      description: sentence,
+      duration: 12_000,
+    });
+    return true;
+  }
 
   const handleReset = async () => {
     if (saving) return;

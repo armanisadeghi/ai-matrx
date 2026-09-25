@@ -18,6 +18,7 @@
 import dynamic from "next/dynamic";
 import MarkdownStream from "@/components/MarkdownStream";
 import { RichContentDepthProvider } from "./depth";
+import { HeadingAnchorsProvider } from "@/components/markdown-core/heading-anchors-context";
 import { RichContentInline } from "./RichContentInline";
 import { RichContentVariantRoot } from "./prose/variant-root";
 import type { RichContentProps } from "./rich-content-types";
@@ -35,9 +36,24 @@ export function RichContent({
   depthCap,
   variant,
   links,
+  headingAnchors = true,
 }: RichContentProps) {
   if (level === "inline") {
     return <RichContentInline source={source} className={className} links={links} />;
+  }
+  if (!headingAnchors) {
+    return (
+      <HeadingAnchorsProvider value={false}>
+        <RichContent
+          source={source}
+          level={level}
+          isStreaming={isStreaming}
+          className={className}
+          depthCap={depthCap}
+          variant={variant}
+        />
+      </HeadingAnchorsProvider>
+    );
   }
   if (level === "standard") {
     return (

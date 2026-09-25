@@ -284,6 +284,9 @@ export function AssistantMessageFooter(props: AssistantMessageFooterProps) {
 
 export default AssistantMessageFooter;
 
+/** Agent-menu placements over a rendered answer (never "Content Blocks"). */
+export const ASSISTANT_ANSWER_PLACEMENT_MODE = { "content-block": "hide" } as const;
+
 /**
  * The right-click menu over an assistant turn's content: the ONE registry
  * (RegistryContextMenu), fed by the same facts as the footer bar — so the ⋯
@@ -315,6 +318,8 @@ export function AssistantMessageContextMenu(
           messageId: rest.messageId,
           message_id: rest.messageId,
         }}
+        // An answer is read-only: a content block could only be copied here.
+        placementMode={ASSISTANT_ANSWER_PLACEMENT_MODE}
       >
         {children}
       </RegistryContextMenu>

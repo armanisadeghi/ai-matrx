@@ -32,13 +32,19 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import { editMessage } from "./edit-message.thunk";
-import { projectAnswerText, spliceAnswerText } from "./answer-text-splice";
+import { projectAnswerText, spliceAnswerText, spliceDisplayEdit } from "./answer-text-splice";
 
 export interface SaveAnswerEditArgs {
   conversationId: string;
   messageId: string;
-  /** The whole edited answer text (no citation markers). */
-  newText: string;
+  /** The whole edited answer text, in STORED bytes (the in-place editor). */
+  newText?: string;
+  /**
+   * An in-body edit made on DISPLAY text (code block, table, decision, task
+   * toggle): only its changed span is spliced into the stored text
+   * (`spliceDisplayEdit`), so whitespace the view normalized is never rewritten.
+   */
+  displayEdit?: { previous: string; next: string };
   /**
    * The stored answer text the editor opened on (`fetchStoredAnswer`). When
    * given, a row that changed since then is refused instead of overwritten.
@@ -74,7 +80,7 @@ interface ThunkApi {
 
 export const saveAnswerEdit = createAsyncThunk<SaveAnswerEditResult, SaveAnswerEditArgs, ThunkApi>(
   "messages/saveAnswerEdit",
-  async ({ conversationId, messageId, newText, openedText }, { dispatch, getState, rejectWithValue }) => {
+  async ({ conversationId, messageId, newText: givenText, displayEdit, openedText }, { dispatch, getState, rejectWithValue }) => {
     const record = getState().messages.byConversationId[conversationId]?.byId?.[messageId];
     if (!record) {
       return rejectWithValue({ message: "This answer is no longer loaded — reload the conversation and edit again." });
@@ -90,6 +96,15 @@ export const saveAnswerEdit = createAsyncThunk<SaveAnswerEditResult, SaveAnswerE
         message:
           "This answer changed since you opened it (another tab or edit saved first). Nothing was written — copy your text, reload, and edit again.",
       });
+    }
+    let newText = givenText;
+    if (displayEdit) {
+      const mapped = spliceDisplayEdit(stored.text, displayEdit.previous, displayEdit.next);
+      if ("error" in mapped) return rejectWithValue({ message: mapped.error });
+      newText = mapped.text;
+    }
+    if (newText === undefined) {
+      return rejectWithValue({ message: "Nothing to save: no edited text was given." });
     }
     const plan = spliceAnswerText(stored.content, newText);
     if ("error" in plan) return rejectWithValue({ message: plan.error });

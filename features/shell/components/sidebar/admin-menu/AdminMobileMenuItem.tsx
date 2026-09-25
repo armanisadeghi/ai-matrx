@@ -10,7 +10,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/slices/userSlice";
+import { selectIsAdminPerson } from "@/lib/redux/selectors/userSelectors";
 
 const AdminMobileMenu = dynamic(() => import("./AdminMobileMenu"), {
   ssr: false,
@@ -18,7 +18,8 @@ const AdminMobileMenu = dynamic(() => import("./AdminMobileMenu"), {
 });
 
 export default function AdminMobileMenuItem() {
-  const isAdmin = useAppSelector(selectIsAdmin) ?? false;
+  // ADMIN IDENTITY: the mobile way INTO the admin section.
+  const isAdmin = useAppSelector(selectIsAdminPerson);
 
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {

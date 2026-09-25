@@ -50,7 +50,7 @@ describe("AdminSandboxManagementPage deletion ownership", () => {
     </SandboxStoreProvider>
   );
   beforeEach(() => {
-    store = createSandboxTestStore({ userId: viewerId, organizationId: "22222222-2222-4222-8222-222222222222", adminLevel: "super_admin" });
+    store = createSandboxTestStore({ userId: viewerId, organizationId: "22222222-2222-4222-8222-222222222222", adminLevel: "super_admin", adminLaneOpen: true });
     readAllRows.mockResolvedValue([first, second]);
     container = document.createElement("div"); document.body.append(container); root = createRoot(container);
     Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string, init?: RequestInit) => init?.method === "DELETE" && url.endsWith(first.id) ? new Promise(() => {}) : Promise.resolve({ ok: true, json: async () => ({}) })) });

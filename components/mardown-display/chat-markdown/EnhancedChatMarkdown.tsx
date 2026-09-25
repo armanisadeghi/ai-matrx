@@ -111,7 +111,14 @@ export interface ChatMarkdownDisplayProps {
   taskId?: string;
   className?: string;
   isStreamActive?: boolean;
-  onContentChange?: (newContent: string) => void;
+  /**
+   * An in-body edit produced the full new text. `previousContent` is the text
+   * the edit was applied to (this renderer's current content) — a persisting
+   * host diffs the two and splices ONLY the changed span into its stored bytes,
+   * because this content is display text (whitespace-normalized, reasoning
+   * scrubbed), never the stored row (RC-B5).
+   */
+  onContentChange?: (newContent: string, previousContent: string) => void;
   analysisData?: Record<string, unknown>;
   messageId?: string;
   allowFullScreenEditor?: boolean;
@@ -908,7 +915,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
           currentContent.slice(0, idx) +
           replacement +
           currentContent.slice(idx + original.length);
-        onContentChange?.(updatedContent);
+        onContentChange?.(updatedContent, currentContent);
         if (applyLocalEdits !== false) {
           setEditedContent(updatedContent);
         }
@@ -939,7 +946,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
   const handleSaveEdit = useCallback(
     (newContent: string) => {
       try {
-        onContentChange?.(newContent);
+        onContentChange?.(newContent, currentContent);
         if (applyLocalEdits !== false) {
           setEditedContent(newContent);
         }
@@ -948,7 +955,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
         console.error("[MarkdownStream] Error saving edit:", error);
       }
     },
-    [onContentChange, applyLocalEdits],
+    [onContentChange, applyLocalEdits, currentContent],
   );
 
   // Stable key: type + content fingerprint. Prevents React from reusing a
@@ -999,7 +1006,11 @@ export const EnhancedChatMarkdownInternal: React.FC<
             block={block}
             index={index}
             isStreamActive={isStreamActive}
-            onContentChange={onContentChange}
+            onContentChange={
+              onContentChange
+                ? (next: string) => onContentChange(next, currentContent)
+                : undefined
+            }
             conversationId={conversationId}
             messageId={messageId}
             requestId={requestId}
@@ -1030,6 +1041,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
       blockKey,
       isStreamActive,
       onContentChange,
+      currentContent,
       conversationId,
       messageId,
       requestId,

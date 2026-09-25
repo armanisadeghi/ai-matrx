@@ -45,6 +45,7 @@ import {
 } from "@/features/mandates/admin/references";
 import {
   bindingMetrics,
+  contractMismatchKeys,
   coverageCounts,
   definitionMetrics,
   codeBackedKeys,
@@ -166,6 +167,7 @@ export function MandateDashboard() {
   const keys = systemKeys(consoleSlot.data);
   const defs = definitionMetrics(consoleSlot.data, truthSlot.data);
   const binds = bindingMetrics(consoleSlot.data);
+  const mismatchKeys = contractMismatchKeys(consoleSlot.data);
   const cov = coverageCounts(coverageSlot.data, keys);
   const drift = driftMetrics(truthSlot.data, keys, codeBackedKeys(consoleSlot.data));
   const scan = scanMetrics(boardSlot.data);
@@ -246,6 +248,18 @@ export function MandateDashboard() {
             tone={defs && defs.defaultsNone > 0 ? "warn" : "neutral"}
             loading={consoleSlot.loading}
             href={mandateListHref({ [COL.pin]: "None" })}
+          />
+          <KpiTile
+            label="Contract mismatches"
+            value={mismatchKeys ? mismatchKeys.length : null}
+            tone={mismatchKeys && mismatchKeys.length > 0 ? "bad" : "neutral"}
+            loading={consoleSlot.loading}
+            href={mandateListHref()}
+            title={
+              mismatchKeys && mismatchKeys.length > 0
+                ? `A Holder was saved that does not match its job's contract (red in the list's Health column): ${mismatchKeys.join(", ")}`
+                : "Every saved Holder matches its job's contract."
+            }
           />
         </KpiGrid>
 

@@ -160,7 +160,6 @@ import {
   selectIsBlockMode,
   selectIsMemoryToggleRequested,
   selectIsSnapshot,
-  selectMemoryModel,
   selectMemoryScope,
   selectMemoryToggleTarget,
 } from "../instance-ui-state/instance-ui-state.selectors";
@@ -561,9 +560,7 @@ export async function assembleManualRequest(
     const target = selectMemoryToggleTarget(state);
     request.memory = target;
     if (target) {
-      const memoryModel = selectMemoryModel(state);
       const memoryScope = selectMemoryScope(state);
-      if (memoryModel) request.memory_model = memoryModel;
       if (memoryScope) request.memory_scope = memoryScope;
     }
   }

@@ -31,7 +31,9 @@ jest.mock("@/lib/toast", () => ({
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
   useAppSelector: (selector: (state: unknown) => unknown) =>
-    selector({ userAuth: { id: "admin-1", adminLevel: "super_admin" } }),
+    selector({
+      userAuth: { id: "admin-1", adminLevel: "super_admin", adminLaneOpen: true },
+    }),
 }));
 
 import { useImpactAdvance } from "../impact-advance";

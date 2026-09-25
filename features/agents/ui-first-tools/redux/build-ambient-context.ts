@@ -106,8 +106,10 @@ export function buildAmbientContext(
       id: auth.id,
       name,
       email: auth.email,
-      is_admin: auth.isAdmin ?? false,
-      admin_level: auth.adminLevel ?? null,
+      // ADMIN POWER, not identity: an agent on a user page must see an admin
+      // exactly as it sees anyone else (utils/supabase/adminLane.ts).
+      is_admin: auth.adminLaneOpen === true && (auth.isAdmin ?? false),
+      admin_level: auth.adminLaneOpen === true ? (auth.adminLevel ?? null) : null,
     },
     client: {
       surface: "nextjs",

@@ -8,6 +8,7 @@
 
 "use client";
 
+import { displayTitle } from "@/components/markdown-core/plain-title";
 import { createClient } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
 import type { CreatorProfileMine, FeaturedItem, CreatorLink } from "./types";
@@ -276,7 +277,7 @@ export async function listMyPublicResources(): Promise<OwnedPublicResource[]> {
 
   const out: OwnedPublicResource[] = [];
   for (const r of sets.data ?? []) {
-    out.push({ resourceType: "fc_set", id: (r as { id: string }).id, title: (r as { name: string }).name });
+    out.push({ resourceType: "fc_set", id: (r as { id: string }).id, title: displayTitle((r as { name: string }).name) });
   }
   for (const r of docs.data ?? []) {
     out.push({ resourceType: "learn_doc", id: (r as { id: string }).id, title: (r as { title: string }).title });

@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { ADMIN_LANE_HEADER } from "@/utils/supabase/adminLane";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { mapUserData } from "@/utils/userDataMapper";
 import {
@@ -121,6 +122,9 @@ export default async function AppLayout({
 
     initialReduxState = {
       user: userData,
+      // THE ADMIN LANE seed: the per-feature admin maps under (core) are admin
+      // section; `proxy.ts` stamped the request (utils/supabase/adminLane.ts).
+      adminLaneOpen: headersList.get(ADMIN_LANE_HEADER) === "1",
     };
   } else {
     const guestUserData = mapUserData(null, undefined, false);

@@ -50,11 +50,13 @@ describe("AssistantNoAnswer speaks to whoever is reading it", () => {
   const renderAs = (
     adminLevel: "super_admin" | null,
     props: { onRetry?: () => void } = {},
+    adminLaneOpen = false,
   ) => {
     const store = createSandboxTestStore({
       userId: "87a6e699-3622-4869-8843-d0867456c0dd",
       organizationId: "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
       adminLevel,
+      adminLaneOpen,
     });
     act(() => {
       root.render(
@@ -81,8 +83,14 @@ describe("AssistantNoAnswer speaks to whoever is reading it", () => {
     expect(host.querySelector("button")?.textContent).toBe("Run it again");
   });
 
-  it("keeps the engineering advice for the admins who can act on it", () => {
-    const text = renderAs("super_admin");
+  it("keeps the engineering advice for the admins who can act on it — in the admin section", () => {
+    const text = renderAs("super_admin", {}, true);
     expect(text).toContain(AGENT_INSTRUCTION_ADVICE);
+  });
+
+  it("shows an admin on a user page exactly what anyone else sees (the admin lane)", () => {
+    const text = renderAs("super_admin");
+    expect(text).not.toContain(AGENT_INSTRUCTION_ADVICE);
+    expect(text).toContain("This run finished without writing an answer.");
   });
 });

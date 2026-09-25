@@ -1,0 +1,95 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { onMandateCacheInvalidated } from "../service";
+import { fetchFeatureIntelligence } from "./service";
+import {
+  fetchRegisteredPlaces,
+  mergePlaces,
+  resolveDeclaredPlaces,
+} from "./places";
+import type {
+  FeatureIntelligenceRow,
+  IntelligenceContext,
+  IntelligenceLevel,
+  ResolvedPlace,
+} from "./types";
+
+export interface FeatureIntelligenceState {
+  rows: FeatureIntelligenceRow[];
+  places: ResolvedPlace[];
+  loading: boolean;
+  error: string | null;
+  /** A failed read of registered places — the declared ones still show. */
+  placesError: string | null;
+}
+
+/**
+ * One feature's jobs and places for a seat. Re-reads whenever any binding is
+ * written (the resolution cache's invalidation), so an action on this page
+ * shows its result without a reload.
+ */
+export function useFeatureIntelligence(args: {
+  feature: string;
+  level: IntelligenceLevel;
+  organizationId: string | null;
+  context: IntelligenceContext;
+  /** False while the seat is still being worked out. */
+  enabled: boolean;
+}): FeatureIntelligenceState {
+  const { feature, level, organizationId, enabled } = args;
+  const contextKey = JSON.stringify(args.context);
+  const [epoch, setEpoch] = useState(0);
+  const [state, setState] = useState<FeatureIntelligenceState>({
+    rows: [],
+    places: [],
+    loading: true,
+    error: null,
+    placesError: null,
+  });
+
+  useEffect(() => onMandateCacheInvalidated(() => setEpoch((n) => n + 1)), []);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    const context = JSON.parse(contextKey) as IntelligenceContext;
+    setState((prev) => ({ ...prev, loading: prev.rows.length === 0, error: null }));
+    (async () => {
+      try {
+        const rows = await fetchFeatureIntelligence({ feature, level, organizationId });
+        const declared = resolveDeclaredPlaces(feature, context);
+        let registered: ResolvedPlace[] = [];
+        let placesError: string | null = null;
+        try {
+          registered = await fetchRegisteredPlaces(
+            rows.map((row) => row.mandateKey),
+            context,
+          );
+        } catch (error) {
+          placesError = error instanceof Error ? error.message : String(error);
+        }
+        if (cancelled) return;
+        setState({
+          rows,
+          places: mergePlaces(declared, registered),
+          loading: false,
+          error: null,
+          placesError,
+        });
+      } catch (error) {
+        if (cancelled) return;
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          error: error instanceof Error ? error.message : String(error),
+        }));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [feature, level, organizationId, contextKey, enabled, epoch]);
+
+  return state;
+}

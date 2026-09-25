@@ -13,7 +13,7 @@
  * the old call site did not pass — and it pins the rule, not one screen:
  *
  *   · system rung → ONLY the system catalogue is reachable;
- *   · org rung    → only agents shared with the organization, or system ones;
+ *   · org rung    → every lane the organization can open (owner ruling 2026-09-25);
  *   · user rung   → unrestricted, deliberately (D3: "on my own user route, my
  *     own agents are fine"), and therefore carrying no sentence.
  *
@@ -138,11 +138,13 @@ describe("the holder picker is restricted BY RUNG, at the door", () => {
     act(() => root.unmount());
   });
 
-  it("the org rung can reach shared and system agents, never personal ones", () => {
+  // OWNER RULING (Arman, 2026-09-25): only the SYSTEM answer must be a system
+  // holder; an organization fills a system mandate with anything it can open.
+  it("the org rung reaches every lane the organization can open (mine · shared · all · system)", () => {
     const { text, root } = renderAt("org");
-    expect(lastDropdownProps?.visibleTabs).toEqual(["shared", "system"]);
-    expect(lastDropdownProps?.visibleTabs).not.toContain("mine");
-    expect(text).toContain("only agents shared with the organization");
+    expect(lastDropdownProps?.visibleTabs).toBeUndefined();
+    expect(lastDropdownProps?.includeSystemInAll).toBe(true);
+    expect(text).toContain("anything the whole organization can open");
     act(() => root.unmount());
   });
 

@@ -106,6 +106,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "durable-run": "Durable run could not be rejoined or settled",
   "record-unavailable": "Record unavailable (deleted, or access gap)",
   associations: "Associations package scream (port degradation / schema violation)",
+  "mandate-fast-path": "Hard-coded agent fast path disagrees with its Mandate",
 };
 
 export function sourceLabel(source: CapturedErrorSource): string {

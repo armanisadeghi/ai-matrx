@@ -185,6 +185,10 @@ export function PlacesBatchGrid({
                 // H3 — an unread place says so, and says nothing else.
                 ...(health.unknown ? [health.unknown] : []),
                 ...health.blockers,
+                ...health.warnings.map(
+                  (warning) =>
+                    `Contract mismatch (it still saves): ${warning}`,
+                ),
                 ...health.problems,
                 ...health.unfedRequired.map(
                   (name) =>
@@ -317,7 +321,11 @@ function toAttention(health: PlaceHealth) {
   if (health.tone === "red") {
     const count =
       health.unmapped + health.problems.length + health.blockers.length;
-    return { unmapped: count, requiredUnmapped: count };
+    // Contract warnings are red on the dot too — counted, never "required".
+    return {
+      unmapped: count + health.warnings.length,
+      requiredUnmapped: count,
+    };
   }
   if (health.tone === "amber") {
     return { unmapped: health.unfedRequired.length, requiredUnmapped: 0 };

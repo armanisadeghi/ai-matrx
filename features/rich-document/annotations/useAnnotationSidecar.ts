@@ -45,6 +45,9 @@ import type {
   SidecarCapabilities,
 } from "./types";
 
+/** An own-author event this soon after THIS tab wrote is its echo. */
+const OWN_ECHO_WINDOW_MS = 5000;
+
 const commentsChannel = defineChannelNamespace({
   namespace: "annotation-sidecar-comments",
   parts: ["entityId"],
@@ -149,6 +152,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
   }, [versionKey, source?.contentVersion, capturedBodies]);
 
   // Live comments from everyone who can read the source.
+  const lastLocalWrite = useRef(0);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scheduleReload = useCallback(() => {
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
@@ -169,9 +173,11 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
               filter: `entity_id=eq.${source.id}`,
               rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
               onChange: ({ row }) => {
-                // Own writes already reload after the door answers: never pay twice.
+                // THIS TAB's own writes already reload after the door answers:
+                // never pay twice. Scoped to this tab's recent writes, so the
+                // same person's OTHER tab still updates live.
                 const by = row && typeof row === "object" ? (row as { updated_by?: unknown }).updated_by : undefined;
-                if (by && by === getUserId()) return;
+                if (by && by === getUserId() && Date.now() - lastLocalWrite.current < OWN_ECHO_WINDOW_MS) return;
                 scheduleReload();
               },
             },
@@ -201,6 +207,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
   const runDraft = useCallback(
     async (draft: AnnotationItem, write: () => Promise<void>) => {
       setDrafts((d) => [...d.filter((x) => x.key !== draft.key), { ...draft, saveState: "pending", error: undefined }]);
+      lastLocalWrite.current = Date.now();
       try {
         await write();
         setDrafts((d) => d.filter((x) => x.key !== draft.key));
@@ -228,6 +235,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
       let notice: MentionNoticeResult | null = null;
       if (input.parentId) {
         // Replies are written straight through (no passage, nothing to paint).
+        lastLocalWrite.current = Date.now();
         const id = await addComment({ source: src, body: input.body, parentId: input.parentId });
         await reload();
         const mentions = mentionedUserIds(input.body);
@@ -337,6 +345,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
 
   const act = useCallback(
     async (fn: () => Promise<void>) => {
+      lastLocalWrite.current = Date.now();
       try {
         await fn();
         await reload();

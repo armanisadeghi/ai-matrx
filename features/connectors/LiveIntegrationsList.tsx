@@ -38,7 +38,7 @@ export function LiveIntegrationsList() {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className="shrink-0 border-b border-border px-4 py-3 sm:px-5">
+      <div className="shrink-0 border-b border-border px-2 py-3 sm:px-5">
         <p className="text-sm text-muted-foreground">
           Connect the services agents can use in a conversation. Only live,
           usable integrations appear here.
@@ -112,14 +112,14 @@ export function LiveIntegrationsList() {
                   <div
                     key={connector.id}
                     role="listitem"
-                    className="flex items-center gap-3 border-b border-border/70 px-4 py-3 last:border-b-0 sm:px-5"
+                    className="flex flex-wrap items-start gap-2 border-b border-border/70 px-2 py-3 last:border-b-0 sm:flex-nowrap sm:items-center sm:gap-3 sm:px-5"
                   >
                     <ConnectorMark
                       connector={connector}
                       className="h-8 w-8 rounded-lg"
                     />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 text-sm">
+                    <div className="min-w-0 flex-1 basis-[calc(100%-2.5rem)] sm:basis-0">
+                      <div className="flex flex-wrap items-center gap-1.5 text-sm">
                         {identity}
                         {connected && (
                           <span className="inline-flex items-center gap-1 text-xs text-success">
@@ -137,7 +137,7 @@ export function LiveIntegrationsList() {
                         asChild
                         size="sm"
                         variant="outline"
-                        className="h-10 shrink-0 gap-1.5 sm:h-8"
+                        className="ml-10 h-11 shrink-0 gap-1.5 sm:ml-0 sm:h-8"
                       >
                         <Link
                           href={connector.manageHref}
@@ -154,7 +154,7 @@ export function LiveIntegrationsList() {
                         type="button"
                         size="sm"
                         variant="outline"
-                        className="h-10 shrink-0 sm:h-8"
+                        className="ml-10 h-11 shrink-0 sm:ml-0 sm:h-8"
                         onClick={() => void connect(connector.id)}
                         disabled={busy}
                         aria-label={label}

@@ -59,24 +59,63 @@ export const selectUserEmailConfirmedAt = (state: RootState): string | null =>
 export const selectUserLastSignInAt = (state: RootState): string | null =>
   state.userAuth.lastSignInAt;
 
-/**
- * True if the user has any admin row at all. Use only when a feature has
- * deliberately lowered the bar to allow developer / senior_admin in
- * addition to super_admin. Default gates should use `selectIsSuperAdmin`.
+/*
+ * ADMIN IDENTITY vs ADMIN POWER (Arman, 2026-09-25): "Admin privileges cannot
+ * ever extend beyond the admin sections of the system. A persona with admin
+ * privileges should see nothing more than anyone else in any area of the
+ * normal user pages."
+ *
+ * The three default gates below — `selectIsAdmin`, `selectAdminLevel`,
+ * `selectIsSuperAdmin` — are ADMIN POWER: true only while the page is in the
+ * admin section (`state.userAuth.adminLaneOpen`, see
+ * utils/supabase/adminLane.ts). On every user page an admin reads exactly like
+ * everyone else, and so does the database (its admin arms need the same lane).
+ *
+ * The `...Person` selectors are ADMIN IDENTITY — "is this person an admin at
+ * all". They exist for ONE job: offering the way INTO the admin section
+ * (the admin-portal link, the admin indicator, a sign-out warning). Never gate
+ * data, a control, or extra information on a user page with them —
+ * `pnpm check:admin-lane` fails on that.
  */
-export const selectIsAdmin = (state: RootState): boolean =>
+
+function adminLaneOpen(state: RootState): boolean {
+  return state.userAuth.adminLaneOpen === true;
+}
+
+/** ADMIN IDENTITY — any admin row. Only for the way into the admin section. */
+export const selectIsAdminPerson = (state: RootState): boolean =>
   state.userAuth.isAdmin;
 
-/** The admin tier enum, or null for non-admins. */
-export const selectAdminLevel = (state: RootState): AdminLevel | null =>
+/** ADMIN IDENTITY — the tier, or null. Only for the way into the admin section. */
+export const selectAdminLevelPerson = (state: RootState): AdminLevel | null =>
   state.userAuth.adminLevel;
 
+/** ADMIN IDENTITY — super admin. Only for the way into the admin section. */
+export const selectIsSuperAdminPerson = (state: RootState): boolean =>
+  state.userAuth.adminLevel === "super_admin";
+
+/** True while the current page is in the admin section. */
+export const selectAdminLaneOpen = (state: RootState): boolean =>
+  adminLaneOpen(state);
+
 /**
- * Highest-bar selector. The new default for every UI gate. Future selective
- * lowering reads `selectAdminLevel` directly to gate on a specific tier.
+ * ADMIN POWER, any tier. Use only when a feature has deliberately lowered the
+ * bar to allow developer / senior_admin in addition to super_admin. Default
+ * gates should use `selectIsSuperAdmin`. False on every user page.
+ */
+export const selectIsAdmin = (state: RootState): boolean =>
+  adminLaneOpen(state) && state.userAuth.isAdmin;
+
+/** ADMIN POWER — the tier inside the admin section, null everywhere else. */
+export const selectAdminLevel = (state: RootState): AdminLevel | null =>
+  adminLaneOpen(state) ? state.userAuth.adminLevel : null;
+
+/**
+ * ADMIN POWER, highest bar. The default for every UI gate. False on every
+ * user page — an admin there sees exactly what anyone else sees.
  */
 export const selectIsSuperAdmin = (state: RootState): boolean =>
-  state.userAuth.adminLevel === "super_admin";
+  adminLaneOpen(state) && state.userAuth.adminLevel === "super_admin";
 
 /**
  * Authority check for the "creator" role — agentic engineers building agents,

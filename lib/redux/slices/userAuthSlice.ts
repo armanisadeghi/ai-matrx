@@ -39,6 +39,14 @@ export interface UserAuthState {
   tokenExpiresAt: number | null;
   /** True once the boot path has resolved either an auth user or fingerprint. */
   authReady: boolean;
+  /**
+   * THE ADMIN LANE (utils/supabase/adminLane.ts): true only while the page is
+   * in the admin section (/administration/**). Admin identity (`isAdmin`,
+   * `adminLevel`) is a fact about the PERSON; admin POWER exists only here.
+   * Seeded by the `(admin)` layout, kept current on navigation by
+   * `AdminLaneSync`. Optional so absent reads as closed.
+   */
+  adminLaneOpen?: boolean;
 }
 
 const initialState: UserAuthState = {
@@ -59,6 +67,7 @@ const initialState: UserAuthState = {
   accessToken: null,
   tokenExpiresAt: null,
   authReady: false,
+  adminLaneOpen: false,
 };
 
 const userAuthSlice = createSlice({
@@ -82,8 +91,18 @@ const userAuthSlice = createSlice({
     setAuthReady: (state, action: PayloadAction<boolean>) => {
       state.authReady = action.payload;
     },
-    /** Resets to initial — clears accessToken (security invariant). */
-    clearUserAuth: () => initialState,
+    /** Mirrors whether the current page is in the admin section. */
+    setAdminLaneOpen: (state, action: PayloadAction<boolean>) => {
+      state.adminLaneOpen = action.payload;
+    },
+    /**
+     * Resets to initial — clears accessToken (security invariant). The lane is
+     * a fact about the PAGE, not the person, so it survives the reset.
+     */
+    clearUserAuth: (state) => ({
+      ...initialState,
+      adminLaneOpen: state.adminLaneOpen,
+    }),
   },
 });
 
@@ -92,6 +111,7 @@ export const {
   setAccessToken,
   setTokenExpiry,
   setAuthReady,
+  setAdminLaneOpen,
   clearUserAuth,
 } = userAuthSlice.actions;
 

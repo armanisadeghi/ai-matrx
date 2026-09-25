@@ -18,7 +18,8 @@ import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import { hydrateMessages, type MessageRecord } from "../../messages/messages.slice";
 import { extractFlatText } from "../../messages/messages.selectors";
 import { saveAnswerEdit } from "../save-answer-edit.thunk";
-import { projectAnswerText, spliceAnswerText } from "../answer-text-splice";
+import { projectAnswerText, spliceAnswerText, spliceDisplayEdit } from "../answer-text-splice";
+import { commitInlineContentEdit, flushPendingInlineEdit } from "../commit-inline-edit.thunk";
 import { removeThinkingContent } from "@ai-matrx/print/markdown";
 import { listIslands, tokenizeSource } from "@ai-matrx/content-ir/source";
 import { planSave } from "@/components/rich-editor/core/save-plan";
@@ -313,5 +314,58 @@ describe("the database row is the truth, not the loaded Redux copy", () => {
     );
     expect(saveAnswerEdit.rejected.match(result)).toBe(true);
     expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
+describe("in-body edits (code block, table, decision) splice against the STORED text", () => {
+  // Stored bytes the view normalizes: a 3-blank-line run, trailing spaces,
+  // an inline reasoning section, a trailing newline.
+  const storedText =
+    "<thinking>\nPick a fast default.\n</thinking>\n\nUse this helper:  \n\n\n\n```python\ndef total(p, r, n):\n    return p * (1 + r) ** n\n```\n\n\n| Term | Rate |  \n|---|---|\n| 5y | 7.5% |\n";
+  const stored = [{ type: "text", text: storedText }];
+
+  test("the display text really is normalized (the trap)", () => {
+    const display = extractFlatText(record(stored));
+    expect(display).not.toContain("\n\n\n");
+    expect(display).not.toContain("<thinking>");
+    expect(display.endsWith("\n")).toBe(false);
+  });
+
+  test("a code-block edit changes only its span; every other stored byte is kept", async () => {
+    jest.useFakeTimers();
+    try {
+      const s = store(stored);
+      const display = extractFlatText(record(stored));
+      const edited = display.replace("return p * (1 + r) ** n", "return round(p * (1 + r) ** n, 2)");
+      s.dispatch(
+        commitInlineContentEdit({
+          conversationId: CONVERSATION_ID,
+          messageId: MESSAGE_ID,
+          newText: edited,
+          previousText: display,
+        }),
+      );
+      s.dispatch(flushPendingInlineEdit(MESSAGE_ID));
+      jest.useRealTimers();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(rpc).toHaveBeenCalledTimes(1);
+      const [, args] = rpc.mock.calls[0] as [string, { p_new_content: Array<{ text: string }> }];
+      expect(args.p_new_content).toEqual([
+        { type: "text", text: storedText.replace("return p * (1 + r) ** n", "return round(p * (1 + r) ** n, 2)") },
+      ]);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test("a table edit keeps the trailing spaces and blank-line runs around it", () => {
+    const display = extractFlatText(record(stored));
+    const result = spliceDisplayEdit(storedText, display, display.replace("| 5y | 7.5% |", "| 5y | 7.25% |"));
+    expect(result).toEqual({ text: storedText.replace("| 5y | 7.5% |", "| 5y | 7.25% |") });
+  });
+
+  test("a display that no longer matches the stored text refuses instead of guessing", () => {
+    const result = spliceDisplayEdit(storedText, "Something else entirely.", "Something else, edited.");
+    expect("error" in result).toBe(true);
   });
 });

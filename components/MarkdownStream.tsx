@@ -47,7 +47,8 @@ export interface MarkdownStreamProps {
   /** Whether streaming is currently active */
   isStreamActive?: boolean;
   /** Callback for content changes */
-  onContentChange?: (newContent: string) => void;
+  /** See EnhancedChatMarkdown: `previousContent` is the text the edit applied to. */
+  onContentChange?: (newContent: string, previousContent: string) => void;
   /**
    * When false (with onContentChange), block edits are reported via onContentChange but
    * the visible markdown stays tied to the `content` prop (no local edited overlay).

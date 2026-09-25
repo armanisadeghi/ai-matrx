@@ -374,7 +374,7 @@ function ProviderConnectorsPanel({
 
       <section
         id="connector-consent-body"
-        className="rounded-xl border border-border bg-textured p-3"
+        className="border-t border-border bg-textured px-1 py-3 sm:rounded-xl sm:border sm:p-3"
       >
         <header className="mb-2.5 flex items-start gap-2">
           <Plug className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />

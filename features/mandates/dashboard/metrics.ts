@@ -11,6 +11,7 @@
 //   truth     GET /mandates/code-truth                        — code ↔ DB drift counts
 //   board     GET /mandates/references/board                  — scan freshness, findings, conversion list
 
+import { unmetContractChecks } from "@/features/mandates/contract-check";
 import { featureLabelOf } from "@/features/mandates/admin-list/rows";
 import {
   buildCoverageIndex,
@@ -272,4 +273,23 @@ export function coverageCounts(
 ): Record<MandateCoverageBucket, number> | null {
   if (!coverage || !keys) return null;
   return scopedCoverageOf(buildCoverageIndex(coverage), keys).counts;
+}
+
+/**
+ * 🚨 JOBS WITH A HOLDER SAVED RED — the default or any binding whose contract
+ * check the server persisted as `unmet` (Arman, 2026-09-25: a mismatch saves,
+ * and is never quiet). `null` = the console read has not landed.
+ */
+export function contractMismatchKeys(
+  data: MandateConsoleData | null,
+): string[] | null {
+  if (!data) return null;
+  return data.mandates
+    .filter(
+      (mandate) =>
+        unmetContractChecks(mandate, data.bindingsByMandateId[mandate.id] ?? [])
+          .length > 0,
+    )
+    .map((mandate) => mandate.mandate_key)
+    .sort();
 }

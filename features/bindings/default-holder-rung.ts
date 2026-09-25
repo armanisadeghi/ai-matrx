@@ -178,7 +178,7 @@ export const DEFAULT_HOLDER_SYSTEM_HOLDER_RULE =
  * far as the client can honestly see, and never warns-and-allows.
  */
 export const DEFAULT_HOLDER_ORG_HOLDER_RULE =
-  "This default runs for everyone in the organization that homes this job, so only agents shared with an organization — or system agents — can hold it.";
+  "This default runs for each member of the organization that homes this job, with their own access — pick anything the whole organization can open: its own, one shared with it, community or system.";
 
 /**
  * The refusal when a personal agent is drafted as a SYSTEM-homed default, with

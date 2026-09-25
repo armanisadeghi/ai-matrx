@@ -30,6 +30,7 @@ import type { ReactNode } from "react";
 import { configureStore } from "@reduxjs/toolkit";
 import { Provider } from "react-redux";
 import userAuthReducer, {
+  setAdminLaneOpen,
   setUserAuth,
 } from "@/lib/redux/slices/userAuthSlice";
 import appContextReducer, {
@@ -41,8 +42,13 @@ import type { AdminLevel } from "@/utils/supabase/userSessionData";
 export interface SandboxTestIdentity {
   userId: string | null;
   organizationId: string | null;
-  /** `"super_admin"` is what `selectIsSuperAdmin` demands. */
+  /** `"super_admin"` is what `selectIsSuperAdmin` demands — inside the admin section. */
   adminLevel?: AdminLevel | null;
+  /**
+   * Is the page under test in the admin section? Admin POWER exists only
+   * there (utils/supabase/adminLane.ts); default: a user page.
+   */
+  adminLaneOpen?: boolean;
 }
 
 export function createSandboxTestStore(identity: SandboxTestIdentity) {
@@ -62,8 +68,9 @@ export type SandboxTestStore = ReturnType<typeof createSandboxTestStore>;
 /** Sign a different person in, exactly as the app's own auth boot would. */
 export function setSandboxTestIdentity(
   store: SandboxTestStore,
-  { userId, organizationId, adminLevel = null }: SandboxTestIdentity,
+  { userId, organizationId, adminLevel = null, adminLaneOpen = false }: SandboxTestIdentity,
 ): void {
+  store.dispatch(setAdminLaneOpen(adminLaneOpen));
   store.dispatch(
     setUserAuth({
       id: userId,

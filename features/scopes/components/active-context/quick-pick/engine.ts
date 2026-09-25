@@ -30,6 +30,7 @@ import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree"
 import {
   fetchAssignableProjects,
   fetchAssignableTasks,
+  fetchProjectTasks,
   fetchTypeItems,
   type AssignableProject,
   type AssignableTask,
@@ -603,6 +604,40 @@ export function useTypeItems(typeId: string | null): {
   };
 }
 
+/** One project's tasks, loaded when a host drills into the project (the
+ *  engagement Tasks column). Cached + deduped by data.ts. */
+export function useProjectTasks(projectId: string | null): {
+  status: "idle" | "loading" | "ready" | "error";
+  tasks: AssignableTask[];
+} {
+  const [state, setState] = useState<{
+    forProject: string | null;
+    status: "idle" | "loading" | "ready" | "error";
+    tasks: AssignableTask[];
+  }>({ forProject: null, status: "idle", tasks: [] });
+  useEffect(() => {
+    if (!projectId || projectId.startsWith("draft:")) {
+      setState({ forProject: projectId, status: "idle", tasks: [] });
+      return undefined;
+    }
+    let alive = true;
+    setState({ forProject: projectId, status: "loading", tasks: [] });
+    fetchProjectTasks(projectId)
+      .then((tasks) => {
+        if (alive) setState({ forProject: projectId, status: "ready", tasks });
+      })
+      .catch(() => {
+        if (alive) setState({ forProject: projectId, status: "error", tasks: [] });
+      });
+    return () => {
+      alive = false;
+    };
+  }, [projectId]);
+  return state.forProject === projectId
+    ? { status: state.status, tasks: state.tasks }
+    : { status: projectId ? "loading" : "idle", tasks: [] };
+}
+
 /** Items for SEVERAL scope types at once — Miller's OR-merged items column
  *  (multiple selected scopes can span multiple types). Cached + deduped by
  *  the same data.ts layer underneath. */
@@ -712,6 +747,38 @@ export interface SelectionEngine {
   isOn: (kind: NodeKind, id: string) => boolean;
   toggle: (node: PickNode) => void;
   clear: () => void;
+  /** Whether a column host fills the columns AFTER the deepest pick with a
+   *  preview of the highlighted (or first) row's children — Finder's focus
+   *  preview. Unset means yes (the Context Switcher and every multi-pick host
+   *  browse this way). `useDrillPathEngine` sets it false by default: a drill
+   *  path's later columns stay empty, with a hint, until their parent is picked,
+   *  so no column ever describes a selection that was not made. */
+  previewUnpicked?: boolean;
+}
+
+/** The rows that feed the NEXT column: the picked rows; with nothing picked,
+ *  the highlighted row, else the first row — or nothing at all when the host
+ *  does not preview (`SelectionEngine.previewUnpicked === false`). */
+export function columnFeed<T>(
+  picked: T[],
+  highlighted: T | undefined,
+  all: T[],
+  preview: boolean,
+): T[] {
+  if (picked.length > 0) return picked;
+  if (!preview) return [];
+  return highlighted ? [highlighted] : all.slice(0, 1);
+}
+
+/** The column a person is working in: the one after the deepest column that
+ *  holds a pick (0 = Organizations, 3 = Context items). A column host gives it
+ *  the room its names need; the others compress (Finder's column view). */
+export function focusedColumnIndex(pickedPerColumn: readonly number[]): number {
+  let deepest = -1;
+  pickedPerColumn.forEach((count, index) => {
+    if (count > 0) deepest = index;
+  });
+  return Math.min(deepest + 1, pickedPerColumn.length);
 }
 
 export function useSelectionEngine(single: boolean): SelectionEngine {
@@ -872,11 +939,15 @@ export function useDrillPathEngine({
   path,
   onChange,
   itemLabel,
+  preview = false,
 }: {
   orgs: OrgNode[];
   path: DrillPath;
   onChange: (next: DrillPath) => void;
   itemLabel?: string | null;
+  /** Preview the highlighted row's children in the columns after the deepest
+   *  pick. Off by default: a drill path shows only what was picked. */
+  preview?: boolean;
 }): SelectionEngine {
   return useMemo(() => {
     const nodes = drillPathNodes(orgs, path, itemLabel);
@@ -897,8 +968,9 @@ export function useDrillPathEngine({
       isOn,
       toggle: (node) => onChange(applyDrillPick(path, node)),
       clear: () => onChange(EMPTY_DRILL_PATH),
+      previewUnpicked: preview,
     };
-  }, [orgs, path, onChange, itemLabel]);
+  }, [orgs, path, onChange, itemLabel, preview]);
 }
 
 /* ── engagement rungs (org → project → task, scopes as tags) ──────────────── */

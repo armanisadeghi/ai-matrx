@@ -64,8 +64,15 @@ export interface PlaceHealth {
   requiredUnmapped: number;
   /** Map problems in domain words — the same pre-flight the save runs. */
   problems: readonly string[];
-  /** Why this place cannot be written at all (requirement gate, dead offer). */
+  /** Why this place cannot be written at all (a dead offer). */
   blockers: readonly string[];
+  /**
+   * 🚨 CONTRACT MISMATCHES — RED, NEVER A REFUSAL (Arman, 2026-09-25:
+   * "it can warn, make things red, scream and go crazy, but it cannot block").
+   * The Holder's output/inputs do not meet this place's contract; the row is
+   * red and says why, and Apply still writes it.
+   */
+  warnings: readonly string[];
   /** Required inputs nothing feeds, where the holder has no default either. */
   unfedRequired: readonly string[];
   /**
@@ -86,6 +93,7 @@ const EMPTY_HEALTH: PlaceHealth = {
   requiredUnmapped: 0,
   problems: [],
   blockers: [],
+  warnings: [],
   unfedRequired: [],
   unknown: null,
   tone: "green",
@@ -143,6 +151,7 @@ export function placeHealth({
   offered,
   map,
   blockers = [],
+  warnings = [],
   offerStatus = "ready",
   offerMessage = null,
   suppliedByCaller = [],
@@ -150,8 +159,10 @@ export function placeHealth({
   targets: readonly BindingTarget[];
   offered: readonly OfferedValue[];
   map: ConsumptionMap;
-  /** Reasons this place cannot be written, from the requirement gate. */
+  /** Reasons this place cannot be written (a dead offer). */
   blockers?: readonly string[];
+  /** Contract mismatches — painted red, never gating Apply. */
+  warnings?: readonly string[];
   /** Holder inputs this place's own caller passes — see `unfedRequiredTargets`. */
   suppliedByCaller?: readonly string[];
   /**
@@ -169,6 +180,7 @@ export function placeHealth({
       requiredUnmapped: 0,
       problems: [],
       blockers,
+      warnings,
       unfedRequired: [],
       unknown:
         offerStatus === "loading"
@@ -178,7 +190,8 @@ export function placeHealth({
       tone: offerStatus === "error" ? "red" : "amber",
     };
   }
-  if (targets.length === 0 && blockers.length === 0) return EMPTY_HEALTH;
+  if (targets.length === 0 && blockers.length === 0 && warnings.length === 0)
+    return EMPTY_HEALTH;
 
   let unmapped = 0;
   let requiredUnmapped = 0;
@@ -214,7 +227,10 @@ export function placeHealth({
   // whole map over it — which is exactly what map mode's Save says too. Colour
   // and gate must agree, or the dot is decoration.
   const tone: PlaceHealth["tone"] =
-    unmapped > 0 || problems.length > 0 || blockers.length > 0
+    unmapped > 0 ||
+    problems.length > 0 ||
+    blockers.length > 0 ||
+    warnings.length > 0
       ? "red"
       : unfedRequired.length > 0
         ? "amber"
@@ -225,6 +241,7 @@ export function placeHealth({
     requiredUnmapped,
     problems,
     blockers,
+    warnings,
     unfedRequired,
     unknown: null,
     tone,

@@ -110,11 +110,15 @@ export function AgentAppCategoryPicker({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
+      {/* The clear control sits BESIDE the trigger, never inside it: a button
+          inside a button is invalid HTML and a hydration error. */}
+      <div className="relative">
       <PopoverTrigger asChild disabled={disabled}>
         <button
           type="button"
           className={cn(
             "h-9 w-full flex items-center gap-2 px-3 rounded-md border border-input bg-background hover:bg-muted/50 transition-colors text-left",
+            value && !disabled && "pr-8",
             disabled && "opacity-60 cursor-not-allowed",
           )}
         >
@@ -127,24 +131,27 @@ export function AgentAppCategoryPicker({
           >
             {value ?? placeholder}
           </span>
-          {value && !disabled && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="p-0.5 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
-              aria-label="Clear category"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          )}
           {!matchedSystem && value && (
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 shrink-0">
               custom
             </span>
           )}
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          {!(value && !disabled) && (
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          )}
         </button>
       </PopoverTrigger>
+      {value && !disabled && (
+        <button
+          type="button"
+          onClick={handleClear}
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+          aria-label="Clear category"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      )}
+      </div>
       <PopoverContent
         sizing="content"
         align="start"

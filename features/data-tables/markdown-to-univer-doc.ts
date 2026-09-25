@@ -29,6 +29,7 @@
  * than leaking syntax.
  */
 
+import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
 import {
   BooleanNumber,
   createParagraphId,
@@ -367,16 +368,13 @@ export function markdownToUniverDoc(
  */
 export function deriveDocumentName(markdown: string): string {
   const cleaned = stripThinking(markdown ?? "");
-  const lines = cleaned.split("\n").map((l) => l.trim());
-  const heading = lines.find((l) => /^#{1,6}\s+/.test(l));
-  const firstText =
-    heading?.replace(/^#{1,6}\s+/, "") ?? lines.find((l) => l.length > 0) ?? "";
-  const plain = firstText
-    .replace(/[#*_`~>]/g, "")
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-    .trim();
+  // First heading, else the first line — through the ONE plain-text title
+  // projection (components/markdown-core/plain-title.ts).
+  const lines = cleaned.split("\n");
+  const heading = lines.find((l) => /^\s{0,3}#{1,6}\s+/.test(l));
+  const plain = plainTitleFromMarkdown(heading ?? cleaned);
   if (!plain) {
     return `Document ${new Date().toLocaleDateString()}`;
   }
-  return plain.length > 80 ? `${plain.slice(0, 77)}\u2026` : plain;
+  return plainTitleFromMarkdown(plain, { maxLength: 80 });
 }

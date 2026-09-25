@@ -6,7 +6,14 @@
  * Admin-only controls for enabling / disabling / configuring Observational
  * Memory on a conversation. The toggle is a one-shot Redux flag — once set,
  * the next outbound turn (see execute-instance thunk) will send
- * `memory: true|false` plus the selected model/scope.
+ * `memory: true|false` plus the selected scope.
+ *
+ * 🚨 NO MODEL PICKER. Which model runs the Observer / Reflector is the
+ * server's observational-memory MANDATE's decision (its Holder), never a
+ * curated client list sent as `memory_model`. Until 2026-09-25 this file held
+ * `MEMORY_MODEL_NAMES` and sent the admin's pick as a run-scope override — a
+ * model choice outside the mandate system (BYPASS-CENSUS frontend-features).
+ * Change the model by rebinding the mandate, not here.
  *
  * For unpersisted conversations (no turns yet), the toggle is still queued —
  * it rides the first turn and the backend persists the metadata from there.
@@ -25,12 +32,10 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   requestMemoryToggle,
-  setMemoryModel,
   setMemoryScope,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import {
   selectIsMemoryToggleRequested,
-  selectMemoryModel,
   selectMemoryScope,
   selectMemoryToggleTarget,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
@@ -38,21 +43,6 @@ import {
   selectIsMemoryEnabledForConversation,
   selectMemoryMetadata,
 } from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
-import { useModels } from "@/features/ai-models/hooks/useModels";
-
-/**
- * Curated list of models known to work well for Observer / Reflector.
- * Kept small + opinionated — if we need more freedom, we can swap to a
- * free-text input later.
- */
-const MEMORY_MODEL_NAMES: readonly string[] = [
-  "google/gemini-2.5-flash",
-  "google/gemini-2.5-flash-lite",
-  "openai/gpt-5-mini",
-  "openai/gpt-5-nano",
-  "claude-haiku-4-5",
-];
 
 interface MemoryControlsProps {
   conversationId: string;
@@ -75,15 +65,7 @@ export function MemoryControls({
 
   const toggleRequested = useAppSelector(selectIsMemoryToggleRequested);
   const toggleTarget = useAppSelector(selectMemoryToggleTarget);
-  const memoryModel = useAppSelector(selectMemoryModel);
   const memoryScope = useAppSelector(selectMemoryScope);
-  const { models } = useModels();
-  const eligibleMemoryModels = models.filter((model) =>
-    MEMORY_MODEL_NAMES.includes(model.name),
-  );
-  const memoryModelId =
-    eligibleMemoryModels.find((model) => model.name === memoryModel)?.id ??
-    null;
 
   // Effective shown state — pending toggle beats persisted state.
   const effectiveEnabled = toggleRequested
@@ -93,13 +75,6 @@ export function MemoryControls({
   const handleToggle = useCallback(
     (enabled: boolean) => {
       dispatch(requestMemoryToggle({ enabled }));
-    },
-    [dispatch],
-  );
-
-  const handleModelChange = useCallback(
-    (value: string) => {
-      dispatch(setMemoryModel(value === "" ? null : value));
     },
     [dispatch],
   );
@@ -195,34 +170,13 @@ export function MemoryControls({
 
       {!isCompact && <Separator className="!my-2" />}
 
-      {/* Model + scope selectors (only meaningful when enabling) */}
+      {/* Scope selector (only meaningful when enabling) */}
       <div
         className={cn(
           "space-y-1.5",
           !toggleRequested && !isPersistedEnabled && "opacity-60",
         )}
       >
-        <div className="flex items-center justify-between gap-2">
-          <Label className="text-xs text-muted-foreground shrink-0">
-            Model override
-          </Label>
-          <ModelListDropdown
-            value={memoryModelId}
-            onValueChange={(modelId) => {
-              const selectedModel = eligibleMemoryModels.find(
-                (model) => model.id === modelId,
-              );
-              if (selectedModel) handleModelChange(selectedModel.name);
-            }}
-            inputModalities={["text"]}
-            outputModalities={["text"]}
-            allowedModelIds={eligibleMemoryModels.map((model) => model.id)}
-            emptyOptionLabel="Default observational-memory model"
-            onClear={() => handleModelChange("")}
-            className="h-6 max-w-[240px] flex-1 text-[11px]"
-          />
-        </div>
-
         <div className="flex items-center justify-between gap-2">
           <Label className="text-xs text-muted-foreground shrink-0">
             Scope

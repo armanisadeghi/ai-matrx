@@ -325,7 +325,7 @@ export function AgentAssistantMessage({
   // `isStreamActive` is true, which is the only window without a messageId,
   // so in practice this branch is always taken when an edit fires.
   const handleInlineContentChange = useCallback(
-    (newContent: string) => {
+    (newContent: string, previousContent: string) => {
       if (!messageId) return;
       dispatch(
         commitInlineContentEdit({
@@ -333,6 +333,7 @@ export function AgentAssistantMessage({
           messageId,
           requestId,
           newText: newContent,
+          previousText: previousContent,
         }),
       );
     },

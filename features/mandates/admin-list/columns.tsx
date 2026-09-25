@@ -167,6 +167,22 @@ function HealthCell({ row }: { row: MandateAdminRow }) {
       </Badge>
       {/* Workflow parity: a workflow holder that no longer fits this job. */}
       <WorkflowDriftBadge verdicts={row.workflowVerdicts} />
+      {/* 🚨 A Holder saved with an unmet contract (Arman, 2026-09-25: saved,
+          never blocked — and never quiet). The server's own sentence. */}
+      {row.contractMismatches.length > 0 ? (
+        <Badge
+          variant="outline"
+          className={HEALTH_CLASS["output contract unmet"]}
+          title={row.contractMismatches
+            .map((m) => `${m.where}: ${m.check.summary}`)
+            .join("\n\n")}
+          data-testid="contract-mismatch-badge"
+        >
+          {row.contractMismatches.length === 1
+            ? "contract mismatch"
+            : `${row.contractMismatches.length} contract mismatches`}
+        </Badge>
+      ) : null}
       {row.health === "code ↔ agent drift" && row.codeTruth && (
         <span className="basis-full text-[10px] leading-tight text-rose-600">
           code: {row.codeTruth.code_variables.join(", ") || "none"}

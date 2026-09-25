@@ -111,6 +111,11 @@ export interface RegistryContextMenuProps {
    * shortcuts receive them.
    */
   contextData?: Record<string, unknown>;
+  /**
+   * Which agent-menu placements show (e.g. `{ "content-block": "hide" }` over
+   * a rendered answer, where a block could only be copied, never inserted).
+   */
+  placementMode?: React.ComponentProps<typeof NonEditableContextMenu>["placementMode"];
   children: React.ReactNode;
 }
 
@@ -132,6 +137,7 @@ export function RegistryContextMenu(
       suppressed={suppressed}
       contentSource={source}
       contextData={{ ...props.contextData, content: ctx.content }}
+      placementMode={props.placementMode}
       excludedRichActions={excludes}
       richDocCtxExtras={{
         callbacks: actions?.callbacks,

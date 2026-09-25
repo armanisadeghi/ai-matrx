@@ -49,7 +49,7 @@ const SIMPLE_ICON_SLUG_BY_PROVIDER_NAME: Record<string, string> = {
   "Zoho CRM Data Insights": "zoho",
 };
 
-function providerArtworkUrls(entry: McpCatalogEntry): string[] {
+export function providerArtworkUrls(entry: McpCatalogEntry): string[] {
   const urls: Array<string | null> = [];
 
   if (entry.websiteUrl) {

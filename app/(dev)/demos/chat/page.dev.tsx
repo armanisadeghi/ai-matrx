@@ -7,6 +7,7 @@ import {
   getDefaultAgent,
   resolveAgentForSSR,
 } from "@/features/cx-chat/components/agent/agents";
+import { FastPathMandateGuard } from "@/features/mandates/FastPathMandateGuard";
 import { resolveMandateSeed } from "@/features/mandates/seed.server";
 import { BACKEND_URLS } from "@/lib/api/endpoints";
 import { warmAgent } from "@/lib/api/warm-helpers";
@@ -28,6 +29,15 @@ export default async function ChatPage() {
   return (
     <>
       <ChatHeaderControls />
+      {/* The seed-mirror fallback ran without a resolved Mandate — the browser
+          re-asks `chat.cx_default` and screams to admins on a mismatch. */}
+      {seed.agentId ? null : (
+        <FastPathMandateGuard
+          mandateKey={CX_DEFAULT_MANDATE_KEY}
+          hardcodedAgentId={agent.promptId}
+          surface="app/(dev)/demos/chat/page.dev.tsx (SSR seed fallback)"
+        />
+      )}
       <ChatWelcomeServer agent={agent} />
     </>
   );

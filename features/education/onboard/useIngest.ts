@@ -15,6 +15,7 @@
 
 "use client";
 
+import { pastedNotesTitle } from "./pasted-notes-title";
 import { useCallback } from "react";
 import { fileHandler } from "@/features/files/handler/handler";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
@@ -237,7 +238,7 @@ export function useIngest(): UseIngestResult {
       if (input.kind === "paste") {
         const raw = (input.text ?? "").trim();
         if (!raw) throw new Error("Nothing to ingest — paste some text first.");
-        const title = input.title?.trim() || raw.split(/\n/)[0].slice(0, 60) || "Pasted notes";
+        const title = pastedNotesTitle(raw, input.title);
         onProgress?.({ phase: "uploading", message: "Saving your notes…" });
         const fileId = await anchorText(raw, title, onProgress);
         const { text, truncated } = await clampToKnob(raw);

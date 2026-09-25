@@ -8,6 +8,7 @@
 
 "use client";
 
+import { withDisplayTitle } from "@/components/markdown-core/plain-title";
 import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
@@ -94,7 +95,7 @@ export const studyMediaService = {
         .select()
         .single();
       if (error) return fail("create", error);
-      return { data: data as StudyMediaRow, error: null };
+      return { data: withDisplayTitle(data as StudyMediaRow, "title"), error: null };
     } catch (e) {
       return fail("create", e);
     }
@@ -112,7 +113,7 @@ export const studyMediaService = {
         .select()
         .single();
       if (error) return fail("update", error);
-      return { data: data as StudyMediaRow, error: null };
+      return { data: withDisplayTitle(data as StudyMediaRow, "title"), error: null };
     } catch (e) {
       return fail("update", e);
     }
@@ -139,7 +140,7 @@ export const studyMediaService = {
             relation: "education.study_media",
           }).message,
         };
-      return { data: data as StudyMediaRow, error: null };
+      return { data: withDisplayTitle(data as StudyMediaRow, "title"), error: null };
     } catch (e) {
       return fail("getById", e);
     }
@@ -161,7 +162,7 @@ export const studyMediaService = {
         .in("id", ids)
         .is("deleted_at", null);
       if (error) return fail("listByIds", error);
-      return { data: (data ?? []) as StudyMediaRow[], error: null };
+      return { data: ((data ?? []) as StudyMediaRow[]).map((r) => withDisplayTitle(r, "title")), error: null };
     } catch (e) {
       return fail("listByIds", e);
     }
@@ -179,7 +180,7 @@ export const studyMediaService = {
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) return fail("listByKind", error);
-      return { data: (data ?? []) as StudyMediaRow[], error: null };
+      return { data: ((data ?? []) as StudyMediaRow[]).map((r) => withDisplayTitle(r, "title")), error: null };
     } catch (e) {
       return fail("listByKind", e);
     }

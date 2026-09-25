@@ -10,8 +10,8 @@ import {
   selectUser,
   selectDisplayName,
   selectProfilePhoto,
-  selectIsSuperAdmin,
 } from "@/lib/redux/slices/userSlice";
+import { selectIsSuperAdminPerson } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
@@ -41,7 +41,8 @@ export function PublicHeaderAuth() {
   const user = useSelector(selectUser);
   const displayName = useSelector(selectDisplayName);
   const profilePhoto = useSelector(selectProfilePhoto);
-  const isAdmin = useSelector(selectIsSuperAdmin);
+  // ADMIN IDENTITY: the admin menu is the way INTO the admin section.
+  const isAdmin = useSelector(selectIsSuperAdminPerson);
   const router = useRouter();
 
   // Avoid hydration mismatch: GlobalAuthSync populates the user slice after

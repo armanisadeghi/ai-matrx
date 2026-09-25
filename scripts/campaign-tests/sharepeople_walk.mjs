@@ -82,6 +82,23 @@ try {
   if (!process.env.ADMIN_ONLY) {
   const tctx = await browser.newContext({ viewport: { width: WIDTH, height: 1000 } });
   const t = await tctx.newPage();
+  if (process.env.VERIFY_ONLY) {
+    // The shares are in place: reopen the visits dialog and read what it says now.
+    const whoV = await signIn(t, ORIGIN, TEST_EMAIL, TEST_PW, "test seat");
+    pass("test seat signed in", whoV === TEST_EMAIL, whoV);
+    await openTable(t, VISITS, "Birch Court HOA");
+    await openShare(t);
+    const cur = await dialogText(t);
+    pass("Current Access names admin", /Current Access.*admin@admin\.com/s.test(cur) && !/Not shared with anyone/.test(cur), cur.slice(0, 200));
+    await t.locator('[role="dialog"] button:has-text("Add everyone in an organization")').click({ timeout: 20000 });
+    await until("members listed", () => t.evaluate(() => document.querySelectorAll("[data-member]").length > 0), 60000);
+    const panelV = await t.evaluate(() => document.querySelector("[data-add-everyone-in-org]")?.textContent ?? "");
+    pass("already-shared person is skipped and said", /Already has access/.test(panelV) && /has access now/.test(panelV), panelV.slice(0, 220));
+    await t.locator("[data-add-everyone-in-org]").scrollIntoViewIfNeeded().catch(() => {});
+    await shot(t, "7-visits-reopened");
+    await tctx.close();
+    throw Object.assign(new Error("verify-only done"), { done: true });
+  }
   const who = await signIn(t, ORIGIN, TEST_EMAIL, TEST_PW, "test seat");
   pass("test seat signed in", who === TEST_EMAIL, who);
 
@@ -141,6 +158,8 @@ try {
   pass("admin opens visits", await openTable(a, VISITS, "Birch Court HOA"), VISITS);
   await shot(a, "6-admin-opens-visits");
   await actx.close();
+} catch (e) {
+  if (!e.done) throw e;
 } finally {
   await browser.close();
 }

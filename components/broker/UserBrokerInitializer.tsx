@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { brokerActions } from "@/lib/redux/brokerSlice/slice";
 import { UserData } from "@/utils/userDataMapper";
 import { useSetGlobalBasics } from "@/hooks/brokers/useSetGlobalBasics";
@@ -15,6 +16,7 @@ interface GlobalBrokersInitializerProps {
 
 export function GlobalBrokersInitializer({ user }: GlobalBrokersInitializerProps) {
     const dispatch = useAppDispatch();
+    const isAdminInLane = useAppSelector(selectIsAdmin);
 
     useSetGlobalBasics();
 
@@ -57,11 +59,13 @@ export function GlobalBrokersInitializer({ user }: GlobalBrokersInitializerProps
         dispatch(
             brokerActions.setValue({
                 brokerId: "GLOBAL_USER_IS_ADMIN",
-                value: user.isAdmin,
+                // ADMIN POWER, not identity: false on every user page
+                // (utils/supabase/adminLane.ts).
+                value: isAdminInLane,
             })
         );
         
-    }, [dispatch, user]);
+    }, [dispatch, user, isAdminInLane]);
 
     return null;
 }

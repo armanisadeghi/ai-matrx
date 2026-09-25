@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Briefcase, FolderOpen, Plus } from "lucide-react";
 import {
   Popover,
@@ -14,8 +14,10 @@ import type {
   ScopeTypeNode,
 } from "@/features/scopes/types";
 import {
+  columnFeed,
   columnShowsSearch,
   filterColumnRows,
+  focusedColumnIndex,
   itemNodeOf,
   orgNameLookup,
   orgNodeOf,
@@ -25,6 +27,7 @@ import {
   typeNodeOf,
   useColumnQuery,
   useItemsForTypes,
+  useProjectTasks,
   useUniverse,
   ALL_ENGAGEMENT_RUNGS,
   type CreatePayload,
@@ -42,6 +45,7 @@ import {
   InlineCreate,
   KindGlyph,
   NodeLabel,
+  nodeTitle,
   PickerFooter,
   SkeletonRows,
 } from "../quick-pick/parts";
@@ -91,6 +95,8 @@ function Column({
   onCreate,
   condensed,
   search,
+  focused,
+  columnRef,
 }: {
   title: string;
   count?: number;
@@ -100,10 +106,22 @@ function Column({
   condensed: boolean;
   /** Per-column search; the box renders only when the column is long. */
   search?: ColumnSearchState;
+  /** The column the person is working in. When the columns are squeezed (a
+   *  phone, a narrow panel) it takes the room its names need and the others
+   *  compress — Finder's column view. At full width every column is equal. */
+  focused?: boolean;
+  columnRef?: React.Ref<HTMLDivElement>;
 }) {
   const [creating, setCreating] = useState(false);
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col border-r border-border last:border-r-0">
+    <div
+      ref={columnRef}
+      data-miller-focused={focused ? "" : undefined}
+      className={cn(
+        "flex min-h-0 min-w-0 flex-1 flex-col border-r border-border last:border-r-0",
+        focused && "@max-[720px]:flex-[2.4]",
+      )}
+    >
       <div className="flex h-7 shrink-0 items-center gap-1.5 border-b border-border px-2">
         <span className="min-w-0 flex-1 truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           {title}
@@ -180,6 +198,7 @@ function ColRow({
       type="button"
       onClick={onActivate}
       aria-pressed={on}
+      title={nodeTitle(node)}
       className={cn(
         "flex h-7 w-full items-center gap-1.5 rounded-md pr-1 text-left",
         navActive ? "bg-accent" : "hover:bg-muted",
@@ -292,14 +311,12 @@ function ScopeColumns({
   const [focusTypeId, setFocusTypeId] = useState<string | null>(null);
   const [focusScopeId, setFocusScopeId] = useState<string | null>(null);
 
+  // A drill path previews nothing it was not given (`previewUnpicked: false`):
+  // the columns after the deepest pick wait, with a hint, for their parent.
+  const preview = engine.previewUnpicked !== false;
   const checkedOrgs = u.orgs.filter((org) => engine.isOn("org", org.id));
   const focusOrg = u.orgs.find((org) => org.id === focusOrgId);
-  const activeOrgs =
-    checkedOrgs.length > 0
-      ? checkedOrgs
-      : focusOrg
-        ? [focusOrg]
-        : u.orgs.slice(0, 1);
+  const activeOrgs = columnFeed(checkedOrgs, focusOrg, u.orgs, preview);
 
   const typeEntries: TypeEntry[] = activeOrgs.flatMap((org) =>
     org.scope_types.map((type) => ({ org, type })),
@@ -310,12 +327,12 @@ function ScopeColumns({
   const focusTypeEntry = typeEntries.find(
     ({ type }) => type.id === focusTypeId,
   );
-  const activeTypeEntries =
-    checkedTypeEntries.length > 0
-      ? checkedTypeEntries
-      : focusTypeEntry
-        ? [focusTypeEntry]
-        : typeEntries.slice(0, 1);
+  const activeTypeEntries = columnFeed(
+    checkedTypeEntries,
+    focusTypeEntry,
+    typeEntries,
+    preview,
+  );
 
   const scopeEntries: ScopeEntry[] = activeTypeEntries.flatMap(
     ({ org, type }) => type.scopes.map((scope) => ({ org, type, scope })),
@@ -326,12 +343,33 @@ function ScopeColumns({
   const focusScopeEntry = scopeEntries.find(
     ({ scope }) => scope.id === focusScopeId,
   );
-  const activeScopeEntries =
-    checkedScopeEntries.length > 0
-      ? checkedScopeEntries
-      : focusScopeEntry
-        ? [focusScopeEntry]
-        : scopeEntries.slice(0, 1);
+  const activeScopeEntries = columnFeed(
+    checkedScopeEntries,
+    focusScopeEntry,
+    scopeEntries,
+    preview,
+  );
+  const checkedItemCount = activeScopeEntries.length > 0 && engine.nodes.some((n) => n.kind === "item") ? 1 : 0;
+  const focusedColumn = focusedColumnIndex([
+    checkedOrgs.length,
+    checkedTypeEntries.length,
+    checkedScopeEntries.length,
+    checkedItemCount,
+  ]);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const columnRefs = useRef<(HTMLDivElement | null)[]>([]);
+  // Keep the focused column in view when the columns scroll sideways (a phone,
+  // a deep link): scroll the columns' own box, never the page.
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    const column = columnRefs.current[Math.min(focusedColumn, 3)];
+    if (!scroller || !column || scroller.scrollWidth <= scroller.clientWidth) return;
+    const left = column.offsetLeft;
+    const right = left + column.offsetWidth;
+    if (left < scroller.scrollLeft) scroller.scrollLeft = left;
+    else if (right > scroller.scrollLeft + scroller.clientWidth)
+      scroller.scrollLeft = Math.min(left, right - scroller.clientWidth);
+  }, [focusedColumn, u.treeStatus]);
 
   const itemsQ = useItemsForTypes(
     activeScopeEntries.map(({ type }) => type.id),
@@ -422,12 +460,19 @@ function ScopeColumns({
         className,
       )}
     >
-      <div className="flex min-h-0 flex-1 overflow-x-auto">
+      <div
+        ref={scrollerRef}
+        className="@container relative flex min-h-0 flex-1 overflow-x-auto"
+      >
         <div className="flex h-full min-w-[560px] flex-1">
           <Column
             title="Organizations"
             count={u.orgs.length}
             condensed={condensed}
+            focused={focusedColumn === 0}
+            columnRef={(el) => {
+              columnRefs.current[0] = el;
+            }}
             search={{
               value: orgQuery,
               onChange: setOrgQuery,
@@ -463,8 +508,12 @@ function ScopeColumns({
                 ? `Scope types · ${activeOrgs.length} orgs`
                 : "Scope types"
             }
-            count={typeEntries.length}
+            count={activeOrgs.length > 0 ? typeEntries.length : undefined}
             condensed={condensed}
+            focused={focusedColumn === 1}
+            columnRef={(el) => {
+              columnRefs.current[1] = el;
+            }}
             search={{
               value: typeQuery,
               onChange: setTypeQuery,
@@ -485,7 +534,10 @@ function ScopeColumns({
                 : undefined
             }
           >
-            {typeEntries.length === 0 && (
+            {activeOrgs.length === 0 && (
+              <EmptyPane text="Pick an organization" />
+            )}
+            {activeOrgs.length > 0 && typeEntries.length === 0 && (
               <EmptyPane text="No scope types here yet." />
             )}
             {typeQuery && typeEntries.length > 0 && shownTypeEntries.length === 0 && (
@@ -524,8 +576,12 @@ function ScopeColumns({
                 ? `Scopes · ${activeTypeEntries.length} types`
                 : (activeTypeEntries[0]?.type.label_plural ?? "Scopes")
             }
-            count={scopeEntries.length}
+            count={activeTypeEntries.length > 0 ? scopeEntries.length : undefined}
             condensed={condensed}
+            focused={focusedColumn === 2}
+            columnRef={(el) => {
+              columnRefs.current[2] = el;
+            }}
             search={{
               value: scopeQuery,
               onChange: setScopeQuery,
@@ -549,8 +605,23 @@ function ScopeColumns({
                 : undefined
             }
           >
-            {scopeEntries.length === 0 && (
-              <EmptyPane text="No scopes under the selected types yet." />
+            {activeTypeEntries.length === 0 && (
+              <EmptyPane
+                text={
+                  activeOrgs.length === 0
+                    ? "Pick an organization"
+                    : "Pick a scope type"
+                }
+              />
+            )}
+            {activeTypeEntries.length > 0 && scopeEntries.length === 0 && (
+              <EmptyPane
+                text={
+                  activeTypeEntries.length > 1
+                    ? "No scopes of these types yet."
+                    : `No ${activeTypeEntries[0].type.label_plural.toLowerCase()} yet.`
+                }
+              />
             )}
             {scopeQuery &&
               scopeEntries.length > 0 &&
@@ -600,8 +671,16 @@ function ScopeColumns({
                   ? `${activeScopeEntries[0].scope.name} · items`
                   : "Context items"
             }
-            count={itemsQ.status === "ready" ? totalItems : undefined}
+            count={
+              itemsQ.status === "ready" && activeScopeEntries.length > 0
+                ? totalItems
+                : undefined
+            }
             condensed={condensed}
+            focused={focusedColumn >= 3}
+            columnRef={(el) => {
+              columnRefs.current[3] = el;
+            }}
             search={{
               value: itemQuery,
               onChange: setItemQuery,
@@ -621,7 +700,15 @@ function ScopeColumns({
             }
           >
             {activeScopeEntries.length === 0 && (
-              <EmptyPane text="Select a scope to see its items." />
+              <EmptyPane
+                text={
+                  activeOrgs.length === 0
+                    ? "Pick an organization"
+                    : activeTypeEntries.length === 0
+                      ? "Pick a scope type"
+                      : "Pick a scope to see its items."
+                }
+              />
             )}
             {activeScopeEntries.length > 0 && itemsQ.status === "loading" && (
               <SkeletonRows count={4} />
@@ -824,14 +911,24 @@ function EngagementColumns({
     engine.isOn("project", node.id),
   );
   // With a project rung, a task column lists the chosen project's tasks (the
-  // old cascade's rule); without one, the organization's tasks.
-  const taskNodes = u.tasks
-    .filter((task) =>
-      has("project")
-        ? checkedProject !== undefined && task.projectId === checkedProject.id
-        : !activeOrg || task.orgId === activeOrg.id,
-    )
-    .map((task) => taskNodeOf(task, orgName));
+  // old cascade's rule), read for that project on demand — the person's whole
+  // task list is a capped organization-wide read; without one, the
+  // organization's tasks.
+  const projectTasks = useProjectTasks(
+    has("project") && has("task") ? (checkedProject?.id ?? null) : null,
+  );
+  const taskRows = has("project")
+    ? [
+        ...projectTasks.tasks,
+        ...u.tasks.filter(
+          (task) =>
+            checkedProject !== undefined &&
+            task.projectId === checkedProject.id &&
+            !projectTasks.tasks.some((t) => t.id === task.id),
+        ),
+      ]
+    : u.tasks.filter((task) => !activeOrg || task.orgId === activeOrg.id);
+  const taskNodes = taskRows.map((task) => taskNodeOf(task, orgName));
 
   const types = activeOrg?.scope_types ?? [];
   const activeType =

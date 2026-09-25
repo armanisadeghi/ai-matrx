@@ -16,6 +16,7 @@
  * surface for free.
  */
 
+import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -61,9 +62,7 @@ const NEEDS_FIX_TAG = "needs-fix";
 const OBSERVATION_FOLDER = "Page Observations";
 
 function observationLabel(content: string): string {
-  const firstLine = content.trim().split("\n")[0]?.trim() ?? "";
-  if (!firstLine) return "Capture observation";
-  return firstLine.length > 80 ? `${firstLine.slice(0, 77)}…` : firstLine;
+  return plainTitleFromMarkdown(content, { maxLength: 80 }) || "Capture observation";
 }
 
 /**

@@ -32,7 +32,7 @@ import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectDisplayName,
-  selectIsSuperAdmin,
+  selectIsSuperAdminPerson,
   selectUserEmail,
 } from "@/lib/redux/selectors/userSelectors";
 
@@ -154,7 +154,9 @@ export async function runSignOutFlow(
  * control inside the app shell.
  */
 export function useSignOut() {
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  // ADMIN IDENTITY: the double sign-out warning protects the PERSON (a super
+  // admin's session), wherever they stand — it grants nothing.
+  const isSuperAdmin = useAppSelector(selectIsSuperAdminPerson);
   const displayName = useAppSelector(selectDisplayName);
   const email = useAppSelector(selectUserEmail);
 

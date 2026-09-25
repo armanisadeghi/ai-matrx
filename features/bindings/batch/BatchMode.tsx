@@ -267,6 +267,16 @@ export function BatchMode({
       const out: string[] = [];
       const offer = offerOf(row.mandate_key);
       if (offer.status === "error") out.push(offer.message);
+      return out;
+    },
+    [offerOf],
+  );
+
+  /** 🚨 Contract mismatches: RED on the row, never a refusal (Arman,
+   * 2026-09-25). The server saves them and persists the verdict. */
+  const contractWarningsFor = useCallback(
+    (row: MandateRowDb): string[] => {
+      const out: string[] = [];
       if (holder.kind === "workflow") return out;
       if (agentId && missingOutputs?.has(row.mandate_key)) {
         out.push(
@@ -293,14 +303,7 @@ export function BatchMode({
       }
       return out;
     },
-    [
-      offerOf,
-      holder.kind,
-      agentId,
-      missingOutputs,
-      agentDeclarations,
-      agentName,
-    ],
+    [holder.kind, agentId, missingOutputs, agentDeclarations, agentName],
   );
 
   // ── Seeding: every place starts from its own stored answer, plus the exact
@@ -396,6 +399,7 @@ export function BatchMode({
         offered: offer.status === "ready" ? offer.offered : [],
         map: effectiveMaps[key] ?? {},
         blockers: blockersFor(row),
+        warnings: contractWarningsFor(row),
         // H3 — the health is told whether the offer it is judging is REAL.
         offerStatus: offer.status,
         offerMessage: offer.status === "error" ? offer.message : null,
@@ -405,7 +409,15 @@ export function BatchMode({
       });
     }
     return out;
-  }, [selectedRows, offerOf, holderInputs.targets, effectiveMaps, blockersFor]);
+  }, [
+    selectedRows,
+    offerOf,
+    holderInputs.targets,
+    effectiveMaps,
+    blockersFor,
+    contractWarningsFor,
+    callerSuppliedFor,
+  ]);
 
   const gridRows = useMemo<PlaceRow[]>(
     () =>
@@ -810,6 +822,7 @@ const EMPTY_HEALTH: PlaceHealth = {
   requiredUnmapped: 0,
   problems: [],
   blockers: [],
+  warnings: [],
   unfedRequired: [],
   unknown: null,
   tone: "green",

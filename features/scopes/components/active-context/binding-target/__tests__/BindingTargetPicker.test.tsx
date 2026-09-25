@@ -32,6 +32,7 @@ jest.mock("@/features/scopes/components/context-assignment/data", () => ({
   fetchTypeItems: jest.fn(async () => []),
   fetchAssignableProjects: jest.fn(async () => []),
   fetchAssignableTasks: jest.fn(async () => []),
+  fetchProjectTasks: jest.fn(async () => []),
 }));
 
 import { BindingTargetPicker } from "../BindingTargetPicker";

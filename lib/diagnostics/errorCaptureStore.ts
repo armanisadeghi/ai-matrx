@@ -266,7 +266,17 @@ export type CapturedErrorSource =
    * client points at does not answer a demanded RPC). Bound once in
    * `features/scopes/host/errorSink.ts`.
    */
-  | "associations";
+  | "associations"
+  /**
+   * A hard-coded agent FAST PATH (an SSR seed, a seed-mirror fallback, a
+   * manifest role default) ran — or picked what runs — and its id did not
+   * match the Holder its Mandate resolves to right now, or the Mandate could
+   * not be resolved to check it. The one compliant exception to "nothing
+   * works around the mandate system" is a fast path VERIFIED AT RUNTIME; this
+   * is that verification failing. Filed by
+   * `features/mandates/fast-path-guard.ts`.
+   */
+  | "mandate-fast-path";
 
 /** A Supabase DML verb, or "rpc" for a function call. */
 export type CapturedOperation =

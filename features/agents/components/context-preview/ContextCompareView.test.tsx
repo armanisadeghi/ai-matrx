@@ -26,6 +26,18 @@ jest.mock(
     selectConversationScopeIds: () => () => ({ organizationId: undefined }),
   }),
 );
+// THE markdown renderer a chat answer goes through, stood in so the test can see what it is handed.
+jest.mock("@/components/MarkdownStream", () => ({
+  __esModule: true,
+  default: (props: { content?: string }) => <div data-markdown-stream>{props.content}</div>,
+}));
+jest.mock("@/lib/api/run-wait", () => ({
+  resolveRunWait: jest.fn(async () => ({ firstResponseMs: 120_000 })),
+}));
+jest.mock("@/lib/api/organization-admission", () => ({
+  peekSelectedOrganizationId: () => null,
+}));
+jest.mock("@/utils/auth/getUserId", () => ({ getUserId: () => "a1e2c3d4-0000-4000-8000-00000000a1e7" }));
 jest.mock("@/components/matrx/buttons/InlineCopyButton", () => ({
   InlineCopyButton: () => null,
 }));
@@ -166,6 +178,49 @@ describe("ContextCompareView", () => {
     const withAgent = await mount({ agentId: "agent-1" });
     expect(withAgent.host.querySelector("textarea")).not.toBeNull();
     await withAgent.unmount();
+  });
+});
+
+describe("the two answers (lane INSPECTOR-TAILS)", () => {
+  it("renders each answer through the platform's markdown renderer, never as raw text", async () => {
+    door.mockReset();
+    door.mockImplementation(async (req: unknown) => {
+      const path = (req as { path?: string }).path;
+      if (path === "/ai/context/preview/answer-both") {
+        return {
+          data: {
+            says: "Both systems answered the same question.",
+            answers: [
+              { path: "old", answer: "**Primary Contact:** Priya Nair, Claims Supervisor — (619) 555-0177", duration_ms: 1800 },
+              { path: "new", answer: "**Primary Contact:** Priya Nair — (619) 555-0177", duration_ms: 2000 },
+            ],
+          },
+        };
+      }
+      return { data: { compare, injected_block: null } };
+    });
+    const view = await mount({ agentId: INTAKE_AGENT });
+    try {
+    const box = view.host.querySelector("textarea") as HTMLTextAreaElement;
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!;
+    await act(async () => {
+      setter.call(box, "What is the best phone number to reach Meridian Risk Services?");
+      box.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    const button = [...view.host.querySelectorAll("button")].find((b) => b.textContent === "Answer on both paths")!;
+    await act(async () => button.click());
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    for (const p of ["old", "new"]) {
+      const side = view.host.querySelector(`[data-answer-path="${p}"]`);
+      const rendered = side?.querySelector("[data-markdown-stream]");
+      expect(rendered?.textContent).toContain("**Primary Contact:**");
+    }
+    } finally {
+      await view.unmount();
+    }
   });
 });
 

@@ -234,7 +234,7 @@ function ProductRow({
   /** Blocked: no toggle at all, because no request could succeed (V17-1). */
   const blocked = health.state === "unavailable";
   return (
-    <div className="flex items-start gap-2.5 border-b border-border/60 px-2.5 py-2.5 last:border-b-0 sm:px-3">
+    <div className="flex items-start gap-2 border-b border-border/60 px-1 py-2.5 last:border-b-0 sm:gap-2.5 sm:px-3">
       <Icon
         className={cn(
           "mt-0.5 h-4 w-4 shrink-0",
@@ -243,8 +243,8 @@ function ProductRow({
         aria-hidden
       />
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <span className="truncate text-sm font-medium text-foreground">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-sm font-medium text-foreground">
             {health.product.name}
           </span>
           {health.state === "connected" ? (
@@ -838,16 +838,16 @@ export function ConnectorConsentBody({
                       className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90"
                       aria-hidden
                     />
-                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <span className="min-w-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       {group.label}
                     </span>
                   </span>
-                  <span className="truncate text-xs text-muted-foreground/80">
+                  <span className="hidden truncate text-xs text-muted-foreground/80 sm:inline">
                     {group.hint}
                   </span>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <div className="overflow-hidden rounded-lg border border-border bg-card">
+                  <div className="overflow-hidden border-y border-border sm:rounded-lg sm:border sm:bg-card">
                     {products.map((product) => {
                       const row = health.find(
                         (candidate) => candidate.product.key === product.key,

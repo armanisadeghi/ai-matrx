@@ -9,6 +9,7 @@
  * here.
  */
 
+import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
 import {
   Copy,
   FileCode,
@@ -898,14 +899,9 @@ export function resumePendingContentAuthAction(
       }
     } else if (action === "add-to-tasks") {
       const preview = savedContent.slice(0, 400);
-      const firstLine =
-        savedContent
-          .trim()
-          .split(/\n+/)[0]
-          ?.replace(/^[#>*\-\s]+/, "")
-          .slice(0, 60) || "";
+      const firstLine = plainTitleFromMarkdown(savedContent, { maxLength: 60 });
       const seedTitle = firstLine
-        ? `Task Related To: ${firstLine}${firstLine.length >= 60 ? "…" : ""}`
+        ? `Task Related To: ${firstLine}`
         : "Task Related To Content";
       dispatch(
         setPendingSource({

@@ -1,5 +1,6 @@
 "use client";
 
+import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
 import { useEffect, useRef } from 'react';
 
 interface UseAutoLabelOptions {
@@ -79,30 +80,14 @@ export function generateLabelFromContent(content: string, maxLength: number = 30
         return '';
     }
 
-    // Get the first line (up to first newline)
-    const lines = content.split('\n');
-    let firstLine = lines[0].trim();
-
-    // If first line is empty, try the next non-empty line
-    if (!firstLine && lines.length > 1) {
-        for (let i = 1; i < lines.length; i++) {
-            if (lines[i].trim()) {
-                firstLine = lines[i].trim();
-                break;
-            }
-        }
-    }
+    // The ONE plain-text projection: first heading/line, every markdown
+    // mark removed (was: only leading `#-*>` stripped, so `**bold**` and
+    // `[links](…)` leaked into labels).
+    let firstLine = plainTitleFromMarkdown(content);
 
     if (!firstLine) {
         return '';
     }
-
-    // Clean up the text
-    // Remove multiple spaces
-    firstLine = firstLine.replace(/\s+/g, ' ');
-
-    // Remove common markdown/formatting at the start
-    firstLine = firstLine.replace(/^[#\-*>\s]+/, '').trim();
 
     // Capitalize first letter
     if (firstLine.length > 0) {

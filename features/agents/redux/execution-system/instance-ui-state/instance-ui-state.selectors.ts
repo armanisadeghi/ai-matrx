@@ -526,9 +526,6 @@ export const selectIsMemoryToggleRequested = (state: RootState): boolean =>
 export const selectMemoryToggleTarget = (state: RootState): boolean =>
   state.instanceUIState.memoryToggleTarget;
 
-export const selectMemoryModel = (state: RootState): string | null =>
-  state.instanceUIState.memoryModel;
-
 export const selectMemoryScope = (state: RootState): "thread" | "resource" =>
   state.instanceUIState.memoryScope;
 

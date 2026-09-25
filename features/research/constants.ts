@@ -397,6 +397,14 @@ export const RESEARCH_NAV_ITEMS: ResearchNavItem[] = [
     mobileVisible: false,
   },
   {
+    key: "intelligence",
+    label: "Intelligence",
+    icon: "BrainCircuit",
+    href: (id) => `/research/topics/${id}/intelligence`,
+    group: "secondary",
+    mobileVisible: false,
+  },
+  {
     key: "settings",
     label: "Settings",
     icon: "Settings2",

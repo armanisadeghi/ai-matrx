@@ -19,6 +19,7 @@ import type { RootState } from "@/lib/redux/store";
 import type { AssistantConversationRef } from "../types";
 import { TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY } from "../constants";
 import { resolveMandate } from "@/features/mandates/service";
+import { verifyFastPathAgainstMandate } from "@/features/mandates/fast-path-guard";
 import { selectSurfaceConfigEntry } from "@/features/surfaces/redux/surfaceConfigSlice";
 import { TRANSCRIPT_SCRIBE_SURFACE } from "@/features/surfaces/manifests/transcript-scribe.manifest";
 
@@ -44,9 +45,22 @@ export async function resolveDefaultAssistantAgentId(
 ): Promise<string> {
   if (overrideAgentId) return overrideAgentId;
   const entry = selectSurfaceConfigEntry(state, TRANSCRIPT_SCRIBE_SURFACE);
-  const roleAgent =
-    entry?.resolved?.roles["assistant"]?.effective[0]?.agentId ?? null;
-  if (roleAgent) return roleAgent;
+  const roleEntry = entry?.resolved?.roles["assistant"]?.effective[0] ?? null;
+  const roleAgent = roleEntry?.agentId ?? null;
+  if (roleAgent) {
+    // FAST PATH: the platform-tier role default is the manifest's hard-coded
+    // seed mirror (`AUDIO_ASSISTANT_AGENT_ID`), and it is chosen WITHOUT asking
+    // the Mandate. Verify it beside the run (never awaited) — a mismatch
+    // screams to admins. User/org picks are people's choices, not fast paths.
+    if (roleEntry?.sourceTier === "manifest") {
+      void verifyFastPathAgainstMandate({
+        mandateKey: TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY,
+        hardcodedAgentId: roleAgent,
+        surface: `${TRANSCRIPT_SCRIBE_SURFACE} assistant role (manifest default)`,
+      });
+    }
+    return roleAgent;
+  }
   const mandate = await resolveMandate(TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY);
   return mandate.agentId;
 }

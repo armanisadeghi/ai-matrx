@@ -8,6 +8,7 @@ import {
   selectIsOverlayOpen,
   toggleOverlay,
 } from "@/lib/redux/slices/overlaySlice";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
 import { useMenuCheckboxId } from "./menuCheckboxId";
 
@@ -18,9 +19,16 @@ export function AdminIndicatorMenuItem() {
     selectIsOverlayOpen(state, "adminIndicator"),
   );
 
+  // ADMIN POWER: the indicator it toggles exists only inside the admin
+  // section (utils/supabase/adminLane.ts), so the entry does too — never a
+  // switch for something that cannot appear.
+  const canUse = useAppSelector(selectIsSuperAdmin);
+
   const handleClick = useCallback(() => {
     dispatch(toggleOverlay({ overlayId: "adminIndicator" }));
   }, [dispatch]);
+
+  if (!canUse) return null;
 
   return (
     <label htmlFor={menuCheckboxId} className="block">

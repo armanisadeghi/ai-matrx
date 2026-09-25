@@ -15,6 +15,7 @@ jest.mock("@/features/scopes/components/context-assignment/data", () => ({
   ]),
   fetchAssignableProjects: jest.fn(async () => []),
   fetchAssignableTasks: jest.fn(async () => []),
+  fetchProjectTasks: jest.fn(async () => []),
 }));
 
 import { MillerColumnsCore } from "../MillerColumns";

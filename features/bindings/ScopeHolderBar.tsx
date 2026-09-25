@@ -235,6 +235,10 @@ function scopeToRung(scope: AgentScope): BindingRung {
   return "user";
 }
 
+/** The org rung's holder rule — every lane the organization can open. */
+const ORG_RUNG_HOLDER_RULE =
+  "Runs for each member with their own access — pick anything the whole organization can open: its own, one shared with it, community or system.";
+
 /**
  * 🚨 WHAT MAY HOLD THIS JOB AT THIS RUNG — a HARD restriction on the picker,
  * never a warning after the fact.
@@ -250,15 +254,18 @@ function scopeToRung(scope: AgentScope): BindingRung {
  * the destructive alert on a non-system pin). `GlobalBindAgentGuard` stays as
  * the BELT for the API path; this is the door.
  *
- * The ladder, said as a rule about who breaks:
- *   · **system rung** — everybody on the platform runs this, so only a SYSTEM
- *     agent may hold it. A personal agent breaks every user the moment its
- *     owner renames, un-shares or archives it.
- *   · **org rung** — everyone in one organization runs this, so a personal
- *     agent is the same defect at organization size. Shared and system agents
- *     only.
- *   · **user rung** — your own answer, your own agents. Unrestricted, and
- *     correctly so (VISION-RECONCILIATION D3).
+ * The ladder, said as a rule about who breaks — OWNER RULING (Arman,
+ * 2026-09-25): *"A mandate being filled for the purpose of the system serving
+ * all users must be a system mandate. However, you can have a system mandate
+ * that is filled at the org or user level by whatever they have access to,
+ * including their own or something shared with them."*
+ *   · **system rung** (and a SYSTEM-homed default) — everybody on the platform
+ *     runs this, so only a SYSTEM agent may hold it. The one restricted rung.
+ *   · **org rung** (and an org-homed default) — every lane the organization
+ *     can reach: its own, shared with it, community, system. The server's
+ *     containment predicate judges "every member can open it" and says why in
+ *     words; at run time the holder runs with the running member's access.
+ *   · **user rung** — anything the person can open. Unrestricted.
  */
 function holderRestriction(
   rung: WorkspaceRung,
@@ -289,12 +296,8 @@ function holderRestriction(
       };
     }
     return {
-      visibleTabs: ["shared", "system"],
-      initialTab: "shared",
       includeSystemInAll: true,
-      sentence:
-        defaultHolderOffer?.holderRule ??
-        "An organization's default runs for everyone in it, so only agents shared with the organization — or system agents — can hold it.",
+      sentence: defaultHolderOffer?.holderRule ?? ORG_RUNG_HOLDER_RULE,
     };
   }
   switch (rung) {
@@ -307,11 +310,8 @@ function holderRestriction(
       };
     case "org":
       return {
-        visibleTabs: ["shared", "system"],
-        initialTab: "shared",
         includeSystemInAll: true,
-        sentence:
-          "An organization's answer runs for everyone in it, so only agents shared with the organization — or system agents — can be bound here.",
+        sentence: ORG_RUNG_HOLDER_RULE,
       };
     default:
       return { sentence: null };

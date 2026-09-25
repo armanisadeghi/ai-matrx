@@ -21,7 +21,13 @@ function setup() {
     return null;
   }
   const root = createRoot(document.createElement("div"));
-  act(() => root.render(React.createElement(Provider, { store }, React.createElement(Probe))));
+  act(() =>
+    root.render(
+      <Provider store={store}>
+        <Probe />
+      </Provider>,
+    ),
+  );
   return { store, get: () => api, root };
 }
 

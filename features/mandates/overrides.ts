@@ -20,6 +20,10 @@
  * superset rule); the server check is the authority.
  */
 
+import {
+  parseContractCheck,
+  type ContractCheck,
+} from "@/features/mandates/contract-check";
 import { createClient } from "@/utils/supabase/client";
 import { callApi } from "@/lib/api/call-api";
 import { parseCallApiError } from "@/lib/api/errors";
@@ -457,6 +461,10 @@ export interface BindingWriteReport {
   /** Where the row that was just written answers. `null` when the server said
    * nothing — never a client-invented sentence. */
   appliesIn: string | null;
+  /** 🚨 The Holder's contract verdict, persisted on the row by the server.
+   * `unmet` = SAVED red, never refused (validation offers, never blocks —
+   * Arman, 2026-09-25). `null` = settings-only write or an older server. */
+  contractCheck: ContractCheck | null;
 }
 
 /** Read the write's own report off the response body. Defensive because a
@@ -476,6 +484,7 @@ export function parseBindingWriteReport(raw: unknown): BindingWriteReport {
         )
       : [],
     appliesIn,
+    contractCheck: parseContractCheck(record.contract_check),
   };
 }
 
@@ -640,6 +649,8 @@ export interface DefaultHolderWriteReport {
   appliesIn: string | null;
   /** What the write did that was not asked for, in the server's words. */
   notes: string[];
+  /** The default Holder's contract verdict (saved red, never refused). */
+  contractCheck: ContractCheck | null;
 }
 
 /**
@@ -672,6 +683,7 @@ export function parseDefaultHolderResult(
       typeof record.use_latest === "boolean" ? record.use_latest : null,
     appliesIn,
     notes: parseBindingWriteReport(raw).notes,
+    contractCheck: parseContractCheck(record.contract_check),
   };
 }
 

@@ -287,7 +287,15 @@ export function AddEveryoneInOrg({
         </ul>
       ) : null}
 
-      {members && members.length > 0 ? (
+      {members && members.length > 0 && chosen.length === 0 && !running ? (
+        <p className="text-xs text-muted-foreground">
+          {Object.values(outcomes).some((o) => o.ok) ||
+          members.every((m) => already.has(m.userId))
+            ? `Everyone listed in ${orgName} has access now.`
+            : "Tick the people to add."}
+        </p>
+      ) : null}
+      {members && members.length > 0 && (chosen.length > 0 || running) ? (
         <Button
           type="button"
           onClick={run}

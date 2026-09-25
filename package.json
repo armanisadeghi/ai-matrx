@@ -543,6 +543,8 @@
     "check:list-scope:strict": "tsx scripts/check-list-scope.ts --strict",
     "check:list-scope:self-test": "tsx scripts/check-list-scope.ts --self-test",
     "check:admin-door": "tsx scripts/check-admin-door.ts",
+    "check:admin-lane": "tsx scripts/check-admin-lane.ts",
+    "check:admin-lane:self-test": "tsx scripts/check-admin-lane.ts --self-test",
     "check:admin-door:strict": "tsx scripts/check-admin-door.ts --strict",
     "check:admin-door:self-test": "tsx scripts/check-admin-door.ts --self-test",
     "check:access-guards": "tsx scripts/check-access-guards.ts",

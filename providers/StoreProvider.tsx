@@ -28,6 +28,7 @@ import {
 } from "@/lib/redux/store";
 import { useRef } from "react";
 import { Provider } from "react-redux";
+import { AdminLaneSync } from "@/providers/AdminLaneSync";
 import { attachStore } from "@/lib/sync/identity";
 import { resolveThemeMode, themePolicy, writeThemeCookie, type ResolvedThemeMode, type ThemeMode } from "@/styles/themes/themeSlice";
 import { applyPrePaintDescriptors } from "@/lib/sync/engine/applyPrePaint";
@@ -133,6 +134,7 @@ export default function StoreProvider({
       {/* MUST stay first: it schedules persisted boot after load + browser idle,
           beyond streamed/selective hydration. */}
       <SyncBootstrap />
+      <AdminLaneSync />
       {children}
     </Provider>
   );

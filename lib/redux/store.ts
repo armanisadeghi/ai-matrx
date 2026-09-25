@@ -88,6 +88,7 @@ function splitUserData(user: UserData): {
       accessToken: user.accessToken,
       tokenExpiresAt: null,
       authReady: user.id !== null,
+      adminLaneOpen: false,
     },
     userProfile: {
       userMetadata: user.userMetadata,
@@ -193,7 +194,7 @@ export function resolveStoreBootstrapState(
   const split = splitUserData(mergedUser);
 
   const out: Record<string, unknown> = {
-    userAuth: split.userAuth,
+    userAuth: { ...split.userAuth, adminLaneOpen: input.adminLaneOpen === true },
     userProfile: split.userProfile,
     userPreferences: resolveUserPreferencesForBootstrap(input, {
       userPreferences: baseUserPreferences,

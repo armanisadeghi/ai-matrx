@@ -59,7 +59,7 @@ export default async function AdminLayout({
       const guestUserData = mapUserData(null, undefined, false);
       return (
         <AppShell
-          initialReduxState={{ user: guestUserData }}
+          initialReduxState={{ user: guestUserData, adminLaneOpen: true }}
           userData={guestUserData}
           isAuthenticated={false}
           pathname={pathname}
@@ -116,6 +116,9 @@ export default async function AdminLayout({
 
   const initialReduxState: BaseReduxState = {
     user: userData,
+    // THE ADMIN LANE seed — this layout IS the admin section, so its first
+    // render carries admin power (utils/supabase/adminLane.ts).
+    adminLaneOpen: true,
   };
 
   return (

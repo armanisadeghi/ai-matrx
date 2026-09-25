@@ -171,3 +171,81 @@ export function spliceAnswerText(content: unknown, newText: string): AnswerSplic
   }
   return { changed: true, content: spliced };
 }
+
+/** Inline reasoning sections the chat view scrubs (`removeThinkingContent`). */
+const REASONING_OPEN = /^<(thinking|think|reasoning)>/i;
+
+/**
+ * Map an edit made on DISPLAY text onto the STORED answer text (RC-B5).
+ *
+ * In-body editors (code blocks, tables, inline decisions, task toggles) edit
+ * the text the renderer shows, which is NOT the stored text: the view trims,
+ * collapses runs of blank lines and drops inline `<thinking>` / `<reasoning>`
+ * sections. Writing that display text back rewrote whitespace across the
+ * whole answer. Instead:
+ *
+ *   1. diff `previousDisplay` → `nextDisplay` (longest common prefix/suffix):
+ *      the changed span and the text typed into it;
+ *   2. align `previousDisplay` onto `stored` character by character — a stored
+ *      character the view dropped (extra whitespace, a reasoning section) is
+ *      skipped; anything else that disagrees refuses (never a guess);
+ *   3. replace only the aligned span of `stored`.
+ *
+ * Every stored byte outside the changed span is kept exactly — blank-line
+ * runs, trailing spaces, reasoning sections included.
+ */
+export function spliceDisplayEdit(
+  stored: string,
+  previousDisplay: string,
+  nextDisplay: string,
+): { text: string } | { error: string } {
+  if (previousDisplay === nextDisplay) return { text: stored };
+  let prefix = 0;
+  const maxPrefix = Math.min(previousDisplay.length, nextDisplay.length);
+  while (prefix < maxPrefix && previousDisplay.charCodeAt(prefix) === nextDisplay.charCodeAt(prefix)) prefix++;
+  let suffix = 0;
+  const maxSuffix = maxPrefix - prefix;
+  while (
+    suffix < maxSuffix &&
+    previousDisplay.charCodeAt(previousDisplay.length - 1 - suffix) ===
+      nextDisplay.charCodeAt(nextDisplay.length - 1 - suffix)
+  ) {
+    suffix++;
+  }
+  const displayEnd = previousDisplay.length - suffix;
+  const inserted = nextDisplay.slice(prefix, nextDisplay.length - suffix);
+
+  // storedAt[j] = index in `stored` of display character j.
+  const storedAt: number[] = new Array(previousDisplay.length);
+  let i = 0;
+  for (let j = 0; j < previousDisplay.length; j++) {
+    for (;;) {
+      if (i >= stored.length) {
+        return { error: "The edited block no longer matches the saved answer — reload and edit again." };
+      }
+      if (stored[i] === previousDisplay[j]) break;
+      const rest = stored.slice(i, i + 12);
+      const open = REASONING_OPEN.exec(rest);
+      if (open) {
+        const close = stored.indexOf(`</${open[1]}>`, i);
+        if (close === -1) return { error: "The saved answer has an unclosed reasoning section; edit it in the editor." };
+        i = close + open[1].length + 3;
+        continue;
+      }
+      if (/\s/.test(stored[i])) {
+        i++;
+        continue;
+      }
+      return { error: "The edited block no longer matches the saved answer — reload and edit again." };
+    }
+    storedAt[j] = i;
+    i++;
+  }
+  const endOfMatch = i;
+  const at = (j: number) => (j < previousDisplay.length ? storedAt[j] : endOfMatch);
+  // A pure insertion lands right after the preceding displayed character, so
+  // stored whitespace the view collapsed stays on its own side.
+  const storedStart = prefix === displayEnd && prefix > 0 ? storedAt[prefix - 1] + 1 : at(prefix);
+  const storedEnd = prefix === displayEnd ? storedStart : storedAt[displayEnd - 1] + 1;
+  return { text: stored.slice(0, storedStart) + inserted + stored.slice(storedEnd) };
+}

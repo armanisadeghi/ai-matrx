@@ -10,6 +10,7 @@
 
 import type { MarkdownComponents as Components } from "@/components/markdown-core/markdown-core-types";
 import { cn } from "@/lib/utils";
+import { isHeadingAnchorProps } from "@/components/markdown-core/heading-anchors-props";
 import { THICK_HR_SENTINEL } from "./prose-prepare";
 import { PROSE_INLINE_ELEMENTS } from "./prose-inline-elements";
 import { INLINE_SYNTAX_ELEMENTS } from "@/components/markdown-core/syntax/elements/core-syntax-elements";
@@ -22,10 +23,15 @@ export const INLINE_P_CLASS = "rc-inline-p";
  * `data-rc-block` so the wrapper can put consecutive ones on their own lines
  * while a single paragraph flows inline (titles, clamped rows, `truncate`).
  */
+const InlineLink = PROSE_INLINE_ELEMENTS.a as NonNullable<Components["a"]>;
+
 export const INLINE_LEVEL_ELEMENTS = {
   ...PROSE_INLINE_ELEMENTS,
   // The extended syntax's block constructs (callouts, tabs, figures…) as spans.
   ...INLINE_SYNTAX_ELEMENTS,
+  // The inline level renders no sections, so a heading's hover anchor would
+  // link to nothing and read as part of the title: never rendered here.
+  a: (props) => (isHeadingAnchorProps(props) ? null : <InlineLink {...props} />),
   p: ({ children }) => {
     const only = Array.isArray(children) ? null : children;
     if (only === " ") return <span data-rc-block className="block h-[0.4em]" />;
@@ -168,7 +174,10 @@ export type InlineLinks = "link" | "text";
 /** The inline map with links rendered as their text (no anchor). */
 export const INLINE_LEVEL_ELEMENTS_LINKS_AS_TEXT = {
   ...INLINE_LEVEL_ELEMENTS,
-  a: ({ children }) => <span data-rc-link-text="">{children}</span>,
+  a: (props) =>
+    isHeadingAnchorProps(props) ? null : (
+      <span data-rc-link-text="">{props.children}</span>
+    ),
 } as Components;
 
 /** The inline element map for a `links` choice. */

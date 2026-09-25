@@ -244,9 +244,35 @@ it("a pick in each column drives the compare, narrowing at every step", async ()
   expect(writes.at(-1)?.next).toEqual({ ...EMPTY_SELECTION, org: CASTELLANO });
 });
 
+it("the first screen is honest: nothing is picked, so nothing past Organizations is shown", async () => {
+  await mount(EMPTY_SELECTION);
+  // VERIFIER-22 #1: the later columns previewed the first organization's types and one read
+  // "No scopes under the selected types yet." with nothing selected.
+  const labels = rows().map((b) => b.textContent);
+  expect(labels).toEqual(["Castellano & Reyes, LLP", "Titanium"]);
+  expect(labels).not.toContain("Clients");
+  expect(host.textContent).toContain("Pick an organization");
+  expect(host.textContent).not.toMatch(/selected/i);
+  expect(host.textContent).not.toContain("· items");
+
+  // One step down, the same: the organization is picked, its types show, and the scope and
+  // items columns wait for a type rather than previewing the first one's scopes.
+  await pick("Castellano & Reyes, LLP");
+  const next = rows().map((b) => b.textContent);
+  expect(next).toEqual(expect.arrayContaining(["Clients", "Matters"]));
+  expect(next).not.toContain("Golden State Indemnity Co.");
+  expect(host.textContent).toContain("Pick a scope type");
+});
+
+it("a truncated row carries its full name", async () => {
+  await mount({ ...EMPTY_SELECTION, org: CASTELLANO, scopeType: CLIENTS });
+  const meridian = rows().find((b) => b.textContent === "Meridian Risk Services");
+  expect(meridian?.getAttribute("title")).toBe("Meridian Risk Services");
+});
+
 it("a scope type with no scopes says so and previews nothing past it", async () => {
   await mount({ ...EMPTY_SELECTION, org: CASTELLANO, scopeType: MATTERS });
-  expect(host.textContent).toContain("No scopes under the selected types yet.");
+  expect(host.textContent).toContain("No matters yet.");
   expect(compareProps).toHaveLength(0);
 });
 

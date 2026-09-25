@@ -32,6 +32,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { InlineCopyButton } from "@/components/matrx/buttons/InlineCopyButton";
+import MarkdownStream from "@/components/MarkdownStream";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAllAgents } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentsList } from "@/features/agents/redux/agent-definition/thunks";
@@ -515,8 +516,10 @@ function AnswerBoth({
                   {a?.error ? (
                     <p className="mt-1 text-xs text-destructive">{a.error}</p>
                   ) : (
-                    <div className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
-                      {a?.answer ?? ""}
+                    // The platform's markdown renderer — the one a chat answer goes through — so an
+                    // answer reads as it would in chat, never as raw text with asterisks.
+                    <div className="mt-1 min-w-0 break-words text-sm text-foreground" data-answer-markdown>
+                      <MarkdownStream content={a?.answer ?? ""} hideCopyButton />
                     </div>
                   )}
                 </div>

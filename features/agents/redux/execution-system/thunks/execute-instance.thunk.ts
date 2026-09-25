@@ -129,7 +129,6 @@ import {
   selectIsBlockMode,
   selectIsMemoryToggleRequested,
   selectIsSnapshot,
-  selectMemoryModel,
   selectMemoryScope,
   selectMemoryToggleTarget,
 } from "../instance-ui-state/instance-ui-state.selectors";
@@ -333,8 +332,9 @@ export function assembleRequest(
   const snapshot = selectIsSnapshot(state);
 
   // Observational Memory — one-shot per-conversation admin signal. When
-  // `isMemoryToggleRequested` is true we attach `memory`, `memory_model`,
-  // and `memory_scope` to this turn's payload. The server persists the
+  // `isMemoryToggleRequested` is true we attach `memory` and `memory_scope`
+  // to this turn's payload (never `memory_model` — the model is the server's
+  // observational-memory mandate's decision). The server persists the
   // resulting block on `cx_conversation.metadata.observational_memory`, so
   // subsequent turns should NOT re-send unless the admin changes state.
   //
@@ -342,7 +342,6 @@ export function assembleRequest(
   // toggle after assembling — keeps this selector logic pure.
   const memoryToggleRequested = selectIsMemoryToggleRequested(state);
   const memoryTarget = selectMemoryToggleTarget(state);
-  const memoryModel = selectMemoryModel(state);
   const memoryScope = selectMemoryScope(state);
 
   // Assemble snake_case body
@@ -380,9 +379,8 @@ export function assembleRequest(
   if (memoryToggleRequested) {
     request.memory = memoryTarget;
     if (memoryTarget) {
-      // Only send model/scope on enable — the server needs them to
-      // initialize the metadata block. On disable they're ignored.
-      if (memoryModel) request.memory_model = memoryModel;
+      // Only send scope on enable — the server needs it to initialize the
+      // metadata block. On disable it's ignored.
       if (memoryScope) request.memory_scope = memoryScope;
     }
   }

@@ -51,7 +51,13 @@ registerAction({
     if (!ext) return true;
     // A user turn edits through its three-outcome editor (edit-and-resubmit);
     // an assistant turn needs a text-bearing row to save to.
-    return ext.role === "assistant" && Boolean(ext.editTarget?.messageId);
+    // A step of a multi-step turn that only called tools has no text: no
+    // Edit there (absent, never a control that opens an empty editor).
+    return (
+      ext.role === "assistant" &&
+      Boolean(ext.editTarget?.messageId) &&
+      (Boolean(ext.editTarget?.isStructuredRaw) || (ext.editTarget?.content.length ?? 0) > 0)
+    );
   },
   run: async (ctx) => {
     // CHAT ASSISTANT MESSAGE — edit IN PLACE (RC-B5, PLAN decision 11): the
@@ -62,7 +68,9 @@ registerAction({
     // written back verbatim, never routed elsewhere. A grouped (multi-
     // iteration) turn edits its answer row — the row the bar's pencil is on;
     // `AssistantTurnGroup` renders that turn from its persisted rows while
-    // any of them is being edited, so the row's spot exists on screen.
+    // any of them is being edited, so the row's spot exists on screen — and
+    // every step then carries its own right-click menu (this same action,
+    // targeting that step's row), which is the per-step door.
     // Structured payloads keep the read-only raw view. The 16-tab full-screen
     // editor stays one click away ("Open in full-screen editor").
     const ext = chatExtensions(ctx);

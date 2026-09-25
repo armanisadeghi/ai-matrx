@@ -65,10 +65,15 @@ describe("parseBindingWriteReport — the server's words, or nothing", () => {
   });
 
   it("survives a body that is not an object at all", () => {
-    expect(parseBindingWriteReport(null)).toEqual({ notes: [], appliesIn: null });
+    expect(parseBindingWriteReport(null)).toEqual({
+      notes: [],
+      appliesIn: null,
+      contractCheck: null,
+    });
     expect(parseBindingWriteReport("nope")).toEqual({
       notes: [],
       appliesIn: null,
+      contractCheck: null,
     });
   });
 });

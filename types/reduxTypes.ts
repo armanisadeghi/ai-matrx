@@ -22,6 +22,12 @@ import type { ContextMenuRow } from "@/utils/supabase/ssrShellData";
  */
 export interface BaseReduxState {
   user: UserData;
+  /**
+   * THE ADMIN LANE seed: true only from the `(admin)` layout, so an admin
+   * page's first render (server and client) already carries admin power and
+   * every other page's does not. `AdminLaneSync` keeps it current afterwards.
+   */
+  adminLaneOpen?: boolean;
   // Preferences are no longer fetched server-side; the
   // `userPreferencesPolicy` warm-cache cold-boot path (IDB → LS → remote.fetch)
   // owns hydration entirely on the client. `resolveStoreBootstrapState` falls

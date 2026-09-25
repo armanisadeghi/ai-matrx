@@ -55,4 +55,10 @@ export interface RichContentProps {
    * content that already sits inside a link (card previews). Default `link`.
    */
   links?: "link" | "text";
+  /**
+   * Standard / full: heading hover anchors ("#" links to a section). Pass
+   * `false` in preview contexts (clamped cards, collapsed panels) where the
+   * section is not on screen. Default `true`; the inline level never has them.
+   */
+  headingAnchors?: boolean;
 }

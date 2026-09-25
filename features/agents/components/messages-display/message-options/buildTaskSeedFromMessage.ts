@@ -18,6 +18,7 @@
  * can never drift.
  */
 
+import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
 import { cleanMarkdown } from "@/utils/markdown-processors/clean-markdown-to-text";
 import { buildConversationMessageTitle } from "@/features/agents/utils/conversation-message-title";
 import type { PendingSource } from "@/features/tasks/redux/taskUiSlice";
@@ -63,9 +64,10 @@ export function buildTaskSeedFromMessage({
   if (conversationRef) {
     seedTitle = `Task Related To: ${conversationRef}`;
   } else {
-    const firstLine = preview.slice(0, 60);
+    // The message's first heading/line through the ONE title projection.
+    const firstLine = plainTitleFromMarkdown(content, { maxLength: 60 });
     seedTitle = firstLine
-      ? `Task Related To: ${firstLine}${preview.length > 60 ? "…" : ""}`
+      ? `Task Related To: ${firstLine}`
       : "Task Related To AI message";
   }
 

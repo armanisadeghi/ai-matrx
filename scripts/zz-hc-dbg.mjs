@@ -1,0 +1,16 @@
+import { chromium } from "playwright";
+import { readFileSync } from "node:fs";
+import { signIn } from "/Users/armanisadeghi/code/matrx-frontend/scripts/lib/seat-browser.mjs";
+const env = Object.fromEntries(readFileSync("/Users/armanisadeghi/code/matrx-frontend/.env.local","utf8").split("\n").map(l=>l.match(/^([A-Z_]+)=(.*)$/)).filter(Boolean).map(m=>[m[1],m[2].replace(/^["']|["']$/g,"")]));
+const O="http://hierarchy-cascade.localhost:3001";
+const b=await chromium.launch({headless:true}); const p=await (await b.newContext({viewport:{width:1500,height:1000}})).newPage();
+await signIn(p,O,env.AI_ADMIN_USERNAME,env.AI_ADMIN_PASSWORD,"admin");
+await p.goto(O+"/agent-apps/d9c30db7-dcce-46c3-a00e-9498342692a9/settings",{waitUntil:"domcontentloaded",timeout:240000});
+await p.getByRole("tab",{name:"Sharing"}).click();
+await p.waitForSelector('[data-engagement-picker="field"]',{timeout:240000});
+console.log("count", await p.locator('[data-engagement-picker="field"]').count(), JSON.stringify(await p.locator('[data-engagement-picker="field"]').first().evaluate(e=>e.outerHTML.slice(0,600))));
+await p.locator('[data-engagement-picker="field"]').first().click();
+await p.waitForTimeout(8000);
+await p.screenshot({path:"/private/tmp/claude-501/-Users-armanisadeghi-code/4aca9d01-f3c0-4271-be17-2f948446dfb3/scratchpad/dbg.png"});
+console.log(await p.locator('[data-miller-rungs="engagements"] button[aria-pressed]').allTextContents());
+await b.close();

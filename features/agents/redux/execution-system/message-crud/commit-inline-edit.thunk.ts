@@ -48,6 +48,7 @@ import { saveAnswerEdit } from "./save-answer-edit.thunk";
 import { toast } from "@/lib/toast";
 import { buildContentBlocksForSave } from "@/features/cx-chat/utils/buildContentBlocksForSave";
 import { stripCitationMarkers } from "../messages/message-citations";
+import { extractFlatText } from "../messages/messages.selectors";
 
 /** ms of idle time before the DB write fires. */
 const DB_DEBOUNCE_MS = 800;
@@ -55,6 +56,8 @@ const DB_DEBOUNCE_MS = 800;
 interface PendingEdit {
   timer: ReturnType<typeof setTimeout>;
   latestText: string;
+  /** The display text the FIRST edit of this window was applied to. */
+  baseText: string;
 }
 
 // Module-level debounce map. Keyed by messageId so each message has its
@@ -79,6 +82,12 @@ interface CommitInlineEditArgs {
   requestId?: string;
   /** The full updated message text after the inline edit. */
   newText: string;
+  /**
+   * The display text the edit was applied to (the renderer's content). The
+   * write splices only the changed span into the STORED text; without it the
+   * record's current display projection is the base.
+   */
+  previousText?: string;
 }
 
 /**
@@ -87,13 +96,21 @@ interface CommitInlineEditArgs {
  * doesn't need to await this.
  */
 export const commitInlineContentEdit =
-  ({ conversationId, messageId, requestId, newText: rawNewText }: CommitInlineEditArgs) =>
+  ({ conversationId, messageId, requestId, newText: rawNewText, previousText }: CommitInlineEditArgs) =>
   (dispatch: AppDispatch, getState: () => RootState) => {
     // Inline `<matrxcite n="…" />` citation markers are RENDER-ONLY — the
     // displayed text a cited message hands to inline editors contains them,
     // but they must never reach `cx_message.content` (or the DB). Strip once
     // at this choke point so every downstream write is clean.
     const newText = stripCitationMarkers(rawNewText);
+    // The base of this edit window, captured BEFORE the optimistic update.
+    const pendingBase = pendingByMessageId.get(messageId)?.baseText;
+    const baseText =
+      pendingBase ??
+      stripCitationMarkers(
+        previousText ??
+          extractFlatText(getState().messages.byConversationId[conversationId]?.byId?.[messageId]),
+      );
 
     // ── 1. Sync the renderer immediately ────────────────────────────
     if (requestId) {
@@ -135,10 +152,10 @@ export const commitInlineContentEdit =
       // it), never the loaded Redux copy: for an answer streamed this session
       // the Redux copy is the client's own shape, and writing it back dropped
       // the server's thinking / tool parts (RC-B5, 2026-09-25).
-      void persistInlineEdit(dispatch, conversationId, messageId, entry.latestText);
+      void persistInlineEdit(dispatch, conversationId, messageId, entry.baseText, entry.latestText);
     }, DB_DEBOUNCE_MS);
 
-    pendingByMessageId.set(messageId, { timer, latestText: newText });
+    pendingByMessageId.set(messageId, { timer, latestText: newText, baseText });
   };
 
 /**
@@ -164,16 +181,21 @@ export const flushPendingInlineEdit =
     })();
     if (!record) return;
 
-    void persistInlineEdit(dispatch, record.conversationId, messageId, entry.latestText);
+    void persistInlineEdit(dispatch, record.conversationId, messageId, entry.baseText, entry.latestText);
   };
 
 async function persistInlineEdit(
   dispatch: AppDispatch,
   conversationId: string,
   messageId: string,
-  text: string,
+  previous: string,
+  next: string,
 ): Promise<void> {
-  const result = await dispatch(saveAnswerEdit({ conversationId, messageId, newText: text }));
+  // The edit was made on DISPLAY text: splice only its changed span into the
+  // stored text (never write the display text — it is whitespace-normalized).
+  const result = await dispatch(
+    saveAnswerEdit({ conversationId, messageId, displayEdit: { previous, next } }),
+  );
   if (saveAnswerEdit.rejected.match(result)) {
     toast.error(`Your change to this answer was not saved: ${result.payload?.message ?? result.error.message ?? "unknown error"}`);
   }

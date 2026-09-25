@@ -87,6 +87,14 @@ import {
   missingOutputKeys,
 } from "@/features/mandates/output-contract";
 import {
+  bindingContractCheck,
+  declaredOutputKind,
+  defaultHolderContractCheck,
+  isUnmet,
+  kindMismatchProblem,
+} from "@/features/mandates/contract-check";
+import { ContractMismatchNotice } from "@/features/mandates/components/ContractMismatchNotice";
+import {
   consumptionMapProblems,
   isOfferedSource,
   parseBindingWave1,
@@ -787,7 +795,8 @@ function BindingDraft({
           "This agent could not be read — it may be deleted or not shared with you.",
         );
       } else {
-        if (data.contract.requiredOutputKeys.length > 0) {
+        const expectedKind = data.mandate.output_kind ?? null;
+        if (data.contract.requiredOutputKeys.length > 0 || expectedKind) {
           const schemas = await fetchAgentOutputSchemas([agentId]);
           const missing = missingOutputKeys(
             data.contract.requiredOutputKeys,
@@ -798,6 +807,13 @@ function BindingDraft({
               `Its structured output is missing ${missing.map((m) => `\`${m}\``).join(", ")} — whatever reads this job's result requires ${missing.length === 1 ? "it" : "them"}.`,
             );
           }
+          // The same declared-kind verdict the server persists (aidream
+          // `ContractCheck`), shown before the save as well as after it.
+          const kindProblem = kindMismatchProblem(
+            expectedKind,
+            declaredOutputKind(schemas[agentId] ?? null),
+          );
+          if (kindProblem) problems.push(kindProblem);
         }
         if (!data.provisionKey) {
           const check = compareStoredContract(data.contract, {
@@ -1107,11 +1123,9 @@ function BindingDraft({
         ? defaultHolderOffer.refusal
         : defaultHolderOffer.systemHomed && systemHolderIsPersonal
           ? DEFAULT_HOLDER_PERSONAL_HOLDER_REFUSAL
-          : holder.kind === "agent" && !verdict.passed
-            ? verdict.checking
-              ? "Preliminary check: Checking"
-              : "Preliminary check: Failed"
-            : mapRefusal;
+          : // 🚨 A CONTRACT MISMATCH NEVER BLOCKS SAVE (Arman, 2026-09-25):
+            // it is painted red by `ContractMismatchNotice` beside the button.
+            mapRefusal;
 
   /** Why Save cannot act — adjacent to the button, never a transient toast. */
   const saveRefusal =
@@ -1128,11 +1142,9 @@ function BindingDraft({
               ? "Pick the organization this answer is for."
               : rung === "org" && !canBindThisOrg
                 ? `Deciding for everyone in ${organizations.find((o) => o.id === organizationId)?.name ?? "this organization"} takes an owner or admin of it, and you are ${selectedOrgRole ? `a ${selectedOrgRole}` : "not a member"} there. Ask an owner to set it, or pick an organization you administer — your own answer above always works.`
-                : holder.kind === "agent" && !verdict.passed
-                  ? verdict.checking
-                    ? "Preliminary check: Checking"
-                    : "Preliminary check: Failed"
-                  : mapRefusal);
+                : // A contract mismatch is RED, never a refusal (Arman,
+                  // 2026-09-25) — see `ContractMismatchNotice` below.
+                  mapRefusal);
 
   const storedAgentId = binding ? agentHolderOfBinding(binding).holderId : null;
   const holderChanged =
@@ -1141,6 +1153,25 @@ function BindingDraft({
     agentId !== null &&
     storedAgentId !== null &&
     agentId !== storedAgentId;
+
+  // 🚨 THE RED, NEVER THE BLOCK (Arman, 2026-09-25). The server persists its
+  // contract verdict on the row it wrote; the fresh write report wins, then the
+  // stored verdict while the drafted Holder is still the stored one, then the
+  // client's pre-save problems for a Holder not yet saved.
+  const persistedContractCheck = writingDefinitionDefault
+    ? defaultHolderContractCheck(data.mandate)
+    : bindingContractCheck(binding);
+  const serverContractCheck =
+    writeReport?.contractCheck ??
+    (holderChanged ? null : persistedContractCheck);
+  const contractNotice = isUnmet(serverContractCheck) ? (
+    <ContractMismatchNotice check={serverContractCheck} />
+  ) : holder.kind === "agent" &&
+    agentId !== null &&
+    !verdict.checking &&
+    !verdict.passed ? (
+    <ContractMismatchNotice problems={verdict.problems} />
+  ) : null;
 
   /**
    * `bindAgentId` overrides the drafted holder for THIS write only — the one
@@ -1219,6 +1250,7 @@ function BindingDraft({
       const report: BindingWriteReport = {
         notes: result.notes,
         appliesIn: result.appliesIn,
+        contractCheck: result.contractCheck,
       };
       onWrote(report, draftSignature);
       return report;
@@ -2507,6 +2539,8 @@ function BindingDraft({
               </p>
             </div>
           ) : null}
+
+          {contractNotice}
 
           {/* The server's refusal, kept ON THE PAGE — its words name the exact
           missing deliverable or the exact input, and a toast loses them. */}

@@ -9,6 +9,8 @@ import {
 } from "@/features/research/service/server";
 import { IntentBadge } from "@/features/research/components/shared/IntentBadge";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
+import { ROLE_MANDATE_KEYS } from "@/features/research/components/agents/constants";
 import ResearchTopicShell from "./ResearchTopicShell";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 
@@ -108,6 +110,12 @@ export default async function ResearchTopicLayout({
             {topic.name}
           </span>
           <IntentBadge label={intentLabel} className="shrink-0" />
+          <IntelligenceIndicator
+            feature="research"
+            mandateKeys={Object.values(ROLE_MANDATE_KEYS)}
+            context={{ topicId }}
+            label="The AI jobs that research this topic"
+          />
         </div>
       </PageHeader>
       <div className="flex h-dvh flex-col bg-textured">

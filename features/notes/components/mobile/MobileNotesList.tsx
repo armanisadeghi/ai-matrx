@@ -1,5 +1,6 @@
 "use client";
 
+import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
 import React, { useRef, useState, useMemo } from "react";
 import { noteCreateErrorMessage } from "../../utils/writeErrors";
 import { selectNotesListError, selectNotesListStatus } from "../../redux/selectors";
@@ -188,8 +189,7 @@ export default function MobileNotesList({
   };
 
   const getPreviewText = (content: string | null | undefined) => {
-    const stripped = (content ?? "").replace(/[#*_~`]/g, "").trim();
-    return stripped.split("\n")[0] || "No content";
+    return plainTitleFromMarkdown(content) || "No content";
   };
 
   const isFiltered =

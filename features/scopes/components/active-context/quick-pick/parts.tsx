@@ -105,6 +105,11 @@ export function NodeLabel({ node }: { node: PickNode }) {
   );
 }
 
+/** A row's full name (and its hint) — the tooltip a truncated row carries. */
+export function nodeTitle(node: Pick<PickNode, "label" | "hint">): string {
+  return node.hint ? `${node.label} · ${node.hint}` : node.label;
+}
+
 /* ── panes ───────────────────────────────────────────────────────────────── */
 
 export function SkeletonRows({ count = 5 }: { count?: number }) {

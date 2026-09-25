@@ -19,6 +19,11 @@ The job must already exist in the product surface. This skill records that
 pre-existing fixed job so the user can inspect its mandate without leaving the
 page. It is not authority to modify page content or product behavior.
 
+**One owner-approved exception (Arman, 2026-09-25):** the small Intelligence
+icon (`IntelligenceIndicator`, `features/mandates/feature-intelligence/FEATURE.md`)
+may sit beside a control that runs a job. It is a door to where the job is
+managed, not a disclosure roster — never add anything else under its name.
+
 There is no inline disclosure component. `PageAgents` is forbidden and deleted.
 If a task or old document tells you to render it, that instruction is stale and
 must not be followed.

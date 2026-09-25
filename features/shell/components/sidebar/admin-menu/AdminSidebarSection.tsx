@@ -20,7 +20,7 @@ import AppLink from "@/components/navigation/AppLink";
 import { ADMIN_LAUNCHPAD_PATH } from "@/features/admin/constants/admin-categories";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/slices/userSlice";
+import { selectIsAdminPerson } from "@/lib/redux/selectors/userSelectors";
 import SidebarAdminIndicatorToggle from "../../controls/SidebarAdminIndicatorToggle";
 import SidebarApiVersionToggle from "../../controls/SidebarApiVersionToggle";
 import SidebarCreatorHubToggle from "../../controls/SidebarCreatorHubToggle";
@@ -34,7 +34,10 @@ const AdminMenu = dynamic(() => import("./AdminMenu"), {
 });
 
 export default function AdminSidebarSection() {
-  const isAdmin = useAppSelector(selectIsAdmin) ?? false;
+  // ADMIN IDENTITY: this section is the way INTO the admin section, so it
+  // shows on user pages too. Every tool inside it gates itself on admin
+  // POWER and is absent outside /administration (utils/supabase/adminLane.ts).
+  const isAdmin = useAppSelector(selectIsAdminPerson);
   const hydrated = useIsMounted();
 
   if (!hydrated || !isAdmin) return null;

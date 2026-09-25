@@ -14,6 +14,10 @@ import {
 } from "@/features/agents/addressing/agentAddress";
 import { parseMandateContract } from "@/features/mandates/overrides";
 import { missingOutputKeys } from "@/features/mandates/output-contract";
+import {
+  unmetContractChecks,
+  type ContractMismatch,
+} from "@/features/mandates/contract-check";
 import { splitMandateKey } from "@/features/mandates/mandate-key";
 import { parseMandateWave1 } from "@/features/mandates/provision-shapes";
 import {
@@ -124,6 +128,12 @@ export interface MandateRow {
   /** "v7 → v9" when the pin trails the newest SAVED snapshot; null when unknown. */
   drift: string | null;
   health: MandateHealth;
+  /**
+   * 🚨 EVERY RED HOLDER ON THIS JOB — its default and each binding saved with
+   * an unmet contract (server-persisted, `metadata.contract_check`). A
+   * mismatch never blocks a save (Arman, 2026-09-25); it is shown here, loud.
+   */
+  contractMismatches: ContractMismatch[];
   /** Live source/agent/DB comparison from aidream; null means this mandate has no
    * returned report (for example while the endpoint is unavailable). */
   codeTruth: MandateCodeTruth | null;
@@ -348,14 +358,22 @@ export function buildRow(
   // An explicit map wins (a caller with a fresher read of one holder); otherwise
   // the console load's own read answers. Neither present = UNKNOWN, unchanged.
   const schemas = outputSchemas ?? data.outputSchemas;
+  const contractMismatches = unmetContractChecks(
+    mandate,
+    data.bindingsByMandateId[mandate.id] ?? [],
+  );
+  const defaultSavedRed = contractMismatches.some(
+    (m) => m.where === "The job's default",
+  );
   const outputContractUnmet =
-    hasPin &&
+    defaultSavedRed ||
+    (hasPin &&
     agentId !== null &&
     schemas !== undefined &&
     agentId in schemas &&
     contractForOutput.requiredOutputKeys.length > 0 &&
     missingOutputKeys(contractForOutput.requiredOutputKeys, schemas[agentId])
-      .length > 0;
+      .length > 0);
 
   const health: MandateHealth = codeAgentDrift
     ? "code ↔ agent drift"
@@ -408,6 +426,7 @@ export function buildRow(
     pinLabel,
     drift,
     health,
+    contractMismatches,
     codeTruth: codeTruth ?? null,
     inputKind: inputKindOfMandate(mandate) ?? "—",
     outputKind: mandate.output_kind ?? "text",

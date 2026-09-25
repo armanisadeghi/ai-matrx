@@ -1,5 +1,6 @@
 "use client";
 
+import { ContractMismatchList } from "@/features/mandates/components/ContractMismatchNotice";
 import { normalizeTransferJson } from "@ai-matrx/kit/content-transfer";
 import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
 
@@ -1847,6 +1848,7 @@ export function MandateDetailView({
             verdictsError={liveVerdictState?.error ?? null}
             onSaved={onSaved}
           />
+          <ContractMismatchList mismatches={row.contractMismatches} />
           {row.health === "code ↔ agent drift" ||
           row.health === "code truth import failed" ||
           row.health === "code ↔ contract drift" ? (
@@ -1927,6 +1929,10 @@ export function MandateDetailView({
         }}
         onOpenRebind={openTheBindingUi}
       />
+
+      {/* 🚨 A Holder saved with an unmet contract — red, never blocked
+          (Arman, 2026-09-25). */}
+      <ContractMismatchList mismatches={row.contractMismatches} />
 
       {/* 🚨 AND THE DOOR TO IT IS GONE TOO (FIX-R9, 2026-09-08). The rebind
           editor left in 2026-08-31 and a fold headed "Who fulfils this job"

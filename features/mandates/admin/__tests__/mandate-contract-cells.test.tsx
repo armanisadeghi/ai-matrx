@@ -72,6 +72,7 @@ const row: MandateRow = {
   pinLabel: "latest",
   drift: null,
   health: "ok",
+  contractMismatches: [],
   codeTruth: null,
   inputKind: "text",
   outputKind: LONG_OUTPUT_KIND,

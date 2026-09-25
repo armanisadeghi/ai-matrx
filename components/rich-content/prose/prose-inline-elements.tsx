@@ -27,6 +27,8 @@ import type { MarkdownComponents as Components } from "@/components/markdown-cor
 type ExtraProps = { node?: Element };
 import { cn } from "@/styles/themes/utils";
 import { LinkComponent } from "@/components/mardown-display/blocks/links/LinkComponent";
+import { useHeadingAnchors } from "@/components/markdown-core/heading-anchors-context";
+import { isHeadingAnchorProps } from "@/components/markdown-core/heading-anchors-props";
 import { MatrxVariableInline } from "@/components/mardown-display/chat-markdown/matrx-variables/MatrxVariableInline";
 import { CitationMarkerInline } from "@/components/mardown-display/chat-markdown/citations/CitationMarkerInline";
 import { InDocAnchor } from "@/components/markdown-core/syntax/elements/InDocAnchor";
@@ -64,8 +66,12 @@ export function splitWithVariables(text: string): React.ReactNode[] {
 // An in-document link (`#id` — footnotes, heading anchors, contents,
 // cross-references) scrolls within the document; every other link gets the
 // link card.
-const LinkElement: NonNullable<Components["a"]> = ({ node, href, children, ...rest }) =>
-  isInDocHref(href) ? (
+function LinkElement({ node, href, children, ...rest }: Parameters<NonNullable<Components["a"]>>[0]) {
+  // A heading's hover anchor is dropped where its section is not on screen
+  // (preview contexts — heading-anchors-context.ts).
+  const anchorsOn = useHeadingAnchors();
+  if (!anchorsOn && isHeadingAnchorProps(rest)) return null;
+  return isInDocHref(href) ? (
     <InDocAnchor href={href} {...rest}>
       {children}
     </InDocAnchor>
@@ -74,6 +80,7 @@ const LinkElement: NonNullable<Components["a"]> = ({ node, href, children, ...re
   ) : (
     <>{children}</>
   );
+}
 
 /**
  * Inline-mark renderers shared by every level. Module scope, so the map's

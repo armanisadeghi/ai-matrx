@@ -76,6 +76,7 @@ import { githubConnectUrl } from "@/features/github-integration/service";
 import { useGitHubConnection } from "@/features/github-integration/useGitHubConnection";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { ConnectorsSettingsPanel } from "@/features/connectors/ConnectorsSettingsPanel";
+import { providerArtworkUrls } from "@/features/connectors/live-connectors";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { catalogConnectionPresentation } from "./integration-catalog-state";
@@ -450,7 +451,7 @@ export default function IntegrationsPage() {
 
   return (
     <TooltipProvider>
-      <div className="mx-auto max-w-6xl space-y-6 p-4 pb-12 md:p-8">
+      <div className="-mx-2 max-w-6xl space-y-5 px-1 pb-12 pt-3 sm:mx-auto sm:px-4 md:space-y-6 md:p-8">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-2xl">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
@@ -745,7 +746,8 @@ function ServerCard({
   const [supabaseProjectRef, setSupabaseProjectRef] = useState("");
   const [supabaseError, setSupabaseError] = useState<string | null>(null);
   const [showManualForm, setShowManualForm] = useState(false);
-  const [iconFailed, setIconFailed] = useState(false);
+  const [failedIconUrls, setFailedIconUrls] = useState<string[]>([]);
+  const iconUrl = providerArtworkUrls(entry).find((url) => !failedIconUrls.includes(url));
 
   const isSupabase = entry.slug === "supabase";
 
@@ -780,7 +782,7 @@ function ServerCard({
         isComingSoon && "opacity-55",
       )}
     >
-      <CardContent className="p-4">
+      <CardContent className="p-3 sm:p-4">
         {/* Record pair — SANITIZED via mcpEntryMeta (no endpoint URL, auth
             strategy, connection id or token expiry ever reaches a payload). */}
         <div className="float-right opacity-100 transition-opacity sm:opacity-0 sm:group-hover/integration:opacity-100 sm:focus-within:opacity-100">
@@ -811,15 +813,15 @@ function ServerCard({
         {/* Top row */}
         <div className="flex items-start gap-3">
           <div className="shrink-0 mt-0.5">
-            {entry.iconUrl && !iconFailed ? (
+            {iconUrl ? (
               <img
-                src={entry.iconUrl}
+                src={iconUrl}
                 alt=""
                 className={cn(
                   "h-11 w-11 rounded-xl border border-border bg-background object-contain p-1.5",
                   isComingSoon && "grayscale",
                 )}
-                onError={() => setIconFailed(true)}
+                onError={() => setFailedIconUrls((current) => [...current, iconUrl])}
               />
             ) : (
               <div
@@ -924,24 +926,26 @@ function ServerCard({
               </Button>
             </>
           ) : canConnect && needsOAuth && !isSupabase ? (
-            <div className="flex flex-1 gap-2">
+            <div className="flex min-w-0 flex-1 gap-2">
               <Button
                 size="sm"
-                className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
+                className="h-11 min-w-0 flex-1 px-2 text-sm sm:h-7 sm:px-3 sm:text-xs"
                 onClick={() => onOAuthConnect()}
                 disabled={isConnecting}
+                aria-label="Connect with OAuth"
               >
                 {isConnecting ? (
                   <Loader2 className="h-3 w-3 animate-spin mr-1" />
                 ) : (
                   <Lock className="h-3 w-3 mr-1" />
                 )}
-                Connect with OAuth
+                <span className="sm:hidden">Connect</span>
+                <span className="hidden sm:inline">Connect with OAuth</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-11 text-sm sm:h-7 sm:text-xs"
+                className="h-11 shrink-0 px-2 text-sm sm:h-7 sm:px-3 sm:text-xs"
                 onClick={() => setShowManualForm((visible) => !visible)}
                 disabled={isConnecting}
               >
@@ -951,16 +955,18 @@ function ServerCard({
           ) : canConnect && needsOAuth && isSupabase ? (
             <Button
               size="sm"
-              className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
+              className="h-11 min-w-0 flex-1 px-2 text-sm sm:h-7 sm:px-3 sm:text-xs"
               onClick={handleSupabaseOAuth}
               disabled={isConnecting || !supabaseProjectRef.trim()}
+              aria-label="Connect read-only project"
             >
               {isConnecting ? (
                 <Loader2 className="h-3 w-3 animate-spin mr-1" />
               ) : (
                 <Lock className="h-3 w-3 mr-1" />
               )}
-              Connect read-only project
+              <span className="sm:hidden">Connect project</span>
+              <span className="hidden sm:inline">Connect read-only project</span>
             </Button>
           ) : canConnect && needsToken ? (
             <Button

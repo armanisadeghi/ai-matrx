@@ -7,6 +7,9 @@ import { isPageBreakLine } from "@ai-matrx/print/directives";
 import {
   Braces,
   Code,
+  Hash,
+  Info,
+  LayoutPanelTop,
   CodeXml,
   EyeOff,
   FileCog,
@@ -86,6 +89,18 @@ export function islandMeta(islandType: string, raw: string): IslandMeta {
       return { label: "Front matter", icon: FileCog, language: "code", renders: false };
     case "tree":
       return { label: "File tree", icon: FolderTree, language: "code", renders: true };
+    case "callout": {
+      const name = /^\s*>\s*\[!([\w-]+)\]/.exec(raw)?.[1];
+      return { label: name ? `Callout · ${name.toLowerCase()}` : "Callout", icon: Info, language: "markdown", renders: true };
+    }
+    case "directive": {
+      const name = /^\s*(?::{2,}|!!!|\?{3}\+?)\s*([\w-]+)/.exec(raw)?.[1];
+      return { label: name ? `Block · ${name}` : "Block", icon: LayoutPanelTop, language: "markdown", renders: true };
+    }
+    case "footnote_def": {
+      const id = /^\s*\[\^([^\]]+)\]:/.exec(raw)?.[1];
+      return { label: id ? `Footnote ${id}` : "Footnote", icon: Hash, language: "markdown", renders: true };
+    }
     default:
       return { label: "Protected block", icon: Lock, language: "markdown", renders: true };
   }
@@ -108,6 +123,8 @@ export function inlineIslandLabel(islandType: string): string {
       return "Kind";
     case "media_ref":
       return "Media";
+    case "wikilink":
+      return "Page link";
     default:
       return "Protected text";
   }

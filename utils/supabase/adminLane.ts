@@ -34,13 +34,48 @@ export const ADMIN_LANE_HEADER = "x-matrx-admin-lane";
 
 /**
  * Path prefixes that ARE the admin section. Everything else is a user page.
- * `/api/admin/**` and `/api/sms/admin/**` are the admin section's route
- * handlers (proxied only to stamp the lane — see `proxy.ts`).
+ *
+ * - `/administration/**` — the `(admin)` route group.
+ * - `/api/admin/**`, `/api/sms/admin/**` — its Route Handlers (proxied only to
+ *   receive the lane stamp — see `proxy.ts`).
+ * - The per-feature admin maps, `app/(core)/<feature>/admin` — the Tier-1
+ *   contract in features/admin (FeatureAdminPage, platform-admin gated).
+ *   `pnpm check:admin-lane` fails when a `(core)` `admin` directory exists
+ *   that this list does not name, so a new map cannot silently run lane-less.
+ *
+ * NOT here, deliberately: `/organizations/<id>/admin/**` — an ORGANIZATION's
+ * own admin pages, run by that org's admins. A platform admin standing there
+ * is a member like any other.
  */
 export const ADMIN_LANE_PATH_PREFIXES = [
   "/administration",
   "/api/admin",
   "/api/sms/admin",
+  "/agents/admin",
+  "/camera/admin",
+  "/cms/admin",
+  "/commerce/intake/admin",
+  "/commerce/review/admin",
+  "/crm/admin",
+  "/dictionary/admin",
+  "/education/admin",
+  "/education/flashcards/admin",
+  "/education/learn/admin",
+  "/files/admin",
+  "/knowledge/extractions/admin",
+  "/marketing/admin",
+  "/masterwork/admin",
+  "/messages/admin",
+  "/print/admin",
+  "/rag/admin",
+  "/reports/admin",
+  "/shapes/admin",
+  "/tool-call-visualization/admin",
+  "/tools/pdf-extractor/admin",
+  "/tools/product-capture/admin",
+  "/transcripts/admin",
+  "/war-room/admin",
+  "/work/admin",
 ] as const;
 
 export function isAdminLanePath(pathname: string | null | undefined): boolean {

@@ -32,7 +32,7 @@ let viewer: { isSuperAdmin: boolean; userId: string | null } = { isSuperAdmin: t
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
   useAppSelector: (selector: (state: unknown) => unknown) =>
-    selector({ userAuth: { id: viewer.userId, adminLevel: viewer.isSuperAdmin ? "super_admin" : null } }),
+    selector({ userAuth: { id: viewer.userId, adminLevel: viewer.isSuperAdmin ? "super_admin" : null, adminLaneOpen: true } }),
 }));
 jest.mock("@/features/overlays/openers/agentFindUsagesWindow", () => ({
   useOpenAgentFindUsagesWindow: () => openWindowMock,

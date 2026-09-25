@@ -611,3 +611,23 @@ describe("H1 — a value the job's caller supplies is not unfed", () => {
     ).toEqual(["Task Overview"]);
   });
 });
+
+/**
+ * VALIDATION OFFERS, NEVER BLOCKS (Arman, 2026-09-25). A Holder whose output
+ * does not meet a place's contract paints the row RED and says why — and Apply
+ * still writes it. Before this, the mismatch rode `blockers` and refused Apply.
+ */
+describe("contract mismatch is red, never a refusal", () => {
+  it("colours the place red, names the mismatch, and leaves Apply open", () => {
+    const health = placeHealth({
+      targets: [],
+      offered: [],
+      map: {},
+      warnings: ["Its structured output declares kind 'quiz_set', but this job answers in 'page_summary'."],
+    });
+    expect(health.tone).toBe("red");
+    expect(health.warnings).toHaveLength(1);
+    expect(health.blockers).toHaveLength(0);
+    expect(applyRefusal([health], 1)).toBeNull();
+  });
+});

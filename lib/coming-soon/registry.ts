@@ -64,6 +64,21 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     // a DIFFERENT, working control — this is the continuous session.
     surfaces: ["Chat input action bar"],
   },
+  "mandates.holder-auto-heal": {
+    id: "mandates.holder-auto-heal",
+    label: "Fix with AI",
+    owner: "mandates",
+    promise:
+      "Our agent rewrites your Holder so it matches the job's contract (usually its output kind), saves that as a NEW version, runs the job's test on it, and shows you before and after so you can adopt it — your current version is never overwritten.",
+    stage: "planned",
+    // Owner ruling 2026-09-25: a mismatched binding saves red; this is the
+    // helper beside the red. Design: common-docs mandates REGISTER.md.
+    surfaces: [
+      "Mandate binding workspace (contract mismatch notice)",
+      "Mandate page banner",
+      "Mandates admin list drawer",
+    ],
+  },
   "agents.create-app": {
     id: "agents.create-app",
     label: "Create App from Agent",

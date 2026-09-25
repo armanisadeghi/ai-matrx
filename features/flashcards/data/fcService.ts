@@ -11,6 +11,7 @@
 
 "use client";
 
+import { displayTitle, withDisplayTitle } from "@/components/markdown-core/plain-title";
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import {
@@ -109,7 +110,7 @@ export const fcService = {
         .select("*")
         .single();
       if (error) return fail("createSet", error);
-      return { data: data as FcSetRow, error: null };
+      return { data: withDisplayTitle(data as FcSetRow, "name"), error: null };
     } catch (e) {
       return fail("createSet", e);
     }
@@ -129,7 +130,7 @@ export const fcService = {
         .select("*")
         .single();
       if (error) return fail("updateSet", error);
-      return { data: data as FcSetRow, error: null };
+      return { data: withDisplayTitle(data as FcSetRow, "name"), error: null };
     } catch (e) {
       return fail("updateSet", e);
     }
@@ -154,7 +155,7 @@ export const fcService = {
         .select("*")
         .single();
       if (error) return fail("updateSetAudioOverview", error);
-      return { data: data as FcSetRow, error: null };
+      return { data: withDisplayTitle(data as FcSetRow, "name"), error: null };
     } catch (e) {
       return fail("updateSetAudioOverview", e);
     }
@@ -173,7 +174,7 @@ export const fcService = {
         .select("*")
         .single();
       if (error) return fail("updateSetVisibility", error);
-      return { data: data as FcSetRow, error: null };
+      return { data: withDisplayTitle(data as FcSetRow, "name"), error: null };
     } catch (e) {
       return fail("updateSetVisibility", e);
     }
@@ -257,7 +258,7 @@ export const fcService = {
             relation: "fc_set",
           }).message,
         };
-      return { data: data as FcSetRow, error: null };
+      return { data: withDisplayTitle(data as FcSetRow, "name"), error: null };
     } catch (e) {
       return fail("getSet", e);
     }
@@ -283,7 +284,7 @@ export const fcService = {
         ? await query.abortSignal(options.signal)
         : await query;
       if (error) return fail("listSets", error);
-      return { data: (data ?? []) as FcSetRow[], error: null };
+      return { data: ((data ?? []) as FcSetRow[]).map((r) => withDisplayTitle(r, "name")), error: null };
     } catch (e) {
       return fail("listSets", e);
     }
@@ -303,7 +304,7 @@ export const fcService = {
         .is("deleted_at", null);
       if (error) return fail("getSetNamesByIds", error);
       const map: Record<string, string> = {};
-      for (const row of data ?? []) map[row.id] = row.name;
+      for (const row of data ?? []) map[row.id] = displayTitle(row.name);
       return { data: map, error: null };
     } catch (e) {
       return fail("getSetNamesByIds", e);
@@ -473,7 +474,7 @@ export const fcService = {
         .limit(1)
         .maybeSingle();
       if (error) return fail("findChatGeneratedSetForConversation", error);
-      return { data: (data as FcSetRow | null) ?? null, error: null };
+      return { data: data ? withDisplayTitle(data as FcSetRow, "name") : null, error: null };
     } catch (e) {
       return fail("findChatGeneratedSetForConversation", e);
     }
@@ -496,7 +497,7 @@ export const fcService = {
         .limit(1)
         .maybeSingle();
       if (error) return fail("findSurfaceSavedSetForConversation", error);
-      return { data: (data as FcSetRow | null) ?? null, error: null };
+      return { data: data ? withDisplayTitle(data as FcSetRow, "name") : null, error: null };
     } catch (e) {
       return fail("findSurfaceSavedSetForConversation", e);
     }

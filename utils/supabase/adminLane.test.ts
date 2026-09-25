@@ -41,7 +41,10 @@ describe("isAdminLanePath", () => {
     ["/notes", false],
     ["/agents", false],
     ["/administrationx", false],
-    ["/reports/admin", false],
+    ["/reports/admin", true],
+    ["/agents/admin", true],
+    ["/organizations/abc/admin", false],
+    ["/agents/administrator", false],
     ["/api/agents", false],
     [null, false],
   ])("%s → %s", (path, expected) => {

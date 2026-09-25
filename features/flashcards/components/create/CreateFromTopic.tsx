@@ -46,6 +46,7 @@ import { useAiComplianceGate } from "@/features/education/compliance/useAiCompli
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { FC_MANDATES } from "../../data/mandates";
 import { useFlashcardMandates } from "../../data/mandate-disclosure";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { fcService } from "../../data/fcService";
 import { generatedSetFromEnvelope } from "../../data/generated-set-from-envelope";
 import { useGenerateCards } from "../../data/useGenerateCards";
@@ -406,6 +407,11 @@ export function CreateFromTopic() {
                 >
                   Cancel
                 </Button>
+                <IntelligenceIndicator
+                  feature="flashcards"
+                  mandateKeys={[FC_MANDATES.generateCards]}
+                  label="The AI job behind Generate"
+                />
                 <Button type="submit" disabled={!canSubmit}>
                   {busy ? (
                     <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />

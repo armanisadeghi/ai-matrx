@@ -11,6 +11,7 @@
 
 "use client";
 
+import { withDisplayTitle } from "@/components/markdown-core/plain-title";
 import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
@@ -96,7 +97,7 @@ export const assessmentService = {
       if (error) return fail("createAssessment", error);
       // Provenance is single-valued → captured by source_kind/source_id columns
       // (the study_media precedent), not a polymorphic association edge.
-      return { data: data as AssessmentRow, error: null };
+      return { data: withDisplayTitle(data as AssessmentRow, "title"), error: null };
     } catch (e) {
       return fail("createAssessment", e);
     }
@@ -114,7 +115,7 @@ export const assessmentService = {
         .select("*")
         .single();
       if (error) return fail("updateAssessment", error);
-      return { data: data as AssessmentRow, error: null };
+      return { data: withDisplayTitle(data as AssessmentRow, "title"), error: null };
     } catch (e) {
       return fail("updateAssessment", e);
     }
@@ -133,7 +134,7 @@ export const assessmentService = {
         .select("*")
         .single();
       if (error) return fail("updateVisibility", error);
-      return { data: data as AssessmentRow, error: null };
+      return { data: withDisplayTitle(data as AssessmentRow, "title"), error: null };
     } catch (e) {
       return fail("updateVisibility", e);
     }
@@ -163,7 +164,7 @@ export const assessmentService = {
         .is("deleted_at", null)
         .maybeSingle();
       if (error) return fail("getAssessment", error);
-      return { data: (data ?? null) as AssessmentRow | null, error: null };
+      return { data: data ? withDisplayTitle(data as AssessmentRow, "title") : null, error: null };
     } catch (e) {
       return fail("getAssessment", e);
     }
@@ -192,7 +193,7 @@ export const assessmentService = {
       if (iErr) return fail("getAssessmentWithItems", iErr);
       return {
         data: {
-          assessment: assessment as AssessmentRow,
+          assessment: withDisplayTitle(assessment as AssessmentRow, "title"),
           items: (items ?? []) as AssessmentItemRow[],
         },
         error: null,
@@ -216,7 +217,7 @@ export const assessmentService = {
       if (filter.limit != null) q = q.limit(filter.limit);
       const { data, error } = await q;
       if (error) return fail("listAssessments", error);
-      return { data: (data ?? []) as AssessmentRow[], error: null };
+      return { data: ((data ?? []) as AssessmentRow[]).map((r) => withDisplayTitle(r, "title")), error: null };
     } catch (e) {
       return fail("listAssessments", e);
     }
