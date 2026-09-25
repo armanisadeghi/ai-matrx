@@ -542,17 +542,20 @@ export async function countAvailableCodes(
 /** Release a claim that could not complete (identifier write failed after the
  *  code was stamped) — never strand a code half-assigned. */
 export async function releaseLabelCode(codeId: string): Promise<void> {
-  const { error } = await labelsDb()
-    .from("label_code")
-    .update({
-      state: "available",
-      assigned_at: null,
-      intake_asset_id: null,
-      asset_identifier_id: null,
-    })
-    .eq("id", codeId)
-    .eq("state", "assigned");
-  if (error) throw error;
+  await writeOne(
+    labelsDb()
+      .from("label_code")
+      .update({
+        state: "available",
+        assigned_at: null,
+        intake_asset_id: null,
+        asset_identifier_id: null,
+      })
+      .eq("id", codeId)
+      .eq("state", "assigned")
+      .select("id"),
+    { action: "change", noun: "label code", compareAndSet: true },
+  );
 }
 
 /** Void specific codes (damaged sheet, lost labels). Available codes only —

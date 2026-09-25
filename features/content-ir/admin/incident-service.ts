@@ -22,7 +22,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/types/database.types";
 import { readAllRows } from "@ai-matrx/data/db";
 import { operationFailed } from "@/utils/errors";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { WriteDidNotLandError, tryWriteOne } from "@/utils/supabase/writeOne";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 export type KindIncidentClient = SupabaseClient<Database>;
@@ -204,7 +204,9 @@ export async function resolveKindIncident(
       .select("id"),
     { action: "update", noun: "Shape incident" },
   );
-  if (error) throw operationFailed("resolve this Shape incident", error);
+  if (error) {
+    throw error instanceof WriteDidNotLandError ? error : operationFailed("resolve this Shape incident", error);
+  }
 }
 
 /** Re-open a row closed by mistake (or superseded and still failing). */
@@ -221,5 +223,7 @@ export async function reopenKindIncident(
       .select("id"),
     { action: "update", noun: "Shape incident" },
   );
-  if (error) throw operationFailed("reopen this Shape incident", error);
+  if (error) {
+    throw error instanceof WriteDidNotLandError ? error : operationFailed("reopen this Shape incident", error);
+  }
 }

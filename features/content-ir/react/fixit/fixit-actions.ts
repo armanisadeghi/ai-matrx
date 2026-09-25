@@ -14,7 +14,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { WriteDidNotLandError, tryWriteOne } from "@/utils/supabase/writeOne";
 import {
   createOwnedShapeExample,
   makeOwnedShapeExampleCanonical,
@@ -45,7 +45,9 @@ export async function reactivateComponent(
       .select("id"),
     { action: "update", noun: "component" },
   );
-  if (error) throw operationFailed("re-activate this component", error);
+  if (error) {
+    throw error instanceof WriteDidNotLandError ? error : operationFailed("re-activate this component", error);
+  }
   invalidateKindRenderGap(diagnosis.kind);
   await refreshKindComponents(0);
 }

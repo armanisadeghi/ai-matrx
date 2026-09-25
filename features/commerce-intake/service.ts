@@ -808,16 +808,19 @@ export async function replaceIdentifier(
   identifierId: string,
   reason: string,
 ): Promise<void> {
-  const { error } = await db()
-    .from("asset_identifier")
-    .update({
-      replaced_at: new Date().toISOString(),
-      replaced_reason: reason,
-      is_primary: false,
-    })
-    .eq("id", identifierId)
-    .is("replaced_at", null);
-  if (error) throw error;
+  await writeOne(
+    db()
+      .from("asset_identifier")
+      .update({
+        replaced_at: new Date().toISOString(),
+        replaced_reason: reason,
+        is_primary: false,
+      })
+      .eq("id", identifierId)
+      .is("replaced_at", null)
+      .select("id"),
+    { action: "change", noun: "identifier", compareAndSet: true },
+  );
 }
 
 export async function listIdentifiers(
@@ -903,17 +906,20 @@ export async function answerQuestion(
   question: AssetQuestion,
   answer: string,
 ): Promise<void> {
-  const { error } = await db()
-    .from("asset_unknown")
-    .update({
-      answer,
-      answered_at: new Date().toISOString(),
-      answer_source: "human",
-      version: question.version + 1,
-    })
-    .eq("id", question.id)
-    .is("answered_at", null);
-  if (error) throw error;
+  await writeOne(
+    db()
+      .from("asset_unknown")
+      .update({
+        answer,
+        answered_at: new Date().toISOString(),
+        answer_source: "human",
+        version: question.version + 1,
+      })
+      .eq("id", question.id)
+      .is("answered_at", null)
+      .select("id"),
+    { action: "save", noun: "question", compareAndSet: true },
+  );
 }
 
 /** Skip = "not near that shelf": skip_count++ → the back of the queue. */

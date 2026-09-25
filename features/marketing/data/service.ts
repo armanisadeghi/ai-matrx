@@ -69,6 +69,7 @@ import type {
 } from "@/features/marketing/types";
 import { isJsonRecord, isPropertyKind } from "@/features/marketing/types";
 import { extractErrorMessage, operationFailed } from "@/utils/errors";
+import { writeOne } from "@/utils/supabase/writeOne";
 import type { Database, Json } from "@/types/database.types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
 import { applyPageOnlyFilters } from "@/features/marketing/lib/page-content-class";
@@ -2536,31 +2537,64 @@ export async function confirmDiscoveredAsset(
           ? { og_image_url: input.item.url }
           : null;
   if (identityPatch && input.item.url) {
-    const brandUpdate = await db
-      .from("brand")
-      .update(identityPatch)
-      .eq("id", input.item.brand_id)
-      .is("deleted_at", null);
-    if (brandUpdate.error) throw brandUpdate.error;
-    if (input.item.site_id) {
-      const siteUpdate = await db
-        .from("site")
+    await writeOne(
+      db
+        .from("brand")
         .update(identityPatch)
-        .eq("id", input.item.site_id)
-        .is("deleted_at", null);
-      if (siteUpdate.error) throw siteUpdate.error;
+        .eq("id", input.item.brand_id)
+        .is("deleted_at", null)
+        .select("id, deleted_at"),
+      {
+        action: "update",
+        noun: "brand",
+        alreadyDone: {
+          reread: () =>
+            db
+              .from("brand")
+              .select("id, deleted_at")
+              .eq("id", input.item.brand_id)
+              .maybeSingle(),
+          isDone: (row) => row.deleted_at != null,
+        },
+      },
+    );
+    if (input.item.site_id) {
+      await writeOne(
+        db
+          .from("site")
+          .update(identityPatch)
+          .eq("id", input.item.site_id)
+          .is("deleted_at", null)
+          .select("id, deleted_at"),
+        {
+          action: "update",
+          noun: "site",
+          alreadyDone: {
+            reread: () =>
+              db
+                .from("site")
+                .select("id, deleted_at")
+                .eq("id", input.item.site_id)
+                .maybeSingle(),
+            isDone: (row) => row.deleted_at != null,
+          },
+        },
+      );
     }
   }
-  const update = await db
-    .from("discovered_item")
-    .update({
-      status: "confirmed",
-      resolved_asset_id: created.id,
-      reviewed_at: new Date().toISOString(),
-    })
-    .eq("id", input.item.id)
-    .eq("status", "pending");
-  if (update.error) throw update.error;
+  await writeOne(
+    db
+      .from("discovered_item")
+      .update({
+        status: "confirmed",
+        resolved_asset_id: created.id,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", input.item.id)
+      .eq("status", "pending")
+      .select("id"),
+    { action: "save", noun: "discovery", compareAndSet: true },
+  );
 }
 
 /** Promote a social discovery to the brand-property model it renders in. */
@@ -2585,16 +2619,19 @@ export async function confirmDiscoveredProperty(
     .select("id")
     .single();
   const created = assertData(property.data, property.error);
-  const update = await db
-    .from("discovered_item")
-    .update({
-      status: "confirmed",
-      resolved_property_id: created.id,
-      reviewed_at: new Date().toISOString(),
-    })
-    .eq("id", input.item.id)
-    .eq("status", "pending");
-  if (update.error) throw update.error;
+  await writeOne(
+    db
+      .from("discovered_item")
+      .update({
+        status: "confirmed",
+        resolved_property_id: created.id,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", input.item.id)
+      .eq("status", "pending")
+      .select("id"),
+    { action: "save", noun: "discovery", compareAndSet: true },
+  );
 }
 
 /** Promote a discovered item to a confirmed business fact. */
@@ -2618,16 +2655,19 @@ export async function confirmDiscoveredFact(
     .select("id")
     .single();
   const created = assertData(fact.data, fact.error);
-  const update = await db
-    .from("discovered_item")
-    .update({
-      status: "confirmed",
-      resolved_fact_id: created.id,
-      reviewed_at: new Date().toISOString(),
-    })
-    .eq("id", input.item.id)
-    .eq("status", "pending");
-  if (update.error) throw update.error;
+  await writeOne(
+    db
+      .from("discovered_item")
+      .update({
+        status: "confirmed",
+        resolved_fact_id: created.id,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", input.item.id)
+      .eq("status", "pending")
+      .select("id"),
+    { action: "save", noun: "discovery", compareAndSet: true },
+  );
 }
 
 function asRecord(value: DiscoveredItem["value"]): { [key: string]: unknown } {
@@ -2724,14 +2764,15 @@ export async function bulkDeleteDiscoveredItems(
 }
 
 export async function dismissDiscoveredItem(itemId: string): Promise<void> {
-  const response = await (
-    await authenticatedWebDb(supabase)
-  )
-    .from("discovered_item")
-    .update({ status: "dismissed", reviewed_at: new Date().toISOString() })
-    .eq("id", itemId)
-    .eq("status", "pending");
-  if (response.error) throw response.error;
+  await writeOne(
+    (await authenticatedWebDb(supabase))
+      .from("discovered_item")
+      .update({ status: "dismissed", reviewed_at: new Date().toISOString() })
+      .eq("id", itemId)
+      .eq("status", "pending")
+      .select("id"),
+    { action: "save", noun: "discovery", compareAndSet: true },
+  );
 }
 
 // ============================================================================

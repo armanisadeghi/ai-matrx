@@ -36,7 +36,7 @@ import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { isJsonRecord } from "@/features/marketing/types";
 import { operationFailed } from "@/utils/errors";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { WriteDidNotLandError, tryWriteOne } from "@/utils/supabase/writeOne";
 // TYPE ONLY. `fixtures.ts` is ~950 lines of sample dataset that almost nobody
 // on this route ever sees, so it must not sit in the bundle every user
 // downloads. A type-only import is erased at build time; the module itself is
@@ -431,7 +431,9 @@ async function persistAngleRuling(
       .select("id"),
     { action: "save", noun: "story angle" },
   );
-  if (error) throw operationFailed("save this ruling", error);
+  if (error) {
+    throw error instanceof WriteDidNotLandError ? error : operationFailed("save this ruling", error);
+  }
 }
 
 async function persistRequestRuling(
@@ -454,7 +456,9 @@ async function persistRequestRuling(
       .select("id"),
     { action: "save", noun: "source request" },
   );
-  if (error) throw operationFailed("save this ruling", error);
+  if (error) {
+    throw error instanceof WriteDidNotLandError ? error : operationFailed("save this ruling", error);
+  }
 }
 
 /**
@@ -634,7 +638,9 @@ async function persistEvidenceHold(
       .select("id"),
     { action: "save", noun: "story angle" },
   );
-  if (error) throw operationFailed("save this review", error);
+  if (error) {
+    throw error instanceof WriteDidNotLandError ? error : operationFailed("save this review", error);
+  }
 }
 
 export function usePressRoomRulings(): RulingController {
