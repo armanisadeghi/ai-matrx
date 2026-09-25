@@ -150,11 +150,11 @@ export function GlobalBindAgentGuard({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-500" />
-            Global binding with your personal agent
+            Set your personal agent as the Default?
           </DialogTitle>
           <DialogDescription>
-            A global binding is offered to every user — but personal agents
-            usually shouldn&apos;t be the ones behind it.
+            This sets the Default for everyone. A personal agent is usually not
+            the right one for that.
           </DialogDescription>
         </DialogHeader>
 
@@ -188,8 +188,9 @@ export function GlobalBindAgentGuard({
                 <Link2 className="h-4 w-4" />
                 <AlertDescription>
                   <span className="font-medium">{audit.agentName}</span> has no
-                  linked system version. For a global binding, create a synced
-                  system agent (or promote this one) via Linked Agent Sync.
+                  linked system version. To use it as the Default, create a
+                  synced system agent (or promote this one) with Linked Agent
+                  Sync.
                 </AlertDescription>
               </Alert>
             )}
@@ -202,8 +203,8 @@ export function GlobalBindAgentGuard({
                   <span className="font-mono">
                     {audit.cardVisibility ?? "unknown"}
                   </span>{" "}
-                  — users outside its audience will NOT see this binding even
-                  though it is global.
+                  — people outside its audience will not get it, even though it
+                  is the Default for everyone.
                 </AlertDescription>
               </Alert>
             )}
