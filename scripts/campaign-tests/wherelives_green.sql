@@ -46,9 +46,14 @@ begin
      or has_function_privilege('anon', 'custom.where_tables_live(uuid[])', 'execute') then
     raise exception '0b: a client reaches the private fact, or a signed-out visitor reaches the door';
   end if;
-  if not has_function_privilege('anon', 'custom._older_table_copy_refusal(uuid)', 'execute')
+  -- 0f (KERNEL-TAILS, 2026-09-25): the fence's question is reachable by every role that can WRITE
+  -- custom.record (authenticated, service_role; a visitor's form writes through a definer door, as
+  -- its owner) and NOT by anon: anon holds no USAGE on custom, so its old grant was a dead door.
+  if has_function_privilege('anon', 'custom._older_table_copy_refusal(uuid)', 'execute')
+     or not has_function_privilege('authenticated', 'custom._older_table_copy_refusal(uuid)', 'execute')
+     or not has_function_privilege('service_role', 'custom._older_table_copy_refusal(uuid)', 'execute')
      or not has_function_privilege('authenticated', 'custom.where_tables_live(uuid[])', 'execute') then
-    raise exception '0f: the fence''s question is not reachable by every writer role, or a signed-in person cannot ask the door';
+    raise exception '0f: the fence''s question is not reachable by every writer role, a signed-out visitor holds a grant on it, or a signed-in person cannot ask the door';
   end if;
 
   -- Fixtures must be what the story says, or the suite proves nothing.
