@@ -59545,6 +59545,42 @@ export type Database = {
           vals: Json
         }[]
       }
+      _member_list_rows: {
+        Args: {
+          p_level: string
+          p_q: string
+          p_res_org: string
+          p_res_user: string
+        }
+        Returns: {
+          created_at: string
+          created_by: string
+          customized_by: string[]
+          decided_by: string
+          decided_rung: string
+          feature_label: string
+          goal: string
+          health: string
+          holder_id: string
+          holder_name: string
+          holder_type: string
+          home_label: string
+          id: string
+          is_enabled: boolean
+          is_personal_home: boolean
+          is_system: boolean
+          mandate_key: string
+          name: string
+          organization_id: string
+          origin: string
+          pin_text: string
+          score: number
+          sortv: Json
+          updated_at: string
+          vals: Json
+          visibility: string
+        }[]
+      }
       _rungs: {
         Args: {
           p_mandate_ids: string[]
@@ -64962,6 +64998,80 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      cutover_census_run: {
+        Row: {
+          evidence: string
+          flip_time: number
+          id: string
+          met: boolean
+          nothing: number
+          open: number
+          organization_id: string
+          places: number
+          prerequisite_key: string
+          proven: number
+          ran_at: string
+          recorded_by: string
+          repos: Json
+          rows: Json
+          script_sha256: string
+          seam_key: string
+          target: string
+          unlisted: number
+          unlisted_findings: Json
+        }
+        Insert: {
+          evidence: string
+          flip_time: number
+          id?: string
+          met: boolean
+          nothing: number
+          open: number
+          organization_id: string
+          places: number
+          prerequisite_key: string
+          proven: number
+          ran_at?: string
+          recorded_by?: string
+          repos: Json
+          rows: Json
+          script_sha256: string
+          seam_key: string
+          target: string
+          unlisted: number
+          unlisted_findings?: Json
+        }
+        Update: {
+          evidence?: string
+          flip_time?: number
+          id?: string
+          met?: boolean
+          nothing?: number
+          open?: number
+          organization_id?: string
+          places?: number
+          prerequisite_key?: string
+          proven?: number
+          ran_at?: string
+          recorded_by?: string
+          repos?: Json
+          rows?: Json
+          script_sha256?: string
+          seam_key?: string
+          target?: string
+          unlisted?: number
+          unlisted_findings?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cutover_census_run_seam_key_fkey"
+            columns: ["seam_key"]
+            isOneToOne: false
+            referencedRelation: "cutover_seam"
+            referencedColumns: ["seam_key"]
           },
         ]
       }
@@ -71219,6 +71329,10 @@ export type Database = {
         Args: { p_definitions: Json; p_organization_id: string; p_values: Json }
         Returns: Json
       }
+      cutover_census_record: {
+        Args: { p_census: Json; p_key: string; p_seam: string }
+        Returns: Json
+      }
       cutover_seam_press: {
         Args: {
           p_note?: string
@@ -71229,6 +71343,7 @@ export type Database = {
         Returns: Json
       }
       cutover_seams: { Args: { p_organization_id: string }; Returns: Json }
+      cutover_tables_copied: { Args: { p_org: string }; Returns: Json }
       dd166_table_rung_scope_rows_ok: { Args: never; Returns: Json }
       ddl_guard_ack: {
         Args: {
@@ -72569,6 +72684,7 @@ export type Database = {
           updated: number
         }[]
       }
+      table_lives_in: { Args: { p_table_id: string }; Returns: string }
       undeclared_carrying_cycles: {
         Args: never
         Returns: {
@@ -81800,6 +81916,22 @@ export type Database = {
           updated_at: string
           version_live: boolean
         }[]
+      }
+      mnd_member_list: {
+        Args: {
+          p_dir?: string
+          p_filters?: Json
+          p_level?: string
+          p_limit?: number
+          p_mode?: string
+          p_offset?: number
+          p_org_id?: string
+          p_resolve_org_id?: string
+          p_scope?: string
+          p_search?: string
+          p_sort?: string
+        }
+        Returns: Json
       }
       move_file: {
         Args: { p_file_id: string; p_new_parent_folder_id: string }
