@@ -94,9 +94,8 @@ describe("database admin surface contract", () => {
     // that space on an outer wrapper would leave the final result obscured.
     // The surrounding admin frame must clip that route instead of adding a
     // second competing vertical scroll region.
-    expect(databaseFrame).toContain(
-      'className="scroll-page-end-space min-h-0 flex-1 overflow-y-auto overflow-x-hidden"',
-    );
+    expect(databaseFrame).toContain('!isFullHeightTableImpact && "scroll-page-end-space"');
+    expect(databaseFrame).toContain('currentPath === `${DATABASE_MODULE_HOME}/canonicalization/table-impact`');
     expect(databaseFrame.match(/scroll-page-end-space/g)).toHaveLength(1);
     expect(adminFrame).toContain(
       'pathname.startsWith("/administration/database")',

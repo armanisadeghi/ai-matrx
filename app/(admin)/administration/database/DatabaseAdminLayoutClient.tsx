@@ -30,6 +30,10 @@ export function DatabaseAdminLayoutClient({
   const hasNestedSectionNavigation = currentPath.startsWith(
     `${DATABASE_MODULE_HOME}/relationships`,
   );
+  // A full-height virtual grid needs the route's complete viewport. The
+  // natural-height page-end runway would otherwise subtract 160px from it.
+  const isFullHeightTableImpact =
+    currentPath === `${DATABASE_MODULE_HOME}/canonicalization/table-impact`;
 
   const handleNavigate = (href: string) => {
     if (currentPath === href.split("?")[0] || isPending) return;
@@ -152,7 +156,7 @@ export function DatabaseAdminLayoutClient({
         </div>
       )}
 
-      <div className="scroll-page-end-space min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+      <div className={cn("min-h-0 flex-1 overflow-y-auto overflow-x-hidden", !isFullHeightTableImpact && "scroll-page-end-space")}>
         {children}
       </div>
     </div>
