@@ -15,7 +15,6 @@ import {
   SelectValue,
 } from "@ai-matrx/design-system";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
-import { hasCompatibleDecisionInteraction } from "@/features/ai-models/capabilities/types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,6 +46,8 @@ import {
 import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
 import { toast } from "@/lib/toast";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { SettingSwap } from "@/features/ai-models/server/replace-model-references";
+import { usageSettingsList } from "./unionUsageSettings";
 import {
   MatrxDataTable,
   type MatrxColumnDef,
@@ -332,7 +333,7 @@ export default function DeprecatedModelsAudit({
     setSettingsTarget({ entry, settings: {} });
   };
 
-  const handleApplyWithSettings = async () => {
+  const handleApplyWithSettings = async (swaps: SettingSwap[]) => {
     if (!settingsTarget || !settingsTarget.entry.replacementId) return;
     const { entry, settings } = settingsTarget;
     updateEntry(entry.model.id, { replacing: true, error: null });
@@ -342,6 +343,7 @@ export default function DeprecatedModelsAudit({
         entry.model.id,
         entry.replacementId,
         settings,
+        swaps,
       );
       updateEntry(entry.model.id, { replacing: false, replaced: true });
       onModelsChanged();
@@ -547,14 +549,9 @@ export default function DeprecatedModelsAudit({
                 updateEntry(entry.model.id, { replacementId })
               }
               inputModalities={[]}
-              allowedModelIds={activeModels
-                .filter((candidate) =>
-                  hasCompatibleDecisionInteraction(
-                    entry.model.capabilities,
-                    candidate.capabilities,
-                  ),
-                )
-                .map((candidate) => candidate.id)}
+              // Every active model is offered — an admin's replacement is
+              // never filtered by a compatibility rule (offers, never gates).
+              allowedModelIds={activeModels.map((candidate) => candidate.id)}
               catalogVariant="admin"
               selectionPurpose="admin"
               placeholder="Select replacement..."
@@ -947,6 +944,7 @@ export default function DeprecatedModelsAudit({
                 : prev,
             );
           }}
+          sourceSettings={usageSettingsList(settingsTarget.entry.usage)}
           onApply={handleApplyWithSettings}
           onCancel={() => setSettingsTarget(null)}
           applying={settingsTarget.entry.replacing}

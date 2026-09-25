@@ -19,6 +19,7 @@ import rehypeRaw from "rehype-raw";
 import remarkMatrxVariable from "@/components/mardown-display/chat-markdown/matrx-variables/remarkMatrxVariable";
 import remarkMatrxCite from "@/components/mardown-display/chat-markdown/citations/remarkMatrxCite";
 import rehypeSafeRawHtml from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
+import remarkMatrxPageBreak from "@/components/mardown-display/chat-markdown/page-break/remarkMatrxPageBreak";
 import type { Options } from "react-markdown";
 import {
   normalizeMathDelimiters,
@@ -40,20 +41,25 @@ type Plugin = NonNullable<Options["remarkPlugins"]>[number];
 const MATH: Plugin = [remarkMath, REMARK_MATH_OPTIONS];
 const KATEX: Plugin = [rehypeKatex, REHYPE_KATEX_OPTIONS];
 
+// The print system's page break (`<!-- pagebreak -->`, `\newpage`, …) previews
+// as a dashed "Page break" divider in every preset but `plain`, so any surface
+// that shows markdown shows the break the printer will honour.
+const PAGE_BREAK: Plugin = remarkMatrxPageBreak;
+
 /** Module-scope arrays so plugin identity is stable across renders. */
 export const MARKDOWN_PRESETS: Record<MarkdownPreset, MarkdownPluginSet> = {
   plain: { remark: [], rehype: [], math: false },
-  gfm: { remark: [remarkGfm], rehype: [], math: false },
-  "gfm-breaks": { remark: [remarkGfm, remarkBreaks], rehype: [], math: false },
-  math: { remark: [MATH], rehype: [KATEX], math: true },
-  "gfm-math": { remark: [remarkGfm, MATH], rehype: [KATEX], math: true },
+  gfm: { remark: [remarkGfm, PAGE_BREAK], rehype: [], math: false },
+  "gfm-breaks": { remark: [remarkGfm, remarkBreaks, PAGE_BREAK], rehype: [], math: false },
+  math: { remark: [MATH, PAGE_BREAK], rehype: [KATEX], math: true },
+  "gfm-math": { remark: [remarkGfm, MATH, PAGE_BREAK], rehype: [KATEX], math: true },
   rich: {
-    remark: [remarkGfm, remarkBreaks, MATH],
+    remark: [remarkGfm, remarkBreaks, MATH, PAGE_BREAK],
     rehype: [KATEX],
     math: true,
   },
   chat: {
-    remark: [remarkGfm, remarkBreaks, MATH, remarkMatrxVariable, remarkMatrxCite],
+    remark: [remarkGfm, remarkBreaks, MATH, remarkMatrxVariable, remarkMatrxCite, PAGE_BREAK],
     // Parse + sanitize allow-listed raw HTML BEFORE KaTeX, so KaTeX's
     // rendered output is never sanitized and matrx-variable / math element
     // nodes are never touched.
@@ -61,7 +67,7 @@ export const MARKDOWN_PRESETS: Record<MarkdownPreset, MarkdownPluginSet> = {
     math: true,
   },
   message: {
-    remark: [remarkGfm, MATH, remarkBreaks],
+    remark: [remarkGfm, MATH, remarkBreaks, PAGE_BREAK],
     rehype: [rehypeRaw, KATEX],
     math: true,
   },

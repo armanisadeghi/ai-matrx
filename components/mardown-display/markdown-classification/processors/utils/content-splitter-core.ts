@@ -47,6 +47,7 @@ import {
 import { splitAroundEmbeddedKindJson } from "@/features/content-ir/surfaces/embedded-kind-json";
 import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
+import { isPageBreakLine } from "@ai-matrx/print/directives";
 import { readXmlTag } from "@/components/mardown-display/blocks/xml/readXmlTag";
 import {
   classifyInnerFenceLine,
@@ -1019,6 +1020,7 @@ class XmlContainerTracker implements UnrecognizedXmlContainerTracker {
 
 /** Protect tag attributes while an opening tag is still arriving. */
 export function isUnclosedGenericXmlOpening(source: string): boolean {
+  if (isPageBreakLine(source)) return false;
   const text = source.trimStart();
   const prefix = /^<([A-Za-z_][\w.:-]*)(?=\s|\/|$)/.exec(text);
   if (
@@ -1041,6 +1043,10 @@ export function isUnclosedGenericXmlOpening(source: string): boolean {
 export function startUnrecognizedXmlContainer(
   line: string,
 ): UnrecognizedXmlStart | null {
+  // A page-break directive (`<div style="page-break-after: always"></div>`)
+  // stays in its text block, where remarkMatrxPageBreak draws the divider.
+  // Mirrored in aidream block_detector.py `is_page_break_line`.
+  if (isPageBreakLine(line)) return null;
   const firstTrimmed = line.trimStart();
   const openingTag = readXmlTag(firstTrimmed, 0);
   if (!openingTag || openingTag.isClosing) return null;

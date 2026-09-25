@@ -53,3 +53,13 @@ export function settingsUnchanged(
 ): boolean {
   return normalizeSettings(next) === normalizeSettings(current);
 }
+
+/** Every referencing row's own settings — what the swap suggestions read. */
+export function usageSettingsList(
+  usage: ModelUsageResult | null | undefined,
+): Array<Record<string, unknown> | null> {
+  if (!usage) return [];
+  return [...usage.promptBuiltins, ...usage.agents, ...usage.agentTemplates].map(
+    (item) => asSettings(item.settings),
+  );
+}

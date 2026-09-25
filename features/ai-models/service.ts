@@ -3,7 +3,9 @@
 import { readAllRows } from "@ai-matrx/data/db";
 
 import { supabase } from "@/utils/supabase/client";
+import { toast } from "@/lib/toast";
 import type { Database } from "@/types/database.types";
+import type { SettingSwap } from "@/features/ai-models/server/replace-model-references";
 import { isJsonArray, isJsonObject, type JsonObject } from "@/types/json";
 import type {
   AiModel,
@@ -63,6 +65,8 @@ type ReplaceModelReferencesResult = {
   templates: number;
   /** Every agent.definition id the write touched — the post-batch impact scope (I5). */
   agent_ids: string[];
+  /** Rows found but not writable by this admin (RLS) — announced, never hidden. */
+  skipped: number;
 };
 
 function boundaryError(path: string, expected: string): Error {
@@ -130,6 +134,10 @@ function parseReplaceModelReferencesResult(
       record.agent_ids,
       "replace-references response.agent_ids",
     ),
+    skipped: requireFiniteNumber(
+      record.skipped,
+      "replace-references response.skipped",
+    ),
   };
 }
 
@@ -137,6 +145,7 @@ async function replaceModelReferencesViaAdmin(
   oldId: string,
   newId: string,
   newSettings?: LLMParams,
+  swaps?: SettingSwap[],
 ): Promise<ReplaceModelReferencesResult> {
   const response = await fetch("/api/admin/ai-models/replace-references", {
     method: "POST",
@@ -148,6 +157,7 @@ async function replaceModelReferencesViaAdmin(
       oldModelId: oldId,
       newModelId: newId,
       newSettings,
+      swaps,
     }),
   });
 
@@ -160,7 +170,17 @@ async function replaceModelReferencesViaAdmin(
     );
   }
 
-  return parseReplaceModelReferencesResult(payload);
+  const result = parseReplaceModelReferencesResult(payload);
+  if (result.skipped > 0) {
+    toast.warning(
+      `${result.skipped} reference${result.skipped === 1 ? "" : "s"} still point at the old model`,
+      {
+        description:
+          "They are private to their owners, so an admin session cannot rewrite them. Everything else was replaced.",
+      },
+    );
+  }
+  return result;
 }
 
 // Minimal row shapes for the agent.definition / agent.template usage queries.
@@ -1263,8 +1283,9 @@ export const aiModelService = {
     oldId: string,
     newId: string,
     newSettings?: LLMParams,
+    swaps?: SettingSwap[],
   ): Promise<ReplaceModelReferencesResult> {
-    return replaceModelReferencesViaAdmin(oldId, newId, newSettings);
+    return replaceModelReferencesViaAdmin(oldId, newId, newSettings, swaps);
   },
 
   async replaceModelInPrompts(

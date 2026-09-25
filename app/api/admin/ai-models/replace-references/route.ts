@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/utils/supabase/adminClient";
+import { createClient } from "@/utils/supabase/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
-import { replaceModelReferencesAdmin } from "@/features/ai-models/server/replace-model-references";
+import {
+  replaceModelReferencesAdmin,
+  type SettingSwap,
+} from "@/features/ai-models/server/replace-model-references";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
 
 export const dynamic = "force-dynamic";
@@ -34,9 +37,16 @@ export async function POST(request: NextRequest) {
       oldModelId?: string;
       newModelId?: string;
       newSettings?: LLMParams;
+      swaps?: SettingSwap[];
     };
 
     const { oldModelId, newModelId, newSettings } = body;
+    const swaps = Array.isArray(body.swaps)
+      ? body.swaps.filter(
+          (swap): swap is SettingSwap =>
+            !!swap && typeof swap.key === "string" && swap.key.length > 0,
+        )
+      : [];
     if (!oldModelId || !newModelId) {
       return NextResponse.json(
         { error: "oldModelId and newModelId are required." },
@@ -50,12 +60,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createAdminClient();
+    // The admin's own session, never the service-role key: agent.definition
+    // refuses a write that names no actor (provenance guard). See
+    // replace-model-references.ts.
+    const supabase = await createClient();
     const result = await replaceModelReferencesAdmin(
       supabase,
       oldModelId,
       newModelId,
       newSettings,
+      swaps,
     );
 
     return NextResponse.json(result);

@@ -10,9 +10,15 @@
  *
  * A failed replace is a banner above the actions — title, plain sentence,
  * wrapping detail — never a truncated footer string and never a cell dump.
+ *
+ * NEVER A GATE. "Suggested swaps" lists values on the agents being replaced
+ * that the new model may not take ("if an agent has X, change it to Y"). They
+ * are unticked offers: Apply always runs, with or without them. An admin
+ * replacing a model is never stopped by validation — see
+ * common-docs/policies/validation-offers-never-blocks.md.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRightLeft, Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -23,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   initInstanceOverrides,
@@ -36,6 +43,15 @@ import {
 import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
 import { ReplaceFailureBanner } from "@/components/official/error-detail/ReplaceFailureBanner";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import { selectAllModels } from "@/features/ai-models/redux/modelRegistrySlice";
+import type { SettingSwap } from "@/features/ai-models/server/replace-model-references";
+import { suggestSettingSwaps } from "./suggestSettingSwaps";
+
+function formatSwapValue(value: unknown): string {
+  if (value === undefined) return "remove the setting";
+  if (typeof value === "string") return value;
+  return JSON.stringify(value);
+}
 
 const INSTANCE_KEY = "model-replace-review";
 
@@ -62,8 +78,13 @@ export interface ModelSettingsReviewDialogProps {
   onChange: (next: LLMParams) => void;
   /** The structured picker changed the replacement model. */
   onReplacementModelChange?: (modelId: string) => void;
-  /** Apply the replacement with the current `value`. */
-  onApply: () => void;
+  /**
+   * Settings of every row that will be replaced — the source of the optional
+   * swap suggestions. Omit it and no suggestions are shown.
+   */
+  sourceSettings?: Array<Record<string, unknown> | null | undefined>;
+  /** Apply the replacement with the current `value` plus the ticked swaps. */
+  onApply: (swaps: SettingSwap[]) => void;
   onCancel: () => void;
   applying?: boolean;
   error?: string | null;
@@ -76,12 +97,22 @@ export function ModelSettingsReviewDialog({
   toLabel,
   onChange,
   onReplacementModelChange,
+  sourceSettings,
   onApply,
   onCancel,
   applying = false,
   error = null,
 }: ModelSettingsReviewDialogProps) {
   const dispatch = useAppDispatch();
+  const models = useAppSelector(selectAllModels);
+  const suggestions =
+    sourceSettings && replacementModelId
+      ? suggestSettingSwaps(sourceSettings, replacementModelId, models)
+      : [];
+  const [ticked, setTicked] = useState<Record<string, boolean>>({});
+  const tickedSwaps: SettingSwap[] = suggestions
+    .filter((s) => ticked[s.id])
+    .map(({ key, from, to }) => ({ key, from, to }));
   const lastEmitted = useRef<string>("");
   const ready = useAppSelector(
     (state) => selectInstanceOverrideState(INSTANCE_KEY)(state) != null,
@@ -163,6 +194,53 @@ export function ModelSettingsReviewDialog({
               overrideSource="This replacement"
             />
           ) : null}
+
+          {suggestions.length > 0 ? (
+            <section className="border-t border-border px-5 py-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <h3 className="text-sm font-medium text-foreground">
+                  Suggested swaps
+                </h3>
+                <span className="text-xs text-muted-foreground">
+                  Optional — unticked lines are left as they are
+                </span>
+              </div>
+              <ul className="mt-2 divide-y divide-border rounded-md border border-border">
+                {suggestions.map((s) => (
+                  <li key={s.id} className="flex items-start gap-3 px-3 py-2">
+                    <Checkbox
+                      id={`swap-${s.id}`}
+                      className="mt-0.5"
+                      checked={!!ticked[s.id]}
+                      disabled={applying}
+                      onCheckedChange={(next) =>
+                        setTicked((prev) => ({ ...prev, [s.id]: next === true }))
+                      }
+                    />
+                    <label
+                      htmlFor={`swap-${s.id}`}
+                      className="min-w-0 flex-1 cursor-pointer text-sm leading-snug"
+                    >
+                      <span className="text-foreground">
+                        If an agent has <code className="text-xs">{s.key}</code>{" "}
+                        = <strong>{formatSwapValue(s.from)}</strong>,{" "}
+                        {s.to === undefined ? (
+                          <strong>remove the setting</strong>
+                        ) : (
+                          <>
+                            change it to <strong>{formatSwapValue(s.to)}</strong>
+                          </>
+                        )}
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        {s.count} agent{s.count === 1 ? "" : "s"} · {s.reason}
+                      </span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
         </div>
 
         {error ? <ReplaceFailureBanner error={error} /> : null}
@@ -180,7 +258,7 @@ export function ModelSettingsReviewDialog({
           <Button
             size="sm"
             className="h-8 text-xs gap-1"
-            onClick={onApply}
+            onClick={() => onApply(tickedSwaps)}
             disabled={applying}
           >
             {applying ? (

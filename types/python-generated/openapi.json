@@ -139443,6 +139443,16 @@
             "title": "Path",
             "default": "old"
           },
+          "selection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextSelection"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "question": {
             "type": "string",
             "maxLength": 4000,
@@ -139500,6 +139510,9 @@
             "title": "Ruling",
             "default": "The new side checks every contributing record for the person; an old-path delivery without a check is labeled, not matched."
           },
+          "selection": {
+            "$ref": "#/components/schemas/ContextCompareSelection"
+          },
           "old": {
             "$ref": "#/components/schemas/ContextCompareSide"
           },
@@ -139543,6 +139556,7 @@
         },
         "type": "object",
         "required": [
+          "selection",
           "old",
           "new",
           "follow"
@@ -139714,6 +139728,63 @@
           "why"
         ],
         "title": "ContextCompareDifference"
+      },
+      "ContextCompareSelection": {
+        "properties": {
+          "depth": {
+            "type": "string",
+            "enum": [
+              "active",
+              "context_item",
+              "organization",
+              "scope",
+              "scope_type"
+            ],
+            "title": "Depth"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "scope_type_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scope Type Ids"
+          },
+          "scope_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scope Ids"
+          },
+          "context_item_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Item Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "depth"
+        ],
+        "title": "ContextCompareSelection",
+        "description": "What BOTH resolvers are handed for one compare — identical on both sides.\n\n``depth`` is ``active`` when the caller sent raw selections (a chat's active scopes)\nrather than a :class:`ContextSelection`."
       },
       "ContextCompareSide": {
         "properties": {
@@ -140290,6 +140361,16 @@
             ],
             "title": "Path",
             "default": "old"
+          },
+          "selection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextSelection"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -140593,6 +140674,58 @@
           "metadata"
         ],
         "title": "ContextRenderResponse"
+      },
+      "ContextSelection": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id",
+            "description": "The organization the selection is in."
+          },
+          "scope_type_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Type Id",
+            "description": "A scope type of that organization — every scope of it."
+          },
+          "scope_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Id",
+            "description": "One scope of that type."
+          },
+          "context_item_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Item Id",
+            "description": "One context item — the page narrows what it shows to it."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "organization_id"
+        ],
+        "title": "ContextSelection",
+        "description": "The inspector's drill-down, one step per field. A later step needs every earlier one."
       },
       "ContextStateResponse": {
         "properties": {

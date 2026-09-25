@@ -303,7 +303,8 @@ export function stripBulletStyles(html: string): string {
  * Remove decorative line breaks from HTML
  */
 export function stripDecorativeLineBreaks(html: string): string {
-  return html.replace(/<hr class="matrx-hr"[^>]*>/g, "");
+  // Accent/heavy rules carry a second class (`matrx-hr matrx-hr-accent`).
+  return html.replace(/<hr class="matrx-hr(?: [^"]*)?"[^>]*>/g, "");
 }
 
 /**

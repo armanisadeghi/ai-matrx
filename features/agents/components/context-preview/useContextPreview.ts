@@ -24,6 +24,8 @@ import { selectConversationScopeIds } from "@/features/agents/redux/execution-sy
 import { extractErrorMessage } from "@/utils/errors";
 import type { components } from "@/types/python-generated/api-types";
 
+export type ContextSelection = components["schemas"]["ContextSelection"];
+
 export type ContextPreviewResponse =
   components["schemas"]["ContextPreviewResponse"];
 
@@ -50,35 +52,29 @@ export function useContextPreview(opts: {
   enabled: boolean;
   path?: ContextPreviewPath;
   /**
-   * Explicit scope ids (the admin inspector's "compare one scope"). When given,
-   * they replace the active selections; the server resolves each scope under its
-   * own organization.
+   * The context inspector's drill-down (Organization → Scope type → Scope →
+   * Context item) — the server's own `ContextSelection`. When given it is the
+   * WHOLE selection: it replaces the active selections, and its organization is
+   * the request's (access is personal — the object names its organization; the
+   * active selection and the picker are never consulted for it, ORG-GATE-AUDIT,
+   * VERIFIER-20 #2). The server expands it once for both sides of the compare.
    */
-  scopeIds?: string[];
-  /**
-   * The organization the OBJECT being previewed names (the admin inspector's
-   * scope, read from the scope's own id). Wins over everything: access is
-   * personal, and the object names its organization — the active selection and
-   * the picker are never consulted for it (ORG-GATE-AUDIT, VERIFIER-20 #2).
-   */
-  organizationId?: string | null;
+  selection?: ContextSelection;
 }): ContextPreviewState {
   const { conversationId, agentId, enabled, path = "old" } = opts;
-  const explicitScopeIds = opts.scopeIds;
+  const chosen = opts.selection ?? null;
   const dispatch = useAppDispatch();
 
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
   const conversationScope = useAppSelector(
     selectConversationScopeIds(conversationId ?? ""),
   );
-  const explicitKey = explicitScopeIds ? explicitScopeIds.join(",") : null;
   const scopeIds = useMemo(
-    () =>
-      explicitKey !== null
-        ? explicitKey.split(",").filter(Boolean)
-        : Object.values(scopeSelections).filter((v): v is string => !!v),
-    [scopeSelections, explicitKey],
+    () => Object.values(scopeSelections).filter((v): v is string => !!v),
+    [scopeSelections],
   );
+  // One stable key per selection, so a re-render with an equal object never refetches.
+  const selectionKey = chosen ? JSON.stringify(chosen) : null;
 
   // Starts in "loading": the hook fetches on mount (the panel only mounts
   // while open). Later selection changes silently re-resolve — the previous
@@ -93,7 +89,7 @@ export function useContextPreview(opts: {
   // with an immediate "loading" flip (event handler, so that's allowed).
   // The object's organization (explicit) wins over a conversation's durable one.
   const requestOrganizationId =
-    opts.organizationId ?? conversationScope.organizationId ?? null;
+    chosen?.organization_id ?? conversationScope.organizationId ?? null;
   const fetchPreview = useCallback(() => {
     const seq = ++requestSeq.current;
     void dispatch(
@@ -103,7 +99,9 @@ export function useContextPreview(opts: {
         body: {
           conversation_id: conversationId ?? null,
           agent_id: agentId ?? null,
-          scope_ids: scopeIds,
+          ...(selectionKey
+            ? { selection: JSON.parse(selectionKey) as ContextSelection }
+            : { scope_ids: scopeIds }),
           ...(path !== "old" ? { path } : {}),
         },
         scopeOverrides: requestOrganizationId
@@ -133,6 +131,7 @@ export function useContextPreview(opts: {
     conversationId,
     agentId,
     scopeIds,
+    selectionKey,
     path,
     requestOrganizationId,
     dispatch,

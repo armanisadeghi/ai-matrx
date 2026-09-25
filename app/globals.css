@@ -2492,3 +2492,17 @@
     text-align: center;
   }
 }
+
+/* Print-system page break (remarkMatrxPageBreak ← @ai-matrx/print/directives).
+ * On screen it is a dashed "Page break" divider; when the app page itself is
+ * printed it becomes a real break and the divider disappears. Unlayered on
+ * purpose so it beats the divider's Tailwind utilities. */
+@media print {
+  .matrx-page-break {
+    height: 0;
+    margin: 0;
+    overflow: hidden;
+    break-after: page;
+    page-break-after: always;
+  }
+}

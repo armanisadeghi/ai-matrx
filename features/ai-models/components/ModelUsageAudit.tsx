@@ -4,7 +4,6 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
-import { hasCompatibleDecisionInteraction } from "@/features/ai-models/capabilities/types";
 import {
   RefreshCcw,
   ArrowRightLeft,
@@ -18,6 +17,8 @@ import { aiModelService } from "../service";
 import type { AiModel, ModelUsageResult } from "../types";
 import { ModelSettingsReviewDialog } from "./ModelSettingsReviewDialog";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { SettingSwap } from "@/features/ai-models/server/replace-model-references";
+import { usageSettingsList } from "./unionUsageSettings";
 import { cn } from "@/lib/utils";
 import { MOBILE_TABLE_FROZEN } from "@/components/official/mobile-table/mobileTable";
 
@@ -64,11 +65,10 @@ export default function ModelUsageAudit({
     (usage?.agents.length ?? 0) +
     (usage?.agentTemplates.length ?? 0);
 
+  // Every other active model is offered — an admin's replacement is never
+  // filtered by a compatibility rule (offers, never gates).
   const replacementOptions = allModels.filter(
-    (m) =>
-      m.id !== model.id &&
-      !m.is_deprecated &&
-      hasCompatibleDecisionInteraction(model.capabilities, m.capabilities),
+    (m) => m.id !== model.id && !m.is_deprecated,
   );
   const selectedReplacement = allModels.find((m) => m.id === replacementId);
 
@@ -109,7 +109,7 @@ export default function ModelUsageAudit({
     }
   };
 
-  const handleApplyWithSettings = async () => {
+  const handleApplyWithSettings = async (swaps: SettingSwap[]) => {
     if (!replacementId) return;
     setReplacing(true);
     setReplaceError(null);
@@ -118,6 +118,7 @@ export default function ModelUsageAudit({
         model.id,
         replacementId,
         pendingSettings,
+        swaps,
       );
       if (result.agents + result.builtins + result.templates === 0) {
         setReplaceError("No references were updated.");
@@ -332,6 +333,7 @@ export default function ModelUsageAudit({
           value={pendingSettings}
           onChange={setPendingSettings}
           onReplacementModelChange={setReplacementId}
+          sourceSettings={usageSettingsList(usage)}
           onApply={handleApplyWithSettings}
           onCancel={handleCancel}
           applying={replacing}

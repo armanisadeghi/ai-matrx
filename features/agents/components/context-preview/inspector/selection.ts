@@ -12,6 +12,8 @@
  * Pure: no React, no network — the suite drives it directly.
  */
 
+import type { components } from "@/types/python-generated/api-types";
+
 export interface InspectorSelection {
   org: string | null;
   scopeType: string | null;
@@ -67,6 +69,21 @@ export function selectionSearch(
   return params.toString();
 }
 
+/** The agent "Answer on both paths" asks — `?agent=`, never a hidden id: its picker sets it. */
+export function parseAgent(search: URLSearchParams | string): string | null {
+  const params = typeof search === "string" ? new URLSearchParams(search) : search;
+  return idOrNull(params.get("agent"));
+}
+
+/** The address query with `?agent=` set (or dropped); every other param is kept. */
+export function agentSearch(agentId: string | null, current: URLSearchParams | string = ""): string {
+  const params = new URLSearchParams(typeof current === "string" ? current : current.toString());
+  const id = idOrNull(agentId);
+  if (id) params.set("agent", id);
+  else params.delete("agent");
+  return params.toString();
+}
+
 /** Choose one step: it takes the value, and every later step is cleared. */
 export function chooseStep(
   selection: InspectorSelection,
@@ -94,21 +111,17 @@ export function selectionDepth(selection: InspectorSelection): InspectorStep | n
 }
 
 /**
- * How many of a type's scopes the preview hands the agent at the type step. The
- * server resolves every one on both sides, so a type holding hundreds is
- * previewed by its first scopes by name — and the caption says how many.
+ * THE selection both sides of the compare receive — the server's own type
+ * (`aidream conversation_context/context_selection.py#ContextSelection`),
+ * generated into the API types. One contract, one parser: the page never
+ * expands a scope type into scope ids itself; the server does, once, for the
+ * old scope system and the record store alike, with no cap.
  */
-export const TYPE_PREVIEW_LIMIT = 25;
+export type ContextSelection = components["schemas"]["ContextSelection"];
 
 export interface PreviewRequest {
   depth: InspectorStep;
-  organizationId: string;
-  /** The scopes both sides of the compare receive — identical on both sides. */
-  scopeIds: string[];
-  /** At the item step: the one context item the preview narrows to. */
-  itemId: string | null;
-  /** At the type step: how many scopes the type holds in total. */
-  typeScopeCount: number | null;
+  selection: ContextSelection;
 }
 
 /**
@@ -117,39 +130,26 @@ export interface PreviewRequest {
  *
  * - organization — no scope: what an agent in that organization is handed with
  *   nothing selected;
- * - scope type — the type's scopes (first {@link TYPE_PREVIEW_LIMIT} by name).
- *   Sent as scope ids, never as a type id: the server's old side resolves scope
- *   ids only, so a type id would reach one side and not the other;
+ * - scope type — the type: the server hands both sides every scope of it the
+ *   person can read;
  * - scope — that one scope;
- * - context item — that scope, narrowed on screen to the one item.
+ * - context item — that scope, and the item the page narrows what it shows to.
  *
- * Null while the next step's options are still loading (the type step needs its
- * scopes) or when nothing is chosen.
+ * Only the unbroken chain from the organization is sent (a `?scope=` link waits
+ * for its back-fill). Null when nothing is chosen.
  */
-export function previewRequest(
-  selection: InspectorSelection,
-  typeScopeIds: string[] | null,
-): PreviewRequest | null {
+export function previewRequest(selection: InspectorSelection): PreviewRequest | null {
   const depth = selectionDepth(selection);
   if (!depth || !selection.org) return null;
-  if (depth === "org") {
-    return { depth, organizationId: selection.org, scopeIds: [], itemId: null, typeScopeCount: null };
-  }
-  if (depth === "scopeType") {
-    if (!typeScopeIds) return null;
-    return {
-      depth,
-      organizationId: selection.org,
-      scopeIds: typeScopeIds.slice(0, TYPE_PREVIEW_LIMIT),
-      itemId: null,
-      typeScopeCount: typeScopeIds.length,
-    };
-  }
+  const reached = (step: InspectorStep) =>
+    INSPECTOR_STEPS.indexOf(step) <= INSPECTOR_STEPS.indexOf(depth);
   return {
     depth,
-    organizationId: selection.org,
-    scopeIds: [selection.scope as string],
-    itemId: depth === "item" ? selection.item : null,
-    typeScopeCount: null,
+    selection: {
+      organization_id: selection.org,
+      scope_type_id: reached("scopeType") ? selection.scopeType : null,
+      scope_id: reached("scope") ? selection.scope : null,
+      context_item_id: reached("item") ? selection.item : null,
+    },
   };
 }

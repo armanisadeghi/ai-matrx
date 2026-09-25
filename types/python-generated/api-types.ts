@@ -60871,6 +60871,7 @@ export interface components {
              * @enum {string}
              */
             path?: "both" | "new" | "old";
+            selection?: components["schemas"]["ContextSelection"] | null;
             /** Question */
             question: string;
         };
@@ -60893,6 +60894,7 @@ export interface components {
              * @default The new side checks every contributing record for the person; an old-path delivery without a check is labeled, not matched.
              */
             ruling?: string;
+            selection: components["schemas"]["ContextCompareSelection"];
             old: components["schemas"]["ContextCompareSide"];
             new: components["schemas"]["ContextCompareSide"];
             /** Differences */
@@ -60958,6 +60960,28 @@ export interface components {
             difference_class: "copy lag" | "declared tier move" | "defect" | "old path delivered without a check";
             /** Why */
             why: string;
+        };
+        /**
+         * ContextCompareSelection
+         * @description What BOTH resolvers are handed for one compare — identical on both sides.
+         *
+         *     ``depth`` is ``active`` when the caller sent raw selections (a chat's active scopes)
+         *     rather than a :class:`ContextSelection`.
+         */
+        ContextCompareSelection: {
+            /**
+             * Depth
+             * @enum {string}
+             */
+            depth: "active" | "context_item" | "organization" | "scope" | "scope_type";
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Scope Type Ids */
+            scope_type_ids?: string[];
+            /** Scope Ids */
+            scope_ids?: string[];
+            /** Context Item Id */
+            context_item_id?: string | null;
         };
         /** ContextCompareSide */
         ContextCompareSide: {
@@ -61219,6 +61243,7 @@ export interface components {
              * @enum {string}
              */
             path?: "both" | "new" | "old";
+            selection?: components["schemas"]["ContextSelection"] | null;
         };
         /** ContextPreviewResponse */
         ContextPreviewResponse: {
@@ -61319,6 +61344,32 @@ export interface components {
             metadata: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+        };
+        /**
+         * ContextSelection
+         * @description The inspector's drill-down, one step per field. A later step needs every earlier one.
+         */
+        ContextSelection: {
+            /**
+             * Organization Id
+             * @description The organization the selection is in.
+             */
+            organization_id: string;
+            /**
+             * Scope Type Id
+             * @description A scope type of that organization — every scope of it.
+             */
+            scope_type_id?: string | null;
+            /**
+             * Scope Id
+             * @description One scope of that type.
+             */
+            scope_id?: string | null;
+            /**
+             * Context Item Id
+             * @description One context item — the page narrows what it shows to it.
+             */
+            context_item_id?: string | null;
         };
         /**
          * ContextStateResponse

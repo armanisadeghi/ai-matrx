@@ -18,25 +18,30 @@
  * "Answer on both paths" runs one real agent turn per resolver on the same
  * question (`POST /ai/context/preview/answer-both`): same agent, instructions
  * and model, tools off, nothing persisted. It needs the agent whose answer is
- * being compared, so without one the control is absent and the sentence says
- * where to open it from.
+ * being compared. Where the host lets the person choose one (`onAgentChange`,
+ * the context inspector), the ONE agent picker (`AgentListDropdown`) sits on
+ * the action; where it does not (a chat's panel, whose agent is the chat's),
+ * without an agent the sentence says where to open it from.
  */
 
-import { useMemo, useState } from "react";
-import { AlertTriangle, GitCompareArrows, MessageSquareText, RefreshCw } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertTriangle, Bot, ChevronDown, GitCompareArrows, MessageSquareText, RefreshCw } from "lucide-react";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { InlineCopyButton } from "@/components/matrx/buttons/InlineCopyButton";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectAllAgents } from "@/features/agents/redux/agent-definition/selectors";
+import { fetchAgentsList } from "@/features/agents/redux/agent-definition/thunks";
 import { callApi } from "@/lib/api/call-api";
 import { resolveRunWait } from "@/lib/api/run-wait";
 import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
 import { getUserId } from "@/utils/auth/getUserId";
 import { extractErrorMessage } from "@/utils/errors";
 import type { components } from "@/types/python-generated/api-types";
-import { useContextPreview } from "./useContextPreview";
+import { useContextPreview, type ContextSelection } from "./useContextPreview";
 
 type ContextCompare = components["schemas"]["ContextCompare"];
 type CompareSide = components["schemas"]["ContextCompareSide"];
@@ -345,14 +350,57 @@ function Checks({ side }: { side: CompareSide }) {
   );
 }
 
-function AnswerBoth({
+/**
+ * The agent the two answers come from — a thin binding of THE agent picker
+ * (`AgentListDropdown`, `@ai-matrx/agents/catalog/react`; `pnpm
+ * check:canonical-pickers`), never a second list.
+ */
+function AnswerAgentPicker({
   agentId,
-  conversationId,
-  scopeIds,
+  onAgentChange,
 }: {
   agentId?: string;
+  onAgentChange: (agentId: string | null) => void;
+}) {
+  const dispatch = useAppDispatch();
+  const agents = useAppSelector(selectAllAgents);
+  useEffect(() => {
+    void dispatch(fetchAgentsList());
+  }, [dispatch]);
+  const chosenName = agentId ? ((agents?.[agentId]?.name as string | undefined) ?? null) : null;
+  return (
+    <div data-answer-agent={agentId ?? ""}>
+      <AgentListDropdown
+        consumerId="context-inspector-answer-both"
+        activeAgentId={agentId ?? null}
+        onSelect={(id: string) => onAgentChange(id || null)}
+        label={chosenName ?? "Choose an agent"}
+        showPinnedAgent={Boolean(agentId)}
+        triggerSlot={
+          <Button type="button" variant="outline" size="sm" className="h-7 max-w-full justify-between gap-1.5 text-xs font-normal">
+            <span className="flex min-w-0 items-center gap-1.5">
+              <Bot className="h-3 w-3 shrink-0 text-muted-foreground" />
+              <span className="truncate">{chosenName ?? (agentId ? "This agent" : "Choose an agent")}</span>
+            </span>
+            <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+          </Button>
+        }
+      />
+    </div>
+  );
+}
+
+function AnswerBoth({
+  agentId,
+  onAgentChange,
+  conversationId,
+  selection,
+}: {
+  agentId?: string;
+  /** The host lets the person choose the agent (the inspector); absent in a chat's panel. */
+  onAgentChange?: (agentId: string | null) => void;
   conversationId?: string;
-  scopeIds?: string[];
+  selection?: ContextSelection;
 }) {
   const dispatch = useAppDispatch();
   const [question, setQuestion] = useState("");
@@ -360,17 +408,26 @@ function AnswerBoth({
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnswerBoth | null>(null);
 
+  const heading = (
+    <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
+      <MessageSquareText className="h-3 w-3" />
+      Answer on both paths
+    </h3>
+  );
+  const picker = onAgentChange ? (
+    <AnswerAgentPicker agentId={agentId} onAgentChange={onAgentChange} />
+  ) : null;
+
   if (!agentId) {
     return (
-      <section className="px-4 pt-4">
-        <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
-          <MessageSquareText className="h-3 w-3" />
-          Answer on both paths
-        </h3>
+      <section className="px-4 pt-4" data-answer-both-needs-agent>
+        {heading}
         <p className="mt-1 text-xs text-muted-foreground">
-          Answering needs the agent whose answer you want to compare. Open this panel from a chat
-          with that agent, and the question box appears here.
+          {picker
+            ? "Choose the agent whose answer you want to compare, then ask it one question on both systems."
+            : "Answering needs the agent whose answer you want to compare. Open this panel from a chat with that agent, and the question box appears here."}
         </p>
+        {picker && <div className="mt-1.5">{picker}</div>}
       </section>
     );
   }
@@ -393,8 +450,9 @@ function AnswerBoth({
               conversation_id: conversationId ?? null,
               agent_id: agentId,
               question: q,
-              ...(scopeIds ? { scope_ids: scopeIds } : {}),
+              ...(selection ? { selection } : {}),
             },
+            ...(selection ? { scopeOverrides: { organization_id: selection.organization_id } } : {}),
             connectTimeoutMs: wait.firstResponseMs,
             totalTimeoutMs: null,
           }),
@@ -413,10 +471,8 @@ function AnswerBoth({
 
   return (
     <section className="px-4 pt-4" data-answer-both>
-      <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
-        <MessageSquareText className="h-3 w-3" />
-        Answer on both paths
-      </h3>
+      {heading}
+      {picker && <div className="mt-1.5">{picker}</div>}
       <p className="mt-1 text-xs text-muted-foreground">
         One real turn of this agent per system, same instructions and model, tools off, nothing
         saved to the chat.
@@ -476,16 +532,23 @@ function AnswerBoth({
 export function ContextCompareView({
   conversationId,
   agentId,
-  scopeIds,
-  organizationId,
+  onAgentChange,
+  selection,
   focus,
 }: {
   conversationId?: string;
   agentId?: string;
-  /** Explicit scopes (the admin inspector); otherwise the active selections. */
-  scopeIds?: string[];
-  /** The organization the compared scope names — sent as the request's organization. */
-  organizationId?: string | null;
+  /**
+   * The host lets the person choose the answering agent (the inspector carries
+   * it in the address as `?agent=`); without it the chat's own agent is used.
+   */
+  onAgentChange?: (agentId: string | null) => void;
+  /**
+   * The inspector's drill-down — the server's `ContextSelection`, sent as the
+   * whole selection (its organization is the request's). Otherwise the active
+   * selections.
+   */
+  selection?: ContextSelection;
   /**
    * Narrow what is SHOWN to one context item (the inspector's last step): each
    * side's block shows only that item's lines and the differences only that
@@ -499,8 +562,7 @@ export function ContextCompareView({
     agentId,
     enabled: true,
     path: "both",
-    scopeIds,
-    organizationId,
+    selection,
   });
   const compare = data?.compare ?? null;
   const diff = useMemo(
@@ -572,7 +634,13 @@ export function ContextCompareView({
               }
             />
             <Checks side={compare.new} />
-            <AnswerBoth agentId={agentId} conversationId={conversationId} scopeIds={scopeIds} />
+            <AnswerBoth
+              key={agentId ?? "no-agent"}
+              agentId={agentId}
+              onAgentChange={onAgentChange}
+              conversationId={conversationId}
+              selection={selection}
+            />
           </>
         )}
       </div>

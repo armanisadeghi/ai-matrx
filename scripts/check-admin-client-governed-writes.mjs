@@ -81,6 +81,83 @@ export function findGovernedAdminWrites(src) {
   return findings;
 }
 
+/**
+ * Does this source write a governed table through ANY receiver? (The helper
+ * half of the cross-file shape: a module that takes a client as a parameter.)
+ */
+export function writesGovernedTable(src) {
+  const chain = /\.schema\(\s*["'](\w+)["']\s*\)\s*\.from\(\s*["'](\w+)["']\s*\)([^;]*?)(?=;|$)/gs;
+  for (const m of src.matchAll(chain)) {
+    if ((GOVERNED[m[1]] ?? []).includes(m[2]) && WRITE.test(m[3])) return true;
+  }
+  return false;
+}
+
+/** Every top-level function in a module: name → body (to the next top-level function/export). */
+function moduleFunctions(src) {
+  const heads = [...src.matchAll(/^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/gm)];
+  const out = new Map();
+  heads.forEach((m, i) => {
+    const end = i + 1 < heads.length ? heads[i + 1].index : src.length;
+    out.set(m[1], src.slice(m.index, end));
+  });
+  return out;
+}
+
+/**
+ * Does exported function `fn` write a governed table — itself, or through any
+ * function in the same module it calls (traced transitively)?
+ */
+export function functionWritesGoverned(src, fn) {
+  const fns = moduleFunctions(src);
+  const seen = new Set();
+  const stack = [fn];
+  while (stack.length) {
+    const name = stack.pop();
+    if (seen.has(name) || !fns.has(name)) continue;
+    seen.add(name);
+    const body = fns.get(name);
+    if (writesGovernedTable(body)) return true;
+    for (const other of fns.keys()) {
+      if (!seen.has(other) && new RegExp(`\\b${other}\\s*\\(`).test(body)) stack.push(other);
+    }
+  }
+  return false;
+}
+
+/**
+ * THE CROSS-FILE SHAPE (2026-09-25, replace-references): a route binds
+ * `createAdminClient()` and HANDS it to a helper imported from another module
+ * that writes the governed table. The same-file scan cannot see it.
+ * `resolveWrites(specifier, fn)` → true when that exported function writes a
+ * governed table.
+ */
+export function findAdminClientHandedToGovernedWriter(src, resolveWrites) {
+  if (!src.includes("createAdminClient(")) return [];
+  const vars = [];
+  for (const m of src.matchAll(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*createAdminClient\(\)/g)) {
+    vars.push(m[1]);
+  }
+  if (vars.length === 0) return [];
+  const importedFrom = new Map();
+  for (const m of src.matchAll(/import\s*\{([^}]*)\}\s*from\s*["']([^"']+)["']/g)) {
+    for (const part of m[1].split(",")) {
+      const name = part.replace(/^\s*type\s+/, "").split(/\s+as\s+/).pop().trim();
+      if (name) importedFrom.set(name, m[2]);
+    }
+  }
+  const findings = [];
+  for (const [fn, spec] of importedFrom) {
+    const call = new RegExp(`\\b${fn.replace(/\$/g, "\\$")}\\s*\\(\\s*(${vars.join("|")})\\b`, "g");
+    for (const m of src.matchAll(call)) {
+      if (!resolveWrites(spec, fn)) continue;
+      const line = src.slice(0, m.index).split("\n").length;
+      findings.push({ line, schema: "(via helper)", table: `${fn}() in ${spec}` });
+    }
+  }
+  return findings;
+}
+
 function selfTest() {
   const red = `
 import { createAdminClient } from "@/utils/supabase/adminClient";
@@ -114,7 +191,60 @@ export async function POST() {
     console.error("[self-test] GREEN fixture produced findings:", g);
     process.exit(1);
   }
-  console.log("[self-test] ok — RED fails, GREEN passes");
+  const crossRed = `
+import { createAdminClient } from "@/utils/supabase/adminClient";
+import { replaceThings } from "@/features/x/server/writer";
+export async function POST() {
+  const supabase = createAdminClient();
+  await replaceThings(
+    supabase,
+    "a",
+  );
+}`;
+  const crossGreen = crossRed.replace(
+    'const supabase = createAdminClient();',
+    'const supabase = await createClient();',
+  );
+  // The writer delegates to an unexported helper — the 2026-09-25 shape.
+  const writer = `async function applyUpdates(sb) {
+  await sb.schema("agent").from("definition").update({ x: 1 }).eq("id", "a");
+}
+export async function replaceThings(sb) {
+  await applyUpdates(sb);
+}
+export async function readThings(sb) {
+  await sb.schema("agent").from("definition").select("id");
+}`;
+  const resolve = (_spec, fn) => functionWritesGoverned(writer, fn);
+  if (functionWritesGoverned(writer, "readThings")) {
+    console.error("[self-test] a read-only helper was judged a writer");
+    process.exit(1);
+  }
+  const cr = findAdminClientHandedToGovernedWriter(crossRed, resolve);
+  const cg = findAdminClientHandedToGovernedWriter(crossGreen, resolve);
+  if (cr.length !== 1) {
+    console.error("[self-test] cross-file RED fixture did not fail:", cr);
+    process.exit(1);
+  }
+  if (cg.length !== 0) {
+    console.error("[self-test] cross-file GREEN fixture produced findings:", cg);
+    process.exit(1);
+  }
+  console.log("[self-test] ok — RED fails, GREEN passes (same-file and cross-file)");
+}
+
+function resolveWritesFrom(spec, fn) {
+  if (!spec.startsWith("@/")) return false;
+  for (const ext of [".ts", ".tsx", ".mjs", "/index.ts"]) {
+    let src;
+    try {
+      src = readFileSync(join(ROOT, spec.slice(2) + ext), "utf8");
+    } catch {
+      continue;
+    }
+    return functionWritesGoverned(src, fn);
+  }
+  return false;
 }
 
 function main() {
@@ -124,7 +254,11 @@ function main() {
     let files;
     try { files = [...walk(join(ROOT, dir))]; } catch { continue; }
     for (const f of files) {
-      for (const hit of findGovernedAdminWrites(readFileSync(f, "utf8"))) {
+      const src = readFileSync(f, "utf8");
+      for (const hit of findGovernedAdminWrites(src)) {
+        findings.push({ file: relative(ROOT, f), ...hit });
+      }
+      for (const hit of findAdminClientHandedToGovernedWriter(src, resolveWritesFrom)) {
         findings.push({ file: relative(ROOT, f), ...hit });
       }
     }

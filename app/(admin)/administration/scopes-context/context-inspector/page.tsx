@@ -11,7 +11,9 @@
  *
  * The address IS the selection (`?org=&scopeType=&scope=&item=`), written
  * through the URL-state door (never a navigation). Old links that carry only
- * `?scope=<id>` still open: the scope names its organization and type.
+ * `?scope=<id>` still open: the scope names its organization and type. The
+ * agent "Answer on both paths" asks is `?agent=`, set by its own picker on the
+ * page — never an id someone has to type into the address.
  */
 
 import { Suspense, useCallback } from "react";
@@ -25,18 +27,18 @@ import {
 } from "@/lib/url-state/addressWithoutNavigating";
 import { ContextInspector } from "@/features/agents/components/context-preview/inspector/ContextInspector";
 import {
+  agentSearch,
+  parseAgent,
   parseSelection,
   selectionSearch,
   type InspectorSelection,
 } from "@/features/agents/components/context-preview/inspector/selection";
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 function InspectorFromAddress() {
   const params = useSearchParams();
   const search = params.toString();
   const selection = parseSelection(search);
-  const agent = params.get("agent")?.trim() ?? "";
+  const agent = parseAgent(search);
 
   const onChange = useCallback(
     (next: InspectorSelection, opts?: { replace?: boolean }) => {
@@ -46,12 +48,16 @@ function InspectorFromAddress() {
     },
     [],
   );
+  const onAgentChange = useCallback((agentId: string | null) => {
+    pushAddressWithoutNavigating(currentPathWithSearch(agentSearch(agentId, window.location.search)));
+  }, []);
 
   return (
     <ContextInspector
       selection={selection}
       onChange={onChange}
-      agentId={UUID_RE.test(agent) ? agent : undefined}
+      agentId={agent ?? undefined}
+      onAgentChange={onAgentChange}
     />
   );
 }

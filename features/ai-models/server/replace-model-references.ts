@@ -2,7 +2,31 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
 
+/**
+ * The signed-in admin's OWN client (`await createClient()`), never the
+ * service-role client: `agent.definition` is provenance-governed, and a
+ * service-role write names no actor, so the database refuses it (23514,
+ * "declares actor_tier=code, but names no actor_system" — 2026-09-25, Opus 5 →
+ * Opus 5.5 was refused outright). The admin's session stamps `human` + their
+ * id, and RLS `platform_admin_all` admits a platform admin.
+ */
 type AdminSupabase = SupabaseClient<Database>;
+
+/**
+ * An OPTIONAL value swap the admin ticked in Review: on every row being
+ * replaced, if `settings[key]` equals `from`, write `to` instead (`to`
+ * undefined → remove the key). Rows holding any other value are untouched.
+ * Swaps are offers, never gates — an empty list is a normal replace.
+ */
+export interface SettingSwap {
+  key: string;
+  from: unknown;
+  to?: unknown;
+}
+
+function sameValue(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
 
 type AgentSettingsRow = {
   id: string;
@@ -30,19 +54,28 @@ function buildModelReferenceFilter(oldId: string): string {
   ].join(",");
 }
 
+/**
+ * The row's own settings, then the admin's explicit overrides, then any
+ * ticked swaps. Never a wipe: a setting nobody touched stays exactly as the
+ * agent's owner left it.
+ */
 function buildSettingsPayload(
-  oldId: string,
   newId: string,
   existing: Record<string, unknown> | null,
   newSettings?: LLMParams,
+  swaps: SettingSwap[] = [],
 ): Record<string, unknown> {
-  if (newSettings) {
-    return { ...newSettings, model_id: newId };
+  const out: Record<string, unknown> = {
+    ...(existing && typeof existing === "object" ? existing : {}),
+  };
+  for (const swap of swaps) {
+    if (!(swap.key in out) || !sameValue(out[swap.key], swap.from)) continue;
+    if (swap.to === undefined) delete out[swap.key];
+    else out[swap.key] = swap.to;
   }
-  if (existing && typeof existing === "object") {
-    return { ...existing, model_id: newId };
-  }
-  return { model_id: newId };
+  Object.assign(out, newSettings ?? {});
+  out.model_id = newId;
+  return out;
 }
 
 function patchModelTiers(
@@ -80,16 +113,17 @@ async function applyDefinitionUpdates(
   oldId: string,
   newId: string,
   newSettings?: LLMParams,
+  swaps: SettingSwap[] = [],
 ): Promise<string[]> {
   const updated: string[] = [];
 
   for (const row of rows) {
     const hasColumn = row.model_id === oldId;
     const settings = buildSettingsPayload(
-      oldId,
       newId,
       row.settings,
       newSettings,
+      swaps,
     );
     const modelTiers = patchModelTiers(row.model_tiers, oldId, newId);
     const tiersChanged =
@@ -148,6 +182,12 @@ export interface ReplaceModelReferencesResult {
    * are not agents and hold no mandate, so they are counted, not listed.
    */
   agent_ids: string[];
+  /**
+   * Rows that reference the old model but this admin's session could not
+   * write (RLS: platform admins write `internal`-and-wider rows only). The
+   * replace still lands everywhere else; the UI announces the gap.
+   */
+  skipped: number;
 }
 
 export async function replaceModelReferencesAdmin(
@@ -155,6 +195,7 @@ export async function replaceModelReferencesAdmin(
   oldId: string,
   newId: string,
   newSettings?: LLMParams,
+  swaps: SettingSwap[] = [],
 ): Promise<ReplaceModelReferencesResult> {
   const filter = buildModelReferenceFilter(oldId);
 
@@ -192,6 +233,7 @@ export async function replaceModelReferencesAdmin(
       oldId,
       newId,
       newSettings,
+      swaps,
     ),
     applyDefinitionUpdates(
       supabase,
@@ -199,16 +241,17 @@ export async function replaceModelReferencesAdmin(
       oldId,
       newId,
       newSettings,
+      swaps,
     ),
     (async () => {
       let updated = 0;
       for (const row of templatesResult.data ?? []) {
         const hasColumn = row.model_id === oldId;
         const settings = buildSettingsPayload(
-          oldId,
           newId,
           row.settings,
           newSettings,
+          swaps,
         );
         const modelTiers = patchModelTiers(row.model_tiers, oldId, newId);
         const tiersChanged =
@@ -246,7 +289,7 @@ export async function replaceModelReferencesAdmin(
 
   if (candidates > 0 && total === 0) {
     throw new Error(
-      `Found ${candidates} reference(s) but updated 0 — check admin credentials.`,
+      `Found ${candidates} reference(s) but the database let this account update none of them — it is not signed in as a platform admin.`,
     );
   }
 
@@ -255,5 +298,8 @@ export async function replaceModelReferencesAdmin(
     builtins: builtins.length,
     templates,
     agent_ids: [...builtins, ...agents],
+    skipped: candidates - total,
   };
 }
+
+export { buildSettingsPayload as buildReplacementSettings };

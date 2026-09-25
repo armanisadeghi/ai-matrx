@@ -25,6 +25,8 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import rehypePrism from "rehype-prism-plus";
+// Page breaks preview here exactly as in every MarkdownCore preset.
+import remarkMatrxPageBreak from "@/components/mardown-display/chat-markdown/page-break/remarkMatrxPageBreak";
 import "katex/dist/katex.min.css";
 // Math rules are the core's, never local: same normalizer, same options.
 import {
@@ -159,7 +161,7 @@ export function MarkdownPreview({
       <div className="flex-1 overflow-auto px-6 py-5">
         <article className="prose prose-sm dark:prose-invert max-w-none">
           <ReactMarkdown
-            remarkPlugins={[remarkGfm, [remarkMath, REMARK_MATH_OPTIONS]]}
+            remarkPlugins={[remarkGfm, [remarkMath, REMARK_MATH_OPTIONS], remarkMatrxPageBreak]}
             rehypePlugins={[[rehypeKatex, REHYPE_KATEX_OPTIONS], rehypePrism]}
           >
             {/* Guard a stray `$$` / unclosed `[` from swallowing a section

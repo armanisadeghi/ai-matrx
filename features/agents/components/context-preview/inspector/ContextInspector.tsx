@@ -10,7 +10,10 @@
  * only; choosing one clears the ones after it; the value of the chosen context
  * item sits read-only at the end of the row. Below, the old-vs-new compare
  * re-resolves on every choice with the SAME selection on both sides
- * (`selection.ts#previewRequest`). No Run button.
+ * (`selection.ts#previewRequest` — the server's own `ContextSelection`; a
+ * scope type reaches both sides as every one of its scopes, no cap). No Run
+ * button. "Answer on both paths" carries its own agent picker; the chosen agent
+ * lives in the address (`?agent=`).
  *
  * Controlled: the page owns the selection (the address), this renders it. The
  * one reverse flow is the deep link — `?scope=<id>` alone — where the scope
@@ -41,7 +44,6 @@ import { ContextCompareView } from "../ContextCompareView";
 import {
   chooseStep,
   previewRequest,
-  TYPE_PREVIEW_LIMIT,
   type InspectorSelection,
   type InspectorStep,
 } from "./selection";
@@ -249,12 +251,15 @@ export function ContextInspector({
   selection,
   onChange,
   agentId,
+  onAgentChange,
 }: {
   selection: InspectorSelection;
   /** The page writes it to the address; `replace` is true for a back-fill. */
   onChange: (next: InspectorSelection, opts?: { replace?: boolean }) => void;
-  /** Optional `?agent=` — lets the compare answer the same question on both paths. */
+  /** `?agent=` — the agent "Answer on both paths" asks, chosen with its picker. */
   agentId?: string;
+  /** The page writes the chosen agent to the address. */
+  onAgentChange?: (agentId: string | null) => void;
 }) {
   // ── Step 1: the person's own organizations (access is personal). ──
   const orgs = useUserOrganizations();
@@ -320,16 +325,18 @@ export function ContextInspector({
   const chosenItem = itemRows.find((r) => r.item.id === selection.item) ?? null;
   const chosenValue = chosenItem ? displayValue(chosenItem.value) : null;
 
-  const request = previewRequest(
-    selection,
-    scopesLoad.state === "ready" ? scopesLoad.data.map((s) => s.id) : null,
-  );
+  const request = previewRequest(selection);
   // The item step narrows the SHOWN compare to one item; it waits for the item's key.
   const focus =
     request?.depth === "item" && chosenItem
       ? { itemId: chosenItem.item.id, key: chosenItem.item.key, label: chosenItem.item.display_name }
       : undefined;
-  const previewReady = request && (request.depth !== "item" || focus);
+  // The type step waits for the type's scope list only to know whether it is empty (an empty
+  // type previews nothing); the request itself is the type, never the list.
+  const previewReady =
+    request &&
+    (request.depth !== "item" || focus) &&
+    (request.depth !== "scopeType" || scopesLoad.state === "ready");
 
   const errors = [
     orgs.error ? `Your organizations could not load: ${orgs.error}` : null,
@@ -346,19 +353,22 @@ export function ContextInspector({
   if (request?.depth === "org") {
     caption = `What an agent working in ${orgName ?? "this organization"} is handed with nothing selected.`;
   } else if (request?.depth === "scopeType") {
-    const n = request.typeScopeCount ?? 0;
+    // The count is the scope step's own list — the same scopes, read the same way (the
+    // person's own access), that the server hands both sides.
+    const n = scopesLoad.state === "ready" ? scopesLoad.data.length : null;
     caption =
       n === 0
         ? null
-        : n > TYPE_PREVIEW_LIMIT
-          ? `The first ${TYPE_PREVIEW_LIMIT} of ${n} ${typeName ?? "scopes"} selected at once, by name.`
+        : n === null
+          ? `Every ${typeName ?? "scope"} selected at once.`
           : `All ${n} ${typeName ?? "scopes"} selected at once.`;
   } else if (request?.depth === "scope") {
     caption = `${scopeName ?? "This scope"} selected — what the agent is handed for it.`;
   } else if (request?.depth === "item" && focus) {
     caption = `${focus.label} on ${scopeName ?? "this scope"}, as the agent sees it.`;
   }
-  const typeIsEmpty = request?.depth === "scopeType" && request.typeScopeCount === 0;
+  const typeIsEmpty =
+    request?.depth === "scopeType" && scopesLoad.state === "ready" && scopesLoad.data.length === 0;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2" data-context-inspector>
@@ -468,10 +478,10 @@ export function ContextInspector({
       {previewReady && request && !typeIsEmpty && (
         <div className="flex min-h-[24rem] flex-1 flex-col rounded-md border border-border">
           <ContextCompareView
-            key={`${request.depth}:${request.organizationId}:${request.scopeIds.join(",")}:${agentId ?? ""}`}
-            scopeIds={request.scopeIds}
-            organizationId={request.organizationId}
+            key={`${request.depth}:${JSON.stringify(request.selection)}`}
+            selection={request.selection}
             agentId={agentId}
+            onAgentChange={onAgentChange}
             focus={focus}
           />
         </div>
