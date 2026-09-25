@@ -1,5 +1,5 @@
 // TEMPORARY (RC-B10 stage b verification, never committed).
-import base from "./jest.config.ts";
+import base from "./jest.config";
 export default {
   ...base,
   moduleNameMapper: {
