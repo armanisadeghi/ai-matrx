@@ -830,8 +830,19 @@ describe("VaultCsvImportDialog", () => {
       await act(async () => {
         button.click();
       });
+      const terminalMessage =
+        code === "idempotency_key_conflict"
+          ? "This import retry key conflicts with a different request."
+          : "The import result is no longer available to confirm.";
       await waitForCondition(
-        () => createVaultItemMock.mock.calls.length === 2,
+        () => {
+          const text = document.body.textContent ?? "";
+          return (
+            text.includes(terminalMessage) &&
+            !text.includes("Retry current row") &&
+            !text.includes("Import selected records")
+          );
+        },
         "terminal receipt response was not processed",
       );
       expect(createVaultItemMock).toHaveBeenCalledTimes(2);
@@ -845,11 +856,7 @@ describe("VaultCsvImportDialog", () => {
       expect(document.body.textContent).not.toContain(
         "Your account or request organization changed",
       );
-      expect(document.body.textContent).toContain(
-        code === "idempotency_key_conflict"
-          ? "This import retry key conflicts with a different request."
-          : "The import result is no longer available to confirm.",
-      );
+      expect(document.body.textContent).toContain(terminalMessage);
     },
   );
 

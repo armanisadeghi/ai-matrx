@@ -408,6 +408,19 @@ describe("Vault and Authenticator organization transport", () => {
         },
       ),
     ).rejects.toMatchObject({ code: "request_rejected" });
+
+    fetchMock.mockResolvedValueOnce(
+      receiptErrorResponse(403, "different_forbidden_reason"),
+    );
+    await expect(
+      createVaultItem(
+        { display_name: "Imported", source: "system_import" },
+        {
+          idempotencyKey: "00000000-0000-4000-8000-000000000003",
+          expectedActor: { userId: "user-1", organizationId: ORGANIZATION_ID },
+        },
+      ),
+    ).rejects.toMatchObject({ code: "request_rejected" });
   });
 
   test.each([403, 409, 410])(
