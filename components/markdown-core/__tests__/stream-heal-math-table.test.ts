@@ -64,3 +64,18 @@ describe("half-arrived table header while streaming", () => {
     expect(healStreamingMarkdown(prefix)).toBe(prefix);
   });
 });
+
+describe("a lone trailing backtick while streaming", () => {
+  it.each([
+    ["Set the flag `", "Set the flag "],
+    ["Run `", "Run "],
+  ])("holds back %j", (prefix, expected) => {
+    expect(healStreamingMarkdown(prefix)).toBe(expected);
+  });
+
+  it("keeps a closed code span", () => {
+    expect(healStreamingMarkdown("Set `ROUTE_14_CAPACITY` to 38")).toBe(
+      "Set `ROUTE_14_CAPACITY` to 38",
+    );
+  });
+});

@@ -114,7 +114,7 @@ const pendingBracketedTail: RemendHandler = {
   },
 };
 
-const TRAILING_EMPTY_EMPHASIS = /(^|\s)[*_~]+$/;
+const TRAILING_EMPTY_EMPHASIS = /(^|\s)[*_~`]+$/;
 
 /**
  * A trailing run of emphasis markers with nothing after it yet (`Our **`)
