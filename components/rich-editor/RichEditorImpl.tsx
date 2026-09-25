@@ -114,7 +114,16 @@ export interface RichEditorProps {
 
 function describeDelta(delta: IslandDelta): string {
   const raw = delta.before ?? delta.after ?? "";
-  const name = raw.startsWith("{{") ? raw : `${islandMeta(delta.islandType, raw).label || inlineIslandLabel(delta.islandType)}`;
+  const block = islandMeta(delta.islandType, raw);
+  // A type with no name of its own (an inline tag, a span directive…) is named
+  // by its first characters, so the person can find it.
+  const excerpt = raw.replace(/\s+/g, " ").trim();
+  const quoted = `“${excerpt.length > 40 ? `${excerpt.slice(0, 40)}…` : excerpt}”`;
+  const name = raw.startsWith("{{")
+    ? raw
+    : !block.generic
+      ? block.label
+      : `${inlineIslandLabel(delta.islandType)} ${quoted}`;
   switch (delta.kind) {
     case "removed":
       return `${name} would be removed`;
@@ -269,6 +278,11 @@ export default function RichEditorImpl({
     replace: () => setFindMode("replace"),
     toggleOutline: () => setOutlineOpen((open) => !open),
     toggleFocus: () => setFocusMode((on) => !on),
+    exitFocus: () => {
+      if (!focusMode) return false;
+      setFocusMode(false);
+      return true;
+    },
     cycleView: () => switchView(VIEWS[(VIEWS.indexOf(view) + 1) % VIEWS.length] ?? "visual"),
     showHelp: () => setHelpOpen(true),
     showWordCount: () =>
@@ -290,6 +304,7 @@ export default function RichEditorImpl({
     replace: () => shellRef.current?.replace(),
     toggleOutline: () => shellRef.current?.toggleOutline(),
     toggleFocus: () => shellRef.current?.toggleFocus(),
+    exitFocus: () => shellRef.current?.exitFocus() ?? false,
     cycleView: () => shellRef.current?.cycleView(),
     showHelp: () => shellRef.current?.showHelp(),
     showWordCount: () => shellRef.current?.showWordCount(),
@@ -430,6 +445,7 @@ export default function RichEditorImpl({
         data-testid="rich-editor"
         onKeyDown={(event) => {
           // Escape leaves focus mode — unless a menu, the find bar or a picker used it first.
+          // (ProseMirror prevents every Escape, so the visual view exits through its own keymap.)
           if (event.key === "Escape" && focusMode && !event.defaultPrevented) {
             event.preventDefault();
             setFocusMode(false);

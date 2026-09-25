@@ -33,6 +33,8 @@ export interface IslandMeta {
   language: IslandEditorLanguage;
   /** Rendered through the shared renderer (false: shown as its source). */
   renders: boolean;
+  /** True when the type has no name of its own ("Protected block"). */
+  generic?: boolean;
 }
 
 const KIND_RE = /"__kind"\s*:\s*"([^"]+)"/;
@@ -102,7 +104,7 @@ export function islandMeta(islandType: string, raw: string): IslandMeta {
       return { label: id ? `Footnote ${id}` : "Footnote", icon: Hash, language: "markdown", renders: true };
     }
     default:
-      return { label: "Protected block", icon: Lock, language: "markdown", renders: true };
+      return { label: "Protected block", icon: Lock, language: "markdown", renders: true, generic: true };
   }
 }
 
@@ -125,6 +127,11 @@ export function inlineIslandLabel(islandType: string): string {
       return "Media";
     case "wikilink":
       return "Page link";
+    case "html_tag":
+      return "HTML tag";
+    case "xml_inline":
+    case "xml_tag":
+      return "Inline tag";
     default:
       return "Protected text";
   }

@@ -77,6 +77,9 @@ export function createVisualExtensions(options: {
           bindings[key] = () => handler(this.editor, shell);
         }
       }
+      // Escape leaves focus mode. ProseMirror swallows every Escape (preventDefault),
+      // so the shell cannot hear it; the open menus (priority above) still get it first.
+      bindings.Escape = () => shell.exitFocus();
       bindings.Enter = () => {
         // An open `/` or `{{` menu owns Enter (it picks the highlighted row) —
         // in a list item too, where the list's own Enter would split the item.

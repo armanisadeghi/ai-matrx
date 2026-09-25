@@ -15,6 +15,8 @@ export interface RichShellActions {
   replace: () => void;
   toggleOutline: () => void;
   toggleFocus: () => void;
+  /** Leave focus mode; false when it was not on (so Escape stays free for others). */
+  exitFocus: () => boolean;
   cycleView: () => void;
   showHelp: () => void;
   showWordCount: () => void;
