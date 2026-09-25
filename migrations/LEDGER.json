@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-09-25T01:10:25.182Z",
+  "generated_at": "2026-09-25T02:00:36.269Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3362,6 +3362,18 @@
       "checksum": "16d3443c9c5141543064eee8a62192d5f5c99d587bf45b52827a702790b2ba61",
       "applied_at": "2026-09-25 00:50:42.889851+00"
     },
+    "migrations/campaign/sc2_agents_read_context_from_the_old_system_until_the_switch.sql": {
+      "source": "campaign",
+      "filename": "sc2_agents_read_context_from_the_old_system_until_the_switch.sql",
+      "checksum": "052fcb5db3bca359f1318d14803787ad39cc1b63af1831446de2224050c734a2",
+      "applied_at": "2026-09-25 01:54:23.079624+00"
+    },
+    "migrations/campaign/sc2_the_context_copy_follows_the_current_screens.sql": {
+      "source": "campaign",
+      "filename": "sc2_the_context_copy_follows_the_current_screens.sql",
+      "checksum": "d76d1350b42c4986e7f5a5d388086f9d974a3a24a8ec4f1dc266dcd6f8be676b",
+      "applied_at": "2026-09-25 01:54:24.380062+00"
+    },
     "migrations/campaign/sc3_a_scope_member_reads_the_one_record_they_were_admitted_to.sql": {
       "source": "matrx-frontend",
       "filename": "sc3_a_scope_member_reads_the_one_record_they_were_admitted_to.sql",
@@ -4130,6 +4142,18 @@
       "checksum": "19429f6bc0c42f864629d57106f109d0e01218799d608ea28b3b9717430be326",
       "applied_at": "2026-09-21 01:38:56.51551+00"
     },
+    "migrations/campaign/storeleakformula_a_worked_out_column_is_as_sensitive_as_what_it_reads.sql": {
+      "source": "campaign",
+      "filename": "storeleakformula_a_worked_out_column_is_as_sensitive_as_what_it_reads.sql",
+      "checksum": "e8a5778ffe8f583645e1de5066189051590c0f9f88fb61c0cc1978f3cf8f42d8",
+      "applied_at": "2026-09-25 01:31:47.550307+00"
+    },
+    "migrations/campaign/storeleakformula_every_worked_out_column_reads_its_inputs_again.sql": {
+      "source": "campaign",
+      "filename": "storeleakformula_every_worked_out_column_reads_its_inputs_again.sql",
+      "checksum": "9065f1a270dc7bf94c0f0bd2231fbc525fed26c727d9f9bbc33270433d058b2f",
+      "applied_at": "2026-09-25 01:34:33.788443+00"
+    },
     "migrations/campaign/storeoff_a_link_says_the_store_is_off_rather_than_404.sql": {
       "source": "matrx-frontend",
       "filename": "storeoff_a_link_says_the_store_is_off_rather_than_404.sql",
@@ -4538,6 +4562,18 @@
       "checksum": "4984e2f57f214502d4007de7579385026cad4c5e1c8e2123a5fa4210793f7c2d",
       "applied_at": "2026-09-20 20:55:24.633361+00"
     },
+    "migrations/campaign/uichamp_s1_a_signed_in_person_may_read_the_view_keys.sql": {
+      "source": "campaign",
+      "filename": "uichamp_s1_a_signed_in_person_may_read_the_view_keys.sql",
+      "checksum": "021cbf40cfa1614dbc026030e2b7e51c6c8ed545439b31e80e1198b1a459368d",
+      "applied_at": "2026-09-25 01:10:05.951062+00"
+    },
+    "migrations/campaign/uichamp_s1_a_view_keeps_every_setting_it_is_given.sql": {
+      "source": "campaign",
+      "filename": "uichamp_s1_a_view_keeps_every_setting_it_is_given.sql",
+      "checksum": "c52fe9f930cc00f48a76281f5a8559b18f720c394211c47e7a0e4168421525b7",
+      "applied_at": "2026-09-25 01:09:57.939669+00"
+    },
     "migrations/campaign/uichamp_s3_a_number_knows_last_month_and_its_target.sql": {
       "source": "matrx-frontend",
       "filename": "uichamp_s3_a_number_knows_last_month_and_its_target.sql",
@@ -4567,6 +4603,12 @@
       "filename": "uichamp_s4_a_signed_in_person_may_move_and_decide_many.sql",
       "checksum": "9af9e6736f990e607b92e47472af2fb4a83181b54d663f1a696d291034edcd78",
       "applied_at": "2026-09-25 00:26:15.225059+00"
+    },
+    "migrations/campaign/uichamp_s5_an_archived_thing_takes_its_approvals_out_of_the_inbox.sql": {
+      "source": "campaign",
+      "filename": "uichamp_s5_an_archived_thing_takes_its_approvals_out_of_the_inbox.sql",
+      "checksum": "3141520c76e6855070e2cbd84313e9fa612cff31a5eafe2dd10b97113cec523c",
+      "applied_at": "2026-09-25 01:07:44.845636+00"
     },
     "migrations/campaign/uichamp_s6_a_portal_carries_its_look_and_its_forms.sql": {
       "source": "matrx-frontend",
@@ -4598,6 +4640,12 @@
       "checksum": "5cadbb79b60e809f6d456aa23ec80a7192205b109c77c99da62dc0dbcd26d519",
       "applied_at": "2026-09-19 14:09:27.797833+00"
     },
+    "migrations/campaign/uifix18_a_write_that_only_works_something_out_is_not_a_change.sql": {
+      "source": "campaign",
+      "filename": "uifix18_a_write_that_only_works_something_out_is_not_a_change.sql",
+      "checksum": "2140646ec9eb4821acf914264553a6f6cde4ada429e3cd328f92601147dd6364",
+      "applied_at": "2026-09-25 01:22:09.414106+00"
+    },
     "migrations/campaign/uihonest_a_screen_can_ask_what_it_may_offer.sql": {
       "source": "matrx-frontend",
       "filename": "uihonest_a_screen_can_ask_what_it_may_offer.sql",
@@ -4627,6 +4675,18 @@
       "filename": "versionhistoryfix_c_the_hr_sweep_stops_re_saving_what_did_not_change.sql",
       "checksum": "6049a69524c8f6764dcfcc24baa1b9053c234fcf52a2d1bb6a16906a3af5f585",
       "applied_at": "2026-09-25 00:20:41.256088+00"
+    },
+    "migrations/campaign/viewkeyssheet_a_copied_tables_default_view_names_the_sheet.sql": {
+      "source": "campaign",
+      "filename": "viewkeyssheet_a_copied_tables_default_view_names_the_sheet.sql",
+      "checksum": "cd1e1f604f447aceeea5880954e62e48426b7b5b14920a206741a3e6f4e9e961",
+      "applied_at": "2026-09-25 01:10:07.514645+00"
+    },
+    "migrations/campaign/viewkeyssheet_the_sheet_is_a_layout_a_view_may_name.sql": {
+      "source": "campaign",
+      "filename": "viewkeyssheet_the_sheet_is_a_layout_a_view_may_name.sql",
+      "checksum": "56fe0e49586b0f84af776d2883ec14ab3f690a0df66ede1db4bfe3462abc8391",
+      "applied_at": "2026-09-25 01:09:58.027269+00"
     },
     "migrations/campaign/vis2_a_link_across_the_wall_takes_both_organizations.sql": {
       "source": "matrx-frontend",
