@@ -37,6 +37,7 @@ import { attachVirtualRoots } from "@/features/files/redux/virtual-thunks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";
 import { getPreviewCapability } from "@/features/files/utils/preview-capabilities";
+import { rememberFileOrganization } from "@/features/files/api/fileOrganization";
 import { MobileStack } from "../MobileStack";
 import { FileTabsBody, type FileTab } from "../FileTabsBody";
 import { FileViewerControlsProvider } from "../FileViewerControlsContext";
@@ -46,10 +47,19 @@ import { FileViewerControlRail } from "./FileViewerControlRail";
 
 export interface SingleFileShellProps {
   fileId: string;
+  /**
+   * The organization the FILE lives in, read by the route from the file's own row
+   * (`files.files.organization_id`, under RLS as the person). Every per-file request this page
+   * sends carries it, so the file opens whatever organization is — or is not — picked in the
+   * shell (access is personal; GATES-TAIL, VERIFIER-21 #2).
+   */
+  organizationId?: string | null;
   className?: string;
 }
 
-export function SingleFileShell({ fileId, className }: SingleFileShellProps) {
+export function SingleFileShell({ fileId, organizationId, className }: SingleFileShellProps) {
+  // Seeded during render, before any child fires its first per-file request.
+  rememberFileOrganization(fileId, organizationId);
   const isMobile = useIsMobile();
   if (isMobile) {
     // Mobile: defer to the existing push-nav stack. It already has a

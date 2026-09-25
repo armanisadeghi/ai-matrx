@@ -32,13 +32,17 @@ export default async function CloudFileDetailPage({ params }: PageProps) {
   const supabase = await createClient();
   const { data, error } = await filesDb(supabase)
     .from("files")
-    .select("id")
+    // The file's own organization rides to the page, so every request about this file is sent
+    // in it — never in whatever organization is (or is not) picked (GATES-TAIL, VERIFIER-21 #2).
+    .select("id, organization_id")
     .eq("id", fileId)
     .is("deleted_at", null)
     .maybeSingle();
 
   if (data) {
-    return <SingleFileShell fileId={data.id} />;
+    return (
+      <SingleFileShell fileId={data.id} organizationId={data.organization_id} />
+    );
   }
 
   // No direct file access — but this may be a processed library document the

@@ -11,6 +11,7 @@
 
 "use client";
 
+import { rememberFileOrganization } from "@/features/files/api/fileOrganization";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -36,9 +37,12 @@ import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigati
 
 interface StudioShellProps {
   fileId: string;
+  /** The file's own organization, from its row (GATES-TAIL): every per-file request carries it. */
+  organizationId?: string | null;
 }
 
-export function StudioShell({ fileId }: StudioShellProps) {
+export function StudioShell({ fileId, organizationId }: StudioShellProps) {
+  rememberFileOrganization(fileId, organizationId);
   const router = useRouter();
   const searchParams = useSearchParams();
 

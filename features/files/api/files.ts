@@ -29,6 +29,10 @@ import {
   withQuery,
 } from "@/lib/api/typed-client";
 import type { components } from "@/types/python-generated/api-types";
+import {
+  rememberFileOrganizationFrom,
+  withFileOrganization,
+} from "@/features/files/api/fileOrganization";
 import type {
   BulkDeleteFilesRequest,
   BulkMoveFilesRequest,
@@ -162,7 +166,13 @@ export async function getFile(
   fileId: string,
   opts: RequestOptions = {},
 ): Promise<{ data: FileRecordApi; meta: ResponseMeta }> {
-  return apiGet(buildPath("/files/{file_id}", { file_id: fileId }), opts);
+  // The file's own organization, never the picker's (GATES-TAIL, VERIFIER-21 #2).
+  const answered = await apiGet(
+    buildPath("/files/{file_id}", { file_id: fileId }),
+    withFileOrganization(fileId, opts),
+  );
+  rememberFileOrganizationFrom(answered.data);
+  return answered;
 }
 
 /**
@@ -175,10 +185,12 @@ export async function getFileMetadata(
   fileId: string,
   opts: RequestOptions = {},
 ): Promise<{ data: FileRecordApi; meta: ResponseMeta }> {
-  return apiGet(buildPath("/files/{file_id}", { file_id: fileId }), {
-    ...opts,
+  const answered = await apiGet(buildPath("/files/{file_id}", { file_id: fileId }), {
+    ...withFileOrganization(fileId, opts),
     query: { include_urls: false },
   });
+  rememberFileOrganizationFrom(answered.data);
+  return answered;
 }
 
 export async function getFileByPath(
@@ -243,7 +255,7 @@ export async function patchFile(
   return patchJson<FileRecordApi, FilePatchRequest>(
     `/files/${fileId}`,
     fullBody,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -266,7 +278,7 @@ export async function patchFileReplaceMetadata(
   return patchJson<FileRecordApi, FilePatchRequest>(
     `/files/${fileId}?metadata_merge=false`,
     fullBody,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -282,7 +294,7 @@ export async function deleteFile(
     withQuery(buildPath("/files/{file_id}", { file_id: fileId }), {
       hard_delete: params.hardDelete ? true : undefined,
     }),
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -304,7 +316,10 @@ export async function downloadFile(
   // where we want the browser tab to render rather than auto-download.
   if (params.inline) qs.push("inline=true");
   const q = qs.length ? `?${qs.join("&")}` : "";
-  return downloadBlob(`/files/${fileId}/download${q}`, opts);
+  return downloadBlob(
+    `/files/${fileId}/download${q}`,
+    withFileOrganization(fileId, opts),
+  );
 }
 
 /**
@@ -326,7 +341,7 @@ export async function downloadFileWithProgress(
   return downloadBlobWithProgress(
     `/files/${fileId}/download${q}`,
     onProgress,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -424,7 +439,7 @@ export async function restoreFile(
   return postJson<FileRecordApi, Record<string, never>>(
     `/files/${fileId}/restore`,
     {},
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -474,7 +489,7 @@ export async function renameFile(
   return apiPost(
     buildPath("/files/{file_id}/rename", { file_id: fileId }),
     body,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 

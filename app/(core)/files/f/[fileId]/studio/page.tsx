@@ -23,7 +23,7 @@ export default async function AnalysisStudioPage({ params }: PageProps) {
   const supabase = await createClient();
   const { data, error } = await filesDb(supabase)
     .from("files")
-    .select("id, mime_type")
+    .select("id, mime_type, organization_id")
     .eq("id", fileId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -58,5 +58,5 @@ export default async function AnalysisStudioPage({ params }: PageProps) {
     );
   }
 
-  return <StudioShell fileId={data.id} />;
+  return <StudioShell fileId={data.id} organizationId={data.organization_id} />;
 }

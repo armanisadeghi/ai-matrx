@@ -30,6 +30,7 @@ import {
   type ResponseMeta,
   type UploadProgressEvent,
 } from "@/lib/python-client";
+import { withFileOrganization } from "@/features/files/api/fileOrganization";
 import type {
   AddAssetVariantsRequest,
   Asset,
@@ -157,7 +158,7 @@ export async function getAsset(
   _params: GetAssetParams = {},
   opts: RequestOptions = {},
 ): Promise<{ data: Asset; meta: ResponseMeta }> {
-  return getJson<Asset>(ENDPOINTS.assets.detail(fileId), opts);
+  return getJson<Asset>(ENDPOINTS.assets.detail(fileId), withFileOrganization(fileId, opts));
 }
 
 /**
@@ -171,7 +172,7 @@ export async function getAssetForFile(
   _params: GetAssetParams = {},
   opts: RequestOptions = {},
 ): Promise<{ data: Asset; meta: ResponseMeta }> {
-  return getJson<Asset>(ENDPOINTS.assets.forFile(fileId), opts);
+  return getJson<Asset>(ENDPOINTS.assets.forFile(fileId), withFileOrganization(fileId, opts));
 }
 
 // ---------------------------------------------------------------------------
