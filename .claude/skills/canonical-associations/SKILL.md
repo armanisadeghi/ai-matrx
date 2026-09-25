@@ -42,6 +42,16 @@ When a newly-canonicalized entity must be "added to all the places we have assoc
 
 `platform.associations` carries `deleted_at` + a `deleted_via_type`/`deleted_via_id` stamp. Soft-deleting an entity tombstones its live edges; restoring it revives exactly those; only a hard `DELETE` purges. **Every READ is live-only** — SQL reads `platform.associations_live`, a direct PostgREST read passes `.is("deleted_at", null)`, aidream's ORM engine filters it automatically. A reader that sees a tombstone is an **access leak** (edges convey access via `platform.containment_edges` → `platform.reachability`). Re-attaching over a tombstone revives it (BEFORE INSERT trigger) — never "fix" a unique violation by deleting the tombstone. Full contract: `common-docs/systems/platform/access/FEATURE.md` §2.4c.
 
+## 🚨 An edge that copies an endpoint's content is gated by BOTH ends (RC-A5, 2026-09-25)
+
+A payload that quotes or copies an endpoint (a `text_anchor` passage, a `relation_snapshot`, the
+variables of a `render_binding`) is readable only by someone who can open both ends: the restrictive
+policy `assoc_payload_follows_endpoints` reads `platform.edge_payload_kind.payload_follows_endpoints`,
+which defaults to TRUE for every new kind. Set it false ONLY with a `payload_follows_endpoints_reason`
+saying the payload describes the edge itself. Never copy an endpoint's title or text into `label` or
+`metadata` — those columns are read by every member of the edge's organization; read the title at
+display time instead. Design: `common-docs/projects/rich-content-unification/ASSOCIATION-VISIBILITY.md`.
+
 ## The one load-bearing boundary — DO NOT cross it
 
 `platform.associations` is the M2M association edge. It does **NOT** absorb two adjacent single-home domains. Leave them alone:
