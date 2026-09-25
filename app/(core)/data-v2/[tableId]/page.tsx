@@ -8,7 +8,7 @@
 // is assembled here, because a table opened from a portal or from an agent's
 // link must be the same screen.
 
-import { use, useCallback, useMemo } from "react";
+import { use, useCallback, useMemo, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import * as recordsUiPackage from "@ai-matrx/records-ui";
@@ -52,8 +52,9 @@ import {
  * DATA-V2-FACE: `TablePage`'s `leading` and `menuExtras`, the table menu, the designated
  * opening). Until that release is installed the page keeps the where-it-lives row it had, so the
  * organization stays named; once it is, the row is gone and the chip rides the table's own row.
- * SWAP ON INSTALL: delete this constant and the `faceAware ? … : …` fallback below, and pass
- * `leading` / `menuExtras` by name inside `<TablePage>`.
+ * SWAP ON INSTALL: delete this constant and the `!FACE_AWARE` stand-in row below, and pass
+ * `menuExtras` by name inside `<TablePage>` (the organization rides the page header, so
+ * `leading` is not passed — lane DATA-V2-FACE-2).
  */
 const FACE_AWARE = typeof (recordsUiPackage as Record<string, unknown>)["tableOpening"] === "function";
 
@@ -62,12 +63,15 @@ const FACE_AWARE = typeof (recordsUiPackage as Record<string, unknown>)["tableOp
  * the thing he knows, not like "Data"). Read inside the mount, through the same `useTable` every
  * package screen reads, and set through the shell's one header primitive.
  */
-function TableTitle({ tableId }: { tableId: string }) {
+function TableTitle({ tableId, context }: { tableId: string; context?: ReactNode }) {
   const table = useTable(tableId);
   const name = table.data?.name?.trim();
   return (
     <PageHeader>
-      <HeaderStructured title={name && name !== "" ? name : "Data"} />
+      {/* ONE ROW (lane DATA-V2-FACE-2): the table's whole name, and beside it, quiet, the
+          organization it lives in — Linear's team beside the issue title. On a phone the
+          organization sits under the name so the name keeps the width. */}
+      <HeaderStructured title={name && name !== "" ? name : "Data"} context={context} />
     </PageHeader>
   );
 }
@@ -448,18 +452,21 @@ export default function UnifiedDataTableRoute({
    */
   const whereItLives =
     object.state === "found" ? (
-      <span className="inline-flex items-center gap-1.5" data-table-lives-in="">
+      <span className="inline-flex min-w-0 items-center gap-1.5" data-table-lives-in="">
         <WhereItLives
           dataSource={dataSource}
           tableId={tableId}
           knownOrganizationName={knownOrganizationName}
           onMoved={() => object.retry()}
+          variant="title"
         />
-        {shared.state === "shared" ? <span>Shared with you &middot; {shared.levelLabel}</span> : null}
+        {shared.state === "shared" ? (
+          <span className="shrink-0 text-muted-foreground">Shared with you &middot; {shared.levelLabel}</span>
+        ) : null}
       </span>
     ) : null;
+  /** The organization rides the page header beside the name, so the table's own row takes no `leading`. */
   const facePorts = {
-    leading: whereItLives,
     menuExtras:
       rowChangeOffer.state === "offered"
         ? [
@@ -490,21 +497,21 @@ export default function UnifiedDataTableRoute({
         <HeaderStructured title="Data" />
       </PageHeader>
       <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
-        {/* STAND-IN until the installed records-ui draws the one-row face — see FACE_AWARE. */}
-        {!FACE_AWARE && object.state === "found" ? (
+        {/* STAND-IN until the installed records-ui carries the table menu's `menuExtras` — see
+            FACE_AWARE. Only the run-an-agent link rides it, and only when the store offers it: the
+            organization is in the header now, so there is no row at all otherwise. */}
+        {!FACE_AWARE && object.state === "found" && campaign.state === "on" &&
+        (rowChangeOffer.state === "offered" || rowChangeOffer.state === "refused") ? (
           <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
-            {whereItLives}
             {/* TABLE-PARITY N2: absent until the store says a row change here reaches a schedule. */}
-            {campaign.state === "on" ? (
-              <span className="ml-auto">
-                <RowChangeAgentLink
-                  tableId={tableId}
-                  tableName={null}
-                  organizationId={object.organizationId}
-                  userId={userId ?? null}
-                />
-              </span>
-            ) : null}
+            <span className="ml-auto">
+              <RowChangeAgentLink
+                tableId={tableId}
+                tableName={null}
+                organizationId={object.organizationId}
+                userId={userId ?? null}
+              />
+            </span>
           </div>
         ) : null}
         {object.state === "resolving" ? (
@@ -608,7 +615,7 @@ export default function UnifiedDataTableRoute({
                 somebody else's table must never be left to work out why their
                 own organization's things are not around it. One row, the
                 organization's name, and what they hold. */}
-            <TableTitle tableId={tableId} />
+            <TableTitle tableId={tableId} context={whereItLives} />
             {/* SIDE BY SIDE IS A FACT, NOT A BANNER (owner, 2026-09-24): no notice that this table
                 also lives in the older system, and no "shared with you" paragraph — the table's
                 row names its organization and the level it was shared at. */}

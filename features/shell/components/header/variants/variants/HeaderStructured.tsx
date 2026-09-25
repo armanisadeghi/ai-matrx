@@ -36,7 +36,7 @@
 //     />
 //   </PageHeader>
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import HeaderBack from "../shared/HeaderBack";
 import HeaderActions from "../shared/HeaderActions";
 import GlassDropdown from "../shared/GlassDropdown";
@@ -60,6 +60,13 @@ interface HeaderStructuredProps<T extends string = string> {
   actions?: HeaderAction[];
   /** Max inline action icons on desktop before overflow. Default: 3 */
   maxInlineActions?: number;
+  /**
+   * A QUIET FACT BESIDE THE TITLE — which organization a record lives in, the way Linear shows the
+   * team beside an issue's title. One row on a wide screen (it gives way before the title does);
+   * under the title on a phone, the way an iOS navigation bar carries a subtitle. Ignored with a
+   * dropdown.
+   */
+  context?: ReactNode;
 }
 
 export default function HeaderStructured<T extends string = string>({
@@ -68,6 +75,7 @@ export default function HeaderStructured<T extends string = string>({
   dropdown,
   actions = [],
   maxInlineActions,
+  context,
 }: HeaderStructuredProps<T>) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -121,7 +129,12 @@ export default function HeaderStructured<T extends string = string>({
             />
           </div>
         ) : title ? (
-          <span className="hdr-structured-title">{title}</span>
+          <div className="hdr-structured-heading" data-has-context={context ? "" : undefined}>
+            <span className="hdr-structured-title" title={title}>
+              {title}
+            </span>
+            {context ? <span className="hdr-structured-context">{context}</span> : null}
+          </div>
         ) : null}
       </div>
 

@@ -77,6 +77,18 @@
    --------------------------------------------------------------------------- */
 
 /* Static title */
+/* The title and its quiet context (the organization a record lives in) share ONE row. The title
+   is never capped at a fixed width: it takes the whole center zone and truncates only when the
+   zone itself is too narrow (lane DATA-V2-FACE-2 — a fixed 12rem cut "Rincon Plumbing — Service
+   Calls" at 1440px with the bar empty). The context gives way first. */
+.hdr-structured-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .hdr-structured-title {
   font-size: 0.8125rem;
   font-weight: 600;
@@ -84,8 +96,42 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 12rem;
+  min-width: 0;
+  flex: 0 1 auto;
   letter-spacing: -0.01em;
+}
+
+.hdr-structured-context {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+  max-width: 18rem;
+  flex: 0 100 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: var(--shell-nav-text);
+}
+
+/* A phone: the context sits under the title (an iOS navigation-bar subtitle), so the title keeps
+   the whole width of the zone. */
+@media (max-width: 639px) {
+  .hdr-structured-heading[data-has-context] {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+  }
+  .hdr-structured-heading[data-has-context] .hdr-structured-title {
+    max-width: 100%;
+    line-height: 1.05rem;
+  }
+  .hdr-structured-heading[data-has-context] .hdr-structured-context {
+    max-width: 100%;
+    font-size: 0.6875rem;
+    line-height: 0.9rem;
+  }
 }
 
 /* Dropdown trigger — glass pill */

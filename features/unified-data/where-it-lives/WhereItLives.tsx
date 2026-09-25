@@ -40,8 +40,11 @@ export interface WhereItLivesProps {
   knownOrganizationName?: string | null | undefined;
   /** After a move lands: the page re-reads where the table lives (and the list, its rows). */
   onMoved?: ((to: { id: string; name: string }) => void) | undefined;
-  /** `row` is quieter, for a list; `header` for an object page. */
-  variant?: "header" | "row" | undefined;
+  /**
+   * `row` is quieter, for a list; `header` for an object page's own row; `title` rides the page
+   * header beside the object's name (Linear's team beside the issue title) — no frame, muted.
+   */
+  variant?: "header" | "row" | "title" | undefined;
 }
 
 export function WhereItLives({ dataSource, tableId, knownOrganizationName, onMoved, variant = "header" }: WhereItLivesProps) {
@@ -51,7 +54,7 @@ export function WhereItLives({ dataSource, tableId, knownOrganizationName, onMov
   const [moving, setMoving] = useState<string | null>(null);
   // A LIST ROW THAT ALREADY KNOWS ITS ORGANIZATION asks the store only when pressed: forty rows
   // are not forty reads. An object page asks at once.
-  const [armed, setArmed] = useState(variant === "header" || !knownOrganizationName);
+  const [armed, setArmed] = useState(variant !== "row" || !knownOrganizationName);
 
   useEffect(() => {
     if (!armed) return;
@@ -111,7 +114,9 @@ export function WhereItLives({ dataSource, tableId, knownOrganizationName, onMov
       className={
         variant === "row"
           ? "inline-flex max-w-[14rem] items-center gap-1 rounded px-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
-          : "inline-flex max-w-[28rem] items-center gap-1 rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+          : variant === "title"
+            ? "inline-flex min-w-0 max-w-full items-center gap-1 rounded px-1 text-[11px] font-normal text-muted-foreground hover:bg-muted hover:text-foreground sm:text-xs"
+            : "inline-flex max-w-[28rem] items-center gap-1 rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
       }
       title={name ? `Lives in ${name}` : label}
     >
