@@ -85,7 +85,55 @@ function surfaceSections(sections: MenuSection[]): MenuSection[] {
     .filter((s): s is MenuSection => s !== null);
 }
 
+/**
+ * THE NO-DEAD-CONTROLS RULE (law 4 — "a screen is absent or honest — never
+ * dead, disabled-looking, or lying"; RC-B6 verify 2026-09-25): a row the
+ * person cannot use RIGHT NOW is absent, not greyed. Cut / Paste / Undo /
+ * Redo / History appear only where they apply; a submenu whose every entry is
+ * unavailable disappears with them (never a panel whose only row is dead).
+ * Applied to every layout, so Classic and the others still show the SAME rows
+ * (the lossless law holds — both prune identically).
+ */
+export function pruneUnavailable(nodes: MenuNode[]): MenuNode[] {
+  const out: MenuNode[] = [];
+  for (const node of nodes) {
+    if (node.kind === "separator" || node.kind === "label") {
+      out.push(node);
+      continue;
+    }
+    if (node.kind === "submenu") {
+      if (node.disabled || node.loading) {
+        if (node.loading) out.push(node);
+        continue;
+      }
+      const children = pruneUnavailable(node.children);
+      if (!hasActionable(children) && !node.emptyLabel) continue;
+      out.push({ ...node, children });
+      continue;
+    }
+    if (node.disabled) continue;
+    out.push(node);
+  }
+  return tidy(out);
+}
+
+function pruneArranged(arranged: ArrangedMenu): ArrangedMenu {
+  return {
+    strip: arranged.strip.filter((n) => !n.disabled),
+    sections: arranged.sections
+      .map((s) => ({ ...s, nodes: pruneUnavailable(s.nodes) }))
+      .filter((s) => hasActionable(s.nodes)),
+  };
+}
+
 export function arrangeMenu(
+  model: MenuModel,
+  layout: ContextMenuLayout,
+): ArrangedMenu {
+  return pruneArranged(arrangeMenuUnpruned(model, layout));
+}
+
+function arrangeMenuUnpruned(
   model: MenuModel,
   layout: ContextMenuLayout,
 ): ArrangedMenu {
@@ -96,8 +144,9 @@ export function arrangeMenu(
   const r = model.roles;
 
   // ── THE LOSSLESS LAW (Arman, 2026-08-22): every row Classic shows exists
-  //    here too, by its own name — greyed when unavailable exactly like
-  //    Classic, NEVER hidden, never renamed, never folded under a coined
+  //    here too, by its own name — and unavailable rows are pruned from BOTH
+  //    identically (pruneUnavailable, law 4 supersedes the old greying), never
+  //    renamed, never folded under a coined
   //    heading. The only grouping he approved is History (Undo / Redo / View
   //    History / Compare under one entry). A surface's own section folds into
   //    one submenu carrying the surface's OWN label (e.g. "Note").

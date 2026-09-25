@@ -328,7 +328,6 @@ describe("THE LOSSLESS LAW — classic vs tiered vs command", () => {
       "Attach To",
       "Share",
       "Improve Writing",
-      "Unwired Shortcut", // disabled (no agent) — still shown
       "Deep Résumé Fixer", // nested child category leaf
       "Summarizer", // bound agent
       "New Note",
@@ -342,7 +341,6 @@ describe("THE LOSSLESS LAW — classic vs tiered vs command", () => {
       "Surface Context",
       "Notes", // quick actions
     ]) {
-      expect(classic.has(label)).toBe(label ? true : true);
       if (!classic.has(label)) {
         throw new Error(`classic leaf set is missing "${label}"`);
       }
@@ -412,6 +410,24 @@ describe("command layout filter", () => {
     // Empty model: no sections at all — no crash, no results.
     const emptyModel = { header: null, sections: [], roles: {} } as unknown as MenuModel;
     expect(filterLeaves(collectAllLeaves(emptyModel), "anything")).toEqual([]);
+  });
+
+  it("NO DEAD CONTROLS: an unavailable row is absent in every layout, never greyed (law 4)", () => {
+    for (const layout of ["classic", "tiered", "command"] as const) {
+      const shown = leafSet(arrangeMenu(buildModel(), layout));
+      expect(shown.has("Unwired Shortcut")).toBe(false);
+    }
+    // …and a submenu whose only entries are unavailable disappears with them.
+    const unavailableOnly = buildMenuModel(
+      makeEngine(),
+      { ...modelProps, canUndo: false, canRedo: false, hasHistory: false, onViewHistory: undefined } as typeof modelProps,
+    );
+    for (const layout of ["classic", "tiered"] as const) {
+      const shown = leafSet(arrangeMenu(unavailableOnly, layout));
+      expect(shown.has("Undo")).toBe(false);
+      expect(shown.has("Redo")).toBe(false);
+      expect(shown.has("View History")).toBe(false);
+    }
   });
 
   it("excludes disabled leaves from filter results (cannot run what cannot be clicked)", () => {

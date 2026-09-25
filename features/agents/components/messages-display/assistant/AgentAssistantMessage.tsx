@@ -78,11 +78,16 @@ import { AssistantError } from "../../run/AssistantError";
 import { friendlyStreamError } from "../../run/friendlyStreamError";
 import { AssistantWarning } from "../../run/AssistantWarning";
 import { BreathingOrb } from "./BreathingOrb";
-import { AssistantMessageFooter } from "./AssistantMessageFooter";
+import {
+  AssistantMessageContextMenu,
+  AssistantMessageFooter,
+} from "./AssistantMessageFooter";
 import { AssistantNoAnswer } from "./AssistantNoAnswer";
 import { countPersonVisibleParts, isAnswerlessTurn } from "./answerless-turn";
 import { retryConversationTurn } from "@/features/agents/redux/execution-system/message-crud/retry-turn.thunk";
 import { commitInlineContentEdit } from "@/features/agents/redux/execution-system/message-crud/commit-inline-edit.thunk";
+import { projectAnswerText } from "@/features/agents/redux/execution-system/message-crud/answer-text-splice";
+import { InPlaceAnswerEditor } from "./InPlaceAnswerEditor";
 import { toast } from "@/lib/toast";
 import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
 import { MessageFilesStrip } from "@/features/code/views/history/MessageFilesStrip";
@@ -221,6 +226,9 @@ export function AgentAssistantMessage({
   const record = useAppSelector(
     messageId ? selectMessageById(conversationId, messageId) : () => undefined,
   );
+
+  // The pencil (registry `edit`) turned this answer's spot into the editor.
+  const editingInPlace = record?._editingInPlace === true && !isStreamActive;
 
   // Request-wide notices and source lists belong to its final segment. They
   // must not keep growing above a steering message after this segment closes.
@@ -553,12 +561,7 @@ export function AgentAssistantMessage({
   // and let the parent's ref wrap the full group.
   const containerRef = hideActionBar ? undefined : captureRef;
 
-  return (
-    // Citation sources ride context down to the inline `<matrxcite>` marker
-    // chips rendered deep inside the markdown tree (CitationMarkerInline).
-    // `displaySources` covers both halves: persisted index for settled /
-    // reloaded turns, live request-derived index while streaming.
-    <MessageCitationsProvider sources={displaySources}>
+  const body = (
     <div
       ref={containerRef}
       data-message-id={messageId ?? undefined}
@@ -598,6 +601,13 @@ export function AgentAssistantMessage({
             parts={attachmentParts}
             className="mb-2"
           />
+          {editingInPlace && messageId ? (
+            <InPlaceAnswerEditor
+              conversationId={conversationId}
+              messageId={messageId}
+              storedText={projectAnswerText(record?.content).text}
+            />
+          ) : (
           <div data-message-content>
             <MarkdownStream
               requestId={effectiveRequestId}
@@ -614,6 +624,7 @@ export function AgentAssistantMessage({
               onContentChange={handleInlineContentChange}
             />
           </div>
+          )}
           {/* Per-message citation sources footer — numbered chips matching
               the inline markers above; renders only when sources exist.
               During a live stream it appears as soon as the first citation
@@ -666,7 +677,7 @@ export function AgentAssistantMessage({
           messageId={messageId}
         />
       )}
-      {!hideActionBar && !isStreamActive && !failed && messageId && (
+      {!hideActionBar && !isStreamActive && !failed && messageId && !editingInPlace && (
         <AssistantMessageFooter
           messageId={messageId}
           conversationId={conversationId}
@@ -676,6 +687,30 @@ export function AgentAssistantMessage({
         />
       )}
     </div>
+  );
+
+  return (
+    // Citation sources ride context down to the inline `<matrxcite>` marker
+    // chips rendered deep inside the markdown tree (CitationMarkerInline).
+    // `displaySources` covers both halves: persisted index for settled /
+    // reloaded turns, live request-derived index while streaming.
+    <MessageCitationsProvider sources={displaySources}>
+    {messageId ? (
+      // Right-click = the ONE action registry, the same actions as the ⋯
+      // menu (RC-B6). Innermost menu wins over the conversation-level one.
+      <AssistantMessageContextMenu
+        messageId={messageId}
+        conversationId={conversationId}
+        onFullPrint={handleFullPrint}
+        isCapturing={isCapturing}
+        surfaceKey={surfaceKey}
+        suppressed={isStreamActive}
+      >
+        {body}
+      </AssistantMessageContextMenu>
+    ) : (
+      body
+    )}
     </MessageCitationsProvider>
   );
 }

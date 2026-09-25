@@ -25,15 +25,14 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
-import { FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { resolveActions } from "./actions/registry";
 // Side-effect import — registers every built-in action handler at module load.
 // Without this, the registry is empty when resolveActions runs. (Also imported
 // by useActionSurfaceProvider, which RichDocument consumes; kept here too so
 // the dependency is self-documenting.)
 import "./actions/handlers";
 import { useActionSurfaceProvider } from "./runtime/useActionSurfaceProvider";
+import { RegistryContextMenu } from "./RegistryContextMenu";
 import { getSourceAdapter } from "./actions/sources";
 import {
   convertOriginForSource,
@@ -42,20 +41,12 @@ import {
 import { ActionBar } from "./variants/ActionBar";
 import { MiniActionBar } from "./variants/MiniActionBar";
 import { MenuVariant } from "./variants/MenuVariant";
-import { buildMenuTree } from "./variants/shared/menuStructure";
-// The UNIVERSAL context menu (v3) — the light shell; MenuContent stays lazy
-// inside it, so this static import costs nothing until the user right-clicks.
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   SpecimenProvider,
   SpecimenBanner,
   resolveSpecimenMode,
   type SpecimenMode,
 } from "@/components/mardown-display/specimen/SpecimenContext";
-import type {
-  ContextMenuExtraItem,
-  ContextMenuExtraSection,
-} from "@/features/context-menu-v3/types";
 import type {
   ContentSource,
   RichDocumentAction,
@@ -358,95 +349,18 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
   if (enableContextMenu && !specimenMode) {
     const cmOptions =
       typeof enableContextMenu === "object" ? enableContextMenu : {};
-    // v3's engine renders copy/export/convert(save) from the registry itself;
-    // every OTHER registry category (edit, fullscreen editor, app group, …)
-    // must ride along as extras or it silently vanishes from right-click.
-    const cmExcludes = [
-      ...(actionsProp?.exclude ?? []),
-      ...(cmOptions.exclude ?? []),
-    ];
-    const registryRest = resolveActions(ctx, {
-      exclude: cmExcludes,
-    }).filter(
-      (a) =>
-        a.category !== "copy" &&
-        a.category !== "export" &&
-        a.category !== "save" &&
-        // v3 owns the Listen submenu (Speak · Summarize · Summarize & listen)
-        // with the surface's own spoken_summary role — never a second one.
-        a.category !== "listen" &&
-        a.id !== "save-as-file" &&
-        // Context-menu v3 already owns these three Compare verbs. Ferrying
-        // their RichDocument twins creates a second Compare submenu.
-        ![
-          "compare-with-clipboard",
-          "set-compare-base",
-          "compare-with-base",
-        ].includes(a.id),
-    );
-    const extraActions = [
-      ...registryRest,
-      ...(actionsProp?.extra ?? []),
-      ...(cmOptions.extra ?? []),
-    ];
-    const toContextMenuItem = (
-      action: RichDocumentAction,
-    ): ContextMenuExtraItem => {
-      const label =
-        typeof action.label === "function" ? action.label(ctx) : action.label;
-      const disabledResult = action.disabled?.(ctx);
-      return {
-        kind: "item",
-        id: action.id,
-        label,
-        icon: action.icon,
-        disabled:
-          typeof disabledResult === "object" ? true : Boolean(disabledResult),
-        onSelect: () => void action.run(getCtx()),
-      };
-    };
-    const extraTree = buildMenuTree(extraActions);
-    const extraItems: ContextMenuExtraItem[] = [
-      ...extraTree.topLevel.map(toContextMenuItem),
-      ...extraTree.submenus.map((submenu) => ({
-        kind: "submenu" as const,
-        id: `rich-doc-${submenu.label.toLowerCase().replaceAll(" ", "-")}`,
-        label: submenu.label,
-        icon: submenu.icon,
-        children: submenu.actions.map(toContextMenuItem),
-      })),
-      ...extraTree.extras.map(toContextMenuItem),
-    ];
-    const extraSections: ContextMenuExtraSection[] =
-      extraItems.length > 0
-        ? [
-            {
-              id: "rich-doc-extra",
-              label: "Document",
-              icon: FileText,
-              anchor: "after-compare",
-              items: extraItems,
-            },
-          ]
-        : [];
+    // THE SAME registry as the bar and the ⋯ menu (RegistryContextMenu).
     engine = (
-      <NonEditableContextMenu
-        sourceFeature="documents"
+      <RegistryContextMenu
+        content={content ?? ""}
+        source={source}
+        actions={hostedActions}
+        extra={cmOptions.extra}
+        exclude={cmOptions.exclude}
         suppressed={isStreamActive}
-        contentSource={source}
-        contextData={{ content: ctx.content }}
-        excludedRichActions={cmExcludes}
-        richDocCtxExtras={{
-          callbacks: hostedActions?.callbacks,
-          extensions: actionsProp?.extensions,
-          metadata: actionsProp?.metadata ?? null,
-          isCreator: actionsProp?.isCreator ?? false,
-          surfaceKey: actionsProp?.surfaceKey ?? null,
-        }}
-        extraSections={extraSections}
       >
         {engineInner}
-      </NonEditableContextMenu>
+      </RegistryContextMenu>
     );
   }
 

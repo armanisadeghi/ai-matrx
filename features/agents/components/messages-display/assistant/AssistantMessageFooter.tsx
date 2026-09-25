@@ -23,6 +23,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { cn } from "@/lib/utils";
 import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
+import { RegistryContextMenu } from "@/features/rich-document/RegistryContextMenu";
 import { buildChatMessageActions } from "@/features/rich-document/chat/chatMessageActions";
 import {
   convertOriginForSource,
@@ -71,7 +72,12 @@ export interface AssistantMessageFooterProps {
   groupMessageIds?: string[];
 }
 
-export function AssistantMessageFooter({
+/**
+ * Everything a chat assistant turn's registry actions need — the ONE place the
+ * footer bar and the message's right-click menu get it from, so both offer the
+ * same actions over the same facts.
+ */
+export function useAssistantMessageActions({
   messageId,
   conversationId,
   onFullPrint,
@@ -196,6 +202,37 @@ export function AssistantMessageFooter({
     callbacks: { ...dialogsHost.callbacks, onFullPrint },
   });
 
+  return {
+    config,
+    dialogsHost,
+    record,
+    content,
+    turnText,
+    agentId,
+    answeredQuestion,
+    verdictClickCount,
+    density,
+    showOptions,
+    isLatestAssistant,
+  };
+}
+
+export function AssistantMessageFooter(props: AssistantMessageFooterProps) {
+  const { messageId, conversationId, surfaceKey } = props;
+  const {
+    config,
+    dialogsHost,
+    record,
+    content,
+    turnText,
+    agentId,
+    answeredQuestion,
+    verdictClickCount,
+    density,
+    showOptions,
+    isLatestAssistant,
+  } = useAssistantMessageActions(props);
+
   // Compact (agentic) density: older turns reveal the bar on hover; the
   // latest answer always shows it.
   const isHoverOnly = density === "compact" && !isLatestAssistant;
@@ -246,3 +283,34 @@ export function AssistantMessageFooter({
 }
 
 export default AssistantMessageFooter;
+
+/**
+ * The right-click menu over an assistant turn's content: the ONE registry
+ * (RegistryContextMenu), fed by the same facts as the footer bar — so the ⋯
+ * menu and right-click offer the same actions. The v3 engine's universal rows
+ * (Copy, Speak, Find…) come with it. Suppressed while the turn streams.
+ */
+export function AssistantMessageContextMenu(
+  props: AssistantMessageFooterProps & {
+    suppressed?: boolean;
+    children: React.ReactNode;
+  },
+) {
+  const { suppressed, children, ...rest } = props;
+  const { config, dialogsHost } = useAssistantMessageActions(rest);
+  return (
+    <>
+      <RegistryContextMenu
+        content={config.content}
+        source={config.source}
+        actions={config.actions}
+        suppressed={suppressed}
+        sourceFeature="chat"
+        surfaceName="matrx-user/assistant-message"
+      >
+        {children}
+      </RegistryContextMenu>
+      {dialogsHost.dialogs}
+    </>
+  );
+}

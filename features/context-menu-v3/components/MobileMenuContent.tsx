@@ -762,7 +762,31 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     currentEmpty = found.emptyLabel;
     validPath.push(id);
   }
-  const nodes = levelNodes;
+  // THE NO-DEAD-CONTROLS RULE (law 4, same as the desktop layouts'
+  // `pruneUnavailable`): an unavailable row is absent, never greyed; a
+  // submenu with nothing usable inside disappears with it.
+  const usable = (list: MobileNode[]): MobileNode[] => {
+    const kept: MobileNode[] = [];
+    for (const n of list) {
+      if (n.kind === "action" && n.disabled) continue;
+      if (n.kind === "submenu") {
+        if (n.disabled && !n.loading) continue;
+        const kids = usable(n.children);
+        const actionable = kids.some((k) => k.kind === "action" || k.kind === "submenu");
+        if (!actionable && !n.loading && !n.emptyLabel) continue;
+        kept.push({ ...n, children: kids });
+        continue;
+      }
+      kept.push(n);
+    }
+    // No leading, trailing or doubled separators.
+    return kept.filter(
+      (n, i, arr) =>
+        n.kind !== "separator" ||
+        (i > 0 && i < arr.length - 1 && arr[i - 1].kind !== "separator"),
+    );
+  };
+  const nodes = usable(levelNodes);
   const atRoot = validPath.length === 0;
 
   const headerLabel =

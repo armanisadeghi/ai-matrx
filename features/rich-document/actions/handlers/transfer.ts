@@ -228,7 +228,9 @@ registerAction({
     try {
       const { renderMarkdownDocument } = await import("@ai-matrx/print/markdown");
       const name = fileBase(ctx);
-      const html = renderMarkdownDocument(ctx.content, { title: name });
+      const html = renderMarkdownDocument(unwrapKindEnvelopes(ctx.content), {
+        title: name,
+      });
       downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), `${name}.html`);
       toast.success("HTML page downloaded");
     } catch (error) {
@@ -249,16 +251,14 @@ registerAction({
   run: async (ctx) => {
     const toastId = toast.loading("Generating PDF…");
     try {
-      const [{ markdownToPdfBlob }, { markdownToHtml, getMarkdownStylesheet }] =
-        await Promise.all([
-          import("@ai-matrx/print/pdf"),
-          import("@ai-matrx/print/markdown"),
-        ]);
-      const blob = await markdownToPdfBlob(ctx.content, {
-        convertToHtml: markdownToHtml,
-        loadCss: getMarkdownStylesheet,
+      // The print-grade VECTOR PDF (@ai-matrx/print/document): real text,
+      // selectable and searchable, a few KB. The old path screenshotted the
+      // page into PNGs — a 5-row answer came out at 6.4 MB (RC-B6 verify).
+      const { exportDocument } = await import("@ai-matrx/print/document");
+      const exp = await exportDocument(unwrapKindEnvelopes(ctx.content), "pdf", {
+        fileName: fileBase(ctx),
       });
-      downloadBlob(blob, `${fileBase(ctx)}.pdf`);
+      downloadBlob(new Blob([exp.bytes], { type: exp.mime }), exp.fileName);
       toast.success("PDF downloaded", { id: toastId });
     } catch (error) {
       toast.error("Failed to create PDF", {
@@ -288,7 +288,7 @@ registerAction({
       const { exportDocument, downloadDocumentExport } = await import(
         "@ai-matrx/print/document"
       );
-      const exp = await exportDocument(ctx.content, "docx", {
+      const exp = await exportDocument(unwrapKindEnvelopes(ctx.content), "docx", {
         fileName: fileBase(ctx),
       });
       downloadDocumentExport(exp);

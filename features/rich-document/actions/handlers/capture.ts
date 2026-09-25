@@ -238,17 +238,14 @@ registerAction({
     ctx.onClose();
     const toastId = toast.loading("Generating PDF…");
     try {
-      // Markdown → styled offscreen render → multi-page PDF blob.
-      const [{ markdownToPdfBlob }, { markdownToHtml, getMarkdownStylesheet }, { fileHandler }] =
-        await Promise.all([
-          import("@ai-matrx/print/pdf"),
-          import("@ai-matrx/print/markdown"),
-          import("@/features/files/handler/handler"),
-        ]);
-      const blob = await markdownToPdfBlob(ctx.content, {
-        convertToHtml: markdownToHtml,
-        loadCss: getMarkdownStylesheet,
-      });
+      // The print-grade VECTOR PDF — real text, a few KB (the old raster
+      // screenshot path made a 5-row answer 6.4 MB).
+      const [{ exportDocument }, { fileHandler }] = await Promise.all([
+        import("@ai-matrx/print/document"),
+        import("@/features/files/handler/handler"),
+      ]);
+      const exp = await exportDocument(unwrapKindEnvelopes(ctx.content), "pdf");
+      const blob = new Blob([exp.bytes], { type: "application/pdf" });
       const name = contentFileName(ctx, ctx.source.type === "chat-message" ? "message" : ctx.source.type);
       const file = new File([blob], `${name}.pdf`, { type: "application/pdf" });
       const uploaded = await fileHandler.upload(
