@@ -1216,6 +1216,23 @@ if [ "$SEED_ONLY" != "1" ]; then
   zsh "$FRONTEND/scripts/night/branch-carry-database-objects.sh" 2>&1 | grep -v 'target ok:' | while read -r l; do say "  ${l#\[*\] }"; done
 fi
 
+# ── (3d) THE BODIES, NOT THE LEDGER ──────────────────────────────────────────
+# 🚨 lane BRANCH-REFRESH-4, 2026-09-24. The branch carries its source's LEDGER, and a ledger row
+# says a file ran, never what stands: `platform.knob_archive` sat on the branch with its
+# pre-knobguard2 body under a row saying knobguard2 was applied. So every function and view body
+# in the campaign schemas is hashed against the CLONE — this job's only source, which keeps its
+# no-production-read property by construction; clone-catchup.sh levels the clone against
+# production with the same check before this runs — and each mismatch is levelled from the
+# clone's own body. What will not level is named.
+BODY_BEFORE=skipped BODY_AFTER=skipped
+if [ "$SEED_ONLY" != "1" ]; then
+  say "─── (3d) body drift: the branch's function and view bodies against the clone's ───"
+  zsh "$FRONTEND/scripts/night/body-drift.sh" --target branch --source clone --repair > "$WORK/body-drift.out" 2>&1
+  grep -E 'MISMATCHES|NOT REPAIRED|RESULT|REFUSED|READ FAILED' "$WORK/body-drift.out" | while read -r l; do say "  ${l#\[*\] }"; done
+  BODY_BEFORE="$(sed -nE 's/.*mismatches before ([0-9]+), after ([0-9]+).*/\1/p' "$WORK/body-drift.out" | tail -1)"
+  BODY_AFTER="$(sed -nE 's/.*mismatches before ([0-9]+), after ([0-9]+).*/\2/p' "$WORK/body-drift.out" | tail -1)"
+fi
+
 # BRANCH-REF re-point. Same database, so the identifier must NOT have moved; if it has,
 # something is very wrong and this job says so rather than rewriting the file.
 NOWID="$("$PSQL" "$BRANCH_DSN" -qAt -c 'select system_identifier from pg_control_system()' 2>&1 | tr -d ' ')"
@@ -1312,6 +1329,6 @@ else
 fi
 
 say "───────── BRANCH-REFRESH RESULT ─────────"
-say "dump ${DUMP_SECS}s · restore ${RESTORE_SECS}s · restore errors $RERR · drift ${DNUM:-0} · suites PASS $VPASS SKIP $VSKIP FAIL $VFAIL"
+say "dump ${DUMP_SECS}s · restore ${RESTORE_SECS}s · restore errors $RERR · drift ${DNUM:-0} · body mismatches ${BODY_BEFORE:-?} -> ${BODY_AFTER:-?} · suites PASS $VPASS SKIP $VSKIP FAIL $VFAIL"
 say "work directory left in place for inspection: $WORK"
 exit 0
