@@ -104,6 +104,18 @@ describe("findRegenerateAnchor", () => {
     expect(findRegenerateAnchor(msgs, "missing")).toBeNull();
     expect(findRegenerateAnchor(msgs, "u2")).toBeNull();
   });
+  it("still regenerates when the loaded window starts AFTER the question", () => {
+    // The chat loads the newest rows only; the question can be outside them.
+    // Real shape: conversation 6327cba2 loaded positions 2..13, no user row.
+    const tail = [
+      { id: "t2", role: "tool", position: 2 },
+      { id: "a3", role: "assistant", position: 3 },
+      { id: "t4", role: "tool", position: 4 },
+      { id: "a5", role: "assistant", position: 5 },
+    ];
+    expect(findRegenerateAnchor(tail, "a5")).toEqual({ userMessageId: null, userPosition: null });
+    expect(findRegenerateAnchor(tail, "t4")).toBeNull();
+  });
   it("ignores deleted rows", () => {
     expect(
       findRegenerateAnchor(

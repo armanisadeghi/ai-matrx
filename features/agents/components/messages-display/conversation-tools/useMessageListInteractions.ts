@@ -25,10 +25,16 @@ function groupsIn(root: HTMLElement): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>(GROUP));
 }
 
+// The message bar's overflow trigger. A marked trigger wins; otherwise the
+// LAST labelled one in the message — the bar sits after the content, so a code
+// block's own "More actions" kebab inside the answer is never the one pressed.
+const TRIGGER =
+  '[data-message-actions-trigger], [aria-label="More options"], [aria-label="Message options"], [aria-label="More actions"]';
+
 function openActions(group: HTMLElement): boolean {
-  const trigger = group.querySelector<HTMLElement>(
-    '[aria-label="More options"], [aria-label="Message options"]',
-  );
+  const marked = group.querySelector<HTMLElement>("[data-message-actions-trigger]");
+  const all = group.querySelectorAll<HTMLElement>(TRIGGER);
+  const trigger = marked ?? all[all.length - 1];
   if (!trigger) return false;
   trigger.click();
   return true;

@@ -47,9 +47,30 @@ export const regenerateAnswer = createAsyncThunk<
         message: "Only the latest answer can be regenerated here — use Fork for an earlier one.",
       });
     }
+    let userPosition = anchor.userPosition;
+    if (userPosition === null) {
+      // The question is older than the loaded window — read its position.
+      const { data, error: readErr } = await supabase
+        .schema("chat")
+        .from("message")
+        .select("position")
+        .eq("conversation_id", conversationId)
+        .eq("role", "user")
+        .is("deleted_at", null)
+        .order("position", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (readErr || typeof data?.position !== "number") {
+        console.error("[regenerateAnswer] could not find the question", readErr);
+        return rejectWithValue({
+          message: "Couldn't find the question this answer replied to.",
+        });
+      }
+      userPosition = data.position;
+    }
     const { error } = await supabase.rpc("cx_truncate_conversation_after", {
       p_conversation_id: conversationId,
-      p_after_position: anchor.userPosition,
+      p_after_position: userPosition,
     });
     if (error) {
       console.error("[regenerateAnswer] truncate failed", error);

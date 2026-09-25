@@ -12,13 +12,22 @@ export interface RegenerateAnchorInput {
 }
 
 /**
+ * `userMessageId/userPosition` null = the question sits BEFORE the loaded
+ * window (the chat loads the newest rows only); the thunk reads its position
+ * from the database before acting.
+ */
+export type RegenerateAnchor =
+  | { userMessageId: string; userPosition: number }
+  | { userMessageId: null; userPosition: null };
+
+/**
  * The question to regenerate from, or null when `assistantMessageId` is not
  * part of the conversation's LAST turn (or is not an assistant message).
  */
 export function findRegenerateAnchor(
   messages: RegenerateAnchorInput[],
   assistantMessageId: string,
-): { userMessageId: string; userPosition: number } | null {
+): RegenerateAnchor | null {
   const live = messages
     .filter((m) => !m.deletedAt)
     .sort((a, b) => a.position - b.position);
@@ -26,7 +35,10 @@ export function findRegenerateAnchor(
   if (!target || target.role !== "assistant") return null;
   let lastUser: RegenerateAnchorInput | undefined;
   for (const m of live) if (m.role === "user") lastUser = m;
-  if (!lastUser || target.position <= lastUser.position) return null;
+  // No question in the loaded window: every loaded row belongs to the latest
+  // turn, so the target is in it — the question precedes the window.
+  if (!lastUser) return { userMessageId: null, userPosition: null };
+  if (target.position <= lastUser.position) return null;
   return { userMessageId: lastUser.id, userPosition: lastUser.position };
 }
 
@@ -35,7 +47,7 @@ export function selectRegenerateAnchor(
   state: RootState,
   conversationId: string,
   assistantMessageId: string,
-): { userMessageId: string; userPosition: number } | null {
+): RegenerateAnchor | null {
   const entry = state.messages.byConversationId[conversationId];
   if (!entry) return null;
   const rows = entry.orderedIds
