@@ -403,7 +403,11 @@ function OneMandateRecordBody({
         />
         <TriadOutputSection data={data} authoring={authoring} />
         {ownerCanEdit ? (
-          <OwnerDefinitionEditor data={data} onChanged={refresh} />
+          <OwnerDefinitionEditor
+            data={data}
+            onChanged={refresh}
+            organizationId={principal.kind === "org" ? principal.orgId : null}
+          />
         ) : null}
         <div>
           <EffectiveConfigLayers

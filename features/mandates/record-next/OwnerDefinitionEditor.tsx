@@ -55,9 +55,12 @@ export function useDefinitionRights(
 export function OwnerDefinitionEditor({
   data,
   onChanged,
+  organizationId = null,
 }: {
   data: MandateWorkspaceData;
   onChanged: () => void;
+  /** Organization seat: the route organization the write happens in. */
+  organizationId?: string | null;
 }) {
   const dispatch = useAppDispatch();
   const mandate = data.mandate;
@@ -84,7 +87,7 @@ export function OwnerDefinitionEditor({
         description,
         outputKind,
         outputConstraints: constraints,
-      });
+      }, organizationId);
       toast.success("Mandate updated.");
       setEditing(false);
       onChanged();

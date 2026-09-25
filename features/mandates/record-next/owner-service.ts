@@ -65,6 +65,9 @@ export async function patchOwnerDefinition(
   dispatch: AppDispatch,
   mandateKey: string,
   patch: OwnerDefinitionPatch,
+  /** Organization seat: the route organization — a write needs one, and on
+   * that seat it is the page's own, never whatever the header last held. */
+  organizationId?: string | null,
 ): Promise<void> {
   const body: components["schemas"]["MandateDefinitionPatch"] = {
     ...(patch.label !== undefined ? { label: patch.label } : {}),
@@ -80,6 +83,7 @@ export async function patchOwnerDefinition(
       method: "PATCH",
       pathParams: { mandate_key: mandateKey },
       body,
+      ...(organizationId ? { scopeOverrides: { organization_id: organizationId } } : {}),
     }),
   );
   if (result.error) throw new Error(parseCallApiError(result.error).userMessage);
