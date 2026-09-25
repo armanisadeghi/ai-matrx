@@ -461,6 +461,8 @@ describe("mandate owner bench service", () => {
       versionsById: {},
       bindingsByMandateId: {},
       outputSchemas: {},
+      workflowsById: {},
+      workflowVersionsById: {},
     });
 
     expect(mockQueries).toEqual([
