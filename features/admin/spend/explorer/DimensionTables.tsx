@@ -31,7 +31,13 @@ import {
   type SpendDimension,
   type SpendDimensionRow,
 } from "../types";
-import { DIMENSION_HINT, DIMENSION_LABEL, compactNumber, identityHref, rowLabel } from "./labels";
+import {
+  DIMENSION_HINT,
+  DIMENSION_LABEL,
+  compactNumber,
+  identityHref,
+  rowLabel,
+} from "./labels";
 import { formatCount, formatPercentFromFraction } from "@ai-matrx/kit/format";
 
 function ShareBar({ share }: { share: number }) {
@@ -103,6 +109,7 @@ function columnsFor(
       id: "share",
       header: "Share",
       accessorFn: (r) => r.share,
+      filter: "number",
       width: 120,
       cell: (r) => <ShareBar share={r.share} />,
     },
@@ -110,6 +117,7 @@ function columnsFor(
       id: "manual",
       header: "Manual",
       accessorFn: (r) => r.manualCost,
+      filter: "number",
       width: 100,
       align: "right",
       cell: (r) => (
@@ -122,6 +130,7 @@ function columnsFor(
       id: "automated",
       header: "Automated",
       accessorFn: (r) => r.automatedCost,
+      filter: "number",
       width: 100,
       align: "right",
       cell: (r) => (
@@ -134,6 +143,7 @@ function columnsFor(
       id: "requests",
       header: "Requests",
       accessorFn: (r) => r.requests,
+      filter: "number",
       width: 90,
       align: "right",
       cell: (r) => (
@@ -146,6 +156,7 @@ function columnsFor(
       id: "per_request",
       header: "Per request",
       accessorFn: (r) => (r.requests > 0 ? r.cost / r.requests : 0),
+      filter: "number",
       width: 100,
       align: "right",
       cell: (r) => (
@@ -155,13 +166,40 @@ function columnsFor(
       ),
     },
     {
-      id: "tokens",
-      header: "Tokens in / cached / out",
-      accessorFn: (r) => r.tokensIn + r.tokensCached,
-      width: 170,
+      id: "tokens_in",
+      header: "Input tokens",
+      accessorFn: (r) => r.tokensIn,
+      filter: "number",
+      width: 112,
+      align: "right",
       cell: (r) => (
         <span className="tabular-nums text-muted-foreground">
-          {compactNumber(r.tokensIn)} / {compactNumber(r.tokensCached)} /{" "}
+          {compactNumber(r.tokensIn)}
+        </span>
+      ),
+    },
+    {
+      id: "tokens_cached",
+      header: "Cached tokens",
+      accessorFn: (r) => r.tokensCached,
+      filter: "number",
+      width: 112,
+      align: "right",
+      cell: (r) => (
+        <span className="tabular-nums text-muted-foreground">
+          {compactNumber(r.tokensCached)}
+        </span>
+      ),
+    },
+    {
+      id: "tokens_out",
+      header: "Output tokens",
+      accessorFn: (r) => r.tokensOut,
+      filter: "number",
+      width: 112,
+      align: "right",
+      cell: (r) => (
+        <span className="tabular-nums text-muted-foreground">
           {compactNumber(r.tokensOut)}
         </span>
       ),
