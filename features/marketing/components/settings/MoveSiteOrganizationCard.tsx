@@ -42,6 +42,7 @@ import {
   type BrandAction,
   type MovePreviewTable,
 } from "@/features/marketing/data/move-site-org";
+import { orgNameDistinguisher } from "@/features/scopes/utils/formatOrgDisplayName";
 
 const BRAND_CHOICES: { value: BrandAction; label: string; detail: string }[] = [
   {
@@ -188,6 +189,12 @@ export function MoveSiteOrganizationCard({ site }: { site: MarketingSite }) {
                 {destinations.map((org) => (
                   <SelectItem key={org.id} value={org.id}>
                     {org.name}
+                    {/* THE SAME NAME, TOLD APART (UI-FIX-19): a shared name carries its address. */}
+                    {orgNameDistinguisher(org, destinations) ? (
+                      <span className="ml-1.5 text-xs text-muted-foreground">
+                        {orgNameDistinguisher(org, destinations)}
+                      </span>
+                    ) : null}
                     {/* CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045 */}
                     {org.is_personal ? " (personal workspace)" : ""}
                   </SelectItem>

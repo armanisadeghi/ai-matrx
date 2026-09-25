@@ -45,10 +45,13 @@ import {
 } from "@/features/rag/hooks/useLibraryGrants";
 import { useIndustries } from "@/features/industries/hooks";
 import { getUserOrganizations } from "@/features/organizations/service";
+import { orgNameDistinguisher } from "@/features/scopes/utils/formatOrgDisplayName";
 
 export interface PublishOrganizationOption {
   id: string;
   name: string;
+  /** The web address, drawn only when another option shares this name (UI-FIX-19). */
+  slug?: string | null;
 }
 
 interface LibraryPublishPanelProps {
@@ -97,7 +100,7 @@ export function LibraryPublishPanel({
     let cancelled = false;
     getUserOrganizations()
       .then((orgs) => {
-        if (!cancelled) setFallbackOrgs(orgs.map((o) => ({ id: o.id, name: o.name })));
+        if (!cancelled) setFallbackOrgs(orgs.map((o) => ({ id: o.id, name: o.name, slug: o.slug })));
       })
       .catch((e) => {
         console.error("[LibraryPublishPanel] could not load orgs:", e);
@@ -253,11 +256,18 @@ export function LibraryPublishPanel({
                 <SelectValue placeholder="Choose an organization…" />
               </SelectTrigger>
               <SelectContent>
-                {orgOptions.map((o) => (
-                  <SelectItem key={o.id} value={o.id}>
-                    {o.name}
-                  </SelectItem>
-                ))}
+                {orgOptions.map((o) => {
+                  // THE SAME NAME, TOLD APART (UI-FIX-19).
+                  const distinguisher = orgNameDistinguisher(o, orgOptions);
+                  return (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.name}
+                      {distinguisher ? (
+                        <span className="ml-1.5 text-xs text-muted-foreground">{distinguisher}</span>
+                      ) : null}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             <Button

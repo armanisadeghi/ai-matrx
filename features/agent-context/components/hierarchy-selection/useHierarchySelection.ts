@@ -15,6 +15,9 @@ import type {
   UseHierarchySelectionReturn,
 } from "./types";
 import { EMPTY_SELECTION } from "./types";
+import { orgNameDistinguisher } from "@/features/scopes/utils/formatOrgDisplayName";
+
+const withDistinguisher = (d: string | null): { distinguisher?: string } => (d ? { distinguisher: d } : {});
 
 /**
  * Enforces the hierarchy rule: you cannot include levels both above AND below
@@ -182,6 +185,8 @@ export function useHierarchySelection(
   const orgs: HierarchyOption[] = rawOrgs.map((o) => ({
     id: o.id,
     name: o.name,
+    // THE SAME NAME, TOLD APART (UI-FIX-19).
+    ...withDistinguisher(orgNameDistinguisher(o, rawOrgs)),
     // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
     isPersonal: o.is_personal,
     role: o.role,

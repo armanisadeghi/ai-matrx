@@ -406,7 +406,9 @@ function ScopeLevelCombobox({
                 {scopeLevel.options.map((opt) => (
                   <CommandItem
                     key={opt.id}
-                    value={opt.name}
+                    // Identity by id, never by name alone (UI-FIX-19): two scopes named alike
+                    // would share one cmdk value and collapse into one row.
+                    value={`${opt.name} ${opt.id}`}
                     onSelect={() => onToggle(opt.id)}
                     className="text-xs flex items-center gap-2"
                   >
@@ -523,10 +525,15 @@ function LevelCombobox({
   const createTask = useCreateTask();
 
   const selectedName = options.find((o) => o.id === selectedId)?.name;
-  const [activeValue, setActiveValue] = useState(selectedName ?? "");
+  // 🚨 A cmdk item's `value` is its IDENTITY inside the list (search, the highlighted row, the
+  // selection): two options valued by NAME collapse into one when two organizations share a
+  // name (UI-FIX-19). The value is the name — so search still finds it — plus the id.
+  const itemValue = (opt: { id: string; name: string }) => `${opt.name} ${opt.id}`;
+  const selectedOption = options.find((o) => o.id === selectedId);
+  const [activeValue, setActiveValue] = useState(selectedOption ? itemValue(selectedOption) : "");
 
   const handleOpenChange = (nextOpen: boolean) => {
-    if (nextOpen) setActiveValue(selectedName ?? "");
+    if (nextOpen) setActiveValue(selectedOption ? itemValue(selectedOption) : "");
     setOpen(nextOpen);
   };
 
@@ -601,9 +608,9 @@ function LevelCombobox({
                 {options.map((opt) => (
                   <CommandItem
                     key={opt.id}
-                    value={opt.name}
+                    value={itemValue(opt)}
                     onSelect={() => {
-                      setActiveValue(opt.name);
+                      setActiveValue(itemValue(opt));
                       onSelect(opt.id);
                       setOpen(false);
                     }}
@@ -621,7 +628,12 @@ function LevelCombobox({
                         <Check className="h-2.5 w-2.5" />
                       )}
                     </div>
-                    <span className="flex-1 truncate">{opt.name}</span>
+                    <span className="flex-1 truncate">
+                      {opt.name}
+                      {opt.distinguisher ? (
+                        <span className="ml-1.5 text-[10px] text-muted-foreground">{opt.distinguisher}</span>
+                      ) : null}
+                    </span>
                     {opt.isPersonal && (
                       <span className="text-[9px] text-muted-foreground">
                         (personal)

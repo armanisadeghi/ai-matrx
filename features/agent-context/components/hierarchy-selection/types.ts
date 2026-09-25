@@ -26,6 +26,11 @@ export interface HierarchyOption {
   isPersonal?: boolean;
   role?: string;
   status?: string | null;
+  /**
+   * Drawn beside the name ONLY when another option in the same list carries the same name
+   * (UI-FIX-19) — for an organization, its web address.
+   */
+  distinguisher?: string;
 }
 
 export interface ScopeTypeLevel {

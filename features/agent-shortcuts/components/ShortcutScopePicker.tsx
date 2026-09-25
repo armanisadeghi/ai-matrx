@@ -39,6 +39,7 @@ import { selectAllTasks } from "@/features/agent-context/redux/tasksSlice";
 import { cn } from "@/lib/utils";
 import { AGENT_SCOPES, SCOPE_OPTIONS } from "../constants";
 import type { AgentScope } from "../constants";
+import { orgNameDistinguisher } from "@/features/scopes/utils/formatOrgDisplayName";
 
 export interface ShortcutScopePickerProps {
   scope: AgentScope;
@@ -104,12 +105,14 @@ export function ShortcutScopePicker({
 
   const organizationOptions = useMemo<NamedOption[]>(
     () =>
-      organizations.map((org) => ({
-        id: org.id,
-        name: org.name,
-        // No subtitle: an organization is identified by its own name. Tagging
-        // `is_personal` rows "Personal" made two of them indistinguishable.
-      })),
+      organizations.map((org) => {
+        // An organization is identified by its own name — and when another row carries the
+        // same name, by its address too (UI-FIX-19). Never "Personal", which made two alike.
+        const distinguisher = orgNameDistinguisher(org, organizations);
+        return distinguisher
+          ? { id: org.id, name: org.name, subtitle: distinguisher }
+          : { id: org.id, name: org.name };
+      }),
     [organizations],
   );
 

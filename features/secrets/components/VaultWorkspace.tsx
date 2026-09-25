@@ -89,6 +89,7 @@ import { VaultCsvImportDialog } from "./VaultCsvImportDialog";
 import { VaultLoginExportDialog } from "./VaultLoginExportDialog";
 import { VaultBackupDialog } from "./VaultBackupDialog";
 import { VaultItemDetail } from "./VaultItemDetail";
+import { orgNameDistinguisher } from "@/features/scopes/utils/formatOrgDisplayName";
 
 export interface VaultWorkspaceProps {
   principal: VaultPrincipal;
@@ -1621,7 +1622,7 @@ function OrganizationVaultChooser({
   className,
 }: {
   value: string | null;
-  organizations: ReadonlyArray<{ id: string; name: string }>;
+  organizations: ReadonlyArray<{ id: string; name: string; slug?: string | null }>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onPick: (organizationId: string) => void;
@@ -1641,11 +1642,18 @@ function OrganizationVaultChooser({
         <SelectValue placeholder="Choose an organization" />
       </SelectTrigger>
       <SelectContent>
-        {organizations.map((org) => (
-          <SelectItem key={org.id} value={org.id}>
-            {org.name}
-          </SelectItem>
-        ))}
+        {organizations.map((org) => {
+          // THE SAME NAME, TOLD APART (UI-FIX-19): keyed by id, and a shared name carries its address.
+          const distinguisher = orgNameDistinguisher(org, organizations);
+          return (
+            <SelectItem key={org.id} value={org.id}>
+              {org.name}
+              {distinguisher ? (
+                <span className="ml-1.5 text-xs text-muted-foreground">{distinguisher}</span>
+              ) : null}
+            </SelectItem>
+          );
+        })}
       </SelectContent>
     </Select>
   );
