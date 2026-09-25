@@ -49,7 +49,7 @@ export const languageMap: Record<string, LanguageInfo> = {
     size: DEFAULT_ICON_SIZE,
   },
   diff: {
-    name: "Updates",
+    name: "Diff",
     icon: (props: IconProps) => <GitCompare {...props} />,
     color: "text-emerald-500",
     size: DEFAULT_ICON_SIZE,
@@ -218,14 +218,61 @@ export const languageMap: Record<string, LanguageInfo> = {
   },
 };
 
+/** Fence spellings → the languageMap key (the icon and the display name). */
+const LANGUAGE_ALIASES: Record<string, string> = {
+  ts: "typescript",
+  mts: "typescript",
+  cts: "typescript",
+  js: "javascript",
+  mjs: "javascript",
+  cjs: "javascript",
+  py: "python",
+  python3: "python",
+  rb: "ruby",
+  golang: "go",
+  rs: "rust",
+  cs: "csharp",
+  "c#": "csharp",
+  "c++": "cpp",
+  sh: "bash",
+  zsh: "bash",
+  console: "shell",
+  terminal: "shell",
+  ps1: "powershell",
+  pwsh: "powershell",
+  yml: "yaml",
+  md: "markdown",
+  dockerfile: "docker",
+  kt: "kotlin",
+  gql: "graphql",
+  patch: "diff",
+  udiff: "diff",
+  htm: "html",
+};
+
+/**
+ * The display entry for a fence language. A language we have no icon for
+ * shows its own name (`nginx`, `toml`) with the generic code icon — never a
+ * misleading "Code".
+ */
+export function resolveLanguageInfo(language: string): LanguageInfo {
+  const lower = language.trim().toLowerCase();
+  const key = LANGUAGE_ALIASES[lower] ?? lower;
+  const known = languageMap[key];
+  if (known) return known;
+  if (!lower || lower === "code" || lower === "text" || lower === "plaintext") {
+    return languageMap.code;
+  }
+  return { ...languageMap.code, name: language.trim() };
+}
+
 export function getLanguageIconNode(
   language: string,
   compact = false,
   iconOverride?: React.ReactNode,
 ): React.ReactNode {
   if (iconOverride) return iconOverride;
-  const normalizedLang = language.toLowerCase();
-  const langInfo = languageMap[normalizedLang] || languageMap["code"];
+  const langInfo = resolveLanguageInfo(language);
   const Icon = langInfo.icon;
   const size = compact ? 14 : 16;
   if (langInfo.size === null) {
@@ -247,8 +294,7 @@ const LanguageDisplay: React.FC<LanguageDisplayProps> = ({
   iconSize,
   isMobile,
 }) => {
-  const normalizedLang = language.toLowerCase();
-  const langInfo = languageMap[normalizedLang] || languageMap["code"];
+  const langInfo = resolveLanguageInfo(language);
 
   const Icon = langInfo.icon;
 
