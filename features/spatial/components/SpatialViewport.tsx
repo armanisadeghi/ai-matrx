@@ -28,7 +28,7 @@ import {
   wheelZoomFactor,
   zoomAt,
 } from "../engine/camera";
-import { SpatialStore } from "../engine/spatial-store";
+import { type Insets, SpatialStore } from "../engine/spatial-store";
 import { SpatialStoreContext } from "../engine/react";
 
 const GRID_WORLD_PX = 24;
@@ -41,6 +41,8 @@ interface SpatialViewportProps {
   children: ReactNode;
   /** Chrome drawn over the plane in screen space (HUD, minimap, toolbars). */
   overlay?: ReactNode;
+  /** Screen px the overlay covers on each edge; fits keep content clear of it. */
+  insets?: Partial<Insets>;
   className?: string;
 }
 
@@ -49,29 +51,54 @@ export function SpatialViewport({
   fitOnMount = true,
   children,
   overlay,
+  insets,
   className,
 }: SpatialViewportProps) {
   const [store] = useState(() => new SpatialStore(initialCamera));
+  const { top = 0, right = 0, bottom = 0, left = 0 } = insets ?? {};
+  useEffect(() => store.setInsets({ top, right, bottom, left }), [store, top, right, bottom, left]);
   const rootRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<HTMLDivElement>(null);
+  const zoomVarRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
   // ── frame listener: camera → DOM ─────────────────────────────────────────
   useEffect(() => {
     const world = worldRef.current;
+    const zoomVar = zoomVarRef.current;
     const grid = gridRef.current;
-    if (!world || !grid) return;
+    if (!world || !zoomVar || !grid) return;
+    let writtenZ = 0;
+    let writtenWillChange = "";
     const apply = () => {
       const { x, y, z } = store.getCamera();
       world.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${z})`;
-      world.style.willChange = store.isInteracting() ? "transform" : "auto";
-      world.style.setProperty("--spatial-z", String(z));
-      // Dot grid: one CSS background, fades out as it gets dense.
+      // Only on a real flip: `will-change: transform` changes the containing
+      // block for every descendant, so each write restyles the subtree.
+      const willChange = store.isInteracting() ? "transform" : "auto";
+      if (willChange !== writtenWillChange) {
+        writtenWillChange = willChange;
+        world.style.willChange = willChange;
+      }
+      // `--spatial-z` drives counter-scaled labels. It lives on an INNER
+      // element, never the world: an inline style carrying a custom property
+      // makes every mutation of it (each pan frame's transform) restyle the
+      // whole subtree. Written only when zoom moved ≥ 1.5%.
+      if (Math.abs(z - writtenZ) / z >= 0.015) {
+        writtenZ = z;
+        zoomVar.style.setProperty("--spatial-z", String(z));
+      }
+      // Dot grid: one CSS background that fades out as it gets dense. A pan
+      // moves it by TRANSFORM within one cell (compositor only); changing
+      // background-position instead repaints the whole viewport every frame.
       const step = GRID_WORLD_PX * z;
       const shown = step >= 7;
       grid.style.opacity = shown ? String(Math.min(1, (step - 7) / 10)) : "0";
-      grid.style.backgroundSize = `${step}px ${step}px`;
-      grid.style.backgroundPosition = `${x}px ${y}px`;
+      const size = `${step}px ${step}px`;
+      if (grid.style.backgroundSize !== size) grid.style.backgroundSize = size;
+      const ox = (((x % step) + step) % step) - step;
+      const oy = (((y % step) + step) % step) - step;
+      grid.style.transform = `translate3d(${ox}px, ${oy}px, 0)`;
     };
     apply();
     return store.subscribeFrame(apply);
@@ -162,14 +189,19 @@ export function SpatialViewport({
 
     const onDown = (e: PointerEvent) => {
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      const onBackground = !(e.target as HTMLElement).closest("[data-spatial-tile]");
+      // Only the bare plane starts a pan. Tiles, chrome and any control keep
+      // their own pointer input — capturing it here would swallow their clicks.
+      const onBackground = !(e.target as HTMLElement).closest(
+        "[data-spatial-tile], [data-spatial-chrome], button, a, input, textarea, select, canvas",
+      );
       if (pointers.size === 2) {
         const [a, b] = [...pointers.values()];
         pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
         panning = false;
         return;
       }
-      if (e.button === 1 || spaceDown || (e.button === 0 && onBackground)) {
+      const onChrome = !!(e.target as HTMLElement).closest("[data-spatial-chrome]");
+      if (!onChrome && (e.button === 1 || spaceDown || (e.button === 0 && onBackground))) {
         panning = true;
         root.setPointerCapture(e.pointerId);
         root.style.cursor = "grabbing";
@@ -263,10 +295,10 @@ export function SpatialViewport({
         <div
           ref={gridRef}
           aria-hidden
-          className="pointer-events-none absolute inset-0 [background-image:radial-gradient(hsl(var(--muted-foreground)/0.28)_1px,transparent_1.2px)]"
+          className="pointer-events-none absolute -bottom-40 -right-40 left-0 top-0 [background-image:radial-gradient(hsl(var(--muted-foreground)/0.28)_1px,transparent_1.2px)]"
         />
         <div ref={worldRef} className="absolute left-0 top-0 origin-top-left">
-          {children}
+          <div ref={zoomVarRef}>{children}</div>
         </div>
         {overlay}
       </div>

@@ -99,6 +99,12 @@ describe("zoom-paced streaming", () => {
     ).toBe(false);
   });
 
+  it("never re-renders a body hidden behind its overview card", () => {
+    expect(
+      shouldCommit({ pending: true, tier: "overview", lastCommitTier: "overview", msSinceLastCommit: 1e9 }),
+    ).toBe(false);
+  });
+
   it("never commits without new content", () => {
     expect(
       shouldCommit({ pending: false, tier: "read", lastCommitTier: "overview", msSinceLastCommit: 1e9 }),
@@ -117,17 +123,16 @@ describe("zoom-paced streaming", () => {
       shouldCommit({ pending: true, tier: "glance", lastCommitTier: "overview", msSinceLastCommit: 1 }),
     ).toBe(true);
     expect(
-      shouldCommit({ pending: true, tier: "overview", lastCommitTier: "offscreen", msSinceLastCommit: 1 }),
+      shouldCommit({ pending: true, tier: "read", lastCommitTier: "overview", msSinceLastCommit: 1 }),
     ).toBe(true);
   });
 
   it("lands each batch before the next one arrives", () => {
     expect(revealMsForTier("read")).toBe(0);
     expect(revealMsForTier("offscreen")).toBe(0);
-    for (const t of ["glance", "overview"] as const) {
-      expect(revealMsForTier(t)).toBeGreaterThan(0);
-      expect(revealMsForTier(t)).toBeLessThan(PACE_MS[t]);
-    }
+    expect(revealMsForTier("overview")).toBe(0);
+    expect(revealMsForTier("glance")).toBeGreaterThan(0);
+    expect(revealMsForTier("glance")).toBeLessThan(PACE_MS.glance);
   });
 });
 

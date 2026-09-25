@@ -15,6 +15,21 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D349 — Global `:has()` rules turn ordinary DOM changes into whole-document restyles (2026-09-25)
+
+Traced on `/demos/spatial` (Chrome trace, invalidation tracking): a text-node insertion anywhere under
+the shell marked `body`, `.shell-root` and `.shell-main` "affected by :has()", and the following
+`UpdateLayoutTree` restyled every element on the page (2,730). The anchors are descendant-argument
+`:has()` rules in `styles/shell.css` (`body:has(.shell-show-dock)`, `body:not(:has(.shell-show-dock))`,
+`.shell-root:has(.note-detail-active)`, `.shell-root:…:has(.shell-main [data-matrx-table-sticky-header])`,
+`.shell-sidebar-brand-route:has(> *)`) plus compiled utilities such as
+`:is(:where(.group\/menu-item):has([data-sidebar="menu-action"]) *)`. Any surface that inserts nodes
+at stream rate (chat, run pages, the spatial view) pays a full restyle per insertion. Fix: move each
+route/state fact to a data attribute on `.shell-root` or `<html>` set by the component that owns it
+(the pattern `data-pathname` already uses), so no `:has()` must watch the whole tree; then re-trace.
+The spatial view works around it (one text node per label, updates held during camera motion).
+Owner: shell.
+
 ### D348 — "Stop sandbox" sits beside "Delete" in the sandbox list and stops a running sandbox with no confirmation (2026-09-23)
 
 On `/sandbox` the row's action icons are packed together, and the stop icon acts at once: a verification agent aiming for Delete hit Stop and shut down admin@admin.com's running default sandbox (`sbx-7b560ae80b61`, persisted volume, nothing lost). Stopping a running sandbox ends whatever is running inside it, so under the destructive/expensive click law it should name that consequence first, and the stop and delete controls need space or a menu between them. Found by the data-tables session while verifying `common-docs/projects/ai-reachable-everywhere/REGISTER.md` ARE-009. Files: `app/(core)/sandbox/page.tsx`.

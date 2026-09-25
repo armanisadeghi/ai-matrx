@@ -6,8 +6,8 @@
  *
  * Every token still lands in the source at full rate. This hook only decides
  * WHEN the tile re-renders what has arrived, by the tile's pace tier:
- *   read → every animation frame · glance / overview → on the tier interval ·
- *   offscreen → never (one catch-up commit on re-entry).
+ *   read → every animation frame · glance → on the tier interval ·
+ *   overview / offscreen → never (one catch-up commit on the way back in).
  * Stepping to a more detailed tier commits immediately, so zooming in always
  * shows the latest text without waiting out an interval.
  *
@@ -27,7 +27,16 @@ export interface PacedSnapshot {
   revealMs: number;
 }
 
-export function usePacedSnapshot(source: PacedSource, tier: PaceTier): PacedSnapshot {
+/** How long a commit waits when the camera is moving. */
+const MOTION_RETRY_MS = 120;
+
+export function usePacedSnapshot(
+  source: PacedSource,
+  tier: PaceTier,
+  /** True while the camera is moving: commits wait until it settles (nobody
+   * reads a tile mid-fling, and a DOM write per frame costs the pan). */
+  isMoving: () => boolean = () => false,
+): PacedSnapshot {
   const [committed, setCommitted] = useState<{ snapshot: StreamSnapshot; seq: number }>(() => ({
     snapshot: source.get(),
     seq: 0,
@@ -55,6 +64,10 @@ export function usePacedSnapshot(source: PacedSource, tier: PaceTier): PacedSnap
     const evaluate = () => {
       frame = null;
       timer = null;
+      if (pending.current && isMoving()) {
+        timer = setTimeout(evaluate, MOTION_RETRY_MS);
+        return;
+      }
       const since = performance.now() - lastCommitAt.current;
       if (
         shouldCommit({
@@ -67,7 +80,7 @@ export function usePacedSnapshot(source: PacedSource, tier: PaceTier): PacedSnap
         commit();
         return;
       }
-      if (!pending.current || tier === "offscreen") return;
+      if (!pending.current || !Number.isFinite(PACE_MS[tier])) return;
       const wait = PACE_MS[tier] - since;
       timer = setTimeout(evaluate, Math.max(16, wait));
     };
@@ -76,7 +89,7 @@ export function usePacedSnapshot(source: PacedSource, tier: PaceTier): PacedSnap
       pending.current = true;
       if (tier === "read") {
         if (frame === null) frame = requestAnimationFrame(evaluate);
-      } else if (timer === null && tier !== "offscreen") {
+      } else if (timer === null && Number.isFinite(PACE_MS[tier])) {
         evaluate();
       }
     };
@@ -90,7 +103,7 @@ export function usePacedSnapshot(source: PacedSource, tier: PaceTier): PacedSnap
       if (frame !== null) cancelAnimationFrame(frame);
       if (timer !== null) clearTimeout(timer);
     };
-  }, [source, tier]);
+  }, [source, tier, isMoving]);
 
   return {
     snapshot: committed.snapshot,

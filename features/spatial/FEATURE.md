@@ -18,8 +18,8 @@ arrived**, by its pace tier (`engine/lod.ts`):
 | Tier | When | Commit cadence | Landing motion |
 |---|---|---|---|
 | `read` | body text ≥ 9.5px on screen | every animation frame (token by token) | none — the tokens are the motion |
-| `glance` | zoom ≥ 0.28 | every 900 ms | settle (opacity + blur clears) + smooth follow-scroll, 70% of the interval |
-| `overview` | zoom < 0.28 | every 2.6 s; body replaced by a counter-scaled title card + progress | progress bar eases |
+| `glance` | zoom ≥ 0.28 | every 900 ms | settle (opacity rises — never a blur filter, it is the costliest raster) + smooth follow-scroll batched read-then-write across tiles (`tiles/follow-scroll.ts`), 70% of the interval |
+| `overview` | zoom < 0.28 | never — the body is replaced by a counter-scaled title card + progress and skipped for layout (`content-visibility`) | progress bar eases |
 | `offscreen` | culled | never | one catch-up commit on re-entry |
 
 Stepping to a MORE detailed tier commits immediately (`shouldCommit`), so zooming in never shows
@@ -54,6 +54,25 @@ stale text. By construction a batched tile renders once per interval instead of 
   `document.body`, window-relative drag bounds) and anything `position: fixed` cannot be tile
   bodies. A kind tuned for the 720px chat column needs a ≥ 720px tile.
 
+## Performance rules (each one measured on the 100-stream stress board)
+
+- **Status is read in leaves.** `useTileStatus` lives in the dot and the overview card; subscribing
+  a whole tile re-rendered 100 markdown bodies per progress step.
+- **Nothing animates forever at far zoom.** The live dot pulses only at read tier; progress bars step
+  (no transition) and use `scaleX`, never `width`.
+- **No blur filters** in reveal motion — opacity only.
+- **Scroll follow is batched** read-then-write across tiles (`tiles/follow-scroll.ts`).
+- **Updates hold while the camera moves** (`isInteracting`): body commits and status ticks wait
+  ~120 ms after motion stops, then catch up in one step.
+- **One text node per changing label**, updated by `nodeValue` — node insertions trigger the shell's
+  global `:has()` restyles (D349).
+- `--spatial-z` lives on an inner element and is written only on a ≥1.5% zoom change.
+
+Measured in this container (headless Chromium, software raster, dev build, 4 vCPU), 112 tiles:
+standing still with 100 live streams 58 fps (was 21); panning with 100 live streams 21–24 fps (was
+7–8); panning when nothing streams 60 fps; the 12-tile board pans at 60 fps. Re-measure on real
+hardware with a production build before tuning further.
+
 ## Gestures (the Figma/FigJam/tldraw standard)
 
 Wheel / two-finger pan · ⌘/ctrl+wheel or pinch zoom at cursor · drag empty space, space+drag or
@@ -64,3 +83,5 @@ esc deselect · double-click a tile to fly to it · wheel over the SELECTED tile
 
 - 2026-09-25 — Created: engine, zoom-paced streaming, demo board (research/study kinds, podcast
   pipeline, generated HTML, 100-stream stress test). Unit tests in `__tests__/engine.test.ts`.
+  Same day: browser pass fixed controls swallowed by the pan handler, fit under the toolbar
+  (`insets`), and the performance rules above; far-zoom tiles no longer commit at all.

@@ -12,7 +12,9 @@
  *               land each batch with a soft reveal, so it still reads as
  *               continuous motion.
  *   overview  — the tile is a postage stamp: the body is replaced by a
- *               counter-scaled title card + progress; commits are rare.
+ *               counter-scaled title card + progress, and the hidden body
+ *               does not commit at all (the card shows progress from the
+ *               source's coarse status).
  *   offscreen — culled: nothing commits; the tile catches up in one step the
  *               moment it re-enters the viewport.
  *
@@ -41,7 +43,7 @@ export function detailTierForZoom(z: number): DetailTier {
 export const PACE_MS: Record<PaceTier, number> = {
   read: 0,
   glance: 900,
-  overview: 2600,
+  overview: Number.POSITIVE_INFINITY,
   offscreen: Number.POSITIVE_INFINITY,
 };
 
@@ -70,7 +72,7 @@ export function shouldCommit(args: {
 }): boolean {
   const { pending, tier, lastCommitTier, msSinceLastCommit } = args;
   if (!pending) return false;
-  if (tier === "offscreen") return false;
+  if (!Number.isFinite(PACE_MS[tier])) return false;
   if (TIER_RANK[tier] > TIER_RANK[lastCommitTier]) return true;
   return msSinceLastCommit >= PACE_MS[tier];
 }
@@ -86,5 +88,5 @@ const TIER_RANK: Record<PaceTier, number> = {
 export const TIER_LABEL: Record<DetailTier, string> = {
   read: "Reading — live token by token",
   glance: "Glance — batched with soft reveal",
-  overview: "Overview — title cards, rare updates",
+  overview: "Overview — title cards and progress",
 };

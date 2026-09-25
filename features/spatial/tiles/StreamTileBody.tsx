@@ -8,8 +8,8 @@
  * registered component and prose as markdown. This file adds only the pacing
  * and the landing motion:
  *   - read tier: commits per animation frame — token-level motion.
- *   - batched tiers: each commit lands with a short settle (opacity + blur
- *     clearing) and a smooth follow-scroll, both a bit shorter than the batch
+ *   - batched tiers: each commit lands with a short settle (opacity rising)
+ *     and a smooth follow-scroll, both a bit shorter than the batch
  *     interval, so discrete commits read as one continuous flow.
  * The follow-scroll yields the moment the person scrolls up to read, and
  * resumes when they return to the bottom.
@@ -20,6 +20,8 @@ import dynamic from "next/dynamic";
 import type { PaceTier } from "../engine/lod";
 import type { PacedSource } from "../streams/stream-source";
 import { usePacedSnapshot } from "../streams/usePacedSnapshot";
+import { followToBottom } from "./follow-scroll";
+import { useSpatialStore } from "../engine/react";
 
 const BlockRenderer = dynamic(
   () =>
@@ -40,7 +42,8 @@ export function StreamTileBody({
   tier: PaceTier;
   emptyLabel?: string;
 }) {
-  const { snapshot, seq, revealMs } = usePacedSnapshot(source, tier);
+  const store = useSpatialStore();
+  const { snapshot, seq, revealMs } = usePacedSnapshot(source, tier, store.isInteracting);
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const following = useRef(true);
@@ -50,20 +53,14 @@ export function StreamTileBody({
     const scroller = scrollRef.current;
     const content = contentRef.current;
     if (!scroller || !content || seq === 0) return;
-    if (following.current) {
-      scroller.scrollTo({
-        top: scroller.scrollHeight,
-        behavior: revealMs > 0 ? "smooth" : "auto",
-      });
-    }
+    if (following.current) followToBottom(scroller, revealMs > 0);
+    // Opacity only: it runs on the compositor. A blur filter here was the
+    // largest raster cost on a busy board.
     if (revealMs > 0 && typeof content.animate === "function") {
-      content.animate(
-        [
-          { opacity: 0.72, filter: "blur(0.8px)" },
-          { opacity: 1, filter: "blur(0px)" },
-        ],
-        { duration: revealMs, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
-      );
+      content.animate([{ opacity: 0.7 }, { opacity: 1 }], {
+        duration: revealMs,
+        easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+      });
     }
   }, [seq, revealMs]);
 

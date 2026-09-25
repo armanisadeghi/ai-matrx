@@ -21,13 +21,14 @@ import { cn } from "@/lib/utils";
 import type { Rect } from "../engine/camera";
 import type { PaceTier } from "../engine/lod";
 import { usePaceTier, useSelectedTile, useSpatialStore } from "../engine/react";
+import { type StatusFrom, type TileStatus, useTileStatus } from "../streams/useSourceStatus";
 
-export type TileStatus = "idle" | "queued" | "streaming" | "complete" | "error";
+const IDLE_STATUS: StatusFrom = { kind: "static", value: { status: "idle", progress: null } };
 
 const STATUS_DOT: Record<TileStatus, string> = {
   idle: "bg-muted-foreground/40",
   queued: "bg-muted-foreground/60",
-  streaming: "bg-primary animate-pulse",
+  streaming: "bg-primary",
   complete: "bg-success",
   error: "bg-destructive",
 };
@@ -47,9 +48,9 @@ export interface SpatialTileProps {
   /** Small line under the title (kind, source, model…). */
   subtitle?: string;
   icon?: LucideIcon;
-  status?: TileStatus;
-  /** 0–1 progress for the overview card; omit when unknown. */
-  progress?: number | null;
+  /** Where the status dot and overview card read from. Read in leaf
+   * components only, so progress never re-renders the body. */
+  statusFrom?: StatusFrom;
   /** Header actions (screen-sized buttons live in world space too). */
   actions?: ReactNode;
   /** Moves the tile, in world px. Header drag calls it; omit to pin the tile. */
@@ -63,8 +64,7 @@ export function SpatialTile({
   title,
   subtitle,
   icon: Icon,
-  status = "idle",
-  progress = null,
+  statusFrom = IDLE_STATUS,
   actions,
   onMove,
   children,
@@ -138,7 +138,7 @@ export function SpatialTile({
           onMove && "cursor-grab active:cursor-grabbing",
         )}
       >
-        <span className={cn("h-2 w-2 shrink-0 rounded-full", STATUS_DOT[status])} />
+        <StatusDot from={statusFrom} animate={tier === "read"} />
         {Icon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />}
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-foreground">{title}</p>
@@ -151,9 +151,13 @@ export function SpatialTile({
         {actions}
       </div>
       <div className="relative min-h-0 flex-1" aria-hidden={overview}>
-        <div className={cn("h-full", overview && "invisible")}>{children(tier)}</div>
+        {/* At overview the body stays mounted (a stream keeps its place) but
+            is skipped for style, layout and paint. */}
+        <div className="h-full" style={{ contentVisibility: overview ? "hidden" : "visible" }}>
+          {children(tier)}
+        </div>
         {overview && (
-          <OverviewCard title={title} status={status} progress={progress} icon={Icon} />
+          <OverviewCard title={title} from={statusFrom} icon={Icon} />
         )}
       </div>
     </div>
@@ -161,17 +165,32 @@ export function SpatialTile({
 }
 
 /** The far-zoom face of a tile: counter-scaled so it reads at any zoom. */
+/** The live dot pulses only where you can read the tile — 100 infinite
+ * animations inside the transformed world repaint the board every frame. */
+function StatusDot({ from, animate }: { from: StatusFrom; animate: boolean }) {
+  const { status } = useTileStatus(from, useSpatialStore().isInteracting);
+  return (
+    <span
+      className={cn(
+        "h-2 w-2 shrink-0 rounded-full",
+        STATUS_DOT[status],
+        animate && status === "streaming" && "animate-pulse",
+      )}
+      title={STATUS_LABEL[status]}
+    />
+  );
+}
+
 function OverviewCard({
   title,
-  status,
-  progress,
+  from,
   icon: Icon,
 }: {
   title: string;
-  status: TileStatus;
-  progress: number | null;
+  from: StatusFrom;
   icon?: LucideIcon;
 }) {
+  const { status, progress } = useTileStatus(from, useSpatialStore().isInteracting);
   return (
     <div className="absolute inset-0 flex flex-col justify-between bg-card p-4">
       <div className="flex items-start gap-2">
@@ -193,18 +212,21 @@ function OverviewCard({
           className="font-medium text-muted-foreground"
           style={{ fontSize: "min(calc(11px / var(--spatial-z)), 48px)" }}
         >
-          {STATUS_LABEL[status]}
-          {progress !== null && status === "streaming" ? ` · ${Math.round(progress * 100)}%` : ""}
+          {/* One string, one text node: a conditional second node is an
+              insertion, and insertions are what the shell's :has() rules
+              turn into whole-tree restyles. */}
+          {`${STATUS_LABEL[status]}${progress !== null && status === "streaming" ? ` · ${Math.round(progress * 100)}%` : ""}`}
         </p>
         <div className="h-2 overflow-hidden rounded-full bg-muted">
+          {/* Steps, not a transition: at this zoom a 5% step needs no easing,
+              and 100 bars easing at once invalidate the moving world layer
+              every frame. scaleX, never width (width re-runs layout). */}
           <div
             className={cn(
-              "h-full rounded-full transition-[width] duration-700 ease-out",
+              "h-full w-full origin-left rounded-full",
               status === "error" ? "bg-destructive" : "bg-primary",
             )}
-            style={{
-              width: `${Math.round((status === "complete" ? 1 : (progress ?? 0)) * 100)}%`,
-            }}
+            style={{ transform: `scaleX(${status === "complete" ? 1 : (progress ?? 0)})` }}
           />
         </div>
       </div>

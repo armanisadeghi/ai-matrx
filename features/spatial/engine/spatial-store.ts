@@ -27,6 +27,13 @@ import { type DetailTier, detailTierForZoom } from "./lod";
 
 type Listener = () => void;
 
+export interface Insets {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
 /** Tiles within this many SCREEN px of the viewport edge stay mounted-visible,
  * so a tile is already painted by the time a pan brings it in. */
 const CULL_MARGIN_SCREEN_PX = 240;
@@ -34,6 +41,7 @@ const CULL_MARGIN_SCREEN_PX = 240;
 export class SpatialStore {
   private camera: Camera;
   private size: Size = { w: 1, h: 1 };
+  private insets: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
   private items = new Map<string, Rect>();
 
   private frameListeners = new Set<Listener>();
@@ -88,14 +96,30 @@ export class SpatialStore {
     this.flight = requestAnimationFrame(step);
   }
 
-  fitAll(padding = 64): void {
-    const bounds = unionRects([...this.items.values()]);
-    if (bounds) this.flyTo(fitRect(bounds, this.size, padding, 1));
+  /** Screen px covered by overlay chrome; fits frame content inside the rest. */
+  setInsets(insets: Insets): void {
+    this.insets = insets;
   }
 
-  fitItem(id: string, padding = 56): void {
+  /** `fitRect` inside the viewport minus the overlay insets. */
+  private fitClear(target: Rect, padding: number, maxZ: number): Camera {
+    const { top, right, bottom, left } = this.insets;
+    const inner = {
+      w: Math.max(1, this.size.w - left - right),
+      h: Math.max(1, this.size.h - top - bottom),
+    };
+    const cam = fitRect(target, inner, padding, maxZ);
+    return { ...cam, x: cam.x + left, y: cam.y + top };
+  }
+
+  fitAll(padding = 48): void {
+    const bounds = unionRects([...this.items.values()]);
+    if (bounds) this.flyTo(this.fitClear(bounds, padding, 1));
+  }
+
+  fitItem(id: string, padding = 40): void {
     const r = this.items.get(id);
-    if (r) this.flyTo(fitRect(r, this.size, padding, 1.25));
+    if (r) this.flyTo(this.fitClear(r, padding, 1.25));
   }
 
   private cancelFlight(): void {

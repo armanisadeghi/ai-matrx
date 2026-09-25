@@ -16,7 +16,7 @@
  * the `RequestStream` source (features/spatial/streams/stream-source.ts).
  */
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import {
   AudioLines,
   BookOpenCheck,
@@ -38,11 +38,12 @@ import { buildWireText } from "@/features/content-ir/studio/stream-simulator";
 import type { Rect } from "../engine/camera";
 import { useSelectedTile } from "../engine/react";
 import { SpatialViewport } from "../components/SpatialViewport";
-import { SpatialTile, type TileStatus } from "../components/SpatialTile";
+import { SpatialTile } from "../components/SpatialTile";
 import { SpatialFrame } from "../components/SpatialFrame";
 import { SpatialEdge } from "../components/SpatialEdge";
 import { Minimap, ZoomHud } from "../components/SpatialChrome";
 import { ReplayStream, type PacedSource } from "../streams/stream-source";
+import { type StatusFrom, useTileStatus } from "../streams/useSourceStatus";
 import { StreamTileBody } from "../tiles/StreamTileBody";
 import { HtmlTileBody, ImageTileBody } from "../tiles/MediaTileBodies";
 import {
@@ -323,6 +324,7 @@ export function SpatialDemoBoard({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <SpatialViewport
+        insets={{ top: 72, bottom: 56 }}
         overlay={
           <>
             <BoardToolbar
@@ -358,28 +360,6 @@ export function SpatialDemoBoard({
 
 // ── tiles ────────────────────────────────────────────────────────────────────
 
-const PROGRESS_STEPS = 20;
-
-/** Coarse status of a source — phase + progress in 5% steps — so a tile's
- * header re-renders ~20 times per stream, not once per chunk. */
-function useSourceStatus(source: PacedSource | null): { status: TileStatus; progress: number | null } {
-  const key = useSyncExternalStore(
-    (l) => (source ? source.subscribe(l) : () => {}),
-    () => {
-      if (!source) return "none";
-      const s = source.get();
-      const p = s.expected ? Math.floor((s.received / s.expected) * PROGRESS_STEPS) : -1;
-      return `${s.phase}:${p}`;
-    },
-    () => "idle:-1",
-  );
-  if (key === "none") return { status: "complete", progress: null };
-  const [phase, p] = key.split(":");
-  const status: TileStatus = phase === "idle" ? "queued" : (phase as TileStatus);
-  const n = Number(p);
-  return { status, progress: n < 0 ? null : n / PROGRESS_STEPS };
-}
-
 function BoardTile({
   spec,
   rect,
@@ -390,13 +370,13 @@ function BoardTile({
   onMove: (id: string, x: number, y: number) => void;
 }) {
   const c = spec.content;
-  const source = c.type === "stream" ? c.stream : c.type === "image" ? (c.waitFor ?? null) : null;
-  const live = useSourceStatus(source);
   const selected = useSelectedTile() === spec.id;
-
-  let status: TileStatus = live.status;
-  if (c.type === "pending") status = "queued";
-  if (c.type === "image" && c.waitFor) status = live.status === "complete" ? "complete" : "queued";
+  const statusFrom: StatusFrom =
+    c.type === "stream"
+      ? { kind: "self", source: c.stream }
+      : c.type === "image" && c.waitFor
+        ? { kind: "upstream", source: c.waitFor }
+        : { kind: "static", value: c.type === "pending" ? QUEUED : DONE };
 
   return (
     <SpatialTile
@@ -405,8 +385,7 @@ function BoardTile({
       title={spec.title}
       subtitle={spec.subtitle}
       icon={spec.icon}
-      status={status}
-      progress={c.type === "stream" ? live.progress : null}
+      statusFrom={statusFrom}
       onMove={onMove}
     >
       {(tier) => {
@@ -416,16 +395,27 @@ function BoardTile({
           case "html":
             return <HtmlTileBody src={c.src} title={spec.title} tier={tier} active={selected} />;
           case "image":
-            return status === "complete" ? (
-              <ImageTileBody src={c.src} alt={spec.title} />
-            ) : (
-              <p className="p-4 text-sm text-muted-foreground">Waiting for the script to finish.</p>
-            );
+            return <GatedImage src={c.src} alt={spec.title} waitFor={c.waitFor ?? null} />;
           case "pending":
             return <p className="p-4 text-sm leading-relaxed text-muted-foreground">{c.message}</p>;
         }
       }}
     </SpatialTile>
+  );
+}
+
+const QUEUED = { status: "queued", progress: null } as const;
+const DONE = { status: "complete", progress: null } as const;
+
+/** An image stage that appears once the stage it waits on has finished. */
+function GatedImage({ src, alt, waitFor }: { src: string; alt: string; waitFor: PacedSource | null }) {
+  const { status } = useTileStatus(
+    waitFor ? { kind: "upstream", source: waitFor } : { kind: "static", value: DONE },
+  );
+  return status === "complete" ? (
+    <ImageTileBody src={src} alt={alt} />
+  ) : (
+    <p className="p-4 text-sm text-muted-foreground">Waiting for the script to finish.</p>
   );
 }
 
@@ -447,7 +437,7 @@ function BoardToolbar({
   onToggleStress: () => void;
 }) {
   return (
-    <div className="absolute left-4 top-4 flex max-w-[calc(100%-2rem)] flex-col gap-2">
+    <div data-spatial-chrome className="absolute left-4 top-4 flex max-w-[calc(100%-2rem)] flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card/95 p-2 shadow-md backdrop-blur">
         <div className="px-1">
           <p className="text-sm font-semibold text-foreground">Spatial view</p>

@@ -19,8 +19,17 @@ export function ZoomHud({ className }: { className?: string }) {
   const pctRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    const button = pctRef.current;
+    if (!button) return;
+    // Update ONE text node's value, and only when the number changes.
+    // `textContent =` replaces the node — an insertion — and the shell's
+    // `:has()` rules turn every insertion into a whole-document restyle,
+    // which on a pan is every frame.
+    const text = document.createTextNode("");
+    button.replaceChildren(text);
     const apply = () => {
-      if (pctRef.current) pctRef.current.textContent = `${Math.round(store.getCamera().z * 100)}%`;
+      const next = `${Math.round(store.getCamera().z * 100)}%`;
+      if (text.nodeValue !== next) text.nodeValue = next;
     };
     apply();
     return store.subscribeFrame(apply);
@@ -34,6 +43,7 @@ export function ZoomHud({ className }: { className?: string }) {
 
   return (
     <div
+      data-spatial-chrome
       className={cn(
         "absolute bottom-4 left-4 flex items-center gap-1 rounded-lg border border-border bg-card/95 p-1 shadow-md backdrop-blur",
         className,
@@ -103,6 +113,18 @@ export function Minimap({ className }: { className?: string }) {
     canvas.width = MINIMAP_W * dpr;
     canvas.height = MINIMAP_H * dpr;
     let frame: number | null = null;
+    // Theme colours, read once per second — getComputedStyle forces a style
+    // flush, which per frame costs every pan frame a full-board restyle.
+    let colours = { frame: "", tile: "", view: "" };
+    const readColours = () => {
+      const st = getComputedStyle(canvas);
+      colours = {
+        frame: st.getPropertyValue("--mm-frame"),
+        tile: st.getPropertyValue("--mm-tile"),
+        view: st.getPropertyValue("--mm-view"),
+      };
+    };
+    readColours();
 
     const draw = () => {
       frame = null;
@@ -115,15 +137,14 @@ export function Minimap({ className }: { className?: string }) {
       const ox = pad + (MINIMAP_W - pad * 2 - bounds.w * s) / 2 - bounds.x * s;
       const oy = pad + (MINIMAP_H - pad * 2 - bounds.h * s) / 2 - bounds.y * s;
       canvasTransform.set(canvas, { s, ox, oy });
-      const styles = getComputedStyle(canvas);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, MINIMAP_W, MINIMAP_H);
       for (const [id, r] of items) {
         const isFrame = id.startsWith("frame:");
-        ctx.fillStyle = isFrame ? styles.getPropertyValue("--mm-frame") : styles.getPropertyValue("--mm-tile");
+        ctx.fillStyle = isFrame ? colours.frame : colours.tile;
         ctx.fillRect(ox + r.x * s, oy + r.y * s, Math.max(1, r.w * s), Math.max(1, r.h * s));
       }
-      ctx.strokeStyle = styles.getPropertyValue("--mm-view");
+      ctx.strokeStyle = colours.view;
       ctx.lineWidth = 1.5;
       ctx.strokeRect(ox + view.x * s, oy + view.y * s, view.w * s, view.h * s);
     };
@@ -132,7 +153,10 @@ export function Minimap({ className }: { className?: string }) {
     };
     schedule();
     const unsub = store.subscribeFrame(schedule);
-    const interval = setInterval(schedule, 1000); // tiles moved / added
+    const interval = setInterval(() => {
+      readColours(); // theme may have flipped
+      schedule(); // tiles moved / added
+    }, 1000);
     return () => {
       unsub();
       clearInterval(interval);
@@ -155,6 +179,7 @@ export function Minimap({ className }: { className?: string }) {
   return (
     <canvas
       ref={canvasRef}
+      data-spatial-chrome
       aria-label="Minimap — click to move the view"
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId);
