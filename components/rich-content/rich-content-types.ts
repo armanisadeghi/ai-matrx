@@ -65,11 +65,12 @@ export interface RichContentProps {
    */
   headingAnchors?: boolean;
   /**
-   * Remote images (not our files, not same-origin): "ask" shows a click-to-load
-   * placeholder naming the host; "load" draws them (no referrer). Default
-   * "ask" at the inline and standard levels — text people write never makes a
-   * reader's browser call a third party on its own (remote-image-policy.tsx).
-   * The full level keeps "load" unless set.
+   * WHO WROTE this text — "self" (the viewer), "other" (someone else) or "ai"
+   * (a model). Decides whether remote images load by themselves, per the
+   * `rich_content.remote_images.autoload_*` knobs (remote-image-policy.tsx).
+   * REQUIRED in practice at the full level (guard:
+   * __tests__/image-policy-declared.test.ts); omitted = inherit, and with no
+   * declaration anywhere remote images wait for a click.
    */
-  remoteImages?: "load" | "ask";
+  imagePolicy?: "self" | "other" | "ai" | "inherit";
 }

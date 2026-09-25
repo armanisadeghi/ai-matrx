@@ -37,7 +37,7 @@ export function RichContent({
   variant,
   links,
   headingAnchors = true,
-  remoteImages,
+  imagePolicy,
 }: RichContentProps) {
   if (level === "inline") {
     return (
@@ -46,7 +46,7 @@ export function RichContent({
         className={className}
         links={links}
         streaming={isStreaming}
-        remoteImages={remoteImages}
+        imagePolicy={imagePolicy}
       />
     );
   }
@@ -60,7 +60,7 @@ export function RichContent({
           className={className}
           depthCap={depthCap}
           variant={variant}
-          remoteImages={remoteImages}
+          imagePolicy={imagePolicy}
         />
       </HeadingAnchorsProvider>
     );
@@ -73,18 +73,19 @@ export function RichContent({
         className={className}
         depthCap={depthCap}
         variant={variant}
-        remoteImages={remoteImages}
+        imagePolicy={imagePolicy}
       />
     );
   }
   const full = (
     <MarkdownStream
+      imagePolicy={imagePolicy}
       content={source}
       isStreamActive={isStreaming}
       className={className}
     />
   );
-  return (
+  const rendered = (
     <RichContentVariantRoot variant={variant}>
       {depthCap === undefined ? (
         full
@@ -95,6 +96,7 @@ export function RichContent({
       )}
     </RichContentVariantRoot>
   );
+  return rendered;
 }
 
 export default RichContent;

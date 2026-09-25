@@ -51,7 +51,7 @@ import {
   proseFrameClass,
 } from "../prose/prose-block-elements";
 import { DelimiterViolationReport } from "./DelimiterViolationReport";
-import { RemoteImagePolicyProvider } from "@/components/rich-content/prose/remote-image-policy";
+import { ImagePolicyProvider } from "@/components/rich-content/prose/remote-image-policy";
 
 export type RichContentServerLevel = "inline" | "standard";
 
@@ -141,16 +141,16 @@ export function RichContentServer({
   variant,
   links,
 }: RichContentServerProps) {
-  // Public and shared pages render text people wrote: remote images wait for a click.
+  // Public and shared pages show someone's text to a viewer: authorship "other" (remote images wait for a click).
   if (level === "inline") {
     return (
-      <RemoteImagePolicyProvider value="ask">
+      <ImagePolicyProvider value="other">
         <InlineServer source={source} className={className} links={links} />
-      </RemoteImagePolicyProvider>
+      </ImagePolicyProvider>
     );
   }
   return (
-    <RemoteImagePolicyProvider value="ask">
+    <ImagePolicyProvider value="other">
       <RichContentVariantRoot variant={variant}>
         <StaticStandard
           source={source}
@@ -160,7 +160,7 @@ export function RichContentServer({
           Prose={ProseServer}
         />
       </RichContentVariantRoot>
-    </RemoteImagePolicyProvider>
+    </ImagePolicyProvider>
   );
 }
 

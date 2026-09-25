@@ -9,7 +9,7 @@ import { RichContentDepthProvider } from "./depth";
 import { StandardBlocks } from "./standard/StandardBlocks";
 import { RichContentVariantRoot } from "./prose/variant-root";
 import type { RichContentVariant } from "./rich-content-types";
-import { RemoteImageGate, RemoteImagePolicyProvider, type RemoteImagePolicy } from "@/components/rich-content/prose/remote-image-policy";
+import { withImagePolicy, type ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 
 export interface RichContentStandardImplProps {
   source: string;
@@ -17,8 +17,8 @@ export interface RichContentStandardImplProps {
   className?: string;
   depthCap?: number;
   variant?: RichContentVariant;
-  /** Remote images: "ask" (default at this level — click to load) or "load". */
-  remoteImages?: RemoteImagePolicy;
+  /** Who wrote this text (remote-image-policy.tsx). Omit to inherit; none anywhere = click to load. */
+  imagePolicy?: ImagePolicyDeclaration;
 }
 
 export default function RichContentStandardImpl({
@@ -27,10 +27,9 @@ export default function RichContentStandardImpl({
   className,
   depthCap,
   variant,
-  remoteImages = "ask",
+  imagePolicy,
 }: RichContentStandardImplProps) {
-  return (
-    <RemoteImagePolicyProvider value={remoteImages}>
+  const rendered = (
     <RichContentVariantRoot variant={variant}>
       <RichContentDepthProvider depth={0} cap={depthCap}>
         <StandardBlocks
@@ -40,6 +39,6 @@ export default function RichContentStandardImpl({
         />
       </RichContentDepthProvider>
     </RichContentVariantRoot>
-    </RemoteImagePolicyProvider>
   );
+  return <>{withImagePolicy(imagePolicy, rendered)}</>;
 }

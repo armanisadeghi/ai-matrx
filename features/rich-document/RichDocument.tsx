@@ -137,6 +137,14 @@ export interface RichDocumentProps {
   onError?: (error: string) => void;
   onPhaseUpdate?: (phase: string) => void;
   strictServerData?: boolean;
+  /**
+   * WHO WROTE this content — "ai" (a model), "other" (someone else) or "self"
+   * (the viewer). Decides whether remote images load by themselves
+   * (components/rich-content/prose/remote-image-policy.tsx, chair ruling
+   * 2026-09-25). Declare it at every call site — guard:
+   * components/rich-content/__tests__/image-policy-declared.test.ts.
+   */
+  imagePolicy?: "self" | "other" | "ai" | "inherit";
 }
 
 export function RichDocument(props: RichDocumentProps): React.ReactElement {
@@ -169,6 +177,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
     onError,
     onPhaseUpdate,
     strictServerData,
+    imagePolicy,
   } = props;
 
   // A DECLARED SPECIMEN CARRIES NO ACTIONS. Resolved before anything else so
@@ -318,6 +327,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
   const engineInner = (
     <div className={cn("rich-document__content", contentClassName)}>
       <MarkdownStream
+        imagePolicy={imagePolicy}
         content={content}
         events={events}
         serverProcessedBlocks={serverProcessedBlocks}

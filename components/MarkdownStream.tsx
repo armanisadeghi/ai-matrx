@@ -74,6 +74,14 @@ export interface MarkdownStreamProps {
    * if block.serverData is null. Leave false (default) for production.
    */
   strictServerData?: boolean;
+  /**
+   * WHO WROTE this content — "ai" (a model: answers, agent output), "other"
+   * (someone else: shared or public records) or "self" (the viewer). Decides
+   * whether remote images load by themselves (components/rich-content/prose/
+   * remote-image-policy.tsx, chair ruling 2026-09-25). Declare it at every
+   * call site — guard: components/rich-content/__tests__/image-policy-declared.test.ts.
+   */
+  imagePolicy?: "self" | "other" | "ai" | "inherit";
 }
 
 /**

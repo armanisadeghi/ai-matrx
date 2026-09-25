@@ -38,7 +38,7 @@ import {
   type RichContentVariant,
 } from "./rich-content-types";
 import { StaticStandard } from "./standard/static-standard";
-import { RemoteImagePolicyProvider } from "@/components/rich-content/prose/remote-image-policy";
+import { ImagePolicyProvider } from "@/components/rich-content/prose/remote-image-policy";
 
 /** The prose leaf alone (frame + one prose map), statically. */
 export function StaticProseLeaf({
@@ -86,11 +86,11 @@ export function RichContentStaticProse({
 }) {
   if (!source.trim()) return null;
   return (
-    <RemoteImagePolicyProvider value="ask">
+    <ImagePolicyProvider value="other">
       <RichContentVariantRoot variant={variant}>
         <StaticProseLeaf content={source} />
       </RichContentVariantRoot>
-    </RemoteImagePolicyProvider>
+    </ImagePolicyProvider>
   );
 }
 
@@ -114,7 +114,7 @@ export function RichContentStaticStandard({
   className?: string;
 }) {
   return (
-    <RemoteImagePolicyProvider value="ask">
+    <ImagePolicyProvider value="other">
       <RichContentVariantRoot variant={variant}>
         <StaticStandard
           source={source}
@@ -124,7 +124,7 @@ export function RichContentStaticStandard({
           Prose={StaticProseLeaf}
         />
       </RichContentVariantRoot>
-    </RemoteImagePolicyProvider>
+    </ImagePolicyProvider>
   );
 }
 
@@ -146,7 +146,7 @@ export function RichContentStaticInline({
   if (!source.trim()) return null;
   const { text, violations } = guardMarkdownDelimiters(preprocessProse(source));
   return (
-    <RemoteImagePolicyProvider value="ask">
+    <ImagePolicyProvider value="other">
       <span
         data-rich-content="inline"
         className={cn(INLINE_LEVEL_WRAPPER_CLASS, className)}
@@ -161,7 +161,7 @@ export function RichContentStaticInline({
           renderPath="RichContentStaticInline"
         />
       ) : null}
-    </RemoteImagePolicyProvider>
+    </ImagePolicyProvider>
   );
 }
 

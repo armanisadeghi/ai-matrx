@@ -6,6 +6,7 @@ import { MarkdownErrorBoundary } from "@/components/mardown-display/chat-markdow
 import { StreamAwareChatMarkdown } from "@/components/mardown-display/chat-markdown/StreamAwareChatMarkdown";
 import { BlockRenderingProvider } from "@/components/mardown-display/chat-markdown/BlockRenderingContext";
 import type { MarkdownStreamProps } from "./MarkdownStream";
+import { withImagePolicy } from "@/components/rich-content/prose/remote-image-policy";
 
 const MarkdownStreamImpl: React.FC<MarkdownStreamProps> = ({
   content = "",
@@ -30,8 +31,9 @@ const MarkdownStreamImpl: React.FC<MarkdownStreamProps> = ({
   onPhaseUpdate,
   serverProcessedBlocks,
   strictServerData = false,
+  imagePolicy,
 }) => {
-  return (
+  const rendered = (
     <BlockRenderingProvider strictServerData={strictServerData}>
       <MarkdownErrorBoundary
         fallback={<PlainTextFallback content={content} className={className} />}
@@ -67,6 +69,7 @@ const MarkdownStreamImpl: React.FC<MarkdownStreamProps> = ({
       </MarkdownErrorBoundary>
     </BlockRenderingProvider>
   );
+  return <>{withImagePolicy(imagePolicy, rendered)}</>;
 };
 
 export default MarkdownStreamImpl;
