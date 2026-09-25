@@ -386,7 +386,10 @@ begin
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
   values ('custom','inbox_reminder_after_days','organization', v_org, v_org, '30'::jsonb, 'uichamp_s5b_green');
   v_out := custom.inbox_remind_tick();
-  select count(*) into v_n from communication.notification n where n.organization_id = v_org;
+  -- STORE-TAILS-3 (2026-09-25): a reminder now goes on every channel the person has on for it —
+  -- in the app and, by default, by email (the email row is worded by the render pass, or is a
+  -- named skip when there is no address). "One notice" is counted per channel: the in-app one.
+  select count(*) into v_n from communication.notification n where n.organization_id = v_org and n.channel = 'in_app';
   if v_n <> 1 or not exists (select 1 from communication.notification n where n.organization_id = v_org
                               and n.recipient_user_id = c_admin and n.event_key = 'custom.inbox.snooze_ended'
                               and n.target_id = v_rabies and n.channel = 'in_app' and n.deep_link like '/o/' || v_pepper::text || '%') then
@@ -401,7 +404,7 @@ begin
   -- the desk: the proposal, the owner's breed request, and the call-backs still waiting on her (Okafor put back, Tran brought back by
   -- the owner, Alvarez never cleared). Not Delacroix, which she cleared.
   select array_agg(n.target_id order by n.target_id) into v_ids from communication.notification n
-   where n.organization_id = v_org and n.recipient_user_id = c_desk and n.event_key = 'custom.inbox.reminder';
+   where n.organization_id = v_org and n.recipient_user_id = c_desk and n.event_key = 'custom.inbox.reminder' and n.channel = 'in_app';
   select array_agg(x order by x) into v_ids2 from unnest(array[v_rabies, v_own, v_cb[1], v_cb[3], v_cb[4]]) x;
   if v_ids is distinct from v_ids2 then
     raise exception '5b: the desk''s reminders should be the ask and the three call-backs still waiting (%), and are %', v_ids2, v_ids;
