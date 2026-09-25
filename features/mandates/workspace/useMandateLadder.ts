@@ -62,9 +62,9 @@ export interface MandateLadderRow {
    * as an amendment to the frozen return shape).
    *
    * It is set when the platform turned the binding off with a reason, and when
-   * the rung's Holder is not runnable by THAT RUNG'S OWN principal — an org
-   * rung is judged for the organization, not for whoever is looking, so two
-   * members of one organization now read the same words here.
+   * the rung's Holder is not runnable by THAT RUNG'S OWN principal — except the
+   * org rung, which (aidream 1044) is judged for the person looking, because
+   * the run runs it with the running member's access: screen and run agree.
    *
    * Optional on the type because a browser can be newer than the database it
    * is talking to; when it is absent this screen says exactly what it said
