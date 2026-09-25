@@ -59,8 +59,10 @@ try {
   await page.goto(`${ORIGIN}/schedules/${id}`, { waitUntil: "domcontentloaded", timeout: 240000 });
   const dismiss = page.getByRole("button", { name: /Dismiss for today/ });
   if (await dismiss.waitFor({ state: "visible", timeout: 15000 }).then(() => true).catch(() => false)) await dismiss.click();
+  await page.waitForTimeout(3000);
   report.headerChooseOrg = await page.evaluate(() => document.body.innerText.includes("Choose org"));
-  const labels = async () => page.evaluate(() => [...document.querySelectorAll("button")].map((b) => b.textContent?.trim()).filter((t) => /^(Pause|Enable|Pausing…|Enabling…)$/.test(t ?? "")));
+  const labels = async () => page.evaluate(() => [...document.querySelectorAll("button")].map((b) => ({ name: (b.getAttribute("aria-label") || b.getAttribute("title") || b.textContent || "").trim(), disabled: b.disabled })).filter((b) => /^(Pause|Enable|Pausing…|Enabling…)$/.test(b.name)));
+  report.headerSays = await page.evaluate(() => document.querySelector("header.shell-header")?.innerText.replace(/\s+/g, " ").trim().slice(0, 200) ?? null);
   await page.getByRole("button", { name: /^Pause$/ }).first().waitFor({ timeout: 240000 });
   await page.getByRole("button", { name: /^Pause$/ }).first().click();
   await page.waitForTimeout(1200);

@@ -2,6 +2,8 @@
 
 "use client";
 
+import { useDeclarePageObjectOrganization } from "@/features/shell/pageObjectOrganization";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -169,6 +171,19 @@ function ScheduleDetailBody({ taskId }: Props) {
   const [running, setRunning] = useState(false);
   const [flipping, setFlipping] = useState(false);
   const isAdmin = useAppSelector(selectIsAdmin);
+  // The shell header believes the schedule: its writes go in the schedule's own organization,
+  // so a red "Choose org" over it would be a lie (GATES-TAIL, VERIFIER-21 #7).
+  const { organizations: myOrganizations } = useUserOrganizations();
+  const scheduleOrganizationId = task?.organizationId ?? null;
+  useDeclarePageObjectOrganization(
+    scheduleOrganizationId
+      ? {
+          organizationId: scheduleOrganizationId,
+          name: myOrganizations.find((o) => o.id === scheduleOrganizationId)?.name ?? null,
+          shownByPage: false,
+        }
+      : null,
+  );
 
   if (status === "loading" || status === "idle") {
     return (
