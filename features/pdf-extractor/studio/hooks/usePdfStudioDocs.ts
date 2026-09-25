@@ -14,6 +14,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/utils/supabase/client";
 import { docprocDb } from "@/utils/supabase/docprocDb";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { filesDb } from "@/features/files/filesDb";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -110,11 +111,15 @@ export function usePdfStudioDocs(opts?: {
         prev = cur;
         return cur.map((d) => (d.id === id ? { ...d, archived: true } : d));
       });
-      const { error: err } = await docprocDb(supabase)
-        .from("processed_documents")
-        .update({ archived_at: new Date().toISOString() })
-        .eq("id", id)
-        .eq("owner_id", userId);
+      const { error: err } = await tryWriteOne(
+        docprocDb(supabase)
+          .from("processed_documents")
+          .update({ archived_at: new Date().toISOString() })
+          .eq("id", id)
+          .eq("owner_id", userId)
+          .select("id"),
+        { action: "archive", noun: "document" },
+      );
       if (err) {
         setDocs(prev);
         throw operationFailed("archive that document", err);

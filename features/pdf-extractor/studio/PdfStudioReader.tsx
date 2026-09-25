@@ -64,6 +64,7 @@ import { PdfAiContent } from "../components/PdfAiContent";
 import { saveDerivative } from "@/features/pdf/services/saveDerivative";
 import { supabase } from "@/utils/supabase/client";
 import { docprocDb } from "@/utils/supabase/docprocDb";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectViewedJobForFile } from "@/features/page-extraction/redux/selectors";
@@ -1609,10 +1610,14 @@ function PageBlock({
       field === "cleaned"
         ? { cleaned_text: editText, cleaned_char_count: editText.length }
         : { raw_text: editText, raw_char_count: editText.length };
-    const { error } = await docprocDb(supabase)
-      .from("processed_document_pages")
-      .update(patch)
-      .eq("id", page.id);
+    const { error } = await tryWriteOne(
+      docprocDb(supabase)
+        .from("processed_document_pages")
+        .update(patch)
+        .eq("id", page.id)
+        .select("id"),
+      { action: "save", noun: "page" },
+    );
     setSaving(false);
     if (error) {
       setSaveError(error.message);

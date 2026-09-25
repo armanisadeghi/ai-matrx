@@ -9,6 +9,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { docprocDb } from "@/utils/supabase/docprocDb";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { OrganizationContextError } from "@ai-matrx/agents/matrx";
 import type {
@@ -157,16 +158,21 @@ export async function updateJob(
  * via the FK chain).
  */
 export async function deleteJob(jobId: string): Promise<void> {
-  const { error } = await db
-    .from(TABLE)
-    .update({ archived_at: new Date().toISOString() })
-    .eq("id", jobId);
-  if (error) throw error;
+  await writeOne(
+    db
+      .from(TABLE)
+      .update({ archived_at: new Date().toISOString() })
+      .eq("id", jobId)
+      .select("id"),
+    { action: "archive", noun: "extraction template" },
+  );
 }
 
 export async function hardDeleteJob(jobId: string): Promise<void> {
-  const { error } = await db.from(TABLE).delete().eq("id", jobId);
-  if (error) throw error;
+  await writeOne(db.from(TABLE).delete().eq("id", jobId).select("id"), {
+    action: "delete",
+    noun: "extraction template",
+  });
 }
 
 /**

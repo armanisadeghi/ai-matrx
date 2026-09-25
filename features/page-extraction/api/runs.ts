@@ -10,6 +10,7 @@
 import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import { docprocDb } from "@/utils/supabase/docprocDb";
+import { writeOne } from "@/utils/supabase/writeOne";
 import type {
   PageExtractionPageRun,
   PageExtractionResult,
@@ -33,11 +34,14 @@ export async function updateResultPayloadField(opts: {
   value: unknown;
 }): Promise<void> {
   const nextPayload = { ...opts.currentPayload, [opts.key]: opts.value };
-  const { error } = await docproc
-    .from("page_extraction_results")
-    .update({ payload: nextPayload })
-    .eq("id", opts.resultId);
-  if (error) throw error;
+  await writeOne(
+    docproc
+      .from("page_extraction_results")
+      .update({ payload: nextPayload })
+      .eq("id", opts.resultId)
+      .select("id"),
+    { action: "save", noun: "result" },
+  );
 }
 
 /**
@@ -53,11 +57,14 @@ export async function updateResultPayloadField(opts: {
  * data queryable).
  */
 export async function deleteRun(runId: string): Promise<void> {
-  const { error } = await docproc
-    .from("page_extraction_runs")
-    .delete()
-    .eq("id", runId);
-  if (error) throw error;
+  await writeOne(
+    docproc
+      .from("page_extraction_runs")
+      .delete()
+      .eq("id", runId)
+      .select("id"),
+    { action: "delete", noun: "run" },
+  );
 }
 
 export async function getRun(runId: string): Promise<PageExtractionRun | null> {

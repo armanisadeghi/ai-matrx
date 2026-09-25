@@ -11,6 +11,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAllFilesMap } from "@/features/files/redux/selectors";
 import { supabase } from "@/utils/supabase/client";
 import { docprocDb } from "@/utils/supabase/docprocDb";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import type { StudioDocSummary } from "./usePdfStudioDocs";
 
 export function useSyncStudioDocNames(
@@ -30,15 +31,18 @@ export function useSyncStudioDocNames(
       if (syncingRef.current.has(doc.id)) continue;
 
       syncingRef.current.add(doc.id);
-      void docprocDb(supabase)
-        .from("processed_documents")
-        .update({ name: file.fileName })
-        .eq("id", doc.id)
-        .then(({ error }) => {
-          syncingRef.current.delete(doc.id);
-          if (cancelled || error) return;
-          refresh();
-        });
+      void tryWriteOne(
+        docprocDb(supabase)
+          .from("processed_documents")
+          .update({ name: file.fileName })
+          .eq("id", doc.id)
+          .select("id"),
+        { action: "rename", noun: "document" },
+      ).then(({ error }) => {
+        syncingRef.current.delete(doc.id);
+        if (cancelled || error) return;
+        refresh();
+      });
     }
 
     return () => {
