@@ -8,6 +8,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 import type { Database } from "@/types/database.types";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
@@ -289,11 +290,14 @@ export function parseGating(gating: unknown): ToolGateEntry[] {
 }
 
 export async function setToolGating(toolId: string, gates: ToolGateEntry[]): Promise<void> {
-  const { error } = await sb()
-    .schema("tool").from("definition")
-    .update({ gating: gates as never })
-    .eq("id", toolId);
-  if (error) throw error;
+  await writeOne(
+    sb()
+      .schema("tool").from("definition")
+      .update({ gating: gates as never })
+      .eq("id", toolId)
+      .select("id"),
+    { action: "save", noun: "tool gating" },
+  );
 }
 
 // ─── Dependency count for soft / hard delete confirms ────────────────────────

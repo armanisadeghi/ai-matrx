@@ -2,6 +2,7 @@
 
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { createClient } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 import type { Database } from "@/types/database.types";
 import { refreshMcpCatalog } from "@/features/agents/services/mcp-connections.service";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
@@ -64,8 +65,10 @@ export async function setServerStatus(
   serverId: string,
   status: Database["public"]["Enums"]["mcp_server_status"],
 ): Promise<void> {
-  const { error } = await sb().schema("tool").from("mcp_server").update({ status }).eq("id", serverId);
-  if (error) throw error;
+  await writeOne(
+    sb().schema("tool").from("mcp_server").update({ status }).eq("id", serverId).select("id"),
+    { action: "update", noun: "MCP server" },
+  );
 }
 
 // ─── tool_mcp_config CRUD ────────────────────────────────────────────────────
@@ -152,13 +155,17 @@ export async function updateServerConfig(
       .neq("id", configId);
     if (clearErr) throw clearErr;
   }
-  const { error } = await sb().schema("tool").from("mcp_config").update(patch).eq("id", configId);
-  if (error) throw error;
+  await writeOne(
+    sb().schema("tool").from("mcp_config").update(patch).eq("id", configId).select("id"),
+    { action: "update", noun: "server config" },
+  );
 }
 
 export async function deleteServerConfig(configId: string): Promise<void> {
-  const { error } = await sb().schema("tool").from("mcp_config").delete().eq("id", configId);
-  if (error) throw error;
+  await writeOne(
+    sb().schema("tool").from("mcp_config").delete().eq("id", configId).select("id"),
+    { action: "delete", noun: "server config" },
+  );
 }
 
 /** Count of user connections referencing a specific config (used in the delete confirm). */
