@@ -1,0 +1,213 @@
+"use client";
+
+/**
+ * SpatialTile — one item on the plane, in WORLD coordinates.
+ *
+ * It owns three things and nothing else:
+ *   1. Registration: its rect goes into the store for culling, fit and minimap.
+ *   2. Culling: off-screen it keeps its React state (a stream keeps its
+ *      place) but skips layout and paint via `content-visibility: hidden`.
+ *   3. Semantic zoom: at overview tier the body is replaced by a title card
+ *      whose type is COUNTER-SCALED (`--spatial-z`), so a 300-tile board is
+ *      still a readable map instead of grey confetti.
+ * The body is a render prop that receives the tile's pace tier, so each
+ * content type decides how to use it (a stream paces commits, a video pauses
+ * off-screen, an image swaps to a thumbnail…).
+ */
+
+import { type ReactNode, useEffect, useRef } from "react";
+import type { LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { Rect } from "../engine/camera";
+import type { PaceTier } from "../engine/lod";
+import { usePaceTier, useSelectedTile, useSpatialStore } from "../engine/react";
+
+export type TileStatus = "idle" | "queued" | "streaming" | "complete" | "error";
+
+const STATUS_DOT: Record<TileStatus, string> = {
+  idle: "bg-muted-foreground/40",
+  queued: "bg-muted-foreground/60",
+  streaming: "bg-primary animate-pulse",
+  complete: "bg-success",
+  error: "bg-destructive",
+};
+
+const STATUS_LABEL: Record<TileStatus, string> = {
+  idle: "Idle",
+  queued: "Queued",
+  streaming: "Live",
+  complete: "Done",
+  error: "Failed",
+};
+
+export interface SpatialTileProps {
+  id: string;
+  rect: Rect;
+  title: string;
+  /** Small line under the title (kind, source, model…). */
+  subtitle?: string;
+  icon?: LucideIcon;
+  status?: TileStatus;
+  /** 0–1 progress for the overview card; omit when unknown. */
+  progress?: number | null;
+  /** Header actions (screen-sized buttons live in world space too). */
+  actions?: ReactNode;
+  /** Moves the tile, in world px. Header drag calls it; omit to pin the tile. */
+  onMove?: (id: string, x: number, y: number) => void;
+  children: (tier: PaceTier) => ReactNode;
+}
+
+export function SpatialTile({
+  id,
+  rect,
+  title,
+  subtitle,
+  icon: Icon,
+  status = "idle",
+  progress = null,
+  actions,
+  onMove,
+  children,
+}: SpatialTileProps) {
+  const store = useSpatialStore();
+  const tier = usePaceTier(id);
+  const selected = useSelectedTile() === id;
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => store.registerItem(id, rect), [store, id, rect]);
+
+  // Header drag moves the tile (world delta = screen delta / zoom).
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header || !onMove) return;
+    let start: { px: number; py: number; x: number; y: number } | null = null;
+    const down = (e: PointerEvent) => {
+      if (e.button !== 0 || (e.target as HTMLElement).closest("button")) return;
+      start = { px: e.clientX, py: e.clientY, x: rect.x, y: rect.y };
+      store.select(id);
+      header.setPointerCapture(e.pointerId);
+      e.stopPropagation();
+    };
+    const move = (e: PointerEvent) => {
+      if (!start) return;
+      const z = store.getCamera().z;
+      onMove(id, start.x + (e.clientX - start.px) / z, start.y + (e.clientY - start.py) / z);
+    };
+    const up = () => {
+      start = null;
+    };
+    header.addEventListener("pointerdown", down);
+    header.addEventListener("pointermove", move);
+    header.addEventListener("pointerup", up);
+    header.addEventListener("pointercancel", up);
+    return () => {
+      header.removeEventListener("pointerdown", down);
+      header.removeEventListener("pointermove", move);
+      header.removeEventListener("pointerup", up);
+      header.removeEventListener("pointercancel", up);
+    };
+  }, [store, id, rect.x, rect.y, onMove]);
+
+  const culled = tier === "offscreen";
+  const overview = tier === "overview";
+
+  return (
+    <div
+      data-spatial-tile={id}
+      onPointerDown={() => store.select(id)}
+      onDoubleClick={(e) => {
+        if ((e.target as HTMLElement).closest("[data-spatial-scroll]")) return;
+        store.fitItem(id);
+      }}
+      className={cn(
+        "absolute flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow",
+        selected ? "border-primary shadow-lg ring-2 ring-primary/30" : "border-border",
+      )}
+      style={{
+        left: rect.x,
+        top: rect.y,
+        width: rect.w,
+        height: rect.h,
+        contentVisibility: culled ? "hidden" : "visible",
+      }}
+    >
+      <div
+        ref={headerRef}
+        className={cn(
+          "flex h-10 shrink-0 items-center gap-2 border-b border-border px-3",
+          onMove && "cursor-grab active:cursor-grabbing",
+        )}
+      >
+        <span className={cn("h-2 w-2 shrink-0 rounded-full", STATUS_DOT[status])} />
+        {Icon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-foreground">{title}</p>
+        </div>
+        {subtitle && (
+          <span className="hidden shrink-0 truncate text-[11px] text-muted-foreground sm:inline">
+            {subtitle}
+          </span>
+        )}
+        {actions}
+      </div>
+      <div className="relative min-h-0 flex-1" aria-hidden={overview}>
+        <div className={cn("h-full", overview && "invisible")}>{children(tier)}</div>
+        {overview && (
+          <OverviewCard title={title} status={status} progress={progress} icon={Icon} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** The far-zoom face of a tile: counter-scaled so it reads at any zoom. */
+function OverviewCard({
+  title,
+  status,
+  progress,
+  icon: Icon,
+}: {
+  title: string;
+  status: TileStatus;
+  progress: number | null;
+  icon?: LucideIcon;
+}) {
+  return (
+    <div className="absolute inset-0 flex flex-col justify-between bg-card p-4">
+      <div className="flex items-start gap-2">
+        {Icon && (
+          <Icon
+            className="shrink-0 text-muted-foreground"
+            style={{ width: "calc(16px / var(--spatial-z))", height: "calc(16px / var(--spatial-z))" }}
+          />
+        )}
+        <p
+          className="line-clamp-3 font-semibold leading-tight text-foreground"
+          style={{ fontSize: "min(calc(15px / var(--spatial-z)), 72px)" }}
+        >
+          {title}
+        </p>
+      </div>
+      <div className="space-y-2">
+        <p
+          className="font-medium text-muted-foreground"
+          style={{ fontSize: "min(calc(11px / var(--spatial-z)), 48px)" }}
+        >
+          {STATUS_LABEL[status]}
+          {progress !== null && status === "streaming" ? ` · ${Math.round(progress * 100)}%` : ""}
+        </p>
+        <div className="h-2 overflow-hidden rounded-full bg-muted">
+          <div
+            className={cn(
+              "h-full rounded-full transition-[width] duration-700 ease-out",
+              status === "error" ? "bg-destructive" : "bg-primary",
+            )}
+            style={{
+              width: `${Math.round((status === "complete" ? 1 : (progress ?? 0)) * 100)}%`,
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
