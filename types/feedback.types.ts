@@ -16,6 +16,8 @@ export const FEEDBACK_TYPES = [
   "feature",
   "suggestion",
   "other",
+  /** An access request — someone asks for a capability they lack (RequestAccess). */
+  "request",
 ] as const;
 export type FeedbackType = (typeof FEEDBACK_TYPES)[number];
 export type FeedbackStatus =

@@ -5,7 +5,7 @@
 import type { components } from "@/types/python-generated/api-types";
 
 export type ResponseFormat = "text" | "json" | "json_schema";
-export type FeedbackType = "bug" | "feature" | "suggestion" | "other";
+export type { FeedbackType } from "@/types/feedback.types";
 
 export type AgentVariableInput = components["schemas"]["AgentVariableInput"];
 export type CreateAgentInput = components["schemas"]["CreateAgentInput"];

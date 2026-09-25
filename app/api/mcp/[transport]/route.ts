@@ -9,6 +9,7 @@
 import { createMcpHandler, withMcpAuth } from "mcp-handler";
 import type { AuthInfo } from "@modelcontextprotocol/server";
 import { z } from "zod";
+import { FEEDBACK_TYPES } from "@/types/feedback.types";
 
 import {
   submitFeedback,
@@ -25,7 +26,7 @@ import {
   setAdminDecision,
 } from "@/lib/services/agent-feedback.service";
 
-const feedbackTypeSchema = z.enum(["bug", "feature", "suggestion", "other"]);
+const feedbackTypeSchema = z.enum(FEEDBACK_TYPES);
 const feedbackPrioritySchema = z.enum(["low", "medium", "high", "critical"]);
 const feedbackStatusSchema = z.enum([
   "new",

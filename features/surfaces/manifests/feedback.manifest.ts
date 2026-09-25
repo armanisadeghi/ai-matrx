@@ -247,7 +247,7 @@ You cannot submit the feedback, attach screenshots, or set the admin category an
  * true` value above; optional keys mirror the rest.
  */
 export function createFeedbackScope(values: {
-  feedback_type: "bug" | "feature" | "suggestion" | "other";
+  feedback_type: (typeof FEEDBACK_TYPES)[number];
   content: string;
   attachment_count: number;
   submitted: boolean;

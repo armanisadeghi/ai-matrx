@@ -23,6 +23,7 @@ import {
   Send,
   Settings2,
   X,
+    KeyRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -100,6 +101,7 @@ const FEEDBACK_TYPE_CHIPS: Record<
   feature: { label: "Feature", icon: Lightbulb },
   suggestion: { label: "Suggestion", icon: MessageSquare },
   other: { label: "Other", icon: HelpCircle },
+  request: { label: "Access", icon: KeyRound },
 };
 
 /** Active-state chip colors (inactive chips stay neutral). */
@@ -111,6 +113,8 @@ const FEEDBACK_TYPE_ACTIVE_CLASSES: Record<FeedbackType, string> = {
     "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400 [&_svg]:text-green-600 dark:[&_svg]:text-green-400",
   other:
     "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 [&_svg]:text-amber-600 dark:[&_svg]:text-amber-400",
+  request:
+    "border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400 [&_svg]:text-sky-600 dark:[&_svg]:text-sky-400",
 };
 
 // ─── Agent prompt builder ─────────────────────────────────────────────────────

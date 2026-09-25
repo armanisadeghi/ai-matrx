@@ -1,4 +1,5 @@
 import * as React from "react";
+import type { FeedbackType } from "@/types/feedback.types";
 import { sendEmail } from "./client";
 import { renderTemplate } from "./render";
 import {
@@ -452,7 +453,7 @@ export async function sendFeedbackAssignmentEmail(options: {
   assigneeId: string;
   assignerName: string;
   feedbackId: string;
-  feedbackType: "bug" | "feature" | "suggestion" | "other";
+  feedbackType: FeedbackType;
   feedbackPreview: string;
   feedbackRoute: string;
   categoryName?: string | null;
@@ -512,7 +513,9 @@ export async function sendFeedbackAssignmentEmail(options: {
         ? "feature request"
         : feedbackType === "suggestion"
           ? "suggestion"
-          : "feedback item";
+          : feedbackType === "request"
+            ? "access request"
+            : "feedback item";
 
   const result = await sendEmail({
     to: assignee.email,

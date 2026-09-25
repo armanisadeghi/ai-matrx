@@ -100,7 +100,7 @@ toggle, or a Save that cannot save. Where they would plausibly want it, render
 | Owner | Lands in | Mechanism |
 | --- | --- | --- |
 | `{ organizationId }` | that org's owners/admins: DM + `/settings/access-requests` | `setting_access_request_create`, action `request_access.manual` (admin opens the setting, then **Mark as done**) |
-| `"system"` or the system org id | the platform team's feedback queue | `submitFeedback`, `feedback_type: "other"`, `metadata.kind = "access_request"` |
+| `"system"` or the system org id | the platform team's feedback queue | `submitFeedback`, `feedback_type: "request"` (+ `metadata.kind = "access_request"` with the structured target) |
 
 `manageHref` is where an admin makes the change and must sit under
 `/organizations/<org>/settings` (the ledger's link rule); otherwise the org's

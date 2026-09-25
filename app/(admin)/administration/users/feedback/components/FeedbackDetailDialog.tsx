@@ -98,6 +98,7 @@ import {
   CornerDownRight,
   Paperclip,
   X,
+    KeyRound,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "@/lib/toast";
@@ -140,6 +141,7 @@ const feedbackTypeIcons: Record<FeedbackType, React.ReactNode> = {
   feature: <Flame className="w-5 h-5 text-purple-500" />,
   suggestion: <Lightbulb className="w-5 h-5 text-yellow-500" />,
   other: <HelpCircle className="w-5 h-5 text-gray-500" />,
+  request: <KeyRound className="w-5 h-5 text-sky-500" />,
 };
 
 const authorTypeConfig: Record<

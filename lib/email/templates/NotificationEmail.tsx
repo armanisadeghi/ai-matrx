@@ -1,5 +1,6 @@
 import { Button, Heading, Text, Section, Hr } from "react-email";
 import * as React from "react";
+import type { FeedbackType } from "@/types/feedback.types";
 import { BaseLayout } from "./BaseLayout";
 
 // ─── Task Assigned ──────────────────────────────────────────────────────────
@@ -113,7 +114,7 @@ export function MessageReceivedEmail({
 
 interface FeedbackAssignedEmailProps {
   assignerName: string;
-  feedbackType: "bug" | "feature" | "suggestion" | "other";
+  feedbackType: FeedbackType;
   feedbackPreview: string;
   feedbackRoute: string;
   feedbackUrl: string;
@@ -128,6 +129,7 @@ const feedbackTypeLabel: Record<
   feature: "Feature",
   suggestion: "Suggestion",
   other: "Feedback",
+  request: "Access request",
 };
 
 export function FeedbackAssignedEmail({

@@ -52,6 +52,7 @@ import {
     LayoutGrid,
     Settings2,
     Hash,
+    KeyRound,
 } from 'lucide-react';
 import { toast } from "@/lib/toast";
 import { cn } from '@/lib/utils';
@@ -79,6 +80,7 @@ const feedbackTypeIcons: Record<FeedbackType, React.ReactNode> = {
     feature: <Rainbow className="w-3.5 h-3.5 text-purple-500" />,
     suggestion: <Lightbulb className="w-3.5 h-3.5 text-yellow-500" />,
     other: <HelpCircle className="w-3.5 h-3.5 text-gray-500" />,
+    request: <KeyRound className="w-3.5 h-3.5 text-sky-500" />,
 };
 
 const STATUS_OPTIONS: { value: FeedbackStatus | 'all'; label: string }[] = [
@@ -100,6 +102,7 @@ const TYPE_OPTIONS: { value: FeedbackType | 'all'; label: string }[] = [
     { value: 'feature', label: 'Feature' },
     { value: 'suggestion', label: 'Suggestion' },
     { value: 'other', label: 'Other' },
+    { value: 'request', label: 'Access request' },
 ];
 
 export default function CategoriesTab() {

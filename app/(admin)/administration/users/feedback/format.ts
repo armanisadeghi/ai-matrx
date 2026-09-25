@@ -22,6 +22,7 @@ export const feedbackTypeLabels: Record<FeedbackType, string> = {
   feature: "Feature Request",
   suggestion: "Suggestion",
   other: "Other",
+  request: "Access Request",
 };
 
 /** One line per feedback item — list-level human copy. */

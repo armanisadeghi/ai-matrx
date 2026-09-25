@@ -12,6 +12,7 @@ import type {
   UserFeedback,
   FeedbackStatus,
   FeedbackUserMessage,
+  FeedbackType,
 } from "@/types/feedback.types";
 import {
   Bug,
@@ -35,6 +36,7 @@ import {
   Ban,
   Clock,
   UserCheck,
+  KeyRound,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -383,6 +385,8 @@ function FeedbackTypeIcon({ type }: { type: string }) {
       return <Lightbulb className="h-4 w-4 text-yellow-500" />;
     case "suggestion":
       return <MessageSquare className="h-4 w-4 text-blue-500" />;
+    case "request":
+      return <KeyRound className="h-4 w-4 text-sky-500" />;
     default:
       return <HelpCircle className="h-4 w-4 text-muted-foreground" />;
   }
@@ -499,7 +503,7 @@ function FeedbackItem({
     try {
       const updates: {
         description?: string;
-        feedback_type?: "bug" | "feature" | "suggestion" | "other";
+        feedback_type?: FeedbackType;
       } = {};
       if (editDescription !== item.description)
         updates.description = editDescription;
@@ -619,6 +623,7 @@ function FeedbackItem({
                     <SelectItem value="feature">Feature</SelectItem>
                     <SelectItem value="suggestion">Suggestion</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="request">Access request</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (

@@ -221,7 +221,7 @@ export async function updateUserOwnFeedback(
   feedbackId: string,
   updates: {
     description?: string;
-    feedback_type?: "bug" | "feature" | "suggestion" | "other";
+    feedback_type?: FeedbackType;
   },
 ): Promise<{ success: boolean; error?: string; data?: UserFeedback }> {
   try {

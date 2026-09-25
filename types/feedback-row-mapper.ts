@@ -36,7 +36,8 @@ function narrowFeedbackType(raw: string): FeedbackType {
     raw === "bug" ||
     raw === "feature" ||
     raw === "suggestion" ||
-    raw === "other"
+    raw === "other" ||
+    raw === "request"
   ) {
     return raw;
   }

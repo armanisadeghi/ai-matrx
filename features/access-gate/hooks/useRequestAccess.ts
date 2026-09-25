@@ -67,9 +67,9 @@ export function useRequestAccess(target: RequestAccessTarget) {
           organizationId: activeOrganizationId,
         });
         const result = await submitFeedback({
-          // No "request" type exists in the feedback vocabulary; `metadata.kind`
-          // = "access_request" is what marks it (FEATURE.md, RequestAccess).
-          feedback_type: "other",
+          // The feedback vocabulary's access-request type; `metadata` carries
+          // the structured target (FEATURE.md, RequestAccess).
+          feedback_type: "request",
           route: typeof window === "undefined" ? "" : window.location.pathname,
           organization_id: organizationId,
           description: `Access request: ${requestTitle(target)}\n\n${requestBody(target, ctx, note)}`,
