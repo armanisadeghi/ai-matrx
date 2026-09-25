@@ -51,7 +51,7 @@
 --
 -- Idempotent: `on conflict (kind) do nothing`, so it applies twice with the same result.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 do $lvl$

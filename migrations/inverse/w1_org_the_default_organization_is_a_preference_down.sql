@@ -13,7 +13,7 @@
 -- same four statements as a chair step, and nothing on production reads any of these objects
 -- while `custom/signup_provisioning_guard` resolves false.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 drop trigger if exists default_organization_is_a_membership on users.user_preferences;
 drop function if exists iam._default_organization_is_a_membership();

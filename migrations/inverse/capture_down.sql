@@ -15,7 +15,7 @@
 -- capture that already landed keeps its `_source.via = 'capture'` provenance forever, which
 -- is the point of putting the provenance on the record instead of in a side table.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 drop function if exists custom.capture_submit(uuid, uuid, text, jsonb, jsonb, text, timestamptz, jsonb);

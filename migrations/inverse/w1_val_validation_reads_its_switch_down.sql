@@ -16,7 +16,7 @@
 -- ORDER MATTERS: the trigger body calls `custom.store_is_open`, so the body is restored
 -- first and the function dropped after it has no caller left.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 -- W1-VAL's body, restored before its callee is dropped.

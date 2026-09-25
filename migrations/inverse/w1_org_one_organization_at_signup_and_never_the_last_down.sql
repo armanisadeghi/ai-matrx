@@ -20,7 +20,7 @@
 -- It is a `-- target: branch` file and can never reach production; nothing on production runs
 -- the ON path while `custom/signup_provisioning_guard` resolves false.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 drop trigger if exists guard_last_organization_membership_update on iam.memberships;
 drop trigger if exists guard_last_organization_membership_delete on iam.memberships;

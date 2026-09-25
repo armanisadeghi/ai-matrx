@@ -1,6 +1,6 @@
 -- INVERSE of migrations/campaign/sharelane_the_lane_door_names_the_organization.sql: restores public.store_door_lane verbatim.
 -- lane: SHARE-LANE-CONTROL
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION public.store_door_lane(p_resource_type text, p_resource_id uuid)
  RETURNS jsonb

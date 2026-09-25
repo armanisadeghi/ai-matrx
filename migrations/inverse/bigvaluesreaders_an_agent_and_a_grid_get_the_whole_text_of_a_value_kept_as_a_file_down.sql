@@ -8,7 +8,7 @@
 -- based-on: custom.read_records_matching(uuid, uuid, jsonb, boolean, integer, integer) 51804c15d93860a44a00c8bd727a6f5655baf8caa290124670dc6600dbb15e33
 -- based-on: custom.resolve_context(text, uuid, uuid[], uuid[]) e8f144ae46326673403547f773d5d205611325d94e4d33b3781ed3d99b42034a
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom.read_record(p_organization_id uuid, p_record_id uuid, p_by_id boolean DEFAULT false)

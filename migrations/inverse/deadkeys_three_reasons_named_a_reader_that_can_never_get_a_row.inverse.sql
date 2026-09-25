@@ -3,7 +3,7 @@
 -- tables held before the withdrawal, read live from pg_attribute on 2026-09-22 and written out here
 -- rather than inferred, so the undo cannot widen anything. It puts back a key that still opens no
 -- door; it exists for rule 27 on the rehearsal branch, not as a repair.
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 grant select (id, url, captured_at, title) on extend.wbx_capture to anon;
 grant select (id, surface_name, role_name, agent_id, kind, position, settings, scope_id, updated_at, deleted_at)

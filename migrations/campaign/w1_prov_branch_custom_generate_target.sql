@@ -23,7 +23,7 @@
 --
 -- THE INVERSE: `migrations/inverse/w1_prov_branch_custom_generate_target_down.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 do $$

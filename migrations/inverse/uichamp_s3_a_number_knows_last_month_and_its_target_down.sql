@@ -23,7 +23,7 @@
 -- based-on: custom.dashboard_run(uuid, uuid, jsonb, jsonb, text) 511d16a4413fbe74a1db93f63f66ad0565f8e32cefa4d17a08a0062141ef9f97
 -- based-on: custom.dashboard_block_normalize(uuid, uuid, jsonb) 327b9588847703903a0079b364b784c20d275c0ced3a325b52aa4e1bf5c785c0
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '120s';
 
 drop function custom.dashboard_run(uuid, uuid, jsonb, jsonb, text);

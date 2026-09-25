@@ -29,7 +29,7 @@
 -- `w1_prov_the_provisioner_door_on_main.sql` in the same working session. It is `-- target:
 -- branch` and can never reach the main database.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 -- The three functions the campaign invented on this copy. They do not exist on the main

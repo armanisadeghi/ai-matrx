@@ -6,7 +6,7 @@
 -- created by the up file for a trigger the window file attaches — until then NO trigger runs it, so dropping it
 -- here puts back exactly the state before the up (the window file's own inverse detaches its trigger first).
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION platform._associations_validate_text_anchor()
  RETURNS trigger

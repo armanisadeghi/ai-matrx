@@ -3,7 +3,7 @@
 --
 -- chair-step: it replaces two live SECURITY DEFINER bodies.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION hr.leave_case_open(p_employment_id uuid, p_case_kind text, p_continuity text, p_starts_on date, p_entitlement_hours numeric DEFAULT NULL::numeric, p_entitlement_measure text DEFAULT 'rolling_backward'::text, p_expected_return_on date DEFAULT NULL::date, p_runs_concurrent_with_pto boolean DEFAULT true, p_concurrent_policy_ids uuid[] DEFAULT '{}'::uuid[], p_leave_request_id uuid DEFAULT NULL::uuid)
  RETURNS jsonb

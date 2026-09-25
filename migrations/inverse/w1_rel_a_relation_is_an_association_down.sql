@@ -38,7 +38,7 @@
 -- avoid. `platform.association_types` record->record is deleted only when no live association
 -- still uses it, so an abort cannot orphan an edge somebody else wrote.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 drop function if exists platform.relations_to(uuid, uuid);

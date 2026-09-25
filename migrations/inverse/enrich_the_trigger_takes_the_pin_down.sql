@@ -8,7 +8,7 @@
 -- keep existing and are simply no longer called. Run it BEFORE
 -- `enrich_a_persons_edit_holds_the_cell_down.sql`, which drops them.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 CREATE OR REPLACE FUNCTION custom._value_envelope()

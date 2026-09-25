@@ -5,7 +5,7 @@
 -- The inverse of migrations/campaign/gridmanual_a_hand_ordered_view_opens_in_its_layout.sql: each
 -- view it moved goes back to the layout it held before (the Sheet), and carries ORDER-FIX's marker again.
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 update platform.saved_view

@@ -9,7 +9,7 @@
 -- based-on: custom.inbox_remind_tick() e546142f8b379d387c98f59eeba211e30e36ea237efd2704ab56085aac519aa9
 -- based-on: custom.comment_mention_deliver(uuid, uuid, uuid, uuid, uuid, text, text, text) b072b613795f25eaa067f0d9844f86c35c5b7f5c2f74599c18a4fbb907448b2f
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '120s';
 
 CREATE OR REPLACE FUNCTION custom.agg_deliver(p_organization_id uuid, p_rule_id uuid, p_record_id uuid, p_channel text, p_recipient_user_id uuid, p_event_key text, p_subject text, p_body text, p_payload jsonb DEFAULT '{}'::jsonb, p_dedupe_suffix text DEFAULT NULL::text)

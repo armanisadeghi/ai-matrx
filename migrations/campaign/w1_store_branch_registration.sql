@@ -33,7 +33,7 @@
 -- `trg_version_capture` check SKIPs an unversioned row rather than demanding a trigger
 -- this campaign has not built yet.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 insert into platform.entity_types (

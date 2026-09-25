@@ -10,7 +10,7 @@
 -- based-on: hr._wf_unproject_step(uuid, text) b3ff3b1799a0def4724fe9d706108a998660aab9439d38231384cb47732b48ff
 -- based-on: hr._wf_project_step(uuid) 5f5b551044a567e2a23e367b07b6e101325e0d1dbb039912ce62b40e51f2077b
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION hr._wf_unproject_step(p_step uuid, p_outcome text DEFAULT 'completed'::text)
  RETURNS integer

@@ -14,7 +14,7 @@
 -- lock: platform
 -- lane: VERSION-HISTORY-FIX
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 drop trigger if exists zzzzz_no_change_keeps_its_version on web.page;
 drop trigger if exists zzzzz_no_change_keeps_its_version on workbench.notes;

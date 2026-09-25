@@ -6,7 +6,7 @@
 -- With this applied the per-argument census rises from 217 back to 225 and
 -- `uv run python scripts/check_definer_bodies_decide_access.py` fails on the ceiling again.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 update platform.client_callable_door
    set argument_rules = null

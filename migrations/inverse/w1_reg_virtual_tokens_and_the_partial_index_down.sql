@@ -27,7 +27,7 @@
 --     select encode(sha256(convert_to(pg_get_functiondef('<fn>'::regprocedure),'UTF8')),'hex');
 -- which is byte-for-byte what the runner compares. Reported as FOUND OUTSIDE BRIEF.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 delete from platform.entity_types where relation_kind = 'virtual';

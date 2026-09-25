@@ -8,7 +8,7 @@
 -- code reads: dropping it returns platform.associations to the exact set of triggers it carried
 -- before, and the stored form it maintained is a cache the system does not need (VIS-7).
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 drop trigger  if exists zz_w2_epoch_bump on platform.associations;
 drop function if exists custom.has_visibility_at(uuid, text, uuid, public.permission_level, uuid, bigint);

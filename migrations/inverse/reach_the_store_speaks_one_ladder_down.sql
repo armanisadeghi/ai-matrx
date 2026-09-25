@@ -24,7 +24,7 @@
 --    the next DDL that touches each function. A door with no row is a door with no
 --    grant, which is the whole point of the mechanism.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 delete from platform.client_callable_door
  where schema_name = 'custom'

@@ -53,7 +53,7 @@
 --
 -- REVERSIBLE: `migrations/inverse/w1_org_is_personal_is_deprecated_and_audience_is_a_word_down.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 -- 1. REC-61 — THE ORGANIZATION FLAG STOPS RULING ---------------------------------------------
 drop index iam.organizations_one_personal_per_creator;

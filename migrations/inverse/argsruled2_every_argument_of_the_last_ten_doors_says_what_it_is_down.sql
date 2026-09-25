@@ -5,7 +5,7 @@
 -- every door row's argument_rules goes back to exactly what it held on the MAIN database on
 -- 2026-09-23 before that file ran. Rule 27 only.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 update platform.client_callable_door
    set argument_rules = NULL

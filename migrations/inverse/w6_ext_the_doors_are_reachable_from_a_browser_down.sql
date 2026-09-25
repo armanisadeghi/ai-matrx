@@ -7,7 +7,7 @@
 -- prints `platform.schema_exposure_violations('custom')`, which is empty when
 -- the schema holds nothing a client role may touch except its declared doors.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 alter role authenticator set pgrst.db_schemas =

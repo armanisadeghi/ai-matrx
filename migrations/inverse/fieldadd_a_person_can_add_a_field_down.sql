@@ -27,7 +27,7 @@
 -- and Fields still point at them. Dropping them would delete somebody's
 -- dropdown to undo a code change.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 -- LEFT STANDING (lane INVERSE-GUARD, 2026-09-21): drop function if exists custom.field_declare(uuid, uuid, jsonb);

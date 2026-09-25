@@ -2,7 +2,7 @@
 -- `custom.query_record_as_of` goes back to the body that let a 2027 period answer as today
 -- and blanked every undated key under a world date.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 create or replace function custom.query_record_as_of(p_organization_id uuid, p_record_id uuid,

@@ -2,7 +2,7 @@
 --
 -- INVERSE of migrations/campaign/w2_pred_one_visibility_question_per_page.sql.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 CREATE OR REPLACE FUNCTION iam.accessible_entity_ids(p_type text, p_required permission_level, p_depth integer, p_include_public boolean)

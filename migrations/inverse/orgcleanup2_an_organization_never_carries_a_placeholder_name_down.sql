@@ -9,7 +9,7 @@
 -- them reached the organization picker overnight. It exists so rule 27 (up -> inverse ->
 -- up) can prove the guard against its own prior state, not as an end state.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 drop trigger if exists organization_name_is_never_a_placeholder_i on iam.organizations;
 drop trigger if exists organization_name_is_never_a_placeholder_u on iam.organizations;

@@ -4,7 +4,7 @@
 -- rcstore_a_content_schema_down.sql, which refuses while any function or table still lives in schema
 -- content; the restored guard body and content._capture_bypassed leave together, never apart.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 delete from platform.client_callable_door
  where schema_name = 'content' and function_name in ('read_published', 'read_published_by_slug', 'thin_autosave_versions');

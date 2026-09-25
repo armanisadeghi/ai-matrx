@@ -16,7 +16,7 @@
 --     provenance, their absence reasons and their alternates. They are values; the fact
 --     that a model wrote them does not make them the migration's to remove.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 delete from platform.client_callable_door

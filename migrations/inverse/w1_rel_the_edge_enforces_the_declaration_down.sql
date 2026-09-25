@@ -14,7 +14,7 @@
 -- `trg_associations_reachability`, `trg_validate_edge_payload` and the rest - is untouched by
 -- name, because reverting a lane never takes a peer's guard with it.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 drop trigger if exists trg_associations_zzz_relation_contract on platform.associations;

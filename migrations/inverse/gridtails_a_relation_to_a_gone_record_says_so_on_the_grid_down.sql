@@ -3,7 +3,7 @@
 -- lock: custom
 -- based-on: custom.read_records_matching(uuid, uuid, jsonb, boolean, integer, integer) 8e277671a459eb6d0342b5ee833fc1557e4be5e0be1386a62a18946d97d89187
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom.read_records_matching(p_organization_id uuid, p_table_id uuid, p_filter jsonb DEFAULT '{}'::jsonb, p_by_id boolean DEFAULT false, p_limit integer DEFAULT 200, p_offset integer DEFAULT 0)

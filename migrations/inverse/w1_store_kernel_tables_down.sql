@@ -19,7 +19,7 @@
 -- loop re-applies the up with `--reapply`, which re-executes bytes the ledger already
 -- holds.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 do $$

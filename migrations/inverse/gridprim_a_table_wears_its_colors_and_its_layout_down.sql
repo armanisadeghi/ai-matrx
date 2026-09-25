@@ -12,7 +12,7 @@
 -- and nothing reads them once the doors are gone. A dashboard or summary that asked for
 -- median / filled / empty / unique is refused by name again ("is not a measure").
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 drop function if exists custom.grid_layout(uuid, uuid, uuid);

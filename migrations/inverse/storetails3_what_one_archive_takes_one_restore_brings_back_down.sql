@@ -10,7 +10,7 @@
 -- based-on: custom.table_archive(uuid, uuid, integer, boolean) 6409a759ab79361e8ad339ba615b88a02d186f8ab173b40f513ac29e2c5ff4d4
 -- based-on: custom.record_restore(uuid, uuid) ed5e02a538b49478e9f32d2061daf114d2415186d3cbe5e3f79bb17727394c44
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '120s';
 
 CREATE OR REPLACE FUNCTION custom.record_delete(p_organization_id uuid, p_record_id uuid)

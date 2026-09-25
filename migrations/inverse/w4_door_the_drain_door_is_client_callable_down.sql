@@ -1,6 +1,6 @@
 -- chair-step: the DOWN migration for w4_door_the_drain_door_is_client_callable.sql. It takes back the one client EXECUTE grant on custom.io_outbox_drain, puts the registry row back to `signed_in_callers = false` with the lane sentence it carried before, and restores the body to the based-on bytes (no membership check). A REVOKE on a live door, an UPDATE of a registry row, and a CREATE OR REPLACE FUNCTION that removes a check are all outside the additive allow-list, which is exactly why this is a chair step.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 revoke execute on function custom.io_outbox_drain(uuid, text, integer, text) from authenticated;

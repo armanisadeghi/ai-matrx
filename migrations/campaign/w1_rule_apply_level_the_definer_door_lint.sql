@@ -33,7 +33,7 @@
 -- IT IS `-- target: branch` AND NOTHING ELSE. Production already has all six; this file can
 -- never be pointed at it, and the runner refuses it there by header.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 CREATE OR REPLACE FUNCTION iam.is_client_lane()

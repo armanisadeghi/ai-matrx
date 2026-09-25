@@ -5,7 +5,7 @@
 --
 -- CHECKLISTS — the inverse of `checklists_assigning_somebody_their_own_row.sql`.
 
-set lock_timeout = '45s';
+set lock_timeout = '2s';
 
 create or replace function custom.work_assign(p_organization_id uuid, p_record_id uuid, p_assignee_user_id uuid, p_due_date timestamp with time zone DEFAULT NULL::timestamp with time zone, p_clear_due boolean DEFAULT false)
  RETURNS jsonb

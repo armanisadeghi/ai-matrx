@@ -14,7 +14,7 @@
 --   subscription_user_or_org     CHECK ((user_id IS NOT NULL) OR (org_id IS NOT NULL))
 --   subscription_user_idx        btree (user_id)
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 alter table billing.customer
   add constraint customer_user_id_fkey

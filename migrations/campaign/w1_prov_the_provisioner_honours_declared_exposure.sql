@@ -103,7 +103,7 @@
 --
 -- THE INVERSE: `migrations/inverse/w1_prov_the_provisioner_honours_declared_exposure_down.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 -- ── the declaration ───────────────────────────────────────────────────────────

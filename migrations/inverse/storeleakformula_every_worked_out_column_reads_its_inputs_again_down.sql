@@ -7,7 +7,7 @@
 -- lock: custom
 -- lane: STORE-LEAK-FORMULA
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '300s';
 
 select set_config('app.actor_system', 'campaign/storeleakformula-repair-undo', true);

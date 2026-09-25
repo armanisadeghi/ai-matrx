@@ -6,7 +6,7 @@
 -- record-store table stops firing (its changes reach the spine only when a webhook listens), and
 -- the events lose changed_fields. Schedules and their past runs are untouched.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom._record_events_to_activity()

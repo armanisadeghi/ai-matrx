@@ -32,7 +32,7 @@
 -- BRANCH ONLY, and it needs no production half: production already holds every row.
 -- THE INVERSE: `migrations/inverse/w1_prov_branch_registry_levelling_down.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 -- ── platform.provision_rule_message — the 89 four-part refusal messages ────────

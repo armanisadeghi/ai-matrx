@@ -12,7 +12,7 @@
 --
 -- chair-step: it replaces one live client door.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.portal_card(p_organization_id uuid, p_portal_id uuid)
  RETURNS jsonb

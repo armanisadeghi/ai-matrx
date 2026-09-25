@@ -13,7 +13,7 @@
 --   key raises `22P02 invalid input syntax for type uuid` on every write — the defect this file
 --   found while converting the live cells — so it exists for the red twin.
 
-set lock_timeout = '45s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 CREATE OR REPLACE FUNCTION custom._work_shape_guard()

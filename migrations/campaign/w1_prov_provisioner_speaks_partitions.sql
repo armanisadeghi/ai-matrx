@@ -103,7 +103,7 @@
 -- based-on: platform.provision_validate(jsonb, text, uuid) 8e81b9f03b4b8f84aaa84a77f65e8f54b9bd500b6ef15f78416008a0f306d840
 -- based-on: platform.provision(jsonb, text, uuid, text) 411b3f4fef5de4c9709ca0d252978b93302f0f2062f5565b93f3144949a93b42
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 -- ── 1. the refusal messages for the new rules (§4.8: field · why + rule id · legal · what to do)

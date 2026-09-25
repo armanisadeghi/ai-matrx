@@ -11,7 +11,7 @@
 -- Running this on purpose leaves the checklist product unable to start a run. It exists to
 -- prove the repair was a repair.
 
-set lock_timeout = '45s';
+set lock_timeout = '2s';
 
 create or replace function custom._checklist_watch_stmt_update()
  returns trigger

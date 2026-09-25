@@ -19,7 +19,7 @@
 -- standing hole for a relation name that no longer needs it. §3.5's ratchet is shrink-only,
 -- and this is the shrink.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 do $$

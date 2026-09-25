@@ -2,7 +2,7 @@
 -- chair-step: re-creates a policy and re-issues a grant by construction. It restores the EXACT
 -- three-column ACL and the exact predicate the table held on 2026-09-22, read live before the
 -- withdrawal and written out here rather than inferred.
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 create policy feature_knob_read_anon on platform.feature_knob
   for select to anon using (public_read);

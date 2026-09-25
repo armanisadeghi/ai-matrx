@@ -3,7 +3,7 @@
 -- based-on: public.assoc_for_sources(text, uuid[], text) b29c92b311411f9c298e7db82fb401e70b95bb96c256982d85e681c7f07c6273
 -- based-on: public.assoc_list(text, uuid, text, text) 3add14905ec5b106bfa58e756e68012f782c8794b40cecdefe8cc345ac42984d
 -- based-on: custom.resolve_context(text, uuid, uuid[], uuid[]) e68993b8d44290404e87020012038a530abb4d450a0e57c98f342be60bbeeb15
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION public.assoc_for_entity(p_type text, p_id uuid)
  RETURNS TABLE(id uuid, direction text, other_type text, other_id uuid, role text, label text, "position" integer, metadata jsonb, organization_id uuid, created_at timestamp with time zone)

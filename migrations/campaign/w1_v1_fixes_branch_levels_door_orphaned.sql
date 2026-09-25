@@ -48,7 +48,7 @@
 -- applies twice with the same result, and the state it produces is the state production
 -- already holds.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 -- 1. THE KIND LIST, WIDENED TO PRODUCTION'S. A CHECK constraint cannot be widened in

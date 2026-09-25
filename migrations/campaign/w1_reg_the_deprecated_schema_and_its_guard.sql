@@ -96,7 +96,7 @@
 --
 -- REVERSIBLE: `migrations/inverse/w1_reg_the_deprecated_schema_and_its_guard_down.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 create schema if not exists deprecated;

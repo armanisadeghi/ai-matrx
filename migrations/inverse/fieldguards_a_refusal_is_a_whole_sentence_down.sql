@@ -1,7 +1,7 @@
 -- THE INVERSE of fieldguards_a_refusal_is_a_whole_sentence.sql — every guard body and
 -- the field_retire door exactly as they were on the main database at 2026-09-19, and the
 -- three new helper functions removed. Run this and the store refuses in mid-air again.
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 

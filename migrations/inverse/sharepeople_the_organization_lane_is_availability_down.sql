@@ -1,5 +1,5 @@
 -- INVERSE of migrations/campaign/sharepeople_the_organization_lane_is_availability.sql: the body byte-for-byte as it was.
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.share_lane_set(p_organization_id uuid, p_subject_id uuid, p_choice text, p_level permission_level DEFAULT NULL::permission_level)
  RETURNS jsonb

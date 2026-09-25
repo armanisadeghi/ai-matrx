@@ -7,7 +7,7 @@
 -- custom.record_aggregate(…, p_compare). What it undoes: the aggregate asks the flat compiler
 -- again, so a Rule-expression filter is refused by name there while the grid and the board answer it.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom.agg_sql(p_organization_id uuid, p_table_id uuid, p_group_by jsonb DEFAULT '[]'::jsonb, p_measures jsonb DEFAULT '[]'::jsonb, p_bucket jsonb DEFAULT NULL::jsonb, p_filter jsonb DEFAULT '{}'::jsonb, p_limit integer DEFAULT 200, p_required text DEFAULT 'viewer'::text, p_window jsonb DEFAULT NULL::jsonb)

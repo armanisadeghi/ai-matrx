@@ -5,7 +5,7 @@
 -- deletes their two platform.client_callable_door rows. What it undoes: a signed-in person's
 -- summary picker is refused its list again ("permission denied"). Nothing else changes.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 delete from platform.client_callable_door

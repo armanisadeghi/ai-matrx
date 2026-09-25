@@ -22,7 +22,7 @@
 -- based-on: custom.validate_values(uuid, custom.record[], jsonb, text) 2ff3f10c613cba5eb796d0c8c8a136bb21a3a396521379c7a543acca268d5dac
 --
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '120s';
 
 -- 1 · the eight bodies, back to what they were (each is the clone's live body the up replaced).

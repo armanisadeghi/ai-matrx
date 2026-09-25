@@ -13,7 +13,7 @@
 --
 -- ORDER: the trigger before its function, the door rows and grants before the bodies.
 
-set lock_timeout = '10s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 delete from platform.client_callable_door

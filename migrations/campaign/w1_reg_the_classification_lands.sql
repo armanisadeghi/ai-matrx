@@ -62,7 +62,7 @@
 -- deletes exactly the rows this file inserted (by the note it stamps on each) and takes
 -- every type back to null.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 -- ---------------------------------------------------------------- 1. the three CHECKs

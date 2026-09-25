@@ -4,7 +4,7 @@
 -- (so nothing re-grants it), then the function. Nothing else in the store knows
 -- this door exists, so there is nothing to put back.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 delete from platform.client_callable_door

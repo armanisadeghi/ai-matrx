@@ -2,7 +2,7 @@
 -- window-class: DROP/CREATE TRIGGER on platform.associations and DROP TRIGGER on platform.comments freeze the 23-relation supautils set for this short transaction; applied in the 1-4 AM PT window.
 -- based-on: trigger trg_associations_validate_text_anchor on platform.associations b0499f459fceaf52525aebd2f23fba94aa2636748c9e2c43b85d76f79f3fbbba
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 drop trigger trg_comments_validate_text_anchor on platform.comments;
 drop trigger trg_associations_validate_text_anchor on platform.associations;

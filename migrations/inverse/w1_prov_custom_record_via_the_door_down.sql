@@ -18,7 +18,7 @@
 -- §6.10 is why the DROP is safe when it IS this file's alone: nothing outside the campaign
 -- ever wrote a row into schema `custom`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 do $$

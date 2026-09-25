@@ -2,7 +2,7 @@
 -- door row and its authenticated grant back exactly as they were live on production and the dev clone on 2026-09-25.
 -- The row is declared before the grant: the ddl guard refuses a client grant on an undeclared definer.
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.context_resolve(p_organization_id uuid, p_bindings jsonb, p_scope_slug text DEFAULT 'scopes'::text)
  RETURNS jsonb

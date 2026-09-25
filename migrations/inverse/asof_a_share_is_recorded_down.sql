@@ -2,7 +2,7 @@
 -- platform value, which is what made a real person's share invisible to history. Verbatim
 -- the body that stood on the main database before this lane.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '180s';
 
 CREATE OR REPLACE FUNCTION history.grant_capture()

@@ -7,7 +7,7 @@
 -- door rows stay (they belong to the lane file) but their signed-in lane is CLOSED first, with its
 -- reason — otherwise the declared-doors sweep puts the grant straight back in the same statement.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 update platform.client_callable_door

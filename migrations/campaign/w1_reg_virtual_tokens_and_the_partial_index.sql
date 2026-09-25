@@ -57,7 +57,7 @@
 --
 -- REVERSIBLE: `migrations/inverse/w1_reg_virtual_tokens_and_the_partial_index_down.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 -- ---------------------------------------------------------------- 1. relation_kind: a third value

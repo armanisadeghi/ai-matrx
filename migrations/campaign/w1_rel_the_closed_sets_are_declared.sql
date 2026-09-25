@@ -28,7 +28,7 @@
 -- allow-list exists to stop. Until that lands, W1-REL's closed sets reach the main database
 -- through this file as an attended step.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 insert into platform.association_types (source_type, target_type, label, container_side, conveys_max, is_active, allows_loops, notes)
 values ('record', 'record', null, 'none', 'editor', true, true,

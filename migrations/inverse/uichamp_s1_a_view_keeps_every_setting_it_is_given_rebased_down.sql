@@ -21,7 +21,7 @@
 -- lane: S1-PRIME-VIEW-KEYS
 -- based-on: custom.view_declare(uuid, uuid, jsonb) e3cbe21fba7bf799e419c058154fc98f38b4a12f9e5bbabee3fe4340b5f5cd82
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom.view_declare(p_organization_id uuid, p_table_id uuid, p_spec jsonb)

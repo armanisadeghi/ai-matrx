@@ -33,7 +33,7 @@
 -- chair-step: it replaces four live bodies, one of them a trigger function on
 -- platform.associations.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION platform.revive_tombstoned_association()
  RETURNS trigger

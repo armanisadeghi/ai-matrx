@@ -61,7 +61,7 @@
 --
 -- THE INVERSE: `migrations/inverse/w3_doc_the_template_is_a_record_down.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 -- ═══════════════════════════════════════════════════════════════════════════════

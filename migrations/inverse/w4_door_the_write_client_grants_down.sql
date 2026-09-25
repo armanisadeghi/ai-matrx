@@ -3,7 +3,7 @@
 -- Run this BEFORE `w4_door_the_write_doors_are_client_callable_down.sql`: a client EXECUTE
 -- left standing on a body that no longer decides membership is the hole the lane closed.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 revoke execute on function custom.record_write(uuid, uuid, jsonb) from authenticated;

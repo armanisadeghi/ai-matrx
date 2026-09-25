@@ -23,7 +23,7 @@
 --
 -- chair-step: it replaces four live client doors.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION public.assoc_remove(p_source_type text, p_source_id uuid, p_target_type text, p_target_id uuid, p_role text DEFAULT NULL::text)
  RETURNS void

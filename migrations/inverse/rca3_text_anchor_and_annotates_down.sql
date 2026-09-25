@@ -1,7 +1,7 @@
 -- chair-step: RC-A3 inverse of rca3_text_anchor_and_annotates — removes the text_anchor validator, its trigger and comment constraint, the text_anchor edge payload kind and the two non-conveying association types. Refuses while any edge or comment carries a text_anchor or uses one of the two pairs.
 -- window-class: DROP TRIGGER on platform.associations and DROP CONSTRAINT on platform.comments freeze the 23-relation supautils set for this short transaction; applied in the 1-4 AM PT window.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 do $$
 begin

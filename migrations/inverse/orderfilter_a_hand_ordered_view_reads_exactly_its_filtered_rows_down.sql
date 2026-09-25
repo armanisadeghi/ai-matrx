@@ -10,7 +10,7 @@
 -- lane: ORDER-FILTER
 -- based-on: custom.read_records_in_view_order(uuid, uuid, boolean, integer, integer, jsonb) 213896eba65adecc4316e1bbd8862b12646a427c4ad35b4f78d4d92270bbb1a7
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 drop function custom.read_records_in_view_order(uuid, uuid, boolean, integer, integer, jsonb);

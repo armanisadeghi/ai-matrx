@@ -3,7 +3,7 @@
 --   never run on the main database: the up exists because that grant is the wrong shape there.
 -- lock: custom,platform
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 update platform.client_callable_door

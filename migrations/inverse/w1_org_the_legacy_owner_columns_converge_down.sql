@@ -14,7 +14,7 @@
 --
 -- It is a `-- target: branch` file and can never reach production.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 drop function if exists iam.converge_legacy_column(text, text, text, boolean);
 drop function if exists iam.legacy_column_worklist();

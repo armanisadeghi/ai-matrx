@@ -10,7 +10,7 @@
 --
 -- `-- target: branch` like every other inverse here: rule 9.
 
-set lock_timeout = '10s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 create or replace function custom.work_approval_request(p_organization_id uuid, p_subject_id uuid,

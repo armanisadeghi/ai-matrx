@@ -28,7 +28,7 @@
 --
 -- It is a `-- target: branch` file and can never reach production.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 -- 3'. billing.subscription ------------------------------------------------------------------
 -- ORDER MATTERS AND THE BRANCH PROVED IT: the four std_* policies read `user_id`, so creating

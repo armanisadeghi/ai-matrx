@@ -9,7 +9,7 @@
 -- based-on: custom.rollup_value(uuid, uuid, jsonb) 234e4609ec344c07d56fc16e47d96aae2c44d2a357c15938b75475072ce22a9c
 -- based-on: custom._field_reads_what_it_reads() e9e61b6d546bb5a215bac7a1d3eaa1c45b78f64b0ede25531d5f75539e4c23da
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '120s';
 
 CREATE OR REPLACE FUNCTION custom.lookup_value(p_organization_id uuid, p_record_id uuid, p_field_data jsonb)

@@ -5,7 +5,7 @@
 -- (the old guard refuses the fourth state, so a withdrawn row left behind could never be touched
 -- again). Running it brings the defect back: archived subjects' approvals reappear in the inbox.
 
-set lock_timeout = '30s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 drop trigger if exists zz_w4_approvals_withdraw_on_archive on custom.record;

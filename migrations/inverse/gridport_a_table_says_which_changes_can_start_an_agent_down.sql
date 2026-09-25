@@ -4,7 +4,7 @@
 -- offers "When a row changes, run an agent…" on a record-store table; schedules already made stay
 -- and keep firing while G8 is in place. No row of anybody's data is touched.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 drop function if exists custom.record_change_actions(uuid, uuid);

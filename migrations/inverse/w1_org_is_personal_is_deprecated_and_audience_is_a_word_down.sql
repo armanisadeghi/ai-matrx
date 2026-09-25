@@ -23,7 +23,7 @@
 --
 -- It is a `-- target: branch` file and can never reach production.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 -- 2'. REC-64 undone --------------------------------------------------------------------------
 alter table context.templates add column is_personal boolean;

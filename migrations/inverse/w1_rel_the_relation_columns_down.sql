@@ -15,7 +15,7 @@
 -- `updated_at` by the two version triggers. Running this file while any of those still stand
 -- raises a dependency error naming the object, which is the correct outcome.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 drop index if exists platform.idx_assoc_relation_field_live;

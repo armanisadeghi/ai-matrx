@@ -11,7 +11,7 @@
 -- inverse that quietly deleted somebody's setting would be a data loss dressed
 -- as a rollback. Remove one by setting it through the same door with a null.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 update platform.feature_knob

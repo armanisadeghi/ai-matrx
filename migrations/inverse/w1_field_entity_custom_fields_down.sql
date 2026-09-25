@@ -24,7 +24,7 @@
 -- The DROP of the trigger comes first because the function it calls cannot be dropped while
 -- it is still bound, which is the check that this order is right.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 drop trigger if exists custom_fields_validation on crm.party;

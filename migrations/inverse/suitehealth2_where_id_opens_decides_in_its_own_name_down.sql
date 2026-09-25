@@ -1,7 +1,7 @@
 -- inverse of migrations/campaign/suitehealth2_where_id_opens_decides_in_its_own_name.sql — restores custom.where_id_opens as applied by
 -- suitehealth2_every_door_decides_in_its_own_body.sql.
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.where_id_opens(p_id uuid)
  RETURNS jsonb

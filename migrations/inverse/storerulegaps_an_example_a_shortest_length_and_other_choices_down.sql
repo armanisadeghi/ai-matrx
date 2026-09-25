@@ -12,7 +12,7 @@
 -- example, an off-list word is refused again), and a choice a write ADDED stays on its list as an
 -- ordinary choice. Nothing is dropped, revoked or deleted.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom._field_shape_guard()

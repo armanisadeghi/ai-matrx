@@ -60,7 +60,7 @@
 --
 -- REVERSIBLE: `migrations/inverse/w1_org_billing_owner_columns_move_to_the_organization_down.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 -- 0. THE REFUSAL THAT MAKES THE RENAME HONEST ------------------------------------------------
 do $$

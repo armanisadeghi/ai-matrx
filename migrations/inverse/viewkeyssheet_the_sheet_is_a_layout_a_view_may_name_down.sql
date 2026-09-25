@@ -11,7 +11,7 @@
 -- based-on: custom.view_keys() f016927fc6e2e655b68fe77a42bb9b2b617b11d3d86e4e6ac99aea93067ba574
 -- based-on: custom._view_key_value(uuid, uuid, text, text, jsonb, jsonb) 5b2af3345effb1e2010e543c64537f6480ce3594430786d453a4aabd7310207b
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 create or replace function custom.view_keys()

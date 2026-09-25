@@ -21,7 +21,7 @@
 -- based-on: custom.portal_form(uuid, uuid, uuid) 42fd00f01ab9e9460e22ffe888f6e7f777d1b08b2af30e61e4933bb5b4caae3e
 -- based-on: custom.portal_form_submit(uuid, uuid, uuid, jsonb, text) c4df1625598f3e0d2073a9e457504264c2e44473e18bea3f33adfea6d44231c1
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '120s';
 
 delete from platform.client_callable_door

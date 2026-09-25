@@ -8,7 +8,7 @@
 -- lock: custom,platform
 -- lane: STORE-VERSION-NOOP
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 create temporary table _svn_undo on commit drop as
 select m.id as log_id, m.organization_id, m.target_id as id, m.inverse ->> 'store' as store,

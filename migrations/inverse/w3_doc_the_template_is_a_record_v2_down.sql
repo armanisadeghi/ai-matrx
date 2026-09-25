@@ -12,7 +12,7 @@
 -- these (the render path, the signature door), because a template function dropped out from
 -- under a signed document is the one failure this whole lane exists to prevent.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 do $inv$

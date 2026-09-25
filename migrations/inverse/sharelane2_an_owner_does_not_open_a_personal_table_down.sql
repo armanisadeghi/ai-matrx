@@ -1,6 +1,6 @@
 -- INVERSE of migrations/campaign/sharelane2_an_owner_does_not_open_a_personal_table.sql: restores iam.has_access_for_base verbatim (sha256 a0249f7105af7ad8de983665a804b072d599143c5fe696c18e8b33b99e08f581) and drops custom.row_sits_in_a_personal_table.
 -- lane: SHARE-LANE-2
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION iam.has_access_for_base(p_user_id uuid, p_type text, p_id uuid, p_required permission_level, p_include_public boolean, p_path text[])
  RETURNS boolean

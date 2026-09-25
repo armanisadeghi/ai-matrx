@@ -3,7 +3,7 @@
 -- W4-DOOR — the inverse. Every object this lane created, removed; custom.record is left
 -- exactly as it was found.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 drop trigger if exists custom_record_field_write_door on custom.record;
 drop function if exists custom._field_write_door();

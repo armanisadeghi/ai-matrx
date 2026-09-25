@@ -15,7 +15,7 @@
 --   so every valid choice on `crm.party.custom_fields` was refused — and drops
 --   custom.choice_synonyms_in. Running this restores that refusal.
 
-set lock_timeout = '45s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 CREATE OR REPLACE FUNCTION custom.validate_values(p_organization_id uuid, p_fields custom.record[], p_values jsonb, p_record_type text DEFAULT NULL::text)

@@ -8,7 +8,7 @@
 -- archived); it exists only so rule 27 (up -> inverse -> up) can prove the fix
 -- against its own prior state, not as a recommended end state.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 create or replace function platform.knob_archive(
   p_feature text,

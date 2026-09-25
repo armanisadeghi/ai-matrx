@@ -5,7 +5,7 @@
 -- functions dropped). The look rows (`platform.saved_view`, surface `custom/records/look`) stay
 -- where they are: nothing reads them without the doors, and nothing is ever deleted.
 -- lane: VIEW-STATE-PERSONAL
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom.view_declare(p_organization_id uuid, p_table_id uuid, p_spec jsonb)

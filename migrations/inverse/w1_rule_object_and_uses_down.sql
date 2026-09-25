@@ -42,7 +42,7 @@
 -- a live trigger still calls would fail, which is the check that this order is right. The
 -- rows go LAST because the record rows are what the triggers fire on.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 drop trigger if exists custom_record_rule_uses on custom.record;

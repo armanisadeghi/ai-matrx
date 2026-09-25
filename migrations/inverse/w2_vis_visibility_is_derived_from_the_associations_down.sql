@@ -6,7 +6,7 @@
 -- Every one of them is new in schema `custom` and no live code reads any of them, so this
 -- direction removes a capability and breaks nothing.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 -- 🚨 THE HEADER ABOVE IS NO LONGER TRUE, AND THIS IS WHAT REPLACES IT (lane INVERSE-GUARD,
 -- 2026-09-21). "No live code reads any of them" was measured on the day this file was written.

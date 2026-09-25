@@ -36,7 +36,7 @@
 -- W1-INDEX's inverse reported success with every object it was written to drop still
 -- standing, which is the failure this notice exists to make impossible to repeat.
 
-set lock_timeout = '10s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 drop trigger if exists zz_w3_work_shape_guard on custom.record;

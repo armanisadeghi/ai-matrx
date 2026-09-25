@@ -18,7 +18,7 @@
 -- in: an inverse undoes the last thing that landed, not the first.
 -- ground-standing-ok: b
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 create or replace function custom.checklist_start(p_organization_id uuid, p_template_id uuid,
                                                   p_about_record_id uuid default null,

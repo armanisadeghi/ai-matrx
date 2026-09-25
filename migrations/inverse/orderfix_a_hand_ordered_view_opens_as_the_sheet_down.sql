@@ -5,7 +5,7 @@
 -- The inverse of orderfix_a_hand_ordered_view_opens_as_the_sheet.sql: each view it repaired goes
 -- back to the layout its metadata says it had.
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 update platform.saved_view

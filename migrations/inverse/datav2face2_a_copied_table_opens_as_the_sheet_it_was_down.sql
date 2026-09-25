@@ -7,7 +7,7 @@
 --   WHAT THAT MEANS: those copies open with the layout chooser again (the page seeds its own
 --   "All records"), exactly as before the file. Re-applying the file gives each a fresh default view.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 set local app.actor_system = 'migration:datav2face2_a_copied_table_opens_as_the_sheet_it_was_down';
 

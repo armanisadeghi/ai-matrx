@@ -1,7 +1,7 @@
 -- inverse of migrations/campaign/suitehealth3_the_older_store_answers_its_own_read_rule.sql — restores custom.where_tables_live as applied by
 -- suitehealth3_where_a_table_lives_is_told_only_to_who_may_open_it.sql, then drops the helper nothing else calls.
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.where_tables_live(p_table_ids uuid[])
  RETURNS TABLE(table_id uuid, lives_in text, why text)

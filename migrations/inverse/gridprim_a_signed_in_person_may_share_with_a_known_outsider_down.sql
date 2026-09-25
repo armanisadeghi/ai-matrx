@@ -6,7 +6,7 @@
 -- share.table_granted notification kind (as invitedelivery_the_invitation_reaches_the_person_down.sql
 -- does for share.table_invited). A grant already made stays; a notification already sent stays.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 update platform.client_callable_door

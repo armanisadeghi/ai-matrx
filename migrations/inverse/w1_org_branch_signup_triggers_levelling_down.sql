@@ -7,7 +7,7 @@
 -- is their removal. It is a `-- target: branch` file and can never reach production, where
 -- all four are live and are not this campaign's to touch.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 drop trigger if exists on_auth_user_created on auth.users;
 drop trigger if exists on_auth_user_created_profile on auth.users;

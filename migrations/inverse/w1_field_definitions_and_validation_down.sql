@@ -18,7 +18,7 @@
 -- goes with them), then the functions, then the rows. Dropping a function a live trigger
 -- still calls would fail, which is the check that this order is right.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 drop trigger if exists custom_record_field_validation on custom.record;

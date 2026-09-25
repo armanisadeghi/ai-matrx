@@ -2,7 +2,7 @@
 -- based-on: custom._read_record_with(uuid, uuid, boolean, jsonb, jsonb) c298cb02bbcb9344efd7b358b3c32ad9a49a0032c9d6fb765ef09c8e73070404
 -- based-on: custom.read_records_by_ids(uuid, uuid, uuid[], boolean) 8ed0da0e73f71ee3a30a196a24f9b33d6f1b46327b86b52630ac62fcdb90fce0
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom._read_record_with(p_organization_id uuid, p_record_id uuid, p_by_id boolean, p_levels jsonb, p_cache jsonb, OUT o_doc jsonb, OUT o_cache jsonb)
  RETURNS record

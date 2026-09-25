@@ -1,7 +1,7 @@
 -- INVERSE of migrations/campaign/sharetails_mine_means_only_the_people_named.sql: puts every repaired
 -- record's visibility back from custom._share_tails_mine_repair, then restores the three bodies verbatim.
 -- lane: SHARE-TAILS
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 select set_config('app.actor_system', 'sharetails_mine_repair_inverse', true);
 
 update custom.record r

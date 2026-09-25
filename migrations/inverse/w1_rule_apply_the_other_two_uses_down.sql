@@ -43,7 +43,7 @@
 -- exist, and that one LAST. Running them the other way round leaves `rule_eval` calling
 -- functions that are gone and is never correct.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 drop trigger if exists custom_record_rule_topology_guard on custom.record;

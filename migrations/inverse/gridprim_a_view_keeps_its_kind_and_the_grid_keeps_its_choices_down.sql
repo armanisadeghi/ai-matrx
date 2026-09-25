@@ -8,7 +8,7 @@
 -- pipeline_propose fails — run it only with G1's own inverse right behind it. Views saved with
 -- definition.grid keep it; G1's grid_layout no longer reads it.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom.view_declare(p_organization_id uuid, p_table_id uuid, p_spec jsonb)

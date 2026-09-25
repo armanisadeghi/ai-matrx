@@ -24,7 +24,7 @@
 -- exist, and that one LAST. Running them the other way round leaves every guard in the store
 -- calling a function that is gone.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 create or replace function custom._value_envelope()

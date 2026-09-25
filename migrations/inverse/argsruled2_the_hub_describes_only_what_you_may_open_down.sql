@@ -6,7 +6,7 @@
 -- before (byte-for-byte from pg_get_functiondef on the MAIN database, 2026-09-22), which
 -- REOPENS the hole that file closed. Rule 27 only.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 create or replace function custom.hub_changed_by(p_organization_id uuid, p_kind text, p_ids uuid[])
  RETURNS TABLE(id uuid, at timestamp with time zone, who text)

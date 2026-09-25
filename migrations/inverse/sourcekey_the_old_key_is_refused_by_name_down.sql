@@ -3,7 +3,7 @@
 -- window-class: one function body.
 -- based-on: custom._record_source_key_is_record() 4cbcf4829632ab6644264541e9a6665c4c6314030eadfd994ed82024da7a06b2
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '120s';
 
 CREATE OR REPLACE FUNCTION custom._record_source_key_is_record()

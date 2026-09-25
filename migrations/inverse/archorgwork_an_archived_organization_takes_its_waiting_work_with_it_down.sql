@@ -10,7 +10,7 @@
 -- based-on: iam.organization_restore(uuid, text) 78811d51df8e3f8a3c26704068620d6dfaf89e4839214e02f65ceb09dcb13a0e
 -- based-on: custom._inbox_items(uuid, uuid, boolean) 9f3f7ac773c74bc887c72ad1e55f8f0befccd01d984647224942bacfdc19931a
 
-set lock_timeout = '30s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 CREATE OR REPLACE FUNCTION iam.organization_archive(p_org uuid, p_confirm_name text, p_reason text DEFAULT NULL::text)

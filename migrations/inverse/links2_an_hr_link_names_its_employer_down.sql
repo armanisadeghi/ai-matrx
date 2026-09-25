@@ -24,7 +24,7 @@
 --    it is a regression. Nothing here rewrites a notice.
 
 set local statement_timeout = '600s';
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION hr._wf_notify(p_instance uuid, p_step uuid, p_event_key text, p_notice_kind text, p_user uuid, p_employment uuid, p_extra jsonb DEFAULT '{}'::jsonb)
  RETURNS integer

@@ -4,7 +4,7 @@
 -- based-on: view custom.table 798c79b3188f8fc8498845fc301a13df0eb63e18c3aafca38f9d8aa0f75c1aef
 -- lock: custom
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 drop view custom.table;

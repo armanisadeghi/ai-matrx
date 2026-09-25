@@ -9,7 +9,7 @@
 --
 -- chair-step: it replaces three live client-door bodies.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.share_grant(p_organization_id uuid, p_subject_id uuid, p_principal_kind text, p_principal_id uuid, p_level permission_level DEFAULT 'viewer'::permission_level)
  RETURNS jsonb

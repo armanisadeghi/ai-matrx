@@ -11,7 +11,7 @@
 -- based-on: custom.table_move(uuid,uuid,integer) 7ca144f23aec631f115faf7e6e0c9f35084a5ca8814deddda98e9f254b72036f
 -- lock: custom
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom._table_move_plan(p_table_id uuid, p_to uuid, p_me uuid)
  RETURNS jsonb

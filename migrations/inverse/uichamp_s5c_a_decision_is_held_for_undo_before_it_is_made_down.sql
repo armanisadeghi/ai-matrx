@@ -6,7 +6,7 @@
 -- chair-step: custom.work_inbox's OUT list loses two columns, so it is dropped and recreated with the same arguments and re-opened.
 -- based-on: custom.work_inbox(uuid, integer, integer, boolean, text) badfe89c332e3267ca2a96b306f13f9ccfc2cedce361584600ee8473157cbf72
 
-set lock_timeout = '30s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 drop function if exists custom.work_inbox(uuid, integer, integer, boolean, text);

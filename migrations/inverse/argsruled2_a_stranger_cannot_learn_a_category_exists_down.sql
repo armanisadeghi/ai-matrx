@@ -6,7 +6,7 @@
 -- before (byte-for-byte from pg_get_functiondef on the MAIN database, 2026-09-22), which
 -- REOPENS the hole that file closed. Rule 27 only.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 create or replace function public.cat_write(p_dimension text, p_category_id uuid DEFAULT NULL::uuid, p_organization_id uuid DEFAULT NULL::uuid, p_name text DEFAULT NULL::text, p_slug text DEFAULT NULL::text, p_set_slug boolean DEFAULT false, p_parent_id uuid DEFAULT NULL::uuid, p_set_parent boolean DEFAULT false, p_color text DEFAULT NULL::text, p_set_color boolean DEFAULT false, p_icon text DEFAULT NULL::text, p_set_icon boolean DEFAULT false, p_position integer DEFAULT NULL::integer, p_set_position boolean DEFAULT false, p_placement_type text DEFAULT NULL::text, p_set_placement_type boolean DEFAULT false, p_metadata_patch jsonb DEFAULT NULL::jsonb, p_is_system boolean DEFAULT false)
  RETURNS jsonb

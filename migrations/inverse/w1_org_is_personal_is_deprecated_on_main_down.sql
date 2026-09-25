@@ -20,7 +20,7 @@
 -- rolls back — which is the truth (the constraint no longer holds), not a defect in this file.
 -- The remedy is to fix the duplicate, not to weaken the index.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 drop function if exists iam.is_personal_dependents();
 

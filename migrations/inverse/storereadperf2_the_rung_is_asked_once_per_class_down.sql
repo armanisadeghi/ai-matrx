@@ -9,7 +9,7 @@
 -- based-on: custom.entity_reference_render(uuid, uuid, jsonb) 6bcb7fd84088cdbc95285a32319adf09d1fc4f5ec6f7d1011009a23a40ed111f
 -- based-on: custom.with_whole_value_pointers(jsonb, jsonb, jsonb, text[], boolean, jsonb) 3bf1966cf915723935bee17487bf7d22735a4209e9491f9a5993cf451725dc6f
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.read_record(p_organization_id uuid, p_record_id uuid, p_by_id boolean DEFAULT false)
  RETURNS jsonb

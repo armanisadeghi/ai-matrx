@@ -5,7 +5,7 @@
 -- lane: SC-1
 -- WHAT IT DOES NOT UNDO: a Table document that already carries kept_for / offered_as_context keeps them (the store takes any Table key); nothing reads them once this has run. The classification rows are undone by sc1p_every_table_a_feature_made_says_so_down.sql.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 create or replace function custom._table_shape_guard()

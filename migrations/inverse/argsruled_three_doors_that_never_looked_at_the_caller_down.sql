@@ -7,7 +7,7 @@
 --
 -- chair-step: it replaces three live client-door bodies.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION context.provision_scope_dataset(p_item_id uuid, p_scope_id uuid)
  RETURNS uuid

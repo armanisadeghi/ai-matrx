@@ -111,7 +111,7 @@
 --
 -- THE INVERSE: `migrations/inverse/w1_field_types_the_parity_floor_down.sql` (§4.13).
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 -- ══════════════════════════════════════════════════════════════════════════════

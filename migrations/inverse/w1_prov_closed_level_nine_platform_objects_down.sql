@@ -22,7 +22,7 @@
 -- named there as drift left behind), and `platform.client_callable_door` itself
 -- predates this lane on both servers.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 do $$

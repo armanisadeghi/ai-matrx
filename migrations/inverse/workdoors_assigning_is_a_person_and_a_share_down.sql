@@ -11,7 +11,7 @@
 -- assignments `custom.work_assign` wrote and the grants it issued are DATA, and dropping a
 -- function is not a reason to take somebody's access away.
 
-set lock_timeout = '10s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 delete from platform.client_callable_door

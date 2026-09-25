@@ -5,7 +5,7 @@
 -- lane: STORE-TAILS-3
 -- based-on: custom._view_key_value(uuid, uuid, text, text, jsonb, jsonb) 43ce790fa050459da7105b81aa1fe0abf0cee1e82b16546416e411c6a29a3cbe
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '120s';
 
 CREATE OR REPLACE FUNCTION custom._view_key_value(p_organization_id uuid, p_table_id uuid, p_path text, p_shape text, p_value jsonb, p_old jsonb DEFAULT NULL::jsonb)

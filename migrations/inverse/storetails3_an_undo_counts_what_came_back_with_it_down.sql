@@ -5,7 +5,7 @@
 -- lane: STORE-TAILS-3
 -- based-on: history.migration_undo(uuid, uuid) ca62c23a1799964a2df75356f72c275b841d9f9c27fd50460e5e80c018551819
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '120s';
 
 CREATE OR REPLACE FUNCTION history.migration_undo(p_organization_id uuid, p_log_id uuid)

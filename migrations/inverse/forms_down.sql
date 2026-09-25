@@ -13,7 +13,7 @@
 -- from `exposed_field_keys`, which is W4-ANON's own column) but loses its wording, its
 -- thank-you screen, its cap and its decoy. That is why this file is a chair step.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 drop function if exists custom.form_submit(uuid, text, jsonb, text, text, text);

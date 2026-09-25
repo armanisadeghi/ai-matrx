@@ -48,7 +48,7 @@
 -- written between the up and this down, the rename hands every one of them an organization id in
 -- a column named user_id. Check the three counts before running it.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 -- 1. The Connect door goes back to the shape production had. -----------------------------------
 CREATE OR REPLACE FUNCTION public.creator_connect_status()

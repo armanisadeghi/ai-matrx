@@ -93,7 +93,7 @@
 --
 -- REVERSIBLE: `migrations/inverse/w1_reg_one_option_mechanism_and_one_template_mechanism_down.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 -- ============================================================ REC-50: the six converge

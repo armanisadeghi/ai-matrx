@@ -10,7 +10,7 @@
 -- the live provisioner's refusal table, its parity list and its JSON schema. The assertion
 -- below is on the cluster's own control-file identity, which does not move.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 do $$

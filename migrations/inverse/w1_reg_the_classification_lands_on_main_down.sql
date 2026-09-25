@@ -4,7 +4,7 @@
 -- null type on every row, so they constrain nothing once the axis is empty, and dropping them
 -- would be the one irreversible act in an inverse.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 delete from platform.entity_types

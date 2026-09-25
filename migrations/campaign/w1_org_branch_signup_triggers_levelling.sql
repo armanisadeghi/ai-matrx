@@ -41,7 +41,7 @@
 -- additive allow-list (which refuses `DROP TRIGGER`) does not judge it.
 -- THE INVERSE: `migrations/inverse/w1_org_branch_signup_triggers_levelling_down.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 drop trigger if exists on_auth_user_created on auth.users;

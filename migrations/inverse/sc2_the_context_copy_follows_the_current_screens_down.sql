@@ -5,7 +5,7 @@
 -- window-class: DROP TRIGGER takes ACCESS EXCLUSIVE on the four small context tables for the
 --   length of this transaction; run under lock_timeout.
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '120s';
 
 drop trigger if exists zz_follow_to_the_copy on context.context_item_values;

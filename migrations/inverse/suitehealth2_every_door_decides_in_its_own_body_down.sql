@@ -1,7 +1,7 @@
 -- inverse of migrations/campaign/suitehealth2_every_door_decides_in_its_own_body.sql — restores the five bodies exactly as they were live on
 -- production and the dev clone on 2026-09-25 (md5 of pg_get_functiondef identical on both).
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.where_id_opens(p_id uuid)
  RETURNS jsonb

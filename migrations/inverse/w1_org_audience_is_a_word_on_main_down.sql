@@ -33,7 +33,7 @@
 -- iam.is_personal_dependents() all belong to w1_org_is_personal_is_deprecated_on_main.sql and are
 -- reverted by that file's own inverse. The two are independent in both directions.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 alter table context.templates add column is_personal boolean;
 update context.templates set is_personal = (audience = 'individual');

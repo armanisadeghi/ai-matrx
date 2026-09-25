@@ -2,7 +2,7 @@
 -- lane: SC-1
 -- lock: custom
 
-set local lock_timeout = '10s';
+set local lock_timeout = '2s';
 set local statement_timeout = '300s';
 
 update custom.record r

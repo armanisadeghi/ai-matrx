@@ -3,7 +3,7 @@
 -- THE INVERSE of `migrations/campaign/w6_ui_the_read_door_asks_the_one_access_question.sql`:
 -- the one-record read door asks `custom.has_visibility` again.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 CREATE OR REPLACE FUNCTION custom.read_record(p_organization_id uuid, p_record_id uuid, p_by_id boolean DEFAULT false)

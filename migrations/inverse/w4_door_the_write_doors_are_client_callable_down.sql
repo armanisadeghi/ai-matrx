@@ -3,7 +3,7 @@
 -- Run the grants' inverse (w4_door_the_write_client_grants_down.sql) FIRST: leaving a client
 -- EXECUTE on a function whose body no longer decides membership is the hole this lane closed.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 CREATE OR REPLACE FUNCTION custom.record_write(p_organization_id uuid, p_table_id uuid, p_data jsonb)

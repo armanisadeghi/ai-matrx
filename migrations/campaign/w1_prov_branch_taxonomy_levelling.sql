@@ -19,7 +19,7 @@
 -- BRANCH ONLY, and it needs no production half: production already holds every row.
 -- THE INVERSE: `migrations/inverse/w1_prov_branch_taxonomy_levelling_down.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 insert into platform.taxonomy_node (id, slug, name, level, parent_id, status, anchors, docs_path, notes, organization_id, metadata, version, visibility) values ('9a193e53-a5ec-46ec-ab69-f4a4b88d85f6', 'agents', 'Agents', 'domain', null, 'canonical', '{}', NULL, NULL, '39c38960-d30c-4840-b0c1-c9960de95582', '{}'::jsonb, 1, 'internal') on conflict (id) do nothing;

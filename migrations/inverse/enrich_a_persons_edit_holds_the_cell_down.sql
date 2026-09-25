@@ -23,7 +23,7 @@
 -- refused by custom.value_envelope_refusal BY NAME. Clear them first if this inverse is run
 -- after any enrichment has landed.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 -- THE ORDER IS CHECKED, NEVER ASSUMED. `pg_get_functiondef` is the live text of the body the

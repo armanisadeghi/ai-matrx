@@ -2,7 +2,7 @@
 -- Clears the 33 kinds it registered and puts the one code folder back in its old shape.
 -- lane: TRASH-COVERAGE
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 update platform.entity_types
    set user_artifact_kind = null

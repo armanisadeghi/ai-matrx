@@ -7,7 +7,7 @@
 --
 -- With this applied the per-argument census rises by up to 15 and the ratchet fails again.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 update platform.client_callable_door d
    set argument_rules = null

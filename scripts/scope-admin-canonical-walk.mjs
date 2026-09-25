@@ -75,6 +75,9 @@ try {
 
   if (PHASES.has("create")) {
     await go(`/organizations/${ORG_SLUG}/scopes`);
+    await page.getByRole("button", { name: "Add Scope Type" }).first().waitFor({ timeout: 240000 });
+    const already = (await text()).includes(T.plural);
+    if (!already) {
     await page.getByRole("button", { name: "Add Scope Type" }).first().click();
     const dlg = page.locator('[role="dialog"]').last();
     await dlg.getByPlaceholder("Client", { exact: true }).fill(T.singular);
@@ -84,25 +87,31 @@ try {
     await shot("create-type-form");
     await dlg.locator('button[type="submit"]').last().click();
     await dlg.waitFor({ state: "hidden", timeout: 60000 }).catch(() => undefined);
+    }
     const listed = await seen(T.plural);
     await shot("create-type-listed");
     // Reload, then open the type page by its SLUG — resolved from the canonical tree's new field.
     await go(typePath(T.slug));
     const bySlug = await seen(ITEM);
     await shot("type-page-by-slug-after-reload");
-    step({ step: "create scope type", listed, typePageBySlugShowsItsContextItem: bySlug, url: page.url() });
+    step({ step: "create scope type", createdEarlierThisWalk: already, listed, typePageBySlugShowsItsContextItem: bySlug, url: page.url() });
   }
 
   if (PHASES.has("lens")) {
     await go("/chat/new");
-    const chip = page.locator("header").getByRole("button").filter({ hasText: /context|admin|Workspace|scope/i }).first();
+    // The lens chip in the chat header reads the organization's abbreviation ("ASW").
+    const chip = page.getByRole("button", { name: /^ASW\b/ }).first();
     await until("lens chip", async () => (await chip.count()) > 0, 120000);
     await chip.click().catch(() => undefined);
+    await page.waitForTimeout(1500);
+    const lensText = async () => (await page.locator('[role="dialog"], [data-radix-popper-content-wrapper]').allTextContents()).join(" ");
+    const listed0 = await until("lens lists type", async () => (await lensText()).match(/Service Areas?/), 60000);
+    report.lensText = (await lensText()).slice(0, 1500);
     const listed = await until("lens lists type", async () =>
       (await page.locator('[role="dialog"], [data-radix-popper-content-wrapper]').allTextContents()).join(" ").includes(T.plural) ||
       (await page.locator('[role="dialog"], [data-radix-popper-content-wrapper]').allTextContents()).join(" ").includes(T.singular), 60000);
     await shot("chat-lens-chip-lists-new-type");
-    step({ step: "chat header lens chip lists the new scope type", listed: listed.v === true });
+    step({ step: "chat header lens chip lists the new scope type", listed: Boolean(listed0.v) || listed.v === true });
     await page.keyboard.press("Escape");
   }
 
@@ -122,6 +131,72 @@ try {
     const reloaded = await seen(S.description);
     await shot("scope-page-after-reload");
     step({ step: "create scope with description", scopePageAfterReloadShowsDescription: reloaded, url: page.url() });
+  }
+
+  const itemEdit = `${typePath(T.slug)}/context-items/coverage-notes/edit`;
+  const scopePage = `${typePath(T.slug)}/${S.slug}`;
+  const clickSave = async () => {
+    await page.getByRole("button", { name: /^Save( changes)?$/ }).last().click();
+    await page.waitForTimeout(3000);
+  };
+
+  if (PHASES.has("rename")) {
+    // Scope — the name editor on its page (updateScope door).
+    await go(scopePage);
+    await seen(S.description);
+    await page.getByRole("button", { name: "Edit name" }).first().click();
+    await page.locator('input[aria-label="Scope name"]').first().fill(S2);
+    await page.getByRole("button", { name: "Save scope name" }).click();
+    await page.waitForTimeout(3000);
+    await go(scopePage);
+    const scopeRenamed = await seen(S2);
+    await shot("scope-renamed-after-reload");
+    // Context item — its settings form (contextItemsSlice.updateContextItem → scopesService).
+    await go(itemEdit);
+    await page.getByLabel("Display name").fill(ITEM2);
+    await clickSave();
+    await go(typePath(T.slug));
+    const itemRenamed = await seen(ITEM2);
+    await shot("context-item-renamed-after-reload");
+    // Scope type — its settings form (updateScopeType door); the slug stays.
+    await go(`${typePath(T.slug)}/edit`);
+    await page.getByLabel("Name (one item)").fill(T2.singular);
+    await page.getByLabel("Name (many)").fill(T2.plural);
+    await clickSave();
+    await go(typePath(T.slug));
+    const typeRenamed = await seen(T2.plural);
+    await shot("type-renamed-after-reload");
+    step({ step: "rename scope, context item, scope type (reload after each)", scopeRenamed, itemRenamed, typeRenamed });
+  }
+
+  if (PHASES.has("archive")) {
+    // Context item.
+    await go(itemEdit);
+    await page.getByRole("button", { name: /^Delete$/ }).last().click();
+    await confirmDestructive();
+    await page.waitForTimeout(3000);
+    await go(typePath(T.slug));
+    await seen(T2.plural);
+    const itemGone = await gone(ITEM2);
+    await shot("context-item-archived-after-reload");
+    // Scope.
+    await page.getByRole("button", { name: `Delete ${S2}` }).first().click();
+    await confirmDestructive();
+    await page.waitForTimeout(3000);
+    await go(typePath(T.slug));
+    await seen(T2.plural);
+    const scopeGone = await gone(S2);
+    await shot("scope-archived-after-reload");
+    // Scope type.
+    await go(`${typePath(T.slug)}/edit`);
+    await page.getByRole("button", { name: /^Delete$/ }).last().click();
+    await confirmDestructive();
+    await page.waitForTimeout(4000);
+    await go(`/organizations/${ORG_SLUG}/scopes`);
+    await page.getByRole("button", { name: "Add Scope Type" }).first().waitFor({ timeout: 240000 });
+    const typeGone = await gone(T2.plural);
+    await shot("type-archived-after-reload");
+    step({ step: "archive context item, scope, scope type (reload after each)", itemGone, scopeGone, typeGone });
   }
 
   save();

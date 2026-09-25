@@ -7,7 +7,7 @@
 --   a key from the title on the fly, which is what made a rename unsafe. It exists so the red twin
 --   can execute these bytes.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 -- The field definition first: while the `key` values are still in the documents, the Table still

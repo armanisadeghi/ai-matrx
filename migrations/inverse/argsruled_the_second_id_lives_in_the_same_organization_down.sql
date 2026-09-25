@@ -6,7 +6,7 @@
 --
 -- chair-step: it replaces eight live client-door bodies.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION hr.attendance_exception_resolve(p_exception_id uuid, p_resolution_state text, p_note text DEFAULT NULL::text, p_premium_earning_code_id uuid DEFAULT NULL::uuid)
  RETURNS jsonb

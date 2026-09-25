@@ -2,7 +2,7 @@
 -- chair-step: restores custom._context_copy_fence() as SC-1' left it; drops custom.where_tables_live(uuid[]), custom._older_table_copy_refusal(uuid) and platform.table_lives_in(uuid); deletes the three platform.client_callable_door rows the up file wrote.
 -- based-on: custom._context_copy_fence() f2b0b58b52f8a7d22bf48995eafc687fb1e682a278c50a027a5153e73331de85
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom._context_copy_fence()
  RETURNS trigger

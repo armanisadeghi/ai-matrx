@@ -8,7 +8,7 @@
 -- lock: platform
 -- lane: HR-LOOP-CLEANUP
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 create temporary table _hlc_undo on commit drop as
 select m.id as log_id, m.verb, m.target_id as id,

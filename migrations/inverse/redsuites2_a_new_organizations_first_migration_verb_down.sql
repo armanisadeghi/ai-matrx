@@ -41,9 +41,9 @@
 --
 -- ITS TWIN: `migrations/campaign/redsuites2_a_new_organizations_first_migration_verb.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 -- The parent, and with it all 29 attached partition indexes. Catalog-only; no data is rewritten.
 drop index if exists history.rv_org_latest_idx;
 
-reset lock_timeout;
+set lock_timeout = '2s';

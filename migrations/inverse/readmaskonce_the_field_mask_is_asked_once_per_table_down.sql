@@ -9,7 +9,7 @@
 -- based-on: custom.record_card(uuid, uuid, uuid) 3f8b672a6649db216f3cf78042e45ab3d509a60e140d05803846ce8471c381a5
 -- based-on: custom.record_filter_sql(uuid, uuid, jsonb) 40ca156112d4b239e1f42165f90d942f98c62940cdb2f632ff59f445e84c2a74
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.read_mask(p_organization_id uuid, p_record_id uuid, p_action text DEFAULT 'read'::text)
  RETURNS jsonb

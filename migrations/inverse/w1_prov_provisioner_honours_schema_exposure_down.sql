@@ -26,7 +26,7 @@
 -- The registry row for `custom` goes with the table. `w1_prov_closed_declares_custom_closed.sql`
 -- re-seeds it; `branch-api.ts --unexpose custom` writes it too.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 drop function if exists platform.schema_exposure_violations(text);

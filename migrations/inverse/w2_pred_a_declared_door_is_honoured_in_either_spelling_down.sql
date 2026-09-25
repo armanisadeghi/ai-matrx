@@ -2,7 +2,7 @@
 --
 -- INVERSE of migrations/campaign/w2_pred_a_declared_door_is_honoured_in_either_spelling.sql.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION platform._provision_shape_settled()
  RETURNS trigger

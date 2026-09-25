@@ -2,7 +2,7 @@
 -- Restores custom.table_move(uuid, uuid, integer) byte for byte to the body it replaced
 -- (based-on e7e6ba70790acd0160a86b70f0713c314d6f666061f37c462e92d717ffd3e32c). An Organization
 -- record the up made for a destination is left in place (a record, never deleted).
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom.table_move(p_table_id uuid, p_to_organization_id uuid, p_expected_version integer DEFAULT NULL::integer)

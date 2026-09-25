@@ -17,7 +17,7 @@
 -- whose generator differs, and a body somebody has since changed refuses rather than being
 -- silently overwritten from a stale copy (db-rules line 491).
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 update platform.entity_types
    set client_anonymous_public_read = false,

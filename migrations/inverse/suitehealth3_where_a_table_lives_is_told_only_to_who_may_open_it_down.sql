@@ -2,7 +2,7 @@
 -- the two door rows exactly as they were live on production and the dev clone on 2026-09-25 (sha256 of
 -- pg_get_functiondef identical on both).
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.where_tables_live(p_table_ids uuid[])
  RETURNS TABLE(table_id uuid, lives_in text, why text)

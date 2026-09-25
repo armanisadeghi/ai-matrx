@@ -37,7 +37,7 @@
 -- ORDER MATTERS: the constraint reads `custom.value_envelope_ok`, which reads
 -- `custom.value_envelope_refusal`, so the constraint goes first and the functions after.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 alter table custom.record drop constraint if exists record_value_envelope;

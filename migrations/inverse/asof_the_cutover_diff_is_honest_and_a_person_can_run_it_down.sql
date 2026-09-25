@@ -1,7 +1,7 @@
 -- STORE-ASOF (4 of 4) — THE INVERSE. The org-scoped door and its declaration go, and
 -- `custom.visibility_parity` goes back to the body whose depth ceiling was the literal 8.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 delete from platform.client_callable_door

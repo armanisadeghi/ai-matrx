@@ -8,6 +8,6 @@
 -- lock: platform
 -- lane: HR-LOOP-CLEANUP
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 drop trigger if exists zzzzz_no_change_keeps_its_version on workflow.definition;

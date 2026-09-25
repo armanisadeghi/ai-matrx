@@ -6,7 +6,7 @@
 --
 -- THE INVERSE of migrations/campaign/fix11a_the_two_halves_of_the_one_switch_cannot_drift.sql.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 drop trigger if exists store_switch_halves_follow_each_other_tg on platform.knob_override;

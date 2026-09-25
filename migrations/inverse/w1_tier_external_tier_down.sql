@@ -15,7 +15,7 @@
 -- only when it is empty — a foreign table somebody created there is a later lane's or a
 -- bought connection's, and this file names it rather than taking it with them.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 do $$

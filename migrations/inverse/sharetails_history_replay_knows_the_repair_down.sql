@@ -1,6 +1,6 @@
 -- INVERSE of migrations/campaign/sharetails_history_replay_knows_the_repair.sql: restores the two bodies verbatim.
 -- lane: SHARE-TAILS
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.visibility_as_of(p_organization_id uuid, p_record_id uuid, p_at timestamp with time zone)
  RETURNS TABLE(principal_kind text, principal_id uuid, level permission_level, through_kind text, through_id uuid, reason text, replayed boolean, held_from timestamp with time zone, held_to timestamp with time zone)

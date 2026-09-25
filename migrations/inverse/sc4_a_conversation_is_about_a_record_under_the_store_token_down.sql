@@ -5,7 +5,7 @@
 -- window-class: DROP TRIGGER takes ACCESS EXCLUSIVE on platform.associations plus the 23 auth/storage/realtime
 --   relations supautils declares, for this transaction (short; sign-in waits a moment). On production
 --   run it in the 1-4 AM Pacific window, under lock_timeout.
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.conversation_scope_bind(p_organization_id uuid, p_conversation_id uuid, p_record_id uuid)
  RETURNS jsonb

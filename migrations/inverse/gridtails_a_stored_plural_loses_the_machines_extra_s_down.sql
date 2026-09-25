@@ -2,7 +2,7 @@
 -- lane: GRID-TAILS
 -- lock: custom
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '120s';
 
 update custom.record r

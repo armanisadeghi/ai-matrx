@@ -6,7 +6,7 @@
 -- `-- target: branch`: it DROPs, and rule 9 forbids that on production — where the table is the
 -- real one and must never be dropped by this campaign at all.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 drop table if exists platform._work_claim;

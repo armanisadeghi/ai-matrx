@@ -31,7 +31,7 @@
 -- still carrying the older shape must invert the same way, and the pair the LIVE triggers do
 -- run is detached above. Ruled by lane INVERSE-GUARD, 2026-09-21, against the live catalogue.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 -- 🚨 RE-POINTED TO THE LIVE TRIGGERS (lane RED-SUITES-3, 2026-09-21). This file named only the
 -- ROW-level trigger `zz_ckl_watch`, and

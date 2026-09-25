@@ -26,7 +26,7 @@
 -- (gridprim_a_rule_speaks_the_formula_language_down.sql) has run first — inverses run in reverse
 -- order of their ups, and no live trigger is ever left over a dropped body.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom.formula_value(p_organization_id uuid, p_record_id uuid, p_field_data jsonb, p_values jsonb DEFAULT NULL::jsonb)

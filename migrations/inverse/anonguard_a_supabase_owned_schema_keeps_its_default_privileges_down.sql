@@ -6,7 +6,7 @@
 -- it on 2026-09-23 (sha256 395a89da…aa5ea). It reintroduces the defect; it exists so rule 27
 -- (up -> inverse -> up) can prove the fix against its own prior state.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION iam.anon_key_needs_a_class_lane()
  RETURNS event_trigger

@@ -6,7 +6,7 @@
 -- `uv run python scripts/check_definer_bodies_decide_access.py` fails on the ceiling again,
 -- which is what makes the shrink a measurement rather than a story.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 update platform.client_callable_door
    set argument_rules = null

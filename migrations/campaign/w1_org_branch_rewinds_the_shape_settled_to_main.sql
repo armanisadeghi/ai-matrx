@@ -12,7 +12,7 @@
 -- file puts it there;  rolls both
 -- databases forward to the repaired body in the same working session.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 CREATE OR REPLACE FUNCTION platform._provision_shape_settled()

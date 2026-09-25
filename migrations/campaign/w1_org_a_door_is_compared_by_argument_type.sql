@@ -58,7 +58,7 @@
 -- recovered byte-for-byte from that hash. Re-applying these bytes is idempotent by
 -- construction: it is one `CREATE OR REPLACE FUNCTION`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 CREATE OR REPLACE FUNCTION platform._provision_shape_settled()

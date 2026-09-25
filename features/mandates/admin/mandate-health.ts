@@ -6,6 +6,7 @@
  */
 
 import { isJsonObject } from "@/types/json";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import {
   AGENT_BASE_PATH,
   SYSTEM_AGENT_BASE_PATH,
@@ -261,6 +262,11 @@ export function buildRow(
   let pinLabel = "latest";
   let drift: string | null = null;
   let nonSystem = false;
+  // WHO-MAY-FILL (owner ruling 2026-09-25): only the SYSTEM answer — a
+  // system-homed job's default — must be a system Holder. An org-homed job's
+  // default is that organization's own choice and is never "not a system
+  // agent". Twin: mandate._admin_list_rows `v_nonsystem`.
+  const systemHomed = mandate.organization_id === SYSTEM_ORGANIZATION_ID;
   let archived = false;
 
   const holder = holderOfMandate(mandate);
@@ -309,7 +315,7 @@ export function buildRow(
     // counter (D10). Unknown newest = no claim.
     if (pinned != null && newestSnapshotVersion != null && newestSnapshotVersion > pinned)
       drift = `v${pinned} → v${newestSnapshotVersion}`;
-    nonSystem = agent != null && agent.agentType !== "builtin";
+    nonSystem = systemHomed && agent != null && agent.agentType !== "builtin";
     archived = Boolean(agent?.isArchived);
   } else {
     const agent = holder.holderId
@@ -320,7 +326,7 @@ export function buildRow(
     agentType = agent?.agentType ?? null;
     liveCounter = agent?.version ?? null;
     newestSnapshotVersion = agentId ? (newestSnapshotByAgent?.[agentId] ?? null) : null;
-    nonSystem = agent != null && agent.agentType !== "builtin";
+    nonSystem = systemHomed && agent != null && agent.agentType !== "builtin";
     archived = Boolean(agent?.isArchived);
   }
 

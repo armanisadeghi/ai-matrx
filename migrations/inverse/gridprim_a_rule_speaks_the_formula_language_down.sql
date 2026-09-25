@@ -8,7 +8,7 @@
 -- this runs, evaluating it is refused by name ("this rule asks the system to fx.…, and it does
 -- not know how"), as for any node outside REC-15's list.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom.rule_eval(p_organization_id uuid, p_expr jsonb, p_values jsonb, p_context jsonb DEFAULT '{}'::jsonb)

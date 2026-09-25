@@ -3,7 +3,7 @@
 -- THE INVERSE of `migrations/campaign/w1_prov_branch_taxonomy_levelling.sql` (§4.13).
 -- It refuses on production, where these rows are the originals rather than a copy.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 do $$

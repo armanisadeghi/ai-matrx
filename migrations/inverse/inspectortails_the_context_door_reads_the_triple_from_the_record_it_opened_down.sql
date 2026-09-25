@@ -2,7 +2,7 @@
 -- target: branch,production
 -- lane: INSPECTOR-TAILS
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.resolve_context(p_entity_type text, p_entity_id uuid, p_record_ids uuid[] DEFAULT NULL::uuid[], p_table_ids uuid[] DEFAULT NULL::uuid[])
  RETURNS jsonb

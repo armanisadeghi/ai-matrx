@@ -20,7 +20,7 @@
 -- ground-standing-ok: b — the order above is stated, and neither half is run on top of the other.
 --
 
-set lock_timeout = '45s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 update custom.record o

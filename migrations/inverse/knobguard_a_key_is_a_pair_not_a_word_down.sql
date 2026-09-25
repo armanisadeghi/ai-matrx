@@ -14,7 +14,7 @@
 -- file lands. Restoring the old trigger body neuters its behaviour (nothing
 -- calls it any more) without removing the object.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 create or replace function platform.knob_delete_refuses_a_live_reader()
 returns trigger

@@ -20,7 +20,7 @@
 -- BRANCH ONLY; production already holds every row.
 -- THE INVERSE: `migrations/inverse/w1_prov_branch_vocabulary_levelling_down.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 insert into platform.provision_vocabulary (name, declared, live_source, source_kind, doc_reference) values ('audit_class', '{entity,machinery}', 'platform.entity_types|entity_types_audit_class_valid', 'check', 'PLAN §4.4 audit_class') on conflict (name) do nothing;

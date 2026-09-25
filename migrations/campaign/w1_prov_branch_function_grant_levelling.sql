@@ -41,7 +41,7 @@
 -- BRANCH ONLY: production already holds every grant below, which is where they came from.
 -- THE INVERSE: `migrations/inverse/w1_prov_branch_function_grant_levelling_down.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 do $$

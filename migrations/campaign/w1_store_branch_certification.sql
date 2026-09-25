@@ -14,7 +14,7 @@
 -- REC-56's `iam.canonical_certify_ok('custom','record','record')` is therefore proven
 -- here; production's positive proofs are structural.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 select iam.apply_rls('custom', 'record', 'record', 'entity');

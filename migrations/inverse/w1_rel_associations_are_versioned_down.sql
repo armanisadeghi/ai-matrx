@@ -13,7 +13,7 @@
 -- on is a record of something that really happened, and an inverse that erased it would be
 -- deleting history to make a rollback look tidy. The rows stay; the writers go.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 drop trigger if exists trg_associations_zzz_version_capture_delete on platform.associations;

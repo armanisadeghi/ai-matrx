@@ -33,7 +33,7 @@
 -- Branch-only: schema `custom` does not exist on production at all (measured SELECT-only,
 -- 2026-09-17), so there is nothing there to reverse.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 CREATE OR REPLACE FUNCTION custom._containment_guard()

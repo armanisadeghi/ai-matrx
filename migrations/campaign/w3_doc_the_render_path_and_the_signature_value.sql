@@ -71,7 +71,7 @@
 --
 -- THE INVERSE: `migrations/inverse/w3_doc_the_render_path_and_the_signature_value_down.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 -- ═══════════════════════════════════════════════════════════════════════════════

@@ -3,7 +3,7 @@
  * for the table's organization and was refused 403, twice per open. An organization's knobs are
  * its members' to read; she reads the relation option as OFF without asking. Red on the pre-fix.
  */
-const fetchKnobIndex = jest.fn(async () => [
+const fetchKnobIndex = jest.fn(async (_options: unknown) => [
   { feature: "data_tables.relation", key: "relation_columns_enabled", effective_value: true },
 ]);
 jest.mock("@/lib/scoped-config/service", () => ({ fetchKnobIndex: (a: unknown) => fetchKnobIndex(a) }));

@@ -28,7 +28,7 @@
 -- The two triggers it attached to live tables go with their functions, and the live tables
 -- are left exactly as they were found.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 drop trigger if exists _iam_one_owner_guard on iam.memberships;
 drop trigger if exists _iam_per_table_grant_guard on iam.permissions;

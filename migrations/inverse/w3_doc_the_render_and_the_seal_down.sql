@@ -22,7 +22,7 @@
 -- is immutable by construction; dropping it silently would be the one thing this lane exists
 -- to make impossible. A row in it stops this file by name.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 do $inv$

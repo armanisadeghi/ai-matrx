@@ -32,7 +32,9 @@ function sameValue(a: unknown, b: unknown): boolean {
 type AgentSettingsRow = {
   id: string;
   model_id: string | null;
-  settings: Record<string, unknown> | null;
+  // `Json` in the generated types is `unknown` — the real jsonb column, not
+  // a guaranteed object. `buildSettingsPayload` below runtime-checks it.
+  settings: unknown;
   model_tiers: unknown;
 };
 
@@ -62,7 +64,7 @@ function buildModelReferenceFilter(oldId: string): string {
  */
 function buildSettingsPayload(
   newId: string,
-  existing: Record<string, unknown> | null,
+  existing: unknown,
   newSettings?: LLMParams,
   swaps: SettingSwap[] = [],
 ): Record<string, unknown> {
@@ -269,7 +271,15 @@ export interface ReplaceModelReferencesResult {
   skipped: number;
 }
 
-/** Every matching row — never the silent 1000-row PostgREST page. */
+/**
+ * Every matching row — never the silent 1000-row PostgREST page.
+ *
+ * `agent_type` (builtin vs. non-builtin) is a `agent.definition`-only
+ * concept — `agent.template` never carried it, so the branches are split by
+ * literal table name rather than passing `table` through as a union: that
+ * keeps each `.from(...)` call narrowed to the one table whose Row shape it
+ * actually queries instead of the union of both.
+ */
 function readCandidates(
   supabase: AdminSupabase,
   table: "definition" | "template",
@@ -277,18 +287,31 @@ function readCandidates(
   agentType: "builtin" | "non-builtin" | null,
   label: string,
 ): Promise<AgentSettingsRow[]> {
+  if (table === "definition") {
+    return readAllRows<AgentSettingsRow>(
+      ({ from, to }) => {
+        let query = supabase
+          .schema("agent")
+          .from("definition")
+          .select("id, model_id, settings, model_tiers", { count: "exact" })
+          .or(filter);
+        if (agentType === "builtin") query = query.eq("agent_type", "builtin");
+        if (agentType === "non-builtin")
+          query = query.neq("agent_type", "builtin");
+        return query.order("id", { ascending: true }).range(from, to);
+      },
+      { label },
+    );
+  }
   return readAllRows<AgentSettingsRow>(
-    ({ from, to }) => {
-      let query = supabase
+    ({ from, to }) =>
+      supabase
         .schema("agent")
-        .from(table)
+        .from("template")
         .select("id, model_id, settings, model_tiers", { count: "exact" })
-        .or(filter);
-      if (agentType === "builtin") query = query.eq("agent_type", "builtin");
-      if (agentType === "non-builtin")
-        query = query.neq("agent_type", "builtin");
-      return query.order("id", { ascending: true }).range(from, to);
-    },
+        .or(filter)
+        .order("id", { ascending: true })
+        .range(from, to),
     { label },
   );
 }

@@ -21,7 +21,7 @@
 -- this campaign does not stop having been, and un-stamping it here would make THE REFRESH delete
 -- a graph this campaign still owns.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 CREATE OR REPLACE FUNCTION platform.trg_reachability_on_association()

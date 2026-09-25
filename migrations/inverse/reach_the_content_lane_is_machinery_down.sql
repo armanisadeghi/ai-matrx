@@ -1,3 +1,3 @@
 -- chair-step: the inverse of reach_the_content_lane_is_machinery.sql. It DELETEs one row from platform.entity_types, which the additive allow-list refuses by name. Running it un-registers iam.content_lane, putting the table back to the state it was in before 2026-09-19: present on the database, unknown to the registry, and therefore invisible to every census and every RLS regeneration. That is a worse state, not a safer one; this file exists so the change is reversible, not because it should be run.
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 delete from platform.entity_types where token = 'content_lane' and schema_name = 'iam';

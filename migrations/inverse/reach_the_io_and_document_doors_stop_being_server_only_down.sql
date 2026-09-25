@@ -6,7 +6,7 @@
 --
 -- After running it, the app can no longer export a table, import a spreadsheet, accept
 -- the columns an import proposes, or save, render and sign a document template.
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 update platform.client_callable_door d
    set signed_in_callers = false,

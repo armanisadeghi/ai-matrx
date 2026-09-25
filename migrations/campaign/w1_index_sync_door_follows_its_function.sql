@@ -17,7 +17,7 @@
 --   pnpm db:apply migrations/campaign/w1_index_sync_door_follows_its_function.sql \
 --     --source campaign --target branch --lane W1-INDEX
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 CREATE OR REPLACE FUNCTION platform._door_follows_its_function()

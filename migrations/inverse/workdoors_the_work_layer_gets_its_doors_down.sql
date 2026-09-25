@@ -16,7 +16,7 @@
 -- IT DELETES NO ROWS of anybody's data. Templates, holds, assignments and approvals are
 -- written by CALLERS of these verbs.
 
-set lock_timeout = '10s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 delete from platform.client_callable_door

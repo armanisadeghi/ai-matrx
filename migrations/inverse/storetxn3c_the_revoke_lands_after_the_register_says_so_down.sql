@@ -3,7 +3,7 @@
 --   §6d-4 enforces, because a grant on a closed door is refused at the door.
 -- lock: custom,platform
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 update platform.client_callable_door

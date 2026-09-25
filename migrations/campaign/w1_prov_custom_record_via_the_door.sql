@@ -75,7 +75,7 @@
 --
 -- THE INVERSE: `migrations/inverse/w1_prov_custom_record_via_the_door_down.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 -- ── the schema, and the posture that makes it unreachable ──────────────────────

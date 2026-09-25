@@ -1,7 +1,7 @@
 -- chair-step: the inverse of migrations/campaign/storereadperf2_the_read_door_decides_in_its_own_body.sql (lane STORE-READ-PERF-2) — puts custom.read_record back exactly as production held it before it.
 -- based-on: custom.read_record(uuid, uuid, boolean) dbb40e301a344944dcab0c3430d813a7e36b8f448067f31e38f0baeb93632f31
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.read_record(p_organization_id uuid, p_record_id uuid, p_by_id boolean DEFAULT false)
  RETURNS jsonb

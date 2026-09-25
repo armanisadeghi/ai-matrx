@@ -3,7 +3,7 @@
 -- based-on: platform.cutover_seams(uuid) f4a6922b1a02a2b69b5015f3647c7b029e61c7756f0c719cd9433d3a7f8d057f
 -- based-on: platform.cutover_seam_press(text, uuid, text, text) c5d2ccab70e68d62e54003470943d0aaa1df8df3d17fb80709f47e6ad903dc06
 
-set lock_timeout = '30s';
+set lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION platform.cutover_seams(p_organization_id uuid)
  RETURNS jsonb

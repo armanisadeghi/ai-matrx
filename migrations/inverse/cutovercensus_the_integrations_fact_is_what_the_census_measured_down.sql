@@ -1,7 +1,7 @@
 -- INVERSE of migrations/campaign/cutovercensus_the_integrations_fact_is_what_the_census_measured.sql (lane CUTOVER-CENSUS).
 -- chair-step: drops the census door, the guard and the run log, and puts the Data tables switch's integrations fact back to the typed value FLIP-SEAMS wrote (met false, "Not yet: 44 …"), byte for byte. The switch stays not ready either way.
 
-set lock_timeout = '30s';
+set lock_timeout = '2s';
 
 drop trigger if exists cutover_seam_census_facts_are_measured on platform.cutover_seam;
 drop function if exists platform._cutover_seam_census_facts_are_measured();

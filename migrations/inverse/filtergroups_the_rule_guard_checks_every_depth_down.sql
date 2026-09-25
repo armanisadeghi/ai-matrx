@@ -6,7 +6,7 @@
 -- steps. What it undoes: a Rule whose field id or node sits more than six groups down is stored
 -- without being checked again.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom._rule_shape_guard()

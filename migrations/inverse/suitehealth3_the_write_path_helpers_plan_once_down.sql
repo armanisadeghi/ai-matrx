@@ -1,7 +1,7 @@
 -- inverse of migrations/campaign/suitehealth3_the_write_path_helpers_plan_once.sql — restores the four LANGUAGE sql bodies
 -- exactly as they were live on production and the dev clone on 2026-09-25 (sha256 of pg_get_functiondef identical on both).
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.entity_reference_kinds()
  RETURNS TABLE(token text, label text, category text)

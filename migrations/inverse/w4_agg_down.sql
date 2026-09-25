@@ -6,7 +6,7 @@
 --
 -- DROP IF EXISTS throughout, so it is safe against a partially applied lane.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 drop function if exists custom.agg_digest_run(uuid, uuid, timestamptz);
 drop function if exists custom.agg_subscription_fire(uuid, uuid, uuid, jsonb);

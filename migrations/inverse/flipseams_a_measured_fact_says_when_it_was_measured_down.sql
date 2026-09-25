@@ -2,7 +2,7 @@
 -- chair-step: restores platform._cutover_seam_readiness without measured_at.
 -- based-on: platform._cutover_seam_readiness(text, uuid) bb371bb87ddef5c0acabe6a35e18a70a63306b0df03675ba6c3655f2540837a8
 
-set lock_timeout = '30s';
+set lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION platform._cutover_seam_readiness(p_seam text, p_org uuid)
  RETURNS jsonb

@@ -8,7 +8,7 @@
 -- custom.rule_filter_node_sql as they were. What it undoes: "NOT priority is Low" leaves a job with
 -- no priority out of a view, a membership and every list again.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom.rule_eval(p_organization_id uuid, p_expr jsonb, p_values jsonb, p_context jsonb DEFAULT '{}'::jsonb)

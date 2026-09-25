@@ -8,7 +8,7 @@
 -- S7-PRIME inverse, rule 27. The bodies go back first (they name the helper and the table), then
 -- the new functions, the door rows, the knobs and the table.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom.form_submit(p_form_id uuid, p_origin text, p_payload jsonb, p_bucket text, p_honeypot text DEFAULT NULL::text, p_client_key text DEFAULT NULL::text)

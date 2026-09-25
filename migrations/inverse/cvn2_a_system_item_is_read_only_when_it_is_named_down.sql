@@ -5,7 +5,7 @@
 -- based-on: custom.resolve_context(text, uuid, uuid[], uuid[], text[]) d7091ed6dc31bae8f77ed054a87c0cd28cef373648b441a5375fbeed81ecd1db
 -- based-on: context.deliverable_system_context_items() 963ec6c613e4b229c1f846fd7a31556fd6d9acde427a690b753a735e867e92a8
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 drop function public.resolve_full_context(uuid, text, uuid, uuid[], text[]);

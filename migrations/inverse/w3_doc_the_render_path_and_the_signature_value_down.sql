@@ -25,7 +25,7 @@
 -- way to ask whether it still means anything, which is the silent half of exactly the
 -- failure this lane exists to prevent.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 do $inv$

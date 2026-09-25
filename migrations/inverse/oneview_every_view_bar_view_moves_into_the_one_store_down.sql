@@ -11,7 +11,7 @@
 --   views saved after this inverse. Run it only together with the records-ui release before S0,
 --   which read views out of the `records_ui_view` Table.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '10min';
 set local app.actor_system = 'migration:oneview_every_view_bar_view_moves_into_the_one_store_down';
 

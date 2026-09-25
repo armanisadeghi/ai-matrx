@@ -3,7 +3,7 @@
 -- lock: custom
 -- based-on: custom.agent_context_value(jsonb, text, text, uuid, uuid, bigint) bb6f87aea1d84c3d65a02fe8597fb01f47c3b2e462239ed831ae5cab3208c469
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom.agent_context_value(p_doc jsonb, p_key text, p_type text, p_organization_id uuid, p_record_id uuid, p_cap bigint)

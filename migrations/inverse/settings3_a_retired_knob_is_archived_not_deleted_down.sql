@@ -10,7 +10,7 @@
 -- were. Nothing else in the registry is touched: the columns are the only place the archive
 -- was ever recorded.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 -- The door declarations go with the doors. Leaving them would make a re-apply of the up
 -- migration insert a SECOND copy of each row: platform.client_callable_door has no unique

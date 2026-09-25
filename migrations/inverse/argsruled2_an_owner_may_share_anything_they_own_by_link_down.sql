@@ -8,7 +8,7 @@
 -- (MAIN, 2026-09-23), the eight registry rows back to not link-shareable, and the two fork-door
 -- owner_refused_too tokens back. Rule 27 only — it re-closes link sharing Arman opened.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 create or replace function iam.class_allows(p_token text, p_action text, p_row_org uuid DEFAULT NULL::uuid)
  RETURNS boolean

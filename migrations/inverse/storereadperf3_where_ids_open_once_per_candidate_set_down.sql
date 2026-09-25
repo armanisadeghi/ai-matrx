@@ -2,7 +2,7 @@
 -- based-on: custom.resolve_context(text, uuid, uuid[], uuid[], text[]) f997bb272d7334125b8b9b45a5284efc355ca0f794d0e5cd06b9b20d5ca0e293
 -- based-on: custom.context_resolve(jsonb) 4d494ba73f85aadd43cdc026f824da94cbefb9a92f79d5f0b197b64689d0e519
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.resolve_context(p_entity_type text, p_entity_id uuid, p_record_ids uuid[] DEFAULT NULL::uuid[], p_table_ids uuid[] DEFAULT NULL::uuid[], p_system_item_refs text[] DEFAULT NULL::text[])
  RETURNS jsonb

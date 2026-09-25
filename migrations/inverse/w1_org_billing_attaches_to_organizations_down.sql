@@ -15,7 +15,7 @@
 --
 -- It is a `-- target: branch` file and can never reach production.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 create or replace function billing.resolve_tier(p_user uuid)
 returns billing.tier

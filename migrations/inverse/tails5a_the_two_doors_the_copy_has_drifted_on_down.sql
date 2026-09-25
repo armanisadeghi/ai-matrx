@@ -12,7 +12,7 @@
 --
 -- chair-step: it replaces two live client doors.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION public.dissociate_from_task(p_task_id uuid, p_entity_type text, p_entity_id uuid)
  RETURNS jsonb

@@ -3,7 +3,7 @@
 -- the O(the organization) cost with it; it is here because an inverse that does not actually
 -- put the old behaviour back is not an inverse.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 create or replace function custom.query_can_see(p_organization_id uuid, p_record_id uuid, p_required text default 'viewer')

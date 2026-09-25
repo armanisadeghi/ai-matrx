@@ -1,6 +1,6 @@
 -- INVERSE of migrations/campaign/sharetails_no_lane_row_is_the_organization_default.sql: restores the three bodies verbatim.
 -- lane: SHARE-TAILS
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION iam.lane_of(p_resource_type text, p_resource_id uuid)
  RETURNS text

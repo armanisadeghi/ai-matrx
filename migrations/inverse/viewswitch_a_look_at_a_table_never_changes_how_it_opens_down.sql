@@ -3,7 +3,7 @@
 -- ORDER-FIX's custom.view_declare body back byte for byte, and custom.view_designate withdrawn
 -- (its declaration row removed, then the function dropped — no stored row depends on it).
 -- lane: VIEW-SWITCH-NOT-DESIGNATION
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom.view_declare(p_organization_id uuid, p_table_id uuid, p_spec jsonb)

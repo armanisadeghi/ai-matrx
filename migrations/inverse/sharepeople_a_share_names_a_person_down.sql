@@ -1,7 +1,7 @@
 -- INVERSE of migrations/campaign/sharepeople_a_share_names_a_person.sql (lane SHARE-PEOPLE-ONLY).
 -- Puts every converted row back exactly (from iam._share_people_conversion), restores the four
 -- bodies byte-for-byte, drops the guard, the door, the arm and the column.
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 drop trigger if exists _iam_a_share_names_a_person on iam.permissions;
 

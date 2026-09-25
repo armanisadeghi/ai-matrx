@@ -22,7 +22,7 @@
 -- These two hashes are the bodies the UP-migration leaves live (rule 6): an inverse replaces a
 -- body too, so it declares what it expects to find, and it refuses if the up has since moved.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 create or replace function custom.external_rows(p_organization_id uuid, p_source_id uuid)

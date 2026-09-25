@@ -64,7 +64,7 @@
 --
 -- THE INVERSE: `migrations/inverse/w1_store_custom_record_store_down.sql` (§4.13).
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 -- ── the schema, and the posture that makes it unreachable ──────────────────────

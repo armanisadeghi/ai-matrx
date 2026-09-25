@@ -9,7 +9,7 @@
 -- `custom.portal_declare`'s grant is NOT taken back: it is the builder's one door and was granted
 -- before S6; the up file's own inverse re-creates the seven-argument door, and the sweep grants it.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 update platform.client_callable_door

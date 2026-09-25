@@ -26,7 +26,7 @@
 -- `custom` (wrong for `crm.party`, `custom.record` and `users.user_form_profile`, which all
 -- call it `custom_fields`) and to generating index DDL while `custom/field_index_guard` is off.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 CREATE OR REPLACE FUNCTION platform.custom_field_index_expr(p_field_type text, p_field_key text, p_column text DEFAULT 'custom'::text)

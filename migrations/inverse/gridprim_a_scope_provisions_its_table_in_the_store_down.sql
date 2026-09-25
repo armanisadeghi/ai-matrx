@@ -4,7 +4,7 @@
 -- chair-step: the inverse of gridprim_a_scope_provisions_its_table_in_the_store.sql. It DROPS custom.scope_table_provision(uuid, uuid, uuid, uuid) and custom.organization_home_id(uuid), deletes its platform.client_callable_door row. It also puts context.provision_scope_datasets_trigger back to its pre-G11 body first.
 -- WHAT IT DOES NOT UNDO: a Table a scope was given stays, with its scope_binding and the context value that names it.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 -- The trigger function first, back to the body production held before G11 (it calls only

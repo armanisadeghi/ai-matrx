@@ -2,7 +2,7 @@
 -- it, which is the body that raised `SET is not allowed in a non-volatile function` for every
 -- caller. It is here because an inverse that does not put the old behaviour back is not one.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 create or replace function custom.query_visibility_parity(p_organization_id uuid)

@@ -12,7 +12,7 @@
 -- files' inverses fight over one object. THE KNOB ROW IS NOT TOUCHED EITHER — it belongs to
 -- `w1_index_the_record_ceiling_knob.sql`, and `…_knob_down.sql` is what removes it.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 drop function if exists custom.table_capacity(uuid, uuid);

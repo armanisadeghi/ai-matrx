@@ -6,7 +6,7 @@
 -- (apply_table_grants' symmetric half takes a dead key on sight). The table returns to exactly the
 -- state ANON-LANES measured minus the dead key itself, which is the state the census said was
 -- broken -- so this is an undo, never a repair.
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 update platform.entity_types
    set client_anonymous_public_read = false,

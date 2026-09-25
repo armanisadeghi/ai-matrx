@@ -16,7 +16,7 @@
 -- statement-level trio, which this file detaches. The row-level name stays so a database still
 -- carrying the older shape inverts the same way. Ruled by lane INVERSE-GUARD, 2026-09-21.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 drop event trigger if exists platform_reopen_declared_doors;

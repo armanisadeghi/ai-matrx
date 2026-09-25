@@ -4,7 +4,7 @@
 -- INVERSE of migrations/campaign/argsruled2_the_last_ten_doors_can_be_called_by_their_contract.sql: the ten
 -- contract_probe values go back to NULL, which is what they held. Rule 27 only.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 update platform.client_callable_door set contract_probe = NULL
  where schema_name = 'custom' and function_name = 'hub_changed_by' and identity_args = 'p_organization_id uuid, p_kind text, p_ids uuid[]';

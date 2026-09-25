@@ -5,7 +5,7 @@
 -- row. What it undoes: a signed-in person's view-settings controls are refused the registry again
 -- ("permission denied"); custom.view_declare still judges every save by it. Nothing else changes.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 delete from platform.client_callable_door

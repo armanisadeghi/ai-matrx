@@ -31,7 +31,7 @@
 -- based-on: platform.provision_validate(jsonb, text, uuid) c02982a46d5b88354432a6efd85fd5d046108066b3f8edbeb8cda350fc26d2e7
 -- based-on: platform.provision(jsonb, text, uuid, text) 21d50d62fa5dfe4c8673f6b21a9232379a933b2364250b2719bd2784493bc5fc
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 -- the two spec keys leave the JSON schema first, so a spec that still carries them is

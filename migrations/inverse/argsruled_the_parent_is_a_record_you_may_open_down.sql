@@ -3,7 +3,7 @@
 --
 -- chair-step: it replaces two live client-door bodies.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.record_reparent(p_organization_id uuid, p_record_id uuid, p_parent_id uuid)
  RETURNS void

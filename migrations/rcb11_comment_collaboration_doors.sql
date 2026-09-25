@@ -40,7 +40,7 @@
 -- based-on: public.cmt_list(text, uuid) 8bf23bcbb4951e65237c71091da14dd97fb912155caf3ceacc050590d74263e8
 -- based-on: public.cmt_edit(uuid, text) f46ae8a89e46c695970b36cca87a2ed34f3f0272b8a3ccb5345152dc2a95a2b0
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 1. THE COLUMN

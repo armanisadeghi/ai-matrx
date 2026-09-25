@@ -2,7 +2,7 @@
 --
 -- THE INVERSE of `migrations/campaign/w1_prov_branch_vocabulary_levelling.sql` (§4.13).
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 do $$

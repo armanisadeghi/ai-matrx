@@ -6,7 +6,7 @@
 --   the defect T8 names; it exists so the red twin can execute these bytes and prove the fix was
 --   real.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 CREATE OR REPLACE FUNCTION custom._options_table_for(p_organization_id uuid, p_label text, p_options jsonb)

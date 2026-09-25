@@ -47,7 +47,7 @@ jest.mock("next/link", () => ({
 // The peek host statically drags peek components in. Keep it shallow here, but
 // retain its props so the test can prove a caller's destination reaches the
 // dialog host when the Quick look button is pressed.
-const mockResourcePeekHost = jest.fn(() => null);
+const mockResourcePeekHost = jest.fn((_props: unknown) => null);
 
 jest.mock("@/features/organizations/peek/ResourcePeekHost", () => ({
   __esModule: true,

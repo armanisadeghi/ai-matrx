@@ -5,7 +5,7 @@
 -- and the event is stamped undone. Run BEFORE the organization-doors file's inverse.
 -- chair-step: gives back what the archorgwork repair withdrew from archived organizations, without restoring any organization.
 
-set lock_timeout = '30s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 do $undo$

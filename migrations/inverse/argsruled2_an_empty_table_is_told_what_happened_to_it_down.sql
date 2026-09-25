@@ -6,7 +6,7 @@
 -- exactly as it was (MAIN, 2026-09-23), which brings back the false sentence and the preview
 -- that archives an empty Table. Rule 27 only.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 create or replace function custom.table_archive(p_organization_id uuid, p_table_id uuid, p_chunk integer DEFAULT 50, p_include_table boolean DEFAULT true)
  RETURNS jsonb

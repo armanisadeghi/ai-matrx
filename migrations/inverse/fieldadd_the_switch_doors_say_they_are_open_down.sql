@@ -6,7 +6,7 @@
 -- API route's service_role lane — the one the screen worked through before — is
 -- untouched, so nothing a person could do yesterday stops working.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 update platform.client_callable_door

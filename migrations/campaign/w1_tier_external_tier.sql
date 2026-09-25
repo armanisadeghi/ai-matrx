@@ -42,7 +42,7 @@
 --
 -- THE INVERSE: `migrations/inverse/w1_tier_external_tier_down.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 -- ── DOOR-N-6: the private schema, closed before anything can be put in it ──────

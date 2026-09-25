@@ -8,7 +8,7 @@
 -- that organization's own declaration — and every record an action changed keeps its change and
 -- its history line (the writes were ordinary custom.record_update writes).
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 drop function if exists custom.action_run(uuid, uuid, uuid[]);

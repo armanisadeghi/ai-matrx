@@ -66,3 +66,47 @@ describe("holder declarations follow the pin", () => {
     expect(row.holderDeclarations).toEqual(["prompt_purpose", "model_selection_guidance"]);
   });
 });
+
+describe("who-may-fill: only a system-homed job needs a system Holder", () => {
+  const ORG_AGENT = "0f0f0f0f-0000-4000-8000-000000000001";
+  const data = {
+    ...DATA,
+    agentsById: {
+      [ORG_AGENT]: {
+        id: ORG_AGENT,
+        name: "Regional Page Writer",
+        version: 3,
+        isArchived: false,
+        agentType: "user",
+        autoContextDisabled: false,
+        variableNames: [],
+        contextPolicyKeys: [],
+      },
+    },
+  } as unknown as MandateConsoleData;
+
+  it("an org-homed job held by its org's own agent is healthy", () => {
+    const row = buildRow(
+      mandate({
+        organization_id: "39c38960-d30c-4840-b0c1-c9960de95582",
+        default_holder_id: ORG_AGENT,
+        default_holder_version_id: null,
+      }),
+      data,
+    );
+    expect(row.health).not.toBe("not a system agent");
+  });
+
+  it("a system-homed job held by a non-system agent is flagged", () => {
+    const { SYSTEM_ORGANIZATION_ID } = jest.requireActual("@/constants/platform-orgs");
+    const row = buildRow(
+      mandate({
+        organization_id: SYSTEM_ORGANIZATION_ID,
+        default_holder_id: ORG_AGENT,
+        default_holder_version_id: null,
+      }),
+      data,
+    );
+    expect(row.health).toBe("not a system agent");
+  });
+});

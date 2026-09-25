@@ -1,7 +1,7 @@
 -- P1: a task assignment is a saved transition, never a second browser request.
 -- This migration is applied by the database release lane. The task write and its
 -- email intent commit together; the dispatcher owns delivery and retries.
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '120s';
 
 insert into communication.notification_event_type

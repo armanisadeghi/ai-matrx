@@ -2,7 +2,7 @@
 -- is live. The base migration installs an inert trigger, so either the base
 -- migration or the frontend can arrive first without a duplicate email.
 -- The release owner activates this step after verifying both prerequisites.
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '120s';
 
 do $activate$

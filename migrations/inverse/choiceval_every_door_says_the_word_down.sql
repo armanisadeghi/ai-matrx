@@ -4,7 +4,7 @@
 --   export and group-by hands back the stored KEY instead of the word — which is half of T8's
 --   failure — so it exists for the red twin to execute and for nothing else.
 
-set lock_timeout = '45s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 CREATE OR REPLACE FUNCTION custom.read_record(p_organization_id uuid, p_record_id uuid, p_by_id boolean DEFAULT false)

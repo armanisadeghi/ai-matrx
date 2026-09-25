@@ -6,7 +6,7 @@
 -- provisioner to exactly the behaviour the RED probe measured. `-- target: branch`: it DELETEs,
 -- and rule 9 forbids that on production.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 delete from platform.schema_client_exposure where schema_name = 'custom';

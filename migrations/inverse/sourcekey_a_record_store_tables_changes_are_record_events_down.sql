@@ -8,7 +8,7 @@
 -- based-on: custom.table_webhook_archive(uuid, uuid) e63820ec1ccf18d27908b976f5a38ab750f78db9cf9f5f1d9cf190b8f4ceb4f3
 -- based-on: custom._record_events_to_activity() b886ddbf95c2216deb3c88e61dcb85eddfd27fd7fc45749685beee9479a68eef
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '120s';
 
 DROP TRIGGER IF EXISTS _aa_record_source_key_is_record ON scheduler.sch_trigger;

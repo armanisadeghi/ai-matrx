@@ -5,7 +5,7 @@
 --
 -- CHECKLISTS — the inverse of `checklists_a_run_is_seen_by_the_people_in_it.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 drop function if exists custom.checklist_runs(uuid, uuid, uuid, boolean, integer);
 drop function if exists custom.checklist_run(uuid, uuid);

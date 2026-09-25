@@ -5,7 +5,7 @@
 -- lock: platform
 -- lane: VIEW-KEYS-SHEET
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 set local app.actor_system = 'migration:viewkeyssheet_a_copied_tables_default_view_names_the_sheet_down';
 

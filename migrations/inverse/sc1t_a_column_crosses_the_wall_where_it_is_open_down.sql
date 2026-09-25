@@ -12,7 +12,7 @@
 -- based-on: custom._table_move_plan(uuid,uuid,uuid) d39e038ba19d0ca2d80d0faf8e5223189f63bb5bb4586732dea44213541ada41
 -- based-on: custom.table_move(uuid,uuid,integer) e7e6ba70790acd0160a86b70f0713c314d6f666061f37c462e92d717ffd3e32c
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.organization_references(p_kind text, p_organization_id uuid, p_row jsonb)
  RETURNS TABLE(site text, what text, ref_id uuid, openable boolean)

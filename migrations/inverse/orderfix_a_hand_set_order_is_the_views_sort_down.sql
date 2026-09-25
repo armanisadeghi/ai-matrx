@@ -10,7 +10,7 @@
 -- based-on: custom.view_declare(uuid, uuid, jsonb) 67084f9aadc1fe1082e6d7554b392737182d6486e776dda62914c71e8dab10fb
 -- based-on: custom.view_record_order_set(uuid, uuid, uuid[]) 95230e86dbbd6b4127617357b944aabd4219adea1214945719b4d94bd58aaef5
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom.view_declare(p_organization_id uuid, p_table_id uuid, p_spec jsonb)

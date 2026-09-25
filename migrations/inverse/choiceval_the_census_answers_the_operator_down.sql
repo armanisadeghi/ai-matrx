@@ -13,7 +13,7 @@
 -- gone. The other order is the only one that breaks, and an inverse pair is never run in it.
 -- ground-standing-ok: b
 
-set lock_timeout = '45s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 CREATE OR REPLACE FUNCTION custom.choice_census(p_organization_id uuid, p_table_id uuid DEFAULT NULL::uuid)

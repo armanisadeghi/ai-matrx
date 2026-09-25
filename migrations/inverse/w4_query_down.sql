@@ -23,7 +23,7 @@
 -- It is DROP IF EXISTS throughout, so it is safe to run against a partially applied lane —
 -- which is exactly the state rule 27's middle step leaves behind when a file fails halfway.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 drop function if exists custom.query_hot_paths_prepared();
 drop function if exists custom.query_prepare_hot();

@@ -2,7 +2,7 @@
 -- chair-step: removes the seam catalogue, the press log, the two doors and their door rows, the two helpers, the two knob_write_door rows and the 'cutover_seam' authority kind, and puts platform.knob_write_door_for back byte for byte (sha256 ad71fec6…). REFUSES while any organization has any seam on the new system: press it back first, so no archived table or setting is left without the record of who switched it.
 -- based-on: platform.knob_write_door_for(text, uuid) a5cf4311cf19b1f4331406544e735260f4e30c7ad3b5fd1852d58e2f934fcf47
 
-set lock_timeout = '30s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 do $$

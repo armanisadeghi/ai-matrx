@@ -22,7 +22,7 @@
 -- `public._schema_migrations` itself, and both runners refuse a file that tries. Rule 27's
 -- loop re-applies the up with `--reapply`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 -- ── the refusal, before a single drop ──────────────────────────────────────────

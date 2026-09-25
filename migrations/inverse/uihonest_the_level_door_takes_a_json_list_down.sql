@@ -6,7 +6,7 @@
 -- first file's own inverse after this one leaves the store exactly as it was
 -- before this lane.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 delete from platform.client_callable_door

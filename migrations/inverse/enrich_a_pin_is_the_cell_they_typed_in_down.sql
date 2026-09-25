@@ -16,7 +16,7 @@
 -- ground-standing-ok: b — the order above is stated, and neither half is run on top of the other.
 --
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 CREATE OR REPLACE FUNCTION custom.pin_agent_cells(p_new jsonb, p_old jsonb, p_agent_keys text[])

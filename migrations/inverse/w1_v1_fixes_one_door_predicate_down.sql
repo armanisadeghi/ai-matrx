@@ -17,7 +17,7 @@
 -- Branch-only, because it DROPs: rule 9 keeps a DROP off production in every lane, and
 -- nothing this file reverses has been applied there.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 -- 🚨 EVERY TRIGGER OVER THE BODIES THIS FILE DROPS COMES OFF FIRST (lane RED-SUITES-3,

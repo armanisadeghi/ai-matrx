@@ -12,7 +12,7 @@
 -- same three statements as a chair step; while `custom/entity_custom_fields_guard` resolves
 -- false the guard returns NEW untouched, so removing it changes no answer either way.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 drop trigger if exists _doctrine_field_shape_guard on platform.custom_field_definition;
 drop function if exists platform._doctrine_field_shape_guard();

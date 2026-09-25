@@ -3,7 +3,7 @@
 -- lock: custom
 -- window-class: DROP TRIGGER on the partitioned custom.record takes ACCESS EXCLUSIVE on the parent, its 16 partitions and the 23 auth/storage/realtime relations Supabase's hook adds, for the length of this transaction; 01:00–04:00 Pacific at production.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 drop trigger if exists _ab_context_copy_fence on custom.record;

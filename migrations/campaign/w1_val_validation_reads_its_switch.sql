@@ -61,7 +61,7 @@
 --
 -- THE INVERSE: `migrations/inverse/w1_val_validation_reads_its_switch_down.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 

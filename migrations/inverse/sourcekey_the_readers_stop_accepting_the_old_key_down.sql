@@ -5,7 +5,7 @@
 -- based-on: custom.record_source_keys(uuid) (the body this file installs, once applied)
 -- based-on: custom.record_source_table(text) (the body this file installs, once applied)
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '120s';
 
 CREATE OR REPLACE FUNCTION custom.record_source_keys(p_table_id uuid)

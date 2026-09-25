@@ -7,7 +7,7 @@
 -- ONE TRANSACTION, and that is not style: `provision_shape_guard` fires at COMMIT and refuses
 -- a door row whose function is gone, so the DROP and the CREATE must reach COMMIT together.
 begin;
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '180s';
 
 drop function if exists custom.visibility_as_of(uuid, uuid, timestamptz);

@@ -8,7 +8,7 @@
 -- Run it only together with the records-ui release before S0 (which saved whole views), never
 -- under a records-ui that saves one changed key at a time.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION custom.view_declare(p_organization_id uuid, p_table_id uuid, p_spec jsonb)

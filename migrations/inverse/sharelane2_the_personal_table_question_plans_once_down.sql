@@ -1,6 +1,6 @@
 -- INVERSE of migrations/campaign/sharelane2_the_personal_table_question_plans_once.sql: restores custom.row_sits_in_a_personal_table(text, uuid) (sha256 aabac5de…), iam.has_access_for_base (sha256 a484caa5…) and iam.entity_read_kernel_expected() verbatim (its recorded value was then stale: the provisioner refuses every spec until a re-record), and drops the three-argument helper.
 -- lane: SHARE-LANE-2
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.row_sits_in_a_personal_table(p_type text, p_id uuid)
  RETURNS boolean

@@ -6,7 +6,7 @@
 -- being able to answer "does my organization keep its data here?" the moment it
 -- runs, so the code that reads the door has to go back with it.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 revoke execute on function platform.unified_data_store_on(uuid) from authenticated;

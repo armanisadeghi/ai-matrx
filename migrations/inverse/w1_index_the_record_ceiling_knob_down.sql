@@ -10,7 +10,7 @@
 -- decision, and an inverse that silently erased it would be undoing somebody else's work
 -- rather than its own — so the delete is refused, by name, while an override exists.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 do $$

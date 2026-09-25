@@ -7,7 +7,7 @@
 -- lock: custom
 -- lane: STORE-TAILS-3
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '300s';
 
 update history.migration_log m

@@ -5,7 +5,7 @@
 -- INVERSE of migrations/campaign/argsruled2_chats_shared_with_me_are_listed.sql: the body back as it was
 -- (MAIN, 2026-09-24) — the cx_conversation filter that lists nothing. Rule 27 only.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 create or replace function public.get_cx_conversations_shared_with_me()
  RETURNS TABLE(id uuid, title text, status text, message_count integer, created_at timestamp with time zone, updated_at timestamp with time zone, permission_level text, owner_email text)

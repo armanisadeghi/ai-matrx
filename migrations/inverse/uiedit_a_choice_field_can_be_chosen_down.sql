@@ -8,7 +8,7 @@
 -- a REVOKE on a live door is the one thing this campaign never does on a
 -- database the app is pointed at.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 CREATE OR REPLACE FUNCTION custom.field_options(p_organization_id uuid, p_field_id uuid)

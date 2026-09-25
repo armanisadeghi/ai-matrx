@@ -9,7 +9,7 @@
 -- ground-standing-ok: b — the body this restores calls custom.field_cycle, which the sibling inverse storetails3_a_worked_out_column_never_reads_itself_down.sql drops. The order is fixed: this file was applied AFTER that one's up, so this inverse runs FIRST; the sibling's inverse then puts back the STORE-LEAK-FORMULA body, which calls nothing it drops. Run alone, this inverse leaves field_cycle standing and called.
 -- based-on: custom._field_reads_what_it_reads() 22aaa6382efe9f384d9c696a9902c7a172c9dfbd8019a31b33bacd7c53124c6f
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '120s';
 
 CREATE OR REPLACE FUNCTION custom._field_reads_what_it_reads()

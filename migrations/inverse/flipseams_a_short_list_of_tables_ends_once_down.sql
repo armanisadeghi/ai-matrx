@@ -2,7 +2,7 @@
 -- chair-step: restores platform._cutover_seam_readiness as the first FLIP-SEAMS file left it.
 -- based-on: platform._cutover_seam_readiness(text, uuid) 90d78cca0caff349011dcbfd38fe4acdc2c5e37150f0b08d5901d38591e1832a
 
-set lock_timeout = '30s';
+set lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION platform._cutover_seam_readiness(p_seam text, p_org uuid)
  RETURNS jsonb

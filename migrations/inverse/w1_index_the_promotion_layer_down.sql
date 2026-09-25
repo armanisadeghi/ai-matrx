@@ -13,7 +13,7 @@
 -- promoted indexes first (they are what the functions built), then the trigger, then the
 -- functions in dependency order, callers before callees.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 -- 1. Every promoted index this lane's generator or promote_field could have built, parent and

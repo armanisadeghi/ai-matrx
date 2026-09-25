@@ -1,6 +1,6 @@
 -- INVERSE of migrations/campaign/sharelane2_the_transfer_doors_decide_in_their_own_body.sql: restores both door bodies verbatim.
 -- lane: SHARE-LANE-2
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.table_transfer_owner(p_table_id uuid, p_to_person uuid, p_reason text)
  RETURNS jsonb

@@ -19,7 +19,7 @@
 --
 -- THE INVERSE: `migrations/inverse/w1_prov_closed_level_platform_work_claim_down.sql`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 create table if not exists platform._work_claim (

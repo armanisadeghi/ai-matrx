@@ -25,7 +25,7 @@
 -- than a broken door. Nothing else in either repository calls either function.
 -- ground-standing-ok: d
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 drop function if exists platform.relation_on_delete(uuid, uuid);

@@ -10,7 +10,7 @@
 -- The values are production's, read SELECT-only 2026-09-17, keyed by
 -- (schema_name, function_name, identity_args) — the key that IS portable across databases.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 do $$

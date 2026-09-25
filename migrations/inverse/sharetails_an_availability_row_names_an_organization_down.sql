@@ -1,6 +1,6 @@
 -- INVERSE of migrations/campaign/sharetails_an_availability_row_names_an_organization.sql: restores the body it replaced, verbatim.
 -- lane: SHARE-TAILS
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION iam._a_share_names_a_person()
  RETURNS trigger

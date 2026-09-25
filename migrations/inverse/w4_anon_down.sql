@@ -6,7 +6,7 @@
 -- direction: nothing else in the platform calls these, because schema `custom` is closed and
 -- absent from `pgrst.db_schemas`, so no client and no route reaches them.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 drop function if exists custom.anon_write(text, text, jsonb, text, jsonb);

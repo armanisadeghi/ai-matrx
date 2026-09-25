@@ -8,7 +8,7 @@
 --
 -- chair-step: it replaces four live client-door bodies.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.agent_table_claim(p_organization uuid, p_table uuid, p_conversation uuid DEFAULT NULL::uuid)
  RETURNS void

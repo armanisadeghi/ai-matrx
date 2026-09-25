@@ -1,6 +1,6 @@
 -- lane: DEAD-KEYS — inverse: restores ANON-LANES' original wording verbatim.
 -- chair-step: a plain UPDATE, non-additive only in that it puts an older sentence back.
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 update platform.entity_types
    set anon_lane_pending_withdrawal_reason =

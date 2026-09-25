@@ -38,7 +38,7 @@
 -- LOCKS. insert into platform.saved_view and updates of custom.record rows (through the store's
 -- own archive door). No DDL. Not window-class.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '10min';
 -- A write with no person behind it names the system that made it (platform.associations refuses
 -- actor_tier=code with no actor_system).

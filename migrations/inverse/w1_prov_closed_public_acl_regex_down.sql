@@ -5,7 +5,7 @@
 -- inverse is known to invert anything (rule 27). The `-- based-on:` hash is the FIXED body's,
 -- because that is what is live immediately before this file runs.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 CREATE OR REPLACE FUNCTION platform.schema_exposure_violations(p_schema text DEFAULT NULL::text)

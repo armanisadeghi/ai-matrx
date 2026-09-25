@@ -16,7 +16,7 @@
 -- Run the chair-step grant's inverse first
 -- (filtergroups_a_signed_in_person_may_read_a_rules_members_down.sql).
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 -- NOT ON TOP OF LANE S3. S3's uichamp_s3_a_number_knows_last_month_and_its_target.sql DROPS the

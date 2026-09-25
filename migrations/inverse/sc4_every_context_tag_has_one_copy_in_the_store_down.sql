@@ -1,7 +1,7 @@
 -- chair-step: inverse of sc4_every_context_tag_has_one_copy_in_the_store.sql (lane SC-4) — drops the tag follow's and the fence's triggers on platform.associations and their functions, and custom.context_tag_copy. The copied tags already written stay, archived (soft delete, never a hard delete: the soft-delete law), and the fourteen `<kind> -> record` types are deactivated rather than removed, because an archived edge still names its type. Nothing in the old tags is touched.
 -- window-class: DROP TRIGGER takes ACCESS EXCLUSIVE on platform.associations for the length of
 --   this transaction (short; readers wait a moment), under lock_timeout.
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '180s';
 
 drop trigger if exists zz_context_tag_follow_ins on platform.associations;

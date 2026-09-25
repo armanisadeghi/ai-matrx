@@ -7,7 +7,7 @@
 -- lock: platform
 -- lane: VERSION-HISTORY-FIX
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 
 create temporary table _vhf_undo on commit drop as
 select m.id as log_id, m.target_id as id, m.inverse ->> 'store' as store,

@@ -1,7 +1,7 @@
 -- inverse of migrations/campaign/suitehealth3_the_hand_order_page_asks_the_page_size_door.sql — restores the body exactly as it was live on production and
 -- the dev clone on 2026-09-25 (sha256 of pg_get_functiondef identical on both).
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.read_records_in_view_order(p_organization_id uuid, p_view_id uuid, p_by_id boolean DEFAULT false, p_limit integer DEFAULT 200, p_offset integer DEFAULT 0, p_filter jsonb DEFAULT NULL::jsonb)
  RETURNS TABLE(id uuid, document jsonb, level permission_level, "position" numeric)

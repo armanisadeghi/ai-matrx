@@ -4,7 +4,7 @@
 --   page a person reads showed the stored word instead of the label while the single-record door
 --   looked right. Running this restores that disagreement, which is what it is for.
 
-set lock_timeout = '45s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 create or replace function custom.choice_render(p_organization_id uuid, p_table_id uuid, p_doc jsonb)

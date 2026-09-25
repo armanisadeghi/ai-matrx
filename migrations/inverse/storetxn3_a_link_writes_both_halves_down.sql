@@ -15,7 +15,7 @@
 -- based-on: platform.relation_unset(uuid, uuid, text, uuid) 548a20fabccdc9f720bff9b088b211438bd25aa0ff21b7d328430440f9b0e7cb
 -- based-on: custom.validate_values(uuid, custom.record[], jsonb, text) 7b2d8e7c6acbd6f54a2b87592924b3774a4c2cbf08a62e85709dee98846deb60
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 CREATE OR REPLACE FUNCTION platform.relation_set(p_organization_id uuid, p_record_id uuid, p_field_key text, p_targets jsonb)

@@ -6,7 +6,7 @@
 -- chair-step: restores the S5b tick body and leaves pg_cron job custom-inbox-remind-tick inactive.
 -- based-on: custom.inbox_remind_tick() f9b1e7134735c4be4d7b9f04f229c8d32268397241cbc0d431cdaf6a057e4930
 
-set lock_timeout = '30s';
+set lock_timeout = '2s';
 set statement_timeout = '120s';
 
 select cron.alter_job(j.jobid, active := false)

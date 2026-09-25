@@ -21,7 +21,7 @@
 -- branch, and the effect is a correct ordering guard: this file is refused unless the fix is
 -- actually live.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 drop function if exists platform.schema_exposure_violations(text);

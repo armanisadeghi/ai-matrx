@@ -8,7 +8,7 @@
 -- the activity rows already written stay in platform.activity_log; once the trigger is gone no new
 -- record change is logged, so those webhooks go quiet. Nothing is deleted.
 
-set local lock_timeout = '5s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 drop trigger if exists zz_gridprim_record_events_s_i on custom.io_outbox;

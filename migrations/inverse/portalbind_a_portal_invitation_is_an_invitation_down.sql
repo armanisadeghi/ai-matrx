@@ -8,7 +8,7 @@
 --
 -- chair-step: it replaces four live client-door bodies.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 CREATE OR REPLACE FUNCTION custom.portal_invite(p_organization_id uuid, p_portal_id uuid, p_client_record_id uuid, p_email text, p_user_id uuid DEFAULT NULL::uuid)
  RETURNS jsonb

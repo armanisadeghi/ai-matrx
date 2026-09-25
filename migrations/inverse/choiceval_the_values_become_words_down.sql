@@ -5,7 +5,7 @@
 --   uuid, which is why the verb records its own inverse as `{"kind":"none"}` with that reason.
 --   Each converted record's previous value is in history.row_versions.
 
-set lock_timeout = '45s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 delete from platform.client_callable_door

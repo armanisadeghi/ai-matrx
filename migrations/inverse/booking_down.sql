@@ -27,7 +27,7 @@
 --    `custom.form_public`, and re-applying this lane brings its booking side back with the
 --    same availability, the same slots Table and the same slug.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 drop function if exists custom.bookings(uuid, uuid);

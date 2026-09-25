@@ -323,7 +323,7 @@ describe("Vault and Authenticator organization transport", () => {
       json: async () => {
         throw new SyntaxError("truncated receipt");
       },
-    } as Response);
+    } as unknown as Response);
     await expect(
       createVaultItem(
         { display_name: "Imported", source: "system_import" },
@@ -451,9 +451,9 @@ describe("Vault and Authenticator organization transport", () => {
     const missingKey = {
       expectedActor: { userId: "user-1", organizationId: ORGANIZATION_ID },
     };
-    // @ts-expect-error a frozen import always carries its original idempotency key.
     const missingKeyCall = createVaultItem(
       { display_name: "Imported", source: "system_import" },
+      // @ts-expect-error a frozen import always carries its original idempotency key.
       missingKey,
     );
     await expect(missingKeyCall).rejects.toMatchObject({
@@ -462,9 +462,9 @@ describe("Vault and Authenticator organization transport", () => {
     const missingActor = {
       idempotencyKey: "00000000-0000-4000-8000-000000000001",
     };
-    // @ts-expect-error an idempotency key always carries its frozen actor.
     const missingActorCall = createVaultItem(
       { display_name: "Imported", source: "system_import" },
+      // @ts-expect-error an idempotency key always carries its frozen actor.
       missingActor,
     );
     await expect(missingActorCall).rejects.toMatchObject({
@@ -493,7 +493,7 @@ describe("Vault and Authenticator organization transport", () => {
       json: async () => {
         throw decodeFailure;
       },
-    } as Response);
+    } as unknown as Response);
 
     await expect(
       createVaultItem({ display_name: "Created", source: "manual" }),

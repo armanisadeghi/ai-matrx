@@ -4,7 +4,7 @@
 -- based-on: custom.resolve_context(text, uuid, uuid[], uuid[], text[]) 558c5dff60fbcfa19bc4c61965db49b4aa6fb7132e50bc41a311d39b5fdad7d6
 -- based-on: public.resolve_full_context(uuid, text, uuid, uuid[], text[]) 285751eb5d89e696049730d31083158d45a98e7c9e897511b49274aa769339d8
 
-set local lock_timeout = '30s';
+set local lock_timeout = '2s';
 set local statement_timeout = '60s';
 
 CREATE OR REPLACE FUNCTION public.resolve_full_context(p_user_id uuid, p_entity_type text, p_entity_id uuid, p_scope_ids uuid[] DEFAULT NULL::uuid[], p_system_item_refs text[] DEFAULT NULL::text[])

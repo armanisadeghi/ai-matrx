@@ -1,6 +1,6 @@
 -- chair-step: REVOKE, which closes schema custom again. It grants nothing and opens nothing; it is the exact inverse of w4_door_the_client_grants.sql.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 
 revoke execute on function custom.assert_store_door(uuid, text) from authenticated;
 revoke execute on function custom.caller_role() from authenticated;

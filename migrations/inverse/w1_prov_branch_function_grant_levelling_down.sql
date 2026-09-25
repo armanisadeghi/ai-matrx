@@ -6,7 +6,7 @@
 -- `iam.accessible_entity_ids`, so `branch-api.ts … --as-test-user` goes back to HTTP 403
 -- `42501 permission denied for function accessible_entity_ids`.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 do $$

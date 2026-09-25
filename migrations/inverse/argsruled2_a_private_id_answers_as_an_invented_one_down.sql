@@ -8,7 +8,7 @@
 -- the three fork_shared_*(uuid,uuid,text) bodies back exactly as they were (pg_get_functiondef,
 -- MAIN database, 2026-09-23), which REOPENS the not-found / not-shared oracle. Rule 27 only.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 create or replace function public.fork_shared_conversation(p_conversation_id uuid, p_organization_id uuid, p_token text DEFAULT NULL::text)
  RETURNS jsonb

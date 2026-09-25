@@ -3,7 +3,7 @@
 --
 -- INVERSE of migrations/campaign/argsruled2_two_fork_doors_declare_why_the_owner_is_refused_too.sql: the owner_refused_too key comes off both rules. Rule 27 only.
 
-set lock_timeout = '4s';
+set lock_timeout = '2s';
 
 update platform.client_callable_door
    set argument_rules = argument_rules #- '{arguments,p_conversation_id,foreign,owner_refused_too}'

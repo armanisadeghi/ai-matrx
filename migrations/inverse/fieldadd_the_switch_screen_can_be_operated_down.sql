@@ -14,7 +14,7 @@
 -- Run it with fieldadd_the_switch_doors_say_they_are_open_down.sql FIRST, or
 -- the client doors it opens will point at bodies that no longer decide.
 
-set lock_timeout = '5s';
+set lock_timeout = '2s';
 set statement_timeout = '600s';
 
 drop function if exists platform.unified_data_ramp_exit(uuid);

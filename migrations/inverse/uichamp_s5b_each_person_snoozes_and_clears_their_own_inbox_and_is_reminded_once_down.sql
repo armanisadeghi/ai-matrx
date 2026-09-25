@@ -16,7 +16,7 @@
 -- ground-standing-ok: b
 -- based-on: custom.work_inbox(uuid, integer, integer, boolean, text) ce03303d26a363130d40553ed92023a2f76c31ea04a58e570db11486223b51f7
 
-set lock_timeout = '30s';
+set lock_timeout = '2s';
 set statement_timeout = '300s';
 
 select cron.unschedule(j.jobid) from cron.job j where j.jobname = 'custom-inbox-remind-tick';
