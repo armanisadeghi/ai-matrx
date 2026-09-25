@@ -32,6 +32,7 @@ import type {
 } from "@/features/files/virtual-sources/types";
 import type { Database } from "@/types/database.types";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 const TAB_ID_PREFIX = "code-file:";
@@ -322,18 +323,24 @@ const codeFilesAdapter: VirtualSourceAdapter = {
 
   async delete(supabase, _userId, id, hard) {
     if (hard) {
-      const { error } = await supabase
-        .schema("code").from("code_files")
-        .delete()
-        .eq("id", id);
-      if (error) throw error;
+      await writeOne(
+        supabase
+          .schema("code").from("code_files")
+          .delete()
+          .eq("id", id)
+          .select("id"),
+        { action: "delete", noun: "code file" },
+      );
       return;
     }
-    const { error } = await supabase
-      .schema("code").from("code_files")
-      .update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) throw error;
+    await writeOne(
+      supabase
+        .schema("code").from("code_files")
+        .update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .select("id"),
+      { action: "delete", noun: "code file" },
+    );
   },
 
   async create(supabase, _userId, args: CreateArgs) {

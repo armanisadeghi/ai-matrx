@@ -8,6 +8,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
 import { filesDb } from "@/features/files/filesDb";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
 import type {
   CreateWebhookInput,
@@ -126,7 +127,10 @@ export async function rotateWebhookSecret(id: string): Promise<string> {
 
 export async function deleteWebhook(id: string): Promise<void> {
   const supabase = createClient();
-  const { error } = await filesDb(supabase).from("webhooks").delete().eq("id", id);
+  const { error } = await tryWriteOne(
+    filesDb(supabase).from("webhooks").delete().eq("id", id).select("id"),
+    { action: "delete", noun: "webhook" },
+  );
   if (error) throw new Error(`Failed to delete webhook: ${error.message}`);
 }
 

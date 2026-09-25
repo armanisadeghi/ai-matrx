@@ -27,6 +27,7 @@ import { registerVirtualSource } from "@/features/files/virtual-sources/registry
 import { NotesInlinePreview } from "./NotesInlinePreview";
 import type { Database } from "@/types/database.types";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
+import { writeOne } from "@/utils/supabase/writeOne";
 import type {
   ListArgs,
   RenameArgs,
@@ -275,20 +276,26 @@ const notesAdapter: VirtualSourceAdapter = {
 
   async delete(supabase, userId, id, hard) {
     if (hard) {
-      const { error } = await supabase
-        .schema("workbench").from("notes")
-        .delete()
-        .eq("id", id)
-        .eq("created_by", userId);
-      if (error) throw error;
+      await writeOne(
+        supabase
+          .schema("workbench").from("notes")
+          .delete()
+          .eq("id", id)
+          .eq("created_by", userId)
+          .select("id"),
+        { action: "delete", noun: "note" },
+      );
       return;
     }
-    const { error } = await supabase
-      .schema("workbench").from("notes")
-      .update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-      .eq("id", id)
-      .eq("created_by", userId);
-    if (error) throw error;
+    await writeOne(
+      supabase
+        .schema("workbench").from("notes")
+        .update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("created_by", userId)
+        .select("id"),
+      { action: "delete", noun: "note" },
+    );
   },
 
   async create(supabase, userId, args: CreateArgs) {

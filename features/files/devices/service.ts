@@ -21,6 +21,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { filesDb } from "@/features/files/filesDb";
+import { writeOne } from "@/utils/supabase/writeOne";
 import type {
   DeviceRow,
   SyncDirection,
@@ -79,11 +80,14 @@ async function writeIntent(
     knobs: Record<string, unknown>;
   }>,
 ): Promise<void> {
-  const { error } = await filesDb(supabase)
-    .from("sync_mappings")
-    .update({ ...patch, organization_id: mapping.organization_id })
-    .eq("id", mapping.id);
-  if (error) throw error;
+  await writeOne(
+    filesDb(supabase)
+      .from("sync_mappings")
+      .update({ ...patch, organization_id: mapping.organization_id })
+      .eq("id", mapping.id)
+      .select("id"),
+    { action: "save", noun: "sync setting" },
+  );
 }
 
 export function setDesiredState(

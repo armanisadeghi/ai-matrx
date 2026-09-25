@@ -25,6 +25,7 @@ import type {
 } from "@/features/files/virtual-sources/types";
 import type { Database } from "@/types/database.types";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 
 const TAB_ID_PREFIX = "aga-app:";
@@ -187,12 +188,15 @@ const agaAppsAdapter: VirtualSourceAdapter = {
 
   async delete(supabase, userId, id) {
     // Soft-delete via status column when available; otherwise hard-delete.
-    const { error } = await supabase
-      .schema("app").from("definition")
-      .update({ status: "archived", updated_at: new Date().toISOString() })
-      .eq("id", id)
-      .eq("user_id", userId);
-    if (error) throw error;
+    await writeOne(
+      supabase
+        .schema("app").from("definition")
+        .update({ status: "archived", updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("user_id", userId)
+        .select("id"),
+      { action: "archive", noun: "agent app" },
+    );
   },
 
   inlinePreview: makeCodeInlinePreview("aga_apps"),
