@@ -9,6 +9,7 @@ import {
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { writeOne } from "@/utils/supabase/writeOne";
 import type { TablesUpdate } from "@/types/database.types";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
@@ -265,11 +266,14 @@ export const updateTaskThunk = createAsyncThunk(
     if (priority !== undefined) {
       patch.priority = toTaskPriority(priority);
     }
-    const { error } = await workspaceDb(supabase)
-      .from("tasks")
-      .update(patch)
-      .eq("id", params.id);
-    if (error) throw error;
+    await writeOne(
+      workspaceDb(supabase)
+        .from("tasks")
+        .update(patch)
+        .eq("id", params.id)
+        .select("id"),
+      { action: "update", noun: "task" },
+    );
     return { id: params.id, patch: params.patch };
   },
 );

@@ -9,6 +9,7 @@ import {
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
@@ -176,11 +177,14 @@ export const updateProjectThunk = createAsyncThunk(
       organization_id?: string;
     };
   }) => {
-    const { error } = await workspaceDb(supabase)
-      .from("projects")
-      .update(params.patch)
-      .eq("id", params.id);
-    if (error) throw error;
+    await writeOne(
+      workspaceDb(supabase)
+        .from("projects")
+        .update(params.patch)
+        .eq("id", params.id)
+        .select("id"),
+      { action: "update", noun: "project" },
+    );
     return params;
   },
 );

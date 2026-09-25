@@ -3,6 +3,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { archiveOrganization as archiveOrganizationDoor } from "@/features/organizations/service/organizationArchive";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { requireUserId, getUserEmail } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
@@ -475,11 +476,14 @@ export const hierarchyService = {
     if (data.organization_id !== undefined) {
       patch.organization_id = data.organization_id ?? undefined;
     }
-    const { error } = await workspaceDb(supabase)
-      .from("projects")
-      .update(patch)
-      .eq("id", id);
-    if (error) throw error;
+    await writeOne(
+      workspaceDb(supabase)
+        .from("projects")
+        .update(patch)
+        .eq("id", id)
+        .select("id"),
+      { action: "update", noun: "project" },
+    );
   },
 
   async updateTask(
@@ -500,11 +504,14 @@ export const hierarchyService = {
     if (priority !== undefined) {
       patch.priority = toTaskPriority(priority);
     }
-    const { error } = await workspaceDb(supabase)
-      .from("tasks")
-      .update(patch)
-      .eq("id", id);
-    if (error) throw error;
+    await writeOne(
+      workspaceDb(supabase)
+        .from("tasks")
+        .update(patch)
+        .eq("id", id)
+        .select("id"),
+      { action: "update", noun: "task" },
+    );
   },
 
   // ─── Delete entity ──────────────────────────────────────────────
@@ -575,22 +582,28 @@ export const hierarchyService = {
     if (target.organization_id !== undefined) {
       patch.organization_id = target.organization_id ?? undefined;
     }
-    const { error } = await workspaceDb(supabase)
-      .from("projects")
-      .update(patch)
-      .eq("id", projectId);
-    if (error) throw error;
+    await writeOne(
+      workspaceDb(supabase)
+        .from("projects")
+        .update(patch)
+        .eq("id", projectId)
+        .select("id"),
+      { action: "move", noun: "project" },
+    );
   },
 
   async moveTask(
     taskId: string,
     target: { project_id?: string | null; parent_task_id?: string | null },
   ): Promise<void> {
-    const { error } = await workspaceDb(supabase)
-      .from("tasks")
-      .update(target)
-      .eq("id", taskId);
-    if (error) throw error;
+    await writeOne(
+      workspaceDb(supabase)
+        .from("tasks")
+        .update(target)
+        .eq("id", taskId)
+        .select("id"),
+      { action: "move", noun: "task" },
+    );
   },
 
   // ─── Resolve entity name by type + id (for breadcrumbs) ─────────
