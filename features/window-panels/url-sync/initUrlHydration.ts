@@ -498,6 +498,22 @@ export function initUrlHydration() {
     );
   });
 
+  // Mandates (new window) — `?panels=mandate_next:<mandateKey>:t-<tab>`; the id
+  // is the selected mandate key and `t` its tab, so a reload reopens both.
+  registerPanelHydrator("mandate_next", (dispatch, id, args) => {
+    const initialMandateKey = getRestorableResourceId(
+      id,
+      "mandateWindowNext",
+      "mandate-window-next",
+    );
+    dispatch(
+      openOverlay({
+        overlayId: "mandateWindowNext",
+        data: { initialMandateKey, initialTab: args.t ?? null },
+      }),
+    );
+  });
+
   // Picklists v1 — `?panels=structuredListManagerV1` (optionally `:<listId>`).
   registerPanelHydrator("structuredListManagerV1", (dispatch, id) => {
     const forcedListId = getRestorableResourceId(

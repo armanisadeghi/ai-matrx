@@ -825,6 +825,23 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     urlSync: { key: "mandate" },
   },
   {
+    // The NEW mandate window, beside the old one while the owner compares
+    // them (features/window-panels/windows/mandates-next/MandateWindowNext).
+    // The URL id IS the selected mandate key, so reload reopens that mandate.
+    slug: "mandate-window-next",
+    overlayId: "mandateWindowNext",
+    kind: "window",
+    label: "Mandates (new)",
+    defaultData: {
+      initialMandateKey: null,
+      initialTab: null,
+    },
+    preservation: { dataKeys: ["initialMandateKey", "initialTab"] },
+    mobilePresentation: "drawer",
+    mobileSidebarAs: "drawer",
+    urlSync: { key: "mandate_next" },
+  },
+  {
     // Agent Change Impact (I5): the batch panel — dry run before a write,
     // three piles after it. Restores on refresh from its scope alone (the
     // grades are re-read from the server, never stored).

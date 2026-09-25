@@ -326,6 +326,11 @@ const MandateWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/mandates/MandateWindow"),
   { ssr: false },
 );
+const MandateWindowNext = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/mandates-next/MandateWindowNext"),
+  { ssr: false },
+);
 const ImpactBatchWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/mandates/ImpactBatchWindow"),
   { ssr: false },
@@ -1352,6 +1357,9 @@ export default function OverlayController() {
     mandateWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "mandateWindow"),
     ),
+    mandateWindowNext: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "mandateWindowNext"),
+    ),
     impactBatchWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "impactBatchWindow"),
     ),
@@ -1783,6 +1791,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     mandateWindow: useAppSelector((s) =>
       selectOverlayData(s, "mandateWindow"),
+    ) as Record<string, unknown> | null,
+    mandateWindowNext: useAppSelector((s) =>
+      selectOverlayData(s, "mandateWindowNext"),
     ) as Record<string, unknown> | null,
     impactBatchWindow: useAppSelector((s) =>
       selectOverlayData(s, "impactBatchWindow"),
@@ -3520,6 +3531,30 @@ export default function OverlayController() {
               data?.initialView === "yours" || data?.initialView === "admin"
                 ? data.initialView
                 : undefined
+            }
+          />
+        );
+      })()}
+
+      {/* mandateWindowNext */}
+      {(() => {
+        const isOpen = isOpenById.mandateWindowNext;
+        const data = dataById.mandateWindowNext as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <MandateWindowNext
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "mandateWindowNext" }))
+            }
+            initialMandateKey={
+              typeof data?.initialMandateKey === "string"
+                ? data.initialMandateKey
+                : null
+            }
+            initialTab={
+              typeof data?.initialTab === "string" ? data.initialTab : null
             }
           />
         );

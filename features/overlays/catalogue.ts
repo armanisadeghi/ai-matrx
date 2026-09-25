@@ -274,6 +274,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  mandateWindowNext: {
+    label: "Mandates (new)",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   impactBatchWindow: {
     label: "Change impact",
     instanceMode: "singleton",
