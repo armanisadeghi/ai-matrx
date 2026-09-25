@@ -59514,6 +59514,37 @@ export type Database = {
       }
     }
     Functions: {
+      _admin_list_match: {
+        Args: { p_filters: Json; p_skip?: string; p_vals: Json }
+        Returns: boolean
+      }
+      _admin_list_pretty: { Args: { p_segment: string }; Returns: string }
+      _admin_list_rows: {
+        Args: { p_facts: Json; p_q: string }
+        Returns: {
+          backs_count: number
+          created_at: string
+          created_by: string
+          customized_by: string[]
+          description: string
+          feature_label: string
+          goal: string
+          h_agent_id: string
+          h_agent_name: string
+          home_label: string
+          id: string
+          is_system: boolean
+          mandate_key: string
+          name: string
+          organization_id: string
+          score: number
+          serves: string[]
+          serves_detail: string[]
+          sortv: Json
+          updated_at: string
+          vals: Json
+        }[]
+      }
       _rungs: {
         Args: {
           p_mandate_ids: string[]
@@ -70700,6 +70731,10 @@ export type Database = {
         Args: { p_org: string; p_seam: string }
         Returns: Json
       }
+      _cutover_seam_reverse_readiness: {
+        Args: { p_org: string; p_seam: string }
+        Returns: Json
+      }
       _door_follows_its_function_impl: {
         Args: { p_schemas: string[] }
         Returns: undefined
@@ -81692,6 +81727,21 @@ export type Database = {
       mkt_initiative_since_bucket: {
         Args: { p_bucket: string }
         Returns: string
+      }
+      mnd_admin_list: {
+        Args: {
+          p_dir?: string
+          p_facts?: Json
+          p_filters?: Json
+          p_limit?: number
+          p_mode?: string
+          p_offset?: number
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+          p_sort?: string
+        }
+        Returns: Json
       }
       mnd_list_facets: {
         Args: { p_search?: string }
