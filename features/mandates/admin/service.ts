@@ -64,7 +64,7 @@ export type { MandateBindingRow, MandateDefinitionRow, MandateDefinitionUpdate }
 
 /** The `name`/`key` strings out of a jsonb declaration array, defensively —
  * the column is jsonb, so any element may be junk. */
-function namesOf(raw: unknown, key: "name" | "key"): string[] {
+export function namesOf(raw: unknown, key: "name" | "key"): string[] {
   if (!Array.isArray(raw)) return [];
   const out: string[] = [];
   for (const item of raw) {
@@ -134,6 +134,14 @@ export interface MandateVersionInfo {
   agentId: string | null;
   versionNumber: number;
   name: string | null;
+  /**
+   * The PINNED version's own declarations — what the job actually runs with.
+   * Absent when the read did not carry them (then the live agent's stand in).
+   * Review 2026-09-25: a peek read the live agent's two variables while the
+   * pinned v1 (and the Definition tab) had one.
+   */
+  variableNames?: string[];
+  contextPolicyKeys?: string[];
 }
 
 export interface MandateConsoleData {
@@ -388,7 +396,7 @@ export async function fetchMandateConsoleData(
     const { data, error } = await supabase
       .schema("agent")
       .from("definition_version")
-      .select("id, agent_id, version_number, name")
+      .select("id, agent_id, version_number, name, variable_definitions, context_policies")
       .in("id", [...versionIds]);
     if (error) throw error;
     for (const row of data ?? []) {
@@ -397,6 +405,8 @@ export async function fetchMandateConsoleData(
         agentId: row.agent_id,
         versionNumber: row.version_number,
         name: row.name,
+        variableNames: namesOf(row.variable_definitions, "name"),
+        contextPolicyKeys: namesOf(row.context_policies, "key"),
       };
       if (row.agent_id) agentIds.add(row.agent_id);
     }
