@@ -50,33 +50,15 @@ import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import type { RootState } from "@/lib/redux/store";
 import type { OrganizationRequiredWireMembership } from "@/lib/organizations/organizationRequiredError";
 
-/**
- * The person closed the picker without choosing.
- *
- * This is NOT an error condition — it is an answer, and the answer is "not
- * now". Every caller must treat it as "nothing happened": no toast, no error
- * banner, no cleared composer, no dropped draft. The rule is the one Arman set:
- * cancelling returns you exactly where you were.
- */
-export class OrganizationSelectionCancelled extends Error {
-  override name = "OrganizationSelectionCancelled" as const;
-  constructor() {
-    super("Organization selection was cancelled; nothing was sent.");
-  }
-}
-
-export function isOrganizationSelectionCancelled(
-  error: unknown,
-): error is OrganizationSelectionCancelled {
-  // A thunk's `.unwrap()` rejects with a SERIALIZED error — a plain object
-  // carrying `name` — so the name is the test, not the prototype.
-  return (
-    error instanceof OrganizationSelectionCancelled ||
-    (typeof error === "object" &&
-      error !== null &&
-      (error as { name?: unknown }).name === "OrganizationSelectionCancelled")
-  );
-}
+// The person closed the picker without choosing: an answer ("not now"), never
+// a failure. Defined once in ./selection-cancelled (dependency-free, so the
+// toast layer can recognise and drop it at the boundary) and re-exported here
+// so every existing import keeps working.
+import {
+  OrganizationSelectionCancelled,
+  isOrganizationSelectionCancelled,
+} from "./selection-cancelled";
+export { OrganizationSelectionCancelled, isOrganizationSelectionCancelled };
 
 // ---------------------------------------------------------------------------
 // The bridge between an imperative `await` and a declarative overlay

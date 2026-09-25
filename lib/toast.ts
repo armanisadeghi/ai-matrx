@@ -63,6 +63,10 @@
 
 import { toast as sonnerToast } from "sonner";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import {
+  isOrganizationSelectionCancelled,
+  organizationSelectionCancelledWithin,
+} from "@/lib/organization/selection-cancelled";
 import { createMatrxToast } from "@ai-matrx/kit/toast";
 
 const captured = createMatrxToast({
@@ -370,11 +374,34 @@ function track(
   return toastId;
 }
 
+/**
+ * 🚨 CLOSING THE ORGANIZATION PICKER IS NOT AN ERROR (ORG-GATE-AUDIT). The
+ * gate rejects the held action with `OrganizationSelectionCancelled` so the
+ * action stops — and every caller's ordinary catch then toasts what it caught.
+ * This is the ONE boundary that turns that into "nothing happened": an
+ * error/warning toast whose title or description IS the cancellation, or whose
+ * title is empty (the cancellation carries no text, so `toast.error(err.message)`
+ * arrives here as ""), is never raised and never filed in the Error Inspector.
+ * An error toast with no words is never an honest toast anyway.
+ */
+function isSilentNotice(message: unknown, options?: RecordToastOptions): boolean {
+  if (isOrganizationSelectionCancelled(message)) return true;
+  if (isOrganizationSelectionCancelled(options?.description)) return true;
+  if (typeof message === "string" && message.trim() === "") return true;
+  // A caller's own title over the cancellation's empty text, raised in the
+  // same breath as the cancellation. Never read without both conditions.
+  return (
+    options?.description === "" && organizationSelectionCancelledWithin(5_000)
+  );
+}
+
 /** Wrap one sonner method onto the wall clock; leave a missing one missing. */
-function onWallClock(emit: Emit | undefined) {
+function onWallClock(emit: Emit | undefined, dropsSilentNotices = false) {
   if (typeof emit !== "function") return undefined;
   return (message: unknown, options?: RecordToastOptions) =>
-    track(emit, message, options, null);
+    dropsSilentNotices && isSilentNotice(message, options)
+      ? ("" as ToastId)
+      : track(emit, message, options, null);
 }
 
 type MatrxToast = typeof captured.toast;
@@ -391,9 +418,9 @@ export const toast: MatrxToast = Object.assign(
   captured.toast,
   {
     success: onWallClock(captured.toast.success as unknown as Emit),
-    error: onWallClock(captured.toast.error as unknown as Emit),
+    error: onWallClock(captured.toast.error as unknown as Emit, true),
     info: onWallClock(captured.toast.info as unknown as Emit),
-    warning: onWallClock(captured.toast.warning as unknown as Emit),
+    warning: onWallClock(captured.toast.warning as unknown as Emit, true),
     message: onWallClock(captured.toast.message as unknown as Emit),
     dismiss: (id?: ToastId) => {
       if (id === undefined) {
@@ -412,7 +439,9 @@ export const toastErrorAlreadyCaptured: typeof captured.toastErrorAlreadyCapture
   message,
   options,
 ) =>
-  track(
+  isSilentNotice(message, options as RecordToastOptions | undefined)
+    ? ("" as ToastId)
+    : track(
     captured.toastErrorAlreadyCaptured as unknown as Emit,
     message,
     options as RecordToastOptions | undefined,
