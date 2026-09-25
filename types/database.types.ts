@@ -21815,6 +21815,41 @@ export type Database = {
         Returns: boolean
       }
       _strip_sql_noise: { Args: { p_src: string }; Returns: string }
+      deliverable_system_context_items: {
+        Args: never
+        Returns: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          display_name: string
+          feed_config: Json
+          feed_error: string | null
+          feed_status: string | null
+          feed_type: Database["public"]["Enums"]["context_feed_type"]
+          id: string
+          is_active: boolean
+          item_class: string
+          key: string
+          last_fed_at: string | null
+          metadata: Json
+          organization_id: string
+          sensitivity: Database["public"]["Enums"]["context_sensitivity"]
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+          value: Json | null
+          value_type: Database["public"]["Enums"]["context_value_type"]
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "system_context_item"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       index_reference_value: {
         Args: {
           p_item_id: string
@@ -54240,6 +54275,54 @@ export type Database = {
   }
   iam: {
     Tables: {
+      _org_availability_key: {
+        Row: {
+          key: string
+        }
+        Insert: {
+          key: string
+        }
+        Update: {
+          key?: string
+        }
+        Relationships: []
+      }
+      _share_people_conversion: {
+        Row: {
+          classified: string
+          converted_at: string
+          created_row: boolean
+          level_before: Database["public"]["Enums"]["permission_level"] | null
+          org_permission_id: string
+          organization_id: string
+          person_id: string | null
+          person_permission_id: string | null
+          status_before: string | null
+        }
+        Insert: {
+          classified: string
+          converted_at?: string
+          created_row: boolean
+          level_before?: Database["public"]["Enums"]["permission_level"] | null
+          org_permission_id: string
+          organization_id: string
+          person_id?: string | null
+          person_permission_id?: string | null
+          status_before?: string | null
+        }
+        Update: {
+          classified?: string
+          converted_at?: string
+          created_row?: boolean
+          level_before?: Database["public"]["Enums"]["permission_level"] | null
+          org_permission_id?: string
+          organization_id?: string
+          person_id?: string | null
+          person_permission_id?: string | null
+          status_before?: string | null
+        }
+        Relationships: []
+      }
       access_audit: {
         Row: {
           action: string
@@ -55387,6 +55470,7 @@ export type Database = {
           expires_at: string | null
           granted_to_organization_id: string | null
           granted_to_user_id: string | null
+          granted_via: string | null
           id: string
           is_public: boolean | null
           permission_level: Database["public"]["Enums"]["permission_level"]
@@ -55403,6 +55487,7 @@ export type Database = {
           expires_at?: string | null
           granted_to_organization_id?: string | null
           granted_to_user_id?: string | null
+          granted_via?: string | null
           id?: string
           is_public?: boolean | null
           permission_level?: Database["public"]["Enums"]["permission_level"]
@@ -55419,6 +55504,7 @@ export type Database = {
           expires_at?: string | null
           granted_to_organization_id?: string | null
           granted_to_user_id?: string | null
+          granted_via?: string | null
           id?: string
           is_public?: boolean | null
           permission_level?: Database["public"]["Enums"]["permission_level"]
@@ -55924,6 +56010,8 @@ export type Database = {
         }
         Returns: undefined
       }
+      _org_availability_arm: { Args: never; Returns: undefined }
+      _org_availability_token: { Args: never; Returns: string }
       _record_access_audit: {
         Args: {
           p_action: string
@@ -59883,6 +59971,15 @@ export type Database = {
       submit_scan_report: { Args: { p_report: Json }; Returns: Json }
       validate_treatment_config: {
         Args: { p_config: Json; p_tier: string }
+        Returns: boolean
+      }
+      workflow_holder_runnable: {
+        Args: {
+          p_organization_id: string
+          p_principal_type: string
+          p_subject_user_id: string
+          p_workflow_id: string
+        }
         Returns: boolean
       }
     }
@@ -71203,6 +71300,7 @@ export type Database = {
         Args: { p_schema: string; p_table: string }
         Returns: string
       }
+      admin_lane_open: { Args: never; Returns: boolean }
       admin_relation_catalog: {
         Args: never
         Returns: {
@@ -75467,6 +75565,7 @@ export type Database = {
       }
       admin_heal_hr_grant_drift: { Args: never; Returns: Json }
       admin_heal_reachability_drift: { Args: never; Returns: Json }
+      admin_lane_open: { Args: never; Returns: boolean }
       admin_list: {
         Args: never
         Returns: {
@@ -80221,6 +80320,15 @@ export type Database = {
         Args: { p_entity_id: string; p_entity_type: string; p_version: number }
         Returns: Json
       }
+      grant_org_availability: {
+        Args: {
+          p_permission_level?: string
+          p_resource_id: string
+          p_resource_type: string
+          p_target_org_id: string
+        }
+        Returns: Json
+      }
       guardian_assert_access: {
         Args: { p_student_id: string }
         Returns: undefined
@@ -81460,6 +81568,7 @@ export type Database = {
       }
       is_platform_admin: { Args: never; Returns: boolean }
       is_platform_admin_for: { Args: { p_user: string }; Returns: boolean }
+      is_platform_admin_person: { Args: never; Returns: boolean }
       is_resource_owner: {
         Args: { p_resource_id: string; p_resource_type: string }
         Returns: boolean
@@ -81470,6 +81579,7 @@ export type Database = {
       }
       is_super_admin: { Args: never; Returns: boolean }
       is_super_admin_for: { Args: { p_user_id: string }; Returns: boolean }
+      is_super_admin_person: { Args: never; Returns: boolean }
       is_super_admin_user: { Args: { p_user: string }; Returns: boolean }
       is_system_path: { Args: { p_path: string }; Returns: boolean }
       ivw_list_facets: {
@@ -83298,15 +83408,6 @@ export type Database = {
           p_token: string
         }
         Returns: boolean
-      }
-      grant_org_availability: {
-        Args: {
-          p_permission_level?: string
-          p_resource_id: string
-          p_resource_type: string
-          p_target_org_id: string
-        }
-        Returns: Json
       }
       share_resource_with_org: {
         Args: {
