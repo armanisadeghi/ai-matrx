@@ -182,9 +182,10 @@ export default function OrgCategoriesPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Category</AlertDialogTitle>
               <AlertDialogDescription>
-                Delete &quot;{deleteTarget.label}&quot; from {organizationName}?
-                Child categories and shortcuts assigned to this category may be
-                orphaned. This cannot be undone.
+                This archives &quot;{deleteTarget.label}&quot; from{" "}
+                {organizationName}. It stops appearing in this list; shortcuts
+                that reference it keep the reference, and an admin can
+                restore it.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
