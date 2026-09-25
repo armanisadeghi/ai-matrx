@@ -19,8 +19,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
-import { useAppStore } from "@/lib/redux/hooks";
-import { selectRecentApiCalls } from "@/lib/redux/slices/apiConfigSlice";
+import { ledgerForCapture } from "@/lib/diagnostics/stream-capture/request-ledger";
 import { useDebugContext } from "@/hooks/useDebugContext";
 import {
   mergePageCapture,
@@ -115,7 +114,8 @@ export type PageCaptureInput = Omit<PageCapture, "route" | "requests"> & {
   requests?: PageCaptureRequest[];
 };
 
-const REQUEST_LOG_LIMIT = 10;
+/** The capture carries the last 20 requests from the one request ledger, failing ones first. */
+const REQUEST_LOG_LIMIT = 20;
 
 /**
  * Register this page's capture. `build` is called at click time (and when the
@@ -131,18 +131,14 @@ export function usePageCapture(
 ): void {
   const enabled = opts.enabled ?? true;
   const pathname = usePathname();
-  const store = useAppStore();
-  const mountedAt = useRef(Date.now());
   const buildRef = useRef(build);
   useEffect(() => {
     buildRef.current = build;
   });
 
   const pathRef = useRef(pathname);
-  const storeRef = useRef(store);
   useEffect(() => {
     pathRef.current = pathname;
-    storeRef.current = store;
   });
 
   // Registered once for the mount; the getter reads the LATEST build and path.
@@ -150,21 +146,19 @@ export function usePageCapture(
     if (!enabled) return;
     return registerPageCapture((): PageCapture => {
         const input = buildRef.current();
-        const since = mountedAt.current;
-        const log: PageCaptureRequest[] = selectRecentApiCalls(
-          storeRef.current.getState() as Parameters<typeof selectRecentApiCalls>[0],
-        )
-          .filter((c) => c.timestamp >= since)
-          .slice(0, REQUEST_LOG_LIMIT)
-          .map((c) => ({
-            method: c.method,
-            path: c.path,
-            status: c.status,
-            ...(c.httpStatus !== undefined ? { httpStatus: c.httpStatus } : {}),
-            ...(c.durationMs !== undefined ? { durationMs: c.durationMs } : {}),
-            ...(c.requestId ? { requestId: c.requestId } : {}),
-            timestamp: c.timestamp,
-          }));
+        const log: PageCaptureRequest[] = ledgerForCapture(REQUEST_LOG_LIMIT).map((c) => ({
+          method: c.method,
+          path: c.path,
+          status: c.status,
+          client: c.client,
+          ...(c.httpStatus !== undefined ? { httpStatus: c.httpStatus } : {}),
+          ...(c.durationMs !== undefined ? { durationMs: c.durationMs } : {}),
+          ...(c.requestId ? { requestId: c.requestId } : {}),
+          ...(c.requestBody !== undefined ? { requestBody: c.requestBody } : {}),
+          ...(c.requestBodyNote ? { requestBodyNote: c.requestBodyNote } : {}),
+          ...(c.errorSentence ? { errorSentence: c.errorSentence } : {}),
+          timestamp: c.timestamp,
+        }));
         return {
           ...input,
           route: input.route ?? pathRef.current ?? "",

@@ -11,6 +11,7 @@
 
 import type { RouteContext } from '@/lib/redux/preferences/adminDebugSlice';
 import type { ApiCallLogEntry, ServerEnvironment } from '@/lib/redux/slices/apiConfigSlice';
+import { ledgerForCapture } from '@/lib/diagnostics/stream-capture/request-ledger';
 
 /** Minimal console/runtime error shape for the snapshot — sourced from the
  * systemwide errorCaptureStore (mapped by the caller). */
@@ -102,16 +103,17 @@ export function buildAgentContext(input: AgentContextInput): string {
 
     // ── Recent API Calls ───────────────────────────────────────────────────
     if (recentApiCalls.length > 0) {
-        lines.push('## Recent API Calls (newest first)');
-        const cols = 'Status | Method | Path | HTTP | Duration';
-        const sep  = '-------|--------|------|------|----------';
+        lines.push('## Recent API Calls (failing first, then newest first; every client path)');
+        const cols = 'Status | Method | Path | HTTP | Duration | Server said';
+        const sep  = '-------|--------|------|------|----------|------------';
         lines.push(`| ${cols} |`);
         lines.push(`| ${sep} |`);
-        for (const call of recentApiCalls.slice(0, 20)) {
+        for (const call of ledgerForCapture(20, recentApiCalls)) {
             const status = call.status === 'success' ? '✓' : call.status === 'error' ? '✗' : '…';
             const http = call.httpStatus != null ? String(call.httpStatus) : '—';
             const dur = call.durationMs != null ? `${call.durationMs}ms` : '—';
-            lines.push(`| ${status} | ${call.method} | ${call.path} | ${http} | ${dur} |`);
+            const said = (call.errorSentence ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+            lines.push(`| ${status} | ${call.method} | ${call.path} | ${http} | ${dur} | ${said} |`);
         }
         lines.push('');
     }

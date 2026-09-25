@@ -28,7 +28,7 @@
 //   selectServerHealth(env)       — health record for one environment
 //   selectActiveServerHealth      — health for the currently active environment
 //   selectAllServerHealth         — array of all envs + health (for UI lists)
-//   selectRecentApiCalls          — ring buffer of recent calls (max 50)
+//   (recent calls: the one request ledger, lib/diagnostics/stream-capture/request-ledger.ts)
 
 import {
   createSlice,
@@ -78,17 +78,12 @@ export interface ServerHealthRecord {
   error: string | null;
 }
 
-export interface ApiCallLogEntry {
-  id: string;
-  path: string;
-  method: string;
-  baseUrl: string;
-  status: "pending" | "success" | "error";
-  httpStatus?: number;
-  durationMs?: number;
-  requestId?: string;
-  timestamp: number;
-}
+/**
+ * A recent call. The log itself is the one request ledger the fetch tap feeds
+ * (`lib/diagnostics/stream-capture/request-ledger.ts`); the `recentCalls` ring
+ * that lived here was never written by anything and is gone (lane ALCHEMY-2).
+ */
+export type { LedgerEntry as ApiCallLogEntry } from "@/lib/diagnostics/stream-capture/request-ledger";
 
 const ALL_ENVIRONMENTS: ServerEnvironment[] = [
   "production",
@@ -101,7 +96,6 @@ const ALL_ENVIRONMENTS: ServerEnvironment[] = [
 
 const HEALTH_STALENESS_MS = 5 * 60 * 1000; // 5 minutes
 const HEALTH_CHECK_TIMEOUT_MS = 5000;
-const MAX_RECENT_CALLS = 50;
 
 function buildDefaultHealth(): Record<ServerEnvironment, ServerHealthRecord> {
   return ALL_ENVIRONMENTS.reduce(
@@ -127,7 +121,6 @@ interface ApiConfigState {
   /** Per-service production/localhost exceptions; absent means follow activeServer. */
   serviceOverrides: Partial<Record<ApiService, ServiceEnvironment>>;
   health: Record<ServerEnvironment, ServerHealthRecord>;
-  recentCalls: ApiCallLogEntry[];
 
   /**
    * Global API version override. When set (e.g. "v2"), every backend PATH is
@@ -321,7 +314,6 @@ const initialState: ApiConfigState = {
   customUrl: _persisted.customUrl,
   serviceOverrides: _persisted.serviceOverrides,
   health: buildDefaultHealth(),
-  recentCalls: [],
   apiVersion: _persisted.apiVersion,
   pathOverrides: _persisted.pathOverrides,
   aiApiVersionOverride: _persisted.aiApiVersionOverride,
@@ -662,25 +654,6 @@ const apiConfigSlice = createSlice({
         error,
       };
     },
-
-    appendApiCallLog: (state, action: PayloadAction<ApiCallLogEntry>) => {
-      // Upsert — if entry with same id exists, update it; otherwise prepend
-      const idx = state.recentCalls.findIndex(
-        (c) => c.id === action.payload.id,
-      );
-      if (idx !== -1) {
-        state.recentCalls[idx] = action.payload;
-      } else {
-        state.recentCalls.unshift(action.payload);
-        if (state.recentCalls.length > MAX_RECENT_CALLS) {
-          state.recentCalls.length = MAX_RECENT_CALLS;
-        }
-      }
-    },
-
-    clearApiCallLog: (state) => {
-      state.recentCalls = [];
-    },
   },
 });
 
@@ -698,8 +671,6 @@ export const {
   clearApiOverrides,
   setServerHealthChecking,
   setServerHealthResult,
-  appendApiCallLog,
-  clearApiCallLog,
 } = apiConfigSlice.actions;
 
 export default apiConfigSlice.reducer;
@@ -895,11 +866,6 @@ export const selectAllServerHealth = createSelector(
       isActive: activeServer === env,
     })),
 );
-
-/** Recent API call log entries (newest first) */
-export const selectRecentApiCalls = (
-  state: StateWithApiConfig,
-): ApiCallLogEntry[] => state.apiConfig.recentCalls;
 
 /** Convenience: whether the active server is known healthy */
 export const selectIsActiveServerHealthy = (

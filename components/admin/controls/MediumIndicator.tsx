@@ -33,12 +33,12 @@ import {
   selectResolvedBaseUrl,
   selectAllServerHealth,
   selectActiveServerHealth,
-  selectRecentApiCalls,
   switchServer,
   checkServerHealth,
   setCustomUrl,
   type ServerEnvironment,
 } from "@/lib/redux/slices/apiConfigSlice";
+import { useRequestLedger } from "@/lib/diagnostics/stream-capture/useRequestLedger";
 import { BACKEND_URLS } from "@/lib/api/endpoints";
 import { setUseSnapshot } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectIsSnapshot } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
@@ -100,7 +100,7 @@ const MediumIndicator: React.FC<MediumIndicatorProps> = ({
   const resolvedUrl = useAppSelector(selectResolvedBaseUrl);
   const activeHealth = useAppSelector(selectActiveServerHealth);
   const allServerHealth = useAppSelector(selectAllServerHealth);
-  const recentCalls = useAppSelector(selectRecentApiCalls);
+  const recentCalls = useRequestLedger();
   const isDebugMode = useAppSelector(selectIsDebugMode);
   const isSnapshot = useAppSelector(selectIsSnapshot);
 

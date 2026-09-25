@@ -58,6 +58,13 @@ export interface PageCaptureRequest {
   httpStatus?: number;
   durationMs?: number;
   requestId?: string;
+  /** Which client door (supabase-rest, supabase-rpc, aidream, next-api …). */
+  client?: string;
+  /** The JSON request body under 8 KB, credentials redacted. */
+  requestBody?: unknown;
+  requestBodyNote?: string;
+  /** A failed request's own sentence from the server (the refusal, verbatim). */
+  errorSentence?: string;
   timestamp: number;
 }
 
@@ -248,7 +255,7 @@ export function pageCaptureGroomer(c: PageCapture): AlchemyGroomerConfig {
     sections.push({
       id: "requests",
       title: "Recent requests",
-      description: "The last server calls, newest first, with status and timing.",
+      description: "The last server calls (every client: supabase, records, aidream, fetch): failing ones first with the server's sentence, then newest first, with status, timing and the JSON request body.",
       defaultSelection: "compact",
       build: (level: AlchemyDetail) => {
         const log = level === "brief" ? c.requests.slice(0, 3) : c.requests;
@@ -317,11 +324,16 @@ export function pageCaptureMarkdown(c: PageCapture): string {
     lines.push(typeof s.value === "string" ? text : "```json\n" + text + "\n```");
   }
   if (c.requests.length > 0) {
-    lines.push("", "## Recent requests", "", "| Status | Request | HTTP | Duration | Request id |", "|---|---|---|---|---|");
+    lines.push("", "## Recent requests", "", "Failing first, then newest first.", "", "| Status | Request | HTTP | Duration | Request id | Server said |", "|---|---|---|---|---|---|");
+    const cell = (t: string) => t.replace(/\|/g, "\\|").replace(/\n/g, " ");
     for (const r of c.requests) {
       lines.push(
-        `| ${r.status} | ${r.method} ${r.path} | ${r.httpStatus ?? ""} | ${typeof r.durationMs === "number" ? `${Math.round(r.durationMs)} ms` : ""} | ${r.requestId ?? ""} |`,
+        `| ${r.status} | ${cell(`${r.method} ${r.path}`)} | ${r.httpStatus ?? ""} | ${typeof r.durationMs === "number" ? `${Math.round(r.durationMs)} ms` : ""} | ${r.requestId ?? ""} | ${cell(r.errorSentence ?? "")} |`,
       );
+    }
+    const withBodies = c.requests.filter((r) => r.requestBody !== undefined);
+    for (const r of withBodies) {
+      lines.push("", `Request body — ${r.method} ${r.path}`, "```json", toJson(r.requestBody), "```");
     }
   }
   return lines.join("\n");

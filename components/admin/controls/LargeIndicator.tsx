@@ -37,11 +37,11 @@ import {
   selectResolvedBaseUrl,
   selectActiveServerHealth,
   selectAllServerHealth,
-  selectRecentApiCalls,
   checkServerHealth,
   switchServer,
   type ServerEnvironment,
 } from "@/lib/redux/slices/apiConfigSlice";
+import { useRequestLedger } from "@/lib/diagnostics/stream-capture/useRequestLedger";
 
 interface LargeIndicatorProps {
   onSizeDown: () => void;
@@ -76,7 +76,7 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
   const resolvedUrl = useAppSelector(selectResolvedBaseUrl);
   const activeHealth = useAppSelector(selectActiveServerHealth);
   const allServerHealth = useAppSelector(selectAllServerHealth);
-  const recentCalls = useAppSelector(selectRecentApiCalls);
+  const recentCalls = useRequestLedger();
   const isDebugMode = useAppSelector(selectIsDebugMode);
   const debugData = useAppSelector(selectDebugData);
   const routeContext = useAppSelector(selectRouteContext);
@@ -323,7 +323,7 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
                   <div
                     key={call.id}
                     className="flex items-center gap-2 text-[10px] font-mono py-0.5 border-b border-slate-600/50"
-                    title={`${call.method} ${call.baseUrl}${call.path}${call.httpStatus ? ` → ${call.httpStatus}` : ""}`}
+                    title={`${call.method} ${call.baseUrl}${call.path}${call.httpStatus ? ` → ${call.httpStatus}` : ""}${call.errorSentence ? ` — ${call.errorSentence}` : ""}`}
                   >
                     <span
                       className={

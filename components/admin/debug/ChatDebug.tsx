@@ -8,8 +8,8 @@ import {
   selectActiveServer,
   selectResolvedBaseUrl,
   selectActiveServerHealth,
-  selectRecentApiCalls,
 } from "@/lib/redux/slices/apiConfigSlice";
+import { useRequestLedger } from "@/lib/diagnostics/stream-capture/useRequestLedger";
 // Legacy chat debug panel — stubbed during Redux unification. Selectors
 // return empty data; the panel still mounts but shows nothing for chat.
 import type { RootState } from "@/lib/redux/store";
@@ -105,7 +105,7 @@ export default function ChatDebug() {
   const activeServer = useAppSelector(selectActiveServer);
   const resolvedUrl = useAppSelector(selectResolvedBaseUrl);
   const serverHealth = useAppSelector(selectActiveServerHealth);
-  const recentCalls = useAppSelector(selectRecentApiCalls);
+  const recentCalls = useRequestLedger();
 
   // Session-scoped state — guard with empty fallback when no session
   const session = useAppSelector((s) =>

@@ -39,6 +39,13 @@ import {
   recordResponseBody,
 } from "./recorder";
 import {
+  LEDGER_BODY_MAX_BYTES,
+  ledgerBegin,
+  ledgerFailed,
+  ledgerResponse,
+  ledgerResponseBody,
+} from "./request-ledger";
+import {
   CAPTURE_LIMITS,
   MAX_UNPARSED_CHARS,
   isStreamingContentType,
@@ -81,26 +88,32 @@ function deriveEventType(payload: unknown): string {
 async function readRequestBody(
   input: RequestInfo | URL,
   init: RequestInit | undefined,
-): Promise<{ body: string | null; truncated: boolean }> {
+): Promise<{
+  body: string | null;
+  truncated: boolean;
+  /** For the request ledger: the text up to its 8 KB cap + 1 (null = none, undefined = not text). */
+  ledgerText: string | null | undefined;
+}> {
   const max = CAPTURE_LIMITS[getCaptureMode()].maxBodyChars;
   const clamp = (text: string) => ({
     body: text.slice(0, max),
     truncated: text.length > max,
+    ledgerText: text.slice(0, Math.max(max, LEDGER_BODY_MAX_BYTES + 1)),
   });
 
   try {
     if (typeof init?.body === "string") return clamp(init.body);
     if (init?.body instanceof URLSearchParams)
       return clamp(init.body.toString());
-    if (init?.body) return { body: "[non-text body]", truncated: false };
+    if (init?.body) return { body: "[non-text body]", truncated: false, ledgerText: undefined };
     if (input instanceof Request && input.body) {
       return clamp(await input.clone().text());
     }
   } catch {
     // A body we cannot read is not a reason to fail the request.
-    return { body: "[unreadable body]", truncated: false };
+    return { body: "[unreadable body]", truncated: false, ledgerText: undefined };
   }
-  return { body: null, truncated: false };
+  return { body: null, truncated: false, ledgerText: null };
 }
 
 /** Drain the capture branch of a stream, splitting NDJSON lines in wire order. */
@@ -172,9 +185,14 @@ async function drainStream(
 }
 
 /** Drain a cloned non-streaming response as a single body. */
-async function drainClonedResponse(clone: Response, id: string): Promise<void> {
+async function drainClonedResponse(
+  clone: Response,
+  id: string,
+  ledgerId: string | null,
+): Promise<void> {
   try {
     const text = await clone.text();
+    if (ledgerId) ledgerResponseBody(ledgerId, text);
     recordBytes(id, new TextEncoder().encode(text).length);
     recordResponseBody(id, text);
     endExchange(id, "closed");
@@ -221,6 +239,7 @@ export function installCaptureTap(): void {
     init?: RequestInit,
   ): Promise<Response> {
     let id: string | null = null;
+    let ledgerId: string | null = null;
 
     // ── Outbound ──────────────────────────────────────────────────────────
     try {
@@ -234,12 +253,25 @@ export function installCaptureTap(): void {
       const headers = new Headers(
         init?.headers ?? (input instanceof Request ? input.headers : undefined),
       );
-      const { body, truncated } = await readRequestBody(input, init);
+      const { body, truncated, ledgerText } = await readRequestBody(input, init);
+      const method =
+        init?.method ?? (input instanceof Request ? input.method : "GET");
+
+      // The request ledger (every client path, always on, last 50).
+      try {
+        ledgerId = ledgerBegin({
+          url,
+          method,
+          bodyText: ledgerText,
+          isRscOrNav: headers.get("RSC") === "1" || headers.has("Next-Router-State-Tree"),
+        });
+      } catch {
+        ledgerId = null;
+      }
 
       id = beginExchange({
         url,
-        method:
-          init?.method ?? (input instanceof Request ? input.method : "GET"),
+        method,
         requestHeaders: redactHeaders(headers),
         requestBody: body,
         requestBodyTruncated: truncated,
@@ -254,6 +286,13 @@ export function installCaptureTap(): void {
     try {
       response = await originalFetch(input, init);
     } catch (err) {
+      if (ledgerId) {
+        try {
+          ledgerFailed(ledgerId, err instanceof Error ? err.message : String(err));
+        } catch {
+          // never into the caller's path
+        }
+      }
       if (id) {
         endExchange(
           id,
@@ -271,6 +310,27 @@ export function installCaptureTap(): void {
     // branch so a mid-rebuild failure never returns a consumed original
     // (that bug surfaced as postgrest-js "body stream already read" on DELETE).
     let teeCallerBranch: ReadableStream<Uint8Array> | null = null;
+
+    if (ledgerId) {
+      try {
+        ledgerResponse(ledgerId, {
+          httpStatus: response.status,
+          requestId: response.headers.get("X-Request-ID"),
+        });
+        // The recorder may be off for this exchange; a failed request still
+        // keeps its sentence in the ledger.
+        if (!id && response.status >= 400 && response.body) {
+          const lid = ledgerId;
+          void response
+            .clone()
+            .text()
+            .then((t) => ledgerResponseBody(lid, t))
+            .catch(() => undefined);
+        }
+      } catch {
+        // never into the caller's path
+      }
+    }
 
     try {
       if (!id) return response;
@@ -297,7 +357,7 @@ export function installCaptureTap(): void {
       // caller keeps the undisturbed original — no Response rebuild, no way
       // for capture to mark the body used.
       if (!isStream) {
-        void drainClonedResponse(response.clone(), id);
+        void drainClonedResponse(response.clone(), id, ledgerId);
         return response;
       }
 

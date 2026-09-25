@@ -1,7 +1,8 @@
 /**
  * The page-capture registry (lane ALCHEMY-BUTTON): a page registers once, a
  * descendant adds its sections, the capture is read LIVE at click time with the
- * route, the address and the requests made since the page opened, and the admin
+ * route, the address and the last requests from the one request ledger (failing
+ * first, with the server's sentence), and the admin
  * debug context receives the same entries.
  */
 import React, { act, useState } from "react";
@@ -12,13 +13,13 @@ jest.mock("next/navigation", () => ({ usePathname: () => "/administration/scopes
 jest.mock("@/hooks/useDebugContext", () => ({
   useDebugContext: () => ({ publish, publishKey: jest.fn(), isActive: true }),
 }));
-const calls = [
-  { id: "1", method: "POST", path: "/ai/context/preview", baseUrl: "", status: "success", httpStatus: 200, durationMs: 812, requestId: "r-new", timestamp: Date.now() + 60_000 },
-  { id: "0", method: "GET", path: "/before-the-page", baseUrl: "", status: "success", timestamp: 0 },
-];
-jest.mock("@/lib/redux/hooks", () => ({
-  useAppStore: () => ({ getState: () => ({ apiConfig: { recentCalls: calls } }) }),
-}));
+// The one request ledger the fetch tap feeds (no Redux store: `apiConfig.recentCalls` was never written).
+import { clearRequestLedger, ledgerBegin, ledgerResponse, ledgerResponseBody } from "@/lib/diagnostics/stream-capture/request-ledger";
+function seed(method: string, url: string, httpStatus: number, body: string | null, responseBody = "") {
+  const id = ledgerBegin({ url, method, bodyText: body })!;
+  ledgerResponse(id, { httpStatus, requestId: `rid-${httpStatus}` });
+  if (responseBody) ledgerResponseBody(id, responseBody);
+}
 
 import { usePageCapture, usePageCaptureContribution, getActivePageCapture } from "./usePageCapture";
 import { adminPageCapture } from "./pageCapture";
@@ -42,6 +43,16 @@ function Page() {
 describe("usePageCapture", () => {
   it("registers, merges the descendant, reads live, and publishes to the debug context", () => {
     expect(getActivePageCapture()).toBeNull();
+    clearRequestLedger();
+    seed("POST", "https://server.app.matrxserver.com/ai/context/preview", 200, JSON.stringify({ organization_id: "o1", api_key: "sk-live" }));
+    seed(
+      "PATCH",
+      "https://db.matrxserver.com/rest/v1/contacts?id=eq.7",
+      403,
+      JSON.stringify({ phone: "+1 555 0100" }),
+      JSON.stringify({ code: "42501", message: 'new row violates row-level security policy for table "contacts"', hint: null }),
+    );
+    seed("GET", "https://db.matrxserver.com/rest/v1/contacts?select=*", 200, null);
     const el = document.createElement("div");
     const root = createRoot(el);
     act(() => root.render(<Page />));
@@ -50,9 +61,20 @@ describe("usePageCapture", () => {
     expect(c.selection.Organization).toEqual({ id: "o1", name: "AI Matrx" });
     expect(c.sections.map((s) => s.id)).toEqual(["compare"]);
     expect(c.url).toContain("http");
-    // Only the requests made since the page opened.
-    expect(c.requests.map((r) => r.path)).toEqual(["/ai/context/preview"]);
-    expect(c.requests[0]).toMatchObject({ durationMs: 812, requestId: "r-new", httpStatus: 200 });
+    // Failing first (with the server's refusal sentence), then newest first; the compare call is there.
+    expect(c.requests.map((r) => `${r.method} ${r.path}`)).toEqual([
+      "PATCH /rest/v1/contacts?id=eq.7",
+      "GET /rest/v1/contacts?select=*",
+      "POST /ai/context/preview",
+    ]);
+    expect(c.requests[0]).toMatchObject({
+      status: "error",
+      httpStatus: 403,
+      client: "supabase-rest",
+      errorSentence: 'new row violates row-level security policy for table "contacts"',
+      requestBody: { phone: "+1 555 0100" },
+    });
+    expect(c.requests[2]).toMatchObject({ client: "aidream", httpStatus: 200, requestBody: { organization_id: "o1", api_key: "[redacted]" } });
     expect(publish).toHaveBeenCalledWith(expect.objectContaining({ Page: "Context inspector", Organization: "AI Matrx (o1)" }));
 
     act(() => setPick("Titanium"));
