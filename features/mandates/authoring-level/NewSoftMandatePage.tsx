@@ -15,7 +15,9 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ExternalLink, Loader2 } from "lucide-react";
+import { ArrowRight, ChevronRight, ExternalLink, Loader2 } from "lucide-react";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { toast, recordToast } from "@/lib/toast";
@@ -26,7 +28,10 @@ import { DraftInputsEditor } from "../authoring/DraftInputsEditor";
 import { OutputKindPicker } from "../authoring/OutputKindPicker";
 import { type DraftInput } from "../authoring/service";
 import { createSoftMandate } from "./service";
-import { memberMandateRecordHref } from "@/features/mandates/member-list/routes";
+import {
+  memberMandateListHref,
+  memberMandateRecordHref,
+} from "@/features/mandates/member-list/routes";
 import type { MandateListLevel } from "@/features/mandates/member-list/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import {
@@ -56,6 +61,28 @@ export interface NewSoftMandatePageProps {
   orgName?: string | null;
 }
 
+/**
+ * THE KEY IS MADE FOR YOU (review 2026-09-25). A soft mandate is found by its
+ * name; nobody's code calls it, so asking a person for a "lowercase,
+ * dot-separated" key was a developer question put to a user. The key is built
+ * from the name (`custom.<words_of_the_name>`, the shape the server requires),
+ * bumped with a number when that key is already taken, and stays editable
+ * under Advanced. Exported for tests.
+ */
+export function keyFromName(name: string, attempt = 1): string {
+  const words = name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 60)
+    .replace(/_+$/g, "");
+  if (!words) return "";
+  const body = /^[a-z]/.test(words) ? words : `job_${words}`;
+  return attempt > 1 ? `custom.${body}_${attempt}` : `custom.${body}`;
+}
+
 export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewSoftMandatePageProps) {
   const draftKey = levelDraftKey(level, orgId);
   const clearDraft = () => clearLevelDraft(draftKey);
@@ -64,7 +91,13 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
   const [pending, startTransition] = useTransition();
 
   const [label, setLabel] = useState("");
-  const [mandateKey, setMandateKey] = useState("");
+  /** Only what the person typed under Advanced; empty = the key follows the name. */
+  const [typedMandateKey, setMandateKey] = useState("");
+  /** Bumped when the key made from the name is already taken. */
+  const [autoAttempt, setAutoAttempt] = useState(1);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const keyIsAuto = typedMandateKey.trim() === "";
+  const mandateKey = keyIsAuto ? keyFromName(label, autoAttempt) : typedMandateKey;
   const [goal, setGoal] = useState("");
   const [draftInputs, setDraftInputs] = useState<DraftInput[]>([
     { description: "" },
@@ -90,14 +123,20 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
 
   const draft = {
     label,
-    mandateKey,
+    mandateKey: typedMandateKey,
     goal,
     outputKind,
     outputConstraints,
     draftInputs,
   };
   const dirty = draftIsDirty(draft);
-  const missing = missingCreationPieces({ label, mandateKey, goal });
+  // A key made from the name is never a missing piece of its own: with no
+  // name there is nothing to make it from, and the name is already asked for.
+  const missing = missingCreationPieces({
+    label,
+    mandateKey: keyIsAuto && !label.trim() ? "pending" : mandateKey,
+    goal,
+  }).map((piece) => (piece === "the key" ? "a key (under Advanced)" : piece));
 
   // ── NOTHING TYPED IS LOST ──────────────────────────────────────────────────
   // Put back whatever was in the form last time this page was open. It runs
@@ -114,7 +153,11 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
     // door behind it before a single setter runs.
     /* eslint-disable react-hooks/set-state-in-effect */
     setLabel(saved.label);
-    setMandateKey(saved.mandateKey);
+    // A key that is just the one the name makes is not a choice the person
+    // made — restore it as "follow the name", so renaming still moves it.
+    setMandateKey(
+      saved.mandateKey === keyFromName(saved.label) ? "" : saved.mandateKey,
+    );
     setGoal(saved.goal);
     setOutputKind(saved.outputKind);
     setOutputConstraints(saved.outputConstraints);
@@ -130,14 +173,14 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
     if (!restored.current || !dirty) return;
     const result = writeLevelDraft(draftKey, {
       label,
-      mandateKey,
+      mandateKey: typedMandateKey,
       goal,
       outputKind,
       outputConstraints,
       draftInputs,
     });
     setUnstorable(result.ok ? null : result.reason);
-  }, [label, mandateKey, goal, outputKind, outputConstraints, draftInputs, dirty, draftKey]);
+  }, [label, typedMandateKey, goal, outputKind, outputConstraints, draftInputs, dirty, draftKey]);
 
   // A hard navigation (reload, closing the tab, a link out of the app) is the
   // one kind the draft alone cannot make invisible — so it is announced.
@@ -182,6 +225,11 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
         ? probed.answer
         : { status: "checking" };
   const keyIsTaken = keyState.status === "taken";
+  // A key made from the name that is already taken is not the person's
+  // problem: the next number is tried, silently and only for the made key.
+  useEffect(() => {
+    if (keyIsAuto && keyIsTaken && autoAttempt < 50) setAutoAttempt((n) => n + 1);
+  }, [keyIsAuto, keyIsTaken, autoAttempt]);
   // A taken key's door opens the mandate on THIS seat, not the admin route.
   const takenHref =
     keyState.status === "taken"
@@ -221,10 +269,10 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
         draftInputs,
       });
       recordToast.success(
-        { type: "mandate", id: created.mandateId, title: created.mandateKey },
+        { type: "mandate", id: created.mandateId, title: label.trim() },
         level === "organization"
-          ? `${created.mandateKey} created for ${orgName ?? "your organization"} — now choose who fulfils it.`
-          : `${created.mandateKey} created — only you can see it until you share it. Now choose who fulfils it.`,
+          ? `${label.trim()} created for ${orgName ?? "your organization"} — now choose who fulfils it.`
+          : `${label.trim()} created — only you can see it until you share it. Now choose who fulfils it.`,
       );
       // The draft has served its purpose: the words are in the database now,
       // and a draft left behind would be put back on the next visit.
@@ -247,8 +295,19 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
     }
   };
 
+  const listHref = memberMandateListHref(level, orgId);
   return (
     <div className="h-full overflow-y-auto">
+      <RouteHeader
+        left={
+          <div className="flex min-w-0 items-center gap-1">
+            <ChevronLeftTapButton href={listHref} ariaLabel="All mandates" />
+            <span className="truncate text-sm font-medium">
+              {level === "organization" && orgName ? `New mandate for ${orgName}` : "New mandate"}
+            </span>
+          </div>
+        }
+      />
       <div className="mx-auto w-full max-w-3xl space-y-6 px-4 pb-16 pt-[calc(var(--shell-header-h)+0.75rem)] sm:px-6">
         <p className="rounded-lg border border-border/60 bg-card px-3 py-2 text-[12px] leading-snug text-muted-foreground">
           {level === "organization" ? (
@@ -278,6 +337,7 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
               onClick={() => {
                 setLabel(EMPTY_DRAFT.label);
                 setMandateKey(EMPTY_DRAFT.mandateKey);
+                setAutoAttempt(1);
                 setGoal(EMPTY_DRAFT.goal);
                 setOutputKind(EMPTY_DRAFT.outputKind);
                 setOutputConstraints(EMPTY_DRAFT.outputConstraints);
@@ -306,6 +366,7 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
               value={label}
               onChange={(e) => {
                 setLabel(e.target.value);
+                setAutoAttempt(1);
                 setServerError(null);
               }}
               placeholder="What this job is called — e.g. Goal writer"
@@ -314,29 +375,50 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
               aria-label="Mandate name"
             />
           </div>
-          <div className="flex flex-wrap items-center gap-2 px-1">
-            <Input
-              value={mandateKey}
-              onChange={(e) => {
-                setMandateKey(e.target.value);
-                // The server's refusal is about the key it was GIVEN. Once the
-                // key changes the sentence describes a value that is no longer
-                // on screen — it goes with it.
-                setServerError(null);
-              }}
-              placeholder="feature.specific_job"
-              className="h-8 w-72 font-mono text-[12.5px]"
-              aria-label="Mandate key"
-            />
-            <span className="text-[11px] text-muted-foreground/70">
-              lowercase, dot-separated — code calls this key forever
-            </span>
-          </div>
+          {/* The key follows the name; only someone who wants a particular one
+              opens Advanced. A key the person must fix (taken, or a name with no
+              letters to make one from) opens it for them. */}
+          {showAdvanced || (!keyIsAuto && keyIsTaken) || (label.trim() && !mandateKey) ? (
+            <div className="space-y-1 px-1">
+              <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground/80">
+                Key
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  value={typedMandateKey}
+                  onChange={(e) => {
+                    setMandateKey(e.target.value);
+                    // The server's refusal is about the key it was GIVEN. Once the
+                    // key changes the sentence describes a value that is no longer
+                    // on screen — it goes with it.
+                    setServerError(null);
+                  }}
+                  placeholder={keyFromName(label, autoAttempt) || "custom.my_job"}
+                  className="h-8 w-72 font-mono text-[12.5px]"
+                  aria-label="Mandate key"
+                />
+                <span className="text-[11px] text-muted-foreground/70">
+                  {keyIsAuto
+                    ? "Made from the name. Type here only if you want a different one."
+                    : "Your own key. Clear it to go back to the one made from the name."}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(true)}
+              className="inline-flex items-center gap-1 px-1 text-[11.5px] text-muted-foreground hover:text-foreground"
+            >
+              <ChevronRight className="h-3 w-3" />
+              Advanced
+            </button>
+          )}
           {/* 🚨 THE KEY IS TAKEN — REFUSED ON THE FIELD, WITH A DOOR THE PERSON
               MAY CHOOSE. The link opens in a NEW TAB on purpose: following it
               must not cost them this form, and this page must never decide to
               follow it for them. */}
-          {keyState.status === "taken" ? (
+          {keyState.status === "taken" && !keyIsAuto ? (
             <div className="flex flex-wrap items-center gap-2 px-1">
               <p className="text-[12.5px] leading-snug text-destructive">
                 {keyTakenSentence(keyState.mandateKey, keyState.label)}
@@ -427,7 +509,9 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
             {missing.length > 0
               ? `Not yet — this mandate still needs ${missing.join(", ")}.`
               : keyIsTaken
-                ? "Not yet — that key belongs to a live job; change it and this works."
+                ? keyIsAuto
+                  ? "Finding a free key for this name…"
+                  : "Not yet — that key belongs to a live job; change it and this works."
                 : "No agent or workflow needed yet — bind one whenever it exists."}
           </span>
         </div>
