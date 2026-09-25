@@ -23,6 +23,7 @@ import {
   type ResolvedMandateHolder,
 } from "./service";
 import { extractErrorMessage } from "@/utils/errors";
+import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
 import type { AnyMandateKey } from "./mandate-key";
 
 export interface MandateHolderState {
@@ -30,6 +31,13 @@ export interface MandateHolderState {
   loading: boolean;
   error: string | null;
   organizationPending: boolean;
+  /**
+   * 🚨 READING NEVER WAITS ON AN ORGANIZATION (review 2026-09-25). With no
+   * workspace selected, "what runs for me" is answered for the person's OWN
+   * workspace — their personal binding wins everywhere, and the system default
+   * is the same for all — and the screen says so. True when that happened.
+   */
+  ownWorkspace: boolean;
 }
 
 export function useMandateHolder(
@@ -51,6 +59,7 @@ export function useMandateHolder(
     loading: enabled,
     error: null,
     organizationPending: false,
+    ownWorkspace: false,
   });
 
   if (state.key !== question) {
@@ -61,6 +70,7 @@ export function useMandateHolder(
       loading: enabled,
       error: null,
       organizationPending: false,
+      ownWorkspace: false,
     });
   }
 
@@ -84,9 +94,10 @@ export function useMandateHolder(
           loading: false,
           error: null,
           organizationPending: false,
+          ownWorkspace: false,
         });
       })
-      .catch((error: unknown) => {
+      .catch(async (error: unknown) => {
         if (cancelled) return;
         const organizationPending =
           error instanceof MandateOrganizationUnresolvedError;
@@ -95,12 +106,36 @@ export function useMandateHolder(
           setEpoch((e) => e + 1);
           return;
         }
+        if (organizationPending) {
+          // Nothing selected even after the admission wait: answer for the
+          // person's own workspace instead of showing nothing.
+          try {
+            const own = await resolvePersonalOrgId();
+            const holder = await resolveMandateHolder(mandateKey as AnyMandateKey, {
+              organizationId: own,
+            });
+            if (cancelled) return;
+            setState({
+              key: question,
+              holder,
+              loading: false,
+              error: null,
+              organizationPending: false,
+              ownWorkspace: true,
+            });
+            return;
+          } catch (ownError: unknown) {
+            if (cancelled) return;
+            error = ownError;
+          }
+        }
         setState({
           key: question,
           holder: null,
           loading: false,
           error: extractErrorMessage(error),
           organizationPending,
+          ownWorkspace: false,
         });
       });
     return () => {
@@ -113,5 +148,6 @@ export function useMandateHolder(
     loading: state.loading,
     error: state.error,
     organizationPending: state.organizationPending,
+    ownWorkspace: state.ownWorkspace,
   };
 }

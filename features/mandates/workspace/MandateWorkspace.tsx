@@ -280,6 +280,8 @@ export function viewFromVerdict(
   loading: boolean,
   error: string | null,
   nameOfOrg: (id: string) => string | null,
+  /** The answer was asked for the person's own workspace because none is selected. */
+  ownWorkspace = false,
 ): FulfillmentView {
   const empty = {
     holderType: "agent" as const,
@@ -317,7 +319,9 @@ export function viewFromVerdict(
   const orgName = verdict.organizationId
     ? nameOfOrg(verdict.organizationId)
     : null;
-  const activeOrgLabel = verdict.organizationId
+  const activeOrgLabel = ownWorkspace
+    ? "your own workspace (no workspace is selected)"
+    : verdict.organizationId
     ? orgName
       ? `${orgName} (your active org)`
       : "your active organization"
@@ -527,6 +531,7 @@ function OneMandateWorkspace({
           verdict.loading,
           verdict.error,
           nameOfOrg,
+          holderVerdict.ownWorkspace,
         )
       : null;
   const feature = splitMandateKey(data.mandate.mandate_key).feature;
