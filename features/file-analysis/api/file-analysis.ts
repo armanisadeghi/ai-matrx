@@ -55,6 +55,9 @@ import {
   type ResponseMeta,
 } from "@/lib/python-client";
 import { apiGet, apiPost, apiPut, buildPath } from "@/lib/api/typed-client";
+// Every request about one file carries THAT file's organization (read from the file, never
+// the picker) — the same rule as features/files/api/files.ts (VERIFIER-23 #4 sibling census).
+import { withFileOrganization } from "@/features/files/api/fileOrganization";
 import type { components } from "@/types/python-generated/api-types";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 
@@ -138,7 +141,7 @@ export function getAnalysis(
 ): Result<FileAnalysisResponse> {
   return apiGet(
     buildPath("/files/{file_id}/analysis", { file_id: fileId }),
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -161,7 +164,7 @@ export function refreshAnalysisStream(
   return postNdjson<AnalyzeRefreshBody>(
     `/files/${fid(fileId)}/analysis/refresh`,
     body,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -171,7 +174,7 @@ export function listPages(
   fileId: string,
   opts: RequestOptions = {},
 ): Result<FilePageOut[]> {
-  return apiGet(buildPath("/files/{file_id}/pages", { file_id: fileId }), opts);
+  return apiGet(buildPath("/files/{file_id}/pages", { file_id: fileId }), withFileOrganization(fileId, opts));
 }
 
 export function getActivePageIds(
@@ -180,7 +183,7 @@ export function getActivePageIds(
 ): Result<ActivePageIdsResponse> {
   return apiGet(
     buildPath("/files/{file_id}/active-pages", { file_id: fileId }),
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -194,7 +197,7 @@ export function getPage(
       file_id: fileId,
       page_id: pageId,
     }),
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -210,7 +213,7 @@ export function excludePage(
       page_id: pageId,
     }),
     body,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -222,7 +225,7 @@ export function includePage(
   return postJson<FilePageOut, Record<string, never>>(
     `/files/${fid(fileId)}/pages/${fid(pageId)}/include`,
     {},
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -235,7 +238,7 @@ export function rotatePage(
   return postJson<{ id: string; rotation: number }, RotatePageBody>(
     `/files/${fid(fileId)}/pages/${fid(pageId)}/rotate`,
     body,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -251,7 +254,7 @@ export function overridePageText(
       page_id: pageId,
     }),
     body,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -261,7 +264,7 @@ export function listOverrides(
 ): Result<FilePageOverrideOut[]> {
   return apiGet(
     buildPath("/files/{file_id}/overrides", { file_id: fileId }),
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -285,7 +288,7 @@ export function listAnnotations(
   const q = qs.length ? `?${qs.join("&")}` : "";
   return getJson<AnnotationOut[]>(
     `/files/${fid(fileId)}/annotations${q}`,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -297,7 +300,7 @@ export function createAnnotation(
   return apiPost(
     buildPath("/files/{file_id}/annotations", { file_id: fileId }),
     body,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -313,7 +316,7 @@ export function updateAnnotation(
       annotation_id: annotationId,
     }),
     body,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -324,7 +327,7 @@ export function deleteAnnotation(
 ): Result<null> {
   return delJson<null>(
     `/files/${fid(fileId)}/annotations/${fid(annotationId)}`,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -338,7 +341,7 @@ export function extractAtBbox(
       file_id: fileId,
     }),
     body,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -350,7 +353,7 @@ export function snapBbox(
   return apiPost(
     buildPath("/files/{file_id}/annotations/snap-bbox", { file_id: fileId }),
     body,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -364,7 +367,7 @@ export function bulkFromCandidates(
       file_id: fileId,
     }),
     body,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -374,7 +377,7 @@ export function getKeyFindings(
 ): Result<KeyFindingsResponse> {
   return apiGet(
     buildPath("/files/{file_id}/key-findings", { file_id: fileId }),
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -384,7 +387,7 @@ export function getAnnotationManifest(
 ): Result<ManifestResponse> {
   return apiGet(
     buildPath("/files/{file_id}/annotations/manifest", { file_id: fileId }),
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -429,7 +432,7 @@ export function listEntities(
 ): Result<EntityOut[]> {
   return apiGet(
     buildPath("/files/{file_id}/entities", { file_id: fileId }),
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -441,7 +444,7 @@ export function createEntity(
   return apiPost(
     buildPath("/files/{file_id}/entities", { file_id: fileId }),
     body,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -457,7 +460,7 @@ export function updateEntity(
       entity_id: entityId,
     }),
     body,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -466,7 +469,7 @@ export function deleteEntity(
   entityId: string,
   opts: RequestOptions = {},
 ): Result<null> {
-  return delJson<null>(`/files/${fid(fileId)}/entities/${fid(entityId)}`, opts);
+  return delJson<null>(`/files/${fid(fileId)}/entities/${fid(entityId)}`, withFileOrganization(fileId, opts));
 }
 
 export function findSimilar(
@@ -477,7 +480,7 @@ export function findSimilar(
   return apiPost(
     buildPath("/files/{file_id}/entities/find-similar", { file_id: fileId }),
     body,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -489,7 +492,7 @@ export function promoteAnnotationToEntity(
   return postJson<EntityOut, Record<string, never>>(
     `/files/${fid(fileId)}/annotations/${fid(annotationId)}/promote-to-entity`,
     {},
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -505,7 +508,7 @@ export function searchInFileStream(
   body: SearchRequest,
   opts: RequestOptions = {},
 ): AsyncGenerator<TypedStreamEvent, void, void> {
-  return postNdjson<SearchRequest>(`/files/${fid(fileId)}/search`, body, opts);
+  return postNdjson<SearchRequest>(`/files/${fid(fileId)}/search`, body, withFileOrganization(fileId, opts));
 }
 
 export function extractRegion(
@@ -516,7 +519,7 @@ export function extractRegion(
   return apiPost(
     buildPath("/files/{file_id}/regions/extract", { file_id: fileId }),
     body,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -530,7 +533,7 @@ export function renderPageWithOverlay(
       file_id: fileId,
     }),
     body,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -547,7 +550,7 @@ export function getExtractedText(
   const q = qs.length ? `?${qs.join("&")}` : "";
   return getJson<ExtractedTextResponse>(
     `/files/${fid(fileId)}/extracted-text${q}`,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 
@@ -561,7 +564,7 @@ export function maskFile(
   return apiPost(
     buildPath("/files/{file_id}/redact/mask", { file_id: fileId }),
     body,
-    opts,
+    withFileOrganization(fileId, opts),
   );
 }
 

@@ -7,9 +7,9 @@
  *
  *   left   — Back to /files, then folder breadcrumb (with last segment
  *            being the file's parent folder, not the file itself)
- *   center — File icon + filename (with lineage chip for real files) —
- *            the bounded `1fr` cell so long names truncate instead of
- *            pushing the actions off-screen.
+ *            then the file icon + filename (with lineage chip for real
+ *            files), in flow so a long name truncates and never draws
+ *            over the breadcrumb (no center slot: that is for mode navs).
  *   right  — Show files (sheet drawer), Download, Copy link, More menu,
  *            Open in new tab
  *
@@ -167,29 +167,29 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
               ))
             )}
           </nav>
+          {/* File name + lineage sit IN FLOW after the breadcrumb, never in the absolutely
+           * centred slot: that slot is for a route's mode nav, and when the actions on the right
+           * were wide it fell back to full width and drew the name over the breadcrumb
+           * (VERIFIER-23 #4). In flow, a long name truncates and nothing overlaps. The
+           * right-click menu wraps it so a right-click here gives the full action set. */}
+          <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <FileRightClickMenu fileId={fileId}>
+            <div className="flex min-w-0 items-center gap-2 px-1">
+              {file ? (
+                <FileIcon fileName={file.fileName} size={16} className="shrink-0" />
+              ) : null}
+              <span
+                className="truncate text-sm font-medium text-foreground"
+                title={file?.fileName ?? ""}
+              >
+                {file?.fileName ?? "Loading…"}
+              </span>
+              {file?.source.kind === "real" ? (
+                <FileLineageChip fileId={fileId} className="shrink-0" />
+              ) : null}
+            </div>
+          </FileRightClickMenu>
         </>
-      }
-      center={
-        /* File name + lineage — the bounded 1fr cell, so long names
-         * truncate instead of pushing the actions off-screen. The
-         * right-click menu wraps it so a right-click anywhere here gives
-         * the full action set. */
-        <FileRightClickMenu fileId={fileId}>
-          <div className="flex min-w-0 items-center gap-2 px-2">
-            {file ? (
-              <FileIcon fileName={file.fileName} size={16} className="shrink-0" />
-            ) : null}
-            <span
-              className="truncate text-sm font-medium text-foreground"
-              title={file?.fileName ?? ""}
-            >
-              {file?.fileName ?? "Loading…"}
-            </span>
-            {file?.source.kind === "real" ? (
-              <FileLineageChip fileId={fileId} className="shrink-0" />
-            ) : null}
-          </div>
-        </FileRightClickMenu>
       }
       right={
         <div className={cn("flex items-center", className)}>

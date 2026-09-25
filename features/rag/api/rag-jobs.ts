@@ -15,6 +15,7 @@
 import { postJson } from "@/lib/python-client";
 import { apiGet, buildPath } from "@/lib/api/typed-client";
 import { BackendApiError } from "@/lib/api/errors";
+import { withFileOrganization } from "@/features/files/api/fileOrganization";
 import type { components } from "@/types/python-generated/api-types";
 import type { IngestResponse } from "./ingest";
 
@@ -47,7 +48,10 @@ export async function fetchFileRagStatus(
 ): Promise<FileRagStatus> {
   const { data } = await apiGet(
     buildPath("/files/{file_id}/rag-status", { file_id: fileId }),
-    { signal },
+    // A request about one file carries THAT file's organization, read from the
+    // file — never the picker (VERIFIER-23 #4: this went out bare and got 400
+    // organization_required on /files/f/<id> in a fresh session).
+    withFileOrganization(fileId, { signal }),
   );
   return data;
 }
@@ -63,7 +67,7 @@ export async function triggerFileIngestNow(
   const { data } = await postJson<FileIngestResult>(
     `/files/${encodeURIComponent(fileId)}/ingest`,
     { force: opts.force ?? false },
-    { signal: opts.signal },
+    withFileOrganization(fileId, { signal: opts.signal }),
   );
   return data;
 }
@@ -79,7 +83,7 @@ export async function refreshFileRag(
   await postJson<unknown>(
     `/files/${encodeURIComponent(fileId)}/refresh`,
     {},
-    { signal: opts.signal },
+    withFileOrganization(fileId, { signal: opts.signal }),
   );
 }
 
