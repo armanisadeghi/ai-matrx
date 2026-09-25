@@ -66,14 +66,41 @@ function unavailable(title: string, message: string): WikiResolution {
   return { status: "unavailable", title, message };
 }
 
-/** A PostgREST `or` filter value, quoted and escaped (commas, parens, quotes, wildcards). */
-function quoted(value: string): string {
-  const escaped = value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_").replace(/"/g, '\\"');
-  return `"${escaped}"`;
+/**
+ * A value inside a PostgREST `in.(…)` list: always double-quoted, with `\\`
+ * and `"` backslash-escaped. `in` is an EXACT comparison — `%` and `_` are
+ * ordinary characters here (verify-RC-B8 round 2: `ilike` let them act as
+ * wildcards).
+ */
+export function inListValue(value: string): string {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+/** A `LIKE` pattern that matches `value` literally (case-insensitive under ilike). */
+export function literalLikePattern(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
+/** The spellings an exact lookup tries for one title (the person's case habits). */
+function caseVariants(title: string): string[] {
+  const lower = title.toLowerCase();
+  const capital = lower.charAt(0).toUpperCase() + lower.slice(1);
+  const words = lower.replace(/(^|\s)(\S)/g, (_m, sp: string, ch: string) => sp + ch.toUpperCase());
+  return [...new Set([title, lower, title.toUpperCase(), capital, words])];
 }
 
 type Row = { id: string; title: string };
 
+function rowsOf(data: unknown, col: string): Row[] {
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({ id: String(r.id), title: String(r[col] ?? "") }));
+}
+
+/**
+ * One exact read for every title (in their case variants) and id, with NO
+ * shared limit — one link can never push another out of the result. A title
+ * the exact read missed gets its own case-insensitive literal read (limit
+ * per title), so a page that exists is never shown as "no page yet".
+ */
 async function readRows(
   token: string,
   titles: string[],
@@ -82,26 +109,28 @@ async function readRows(
   const info = tryGetEntityInfo(token);
   if (!info || !info.titleColumn) return { error: `"${token}" records cannot be linked by name.` };
   const col = info.titleColumn;
+  const variants = titles.flatMap(caseVariants);
   const filters = [
-    ...(ids.length ? [`id.in.(${ids.join(",")})`] : []),
-    ...titles.map((t) => `${col}.ilike.${quoted(t)}`),
+    ...(ids.length ? [`id.in.(${ids.map(inListValue).join(",")})`] : []),
+    ...(variants.length ? [`${col}.in.(${variants.map(inListValue).join(",")})`] : []),
   ];
   if (filters.length === 0) return { rows: [] };
   const supabase = createClient();
-  const query = supabase
-    .schema(info.schema as "public")
-    .from(info.table as never)
-    .select(`id, ${col}`)
-    .or(filters.join(","))
-    .limit(Math.max(50, (titles.length + ids.length) * 5));
-  const { data, error } = await query;
+  const table = () => supabase.schema(info.schema as "public").from(info.table as never);
+  const { data, error } = await table().select(`id, ${col}`).or(filters.join(","));
   if (error) return { error: error.message };
-  return {
-    rows: ((data ?? []) as unknown as Record<string, unknown>[]).map((r) => ({
-      id: String(r.id),
-      title: String(r[col] ?? ""),
-    })),
-  };
+  const rows = rowsOf(data, col);
+
+  const missed = titles.filter(
+    (t) => !rows.some((r) => r.title.trim().toLowerCase() === t.toLowerCase()) && !t.includes("*"),
+  );
+  const extra = await Promise.all(
+    missed.map(async (t) => {
+      const res = await table().select(`id, ${col}`).ilike(col, literalLikePattern(t)).limit(5);
+      return res.error ? [] : rowsOf(res.data, col);
+    }),
+  );
+  return { rows: [...rows, ...extra.flat()] };
 }
 
 async function runBatch(batch: Map<string, { target: string; settle: (r: WikiResolution) => void }>): Promise<void> {

@@ -25,11 +25,23 @@
 // and the store marks the place sent in the same transaction.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FormRunner, type FormSubmitOutcome } from "@ai-matrx/records-ui";
+import {
+  FormRunner,
+  RecordsUiProvider,
+  type FormSubmitOutcome,
+  type RecordsUiHost,
+} from "@ai-matrx/records-ui";
+import { RichContentStaticInline } from "@/components/rich-content/RichContentStaticProse";
 import type { Field, RuleExpression } from "@ai-matrx/records";
 
 import type { PublicForm } from "@/features/forms/service";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+
+
+/** Authored form text → the static inline level (phrasing, valid inside the package's <p>). */
+const FORM_TEXT_HOST: RecordsUiHost = {
+  renderText: (text) => <RichContentStaticInline source={text} />,
+};
 
 /**
  * What the runner's `whichAsked` port answers — records-ui's `FormAsked`, 0.84.10 onwards.
@@ -358,14 +370,19 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
         <p className="mt-3 rounded border border-dashed px-2 py-1 text-xs text-muted-foreground">{resumed.message}</p>
       ) : null}
 
-      <FormRunner
-        key={runKey}
-        form={spec as unknown as Parameters<typeof FormRunner>[0]["form"]}
-        fields={form.fields as unknown as Field[]}
-        honeypotKey={form.honeypot_key}
-        onSubmit={submit}
-        {...ports}
-      />
+      {/* The form's authored text (intro, question help, thank-you) reads
+          through the one rich-content core — markdown and math, in the
+          server HTML (records-ui `renderText` host port, 0.85.15). */}
+      <RecordsUiProvider value={FORM_TEXT_HOST}>
+        <FormRunner
+          key={runKey}
+          form={spec as unknown as Parameters<typeof FormRunner>[0]["form"]}
+          fields={form.fields as unknown as Field[]}
+          honeypotKey={form.honeypot_key}
+          onSubmit={submit}
+          {...ports}
+        />
+      </RecordsUiProvider>
 
       {!sent && save.kind !== "idle" ? (
         <div className="mt-2 flex flex-col gap-1 text-xs text-muted-foreground" aria-live="polite">

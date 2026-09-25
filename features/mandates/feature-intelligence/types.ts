@@ -47,10 +47,11 @@ export interface FeaturePlaces {
    */
   extraPrefixes?: readonly string[];
   /**
-   * Named key maps the feature's code reads jobs through (`{ FC_MANDATES }`) —
-   * the places guard resolves `FC_MANDATES.generateCards` to its key.
+   * Names the feature's code reads jobs through — a key map (`{ FC_MANDATES }`,
+   * so `FC_MANDATES.generateCards` resolves) or one named key constant
+   * (`{ DEFAULT_NEW_CHAT_MANDATE_KEY }`). The places guard follows them.
    */
-  aliases?: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  aliases?: Readonly<Record<string, string | Readonly<Record<string, string>>>>;
   /**
    * Folders the places guard scans: every component (`.tsx`) inside that runs
    * one of this feature's jobs must be named by a place.

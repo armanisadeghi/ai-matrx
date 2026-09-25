@@ -38,6 +38,10 @@ function keysNamedIn(source: string, feature: FeaturePlaces): Set<string> {
     if (ALL_KEYS.has(match[1]) && inFeature(match[1])) out.add(match[1]);
   }
   for (const [alias, map] of Object.entries(feature.aliases ?? {})) {
+    if (typeof map === "string") {
+      if (new RegExp(`\\b${alias}\\b`).test(source) && inFeature(map)) out.add(map);
+      continue;
+    }
     const pattern = new RegExp(`\\b${alias}\\.([A-Za-z0-9_]+)`, "g");
     for (const match of source.matchAll(pattern)) {
       const key = map[match[1]];

@@ -78,7 +78,9 @@ jest.mock("@/features/scopes/service/scopesService", () => ({
 }));
 
 const svc = jest.mocked(scopesService);
-const rpc = jest.mocked(supabase.rpc);
+// A plain mock: `jest.mocked(supabase.rpc)` instantiates the whole generated
+// RPC overload set (TS2589).
+const rpc = supabase.rpc as unknown as jest.Mock;
 
 const ORG = "f9cb3e35-2a65-4f2a-8525-088d6551071c";
 const STAMP = "2026-09-25T10:00:00.000Z";
@@ -297,7 +299,7 @@ describe("context-item console writes go through scopesService and update both c
   async function storeWithLoadedCatalogs(items: ContextItemRow[]) {
     const store = await bootedStore([typeNode()]);
     // The console cache's own read.
-    rpc.mockResolvedValueOnce({ data: items, error: null } as never);
+    rpc.mockResolvedValueOnce({ data: items, error: null });
     await store.dispatch(listScopeTypeItems(typeNode().id));
     // The tree's catalog read.
     svc.listContextItems.mockResolvedValueOnce({ ok: true, data: { items } } as never);
