@@ -22,6 +22,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/types/database.types";
 import { readAllRows } from "@ai-matrx/data/db";
 import { operationFailed } from "@/utils/errors";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 export type KindIncidentClient = SupabaseClient<Database>;
@@ -189,16 +190,20 @@ export async function resolveKindIncident(
   if (authError) {
     throw operationFailed("verify who is resolving this incident", authError);
   }
-  const { error } = await client
-    .schema("content_ir")
-    .from("kind_component_incident")
-    .update({
-      resolved: true,
-      resolved_at: new Date().toISOString(),
-      resolved_by: authData.user?.id ?? null,
-      resolution_notes: note,
-    })
-    .eq("id", incidentId);
+  const { error } = await tryWriteOne(
+    client
+      .schema("content_ir")
+      .from("kind_component_incident")
+      .update({
+        resolved: true,
+        resolved_at: new Date().toISOString(),
+        resolved_by: authData.user?.id ?? null,
+        resolution_notes: note,
+      })
+      .eq("id", incidentId)
+      .select("id"),
+    { action: "update", noun: "Shape incident" },
+  );
   if (error) throw operationFailed("resolve this Shape incident", error);
 }
 
@@ -207,10 +212,14 @@ export async function reopenKindIncident(
   client: KindIncidentClient,
   incidentId: string,
 ): Promise<void> {
-  const { error } = await client
-    .schema("content_ir")
-    .from("kind_component_incident")
-    .update({ resolved: false, resolved_at: null, resolved_by: null })
-    .eq("id", incidentId);
+  const { error } = await tryWriteOne(
+    client
+      .schema("content_ir")
+      .from("kind_component_incident")
+      .update({ resolved: false, resolved_at: null, resolved_by: null })
+      .eq("id", incidentId)
+      .select("id"),
+    { action: "update", noun: "Shape incident" },
+  );
   if (error) throw operationFailed("reopen this Shape incident", error);
 }

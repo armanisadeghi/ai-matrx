@@ -14,6 +14,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import {
   createOwnedShapeExample,
   makeOwnedShapeExampleCanonical,
@@ -35,11 +36,15 @@ export async function reactivateComponent(
     throw new Error("No disabled component to re-activate.");
   }
   const supabase = createClient();
-  const { error } = await supabase
-    .schema("content_ir")
-    .from("kind_component")
-    .update({ is_active: true })
-    .eq("id", diagnosis.inactiveComponentId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("content_ir")
+      .from("kind_component")
+      .update({ is_active: true })
+      .eq("id", diagnosis.inactiveComponentId)
+      .select("id"),
+    { action: "update", noun: "component" },
+  );
   if (error) throw operationFailed("re-activate this component", error);
   invalidateKindRenderGap(diagnosis.kind);
   await refreshKindComponents(0);

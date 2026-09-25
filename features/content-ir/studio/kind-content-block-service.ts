@@ -19,6 +19,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase as browserSupabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { operationFailed } from "@/utils/errors";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import type { Database } from "@/types/database.types";
 import type { GeneratedContentBlock } from "@/features/content-ir/registry/kind-content-block-generator";
 
@@ -103,11 +104,15 @@ export async function ownerUpsertKindContentBlock(
   };
 
   const { error } = existing
-    ? await browserSupabase
-        .schema("skill")
-        .from("render_definition")
-        .update(fields)
-        .eq("id", existing.id)
+    ? await tryWriteOne(
+        browserSupabase
+          .schema("skill")
+          .from("render_definition")
+          .update(fields)
+          .eq("id", existing.id)
+          .select("id"),
+        { action: "save", noun: "content block" },
+      )
     : await browserSupabase
         .schema("skill")
         .from("render_definition")

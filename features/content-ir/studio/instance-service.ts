@@ -30,6 +30,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 import {
   DEFAULT_ARCHIVE_FILTER,
@@ -415,11 +416,15 @@ export async function repinKindInstance(
 
 /** Soft delete (platform tombstone) — `deleted_at` set, row retained. */
 export async function softDeleteKindInstance(id: string): Promise<void> {
-  const { error } = await supabase
-    .schema("content_ir")
-    .from("kind_instance")
-    .update({ deleted_at: new Date().toISOString(), updated_by: await currentUserId() })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("content_ir")
+      .from("kind_instance")
+      .update({ deleted_at: new Date().toISOString(), updated_by: await currentUserId() })
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "instance" },
+  );
   if (error) {
     throw new Error(`Failed to delete the instance: ${error.message}`);
   }

@@ -12,6 +12,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/types/database.types";
 import { guardedUpdate } from "@ai-matrx/data/db";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@/features/content-ir/registry/schema-source-kind-components";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
@@ -745,11 +746,15 @@ export async function setDefaultShapeComponent(
     }
   }
 
-  const { error: setError } = await client
-    .schema("content_ir")
-    .from("kind_component")
-    .update({ is_default: true, updated_by: userId })
-    .eq("id", plan.setId);
+  const { error: setError } = await tryWriteOne(
+    client
+      .schema("content_ir")
+      .from("kind_component")
+      .update({ is_default: true, updated_by: userId })
+      .eq("id", plan.setId)
+      .select("id"),
+    { action: "change", noun: "default component" },
+  );
   if (setError) {
     // Best-effort rollback so a mid-switch failure never leaves the group
     // with zero defaults.
