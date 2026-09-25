@@ -190,9 +190,12 @@ begin
     raise exception '2b: the scope TYPE is the record''s Table, and it said %', v_scope::text;
   end if;
 
+  -- target_type is the store's token `record` since
+  -- migrations/campaign/sc4_a_conversation_is_about_a_record_under_the_store_token.sql (SC-4);
+  -- custom.conversation_scope_bind still reads `custom_record` but never writes it.
   select count(*) into v_n from platform.associations a
    where a.source_type='conversation' and a.source_id=v_conv
-     and a.target_type='custom_record' and a.role='record_scope' and a.deleted_at is null;
+     and a.target_type='record' and a.role='record_scope' and a.deleted_at is null;
   if v_n <> 1 then
     raise exception '2c: the binding is % rows of platform.associations, not one', v_n;
   end if;
@@ -201,7 +204,7 @@ begin
   perform custom.conversation_scope_bind(v_org, v_conv, v_beta);
   select count(*) into v_n from platform.associations a
    where a.source_type='conversation' and a.source_id=v_conv
-     and a.target_type='custom_record' and a.role='record_scope' and a.deleted_at is null;
+     and a.target_type='record' and a.role='record_scope' and a.deleted_at is null;
   if v_n <> 1 then
     raise exception '2d: re-binding left % live scopes', v_n;
   end if;
