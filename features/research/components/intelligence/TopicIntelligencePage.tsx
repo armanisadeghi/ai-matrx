@@ -89,7 +89,10 @@ export default function TopicIntelligencePage() {
     if (!expectedId) return;
     await removeTopicAgentChoice(topicId, key, expectedId);
     const latest = await getTopic(topicId);
-    if (!latest || (latest.agent_config && typeof latest.agent_config === "object" && !Array.isArray(latest.agent_config) && latest.agent_config[key] === expectedId)) {
+    const latestChoices = latest?.agent_config && typeof latest.agent_config === "object" && !Array.isArray(latest.agent_config)
+      ? latest.agent_config as Record<string, unknown>
+      : {};
+    if (!latest || latestChoices[key] === expectedId) {
       throw new Error("The topic choice could not be confirmed as removed. Refresh and check this job.");
     }
     setRemovedChoices((current) => ({ ...current, [key]: expectedId }));
