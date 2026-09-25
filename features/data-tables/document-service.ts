@@ -16,6 +16,7 @@
  * the other at the same time — see `features/data-tables/FEATURE.md`.
  */
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { requireOrganizationContext } from "@/lib/api/organization-context";
 
 import type {
@@ -176,11 +177,15 @@ export async function updateDocumentDescription(
 export async function restoreDocument(
   documentId: string,
 ): Promise<ServiceResult<true>> {
-  const { error } = await supabase
-    .schema("workbench")
-    .from("udt_documents")
-    .update({ deleted_at: null })
-    .eq("id", documentId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("workbench")
+      .from("udt_documents")
+      .update({ deleted_at: null })
+      .eq("id", documentId)
+      .select("id"),
+    { action: "restore", noun: "document" },
+  );
   if (error) return { success: false, error: error.message };
   return { success: true, data: true };
 }
@@ -193,11 +198,15 @@ export async function restoreDocument(
 export async function discardFailedDocument(
   documentId: string,
 ): Promise<ServiceResult<true>> {
-  const { error } = await supabase
-    .schema("workbench")
-    .from("udt_documents")
-    .delete()
-    .eq("id", documentId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("workbench")
+      .from("udt_documents")
+      .delete()
+      .eq("id", documentId)
+      .select("id"),
+    { action: "delete", noun: "document" },
+  );
   if (error) return { success: false, error: error.message };
   return { success: true, data: true };
 }
@@ -205,11 +214,15 @@ export async function discardFailedDocument(
 export async function deleteDocument(
   documentId: string,
 ): Promise<ServiceResult<true>> {
-  const { error } = await supabase
-    .schema("workbench")
-    .from("udt_documents")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", documentId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("workbench")
+      .from("udt_documents")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", documentId)
+      .select("id"),
+    { action: "delete", noun: "document" },
+  );
   if (error) return { success: false, error: error.message };
   return { success: true, data: true };
 }
@@ -264,6 +277,7 @@ export async function saveDocumentSnapshot(
 
   // Touch the parent document's updated_at so list views can sort by recency
   // without scanning snapshots. Best-effort — failure here is harmless.
+  // write-lands-exempt: best-effort recency stamp on the parent document; the snapshot insert above is the real write
   await supabase
     .schema("workbench")
     .from("udt_documents")

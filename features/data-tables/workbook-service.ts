@@ -15,6 +15,7 @@
  */
 import { requireOrganizationContext } from "@/lib/api/organization-context";
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 import type {
   ServiceResult,
@@ -176,11 +177,15 @@ export async function updateWorkbookDescription(
 export async function deleteWorkbook(
   workbookId: string,
 ): Promise<ServiceResult<true>> {
-  const { error } = await supabase
-    .schema("workbench")
-    .from("udt_workbooks")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", workbookId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("workbench")
+      .from("udt_workbooks")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", workbookId)
+      .select("id"),
+    { action: "delete", noun: "workbook" },
+  );
   if (error) return { success: false, error: error.message };
   return { success: true, data: true };
 }
@@ -194,11 +199,15 @@ export async function deleteWorkbook(
 export async function discardFailedWorkbook(
   workbookId: string,
 ): Promise<ServiceResult<true>> {
-  const { error } = await supabase
-    .schema("workbench")
-    .from("udt_workbooks")
-    .delete()
-    .eq("id", workbookId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("workbench")
+      .from("udt_workbooks")
+      .delete()
+      .eq("id", workbookId)
+      .select("id"),
+    { action: "delete", noun: "workbook" },
+  );
   if (error) return { success: false, error: error.message };
   return { success: true, data: true };
 }
@@ -206,11 +215,15 @@ export async function discardFailedWorkbook(
 export async function restoreWorkbook(
   workbookId: string,
 ): Promise<ServiceResult<true>> {
-  const { error } = await supabase
-    .schema("workbench")
-    .from("udt_workbooks")
-    .update({ deleted_at: null })
-    .eq("id", workbookId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("workbench")
+      .from("udt_workbooks")
+      .update({ deleted_at: null })
+      .eq("id", workbookId)
+      .select("id"),
+    { action: "restore", noun: "workbook" },
+  );
   if (error) return { success: false, error: error.message };
   return { success: true, data: true };
 }
@@ -265,6 +278,7 @@ export async function saveSnapshot(
 
   // Touch the parent workbook's updated_at so list views can sort by recency
   // without scanning snapshots. Best-effort — failure here is harmless.
+  // write-lands-exempt: best-effort recency stamp on the parent workbook; the snapshot insert above is the real write
   await supabase
     .schema("workbench")
     .from("udt_workbooks")
