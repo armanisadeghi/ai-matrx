@@ -28,7 +28,6 @@ import {
   PERSISTENCE_REGION,
   PERSISTENCE_SOURCE_APP,
   PERSISTENCE_SOURCE_FEATURE,
-  XAI_MODEL_ID,
 } from "../constants";
 import type {
   LatencySummary,
@@ -50,6 +49,8 @@ type CxConversationInsert =
 type CxMessageInsert = Database["chat"]["Tables"]["message"]["Insert"];
 
 export interface EnsureConversationOpts {
+  /** The realtime model the mandate's Holder resolved (realtimeModel.ts); null until the caller passes it. */
+  model?: string | null;
   voiceId: VoiceId;
   instructions: string;
   tools: RealtimeToolSet;
@@ -65,6 +66,8 @@ export interface PersistTurnsOpts {
 }
 
 export interface FinalizeOpts {
+  /** The realtime model the mandate's Holder resolved (realtimeModel.ts); null until the caller passes it. */
+  model?: string | null;
   conversationId: string;
   totalTurns: number;
   totalInterruptions: number;
@@ -100,7 +103,7 @@ export async function ensureConversation(
     // Model slug — xAI Realtime models are NOT in the `ai_model` table, so we
     // record the identifier here instead of in `cx_conversation.last_model_id`
     // (which is a UUID FK to ai_model.id and would 22P02 with a slug).
-    model: XAI_MODEL_ID,
+    model: opts.model ?? null,
     voice_id: opts.voiceId,
     tools_enabled: toolNames(opts.tools),
     region: PERSISTENCE_REGION,
@@ -271,7 +274,7 @@ export async function finalizeConversation(
 
   const voiceMeta: Record<string, Json> = {
     provider: PERSISTENCE_PROVIDER,
-    model: XAI_MODEL_ID,
+    model: opts.model ?? null,
     voice_id: opts.voiceId,
     tools_enabled: toolNames(opts.tools),
     region: PERSISTENCE_REGION,
