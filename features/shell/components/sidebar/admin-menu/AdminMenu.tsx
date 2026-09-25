@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
 import { IconResolver } from "@ai-matrx/icons";
 import {
   adminDomainHref,
-  adminNavigationRegistry,
+  adminMenuDomains,
   destinationOwnsPathname,
 } from "@/features/admin/constants/admin-navigation";
 import { ADMIN_APP_URL } from "@/features/shell/constants/nav-data";
@@ -102,7 +102,7 @@ export default function AdminMenu() {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
 
-        {adminNavigationRegistry
+        {adminMenuDomains
           .filter((domain) => domain.slug !== "launchpad")
           .map((domain) => (
             <DropdownMenuSub key={domain.name}>

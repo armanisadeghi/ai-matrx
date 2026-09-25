@@ -7,9 +7,9 @@
 
 import React from "react";
 import { IconResolver } from "@ai-matrx/icons";
-import { adminNavigationRegistry } from "@/features/admin/constants/admin-navigation";
+import { adminMenuDomains } from "@/features/admin/constants/admin-navigation";
 
-export const adminNavigation = adminNavigationRegistry.map((domain) => ({
+export const adminNavigation = adminMenuDomains.map((domain) => ({
   name: domain.name,
   slug: domain.slug,
   iconColor: domain.iconColor,

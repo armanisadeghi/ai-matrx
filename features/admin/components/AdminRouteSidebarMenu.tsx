@@ -17,7 +17,8 @@ import { IconResolver } from "@ai-matrx/icons";
 import { ADMIN_LAUNCHPAD_PATH } from "@/features/admin/constants/admin-categories";
 import {
   adminDomainHref,
-  adminNavigationRegistry,
+  adminMenuDomains,
+  adminMenuPathname,
   destinationOwnsPathname,
   findAdminNavigationDomainByPathname,
   findAdminNavigationLocation,
@@ -51,9 +52,11 @@ export default function AdminRouteSidebarMenu({
   expanded,
 }: AdminRouteSidebarMenuProps) {
   const pathname = usePathname() ?? "/administration";
-  const activeLocation = findAdminNavigationLocation(pathname);
+  // A page in a superseded domain highlights its new home's menu row.
+  const menuPathname = adminMenuPathname(pathname);
+  const activeLocation = findAdminNavigationLocation(menuPathname);
   const activeDomain =
-    activeLocation?.domain ?? findAdminNavigationDomainByPathname(pathname);
+    activeLocation?.domain ?? findAdminNavigationDomainByPathname(menuPathname);
 
   return (
     <div
@@ -98,7 +101,7 @@ export default function AdminRouteSidebarMenu({
       </AppLink>
 
       <div className="shell-admin-domain-list">
-        {adminNavigationRegistry
+        {adminMenuDomains
           .filter((domain) => domain.slug !== "launchpad")
           .map((domain) => {
             const domainActive = activeDomain?.name === domain.name;
@@ -136,7 +139,7 @@ export default function AdminRouteSidebarMenu({
                 <div className="shell-admin-domain-children">
                   {domain.sections.flatMap((section) =>
                     section.destinations.map((item) => {
-                      const active = destinationOwnsPathname(item, pathname);
+                      const active = destinationOwnsPathname(item, menuPathname);
                       return (
                         <AppLink
                           key={item.link}

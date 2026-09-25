@@ -964,6 +964,30 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "cyan",
   },
   {
+    // Intelligence (Arman, 2026-09-25): how agents, workflows and models serve
+    // the application. A group parent — for now it holds only Mandates; more
+    // will come. Mandates are never under Agents. Agents and Workflows stay
+    // top-level items.
+    label: "Intelligence",
+    href: "/mandates/list-preview",
+    iconName: "BrainCircuit",
+    section: "primary",
+    profileMenu: false,
+    dashboard: false,
+    description: "How agents and workflows serve the app",
+    color: "teal",
+    children: [
+      {
+        label: "Mandates",
+        href: "/mandates/list-preview",
+        iconName: "Plug",
+        description: "The jobs in the app your agents and workflows do, and which one does each",
+        profileMenu: true,
+        dashboard: true,
+      },
+    ],
+  },
+  {
     // User-facing Shape System studio (features/content-ir/studio/).
     label: "Shapes",
     href: SHAPES_ALL_HREF,

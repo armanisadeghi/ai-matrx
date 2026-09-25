@@ -852,9 +852,43 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Lookups",
+        description:
+          "CRUD for tool-registry lookup tables: ui.ui_client, ui.ui_surface (basic), tool.executor. Foundation tables every other registry feature reads.",
+        iconName: "SlidersHorizontal",
+        link: "/administration/agents/lookups",
+        isNew: true,
+      },
+      {
+        title: "New Tool Definition",
+        description:
+          "Create a new row in the tool.definition catalog (identity, parameters, executors, surfaces).",
+        iconName: "Pencil",
+        link: "/administration/agents/mcp-tools/new",
+      },
+    ],
+  },
+  {
+    // Intelligence (Arman, 2026-09-25): how agents, workflows and models serve
+    // the application. Holds Mandates for now; more will come. Mandates are
+    // never under Agents. Metadata only — placement lives in admin-navigation.
+    name: "Intelligence",
+    iconName: "BrainCircuit",
+    iconColor: "text-teal-600",
+    landingPath: "/administration/intelligence",
+    features: [
+      {
         title: "Mandates",
         description:
-          "DB-managed system-agent pins (agent.mandate / mandate_binding): rebind, enable/disable, org/user overrides, and the exemplar test bench for candidate agents.",
+          "Every mandate — the job, what holds it, who customized it — with its dashboard, health, unconverted AI calls and the classic console reached from inside the page.",
+        iconName: "Plug",
+        link: "/administration/intelligence/mandates",
+        isNew: true,
+      },
+      {
+        title: "Mandates (classic view)",
+        description:
+          "The original console, kept beside the new list until the owner validates it. DB-managed system-agent pins (agent.mandate / mandate_binding): rebind, enable/disable, org/user overrides, and the exemplar test bench for candidate agents.",
         iconName: "Plug",
         link: "/administration/mandates",
         isNew: true,
@@ -886,21 +920,6 @@ export const adminCategoriesData: AdminCategory[] = [
         iconName: "Plug",
         link: "/administration/mandates/advanced",
         isNew: true,
-      },
-      {
-        title: "Lookups",
-        description:
-          "CRUD for tool-registry lookup tables: ui.ui_client, ui.ui_surface (basic), tool.executor. Foundation tables every other registry feature reads.",
-        iconName: "SlidersHorizontal",
-        link: "/administration/agents/lookups",
-        isNew: true,
-      },
-      {
-        title: "New Tool Definition",
-        description:
-          "Create a new row in the tool.definition catalog (identity, parameters, executors, surfaces).",
-        iconName: "Pencil",
-        link: "/administration/agents/mcp-tools/new",
       },
     ],
   },

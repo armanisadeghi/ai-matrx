@@ -3,7 +3,10 @@
 import { act, type AnchorHTMLAttributes, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import AdminRouteSidebarMenu from "./AdminRouteSidebarMenu";
-import { getAdminNavigationLocations } from "../constants/admin-navigation";
+import {
+  adminMenuDomains,
+  getAdminNavigationLocations,
+} from "../constants/admin-navigation";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean })
   .IS_REACT_ACT_ENVIRONMENT = true;
@@ -94,13 +97,15 @@ describe("AdminRouteSidebarMenu", () => {
     expect(aiDetails?.open).toBe(true);
   });
 
-  it("links every registry destination exactly once", () => {
+  it("links every menu destination exactly once", () => {
     render();
     const hrefs = Array.from(host.querySelectorAll("a[href]")).map(
       (anchor) => anchor.getAttribute("href") ?? "",
     );
-    const missing = getAdminNavigationLocations()
-      .map(({ destination }) => destination.link)
+    const missing = adminMenuDomains
+      .flatMap((domain) => domain.sections)
+      .flatMap((section) => section.destinations)
+      .map((destination) => destination.link)
       .filter((link) => !hrefs.includes(link));
 
     expect(missing).toEqual([]);
@@ -112,6 +117,25 @@ describe("AdminRouteSidebarMenu", () => {
       getAdminNavigationLocations()[0]?.destination.link ?? "/administration";
     render();
     expect(host.querySelectorAll(".shell-active-pill")).toHaveLength(1);
+  });
+
+  it("shows Intelligence → Mandates once and never the original mandate pages", () => {
+    render();
+    const hrefs = Array.from(host.querySelectorAll("a[href]")).map(
+      (anchor) => anchor.getAttribute("href") ?? "",
+    );
+    expect(
+      hrefs.filter((href) => href === "/administration/intelligence/mandates"),
+    ).toHaveLength(1);
+    expect(hrefs.filter((href) => href.startsWith("/administration/mandates"))).toEqual([]);
+  });
+
+  it("lights Intelligence → Mandates on an original mandate page", () => {
+    pathnameMock = "/administration/mandates/new";
+    render();
+    const active = host.querySelectorAll<HTMLAnchorElement>(".shell-active-pill");
+    expect(active).toHaveLength(1);
+    expect(active[0]?.getAttribute("href")).toBe("/administration/intelligence/mandates");
   });
 
   it("does not style Launchpad as selected away from its route", () => {

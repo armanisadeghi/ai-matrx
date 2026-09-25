@@ -41,6 +41,14 @@ export interface AdminNavigationDomain {
   iconName: string;
   iconColor: string;
   sections: readonly AdminNavigationSection[];
+  /**
+   * Set ONLY on a domain that keeps an older route family alive beside its new
+   * home until the owner validates the move (no redirects until then). Its
+   * routes stay declared and working, and are reached from inside the new
+   * home — the domain is never a menu row. The value is the new home's link;
+   * a page in this domain highlights that destination in the menu.
+   */
+  supersededBy?: string;
 }
 
 const toolsByLink = new Map<string, AdminToolLink>();
@@ -205,14 +213,44 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
     ],
   },
   {
-    // A mandate is a named job fulfilled by an Agent, an Orchestra, or a
-    // Workflow — so it is a PEER of Agents, not a child (detach, 2026-08-30).
-    // Management (create/rebind/enable) lives here, super-admin gated; the
-    // user route `/mandates` is browse + self-service only.
-    name: "Mandates",
+    // Intelligence (Arman, 2026-09-25): how agents, workflows and models serve
+    // the application. AI keeps its meaning (models and what involves them);
+    // Agents and Workflows are things we make with them. For now Intelligence
+    // holds only Mandates — a mandate is a named job fulfilled by an Agent, an
+    // Orchestra, or a Workflow, so it is NEVER under Agents. ONE menu entry;
+    // every other mandate page is reached from inside the list's header.
+    name: "Intelligence",
+    slug: "intelligence",
+    iconName: "BrainCircuit",
+    iconColor: "text-teal-600",
+    sections: [
+      {
+        name: "Mandates",
+        iconName: "Plug",
+        destinations: [
+          destination("/administration/intelligence/mandates", [
+            "/administration/intelligence/mandates/dashboard",
+            "/administration/intelligence/mandates/health",
+            "/administration/intelligence/mandates/unconverted",
+            "/administration/intelligence/mandates/window",
+            "/administration/intelligence/mandates/[mandateKey]",
+            "/administration/intelligence/mandates/[mandateKey]/overrides",
+          ]),
+        ],
+      },
+    ],
+  },
+  {
+    // The owner's ORIGINAL mandate pages (and the first preview addresses),
+    // kept working untouched beside Intelligence → Mandates until he validates
+    // the new suite — no redirects until then. Not a menu row: every page here
+    // is reached from the new list's header (Classic view, References, Raw
+    // tables, New mandate).
+    name: "Mandates (original pages)",
     slug: "mandates",
     iconName: "Plug",
     iconColor: "text-sky-600",
+    supersededBy: "/administration/intelligence/mandates",
     sections: [
       {
         name: "Mandates",
@@ -231,6 +269,12 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/mandates", [
             "/administration/mandates/[mandateKey]",
             "/administration/mandates/dashboard-preview",
+            "/administration/mandates/health-preview",
+            "/administration/mandates/list-preview",
+            "/administration/mandates/overrides-preview/[mandateKey]",
+            "/administration/mandates/record-preview/[mandateKey]",
+            "/administration/mandates/unconverted-preview",
+            "/administration/mandates/window-preview",
           ]),
         ],
       },
@@ -765,6 +809,24 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
   },
 ] as const;
 
+/**
+ * The domains the MENUS render — every consumer that draws a menu, launcher,
+ * or header tree iterates this, never the raw registry. A `supersededBy`
+ * domain keeps its routes declared (route audit, search, the all-routes
+ * directory) but is never a menu row.
+ */
+export const adminMenuDomains: readonly AdminNavigationDomain[] =
+  adminNavigationRegistry.filter((domain) => !domain.supersededBy);
+
+/**
+ * The pathname a menu should highlight: a page inside a superseded domain
+ * lights up its new home, so the one menu entry stays selected.
+ */
+export function adminMenuPathname(pathname: string): string {
+  const domain = findAdminNavigationDomainByPathname(pathname);
+  return domain?.supersededBy ?? pathname;
+}
+
 export interface AdminNavigationLocation {
   domain: AdminNavigationDomain;
   section: AdminNavigationSection;
@@ -844,6 +906,25 @@ export function getAdminNavigationArchitectureErrors(): string[] {
           }
         }
       }
+    }
+  }
+
+  // A superseded domain is hidden from every menu, so its new home MUST be a
+  // real menu destination — otherwise its pages would have no menu entry at all.
+  for (const domain of adminNavigationRegistry) {
+    if (!domain.supersededBy) continue;
+    const home = domain.supersededBy;
+    const homeIsMenuRow = adminNavigationRegistry.some(
+      (other) =>
+        !other.supersededBy &&
+        other.sections.some((section) =>
+          section.destinations.some((item) => item.link === home),
+        ),
+    );
+    if (!homeIsMenuRow) {
+      errors.push(
+        `${domain.name}: supersededBy ${home} is not a destination of any menu domain`,
+      );
     }
   }
 

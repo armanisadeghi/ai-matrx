@@ -2,7 +2,8 @@
 
 // features/mandates/admin-list/MandateAdminListPage.tsx
 //
-// /administration/mandates/list-preview — the NEW admin mandate list, built
+// /administration/intelligence/mandates — the NEW admin mandate list (also
+// served at /administration/mandates/list-preview until the swap), built
 // beside the old console (features/mandates/admin/MandatesConsole.tsx, left
 // untouched) on the canonical `EntityListPage`. One top row: Mine / Org /
 // System on the left, New mandate on the right; the table's own title row
@@ -10,9 +11,7 @@
 // the URL, so Back restores scope, search, filters and sort.
 
 import { useEffect } from "react";
-import Link from "next/link";
-import { BrainCircuit, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BrainCircuit } from "lucide-react";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import type { EntityBulkAction } from "@/lib/entity-list/selection";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -34,6 +33,7 @@ import { useImpactAdvance } from "@/features/mandates/admin/impact-advance";
 import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import { adminMandateListConfig } from "./listConfig";
+import { MandateAdminPagesNav } from "./MandateAdminPagesNav";
 import {
   MandateAdminListActionsContext,
   useMandateAdminListState,
@@ -180,14 +180,7 @@ export function MandateAdminListPage() {
             </div>
           ) : null
         }
-        headerActions={
-          <Button asChild size="sm" className="h-8 gap-1">
-            <Link href="/administration/mandates/new">
-              <Plus className="h-3.5 w-3.5" />
-              New mandate
-            </Link>
-          </Button>
-        }
+        headerActions={<MandateAdminPagesNav />}
       />
     </MandateAdminListActionsContext.Provider>
   );

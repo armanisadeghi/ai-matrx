@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import {
   adminDomainHref,
-  adminNavigationRegistry,
+  adminMenuDomains,
   type AdminNavigationDestination,
 } from "@/features/admin/constants/admin-navigation";
 import { cn } from "@/lib/utils";
@@ -30,7 +30,7 @@ interface LaunchpadSearchItem extends AdminNavigationDestination {
   sectionName: string;
 }
 
-const launchpadDomains = adminNavigationRegistry.filter(
+const launchpadDomains = adminMenuDomains.filter(
   (domain) => domain.slug !== "launchpad",
 );
 

@@ -13,7 +13,8 @@ import { IconResolver } from "@ai-matrx/icons";
 import { ADMIN_LAUNCHPAD_PATH } from "@/features/admin/constants/admin-categories";
 import {
   adminDomainHref,
-  adminNavigationRegistry,
+  adminMenuDomains,
+  adminMenuPathname,
   destinationOwnsPathname,
   findAdminNavigationDomainByPathname,
 } from "@/features/admin/constants/admin-navigation";
@@ -27,7 +28,8 @@ import { usePathname } from "next/navigation";
 export default function AdminMobileMenu() {
   const dispatch = useAppDispatch();
   const pathname = usePathname() ?? "";
-  const activeDomain = findAdminNavigationDomainByPathname(pathname);
+  const menuPathname = adminMenuPathname(pathname);
+  const activeDomain = findAdminNavigationDomainByPathname(menuPathname);
   return (
     <>
       <div className="shell-mobile-section-divider" />
@@ -96,7 +98,7 @@ export default function AdminMobileMenu() {
         />
       </a>
 
-      {adminNavigationRegistry
+      {adminMenuDomains
         .filter((domain) => domain.slug !== "launchpad")
         .map((domain) => (
           <details
@@ -151,7 +153,7 @@ export default function AdminMobileMenu() {
                     <span>{section.name}</span>
                   </div>
                   {section.destinations.map((item) => {
-                    const active = destinationOwnsPathname(item, pathname);
+                    const active = destinationOwnsPathname(item, menuPathname);
                     return (
                       <AppLink
                         key={item.link}

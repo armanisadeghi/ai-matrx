@@ -21,6 +21,7 @@ import { useEffect, useState } from "react";
 const LIST_PATHS = new Set([
   "/administration/mandates",
   "/administration/mandates/list-preview",
+  "/administration/intelligence/mandates",
   "/mandates",
   "/mandates/list-preview",
 ]);

@@ -12,6 +12,7 @@ import { Input } from "@ai-matrx/design-system";
 import { AdminDomainSection } from "@/features/admin/components/AdminDomainSection";
 import { ADMIN_LAUNCHPAD_PATH } from "@/features/admin/constants/admin-categories";
 import {
+  adminMenuDomains,
   adminNavigationRegistry,
   type AdminNavigationDestination,
 } from "@/features/admin/constants/admin-navigation";
@@ -210,7 +211,7 @@ export default function AdminDashboardClient({
           </div>
         ) : (
           <div className="overflow-hidden rounded-lg border border-border bg-background shadow-sm">
-            {adminNavigationRegistry
+            {adminMenuDomains
               .filter((domain) => domain.slug !== "launchpad")
               .map((domain) => (
                 <AdminDomainSection key={domain.slug} domain={domain} />

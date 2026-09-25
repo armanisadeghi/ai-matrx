@@ -23,6 +23,7 @@
 //   (features/mandates/overrides-simple/), the simple redesign the owner asked
 //   for: the current agent's settings, each with a way to override it.
 
+import { ADMIN_MANDATES_HOME, adminMandateRecordHref } from "@/features/mandates/admin-routes";
 import {
   Activity,
   Bot,
@@ -111,13 +112,13 @@ export function recordTabsForLevel(
 }
 
 /** Where the record's Back goes when this tab did not come from a mandate list. */
-export const MANDATE_LIST_PREVIEW_HREF = "/administration/mandates/list-preview";
+export const MANDATE_LIST_PREVIEW_HREF = ADMIN_MANDATES_HOME;
 
 /** The new record page's address — the window's "open in a new tab" uses it. */
 export function mandateRecordPreviewHref(
   mandateKey: string,
   tab?: RecordTabId,
 ): string {
-  const base = `/administration/mandates/record-preview/${encodeURIComponent(mandateKey)}`;
+  const base = adminMandateRecordHref(mandateKey);
   return tab && tab !== DEFAULT_RECORD_TAB ? `${base}?tab=${tab}` : base;
 }

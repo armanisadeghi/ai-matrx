@@ -1,7 +1,7 @@
 // features/mandates/dashboard/list-link.ts
 //
 // Every dashboard number that names a set of mandates opens the new list
-// (/administration/mandates/list-preview) pre-filtered to that set.
+// (/administration/intelligence/mandates) pre-filtered to that set.
 //
 // Encoding: lib/entity-list/urlQuery.ts — one `filters` JSON param keyed by
 // COLUMN ID, each value an EntityFilterValue. The ids and values below are the
@@ -10,8 +10,9 @@
 
 import { ENTITY_LIST_URL_PARAMS } from "@/lib/entity-list/urlQuery";
 import type { EntityFilters } from "@/lib/entity-list/types";
+import { ADMIN_MANDATES_HOME } from "@/features/mandates/admin-routes";
 
-export const MANDATE_LIST_PATH = "/administration/mandates/list-preview";
+export const MANDATE_LIST_PATH = ADMIN_MANDATES_HOME;
 
 export const MANDATE_LIST_COLUMN = {
   /** "code" | "soft" */

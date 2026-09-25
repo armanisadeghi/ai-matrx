@@ -9,6 +9,7 @@
 // old /administration/mandates/references page (common-docs/systems/mandates/
 // OPTIONS.md §2), which stays untouched beside it until the swap.
 
+import { ADMIN_MANDATES_HEALTH } from "@/features/mandates/admin-routes";
 import Link from "next/link";
 import { Copy, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -232,7 +233,7 @@ export function UnconvertedCallsPage() {
       clearsShellHeader={false}
       headerActions={
         <Link
-          href="/administration/mandates/health-preview"
+          href={ADMIN_MANDATES_HEALTH}
           className="whitespace-nowrap rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
         >
           Mandate health
