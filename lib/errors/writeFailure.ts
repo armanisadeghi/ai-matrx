@@ -6,8 +6,9 @@
 //     PATCH /scheduler/tasks/2be9cc7c… 500 — "injected failure"
 // That is a developer's log line on a customer's screen. The rule (a screen never lies, and
 // nothing fails silently): a failure says what did not happen, why in plain words, and what to
-// do — "Could not pause this schedule. The server refused (500). Try again or open the
-// schedule's activity." The technical line is kept on the error (`technical`) for diagnostics.
+// do — "Could not pause this schedule. The server refused the request. Try again or open the
+// schedule's activity." No status code, method or path on screen (VERIFIER-23 #6 caught the toast
+// still reading "(500)") — the technical line is kept on the error (`technical`) for diagnostics.
 //
 // Two pieces, one per side of the wire:
 //   - `WriteRefusedError` — what a hand-rolled fetch client throws for a non-2xx answer. Its
@@ -93,9 +94,11 @@ function refusalSentence(status: number, serverMessage: string | null): string {
   if (status === 404) return said ?? "It is no longer there — it may have been deleted.";
   if (status === 409 || status === 412) return said ?? "It changed while you were working. Reload to see the latest.";
   // A 5xx body is the server's own failure text, not a sentence for a person.
-  if (status >= 500) return `The server refused (${status}).`;
+  // No status code, method or path on screen — that is a developer's log line, kept on
+  // `technical` for diagnostics only (GATES-TAIL, VERIFIER-23 #6: the toast still read "(500)").
+  if (status >= 500) return "The server refused the request.";
   if (said) return `The server said: ${said.replace(/\.?$/, ".")}`;
-  return `The server did not accept it (${status}).`;
+  return "The server did not accept it.";
 }
 
 export interface WriteFailureWords {
