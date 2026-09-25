@@ -88,7 +88,7 @@ describe("who-may-fill: only a system-homed job needs a system Holder", () => {
   it("an org-homed job held by its org's own agent is healthy", () => {
     const row = buildRow(
       mandate({
-        organization_id: "39c38960-d30c-4840-b0c1-c9960de95582",
+        organization_id: "7a1b2c3d-0000-4000-8000-00000000abcd",
         default_holder_id: ORG_AGENT,
         default_holder_version_id: null,
       }),
