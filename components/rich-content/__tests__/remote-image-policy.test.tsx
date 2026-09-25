@@ -6,7 +6,7 @@
  * At the inline and standard levels, the server level and the static share
  * leaf, a REMOTE image — markdown `![]()` or raw HTML `<img>` — renders a
  * click-to-load placeholder naming its host, never an <img> with that src.
- * Our own files, same-origin paths and data:image still draw. "Show image"
+ * Our own files and same-origin paths still draw. "Show image"
  * loads it on request (without a referrer).
  *
  * Use case: a crew lead's comment on the irrigation checklist pasting a
@@ -37,7 +37,7 @@ const COMMENT = [
   "",
   `Hidden: <img src="${TRACKER}" width="1" height="1">`,
   "",
-  `Ours inline: ![logo](${OURS}) and a tiny ![dot](${DATA}).`,
+  `Ours inline: ![logo](${OURS}) and a pasted ![dot](${DATA}).`,
   "",
   `![standalone supplier](${SUPPLIER})`,
 ].join("\n");
@@ -48,7 +48,8 @@ function expectAsked(html: string) {
   expect(html).toContain('data-rc-remote-image="supplier.example.com"');
   expect(html).toContain("Show image");
   expect(html).toContain(`src="${OURS}"`);
-  expect(html).toContain(`src="${DATA}"`);
+  // data: images are refused by the core's URL sanitizer (refused-image-url.test.tsx), never loaded.
+  expect(html).not.toMatch(/<img[^>]*src="data:/);
 }
 
 describe.each([

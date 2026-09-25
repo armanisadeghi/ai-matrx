@@ -37,10 +37,13 @@ describe.each([
   it("draws no <img> with an empty or unsafe src, and says so honestly", () => {
     const html = renderToStaticMarkup(make());
     expect(html).not.toMatch(/<img[^>]*src=""/);
-    expect(html).not.toMatch(/<img(?![^>]*src="https:)[^>]*>/);
+    expect(html).not.toMatch(/<img[^>]*src=""/);
     expect(html).not.toMatch(/src="(javascript|vbscript):/i);
     expect(html).toContain("Image not shown");
-    expect(html).toContain('src="https://example.com/bay3.jpg"');
+    // A remote photo on a shared page waits for a click (remote-image-policy.test.tsx);
+    // it is named, never dropped and never loaded unasked.
+    expect(html).not.toContain('src="https://example.com/bay3.jpg"');
+    expect(html).toContain('data-rc-remote-image="example.com"');
     expect(html).toContain("All pallets wrapped.");
   });
 });
