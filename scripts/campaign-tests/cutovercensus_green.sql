@@ -77,17 +77,25 @@ begin
 end;
 $$;
 
--- 2. WHAT IS EXCLUDED, on admin's Workspace's real tables (rolled back): an archived copy is not a
---    copy; an archived older table is not counted; the option lists the app keeps never count.
+-- 2. WHAT IS EXCLUDED, on the real tables of the organization holding the most copies here (rolled
+--    back; on the clone): an archived copy is not a copy; an archived older table is not counted; the
+--    option lists the app keeps never count.
 do $$
 declare
-  org constant uuid := '884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f';
+  org uuid;
   before jsonb; after jsonb; t uuid; t2 uuid;
 begin
-  before := platform.cutover_tables_copied(org);
-  if (before ->> 'app_kept')::int = 0 then
-    raise exception 'RED 2 setup: admin''s Workspace keeps no option lists here, so the exclusion cannot be shown';
+  select d.organization_id into org
+    from workbench.udt_datasets d
+   where d.deleted_at is null
+     and exists (select 1 from custom.record r where r.organization_id = d.organization_id and r.id = d.id and r.data_class = 'table' and r.deleted_at is null)
+     and exists (select 1 from custom.record k where k.organization_id = d.organization_id and k.data_class = 'table' and k.deleted_at is null
+                   and coalesce((k.data ->> 'kept_by_the_app')::boolean, false))
+   group by 1 having count(*) >= 1 order by count(*) desc limit 1;
+  if org is null then
+    raise exception 'RED 2 setup: no organization here holds a copied table beside an option list the app keeps, so the exclusion cannot be shown';
   end if;
+  before := platform.cutover_tables_copied(org);
   if (before ->> 'copied')::int > (before ->> 'older_live')::int then
     raise exception 'RED 2a: more copies (%) than older tables (%) — the option lists are being counted', before ->> 'copied', before ->> 'older_live';
   end if;
@@ -105,6 +113,7 @@ begin
 
   select d.id into t2 from workbench.udt_datasets d
    where d.organization_id = org and d.deleted_at is null and d.id <> t order by d.table_name limit 1;
+  perform set_config('app.actor_system', 'cutovercensus_green suite', true);
   perform workbench.udt_dataset_archive(t2, t2, 'cutovercensus_green: an archived older table is not counted (rolled back)');
   after := platform.cutover_tables_copied(org);
   if (after ->> 'older_live')::int <> (before ->> 'older_live')::int - 1 or (after ->> 'archived_older')::int <> (before ->> 'archived_older')::int + 1 then

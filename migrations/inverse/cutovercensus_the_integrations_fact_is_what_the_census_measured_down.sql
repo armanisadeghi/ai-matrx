@@ -23,3 +23,5 @@ update platform.cutover_seam s
 drop trigger if exists cutover_census_run_is_append_only on platform.cutover_census_run;
 drop table if exists platform.cutover_census_run;
 drop function if exists platform._cutover_census_run_is_append_only();
+delete from platform.client_callable_door
+ where schema_name = 'platform' and function_name = 'cutover_census_record';

@@ -81,7 +81,7 @@ export function TopRequestsTable({
     {
       id: "share",
       header: "Share",
-      accessorFn: (r) => r.share,
+      accessorFn: (r) => r.share * 100,
       filter: "number",
       width: 80,
       align: "right",

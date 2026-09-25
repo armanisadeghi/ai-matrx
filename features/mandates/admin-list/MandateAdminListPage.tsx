@@ -124,6 +124,7 @@ export function MandateAdminListPage() {
         }
         // `advance` opens its own confirm naming what moves (useImpactAdvance).
         await writes.advance(verdicts, `Mandate list: ${rows.length} selected`);
+        return { keepSelection: false };
       },
     },
   ];

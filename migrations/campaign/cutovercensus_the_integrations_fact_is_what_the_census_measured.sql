@@ -268,3 +268,16 @@ comment on function platform.cutover_census_record(text, text, jsonb) is
   'The one writer of a census-measured switch fact (platform.cutover_seam.prerequisites[*].measured_by = census): takes the census script''s rows, computes met (no open place, no unlisted file) and the sentence the owner reads, appends a platform.cutover_census_run row and writes the fact. Direct database connection only. Lane CUTOVER-CENSUS.';
 
 revoke all on function platform.cutover_census_record(text, text, jsonb) from public, anon, authenticated, service_role;
+
+-- The access decision, in data (provision_shape_guard): no client, signed in or not, ever calls it.
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,
+   non_client_lane, signed_in_callers, anonymous_callers)
+values
+  ('platform', 'cutover_census_record', 'p_seam text, p_key text, p_census jsonb',
+   array['text'::regtype, 'text'::regtype, 'jsonb'::regtype]::oid[],
+   'p_seam must name a live platform.cutover_seam and p_key one of its prerequisites marked measured_by=census; no entity-id argument; refused when auth.uid() is not null.',
+   'cutovercensus_the_integrations_fact_is_what_the_census_measured.sql',
+   'server_only: called only by matrx-frontend scripts/cutover-census/census.ts --record over a direct database connection as the database owner; EXECUTE is revoked from public, anon, authenticated and service_role, and a signed-in caller is refused inside.',
+   false, false)
+on conflict (schema_name, function_name, identity_argtypes) do nothing;
