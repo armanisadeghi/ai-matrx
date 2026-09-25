@@ -20,6 +20,7 @@
 //      silently dialed.
 
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import {
   applyPartyListPredicates,
@@ -53,6 +54,8 @@ import type { OutreachListKind } from "./types";
 // ── Error mapping (same contract as ../service.ts) ──────────────────────────
 
 function pgError(error: { message?: string; code?: string }): Error {
+  // A zero-row refusal already carries its sentence for a person — keep it typed.
+  if (error instanceof WriteDidNotLandError) return error;
   return new Error(
     error.message?.trim()
       ? `${error.message}${error.code ? ` (${error.code})` : ""}`
@@ -145,10 +148,14 @@ export async function updateOutreachList(
     "name" | "description" | "sending_identity_id"
   >,
 ): Promise<void> {
-  const { error } = await crm()
-    .from("outreach_list")
-    .update(patch)
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    crm()
+      .from("outreach_list")
+      .update(patch)
+      .eq("id", id)
+      .select("id"),
+    { action: "update", noun: "outreach list" },
+  );
   if (error) throw pgError(error);
 }
 
@@ -164,19 +171,27 @@ export async function setOutreachListStatus(
   if (status === "completed" || status === "archived") {
     patch.ended_at = list.ended_at ?? new Date().toISOString();
   }
-  const { error } = await crm()
-    .from("outreach_list")
-    .update(patch)
-    .eq("id", list.id);
+  const { error } = await tryWriteOne(
+    crm()
+      .from("outreach_list")
+      .update(patch)
+      .eq("id", list.id)
+      .select("id"),
+    { action: "update", noun: "outreach list" },
+  );
   if (error) throw pgError(error);
 }
 
 /** Soft-delete. Members stay (cascade is a hard-delete concern, not trash). */
 export async function deleteOutreachList(id: string): Promise<void> {
-  const { error } = await crm()
-    .from("outreach_list")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    crm()
+      .from("outreach_list")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "outreach list" },
+  );
   if (error) throw pgError(error);
 }
 
@@ -473,18 +488,22 @@ export async function recordEnrollmentSource(args: {
     query: args.query,
   };
 
-  const { error } = await crm()
-    .from("outreach_list")
-    .update({
-      definition: {
-        ...prior,
-        ...entry,
-        // Cap the trail: the last few enrollments answer the question; an
-        // unbounded array in a jsonb column read on every page load does not.
-        history: [...priorHistory, entry].slice(-10),
-      },
-    })
-    .eq("id", args.list.id);
+  const { error } = await tryWriteOne(
+    crm()
+      .from("outreach_list")
+      .update({
+        definition: {
+          ...prior,
+          ...entry,
+          // Cap the trail: the last few enrollments answer the question; an
+          // unbounded array in a jsonb column read on every page load does not.
+          history: [...priorHistory, entry].slice(-10),
+        },
+      })
+      .eq("id", args.list.id)
+      .select("id"),
+    { action: "update", noun: "outreach list" },
+  );
   // The members are already enrolled — a failed provenance stamp must not
   // undo that, but it is never swallowed.
   if (error) {
@@ -525,24 +544,32 @@ export function readEnrollmentSource(
 
 /** Remove a member from the outreach list (soft — the party is untouched). */
 export async function removeMember(memberId: string): Promise<void> {
-  const { error } = await crm()
-    .from("outreach_list_member")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", memberId);
+  const { error } = await tryWriteOne(
+    crm()
+      .from("outreach_list_member")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", memberId)
+      .select("id"),
+    { action: "remove", noun: "list member" },
+  );
   if (error) throw pgError(error);
 }
 
 /** Put a worked member back at the front of the queue. */
 export async function requeueMember(memberId: string): Promise<void> {
-  const { error } = await crm()
-    .from("outreach_list_member")
-    .update({
-      status: "queued",
-      next_attempt_at: null,
-      claimed_by: null,
-      claimed_until: null,
-    })
-    .eq("id", memberId);
+  const { error } = await tryWriteOne(
+    crm()
+      .from("outreach_list_member")
+      .update({
+        status: "queued",
+        next_attempt_at: null,
+        claimed_by: null,
+        claimed_until: null,
+      })
+      .eq("id", memberId)
+      .select("id"),
+    { action: "update", noun: "list member" },
+  );
   if (error) throw pgError(error);
 }
 
@@ -776,13 +803,17 @@ export async function dispositionCall(args: {
   //    party is flagged so no channel offers them again.
   if (args.disposition.suppresses) {
     if (args.target) {
-      const { error: mediumError } = await crm()
-        .from("contact_medium")
-        .update({
-          suppressed_at: nowIso,
-          suppression_reason: "dnc_request",
-        })
-        .eq("id", args.target.medium.id);
+      const { error: mediumError } = await tryWriteOne(
+        crm()
+          .from("contact_medium")
+          .update({
+            suppressed_at: nowIso,
+            suppression_reason: "dnc_request",
+          })
+          .eq("id", args.target.medium.id)
+          .select("id"),
+        { action: "update", noun: "contact number" },
+      );
       if (mediumError) throw pgError(mediumError);
     }
     await updateParty(args.member.party_id, {

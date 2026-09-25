@@ -17,6 +17,7 @@
 // a sales floor's work console, not a browse surface.
 
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import type { CrmQueryContext } from "../types";
 import type {
   DealDetail,
@@ -32,6 +33,8 @@ import type {
 import { DEAL_SORT_KEYS } from "./types";
 
 function pgError(error: { message?: string; code?: string }): Error {
+  // A zero-row refusal already carries its sentence for a person — keep it typed.
+  if (error instanceof WriteDidNotLandError) return error;
   return new Error(
     error.message?.trim()
       ? `${error.message}${error.code ? ` (${error.code})` : ""}`
@@ -298,7 +301,10 @@ export async function updateDeal(
   id: string,
   patch: DealUpdate,
 ): Promise<void> {
-  const { error } = await crm().from("deal").update(patch).eq("id", id);
+  const { error } = await tryWriteOne(
+    crm().from("deal").update(patch).eq("id", id).select("id"),
+    { action: "update", noun: "deal" },
+  );
   if (error) throw pgError(error);
 }
 
@@ -315,22 +321,33 @@ export async function moveDealToStage(args: {
 }): Promise<void> {
   const patch: DealUpdate = { stage_id: args.stageId };
   if (args.sortOrder !== undefined) patch.sort_order = args.sortOrder;
-  const { error } = await crm().from("deal").update(patch).eq("id", args.dealId);
+  const { error } = await tryWriteOne(
+    crm().from("deal").update(patch).eq("id", args.dealId).select("id"),
+    { action: "move", noun: "deal" },
+  );
   if (error) throw pgError(error);
 }
 
 export async function deleteDeal(id: string): Promise<void> {
-  const { error } = await crm()
-    .from("deal")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    crm()
+      .from("deal")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "deal" },
+  );
   if (error) throw pgError(error);
 }
 
 export async function restoreDeal(id: string): Promise<void> {
-  const { error } = await crm()
-    .from("deal")
-    .update({ deleted_at: null })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    crm()
+      .from("deal")
+      .update({ deleted_at: null })
+      .eq("id", id)
+      .select("id"),
+    { action: "restore", noun: "deal" },
+  );
   if (error) throw pgError(error);
 }

@@ -14,6 +14,7 @@
 //      indexes cannot be DEFERRABLE).
 
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { apiPost } from "@/lib/api/typed-client";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { associationsService } from "@/features/scopes/service/associationsService";
@@ -62,6 +63,8 @@ const CRM_PRIMARY_RECORD_CLASS = "contact";
 // ── Error mapping ───────────────────────────────────────────────────────────
 
 function pgError(error: { message?: string; code?: string }): Error {
+  // A zero-row refusal already carries its sentence for a person — keep it typed.
+  if (error instanceof WriteDidNotLandError) return error;
   return new Error(
     error.message?.trim()
       ? `${error.message}${error.code ? ` (${error.code})` : ""}`
@@ -527,11 +530,15 @@ export async function updateParty(
   id: string,
   patch: PartyUpdate,
 ): Promise<void> {
-  const { error } = await supabase
-    .schema("crm")
-    .from("party")
-    .update(patch)
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("crm")
+      .from("party")
+      .update(patch)
+      .eq("id", id)
+      .select("id"),
+    { action: "update", noun: "contact" },
+  );
   if (error) throw pgError(error);
 }
 
@@ -616,21 +623,29 @@ export async function fetchPartyExpertTopics(
 
 /** Soft-delete (trash). Real erasure is `crm_party_purge` — a separate act. */
 export async function deleteParty(id: string): Promise<void> {
-  const { error } = await supabase
-    .schema("crm")
-    .from("party")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("crm")
+      .from("party")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "contact" },
+  );
   if (error) throw pgError(error);
 }
 
 /** Undo a soft delete — the row returns to every active list. */
 export async function restoreParty(id: string): Promise<void> {
-  const { error } = await supabase
-    .schema("crm")
-    .from("party")
-    .update({ deleted_at: null })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("crm")
+      .from("party")
+      .update({ deleted_at: null })
+      .eq("id", id)
+      .select("id"),
+    { action: "restore", noun: "contact" },
+  );
   if (error) throw pgError(error);
 }
 
@@ -853,30 +868,34 @@ export async function unsuppressMedium(args: {
     : [];
   const now = new Date().toISOString();
 
-  const { error } = await supabase
-    .schema("crm")
-    .from("contact_medium")
-    .update({
-      suppressed_at: null,
-      suppression_reason: null,
-      suppression_expires_at: null,
-      details: {
-        ...details,
-        suppression_history: [
-          ...priorHistory,
-          {
-            action: "unsuppressed",
-            at: now,
-            by: args.userId,
-            from_party_id: args.partyId ?? null,
-            previous_suppressed_at: medium.suppressed_at,
-            previous_reason: medium.suppression_reason,
-            note: args.note?.trim() || null,
-          },
-        ],
-      },
-    })
-    .eq("id", args.mediumId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("crm")
+      .from("contact_medium")
+      .update({
+        suppressed_at: null,
+        suppression_reason: null,
+        suppression_expires_at: null,
+        details: {
+          ...details,
+          suppression_history: [
+            ...priorHistory,
+            {
+              action: "unsuppressed",
+              at: now,
+              by: args.userId,
+              from_party_id: args.partyId ?? null,
+              previous_suppressed_at: medium.suppressed_at,
+              previous_reason: medium.suppression_reason,
+              note: args.note?.trim() || null,
+            },
+          ],
+        },
+      })
+      .eq("id", args.mediumId)
+      .select("id"),
+    { action: "update", noun: "contact number" },
+  );
   if (error) throw pgError(error);
 
   const value = medium.display_value ?? medium.value_raw;
@@ -1203,11 +1222,15 @@ export async function setPrimaryContactPoint(id: string): Promise<void> {
 }
 
 export async function removeContactPoint(id: string): Promise<void> {
-  const { error } = await supabase
-    .schema("crm")
-    .from("party_contact_point")
-    .update({ deleted_at: new Date().toISOString(), is_primary: false })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("crm")
+      .from("party_contact_point")
+      .update({ deleted_at: new Date().toISOString(), is_primary: false })
+      .eq("id", id)
+      .select("id"),
+    { action: "remove", noun: "contact point" },
+  );
   if (error) throw pgError(error);
 }
 
@@ -1235,11 +1258,15 @@ export async function addAddress(
 }
 
 export async function removeAddress(id: string): Promise<void> {
-  const { error } = await supabase
-    .schema("crm")
-    .from("address")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("crm")
+      .from("address")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "remove", noun: "address" },
+  );
   if (error) throw pgError(error);
 }
 
@@ -1302,15 +1329,19 @@ export async function fetchCurrentEmploymentState(partyId: string): Promise<{
 
 /** "They left": end the stint — history stays, nothing is erased. */
 export async function endAffiliation(id: string): Promise<void> {
-  const { error } = await supabase
-    .schema("crm")
-    .from("affiliation")
-    .update({
-      is_current: false,
-      is_primary: false,
-      end_date: new Date().toISOString().slice(0, 10),
-    })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("crm")
+      .from("affiliation")
+      .update({
+        is_current: false,
+        is_primary: false,
+        end_date: new Date().toISOString().slice(0, 10),
+      })
+      .eq("id", id)
+      .select("id"),
+    { action: "update", noun: "employment record" },
+  );
   if (error) throw pgError(error);
 }
 
