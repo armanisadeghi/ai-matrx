@@ -13,11 +13,11 @@ description: "The rot sweep for handoff docs in matrx-frontend and aidream docs/
 
 # handoff-cleanup — kill the rot
 
-Handoffs rot: agents finish work and leave the novel behind; the codebase moves and the doc lies. This is the backstop sweep. Read `.claude/skills/handoffs/SKILL.md` first — it defines the format you groom toward.
+Handoffs rot: agents finish work and leave the novel behind; the codebase moves and the doc lies. This is the backstop sweep. Read `.claude/skills/handoffs/SKILL.md` first — it defines the format you groom toward: Vision (Arman's confirmed words), Where it stands (≤5 one-line bullets), Future (everything open, in detail), Resources. **Your main job is cutting the past**: history, changelogs, dated update blocks and done-work descriptions go; open work and known weaknesses stay.
 
 ## Scope
 
-- Sweep BOTH `/Users/armanisadeghi/code/matrx-frontend/docs/handoffs/` and `/Users/armanisadeghi/code/aidream/docs/handoffs/`.
+- Sweep every repo's `docs/handoffs/` under `/Users/armanisadeghi/code/` and every `HANDOFF.md` under `common-docs/systems/`.
 - Default: every doc, oldest `updated:`/mtime first. Args may name files or cap the batch.
 
 ## Per-doc verification — small parallel subagents
@@ -32,9 +32,9 @@ One Explore agent per doc (batch 3–4 docs per agent when they're small). Each 
 
 | Verdict | Action |
 |---|---|
-| **DONE** — all remaining work shipped | Delete the file; add a dated one-liner to the feature's `FEATURE.md` Change Log if missing. |
-| **ACTIVE, rotted** — real work remains; doc is bloated or stale | Rewrite to the handoffs format: identity block first, done work → one bullet each, stale claims corrected, vision quotes preserved **verbatim**. If the leftover is one focused session, apply the **tail law** (collapse the doc, `scope: tail`, move the orphan-list row to Tails). |
-| **VISION MISSING** — no Arman words, only paraphrase or a checklist | Do not invent a vision. Put `VISION MISSING` in the identity block and in orphan-list Notes. Add writing the vision to Decisions needed. |
+| **DONE** — only known weaknesses remain | The feature's `FEATURE.md`/`STATE.md` status line becomes "X is built and in production"; move every weakness into its **Known weaknesses** list; delete the handoff and its register row. No change-log line. |
+| **ACTIVE, rotted** — real work remains; doc is bloated or stale | Rewrite to the four sections. Cut every past-tense paragraph, date narrative, changelog and done-work description down to ≤5 one-line "Where it stands" bullets. Correct stale claims. Keep vision quotes **verbatim**, but only ones Arman said directly or his own documents hold: a quote copied from another agent's doc is dropped. |
+| **VISION MISSING** — no confirmed Arman words, only paraphrase or a checklist | Do not invent a vision. Write `VISION MISSING` in the Vision section and in the register row. Add writing the vision to Future as a decision for Arman. |
 | **DRIFT, intentional** — code contradicts the doc because Arman changed direction (evidence: newer vision doc, his explicit decision, an answered question) | Delete every claim describing the old way. The doc states current intent only. |
 | **DRIFT, unclear** — code and vision disagree and you cannot tell whether it was a decision or an agent screwup | Touch nothing contested; add it to the decision list. |
 
@@ -53,19 +53,16 @@ The sweep is its ONLY automated maintainer. It may:
 
 - **Remove a row whose handoff file no longer exists** (including ones you deleted this sweep).
 - **Fix a broken link/path** in an existing row.
-- **Move a row** among Domains, Features, Sub-features, Programs, and Tails when its complete-node
-  level or work shape changed this sweep (including the tail law). Moving is not deleting.
+- **Merge the register's older five tables (Domains, Features, Sub-features, Programs, Tails) into
+  its one list** — `| [Name](link) | repos · date · one sentence |` — keeping every row. Merging is
+  not deleting.
 
 **Never add a row, and never remove one because the work looks stale or someone might be on it** —
 ownership is not knowable from the files, and a wrongly-removed row silently loses the work.
-Report any handoff you suspect is orphaned-but-unlisted as a decision line instead. Notes is one
+Report any handoff you suspect is orphaned-but-unlisted as a decision line instead. The note is one
 sentence (and `VISION MISSING` when that is true). Extra status columns stay banned.
 
 ## Mirror check
 
-Finish by running `python3 /Users/armanisadeghi/code/common-docs/meta/scripts/sync_skills.py --check` — it verifies the synced copies (`handoffs`, `handoff-cleanup`) in every consuming repo (matrx-frontend, aidream) are byte-identical to the canonical bodies here; re-run without `--check` and commit each repo if drifted.
+Finish by running `python3 /Users/armanisadeghi/code/common-docs/meta/scripts/sync_skills.py --check` — it verifies the synced copies (`handoffs`, `handoff-cleanup`) in every consuming repo are byte-identical to the canonical bodies here; re-run without `--check` and commit each repo if drifted.
 
-## Changelog
-
-- 2026-08-25 — Orphan-list reconciliation now recognizes Domain, Feature, Sub-feature,
-  Program, and Tail tables.

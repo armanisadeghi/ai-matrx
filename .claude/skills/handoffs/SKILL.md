@@ -11,154 +11,100 @@ description: "The handoff-document system for docs/handoffs/*.md and node HANDOF
      common-docs/meta/scripts/sync_skills.py. Edit the canonical, run the
      sync, and commit each repo. Edits made here are overwritten and lost. -->
 
-# Handoffs — forward-looking work orders, not history
+# Handoffs — the future, never the past
 
-A handoff exists so a fresh agent can start producing in minutes: a work order + resource map, grounded in Arman's vision. It is **not** a record of what you did — git and `FEATURE.md` hold history. **A handoff with no remaining work gets deleted, not archived.**
+A handoff exists so someone else can take the work over in minutes. It holds three things: **Arman's confirmed vision**, **everything still open**, and **almost nothing about the past**.
 
-## The identity block — required, first, every handoff
+Its goal is to delete itself. The end state of any feature is one line in its docs, *"X is built and in production"*, plus a list of known weaknesses. A handoff that grows is failing. A handoff that turns into a history document is the defect this skill exists to prevent (Arman, 2026-09-24: *"We have change-logs and bullshit that just destroys us! Who cares about the past and where we were and what we did. Where are we now?"*).
 
-The first lines after the title, before remaining work, before Done, before anything else:
-
-```markdown
-**What this is:** one sentence. The job in human words.
-**Scope:** Domain | Feature | Sub-feature | Program | Tail
-**Feature:** the owning Feature name (a Domain names itself; a Program and a Tail name their owning Feature)
-**Vision:** link to Arman's words, or `VISION MISSING`
-**Seen from his seat:** where the user goes and what he does to meet this work — the sentence a successor verifies first, before the register
-```
-
-- **What this is** is the key. A reader who does not already know the feature must understand it from that sentence. A checklist with no identity is a defect (Voice Communication Layer, 2026-08-19).
-- **VISION MISSING** is loud and legal. Do not paraphrase Arman into a vision. Do not invent one from an interview summary. An inferred paragraph is not a vision. If he has not written it, say so at the top and in the orphan-list Notes. The work may still be listed; it may not pretend to have his words.
-- Frontmatter `vision:` holds the links. Empty `vision: []` means VISION MISSING. Frontmatter
-  `scope:` is `domain` | `feature` | `subfeature` | `program` | `tail`. Frontmatter `feature:`
-  is the owning Feature name; for a Domain row it carries the Domain name.
-
-## Where they live (re-ruled by Arman, 2026-08-20)
-
-- **Cross-repo work** (the remaining work touches 2+ repos): `HANDOFF.md` in the owning
-  registry node's home in common-docs (per `policies/feature-registry.md` — the node doc kit).
-  ONE doc — never twins. Frontmatter `repos:` lists every repo involved; cross-repo file
-  references use absolute paths.
-- **Single-repo work**: `docs/handoffs/<topic>.md` (kebab-case) in the owning repo.
-- Handoffs written under the old rule sit wherever they sit until the doc-migration board
-  (common-docs `operations/doc-migration.md`) rehomes them — follow the register's links, and
-  rehome-on-touch when you groom one.
-- Unowned handoffs are listed in the cross-repo orphan list — see The orphan list.
-- **This doctrine is cross-repo and canonical in `common-docs/skills/handoffs/SKILL.md`.** Every repo carries a real synced copy (see the banner at the top of this file) so it works in a one-repo sandbox. Edit the canonical, run `python3 common-docs/meta/scripts/sync_skills.py`, commit each repo — never edit a copy.
-- **The orphan register is NOT a handoff and does not live in a repo** — `common-docs/operations/unassigned-handoffs.md`. See The orphan list below.
-
-## Format
+## Format — four sections, in this order
 
 ```markdown
 ---
-type: Handoff             # REQUIRED by okf_lint (§9.2) — a handoff without it FAILS the
-                          # shared gate for every session, not just yours
-status: active            # active | blocked (blocked = waiting ONLY on Arman's answers)
-updated: 2026-07-07
-repos: [matrx-frontend]   # every repo the remaining work touches
-scope: feature            # domain | feature | subfeature | program | tail
-feature: Workflow Runtime # owning Feature; a Domain row carries the Domain name
-vision: [docs/.../VISION-x.md]   # Arman's own docs — empty [] means VISION MISSING
+type: Handoff             # REQUIRED by okf_lint
+title: "<name> — handoff"
+description: "<one sentence>"
+status: active            # active | blocked (blocked = waiting ONLY on Arman)
+updated: 2026-09-24
+repos: [matrx-frontend]   # every repo the open work touches
+scope: feature            # domain | feature | subfeature | program
+feature: <owning Feature name>
+vision: []                # links to Arman's own documents, if any exist
 ---
+
+# <Name> — handoff
+
+**What this is:** one sentence a stranger understands.
+**Seen from his seat:** where Arman goes and what he does to meet this work.
+
+## Vision — Arman's words
+## Where it stands
+## Future — everything still open
+## Resources
 ```
 
-Sections, in this order (omit empty ones):
+**1. Vision — Arman's words, confirmed.** Big-picture things Arman himself said he wants the system to do, **quoted exactly**.
+- Only words he said to you directly, or that his own document (`authority: owner`) holds. Never carry a quote over from another agent's doc: an agent-recorded "Arman said" line is how untrue things spread.
+- Never paraphrase him into agent-speak.
+- No confirmed words → write `VISION MISSING` here and nothing else. An inferred paragraph is not a vision.
 
-1. **Identity block** (above). Required. Then **Vision — Arman's words** when they exist: verbatim quotes + links. Mark anything you inferred with `(inferred)`. **Never paraphrase Arman into agent-speak — the distilled agent version is exactly what drifts.** If the words do not exist, the identity block already said VISION MISSING; do not write a substitute paragraph.
-2. **Resources.** Everything that spares the next agent a discovery pass: key files, the `FEATURE.md`, skills to invoke, RPCs/tables, test routes + how to log in, demo pages. Pointers, not explanations.
-3. **Remaining work.** Each item independently actionable: what, where (file paths), known traps. Ordered by priority — no priorities disguised as prose.
-4. **Done.** One bullet per completed area, ≤1 line, pointing at the code: `- RAG pipeline built — see services/rag/`. Nothing else.
-5. **Decisions needed.** Escalation format below.
+**2. Where it stands — five one-line bullets, at most.** Present tense, what exists now: `- RAG pipeline built — see services/rag/`.
+- No dates, no "we then…", no session narrative, no counts of agents or commits, no change log.
+- Nine pages of work become one bullet.
 
-## The tail law — almost-done work does not occupy a complete-node row
+**3. Future — everything still open, in detail.** This is the heart of the doc and the only section allowed to be long. Numbered by priority. Each item is independently actionable: what, where (file paths), the trap, what "done" looks like. It holds:
+- pending work and upcoming tasks
+- **known weaknesses** (bugs, risks, unproven claims, fragile spots) — worth their weight in gold
+- things that must not be left behind or forgotten
+- decisions only Arman can make, each self-contained (see Escalating below)
 
-When a registry node or Program is shipped except a leftover that **one focused session** can
-finish (plus any blocking ruling):
+**4. Resources.** Pointers that spare a discovery pass: key files, guards and how to run them, logs, skills, test login. Pointers, not explanations.
 
-1. **Collapse the handoff.** Delete the novel. Keep only the identity block, the leftover items, and any Decision. Done work already lives in `FEATURE.md` — point at it, do not restate it. (Configuration Equivalence, 2026-08-19: 58 lines of shipped history sitting on the staffing list.)
-2. **Set `scope: tail`.** The owning `feature:` stays.
-3. **Move the orphan-list row** from Domains, Features, Sub-features, or Programs to **Tails**.
-   A Tail is a knock-off: Arman can see it is almost done and staff it as a short job. It is not
-   "staff the entire node."
-4. If the leftover is a single task on a feature that already has a master handoff, attach it there instead and delete this file — same rule as any other task.
+**Banned everywhere:** chronology, changelogs, "Update 2026-…:" blocks, session narratives, self-praise, restating what `FEATURE.md` or the code already says.
 
-A complete-node row that is 90% Done is a defect in the register. Grooming that does not collapse
-a tail has failed.
+## Where they live
 
-**Banned everywhere:** chronology, session narratives, subagent/effort counts, "we then…", self-praise, restating `FEATURE.md` content (point to it instead).
+- **Cross-repo work** (2+ repos): `HANDOFF.md` in the owning registry node's home in common-docs (`systems/<domain>/<feature>/`). One doc, never twins. Cross-repo paths are absolute.
+- **Single-repo work**: `docs/handoffs/<topic>.md` in the owning repo.
+- This skill is canonical in `common-docs/skills/handoffs/SKILL.md`. Every repo carries a synced copy. Edit the canonical, run `python3 common-docs/meta/scripts/sync_skills.py`, commit each repo.
 
-## The orphan list — `/Users/armanisadeghi/code/common-docs/operations/unassigned-handoffs.md`
+## Rewrite every turn — the doc only shrinks
 
-Five tables, one meaning: **every row is a handoff with no owner.** It is how Arman decides what to
-staff next, so it stays short and true. The tables are about **developer scope**, not directories:
+Any turn that moved the work ends with a **rewrite** of the handoff, never an append:
+- A finished Future item **leaves Future**. At most it becomes one bullet in Where it stands, and only if that bullet is not already there.
+- New knowledge goes into the item it changes. The doc is always the current state, in one voice.
+- Target ≤150 lines. If it grew after progress, you appended.
+- Refresh `updated:` and `status:`.
 
-- **Domain** — the developer owns the entire registry Domain.
-- **Feature** — the developer owns the entire registry Feature.
-- **Sub-feature** — the developer owns one complete registry Sub-feature.
-- **Program** — the developer owns a limited scope (one part of a registry node, or work that
-  spans several nodes). Not a `projects/` folder.
-- **Tail** — the owning node (or Program) is shipped except a leftover one focused session can finish.
-  Knock-off work. Visible so it gets done; not a Feature row.
+## Finishing — the success state is deletion
 
-Domain → Feature → Sub-feature is the permanent registry hierarchy. Program and Tail are
-work shapes, not extra taxonomy levels.
+When Future holds nothing but known weaknesses:
+1. In the feature's `FEATURE.md` (or its `STATE.md` in common-docs), the status line becomes **"X is built and in production."**
+2. Every remaining weakness moves into that doc's **Known weaknesses** list. Weaknesses are never deleted with the handoff.
+3. Delete the handoff (git keeps history) and remove its row from the register.
 
-A **task** (one remaining item on a registry node that already has a master handoff) does not get
-a row. Attach it on that node's handoff. Do not name a slice as if it were the complete node.
+No change-log line, no summary of what was built, no archive copy.
 
-If `vision:` is empty, Notes must include `VISION MISSING`.
+## The register of handoffs no one is working on
 
-**The name is the link.** File a row as `[Name](path)`, never a bare backtick path. common-docs
-files use a path relative to the register (`../projects/…`, `../systems/…`) so the click opens
-in the editor. A leading `/projects/` or `/systems/` is an OKF path — Cursor looks under the
-workspace root and offers to create a file that already exists. Every other repo uses
-`/Users/armanisadeghi/code/<repo>/…`.
-
-- **Taking a handoff over → DELETE its row first**, before reading the doc or touching code
-  (step 1 below). Assigned ≠ orphaned.
-- **Writing a new handoff, or grooming one that still has remaining work and nobody continuing
-  it → ADD its row in the same commit.** A new handoff IS an orphan the moment it exists. File
-  a complete-node handoff under its exact Domain, Feature, or Sub-feature level; otherwise file
-  it as a Program or Tail by scope. A task attaches to the owning node instead.
-- **No statuses, no essays, no history in that file** — a row's existence is the status. Notes
-  is repo + date + one sentence. Anything that needs explaining belongs inside the handoff.
-  Rows leave only two ways: someone took the work, or the handoff itself was deleted as finished.
+`/Users/armanisadeghi/code/common-docs/operations/unassigned-handoffs.md` is how Arman decides what to staff next. It stays short and true.
+- **One row per handoff nobody is working on:** `| [Name](link) | repos · date · one sentence about what is open |`. The name is the link: a path relative to the register for common-docs files, an absolute `/Users/armanisadeghi/code/<repo>/…` path otherwise.
+- A new handoff, or one handed back with work left → **add its row** in the same commit.
+- **Taking one over → delete its row first**, before reading the doc.
+- A deleted handoff → delete its row.
+- No statuses, no essays, no extra columns. A row's existence is the status.
+- The register's older five-table layout (Domain / Feature / Sub-feature / Program / Tail) is being merged into this one list. `handoff-cleanup` merges it on its next sweep; until then, add new rows to the table that fits.
 
 ## Taking one over
 
-0. **Delete your row from the orphan list** (`/Users/armanisadeghi/code/common-docs/operations/unassigned-handoffs.md`, committed in the common-docs repo) — first action of the turn. You are the owner now.
-1. **Vision first.** Read every `vision:` link before touching code. Arman's docs outrank the handoff's summary of them. If the identity block says VISION MISSING, do not invent one — work only what the remaining-work list already names, and put writing the vision on Decisions needed.
-2. **Trust nothing dated.** The codebase moves daily. Fan out small parallel Explore subagents to verify each load-bearing claim — files exist? RPC live? still wired? **A comment in code is not a fact**; agents write wrong comments. Verify behavior and artifacts, not prose.
-3. Plan, then execute in a loop — build, adversarially verify, fix — until done or blocked on a genuine Arman-decision (one with no best-practice answer). The handoff already authorizes the work; don't stop to ask permission for it.
-4. Groom before the turn ends (below).
-
-## Groom before ending EVERY turn — non-negotiable
-
-Any turn that progressed work covered by a handoff ends with a rewrite of that handoff:
-
-- **A completed task's entire description collapses to one Done bullet.** 8,000 words of pipeline spec, 4 hours, 15 subagents → `- RAG pipeline built — see services/rag/`. Readers who need detail read the code.
-- **Rewrite, never append.** No "Update 2026-07-07:" blocks. The doc is always the current state, one voice.
-- **The doc shrinks as work completes.** Target ≤150 lines. If it grew after progress, you appended instead of grooming.
-- **Almost done → apply the tail law.** Collapse the doc to the leftover, set `scope: tail`, move the orphan-list row to Tails. Do not leave a Feature row for a knock-off.
-- **Identity block stays true.** If you still cannot say what this is in one sentence, or the vision is still a paraphrase, fix that before you hand the doc back.
-- **Everything done → delete the file** (git keeps history) + one dated line in the affected `FEATURE.md` Change Log + **remove its row from the orphan list**. Deleting is the success state — do not ask permission.
-- **Work remains and nobody is continuing it → its row goes in the orphan list** (add it if absent; if you took it over this turn you deleted the row at step 0, so put it back). Handing work back is what makes it an orphan again.
-- Refresh `updated:` and `status:`.
+1. Delete the register row.
+2. **Vision first.** Read the Vision quotes and every `vision:` link. `VISION MISSING` → work only what Future already names, and put writing the vision on Future as a decision for Arman.
+3. **Trust nothing dated.** The codebase moves daily. Verify each load-bearing claim against code, the database and live behaviour, not prose. A code comment or a doc's "verified ✓" is not evidence.
+4. Work the Future list in a loop (build, verify adversarially, fix) until it is empty or blocked on a real Arman decision. The handoff already authorizes the work.
+5. Rewrite before the turn ends.
 
 ## Escalating decisions to Arman
 
-Arman juggles 15 projects; a question must be answerable cold:
+A question in Future must be answerable cold: **Situation** (2–3 plain sentences of fact) → **Decide** (the concrete choice, your recommendation, and why). No doc-internal references or shorthand. Only questions with no best-practice answer; where one exists, apply it.
 
-- **Never** reference doc-internal numbering ("as noted in 3b…") or shorthand he'd have to look up.
-- Per question: **Situation** (2–3 plain sentences of fact) → **Decide** (the concrete choice, with options). Fully self-contained.
-- Only questions with no best-practice answer. Where a best practice exists, apply it and record the choice as a Done bullet.
-
-## Rot control
-
-`/handoff-cleanup` (its own skill) periodically sweeps both repos' handoff dirs, verifies claims against reality, deletes done docs, and escalates unclear drift. It is the backstop — per-turn grooming is still your job.
-
-## Changelog
-- 2026-09-16 — Identity block gains **Seen from his seat**: a successor starts from the user's path, not the register ([reality is the referee](/policies/reality-is-the-referee.md)).
-
-- 2026-08-25 — The orphan register now lists complete-node ownership at all registry levels
-  (Domain, Feature, Sub-feature), plus Program and Tail work shapes.
+Rot control: `/handoff-cleanup` sweeps every handoff with the same rules. Per-turn rewriting is still your job.
