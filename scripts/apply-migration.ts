@@ -240,6 +240,16 @@ import {
 } from "./lib/ledger-snapshot.mjs";
 import { basedOnCheck, findReplaceOccurrences, type Query } from "./migration-based-on";
 import { RevokeOrderRefusal, revokeOrderFindings } from "./migration-revoke-order";
+import {
+  IDLE_IN_TRANSACTION_CEILING,
+  LOCK_RETRY_ATTEMPTS,
+  TRANSACTION_TIMEOUT_MIN_SERVER_VERSION_NUM,
+  backoffSeconds,
+  isLockTimeout,
+  overrideSentence,
+  parseDurationMs,
+  timeoutOverrideFindings,
+} from "./lib/migration-lock-policy";
 import { judgeTexts as judgeKernelPairing } from "./check-kernel-rerecord-pairing";
 import { judgeOneInverse } from "./check-inverses-leave-the-ground-standing";
 
@@ -1738,12 +1748,41 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       );
     }
 
+    // 🚨 A FILE MAY NOT RAISE ITS OWN LOCK WAIT (lane LOCK-QUEUE, 2026-09-25). Its own
+    // `set lock_timeout = '30s'` beats the 2s below, and while that DDL waits for its lock every
+    // later reader of the table waits behind it — auth.users at 06:50 UTC, iam.permissions at
+    // 13:26 UTC that day. Refused before a byte runs, by file and line.
+    // See scripts/lib/migration-lock-policy.ts.
+    const statementCeilingMs = parseDurationMs(statementTimeout) || Number.POSITIVE_INFINITY;
+    const overrides = timeoutOverrideFindings(sql, statementCeilingMs);
+    if (overrides.length) {
+      console.error(
+        `${TAG.fail}${filename} raises its own lock wait or statement ceiling past this runner's. ` +
+          `While a DDL waits for a lock, every later reader of that table waits behind it (the lock ` +
+          `queue is FIFO). Nothing was applied, no ledger row was written.`,
+      );
+      for (const f of overrides) console.error(`  ${C.red}- ${overrideSentence(filename, f)}${C.reset}`);
+      return 1;
+    }
+    // THE TRANSACTION CEILING: on Postgres 17+ the whole transaction — and so every lock the
+    // file holds — is bounded at the statement ceiling. Older servers do not know the setting.
+    const serverVersionNum = Number(
+      (await client.query<{ v: string }>(`select current_setting('server_version_num') as v`)).rows[0]?.v ?? 0,
+    );
+    const transactionCeiling =
+      serverVersionNum >= TRANSACTION_TIMEOUT_MIN_SERVER_VERSION_NUM &&
+      statementCeilingMs !== Number.POSITIVE_INFINITY
+        ? `set local transaction_timeout = '${statementTimeout}';\n`
+        : ``;
+
     // The prologue and the ledger upsert are their own statements so the FILE is
     // a payload of exactly its own bytes — which is what makes a Postgres error
     // `position` point at a line in the file.
     const prologue =
       `set local lock_timeout = '${LOCK_TIMEOUT}';\n` +
       `set local statement_timeout = '${statementTimeout}';\n` +
+      `set local idle_in_transaction_session_timeout = '${IDLE_IN_TRANSACTION_CEILING}';\n` +
+      transactionCeiling +
       `select set_config('matrx.db_apply_t0', clock_timestamp()::text, true);`;
     // A CONFIRMED CHAIR STEP IS LOGGED TO THE LEDGER (ATTACK-6 finding 4). The
     // column is added idempotently on the one path that writes it, so the record of
@@ -1917,24 +1956,42 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
 
     const t0 = Date.now();
     try {
-      await beginClean(client);
-      await client.query(prologue);
-      await client.query(sql);
-      // CLOSE THE ROW FIRST, THEN REVOKE (STORE-TXN-3's class, lane ARGS-RULED-2). Read the END
-      // state of every door this file revokes, inside the transaction, before anything commits:
-      // a REVOKE that platform.reopen_declared_doors undid, or one that left grant and register
-      // disagreeing, rolls the whole file back. See scripts/migration-revoke-order.ts.
-      const revokeFindings = await revokeOrderFindings(
-        async (text, params) =>
-          (await client.query(text, (params ?? []) as never[])).rows as Record<string, unknown>[],
-        sql,
-      );
-      if (revokeFindings.length) throw new RevokeOrderRefusal(filename, revokeFindings);
-      const attrNow = await attributionColumnsPresent(attrQ);
-      attrMissing = attrNow.missing;
-      ledgerUpsert = buildLedgerUpsert(attrNow.present ? attrParts : null);
-      await client.query(ledgerUpsert);
-      await client.query("commit");
+      // LOCK TIMEOUT → BOUNDED, JITTERED RETRY (lane LOCK-QUEUE, 2026-09-25). Each attempt waits at
+      // most LOCK_TIMEOUT for any lock, so readers queued behind it wait seconds, and the gap between
+      // attempts lets that queue drain. Always safe here: this runner refuses a file carrying its own
+      // transaction control, so a lock timeout rolls the WHOLE attempt back.
+      for (let attempt = 1; ; attempt += 1) {
+        try {
+          await beginClean(client);
+          await client.query(prologue);
+          await client.query(sql);
+          // CLOSE THE ROW FIRST, THEN REVOKE (STORE-TXN-3's class, lane ARGS-RULED-2). Read the END
+          // state of every door this file revokes, inside the transaction, before anything commits:
+          // a REVOKE that platform.reopen_declared_doors undid, or one that left grant and register
+          // disagreeing, rolls the whole file back. See scripts/migration-revoke-order.ts.
+          const revokeFindings = await revokeOrderFindings(
+            async (text, params) =>
+              (await client.query(text, (params ?? []) as never[])).rows as Record<string, unknown>[],
+            sql,
+          );
+          if (revokeFindings.length) throw new RevokeOrderRefusal(filename, revokeFindings);
+          const attrNow = await attributionColumnsPresent(attrQ);
+          attrMissing = attrNow.missing;
+          ledgerUpsert = buildLedgerUpsert(attrNow.present ? attrParts : null);
+          await client.query(ledgerUpsert);
+          await client.query("commit");
+          break;
+        } catch (err) {
+          if (!isLockTimeout(err) || attempt >= LOCK_RETRY_ATTEMPTS) throw err;
+          await client.query("rollback").catch(() => undefined);
+          const wait = backoffSeconds(attempt);
+          console.warn(
+            `${TAG.warn}${filename}: a lock wait hit ${LOCK_TIMEOUT} (attempt ${attempt}/${LOCK_RETRY_ATTEMPTS}, ` +
+              `rolled back whole) — retrying in ${wait.toFixed(1)}s so queued readers drain`,
+          );
+          await new Promise((r) => setTimeout(r, wait * 1000));
+        }
+      }
     } catch (err) {
       await heartbeats.stop();
       await client.query("rollback").catch(() => undefined);
