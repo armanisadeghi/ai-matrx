@@ -38,11 +38,6 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import {
-  fetchScopeTypes,
-  selectScopeTypesByOrg,
-  selectScopeTypesLoadedForOrg,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import {
   listScopeTypeItems,
   listSystemContextItems,
   selectItemsByType,
@@ -73,6 +68,11 @@ import {
   type AgentEditAccess,
 } from "@/features/agents/utils/agent-edit-access";
 import { contextItemBindingOf } from "@/features/agents/utils/variable-binding";
+import {
+  selectScopeTypesByOrg,
+  selectScopeTypesLoadedForOrg,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
 interface ScopeBatchImportBodyProps {
   agentId: string;
@@ -130,7 +130,7 @@ export function ScopeBatchImportBody({
   const items = useAppSelector((s) => selectItemsByType(s, itemsKey));
 
   useEffect(() => {
-    if (!isSystem && orgId && !typesLoaded) dispatch(fetchScopeTypes(orgId));
+    if (!isSystem && orgId && !typesLoaded) dispatch(ensureScopeTree());
   }, [isSystem, orgId, typesLoaded, dispatch]);
 
   useEffect(() => {

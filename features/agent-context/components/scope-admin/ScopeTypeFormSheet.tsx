@@ -3,11 +3,6 @@
 import { useState, useEffect } from "react";
 import { Loader2, X } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import {
-  createScopeType,
-  updateScopeType,
-} from "../../redux/scope/scopeTypesSlice";
-import type { ScopeType } from "../../redux/scope/types";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -24,6 +19,13 @@ import IconInputWithValidation from "@/components/official/icons/IconInputWithVa
 import { TailwindColorPicker } from "@/components/ui/TailwindColorPicker";
 import { toSlug } from "@/features/scopes/utils/slugify";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import type { ScopeTypeNode as ScopeType } from "@/features/scopes/types";
+import {
+  createScopeType,
+  updateScopeType,
+} from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import { unwrapScopesRpc } from "@/features/scopes/types";
+import { toast } from "@/lib/toast";
 
 interface ScopeTypeFormSheetProps {
   open: boolean;
@@ -128,7 +130,7 @@ export function ScopeTypeFormSheet({
               : undefined,
             slug: editingType.slug ?? toSlug(labelPlural),
           }),
-        );
+        ).then(unwrapScopesRpc);
       } else {
         await dispatch(
           createScopeType({
@@ -146,9 +148,11 @@ export function ScopeTypeFormSheet({
             default_variable_keys: variableKeys,
             slug: toSlug(labelPlural),
           }),
-        );
+        ).then(unwrapScopesRpc);
       }
       onOpenChange(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save");
     } finally {
       setSaving(false);
     }

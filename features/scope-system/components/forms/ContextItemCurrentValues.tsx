@@ -4,17 +4,17 @@ import { useEffect, useMemo } from "react";
 import { Layers, Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  fetchScopes,
-  selectScopesByType,
-  selectScopesLoadedForType,
-} from "@/features/agent-context/redux/scope/scopesSlice";
-import {
   getScopeContext,
   selectValuesByScope,
   type ScopeContextRow,
 } from "@/features/scope-system/redux/scopeValuesSlice";
 import { ContextValueDisplay } from "@/features/scopes/components/reference/ContextValueDisplay";
 import type { Json } from "@/types/database.types";
+import {
+  selectScopesByType,
+  selectScopesLoadedForType,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
 interface ContextItemCurrentValuesProps {
   /** The context item whose per-scope values to preview. */
@@ -48,7 +48,7 @@ export function ContextItemCurrentValues({
   );
 
   useEffect(() => {
-    dispatch(fetchScopes({ org_id: orgId, type_id: scopeTypeId }));
+    dispatch(ensureScopeTree());
   }, [dispatch, orgId, scopeTypeId]);
 
   // Warm each scope's context once. getScopeContext replaces the cached rows in

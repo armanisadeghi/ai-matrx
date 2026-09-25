@@ -6,11 +6,6 @@ import Link from "next/link";
 import { ArrowUpRight, Layers, ListChecks, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  fetchScopeTypes,
-  selectScopeTypeBySlugOrId,
-  selectScopeTypesLoadedForOrg,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import { ScopeTypeSettingsForm } from "./forms/ScopeTypeSettingsForm";
 import { DictionarySection } from "@/features/dictionary/components/DictionarySection";
 import { ScopeNotFound } from "./ScopeNotFound";
@@ -24,6 +19,11 @@ import {
   orgScopesHref,
   scopeTypeHref,
 } from "@/features/scopes/lib/scopeRoutes";
+import {
+  selectScopeTypeBySlugOrId,
+  selectScopeTypesLoadedForOrg,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
 interface ScopeTypeEditViewProps {
   orgId: string;
@@ -58,7 +58,7 @@ export function ScopeTypeEditView({
   );
 
   useEffect(() => {
-    dispatch(fetchScopeTypes(orgId));
+    dispatch(ensureScopeTree());
   }, [dispatch, orgId]);
 
   if (!scopeType) {

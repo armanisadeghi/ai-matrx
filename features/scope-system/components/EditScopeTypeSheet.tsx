@@ -22,12 +22,6 @@ import { ScopeColorPicker } from "@/features/scopes/components/management/ScopeC
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  updateScopeType,
-  deleteScopeType,
-  selectScopeTypeById,
-  fetchScopeTypes,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import {
   listScopeTypeItems,
   createContextItem,
   updateContextItem,
@@ -37,6 +31,15 @@ import {
 import { slugifyKey, toSlug } from "@/features/scopes/utils/slugify";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { EditContextItemSheet } from "./EditContextItemSheet";
+import {
+  selectScopeTypeById,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import {
+  deleteScopeType,
+  updateScopeType,
+} from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 interface EditScopeTypeSheetProps {
   open: boolean;
@@ -240,7 +243,7 @@ export function EditScopeTypeSheet({
               ? parseInt(maxAssignments, 10)
               : undefined,
           }),
-        ).unwrap();
+        ).then(unwrapScopesRpc);
       }
 
       // Context items: delete, rename, create
@@ -271,7 +274,7 @@ export function EditScopeTypeSheet({
       }
 
       dispatch(listScopeTypeItems(scopeType.id));
-      dispatch(fetchScopeTypes(orgId));
+      dispatch(ensureScopeTree());
 
       toast.success(`Updated "${trimmedPlural}"`);
       onOpenChange(false);
@@ -293,8 +296,8 @@ export function EditScopeTypeSheet({
     if (!ok) return;
     setBusy(true);
     try {
-      await dispatch(deleteScopeType(scopeType.id)).unwrap();
-      dispatch(fetchScopeTypes(orgId));
+      await dispatch(deleteScopeType({ type_id: scopeType.id })).then(unwrapScopesRpc);
+      dispatch(ensureScopeTree());
       toast.success(`Deleted "${scopeType.label_plural}"`);
       onOpenChange(false);
       onDeleted?.();

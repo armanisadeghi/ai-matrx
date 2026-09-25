@@ -257,6 +257,11 @@ describe("scope type mutations", () => {
       sort_order: 7,
       parent_type_id: null,
       default_variable_keys: ["client_name"],
+      // The admin console's fields ride the same row (SCOPE-ADMIN-CANONICAL).
+      slug: "clients",
+      description: "Companies we serve",
+      created_at: STAMP,
+      updated_at: STAMP,
       scopes: [],
     };
     expect(res).toEqual({ ok: true, data: node });
@@ -394,6 +399,12 @@ describe("scope mutations", () => {
       description: "Enterprise account",
       parent_scope_id: null,
       settings: { tier: "gold" },
+      // The admin console's fields ride the same row (SCOPE-ADMIN-CANONICAL).
+      slug: "acme-co",
+      sort_order: 1,
+      created_by: SIGNED_IN_USER,
+      created_at: STAMP,
+      updated_at: STAMP,
     };
     expect(res).toEqual({ ok: true, data: node });
   });
@@ -483,6 +494,33 @@ describe("context item mutations", () => {
         p_display_name: "Sector",
       }),
     ]);
+  });
+
+  it("updateContextItem sends a clear or an RPC-less column as ONE row update of exactly that item", async () => {
+    // `update_context_item` COALESCEs every argument and has no parameter for
+    // the custom input component, so a clear (null) and that column go as a
+    // row update — only the fields given, only this item's id.
+    mockReplies.push(
+      ok({ ...contextItemRow, category: null, custom_component: { type: "toggle" } }),
+    );
+
+    const res = await scopesService.updateContextItem({
+      item_id: ITEM_ID,
+      category: null,
+      custom_component: { type: "toggle" },
+    });
+
+    expect(mockRequests).toEqual([
+      {
+        path: `/rest/v1/context_items?id=eq.${ITEM_ID}&select=*`,
+        profile: "context",
+        args: { category: null, custom_component: { type: "toggle" } },
+      },
+    ]);
+    expect(res).toEqual({
+      ok: true,
+      data: { ...contextItemRow, category: null, custom_component: { type: "toggle" } },
+    });
   });
 
   it("updateContextItem refuses a row that carries no scope type id", async () => {

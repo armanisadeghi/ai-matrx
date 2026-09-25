@@ -22,11 +22,6 @@ import {
   PenLine,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  createScopeType,
-  selectScopeTypesByOrg,
-} from "../../redux/scope/scopeTypesSlice";
-import { createScope } from "../../redux/scope/scopesSlice";
 import { INDUSTRY_CATEGORIES } from "../../constants";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,6 +29,14 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { cn } from "@/utils/cn";
+import {
+  selectScopeTypesByOrg,
+} from "@/features/scopes/redux/selectors/admin";
+import {
+  createScope,
+  createScopeType,
+} from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 type LucideIcon = React.ComponentType<{
   className?: string;
@@ -444,7 +447,7 @@ export function ScopeTemplateStarter({
             sort_order: 0,
             max_assignments: preset.max_assignments,
           }),
-        ).unwrap();
+        ).then(unwrapScopesRpc);
 
         const typeId = (typeResult as { id: string }).id;
         if (typeId && preset.scopes.length > 0) {

@@ -46,12 +46,6 @@ import {
 } from "@/lib/redux/slices/appContextSlice";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import {
-  fetchScopes,
-  selectScopeById,
-  selectScopesByType,
-  selectScopesLoadedForType,
-} from "@/features/agent-context/redux/scope/scopesSlice";
-import {
   useBoundVariableScope,
   type BoundVarInfo,
 } from "@/features/agents/hooks/useBoundVariableScope";
@@ -72,6 +66,12 @@ import { ensureContextValues } from "@/features/scopes/redux/thunks/ensureContex
 import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
 import { formatText } from "@ai-matrx/kit/text-case";
 import type { ContextValueType } from "@/features/scope-system/redux/contextItemsSlice";
+import {
+  selectScopeById,
+  selectScopesByType,
+  selectScopesLoadedForType,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
 interface BoundVariableChipsProps {
   conversationId: string;
@@ -162,7 +162,7 @@ function BoundScopePrompt({
 
   useEffect(() => {
     if (orgId && !loaded) {
-      dispatch(fetchScopes({ org_id: orgId, type_id: scopeTypeId }));
+      dispatch(ensureScopeTree());
     }
   }, [orgId, loaded, scopeTypeId, dispatch]);
 

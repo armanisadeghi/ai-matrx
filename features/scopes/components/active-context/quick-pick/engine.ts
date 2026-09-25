@@ -233,6 +233,10 @@ function fabricateType(d: DraftType): ScopeTypeNode {
     sort_order: 999,
     parent_type_id: null,
     default_variable_keys: [],
+    slug: null,
+    description: "",
+    created_at: "",
+    updated_at: "",
     scopes: [],
   };
 }
@@ -255,6 +259,11 @@ function mergeDrafts(orgs: OrgNode[], d: DraftsState): OrgNode[] {
           description: "",
           parent_scope_id: null,
           settings: {},
+          slug: null,
+          sort_order: 0,
+          created_by: null,
+          created_at: "",
+          updated_at: "",
         }));
       return extra.length > 0 ? { ...t, scopes: [...t.scopes, ...extra] } : t;
     });

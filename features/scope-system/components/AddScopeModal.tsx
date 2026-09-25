@@ -23,17 +23,19 @@ import { ScopeColorPicker } from "@/features/scopes/components/management/ScopeC
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  createScopeType,
-  fetchScopeTypes,
-  selectScopeTypesByOrg,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import { fetchScopes } from "@/features/agent-context/redux/scope/scopesSlice";
-import {
   createContextItem,
   listScopeTypeItems,
 } from "@/features/scope-system/redux/contextItemsSlice";
 import { slugifyKey } from "@/features/scopes/utils/slugify";
 import { pluralize } from "@/features/scopes/utils/pluralize";
+import {
+  selectScopeTypesByOrg,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import {
+  createScopeType,
+} from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 type ContextItemDraft = { id: string; display_name: string };
 
@@ -204,7 +206,7 @@ export function AddScopeModal({
             parentTypeId === NONE_VALUE ? undefined : parentTypeId,
           default_variable_keys: variableKeys,
         }),
-      ).unwrap();
+      ).then(unwrapScopesRpc);
 
       for (const display_name of primaryItems) {
         await dispatch(
@@ -217,8 +219,7 @@ export function AddScopeModal({
       }
 
       dispatch(listScopeTypeItems(primaryType.id));
-      dispatch(fetchScopes({ org_id: orgId }));
-      dispatch(fetchScopeTypes(orgId));
+      dispatch(ensureScopeTree());
 
       toast.success(`Created “${trimmedPlural || trimmedSingular}”`);
       onOpenChange(false);

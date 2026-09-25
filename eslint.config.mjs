@@ -2105,8 +2105,9 @@ export default [
       // Each of these reaches context.* beside the service. They are on the
       // convergence list (features/scopes/FEATURE.md §"What is enforced"), not
       // a standing exemption — delete the entry with the duplicate path.
-      // The context-item editor: reads context.system_context_item (the ONLY
-      // reader of that table) and updates/soft-deletes context.context_items.
+      // The context-item console cache: reads context.system_context_item (the
+      // ONLY reader of that table) and list_scope_type_items. Its writes go
+      // through scopesService since 2026-09-25 (lane SCOPE-ADMIN-CANONICAL).
       "features/scope-system/redux/contextItemsSlice.ts",
       // Second apply-template path (list_templates / apply_template /
       // apply_template_by_key) beside scopesService.applyTemplate.
@@ -2114,10 +2115,6 @@ export default [
       // Second write path to the same cell (set_scope_context_value) beside
       // scopesService.setContextValue (set_context_value).
       "features/scope-system/redux/scopeValuesSlice.ts",
-      // Third scope Redux module: duplicate RPC-only read/write paths for
-      // scope types and scopes.
-      "features/agent-context/redux/scope/scopeTypesSlice.ts",
-      "features/agent-context/redux/scope/scopesSlice.ts",
       // Added 2026-09-11 by the schema-derived ban list (DD-109 fix 1): both
       // call `get_user_full_context`, which the hand-enumerated RPC list never
       // held. It is a genuine context door — `pg_get_functiondef` on the live

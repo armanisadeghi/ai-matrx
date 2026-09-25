@@ -10,17 +10,6 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { selectOrgBySlugOrId } from "@/features/agent-context/redux/organizationsSlice";
 import {
-  fetchScopeTypes,
-  selectScopeTypeBySlugOrId,
-  selectScopeTypesByOrg,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import {
-  deleteScope,
-  fetchScopes,
-  selectScopeBySlugOrId,
-  selectScopesByType,
-} from "@/features/agent-context/redux/scope/scopesSlice";
-import {
   listScopeTypeItems,
   selectItemBySlugOrId,
   selectItemsByType,
@@ -54,6 +43,17 @@ import { ReferenceCopyButton } from "@/features/matrx-envelope/components/Refere
 import { CompoundReferenceCopyButton } from "@/features/matrx-envelope/components/CompoundReferenceCopyButton";
 import { buildContextValueReferenceFence } from "@/features/matrx-envelope/compoundReference";
 import { resolveScopeRouteReference } from "@/features/scope-system/utils/scopeRouteReference";
+import {
+  selectScopeBySlugOrId,
+  selectScopeTypeBySlugOrId,
+  selectScopeTypesByOrg,
+  selectScopesByType,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import {
+  deleteScope,
+} from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 /**
  * The single layout-level header for the org Scope & Context system. Mounted once
@@ -149,12 +149,12 @@ export function ScopesRouteHeader() {
   const items = useAppSelector(selectItems);
 
   useEffect(() => {
-    if (active && orgId) dispatch(fetchScopeTypes(orgId));
+    if (active && orgId) dispatch(ensureScopeTree());
   }, [active, dispatch, orgId]);
 
   useEffect(() => {
     if (active && orgId && resolvedTypeId) {
-      dispatch(fetchScopes({ org_id: orgId, type_id: resolvedTypeId }));
+      dispatch(ensureScopeTree());
       dispatch(listScopeTypeItems(resolvedTypeId));
     }
   }, [active, dispatch, orgId, resolvedTypeId]);
@@ -197,7 +197,7 @@ export function ScopesRouteHeader() {
     if (!ok) return;
     setDeleting(true);
     try {
-      await dispatch(deleteScope(scope.id)).unwrap();
+      await dispatch(deleteScope({ scope_id: scope.id })).then(unwrapScopesRpc);
       toast.success(`Deleted “${scope.name}”`);
       router.push(scopeTypeHref(orgSlugOrId, scopeType));
     } catch (err) {

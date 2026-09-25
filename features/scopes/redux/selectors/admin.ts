@@ -161,3 +161,18 @@ export const selectScopesLoadedForType = (
   _orgId: string | null | undefined,
   _typeId: string | null | undefined,
 ): boolean => selectScopeTreeSettled(state);
+
+export type ScopeTreeRow = ScopeNode & { children: ScopeTreeRow[] };
+
+/** One scope type's scopes as a parent → children forest, in the type's order. */
+export const selectScopeTreeByType = createSelector(
+  [selectScopesByType],
+  (scopes): ScopeTreeRow[] => {
+    const build = (parentId: string | null): ScopeTreeRow[] =>
+      scopes
+        .filter((s) => s.parent_scope_id === parentId)
+        .map((s) => ({ ...s, children: build(s.id) }));
+    return build(null);
+  },
+  { memoize: weakMapMemoize, argsMemoize: weakMapMemoize },
+);

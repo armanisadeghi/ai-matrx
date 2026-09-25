@@ -43,17 +43,17 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import {
-  fetchScopeTypes,
-  selectScopeTypesByOrg,
-  selectScopeTypesLoadedForOrg,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import {
   listScopeTypeItems,
   selectItemsByType,
   selectItemsLoadedForType,
 } from "@/features/scope-system/redux/contextItemsSlice";
 import { toast } from "@/lib/toast";
 import { contextItemsHref } from "@/features/scopes/lib/scopeRoutes";
+import {
+  selectScopeTypesByOrg,
+  selectScopeTypesLoadedForOrg,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
 const WindowPanel = dynamic(
   () => import("@/features/window-panels/WindowPanel"),
@@ -78,7 +78,7 @@ export function LiteWindowExamples() {
   );
 
   useEffect(() => {
-    if (orgId && !typesLoaded) dispatch(fetchScopeTypes(orgId));
+    if (orgId && !typesLoaded) dispatch(ensureScopeTree());
   }, [dispatch, orgId, typesLoaded]);
 
   // ── A ──────────────────────────────────────────────────────────────────────

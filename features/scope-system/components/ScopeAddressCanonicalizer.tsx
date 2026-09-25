@@ -30,14 +30,16 @@ import { useParams, usePathname, useRouter } from "next/navigation";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { selectOrgBySlugOrId } from "@/features/agent-context/redux/organizationsSlice";
-import { selectScopeTypeBySlugOrId } from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import { selectScopeBySlugOrId } from "@/features/agent-context/redux/scope/scopesSlice";
 import { selectItemBySlugOrId } from "@/features/scope-system/redux/contextItemsSlice";
 import {
   canonicalizeScopePath,
   scopeSeg,
   type ScopeSegmentSubstitution,
 } from "@/features/scopes/lib/scopeRoutes";
+import {
+  selectScopeBySlugOrId,
+  selectScopeTypeBySlugOrId,
+} from "@/features/scopes/redux/selectors/admin";
 
 export function ScopeAddressCanonicalizer() {
   const params = useParams();

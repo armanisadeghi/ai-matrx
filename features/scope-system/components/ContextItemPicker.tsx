@@ -65,12 +65,6 @@ import {
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import {
-  createScopeType,
-  fetchScopeTypes,
-  selectScopeTypesByOrg,
-  selectScopeTypesLoadedForOrg,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import {
   listScopeTypeItems,
   listSystemContextItems,
   selectItemsByType,
@@ -85,6 +79,14 @@ import {
 } from "@/features/scopes/lib/scopeRoutes";
 import { CreateOrgModal } from "@/features/organizations/components/CreateOrgModal";
 import { ContextItemAddForm } from "./ContextItemAddForm";
+import {
+  selectScopeTypesByOrg,
+  selectScopeTypesLoadedForOrg,
+} from "@/features/scopes/redux/selectors/admin";
+import {
+  createScopeType,
+} from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 export type ContextItemSource = "system" | "scope";
 
@@ -205,7 +207,7 @@ export function ContextItemPicker({
   }, [isSystem, value.scopeTypeId, treeStatus, dispatch]);
 
   useEffect(() => {
-    if (!isSystem && orgId && !typesLoaded) dispatch(fetchScopeTypes(orgId));
+    if (!isSystem && orgId && !typesLoaded) dispatch(ensureScopeTree());
   }, [isSystem, orgId, typesLoaded, dispatch]);
 
   useEffect(() => {
@@ -248,7 +250,7 @@ export function ContextItemPicker({
           label_plural: pluralize(typed),
           icon: "Folder",
         }),
-      ).unwrap();
+      ).then(unwrapScopesRpc);
       toast.success(
         `Added scope type "${created.label_singular}" — fine-tune it any time from Scopes`,
       );

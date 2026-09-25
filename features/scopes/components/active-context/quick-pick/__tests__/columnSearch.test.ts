@@ -43,6 +43,10 @@ function clientsType(): ScopeTypeNode {
     sort_order: 1,
     parent_type_id: null,
     default_variable_keys: [],
+    slug: null,
+    description: "",
+    created_at: "",
+    updated_at: "",
     scopes: CLIENT_NAMES.map((name, index) => ({
       id: `scope-${index}`,
       scope_type_id: "type-clients",
@@ -51,6 +55,11 @@ function clientsType(): ScopeTypeNode {
       description: "",
       parent_scope_id: null,
       settings: {},
+      slug: null,
+      sort_order: 0,
+      created_by: null,
+      created_at: "",
+      updated_at: "",
     })),
   };
 }

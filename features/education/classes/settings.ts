@@ -5,7 +5,6 @@
 // scope system persists `settings` verbatim; this is the ONE place the class
 // layer reads/writes its shape, so a schema change lives here, not per-callsite.
 
-import type { Scope } from "@/features/agent-context/redux/scope/types";
 import { CLASS_SETTINGS_KEYS, DEFAULT_ACCESS_MODE } from "./constants";
 import type {
   AccessMode,
@@ -13,6 +12,7 @@ import type {
   ClassSettings,
   StudyClass,
 } from "./types";
+import type { ScopeNode as Scope } from "@/features/scopes/types";
 
 /** Coerce any value to a valid AccessMode, defaulting missing → 'closed'. */
 export function parseAccessMode(v: unknown): AccessMode {

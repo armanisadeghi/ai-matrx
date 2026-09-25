@@ -6,15 +6,6 @@ import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  fetchScopeTypes,
-  selectScopeTypesByOrg,
-  selectScopeTypesLoading,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import {
-  fetchScopes,
-  selectScopesByOrg,
-} from "@/features/agent-context/redux/scope/scopesSlice";
-import {
   listScopeTypeItems,
   selectAllContextItems,
 } from "@/features/scope-system/redux/contextItemsSlice";
@@ -22,6 +13,12 @@ import { ScopeTypeCard } from "./ScopeTypeCard";
 import { AddScopeTypeCard } from "./AddScopeTypeCard";
 import { AddScopeModal } from "./AddScopeModal";
 import { TemplateGalleryDrawer } from "./TemplateGalleryDrawer";
+import {
+  selectScopeTypesByOrg,
+  selectScopeTypesLoading,
+  selectScopesByOrg,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
 interface ScopesGridProps {
   orgId: string;
@@ -45,8 +42,7 @@ export function ScopesGrid({
   const [galleryOpen, setGalleryOpen] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchScopeTypes(orgId));
-    dispatch(fetchScopes({ org_id: orgId }));
+    dispatch(ensureScopeTree());
   }, [dispatch, orgId]);
 
   useEffect(() => {

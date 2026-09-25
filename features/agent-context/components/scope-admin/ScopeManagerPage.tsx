@@ -2,17 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  fetchScopeTypes,
-  selectScopeTypesByOrg,
-  selectScopeTypesLoading,
-} from "../../redux/scope/scopeTypesSlice";
-import { fetchScopes } from "../../redux/scope/scopesSlice";
-import type { ScopeType } from "../../redux/scope/types";
 import { ScopeTypeList } from "./ScopeTypeList";
 import { ScopeInstancePanel } from "./ScopeInstancePanel";
 import { ScopeTemplateStarter } from "./ScopeTemplateStarter";
 import { ScopeOnboarding } from "@/features/scope-system/components/ScopeOnboarding";
+import type { ScopeTypeNode as ScopeType } from "@/features/scopes/types";
+import {
+  selectScopeTypesByOrg,
+  selectScopeTypesLoading,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
 interface ScopeManagerPageProps {
   organizationId: string;
@@ -37,8 +36,7 @@ export function ScopeManagerPage({
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
-    dispatch(fetchScopeTypes(organizationId));
-    dispatch(fetchScopes({ org_id: organizationId }));
+    dispatch(ensureScopeTree());
   }, [dispatch, organizationId]);
 
   useEffect(() => {
@@ -65,8 +63,7 @@ export function ScopeManagerPage({
           isPersonal={isPersonal}
           onChanged={() => {
             hasFetched.current = false;
-            dispatch(fetchScopeTypes(organizationId));
-            dispatch(fetchScopes({ org_id: organizationId }));
+            dispatch(ensureScopeTree());
           }}
         />
       </div>
@@ -89,8 +86,7 @@ export function ScopeManagerPage({
             compact
             onTypesCreated={() => {
               hasFetched.current = false;
-              dispatch(fetchScopeTypes(organizationId));
-              dispatch(fetchScopes({ org_id: organizationId }));
+              dispatch(ensureScopeTree());
             }}
           />
         </div>

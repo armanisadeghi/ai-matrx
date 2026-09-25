@@ -7,15 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  fetchScopes,
-  selectScopeBySlugOrId,
-  selectScopesLoadedForType,
-} from "@/features/agent-context/redux/scope/scopesSlice";
-import {
-  selectScopeTypeBySlugOrId,
-  selectScopeTypesLoadedForOrg,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import {
   getScopeContext,
   selectValuesByScope,
   selectScopeValuesLoading,
@@ -38,6 +29,13 @@ import {
   scopeItemHref,
   scopeTypeHref,
 } from "@/features/scopes/lib/scopeRoutes";
+import {
+  selectScopeBySlugOrId,
+  selectScopeTypeBySlugOrId,
+  selectScopeTypesLoadedForOrg,
+  selectScopesLoadedForType,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
 interface ScopeContextItemsHubProps {
   orgId: string;
@@ -88,7 +86,7 @@ export function ScopeContextItemsHub({
 
   useEffect(() => {
     if (!resolvedTypeId) return;
-    dispatch(fetchScopes({ org_id: orgId, type_id: resolvedTypeId }));
+    dispatch(ensureScopeTree());
     dispatch(listScopeTypeItems(resolvedTypeId));
   }, [dispatch, orgId, resolvedTypeId]);
 

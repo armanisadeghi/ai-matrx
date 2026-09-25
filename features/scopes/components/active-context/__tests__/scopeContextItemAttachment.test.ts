@@ -27,6 +27,10 @@ const organizations = [
         sort_order: 0,
         parent_type_id: null,
         default_variable_keys: [],
+        slug: null,
+        description: "",
+        created_at: "",
+        updated_at: "",
         scopes: [
           {
             id: "scope-1",
@@ -36,6 +40,11 @@ const organizations = [
             description: "",
             parent_scope_id: null,
             settings: {},
+            slug: null,
+            sort_order: 0,
+            created_by: null,
+            created_at: "",
+            updated_at: "",
           },
         ],
       },

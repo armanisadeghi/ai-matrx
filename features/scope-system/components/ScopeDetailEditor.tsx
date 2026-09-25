@@ -10,16 +10,6 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  fetchScopes,
-  selectScopeBySlugOrId,
-  selectScopesLoadedForType,
-  updateScope,
-} from "@/features/agent-context/redux/scope/scopesSlice";
-import {
-  selectScopeTypeBySlugOrId,
-  selectScopeTypesLoadedForOrg,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import {
   getScopeContext,
   selectValuesByScope,
   selectScopeValuesLoading,
@@ -44,6 +34,17 @@ import {
 } from "@/features/scopes/lib/scopeRoutes";
 import { AssociationCardGrid } from "@ai-matrx/associations/react";
 import { PrimaryEntityProvider } from "@ai-matrx/associations/react";
+import {
+  selectScopeBySlugOrId,
+  selectScopeTypeBySlugOrId,
+  selectScopeTypesLoadedForOrg,
+  selectScopesLoadedForType,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import {
+  updateScope,
+} from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 interface ScopeDetailEditorProps {
   orgId: string;
@@ -119,7 +120,7 @@ export function ScopeDetailEditor({
 
   useEffect(() => {
     if (!resolvedTypeId) return;
-    dispatch(fetchScopes({ org_id: orgId, type_id: resolvedTypeId }));
+    dispatch(ensureScopeTree());
   }, [dispatch, orgId, resolvedTypeId]);
 
   useEffect(() => {
@@ -176,7 +177,7 @@ export function ScopeDetailEditor({
     }
     setSavingName(true);
     try {
-      await dispatch(updateScope({ scope_id: scope.id, name: next })).unwrap();
+      await dispatch(updateScope({ scope_id: scope.id, name: next })).then(unwrapScopesRpc);
       toast.success("Renamed");
       closeNameEditor();
     } catch (err) {
@@ -197,7 +198,7 @@ export function ScopeDetailEditor({
     try {
       await dispatch(
         updateScope({ scope_id: scope.id, description: next }),
-      ).unwrap();
+      ).then(unwrapScopesRpc);
       toast.success("Description updated");
       closeDescriptionEditor();
     } catch (err) {

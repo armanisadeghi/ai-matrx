@@ -12,17 +12,6 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  fetchScopes,
-  selectScopeBySlugOrId,
-  selectScopesLoadedForType,
-  updateScope,
-  deleteScope,
-} from "@/features/agent-context/redux/scope/scopesSlice";
-import {
-  selectScopeTypeBySlugOrId,
-  selectScopeTypesLoadedForOrg,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import { ScopeAdvancedSection } from "./ScopeAdvancedSection";
 import { DictionarySection } from "@/features/dictionary/components/DictionarySection";
 import { ScopeNotFound } from "./ScopeNotFound";
@@ -37,6 +26,18 @@ import {
   scopeTypeHref,
   scopeContextItemsHref,
 } from "@/features/scopes/lib/scopeRoutes";
+import {
+  selectScopeBySlugOrId,
+  selectScopeTypeBySlugOrId,
+  selectScopeTypesLoadedForOrg,
+  selectScopesLoadedForType,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import {
+  deleteScope,
+  updateScope,
+} from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 interface ScopeEditViewProps {
   orgId: string;
@@ -90,7 +91,7 @@ export function ScopeEditView({
 
   useEffect(() => {
     if (resolvedTypeId)
-      dispatch(fetchScopes({ org_id: orgId, type_id: resolvedTypeId }));
+      dispatch(ensureScopeTree());
   }, [dispatch, orgId, resolvedTypeId]);
 
   useEffect(() => {
@@ -147,7 +148,7 @@ export function ScopeEditView({
           name: trimmed,
           description: description.trim(),
         }),
-      ).unwrap();
+      ).then(unwrapScopesRpc);
       toast.success("Saved");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save");
@@ -167,7 +168,7 @@ export function ScopeEditView({
     if (!ok) return;
     setDeleting(true);
     try {
-      await dispatch(deleteScope(scope.id)).unwrap();
+      await dispatch(deleteScope({ scope_id: scope.id })).then(unwrapScopesRpc);
       toast.success(`Deleted “${scope.name}”`);
       router.push(scopeTypeHref(orgSlugOrId, scopeType));
     } catch (err) {

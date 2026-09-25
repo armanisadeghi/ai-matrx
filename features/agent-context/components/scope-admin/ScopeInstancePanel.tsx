@@ -11,12 +11,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectScopeTreeByType,
-  selectScopesLoading,
-  deleteScope,
-} from "../../redux/scope/scopesSlice";
-import type { ScopeType, Scope } from "../../redux/scope/types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import {
@@ -30,6 +24,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ScopeFormSheet } from "./ScopeFormSheet";
+import type { ScopeNode as Scope, ScopeTypeNode as ScopeType } from "@/features/scopes/types";
+import {
+  deleteScope,
+} from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import {
+  selectScopeTreeByType,
+  selectScopeTypesLoading,
+} from "@/features/scopes/redux/selectors/admin";
+import { isScopesRpcErr } from "@/features/scopes/types";
+import { toast } from "@/lib/toast";
 
 type LucideIcon = React.ComponentType<{
   className?: string;
@@ -68,7 +72,7 @@ export function ScopeInstancePanel({
   const tree = useAppSelector((state) =>
     selectScopeTreeByType(state, scopeType.id),
   ) as ScopeTreeNode[];
-  const loading = useAppSelector(selectScopesLoading);
+  const loading = useAppSelector(selectScopeTypesLoading);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingScope, setEditingScope] = useState<Scope | null>(null);
@@ -93,7 +97,8 @@ export function ScopeInstancePanel({
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
-    await dispatch(deleteScope(deleteTarget.id));
+    const res = await dispatch(deleteScope({ scope_id: deleteTarget.id }));
+    if (isScopesRpcErr(res)) toast.error(res.error.message);
     setDeleteTarget(null);
   };
 

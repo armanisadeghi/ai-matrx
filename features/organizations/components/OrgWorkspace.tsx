@@ -62,14 +62,6 @@ import {
 } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
-import {
-  fetchScopeTypes,
-  selectScopeTypesByOrg,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import {
-  fetchScopes,
-  selectScopesByOrg,
-} from "@/features/agent-context/redux/scope/scopesSlice";
 import { OrgHomeScopeSection } from "@/features/scope-system/components/OrgHomeScopeSection";
 import { ScopeOnboarding } from "@/features/scope-system/components/ScopeOnboarding";
 import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
@@ -93,6 +85,10 @@ import {
 } from "@/features/surfaces/manifests/organizations.manifest";
 import { OrgWorkspaceWriteTargets } from "@/features/organizations/components/OrgWorkspaceWriteTargets";
 import { OrganizationAccessGate } from "@/features/organizations/components/OrganizationAccessGate";
+import {
+  selectScopeTypesByOrg,
+  selectScopesByOrg,
+} from "@/features/scopes/redux/selectors/admin";
 
 export function OrgWorkspace() {
   const params = useParams();
@@ -151,8 +147,7 @@ export function OrgWorkspace() {
 
   React.useEffect(() => {
     if (!organization?.id) return;
-    dispatch(fetchScopeTypes(organization.id));
-    dispatch(fetchScopes({ org_id: organization.id }));
+    dispatch(ensureScopeTree());
   }, [dispatch, organization?.id]);
 
   // Canonical resource count = how many entities are attached to this org via
@@ -612,8 +607,7 @@ export function OrgWorkspace() {
                 orgId={organization.id}
                 isPersonal={organization.isPersonal ?? undefined}
                 onChanged={() => {
-                  dispatch(fetchScopeTypes(organization.id));
-                  dispatch(fetchScopes({ org_id: organization.id }));
+                  dispatch(ensureScopeTree());
                 }}
               />
             </Card>

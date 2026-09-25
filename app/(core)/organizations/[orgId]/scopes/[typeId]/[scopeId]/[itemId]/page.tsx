@@ -8,7 +8,7 @@ import { OrganizationAccessGate } from "@/features/organizations/components/Orga
 import { canManageSettings } from "@/features/organizations/types";
 import { ScopeItemDetail } from "@/features/scope-system/components/ScopeItemDetail";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { fetchScopeTypes } from "@/features/agent-context/redux/scope/scopeTypesSlice";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
 export default function ScopeItemPage() {
   const params = useParams();
@@ -23,7 +23,7 @@ export default function ScopeItemPage() {
   const canManage = role ? canManageSettings(role) : false;
 
   React.useEffect(() => {
-    if (org) dispatch(fetchScopeTypes(org.id));
+    if (org) dispatch(ensureScopeTree());
   }, [org, dispatch]);
 
   if (loading) {

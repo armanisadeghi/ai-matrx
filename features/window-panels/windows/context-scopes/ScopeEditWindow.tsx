@@ -4,16 +4,13 @@ import React, { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  fetchScopes,
-  selectScopeById,
-} from "@/features/agent-context/redux/scope/scopesSlice";
-import {
-  fetchScopeTypes,
-  selectScopeTypeById,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import { ScopeForm } from "@/features/agent-context/components/scope-admin/ScopeForm";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  selectScopeById,
+  selectScopeTypeById,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
 export interface ScopeEditWindowData {
   /** Existing scope to edit. Omit to create a new scope. */
@@ -58,19 +55,11 @@ function ScopeEditWindowInner({
     scopeId ? (selectScopeById(s, scopeId) ?? null) : null,
   );
 
-  // Hydrate the agent-context scope slices on demand — the window can be opened
-  // from surfaces (e.g. the context-assignment field) that read a different
-  // tree, so the canonical scope-admin slices may not be loaded yet.
+  // The window can open from a surface before anything loaded the scope tree;
+  // the tree's one loader is a no-op once it is ready.
   useEffect(() => {
-    if (!scopeType) void dispatch(fetchScopeTypes(organizationId));
-  }, [dispatch, scopeType, organizationId]);
-  useEffect(() => {
-    if (scopeId && !editingScope) {
-      void dispatch(
-        fetchScopes({ org_id: organizationId, type_id: scopeTypeId }),
-      );
-    }
-  }, [dispatch, scopeId, editingScope, organizationId, scopeTypeId]);
+    if (!scopeType || (scopeId && !editingScope)) void dispatch(ensureScopeTree());
+  }, [dispatch, scopeType, scopeId, editingScope]);
 
   const title = !scopeType
     ? "Edit scope"

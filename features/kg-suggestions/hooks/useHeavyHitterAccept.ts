@@ -28,7 +28,6 @@
 
 import { useCallback } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { createScope } from "@/features/agent-context/redux/scope/scopesSlice";
 import { removeFromLists } from "@/lib/redux/slices/kgSuggestionsSlice";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import {
@@ -41,6 +40,10 @@ import {
   kgSourceKindToEntityType,
   type KgSuggestionRow,
 } from "@/features/kg-suggestions/types";
+import {
+  createScope,
+} from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 export interface PromoteHeavyHitterArgs {
   /** The heavy-hitter row to promote. */
@@ -118,7 +121,7 @@ export function useHeavyHitterAccept() {
               row.entity.name ?? finalName
             }"`,
           }),
-        ).unwrap();
+        ).then(unwrapScopesRpc);
         scopeId = scope.id;
         createdName = scope.name;
       } catch (err) {

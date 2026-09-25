@@ -7,10 +7,6 @@ import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectScopeTypeBySlugOrId,
-  selectScopeTypesLoadedForOrg,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import {
   listScopeTypeItems,
   selectItemBySlugOrId,
   selectItemsLoadedForType,
@@ -27,6 +23,10 @@ import {
   contextItemsHref,
   orgScopesHref,
 } from "@/features/scopes/lib/scopeRoutes";
+import {
+  selectScopeTypeBySlugOrId,
+  selectScopeTypesLoadedForOrg,
+} from "@/features/scopes/redux/selectors/admin";
 
 interface ContextItemEditViewProps {
   orgId: string;

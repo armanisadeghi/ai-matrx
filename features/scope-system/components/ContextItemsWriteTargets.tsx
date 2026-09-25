@@ -44,10 +44,12 @@ import {
   type ContextItem,
   type ContextValueType,
 } from "@/features/scope-system/redux/contextItemsSlice";
-import { selectScopeTypeById } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import { selectFullContextOrganizations } from "@/features/agent-context/redux/hierarchySlice";
 import { canManageSettings, type OrgRole } from "@/features/organizations/types";
 import { slugifyKey } from "@/features/scopes/utils/slugify";
+import {
+  selectScopeTypeById,
+} from "@/features/scopes/redux/selectors/admin";
 
 /** Wire value for `context_item_copy`. At least one text key is required. */
 export interface ContextItemCopyWrite {

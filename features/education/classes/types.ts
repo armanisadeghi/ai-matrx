@@ -5,7 +5,7 @@
 // settings JSONB — never a parallel data model.
 
 import type { LucideIcon } from "lucide-react";
-import type { Scope } from "@/features/agent-context/redux/scope/types";
+import type { ScopeNode as Scope } from "@/features/scopes/types";
 
 /** One exam/assessment date on a class. Stored in scope.settings.exam_dates. */
 export interface ClassExamDate {

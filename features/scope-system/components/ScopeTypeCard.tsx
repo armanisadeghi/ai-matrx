@@ -4,7 +4,7 @@ import { ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
 import { resolveColor } from "@/features/scopes/constants/scope-colors";
-import type { ScopeType } from "@/features/agent-context/redux/scope/types";
+import type { ScopeTypeNode as ScopeType } from "@/features/scopes/types";
 
 interface ScopeTypeCardProps {
   scopeType: ScopeType;

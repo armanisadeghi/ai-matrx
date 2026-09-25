@@ -11,9 +11,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { deleteScopeType } from "../../redux/scope/scopeTypesSlice";
-import { selectScopesByType } from "../../redux/scope/scopesSlice";
-import type { ScopeType } from "../../redux/scope/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/cn";
@@ -28,6 +25,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ScopeTypeFormSheet } from "./ScopeTypeFormSheet";
+import type { ScopeTypeNode as ScopeType } from "@/features/scopes/types";
+import {
+  selectScopesByType,
+} from "@/features/scopes/redux/selectors/admin";
+import {
+  deleteScopeType,
+} from "@/features/scopes/redux/thunks/scopeTreeMutations";
 
 type LucideIcon = React.ComponentType<{
   className?: string;
@@ -84,7 +88,7 @@ export function ScopeTypeList({
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
-    await dispatch(deleteScopeType(deleteTarget.id));
+    await dispatch(deleteScopeType({ type_id: deleteTarget.id }));
     setDeleteTarget(null);
   };
 

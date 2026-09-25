@@ -1,8 +1,8 @@
 "use client";
 
-import type { ScopeType, Scope } from "../../redux/scope/types";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { ScopeForm } from "./ScopeForm";
+import type { ScopeNode as Scope, ScopeTypeNode as ScopeType } from "@/features/scopes/types";
 
 interface ScopeFormSheetProps {
   open: boolean;

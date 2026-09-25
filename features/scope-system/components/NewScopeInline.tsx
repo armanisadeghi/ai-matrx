@@ -7,7 +7,6 @@ import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { createScope } from "@/features/agent-context/redux/scope/scopesSlice";
 import {
   createContextItem,
   listScopeTypeItems,
@@ -24,6 +23,10 @@ import {
 } from "@/features/scopes/utils/slugify";
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import { EditContextItemSheet } from "./EditContextItemSheet";
+import {
+  createScope,
+} from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 interface NewScopeInlineProps {
   orgId: string;
@@ -174,7 +177,7 @@ export function NewScopeInline({
           description: description.trim(),
           slug: trimmedSlug || undefined,
         }),
-      ).unwrap();
+      ).then(unwrapScopesRpc);
 
       for (const item of items) {
         if (item.value_type === "reference") continue; // no scope id existed yet to point at

@@ -41,11 +41,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
-  createScopeType,
-  fetchScopeTypes,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import { fetchScopes } from "@/features/agent-context/redux/scope/scopesSlice";
-import {
   createContextItem,
   listScopeTypeItems,
 } from "@/features/scope-system/redux/contextItemsSlice";
@@ -59,6 +54,11 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import {
+  createScopeType,
+} from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 // A column shown in the ghost preview. `name` becomes a context item if the
 // dimension is added; sample values are illustrative only.
@@ -194,7 +194,7 @@ export function ScopeOnboarding({
           label_plural: dim.plural,
           icon: iconNameFor(dim.key),
         }),
-      ).unwrap();
+      ).then(unwrapScopesRpc);
       // Columns become context items. Sample rows are NOT seeded.
       for (const col of dim.columns) {
         await dispatch(
@@ -206,8 +206,7 @@ export function ScopeOnboarding({
         ).unwrap();
       }
       dispatch(listScopeTypeItems(type.id));
-      dispatch(fetchScopeTypes(orgId));
-      dispatch(fetchScopes({ org_id: orgId }));
+      dispatch(ensureScopeTree());
       toast.success(`Added "${dim.plural}"`);
       onChanged?.();
     } catch (err) {

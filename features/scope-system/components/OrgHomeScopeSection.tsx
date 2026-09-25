@@ -22,7 +22,6 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectScopesByType } from "@/features/agent-context/redux/scope/scopesSlice";
 import {
   listScopeTypeItems,
   selectItemsByType,
@@ -38,12 +37,15 @@ import {
   contextItemsHref,
   scopeSeg,
 } from "@/features/scopes/lib/scopeRoutes";
-import type { ScopeType } from "@/features/agent-context/redux/scope/types";
 import type { ContextItem } from "@/features/scope-system/redux/contextItemsSlice";
 import type { ScopeContextRow } from "@/features/scope-system/redux/scopeValuesSlice";
 import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import type { ScopeTypeNode as ScopeType } from "@/features/scopes/types";
+import {
+  selectScopesByType,
+} from "@/features/scopes/redux/selectors/admin";
 
 interface OrgHomeScopeSectionProps {
   scopeType: ScopeType;

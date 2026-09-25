@@ -31,15 +31,15 @@ import {
   type TemplateScopeType,
 } from "@/features/scope-system/redux/templatesSlice";
 import {
-  createScopeType,
-  fetchScopeTypes,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import { fetchScopes } from "@/features/agent-context/redux/scope/scopesSlice";
-import {
   createContextItem,
   listScopeTypeItems,
 } from "@/features/scope-system/redux/contextItemsSlice";
 import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import {
+  createScopeType,
+} from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 interface TemplateGalleryDrawerProps {
   open: boolean;
@@ -217,8 +217,7 @@ export function TemplateGalleryDrawer({
       await dispatch(
         applyTemplate({ template_id: template.id, org_id: orgId }),
       ).unwrap();
-      dispatch(fetchScopeTypes(orgId));
-      dispatch(fetchScopes({ org_id: orgId }));
+      dispatch(ensureScopeTree());
       recordToast.success(
         { type: "scope_template", id: template.id, title: template.name },
         `Applied "${template.name}"`,
@@ -256,7 +255,7 @@ export function TemplateGalleryDrawer({
           icon: item.icon || "Folder",
           max_assignments: item.max_assignments_per_entity ?? undefined,
         }),
-      ).unwrap();
+      ).then(unwrapScopesRpc);
       for (const field of item.fields) {
         await dispatch(
           createContextItem({
@@ -267,8 +266,7 @@ export function TemplateGalleryDrawer({
         ).unwrap();
       }
       dispatch(listScopeTypeItems(newType.id));
-      dispatch(fetchScopeTypes(orgId));
-      dispatch(fetchScopes({ org_id: orgId }));
+      dispatch(ensureScopeTree());
       recordToast.success(
         // The record the sentence names is the scope type just created.
         { type: "scope_type", id: newType.id, title: item.label_plural },

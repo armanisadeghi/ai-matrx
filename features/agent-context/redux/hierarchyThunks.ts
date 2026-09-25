@@ -5,13 +5,10 @@
 // Single fetch: get_user_full_context returns everything in one call —
 // orgs, projects (with scope_tags), tasks, scope types, and scope values.
 //
-// The thunk fans the response out to:
-//   - hierarchySlice   (orgs / projects / tasks)
-//   - scopeTypesSlice  (scope type definitions per org)
-//   - scopesSlice      (scope values per org)
-//
-// This means scope pickers are populated immediately on app load without
-// any per-org secondary fetches.
+// The thunk fans the response out to hierarchySlice / organizationsSlice /
+// projectsSlice / tasksSlice (orgs / projects / tasks). Its scope types and
+// scopes are NOT fanned out: the canonical scope tree (`state.scopesTree`,
+// `ensureScopeTree`) is the one home of those rows.
 //
 // Usage:
 //   dispatch(fetchFullContext())              — app boot / sidebar mount
@@ -24,16 +21,10 @@ import {
   fullContextFetchFailed,
   invalidateFullContext,
   type FullContextResponse,
-  type FullContextScopeType,
-  type FullContextScope,
 } from "./hierarchySlice";
-import { hydrateScopeTypesFromContext } from "./scope/scopeTypesSlice";
-import { hydrateScopesFromContext } from "./scope/scopesSlice";
 import { hydrateOrgsFromContext } from "./organizationsSlice";
 import { hydrateProjectsFromContext } from "./projectsSlice";
 import { hydrateTasksFromContext } from "./tasksSlice";
-import type { ScopeType } from "./scope/types";
-import type { Scope } from "./scope/types";
 import type { AppDispatch } from "@/lib/redux/store";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -45,49 +36,6 @@ const FULL_CONTEXT_TIMEOUT_MESSAGE =
   "Loading your workspace took too long. Please try again.";
 
 // ─── Internal helpers ─────────────────────────────────────────────────────
-
-/**
- * Map the scope type shape returned by get_user_full_context to the full
- * ScopeType shape used by scopeTypesSlice (adds organization_id).
- */
-function mapScopeType(orgId: string, t: FullContextScopeType): ScopeType {
-  return {
-    id: t.id,
-    organization_id: orgId,
-    parent_type_id: t.parent_type_id,
-    label_singular: t.label_singular,
-    label_plural: t.label_plural,
-    icon: t.icon,
-    description: t.description,
-    color: t.color,
-    sort_order: t.sort_order,
-    max_assignments_per_entity: t.max_assignments_per_entity,
-    default_variable_keys: t.default_variable_keys ?? [],
-    created_at: t.created_at,
-    updated_at: t.updated_at,
-  };
-}
-
-/**
- * Map the scope shape returned by get_user_full_context to the full
- * Scope shape used by scopesSlice (adds organization_id).
- */
-function mapScope(orgId: string, s: FullContextScope): Scope {
-  return {
-    id: s.id,
-    organization_id: orgId,
-    scope_type_id: s.scope_type_id,
-    parent_scope_id: s.parent_scope_id,
-    name: s.name,
-    description: s.description ?? "",
-    settings: s.settings ?? {},
-    sort_order: s.sort_order ?? 0,
-    created_by: s.created_by,
-    created_at: s.created_at,
-    updated_at: s.updated_at,
-    _type_label: s.type_label,
-  };
-}
 
 async function doFetchFullContext(dispatch: AppDispatch) {
   dispatch(fullContextFetchStarted());
@@ -130,20 +78,6 @@ async function doFetchFullContext(dispatch: AppDispatch) {
     };
 
     const orgs = response.organizations ?? [];
-
-    // ── Fan scope data out ───────────────────────────────────────────────
-    const scopeTypesPayload = orgs.map((org) => ({
-      orgId: org.id,
-      types: (org.scope_types ?? []).map((t) => mapScopeType(org.id, t)),
-    }));
-
-    const scopesPayload = orgs.map((org) => ({
-      orgId: org.id,
-      scopes: (org.scopes ?? []).map((s) => mapScope(org.id, s)),
-    }));
-
-    dispatch(hydrateScopeTypesFromContext(scopeTypesPayload));
-    dispatch(hydrateScopesFromContext(scopesPayload));
 
     // ── Fan org, project, and task data out to normalized slices ─────────
     dispatch(hydrateOrgsFromContext(orgs));

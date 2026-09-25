@@ -101,8 +101,6 @@ import { agentConnectionsUiReducer } from "@/features/agent-connections/redux/ui
 import { agentAppReducer } from "@/features/agents/redux/agent-apps/slice";
 import agentAppConsumersReducer from "@/features/agent-apps/redux/agent-app-consumers/slice";
 import toolsReducer from "@/features/agents/redux/tools/tools.slice";
-import scopeTypesReducer from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import scopesReducer from "@/features/agent-context/redux/scope/scopesSlice";
 import contextItemsReducer from "@/features/scope-system/redux/contextItemsSlice";
 import scopeValuesReducer from "@/features/scope-system/redux/scopeValuesSlice";
 import templatesReducer from "@/features/scope-system/redux/templatesSlice";
@@ -118,11 +116,9 @@ import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import wizardDraftReducer from "@/lib/redux/slices/wizardDraftSlice";
 
 // ─── New scopes module (features/scopes) ────────────────────────────
-// Mounted alongside the legacy scope slices until Phase 5 deletes them.
-// New code reads from these three keys exclusively. Legacy keys
-// (scopes, scopeTypes, contextItems,
-// scopeValues, templates) stay live for now so old consumers keep
-// rendering — they are slated for deletion in Phase 5.
+// New code reads from these three keys exclusively. The legacy `scopes` /
+// `scopeTypes` keys were deleted 2026-09-25 (lane SCOPE-ADMIN-CANONICAL);
+// `contextItems`, `scopeValues`, `templates` remain on the retirement queue.
 import scopesTreeReducer from "@/features/scopes/redux/scopesSlice";
 import contextValuesReducer from "@/features/scopes/redux/contextValuesSlice";
 import scopeTemplatesReducer from "@/features/scopes/redux/templatesSlice";
@@ -306,9 +302,8 @@ export const slimReducerMap = {
   wizardDraft: wizardDraftReducer,
 
   // ─── features/scopes (new module) ──────────────────────────────────
-  // Phase 5 will delete the legacy `scopes`, `scopeTypes`,
-  // `contextItems`, `scopeValues`, and `templates` keys below
-  // and the new `scopesTree` can be renamed to `scopes` at that point.
+  // The legacy `contextItems`, `scopeValues`, and `templates` keys below are
+  // still on the retirement queue (features/scopes/FEATURE.md).
   scopesTree: scopesTreeReducer,
   contextValues: contextValuesReducer,
   scopeTemplates: scopeTemplatesReducer,
@@ -319,8 +314,6 @@ export const slimReducerMap = {
   projects: projectsReducer,
   tasks: tasksReducer,
 
-  scopeTypes: scopeTypesReducer,
-  scopes: scopesReducer,
   contextItems: contextItemsReducer,
   scopeValues: scopeValuesReducer,
   templates: templatesReducer,

@@ -12,21 +12,6 @@ import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectPersonalOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
-  fetchScopeTypes,
-  createScopeType,
-  selectScopeTypesByOrg,
-  selectScopeTypesLoadedForOrg,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import {
-  fetchScopes,
-  createScope,
-  updateScope,
-  deleteScope,
-  selectScopesByType,
-  selectScopesLoadedForType,
-} from "@/features/agent-context/redux/scope/scopesSlice";
-import type { Scope } from "@/features/agent-context/redux/scope/types";
-import {
   CLASS_SCOPE_TYPE_SLUG,
   CLASS_SCOPE_TYPE_SEED,
   DEFAULT_ACCESS_MODE,
@@ -34,6 +19,21 @@ import {
 import { scopeToClass, serializeClassSettings } from "../settings";
 import { setAccessMode } from "../service";
 import type { ClassSettings, StudyClass } from "../types";
+import type { ScopeNode as Scope } from "@/features/scopes/types";
+import {
+  selectScopeTypesByOrg,
+  selectScopeTypesLoadedForOrg,
+  selectScopesByType,
+  selectScopesLoadedForType,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import {
+  createScope,
+  createScopeType,
+  deleteScope,
+  updateScope,
+} from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 export interface CreateClassInput {
   name: string;
@@ -90,13 +90,13 @@ export function useClasses(): UseClassesReturn {
 
   // Load the org's scope types once.
   useEffect(() => {
-    if (orgId && !typesLoaded) void dispatch(fetchScopeTypes(orgId));
+    if (orgId && !typesLoaded) void dispatch(ensureScopeTree());
   }, [dispatch, orgId, typesLoaded]);
 
   // Load the classes (scopes of the Class type) once it's known.
   useEffect(() => {
     if (orgId && classTypeId && !scopesLoaded) {
-      void dispatch(fetchScopes({ org_id: orgId, type_id: classTypeId }));
+      void dispatch(ensureScopeTree());
     }
   }, [dispatch, orgId, classTypeId, scopesLoaded]);
 
@@ -110,7 +110,7 @@ export function useClasses(): UseClassesReturn {
     if (!orgId) return null;
     if (classTypeId) return classTypeId;
     // Re-check freshly (avoids a double-create race across mounts).
-    if (!typesLoaded) await dispatch(fetchScopeTypes(orgId)).unwrap();
+    if (!typesLoaded) await dispatch(ensureScopeTree());
     const created = await dispatch(
       createScopeType({
         org_id: orgId,
@@ -121,7 +121,7 @@ export function useClasses(): UseClassesReturn {
         description: CLASS_SCOPE_TYPE_SEED.description,
         slug: CLASS_SCOPE_TYPE_SLUG,
       }),
-    ).unwrap();
+    ).then(unwrapScopesRpc);
     return created.id;
   }, [dispatch, orgId, classTypeId, typesLoaded]);
 
@@ -139,7 +139,7 @@ export function useClasses(): UseClassesReturn {
           description: input.description?.trim() ?? "",
           settings: serializeClassSettings(settings),
         }),
-      ).unwrap()) as Scope;
+      ).then(unwrapScopesRpc)) as Scope;
       // Register the class access mode + ensure the creator's OWNER membership
       // row exists (the roster's authoritative owner). Idempotent; the scope
       // already carries access_mode in settings, this reaffirms it server-side.
@@ -169,27 +169,22 @@ export function useClasses(): UseClassesReturn {
             ? serializeClassSettings(patch.settings)
             : undefined,
         }),
-      ).unwrap();
+      ).then(unwrapScopesRpc);
     },
     [dispatch],
   );
 
   const deleteClass = useCallback(
     async (id: string): Promise<void> => {
-      await dispatch(deleteScope(id)).unwrap();
+      await dispatch(deleteScope({ scope_id: id })).then(unwrapScopesRpc);
     },
     [dispatch],
   );
 
   const refresh = useCallback(async (): Promise<void> => {
     if (!orgId) return;
-    await dispatch(fetchScopeTypes(orgId)).unwrap();
-    if (classTypeId) {
-      await dispatch(
-        fetchScopes({ org_id: orgId, type_id: classTypeId }),
-      ).unwrap();
-    }
-  }, [dispatch, orgId, classTypeId]);
+    await dispatch(ensureScopeTree({ refresh: true }));
+  }, [dispatch, orgId]);
 
   return {
     classes,

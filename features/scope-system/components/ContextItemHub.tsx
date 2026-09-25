@@ -7,15 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  fetchScopes,
-  selectScopesByType,
-  selectScopesLoadedForType,
-} from "@/features/agent-context/redux/scope/scopesSlice";
-import {
-  selectScopeTypeBySlugOrId,
-  selectScopeTypesLoadedForOrg,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import {
   listScopeTypeItems,
   selectItemBySlugOrId,
   selectItemsLoadedForType,
@@ -39,7 +30,14 @@ import {
   scopeItemHref,
 } from "@/features/scopes/lib/scopeRoutes";
 import { VALUE_TYPE_CONFIG } from "@/features/agent-context/constants";
-import type { Scope } from "@/features/agent-context/redux/scope/types";
+import type { ScopeNode as Scope } from "@/features/scopes/types";
+import {
+  selectScopeTypeBySlugOrId,
+  selectScopeTypesLoadedForOrg,
+  selectScopesByType,
+  selectScopesLoadedForType,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
 interface ContextItemHubProps {
   orgId: string;
@@ -89,7 +87,7 @@ export function ContextItemHub({
 
   useEffect(() => {
     if (!resolvedTypeId) return;
-    dispatch(fetchScopes({ org_id: orgId, type_id: resolvedTypeId }));
+    dispatch(ensureScopeTree());
     dispatch(listScopeTypeItems(resolvedTypeId));
   }, [dispatch, orgId, resolvedTypeId]);
 

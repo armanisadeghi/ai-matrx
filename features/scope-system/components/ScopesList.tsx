@@ -49,16 +49,6 @@ import { ScopeNotFound } from "./ScopeNotFound";
 import { ReorderDialog } from "@/features/scopes/components/management/ReorderDialog";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  fetchScopes,
-  selectScopesByType,
-  updateScope,
-  deleteScope,
-} from "@/features/agent-context/redux/scope/scopesSlice";
-import {
-  selectScopeTypeBySlugOrId,
-  selectScopeTypesLoadedForOrg,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import {
   listScopeTypeItems,
   updateContextItem,
   deleteContextItem,
@@ -93,6 +83,17 @@ import type {
   KgDecisionResponse,
   KgSuggestionRow,
 } from "@/features/kg-suggestions/types";
+import {
+  selectScopeTypeBySlugOrId,
+  selectScopeTypesLoadedForOrg,
+  selectScopesByType,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import {
+  deleteScope,
+  updateScope,
+} from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 interface ScopesListProps {
   orgId: string;
@@ -156,7 +157,7 @@ export function ScopesList({
 
   useEffect(() => {
     if (!resolvedTypeId) return;
-    dispatch(fetchScopes({ org_id: orgId, type_id: resolvedTypeId }));
+    dispatch(ensureScopeTree());
     dispatch(listScopeTypeItems(resolvedTypeId));
   }, [dispatch, orgId, resolvedTypeId]);
 
@@ -202,7 +203,7 @@ export function ScopesList({
   async function saveScopeOrder(orderedIds: string[]) {
     await Promise.all(
       orderedIds.map((id, i) =>
-        dispatch(updateScope({ scope_id: id, sort_order: i + 1 })).unwrap(),
+        dispatch(updateScope({ scope_id: id, sort_order: i + 1 })).then(unwrapScopesRpc),
       ),
     );
     toast.success("Order saved");
@@ -230,7 +231,7 @@ export function ScopesList({
       return;
     setDeletingScopeId(id);
     try {
-      await dispatch(deleteScope(id)).unwrap();
+      await dispatch(deleteScope({ scope_id: id })).then(unwrapScopesRpc);
       toast.success(`${name} deleted`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete");

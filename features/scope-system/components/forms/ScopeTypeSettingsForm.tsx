@@ -12,11 +12,14 @@ import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  updateScopeType,
-  deleteScopeType,
   selectScopeTypeById,
-  fetchScopeTypes,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import {
+  deleteScopeType,
+  updateScopeType,
+} from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 
 interface ScopeTypeSettingsFormProps {
   typeId: string;
@@ -102,8 +105,8 @@ export function ScopeTypeSettingsForm({
             ? parseInt(maxAssignments, 10)
             : undefined,
         }),
-      ).unwrap();
-      dispatch(fetchScopeTypes(orgId));
+      ).then(unwrapScopesRpc);
+      dispatch(ensureScopeTree());
       toast.success(`Updated "${trimmedPlural}"`);
       onSaved?.();
     } catch (err) {
@@ -124,8 +127,8 @@ export function ScopeTypeSettingsForm({
     if (!ok) return;
     setBusy(true);
     try {
-      await dispatch(deleteScopeType(scopeType.id)).unwrap();
-      dispatch(fetchScopeTypes(orgId));
+      await dispatch(deleteScopeType({ type_id: scopeType.id })).then(unwrapScopesRpc);
+      dispatch(ensureScopeTree());
       toast.success(`Deleted "${scopeType.label_plural}"`);
       onDeleted?.();
     } catch (err) {

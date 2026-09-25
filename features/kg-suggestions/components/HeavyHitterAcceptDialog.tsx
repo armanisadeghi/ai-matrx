@@ -51,14 +51,14 @@ import {
 import { Skeleton } from "@ai-matrx/design-system";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  fetchScopeTypes,
-  selectScopeTypesByOrg,
-  selectScopeTypesLoading,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import type { ScopeType } from "@/features/agent-context/redux/scope/types";
 import { useHeavyHitterAccept } from "@/features/kg-suggestions/hooks/useHeavyHitterAccept";
 import type { KgSuggestionRow } from "@/features/kg-suggestions/types";
+import type { ScopeTypeNode as ScopeType } from "@/features/scopes/types";
+import {
+  selectScopeTypesByOrg,
+  selectScopeTypesLoading,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
 export interface HeavyHitterAcceptDialogProps {
   open: boolean;
@@ -120,7 +120,7 @@ export function HeavyHitterAcceptDialog({
   // Load the org's scope types once when the dialog opens.
   useEffect(() => {
     if (open && organizationId) {
-      void dispatch(fetchScopeTypes(organizationId));
+      void dispatch(ensureScopeTree());
     }
   }, [open, organizationId, dispatch]);
 

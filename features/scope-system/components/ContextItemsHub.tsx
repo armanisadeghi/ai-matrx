@@ -20,12 +20,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import {
-  fetchScopeTypes,
-  selectScopeTypeBySlugOrId,
-  selectScopeTypesByOrg,
-  selectScopeTypesLoadedForOrg,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import { fetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import {
   selectFullContextOrganizations,
@@ -74,7 +68,13 @@ import {
   orgScopesHref,
 } from "@/features/scopes/lib/scopeRoutes";
 import { VALUE_TYPE_CONFIG } from "@/features/agent-context/constants";
-import type { ScopeType } from "@/features/agent-context/redux/scope/types";
+import type { ScopeTypeNode as ScopeType } from "@/features/scopes/types";
+import {
+  selectScopeTypeBySlugOrId,
+  selectScopeTypesByOrg,
+  selectScopeTypesLoadedForOrg,
+} from "@/features/scopes/redux/selectors/admin";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
 interface ContextItemsHubProps {
   orgId: string;
@@ -316,7 +316,7 @@ function OrgContextItemsBlock({
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
   useEffect(() => {
-    dispatch(fetchScopeTypes(org.id));
+    dispatch(ensureScopeTree());
   }, [dispatch, org.id]);
 
   if (types.length === 0) return null;
