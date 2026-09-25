@@ -67,14 +67,17 @@ export default function UnifiedDataPage() {
       : active.organizationState;
   /**
    * CHANGE MEANS CHANGE. The strip's Change opens the platform's one organization picker; when
-   * the person picks there, the list follows the pick, so the address's organization is
+   * the person switches there, the list follows the switch, so the address's organization is
    * dropped rather than left overriding what they just chose.
    */
   const lastActive = useRef(active.organizationId);
   useEffect(() => {
-    if (lastActive.current === active.organizationId) return;
+    const previous = lastActive.current;
+    if (previous === active.organizationId) return;
     lastActive.current = active.organizationId;
-    if (!namedOrganizationId) return;
+    // A selection arriving where there was none (the session's boot resolving) is not the
+    // person choosing; only a switch from one organization to another is.
+    if (!namedOrganizationId || previous === null) return;
     const next = new URLSearchParams(searchParams.toString());
     next.delete("org");
     const query = next.toString();
