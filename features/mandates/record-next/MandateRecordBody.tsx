@@ -79,7 +79,7 @@ import {
   readMandateAddress,
 } from "@/features/mandates/mandate-address";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { useMandate } from "@/features/mandates/useMandate";
+import { useMandateHolder } from "@/features/mandates/useMandateHolder";
 import { MANDATE_WORKSPACE_SURFACE_NAME } from "@/features/surfaces/manifests/mandate-workspace.manifest";
 import { normalizeTransferJson } from "@ai-matrx/alchemy/core";
 import {
@@ -89,7 +89,7 @@ import {
   buildMandateDefinitionCore,
   type MandateAlchemyCapture,
 } from "@/features/mandates/workspace/MandateAlchemy";
-import type { ResolvedMandate } from "@/features/mandates/service";
+import type { ResolvedMandateHolder } from "@/features/mandates/service";
 import { updateMandateDefinition } from "@/features/mandates/admin/service";
 import {
   ladderRowChangesHolder,
@@ -99,8 +99,10 @@ import {
   type MandateLadderRow,
 } from "@/features/mandates/workspace/useMandateLadder";
 import {
+  FulfillmentSection,
   resolvedHolderForBannerOf,
   systemRungHealthOf,
+  viewFromVerdict,
   type WorkspacePerspective,
   type WorkspacePrincipal,
 } from "@/features/mandates/workspace/MandateWorkspace";
@@ -231,7 +233,14 @@ function OneMandateRecordBody({
     perspective === "person" && data
       ? storedMandateKey(data.mandate.mandate_key)
       : "";
-  const verdict = useMandate(personalKey);
+  // Holder-neutral on purpose: this page SAYS what runs, it never launches it,
+  // so a workflow winner is an answer here, not a refusal (workflow parity).
+  const holderVerdict = useMandateHolder(personalKey);
+  const verdict = {
+    mandate: holderVerdict.holder,
+    loading: holderVerdict.loading,
+    error: holderVerdict.error,
+  };
   // THE OWNER'S RIGHTS (member seats only; the admin route already authors).
   // The server's answer decides every definition pencil on this page — a
   // soft mandate its creator / its organization's managers own is editable,
@@ -645,166 +654,42 @@ function MandateFactsLine({
   );
 }
 
-// ── Copied verbatim from MandateWorkspace.tsx (only "Holder" wording changed) ──
+// ── The effective holder: ONE painter, shared with the original workspace ──
+// `FulfillmentView`, `viewFromVerdict` and `FulfillmentSection` are imported
+// from `MandateWorkspace.tsx`. This file used to carry verbatim copies that
+// drifted: the copy resolved through the agent-only launch door (`useMandate`)
+// and printed "Not available / Unknown" for every workflow-held job.
 
-/**
- * ── WHAT THE "FULFILLED BY" SECTION RENDERS ──────────────────────────────────
- *
- * One shape, two honest sources, because the two hosts answer two DIFFERENT
- * questions:
- *
- *  · the personal principal asks *"what runs for ME, right now"* — and that
- *    answer comes from the SERVER VERDICT (`useMandate` → `resolveMandate` →
- *    `GET /mandates/{key}/resolution`), the same verdict the runtime executes.
- *    It is never recomputed here: this screen used to walk a third hand-written
- *    ladder that took `orgBindings[0]` across ANY org the caller belonged to —
- *    the exact lie the one-resolution campaign exists to kill (D-R1/D-R2,
- *    Arman 2026-09-01).
- *  · the ORG principal asks *"what runs for every member of THIS org"*, which
- *    no per-caller door can answer (`mandate.resolve` resolves for `auth.uid()`
- *    and would fold in the viewing admin's own personal binding). That answer
- *    is computed below from the route's org rows alone — deliberate, and the
- *    reason `resolveForOrgPrincipal` still exists.
- */
-interface FulfillmentView {
-  /** The rung that decides. `null` while it is still being asked for. */
-  rung: "system" | "org" | "user" | "run" | null;
-  /** One sentence naming WHO decides — the active org by name, never by id. */
-  sentence: string;
-  agent: WorkspaceAgentInfo | null;
-  agentId: string | null;
-  useLatest: boolean;
-  pinned: number | null;
-  drift: string | null;
-  loading: boolean;
-  /**
-   * The one resolver refused, in its own words. Shown as-is: a refusal that
-   * names the rung and the pin is the honest answer to "what runs for you", and
-   * the ladder beneath it shows which row to go fix.
-   */
-  refusal: string | null;
-  /** The server's published staleness bound, when the answer came from it. */
-  freshness: string | null;
-  /**
-   * 🚨 EVERY RUNG THE SERVER SET ASIDE, in its own words (2026-09-08, FIX-R1c).
-   *
-   * Not a refusal — the job DID resolve — but the answer above is not the one
-   * somebody chose, and that is exactly what this screen exists to say. Until
-   * the server grew `dropped_rungs`, an organization could bind an agent its
-   * members could not open and every one of them would be shown the platform
-   * default as if nothing had happened (V-CORRECTNESS §5).
-   */
-  droppedRungs: { rung: string; reason: string }[];
-}
-
-/** How a rung is spoken about on a screen claiming "this is what runs for you". */
-function verdictSentence(
-  rung: NonNullable<FulfillmentView["rung"]>,
-  activeOrgLabel: string,
-): string {
-  switch (rung) {
-    case "user":
-      return "Your own binding decides this job — it wins in every organization you work in.";
-    case "org":
-      return `${activeOrgLabel} overrides this job.`;
-    case "run":
-      return "A choice made for this run decides the job — just for that run.";
-    case "system":
-      return `No override applies in ${activeOrgLabel} — this job runs the system default.`;
-  }
-}
-
-/** THE PERSONAL ANSWER — read off the server verdict, never recomputed. */
 /**
  * The server's verdict, in the shape the simple Overrides tab reads: who runs
- * this job for the viewer when their own level names nobody.
+ * this job for the viewer when their own level names nobody. A workflow holder
+ * has no agent settings to override — said plainly, never "no agent".
  */
 function resolvedHolderOfVerdict(
-  verdict: ResolvedMandate | null,
+  verdict: ResolvedMandateHolder | null,
   loading: boolean,
   error: string | null,
 ): ResolvedHolderForOverrides {
   if (loading) return { status: "loading" };
-  if (!verdict || error || verdict.holderType !== "agent") {
+  if (!verdict || error) {
     return {
       status: "unavailable",
-      message: "No agent runs this job for you right now.",
+      message: "Nothing runs this job for you right now.",
+    };
+  }
+  if (verdict.holderType === "workflow") {
+    return {
+      status: "unavailable",
+      message:
+        "A workflow runs this job for you. Its settings live in the workflow itself.",
     };
   }
   return {
     status: "ready",
-    agentId: verdict.agentId,
+    agentId: verdict.holderId,
     versionId: verdict.isVersion ? verdict.versionId : null,
   };
 }
-
-function viewFromVerdict(
-  data: MandateWorkspaceData,
-  verdict: ResolvedMandate | null,
-  loading: boolean,
-  error: string | null,
-  nameOfOrg: (id: string) => string | null,
-): FulfillmentView {
-  const empty = {
-    agent: null,
-    agentId: null,
-    useLatest: true,
-    pinned: null,
-    drift: null,
-  };
-  if (loading) {
-    return {
-      ...empty,
-      rung: null,
-      sentence: "Asking the server what runs for you…",
-      loading: true,
-      refusal: null,
-      freshness: null,
-      droppedRungs: [],
-    };
-  }
-  if (error || !verdict) {
-    return {
-      ...empty,
-      rung: null,
-      sentence: "This job has no answer for you right now.",
-      loading: false,
-      refusal: error ?? "The server returned no verdict for this job.",
-      freshness: null,
-      droppedRungs: [],
-    };
-  }
-
-  const orgName = verdict.organizationId
-    ? nameOfOrg(verdict.organizationId)
-    : null;
-  const activeOrgLabel = verdict.organizationId
-    ? orgName
-      ? `${orgName} (your active org)`
-      : "your active organization"
-    : // A verdict resolved with NO organization in play is a platform default,
-      // not an answer for a workspace — and it must never be printed as one.
-      "no organization (a platform default, not a workspace answer)";
-
-  const agent = data.agentsById[verdict.agentId] ?? null;
-  return {
-    rung: verdict.provenance,
-    sentence: verdictSentence(verdict.provenance, activeOrgLabel),
-    agent,
-    agentId: verdict.agentId,
-    useLatest: !verdict.isVersion,
-    pinned: null,
-    drift: null,
-    loading: false,
-    refusal: null,
-    freshness: verdict.freshness,
-    droppedRungs: verdict.droppedRungs.map((d) => ({
-      rung: d.rung,
-      reason: d.reason,
-    })),
-  };
-}
-
 
 function BindingSection({
   data,
@@ -886,142 +771,6 @@ function BindingSection({
         />
       </Section>
     </div>
-  );
-}
-
-// ── §2 Current fulfillment ───────────────────────────────────────────────────
-//
-// "Fulfilled by" answers ONE question — what runs — and it answers it from the
-// one resolver. Everything it can say is in `FulfillmentView`; this component
-// only paints it, so there is no place left for a second opinion to grow.
-
-function FulfillmentSection({ resolution }: { resolution: FulfillmentView }) {
-  useMandateAlchemyTabCapture("holder", resolution.loading
-    ? { status: "loading" }
-    : { status: "ready", data: normalizeTransferJson({
-        holder: resolution.agent ? { id: resolution.agentId, name: resolution.agent.name, archived: resolution.agent.isArchived } : null,
-        source: resolution.rung,
-        explanation: resolution.sentence,
-        version: resolution.useLatest ? "Latest" : resolution.pinned,
-        refusal: resolution.refusal,
-        freshness: resolution.freshness,
-        drift: resolution.drift,
-        dropped_rungs: resolution.droppedRungs,
-      }) }, "effective_holder");
-  const { copying, copyAndOpen } = useCopyMandateAgent();
-  const {
-    agent,
-    agentId,
-    rung,
-    sentence,
-    useLatest,
-    pinned,
-    drift,
-    loading,
-    refusal,
-    freshness,
-    droppedRungs,
-  } = resolution;
-  return (
-    <Section title="Effective Mandate Holder">
-      <div className="rounded-lg border border-border bg-card px-3">
-        <PropertyRow
-          label="Mandate Holder"
-          value={
-            loading ? (
-              <SuspenseLoader />
-            ) : agentId ? (
-              <EntityRef
-                token="agent"
-                id={agentId}
-                name={agent?.name ?? "Display name unavailable"}
-              />
-            ) : (
-              "Not available"
-            )
-          }
-        />
-        <PropertyRow
-          label="Source"
-          value={
-            rung
-              ? {
-                  user: "Personal",
-                  org: "Organization",
-                  global: "System binding",
-                  system: "System default",
-                  run: "This run",
-                }[rung]
-              : "Unknown"
-          }
-          help={sentence}
-        />
-        <PropertyRow
-          label="Version"
-          value={
-            loading || refusal
-              ? "Unknown"
-              : useLatest
-                ? "Latest"
-                : pinned !== null
-                  ? `Version ${pinned}`
-                  : "Pinned"
-          }
-        />
-        <PropertyRow
-          label="Status"
-          value={
-            <StatusToken
-              status={loading ? "unknown" : refusal ? "error" : "ok"}
-              label={loading ? "Reading" : refusal ? "Unavailable" : "Resolved"}
-            />
-          }
-          help={
-            refusal ? (
-              <TextWithDoors text={refusal} defaultToken="agent" />
-            ) : (
-              (freshness ?? undefined)
-            )
-          }
-        />
-        <PropertyRow
-          label="Archived"
-          value={agent ? (agent.isArchived ? "Yes" : "No") : "Unknown"}
-        />
-        {drift ? <PropertyRow label="Newer version" value={drift} /> : null}
-        {droppedRungs.map((dropped) => (
-          <PropertyRow
-            key={`${dropped.rung}:${dropped.reason}`}
-            label={`${formatVariableDisplayName(dropped.rung)} binding`}
-            value={<StatusToken status="caution" label="Not applied" />}
-            help={<TextWithDoors text={dropped.reason} defaultToken="agent" />}
-          />
-        ))}
-        {agent ? (
-          <div className="flex items-center gap-2 py-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={copying}
-              className="gap-1.5"
-              onClick={() =>
-                void copyAndOpen({
-                  defaultAgentId: agentId,
-                  defaultAgentVersionId: null,
-                })
-              }
-            >
-              <Copy className="h-3.5 w-3.5" />
-              {copying ? "Duplicating…" : "Duplicate & customize"}
-            </Button>
-            <FieldHelp label="Duplicate & customize">
-              Copies this resolved agent into your account and opens the
-              builder. Assign the copy on the Binding tab to use it for this mandate.
-            </FieldHelp>
-          </div>
-        ) : null}
-      </div>
-    </Section>
   );
 }
 

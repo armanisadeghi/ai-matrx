@@ -221,7 +221,7 @@ export interface MandateWorkspaceProps {
  *    is computed below from the route's org rows alone — deliberate, and the
  *    reason `resolveForOrgPrincipal` still exists.
  */
-interface FulfillmentView {
+export interface FulfillmentView {
   /** The rung that decides. `null` while it is still being asked for. */
   rung: "system" | "org" | "user" | "run" | null;
   /** One sentence naming WHO decides — the active org by name, never by id. */
@@ -274,7 +274,7 @@ function verdictSentence(
 }
 
 /** THE PERSONAL ANSWER — read off the server verdict, never recomputed. */
-function viewFromVerdict(
+export function viewFromVerdict(
   data: MandateWorkspaceData,
   verdict: ResolvedMandateHolder | null,
   loading: boolean,
@@ -1054,7 +1054,7 @@ function BindingSection({
 // one resolver. Everything it can say is in `FulfillmentView`; this component
 // only paints it, so there is no place left for a second opinion to grow.
 
-function FulfillmentSection({ resolution }: { resolution: FulfillmentView }) {
+export function FulfillmentSection({ resolution }: { resolution: FulfillmentView }) {
   useMandateAlchemyTabCapture("holder", resolution.loading
     ? { status: "loading" }
     : { status: "ready", data: normalizeTransferJson({
