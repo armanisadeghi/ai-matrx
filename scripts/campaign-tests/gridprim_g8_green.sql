@@ -83,7 +83,7 @@ begin
   insert into scheduler.sch_agent_task (id, prompt, auth_mode)
   values (v_task, 'The service call in this event changed status. If it now reads Complete, draft the invoice from its labor hours and parts used.', 'auto');
   insert into scheduler.sch_trigger (task_id, user_id, type, config, organization_id)
-  values (v_task, c_admin, 'event', jsonb_build_object('entity_type', 'custom_record:' || v_calls::text,
+  values (v_task, c_admin, 'event', jsonb_build_object('entity_type', 'record:' || v_calls::text,
             'actions', jsonb_build_array('record.updated'), 'table_id', v_calls::text,
             'changed_fields', jsonb_build_array('status')), v_org);
 

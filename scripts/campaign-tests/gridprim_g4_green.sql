@@ -92,7 +92,7 @@ begin
   perform set_config('role', 'postgres', true);
   select array_agg(a.action order by a.id) into v_actions
     from platform.activity_log a
-   where a.organization_id = v_org and a.entity_id = v_rec and a.entity_type = 'custom_record:' || v_appts::text;
+   where a.organization_id = v_org and a.entity_id = v_rec and a.entity_type = 'record:' || v_appts::text;
   select a.metadata into v_meta from platform.activity_log a
    where a.organization_id = v_org and a.entity_id = v_rec and a.action = 'record.updated' limit 1;
   perform set_config('role', 'authenticated', true);
@@ -109,7 +109,7 @@ begin
   perform custom.record_write(v_org, v_sup, jsonb_build_object('supplier', 'High Desert Pet Pharmacy'));
   perform set_config('role', 'postgres', true);
   select count(*) into v_n from platform.activity_log a
-   where a.organization_id = v_org and a.entity_type = 'custom_record:' || v_sup::text;
+   where a.organization_id = v_org and a.entity_type = 'record:' || v_sup::text;
   perform set_config('role', 'authenticated', true);
   if v_n <> 0 then raise exception '3: the Suppliers table has no webhook and still wrote % event(s)', v_n; end if;
   raise notice '3 PASS — a new supplier writes nothing: only a table somebody listens to grows the log.';
