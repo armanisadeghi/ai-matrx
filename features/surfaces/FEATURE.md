@@ -2005,6 +2005,22 @@ on the first.
 
 ## Change Log
 
+- **2026-09-25 — Drift-report "Remap to / Remove" works again: it writes as
+  the signed-in admin through `assoc_add`.** `POST /api/admin/surfaces/remediate-mapping`
+  handed the service-role client to `remediateBrokenMapping`, whose direct
+  `.update()` on `platform.associations` was refused on every call since wf_051
+  (23514, "declares actor_tier=code, but names no actor_system" — reproduced
+  live). The admin's own client cannot `.update()` either
+  (`associations_client_update_refused`), so the write now goes through the
+  registered door `public.assoc_add` (upsert on source/target/role; payload
+  replaced when `p_payload_kind` is set; label/position/metadata passed back
+  unchanged because assoc_add replaces metadata). Stamps `human` + the admin.
+  assoc_add's access ladder now decides: an admin without access to the
+  binding's agent is refused and the route answers **403 Forbidden** with the
+  database's reason (live: most `binding:u:<other person>` edges; a few
+  global/org ones). Guard: `remediate-broken-mapping.test.ts`;
+  `check-admin-client-governed-writes` reports zero.
+
 - **2026-09-18 — Structured context values stay structured from their surface
   producer.** `agent-builder`, `agent-run`, and the focused variable editor
   declared `agent_json` / `variable_json` as strings and applied
