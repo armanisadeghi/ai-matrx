@@ -108,7 +108,7 @@ function columnsFor(
     {
       id: "share",
       header: "Share",
-      accessorFn: (r) => r.share,
+      accessorFn: (r) => r.share * 100,
       filter: "number",
       width: 120,
       cell: (r) => <ShareBar share={r.share} />,
