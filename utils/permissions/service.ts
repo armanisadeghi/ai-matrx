@@ -164,7 +164,79 @@ export interface ResourceVisibility {
    * owner chose "Only people I share it with", or the organization shows members nothing by
    * default), and for every type outside the record store.
    */
-  organizationDefault?: { level: string; organizationName: string } | null;
+  organizationDefault?: {
+    level: string;
+    organizationName: string;
+    /** The organization whose default it is — its own availability row IS this default. */
+    organizationId?: string;
+  } | null;
+  /**
+   * WHO CAN SEE THIS (lane SHARE-LANE-CONTROL, VERIFIER-23 item 3). The owner's lane choice, as the
+   * record store's lane door names it in every state. Present only for kinds whose lane has a door
+   * (the record store); absent everywhere else, so no control is drawn that could not work.
+   */
+  whoCanSee?: WhoCanSee | null;
+}
+
+/** The three lanes the Share dialog's "Who can see this" control offers. */
+export type LaneChoice = "mine" | "organization" | "world";
+
+export interface WhoCanSee {
+  /** Which door reads and writes it: the record store's lane doors, or the row's visibility column. */
+  source: "store" | "visibility";
+  choice: LaneChoice;
+  /** The object's OWN organization (never the active one). Null when the door names none. */
+  organizationId: string | null;
+  organizationName: string | null;
+  /** What the organization's member default grants on it, whichever lane is chosen. */
+  memberDefaultLevel: string | null;
+  /** Organization members reach it right now through the member default. */
+  membersReachNow: boolean;
+  /** "Anyone with the link" is offered only when the world lane would accept it. */
+  worldOffered: boolean;
+}
+
+/** Lane → visibility for kinds whose lane IS their row's canonical visibility column. */
+export function laneOfVisibility(v: VisibilityValue | null): LaneChoice | null {
+  if (v === "personal") return "mine";
+  if (v === "internal") return "organization";
+  if (v === "link" || v === "public") return "world";
+  return null;
+}
+
+/**
+ * THE ONE WRITER OF THE RECORD STORE'S LANE. `custom.share_lane_set` needs the object's own
+ * organization (the lane door names it) and Admin on the thing; it moves the lane and the
+ * record's visibility together, and named people are untouched by it.
+ */
+export async function setStoreLane(
+  organizationId: string,
+  subjectId: string,
+  choice: LaneChoice,
+): Promise<ShareActionResult> {
+  const door = choice === "world" ? "community" : choice;
+  const { data, error } = await (
+    supabase as unknown as {
+      schema(name: string): {
+        rpc(
+          fn: string,
+          args: Record<string, unknown>,
+        ): PromiseLike<{ data: unknown; error: { message: string } | null }>;
+      };
+    }
+  )
+    .schema("custom")
+    .rpc("share_lane_set", {
+      p_organization_id: organizationId,
+      p_subject_id: subjectId,
+      p_choice: door,
+    });
+  if (error) return { success: false, error: errMessage(error) };
+  const said = (data as { message?: unknown } | null)?.message;
+  return {
+    success: true,
+    ...(typeof said === "string" ? { message: said } : {}),
+  };
 }
 
 /**
@@ -257,19 +329,49 @@ export async function getResourceVisibility(
       | { level?: unknown; organization_name?: unknown }
       | null
       | undefined;
+    const organizationDefault =
+      orgDefault && typeof orgDefault.level === "string"
+        ? {
+            level: orgDefault.level,
+            organizationName:
+              typeof orgDefault.organization_name === "string"
+                ? orgDefault.organization_name
+                : "this organization",
+            ...(typeof (orgDefault as { organization_id?: unknown }).organization_id === "string"
+              ? { organizationId: (orgDefault as { organization_id: string }).organization_id }
+              : {}),
+          }
+        : null;
+    const laneWord = typeof row.lane === "string" ? row.lane : null;
+    const choice: LaneChoice | null =
+      laneWord === "mine" || laneWord === "organization"
+        ? laneWord
+        : laneWord === "world"
+          ? "world"
+          : null;
+    const whoCanSee: WhoCanSee | null = choice
+      ? {
+          source: "store",
+          choice,
+          organizationId:
+            typeof row.organization_id === "string" ? row.organization_id : null,
+          organizationName:
+            typeof row.organization_name === "string"
+              ? row.organization_name
+              : (organizationDefault?.organizationName ?? null),
+          memberDefaultLevel:
+            typeof row.member_default_level === "string"
+              ? row.member_default_level
+              : (organizationDefault?.level ?? null),
+          membersReachNow: organizationDefault !== null,
+          worldOffered: row.world_open === true || choice === "world",
+        }
+      : null;
     return {
       isPublic: row.is_public === true,
       visibility: row.is_public === true ? "public" : null,
-      organizationDefault:
-        orgDefault && typeof orgDefault.level === "string"
-          ? {
-              level: orgDefault.level,
-              organizationName:
-                typeof orgDefault.organization_name === "string"
-                  ? orgDefault.organization_name
-                  : "this organization",
-            }
-          : null,
+      organizationDefault,
+      whoCanSee,
     };
   }
 
@@ -290,9 +392,30 @@ export async function getResourceVisibility(
   }
   const value = data[capabilities.publicState.column];
   if (capabilities.publicState.kind === "enum") {
+    const enumValue = isVisibilityValue(value) ? value : null;
+    // WHO CAN SEE THIS for a kind whose REACH is its row's `visibility` enum (a site, a note):
+    // personal is the owner and the people named, internal is every member of its organization.
+    // A kind whose public state is `card_visibility` (an agent, a workflow) is NOT drawn: that
+    // column says who sees the public card, not who may open the thing (measured 2026-09-25: 516
+    // agents are internal with a public card), so a lane control on it would lie.
+    const choice =
+      capabilities.publicState.column === "visibility" ? laneOfVisibility(enumValue) : null;
     return {
       isPublic: value === "public",
-      visibility: isVisibilityValue(value) ? value : null,
+      visibility: enumValue,
+      whoCanSee: choice
+        ? {
+            source: "visibility",
+            choice,
+            organizationId: null,
+            organizationName: null,
+            memberDefaultLevel: null,
+            membersReachNow: choice === "organization",
+            // "Anyone with the link" is the world lane's own act (iam.publish_to_world), which
+            // only the record store has; for these kinds "Anyone" lives on the Public tab.
+            worldOffered: false,
+          }
+        : null,
     };
   }
   return { isPublic: value === true, visibility: null };

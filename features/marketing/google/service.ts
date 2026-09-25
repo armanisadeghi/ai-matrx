@@ -626,10 +626,11 @@ export async function modifyGmailMessage(input: {
 /** Lists named Gmail labels only after the user requests them. */
 export async function listGmailLabels(
   connectionId: string,
+  offset = 0,
 ): Promise<GmailLabelsResult> {
   const response = await postGoogleBackend(
     "/api/google-integrations/gmail/labels",
-    { connection_id: connectionId },
+    { connection_id: connectionId, offset },
     "Gmail labels could not load. Try again.",
   );
   return (await response.json()) as GmailLabelsResult;

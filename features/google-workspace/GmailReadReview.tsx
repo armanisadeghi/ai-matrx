@@ -57,7 +57,9 @@ export function GmailReadReview() {
   const [mutationStatus, setMutationStatus] = useState("");
   const [labelId, setLabelId] = useState("");
   const [labels, setLabels] = useState<GmailLabelSummary[] | null>(null);
-  const [labelsHaveMore, setLabelsHaveMore] = useState(false);
+  const [nextLabelOffset, setNextLabelOffset] = useState<number | null>(null);
+  const [knownLabelIds, setKnownLabelIds] = useState<string[] | null>(null);
+  const [undo, setUndo] = useState<{ action: GmailModifyAction; labelId?: string } | null>(null);
 
   async function onSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -67,6 +69,8 @@ export function GmailReadReview() {
     setResult(null);
     setMessage(null);
     setMutationStatus("");
+    setKnownLabelIds(null);
+    setUndo(null);
     try {
       setResult(await searchGmail(connectionId, query.trim()));
     } catch (cause) {
@@ -82,8 +86,12 @@ export function GmailReadReview() {
     setError("");
     setMessage(null);
     setMutationStatus("");
+    setKnownLabelIds(null);
+    setUndo(null);
     try {
-      setMessage(await readGmailMessage(connectionId, messageId));
+      const opened = await readGmailMessage(connectionId, messageId);
+      setMessage(opened);
+      setKnownLabelIds(opened.label_ids ?? null);
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "This message could not open.",
@@ -93,9 +101,11 @@ export function GmailReadReview() {
     }
   }
 
-  async function onModify(action: GmailModifyAction) {
+  async function onModify(action: GmailModifyAction, labelOverride?: string, isUndo = false) {
     if (!connectionId || !message || !canModify || busy) return;
-    const requestedLabelId = labelId.trim();
+    const requestedLabelId = action === "add_label" || action === "remove_label"
+      ? (labelOverride ?? labelId)
+      : "";
     if (
       (action === "add_label" || action === "remove_label") &&
       !requestedLabelId
@@ -120,6 +130,7 @@ export function GmailReadReview() {
       }
       const description: Record<GmailModifyAction, string> = {
         archive: "Archived",
+        restore_inbox: "Restored to inbox",
         mark_read: "Marked as read",
         mark_unread: "Marked as unread",
         star: "Starred",
@@ -127,7 +138,34 @@ export function GmailReadReview() {
         add_label: "Added label",
         remove_label: "Removed label",
       };
-      setMutationStatus(`${description[action]} in Gmail.`);
+      const labelForAction: Partial<Record<GmailModifyAction, string>> = {
+        archive: "INBOX",
+        restore_inbox: "INBOX",
+        mark_read: "UNREAD",
+        mark_unread: "UNREAD",
+        star: "STARRED",
+        unstar: "STARRED",
+        add_label: requestedLabelId,
+        remove_label: requestedLabelId,
+      };
+      const inverse: Record<GmailModifyAction, GmailModifyAction> = {
+        archive: "restore_inbox",
+        restore_inbox: "archive",
+        mark_read: "mark_unread",
+        mark_unread: "mark_read",
+        star: "unstar",
+        unstar: "star",
+        add_label: "remove_label",
+        remove_label: "add_label",
+      };
+      const changedLabel = labelForAction[action];
+      const changed = knownLabelIds !== null && !!changedLabel &&
+        knownLabelIds.includes(changedLabel) !== updated.label_ids.includes(changedLabel);
+      setKnownLabelIds(updated.label_ids);
+      setUndo(changed && !isUndo
+        ? { action: inverse[action], ...(requestedLabelId ? { labelId: requestedLabelId } : {}) }
+        : null);
+      setMutationStatus(isUndo ? "Last change undone in Gmail." : `${description[action]} in Gmail.`);
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "This message could not be changed.",
@@ -137,18 +175,18 @@ export function GmailReadReview() {
     }
   }
 
-  async function onLoadLabels() {
+  async function onLoadLabels(offset = 0) {
     if (!connectionId || !canModify || busy) return;
     setBusy(true);
     setError("");
     try {
-      const result = await listGmailLabels(connectionId);
+      const result = await listGmailLabels(connectionId, offset);
       if (!Array.isArray(result.labels)) {
         throw new Error("Gmail did not return a label list. Try again.");
       }
-      setLabels(result.labels);
-      setLabelsHaveMore(result.has_more);
-      setLabelId("");
+      setLabels((previous) => offset === 0 ? result.labels : [...(previous ?? []), ...result.labels]);
+      setNextLabelOffset(result.has_more ? result.next_offset : null);
+      if (offset === 0) setLabelId("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Gmail labels could not load.");
     } finally {
@@ -208,8 +246,10 @@ export function GmailReadReview() {
               setMutationStatus("");
               setError("");
               setLabels(null);
-              setLabelsHaveMore(false);
+              setNextLabelOffset(null);
               setLabelId("");
+              setKnownLabelIds(null);
+              setUndo(null);
             }}
           >
             {accounts.map((account) => (
@@ -248,9 +288,14 @@ export function GmailReadReview() {
         </p>
       ) : null}
       {mutationStatus ? (
-        <p role="status" className="text-sm text-foreground">
-          {mutationStatus}
-        </p>
+        <div className="flex items-center gap-2 text-sm" role="status">
+          <span>{mutationStatus}</span>
+          {undo ? (
+            <Button type="button" variant="link" disabled={busy} onClick={() => void onModify(undo.action, undo.labelId, true)}>
+              Undo
+            </Button>
+          ) : null}
+        </div>
       ) : null}
       {result ? (
         <section
@@ -354,10 +399,10 @@ export function GmailReadReview() {
                         <option key={label.id} value={label.id}>{label.name}</option>
                       ))}
                     </select>
-                    {labelsHaveMore ? (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Showing the first 100 labels from this account.
-                      </p>
+                    {nextLabelOffset !== null ? (
+                      <Button type="button" variant="link" disabled={busy} onClick={() => void onLoadLabels(nextLabelOffset)}>
+                        Load more labels
+                      </Button>
                     ) : null}
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Button type="button" variant="outline" disabled={busy || !labelId} onClick={() => void onModify("add_label")}>

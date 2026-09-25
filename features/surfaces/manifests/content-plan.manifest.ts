@@ -440,7 +440,7 @@ Empty values mean the workspace is still loading, no site is selected, or the da
       kind: "single",
       // Declared server-side 2026-09-14 (aidream 97a8b3223); published to
       // @ai-matrx/agents on its next release — allowlisted until then.
-      mandateKey: "seo.strategy.site_brief.generate",
+      mandateKey: MANDATE_KEYS.seo__strategy__site_brief__generate,
       defaultAgentId: null,
       sortOrder: 130,
     },

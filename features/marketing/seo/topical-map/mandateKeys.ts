@@ -16,8 +16,9 @@
 
 /** The map-wide agent: reads and edits the whole map through the `topical_map` tool. */
 import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
-export const MAP_CURATION_MANDATE_KEY = dbAuthoredMandateKey("seo.map_curation");
+export const MAP_CURATION_MANDATE_KEY = dbAuthoredMandateKey(MANDATE_KEYS.seo__map_curation);
 
 /** The surface the mandate window is opened from (stamped onto notes written there). */
 export const TOPICAL_MAP_SURFACE_NAME = "matrx-user/marketing-topical-map";

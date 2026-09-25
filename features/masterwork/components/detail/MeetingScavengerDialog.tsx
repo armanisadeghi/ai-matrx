@@ -86,7 +86,7 @@ import { durableRunDialogOnOpenChange } from "@/lib/durable-run/durableRunDialog
  * here after the package republishes. Registered in
  * `scripts/mandate-keys-allowlist.json` with that reason.
  */
-const MEETING_MANDATE_KEY = "masterwork.meeting_scavenger";
+const MEETING_MANDATE_KEY = MANDATE_KEYS.masterwork__meeting_scavenger;
 
 const PREVIEW_PATH = "/masterworks/meeting/preview" satisfies keyof paths;
 const INGEST_PATH = "/masterworks/ingest-meeting" satisfies keyof paths;
@@ -152,6 +152,7 @@ import { createSittingStore, type SittingBase } from "../../sitting/sitting";
 import { useDialogSitting } from "../../sitting/useDialogSitting";
 import { SittingResumed } from "../../sitting/SittingResumed";
 import { IngestOutcome, RunStages } from "../RunStages";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 interface MeetingSitting extends SittingBase {
   text: string;

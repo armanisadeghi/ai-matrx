@@ -19,6 +19,7 @@ import type { ResourceType } from "@/utils/permissions/types";
 import { PermissionsList } from "@/features/sharing/components/PermissionsList";
 import { ShareWithUserTab } from "@/features/sharing/components/tabs/ShareWithUserTab";
 import { OrgAvailabilityNote } from "@/features/sharing/components/OrgAvailabilityNote";
+import { WhoCanSeeThis } from "@/features/sharing/components/WhoCanSeeThis";
 import { PublicAccessTab } from "@/features/sharing/components/tabs/PublicAccessTab";
 import { useToast } from "@/components/ui/use-toast";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -129,6 +130,8 @@ export default function ShareModalWindow({
     permissions,
     isPublic: resourceIsPublic,
     organizationDefault,
+    whoCanSee,
+    setWhoCanSee,
     loading,
     error,
     shareWithUser,
@@ -267,6 +270,11 @@ export default function ShareModalWindow({
 
           <div className="flex-1 mt-3 min-h-0 overflow-y-auto">
             <TabsContent value="users" className="mt-0 space-y-3 pb-4">
+              <WhoCanSeeThis
+                whoCanSee={whoCanSee}
+                canChange={isOwner && !ownerLoading}
+                onChoose={setWhoCanSee}
+              />
               <div>
                 <h3 className="text-sm font-medium mb-2">Current Access</h3>
                 <PermissionsList

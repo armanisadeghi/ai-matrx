@@ -21,6 +21,7 @@ import { BrainCircuit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { featureIntelligenceHref } from "../feature-intelligence/hrefs";
 import { IntelligenceIndicator } from "../feature-intelligence/IntelligenceIndicator";
+import type { IntelligenceContext } from "../feature-intelligence/types";
 
 interface MandateDoorLinkProps {
   /** Mandate-key domain, e.g. "crm", "masterwork", "workflow". */
@@ -32,6 +33,8 @@ interface MandateDoorLinkProps {
   label: string;
   /** `icon` (default) for a route header; `inline` is a text link for a body action row. */
   variant?: "icon" | "inline";
+  /** Values the intelligence page's place links need (`rulebookId`, `topicId`, …). */
+  context?: IntelligenceContext;
   className?: string;
 }
 
@@ -39,12 +42,13 @@ export function MandateDoorLink({
   feature,
   label,
   variant = "icon",
+  context,
   className,
 }: MandateDoorLinkProps) {
   if (variant === "inline") {
     return (
       <Link
-        href={featureIntelligenceHref(feature)}
+        href={featureIntelligenceHref(feature, { context })}
         className={cn(
           "inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground",
           className,
@@ -60,6 +64,7 @@ export function MandateDoorLink({
     <IntelligenceIndicator
       feature={feature}
       label={label}
+      context={context}
       size="md"
       className={className}
     />

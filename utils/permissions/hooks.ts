@@ -13,6 +13,7 @@ import {
   ResourceType,
   PermissionLevel,
   CheckPermissionOptions,
+  ShareActionResult,
   PermissionCheckResult,
 } from "./types";
 import {
@@ -29,8 +30,11 @@ import {
   getSharedWithMe,
   getResourceVisibility,
   setResourceVisibility,
+  setStoreLane,
+  type LaneChoice,
   type ResourceVisibility,
   type VisibilityValue,
+  type WhoCanSee,
 } from "./service";
 
 // ============================================================================
@@ -500,13 +504,84 @@ export function useSharing(
     [resourceType, resourceId, refresh],
   );
 
+  /**
+   * WHO CAN SEE THIS (lane SHARE-LANE-CONTROL). The record store's lane door names it; a kind whose
+   * reach IS its row's canonical visibility enum reads it off that same value (the Public tab's
+   * picker writes the same column, so the two can never disagree). Every other kind: null, and
+   * the control is absent.
+   */
+  const whoCanSee: WhoCanSee | null = visibility.whoCanSee
+    ? {
+        ...visibility.whoCanSee,
+        // A visibility-enum kind's row names no organization through this read; the page that
+        // opened the dialog resolved it from the object.
+        organizationId: visibility.whoCanSee.organizationId ?? organizationId ?? null,
+      }
+    : null;
+
+  const handleSetWhoCanSee = useCallback(
+    async (choice: LaneChoice): Promise<ShareActionResult> => {
+      if (!whoCanSee) {
+        return { success: false, error: "This item has no lane to choose." };
+      }
+      setLoading(true);
+      setError(null);
+      try {
+        let result: ShareActionResult;
+        if (whoCanSee.source === "store") {
+          if (!whoCanSee.organizationId) {
+            result = {
+              success: false,
+              error: "This item's organization could not be read, so its lane cannot be changed.",
+            };
+          } else {
+            result = await setStoreLane(whoCanSee.organizationId, resourceId, choice);
+          }
+        } else {
+          const next: VisibilityValue | null =
+            choice === "mine" ? "personal" : choice === "organization" ? "internal" : null;
+          result = next
+            ? await setResourceVisibility(resourceType, resourceId, next)
+            : { success: false, error: "Use the Public tab to put this out in the world." };
+        }
+        if (!result.success) {
+          setError(result.error || "Failed to change who can see this");
+          return result;
+        }
+        await refresh();
+        return result;
+      } catch (err) {
+        const errorMessage =
+          extractErrorMessage(err) || "Failed to change who can see this";
+        setError(errorMessage);
+        return { success: false, error: errorMessage };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [whoCanSee, resourceType, resourceId, refresh],
+  );
+
   return {
     permissions,
     isPublic: visibility.isPublic,
     /** The canonical enum value, or null for legacy boolean-backed types. */
     visibility: visibility.visibility,
-    /** Membership alone reaches it (record store only) — said under Current Access. */
-    organizationDefault: visibility.organizationDefault ?? null,
+    /**
+     * Membership alone reaches it — said under Current Access. The record store's door names it;
+     * a visibility-enum kind set to `internal` reaches every member of its organization too.
+     */
+    organizationDefault:
+      visibility.organizationDefault ??
+      (whoCanSee?.source === "visibility" && whoCanSee.choice === "organization"
+        ? {
+            level: "",
+            organizationName: "this organization",
+            ...(organizationId ? { organizationId } : {}),
+          }
+        : null),
+    whoCanSee,
+    setWhoCanSee: handleSetWhoCanSee,
     loading,
     error,
     shareWithUser: handleShareWithUser,

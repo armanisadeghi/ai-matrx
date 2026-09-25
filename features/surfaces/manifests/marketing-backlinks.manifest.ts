@@ -419,7 +419,7 @@ Freshness has two clocks: backlink_summary carries when the KPI snapshot was col
       // outreach program. Diagnoses the link profile only; it hands off to
       // `outreach_strategist` for anything actionable.
       defaultAgentId: null,
-      mandateKey: dbAuthoredMandateKey("seo.backlink_analysis"),
+      mandateKey: dbAuthoredMandateKey(MANDATE_KEYS.seo__backlink_analysis),
       sortOrder: 100,
     },
     {
@@ -432,7 +432,7 @@ Freshness has two clocks: backlink_summary carries when the KPI snapshot was col
       // outreach program. Plans and drafts ONLY; it never sends, and it has
       // no contact-lookup capability on this surface.
       defaultAgentId: null,
-      mandateKey: dbAuthoredMandateKey("crm.outreach_strategy"),
+      mandateKey: dbAuthoredMandateKey(MANDATE_KEYS.crm__outreach_strategy),
       sortOrder: 110,
     },
     {

@@ -36,6 +36,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ComposerChip } from "@/features/agents/components/inputs/smart-input/ComposerChip";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { AgentCredit } from "../components/AgentCredit";
 import {
   BookOpen,
@@ -703,6 +704,12 @@ export function ConductorPanel({
           <AgentCredit
             mandate={MANDATE_KEYS.masterwork__conductor}
             agent="masterwork_conductor"
+          />
+          <IntelligenceIndicator
+            feature="masterwork"
+            mandateKeys={[MANDATE_KEYS.masterwork__conductor]}
+            context={{ rulebookId }}
+            label="The AI that builds it with you"
           />
         </span>
       }

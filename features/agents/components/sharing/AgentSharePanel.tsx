@@ -8,6 +8,7 @@ import { useSharing } from "@/utils/permissions/hooks";
 import { PermissionsList } from "@/features/sharing/components/PermissionsList";
 import { ShareWithUserTab } from "@/features/sharing/components/tabs/ShareWithUserTab";
 import { OrgAvailabilityNote } from "@/features/sharing/components/OrgAvailabilityNote";
+import { WhoCanSeeThis } from "@/features/sharing/components/WhoCanSeeThis";
 import { PublicAccessTab } from "@/features/sharing/components/tabs/PublicAccessTab";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 
@@ -36,6 +37,9 @@ export function AgentSharePanel({
     revokeAccess,
     updateLevel,
     refresh,
+    whoCanSee,
+    setWhoCanSee,
+    organizationDefault,
   } = useSharing("agent", agentId, true);
 
   const userPermissions = permissions.filter((p) => p.grantedToUserId);
@@ -111,6 +115,12 @@ export function AgentSharePanel({
           />
           {activeSubTab === "users" && (
             <>
+              {/* WHO CAN SEE THIS (SHARE-LANE-CONTROL): absent for a kind with no lane door. */}
+              <WhoCanSeeThis
+                whoCanSee={whoCanSee}
+                canChange={isOwner}
+                onChoose={setWhoCanSee}
+              />
               <div>
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                   Current Access
@@ -122,7 +132,10 @@ export function AgentSharePanel({
                   onRevoke={revokeAccess}
                   loading={loading}
                 />
-                <OrgAvailabilityNote permissions={orgPermissions} />
+                <OrgAvailabilityNote
+                permissions={orgPermissions}
+                organizationDefault={organizationDefault}
+              />
               </div>
               {isOwner && (
                 <ShareWithUserTab

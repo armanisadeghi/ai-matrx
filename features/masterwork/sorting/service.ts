@@ -36,6 +36,7 @@ import {
   type SortPile,
   type SortRound,
 } from "./types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export const SORT_CASES_PATH = "/masterworks/sort/cases" satisfies keyof paths;
 export const SORT_BOUNDARY_PATH = "/masterworks/sort/boundary" satisfies keyof paths;
@@ -73,10 +74,10 @@ export const DECLARED_KNOB_DEFAULTS = {
  * the allowlist rows once the package republishes.
  */
 export const SORT_CASE_WRITER_MANDATE = dbAuthoredMandateKey(
-  "masterwork.sort_case_writer",
+  MANDATE_KEYS.masterwork__sort_case_writer,
 );
 export const SORT_DISTILLER_MANDATE = dbAuthoredMandateKey(
-  "masterwork.sort_distiller",
+  MANDATE_KEYS.masterwork__sort_distiller,
 );
 
 function eventData(event: unknown): Record<string, unknown> | null {

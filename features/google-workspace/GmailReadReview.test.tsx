@@ -233,10 +233,12 @@ it("changes only an opened message on the selected modify-granted account", asyn
     access_mode: "on_demand_read_only",
   });
   mockRead.mockResolvedValue({
-    id: "message_1", subject: "Review note", from_address: "sender@example.com", to_address: "reviewer@example.com", date: "Today", snippet: "Preview", text_body: "Body", truncated: false, access_mode: "on_demand_read_only",
+    id: "message_1", label_ids: [], subject: "Review note", from_address: "sender@example.com", to_address: "reviewer@example.com", date: "Today", snippet: "Preview", text_body: "Body", truncated: false, access_mode: "on_demand_read_only",
   });
-  mockModify.mockResolvedValue({ message_id: "message_1", label_ids: ["STARRED"] });
-  mockLabels.mockResolvedValue({ labels: [{ id: "Label_1", name: "Projects", type: "user" }], has_more: false });
+  mockModify.mockResolvedValueOnce({ message_id: "message_1", label_ids: ["STARRED"] })
+    .mockResolvedValueOnce({ message_id: "message_1", label_ids: [] })
+    .mockResolvedValueOnce({ message_id: "message_1", label_ids: ["Label_1"] });
+  mockLabels.mockResolvedValue({ labels: [{ id: "Label_1", name: "Projects", type: "user" }], has_more: false, next_offset: null });
   await act(async () => root.render(<GmailReadReview />));
   expect(mockModify).not.toHaveBeenCalled();
   const input = container.querySelector<HTMLInputElement>("#gmail-read-query")!;
@@ -250,8 +252,11 @@ it("changes only an opened message on the selected modify-granted account", asyn
   await act(async () => action("Star").click());
   expect(mockModify).toHaveBeenCalledWith({ connectionId: "owned-connection", messageId: "message_1", action: "star" });
   expect(container.querySelector("[role='status']")?.textContent).toContain("Starred in Gmail.");
+  await act(async () => action("Undo").click());
+  expect(mockModify).toHaveBeenLastCalledWith({ connectionId: "owned-connection", messageId: "message_1", action: "unstar" });
+  expect(container.querySelector("[role='status']")?.textContent).toContain("Last change undone in Gmail.");
   await act(async () => action("Load Gmail labels").click());
-  expect(mockLabels).toHaveBeenCalledWith("owned-connection");
+  expect(mockLabels).toHaveBeenCalledWith("owned-connection", 0);
   const picker = container.querySelector<HTMLSelectElement>("#gmail-label-picker")!;
   expect(picker.options[1].text).toBe("Projects");
   await act(async () => {

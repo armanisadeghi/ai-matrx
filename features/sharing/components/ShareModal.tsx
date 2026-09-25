@@ -37,6 +37,7 @@ import { ShareWithUserTab } from "./tabs/ShareWithUserTab";
 import { OutsideSharePanel } from "@/features/sharing/outside/OutsideSharePanel";
 import { shareWithOutsidePerson } from "@/features/sharing/outside/outsideShareService";
 import { OrgAvailabilityNote } from "./OrgAvailabilityNote";
+import { WhoCanSeeThis } from "./WhoCanSeeThis";
 import { PublicAccessTab } from "./tabs/PublicAccessTab";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -252,6 +253,8 @@ export function ShareModal({
     isPublic: resourceIsPublic,
     visibility: resourceVisibility,
     organizationDefault,
+    whoCanSee,
+    setWhoCanSee,
     setVisibility,
     loading,
     error,
@@ -421,6 +424,12 @@ export function ShareModal({
 
             <div className="flex-1 mt-3 min-h-0 overflow-y-auto">
               <TabsContent value="users" className="mt-0 space-y-3">
+                {/* WHO CAN SEE THIS (SHARE-LANE-CONTROL): the lane, above the people it limits. */}
+                <WhoCanSeeThis
+                  whoCanSee={whoCanSee}
+                  canChange={isOwner}
+                  onChoose={setWhoCanSee}
+                />
                 {/* Current user permissions */}
                 <div>
                   <h3 className="text-sm font-medium mb-2">Current Access</h3>

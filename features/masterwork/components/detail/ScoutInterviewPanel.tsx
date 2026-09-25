@@ -16,6 +16,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { AgentCredit } from "../AgentCredit";
 import {
   ExternalLink,
@@ -951,6 +952,12 @@ export function ScoutInterviewPanel({
           <MessagesSquare className="h-4 w-4 text-primary" aria-hidden />
           <span className="truncate">Interview</span>
           <AgentCredit mandate={MANDATE_KEYS.masterwork__scout} agent="masterwork_scout" />
+          <IntelligenceIndicator
+            feature="masterwork"
+            mandateKeys={[MANDATE_KEYS.masterwork__scout]}
+            context={{ rulebookId }}
+            label="The interviewer"
+          />
         </span>
       }
       headerActions={

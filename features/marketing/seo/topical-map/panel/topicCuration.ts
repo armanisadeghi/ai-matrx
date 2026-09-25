@@ -11,8 +11,9 @@
  * the key in this lane imports it from HERE, so that swap is one line.
  */
 import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
-export const TOPIC_CURATION_MANDATE_KEY = dbAuthoredMandateKey("seo.topic_curation");
+export const TOPIC_CURATION_MANDATE_KEY = dbAuthoredMandateKey(MANDATE_KEYS.seo__topic_curation);
 
 /** The surface every host of the panel belongs to (the manifest's `surfaceName`). */
 export const TOPICAL_MAP_SURFACE_NAME = "matrx-user/marketing-topical-map";

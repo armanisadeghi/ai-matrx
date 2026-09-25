@@ -45,6 +45,7 @@ import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import type { AgentWritePolicy } from "@/features/cms/types";
 import type { CmsHubSiteSummaryEntry } from "./cms.manifest";
 import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -795,7 +796,7 @@ You can also WRITE here, through apply_surface_write, and which targets you are 
       kind: "single",
       // Platform agent "Site Editor".
       defaultAgentId: null,
-      mandateKey: dbAuthoredMandateKey("cms.site_editing"),
+      mandateKey: dbAuthoredMandateKey(MANDATE_KEYS.cms__site_editing),
       sortOrder: 100,
     },
     {
@@ -806,7 +807,7 @@ You can also WRITE here, through apply_surface_write, and which targets you are 
       kind: "single",
       // Platform agent "Color Concepts".
       defaultAgentId: null,
-      mandateKey: dbAuthoredMandateKey("cms.theme_design"),
+      mandateKey: dbAuthoredMandateKey(MANDATE_KEYS.cms__theme_design),
       sortOrder: 110,
     },
     {
@@ -817,7 +818,7 @@ You can also WRITE here, through apply_surface_write, and which targets you are 
       kind: "single",
       // Platform agent "Website Content Writer".
       defaultAgentId: null,
-      mandateKey: dbAuthoredMandateKey("cms.content_writing"),
+      mandateKey: dbAuthoredMandateKey(MANDATE_KEYS.cms__content_writing),
       sortOrder: 120,
     },
   ],

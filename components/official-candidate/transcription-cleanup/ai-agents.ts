@@ -19,6 +19,7 @@
  */
 import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export interface AiPostProcessAgent {
   /** Local variant key for the picker — NOT an agent id. */
@@ -37,21 +38,21 @@ export interface AiPostProcessAgent {
 export const AI_POST_PROCESS_AGENTS: AiPostProcessAgent[] = [
   {
     id: "clean_with_context",
-    mandateKey: dbAuthoredMandateKey("transcripts.clean_with_context"),
+    mandateKey: dbAuthoredMandateKey(MANDATE_KEYS.transcripts__clean_with_context),
     name: "Transcription Cleaner Context Policies",
     transcriptVariableKey: "transcribed_text",
     contextPolicyKey: "transcription_user_context",
   },
   {
     id: "clean_with_context_variable",
-    mandateKey: dbAuthoredMandateKey("transcripts.clean_with_context_variable"),
+    mandateKey: dbAuthoredMandateKey(MANDATE_KEYS.transcripts__clean_with_context_variable),
     name: "Transcription Cleaner Context Variable",
     transcriptVariableKey: "transcribed_text",
     contextVariableKey: "context",
   },
   {
     id: "clean_without_context",
-    mandateKey: dbAuthoredMandateKey("transcripts.clean_without_context"),
+    mandateKey: dbAuthoredMandateKey(MANDATE_KEYS.transcripts__clean_without_context),
     name: "Instruction Transcript Cleaner (No Context)",
     transcriptVariableKey: "transcript",
   },

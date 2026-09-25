@@ -163,7 +163,7 @@ suggest a workaround for one.
       kind: "single",
       // Platform agent `outreach_strategist` (WP5 roster) — plans + drafts, refuses to send.
       defaultAgentId: null,
-      mandateKey: dbAuthoredMandateKey("crm.outreach_strategy"),
+      mandateKey: dbAuthoredMandateKey(MANDATE_KEYS.crm__outreach_strategy),
       sortOrder: 100,
     },
     {

@@ -7,6 +7,7 @@ import { useIsOwner, useSharing } from "@/utils/permissions/hooks";
 import { PermissionsList } from "@/features/sharing/components/PermissionsList";
 import { ShareWithUserTab } from "@/features/sharing/components/tabs/ShareWithUserTab";
 import { OrgAvailabilityNote } from "@/features/sharing/components/OrgAvailabilityNote";
+import { WhoCanSeeThis } from "@/features/sharing/components/WhoCanSeeThis";
 import { PublicAccessTab } from "@/features/sharing/components/tabs/PublicAccessTab";
 import {
   AccessSummaryPanel,
@@ -68,6 +69,9 @@ export function SiteAccessWorkspace({
     revokeAccess,
     updateLevel,
     refresh,
+    whoCanSee,
+    setWhoCanSee,
+    organizationDefault,
   } = useSharing("web_site", site.id, true);
 
   // Ownership has three states; only a resolved, error-free answer may
@@ -315,6 +319,12 @@ export function SiteAccessWorkspace({
 
               {view === "users" && (
                 <>
+                  {/* WHO CAN SEE THIS (SHARE-LANE-CONTROL): absent for a kind with no lane door. */}
+                  <WhoCanSeeThis
+                    whoCanSee={whoCanSee}
+                    canChange={isOwner}
+                    onChoose={setWhoCanSee}
+                  />
                   <div>
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                       Current Access
@@ -328,7 +338,10 @@ export function SiteAccessWorkspace({
                       copy={copyContext}
                       listLabel="Users"
                     />
-                    <OrgAvailabilityNote permissions={orgPermissions} />
+                    <OrgAvailabilityNote
+                    permissions={orgPermissions}
+                    organizationDefault={organizationDefault}
+                  />
                   </div>
                   {isOwner && (
                     <ShareWithUserTab

@@ -32,9 +32,23 @@ export function OrgAvailabilityNote({
    * the organization's default, and every member reaches it without a share. "Not shared with
    * anyone" above is true of shares; this line says who else really reaches it.
    */
-  organizationDefault?: { level: string; organizationName: string } | null;
+  organizationDefault?: {
+    level: string;
+    organizationName: string;
+    organizationId?: string;
+  } | null;
 }) {
-  const orgs = permissions.filter((p) => p.grantedToOrganizationId);
+  // SHARE-LANE-CONTROL: "Everyone in <org>" on a record-store thing is written as that
+  // organization's own availability row. It IS the default said in the line above, not a second
+  // organization, so it is not listed again as "also available".
+  const orgs = permissions.filter(
+    (p) =>
+      p.grantedToOrganizationId &&
+      !(
+        organizationDefault?.organizationId &&
+        p.grantedToOrganizationId === organizationDefault.organizationId
+      ),
+  );
   const defaultLine = organizationDefault ? (
     <p
       className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground"
@@ -44,8 +58,8 @@ export function OrgAvailabilityNote({
       <span>
         Everyone in {organizationDefault.organizationName} can{" "}
         {DEFAULT_VERB[organizationDefault.level] ?? "open"} this through the
-        organization&apos;s default. That is not a share; it is set in the
-        organization&apos;s settings.
+        organization&apos;s default. That is not a share; it is chosen under
+        &ldquo;Who can see this&rdquo;.
       </span>
     </p>
   ) : null;

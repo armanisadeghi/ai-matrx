@@ -7,6 +7,7 @@
 import { use } from "react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { RulebookDetailPage } from "@/features/masterwork/components/detail/RulebookDetailPage";
 
 export default function RulebookRoute({
@@ -28,6 +29,13 @@ export default function RulebookRoute({
               Rulebook
             </h1>
           </>
+        }
+        right={
+          <MandateDoorLink
+            feature="masterwork"
+            label="Masterwork agents"
+            context={{ rulebookId: id }}
+          />
         }
       />
       <div className="h-full overflow-y-auto bg-textured pt-[calc(var(--shell-header-h)+1rem)]">

@@ -36,6 +36,7 @@ import type {
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import type { AgentWritePolicy } from "@/features/cms/types";
 import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -404,7 +405,7 @@ You can also WRITE here, through apply_surface_write: the targets stage the open
       kind: "single",
       // Platform agent "Site Editor" (bound 2026-08-13; dormant since declared).
       defaultAgentId: null,
-      mandateKey: dbAuthoredMandateKey("cms.site_editing"),
+      mandateKey: dbAuthoredMandateKey(MANDATE_KEYS.cms__site_editing),
       sortOrder: 100,
     },
   ],

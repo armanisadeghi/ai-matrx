@@ -7,6 +7,7 @@
 import { redirect } from "next/navigation";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { MasterworkStudioPage } from "@/features/masterwork/browse/components/MasterworkStudioPage";
 
 export default async function AllRulebooksRoute() {
@@ -19,6 +20,11 @@ export default async function AllRulebooksRoute() {
           <h1 className="ml-2 truncate text-sm font-medium text-foreground">
             All Rulebooks
           </h1>
+          <MandateDoorLink
+            feature="masterwork"
+            label="Masterwork agents"
+            className="ml-auto mr-1"
+          />
         </div>
       </PageHeader>
       <div className="h-full overflow-y-auto bg-textured pt-[calc(var(--shell-header-h)+1rem)]">

@@ -179,6 +179,7 @@ export interface GoogleConnectionResult {
 /** Gmail read review contracts; kept local until the generated API snapshot is refreshed. */
 export interface GmailMessageSummary {
   id: string;
+  label_ids?: string[];
   thread_id: string | null;
   subject: string;
   from_address: string;
@@ -201,6 +202,7 @@ export interface GmailMessageDetail extends GmailMessageSummary {
 
 export type GmailModifyAction =
   | "archive"
+  | "restore_inbox"
   | "mark_read"
   | "mark_unread"
   | "star"
@@ -222,6 +224,7 @@ export interface GmailLabelSummary {
 export interface GmailLabelsResult {
   labels: GmailLabelSummary[];
   has_more: boolean;
+  next_offset: number | null;
 }
 
 export interface YouTubeVideoPreview {

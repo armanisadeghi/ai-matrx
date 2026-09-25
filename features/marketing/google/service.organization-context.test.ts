@@ -23,7 +23,7 @@ import {
   resetGate,
   selectOrganization,
 } from "@/lib/organization/__tests__/gate-harness";
-import { postGoogleBackend } from "./service";
+import { listGmailLabels, modifyGmailMessage, postGoogleBackend } from "./service";
 
 describe("Google backend transport — organization gate", () => {
   beforeEach(() => {
@@ -62,5 +62,27 @@ describe("Google backend transport — organization gate", () => {
     ).rejects.toMatchObject({ code: "organization_context_required" });
     expect(opened).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("sends one explicit Gmail change and loads labels through the same authenticated transport", async () => {
+    selectOrganization(getState, CHOSEN_ORG);
+    const fetchMock = mockFetchJson({ message_id: "message-1", label_ids: ["STARRED"] });
+    await modifyGmailMessage({
+      connectionId: "personal-connection",
+      messageId: "message-1",
+      action: "star",
+    });
+    const [modifyUrl, modifyInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(modifyUrl).toContain("/api/google-integrations/gmail/modify");
+    expect(JSON.parse(modifyInit.body as string)).toMatchObject({
+      connection_id: "personal-connection",
+      message_id: "message-1",
+      action: "star",
+    });
+    expect(organizationHeaderOf(fetchMock)).toBe(CHOSEN_ORG);
+
+    mockFetchJson({ labels: [{ id: "Label_1", name: "Projects", type: "user" }], has_more: false });
+    const labels = await listGmailLabels("personal-connection");
+    expect(labels.labels[0].name).toBe("Projects");
   });
 });

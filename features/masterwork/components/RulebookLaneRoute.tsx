@@ -40,6 +40,7 @@ import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { toast } from "@/lib/toast";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -344,6 +345,13 @@ function RulebookLaneRouteInstance({
             ) : null}
           </h1>
         </>
+      }
+      right={
+        <MandateDoorLink
+          feature="masterwork"
+          label="Masterwork agents"
+          context={{ rulebookId }}
+        />
       }
     />
   );

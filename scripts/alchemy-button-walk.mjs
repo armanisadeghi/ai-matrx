@@ -49,13 +49,11 @@ async function copyVariant(label) {
   if (!trigger) trigger = buttons.last();
   await page.evaluate(() => navigator.clipboard.writeText(""));
   await trigger.click();
-  const item = page.getByRole("menuitem", { name: new RegExp(label, "i") }).first();
+  const item = page.getByText(label, { exact: true }).first();
   const { v: shown } = await until(`menu item ${label}`, async () => (await item.count()) > 0, 15000);
   if (!shown) {
-    report.steps.push({ menu: await page.getByRole("menuitem").allInnerTexts() });
     throw new Error(`no menu item "${label}"`);
   }
-  report.steps.push({ menu: await page.getByRole("menuitem").allInnerTexts() });
   await item.click();
   const { v: text } = await until("clipboard", async () => {
     const t = await page.evaluate(() => navigator.clipboard.readText());

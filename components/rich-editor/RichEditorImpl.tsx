@@ -21,6 +21,7 @@ import { useDeferredValue, useEffect, useRef, useState, type ReactNode } from "r
 import {
   AlignLeft,
   Check,
+  ChevronDown,
   Code2,
   Eye,
   Focus,
@@ -423,6 +424,8 @@ export default function RichEditorImpl({
       </EditableContextMenu>
     );
 
+  const CurrentViewIcon = VIEW_META[view].icon;
+
   // The toolbar's tools, ONE list: buttons on desktop, a "More tools" menu on phones.
   const tools: Array<{ id: string; label: string; icon: typeof Search; active?: boolean; disabled?: boolean; run: () => void }> = [
     { id: "find", label: "Find & replace (⌘F)", icon: Search, active: findMode !== null, disabled: view === "preview", run: () => setFindMode((mode) => (mode ? null : "find")) },
@@ -508,6 +511,34 @@ export default function RichEditorImpl({
             {/* The tools scroll sideways on a narrow screen; the host's actions and
                 Save never do — they stay in view at any width. */}
             <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+            {isMobile ? (
+              // A phone gets the view as one compact menu, so every control fits.
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={`View: ${VIEW_META[view].label}`}
+                    title="Switch view"
+                    className="flex h-8 shrink-0 items-center gap-1 rounded-md border border-border bg-background/60 px-2 text-xs font-medium text-primary"
+                  >
+                    <CurrentViewIcon className="h-3.5 w-3.5" />
+                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-44">
+                  {VIEWS.map((option) => {
+                    const Icon = VIEW_META[option].icon;
+                    return (
+                      <DropdownMenuItem key={option} onSelect={() => switchView(option)}>
+                        <Icon className="mr-2 h-4 w-4" />
+                        <span className="flex-1">{VIEW_META[option].label}</span>
+                        {view === option && <Check className="ml-2 h-4 w-4 text-primary" />}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
             <div role="tablist" aria-label="View" className="flex shrink-0 items-center rounded-md border border-border bg-background/60 p-0.5">
               {VIEWS.map((option) => {
                 const Icon = VIEW_META[option].icon;
@@ -525,11 +556,12 @@ export default function RichEditorImpl({
                     )}
                   >
                     <Icon className="h-3.5 w-3.5" />
-                    <span className={cn(isMobile && "sr-only")}>{VIEW_META[option].label}</span>
+                    {VIEW_META[option].label}
                   </button>
                 );
               })}
             </div>
+            )}
             {!isMobile && (
               <>
                 <span className="mx-1 h-5 w-px shrink-0 bg-border" />

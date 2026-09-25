@@ -16,7 +16,11 @@ interface Snapshot {
   items: Map<string, VaultItemState>;
   error: string | null;
 }
-interface Intent { key: string; token: number }
+interface Intent {
+  key: string;
+  token: number;
+  operation: "favorite" | "touch";
+}
 const EMPTY_ITEMS = new Map<string, VaultItemState>();
 
 /** Canonical per-user state, intersected with the current authorized Vault list. */
@@ -114,7 +118,7 @@ export function useVaultItemState({ actorId, organizationId, scopeKey, itemIds }
 
   const run = async (itemId: string, requestKey: string, operation: "favorite" | "touch") => {
     if (!isCurrent(requestKey, itemId) || !ready(requestKey) || pending.current.has(itemId)) return false;
-    const intent = { key: requestKey, token: ++nextToken.current };
+    const intent = { key: requestKey, token: ++nextToken.current, operation };
     pending.current.set(itemId, intent);
     setPendingView({ key: requestKey, ids: new Set(pending.current.keys()) });
     try {
@@ -123,19 +127,19 @@ export function useVaultItemState({ actorId, organizationId, scopeKey, itemIds }
         : await favoritesService.touch("credential_item", itemId);
       if (!isCurrent(requestKey, itemId) || pending.current.get(itemId) !== intent) return false;
       if (isScopesRpcErr(result)) {
-        if (operation === "touch" && contextKey) queuedTouches.current.set(itemId, { key: contextKey, token: ++nextToken.current });
+        if (operation === "touch" && contextKey) queuedTouches.current.set(itemId, { key: contextKey, token: ++nextToken.current, operation: "touch" });
         fail(requestKey, operation === "favorite" ? "Couldn't update this favorite" : "Couldn't update this recent view");
         return false;
       }
       // Keep the per-item lock until the server readback finishes.
       const reconciled = await reconcile(itemId, requestKey, intent);
       if (!reconciled && operation === "touch" && isCurrent(requestKey, itemId) && pending.current.get(itemId) === intent && contextKey) {
-        queuedTouches.current.set(itemId, { key: contextKey, token: ++nextToken.current });
+        queuedTouches.current.set(itemId, { key: contextKey, token: ++nextToken.current, operation: "touch" });
       }
       return reconciled;
     } catch {
       if (pending.current.get(itemId) === intent && isCurrent(requestKey, itemId)) {
-        if (operation === "touch" && contextKey) queuedTouches.current.set(itemId, { key: contextKey, token: ++nextToken.current });
+        if (operation === "touch" && contextKey) queuedTouches.current.set(itemId, { key: contextKey, token: ++nextToken.current, operation: "touch" });
         fail(requestKey, operation === "favorite" ? "Couldn't update this favorite" : "Couldn't update this recent view");
       }
       return false;
@@ -155,8 +159,14 @@ export function useVaultItemState({ actorId, organizationId, scopeKey, itemIds }
 
   const touch = async (itemId: string) => {
     if (!key || !contextKey || !isCurrent(key, itemId)) return false;
-    if (!ready(key) || pending.current.has(itemId)) {
-      queuedTouches.current.set(itemId, { key: contextKey, token: ++nextToken.current });
+    const active = pending.current.get(itemId);
+    if (!ready(key) || active) {
+      // A retry drain and the routed-item effect can both express the same
+      // open in one commit. An in-flight touch already preserves that intent;
+      // queue only behind a different operation or before state is ready.
+      if (!active || active.operation !== "touch") {
+        queuedTouches.current.set(itemId, { key: contextKey, token: ++nextToken.current, operation: "touch" });
+      }
       return true; // The explicit intent was accepted; the effect owns delivery.
     }
     return run(itemId, key, "touch");

@@ -42,6 +42,7 @@ import type {
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import type { AgentWritePolicy } from "@/features/cms/types";
 import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -738,7 +739,7 @@ active_tab says where the user is and therefore what content and selection conta
       // client-site pages through the guarded CMS tools (bound 2026-08-13; the
       // role sat dormant with no default agent since it was declared).
       defaultAgentId: null,
-      mandateKey: dbAuthoredMandateKey("cms.site_editing"),
+      mandateKey: dbAuthoredMandateKey(MANDATE_KEYS.cms__site_editing),
       sortOrder: 100,
     },
     {
@@ -749,7 +750,7 @@ active_tab says where the user is and therefore what content and selection conta
       kind: "single",
       // Platform agent "Website Content Writer".
       defaultAgentId: null,
-      mandateKey: dbAuthoredMandateKey("cms.seo_metadata"),
+      mandateKey: dbAuthoredMandateKey(MANDATE_KEYS.cms__seo_metadata),
       sortOrder: 110,
     },
     {
@@ -760,7 +761,7 @@ active_tab says where the user is and therefore what content and selection conta
       kind: "single",
       // Platform agent "Site Editor" (verification is half its job).
       defaultAgentId: null,
-      mandateKey: dbAuthoredMandateKey("cms.publish_review"),
+      mandateKey: dbAuthoredMandateKey(MANDATE_KEYS.cms__publish_review),
       sortOrder: 120,
     },
   ],

@@ -29,6 +29,7 @@ import type {
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /** Per-slot summary entry inside `custom_slots_summary`. */
 export interface CleanupSlotSummary {
@@ -555,7 +556,7 @@ export const transcriptsCleanupManifest: SurfaceManifest = {
       kind: "single",
       // Platform default: "Transcription Cleaner Context Policies" (system agent).
       defaultAgentId: null,
-      mandateKey: dbAuthoredMandateKey("transcripts.clean_with_context"),
+      mandateKey: dbAuthoredMandateKey(MANDATE_KEYS.transcripts__clean_with_context),
       allowCustom: true,
       autoRun: "user-choice",
       sortOrder: 10,
