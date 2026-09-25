@@ -404,14 +404,15 @@ export function storeDefaultSort(
 export type StoreHandOrder = { status: string; enabled: boolean; order: string[] };
 
 /**
- * THE OLDER `row_ordering_config` FOR A STORE TABLE: its default sort, plus `{enabled, order}`
- * when the Table says `row_order: "manual"` and the store keeps the order (G13's view). Where
- * the store cannot keep one, only the sort is handed on — the grid then draws no Reorder.
+ * THE OLDER `row_ordering_config` FOR A STORE TABLE (ORDER-FIX): `{enabled, order}` when the Table's
+ * view keeps a hand-set order — that order IS the sort, so the Table's saved sort is NOT handed on
+ * beside it (it drew over the order on production: VERIFIER-19 finding 2). Otherwise the saved sort
+ * only; where the store cannot keep an order the grid then draws no Reorder.
  */
 export function withHandOrder(
   sort: Record<string, unknown> | null,
   hand: StoreHandOrder,
 ): Record<string, unknown> | null {
   if (hand.status !== "served" || !hand.enabled) return sort;
-  return { ...(sort ?? {}), enabled: true, order: [...hand.order] };
+  return { enabled: true, order: [...hand.order] };
 }

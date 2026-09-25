@@ -128,6 +128,11 @@ type Snapshot = {
   rows: GridRow[];
   /** The caller's level on the Table, from `custom.my_levels`. */
   level: string | null;
+  /**
+   * The hand-set order, when the Table's view keeps one (ORDER-FIX): it IS the Sheet's sort, so a
+   * page read with no column sort comes back in it — on every page, not only within one.
+   */
+  handOrder: string[] | null;
   at: number;
 };
 
@@ -218,56 +223,67 @@ async function readEveryRow(
   return { success: true, data: out };
 }
 
-// ─── G13: the hand-set row order ─────────────────────────────────────────────
+// ─── G13 + ORDER-FIX: the hand-set row order ─────────────────────────────────
 //
 // The older grid kept ONE hand-made order per table (`row_ordering_config = {enabled, order}`).
-// The store keeps an order on a VIEW (G13, `platform.saved_view.metadata.record_positions`) and
-// the Table says whether it is ordered by hand (`row_order: "manual" | "sorted"`). So the Sheet's
-// order is: the Table says `manual`, and the order is the one kept on the Table's hand-ordered
-// view (the oldest of its views whose definition says `order: "manual"`; the Sheet declares one
-// named HAND_ORDER_VIEW the first time a person saves an order). Where the doors are not on the
-// database yet the capability is ABSENT (`hand_order` carries the store's sentence) and the
-// Reorder control is not drawn — never a button that cannot save.
+// The store keeps an order on a VIEW (G13, `platform.saved_view.metadata.record_positions`), and
+// ORDER-FIX made it the ONE representation (Airtable's rule: a manual order is one of a view's
+// sorts): a view is ordered by its sort OR by hand, never both — `definition.order = "manual"`
+// means the positions are the view's sort; placing rows removes the view's `sorts`; a saved
+// column sort (or `order: "sorted"`) replaces the hand order. The Table's own `row_order` word is
+// NOT read: 786 tables on production say "manual" beside a saved sort, so it means nothing.
+//
+// So the Sheet's order is the Table's hand-ordered view (the oldest view whose definition says
+// `order: "manual"`). When there is one, that order IS the Sheet's sort and the Table's saved sort
+// is not handed on over it. Saving an order writes it on that view, else on the view that was
+// hand-ordered before a sort replaced it, else on the Table's default view when that view IS the
+// Sheet (`layout: "sheet"`); only a table with none of these gets a new view,
+// on Save and never before, and it opens as the Sheet — the one layout that draws a hand-set
+// order (the records-ui grid draws the table's sort, so a grid tab would lie). Where the doors are
+// not on the database the capability is ABSENT (`hand_order` carries the store's sentence) and
+// the Reorder control is not drawn — never a button that cannot save.
 
 const HAND_ORDER_VIEW = "Hand-set order";
 
 type HandOrder = StoreHandOrder & { viewId: string | null };
+type ViewRow = { view_id: string; created_at: string; definition?: Record<string, unknown> | null };
 
-async function tableViews(
-  client: RecordsClient,
-  tableId: string,
-): Promise<Array<{ view_id: string; created_at: string; definition?: Record<string, unknown> | null }>> {
+async function tableViews(client: RecordsClient, tableId: string): Promise<ViewRow[]> {
   const views = await client.views({ table_id: tableId });
   if (!views.ok) return [];
   // `definition` is on every row the door answers (S0 one saved view); the installed client's
   // type predates it, so it is read as the door's own shape.
-  return (views.data as unknown as Array<{ view_id: string; created_at: string; definition?: Record<string, unknown> | null }>)
+  return (views.data as unknown as ViewRow[])
     .slice()
     .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
 }
 
-function manualViewId(views: Awaited<ReturnType<typeof tableViews>>): string | null {
+function manualViewId(views: readonly ViewRow[]): string | null {
   return views.find((v) => v.definition?.order === "manual")?.view_id ?? null;
 }
 
-async function handOrderViewId(client: RecordsClient, tableId: string): Promise<string | null> {
-  return manualViewId(await tableViews(client, tableId));
+/**
+ * Where a Sheet order is saved when no view is hand-ordered now: the view that WAS (its sort
+ * replaced the order; the store kept the positions, so the new order starts from them), else the
+ * Table's default view when it IS the Sheet. Never a second "Hand-set order" view.
+ */
+function sheetOrderViewId(views: readonly ViewRow[]): string | null {
+  return (
+    views.find((v) => v.definition?.order === "sorted")?.view_id ??
+    views.find((v) => v.definition?.is_default === true && v.definition?.layout === "sheet")?.view_id ??
+    null
+  );
 }
 
-async function readHandOrder(
-  home: RecordStoreHome,
-  client: RecordsClient,
-  tableId: string,
-  rowOrder: unknown,
-): Promise<HandOrder> {
+async function readHandOrder(home: RecordStoreHome, client: RecordsClient, tableId: string): Promise<HandOrder> {
   const views = await tableViews(client, tableId);
   const viewId = manualViewId(views);
   if (!viewId) {
-    // No hand-ordered view yet: does this store keep a hand-set order at all? The registry
+    // No hand-ordered view: does this store keep a hand-set order at all? The registry
     // (`custom.view_keys()`) says so, once per page load — never a probe that answers an error.
     const absent = await handOrderAbsence();
     if (absent) return { status: absent, enabled: false, order: [], viewId: null };
-    return { status: "served", enabled: rowOrder === "manual", order: [], viewId: null };
+    return { status: "served", enabled: false, order: [], viewId: null };
   }
   const order: string[] = [];
   for (let offset = 0; ; ) {
@@ -278,37 +294,38 @@ async function readHandOrder(
     offset += page.data.length;
     if (offset > READ_CEILING) break;
   }
-  return { status: "served", enabled: rowOrder === "manual", order, viewId };
+  return { status: "served", enabled: true, order, viewId };
 }
 
-/** Turn the hand-set order on with this order, or off (the Table goes back to its sort). */
+/**
+ * Keep this hand-set order (it becomes the Sheet's sort), or stop using one (the Sheet goes back to
+ * the Table's saved sort). Called only when the person SAVES — pressing Reorder writes nothing.
+ */
 export async function setRowOrdering(
   home: RecordStoreHome,
   args: { tableId: string; enabled: boolean; order: string[] },
 ): Promise<ServiceResult<null>> {
   const client = clientFor(home);
+  const views = await tableViews(client, args.tableId);
+  const manual = manualViewId(views);
   if (!args.enabled) {
-    const off = await client.recordUpdate({ record_id: args.tableId, patch: { row_order: "sorted" } });
+    if (!manual) return { success: true, data: null };
+    const off = await client.viewDeclare({ table_id: args.tableId, spec: { view_id: manual, definition: { order: "sorted" } } as never });
     invalidateRecordStoreTable(args.tableId);
     return off.ok ? { success: true, data: null } : refused(off.error);
   }
-  let viewId = await handOrderViewId(client, args.tableId);
+  let viewId = manual ?? sheetOrderViewId(views);
   if (!viewId) {
     const made = await client.viewDeclare({
       table_id: args.tableId,
-      spec: { name: HAND_ORDER_VIEW, definition: { layout: "grid" } },
+      spec: { name: HAND_ORDER_VIEW, definition: { layout: "sheet" } },
     });
     if (!made.ok) return refused(made.error);
     viewId = made.data;
   }
   const kept = await viewRecordOrderSet(home, viewId, args.order);
-  if (!kept.ok) {
-    invalidateRecordStoreTable(args.tableId);
-    return refused(kept.error);
-  }
-  const on = await client.recordUpdate({ record_id: args.tableId, patch: { row_order: "manual" } });
   invalidateRecordStoreTable(args.tableId);
-  return on.ok ? { success: true, data: null } : refused(on.error);
+  return kept.ok ? { success: true, data: null } : refused(kept.error);
 }
 
 async function readSnapshot(home: RecordStoreHome, tableId: string): Promise<ServiceResult<Snapshot>> {
@@ -340,7 +357,7 @@ async function readSnapshot(home: RecordStoreHome, tableId: string): Promise<Ser
   // gallery read (records-ui `resolveTableStyle`); the Sheet has no view style of its own.
   if (decorations.ok) metadata.style = resolveTableStyle(decorations.data, fields, undefined);
   if (actions.ok) metadata.row_actions = olderRowActions(actions.data.actions, fields);
-  const hand = await readHandOrder(home, client, tableId, document.row_order);
+  const hand = await readHandOrder(home, client, tableId);
   const titleField = typeof document.title_field === "string" ? document.title_field : null;
   if (titleField && fields.some((f) => f.key === titleField)) {
     metadata.row_label = { kind: "field", field: titleField };
@@ -363,6 +380,7 @@ async function readSnapshot(home: RecordStoreHome, tableId: string): Promise<Ser
       columns,
       rows,
       level: level ? String(level) : null,
+      handOrder: hand.status === "served" && hand.enabled ? hand.order : null,
       at: Date.now(),
     },
   };
@@ -395,11 +413,20 @@ export async function getTableMetadata(
   };
 }
 
+/** The placed rows first, in their order; the rest after them as the store read them. */
+function inHandOrder(rows: readonly GridRow[], order: readonly string[]): GridRow[] {
+  const place = new Map(order.map((id, i) => [id, i]));
+  return rows
+    .map((row, i) => ({ row, i, p: place.get(row.id) }))
+    .sort((a, b) => (a.p ?? Infinity) - (b.p ?? Infinity) || a.i - b.i)
+    .map((x) => x.row);
+}
+
 function pageRows(
   snap: Snapshot,
   args: { sortField?: string | null; sortDirection?: "asc" | "desc"; searchTerm?: string | null },
 ): GridRow[] {
-  let rows: GridRow[] = snap.rows;
+  let rows: GridRow[] = snap.handOrder && !args.sortField ? inHandOrder(snap.rows, snap.handOrder) : snap.rows;
   if (args.searchTerm) rows = searchRowsLikeTheOlderStore(rows, args.searchTerm);
   if (args.sortField) {
     const column = snap.columns.find(
@@ -979,7 +1006,21 @@ export async function setDefaultSort(
   args: { tableId: string; sortField?: string; sortDirection?: "asc" | "desc" },
 ): Promise<ServiceResult<null>> {
   const value = storeDefaultSort(args.sortField, args.sortDirection);
-  const written = await clientFor(home).recordUpdate({ record_id: args.tableId, patch: { default_sort: value } });
+  const client = clientFor(home);
+  // ORDER-FIX: saving a column sort REPLACES a hand-set order (Airtable's rule). The store flips the
+  // hand-ordered view to sorted when it is given a sort; its positions stay, so the next Save of an
+  // order starts from the one last kept.
+  if (value.length > 0) {
+    const manual = manualViewId(await tableViews(client, args.tableId));
+    if (manual) {
+      const replaced = await client.viewDeclare({ table_id: args.tableId, spec: { view_id: manual, definition: { sorts: value } } as never });
+      if (!replaced.ok) {
+        invalidateRecordStoreTable(args.tableId);
+        return refused(replaced.error);
+      }
+    }
+  }
+  const written = await client.recordUpdate({ record_id: args.tableId, patch: { default_sort: value } });
   invalidateRecordStoreTable(args.tableId);
   if (!written.ok) return refused(written.error);
   return { success: true, data: null };

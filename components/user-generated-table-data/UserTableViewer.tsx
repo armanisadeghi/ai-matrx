@@ -942,8 +942,13 @@ const UserTableViewer = ({
         setTotalCount(meta.data.row_count);
         setTotalPages(Math.ceil(meta.data.row_count / pageLimit));
 
-        // Apply saved default sort on initial load (when no sort is specified)
-        if (!sort && currentTableInfo?.row_ordering_config?.default_sort) {
+        // Apply saved default sort on initial load (when no sort is specified). ORDER-FIX: a
+        // hand-set order IS the table's sort (Airtable's rule), so a saved column sort never
+        // draws over it — that is how a saved order stayed invisible (VERIFIER-19 finding 2).
+        const handOrdered =
+          currentTableInfo?.row_ordering_config?.enabled === true &&
+          rowOrderingIds(currentTableInfo.row_ordering_config.order).length > 0;
+        if (!sort && !handOrdered && currentTableInfo?.row_ordering_config?.default_sort) {
           const savedSort = currentTableInfo.row_ordering_config.default_sort;
           const fieldExists = currentFields.some(
             (f) => f.field_name === savedSort.field,
@@ -1864,43 +1869,6 @@ const UserTableViewer = ({
     return tableInfo.row_ordering_config.order;
   };
 
-  // Update row ordering configuration
-  const updateRowOrdering = async (newOrder: string[]) => {
-    try {
-      const saved = await setRowOrdering({ tableId, enabled: true, order: newOrder });
-      if (isServiceFailure(saved))
-        throw new Error(saved.error || "Failed to update row order");
-
-      // Clear sorted data cache when row ordering changes
-      setAllSortedData(null);
-
-      // Reload table data to reflect new order
-      await loadTableData(
-        currentPage,
-        limit,
-        sortField,
-        sortDirection,
-        searchTerm,
-        true,
-      );
-    } catch (err) {
-      console.error("Error updating row order:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to update row order",
-      );
-    }
-  };
-
-  // Enable row ordering for the table
-  const enableRowOrdering = async () => {
-    if (!data.length) return;
-
-    // Create initial order based on current data
-    const initialOrder = data.map((row) => row.id);
-    await updateRowOrdering(initialOrder);
-    setRowOrderingEnabled(true);
-  };
-
   // Disable row ordering
   const disableRowOrdering = async () => {
     try {
@@ -1935,9 +1903,23 @@ const UserTableViewer = ({
     try {
       setSavingSortPreference(true);
 
+      const replacesHandOrder = rowOrderingEnabled;
       const saved = await setDefaultSort({ tableId, sortField, sortDirection });
       if (isServiceFailure(saved))
         throw new Error(saved.error || "Failed to save sort preference");
+
+      if (replacesHandOrder) {
+        // ORDER-FIX: the store turned the hand-set order off when it took this sort. Read the
+        // table again so the grid and the sort control say what the store now holds.
+        const label = fields.find((f) => f.field_name === sortField)?.display_name || sortField;
+        toast({
+          title: `Sorted by ${label} ${sortDirection === "asc" ? "↑" : "↓"}`,
+          description: "This sort replaced the hand-set order. Reorder puts the rows in an order by hand again.",
+        });
+        setAllSortedData(null);
+        await loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true);
+        return;
+      }
 
       // Update saved sort state
       setSavedSortField(sortField);
@@ -3771,9 +3753,25 @@ const UserTableViewer = ({
         </div>
       )}
 
+      {/* ORDER-FIX: a hand-set order IS the sort, and the sort control says so (Airtable's
+          "Manual"). Shown to every reader: rows in an order nobody explains is a screen that lies. */}
+      {!sortField && rowOrderingEnabled && (
+        <div
+          className="hidden shrink-0 items-center gap-1.5 text-xs md:flex"
+          data-sort-mode="manual"
+          title="The rows are in an order someone set by hand. Sorting by a column sets it aside; saving that sort replaces it."
+        >
+          <span className="text-gray-500 dark:text-gray-400">
+            Sort:{" "}
+            <span className="font-medium text-gray-700 dark:text-gray-300">Manual</span>
+          </span>
+          <span className="text-gray-400 dark:text-gray-500">· set by hand</span>
+        </div>
+      )}
+
       {/* Sort indicator with save option */}
       {sortField && !isReadOnly && (
-        <div className="hidden shrink-0 items-center gap-2 text-xs md:flex">
+        <div className="hidden shrink-0 items-center gap-2 text-xs md:flex" data-sort-mode="column">
           <span className="text-gray-500 dark:text-gray-400">
             Sorted by{" "}
             <span className="font-medium text-gray-700 dark:text-gray-300">
@@ -3782,7 +3780,30 @@ const UserTableViewer = ({
             </span>
             <span className="ml-1">{sortDirection === "asc" ? "↑" : "↓"}</span>
           </span>
-          {isSortSaved ? (
+          {rowOrderingEnabled ? (
+            <>
+              <span className="text-gray-400 dark:text-gray-500">· hand-set order set aside</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs text-gray-600 dark:text-gray-300"
+                onClick={clearSort}
+                title="Go back to the order set by hand"
+              >
+                Back to manual
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                onClick={saveDefaultSort}
+                disabled={savingSortPreference}
+                title="Keep this sort as the table's order. It replaces the hand-set order."
+              >
+                {savingSortPreference ? "Saving..." : "Use this sort instead"}
+              </Button>
+            </>
+          ) : isSortSaved ? (
             <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
               Saved as default
@@ -4073,7 +4094,6 @@ const UserTableViewer = ({
         }
         // Row ordering functions
         rowOrderingEnabled={rowOrderingEnabled}
-        enableRowOrdering={enableRowOrdering}
         disableRowOrdering={disableRowOrdering}
         onRowOrderingSuccess={() => {
           // Clear any active sorting when row ordering is updated
@@ -4112,7 +4132,41 @@ const UserTableViewer = ({
         )}
         mobileViewControls={
           <div className="space-y-2">
-            {sortField && !isReadOnly ? (
+            {!sortField && rowOrderingEnabled ? (
+              <div className="rounded-lg bg-muted/40 px-3 py-2.5 text-sm" data-sort-mode="manual">
+                <div className="flex min-h-11 items-center gap-2 text-muted-foreground">
+                  Sort: <span className="font-medium text-foreground">Manual</span>
+                  <span className="text-xs">· set by hand</span>
+                </div>
+              </div>
+            ) : null}
+            {sortField && !isReadOnly && rowOrderingEnabled ? (
+              <div className="rounded-lg bg-muted/40 px-3 py-2.5 text-sm">
+                <div className="min-h-11 truncate py-2 text-muted-foreground">
+                  Sorted by{" "}
+                  <span className="font-medium text-foreground">
+                    {fields.find((field) => field.field_name === sortField)?.display_name || sortField}
+                  </span>{" "}
+                  {sortDirection === "asc" ? "↑" : "↓"} · hand-set order set aside
+                </div>
+                <div className="flex gap-2">
+                  <Button type="button" variant="ghost" size="sm" className="h-11 flex-1 text-xs" onClick={clearSort}>
+                    Back to manual
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-11 flex-1 text-xs text-primary"
+                    onClick={saveDefaultSort}
+                    disabled={savingSortPreference}
+                  >
+                    {savingSortPreference ? "Saving…" : "Use this sort instead"}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+            {sortField && !isReadOnly && !rowOrderingEnabled ? (
               <div className="rounded-lg bg-muted/40 px-3 py-2.5 text-sm">
                 <div className="flex min-h-11 items-center gap-2">
                   <span className="min-w-0 flex-1 truncate text-muted-foreground">

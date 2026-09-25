@@ -234,8 +234,8 @@ describe("a table's hand-set order (G13) reaches the grid as the older row order
   const sort = { default_sort: { field: "reset_date", direction: "asc" } };
   const order = ["49154b37-d134-4e1e-992f-7e95ca4b128e", "fbfbea36-cb6e-4eb1-b787-abeca7f0a7e6", "a68a644c-abc7-49be-9d46-621206e25663"];
 
-  it("hands the grid the order, beside the saved sort, when the store keeps it", () => {
-    expect(withHandOrder(sort, { status: "served", enabled: true, order })).toEqual({ ...sort, enabled: true, order });
+  it("hands the grid the order INSTEAD of the saved sort when the store keeps it (ORDER-FIX: the order is the sort)", () => {
+    expect(withHandOrder(sort, { status: "served", enabled: true, order })).toEqual({ enabled: true, order });
     expect(withHandOrder(null, { status: "served", enabled: true, order: [] })).toEqual({ enabled: true, order: [] });
   });
 

@@ -140,7 +140,6 @@ interface TableToolbarProps {
 
   // Row ordering functions
   rowOrderingEnabled?: boolean;
-  enableRowOrdering?: () => Promise<void>;
   disableRowOrdering?: () => Promise<void>;
   onRowOrderingSuccess?: () => void;
 
@@ -222,7 +221,6 @@ export default function TableToolbar({
 
   // Row ordering functions
   rowOrderingEnabled,
-  enableRowOrdering,
   disableRowOrdering,
   onRowOrderingSuccess,
   toolbarTrailing,
@@ -251,16 +249,11 @@ export default function TableToolbar({
     setShowReferenceOverlay(true);
   };
 
+  // ORDER-FIX: pressing Reorder writes NOTHING. It used to "enable" ordering first — which, on a
+  // record-store table, declared a saved view and wrote an order before the person had moved a
+  // row (VERIFIER-19 finding 2). The order is written once, when the person presses Save Order.
   const handleReorderClick = () => {
-    if (!rowOrderingEnabled && enableRowOrdering) {
-      // Auto-enable ordering and open modal
-      enableRowOrdering().then(() => {
-        setShowRowOrderingModal(true);
-      });
-    } else {
-      // Just open modal if already enabled
-      setShowRowOrderingModal(true);
-    }
+    setShowRowOrderingModal(true);
   };
 
   return (
@@ -382,8 +375,8 @@ export default function TableToolbar({
               className="whitespace-nowrap text-green-600 dark:text-green-400 border-green-300 dark:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
               title={
                 !rowOrderingEnabled
-                  ? "Enable row ordering and open reorder modal"
-                  : "Open row reordering modal"
+                  ? "Put the rows in an order by hand. Nothing changes until you save."
+                  : "Change the order set by hand"
               }
             >
               <GripVertical className="h-3.5 w-3.5 md:mr-1.5" />
@@ -495,9 +488,7 @@ export default function TableToolbar({
               {handOrderAvailable && (
               <MobileActionRow
                 icon={GripVertical}
-                label={
-                  rowOrderingEnabled ? "Reorder Rows" : "Enable & Reorder Rows"
-                }
+                label="Reorder Rows"
                 tone="green"
                 onClick={() => {
                   setShowMobileActions(false);
@@ -616,6 +607,7 @@ export default function TableToolbar({
             tableInfo={tableInfo}
             fields={fields}
             onSuccess={onRowOrderingSuccess || (() => loadTableData(true))}
+            startSort={sortField ? { field: sortField, direction: sortDirection ?? "asc" } : null}
           />
         </>
       )}

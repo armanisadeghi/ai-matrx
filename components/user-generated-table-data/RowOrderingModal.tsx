@@ -49,6 +49,12 @@ interface RowOrderingModalProps {
    */
   fields: TableField[];
   onSuccess: () => void;
+  /**
+   * The column sort the grid is drawn in right now, if any (ORDER-FIX). With no hand-set order yet,
+   * the list starts in the order the person is looking at; and the dialog says that saving replaces
+   * that sort.
+   */
+  startSort?: { field: string; direction: "asc" | "desc" } | null;
 }
 
 interface RowItem {
@@ -104,6 +110,7 @@ export default function RowOrderingModal({
   tableInfo,
   fields,
   onSuccess,
+  startSort = null,
 }: RowOrderingModalProps) {
   const [rows, setRows] = useState<RowItem[]>([]);
   // UI selection for "Label rows by": either the sentinel (use the table's
@@ -137,7 +144,12 @@ export default function RowOrderingModal({
       // rows, never the older door, which holds only the archived copy the move left.
       let rowList: any[];
       if (isRecordStoreTable(tableId)) {
-        const page = await getTablePage({ tableId, limit: 10000, offset: 0 });
+        const page = await getTablePage({
+          tableId,
+          limit: 10000,
+          offset: 0,
+          ...(startSort ? { sortField: startSort.field, sortDirection: startSort.direction } : {}),
+        });
         if (isServiceFailure(page)) throw new Error(page.error);
         rowList = page.data.rows;
       } else {
@@ -147,8 +159,8 @@ export default function RowOrderingModal({
             p_table_id: tableId,
             p_limit: 10000, // Large limit to get all rows
             p_offset: 0,
-            p_sort_field: undefined,
-            p_sort_direction: "asc",
+            p_sort_field: startSort?.field ?? undefined,
+            p_sort_direction: startSort?.direction ?? "asc",
             p_search_term: undefined,
           },
         );
@@ -191,7 +203,7 @@ export default function RowOrderingModal({
     } finally {
       setLoading(false);
     }
-  }, [tableId, tableInfo?.row_ordering_config]);
+  }, [tableId, tableInfo?.row_ordering_config, startSort?.field, startSort?.direction]);
 
   // Load all rows when modal opens
   useEffect(() => {
@@ -365,6 +377,15 @@ export default function RowOrderingModal({
             )}
           </DialogTitle>
         </DialogHeader>
+
+        {/* ORDER-FIX: say what Save does before it is pressed. A hand-set order IS the table's sort. */}
+        <p className="flex-shrink-0 text-xs text-muted-foreground" data-row-order-note>
+          {startSort
+            ? `Saving makes this order the table's sort. It replaces the sort by ${
+                fields.find((f) => f.field_name === startSort.field)?.display_name ?? startSort.field
+              } ${startSort.direction === "asc" ? "↑" : "↓"}. Nothing changes until you save.`
+            : "Saving makes this order the table's sort. Nothing changes until you save."}
+        </p>
 
         {/* Which column labels each row. Without this the dialog has to guess,
             and any guess is wrong for someone — a table whose first column is
