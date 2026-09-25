@@ -91,3 +91,32 @@ describe("user-list delete confirm copy is honest about a soft delete", () => {
     }
   });
 });
+
+/**
+ * A SECOND surface deletes the same `workbench.udt_structured_lists` row
+ * through a different path: `StructuredListManagerV2.tsx` -> `removeList` ->
+ * `deleteListSvc` -> `features/user-lists/service.ts`'s `deleteList`, whose
+ * own doc comment says "Soft delete. The row is tombstoned, not destroyed
+ * ... Pair with restoreList for undo." Its confirm dialog said "Permanently
+ * delete <list> and all of its items. This cannot be undone." — the same
+ * false claim, over the same table, fixed here independently because it is
+ * a separate call chain the first guard's `deleteListAction` filter does not
+ * reach.
+ */
+describe("structured-list manager delete confirm copy is honest about a soft delete", () => {
+  const SOURCE = readFileSync(
+    join(REPO_ROOT, "features/structured-lists/StructuredListManagerV2.tsx"),
+    "utf8",
+  );
+
+  it("does not claim the list delete is permanent", () => {
+    for (const { label, re } of PERMANENCE_PATTERNS) {
+      expect(SOURCE).not.toMatch(re);
+    }
+  });
+
+  it("names the truth: moves to Trash, restorable", () => {
+    expect(SOURCE).toMatch(/to the Trash/);
+    expect(SOURCE).toMatch(/restorable from\s+the Trash/);
+  });
+});

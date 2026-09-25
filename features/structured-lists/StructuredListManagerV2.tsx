@@ -329,8 +329,9 @@ function TopBar({
           title="Delete list"
           description={
             <>
-              Permanently delete <b>{list.list_name || "this list"}</b> and all
-              of its items. This cannot be undone.
+              Move <b>{list.list_name || "this list"}</b> and all of its items
+              to the Trash. It stops appearing in your lists — restorable from
+              the Trash.
             </>
           }
           confirmLabel="Delete"
