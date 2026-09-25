@@ -25,11 +25,7 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { textInputVariable } from "@/features/agents/utils/text-input-variable";
 import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { setHostVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import {
-  selectAccumulatedText,
-  selectPrimaryRequest,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
+import { selectLatestAnswerText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { selectInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
@@ -124,17 +120,12 @@ function ProTextareaAgentRunnerSession({
   );
 
   const store = useAppStore();
-  // THE RESULT, read the way Clean up reads it: the run's own answer text
-  // (the request's accumulated text, thinking stripped) — live, so a result
-  // that lands a tick after the status flips is still read. An agent that
-  // edited the working document hands back the document; one that ANSWERED
-  // with the revised text hands back its answer. Reading only the working
-  // document lost every answer-shaped result ("identical", verify-RC-B5 r3).
-  const requestText = useAppSelector((s) => {
-    const request = selectPrimaryRequest(conversationId)(s);
-    return request ? selectAccumulatedText(request.requestId)(s) : "";
-  });
-  const answer = stripThinkingStreaming(requestText).visible;
+  // THE RESULT, read the way Clean up reads it: the run's COMMITTED final
+  // answer (selectLatestAnswerText). An agent that edited the working document
+  // hands back the document; one that ANSWERED with the revised text hands
+  // back its answer. Reading only the working document lost every
+  // answer-shaped result ("identical", verify-RC-B5 r3).
+  const answer = useAppSelector(selectLatestAnswerText(conversationId));
   // A run this panel saw start (any live status), not yet handed back.
   const pendingRun = useRef(false);
   useEffect(() => {

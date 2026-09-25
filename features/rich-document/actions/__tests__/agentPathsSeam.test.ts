@@ -41,3 +41,33 @@ test("F7: a splice refusal reads as a sentence, never offsets or function names"
   expect(message).not.toMatch(/\[\d|islandEdit|xml_container/);
   expect(message).toMatch(/protected content/);
 });
+
+test("r4: the result handed on is the COMMITTED final answer — a code fence keeps its opening line", async () => {
+  const { selectLatestAnswerText } = await import(
+    "@/features/agents/redux/execution-system/messages/messages.selectors"
+  );
+  const answer = "Restart it:\n\n```bash\nsudo systemctl restart pos-paymentd\n```";
+  const state = {
+    messages: {
+      byConversationId: {
+        run: {
+          orderedIds: ["u", "a1", "t", "a2"],
+          byId: {
+            u: { id: "u", role: "user", content: [{ type: "text", text: "Fix it" }] },
+            a1: { id: "a1", role: "assistant", content: [{ type: "tool_call", id: "c1" }] },
+            t: { id: "t", role: "tool", content: [] },
+            a2: {
+              id: "a2",
+              role: "assistant",
+              content: [
+                { type: "thinking", text: "The user wants the fenced command kept." },
+                { type: "text", text: answer },
+              ],
+            },
+          },
+        },
+      },
+    },
+  } as never;
+  expect(selectLatestAnswerText("run")(state)).toBe(answer);
+});

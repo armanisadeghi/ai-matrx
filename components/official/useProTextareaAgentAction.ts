@@ -16,6 +16,8 @@ import {
   type AiProcessPhase,
 } from "@/features/transcription-cleanup/hooks/useAiPostProcess";
 import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectLatestAnswerText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import type { SessionContextItem } from "@/features/transcript-studio/types";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 
@@ -52,6 +54,13 @@ export function useProTextareaAgentAction(): UseProTextareaAgentActionResult {
     () => stripThinkingStreaming(ai.accumulatedText),
     [ai.accumulatedText],
   );
+  // The live stream projection is for WATCHING; the result handed on is the
+  // COMMITTED final answer once it lands — the projection drops a code
+  // fence's opening line (verify-RC-B5 r4). Same selector every agent-run
+  // path reads (selectLatestAnswerText).
+  const committed = useAppSelector((s) =>
+    ai.conversationId ? selectLatestAnswerText(ai.conversationId)(s) : "",
+  );
 
   const run = useCallback(
     async (
@@ -84,7 +93,7 @@ export function useProTextareaAgentAction(): UseProTextareaAgentActionResult {
   return {
     phase: ai.phase,
     isBusy: ai.isBusy,
-    result: visible,
+    result: ai.phase === "complete" && committed.trim() ? committed : visible,
     isThinking,
     error: ai.error,
     run,

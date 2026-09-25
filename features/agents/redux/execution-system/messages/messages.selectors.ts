@@ -282,6 +282,22 @@ export const selectLatestAssistantMessageId =
     return undefined;
   };
 
+/**
+ * THE final answer of an agent run, as COMMITTED: the latest assistant
+ * message's answer text (thinking excluded). "" until that row carries text.
+ * An agent-run consumer that hands the result on (Clean up, Help with this…,
+ * Custom agent) reads THIS — the live stream projection drops a code fence's
+ * opening line, which made every fenced answer look like it destroyed a
+ * protected block (verify-RC-B5 r4).
+ */
+export const selectLatestAnswerText =
+  (conversationId: string) =>
+  (state: RootState): string => {
+    const id = selectLatestAssistantMessageId(conversationId)(state);
+    if (!id) return "";
+    return extractFlatText(state.messages.byConversationId[conversationId]?.byId?.[id]);
+  };
+
 // ---------------------------------------------------------------------------
 // Conversation-level fields
 // ---------------------------------------------------------------------------
