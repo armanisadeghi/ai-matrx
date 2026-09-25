@@ -337,5 +337,5 @@ it("the alchemy capture names the page and the four picks with names AND ids, an
     depth: "item",
     selection: { organization_id: CASTELLANO, scope_type_id: CLIENTS, scope_id: MERIDIAN, context_item_id: PHONE },
   });
-  expect(payload.context).toMatchObject({ page: "Context inspector", Scope: `Meridian Risk Services (${MERIDIAN})` });
+  expect(payload.context).toMatchObject({ page: "Context inspector", scope: `Meridian Risk Services (${MERIDIAN})` });
 });

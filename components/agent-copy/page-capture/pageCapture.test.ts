@@ -61,7 +61,7 @@ describe("pageCapture", () => {
 
   it("the groomer keeps the page and the selection, and lets the data be filtered", () => {
     const g = pageCaptureGroomer(inspector());
-    expect(g.kind).toBe("page-capture:admin-page");
+    expect(g.kind).toBe("page-capture.admin-page");
     const ids = g.sections.map((s) => s.id);
     expect(ids).toEqual(["page", "selection", "errors", "compare", "requests"]);
     const page = g.sections.find((s) => s.id === "page")!;
@@ -71,7 +71,7 @@ describe("pageCapture", () => {
     expect(data.build("full")).toEqual({ defects: 1, rows: [1, 2, 3] });
     expect(data.build("brief")).toBe("1 defect");
     // The envelope names the page and the picks on every variant.
-    expect(g.context).toMatchObject({ page: "Context inspector", Organization: `AI Matrx (${ORG})` });
+    expect(g.context).toMatchObject({ page: "Context inspector", organization: `AI Matrx (${ORG})`, "scope-type": `Apps (${TYPE})` });
   });
 
   it("'everything' carries every section; 'data only' keeps the page identity and drops requests", () => {
@@ -159,4 +159,16 @@ it("a descendant names what the page left unnamed, never overriding a name the p
   ]);
   expect(merged.identity.Table).toEqual({ id: "t1", name: "Clients" });
   expect(merged.identity.View).toBe("grid");
+});
+
+it("every variant builds through the kit's real envelope (xml-safe kind and context keys)", async () => {
+  const { buildAgentPayload } = await import("@ai-matrx/kit/content-transfer");
+  for (const variant of ["everything", "data"] as const) {
+    const text = buildAgentPayload(pageCapturePayload(inspector(), variant));
+    expect(text).toContain("Context inspector");
+    expect(text).toContain(`AI Matrx (${ORG})`);
+    expect(text).toContain(`Apps (${TYPE})`);
+  }
+  const t = tablePageCapture({ title: "Clients", route: "/data-v2/t1", table: { id: "t1", name: "Clients" }, sections: [] });
+  expect(() => buildAgentPayload(pageCapturePayload(t, "everything"))).not.toThrow();
 });

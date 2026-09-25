@@ -114,7 +114,7 @@ try {
   }
   await until("compare", async () =>
     (await page.locator("[data-compare-side]").count()) >= 2 || (await page.locator("text=Comparison unavailable").count()) > 0, 180000);
-  await page.screenshot({ path: `${OUT}/1-inspector-after-picks.png`, fullPage: true });
+  await page.screenshot({ path: `${OUT}/1-inspector-after-picks.png`, fullPage: true, timeout: 90000 }).catch(() => undefined);
   report.inspectorUrl = page.url().replace(ORIGIN, "");
   const inspector = await copyVariant("Everything on this page");
   writeFileSync(`${OUT}/inspector-capture.md`,
@@ -129,7 +129,7 @@ try {
     await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
     await until("table page", async () => (await page.locator("[data-page-capture]").count()) > 0, 240000);
     await page.waitForTimeout(4000);
-    await page.screenshot({ path: `${OUT}/2-table-page.png`, fullPage: false });
+    await page.screenshot({ path: `${OUT}/2-table-page.png`, fullPage: false, timeout: 90000 }).catch(() => undefined);
     report.tableUrl = page.url().replace(ORIGIN, "");
     const table = await copyVariant("Everything on this page");
     writeFileSync(`${OUT}/table-capture.md`,

@@ -171,13 +171,27 @@ function pageBlock(c: PageCapture) {
   };
 }
 
+/** An envelope key is an XML name (the kit refuses anything else): "Scope type" → "scope-type". */
+export function envelopeKey(label: string): string {
+  const slug = label
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_.-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return /^[a-z_]/.test(slug) ? slug : `k-${slug || "value"}`;
+}
+
+function keyed(rec: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(Object.entries(rec).map(([k, v]) => [envelopeKey(k), v]));
+}
+
 function envelopeContext(c: PageCapture): Record<string, string> {
   return {
     page: c.title,
     "surface-kind": c.kind,
     route: c.route,
-    ...describeRecord(c.identity),
-    ...describeRecord(c.selection),
+    ...keyed(describeRecord(c.identity)),
+    ...keyed(describeRecord(c.selection)),
   };
 }
 
@@ -250,7 +264,7 @@ export function pageCaptureGroomer(c: PageCapture): AlchemyGroomerConfig {
   }
   return {
     label: c.title,
-    kind: `page-capture:${c.kind}`,
+    kind: `page-capture.${c.kind}`,
     location: `${c.title} — ${c.route}`,
     description: `What the person sees on ${c.title}: the page, the selection, the data${c.requests.length ? " and the recent requests" : ""}.`,
     context: envelopeContext(c),
