@@ -57,6 +57,26 @@ const ICONS: Record<string, LucideIcon> = {
   Workflow,
 };
 
+/** The icons a person may pick for a kit they save (each renders here). */
+export const KIT_ICON_CHOICES = [
+  "package",
+  "cpu",
+  "table",
+  "tags",
+  "search",
+  "book-open",
+  "layers",
+  "message-circle",
+  "file-text",
+  "list-checks",
+  "target",
+  "sliders-horizontal",
+  "palette",
+  "workflow",
+  "database",
+  "hash",
+] as const;
+
 const warned = new Set<string>();
 
 export function kitIconFor(name: string | undefined | null): LucideIcon {

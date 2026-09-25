@@ -74,12 +74,18 @@ export interface KitsRead {
   error: string | null;
 }
 
-export async function fetchKits(client: Client): Promise<KitsRead> {
+/**
+ * The active kits ONE organization publishes (THE VIEW LAW: every list declares its
+ * own scope — never "whatever RLS lets me see", which for a platform admin is every
+ * organization's kits). The platform's kits are the system organization's.
+ */
+export async function fetchKits(client: Client, organizationId: string): Promise<KitsRead> {
   const { data, error } = await client
     .from("catalog_entries")
-    .select("key, payload, sort_order")
+    .select("key, payload, sort_order, organization_id, created_by")
     .eq("app", KIT_CATALOG.app)
     .eq("kind", KIT_CATALOG.kind)
+    .eq("organization_id", organizationId)
     .eq("is_active", true)
     .order("sort_order", { ascending: true })
     .order("key", { ascending: true });
@@ -87,7 +93,15 @@ export async function fetchKits(client: Client): Promise<KitsRead> {
   const kits: KitEntry[] = [];
   for (const row of data ?? []) {
     const manifest = parseKitManifest(row.key, row.payload);
-    if (manifest) kits.push({ key: row.key, sortOrder: row.sort_order ?? 0, manifest });
+    if (manifest) {
+      kits.push({
+        key: row.key,
+        sortOrder: row.sort_order ?? 0,
+        manifest,
+        organizationId: row.organization_id,
+        createdBy: row.created_by,
+      });
+    }
   }
   return { kits, error: null };
 }
@@ -98,7 +112,7 @@ export async function fetchKit(
 ): Promise<{ kit: KitEntry | null; error: string | null }> {
   const { data, error } = await client
     .from("catalog_entries")
-    .select("key, payload, sort_order")
+    .select("key, payload, sort_order, organization_id, created_by")
     .eq("app", KIT_CATALOG.app)
     .eq("kind", KIT_CATALOG.kind)
     .eq("key", key)
@@ -110,7 +124,16 @@ export async function fetchKit(
   if (!manifest) {
     return { kit: null, error: `The catalog entry for "${key}" is not a valid kit manifest.` };
   }
-  return { kit: { key: data.key, sortOrder: data.sort_order ?? 0, manifest }, error: null };
+  return {
+    kit: {
+      key: data.key,
+      sortOrder: data.sort_order ?? 0,
+      manifest,
+      organizationId: data.organization_id,
+      createdBy: data.created_by,
+    },
+    error: null,
+  };
 }
 
 /** The fork's source agents, by id — name + description for the detail page's agent card. */

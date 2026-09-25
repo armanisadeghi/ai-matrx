@@ -1107,6 +1107,13 @@ const ShareLinkDialog = lazyOverlay(
     ),
   { ssr: false },
 );
+const SaveKitDialog = lazyOverlay(
+  () =>
+    import("@/features/kits/components/SaveKitDialog").then((m) => ({
+      default: m.SaveKitDialog,
+    })),
+  { ssr: false },
+);
 const ShareModalWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/ShareModalWindow"),
   { ssr: false },
@@ -1641,6 +1648,9 @@ export default function OverlayController() {
     shareLinkDialog: useAppSelector((s) =>
       selectIsOverlayOpen(s, "shareLinkDialog"),
     ),
+    saveKitDialog: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "saveKitDialog"),
+    ),
     shareModalWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "shareModalWindow"),
     ),
@@ -2078,6 +2088,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     shareLinkDialog: useAppSelector((s) =>
       selectOverlayData(s, "shareLinkDialog"),
+    ) as Record<string, unknown> | null,
+    saveKitDialog: useAppSelector((s) =>
+      selectOverlayData(s, "saveKitDialog"),
     ) as Record<string, unknown> | null,
     shareModalWindow: useAppSelector((s) =>
       selectOverlayData(s, "shareModalWindow"),
@@ -7351,6 +7364,26 @@ export default function OverlayController() {
       })()}
 
       {/* TODO: review prop wiring for shareModalWindow */}
+      {/* saveKitDialog */}
+      {(() => {
+        const isOpen = isOpenById.saveKitDialog;
+        const data = dataById.saveKitDialog as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <SaveKitDialog
+            isOpen
+            onClose={() => dispatch(closeOverlay({ overlayId: "saveKitDialog" }))}
+            initialAgentId={
+              typeof data?.initialAgentId === "string" ? data.initialAgentId : null
+            }
+            editKitKey={
+              typeof data?.editKitKey === "string" ? data.editKitKey : null
+            }
+          />
+        );
+      })()}
+
       {/* shareModalWindow */}
       {(() => {
         const isOpen = isOpenById.shareModalWindow;

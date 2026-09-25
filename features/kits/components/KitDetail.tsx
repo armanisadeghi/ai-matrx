@@ -12,6 +12,14 @@ import HeaderStructured from "@/features/shell/components/header/variants/varian
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { KIT_ROUTES, KIT_WORD } from "../constants";
 import { useKitInstall } from "../hooks/useKitInstall";
+import { useRouter } from "next/navigation";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { useOpenSaveKitDialog } from "@/features/overlays/openers/saveKitDialog";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { toast } from "@/lib/toast";
+import { unpublishKit } from "../publish";
+import type { HeaderAction } from "@/features/shell/components/header/variants/types";
 import type { KitEntry, KitHighlightKind, KitManifest } from "../types";
 import { describeBinding, HowItWorks } from "./HowItWorks";
 import { InstallPanel } from "./InstallPanel";
@@ -118,11 +126,49 @@ export function KitDetail({
   const m = kit.manifest;
   const api = useKitInstall(m);
   const installed = api.install?.status === "installed";
+  const router = useRouter();
+  const userId = useAppSelector(selectUserId);
+  const openSave = useOpenSaveKitDialog();
+  // A kit an organization saved is its creator's to edit or take down (RLS agrees).
+  const mine = !!userId && kit.createdBy === userId && kit.organizationId !== null && kit.key.includes(".");
+  const ownerActions: HeaderAction[] = mine
+    ? [
+        { icon: "Pencil", label: `Edit this ${KIT_WORD.oneLower}`, onPress: () => openSave({ editKitKey: kit.key }) },
+        {
+          icon: "EyeOff",
+          label: `Unpublish this ${KIT_WORD.oneLower}`,
+          destructive: true,
+          onPress: () => {
+            void (async () => {
+              const ok = await confirm({
+                title: `Unpublish "${m.name}"?`,
+                description: `It leaves the ${KIT_WORD.manyLower} gallery for everyone in your organization, so nobody can install it from now on. Installs already made keep working and are not changed. The saved ${KIT_WORD.oneLower} is kept, not deleted.`,
+                confirmLabel: "Unpublish",
+                variant: "destructive",
+              });
+              if (!ok) return;
+              try {
+                await unpublishKit(kit.key);
+                toast.success(`"${m.name}" is unpublished.`);
+                router.push(KIT_ROUTES.gallery);
+              } catch (err) {
+                toast.error(err instanceof Error ? err.message : String(err));
+              }
+            })();
+          },
+        },
+      ]
+    : [];
 
   return (
     <>
       <PageHeader>
-        <HeaderStructured back title={m.name} context={<span className="text-xs text-muted-foreground">{KIT_WORD.one} · {m.category}</span>} />
+        <HeaderStructured
+          back
+          title={m.name}
+          context={<span className="text-xs text-muted-foreground">{KIT_WORD.one} · {m.category}</span>}
+          {...(ownerActions.length > 0 ? { actions: ownerActions } : {})}
+        />
       </PageHeader>
       <div className="h-full overflow-y-auto bg-textured">
         <div className="mx-auto w-full max-w-6xl px-4 pb-20 pt-[calc(var(--shell-header-h)+1.25rem)] sm:px-6">

@@ -112,6 +112,9 @@ export interface KitEntry {
   key: string;
   sortOrder: number;
   manifest: KitManifest;
+  /** The organization that publishes it (the platform's system org for platform kits). */
+  organizationId: string | null;
+  createdBy: string | null;
 }
 
 // ─── the install record ─────────────────────────────────────────────────────

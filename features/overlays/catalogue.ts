@@ -943,6 +943,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  saveKitDialog: {
+    label: "Save as Kit",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
   shareLinkDialog: {
     label: "Manage Share Links",
     instanceMode: "singleton",

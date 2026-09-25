@@ -36,3 +36,12 @@ export const KIT_ROUTES = {
 
 /** The server door that renders a binding exactly as the agent will see it (PLAN.md § P1). */
 export const BINDING_PREVIEW_PATH = "/agents/variable-bindings/preview";
+
+/**
+ * "Save as kit" limits. A knob-ready constant until the feature-knob row exists:
+ * the most example rows a saved kit carries per table (the rest are left out and
+ * the flow says so).
+ */
+export const KIT_SAVE = {
+  seedRowCap: 200,
+} as const;

@@ -19,6 +19,11 @@ import { useOpenAgentShortcutQuickCreateWindow } from "@/features/overlays/opene
 import { useOpenAgentAdminFindUsagesWindow } from "@/features/overlays/openers/agentAdminFindUsagesWindow";
 import { useOpenAgentImportWindow } from "@/features/overlays/openers/agentImportWindow";
 import { useOpenAgentInterfaceVariationsWindow } from "@/features/overlays/openers/agentInterfaceVariationsWindow";
+import { useOpenSaveKitDialog } from "@/features/overlays/openers/saveKitDialog";
+import { KIT_WORD } from "@/features/kits/constants";
+
+/** The menu label is also this item's dispatch key. */
+const SAVE_AS_KIT_LABEL = `Save as ${KIT_WORD.oneLower}`;
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
@@ -48,6 +53,7 @@ import {
   Archive,
   ArchiveRestore,
   Trash2,
+  PackagePlus,
 } from "lucide-react";
 import { toast } from "@/lib/toast-service";
 import { cn } from "@/lib/utils";
@@ -124,6 +130,10 @@ const AGENT_MANAGEMENT_ITEMS: MenuItem[] = [
   { label: "Convert to Template", icon: Shield },
   { label: "Create App", icon: AppWindow },
   { label: "Add Data Storage Support", icon: Database },
+  // Share this agent + the tables its variables read (+ the workflows that use
+  // them) as a one-click kit for the organization. The dialog says so plainly
+  // when the agent reads no tables yet.
+  { label: SAVE_AS_KIT_LABEL, icon: PackagePlus },
 ];
 
 // Global agent actions — not scoped to the current agent
@@ -243,6 +253,7 @@ export function AgentOptionsMenu({
   const openDataStorage = useOpenAgentDataStorageWindow();
   const openConvertSystem = useOpenAgentConvertSystemWindow();
   const openShortcut = useOpenAgentShortcutQuickCreateWindow();
+  const openSaveKit = useOpenSaveKitDialog();
   const openAdminFindUsages = useOpenAgentAdminFindUsagesWindow();
   const openImport = useOpenAgentImportWindow();
   const openInterfaceVariations = useOpenAgentInterfaceVariationsWindow();
@@ -440,6 +451,9 @@ export function AgentOptionsMenu({
         agentId,
       );
       openConvertSystem({ agentId: agentId ?? null });
+      setOpen(false);
+    } else if (label === SAVE_AS_KIT_LABEL) {
+      openSaveKit({ initialAgentId: agentId ?? null });
       setOpen(false);
     } else if (label === "Create Shortcut") {
       console.log("[AGENT OPTIONS MENU] Creating shortcut, Agent ID:", agentId);
@@ -785,6 +799,7 @@ function MobileMenuContent({
   const openDataStorage = useOpenAgentDataStorageWindow();
   const openConvertSystem = useOpenAgentConvertSystemWindow();
   const openShortcut = useOpenAgentShortcutQuickCreateWindow();
+  const openSaveKit = useOpenSaveKitDialog();
   const openAdminFindUsages = useOpenAgentAdminFindUsagesWindow();
   const openImport = useOpenAgentImportWindow();
   const openInterfaceVariations = useOpenAgentInterfaceVariationsWindow();
@@ -848,6 +863,9 @@ function MobileMenuContent({
       onClose();
     } else if (label === "Linked Agent Sync") {
       openConvertSystem({ agentId: agentId ?? null });
+      onClose();
+    } else if (label === SAVE_AS_KIT_LABEL) {
+      openSaveKit({ initialAgentId: agentId ?? null });
       onClose();
     } else if (label === "Create Shortcut") {
       openShortcut({ agentId: agentId ?? null });
