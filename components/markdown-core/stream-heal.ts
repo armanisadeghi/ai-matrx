@@ -25,7 +25,7 @@ import remend, {
   isWithinMathBlock,
   type RemendHandler,
 } from "remend";
-import { isSingleDollarMath, singleDollarMathEnd } from "@ai-matrx/content-ir/source";
+import { looksLikeOpenInlineMath, singleDollarMathEnd } from "@ai-matrx/content-ir/source";
 import { SYNTAX_STREAM_HANDLERS } from "./syntax/stream-heal-syntax";
 
 const TRAILING_REFERENCE_DEFINITION = /(^|\n) {0,3}\[[^\]\n]+\]:[^\n]*$/;
@@ -135,8 +135,10 @@ const pendingEmptyEmphasis: RemendHandler = {
 /**
  * An unclosed single-`$` formula on the last line (`For $N = 120{`,
  * `$\mathbb`) is held back from its `$` until it closes — it would print as
- * raw TeX. Whether a `$` opens math is THE core rule (isSingleDollarMath from
- * @ai-matrx/content-ir/source), so currency (`$35 per stop`) keeps showing.
+ * raw TeX. A CLOSED span is judged by THE core rule (`singleDollarMathEnd`);
+ * an UNCLOSED tail by `looksLikeOpenInlineMath` — both from
+ * @ai-matrx/content-ir/source — which needs a math signal, so currency
+ * (`$35 per stop`) keeps showing while it streams.
  * A bare trailing `$` is held for the one chunk until its next character says.
  */
 const pendingInlineMath: RemendHandler = {
@@ -177,7 +179,7 @@ const pendingInlineMath: RemendHandler = {
       const partial = text.slice(i + 1);
       const opensMath =
         partial === "" ||
-        (!/^\s/.test(partial) && isSingleDollarMath(partial.trimEnd(), undefined));
+        (!/^\s/.test(partial) && looksLikeOpenInlineMath(partial.trimEnd()));
       if (
         opensMath &&
         !isWithinCodeBlock(text, i) &&

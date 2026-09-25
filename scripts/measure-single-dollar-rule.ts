@@ -20,7 +20,8 @@
  * Usage:
  *   npx tsx scripts/measure-single-dollar-rule.ts
  *   … --samples /path/outside/the/repo.jsonl
- *   … --module <path to a candidate build of @ai-matrx/content-ir/source>
+ *   … --module <path to a candidate build of @ai-matrx/content-ir/source>  (its
+ *     isSingleDollarMath is measured as `candidate_module` against the published rule)
  *
  * READ ONLY: the session is set read-only before the first query.
  */
@@ -136,10 +137,12 @@ interface Tally {
 
 async function main(): Promise<number> {
   installBlockingStdio();
-  const m: SourceModule = modulePath
+  const m: SourceModule = await import("@ai-matrx/content-ir/source");
+  const candidate = modulePath
     ? ((await import(pathToFileURL(resolve(modulePath)).href)) as SourceModule)
-    : await import("@ai-matrx/content-ir/source");
-  const candidates: Record<string, Rule> = { pandoc, pandoc_digit_guard: pandocDigitGuard, pandoc_content: pandocContent, pandoc_content_glue: pandocContentGlue };
+    : undefined;
+  const candidates: Record<string, Rule> = {
+    ...(candidate ? { candidate_module: candidate.isSingleDollarMath } : {}), pandoc, pandoc_digit_guard: pandocDigitGuard, pandoc_content: pandocContent, pandoc_content_glue: pandocContentGlue };
   const sampled = process.env.SAMPLE_RULE ?? "pandoc";
 
   const env = loadDbEnv();

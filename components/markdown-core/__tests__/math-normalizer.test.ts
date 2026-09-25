@@ -14,7 +14,12 @@ const TABLE: Array<[string, string, string]> = [
   ["task list", "- [ ] todo", "- [ ] todo"],
   ["single-dollar tex", "Let $x^2$ be.", "Let $$x^2$$ be."],
   ["lone variable", "for all $n$ here", "for all $$n$$ here"],
-  ["digit-led needs tex", "$2x$ and $2^x$", "$2x$ and $$2^x$$"],
+  // content-ir 0.18.0 (Pandoc delimiters): `$2x$` is a formula like `$2a$` — a
+  // leading digit no longer needs a TeX command once the span is closed. A
+  // price glued to a word stays text: `$10$N9qo` (a bcrypt cost) and `$5-$10`.
+  ["digit-led closed span is math", "$2x$ and $2^x$", "$$2x$$ and $$2^x$$"],
+  ["digit glued to a word stays text", "hash $2a$10$N9qo8u", "hash $2a$10$N9qo8u"],
+  ["unit economics", "where $FC$ is fixed costs", "where $$FC$$ is fixed costs"],
   ["closing followed by digit", "$x$5", "$x$5"],
   ["space after opening", "$ x^2$", "$ x^2$"],
   ["inline paren", "a \\(x+1\\) b", "a $$x+1$$ b"],

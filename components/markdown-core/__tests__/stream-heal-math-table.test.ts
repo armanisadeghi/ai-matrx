@@ -30,6 +30,12 @@ describe("unclosed inline math while streaming", () => {
     // Currency and complete math stay exactly as written.
     ["The pickup costs $35 per stop and $12 per extra monitor", "The pickup costs $35 per stop and $12 per extra monitor"],
     ["Budget $5 for fuel", "Budget $5 for fuel"],
+    // A price is the stream's tail: no closer yet, so the wider closed-span
+    // rule (content-ir 0.18.0: `$5$` is math) must not decide — a number with
+    // no TeX command keeps showing (`looksLikeOpenInlineMath`).
+    ["The deposit is $5", "The deposit is $5"],
+    ["Each extra bin costs $12.50", "Each extra bin costs $12.50"],
+    ["The margin is $FC", "The margin is $FC"],
     ["A complete formula $x^2$ and then text", "A complete formula $x^2$ and then text"],
     ["Code keeps `$HOME/bin` literal", "Code keeps `$HOME/bin` literal"],
   ])("leaves %j alone", (prefix, expected) => {
