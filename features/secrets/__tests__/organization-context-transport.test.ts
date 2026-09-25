@@ -384,6 +384,56 @@ describe("Vault and Authenticator organization transport", () => {
     },
   );
 
+  test("a structured receipt-context denial is the only 403 classified as context change", async () => {
+    fetchMock.mockResolvedValueOnce(
+      receiptErrorResponse(403, "idempotency_context_denied"),
+    );
+    await expect(
+      createVaultItem(
+        { display_name: "Imported", source: "system_import" },
+        {
+          idempotencyKey: "00000000-0000-4000-8000-000000000001",
+          expectedActor: { userId: "user-1", organizationId: ORGANIZATION_ID },
+        },
+      ),
+    ).rejects.toMatchObject({ code: "context_changed" });
+
+    fetchMock.mockResolvedValueOnce(errorResponse(403));
+    await expect(
+      createVaultItem(
+        { display_name: "Imported", source: "system_import" },
+        {
+          idempotencyKey: "00000000-0000-4000-8000-000000000002",
+          expectedActor: { userId: "user-1", organizationId: ORGANIZATION_ID },
+        },
+      ),
+    ).rejects.toMatchObject({ code: "request_rejected" });
+  });
+
+  test.each([403, 409, 410])(
+    "frozen import response %i treats an unreadable error body as an ordinary rejection",
+    async (status) => {
+      fetchMock.mockResolvedValueOnce({
+        ...errorResponse(status),
+        json: async () => {
+          throw new SyntaxError("truncated error response");
+        },
+      } as Response);
+      await expect(
+        createVaultItem(
+          { display_name: "Imported", source: "system_import" },
+          {
+            idempotencyKey: "00000000-0000-4000-8000-000000000001",
+            expectedActor: {
+              userId: "user-1",
+              organizationId: ORGANIZATION_ID,
+            },
+          },
+        ),
+      ).rejects.toMatchObject({ code: "request_rejected" });
+    },
+  );
+
   test("refuses incomplete frozen-import options before network I/O", async () => {
     const missingKey = {
       expectedActor: { userId: "user-1", organizationId: ORGANIZATION_ID },

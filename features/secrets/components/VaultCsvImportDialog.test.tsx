@@ -829,8 +829,11 @@ describe("VaultCsvImportDialog", () => {
         throw new Error("import button missing");
       await act(async () => {
         button.click();
-        await new Promise((resolve) => setTimeout(resolve, 0));
       });
+      await waitForCondition(
+        () => createVaultItemMock.mock.calls.length === 2,
+        "terminal receipt response was not processed",
+      );
       expect(createVaultItemMock).toHaveBeenCalledTimes(2);
       expect(document.body.textContent).toContain(
         "Imported 1; skipped 0; failed 1.",
