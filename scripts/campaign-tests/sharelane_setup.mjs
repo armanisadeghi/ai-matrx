@@ -27,6 +27,20 @@ const must = (label, { data, error }) => {
 const alex = await seat("test@test.com", process.env.TEST_SEAT_PASSWORD);
 const morgan = await seat("admin@admin.com", process.env.AI_ADMIN_PASSWORD);
 
+// ARCHIVE=<table id> HOME=<home id> (with ORG): archive (soft) the table, its home and the garden.
+if (process.env.ARCHIVE) {
+  const org = process.env.ORG;
+  must("table_archive", await alex.schema("custom").rpc("table_archive", {
+    p_organization_id: org, p_table_id: process.env.ARCHIVE, p_chunk: 500, p_include_table: true,
+  }));
+  must("home", await alex.schema("custom").rpc("record_delete", { p_organization_id: org, p_record_id: process.env.HOME_ID }));
+  must("organization_archive", await alex.schema("iam").rpc("organization_archive", {
+    p_org: org, p_confirm_name: "Maple Street Community Garden",
+    p_reason: "SHARE-LANE-CONTROL walk disposable, finished",
+  }));
+  console.log("archived", org);
+  process.exit(0);
+}
 // RESET=<table id> (with ORG): take Morgan's name back and return the table to "Everyone in …",
 // so the walk can run again from its first state.
 if (process.env.RESET) {
