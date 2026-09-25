@@ -19,7 +19,7 @@ The platform's print hub: one index at `/print` of everything AI Matrx can put o
 - `/print` — the hub. Guests get `PrintLanding` (public marketing), members get `PrintHub`. The branch is server-side in `page.tsx`, not the layout, so the section pages stay reachable signed out.
 - `/print/flashcards` · `/print/education` · `/print/exams` · `/print/certificates` — Education printables.
 - `/print/labels` · `/print/qr` · `/print/branded-qr` · `/print/barcodes` · `/print/zpl` — Labels & codes.
-- `/print/documents` · `/print/booklet` — Documents.
+- `/print/documents` · `/print/booklet` — Documents. `/print/documents?note=<id>` opens one of your notes in the document studio.
 - `/print/order` — the print-on-demand calculator and paid order flow. **Auth-gated** in its own `layout.tsx`.
 - `/print/admin` — the feature admin map.
 
@@ -115,6 +115,8 @@ Migrated out of `(dev)` on 2026-09-11. The demo routes `/demos/print-studio` and
 ---
 
 ## Change log
+
+- **2026-09-25 (RC-B10)** — `/print/documents` is the document studio: markdown editor + `DocumentPrintPreview` from `@ai-matrx/print/react` 0.7.0 (real PDF pages, web view, Print, PDF/Word/EPUB/HTML/Markdown downloads, notices with remedies). Settings ride in the markdown frontmatter (page size, margins, cover, TOC, header/footer "Page X of Y", columns, section breaks, captions, cross-refs, APA/MLA/Chicago citations). `?note=<id>` opens a note (plain notes get a default settings block); the notes row menu has "Print or export as document…". The html2canvas download path here is gone.
 
 - `2026-09-17` — Luna: Registered `/print/documents` as `matrx-user/markdown-pdf`, added live surface scope and canonical editable context-menu wiring while preserving the existing browser PDF conversion and download behavior. The focused live mirror sync/check passed. Authenticated browser integration and independent acceptance remain pending.
 
