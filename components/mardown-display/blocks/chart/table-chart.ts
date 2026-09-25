@@ -243,16 +243,23 @@ export function chartNotice(table: PlainTable, requested?: ChartType): string | 
       return `A pie can't show negative values (${list}), so this is drawn as bars.`;
     }
   }
+  const notes: string[] = [];
+  if (wanted === "pie" && shape.valueCols.length > 1) {
+    const shown = table.headers[shape.valueCols[0]] ?? "the first column";
+    const rest = shape.valueCols.slice(1).map((c) => table.headers[c]).join(", ");
+    notes.push(`A pie shows one column — this is ${shown}; ${rest} ${shape.valueCols.length > 2 ? "are" : "is"} not shown.`);
+  }
   const missing: string[] = [];
   table.rows.forEach((row, i) => {
     if (shape.valueCols.every((c) => parseCellNumber(row[c]) === null)) {
       missing.push(categoryLabel(table, shape, row, i));
     }
   });
-  if (missing.length === 0) return null;
-  return missing.length === 1
-    ? `1 row has no number and is not plotted (${missing[0]}).`
-    : `${missing.length} rows have no number and are not plotted (${missing.join(", ")}).`;
+  if (missing.length === 1) notes.push(`1 row has no number and is not plotted (${missing[0]}).`);
+  else if (missing.length > 1) {
+    notes.push(`${missing.length} rows have no number and are not plotted (${missing.join(", ")}).`);
+  }
+  return notes.length > 0 ? notes.join(" ") : null;
 }
 
 /** RFC-4180-ish CSV / TSV → table. Null when the text is not a table. */

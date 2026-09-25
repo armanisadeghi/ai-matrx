@@ -63,7 +63,7 @@ export function ConversationFindBar({
       observer.disconnect();
       if (timer) clearTimeout(timer);
     };
-  }, [rootRef, query]);
+  }, [rootRef, query, history.state]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -71,7 +71,16 @@ export function ConversationFindBar({
     const next = query.trim() ? collectFindRanges(root, query) : [];
     setRanges(next);
     setCurrent((c) => (next.length === 0 ? 0 : Math.min(c, next.length - 1)));
-  }, [rootRef, query, version]);
+  }, [rootRef, query, version, history.state, history.loaded]);
+
+  // When older history finishes arriving, the newly rendered messages settle
+  // over a few frames (cold markdown defers its first paint) — search again
+  // once they have, so the answer is over EVERY message.
+  useEffect(() => {
+    if (history.state === "loading") return;
+    const timers = [400, 1200].map((ms) => setTimeout(() => setVersion((v) => v + 1), ms));
+    return () => timers.forEach(clearTimeout);
+  }, [history.state]);
 
   useEffect(() => {
     if (ranges.length === 0) {

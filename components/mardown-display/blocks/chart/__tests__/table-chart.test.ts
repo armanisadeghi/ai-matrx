@@ -175,3 +175,15 @@ describe("pie never drops data silently (verify-RC-B9 F8)", () => {
     expect(chartNotice({ headers: ["a", "b"], rows: [["x", "1"], ["y", "2"]] }, "bar")).toBeNull();
   });
 });
+
+it("a pie over a multi-column table says which column it shows and which it leaves out", () => {
+  const t = {
+    headers: ["Region", "Q1", "Q2", "Q3"],
+    rows: [
+      ["Northeast", "142.5", "158.3", "165.9"],
+      ["Midwest", "98.1", "-12.4", "45.6"],
+    ],
+  };
+  expect(tableToChartSpec(t, "pie")?.type).toBe("pie");
+  expect(chartNotice(t, "pie")).toBe("A pie shows one column — this is Q1; Q2, Q3 are not shown.");
+});
