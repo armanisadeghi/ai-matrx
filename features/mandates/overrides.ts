@@ -59,7 +59,10 @@ export {
 } from "./contract";
 
 export function isPlaceholderMandate(mandate: MandateDefinitionRow): boolean {
-  return isJsonObject(mandate.metadata) && mandate.metadata.migration_status === "placeholder";
+  return (
+    isJsonObject(mandate.metadata) &&
+    mandate.metadata.migration_status === "placeholder"
+  );
 }
 
 export interface MandateAgentSummary {
@@ -97,7 +100,9 @@ export async function fetchMandateOverridesData(): Promise<MandateOverridesData>
   if (mandatesRes.error) throw mandatesRes.error;
   if (bindingsRes.error) throw bindingsRes.error;
 
-  const mandates = (mandatesRes.data ?? []).filter((s) => !isPlaceholderMandate(s));
+  const mandates = (mandatesRes.data ?? []).filter(
+    (s) => !isPlaceholderMandate(s),
+  );
   const bindings = bindingsRes.data ?? [];
 
   const agentIds = new Set<string>();
@@ -337,7 +342,8 @@ function consumptionMapForApi(
       };
       if (entry.required === true) wire.required = true;
       if (entry.when_absent) wire.when_absent = entry.when_absent;
-      if (entry.default !== undefined) wire.default = entry.default as JsonValue;
+      if (entry.default !== undefined)
+        wire.default = entry.default as JsonValue;
       return wire;
     });
     if (wires.length === 0) continue;
@@ -592,6 +598,18 @@ export function agentDefaultHolder(
   };
 }
 
+/**
+ * THE REST OF THE SYSTEM ANSWER — the default's own map, settings and auto-run
+ * promise (aidream 1037). The answer a job gives everybody lives in ONE record,
+ * the mandate's own default; there is no platform-wide binding beside it any
+ * more. `undefined` = "leave as stored"; `null` = "clear it".
+ */
+export interface MandateDefaultSettingsInput {
+  consumptionMap?: ConsumptionMap | null;
+  configOverrides?: JsonObject | null;
+  autoRun?: boolean | null;
+}
+
 /** The holder half of a binding write — ONE holder shape for all four rungs. */
 export interface MandateDefaultHolderInput {
   holderType: "agent" | "workflow";
@@ -620,6 +638,8 @@ export interface DefaultHolderWriteReport {
   holderVersionId: string | null;
   useLatest: boolean | null;
   appliesIn: string | null;
+  /** What the write did that was not asked for, in the server's words. */
+  notes: string[];
 }
 
 /**
@@ -651,17 +671,19 @@ export function parseDefaultHolderResult(
     useLatest:
       typeof record.use_latest === "boolean" ? record.use_latest : null,
     appliesIn,
+    notes: parseBindingWriteReport(raw).notes,
   };
 }
 
 /**
  * Set the mandate's own default holder — the rung below every binding.
  *
- * 🚨 HOLDER ONLY, BY CONSTRUCTION. The definition default has no
- * `consumption_map`, no `config_overrides` and no `auto_run` — those columns
- * live on `agent.mandate_binding`. The body below carries the holder and
- * nothing else, so a screen standing on this rung cannot appear to save
- * something the door never receives.
+ * 🚨 THE WHOLE SYSTEM ANSWER, IN ONE RECORD (aidream 1037, Arman 2026-09-25).
+ * The default carries the holder AND — when `settings` says so — its own
+ * consumption map, settings overrides and auto-run promise. Before 1037 the
+ * definition had no columns for those, so the admin screen wrote a
+ * platform-wide binding beside the default the moment a map was added: the
+ * same answer in two places. The server now refuses that binding.
  *
  * 🚨 `organization_id` IS NOT SENT AND WOULD DECIDE NOTHING IF IT WERE. The
  * scope of this write is the mandate's HOME organization, read off the row
@@ -674,6 +696,7 @@ export async function putMandateDefaultHolder(
   dispatch: AppDispatch,
   mandateKey: string,
   input: MandateDefaultHolderInput,
+  settings?: MandateDefaultSettingsInput,
 ): Promise<DefaultHolderWriteReport> {
   const isWorkflow = input.holderType === "workflow";
   const result = await dispatch(
@@ -693,6 +716,23 @@ export async function putMandateDefaultHolder(
         holder_id: isWorkflow ? input.holderId : null,
         holder_version_id: isWorkflow ? input.holderVersionId : null,
         use_latest: input.useLatest,
+        // THE REST OF THE SYSTEM ANSWER (aidream 1037). A key LEFT OUT is left
+        // as stored server-side — a holder-only rebind never wipes a map — so
+        // each one travels only when the caller said something about it.
+        ...(settings && settings.consumptionMap !== undefined
+          ? {
+              consumption_map:
+                settings.consumptionMap === null
+                  ? null
+                  : consumptionMapForApi(settings.consumptionMap),
+            }
+          : {}),
+        ...(settings && settings.configOverrides !== undefined
+          ? { config_overrides: settings.configOverrides }
+          : {}),
+        ...(settings && settings.autoRun !== undefined
+          ? { auto_run: settings.autoRun }
+          : {}),
       } as never,
     }),
   );

@@ -42,7 +42,7 @@
  * silent refusal.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -109,7 +109,23 @@ interface ContextItemPickerProps {
   };
   onChange: (sel: ContextItemSelection) => void;
   readonly?: boolean;
+  /**
+   * A THIRD source, offered only where a variable may be bound to the author's
+   * own custom data (the agent variable editor). When `active`, the Source
+   * control reads "From my data" and `children` replaces the System/Scope
+   * cascade; choosing System or Scope again emits a normal selection.
+   * Callers that bind context POLICIES never pass it — a policy cannot read a
+   * custom table.
+   */
+  customData?: {
+    active: boolean;
+    onSelect: () => void;
+    children: ReactNode;
+  };
 }
+
+/** The Source value for the optional custom-data choice — never a `ContextItemSource`. */
+const CUSTOM_DATA_SOURCE = "custom_data";
 
 const CLASS_LABEL: Record<string, string> = {
   ambient: "Ambient",
@@ -121,6 +137,7 @@ export function ContextItemPicker({
   value,
   onChange,
   readonly,
+  customData,
 }: ContextItemPickerProps) {
   const dispatch = useAppDispatch();
   const activeOrgId = useAppSelector(selectActiveOrganizationId);
@@ -302,9 +319,13 @@ export function ContextItemPicker({
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">Source</Label>
         <Select
-          value={source}
+          value={customData?.active ? CUSTOM_DATA_SOURCE : source}
           onValueChange={(v) => {
             setItemDraft(null);
+            if (v === CUSTOM_DATA_SOURCE) {
+              customData?.onSelect();
+              return;
+            }
             emit({
               source: v as ContextItemSource,
               scopeTypeId: "",
@@ -318,6 +339,14 @@ export function ContextItemPicker({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            {customData && (
+              <SelectItem value={CUSTOM_DATA_SOURCE}>
+                <span>From my data</span>
+                <span className="ml-2 text-xs text-muted-foreground">
+                  a table you keep in Data
+                </span>
+              </SelectItem>
+            )}
             <SelectItem value="system">
               <span>System</span>
               <span className="ml-2 text-xs text-muted-foreground">
@@ -334,7 +363,9 @@ export function ContextItemPicker({
         </Select>
       </div>
 
-      {!isSystem && (
+      {customData?.active ? customData.children : null}
+
+      {!customData?.active && !isSystem && (
         <>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">
@@ -404,76 +435,78 @@ export function ContextItemPicker({
         </>
       )}
 
-      <div className="space-y-1.5">
-        <Label className="text-xs text-muted-foreground">
-          {isSystem ? "System context item" : "Context item"}
-        </Label>
-        <CreatablePicker
-          value={value.contextItemId || null}
-          options={itemOptions}
-          onSelect={selectItem}
-          placeholder={itemPlaceholder}
-          searchPlaceholder={
-            isSystem
-              ? "Search system items…"
-              : "Search or type a new context item…"
-          }
-          noun="context item"
-          onCreateRequiresMore={
-            isSystem ? undefined : (typed) => setItemDraft(typed)
-          }
-          lockedNote={
-            isSystem
-              ? "System items are platform truths curated centrally — every user gets the same set."
-              : undefined
-          }
-          lockedAction={
-            isSystem && !readonly
-              ? {
-                  label: "Need your own? Bind a Scope item instead",
-                  onSelect: () =>
-                    emit({
-                      source: "scope",
-                      scopeTypeId: "",
-                      contextItemId: "",
-                      itemKey: "",
-                    }),
-                }
-              : undefined
-          }
-          manageAction={
-            !isSystem && scopeType && orgId
-              ? {
-                  label: `Manage ${scopeType.label_plural} context items`,
-                  href: contextItemsHref(orgSegment, scopeType),
-                }
-              : undefined
-          }
-          disabled={readonly || scopeTypeMissing || scopeTypePending}
-          loading={
-            scopeTypePending ||
-            (Boolean(itemsKey) && !scopeTypeMissing && !itemsLoaded)
-          }
-          ariaLabel={isSystem ? "System context item" : "Context item"}
-        />
-        {isSystem && (
-          <p className="text-[11px] text-muted-foreground">
-            Resolves for every user with no scope selection. Ambient items are
-            recomputed on every request.
-          </p>
-        )}
-        {itemDraft !== null && !isSystem && scopeType && (
-          <ContextItemAddForm
-            scopeTypeId={scopeTypeId}
-            labelPlural={scopeType.label_plural}
-            initialName={itemDraft}
-            onAdded={(item) => {
-              emit({ contextItemId: item.id, itemKey: item.key, item });
-            }}
-            onClose={() => setItemDraft(null)}
+      {!customData?.active && (
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">
+            {isSystem ? "System context item" : "Context item"}
+          </Label>
+          <CreatablePicker
+            value={value.contextItemId || null}
+            options={itemOptions}
+            onSelect={selectItem}
+            placeholder={itemPlaceholder}
+            searchPlaceholder={
+              isSystem
+                ? "Search system items…"
+                : "Search or type a new context item…"
+            }
+            noun="context item"
+            onCreateRequiresMore={
+              isSystem ? undefined : (typed) => setItemDraft(typed)
+            }
+            lockedNote={
+              isSystem
+                ? "System items are platform truths curated centrally — every user gets the same set."
+                : undefined
+            }
+            lockedAction={
+              isSystem && !readonly
+                ? {
+                    label: "Need your own? Bind a Scope item instead",
+                    onSelect: () =>
+                      emit({
+                        source: "scope",
+                        scopeTypeId: "",
+                        contextItemId: "",
+                        itemKey: "",
+                      }),
+                  }
+                : undefined
+            }
+            manageAction={
+              !isSystem && scopeType && orgId
+                ? {
+                    label: `Manage ${scopeType.label_plural} context items`,
+                    href: contextItemsHref(orgSegment, scopeType),
+                  }
+                : undefined
+            }
+            disabled={readonly || scopeTypeMissing || scopeTypePending}
+            loading={
+              scopeTypePending ||
+              (Boolean(itemsKey) && !scopeTypeMissing && !itemsLoaded)
+            }
+            ariaLabel={isSystem ? "System context item" : "Context item"}
           />
-        )}
-      </div>
+          {isSystem && (
+            <p className="text-[11px] text-muted-foreground">
+              Resolves for every user with no scope selection. Ambient items are
+              recomputed on every request.
+            </p>
+          )}
+          {itemDraft !== null && !isSystem && scopeType && (
+            <ContextItemAddForm
+              scopeTypeId={scopeTypeId}
+              labelPlural={scopeType.label_plural}
+              initialName={itemDraft}
+              onAdded={(item) => {
+                emit({ contextItemId: item.id, itemKey: item.key, item });
+              }}
+              onClose={() => setItemDraft(null)}
+            />
+          )}
+        </div>
+      )}
 
       {orgDraft !== null && (
         <CreateOrgModal

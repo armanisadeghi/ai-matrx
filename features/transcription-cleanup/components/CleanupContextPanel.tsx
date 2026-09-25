@@ -130,15 +130,16 @@ export function CleanupContextPanel({
   const organizationId = useAppSelector(selectOrganizationId);
 
   // ── Mutation helper: update blocks + fire onChange in one step ─────────────
+  // The parent's onChange fires HERE, never inside a setBlocks updater — an
+  // updater runs while React renders, and a parent setState from it is
+  // "Cannot update a component while rendering a different component".
   const updateAndNotify = useCallback(
     (updater: (prev: ContextBlock[]) => ContextBlock[]) => {
-      setBlocks((prev) => {
-        const next = updater(prev);
-        onChange(blocksToItems(next));
-        return next;
-      });
+      const next = updater(blocks);
+      setBlocks(next);
+      onChange(blocksToItems(next));
     },
-    [onChange],
+    [blocks, onChange],
   );
 
   // ── Field handlers ─────────────────────────────────────────────────────────

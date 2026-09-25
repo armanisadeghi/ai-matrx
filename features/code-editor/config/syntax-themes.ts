@@ -1,21 +1,12 @@
 /**
- * Prism + Monaco syntax themes for JSON code blocks.
- *
- * JSON uses JetBrains Darcula–inspired token colors. Prism inline styles
- * only match bare token keys (`string`, `property`, …) — not CSS selectors
- * like `.language-json .token.string`.
+ * Syntax palette shared by the Shiki code view (code-block/highlight) and the
+ * Monaco editor: VS Code Dark+/Light+ everywhere, with JSON in a JetBrains
+ * Darcula–inspired palette.
  */
 
-import type { CSSProperties } from "react";
-import {
-  vscDarkPlus,
-  vs,
-} from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { normalizeLanguage } from "@/features/code-editor/config/languages";
 
-export type PrismTheme = Record<string, CSSProperties>;
-
-/** Darcula-inspired JSON palette — single source of truth for Prism + Monaco. */
+/** Darcula-inspired JSON palette — single source of truth for Shiki + Monaco. */
 export const JSON_SYNTAX_COLORS = {
   dark: {
     key: "#7dd3fc",
@@ -34,34 +25,6 @@ export const JSON_SYNTAX_COLORS = {
     punctuation: "#4b5563",
   },
 } as const;
-
-const JSON_DARK_PRISM: PrismTheme = {
-  property: { color: JSON_SYNTAX_COLORS.dark.key },
-  string: { color: JSON_SYNTAX_COLORS.dark.string },
-  char: { color: JSON_SYNTAX_COLORS.dark.string },
-  number: { color: JSON_SYNTAX_COLORS.dark.number },
-  boolean: { color: JSON_SYNTAX_COLORS.dark.boolean },
-  null: { color: JSON_SYNTAX_COLORS.dark.null },
-  keyword: { color: JSON_SYNTAX_COLORS.dark.boolean },
-  punctuation: { color: JSON_SYNTAX_COLORS.dark.punctuation },
-  operator: { color: JSON_SYNTAX_COLORS.dark.punctuation },
-};
-
-const JSON_LIGHT_PRISM: PrismTheme = {
-  property: { color: JSON_SYNTAX_COLORS.light.key },
-  string: { color: JSON_SYNTAX_COLORS.light.string },
-  char: { color: JSON_SYNTAX_COLORS.light.string },
-  number: { color: JSON_SYNTAX_COLORS.light.number },
-  boolean: { color: JSON_SYNTAX_COLORS.light.boolean },
-  null: { color: JSON_SYNTAX_COLORS.light.null },
-  keyword: { color: JSON_SYNTAX_COLORS.light.boolean },
-  punctuation: { color: JSON_SYNTAX_COLORS.light.punctuation },
-  operator: { color: JSON_SYNTAX_COLORS.light.punctuation },
-};
-
-function mergeThemes(base: PrismTheme, overrides: PrismTheme): PrismTheme {
-  return { ...base, ...overrides };
-}
 
 function hexForMonaco(color: string): string {
   return color.replace("#", "").toUpperCase();
@@ -139,21 +102,6 @@ export function isJsonLanguage(language: string | undefined): boolean {
   if (!language) return false;
   const normalized = normalizeLanguage(language).toLowerCase();
   return normalized === "json" || normalized === "jsonc";
-}
-
-/** Prism style for SyntaxHighlighter view mode. */
-export function resolvePrismSyntaxStyle(
-  language: string | undefined,
-  mode: "light" | "dark",
-): PrismTheme {
-  const base = (mode === "dark" ? vscDarkPlus : vs) as PrismTheme;
-
-  if (!isJsonLanguage(language)) {
-    return base;
-  }
-
-  const jsonTokens = mode === "dark" ? JSON_DARK_PRISM : JSON_LIGHT_PRISM;
-  return mergeThemes(base, jsonTokens);
 }
 
 /** Monaco theme id for SmallCodeEditor edit mode. */

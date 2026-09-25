@@ -25,6 +25,13 @@ export interface ShikiCodeViewProps {
   fontSize?: number;
   /** 1-based source line numbers to highlight. */
   highlightLines?: readonly number[];
+  /**
+   * "theme" paints the theme's own background (a standalone code surface);
+   * "transparent" sits on the host's surface (compact snippets, previews).
+   */
+  surface?: "theme" | "transparent";
+  /** Vertical/horizontal padding in rem (default 1 / 1). */
+  padding?: { y: number; x: number };
   className?: string;
 }
 
@@ -87,6 +94,8 @@ export function ShikiCodeView({
   wrapLines = true,
   fontSize = 12,
   highlightLines,
+  surface = "theme",
+  padding = { y: 1, x: 1 },
   className,
 }: ShikiCodeViewProps) {
   const highlighted = useHighlightedLines(code, language);
@@ -97,8 +106,11 @@ export function ShikiCodeView({
       : plainLines(code);
 
   const background =
-    highlighted.background?.[mode] ?? (mode === "dark" ? "#1e1e1e" : "#ffffff");
-  const foreground = mode === "dark" ? "#d4d4d4" : "#000000";
+    surface === "transparent"
+      ? "transparent"
+      : (highlighted.background?.[mode] ?? (mode === "dark" ? "#1e1e1e" : "#ffffff"));
+  const foreground =
+    surface === "transparent" ? undefined : mode === "dark" ? "#d4d4d4" : "#000000";
   const highlightSet = new Set(highlightLines ?? []);
   const isDiff = DIFF_LANGUAGES.has((language ?? "").toLowerCase());
   const lastNumber = startLine + lines.length - 1;
@@ -113,7 +125,7 @@ export function ShikiCodeView({
         background,
         color: foreground,
         fontSize: `${fontSize}px`,
-        padding: "1rem 0",
+        padding: `${padding.y}rem 0`,
         overflowX: wrapLines ? "hidden" : "auto",
         maxWidth: "100%",
       }}
@@ -134,8 +146,9 @@ export function ShikiCodeView({
               data-line={sourceLine}
               data-highlighted={marked || undefined}
               data-diff={kind ?? undefined}
+              style={{ paddingInline: `${padding.x}rem` }}
               className={cn(
-                "flex px-4",
+                "flex",
                 kind && DIFF_CLASS[kind],
                 marked &&
                   "bg-primary/10 shadow-[inset_3px_0_0_hsl(var(--primary))]",

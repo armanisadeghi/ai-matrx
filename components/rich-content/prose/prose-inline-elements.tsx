@@ -14,7 +14,7 @@
 //
 // Environment-neutral (no "use client", 2026-09-24 RC-B2b): the server level
 // (components/rich-content/server) spreads this map inside a React Server
-// Component. Every stateful piece it names (LinkComponent, Checkbox, the
+// Component. Every stateful piece it names (LinkComponent, TaskCheckbox, the
 // variable and citation chips) is its own "use client" module, so it renders
 // as a client component from either graph. Keep hooks OUT of this file.
 // ─────────────────────────────────────────────────────────────────────────
@@ -26,10 +26,14 @@ import type { MarkdownComponents as Components } from "@/components/markdown-cor
 /** The extra prop the core passes every element renderer (react-markdown's `ExtraProps`). */
 type ExtraProps = { node?: Element };
 import { cn } from "@/styles/themes/utils";
-import { Checkbox } from "@/components/ui/checkbox";
 import { LinkComponent } from "@/components/mardown-display/blocks/links/LinkComponent";
 import { MatrxVariableInline } from "@/components/mardown-display/chat-markdown/matrx-variables/MatrxVariableInline";
 import { CitationMarkerInline } from "@/components/mardown-display/chat-markdown/citations/CitationMarkerInline";
+import { InDocAnchor } from "@/components/markdown-core/syntax/elements/InDocAnchor";
+import {
+  isInDocHref,
+  renderMarkdownInput,
+} from "@/components/markdown-core/syntax/elements/core-syntax-elements";
 import {
   detectTextDirection,
   getDirectionClasses,
@@ -57,8 +61,19 @@ export function splitWithVariables(text: string): React.ReactNode[] {
   return nodes.length > 0 ? nodes : [text];
 }
 
-const LinkElement: NonNullable<Components["a"]> = ({ node, href, children }) =>
-  href ? <LinkComponent href={href}>{children}</LinkComponent> : <>{children}</>;
+// An in-document link (`#id` — footnotes, heading anchors, contents,
+// cross-references) scrolls within the document; every other link gets the
+// link card.
+const LinkElement: NonNullable<Components["a"]> = ({ node, href, children, ...rest }) =>
+  isInDocHref(href) ? (
+    <InDocAnchor href={href} {...rest}>
+      {children}
+    </InDocAnchor>
+  ) : href ? (
+    <LinkComponent href={href}>{children}</LinkComponent>
+  ) : (
+    <>{children}</>
+  );
 
 /**
  * Inline-mark renderers shared by every level. Module scope, so the map's
@@ -66,18 +81,9 @@ const LinkElement: NonNullable<Components["a"]> = ({ node, href, children }) =>
  */
 export const PROSE_INLINE_ELEMENTS = {
   a: LinkElement,
-  input: ({ node, type, checked, disabled, ...props }) => {
-    if (type === "checkbox") {
-      return (
-        <Checkbox
-          checked={!!checked}
-          disabled={disabled}
-          className="mr-2"
-        />
-      );
-    }
-    return <input type={type} {...props} />;
-  },
+  // Task checkboxes: interactive only under a save adapter
+  // (MarkdownSourceEditProvider), read-only state marks otherwise.
+  input: renderMarkdownInput,
   strong: ({ node, children, ...props }) => {
     // NOTE: react-markdown's hast nodes (via hast-util-to-jsx-runtime)
     // never carry a `.parent` reference, so this can never detect a

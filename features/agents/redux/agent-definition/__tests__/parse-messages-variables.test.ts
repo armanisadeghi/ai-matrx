@@ -99,6 +99,78 @@ describe("parseAgentVariableDefinitions", () => {
     expect(parseAgentVariableDefinitions(definitions)).toEqual(definitions);
   });
 
+  it("round-trips a custom-data (merge_field) binding in all three shapes", () => {
+    const definitions = [
+      {
+        name: "model_picks",
+        defaultValue: null,
+        binding: {
+          kind: "merge_field",
+          source: "record",
+          semantic_type: "collection",
+          table_id: "table-1",
+          match: { status: "active" },
+          limit: 40,
+          transform: {
+            name: "list",
+            template: "- {purpose}: {model.name} (`{model.id}`)",
+            join: "\n",
+            max: 40,
+          },
+          missing: "absent",
+          override_policy: "shown_locked",
+        },
+      },
+      {
+        name: "one_pick",
+        defaultValue: null,
+        binding: {
+          kind: "merge_field",
+          source: "record",
+          semantic_type: "reference",
+          table_id: "table-1",
+          record_id: "record-1",
+          transform: { name: "list", template: "{purpose}" },
+          missing: "block",
+          override_policy: "shown_locked",
+        },
+      },
+      {
+        name: "one_value",
+        defaultValue: null,
+        binding: {
+          kind: "merge_field",
+          source: "record",
+          semantic_type: "value",
+          table_id: "table-1",
+          record_id: "record-1",
+          field_key: "purpose",
+          missing: "absent",
+          override_policy: "shown_locked",
+        },
+      },
+    ];
+    expect(parseAgentVariableDefinitions(definitions)).toEqual(definitions);
+  });
+
+  it("keeps an in-progress custom-data binding (no table chosen yet) readable", () => {
+    const definitions = [
+      {
+        name: "draft",
+        defaultValue: null,
+        binding: {
+          kind: "merge_field",
+          source: "record",
+          semantic_type: "collection",
+          table_id: "",
+          missing: "absent",
+          override_policy: "shown_locked",
+        },
+      },
+    ];
+    expect(parseAgentVariableDefinitions(definitions)).toEqual(definitions);
+  });
+
   it("applies the generated default when defaultValue is omitted", () => {
     expect(parseAgentVariableDefinitions([{ name: "topic" }])).toEqual([
       { name: "topic", defaultValue: null },
@@ -156,6 +228,39 @@ describe("parseAgentVariableDefinitions", () => {
             scopeTypeId: "scope",
             itemKey: "x",
             onMissing: "guess",
+          },
+        },
+      ],
+    ],
+    [
+      "unknown binding kind",
+      [{ name: "x", binding: { kind: "mystery", table_id: "t" } }],
+    ],
+    [
+      "merge_field binding with an unknown shape",
+      [
+        {
+          name: "x",
+          binding: {
+            kind: "merge_field",
+            source: "record",
+            semantic_type: "everything",
+            table_id: "t",
+          },
+        },
+      ],
+    ],
+    [
+      "merge_field binding with an unknown missing policy",
+      [
+        {
+          name: "x",
+          binding: {
+            kind: "merge_field",
+            source: "record",
+            semantic_type: "collection",
+            table_id: "t",
+            missing: "guess",
           },
         },
       ],

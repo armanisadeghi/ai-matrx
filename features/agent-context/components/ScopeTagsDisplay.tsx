@@ -1,9 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { Folder } from "lucide-react";
 import * as icons from "lucide-react";
+import type { EntityTypeToken } from "@ai-matrx/associations";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEntityScopesWithLabels } from "../redux/scope/selectors";
+import {
+  makeSelectEntityScopeIds,
+  selectAllScopeTypesFlat,
+} from "@/features/scopes/redux/selectors/tree";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/cn";
 
@@ -29,9 +34,38 @@ export function ScopeTagsDisplay({
   entityId,
   className,
 }: ScopeTagsDisplayProps) {
-  const labels = useAppSelector((state) =>
-    selectEntityScopesWithLabels(state, entityType, entityId),
+  // The canonical per-entity scope cache (scopesTree.entityScopesByKey) and
+  // the canonical tree for names. Cache-only on purpose: a row in a list never
+  // fires its own fetch; whatever loaded this entity's tags (its detail view,
+  // a bulk read, a write) fills it. It read agent-context's scopeAssignments
+  // slice until 2026-09-25, which nothing filled any more.
+  const [selectScopeIds] = useState(makeSelectEntityScopeIds);
+  const scopeIds = useAppSelector((state) =>
+    selectScopeIds(state, {
+      entityType: entityType as EntityTypeToken,
+      entityId,
+    }),
   );
+  const types = useAppSelector(selectAllScopeTypesFlat);
+  const labels: {
+    scope_id: string;
+    scope_name: string;
+    type_color: string;
+    type_icon: string;
+  }[] = [];
+  for (const scopeId of scopeIds) {
+    for (const type of types) {
+      const scope = type.scopes.find((candidate) => candidate.id === scopeId);
+      if (!scope) continue;
+      labels.push({
+        scope_id: scopeId,
+        scope_name: scope.name,
+        type_color: type.color ?? "",
+        type_icon: type.icon ?? "folder",
+      });
+      break;
+    }
+  }
 
   if (labels.length === 0) return null;
 
@@ -41,7 +75,7 @@ export function ScopeTagsDisplay({
         const Icon = resolveIcon(label.type_icon);
         return (
           <Badge
-            key={label.assignment_id}
+            key={label.scope_id}
             variant="outline"
             className="gap-1 text-xs font-medium"
             style={{

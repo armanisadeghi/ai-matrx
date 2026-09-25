@@ -421,16 +421,17 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       // Inside a submenu, Escape goes back one level before it closes.
-      setTrail((prev) => {
-        if (prev.length) return prev.slice(0, -1);
-        onClose();
-        return prev;
-      });
+      // `onClose` is called HERE, never inside a setTrail updater: an updater
+      // runs while React renders this menu, so a parent setState from inside
+      // it is "Cannot update a component while rendering a different
+      // component" (RC-B1 verify, 2026-09-24).
+      if (trail.length) setTrail((prev) => prev.slice(0, -1));
+      else onClose();
     };
 
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, trail.length]);
 
   // Track whether there is hidden content below the scroll area
   useEffect(() => {

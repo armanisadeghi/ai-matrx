@@ -54,7 +54,7 @@ function render(spec: ChartSpec, showLegend: boolean): React.ReactElement {
   const axes = (
     <>
       <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
-      <XAxis dataKey={spec.xKey} tick={AXIS} tickLine={false} axisLine={{ stroke: GRID_STROKE }} />
+      <XAxis dataKey={spec.xKey} type={spec.type === "scatter" ? "number" : "category"} domain={spec.type === "scatter" ? ["auto", "auto"] : undefined} name={spec.xKey} tick={AXIS} tickLine={false} axisLine={{ stroke: GRID_STROKE }} />
       <YAxis tick={AXIS} tickLine={false} axisLine={false} width={44} />
       <Tooltip
         contentStyle={{

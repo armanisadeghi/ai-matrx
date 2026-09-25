@@ -9,6 +9,7 @@ import type {
   DiffResult,
 } from "@ai-matrx/diff/structural";
 import type { AgentVersionHistoryItem } from "@/features/agents/redux/agent-definition/thunks";
+import { contextItemBindingOf } from "@/features/agents/utils/variable-binding";
 
 /**
  * Human-readable, multi-line summary of a full agent definition — the "Copy"
@@ -525,7 +526,7 @@ export function buildAgentWidgetVariableRows(
       default_value: def.defaultValue,
       current_value: current,
       filled: current !== undefined && current !== null && current !== "",
-      bound_to_context_item: def.binding?.itemKey ?? null,
+      bound_to_context_item: contextItemBindingOf(def.binding)?.itemKey ?? null,
     };
   });
 }

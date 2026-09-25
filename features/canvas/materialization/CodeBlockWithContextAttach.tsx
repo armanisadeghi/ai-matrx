@@ -2,7 +2,8 @@
 
 /**
  * CodeBlockWithContextAttach — CodeBlock / JsonBlock wrapper that injects
- * "Add to conversation context" when the block has a real message id.
+ * "Add to conversation context" when the block has a real message id, plus
+ * the registry's code-block answer tools (useCodeBlockAnswerTools).
  *
  * Keeps CodeBlock itself free of chat/canvas coupling; BlockRenderer opts in
  * by passing conversationId + messageId.
@@ -15,6 +16,7 @@ import CodeBlock, {
 } from "@/features/code-editor/components/code-block/CodeBlock";
 import type { CodeBlockMenuItem } from "@/features/code-editor/components/code-block/CodeBlockHeader";
 import { useAttachBlockAsEditableContext } from "@/features/canvas/materialization/useAttachBlockAsEditableContext";
+import { useCodeBlockAnswerTools } from "@/features/rich-document/code-block/useCodeBlockAnswerTools";
 
 export interface CodeBlockWithContextAttachProps extends CodeBlockProps {
   conversationId?: string | null;
@@ -74,17 +76,36 @@ export function CodeBlockWithContextAttach({
         }
       : null;
 
-  const merged: CodeBlockMenuItem[] | undefined = attachItem
-    ? [...(extraMenuItems ?? []), attachItem]
-    : extraMenuItems;
+  // RC-B9 answer tools from the ONE action registry: Open in code editor,
+  // Apply to <open file>, Run (bound sandbox only), Chart (CSV/TSV) — each
+  // absent where it cannot work. Their output renders under the block.
+  const answerTools = useCodeBlockAnswerTools({
+    code,
+    language: language || "",
+    conversationId,
+    messageId,
+    isStreamActive,
+  });
+
+  const merged: CodeBlockMenuItem[] | undefined =
+    attachItem || answerTools.items.length > 0
+      ? [
+          ...(extraMenuItems ?? []),
+          ...answerTools.items,
+          ...(attachItem ? [attachItem] : []),
+        ]
+      : extraMenuItems;
 
   return (
-    <CodeBlock
-      code={code}
-      language={language}
-      isStreamActive={isStreamActive}
-      extraMenuItems={merged}
-      {...rest}
-    />
+    <>
+      <CodeBlock
+        code={code}
+        language={language}
+        isStreamActive={isStreamActive}
+        extraMenuItems={merged}
+        {...rest}
+      />
+      {answerTools.panel}
+    </>
   );
 }

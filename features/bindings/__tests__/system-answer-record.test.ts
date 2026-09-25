@@ -1,32 +1,28 @@
 /**
- * ── THE SYSTEM ANSWER HAS ONE WRITE PATH, AND THE CODE PICKS THE RECORD ──────
+ * ── THE SYSTEM ANSWER LIVES IN ONE RECORD: THE JOB'S OWN DEFAULT ────────────
  *
- * 🚨 THE ORDER THIS GUARDS (Arman's standing default, FIX-R13/A, on top of
- * D19): *"the three controls write THE SYSTEM ANSWER; storage is not a
- * question put to a person."*
+ * 🚨 OWNER RULING (Arman, 2026-09-25): the answer a job gives everybody lives
+ * in ONE place, the mandate's own default. "If they happened through the UI
+ * because something is confusing, that's a massive bug — fix the bug before
+ * anything else."
  *
- * FIX-R9-UI deleted the rung cell's **"Set System-wide binding instead"**
- * button from the admin host — correctly, because it asked the reader to
- * choose between "the job's own default" and "a platform-wide binding", and
- * that distinction is STORAGE. But nothing replaced it, so a NEW platform-wide
- * binding could not be created from that screen at all, and the page kept a
- * `useState` rung that no longer followed the data.
+ * THE BUG. Until aidream 1037 the definition default had no column for a map,
+ * settings or auto-run, so `systemAnswerRecord()` answered 'global-binding'
+ * whenever the system answer carried one, and three screens wrote a
+ * platform-wide `mandate.binding` (Holder included) beside the default:
+ * `OneBindingWorkspace` (the admin host + the "Global" scope), `BatchMode`
+ * ("Global" rung) and `MandateOverridesSimple` (system level). Live on
+ * 2026-09-25 one had been written through the admin screen that morning.
  *
- * The fix is not a third button. `systemAnswerRecord()` is the ONE place the
- * rule lives, `OneBindingWorkspace.writeBinding` is the ONE call site that
- * consults it, and this file proves both — the rule over its whole matrix, and
- * the call site by census rather than by snapshot.
- *
- * RED against the tree at `5c9e56eedc`: the module did not exist, the admin
- * host's rung was `useState`-held, and the binding branch keyed its
- * platform-wide refusals off `rung === "global"` — which is exactly the hole
- * that would have let an admin create a global binding with the super-admin
- * check skipped.
+ * RED against the tree before this change: the matrix below expected
+ * 'global-binding' for three of its rows, and the census found
+ * `{ principalType: "global" }` in all three files.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import {
+  defaultAnswerSettingsOf,
   hasLiveGlobalBinding,
   systemAnswerRecord,
   systemAnswerSaveWords,
@@ -44,73 +40,57 @@ const HOLDER_ONLY: SystemAnswerDraft = {
   carriesAutoRun: false,
 };
 
-// ── 1. THE RULE, over its whole matrix ──────────────────────────────────────
+// ── 1. ONE RECORD, WHATEVER THE ANSWER CARRIES ──────────────────────────────
 
-describe("which record the system answer is written to", () => {
-  it("is the definition's own default when the answer names ONLY a holder", () => {
-    expect(systemAnswerRecord(HOLDER_ONLY)).toBe("definition-default");
-  });
-
+describe("the record the system answer is written to", () => {
   it.each([
+    ["only a holder", {}],
     ["a mapping", { carriesMapping: true }],
     ["settings", { carriesSettings: true }],
     ["an auto-run promise", { carriesAutoRun: true }],
-  ] as const)(
-    "is the platform-wide binding when the answer also carries %s",
-    (_label, extra) => {
-      expect(systemAnswerRecord({ ...HOLDER_ONLY, ...extra })).toBe(
-        "global-binding",
-      );
-    },
-  );
-
-  it("is the platform-wide binding once one exists, whatever the draft carries", () => {
-    // The binding OUTRANKS the definition default. Writing the definition
-    // underneath it would save a row that changes nothing and report success.
-    expect(
-      systemAnswerRecord({ ...HOLDER_ONLY, hasGlobalBinding: true }),
-    ).toBe("global-binding");
+    ["a legacy platform-wide binding beside it", { hasGlobalBinding: true }],
+  ] as const)("is the job's own default when the answer carries %s", (_l, extra) => {
+    expect(systemAnswerRecord({ ...HOLDER_ONLY, ...extra })).toBe(
+      "definition-default",
+    );
   });
 
-  it("reads a live global binding through ONE predicate", () => {
-    expect(hasLiveGlobalBinding([])).toBe(false);
+  it("reads the default's own map, settings and auto-run in a binding's shape", () => {
+    const map = { topic: [{ mapType: "offered_value", target: "topic" }] };
     expect(
-      hasLiveGlobalBinding([{ principal_type: "user", is_enabled: true }]),
-    ).toBe(false);
-    // A disabled row is not an answer — it must not pull the page onto a rung
-    // whose record nothing runs.
+      defaultAnswerSettingsOf({
+        default_consumption_map: map,
+        default_config_overrides: { temperature: 0.3 },
+        default_auto_run: true,
+      }),
+    ).toEqual({
+      consumption_map: map,
+      config_overrides: { temperature: 0.3 },
+      auto_run: true,
+    });
+    expect(defaultAnswerSettingsOf({})).toEqual({
+      consumption_map: null,
+      config_overrides: null,
+      auto_run: null,
+    });
+  });
+
+  it("still recognises a legacy platform-wide row through ONE predicate", () => {
+    expect(hasLiveGlobalBinding([])).toBe(false);
     expect(
       hasLiveGlobalBinding([{ principal_type: "global", is_enabled: false }]),
     ).toBe(false);
-    expect(
-      hasLiveGlobalBinding([{ principal_type: "global", is_enabled: true }]),
-    ).toBe(true);
-    // `is_enabled` absent means enabled — the column defaults true.
     expect(hasLiveGlobalBinding([{ principal_type: "global" }])).toBe(true);
   });
 
-  it("names the record on the SAVE BUTTON — a label, never a paragraph", () => {
+  it("names whose answer it is on the Save button, from the job's home", () => {
     const systemHome = { systemHomed: true, homeName: "Matrx System" };
-    const creating = systemAnswerSaveWords("global-binding", {
-      exists: false,
-      home: systemHome,
-    });
-    expect(creating).toBe("Set the system answer for everyone");
-    expect(creating.split(".").length).toBe(1);
     expect(
       systemAnswerSaveWords("definition-default", {
         exists: false,
         home: systemHome,
       }),
     ).toBe("Set the system answer");
-    // Once it exists, both records are just "the system answer" — the reader
-    // is never asked to think about storage twice.
-    expect(
-      systemAnswerSaveWords("global-binding", {
-        exists: true,
-        home: systemHome,
-      }),
-    ).toBe("Save the system answer");
     expect(
       systemAnswerSaveWords("definition-default", {
         exists: true,
@@ -126,75 +106,47 @@ describe("which record the system answer is written to", () => {
   });
 });
 
-// ── 2. EXACTLY ONE CALL SITE DECIDES ────────────────────────────────────────
+// ── 2. THE CLASS GUARD — NO SCREEN WRITES A PLATFORM-WIDE BINDING ───────────
 
-describe("the census — one decider, and no second one can grow", () => {
-  it("has exactly one component that calls BOTH doors", () => {
-    const files = filesUnder(FEATURES_DIR).filter(
-      (f) =>
-        (f.endsWith(".ts") || f.endsWith(".tsx")) &&
-        !f.includes("__tests__") &&
-        // The API module DEFINES both doors; it does not choose between them.
-        !f.endsWith(join("mandates", "overrides.ts")),
+describe("the census — nothing in features/ asks for a platform-wide binding", () => {
+  it("no source file sends principalType 'global' to a binding door", () => {
+    const offenders = sourceFilesUnder(FEATURES_DIR).filter((f) =>
+      /principalType:\s*"global"/.test(readFileSync(f, "utf8")),
     );
-    const deciders = files.filter((f) => {
-      const src = readFileSync(f, "utf8");
-      return (
-        src.includes("putMandateDefaultHolder(") &&
-        src.includes("putMandateBinding(")
-      );
-    });
-    expect(deciders.map((f) => f.slice(FEATURES_DIR.length + 1))).toEqual([
-      join("bindings", "OneBindingWorkspace.tsx"),
-    ]);
+    expect(offenders.map((f) => f.slice(FEATURES_DIR.length + 1))).toEqual([]);
   });
 
-  it("makes that one branch read the RULE, not the rung", () => {
+  it("the workspace writes the system answer through the default door, with its settings", () => {
     const src = readFileSync(WORKSPACE, "utf8");
-    // The branch itself.
-    expect(src).toContain("if (writingDefinitionDefault) {");
-    expect(src).toContain("systemAnswerRecord({");
-    // RED: the pre-change source had `if (onDefaultHolderRung) {` here, so a
-    // system host that carried a map wrote the holder alone and dropped it.
-    expect(src).not.toContain("if (onDefaultHolderRung) {");
-  });
-
-  it("keys every platform-wide refusal off the RECORD, never off the rung", () => {
-    const src = readFileSync(WORKSPACE, "utf8");
-    // RED: `rung === "global" && !canBindGlobal` and `rung === "global" &&
-    // systemHolderIsPersonal` — both skipped entirely when the record flipped
-    // to a binding on a job standing on the bottom rung.
-    expect(src).toContain("writesForEveryone && !canBindGlobal");
-    expect(src).toContain("writesForEveryone && systemHolderIsPersonal");
-    expect(src).not.toContain('rung === "global" && !canBindGlobal');
-    expect(src).not.toContain('rung === "global" && systemHolderIsPersonal');
-    // …and the wire principal too: a `default:` branch would have written the
-    // ADMIN'S OWN personal row for the platform's answer.
-    expect(src).not.toContain('rung === "global"\n          ? { principalType: "global" }');
-  });
-
-  it("lets the admin host's rung FOLLOW THE DATA, so it can create either record", () => {
-    const src = readFileSync(WORKSPACE, "utf8");
-    // The rung is derived on the system perspective. RED: it was
-    // `useState(pinned?.[0] ?? …)`, seeded once — so the page stayed on the
-    // definition-default rung after the save that created the binding above it.
-    expect(src).toContain("const [chosenRung, setRung]");
+    expect(src).toContain(
+      "const writingDefinitionDefault = systemHost || onDefaultHolderRung;",
+    );
+    // The default door receives the map, settings and auto-run the binding
+    // branch would have sent — built by the same builder.
+    expect(src).toContain("consumptionMap: settingsPayload.consumptionMap,");
+    expect(src).toContain("autoRun: settingsPayload.autoRun ?? null,");
+    // "Global" chosen in a scope picker lands on the default rung.
     expect(src).toMatch(
-      /const rung: WorkspaceRung =\s*\n\s*perspective === "system"/,
+      /perspective === "system" \|\| chosenRung === "global"\s*\?\s*DEFAULT_HOLDER_RUNG/,
     );
-    expect(src).toContain("hasLiveGlobalBinding(data.bindings)");
   });
 });
 
-/** Every file under a directory, recursively. */
-function filesUnder(dir: string): string[] {
-  const { readdirSync, statSync } = require("node:fs") as typeof import("node:fs");
+/** Every non-test .ts/.tsx file under a directory, recursively. */
+function sourceFilesUnder(dir: string): string[] {
+  const { readdirSync, statSync } =
+    require("node:fs") as typeof import("node:fs");
   const out: string[] = [];
   for (const entry of readdirSync(dir)) {
-    if (entry === "node_modules" || entry === "unused") continue;
+    if (entry === "node_modules" || entry === "unused" || entry === "__tests__")
+      continue;
     const full = join(dir, entry);
-    if (statSync(full).isDirectory()) out.push(...filesUnder(full));
-    else out.push(full);
+    if (statSync(full).isDirectory()) out.push(...sourceFilesUnder(full));
+    else if (
+      (full.endsWith(".ts") || full.endsWith(".tsx")) &&
+      !/\.test\.tsx?$/.test(full)
+    )
+      out.push(full);
   }
   return out;
 }

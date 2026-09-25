@@ -9,7 +9,6 @@ import {
   ChevronDown,
   Pencil,
   Trash2,
-  Users,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -17,10 +16,8 @@ import {
   selectScopesLoading,
   deleteScope,
 } from "../../redux/scope/scopesSlice";
-import { selectAssignmentCountByScope } from "../../redux/scope/scopeAssignmentsSlice";
 import type { ScopeType, Scope } from "../../redux/scope/types";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/cn";
 import {
   AlertDialog,
@@ -72,7 +69,6 @@ export function ScopeInstancePanel({
     selectScopeTreeByType(state, scopeType.id),
   ) as ScopeTreeNode[];
   const loading = useAppSelector(selectScopesLoading);
-  const assignmentCounts = useAppSelector(selectAssignmentCountByScope);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingScope, setEditingScope] = useState<Scope | null>(null);
@@ -170,7 +166,6 @@ export function ScopeInstancePanel({
                 depth={0}
                 color={scopeType.color}
                 singularLabel={scopeType.label_singular}
-                assignmentCounts={assignmentCounts}
                 onEdit={handleEdit}
                 onDelete={setDeleteTarget}
                 onAddChild={handleAdd}
@@ -221,7 +216,6 @@ function ScopeTreeItem({
   depth,
   color,
   singularLabel,
-  assignmentCounts,
   onEdit,
   onDelete,
   onAddChild,
@@ -230,14 +224,12 @@ function ScopeTreeItem({
   depth: number;
   color: string;
   singularLabel: string;
-  assignmentCounts: Record<string, number>;
   onEdit: (scope: Scope) => void;
   onDelete: (scope: Scope) => void;
   onAddChild: (parentId: string) => void;
 }) {
   const [expanded, setExpanded] = useState(depth < 2);
   const hasChildren = node.children.length > 0;
-  const count = assignmentCounts[node.id] ?? 0;
 
   return (
     <div>
@@ -277,13 +269,6 @@ function ScopeTreeItem({
           )}
         </div>
 
-        {count > 0 && (
-          <Badge variant="secondary" className="text-[10px] h-5 gap-1 px-1.5">
-            <Users className="h-3 w-3" />
-            {count}
-          </Badge>
-        )}
-
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             type="button"
@@ -319,7 +304,6 @@ function ScopeTreeItem({
               depth={depth + 1}
               color={color}
               singularLabel={singularLabel}
-              assignmentCounts={assignmentCounts}
               onEdit={onEdit}
               onDelete={onDelete}
               onAddChild={onAddChild}

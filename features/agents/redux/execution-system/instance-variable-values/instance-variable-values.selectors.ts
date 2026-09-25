@@ -17,6 +17,10 @@ import type {
   VariableResourceContextConfig,
 } from "@/features/agents/types/agent-definition.types";
 import { resolveVariablesForRequest } from "./resolve-variables-for-request";
+import {
+  contextItemBindingOf,
+  isCustomDataBinding,
+} from "@/features/agents/utils/variable-binding";
 
 // Stable references returned when the instance hasn't been initialized yet.
 const EMPTY_DEFINITIONS: VariableDefinition[] = [];
@@ -204,7 +208,10 @@ export const selectMissingRequiredVariables = (conversationId: string) =>
           // A scope-bound variable is NEVER a hard requirement — when no context provides
           // it, it falls back to an ordinary (optional) input. The server fills it from
           // scope when available. Bound vars must never block a run.
-          if (def.binding?.itemKey || def.binding?.contextItemId) return false;
+          // Custom-data bindings are server-filled too — never a client requirement.
+          if (isCustomDataBinding(def.binding)) return false;
+          const scope = contextItemBindingOf(def.binding);
+          if (scope?.itemKey || scope?.contextItemId) return false;
           if (def.name in userValues) {
             return isEmpty(userValues[def.name]);
           }

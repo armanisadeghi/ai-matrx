@@ -53,7 +53,7 @@ import {
   type KindSchema,
 } from "@ai-matrx/content-ir";
 import type {
-  ContextItemBinding,
+  VariableBinding,
   StructuredListBinding,
   VariableComponentType,
   VariableCustomComponent,
@@ -90,7 +90,8 @@ export type VariableFieldSidecar = {
   /** Picklist binding — options + value resolve from a Structured List at run time. */
   structuredList?: StructuredListBinding;
   /** Scope-context binding — the value fills from the active scope at run time. */
-  scopeBinding?: ContextItemBinding;
+  /** The variable's runtime binding (scope context item or custom-data merge field) — provenance, carried verbatim. */
+  scopeBinding?: VariableBinding;
   /**
    * `allowOther` on a component whose FIELD cannot carry `open` (a plain
    * string from a runtime-options picklist / optionless select). When the
@@ -570,7 +571,7 @@ function scalarZero(
  *
  * | VariableDefinition                                       | FieldSchema                       | sidecar                    | loss |
  * |-----------------------------------------------------------|-----------------------------------|----------------------------|------|
- * | binding set (ContextItemBinding)                          | string                            | scopeBinding               | —    |
+ * | binding set (VariableBinding)                             | string                            | scopeBinding               | —    |
  * | picklist + static options + !multiple                     | enum {values} (+open on allowOther) | structuredList (+component) | — |
  * | picklist otherwise (runtime options / multiple)           | string                            | structuredList (+component/allowOther) | options resolve at run time |
  * | textarea / no customComponent                             | string                            | —                          | —    |

@@ -12,6 +12,7 @@ import type { MarkdownComponents as Components } from "@/components/markdown-cor
 import { cn } from "@/lib/utils";
 import { THICK_HR_SENTINEL } from "./prose-prepare";
 import { PROSE_INLINE_ELEMENTS } from "./prose-inline-elements";
+import { INLINE_SYNTAX_ELEMENTS } from "@/components/markdown-core/syntax/elements/core-syntax-elements";
 
 /** Paragraph-level spans; a second one in a row starts on its own line. */
 export const INLINE_P_CLASS = "rc-inline-p";
@@ -23,6 +24,8 @@ export const INLINE_P_CLASS = "rc-inline-p";
  */
 export const INLINE_LEVEL_ELEMENTS = {
   ...PROSE_INLINE_ELEMENTS,
+  // The extended syntax's block constructs (callouts, tabs, figures…) as spans.
+  ...INLINE_SYNTAX_ELEMENTS,
   p: ({ children }) => {
     const only = Array.isArray(children) ? null : children;
     if (only === " ") return <span data-rc-block className="block h-[0.4em]" />;

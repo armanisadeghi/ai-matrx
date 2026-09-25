@@ -12,7 +12,9 @@
  *   contiguous  blocks cover the text with no gap or overlap; code-point offsets agree
  *   noop_save   open → save with every block handed back unchanged = the original string
  *   edit_local  replacing the first and last prose block changes bytes ONLY inside that block,
- *               and every protected island outside it survives at its mapped position
+ *               carries its inline islands through untouched, and every protected island
+ *               outside it survives at its mapped position (spliceSave refuses otherwise;
+ *               this tooling passes requireIntegrity:false to read the report instead)
  *
  * Sources: every row of the stored rich-text corpus (`scripts/lib/rich-content-corpus.ts`, shared
  * with the editor gate `check-rich-editor-roundtrip-corpus.ts`), READ ONLY — the session is set
@@ -98,7 +100,14 @@ function judge(m: SourceModule, text: string, stats: SourceStats): string | null
   for (const target of targets) {
     if (!target) continue;
     const replacement = `${target.raw} [edited]`;
-    const result = m.spliceSave(text, [m.blockEdit(target, replacement)], { blocks });
+    // Tooling: read the integrity report instead of taking the default refusal.
+    let result: ReturnType<SourceModule["spliceSave"]>;
+    try {
+      result = m.spliceSave(text, [m.blockEdit(target, replacement)], { blocks, requireIntegrity: false });
+    } catch (error) {
+      const code = (error as { code?: unknown }).code;
+      return `edit_refused:${typeof code === "string" ? code : "unknown"}`;
+    }
     const expected = text.slice(0, target.start) + replacement + text.slice(target.end);
     if (result.text !== expected) return "edit_changed_bytes_outside_block";
     if (!result.integrity.bytesOutsideEditsIdentical) return "edit_outside_bytes_differ";

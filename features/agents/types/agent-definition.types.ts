@@ -216,29 +216,41 @@ export interface ContextItemBinding {
 }
 
 /**
- * Binds a variable to the author's OWN CUSTOM DATA (a record-store table).
- * `tableId` alone = the whole table (Collection); `recordId` = one record through
- * the template (Reference); `recordId + fieldKey` = one value (Value). Resolved
- * server-side, once per turn, under the operating person's own principal
- * (`server_fixed` — there is no client write-back). Contract:
- * `common-docs/projects/data-kits/PLAN.md` § P1.
+ * Binds a variable to the author's OWN CUSTOM DATA (a record-store table) — a
+ * MERGE FIELD whose source is a record. snake_case, because it mirrors the
+ * server's merge-field declaration byte for byte (the variable name is the key).
+ *
+ *  - `collection` — the whole table (`table_id`, optional `match`/`limit`), each
+ *    row rendered through `transform` (`list` + `template`).
+ *  - `reference`  — one record (`record_id`) rendered through `transform.template`.
+ *  - `value`      — one field (`record_id` + `field_key`); no transform.
+ *
+ * Resolved server-side, once per turn, under the operating person's own
+ * principal. There is no client write-back. `override_policy: "shown_locked"`
+ * means the run form shows the bound value read-only — the variable input never
+ * overwrites it. Contract: `common-docs/projects/data-kits/PLAN.md` § P1.
  */
 export interface CustomDataBinding {
-  kind: "custom_data";
-  /** The custom table's id. */
-  tableId: string;
-  /** One record of that table. */
-  recordId?: string;
-  /** With `recordId`: one field of that record. */
-  fieldKey?: string;
+  kind: "merge_field";
+  source: "record";
+  semantic_type: "collection" | "reference" | "value";
+  table_id: string;
+  record_id?: string;
+  field_key?: string;
   /** Optional equality filter for a whole-table read, keyed by field key. */
   match?: Record<string, string>;
-  /** Per-row render for a table/record read; `{field_key}` / `{field.name}` / `{field.id}` placeholders. */
-  template?: string;
-  sort?: { field: string; dir: "asc" | "desc" };
   /** Row cap for a whole-table read; truncation is announced server-side. */
   limit?: number;
-  onMissing: "empty" | "skip" | "error";
+  /** `{field_key}` / `{field.name}` / `{field.id}` placeholders; absent for `value`. */
+  transform?: {
+    name: "list";
+    template: string;
+    join?: string;
+    max?: number;
+  };
+  /** "absent" = say it is missing (default); "block" = stop the run. */
+  missing: "absent" | "block";
+  override_policy: "shown_locked";
 }
 
 /** What `VariableDefinition.binding` holds. Narrow with `isCustomDataBinding`. */
@@ -265,7 +277,7 @@ export interface VariableDefinition {
   customComponent?: VariableCustomComponent;
   /**
    * When set, this variable is filled at run time — from a scope context item
-   * (inherits its component) or from the author's custom data (`kind: "custom_data"`).
+   * (inherits its component) or from the author's custom data (`kind: "merge_field"`).
    */
   binding?: VariableBinding;
   /** When set, this variable is a model control exposed as a run input. */

@@ -11,6 +11,8 @@ import {
 import {
   VARIABLE_COMPONENT_TYPES,
   type AgentDefinition,
+  type ContextItemBinding,
+  type CustomDataBinding,
   type StructuredListBinding,
   type VariableAssignmentConfig,
   type VariableComponentType,
@@ -377,11 +379,138 @@ function parseVariableCustomComponent(
   return parsed;
 }
 
-function parseContextItemBinding(
+const MERGE_FIELD_BINDING_KNOWN_KEYS = [
+  "kind",
+  "source",
+  "semantic_type",
+  "table_id",
+  "record_id",
+  "field_key",
+  "match",
+  "limit",
+  "transform",
+  "missing",
+  "override_policy",
+] as const;
+
+function parseStringRecord(
+  value: unknown,
+  path: string,
+): Record<string, string> | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (!isRecord(value)) fail(path, "must be an object of string values");
+  const out: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof entry !== "string") fail(`${path}.${key}`, "must be a string");
+    out[key] = entry;
+  }
+  return out;
+}
+
+/**
+ * `kind: "merge_field"` — a variable bound to the author's own custom data
+ * (data-kits PLAN § P1). Validated here at ingress so a malformed row names
+ * itself instead of reaching the editor or the run.
+ */
+function parseMergeFieldBinding(
+  value: Record<string, unknown>,
+  path: string,
+): CustomDataBinding {
+  if (value.source !== "record") fail(`${path}.source`, 'must be "record"');
+  const semantic = value.semantic_type;
+  if (
+    semantic !== "collection" &&
+    semantic !== "reference" &&
+    semantic !== "value"
+  ) {
+    fail(
+      `${path}.semantic_type`,
+      'must be "collection", "reference", or "value"',
+    );
+  }
+  // Shapes are validated here; COMPLETENESS is not — an author mid-edit holds a
+  // binding with no table or record chosen yet, exactly like an unpicked
+  // context-item binding holds empty ids. The server refuses an incomplete one.
+  if (typeof value.table_id !== "string") {
+    fail(`${path}.table_id`, "must be a string");
+  }
+  const missing = value.missing ?? "absent";
+  if (missing !== "absent" && missing !== "block") {
+    fail(`${path}.missing`, 'must be "absent" or "block"');
+  }
+  const overridePolicy = value.override_policy ?? "shown_locked";
+  if (overridePolicy !== "shown_locked") {
+    fail(`${path}.override_policy`, 'must be "shown_locked"');
+  }
+
+  const parsed: CustomDataBinding = {
+    kind: "merge_field",
+    source: "record",
+    semantic_type: semantic,
+    table_id: value.table_id,
+    missing,
+    override_policy: overridePolicy,
+  };
+  const recordId = parseOptionalString(value.record_id, `${path}.record_id`);
+  if (recordId) parsed.record_id = recordId;
+  const fieldKey = parseOptionalString(value.field_key, `${path}.field_key`);
+  if (fieldKey) parsed.field_key = fieldKey;
+  const match = parseStringRecord(value.match, `${path}.match`);
+  if (match) parsed.match = match;
+  if (value.limit !== undefined && value.limit !== null) {
+    if (
+      typeof value.limit !== "number" ||
+      !Number.isInteger(value.limit) ||
+      value.limit < 1
+    ) {
+      fail(`${path}.limit`, "must be a positive integer");
+    }
+    parsed.limit = value.limit;
+  }
+  if (value.transform !== undefined && value.transform !== null) {
+    const t = value.transform;
+    if (!isRecord(t) || t.name !== "list" || typeof t.template !== "string") {
+      fail(
+        `${path}.transform`,
+        'must be { name: "list", template: string, join?, max? }',
+      );
+    }
+    const transform: NonNullable<CustomDataBinding["transform"]> = {
+      name: "list",
+      template: t.template,
+    };
+    const join = parseOptionalString(t.join, `${path}.transform.join`);
+    if (join !== undefined) transform.join = join;
+    if (t.max !== undefined && t.max !== null) {
+      if (typeof t.max !== "number" || !Number.isInteger(t.max) || t.max < 1) {
+        fail(`${path}.transform.max`, "must be a positive integer");
+      }
+      transform.max = t.max;
+    }
+    parsed.transform = transform;
+  }
+  copyOpaqueKeys(parsed, value, MERGE_FIELD_BINDING_KNOWN_KEYS);
+  return parsed;
+}
+
+function parseVariableBinding(
   value: unknown,
   path: string,
 ): VariableDefinition["binding"] {
   if (value === undefined || value === null) return undefined;
+  if (isRecord(value) && value.kind === "merge_field") {
+    return parseMergeFieldBinding(value, path);
+  }
+  if (isRecord(value) && value.kind !== undefined && value.kind !== "context_item") {
+    fail(`${path}.kind`, 'must be "merge_field", "context_item", or absent');
+  }
+  return parseContextItemBinding(value, path);
+}
+
+function parseContextItemBinding(
+  value: unknown,
+  path: string,
+): ContextItemBinding {
   if (
     !isRecord(value) ||
     typeof value.contextItemId !== "string" ||
@@ -403,7 +532,7 @@ function parseContextItemBinding(
     fail(`${path}.onMissing`, 'must be "empty", "skip", "error", or null');
   }
 
-  const parsed: NonNullable<VariableDefinition["binding"]> = {
+  const parsed: ContextItemBinding = {
     contextItemId: value.contextItemId,
     scopeTypeId: value.scopeTypeId,
     itemKey: value.itemKey,
@@ -411,7 +540,8 @@ function parseContextItemBinding(
   if (value.onMissing !== undefined && value.onMissing !== null) {
     parsed.onMissing = value.onMissing;
   }
-  copyOpaqueKeys(parsed, value, CONTEXT_ITEM_BINDING_KNOWN_KEYS);
+  if (value.kind === "context_item") parsed.kind = "context_item";
+  copyOpaqueKeys(parsed, value, [...CONTEXT_ITEM_BINDING_KNOWN_KEYS, "kind"]);
   return parsed;
 }
 
@@ -447,7 +577,7 @@ function parseVariableDefinition(
     value.customComponent,
     `${path}.customComponent`,
   );
-  const binding = parseContextItemBinding(value.binding, `${path}.binding`);
+  const binding = parseVariableBinding(value.binding, `${path}.binding`);
   const control = parseControlBinding(value.control, `${path}.control`);
   if (helpText !== undefined) parsed.helpText = helpText;
   if (required !== undefined) parsed.required = required;

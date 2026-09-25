@@ -30,12 +30,12 @@ export function LevelCompareView({ content }: LevelCompareViewProps) {
     );
   }
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-1 gap-px overflow-auto bg-border xl:grid-cols-3 xl:overflow-hidden">
+    <div className="grid min-h-0 flex-1 auto-rows-max grid-cols-1 gap-px overflow-auto bg-border @4xl:auto-rows-auto @4xl:grid-cols-3 @4xl:overflow-hidden">
       {LEVELS.map(({ level, label, hint }) => (
         <section
           key={level}
           aria-label={`${label} level`}
-          className="flex min-h-0 flex-col bg-card"
+          className="flex flex-col bg-card @4xl:min-h-0"
         >
           <header className="flex items-baseline gap-2 border-b border-border px-3 py-1.5">
             <span className="text-xs font-semibold">{label}</span>
@@ -43,7 +43,7 @@ export function LevelCompareView({ content }: LevelCompareViewProps) {
               {hint}
             </span>
           </header>
-          <div className="min-h-0 flex-1 p-3 text-sm xl:overflow-auto">
+          <div className="flex-1 p-3 text-sm @4xl:min-h-0 @4xl:overflow-auto">
             <RichContent source={content} level={level} />
           </div>
         </section>

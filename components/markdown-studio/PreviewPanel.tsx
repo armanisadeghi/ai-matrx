@@ -22,6 +22,7 @@ import {
   Braces,
   Columns3,
   Printer,
+  FlaskConical,
   Cpu,
   Eye,
   FileText,
@@ -57,6 +58,7 @@ import {
 import { JsonExtractionPanel } from "./lab/JsonExtractionPanel";
 import { LevelCompareView } from "./lab/LevelCompareView";
 import { PrintPreviewView } from "./lab/PrintPreviewView";
+import { RendererTrialView } from "./lab/RendererTrialView";
 
 export const PREVIEW_MODES = [
   "rendered",
@@ -66,6 +68,7 @@ export const PREVIEW_MODES = [
   "json",
   "levels",
   "print",
+  "trial",
 ] as const;
 export type PreviewMode = (typeof PREVIEW_MODES)[number];
 
@@ -77,6 +80,8 @@ const MODE_META: Record<PreviewMode, { label: string; icon: LucideIcon }> = {
   json: { label: "JSON", icon: Braces },
   levels: { label: "Levels", icon: Columns3 },
   print: { label: "Print", icon: Printer },
+  // RC-B7: current core vs Streamdown 2, side by side, timed (lab only).
+  trial: { label: "Trial", icon: FlaskConical },
 };
 
 export const STUDIO_ACTION_SURFACE_ID = "markdown-studio-preview";
@@ -320,6 +325,8 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
         {mode === "json" && <JsonExtractionPanel content={content} />}
 
         {mode === "levels" && <LevelCompareView content={content} />}
+
+        {mode === "trial" && <RendererTrialView content={content} />}
 
         {mode === "print" && (
           <PrintPreviewView content={content} title={title ?? "Markdown"} />

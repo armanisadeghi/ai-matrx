@@ -66,7 +66,8 @@ import { extractErrorMessage } from "@/utils/errors";
 import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { buildConversationMessageTitle } from "@/features/agents/utils/conversation-message-title";
 import { MessageTimestamp } from "../MessageTimestamp";
-import { MessageSquareShare } from "lucide-react";
+import { MessageSquareShare, RefreshCw } from "lucide-react";
+import { selectRegenerateAnchor } from "@/features/agents/redux/execution-system/message-crud/regenerate-anchor";
 import { usePathname } from "next/navigation";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { selectReservedConversationId } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
@@ -185,6 +186,13 @@ export function AssistantActionBar({
   );
   const isLatestAssistant = useAppSelector(
     selectIsLatestAssistantMessage(conversationId, messageId),
+  );
+  // Plain "Regenerate" (no edit) — only on the latest answer, where re-asking
+  // the same question drops nothing after it. Older answers use Fork.
+  const canRegenerate = useAppSelector(
+    (s) =>
+      isLatestAssistant &&
+      selectRegenerateAnchor(s, conversationId, messageId) !== null,
   );
   const conversationTitle = useAppSelector(
     selectConversationTitle(conversationId),
@@ -523,6 +531,26 @@ export function AssistantActionBar({
               ariaLabel="Edit message"
               className="text-muted-foreground"
             />
+
+            {canRegenerate && (
+              <TapTargetButtonForGroup
+                onClick={() => {
+                  void import(
+                    "@/features/rich-document/actions/handlers/answer-tools"
+                  ).then(({ confirmAndRegenerate }) =>
+                    confirmAndRegenerate(
+                      { dispatch, getState: store.getState },
+                      conversationId,
+                      messageId,
+                    ),
+                  );
+                }}
+                ariaLabel="Regenerate answer"
+                tooltip="Regenerate answer"
+                icon={<RefreshCw className="h-4 w-4" />}
+                className="text-muted-foreground"
+              />
+            )}
 
             {!isChatRoutePath(pathname) && continueInChatHref && (
               <TapTargetButtonForGroup

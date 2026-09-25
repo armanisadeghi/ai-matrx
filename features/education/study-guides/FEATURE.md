@@ -5,7 +5,7 @@ Additive study reader at `/education/study-guides` and `/education/study-guides/
 ## Ownership and composition
 
 - `components/StudyGuideReader.tsx` composes the existing shell, `RichDocument`, Notes outline parser, registered resizable panels, tutor, feedback, and flashcard window openers.
-- `service.ts` reads the personal guide library and canonical note records. Direct links keep the usual record-access gate. Failed reads stay distinct from absent records.
+- `service.ts` reads the personal guide library — my notes in the Education study folder (`STUDY_NOTES_FOLDER`, `features/education/notes/study-notes-folder.ts`, where the notes generator writes) — and canonical note records. An ordinary draft is a note, not a guide; any note still opens here by direct link. Direct links keep the usual record-access gate. Failed reads stay distinct from absent records.
 - Highlights and side notes are personal Notes with `metadata.studyAnnotation` containing the quote, annotation kind, and text anchor. A canonical note-to-note `source` association links each annotation to its guide. The source content is never rewritten to paint highlights.
 - An annotation uses the guide's organization explicitly. A failed association preserves the saved note and returns its identity for retry without creating a duplicate.
 - Key terms come from flashcard sets associated with the note and their canonical card membership edges. Clicking a term opens the existing flashcard item window.
@@ -18,3 +18,4 @@ Focused tests cover missing organization, partial-save retry, annotation ownersh
 ## Changelog
 
 - 2026-09-20: Added the Education study reader alongside Notes, using existing content and association primitives.
+- 2026-09-25: The guide library lists only study-folder notes (it listed every draft and chat save); guard in `service.test.ts` (RC-B1 verify D1).

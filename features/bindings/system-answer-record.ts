@@ -1,46 +1,36 @@
 // features/bindings/system-answer-record.ts
 //
-// ── WHICH RECORD THE SYSTEM ANSWER IS WRITTEN TO — THE ONE PLACE THAT DECIDES ─
+// ── THE SYSTEM ANSWER LIVES IN ONE RECORD: THE JOB'S OWN DEFAULT ─────────────
 //
-// 🚨 STORAGE IS NOT A QUESTION PUT TO A PERSON (Arman's standing default,
-// FIX-R13/A, on top of D19).
+// 🚨 OWNER RULING (Arman, 2026-09-25): the answer a job gives EVERYBODY — the
+// agent or workflow that runs it, its mapping, its settings and its auto-run
+// promise — lives in ONE place, the mandate's own default. "If they happened
+// through the UI because something is confusing, that's a massive bug — fix the
+// bug before anything else."
 //
-// The admin mandate page used to ask the reader to choose between "the job's
-// own default" and "a platform-wide binding" — two buttons, two paragraphs,
-// one meaning. That distinction is STORAGE. FIX-R9-UI deleted the control that
-// asked it, which was right, and left the page unable to create a
-// platform-wide binding at all, which was not. The fix is not a third button:
-// the three controls write THE SYSTEM ANSWER and the code decides the record.
+// THE BUG THIS MODULE USED TO BE. Until aidream 1037 the definition default had
+// no column for a map, settings or auto-run, so this module answered
+// 'global-binding' the moment an admin mapped an input on the system answer:
+// the admin page then wrote a platform-wide `mandate.binding` row — Holder
+// included, duplicating the default — and every later edit followed that row.
+// Live on 2026-09-25 that had produced four global bindings that repeated or
+// replaced the default, one of them made through this screen that morning.
 //
-// THE RULE, and it is the whole rule:
-//
-//   · a system answer that names ONLY A HOLDER is the mandate's own default —
-//     `mandate.definition.default_holder_*`, three columns, no map, no
-//     settings, no auto-run. It is the bottom rung and it is what "the
-//     platform assigns this job to X" means with nothing else attached.
-//
-//   · a system answer that ALSO carries a mapping, settings or an auto-run
-//     promise is a platform-wide binding — `mandate.binding` at
-//     `principal_type = 'global'`. Those three things have no columns on the
-//     definition, so the definition CANNOT hold that answer; writing it there
-//     would silently drop what the admin just set (the fourth law).
-//
-//   · and once a live platform-wide binding exists it is the rung that
-//     ANSWERS, so every further edit on that host goes to it. Writing the
-//     definition default underneath a binding that outranks it would save a
-//     row that changes nothing and report success — the exact lie this
-//     campaign closes.
-//
-// The rule is stated for a reader on the Save button (`systemAnswerSaveWords`)
-// rather than in a paragraph, because a person who is about to create a
-// platform-wide row is entitled to know that is what the button does.
+// NOW: `mandate.definition` carries `default_consumption_map`,
+// `default_config_overrides` and `default_auto_run`; the default door
+// (`PUT /mandates/{key}/default-holder`) stores them; the binding door refuses
+// `principal_type: "global"` (409 `mandate_system_answer_is_the_default`) and
+// the database refuses the row too. So there is ONE record, and the functions
+// below say so rather than choosing.
 //
 // Documented for humans in `features/mandates/FEATURE.md` § The system answer.
 
+import { isJsonObject, type JsonObject } from "@/types/json";
+
 /**
- * IS THERE A LIVE PLATFORM-WIDE BINDING? — the one predicate, so the thing
- * that PICKS the record and the thing that decides which rung the admin page
- * stands on can never disagree about the same row.
+ * IS THERE A LIVE PLATFORM-WIDE BINDING? — a LEGACY row, from before aidream
+ * 1037. Nothing writes one any more; a screen that finds one says so (it still
+ * outranks the default until it is removed) rather than editing it.
  */
 export function hasLiveGlobalBinding(
   bindings: readonly { principal_type: string; is_enabled?: boolean | null }[],
@@ -50,11 +40,11 @@ export function hasLiveGlobalBinding(
   );
 }
 
-/** The two records a system answer can live in. There is no third. */
-export type SystemAnswerRecord = "definition-default" | "global-binding";
+/** The ONE record a system answer lives in. There is no second. */
+export type SystemAnswerRecord = "definition-default";
 
 export interface SystemAnswerDraft {
-  /** Is there a live `principal_type = 'global'` binding on this mandate? */
+  /** Is there a live legacy `principal_type = 'global'` binding on this mandate? */
   hasGlobalBinding: boolean;
   /** Does the draft map any of the job's offered values to a holder input? */
   carriesMapping: boolean;
@@ -65,41 +55,50 @@ export interface SystemAnswerDraft {
 }
 
 /**
- * THE DECISION. One function, one call site (`OneBindingWorkspace.writeBinding`
- * on the system perspective), and a guard that counts the call sites.
+ * THE DECISION — and there is only one answer. Kept as a function (not
+ * inlined) so every caller that used to branch on it now reads the same rule,
+ * and the guard in `__tests__/system-answer-record.test.ts` can prove no caller
+ * writes a platform-wide binding.
  */
-export function systemAnswerRecord(draft: SystemAnswerDraft): SystemAnswerRecord {
-  if (draft.hasGlobalBinding) return "global-binding";
-  if (draft.carriesMapping || draft.carriesSettings || draft.carriesAutoRun) {
-    return "global-binding";
-  }
+export function systemAnswerRecord(
+  _draft: SystemAnswerDraft,
+): SystemAnswerRecord {
   return "definition-default";
 }
 
 /**
- * WHAT THE SAVE BUTTON SAYS. The record is not a question, but it is not a
- * secret either — a save that creates a row deciding for every user on the
- * platform names that on the control that does it. Labels, not paragraphs.
- *
- * 🚨 AND WHOSE ANSWER IT IS COMES FROM THE JOB'S HOME (FIX-R17/R-O4 — F3's
- * class, caught a fourth time by the closing lens). This button read
- * *"Set the system answer"* on an ORG-HOMED job whose own coverage line, three
- * inches above, correctly said *"every member of Write Target Sandbox"*. The
- * bottom rung of an org-homed mandate decides for ONE organization (FIX-R1), so
- * "system" there is not vocabulary drift in a button — it is the screen naming
- * the wrong blast radius on the control that causes it.
- *
- * The home is NOT re-derived here: `home` is `defaultHolderRungOffer()`'s own
- * answer, the one place on this screen that reads `mandate.definition`'s home,
- * so the label and the sentence beside it cannot disagree.
- *
- * The `global-binding` record is the exception that proves it: a
- * `principal_type = 'global'` row genuinely decides for everybody, and the
- * database refuses one on an org-homed mandate outright
- * (`mandate.guard_binding_containment`), so its words stay platform-wide.
+ * The default's own map, settings and auto-run, in the SHAPE of a binding row,
+ * so the one binding parser (`parseBindingWave1`) and the one settings reader
+ * read the bottom rung exactly as they read every other rung.
+ */
+export function defaultAnswerSettingsOf(mandate: object): {
+  consumption_map: unknown;
+  config_overrides: JsonObject | null;
+  auto_run: boolean | null;
+} {
+  const row = mandate as {
+    default_consumption_map?: unknown;
+    default_config_overrides?: unknown;
+    default_auto_run?: unknown;
+  };
+  return {
+    consumption_map: row.default_consumption_map ?? null,
+    config_overrides: isJsonObject(row.default_config_overrides)
+      ? (row.default_config_overrides as JsonObject)
+      : null,
+    auto_run:
+      typeof row.default_auto_run === "boolean" ? row.default_auto_run : null,
+  };
+}
+
+/**
+ * WHAT THE SAVE BUTTON SAYS. Whose answer it is comes from the job's HOME
+ * (FIX-R17/R-O4): the bottom rung of an org-homed mandate decides for ONE
+ * organization, so "system" there would name the wrong blast radius on the
+ * control that causes it. `home` is `defaultHolderRungOffer()`'s own reading.
  */
 export function systemAnswerSaveWords(
-  record: SystemAnswerRecord,
+  _record: SystemAnswerRecord,
   {
     exists,
     home,
@@ -109,9 +108,6 @@ export function systemAnswerSaveWords(
     home: { systemHomed: boolean; homeName: string };
   },
 ): string {
-  if (record === "global-binding") {
-    return exists ? "Save the system answer" : "Set the system answer for everyone";
-  }
   if (!home.systemHomed) {
     // NOT lowercased and never abbreviated: the label carries the home
     // organization's NAME, exactly as the bottom rung's own words do.

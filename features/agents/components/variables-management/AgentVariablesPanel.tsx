@@ -33,6 +33,8 @@ import {
   isDeclarableVariableName,
 } from "@/features/agents/utils/variable-utils";
 import { AgentVariableEditor } from "./AgentVariableEditor";
+import { isCustomDataBinding } from "@/features/agents/utils/variable-binding";
+import { CustomDataBindingSummary } from "./custom-data/CustomDataBindingSummary";
 
 interface AgentVariablesPanelProps {
   agentId: string;
@@ -213,6 +215,12 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
                   <span className="flex-1 text-xs font-mono truncate">
                     {variable.name}
                   </span>
+                  {isCustomDataBinding(variable.binding) && (
+                    <CustomDataBindingSummary
+                      binding={variable.binding}
+                      iconOnly
+                    />
+                  )}
                   {!isUsed && !isControlVariable(variable) && (
                     <span title="Not referenced in messages">
                       <AlertCircle className="w-3 h-3 shrink-0 text-amber-500" />

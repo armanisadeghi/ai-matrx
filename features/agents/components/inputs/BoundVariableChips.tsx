@@ -8,6 +8,9 @@
  * (the value is auto-filled server-side), click it to override for this run, and optionally
  * write the value back to the scope.
  *
+ * Variables bound to the author's CUSTOM DATA are always shown here, locked
+ * (`DataBoundVariableChips`) — the server fills them and nothing overrides them.
+ *
  * Bound variables that did NOT resolve (no context, or no value yet) are NOT shown here —
  * they fall through to the normal input list with their inherited component, with zero
  * requirement. Mounting this component also drives the runtime hook that loads the scope
@@ -52,7 +55,12 @@ import {
   useBoundVariableScope,
   type BoundVarInfo,
 } from "@/features/agents/hooks/useBoundVariableScope";
-import { selectUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import {
+  selectInstanceVariableDefinitions,
+  selectUserVariableValues,
+} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { isCustomDataBinding } from "@/features/agents/utils/variable-binding";
+import { DataBoundVariableChips } from "./DataBoundVariableChips";
 import {
   clearUserVariableValue,
   setUserVariableValue,
@@ -76,6 +84,12 @@ export function BoundVariableChips({
   // even when nothing renders.
   const infos = useBoundVariableScope(conversationId);
   const resolved = infos.filter((i) => !!i.resolved);
+  // Variables bound to the author's custom data are server-filled and LOCKED —
+  // shown here as read-only chips, never as inputs.
+  const definitions = useAppSelector(
+    selectInstanceVariableDefinitions(conversationId),
+  );
+  const hasDataBound = definitions.some((d) => isCustomDataBinding(d.binding));
 
   // "Select {ScopeType}" prompts: distinct bound scope types the user HAS but hasn't
   // selected. If the user doesn't have the type (e.g. a public-agent user), no prompt —
@@ -99,9 +113,16 @@ export function BoundVariableChips({
     return [...seen.values()];
   }, [infos]);
 
-  if (resolved.length === 0 && promptTypes.length === 0) return null;
+  if (
+    resolved.length === 0 &&
+    promptTypes.length === 0 &&
+    !hasDataBound
+  ) {
+    return null;
+  }
   return (
     <div className="flex flex-wrap items-center gap-1.5 px-2.5 py-1.5">
+      <DataBoundVariableChips conversationId={conversationId} />
       {promptTypes.map((p) => (
         <BoundScopePrompt
           key={p.scopeTypeId}

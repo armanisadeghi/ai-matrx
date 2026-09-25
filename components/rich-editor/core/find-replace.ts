@@ -21,6 +21,8 @@ export interface FindMatch {
   end: number;
   /** The match overlaps protected content. */
   inProtected: boolean;
+  /** The stored bytes of the island it overlaps (for the explicit-edit record). */
+  islandRaw: string | null;
 }
 
 export interface FindResult {
@@ -56,9 +58,9 @@ export function buildFindRegex(
   }
 }
 
-/** Ranges of every island in the text, in order. */
-export function protectedRanges(text: string): Array<[number, number]> {
-  return listIslands(tokenizeSource(text)).map((island) => [island.start, island.end]);
+/** Ranges of every island in the text, in order, with the island's bytes. */
+export function protectedRanges(text: string): Array<[number, number, string]> {
+  return listIslands(tokenizeSource(text)).map((island) => [island.start, island.end, island.raw]);
 }
 
 export function findMatches(text: string, query: string, options: FindOptions = {}): FindResult {
@@ -79,7 +81,7 @@ export function findMatches(text: string, query: string, options: FindOptions = 
       skippedProtected += 1;
       continue;
     }
-    matches.push({ start, end, inProtected });
+    matches.push({ start, end, inProtected, islandRaw: inProtected && range ? range[2] : null });
     if (matches.length >= MAX_MATCHES) break;
   }
   return { matches, skippedProtected, error: null };

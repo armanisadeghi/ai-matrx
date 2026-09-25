@@ -18,7 +18,7 @@
  * tool_call stubs with their full payloads from `observability.toolCalls`.
  */
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 // The canonical "this read failed — try again" primitive (docs/reuse-first.md).
@@ -64,6 +64,16 @@ import { AgentAssistantMessage } from "./assistant/AgentAssistantMessage";
 import { AgentEmptyMessageDisplay } from "./assistant/AgentEmptyMessageDisplay";
 import { ErrorBoundaryWithCapture } from "@/lib/error-boundary/ErrorBoundaryWithCapture";
 import { ExampleTurnsGroup } from "@/features/agents/message-flags/ExampleTurnsGroup";
+import { Pin } from "lucide-react";
+import {
+  hydratePinnedMessages,
+  togglePinnedMessage,
+  usePinnedMessageIds,
+} from "@/features/agents/message-pins/pinned-messages-store";
+import { ConversationToolbar } from "./conversation-tools/ConversationToolbar";
+import { FollowUpSuggestions } from "./conversation-tools/FollowUpSuggestions";
+import { filterGroupsToPinned, groupMessageIds } from "./conversation-tools/pinned-filter";
+import { useMessageListInteractions } from "./conversation-tools/useMessageListInteractions";
 
 interface AgentConversationDisplayProps {
   conversationId: string;
@@ -104,6 +114,12 @@ export function AgentConversationDisplay({
   // message. On a new submit we scroll THIS to the top of the viewport so the
   // rest of the page opens up for the incoming answer (see effect below).
   const lastUserRef = useRef<HTMLDivElement>(null);
+  // RC-B9 answer tools: in-thread find, the pinned filter, keyboard + touch
+  // access to every message.
+  const transcriptRef = useRef<HTMLDivElement>(null);
+  const [findOpen, setFindOpen] = useState(false);
+  const [pinnedOnly, setPinnedOnly] = useState(false);
+  const pinnedIds = usePinnedMessageIds();
 
   const isActive =
     phase === "connecting" ||
@@ -135,6 +151,28 @@ export function AgentConversationDisplay({
   );
 
   // Key of the conversation's LAST user turn — the scroll anchor.
+  useMessageListInteractions(
+    transcriptRef,
+    () => setFindOpen(true),
+    displayGroups.length > 0,
+  );
+  useEffect(() => {
+    void hydratePinnedMessages(messages.map((m) => m.id));
+  }, [messages]);
+  const pinnedCount = messages.filter((m) => pinnedIds.has(m.id)).length;
+  // The pinned view reads EVERY group (not the render window) so nothing
+  // pinned hides behind "load earlier".
+  const visibleGroups = pinnedOnly
+    ? filterGroupsToPinned(allDisplayGroups, pinnedIds)
+    : displayGroups;
+  let latestAssistantKey: string | undefined;
+  for (let i = displayGroups.length - 1; i >= 0; i--) {
+    if (displayGroups[i].kind === "assistant") {
+      latestAssistantKey = displayGroups[i].key;
+      break;
+    }
+  }
+
   const lastUserKey = useMemo(() => {
     for (let i = displayGroups.length - 1; i >= 0; i--) {
       if (displayGroups[i].kind === "user") return displayGroups[i].key;
@@ -248,26 +286,7 @@ export function AgentConversationDisplay({
   // activity higher on the page (owner-specified): less of the past
   // conversation sits in the visible space while the agent works, so there's
   // less motion in view and the reading position stays calm.
-  const spacingClass = compact ? "space-y-2 pb-12" : "space-y-6 pb-[25dvh]";
-
-  return (
-    <NonEditableContextMenu
-      sourceFeature="chat"
-      surfaceName="matrx-user/assistant-message"
-      enableFloatingIcon={false}
-      suppressed={isActive}
-      // Content blocks are insert-into-an-editor items — meaningless on
-      // read-only rendered output, so hide that submenu here.
-      placementMode={{ "content-block": "hide" }}
-      contextData={{ conversationId }}
-      resolveContextOnOpen={resolveMenuContext}
-    >
-      <div
-        className={`${spacingClass} p-2 scrollbar-hide ${
-          bottomPinned ? "min-h-full flex flex-col justify-end" : ""
-        }`}
-      >
-        {displayGroups.map((group) => {
+  const renderGroupBody = (group: DisplayGroup): ReactNode => {
           if (group.kind === "user") {
             const isLastUser = group.key === lastUserKey;
             return (
@@ -386,7 +405,110 @@ export function AgentConversationDisplay({
               />
             </ErrorBoundaryWithCapture>
           );
-        })}
+  };
+
+  // Every message is an addressable, labelled item: focusable for keyboard
+  // navigation (ArrowUp/Down, Enter/"." for actions, "p" to pin), announced
+  // by screen readers, and long-pressable on touch.
+  const wrapGroup = (group: DisplayGroup, index: number, body: ReactNode) => {
+    const ids = groupMessageIds(group);
+    const primaryId = ids[ids.length - 1];
+    const pinned = ids.some((id) => pinnedIds.has(id));
+    const who =
+      group.kind === "user"
+        ? "Your message"
+        : group.kind === "collab-note"
+          ? "Note"
+          : group.kind === "examples"
+            ? "Example turns"
+            : "Assistant answer";
+    const showFollowUps =
+      group.kind === "assistant" &&
+      group.key === latestAssistantKey &&
+      !isActive &&
+      !pinnedOnly &&
+      primaryId;
+    return (
+      <div
+        key={group.key}
+        data-message-group=""
+        data-primary-message-id={primaryId}
+        tabIndex={index === visibleGroups.length - 1 ? 0 : -1}
+        role="article"
+        aria-label={`${who}${pinned ? ", pinned" : ""}`}
+        className="relative rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        {pinned && primaryId && (
+          <button
+            type="button"
+            data-find-ignore=""
+            onClick={() => {
+              const pinnedId = ids.find((id) => pinnedIds.has(id));
+              if (pinnedId) void togglePinnedMessage(pinnedId);
+            }}
+            aria-label="Pinned — click to unpin"
+            title="Pinned — click to unpin"
+            className={`mb-1 inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 hover:bg-amber-500/20 dark:text-amber-300 ${group.kind === "user" ? "float-right" : ""}`}
+          >
+            <Pin className="h-3 w-3" aria-hidden="true" />
+            Pinned
+          </button>
+        )}
+        {body}
+        {showFollowUps && (
+          <FollowUpSuggestions conversationId={conversationId} messageId={primaryId} />
+        )}
+      </div>
+    );
+  };
+
+  const spacingClass = compact ? "space-y-2 pb-12" : "space-y-6 pb-[25dvh]";
+
+  return (
+    <NonEditableContextMenu
+      sourceFeature="chat"
+      surfaceName="matrx-user/assistant-message"
+      enableFloatingIcon={false}
+      suppressed={isActive}
+      // Content blocks are insert-into-an-editor items — meaningless on
+      // read-only rendered output, so hide that submenu here.
+      placementMode={{ "content-block": "hide" }}
+      contextData={{ conversationId }}
+      resolveContextOnOpen={resolveMenuContext}
+    >
+      {!compact && (
+        <ConversationToolbar
+          conversationId={conversationId}
+          rootRef={transcriptRef}
+          findOpen={findOpen}
+          setFindOpen={setFindOpen}
+          pinnedOnly={pinnedOnly}
+          setPinnedOnly={setPinnedOnly}
+          pinnedCount={pinnedCount}
+        />
+      )}
+      <div
+        ref={transcriptRef}
+        aria-label="Conversation"
+        className={`${spacingClass} p-2 scrollbar-hide ${
+          bottomPinned ? "min-h-full flex flex-col justify-end" : ""
+        }`}
+      >
+        {visibleGroups.map((group, index) =>
+          wrapGroup(group, index, renderGroupBody(group)),
+        )}
+        {pinnedOnly && visibleGroups.length === 0 && (
+          <div className="py-10 text-center text-sm text-muted-foreground">
+            Nothing pinned in this conversation.{" "}
+            <button
+              type="button"
+              className="font-medium text-primary hover:underline"
+              onClick={() => setPinnedOnly(false)}
+            >
+              Show all messages
+            </button>
+          </div>
+        )}
       </div>
     </NonEditableContextMenu>
   );

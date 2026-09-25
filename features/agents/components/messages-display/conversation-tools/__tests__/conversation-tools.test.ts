@@ -1,0 +1,115 @@
+/**
+ * @jest-environment jsdom
+ *
+ * Conversation tools — the pure halves of in-thread find, the pinned filter,
+ * keyboard navigation between messages, and regenerate's anchor. The DOM find
+ * test walks a real rendered transcript fragment: the ranges must cover the
+ * matched text exactly and the content must never be mutated.
+ */
+
+import {
+  collectFindRanges,
+  findTextMatches,
+} from "../find-in-conversation";
+import { filterGroupsToPinned, groupMessageIds } from "../pinned-filter";
+import { nextMessageIndex } from "../message-keyboard-nav";
+import { findRegenerateAnchor } from "@/features/agents/redux/execution-system/message-crud/regenerate-anchor";
+import type { DisplayGroup } from "../../display-groups";
+
+describe("findTextMatches", () => {
+  it("finds every case-insensitive occurrence, non-overlapping", () => {
+    expect(findTextMatches("Revenue grew. revenue fell. REVENUE", "revenue")).toEqual([
+      [0, 7],
+      [14, 21],
+      [28, 35],
+    ]);
+    expect(findTextMatches("aaaa", "aa")).toEqual([
+      [0, 2],
+      [2, 4],
+    ]);
+  });
+  it("matches nothing for an empty or whitespace query", () => {
+    expect(findTextMatches("anything", "")).toEqual([]);
+    expect(findTextMatches("anything", "   ")).toEqual([]);
+  });
+});
+
+describe("collectFindRanges", () => {
+  it("builds ranges over rendered text without mutating the DOM", () => {
+    const root = document.createElement("div");
+    root.innerHTML =
+      '<div data-message-group="1"><p>The <strong>quarterly</strong> report</p></div>' +
+      '<div data-message-group="2"><p>Quarterly numbers <code>quarterly()</code></p></div>' +
+      '<div data-find-ignore><button>quarterly</button></div>';
+    const before = root.innerHTML;
+    const ranges = collectFindRanges(root, "QUARTERLY");
+    expect(ranges.map((r) => r.toString())).toEqual(["quarterly", "Quarterly", "quarterly"]);
+    expect(root.innerHTML).toBe(before);
+  });
+});
+
+const G = (groups: DisplayGroup[]) => groups;
+
+describe("pinned filter", () => {
+  const groups = G([
+    { kind: "user", key: "u1", messageId: "m-u1" },
+    {
+      kind: "assistant",
+      key: "a1",
+      members: [
+        { key: "k1", messageId: "m-a1", requestId: null, isStreamActive: false },
+        { key: "k2", messageId: "m-a2", requestId: null, isStreamActive: false },
+      ],
+    } as DisplayGroup,
+    { kind: "user", key: "u2", messageId: "m-u2" },
+  ]);
+
+  it("reads every message id a group shows", () => {
+    expect(groupMessageIds(groups[1])).toEqual(["m-a1", "m-a2"]);
+  });
+
+  it("keeps only groups holding a pinned message", () => {
+    const kept = filterGroupsToPinned(groups, new Set(["m-a2"]));
+    expect(kept.map((g) => g.key)).toEqual(["a1"]);
+    expect(filterGroupsToPinned(groups, new Set())).toEqual([]);
+  });
+});
+
+describe("nextMessageIndex", () => {
+  it("moves between messages and clamps at the ends", () => {
+    expect(nextMessageIndex(0, "ArrowDown", 3)).toBe(1);
+    expect(nextMessageIndex(2, "ArrowDown", 3)).toBe(2);
+    expect(nextMessageIndex(0, "ArrowUp", 3)).toBe(0);
+    expect(nextMessageIndex(1, "Home", 3)).toBe(0);
+    expect(nextMessageIndex(1, "End", 3)).toBe(2);
+    expect(nextMessageIndex(1, "x", 3)).toBeNull();
+    expect(nextMessageIndex(0, "ArrowDown", 0)).toBeNull();
+  });
+});
+
+describe("findRegenerateAnchor", () => {
+  const msgs = [
+    { id: "u1", role: "user", position: 1 },
+    { id: "a1", role: "assistant", position: 2 },
+    { id: "u2", role: "user", position: 3 },
+    { id: "a2", role: "assistant", position: 4 },
+    { id: "a3", role: "assistant", position: 5 },
+  ];
+  it("anchors on the question the LATEST answer replied to", () => {
+    expect(findRegenerateAnchor(msgs, "a3")).toEqual({ userMessageId: "u2", userPosition: 3 });
+    expect(findRegenerateAnchor(msgs, "a2")).toEqual({ userMessageId: "u2", userPosition: 3 });
+  });
+  it("refuses an older answer (regenerating it would drop later turns)", () => {
+    expect(findRegenerateAnchor(msgs, "a1")).toBeNull();
+    expect(findRegenerateAnchor(msgs, "missing")).toBeNull();
+    expect(findRegenerateAnchor(msgs, "u2")).toBeNull();
+  });
+  it("ignores deleted rows", () => {
+    expect(
+      findRegenerateAnchor(
+        [...msgs, { id: "u3", role: "user", position: 6, deletedAt: "2026-09-25" }],
+        "a3",
+      ),
+    ).toEqual({ userMessageId: "u2", userPosition: 3 });
+  });
+});

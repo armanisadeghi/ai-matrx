@@ -72,11 +72,11 @@ import { parseBindingWave1 } from "@/features/mandates/provision-shapes";
 import { useMandateInputSurface } from "@/features/mandates/input-surface";
 import { describedOfferFrom } from "@/features/bindings/described-offer";
 import { buildBindingSavePayload } from "@/features/mandates/workspace/save-payload";
-import { putMandateBinding } from "@/features/mandates/overrides";
 import {
-  hasLiveGlobalBinding,
-  systemAnswerRecord,
-} from "@/features/bindings/system-answer-record";
+  putMandateBinding,
+  putMandateDefaultHolder,
+} from "@/features/mandates/overrides";
+import { defaultAnswerSettingsOf } from "@/features/bindings/system-answer-record";
 import {
   SYSTEM_RUNG_PERSONAL_HOLDER_REFUSAL,
   systemRungHolderIsPersonal,
@@ -103,7 +103,10 @@ import {
 } from "./binding-lookup";
 import { agentSettingDisplay } from "./format-setting-value";
 
-export type { OverridesLevel, ResolvedHolderForOverrides } from "./binding-lookup";
+export type {
+  OverridesLevel,
+  ResolvedHolderForOverrides,
+} from "./binding-lookup";
 
 export interface MandateOverridesSimpleProps {
   data: MandateWorkspaceData;
@@ -141,7 +144,9 @@ export function MandateOverridesSimple({
     resolvedHolder?.status === "ready"
       ? `${resolvedHolder.agentId}:${resolvedHolder.versionId ?? ""}`
       : (resolvedHolder?.status ?? "");
-  const identity = `${data.mandate.id}:${rung}:${orgId ?? ""}:${binding?.id ?? "new"}:${binding?.updated_at ?? ""}:${resolvedKey}`;
+  // On the bottom rung the edited row IS the definition, so its `updated_at`
+  // is what a save moves.
+  const identity = `${data.mandate.id}:${rung}:${orgId ?? ""}:${binding?.id ?? "new"}:${binding?.updated_at ?? (rung === DEFAULT_HOLDER_RUNG ? (data.mandate.updated_at ?? "") : "")}:${resolvedKey}`;
   return (
     <OverridesBody
       key={identity}
@@ -214,10 +219,16 @@ function OverridesBody({
       ? effectiveAgentId(holder, data)
       : null;
   const selectedVersionId = holder.useLatest ? null : holder.agentVersionId;
+  // The row the settings live on: the job's own default on the system level
+  // (aidream 1037), the level's binding everywhere else.
+  const settingsRow =
+    rung === DEFAULT_HOLDER_RUNG
+      ? defaultAnswerSettingsOf(data.mandate)
+      : binding;
   const storedOverrides: JsonObject | null = isJsonObject(
-    binding?.config_overrides,
+    settingsRow?.config_overrides,
   )
-    ? binding.config_overrides
+    ? settingsRow.config_overrides
     : null;
   const storedJson = JSON.stringify(storedOverrides);
 
@@ -263,7 +274,8 @@ function OverridesBody({
         const version = await dispatch(
           resolveAgentVersionId(selectedVersionId),
         ).unwrap();
-        if (!version) throw new Error("The pinned agent version is unavailable.");
+        if (!version)
+          throw new Error("The pinned agent version is unavailable.");
         await dispatch(
           fetchAgentVersionSnapshot({
             agentId: version.agentId,
@@ -279,7 +291,8 @@ function OverridesBody({
         store.getState(),
         referenceId,
       );
-      if (!payload.isReady) throw new Error("The agent's settings could not be read.");
+      if (!payload.isReady)
+        throw new Error("The agent's settings could not be read.");
       const own = buildInstanceBaseSettings(payload.settings, payload.modelId);
       // The org level reads ITS organization's rung, so it needs one. The
       // person level never waits on an organization: without one the ladder
@@ -356,12 +369,15 @@ function OverridesBody({
       ? describedOfferFrom({
           mandateKey: data.mandate.mandate_key,
           label: data.mandate.label,
-          draftInputs: (data.mandate as { draft_inputs?: unknown }).draft_inputs,
+          draftInputs: (data.mandate as { draft_inputs?: unknown })
+            .draft_inputs,
           surface: surfaceState.surface,
         })
       : null;
   const offerKnown =
-    Boolean(data.offer) || Boolean(data.provisionKey) || surfaceState.status !== "loading";
+    Boolean(data.offer) ||
+    Boolean(data.provisionKey) ||
+    surfaceState.status !== "loading";
   const hasOffer = Boolean(data.offer ?? describedOffer);
 
   // ── The model's controls, for whichever model is effective ────────────────
@@ -412,7 +428,9 @@ function OverridesBody({
       dispatch(resetOverride({ conversationId: instanceId, key }));
       return;
     }
-    dispatch(setOverrides({ conversationId: instanceId, changes: { [key]: value } }));
+    dispatch(
+      setOverrides({ conversationId: instanceId, changes: { [key]: value } }),
+    );
   }
   function open(key: string) {
     setOpened((prev) => new Set(prev).add(key));
@@ -451,7 +469,9 @@ function OverridesBody({
         ? SYSTEM_RUNG_PERSONAL_HOLDER_REFUSAL
         : level === "organization" && !organizationId
           ? "Pick the organization first."
-          : level === "organization" && orgRole !== "owner" && orgRole !== "admin"
+          : level === "organization" &&
+              orgRole !== "owner" &&
+              orgRole !== "admin"
             ? "Only an owner or admin of this organization can change this."
             : null;
 
@@ -459,22 +479,60 @@ function OverridesBody({
     setBusy(true);
     setSaveError(null);
     try {
-      const captured = selectSettingsOverridesForApi(instanceId)(store.getState());
-      const stored = parseBindingWave1(binding);
+      const captured = selectSettingsOverridesForApi(instanceId)(
+        store.getState(),
+      );
+      const stored = parseBindingWave1(settingsRow);
       const consumptionMap = withoutUnpicked(stored.consumptionMap);
       if (systemLevel) {
-        const record = systemAnswerRecord({
-          hasGlobalBinding: hasLiveGlobalBinding(data.bindings),
-          carriesMapping: Object.keys(consumptionMap).length > 0,
-          carriesSettings: Boolean(captured && Object.keys(captured).length),
-          carriesAutoRun: stored.autoRun !== null,
-        });
-        // Nothing to store and no platform-wide row to clear: the job's own
-        // default holds no settings, so there is nothing to write.
-        if (record === "definition-default") {
-          cancel();
-          return;
+        // 🚨 THE SYSTEM ANSWER IS THE JOB'S OWN DEFAULT (aidream 1037). Its
+        // settings are written to the default itself — never to a
+        // platform-wide binding beside it. The holder, map and auto-run go
+        // back exactly as stored; only `config_overrides` changes here.
+        const own = defaultHolderDraftOf(data.mandate);
+        const swapped = bindAgentId != null && bindAgentId !== agentId;
+        const result = await putMandateDefaultHolder(
+          dispatch,
+          data.mandate.mandate_key,
+          own.kind === "workflow"
+            ? {
+                holderType: "workflow",
+                agentId: null,
+                agentVersionId: null,
+                useLatest: true,
+                holderId: own.workflowId,
+                holderVersionId: null,
+              }
+            : {
+                holderType: "agent",
+                agentId: swapped
+                  ? bindAgentId
+                  : own.useLatest
+                    ? own.agentId
+                    : null,
+                agentVersionId:
+                  swapped || own.useLatest ? null : own.agentVersionId,
+                useLatest: swapped ? true : own.useLatest,
+                holderId: null,
+                holderVersionId: null,
+              },
+          {
+            configOverrides:
+              captured && Object.keys(captured).length > 0
+                ? (captured as JsonObject)
+                : null,
+          },
+        );
+        if (result.notes.length > 0) {
+          toast.warning("Saved", {
+            description: result.notes.join(" "),
+            duration: 12_000,
+          });
+        } else {
+          toast.success("Saved");
         }
+        onChanged();
+        return;
       }
       const payload = buildBindingSavePayload({
         holder: holderChoiceForSave({ picked, agentId, bindAgentId }),
@@ -490,9 +548,7 @@ function OverridesBody({
         data.mandate.mandate_key,
         level === "organization"
           ? { principalType: "org", organizationId: organizationId as string }
-          : systemLevel
-            ? { principalType: "global" }
-            : { principalType: "user" },
+          : { principalType: "user" },
         payload,
       );
       if (report.notes.length > 0) {
@@ -511,7 +567,9 @@ function OverridesBody({
         fallback: "Save failed.",
       });
       setSaveError(
-        failure.remedy ? `${failure.sentence} ${failure.remedy}` : failure.sentence,
+        failure.remedy
+          ? `${failure.sentence} ${failure.remedy}`
+          : failure.sentence,
       );
     } finally {
       setBusy(false);
@@ -586,12 +644,19 @@ function OverridesBody({
       {load.status === "error" ? (
         <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm">
           <span className="text-destructive">{load.message}</span>
-          <Button size="sm" variant="outline" onClick={() => setRetry((n) => n + 1)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setRetry((n) => n + 1)}
+          >
             Retry
           </Button>
         </div>
       ) : load.status === "loading" || !entry ? (
-        <div className="space-y-1 rounded-lg border border-border p-2" aria-busy>
+        <div
+          className="space-y-1 rounded-lg border border-border p-2"
+          aria-busy
+        >
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="h-8 animate-pulse rounded bg-muted/60" />
           ))}
@@ -637,7 +702,12 @@ function OverridesBody({
                 onReset={() => reset(row.key)}
                 disabled={busy}
                 inheritedFrom={sourceWord(sources[row.key])}
-                display={<AgentValue value={agentValue(row.key)} control={row.control} />}
+                display={
+                  <AgentValue
+                    value={agentValue(row.key)}
+                    control={row.control}
+                  />
+                }
                 editor={
                   removals.includes(row.key) ? (
                     <span className="text-sm text-muted-foreground">
@@ -672,16 +742,29 @@ function OverridesBody({
       {dirty || saveError ? (
         <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
           {saveError ? (
-            <span className="mr-auto text-sm text-destructive">{saveError}</span>
+            <span className="mr-auto text-sm text-destructive">
+              {saveError}
+            </span>
           ) : refusal ? (
-            <span className="mr-auto text-sm text-muted-foreground">{refusal}</span>
+            <span className="mr-auto text-sm text-muted-foreground">
+              {refusal}
+            </span>
           ) : null}
           {dirty ? (
             <>
-              <Button variant="ghost" size="sm" onClick={cancel} disabled={busy}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={cancel}
+                disabled={busy}
+              >
                 Cancel
               </Button>
-              <Button size="sm" onClick={save} disabled={busy || refusal !== null}>
+              <Button
+                size="sm"
+                onClick={save}
+                disabled={busy || refusal !== null}
+              >
                 {busy ? "Saving…" : "Save"}
               </Button>
             </>

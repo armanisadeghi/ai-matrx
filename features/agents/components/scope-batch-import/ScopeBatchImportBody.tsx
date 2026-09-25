@@ -72,6 +72,7 @@ import {
   SCOPE_ITEM_DEFAULT_SAVE_MODE,
   type AgentEditAccess,
 } from "@/features/agents/utils/agent-edit-access";
+import { contextItemBindingOf } from "@/features/agents/utils/variable-binding";
 
 interface ScopeBatchImportBodyProps {
   agentId: string;
@@ -153,7 +154,7 @@ export function ScopeBatchImportBody({
     () =>
       new Set(
         variables
-          .map((v) => v.binding?.contextItemId)
+          .map((v) => contextItemBindingOf(v.binding)?.contextItemId)
           .filter(Boolean) as string[],
       ),
     [variables],

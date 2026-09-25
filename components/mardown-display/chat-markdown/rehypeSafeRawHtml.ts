@@ -119,6 +119,9 @@ export const ALLOWED_RAW_HTML_TAGS: ReadonlySet<string> = new Set([
   "col",
   "figure",
   "figcaption",
+  // collapsible sections (styled by the core's details/summary elements)
+  "details",
+  "summary",
 ]);
 
 /**
@@ -137,6 +140,7 @@ export const RAW_HTML_SCHEMA: Schema = {
     col: ["span", "width"],
     colgroup: ["span"],
     abbr: ["title"],
+    details: ["open"],
     "*": ["align"],
   },
   protocols: {
@@ -152,10 +156,56 @@ export const RAW_HTML_SCHEMA: Schema = {
   allowDoctypes: false,
 };
 
+const VOID_TAGS = new Set(["br", "hr", "img", "col"]);
+const OPENING_TAG = /^<([a-zA-Z][\w-]*)(?:\s[^<>]*)?>$/;
+
+/**
+ * Inline raw HTML arrives SPLIT: `<kbd>Esc</kbd>` inside a paragraph is three
+ * nodes — raw `<kbd>`, text `Esc`, raw `</kbd>` — and parsing each raw string
+ * alone yields an empty <kbd> beside a bare "Esc". When a raw node is exactly
+ * an allowed opening tag and its closing tag follows among the same
+ * siblings, build the element around the nodes in between (already-safe
+ * hast), sanitizing only the tag and its attributes.
+ */
+function pairInlineTag(
+  node: RawNode,
+  index: number,
+  parent: { children: RootContent[] },
+): boolean {
+  const open = OPENING_TAG.exec(node.value.trim());
+  if (!open) return false;
+  const tag = (open[1] ?? "").toLowerCase();
+  if (!ALLOWED_RAW_HTML_TAGS.has(tag) || VOID_TAGS.has(tag)) return false;
+  const closer = new RegExp(`^</${tag}\\s*>$`, "i");
+  let depth = 0;
+  for (let j = index + 1; j < parent.children.length; j++) {
+    const sibling = parent.children[j] as unknown;
+    if (!isRawNode(sibling)) continue;
+    const value = sibling.value.trim();
+    const again = OPENING_TAG.exec(value);
+    if (again && (again[1] ?? "").toLowerCase() === tag) depth++;
+    else if (closer.test(value)) {
+      if (depth > 0) {
+        depth--;
+        continue;
+      }
+      const shell = sanitize(fromHtml(`${node.value}</${tag}>`, { fragment: true }), RAW_HTML_SCHEMA) as Root;
+      const element = shell.children.length === 1 ? shell.children[0] : null;
+      if (!element || element.type !== "element" || element.tagName !== tag) return false;
+      element.children = parent.children.slice(index + 1, j) as typeof element.children;
+      parent.children.splice(index, j - index + 1, element);
+      return true;
+    }
+  }
+  return false;
+}
+
 export default function rehypeSafeRawHtml() {
   return (tree: Root) => {
     visit(tree, (node, index, parent) => {
       if (!isRawNode(node) || !parent || typeof index !== "number") return;
+      // Re-visit the built element so raw nodes inside it are handled too.
+      if (pairInlineTag(node, index, parent)) return index;
 
       // Parse this raw HTML string in isolation (fragment: no <html>/<body>
       // wrapper), then sanitize the resulting fragment against our schema.

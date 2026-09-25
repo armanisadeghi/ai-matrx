@@ -43,7 +43,11 @@ import {
   buildCustomComponent,
   extractEffectiveValues,
 } from "@/features/agents/utils/variable-customcomponent";
-import type { ContextItemBinding } from "@/features/agents/types/agent-definition.types";
+import type { VariableBinding } from "@/features/agents/types/agent-definition.types";
+import {
+  contextItemBindingOf,
+  isCustomDataBinding,
+} from "@/features/agents/utils/variable-binding";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import {
   AGENT_BUILDER_CONTEXT_MENU_PROPS,
@@ -194,12 +198,12 @@ export function AgentVariableEditor({
         : {}),
     });
 
-  const handleBindingChange = (next: ContextItemBinding | undefined) =>
+  const handleBindingChange = (next: VariableBinding | undefined) =>
     updateVariable({ binding: next });
 
-  const isBound = !!(
-    variable.binding?.itemKey || variable.binding?.contextItemId
-  );
+  const scopeBinding = contextItemBindingOf(variable.binding);
+  const isBound = !!(scopeBinding?.itemKey || scopeBinding?.contextItemId);
+  const isDataBound = isCustomDataBinding(variable.binding);
   const staticOptions = effective.options
     .map((option) => option.trim())
     .filter((option) => option.length > 0);
@@ -405,7 +409,13 @@ export function AgentVariableEditor({
       {/* ── Component configuration ───────────────────────────────────────
           A bound variable INHERITS its input from the context item, so the
           local configurator is replaced by an inheritance note. */}
-      {isBound ? (
+      {isDataBound ? (
+        <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
+          <span className="font-medium">Filled from your data</span> every
+          time the agent runs. The person running it sees the value locked and
+          cannot type over it, so no input type is needed here.
+        </div>
+      ) : isBound ? (
         <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
           Input type and options are{" "}
           <span className="font-medium">

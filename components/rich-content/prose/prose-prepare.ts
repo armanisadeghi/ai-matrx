@@ -9,6 +9,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
+import { splitFrontmatter } from "@/components/markdown-core/syntax/frontmatter";
 
 /** Private-use sentinel for a standalone `===` line. The `p` renderer swaps a
  *  paragraph whose only child is this token for a thick blue rule. */
@@ -115,6 +116,12 @@ export const getDirectionFontSize = (direction: "rtl" | "ltr") => {
  * Math is NOT touched here — the core's math normalizer owns it.
  */
 export function preprocessProse(rawContent: string): string {
+  // Front matter (YAML/TOML properties at the very top) is data, not prose:
+  // it passes through byte for byte (the core hides it and exposes it as
+  // document properties) — indentation and `---` rules must not be massaged.
+  const frontmatter = splitFrontmatter(rawContent);
+  if (frontmatter) return frontmatter.raw + preprocessProse(frontmatter.body);
+
   let processed = rawContent;
 
   // Pre-escape XML/HTML-style angle-bracket tokens.

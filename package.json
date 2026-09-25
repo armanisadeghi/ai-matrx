@@ -1008,7 +1008,8 @@
       "react-dom": "latest",
       "@types/react": "latest",
       "@types/react-dom": "latest",
-      "@ai-matrx/records": "latest"
+      "@ai-matrx/records": "latest",
+      "katex": "^0.18.9"
     },
     "ignoredBuiltDependencies": [
       "@tsparticles/engine",

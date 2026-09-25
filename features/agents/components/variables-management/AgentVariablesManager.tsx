@@ -37,6 +37,8 @@ import {
   isDeclarableVariableName,
   sanitizeVariableName,
 } from "@/features/agents/utils/variable-utils";
+import { isCustomDataBinding } from "@/features/agents/utils/variable-binding";
+import { CustomDataBindingSummary } from "./custom-data/CustomDataBindingSummary";
 
 interface AgentVariablesManagerProps {
   agentId: string;
@@ -231,6 +233,12 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
                 >
                   {variable.name}
                 </button>
+                {isCustomDataBinding(variable.binding) && (
+                  <CustomDataBindingSummary
+                    binding={variable.binding}
+                    className="max-w-[16rem]"
+                  />
+                )}
                 <button
                   type="button"
                   onClick={() => handleRemove(variable.name)}

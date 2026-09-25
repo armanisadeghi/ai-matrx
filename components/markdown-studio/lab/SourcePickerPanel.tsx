@@ -64,8 +64,11 @@ export function SourcePickerPanel({
   const [kind, setKind] = useState<StudioSourceKind>(initialKind);
   const [search, setSearch] = useState("");
   const [items, setItems] = useState<StudioSourceListItem[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Which (kind, query) the current items/error answer. Until the answer for
+  // the CURRENT request lands, the list is loading — never an empty state
+  // that claims "you have none" for a list that was simply not fetched yet.
+  const [listedKey, setListedKey] = useState<string | null>(null);
 
   const kinds = STUDIO_SOURCE_KINDS.filter(
     (k) => isAdmin || !STUDIO_SOURCES[k].adminOnly,
@@ -73,6 +76,9 @@ export function SourcePickerPanel({
   const def = STUDIO_SOURCES[kind];
   const pastedId = search.trim();
   const canOpenPasted = isUuid(pastedId);
+  const query = canOpenPasted ? "" : search;
+  const requestKey = `${kind}\u0000${query}`;
+  const loading = listedKey !== requestKey;
 
   // Fetch the recent list for the chosen kind (debounced on search).
   useEffect(() => {
@@ -80,20 +86,19 @@ export function SourcePickerPanel({
     let cancelled = false;
     const t = setTimeout(
       () => {
-        setLoading(true);
-        setError(null);
         STUDIO_SOURCES[kind]
-          .list(canOpenPasted ? "" : search)
+          .list(query)
           .then((rows) => {
-            if (!cancelled) setItems(rows);
+            if (cancelled) return;
+            setItems(rows);
+            setError(null);
+            setListedKey(requestKey);
           })
           .catch((err: unknown) => {
             if (cancelled) return;
             setItems([]);
             setError(err instanceof Error ? err.message : String(err));
-          })
-          .finally(() => {
-            if (!cancelled) setLoading(false);
+            setListedKey(requestKey);
           });
       },
       search ? 250 : 0,
@@ -102,7 +107,7 @@ export function SourcePickerPanel({
       cancelled = true;
       clearTimeout(t);
     };
-  }, [open, kind, search, canOpenPasted]);
+  }, [open, kind, query, requestKey, search]);
 
   const pick = (id: string) => {
     onPick(kind, id);

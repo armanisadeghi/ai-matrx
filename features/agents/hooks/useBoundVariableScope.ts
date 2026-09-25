@@ -39,6 +39,7 @@ import type {
   VariableCustomComponent,
 } from "@/features/agents/types/agent-definition.types";
 import type { ResolvedValue } from "@/features/scopes/types";
+import { contextItemBindingOf } from "@/features/agents/utils/variable-binding";
 import {
   referenceConfigFromItem,
   type ReferenceItemConfig,
@@ -97,9 +98,14 @@ export function useBoundVariableScope(conversationId: string): BoundVarInfo[] {
 
   const boundDefs = useMemo(
     () =>
-      definitions.filter(
-        (d) => !!(d.binding?.itemKey || d.binding?.contextItemId),
-      ),
+      // Scope/system bindings only — a custom-data (`merge_field`) binding is
+      // server-filled and locked; it has no scope to resolve or write back to.
+      definitions.flatMap((d) => {
+        const binding = contextItemBindingOf(d.binding);
+        return binding && (binding.itemKey || binding.contextItemId)
+          ? [{ name: d.name, binding }]
+          : [];
+      }),
     [definitions],
   );
 
@@ -112,7 +118,7 @@ export function useBoundVariableScope(conversationId: string): BoundVarInfo[] {
   // Guarded by loadedTypes so a scope switch doesn't refetch already-loaded catalogs.
   useEffect(() => {
     const typeIds = new Set(
-      boundDefs.map((d) => d.binding?.scopeTypeId).filter(Boolean) as string[],
+      boundDefs.map((d) => d.binding.scopeTypeId).filter(Boolean),
     );
     for (const t of typeIds) {
       if (!loadedTypes.includes(t)) dispatch(listScopeTypeItems(t));
@@ -122,7 +128,7 @@ export function useBoundVariableScope(conversationId: string): BoundVarInfo[] {
   const infos = useMemo<BoundVarInfo[]>(() => {
     if (boundDefs.length === 0) return EMPTY;
     return boundDefs.map((d) => {
-      const binding = d.binding as ContextItemBinding;
+      const binding = d.binding;
       const item = binding.contextItemId
         ? allItems.find((i) => i.id === binding.contextItemId)
         : undefined;

@@ -1,4 +1,8 @@
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import {
+  contextItemBindingOf,
+  isCustomDataBinding,
+} from "@/features/agents/utils/variable-binding";
 
 /**
  * Variables to PUT ON THE REQUEST — and to freeze into the first-turn
@@ -20,7 +24,11 @@ export function resolveVariablesForRequest(args: {
   const out: Record<string, unknown> = {};
 
   for (const def of definitions) {
-    const isBound = !!(def.binding?.itemKey || def.binding?.contextItemId);
+    // Bound to the author's custom data (`override_policy: "shown_locked"`): the
+    // server resolves it every turn and nothing the client holds may overwrite it.
+    if (isCustomDataBinding(def.binding)) continue;
+    const scope = contextItemBindingOf(def.binding);
+    const isBound = !!(scope?.itemKey || scope?.contextItemId);
     if (def.name in userValues) {
       out[def.name] = userValues[def.name];
       continue;

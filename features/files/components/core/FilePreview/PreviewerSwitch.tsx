@@ -45,7 +45,7 @@ import type { PreviewKind } from "@/features/files/utils/file-types";
 import { ImagePreview } from "./previewers/ImagePreview";
 import { VideoPreview } from "./previewers/VideoPreview";
 import { AudioPreview } from "./previewers/AudioPreview";
-import { PrismCodeHighlighter } from "./previewers/PrismCodeHighlighter";
+import { CodeHighlighter } from "./previewers/CodeHighlighter";
 
 // Heavy engines — in-gate async edges (React.lazy, NOT next/dynamic).
 const PdfPreview = lazy(() => import("./previewers/PdfPreview"));
@@ -234,7 +234,7 @@ registerMediaViewer("video", HostVideoViewer);
 registerMediaViewer("audio", HostAudioViewer);
 registerMediaViewer("pdf", HostPdfViewer);
 registerMediaViewer("html", HostHtmlViewer);
-registerMediaCodeHighlighter(PrismCodeHighlighter);
+registerMediaCodeHighlighter(CodeHighlighter);
 
 // ---------------------------------------------------------------------------
 // The public adapter. Its three call sites (the FilePreview pane, the inline

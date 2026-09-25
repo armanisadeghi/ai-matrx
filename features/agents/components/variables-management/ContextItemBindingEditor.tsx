@@ -15,11 +15,21 @@ import {
   type ContextItemSelection,
   type ContextItemSource,
 } from "@/features/scope-system/components/ContextItemPicker";
-import type { ContextItemBinding } from "@/features/agents/types/agent-definition.types";
+import type {
+  ContextItemBinding,
+  VariableBinding,
+} from "@/features/agents/types/agent-definition.types";
+import {
+  contextItemBindingOf,
+  isCustomDataBinding,
+} from "@/features/agents/utils/variable-binding";
+import { CustomDataRecordsScope } from "./custom-data/CustomDataRecordsScope";
+import { CustomDataBindingPicker } from "./custom-data/CustomDataBindingPicker";
+import { emptyCustomDataBinding } from "./custom-data/customDataBinding";
 
 interface ContextItemBindingEditorProps {
-  binding: ContextItemBinding | undefined;
-  onChange: (binding: ContextItemBinding | undefined) => void;
+  binding: VariableBinding | undefined;
+  onChange: (binding: VariableBinding | undefined) => void;
   readonly?: boolean;
 }
 
@@ -46,6 +56,10 @@ const ON_MISSING_OPTIONS: {
  * that resolves for every user with no scope selection) or a SCOPE item (the
  * active scope of the chosen type supplies the value). Both are collision-proof
  * by the item's UUID, and the variable inherits the item's input component.
+ *
+ * Or — the third source, "From my data" — to the author's OWN custom data
+ * (`kind: "merge_field"`, `source: "record"`): a table, one record, or one
+ * field of a record, resolved by the server every turn and shown locked.
  * There is never a requirement for context — when none is set, the variable
  * just renders as an ordinary input. Resolution is server-authoritative.
  */
@@ -70,6 +84,8 @@ export function ContextItemBindingEditor({
   );
   // Binding "enabled" is the presence of the object — item ids are empty until the user picks one.
   const bound = binding != null;
+  const customData = isCustomDataBinding(binding) ? binding : undefined;
+  const contextBinding = contextItemBindingOf(binding);
 
   const toggleBound = (on: boolean) => {
     onChange(
@@ -93,7 +109,7 @@ export function ContextItemBindingEditor({
       // binding as System-sourced on the way back in.
       scopeTypeId: sel.scopeTypeId,
       itemKey: sel.itemKey,
-      onMissing: binding?.onMissing ?? "empty",
+      onMissing: contextBinding?.onMissing ?? "empty",
     });
   };
 
@@ -102,12 +118,11 @@ export function ContextItemBindingEditor({
       <div className="flex items-center justify-between">
         <div>
           <Label className="text-sm font-medium cursor-pointer">
-            Bind to a context item
+            Fill automatically
           </Label>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Auto-fills from a platform truth or the active scope, and inherits
-            the item&rsquo;s input. Optional — with no context set it&rsquo;s
-            just a normal input.
+            Auto-fills from your own data, a platform truth, or the active
+            scope. Optional — left off, it&rsquo;s just a normal input.
           </p>
         </div>
         <Switch
@@ -123,44 +138,56 @@ export function ContextItemBindingEditor({
             value={{
               source,
               orgId,
-              scopeTypeId: binding?.scopeTypeId,
-              contextItemId: binding?.contextItemId,
+              scopeTypeId: contextBinding?.scopeTypeId,
+              contextItemId: contextBinding?.contextItemId,
             }}
             onChange={handlePick}
             readonly={readonly}
+            customData={{
+              active: customData !== undefined,
+              onSelect: () => onChange(emptyCustomDataBinding()),
+              children: customData ? (
+                <CustomDataRecordsScope>
+                  <CustomDataBindingPicker
+                    binding={customData}
+                    onChange={onChange}
+                    readonly={readonly}
+                  />
+                </CustomDataRecordsScope>
+              ) : null,
+            }}
           />
 
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">
-              When nothing provides it
-            </Label>
-            <Select
-              value={binding?.onMissing ?? "empty"}
-              onValueChange={(v) =>
-                onChange({
-                  contextItemId: binding?.contextItemId ?? "",
-                  scopeTypeId: binding?.scopeTypeId ?? "",
-                  itemKey: binding?.itemKey ?? "",
-                  onMissing: v as ContextItemBinding["onMissing"],
-                })
-              }
-              disabled={readonly}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ON_MISSING_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    <span>{o.label}</span>
-                    <span className="ml-2 text-xs text-muted-foreground hidden sm:inline">
-                      — {o.hint}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {contextBinding && (
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                When nothing provides it
+              </Label>
+              <Select
+                value={contextBinding.onMissing ?? "empty"}
+                onValueChange={(v) => {
+                  const choice = ON_MISSING_OPTIONS.find((o) => o.value === v);
+                  if (!choice) return;
+                  onChange({ ...contextBinding, onMissing: choice.value });
+                }}
+                disabled={readonly}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ON_MISSING_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      <span>{o.label}</span>
+                      <span className="ml-2 text-xs text-muted-foreground hidden sm:inline">
+                        — {o.hint}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -42,18 +42,6 @@ import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
  */
 export const DEFAULT_HOLDER_RUNG = "system" as const;
 
-/**
- * WHAT THIS RUNG CAN AND CANNOT HOLD, said on the screen where the map and the
- * settings would otherwise be.
- *
- * The definition default has no `consumption_map`, no `config_overrides` and no
- * `auto_run` — those columns live on `agent.mandate_binding`. A mapping editor
- * standing here would appear to save something the door never receives, which
- * is exactly the class this campaign kills.
- */
-export const DEFAULT_HOLDER_IS_HOLDER_ONLY =
-  "The mapping, the settings and auto-run live on a binding above this rung — this one names the Mandate Holder and nothing else.";
-
 export interface DefaultHolderRungInput {
   /** The mandate's HOME organization — `mandate.definition.organization_id`. */
   homeOrganizationId: string | null;

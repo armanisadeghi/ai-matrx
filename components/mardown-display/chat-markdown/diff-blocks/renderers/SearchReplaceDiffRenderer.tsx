@@ -27,18 +27,8 @@ import { LegacyDiffChip } from "@/components/diff/LegacyDiffChip";
 import { GitCompare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
-import { Prism as SyntaxHighlighterBase } from "react-syntax-highlighter";
-import type { SyntaxHighlighterProps } from "react-syntax-highlighter";
-import {
-  vscDarkPlus,
-  vs,
-} from "react-syntax-highlighter/dist/cjs/styles/prism";
+import { ShikiCodeView } from "@/features/code-editor/components/code-block/highlight/ShikiCodeView";
 import type { SearchReplaceBlock } from "../types";
-
-// react-syntax-highlighter's class component predates React 19's stricter JSX
-// element-type checking; the library's own prop types are sound, so we cast
-// the component type (not the props) to keep prop-level type safety.
-const SyntaxHighlighter = SyntaxHighlighterBase as unknown as React.FC<SyntaxHighlighterProps>;
 
 interface SearchReplaceDiffRendererProps {
   data: SearchReplaceBlock;
@@ -118,28 +108,15 @@ const DiffPreview: React.FC<{
             {getDiffLinePrefix(line.type)}
           </div>
           <div className="flex-1 pr-2 overflow-x-auto">
-            <SyntaxHighlighter
+            <ShikiCodeView
+              code={line.content || " "}
               language={language}
-              style={mode === "dark" ? vscDarkPlus : vs}
-              PreTag="span"
-              customStyle={{
-                margin: 0,
-                padding: 0,
-                background: "transparent",
-                fontSize: "inherit",
-                fontFamily: "inherit",
-                lineHeight: "1.2",
-              }}
-              codeTagProps={{
-                style: {
-                  background: "transparent",
-                  fontFamily: "inherit",
-                  lineHeight: "1.2",
-                },
-              }}
-            >
-              {line.content || " "}
-            </SyntaxHighlighter>
+              mode={mode === "dark" ? "dark" : "light"}
+              surface="transparent"
+              padding={{ y: 0, x: 0 }}
+              wrapLines={false}
+              fontSize={12}
+            />
           </div>
         </div>
       ))}

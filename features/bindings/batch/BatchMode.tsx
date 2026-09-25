@@ -89,7 +89,6 @@ export interface BatchModeProps {
   holderInputs: HolderInputs;
   /** The job the person opened — always in the batch, never a surprise. */
   currentMandateKey: string;
-  canBindGlobal: boolean;
   disabled?: boolean;
   onChanged: () => void;
 }
@@ -113,7 +112,6 @@ export function BatchMode({
   agentDeclarations,
   holderInputs,
   currentMandateKey,
-  canBindGlobal,
   disabled = false,
   onChanged,
 }: BatchModeProps) {
@@ -189,9 +187,8 @@ export function BatchMode({
     (mandateKey: string): MandateBindingRow | null => {
       if (console_.status !== "ready") return null;
       const rows = console_.bindings[mandateKey] ?? [];
-      if (rung === "global") {
-        return rows.find((b) => b.principal_type === "global") ?? null;
-      }
+      // "Everybody" is each job's own default, never a binding (aidream 1037).
+      if (rung === "global") return null;
       if (rung === "org") {
         if (!organizationId) return null;
         return (
@@ -296,7 +293,14 @@ export function BatchMode({
       }
       return out;
     },
-    [offerOf, holder.kind, agentId, missingOutputs, agentDeclarations, agentName],
+    [
+      offerOf,
+      holder.kind,
+      agentId,
+      missingOutputs,
+      agentDeclarations,
+      agentName,
+    ],
   );
 
   // ── Seeding: every place starts from its own stored answer, plus the exact
@@ -501,7 +505,6 @@ export function BatchMode({
       agentId,
       rung,
       organizationId,
-      canBindGlobal,
       holderStatus: holderInputs.status,
     }) ??
     applyRefusal(
@@ -529,9 +532,7 @@ export function BatchMode({
           row.mandateKey,
           rung === "org"
             ? { principalType: "org", organizationId: organizationId as string }
-            : rung === "global"
-              ? { principalType: "global" }
-              : { principalType: "user" },
+            : { principalType: "user" },
           buildBindingSavePayload({
             holder:
               holder.kind === "workflow"
@@ -685,8 +686,8 @@ export function BatchMode({
               {gridRows.length === 1 ? "place" : "places"}
             </h3>
             <p className="text-[11px] leading-snug text-muted-foreground">
-              The same middle, transposed. Places are rows, the Mandate Holder&apos;s
-              inputs are columns.
+              The same middle, transposed. Places are rows, the Mandate
+              Holder&apos;s inputs are columns.
             </p>
           </div>
           <label className="ml-auto flex cursor-pointer select-none items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -820,14 +821,12 @@ function holderRefusal({
   agentId,
   rung,
   organizationId,
-  canBindGlobal,
   holderStatus,
 }: {
   holder: HolderDraft;
   agentId: string | null;
   rung: BindingRung;
   organizationId: string | null;
-  canBindGlobal: boolean;
   holderStatus: HolderInputs["status"];
 }): string | null {
   const chosen =
@@ -838,8 +837,11 @@ function holderRefusal({
   if (rung === "org" && !organizationId) {
     return "Pick the organization these answers are for.";
   }
-  if (rung === "global" && !canBindGlobal) {
-    return "The system answer is a super-admin decision — the server refuses this write.";
+  if (rung === "global") {
+    // 🚨 aidream 1037: the answer for everybody lives in ONE record, each job's
+    // own default — batch mode writes bindings, and there is no platform-wide
+    // binding to write.
+    return "The answer for everybody is each job's own default, not a binding — set it on that job's page.";
   }
   if (holderStatus === "loading") return "Reading the Mandate Holder's inputs…";
   if (holderStatus === "error") {

@@ -81,11 +81,7 @@ import { RunConfigOverrides } from "@/features/agents/components/run-controls/Ru
 import { isJsonObject, type JsonObject } from "@/types/json";
 import { agentHolderOfBinding } from "@/lib/supabase/mandateStorage";
 import { compareStoredContract } from "@/features/mandates/contract-compare";
-import {
-  hasLiveGlobalBinding,
-  systemAnswerRecord,
-  type SystemAnswerRecord,
-} from "./system-answer-record";
+import { defaultAnswerSettingsOf } from "./system-answer-record";
 import {
   fetchAgentOutputSchemas,
   missingOutputKeys,
@@ -140,11 +136,9 @@ import {
 import { HolderDraftPanel } from "./HolderDraftPanel";
 import { holderDraftOwnerOf } from "./holder-draft-brief";
 import {
-  SYSTEM_RUNG_PERSONAL_HOLDER_REFUSAL,
   systemRungHolderIsPersonal,
 } from "./system-rung";
 import {
-  DEFAULT_HOLDER_IS_HOLDER_ONLY,
   DEFAULT_HOLDER_PERSONAL_HOLDER_REFUSAL,
   DEFAULT_HOLDER_RUNG,
   defaultHolderRungOffer,
@@ -324,11 +318,15 @@ function OneMandateBindingWorkspace({
    * created the platform-wide binding that now outranks it — showing an empty
    * map beside an answer that has one, which is the fourth law's lie.
    */
+  //
+  // 🚨 AND "EVERYBODY" IS THE DEFAULT, ON EVERY HOST (aidream 1037, Arman
+  // 2026-09-25). The system answer lives in ONE record — the job's own default,
+  // which now carries its map, settings and auto-run. A scope picker that says
+  // "Global" therefore lands on the default rung; there is no platform-wide
+  // binding to write beside it, and the server refuses one.
   const rung: WorkspaceRung =
-    perspective === "system"
-      ? hasLiveGlobalBinding(data.bindings)
-        ? "global"
-        : DEFAULT_HOLDER_RUNG
+    perspective === "system" || chosenRung === "global"
+      ? DEFAULT_HOLDER_RUNG
       : chosenRung;
   const [organizationId, setOrganizationId] = useState<string | null>(
     initialOrganizationId,
@@ -385,7 +383,10 @@ function OneMandateBindingWorkspace({
   const binding = findBinding(data.bindings, rung, userId, organizationId);
   // The mandate leads the key: without it two different jobs with no binding
   // at the same rung are the SAME row to React (R-O6).
-  const bindingIdentity = `${data.mandate.id}:${rung}:${organizationId ?? ""}:${binding?.id ?? "new"}:${binding?.updated_at ?? ""}`;
+  // On the bottom rung the row being edited IS the definition, so ITS
+  // `updated_at` is what a save changes — the draft re-seeds from the stored
+  // default the moment the refetch lands.
+  const bindingIdentity = `${data.mandate.id}:${rung}:${organizationId ?? ""}:${binding?.id ?? "new"}:${binding?.updated_at ?? (rung === DEFAULT_HOLDER_RUNG ? (data.mandate.updated_at ?? "") : "")}`;
 
   return (
     <>
@@ -562,7 +563,6 @@ function BindingDraft({
       ),
     [organizations],
   );
-  const canBindGlobal = allowGlobal && isSuperAdmin;
   const pinnedHere = pinnedRungs(fixedRung);
 
   /**
@@ -639,11 +639,21 @@ function BindingDraft({
     [onDefaultHolderRung, data.mandate, binding],
   );
   const [holder, setHolder] = useState<HolderDraft>(() => seedHolder);
+  /**
+   * THE ROW THE MAP, SETTINGS AND AUTO-RUN ARE READ FROM. On the bottom rung it
+   * is the definition's own default (aidream 1037) — read in a binding's shape
+   * so the one parser serves every rung.
+   */
+  const settingsRow = useMemo(
+    () =>
+      onDefaultHolderRung ? defaultAnswerSettingsOf(data.mandate) : binding,
+    [onDefaultHolderRung, data.mandate, binding],
+  );
   const [draftMap, setDraftMap] = useState<ConsumptionMap>(
-    () => parseBindingWave1(binding).consumptionMap,
+    () => parseBindingWave1(settingsRow).consumptionMap,
   );
   const [autoRun, setAutoRun] = useState<boolean | null>(
-    () => parseBindingWave1(binding).autoRun,
+    () => parseBindingWave1(settingsRow).autoRun,
   );
   const [mapTab, setMapTab] = useState<"ai" | "manual">("manual");
   const [autoBound, setAutoBound] = useState<ReadonlySet<string>>(
@@ -656,8 +666,10 @@ function BindingDraft({
 
   const storedOverrides = useMemo(
     () =>
-      isJsonObject(binding?.config_overrides) ? binding.config_overrides : null,
-    [binding],
+      isJsonObject(settingsRow?.config_overrides)
+        ? settingsRow.config_overrides
+        : null,
+    [settingsRow],
   );
 
   // ── THE OFFER — whatever this job actually offers (D18.1) ─────────────────
@@ -1053,58 +1065,39 @@ function BindingDraft({
     );
 
   /**
-   * ── THE SYSTEM ANSWER, AND WHICH RECORD IT IS WRITTEN TO (FIX-R13/A) ──────
+   * ── THE SYSTEM ANSWER LIVES IN ONE RECORD (aidream 1037) ──────────────────
    *
-   * 🚨 STORAGE IS NOT A QUESTION PUT TO A PERSON. On the admin host the three
-   * controls write THE SYSTEM ANSWER; `systemAnswerRecord()` — the ONE place
-   * the rule lives — decides whether that answer is the mandate's own default
-   * (holder alone, three definition columns) or the platform-wide binding
-   * (which is what holds a mapping, settings or an auto-run promise, because
-   * the definition has no columns for them).
-   *
-   * `holderOnlyRung` is what the OLD `onDefaultHolderRung` meant everywhere it
-   * gated a control: "this screen cannot express a map". The admin host CAN —
-   * that is the whole point of it — so it drops out of that gate while every
-   * other host keeps it exactly as it was.
+   * 🚨 Arman, 2026-09-25: the answer a job gives everybody lives in ONE place,
+   * the job's own default. Before 1037 the definition had no column for a map,
+   * settings or auto-run, so this screen wrote a platform-wide binding — Holder
+   * included — the moment an admin mapped an input, and the answer lived in two
+   * records (`systemAnswerRecord()` used to pick 'global-binding'). The default
+   * now carries all three, the default door stores them, and the binding door
+   * refuses `principal_type: "global"`. So the bottom rung is the ONLY place a
+   * system answer is written, on every host, with its map, settings and
+   * auto-run — never "holder only".
    */
   const systemHost = perspective === "system";
-  const carriesMapping = Object.keys(withoutUnpicked(draftMap)).length > 0;
-  const carriesAutoRun = autoRun !== null;
-  const carriesSettings = overriddenCount > 0;
-  const answerRecord: SystemAnswerRecord = systemAnswerRecord({
-    hasGlobalBinding: hasLiveGlobalBinding(data.bindings),
-    carriesMapping,
-    carriesSettings,
-    carriesAutoRun,
-  });
-  /** Writing the DEFINITION's three columns — holder and nothing else. */
-  const writingDefinitionDefault = systemHost
-    ? answerRecord === "definition-default"
-    : onDefaultHolderRung;
-  /** A rung whose screen cannot express a map, settings or auto-run. */
-  const holderOnlyRung = onDefaultHolderRung && !systemHost;
-  /**
-   * 🚨 THIS WRITE DECIDES FOR EVERY USER ON THE PLATFORM — so every refusal
-   * that guards the platform-wide row is keyed to the RECORD, not to which
-   * rung the page happens to be standing on. Without this, an admin drafting
-   * a map on a job with no global binding yet would create one at
-   * `principal_type = 'global'` with the super-admin check and the
-   * personal-holder refusal both silently skipped.
-   */
-  const writesForEveryone =
-    rung === "global" || (systemHost && answerRecord === "global-binding");
+  /** Writing the job's own default — holder, map, settings and auto-run. */
+  const writingDefinitionDefault = systemHost || onDefaultHolderRung;
   /** The rung the SAVE actually wrote — what the receipt must name. */
   const savedRung: WorkspaceRung = writingDefinitionDefault
     ? DEFAULT_HOLDER_RUNG
-    : writesForEveryone
-      ? "global"
-      : rung;
+    : rung;
+
+  /** The map's own refusals — the same on every rung, the default included. */
+  const mapRefusal = awaitingPick
+    ? "One input is still waiting for you to pick which offered value feeds it."
+    : mapProblems.length > 0
+      ? "Fix the mapping problems named on the rows above."
+      : unfedRequired.length > 0
+        ? `Required mapping: ${unfedRequired.join(", ")}`
+        : null;
 
   /**
-   * Why Save cannot act WHEN THE ANSWER IS THE DEFINITION'S OWN DEFAULT —
-   * checked before the binding ladder's own refusals, because none of those
-   * apply to a record that is not a binding. The server is still the authority
-   * (403 / 409) and its sentence is printed when it disagrees.
+   * Why Save cannot act WHEN THE ANSWER IS THE JOB'S OWN DEFAULT. The server is
+   * still the authority (403 / 409 / 422) and its sentence is printed when it
+   * disagrees.
    */
   const defaultHolderRefusal = !writingDefinitionDefault
     ? null
@@ -1118,7 +1111,7 @@ function BindingDraft({
             ? verdict.checking
               ? "Preliminary check: Checking"
               : "Preliminary check: Failed"
-            : null;
+            : mapRefusal;
 
   /** Why Save cannot act — adjacent to the button, never a transient toast. */
   const saveRefusal =
@@ -1135,27 +1128,11 @@ function BindingDraft({
               ? "Pick the organization this answer is for."
               : rung === "org" && !canBindThisOrg
                 ? `Deciding for everyone in ${organizations.find((o) => o.id === organizationId)?.name ?? "this organization"} takes an owner or admin of it, and you are ${selectedOrgRole ? `a ${selectedOrgRole}` : "not a member"} there. Ask an owner to set it, or pick an organization you administer — your own answer above always works.`
-                : writesForEveryone && !canBindGlobal
-                  ? "The system answer is a super-admin decision — the server refuses this write."
-                  : /* 🚨 A HARD REFUSAL, not a warning (Arman, 2026-08-31, restated
-             2026-09-08). The picker was restricted and the save was not: an
-             agent drafted before the restriction existed, or handed in by the
-             guard dialog, could still be written as the answer every user on
-             the platform gets. Now Save is DISABLED with the reason and the
-             remedy beside it. */
-                    writesForEveryone && systemHolderIsPersonal
-                    ? SYSTEM_RUNG_PERSONAL_HOLDER_REFUSAL
-                    : holder.kind === "agent" && !verdict.passed
-                      ? verdict.checking
-                        ? "Preliminary check: Checking"
-                        : "Preliminary check: Failed"
-                      : awaitingPick
-                        ? "One input is still waiting for you to pick which offered value feeds it."
-                        : mapProblems.length > 0
-                          ? "Fix the mapping problems named on the rows above."
-                          : unfedRequired.length > 0
-                            ? `Required mapping: ${unfedRequired.join(", ")}`
-                            : null);
+                : holder.kind === "agent" && !verdict.passed
+                  ? verdict.checking
+                    ? "Preliminary check: Checking"
+                    : "Preliminary check: Failed"
+                  : mapRefusal);
 
   const storedAgentId = binding ? agentHolderOfBinding(binding).holderId : null;
   const holderChanged =
@@ -1174,21 +1151,36 @@ function BindingDraft({
    */
   async function writeBinding(bindAgentId?: string | null) {
     const overriding = bindAgentId != null && bindAgentId !== agentId;
-    // ── THE BOTTOM RUNG GOES THROUGH ITS OWN DOOR, WITH THE HOLDER ALONE ────
+    // ── THE BOTTOM RUNG GOES THROUGH ITS OWN DOOR — WITH THE WHOLE ANSWER ──
     //
-    // 🚨 `mandate.definition` has no `consumption_map`, no `config_overrides`
-    // and no `auto_run`. `putMandateDefaultHolder` carries the holder and
-    // nothing else by construction, so this path cannot smuggle a map the
-    // definition could never store — and the screen above it does not offer
-    // one. The server's `applies_in` is read back and printed verbatim, exactly
-    // as `BindingResult.applies_in` is.
-    //
-    // 🚨 AND THIS IS THE ONE PLACE THAT DECIDES WHICH RECORD THE SYSTEM ANSWER
-    // GOES TO (FIX-R13/A). `writingDefinitionDefault` is `systemAnswerRecord()`
-    // on the admin host and the rung itself everywhere else; there is no other
-    // branch in the repo that picks between these two doors, and
-    // `features/bindings/__tests__/system-answer-record.test.tsx` counts the
-    // call sites so a second one cannot grow.
+    // 🚨 aidream 1037: the default carries its own `consumption_map`,
+    // `config_overrides` and `auto_run`, so this door receives the SAME map,
+    // settings and auto-run the binding branch below sends — computed by the
+    // same builder, so a map drafted here can never be dropped at the door.
+    // There is no platform-wide binding to write instead (the server refuses
+    // one); `features/bindings/__tests__/system-answer-record.test.ts` proves
+    // nothing in `features/` asks for one.
+    const captured = overridesReady
+      ? selectSettingsOverridesForApi(overridesId)(store.getState())
+      : undefined;
+    const settingsPayload = buildBindingSavePayload({
+      holder:
+        holder.kind === "workflow"
+          ? { kind: "workflow", workflowId: holder.workflowId as string }
+          : {
+              agentId: holder.useLatest ? agentId : null,
+              agentVersionId: holder.useLatest ? null : holder.agentVersionId,
+              useLatest: holder.useLatest,
+            },
+      hasOffer: Boolean(offer),
+      consumptionMap: withoutUnpicked(draftMap),
+      autoRun,
+      settingsOpened: overridesReady,
+      capturedOverrides: isJsonObject(captured)
+        ? (captured as JsonObject)
+        : undefined,
+      storedOverrides,
+    });
     if (writingDefinitionDefault) {
       const writingAgentId = overriding ? bindAgentId : agentId;
       const result = await putMandateDefaultHolder(
@@ -1215,17 +1207,22 @@ function BindingDraft({
               holderId: null,
               holderVersionId: null,
             },
+        {
+          // `undefined` = the job offers nothing: leave the stored map alone.
+          consumptionMap: settingsPayload.consumptionMap,
+          configOverrides: isJsonObject(settingsPayload.configOverrides)
+            ? (settingsPayload.configOverrides as JsonObject)
+            : null,
+          autoRun: settingsPayload.autoRun ?? null,
+        },
       );
       const report: BindingWriteReport = {
-        notes: [],
+        notes: result.notes,
         appliesIn: result.appliesIn,
       };
       onWrote(report, draftSignature);
       return report;
     }
-    const captured = overridesReady
-      ? selectSettingsOverridesForApi(overridesId)(store.getState())
-      : undefined;
     const payload = buildBindingSavePayload({
       holder:
         holder.kind === "workflow"
@@ -1268,15 +1265,11 @@ function BindingDraft({
     const report = await putMandateBinding(
       dispatch,
       data.mandate.mandate_key,
+      // Only two rungs are bindings: "everybody" is the job's own default,
+      // written above (aidream 1037).
       rung === "org"
         ? { principalType: "org", organizationId: organizationId as string }
-        : // The system host's answer is the platform's — never the admin's own
-          // personal row, which is what a `default:` branch would have written
-          // the moment the record flipped to a binding on a job that had no
-          // global binding to stand on.
-          writesForEveryone
-          ? { principalType: "global" }
-          : { principalType: "user" },
+        : { principalType: "user" },
       payload,
     );
     // The signature of exactly what this write sent — the report's lifetime is
@@ -1354,12 +1347,11 @@ function BindingDraft({
       return;
     }
     // The guard fires wherever the write decides for EVERY user on the platform
-    // — the `global` binding rung, and a SYSTEM-homed mandate's own default.
-    // Same blast radius, same audit; an org-homed default is a different scope
-    // and the server's containment predicate is what judges it.
+    // — a SYSTEM-homed mandate's own default (the one home of the system
+    // answer, aidream 1037). An org-homed default is a different scope and the
+    // server's containment predicate is what judges it.
     const platformWideWrite =
-      writesForEveryone ||
-      (writingDefinitionDefault && defaultHolderOffer.systemHomed);
+      writingDefinitionDefault && defaultHolderOffer.systemHomed;
     if (platformWideWrite && holder.kind === "agent" && agentId) {
       setGlobalGuardOpen(true);
       return;
@@ -1440,9 +1432,7 @@ function BindingDraft({
       description:
         rung === "user"
           ? "This job goes back to the layer below — your organization's Mandate Holder if one is set, otherwise the system's."
-          : rung === "org"
-            ? "Everyone in this organization goes back to the system answer, unless they set their own."
-            : "Everybody goes back to the default Mandate Holder.",
+          : "Everyone in this organization goes back to the system answer, unless they set their own.",
       confirmLabel: "Remove it",
       variant: "destructive",
     });
@@ -1454,9 +1444,7 @@ function BindingDraft({
         data.mandate.mandate_key,
         rung === "org"
           ? { principalType: "org", organizationId: organizationId as string }
-          : rung === "global"
-            ? { principalType: "global" }
-            : { principalType: "user" },
+          : { principalType: "user" },
       );
       toast.success("Removed — the layer below fulfils this job again.");
       onChanged();
@@ -1535,7 +1523,10 @@ function BindingDraft({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingRung]);
 
-  const storedDraft = useMemo(() => parseBindingWave1(binding), [binding]);
+  const storedDraft = useMemo(
+    () => parseBindingWave1(settingsRow),
+    [settingsRow],
+  );
   /**
    * ONE SIGNATURE FOR "WHAT THIS DRAFT IS", used by both the unsaved-work note
    * and the write report's lifetime — because they are the same question asked
@@ -1726,11 +1717,8 @@ function BindingDraft({
    * refusals are read here — "choose an agent first" and the mapping problems
    * are reasons to USE this door, not to hide it.
    */
-  const createAgentRefusal: string | null = writesForEveryone
-    ? canBindGlobal
-      ? null
-      : "The system answer is a super-admin decision, so an agent created here could not be bound. Ask a super admin, or set your own answer instead."
-    : rung === "org" && !canBindThisOrg
+  const createAgentRefusal: string | null =
+    rung === "org" && !canBindThisOrg
       ? `Deciding for everyone in ${organizations.find((o) => o.id === organizationId)?.name ?? "this organization"} takes an owner or admin of it, and you are ${selectedOrgRole ? `a ${selectedOrgRole}` : "not a member"} there — an agent created here could not be bound. Ask an owner, or set your own answer instead.`
       : writingDefinitionDefault && !defaultHolderOffer.offered
         ? defaultHolderOffer.refusal
@@ -1899,18 +1887,16 @@ function BindingDraft({
           activeSection && activeSection !== "holder" ? "hidden" : "space-y-3"
         }
       >
-        {!holderOnlyRung ? (
-          <AutoRunBar
-            targets={holderInputs.targets}
-            map={draftMap}
-            value={autoRun}
-            onChange={setAutoRun}
-            disabled={disabled}
-            // Preserve any real save response; mapping completeness does not
-            // prove that the runtime supports mandate-wide intervention.
-            serverNotes={writeReport?.notes ?? []}
-          />
-        ) : null}
+        <AutoRunBar
+          targets={holderInputs.targets}
+          map={draftMap}
+          value={autoRun}
+          onChange={setAutoRun}
+          disabled={disabled}
+          // Preserve any real save response; mapping completeness does not
+          // prove that the runtime supports mandate-wide intervention.
+          serverNotes={writeReport?.notes ?? []}
+        />
         <ScopeHolderBar
           rung={rung}
           organizationId={organizationId}
@@ -2027,34 +2013,18 @@ function BindingDraft({
             }
             holderInputs={holderInputs}
             currentMandateKey={data.mandate.mandate_key}
-            canBindGlobal={canBindGlobal}
             disabled={disabled}
             onChanged={onBatchWrote}
           />
         </div>
       ) : null}
       <>
-        {/* 🚨 THE BOTTOM RUNG IS HOLDER-ONLY, AND THE SCREEN SAYS SO
-          (FIX-R3/W3). `mandate.definition` has no `consumption_map`, no
-          `config_overrides` and no `auto_run` — those columns are on
-          `agent.mandate_binding`. So the whole map/settings/auto-run half is
-          ABSENT here and one honest sentence stands in its place. Rendering the
-          editors disabled, or rendering them live and dropping their contents
-          at the door, are both the same defect: a control that appears to save
-          something the door never receives.
-
-          🚨 EXCEPT ON THE ADMIN HOST (FIX-R13/A). There the three controls
-          write THE SYSTEM ANSWER and `systemAnswerRecord()` picks the record:
-          an answer that carries a map, settings or auto-run IS the
-          platform-wide binding, which has all three columns. So the editors
-          are live, nothing is dropped at the door, and the admin never has to
-          be asked where a row is stored. */}
-        {holderOnlyRung ? (
-          <p className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
-            {DEFAULT_HOLDER_IS_HOLDER_ONLY}
-          </p>
-        ) : (
-          <>
+        {/* 🚨 EVERY RUNG CARRIES ITS MAP, SETTINGS AND AUTO-RUN — the job's
+          own default included (aidream 1037). Before 1037 the definition had no
+          columns for them, so this half was hidden on the bottom rung and the
+          admin host wrote a platform-wide binding instead: the system answer in
+          two places. The default now stores all three through its own door. */}
+                  <>
             {/* TWO SIDES AND A MIDDLE — both inventories permanently open (P1).
           🚨 CONTAINER query, not a viewport one. This workspace is hosted in a
           3xl reading column, in the admin shell, and inside a draggable window
@@ -2492,7 +2462,7 @@ function BindingDraft({
               ) : null}
             </div>
           </>
-        )}
+        
 
         <div
           className={

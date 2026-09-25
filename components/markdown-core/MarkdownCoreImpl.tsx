@@ -9,6 +9,7 @@ import ReactMarkdown from "react-markdown";
 import "katex/dist/katex.min.css";
 import { MARKDOWN_PRESETS, prepareCoreSource } from "./markdown-core-presets";
 import type { MarkdownCoreProps } from "./markdown-core-types";
+import { withCoreSyntaxElements } from "./syntax/elements/core-syntax-elements";
 
 export default function MarkdownCoreImpl({
   children,
@@ -20,7 +21,7 @@ export default function MarkdownCoreImpl({
     <ReactMarkdown
       remarkPlugins={plugins.remark}
       rehypePlugins={plugins.rehype}
-      components={components}
+      components={withCoreSyntaxElements(components)}
     >
       {prepareCoreSource(children, preset)}
     </ReactMarkdown>

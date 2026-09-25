@@ -30,7 +30,7 @@ import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/Bas
 import { InlineCodeSnippet } from "@/components/mardown-display/chat-markdown/InlineCodeSnippet";
 import XmlBlock from "@/components/mardown-display/blocks/xml/XmlBlock";
 import MarkdownPreviewBlock from "@/components/mardown-display/blocks/markdown-preview/MarkdownPreviewBlock";
-import { fenceNestsInnerFences } from "@/components/markdown-core/fence-nesting";
+import { fenceNestsInnerFences } from "@ai-matrx/content-ir/source";
 import { NestedRichContent } from "./NestedRichContent";
 
 // Heavy engines stay behind React.lazy (an async edge inside the parent's

@@ -53,7 +53,7 @@ import { FENCE_META_KEY, splitFenceInfo } from "@/components/markdown-core/fence
 import {
   classifyInnerFenceLine,
   fenceNestsInnerFences,
-} from "@/components/markdown-core/fence-nesting";
+} from "@ai-matrx/content-ir/source";
 
 /**
  * All block type strings this splitter can emit — the union of:
@@ -1550,7 +1550,7 @@ function extractCodeBlock(
   let jsonInString = false;
   let jsonEscaped = false;
   // A ```markdown fence carries its own ```lang … ``` blocks with the same
-  // tick count — see components/markdown-core/fence-nesting.ts.
+  // tick count — THE rule is @ai-matrx/content-ir/source (source/fence-nesting.ts).
   const nests = allowNesting && fenceNestsInnerFences(language);
   let nestedDepth = 0;
   let sawNested = false;

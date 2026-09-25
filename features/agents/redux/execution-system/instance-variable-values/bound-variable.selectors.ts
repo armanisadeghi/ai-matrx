@@ -20,6 +20,10 @@ import type { VariableDefinition } from "@/features/agents/types/agent-definitio
 import { selectAllContextItems } from "@/features/scope-system/redux/contextItemsSlice";
 import type { ContextItem } from "@/features/scope-system/redux/contextItemsSlice";
 import { orderVariablesForForm } from "@/features/agents/utils/control-variables";
+import {
+  contextItemBindingOf,
+  isCustomDataBinding,
+} from "@/features/agents/utils/variable-binding";
 
 const EMPTY_DEFS: VariableDefinition[] = [];
 
@@ -33,7 +37,8 @@ function isEmptyVal(v: unknown): boolean {
 }
 
 function isBound(d: VariableDefinition): boolean {
-  return !!(d.binding?.itemKey || d.binding?.contextItemId);
+  const scope = contextItemBindingOf(d.binding);
+  return !!(scope?.itemKey || scope?.contextItemId);
 }
 
 /** Swap each bound var's component for the one inherited from its context item (live). */
@@ -43,7 +48,7 @@ function applyInheritedComponents(
 ): VariableDefinition[] {
   let changed = false;
   const out = definitions.map((d) => {
-    const cid = d.binding?.contextItemId;
+    const cid = contextItemBindingOf(d.binding)?.contextItemId;
     if (!cid) return d;
     const item = items.find((i) => i.id === cid);
     if (item?.custom_component) {
@@ -97,6 +102,9 @@ export const selectVisibleInputDefinitions = (
         if (!entry || entry.definitions.length === 0) return EMPTY_DEFS;
         const effective = applyInheritedComponents(entry.definitions, items);
         const visible = effective.filter((d) => {
+          // Bound to the author's custom data: the server fills it and the value is
+          // locked (`shown_locked`) — it is shown by BoundVariableChips, never an input.
+          if (isCustomDataBinding(d.binding)) return false;
           if (!isBound(d)) return true;
           // Hide a bound var only when it actually resolved to a scope value — then it's a
           // pill. Unresolved bound vars stay as ordinary inputs (no requirement).

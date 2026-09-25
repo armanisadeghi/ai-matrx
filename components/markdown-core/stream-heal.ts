@@ -21,6 +21,7 @@
 //   - `![alt][id]` / `[text][id]` before `[id]:` arrives → held back / plain text
 
 import remend, { isWithinCodeBlock, type RemendHandler } from "remend";
+import { SYNTAX_STREAM_HANDLERS } from "./syntax/stream-heal-syntax";
 
 const TRAILING_REFERENCE_DEFINITION = /(^|\n) {0,3}\[[^\]\n]+\]:[^\n]*$/;
 
@@ -132,6 +133,8 @@ const REMEND_OPTIONS = {
     pendingReferenceDefinition,
     pendingReferenceUses,
     pendingEmptyEmphasis,
+    // Extended syntax (front matter, directives, callouts, wikilinks, …).
+    ...SYNTAX_STREAM_HANDLERS,
   ],
 };
 

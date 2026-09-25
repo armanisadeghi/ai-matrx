@@ -18,7 +18,6 @@ import {
   parseBindingWave1,
   type ConsumptionMap,
 } from "@/features/mandates/provision-shapes";
-import { hasLiveGlobalBinding } from "@/features/bindings/system-answer-record";
 import { DEFAULT_HOLDER_RUNG } from "@/features/bindings/default-holder-rung";
 import type { HolderChoice } from "@/features/mandates/workspace/save-payload";
 import type {
@@ -34,14 +33,16 @@ import type {
 /** The three levels the Overrides tab serves — the same as the workspace's. */
 export type OverridesLevel = "system" | "organization" | "person";
 
-/** The rung a level edits. System follows the data (FIX-R13/A). */
+/**
+ * The rung a level edits. The system level is the job's OWN DEFAULT — the one
+ * record the system answer lives in (aidream 1037); there is no platform-wide
+ * binding to edit instead.
+ */
 export function rungForLevel(
   level: OverridesLevel,
-  data: MandateWorkspaceData,
+  _data: MandateWorkspaceData,
 ): WorkspaceRung {
-  if (level === "system") {
-    return hasLiveGlobalBinding(data.bindings) ? "global" : DEFAULT_HOLDER_RUNG;
-  }
+  if (level === "system") return DEFAULT_HOLDER_RUNG;
   return level === "organization" ? "org" : "user";
 }
 
@@ -51,10 +52,9 @@ export function findBinding(
   userId: string | null,
   organizationId: string | null,
 ): MandateBindingRowDb | null {
-  if (rung === DEFAULT_HOLDER_RUNG) return null;
-  if (rung === "global") {
-    return bindings.find((b) => b.principal_type === "global") ?? null;
-  }
+  // The bottom rung is the definition, never a binding; "global" is the same
+  // answer (aidream 1037).
+  if (rung === DEFAULT_HOLDER_RUNG || rung === "global") return null;
   if (rung === "org") {
     if (!organizationId) return null;
     return (
@@ -71,7 +71,9 @@ export function findBinding(
   );
 }
 
-export function holderDraftOf(binding: MandateBindingRowDb | null): HolderDraft {
+export function holderDraftOf(
+  binding: MandateBindingRowDb | null,
+): HolderDraft {
   const wave1 = parseBindingWave1(binding);
   const agent = agentHolderOfBinding(binding ?? {});
   return {
@@ -169,7 +171,8 @@ export function overridesHolderOf(
     return { source: "own", holder: own };
   }
   // The system rungs ARE the bottom of the ladder: nothing sits below them.
-  if (rung !== "user" && rung !== "org") return { source: "none", message: null };
+  if (rung !== "user" && rung !== "org")
+    return { source: "none", message: null };
   if (!resolved) return { source: "none", message: null };
   if (resolved.status === "loading") return { source: "loading" };
   if (resolved.status === "unavailable") {

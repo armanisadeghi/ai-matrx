@@ -51,6 +51,7 @@ export const MENU_STRUCTURE: MenuSection[] = [
       "add-to-rulebook",
       "save-to-task",
       "copy",
+      "pin-message",
       "save-to-notes",
       "summarize-and-listen",
       "summarize-for-listening",
@@ -104,6 +105,11 @@ export const MENU_STRUCTURE: MenuSection[] = [
       "download-html",
       "print",
       "full-print",
+      // RC-B9 — the WHOLE conversation, not just this message.
+      "export-conversation-md",
+      "export-conversation-pdf",
+      "export-conversation-docx",
+      "export-conversation-html",
       "convert-to-broker",
     ],
   },
@@ -125,6 +131,7 @@ export const MENU_STRUCTURE: MenuSection[] = [
     submenu: "Edit",
     icon: Edit,
     actionIds: [
+      "regenerate-response",
       "edit",
       "edit-and-resubmit",
       "open-fullscreen-editor",

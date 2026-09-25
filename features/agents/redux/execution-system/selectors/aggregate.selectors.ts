@@ -43,6 +43,10 @@ import {
   selectShowAutoClearToggle,
 } from "../instance-ui-state/instance-ui-state.selectors";
 import { assembleRequest } from "../thunks/execute-instance.thunk";
+import {
+  contextItemBindingOf,
+  isCustomDataBinding,
+} from "@/features/agents/utils/variable-binding";
 
 // =============================================================================
 // Base Primitive — the shared bridge from conversationId → ActiveRequest
@@ -415,7 +419,9 @@ export const selectIsInstanceReady = (
           if (!def.required) continue;
           // A scope-bound variable is never a hard requirement — it falls back to an
           // ordinary input when no context provides it, so it must never block a run.
-          if (def.binding?.itemKey || def.binding?.contextItemId) continue;
+          if (isCustomDataBinding(def.binding)) continue;
+          const scope = contextItemBindingOf(def.binding);
+          if (scope?.itemKey || scope?.contextItemId) continue;
           const hasValue =
             def.name in userValues ||
             def.name in scopeValues ||

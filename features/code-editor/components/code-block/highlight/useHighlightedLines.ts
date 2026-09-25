@@ -61,6 +61,51 @@ function splitLines(tokens: ThemedToken[]): HighlightedToken[][] {
   return lines;
 }
 
+/** Lines per tokenize slice, and the main-thread budget before yielding. */
+const SLICE_LINES = 40;
+const SLICE_BUDGET_MS = 8;
+
+/** The first `count` lines of `text` (with their newlines), or all of it. */
+function takeLines(text: string, count: number): string {
+  let index = -1;
+  for (let i = 0; i < count; i += 1) {
+    index = text.indexOf("\n", index + 1);
+    if (index === -1) return text;
+  }
+  return text.slice(0, index + 1);
+}
+
+function yieldToMain(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+// Finished blocks re-mount constantly (virtualized chat lists, tab switches):
+// the last tokenizations are kept so a remount never re-tokenizes.
+const CACHE_LIMIT = 64;
+const cache = new Map<string, HighlightedToken[][]>();
+
+function cacheKey(language: string, code: string): string {
+  return `${language}\u0000${code}`;
+}
+
+function readCache(language: string, code: string): HighlightedToken[][] | null {
+  const key = cacheKey(language, code);
+  const hit = cache.get(key);
+  if (!hit) return null;
+  cache.delete(key);
+  cache.set(key, hit);
+  return hit;
+}
+
+function writeCache(language: string, code: string, lines: HighlightedToken[][]) {
+  cache.set(cacheKey(language, code), lines);
+  while (cache.size > CACHE_LIMIT) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
+}
+
 export function useHighlightedLines(
   code: string,
   rawLanguage: string | undefined,
@@ -111,23 +156,46 @@ export function useHighlightedLines(
         };
         slot.current = current;
       }
-      const delta = code.slice(current.consumed.length);
-      if (delta) await current.tokenizer.enqueue(delta);
-      current.consumed = code;
-      if (run !== generation.current) return;
+      const background = {
+        light: highlighter.getTheme(SHIKI_THEME.light).bg,
+        dark: highlighter.getTheme(SHIKI_THEME.dark).bg,
+      };
+      const cached = readCache(language, code);
+      if (cached && current.consumed === "") {
+        setResult({ lines: cached, background, source: code });
+        return;
+      }
 
-      const tokens = [
-        ...current.tokenizer.tokensStable,
-        ...current.tokenizer.tokensUnstable,
-      ];
-      setResult({
-        lines: splitLines(tokens),
-        background: {
-          light: highlighter.getTheme(SHIKI_THEME.light).bg,
-          dark: highlighter.getTheme(SHIKI_THEME.dark).bg,
-        },
-        source: code,
-      });
+      // Time-sliced: a long block tokenizes in slices of whole lines, handing
+      // the main thread back between slices, and shows each colored prefix as
+      // it lands (the rest stays plain text in place). Never a long task.
+      const tokenizer = current.tokenizer;
+      const publish = (source: string) =>
+        setResult({
+          lines: splitLines([...tokenizer.tokensStable, ...tokenizer.tokensUnstable]),
+          background,
+          source,
+        });
+      let delta = code.slice(current.consumed.length);
+      let sliceStart = performance.now();
+      while (delta) {
+        const piece = takeLines(delta, SLICE_LINES);
+        await tokenizer.enqueue(piece);
+        current.consumed += piece;
+        delta = delta.slice(piece.length);
+        if (delta && performance.now() - sliceStart > SLICE_BUDGET_MS) {
+          if (run === generation.current) publish(current.consumed);
+          await yieldToMain();
+          if (run !== generation.current) return;
+          sliceStart = performance.now();
+        }
+      }
+      if (run !== generation.current) return;
+      publish(code);
+      writeCache(language, code, splitLines([
+        ...tokenizer.tokensStable,
+        ...tokenizer.tokensUnstable,
+      ]));
     };
 
     queue.current = queue.current.then(task).catch((error: unknown) => {

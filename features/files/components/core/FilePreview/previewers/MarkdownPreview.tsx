@@ -2,7 +2,7 @@
  * features/files/components/core/FilePreview/previewers/MarkdownPreview.tsx
  *
  * Renders Markdown / MDX files as formatted prose with GFM tables, math via
- * KaTeX, and Prism syntax-highlighted code blocks. Restored from the legacy
+ * KaTeX, and syntax-highlighted code blocks. Restored from the legacy
  * `components/FileManager/FilePreview/MarkdownPreview.tsx`, ported to the new
  * preview pipeline (signed-URL fetch, semantic Tailwind tokens).
  *
@@ -15,27 +15,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Check, Copy, Loader2 } from "lucide-react";
-// DELIBERATE standalone react-markdown (not the MarkdownCore front door):
-// rehype-prism-plus drags every refractor grammar with it, which must NOT
-// enter the shared MarkdownCore chunk that all chat/doc surfaces download.
-// This module is only ever entered via dynamic() (FilePreview et al.), so the
-// weight stays inside the previewer chunk.
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-import rehypePrism from "rehype-prism-plus";
-// Page breaks preview here exactly as in every MarkdownCore preset.
-import remarkMatrxPageBreak, {
-  isolatePageBreakLines,
-} from "@/components/mardown-display/chat-markdown/page-break/remarkMatrxPageBreak";
-import "katex/dist/katex.min.css";
-// Math rules are the core's, never local: same normalizer, same options.
-import {
-  normalizeMathDelimiters,
-  REHYPE_KATEX_OPTIONS,
-  REMARK_MATH_OPTIONS,
-} from "@/components/markdown-core/math-normalizer";
+// Rendered through the ONE markdown core (same parser, math and page-break
+// rules as every other surface); fenced code gets the shared Shiki view.
+import MarkdownCore from "@/components/markdown-core/MarkdownCore";
+import type { MarkdownComponents } from "@/components/markdown-core/markdown-core-types";
+import { ShikiCodeView } from "@/features/code-editor/components/code-block/highlight/ShikiCodeView";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { cn } from "@/lib/utils";
 import { guardMarkdownDelimiters } from "@ai-matrx/kit/delimiter-guard";
 import { formatFileSize } from "@ai-matrx/kit/format";
@@ -55,6 +40,26 @@ export function MarkdownPreview({
 }: MarkdownPreviewProps) {
   // Same-origin blob via the Python download endpoint — no S3 CORS to fight.
   const { blob, loading: blobLoading, error: blobError } = useFileBlob(fileId);
+  const mode = useThemeMode() === "dark" ? "dark" : "light";
+  const codeComponents: MarkdownComponents = {
+    pre: ({ children }) => <>{children}</>,
+    code: ({ className, children }) => {
+      const language = /language-([\w+#-]+)/.exec(className ?? "")?.[1];
+      const text = String(children ?? "");
+      if (!language && !text.includes("\n")) {
+        return <code className={className}>{children}</code>;
+      }
+      return (
+        <ShikiCodeView
+          code={text.replace(/\n$/, "")}
+          language={language}
+          mode={mode}
+          className="not-prose my-4 overflow-hidden rounded-md"
+          fontSize={13}
+        />
+      );
+    },
+  };
 
   const [content, setContent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -162,16 +167,11 @@ export function MarkdownPreview({
       </div>
       <div className="flex-1 overflow-auto px-6 py-5">
         <article className="prose prose-sm dark:prose-invert max-w-none">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, [remarkMath, REMARK_MATH_OPTIONS], remarkMatrxPageBreak]}
-            rehypePlugins={[[rehypeKatex, REHYPE_KATEX_OPTIONS], rehypePrism]}
-          >
+          <MarkdownCore preset="gfm-math" components={codeComponents}>
             {/* Guard a stray `$$` / unclosed `[` from swallowing a section
                 (lib/markdown/delimiter-guard.ts). */}
-            {normalizeMathDelimiters(
-              isolatePageBreakLines(guardMarkdownDelimiters(content).text),
-            )}
-          </ReactMarkdown>
+            {guardMarkdownDelimiters(content).text}
+          </MarkdownCore>
         </article>
       </div>
     </div>

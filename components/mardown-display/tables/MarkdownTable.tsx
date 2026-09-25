@@ -46,6 +46,7 @@ import { useTableUndo } from "./editing/useTableUndo";
 import { useDoubleClickEdit } from "./editing/useDoubleClickEdit";
 import { useSpecimenMode } from "../specimen/SpecimenContext";
 import { MarkdownTableScrollArea } from "./MarkdownTableScrollArea";
+import { ChartThisButton, TableChartPanel } from "../blocks/chart/TableChart";
 import {
   appendRow,
   appendColumn,
@@ -276,6 +277,8 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
   const toast = useToastManager();
   const tableTheme = THEMES[theme]?.table || THEMES.professional.table;
   const [showSaveModal, setShowSaveModal] = useState(false);
+  // "Chart this" — draws this table through the one chart primitive.
+  const [showChart, setShowChart] = useState(false);
   const previousDataRef = useRef<string>("");
 
   // Update internal state when tableData changes
@@ -833,6 +836,15 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
           </table>
         </MarkdownTableScrollArea>
       )}
+      {showChart && !isStreamActive && !specimenMode && (
+        <TableChartPanel
+          table={{
+            headers: internalTableData.headers,
+            rows: internalTableData.rows,
+          }}
+          onClose={() => setShowChart(false)}
+        />
+      )}
       {/* Structural editing toolbar — only when in edit mode (and not streaming) */}
       {!isStreamActive && isEditingEnabled && (
         <div className="flex justify-start mt-2">
@@ -863,6 +875,14 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
               {showNormalized ? "Table" : "Data"}
             </Button>
           )}
+          <ChartThisButton
+            table={{
+              headers: internalTableData.headers,
+              rows: internalTableData.rows,
+            }}
+            active={showChart}
+            onToggle={() => setShowChart((v) => !v)}
+          />
           {renderTableActionButton()}
           {internalTableData.normalizedData && (
             <>

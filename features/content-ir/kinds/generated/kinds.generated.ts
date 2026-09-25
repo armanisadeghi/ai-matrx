@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "39030e58b628";
+export const KIND_REGISTRY_FINGERPRINT = "f68455002a80";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -6716,7 +6716,7 @@ export interface AgentInputQmeReport {
 }
 
 /**
- * Kind `agent_mandate_specification` (registry v2).
+ * Kind `agent_mandate_specification` (registry v3).
  */
 export interface AgentMandateSpecification {
   goal: {
@@ -6819,7 +6819,7 @@ export interface AgentResult {
  * a renderer lays out a self-describing row without knowing what produced
  * it, and an edge can carry a single group as a value in its own right.
  *  *
- *  * Kind `aggregate_group` (registry v5).
+ *  * Kind `aggregate_group` (registry v4).
  */
 export interface AggregateGroup {
   /**
@@ -6841,7 +6841,7 @@ export interface AggregateGroup {
 }
 
 /**
- * Kind `aggregate_result` (registry v7).
+ * Kind `aggregate_result` (registry v6).
  */
 export interface AggregateResult {
   /**
@@ -7056,7 +7056,7 @@ export interface AiVisibilityResult {
 }
 
 /**
- * Kind `answer_grade` (registry v4).
+ * Kind `answer_grade` (registry v5).
  */
 export interface AnswerGrade {
   /**
@@ -7336,7 +7336,7 @@ export interface BatchReview {
 }
 
 /**
- * Kind `batched_list_result` (registry v7).
+ * Kind `batched_list_result` (registry v6).
  */
 export interface BatchedListResult {
   /**
@@ -7531,7 +7531,7 @@ export interface CardDetail {
 /**
  * Supplementary learning layers for one flashcard.
  *  *
- *  * Kind `card_enrichment` (registry v6).
+ *  * Kind `card_enrichment` (registry v9).
  */
 export interface CardEnrichment {
   /**
@@ -8192,7 +8192,7 @@ export interface ContentPlanTree {
 }
 
 /**
- * Kind `cooking_recipe` (registry v5).
+ * Kind `cooking_recipe` (registry v6).
  */
 export interface CookingRecipe {
   notes?: string;
@@ -8561,7 +8561,7 @@ export interface DecisionTree {
 }
 
 /**
- * Kind `diagram_spec` (registry v6).
+ * Kind `diagram_spec` (registry v7).
  */
 export interface DiagramSpec {
   type?: string;
@@ -8870,7 +8870,7 @@ export interface EntityMention {
 }
 
 /**
- * Kind `episode_title_options` (registry v5).
+ * Kind `episode_title_options` (registry v6).
  */
 export interface EpisodeTitleOptions {
   /**
@@ -9087,7 +9087,7 @@ export interface FileReadResult {
 }
 
 /**
- * Kind `file_search_match` (registry v9).
+ * Kind `file_search_match` (registry v8).
  */
 export interface FileSearchMatch {
   path?: string;
@@ -9100,7 +9100,7 @@ export interface FileSearchMatch {
 }
 
 /**
- * Kind `file_search_results` (registry v9).
+ * Kind `file_search_results` (registry v8).
  */
 export interface FileSearchResults {
   path?: string | null;
@@ -9181,7 +9181,7 @@ export interface FileWriteResult {
  * registered contract, so a per-node wording would either lie about the
  * other producers or push each of them into minting a near-duplicate kind.
  *  *
- *  * Kind `filter_result` (registry v9).
+ *  * Kind `filter_result` (registry v8).
  */
 export interface FilterResult {
   /**
@@ -9222,7 +9222,7 @@ export interface FlashcardSet {
 }
 
 /**
- * Kind `flattened_list_result` (registry v5).
+ * Kind `flattened_list_result` (registry v4).
  */
 export interface FlattenedListResult {
   /**
@@ -9312,7 +9312,7 @@ export interface GatherResult {
 }
 
 /**
- * Kind `generated_audio` (registry v7).
+ * Kind `generated_audio` (registry v6).
  */
 export interface GeneratedAudio {
   /**
@@ -9355,7 +9355,7 @@ export interface GeneratedAudio {
 }
 
 /**
- * Kind `generated_image_set` (registry v6).
+ * Kind `generated_image_set` (registry v5).
  */
 export interface GeneratedImageSet {
   /**
@@ -9378,7 +9378,7 @@ export interface GeneratedImageSet {
 }
 
 /**
- * Kind `generated_video_set` (registry v7).
+ * Kind `generated_video_set` (registry v6).
  */
 export interface GeneratedVideoSet {
   /**
@@ -10625,7 +10625,7 @@ export interface KgGraphNeighborhood {
 }
 
 /**
- * Kind `kit_title` (registry v2).
+ * Kind `kit_title` (registry v3).
  */
 export interface KitTitle {
   /**
@@ -10640,7 +10640,7 @@ export interface KitTitle {
 }
 
 /**
- * Kind `lesson_script_set` (registry v4).
+ * Kind `lesson_script_set` (registry v5).
  */
 export interface LessonScriptSet {
   /**
@@ -10693,7 +10693,7 @@ export interface LinkBuckets {
 }
 
 /**
- * Kind `list_change_proposal_v1` (registry v2).
+ * Kind `list_change_proposal_v1` (registry v3).
  */
 export interface ListChangeProposalV1 {
   /**
@@ -11192,7 +11192,7 @@ export interface MapResult {
  * alone does not fix it. `parent_slug` carries the same hierarchy with no
  * recursion, so the contract survives every provider.
  *  *
- *  * Kind `map_topic_node_v1` (registry v3).
+ *  * Kind `map_topic_node_v1` (registry v2).
  */
 export interface MapTopicNodeV1 {
   name: string;
@@ -11235,7 +11235,7 @@ export interface MapTopicProposalV1 {
 }
 
 /**
- * Kind `mapped_list_result` (registry v11).
+ * Kind `mapped_list_result` (registry v10).
  */
 export interface MappedListResult {
   /**
@@ -11272,7 +11272,7 @@ export interface Markdown {
 /**
  * A Masterwork's Rulebook as it stands RIGHT NOW, for one run.
  *  *
- *  * Kind `masterwork_canon` (registry v6).
+ *  * Kind `masterwork_canon` (registry v5).
  */
 export interface MasterworkCanon {
   /**
@@ -11594,7 +11594,7 @@ export interface MediaCandidateVerdict {
 }
 
 /**
- * Kind `media_chapters` (registry v4).
+ * Kind `media_chapters` (registry v5).
  */
 export interface MediaChapters {
   /**
@@ -11721,7 +11721,7 @@ export interface MeetRecordingTranscriptionResult {
 }
 
 /**
- * Kind `memory_aid` (registry v4).
+ * Kind `memory_aid` (registry v5).
  */
 export interface MemoryAid {
   /**
@@ -12049,7 +12049,7 @@ export interface NodeError {
  * workflow, which node, and then — nested inside ``output`` — exactly what
  * the data is, all the way down.
  *  *
- *  * Kind `node_outcome` (registry v8).
+ *  * Kind `node_outcome` (registry v7).
  */
 export interface NodeOutcome {
   step?: number | null;
@@ -15322,7 +15322,7 @@ export interface RuleGovernedVariantSet {
  * a frame that already carries it (a run read response), it is elided via
  * ``output_ref`` rather than serialized twice.
  *  *
- *  * Kind `run_result` (registry v8).
+ *  * Kind `run_result` (registry v7).
  */
 export interface RunResult {
   /**
@@ -16024,7 +16024,7 @@ export interface SeoKeywordClassifyResult {
 /**
  * Output of ``seo.keywords.relationships.research``.
  *  *
- *  * Kind `seo_keyword_relationship_research_result` (registry v14).
+ *  * Kind `seo_keyword_relationship_research_result` (registry v13).
  */
 export interface SeoKeywordRelationshipResearchResult {
   /**
@@ -17096,7 +17096,7 @@ export interface SerpAnalysis {
  * dispatches on the nested `__kind` and renders the canonical component the
  * search pilot already built.
  *  *
- *  * Kind `serp_placement` (registry v5).
+ *  * Kind `serp_placement` (registry v4).
  */
 export interface SerpPlacement {
   /**
@@ -17248,7 +17248,7 @@ export interface SlugResult {
 }
 
 /**
- * Kind `sorted_list_result` (registry v7).
+ * Kind `sorted_list_result` (registry v6).
  */
 export interface SortedListResult {
   /**
@@ -17608,7 +17608,7 @@ export interface StudyNotes {
 }
 
 /**
- * Kind `study_notes_document` (registry v2).
+ * Kind `study_notes_document` (registry v3).
  */
 export interface StudyNotesDocument {
   /**
@@ -17756,7 +17756,7 @@ export interface StudyPlan {
 /**
  * A grounded study summary produced from source material: title, markdown body, key takeaways, and an optional trust envelope.
  *  *
- *  * Kind `study_summary` (registry v3).
+ *  * Kind `study_summary` (registry v4).
  */
 export interface StudySummary {
   /**

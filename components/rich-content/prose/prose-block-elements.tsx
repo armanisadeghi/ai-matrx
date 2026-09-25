@@ -36,7 +36,9 @@ type MarkdownCodeElementProps = React.HTMLAttributes<HTMLElement> &
 const ListItemComponent: React.FC<{
   children: React.ReactNode;
   node?: Element;
-}> = ({ children, node }) => {
+  /** A footnote item's id (`user-content-fn-1`) — references and back-links target it. */
+  id?: string;
+}> = ({ children, node, id }) => {
   // Detect direction for list item content
   const itemText =
     typeof children === "string"
@@ -60,6 +62,7 @@ const ListItemComponent: React.FC<{
   if (isTaskItem) {
     return (
       <li
+        id={id}
         className={`mb-1 ${getDirectionFontSize(itemDirection)} ${getDirectionClasses(itemDirection)}`}
         dir={itemDirection}
       >
@@ -71,6 +74,7 @@ const ListItemComponent: React.FC<{
   // For regular list items, use simple styling
   return (
     <li
+      id={id}
       className={`mb-1 ${getDirectionFontSize(itemDirection)} ${getDirectionClasses(itemDirection)}`}
       dir={itemDirection}
     >
@@ -261,7 +265,11 @@ export const PROSE_BLOCK_ELEMENTS = {
     );
   },
   li: ({ node, children, ...props }) => {
-    return <ListItemComponent node={node}>{children}</ListItemComponent>;
+    return (
+      <ListItemComponent node={node} id={props.id}>
+        {children}
+      </ListItemComponent>
+    );
   },
   h1: ({ node, children, ...props }) => {
     const headingText =

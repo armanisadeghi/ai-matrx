@@ -18,7 +18,7 @@ import { FENCE_META_KEY, splitFenceInfo } from "@/components/markdown-core/fence
 import {
   classifyInnerFenceLine,
   fenceNestsInnerFences,
-} from "@/components/markdown-core/fence-nesting";
+} from "@ai-matrx/content-ir/source";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import {
   classifyLine,
@@ -135,7 +135,7 @@ type BlockSubState =
       fenceTicks: number;
       /**
        * Open inner ```lang fences inside a ```markdown fence — the nesting
-       * rule in components/markdown-core/fence-nesting.ts (shared with
+       * rule in @ai-matrx/content-ir/source (source/fence-nesting.ts) (shared with
        * content-splitter-v2 so live and reloaded messages split the same).
        */
       nestedFences: number;
