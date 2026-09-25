@@ -13,7 +13,11 @@
 import * as React from "react";
 import dynamic from "next/dynamic";
 import type { ConvertOrigin } from "@/features/education/convert/ConvertContentDialog";
-import type { ContentSource, RichDocumentActionContextCallbacks } from "../types";
+import type {
+  ContentSource,
+  RichDocumentActionContext,
+  RichDocumentActionContextCallbacks,
+} from "../types";
 
 // ONE dynamic edge for all three dialogs (the Fragmentation Law — a set that
 // belongs to one surface compiles as one piece behind one front door), mounted
@@ -50,7 +54,10 @@ export interface DocumentDialogsHost {
   /** Merge into the actions' `callbacks`; a key is absent when unsupported. */
   callbacks: Pick<
     RichDocumentActionContextCallbacks,
-    "onRequestConvert" | "onRequestSaveTable" | "onRequestFlashcard"
+    | "onRequestConvert"
+    | "onRequestSaveTable"
+    | "onRequestFlashcard"
+    | "onRequestTextAgentAction"
   >;
   /** Render once, anywhere in the host's tree. */
   dialogs: React.ReactNode;
@@ -60,6 +67,12 @@ export function useDocumentDialogsHost(args: {
   /** Lineage origin for convert; null leaves convert absent. */
   convertOrigin: ConvertOrigin | null;
   text: string;
+  /**
+   * True when the source can be saved back (its adapter has `edit` and it is
+   * not a structured / user-turn chat row). Only then do Clean up, Help with
+   * this and Custom agent appear — their result is reviewed and applied.
+   */
+  writable?: boolean;
 }): DocumentDialogsHost {
   const [convertOpen, setConvertOpen] = React.useState(false);
   const [convertMounted, setConvertMounted] = React.useState(false);
@@ -67,6 +80,10 @@ export function useDocumentDialogsHost(args: {
     { headers: string[]; rows: string[][] } | null
   >(null);
   const [cardAnswer, setCardAnswer] = React.useState<string | null>(null);
+  const [agentReview, setAgentReview] = React.useState<{
+    actionId: "cleanup" | "help" | "customAgent";
+    ctx: RichDocumentActionContext;
+  } | null>(null);
 
   const origin = args.convertOrigin;
   return {
@@ -79,9 +96,12 @@ export function useDocumentDialogsHost(args: {
         : undefined,
       onRequestSaveTable: (t) => setTable(t),
       onRequestFlashcard: (answer) => setCardAnswer(answer),
+      onRequestTextAgentAction: args.writable
+        ? (actionId, ctx) => setAgentReview({ actionId, ctx })
+        : undefined,
     },
     dialogs:
-      (origin && convertMounted) || table || cardAnswer !== null ? (
+      (origin && convertMounted) || table || cardAnswer !== null || agentReview ? (
         <DocumentDialogsImpl
           convert={
             origin && convertMounted
@@ -92,6 +112,8 @@ export function useDocumentDialogsHost(args: {
           onTableClose={() => setTable(null)}
           cardAnswer={cardAnswer}
           onCardClose={() => setCardAnswer(null)}
+          agentReview={agentReview}
+          onAgentReviewClose={() => setAgentReview(null)}
         />
       ) : null,
   };

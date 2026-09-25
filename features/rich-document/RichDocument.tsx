@@ -34,6 +34,7 @@ import { resolveActions } from "./actions/registry";
 // the dependency is self-documenting.)
 import "./actions/handlers";
 import { useActionSurfaceProvider } from "./runtime/useActionSurfaceProvider";
+import { getSourceAdapter } from "./actions/sources";
 import {
   convertOriginForSource,
   useDocumentDialogsHost,
@@ -205,6 +206,14 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
       source.type === "note" ? "Note" : "Chat response",
     ),
     text: content ?? "",
+    // Clean up / Help / Custom agent need somewhere to APPLY the result.
+    writable:
+      Boolean(getSourceAdapter(source.type).edit) &&
+      !(
+        actionsProp?.extensions?.type === "chat-message" &&
+        (actionsProp.extensions.contentIsStructuredRaw ||
+          actionsProp.extensions.role === "user")
+      ),
   });
   const hostedActions: RichDocumentActionsProp = {
     ...actionsProp,

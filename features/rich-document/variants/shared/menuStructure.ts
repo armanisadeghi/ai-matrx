@@ -19,6 +19,7 @@ import {
   Settings,
   GitCompareArrows,
   MessagesSquare,
+  BrainCircuit,
   type LucideIcon,
 } from "lucide-react";
 import type { RichDocumentAction } from "../../types";
@@ -44,10 +45,6 @@ export const MENU_STRUCTURE: MenuSection[] = [
     // missing). Every family of near-identical variants is ONE submenu row.
     submenu: null,
     actionIds: [
-      // A text field's own AI powers lead when its host supplies them.
-      "text-cleanup",
-      "text-help",
-      "text-custom-agent",
       "add-to-rulebook",
       "save-to-task",
       "copy",
@@ -57,6 +54,13 @@ export const MENU_STRUCTURE: MenuSection[] = [
       "summarize-for-listening",
       "convert-to-study",
     ],
+  },
+  {
+    // Review-and-apply AI powers (a text field promotes these to the top —
+    // RegistryActionList; a document keeps them one row deep).
+    submenu: "Improve with AI",
+    icon: BrainCircuit,
+    actionIds: ["text-cleanup", "text-help", "text-custom-agent"],
   },
   {
     submenu: "Save as",

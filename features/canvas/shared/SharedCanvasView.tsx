@@ -1,5 +1,6 @@
 "use client";
 
+import { RichContent } from "@/components/rich-content/RichContent";
 import { formatDistanceToNow } from "date-fns";
 import { AlertCircle, Eye, Heart, Trophy } from "lucide-react";
 import Image from "next/image";
@@ -186,7 +187,7 @@ export function SharedCanvasView({
             <div className="space-y-4 p-4">
               {canvas.description ? (
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  {canvas.description}
+                  <RichContent level="inline" source={canvas.description} />
                 </p>
               ) : null}
 

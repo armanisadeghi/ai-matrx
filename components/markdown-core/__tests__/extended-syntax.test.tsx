@@ -250,7 +250,7 @@ describe("inline marks", () => {
 
 describe("headings, anchors and the table of contents", () => {
   it("ids every heading, adds an anchor, builds the contents from [[toc]] and ::toc", async () => {
-    for (const marker of ["[[toc]]", "::toc", ":::toc\n:::"]) {
+    for (const marker of ["[[toc]]", "<!-- toc -->", "::toc", ":::toc\n:::"]) {
       const scope = await render(full(`${marker}\n\n## Loading {#sec:loading}\n\nText.\n\n## Cooling down\n\nMore.\n\nBack to @sec:loading.`));
       expect(scope.querySelector("h2#sec\\:loading")).not.toBeNull();
       expect(scope.querySelector("h2#cooling-down")).not.toBeNull();

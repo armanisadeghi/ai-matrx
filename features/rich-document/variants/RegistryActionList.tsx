@@ -50,8 +50,13 @@ export function RegistryActionList(
     onClose,
   });
 
-  const tree = buildMenuTree(menuActions(resolvedActions));
+  // A text field's own AI powers lead the list (they are its reason for the
+  // menu); everything else follows the shared tree.
+  const listed = menuActions(resolvedActions);
+  const promoted = listed.filter((a) => a.category === "ai");
+  const tree = buildMenuTree(listed.filter((a) => a.category !== "ai"));
   if (
+    promoted.length === 0 &&
     tree.topLevel.length === 0 &&
     tree.submenus.length === 0 &&
     tree.extras.length === 0
@@ -84,6 +89,7 @@ export function RegistryActionList(
 
   return (
     <div className={cn("flex flex-col", className)}>
+      {promoted.map((a) => row(a))}
       {tree.topLevel.map((a) => row(a))}
       {tree.submenus.map((submenu) => {
         const Icon = submenu.icon ?? submenu.actions[0].icon;

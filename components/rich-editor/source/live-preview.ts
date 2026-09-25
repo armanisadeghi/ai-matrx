@@ -75,11 +75,11 @@ class IslandWidget extends WidgetType {
     super();
   }
 
-  eq(other: IslandWidget): boolean {
+  override eq(other: IslandWidget): boolean {
     return other.raw === this.raw && other.islandType === this.islandType;
   }
 
-  toDOM(view: EditorView): HTMLElement {
+  override toDOM(view: EditorView): HTMLElement {
     const element = document.createElement("div");
     element.className = "cm-rich-island";
     element.setAttribute("role", "button");
@@ -93,15 +93,15 @@ class IslandWidget extends WidgetType {
     return element;
   }
 
-  destroy(dom: HTMLElement): void {
+  override destroy(dom: HTMLElement): void {
     this.registry.remove(dom);
   }
 
-  get estimatedHeight(): number {
+  override get estimatedHeight(): number {
     return 80;
   }
 
-  ignoreEvent(): boolean {
+  override ignoreEvent(): boolean {
     return false;
   }
 }
@@ -186,7 +186,7 @@ function previewDecorations(view: EditorView): DecorationSet {
     syntaxTree(state).iterate({
       from,
       to,
-      enter: (node) => {
+      enter: (node): boolean | undefined => {
         const name = node.name;
         if (/^ATXHeading(\d)$/.test(name)) {
           const level = name.slice(-1);
@@ -205,17 +205,18 @@ function previewDecorations(view: EditorView): DecorationSet {
         if (name === "URL" && node.node.parent?.name === "Link") {
           const line = state.doc.lineAt(node.from).number;
           if (!active.has(line)) ranges.push({ from: node.from - 1, to: node.to + 1, deco: hideMark });
-          return;
+          return undefined;
         }
         if (HIDDEN_MARKS.has(name)) {
-          if (name === "CodeMark" && node.node.parent?.name !== "InlineCode") return;
-          if (name === "LinkMark" && node.node.parent?.name !== "Link") return;
+          if (name === "CodeMark" && node.node.parent?.name !== "InlineCode") return undefined;
+          if (name === "LinkMark" && node.node.parent?.name !== "Link") return undefined;
+          const mark = state.sliceDoc(node.from, node.to);
+          if (name === "LinkMark" && (mark === "(" || mark === ")")) return undefined;
           const line = state.doc.lineAt(node.from).number;
-          if (name === "LinkMark" && state.sliceDoc(node.from, node.to) === "(") return;
-          if (name === "LinkMark" && state.sliceDoc(node.from, node.to) === ")") return;
           const end = name === "HeaderMark" && state.sliceDoc(node.to, node.to + 1) === " " ? node.to + 1 : node.to;
           ranges.push({ from: node.from, to: end, deco: active.has(line) ? dimMark : hideMark });
         }
+        return undefined;
       },
     });
   }

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { cache } from "react";
 import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import { siteConfig } from "@/config/extras/site";
@@ -7,7 +7,14 @@ import {
   buildCanvasDescription,
 } from "@/features/canvas/canvas-block-meta";
 import { resolveSharedCanvas } from "@/features/canvas/shared/resolveSharedCanvas";
+import { markdownToPlainText } from "@/lib/markdown/plain-text";
+import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
 import { SharedCanvasViewClient } from "./SharedCanvasViewClient";
+
+/** One read per request: generateMetadata and the page share it. */
+const loadSharedCanvas = cache(async (token: string) =>
+  resolveSharedCanvas(token, await createClient()),
+);
 
 interface PageProps {
   params: Promise<{
@@ -19,9 +26,7 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { token } = await params;
-  const supabase = await createClient();
-
-  const canvas = await resolveSharedCanvas(token, supabase);
+  const canvas = await loadSharedCanvas(token);
 
   if (!canvas) {
     return {
@@ -34,8 +39,10 @@ export async function generateMetadata({
   const creator =
     canvas.creator_display_name ?? canvas.creator_username ?? null;
   const pageTitle = `${canvas.title} | ${meta.label} on AI Matrx`;
+  // Meta descriptions are WORDS: a markdown description would show its
+  // asterisks and `\(…\)` in search results and link previews.
   const description =
-    canvas.description ||
+    markdownToPlainText(canvas.description) ||
     buildCanvasDescription(
       canvas.canvas_type ?? "canvas",
       canvas.title,
@@ -100,6 +107,22 @@ export async function generateMetadata({
 }
 
 export default async function SharedCanvasPage({ params }: PageProps) {
-  const resolvedParams = await params;
-  return <SharedCanvasViewClient shareToken={resolvedParams.token} />;
+  const { token } = await params;
+  // The canvas itself is interactive and client-rendered; its title and
+  // description are rendered HERE, on the server, through the one
+  // rich-content core, so they are in the HTML a crawler (or a reader
+  // without JavaScript) receives. The client view replaces this summary once
+  // it mounts. resolveSharedCanvas is the same read generateMetadata makes.
+  const canvas = await loadSharedCanvas(token);
+  const summary = canvas ? (
+    <header className="mx-auto max-w-3xl px-4 py-10">
+      <h1 className="text-2xl font-semibold text-foreground">{canvas.title}</h1>
+      {canvas.description ? (
+        <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+          <RichContentServer level="inline" source={canvas.description} />
+        </p>
+      ) : null}
+    </header>
+  ) : null;
+  return <SharedCanvasViewClient shareToken={token} serverSummary={summary} />;
 }

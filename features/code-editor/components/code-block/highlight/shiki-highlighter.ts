@@ -15,7 +15,7 @@
 import { createHighlighterCore, type HighlighterCore } from "shiki/core";
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 import { bundledLanguages, bundledLanguagesAlias } from "shiki/langs";
-import type { ThemeRegistrationRaw } from "shiki/core";
+import type { ThemeRegistration } from "shiki/core";
 import { JSON_SYNTAX_COLORS } from "@/features/code-editor/config/syntax-themes";
 
 export const SHIKI_THEME = { light: "matrx-light", dark: "matrx-dark" } as const;
@@ -75,16 +75,19 @@ function jsonScopes(palette: (typeof JSON_SYNTAX_COLORS)["dark"]) {
 }
 
 async function loadTheme(
-  base: Promise<{ default: ThemeRegistrationRaw }>,
+  base: Promise<{ default: ThemeRegistration }>,
   name: string,
   palette: (typeof JSON_SYNTAX_COLORS)["dark"],
-): Promise<ThemeRegistrationRaw> {
+): Promise<ThemeRegistration> {
   const theme = (await base).default;
   return {
     ...theme,
     name,
-    settings: [...(theme.settings ?? theme.tokenColors ?? []), ...jsonScopes(palette)],
-    tokenColors: undefined,
+    tokenColors: [
+      ...(theme.tokenColors ?? theme.settings ?? []),
+      ...jsonScopes(palette),
+    ],
+    settings: undefined,
   };
 }
 

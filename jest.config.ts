@@ -74,6 +74,13 @@ const config: Config = {
             "ts-jest",
             { tsconfig: { rootDir: ".", allowJs: true } },
         ],
+        // Shiki (the ONE code highlighter) and its @shikijs/* packages ship
+        // ESM-only `.mjs`; compile them like any other dependency JS so code
+        // view tests run the real highlighter instead of a stub.
+        "^.+\\.mjs$": [
+            "ts-jest",
+            { tsconfig: { rootDir: ".", allowJs: true, module: "commonjs" } },
+        ],
     },
     setupFiles: ["<rootDir>/jest.setup.ts"],
     // CSS / static assets have no Jest loader. Without these, a side-effect
@@ -86,6 +93,13 @@ const config: Config = {
         "\\.(css|less|sass|scss)$": "<rootDir>/test-utils/style-mock.ts",
         "\\.(gif|ttf|eot|otf|woff|woff2|png|jpe?g|webp|avif|mp4|webm|wav|mp3|m4a|aac|oga)$":
             "<rootDir>/test-utils/style-mock.ts",
+        // Shiki's subpath `exports` (import-only) — Jest's resolver does not
+        // read `exports`, so each subpath the code imports maps to its file.
+        "^shiki/(core|langs|themes)$": "<rootDir>/node_modules/shiki/dist/$1.mjs",
+        "^shiki/engine/javascript$":
+            "<rootDir>/node_modules/shiki/dist/engine-javascript.mjs",
+        "^@shikijs/(themes|langs)/(.+)$":
+            "<rootDir>/node_modules/@shikijs/$1/dist/$2.mjs",
         // `remend` (the streaming markdown healer) ships an import-only
         // `exports` map, which Jest's resolver does not read.
         "^remend$": "<rootDir>/node_modules/remend/dist/index.js",
@@ -161,7 +175,7 @@ const config: Config = {
     // Babel 8 publishes ESM, including the AST helpers exercised by the
     // viewport-breakpoint migration tests. Transform it with the same loader.
     transformIgnorePatterns: [
-      "/node_modules/(?!\\.pnpm/|@ai-matrx|@babel|human-id|uuid|unist|hast|mdast|micromark|remend|marked|react-markdown|is-plain-obj|escape-string-regexp|remark|rehype|unified|vfile|property-information|space-separated-tokens|comma-separated-tokens|web-namespaces|zwitch|html-void-elements|html-url-attributes|ccount|character-entities|character-reference-invalid|decode-named-character-reference|stringify-entities|parse-entities|trim-lines|bail|trough|devlop|longest-streak|markdown-table|estree|mathml-tag-names|parse5|gemoji|github-slugger|smol-toml|fault|format|is-decimal|is-hexadecimal|is-alphanumerical|is-alphabetical).+\\.js$",
+      "/node_modules/(?!\\.pnpm/|@ai-matrx|shiki|@shikijs|@babel|human-id|uuid|unist|hast|mdast|micromark|remend|marked|react-markdown|is-plain-obj|escape-string-regexp|remark|rehype|unified|vfile|property-information|space-separated-tokens|comma-separated-tokens|web-namespaces|zwitch|html-void-elements|html-url-attributes|ccount|character-entities|character-reference-invalid|decode-named-character-reference|stringify-entities|parse-entities|trim-lines|bail|trough|devlop|longest-streak|markdown-table|estree|mathml-tag-names|parse5|gemoji|github-slugger|smol-toml|fault|format|is-decimal|is-hexadecimal|is-alphanumerical|is-alphabetical).+\\.js$",
     ],
     testPathIgnorePatterns: [
         "/node_modules/",

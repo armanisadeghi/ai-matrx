@@ -12,7 +12,13 @@ import { ShikiCodeView } from "../ShikiCodeView";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const DISPATCH = `export function assignRoute(stop: PickupStop) {
+// The block comment spans lines, so a tokenizer that loses its grammar state
+// between streamed chunks colors its middle lines as code, not comment.
+const DISPATCH = `/**
+ * Assign a curbside pickup to the nearest truck with room.
+ * Returns the truck id, or null when every truck is full.
+ */
+export function assignRoute(stop: PickupStop) {
   const truck = nearestTruck(stop.zip);
   if (!truck) return null;
   truck.stops.push(stop);
@@ -64,7 +70,7 @@ function colorsByText(): string[] {
 it("colors TypeScript tokens and marks the fence's highlighted lines", async () => {
   await act(async () => {
     root.render(
-      <ShikiCodeView code={DISPATCH} language="ts" mode="dark" highlightLines={[2, 4, 5]} />,
+      <ShikiCodeView code={DISPATCH} language="ts" mode="dark" highlightLines={[6, 8, 9]} />,
     );
   });
   await waitFor(() => colored().length > 5, "Shiki token colors");
@@ -76,7 +82,7 @@ it("colors TypeScript tokens and marks the fence's highlighted lines", async () 
   const marked = Array.from(container.querySelectorAll("[data-highlighted]")).map((el) =>
     el.getAttribute("data-line"),
   );
-  expect(marked).toEqual(["2", "4", "5"]);
+  expect(marked).toEqual(["6", "8", "9"]);
 });
 
 it("tints unified-diff lines by their marker and starts numbering where the fence says", async () => {

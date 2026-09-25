@@ -2,7 +2,7 @@
  * Remark plugin: renders a markdown page-break directive as a visible
  * "Page break" divider — the on-screen half of the print system's page break.
  *
- * The grammar is NOT defined here. It is `isPageBreakLine` from
+ * The grammar is NOT defined here. It is `isBreakLine` (page OR section break) from
  * `@ai-matrx/print/directives` — the same function the print converters use,
  * so what previews as a page break is exactly what prints as one:
  *
@@ -31,7 +31,9 @@
 import {
   PAGE_BREAK_CLASS,
   PAGE_BREAK_LABEL,
-  isPageBreakLine,
+  // A section break (`<!-- section landscape -->`) starts a new page too, so
+  // the screen divides exactly where paper does.
+  isBreakLine,
 } from "@ai-matrx/print/directives";
 
 interface MdastNode {
@@ -67,7 +69,7 @@ export function isolatePageBreakLines(source: string): string {
       out.push(line);
       continue;
     }
-    if (fence === null && isPageBreakLine(line)) {
+    if (fence === null && isBreakLine(line)) {
       if (out.length > 0 && (out[out.length - 1] ?? "").trim() !== "") out.push("");
       out.push(line, "");
       changed = true;
@@ -153,11 +155,11 @@ function isDirectiveNode(node: MdastNode, file: SourceFile | undefined): boolean
   const raw = rawSource(node, file);
   // The chat's prose preparation escapes non-allow-listed tags to entities
   // (`<div …>` → `&lt;div …&gt;`); undo exactly that before judging the line.
-  if (raw !== null) return isPageBreakLine(decodeTagEntities(raw));
+  if (raw !== null) return isBreakLine(decodeTagEntities(raw));
   // No positions (a caller built the tree by hand): judge the parsed text.
-  if (node.type === "html") return isPageBreakLine(node.value ?? "");
+  if (node.type === "html") return isBreakLine(node.value ?? "");
   if (!node.children?.length || !node.children.every((c) => c.type === "text")) return false;
-  return isPageBreakLine(node.children.map((c) => c.value ?? "").join(""));
+  return isBreakLine(node.children.map((c) => c.value ?? "").join(""));
 }
 
 export default function remarkMatrxPageBreak() {

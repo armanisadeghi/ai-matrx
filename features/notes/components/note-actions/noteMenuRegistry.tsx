@@ -4,7 +4,8 @@
  * noteMenuRegistry — builds the `ItemMenuConfig` for note-row menus.
  *
  * `buildNoteMenu(ctx)` returns the full "..." menu (Rename / Duplicate /
- * Share / Add to knowledge base / Export as Markdown / Move to Folder /
+ * Share / Add to knowledge base / Export as Markdown / Print or export as
+ * document / Move to Folder /
  * Delete) consumed by `<ItemRow menu={…}>` in the notes sidebar — the same
  * kebab + right-click primitive the chat sidebar uses for conversations
  * (see conversationActionRegistry.tsx). Rename is an `intent: "rename"`
@@ -26,6 +27,7 @@ import {
   FolderPlus,
   Database,
   Trash2,
+  Printer,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { renameIntentFallback } from "@/components/official/item/renameIntentFallback";
@@ -308,6 +310,16 @@ export function buildNoteMenu(ctx: NoteMenuContext): ItemMenuConfig {
                 .catch(() => {
                   toast.error("Could not load this note to export it. Try again.");
                 });
+            },
+          },
+          {
+            id: "print-document",
+            label: "Print or export as document…",
+            icon: Printer,
+            // The print studio: real pages, cover/TOC/header/footer from the
+            // note's settings block, and PDF / Word / EPUB / HTML downloads.
+            onSelect: () => {
+              window.open(`/print/documents?note=${encodeURIComponent(ctx.noteId)}`, "_blank", "noopener");
             },
           },
           {

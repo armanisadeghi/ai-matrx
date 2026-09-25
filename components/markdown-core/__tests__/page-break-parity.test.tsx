@@ -60,6 +60,9 @@ const FORMS = [
   "<!-- pagebreak -->",
   "\\newpage",
   '<div style="page-break-after: always"></div>',
+  // A section break starts a new printed page (and may change orientation);
+  // the screen must divide there too, or preview and paper disagree.
+  "<!-- section landscape columns=2 -->",
 ];
 
 const RENDERERS: Array<{ name: string; render: (s: string) => React.ReactElement }> = [

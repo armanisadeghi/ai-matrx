@@ -22,6 +22,7 @@
 // preset table (markdown-core-presets.ts).
 // ─────────────────────────────────────────────────────────────────────────
 
+import { isTocLine } from "@ai-matrx/print/directives";
 import { extractFrontmatter } from "./frontmatter";
 import { transformContainers } from "./containers";
 import { transformInline, type InlineContext, type XrefTarget } from "./inline-syntax";
@@ -260,16 +261,20 @@ function resolveMathRefs(tree: MNode, xrefs: Map<string, XrefTarget>): void {
 
 // ── 7b. `[[toc]]` paragraphs ────────────────────────────────────────────
 
-function applyTocMarkers(tree: MNode): void {
+/**
+ * A table-of-contents line — the PRINT grammar (`isTocLine` from
+ * `@ai-matrx/print/directives`: `[[toc]]` canonical, `[toc]`, `\${toc}`,
+ * `<!-- toc -->`, `\\tableofcontents`), so what previews as contents is what
+ * prints as contents. `::toc` / `:::toc` (the directive grammar) also work.
+ */
+function applyTocMarkers(tree: MNode, file: SyntaxFile | undefined): void {
   walkParents(tree, (parent) => {
     const children = parent.children ?? [];
     for (let i = 0; i < children.length; i++) {
       const child = children[i] as MNode;
-      if (child.type !== "paragraph" || child.children?.length !== 1) continue;
-      const only = child.children[0];
-      if (only?.type === "text" && /^\s*\[\[\s*toc\s*\]\]\s*$/i.test(only.value ?? "")) {
-        children[i] = el("matrx-toc", {}, [], "matrxToc");
-      }
+      if (child.type !== "paragraph" && child.type !== "html") continue;
+      const raw = rawOf(child, file) ?? (child.type === "html" ? (child.value ?? "") : toText(child));
+      if (!raw.includes("\n") && isTocLine(raw)) children[i] = el("matrx-toc", {}, [], "matrxToc");
     }
   });
 }
@@ -360,7 +365,7 @@ export default function remarkMatrxSyntax() {
     tagDefinitionLists(tree);
     const abbrs = collectAbbreviations(tree, file);
     applyHeadingIds(tree);
-    applyTocMarkers(tree);
+    applyTocMarkers(tree, file);
     const xrefs = numberTargets(tree);
     resolveMathRefs(tree, xrefs);
     const { defined, referenced } = footnoteIds(tree);

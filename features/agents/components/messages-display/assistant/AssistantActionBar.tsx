@@ -443,6 +443,8 @@ export function AssistantActionBar({
         "Chat response",
     ),
     text: copySpeakContent,
+    // An assistant turn saves back to its row (structured payloads never).
+    writable: !inspectable.isStructuredRaw,
   });
 
   // THE ONE chat → registry builder (shared with the proving route).

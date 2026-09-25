@@ -16,6 +16,8 @@ import SaveTableModal from "@/components/mardown-display/tables/SaveTableModal";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { DocumentAgentReview } from "./DocumentAgentReview";
+import type { RichDocumentActionContext } from "../types";
 
 /** The deck every "Save as flashcard" lands in — one per person. */
 const SAVED_CARDS_DECK = "Saved cards";
@@ -67,12 +69,25 @@ export interface DocumentDialogsImplProps {
   onTableClose: () => void;
   cardAnswer: string | null;
   onCardClose: () => void;
+  agentReview: {
+    actionId: "cleanup" | "help" | "customAgent";
+    ctx: RichDocumentActionContext;
+  } | null;
+  onAgentReviewClose: () => void;
 }
 
 export default function DocumentDialogsImpl(
   props: DocumentDialogsImplProps,
 ): React.ReactElement {
-  const { convert, table, onTableClose, cardAnswer, onCardClose } = props;
+  const {
+    convert,
+    table,
+    onTableClose,
+    cardAnswer,
+    onCardClose,
+    agentReview,
+    onAgentReviewClose,
+  } = props;
   const [savingCard, setSavingCard] = React.useState(false);
   return (
     <>
@@ -91,6 +106,13 @@ export default function DocumentDialogsImpl(
           tableData={table.rows.map((row) =>
             Object.fromEntries(table.headers.map((h, i) => [h, row[i] ?? ""])),
           )}
+        />
+      ) : null}
+      {agentReview ? (
+        <DocumentAgentReview
+          actionId={agentReview.actionId}
+          ctx={agentReview.ctx}
+          onClose={onAgentReviewClose}
         />
       ) : null}
       {cardAnswer !== null ? (

@@ -32,8 +32,8 @@ import type { HeaderAction, HeaderOption } from "../types";
 interface HeaderToggleProps<T extends string = string> {
   /** Show back chevron */
   back?: boolean | (() => void);
-  /** Exactly 2 options */
-  options: [HeaderOption<T>, HeaderOption<T>];
+  /** Two or three options (a three-way switch: Markdown Studio's Studio · Analysis · Editor). */
+  options: [HeaderOption<T>, HeaderOption<T>] | [HeaderOption<T>, HeaderOption<T>, HeaderOption<T>];
   /** Currently active value */
   active: T;
   /** Toggle change handler */

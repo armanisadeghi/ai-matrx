@@ -328,7 +328,10 @@ export interface RichDocumentActionContextCallbacks {
    * agent). Only a host that can APPLY a result back into the text supplies
    * it — ProTextarea today — so elsewhere those actions are absent.
    */
-  onRequestTextAgentAction?: (actionId: "cleanup" | "help" | "customAgent") => void;
+  onRequestTextAgentAction?: (
+    actionId: "cleanup" | "help" | "customAgent",
+    ctx: RichDocumentActionContext,
+  ) => void;
 }
 
 export interface RichDocumentActionContext {
