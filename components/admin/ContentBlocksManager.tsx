@@ -2582,9 +2582,9 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
             <AlertDialogDescription>
               {deleteConfirmation.type === "block" ? (
                 <>
-                  Are you sure you want to delete{" "}
-                  <strong>"{deleteConfirmation.item?.label}"</strong>? This
-                  action cannot be undone.
+                  This archives{" "}
+                  <strong>"{deleteConfirmation.item?.label}"</strong>. It stops
+                  appearing in the block library; an admin can restore it.
                 </>
               ) : deleteConfirmation.hasChildren ||
                 (deleteConfirmation.hasBlocks &&
@@ -2607,9 +2607,9 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                 </>
               ) : (
                 <>
-                  Are you sure you want to delete the category{" "}
-                  <strong>"{deleteConfirmation.item?.label}"</strong>? This
-                  action cannot be undone.
+                  This archives the category{" "}
+                  <strong>"{deleteConfirmation.item?.label}"</strong>. It stops
+                  appearing in the block library; an admin can restore it.
                 </>
               )}
             </AlertDialogDescription>
