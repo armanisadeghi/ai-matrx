@@ -7,7 +7,8 @@
  * prose, a visual editor can reflow code the reader sees as code. So for every
  * generated document — backtick and tilde fences, nested ```markdown, and the
  * exotic whitespace the RC-B3 re-verification used (U+FEFF, U+00A0, U+0085,
- * U+2028, tabs) — every non-text block the renderer produces must sit inside
+ * U+2028, tabs), plus list, list-marker, blockquote and JSON-string fences
+ * (RC-B10 one code-range rule) — every non-text block the renderer produces must sit inside
  * ONE tokenizer island. The tokenizer may lock MORE (it treats ~~~ as a fence
  * the way remark renders it); it may never lock less. (verify-RC-B3 residual R5.)
  *
@@ -39,6 +40,11 @@ const LINES = [
   `${F}python`, `${F}js`, `${F}markdown`, `${F}md`, `${F}mermaid`, `${F}`, "````", "````md", "~~~", "~~~py",
   "print(1)", "const a = 1;", "# Heading", "Some prose sentence.", "- a list item", "", "", "x = y + 1",
   "graph TD; A-->B", "more words here", `x ${F}`, `}${F}`,
+  // Containers (RC-B10 ruling — THE code-range rule is the renderer's): fences
+  // inside list items at any indent, on a list-marker line, in a blockquote;
+  // a fence inside a JSON string; a tilde fence under a list item.
+  `    ${F}python`, `      ${F}js`, `    ${F}`, "1. first step", "   - nested item", `- ${F}sh`, `> ${F}`, "> quoted code",
+  `{"a": "${F}"}`, `${F}json`, "   ~~~",
 ];
 
 function randomDoc(random: () => number, lines: number): string {
