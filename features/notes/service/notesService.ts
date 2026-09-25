@@ -963,6 +963,7 @@ export async function deleteFolderNotes(folder: FolderReference): Promise<number
   // client under RLS (`deleted_at IS NULL`), so a same-name recreate could
   // neither insert (conflict) nor see/revive it. Hard delete keeps the natural
   // key free for reuse. (The notes themselves stay soft-deleted / recoverable.)
+  // write-lands-exempt: the folder registry row is materialized on demand and may not exist; the notes above are the real work
   await supabase
     .schema("workbench")
     .from("note_folders")

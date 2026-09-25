@@ -12,6 +12,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { schedulerDb } from "@/utils/supabase/schedulerDb";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { pgErrorToError } from "@ai-matrx/data";
 import { mergeJsonColumn, readAllRows } from "@ai-matrx/data/db";
 import type { Database, Json } from "@/types/database.types";
@@ -391,11 +392,15 @@ export async function updateAgentTaskFields(
   patch: AgentTaskFieldsPatch,
 ): Promise<void> {
   if (Object.keys(patch).length === 0) return;
-  const { error } = await schedulerDb(supabase)
-    .schema("scheduler")
-    .from("sch_agent_task")
-    .update(patch)
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    schedulerDb(supabase)
+      .schema("scheduler")
+      .from("sch_agent_task")
+      .update(patch)
+      .eq("id", id)
+      .select("id"),
+    { action: "save", noun: "scheduled task" },
+  );
   if (error) throw pgErrorToError(error);
 }
 

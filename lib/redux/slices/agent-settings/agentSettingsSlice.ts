@@ -13,6 +13,7 @@
 
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 import { createClient } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import {
   selectModelById,
@@ -415,29 +416,37 @@ export const saveAgentSettings = createAsyncThunk(
       if (entry.source === "builtin") {
         // prompt_builtins migrated 1:1 to agent.definition (agent_type='builtin'), same UUIDs.
         // agent.definition uses `variable_definitions` instead of `variable_defaults`.
-        const result = await supabase
-          .schema("agent")
-          .from("definition")
-          .update({
-            settings: settingsToSave,
-            variable_definitions: entry.variable_defaults,
-            updated_at: now,
-          })
-          .eq("id", agentId);
+        const result = await tryWriteOne(
+          supabase
+            .schema("agent")
+            .from("definition")
+            .update({
+              settings: settingsToSave,
+              variable_definitions: entry.variable_defaults,
+              updated_at: now,
+            })
+            .eq("id", agentId)
+            .select("id"),
+          { action: "save", noun: "agent" },
+        );
         error = result.error;
       } else {
         // user prompts migrated 1:1 to agent.definition (agent_type='user'), same UUIDs.
         // agent.definition uses `variable_definitions` instead of `variable_defaults`.
-        const result = await supabase
-          .schema("agent")
-          .from("definition")
-          .update({
-            settings: settingsToSave,
-            variable_definitions: entry.variable_defaults,
-            updated_at: now,
-          })
-          .eq("id", agentId)
-          .eq("agent_type", "user");
+        const result = await tryWriteOne(
+          supabase
+            .schema("agent")
+            .from("definition")
+            .update({
+              settings: settingsToSave,
+              variable_definitions: entry.variable_defaults,
+              updated_at: now,
+            })
+            .eq("id", agentId)
+            .eq("agent_type", "user")
+            .select("id"),
+          { action: "save", noun: "agent" },
+        );
         error = result.error;
       }
 

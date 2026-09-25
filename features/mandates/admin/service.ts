@@ -12,6 +12,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { invalidateMandateCache } from "@/features/mandates/service";
 /** The ad-hoc run path + its transport shapes moved down to the shared
@@ -859,12 +860,15 @@ export async function softDeleteMandate(mandateId: string): Promise<void> {
 
 export async function deleteMandateExemplar(id: string): Promise<void> {
   const supabase = createClient();
-  const { error } = await supabase
-    .schema("agent")
-    .from("exemplar")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) throw error;
+  await writeOne(
+    supabase
+      .schema("agent")
+      .from("exemplar")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "exemplar" },
+  );
 }
 
 /** All bench transport shapes come from aidream's generated OpenAPI contract. */

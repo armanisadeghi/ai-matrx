@@ -12,6 +12,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { callApi, type ApiCallConfig } from "@/lib/api/call-api";
 import type { paths } from "@/types/python-generated/api-types";
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 import type { ComparisonRow } from "./types";
 
@@ -53,16 +54,20 @@ export async function saveVerdict(args: {
   notes: string;
   userId: string | null;
 }): Promise<void> {
-  const { error } = await supabase
-    .schema("workflow")
-    .from("comparison")
-    .update({
-      verdict_winner: args.winnerLabel,
-      verdict_notes: args.notes || null,
-      verdict_at: args.winnerLabel ? new Date().toISOString() : null,
-      verdict_by: args.winnerLabel ? args.userId : null,
-    })
-    .eq("id", args.comparisonId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("workflow")
+      .from("comparison")
+      .update({
+        verdict_winner: args.winnerLabel,
+        verdict_notes: args.notes || null,
+        verdict_at: args.winnerLabel ? new Date().toISOString() : null,
+        verdict_by: args.winnerLabel ? args.userId : null,
+      })
+      .eq("id", args.comparisonId)
+      .select("id"),
+    { action: "save", noun: "verdict" },
+  );
   if (error) throw new Error(`Could not save the verdict: ${error.message}`);
 }
 

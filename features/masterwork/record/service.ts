@@ -542,6 +542,7 @@ export async function ensureInterviewTitle(args: {
   if (!data) return;
   const current = (data.title ?? "").trim();
   if (current && !current.startsWith("Auto:")) return;
+  // write-lands-exempt: best-effort auto-title upgrade; the conversation keeps its old title and nothing depends on it
   await supabase
     .schema("chat")
     .from("conversation")

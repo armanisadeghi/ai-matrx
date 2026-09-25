@@ -175,6 +175,7 @@ export async function ensureConductorTitle(args: {
     undefined,
     { month: "short", day: "numeric", year: "numeric" },
   );
+  // write-lands-exempt: best-effort auto-title upgrade; the conversation keeps its old title and nothing depends on it
   await supabase
     .schema("chat")
     .from("conversation")

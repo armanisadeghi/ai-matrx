@@ -2,6 +2,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
@@ -509,10 +510,14 @@ export async function updateTaskLabels(
       ...((current?.settings as Record<string, unknown> | null) ?? {}),
       labels,
     };
-    const { error } = await workspaceDb(supabase)
-      .from("tasks")
-      .update({ settings })
-      .eq("id", taskId);
+    const { error } = await tryWriteOne(
+      workspaceDb(supabase)
+        .from("tasks")
+        .update({ settings })
+        .eq("id", taskId)
+        .select("id"),
+      { action: "update", noun: "task" },
+    );
     if (error) {
       console.error("Error updating task labels:", error.message);
       return false;
