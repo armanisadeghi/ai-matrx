@@ -1064,7 +1064,9 @@ function StatusBanner({
             Healthy
           </span>
           <span className="text-muted-foreground">
-            System agent,{" "}
+            {holderOfMandate(row.mandate).holderType === "workflow"
+              ? `Workflow ${row.agentName}, `
+              : "System agent, "}
             {isFloatingMandate(row.mandate)
               ? "tracking the latest version"
               : "pin is up to date"}
@@ -1074,6 +1076,30 @@ function StatusBanner({
       );
     case "not a system agent":
       return <NonSystemPanel row={row} lineage={lineage} onSaved={onSaved} />;
+    case "workflow archived":
+      return (
+        <div className="space-y-2 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 text-xs">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+            <div className="min-w-0">
+              <div className="font-medium text-rose-600">
+                The workflow holding this job is archived.
+              </div>
+              <div className="mt-0.5 text-muted-foreground">
+                {HEALTH_HINT["workflow archived"]}
+              </div>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            onClick={onOpenRebind}
+          >
+            Choose a replacement
+          </Button>
+        </div>
+      );
     case "agent archived":
       return (
         <div className="space-y-2 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 text-xs">

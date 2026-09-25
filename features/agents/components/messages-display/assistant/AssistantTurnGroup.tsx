@@ -38,7 +38,8 @@ import { useCallback, useEffect } from "react";
 import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
 import { AgentAssistantMessage } from "./AgentAssistantMessage";
 import { AssistantMessageFooter } from "./AssistantMessageFooter";
-import { collapseByRequestId } from "./collapse-by-request-id";
+import { membersForRender } from "./collapse-by-request-id";
+import { useAppSelector } from "@/lib/redux/hooks";
 import {
   AgentWorkTurnProvider,
   AgentWorkMemberScope,
@@ -80,7 +81,17 @@ export function AssistantTurnGroup({
 }: AssistantTurnGroupProps) {
   const { captureRef, isCapturing, captureAsPDF } = useDomCapturePrint();
 
-  const members = collapseByRequestId(rawMembers);
+  // While a person edits (or has edited) any row of this turn, render it
+  // from its persisted rows so that row has its own spot — see
+  // `membersForRender`. A primitive boolean: no memoization needed.
+  const persistedView = useAppSelector((state) =>
+    rawMembers.some((m) => {
+      if (!m.messageId || m.isStreamActive) return false;
+      const row = state.messages.byConversationId[conversationId]?.byId?.[m.messageId];
+      return row?._editingInPlace === true || row?.status === "edited";
+    }),
+  );
+  const members = membersForRender(rawMembers, persistedView);
 
   // The "answer anchor" for this group: the latest assistant member with
   // a real messageId. The trailing action bar binds Edit / Like / Delete

@@ -200,7 +200,12 @@ export function createMandateAdminService(
         const page = await callMandateAdminList<MandateAdminPageAnswer>(args);
         const definitions =
           page.rows.length > 0
-            ? await fetchMandateConsoleData({ mandateKeys: page.rows.map((row) => row.mandate_key) })
+            ? await fetchMandateConsoleData({
+                mandateKeys: page.rows.map((row) => row.mandate_key),
+                // The page already names the ids, so the bindings read runs
+                // beside the definitions read instead of after it.
+                mandateIds: page.rows.map((row) => row.id),
+              })
             : null;
         return { answer: page, data: definitions };
       });

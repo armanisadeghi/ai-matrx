@@ -138,6 +138,13 @@ export function MandateMemberPeek({
                 href={agentHref(row.holderId, null)}
                 showIcon={false}
               />
+            ) : row.holderType === "workflow" && row.holderId ? (
+              <EntityRef
+                token="workflow"
+                id={row.holderId}
+                name={row.holderName}
+                showIcon={false}
+              />
             ) : (
               <span className={row.holderId ? "" : "text-muted-foreground"}>{row.holderName}</span>
             )}

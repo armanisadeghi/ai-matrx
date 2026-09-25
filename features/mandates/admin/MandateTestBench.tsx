@@ -365,12 +365,20 @@ function CandidateEditor({
   mandate,
   draft,
   defaultAgentId,
+  workflowHeld = false,
   onChange,
   onRemove,
 }: {
   mandate: MandateDefinitionRow;
   draft: CandidateDraft;
   defaultAgentId: string | null;
+  /**
+   * WORKFLOW PARITY (2026-09-25): the job is held by a workflow. Every other
+   * selection NAMES an agent (the server refuses them for a workflow holder),
+   * and a workflow's steps carry their own model settings — so the row offers
+   * exactly what can run: the current workflow.
+   */
+  workflowHeld?: boolean;
   onChange: (next: CandidateDraft) => void;
   onRemove: () => void;
 }) {
@@ -474,7 +482,9 @@ function CandidateEditor({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {(Object.keys(SELECTION_LABEL) as CandidateSelection[]).map(
+            {(Object.keys(SELECTION_LABEL) as CandidateSelection[])
+              .filter((selection) => !workflowHeld || selection === "current")
+              .map(
               (selection) => (
                 <SelectItem
                   key={selection}
@@ -484,7 +494,9 @@ function CandidateEditor({
                     !holderOfMandate(mandate).versionId
                   }
                 >
-                  {SELECTION_LABEL[selection]}
+                  {workflowHeld && selection === "current"
+                    ? "Current workflow"
+                    : SELECTION_LABEL[selection]}
                 </SelectItem>
               ),
             )}
@@ -540,6 +552,11 @@ function CandidateEditor({
           </Select>
         )}
 
+        {workflowHeld ? (
+          <span className="text-[11px] text-muted-foreground">
+            Runs the workflow as bound — its steps carry their own settings.
+          </span>
+        ) : (
         <Button
           size="sm"
           variant={overriddenCount > 0 ? "secondary" : "ghost"}
@@ -551,6 +568,7 @@ function CandidateEditor({
             ? `Comparison overrides (${overriddenCount})`
             : "Comparison overrides"}
         </Button>
+        )}
 
         <Button
           size="icon"
@@ -638,7 +656,13 @@ export function MandateTestBench({
   const [exemplarReadError, setExemplarReadError] = useState<string | null>(null);
   const [defaultAgentId, setDefaultAgentId] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<CandidateDraft[]>(() =>
-    presetLatestCandidate ? [latestCandidate()] : [],
+    presetLatestCandidate
+      ? [
+          effectiveHolder.holderType === "workflow"
+            ? newCandidate()
+            : latestCandidate(),
+        ]
+      : [],
   );
   // The mandate's declared inputs — shown beside the composer so a test case can
   // be written without guessing the variable names.
@@ -1118,6 +1142,7 @@ export function MandateTestBench({
               mandate={mandate}
               draft={candidate}
               defaultAgentId={defaultAgentId}
+              workflowHeld={effectiveHolder.holderType === "workflow"}
               onChange={(next) => updateCandidate(candidate.draftId, next)}
               onRemove={() =>
                 setCandidates((current) =>

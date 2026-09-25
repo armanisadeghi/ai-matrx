@@ -29,11 +29,7 @@ import {
 } from "../utils";
 import { openAssistantMessageEditor } from "@/features/agents/components/messages-display/message-options/openAssistantMessageEditor";
 import { acknowledgedPreparedSource, prepareContentEdit, savePreparedContentEdit } from "./preparedEdit";
-import { projectAnswerText } from "@/features/agents/redux/execution-system/message-crud/answer-text-splice";
 import { updateMessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
-
-/** Inline reasoning tags the chat view scrubs (`removeThinkingContent`). */
-const INLINE_REASONING = /<(thinking|think|reasoning)>/i;
 
 registerAction({
   id: "edit",
@@ -60,30 +56,27 @@ registerAction({
   run: async (ctx) => {
     // CHAT ASSISTANT MESSAGE — edit IN PLACE (RC-B5, PLAN decision 11): the
     // answer's spot becomes THE ONE editor and Save returns it to preview
-    // (`InPlaceAnswerEditor`, mounted by `AgentAssistantMessage`). Grouped
-    // turns edit their text-bearing row. Structured payloads keep the
-    // read-only raw view; an answer whose shown text is not its stored text
-    // byte-for-byte (inline <thinking> tags scrubbed from the view) opens the
-    // full-screen editor instead, and says why. The 16-tab full-screen editor
-    // stays one click away ("Open in full-screen editor").
+    // (`InPlaceAnswerEditor`, mounted by `AgentAssistantMessage`). The editor
+    // opens on the STORED bytes, so inline reasoning (`<thinking>` /
+    // `<reasoning>` sections the chat view hides) shows as a locked island —
+    // written back verbatim, never routed elsewhere. A grouped (multi-
+    // iteration) turn edits its answer row — the row the bar's pencil is on;
+    // `AssistantTurnGroup` renders that turn from its persisted rows while
+    // any of them is being edited, so the row's spot exists on screen.
+    // Structured payloads keep the read-only raw view. The 16-tab full-screen
+    // editor stays one click away ("Open in full-screen editor").
     const ext = chatExtensions(ctx);
     if (ext && ctx.source.type === "chat-message") {
       const target = ext.editTarget;
       if (!target) return;
       const conversationId = ctx.source.conversationId;
-      const record = conversationId
-        ? ctx.getState().messages.byConversationId[conversationId]?.byId?.[target.messageId]
-        : undefined;
-      // The editor opens on the STORED bytes (`projectAnswerText`), not the
-      // display projection (`extractFlatText` also collapses blank-line runs
-      // and trims — harmless to render, wrong to write back). The one thing
-      // the stored text may hold that the view hides is inline reasoning.
-      const inPlace =
-        !target.isStructuredRaw &&
+      // The flag lives on the loaded row; a row this store never loaded has
+      // no spot on screen, so it opens the full-screen editor instead of a
+      // click that does nothing.
+      const loaded =
         !!conversationId &&
-        !!record &&
-        !INLINE_REASONING.test(projectAnswerText(record.content).text);
-      if (inPlace && conversationId) {
+        !!ctx.getState().messages.byConversationId[conversationId]?.byId?.[target.messageId];
+      if (!target.isStructuredRaw && conversationId && loaded) {
         ctx.dispatch(
           updateMessageRecord({
             conversationId,
@@ -93,11 +86,6 @@ registerAction({
         );
         ctx.onClose();
         return;
-      }
-      if (!target.isStructuredRaw) {
-        toast.info(
-          "This answer carries hidden reasoning inside its text, so it opens in the full-screen editor where all of it is visible.",
-        );
       }
       openAssistantMessageEditor(ctx.dispatch, {
         content: target.content,

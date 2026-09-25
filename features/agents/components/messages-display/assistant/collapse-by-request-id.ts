@@ -27,3 +27,29 @@ export function collapseByRequestId<T extends { requestId: string | null }>(
       !item.requestId || lastIndexByRequestId.get(item.requestId) === i,
   );
 }
+
+/**
+ * The members a turn renders when a person is editing (or has edited) one of
+ * its rows (RC-B5).
+ *
+ * A stream-anchored member renders the WHOLE request — every iteration's text
+ * from one source — so (a) the row being edited has no spot of its own when a
+ * later row of the same request won the collapse, and (b) an edit's
+ * `activeRequests.editedText` replaces the whole request's text with that one
+ * row's. Rendering the turn from its persisted rows (one member per row, no
+ * stream source) gives every row its own spot and its own stored content.
+ * A turn with no multi-row request keeps the stream path: a single row edits
+ * against its own request without either problem.
+ */
+export function membersForRender<T extends { requestId: string | null }>(
+  items: T[],
+  persistedView: boolean,
+): T[] {
+  if (!persistedView) return collapseByRequestId(items);
+  const rowsPerRequest = new Map<string, number>();
+  for (const item of items) {
+    if (item.requestId) rowsPerRequest.set(item.requestId, (rowsPerRequest.get(item.requestId) ?? 0) + 1);
+  }
+  if (![...rowsPerRequest.values()].some((count) => count > 1)) return collapseByRequestId(items);
+  return items.map((item) => ({ ...item, requestId: null }));
+}

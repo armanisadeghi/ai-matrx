@@ -84,4 +84,61 @@ const pendingInline: RemendHandler = {
   },
 };
 
-export const SYNTAX_STREAM_HANDLERS: RemendHandler[] = [pendingFrontmatter, pendingBlockMarker, pendingInline];
+/**
+ * A half-typed heading id (`## Loading {#sec`) — hold the `{#…` back until
+ * its `}` arrives, so the heading never flashes the raw id.
+ */
+const pendingHeadingId: RemendHandler = {
+  name: "matrx-pending-heading-id",
+  priority: -2,
+  handle: (text) => {
+    const start = lastLineStart(text);
+    const m = /^(#{1,6}[ \t].*?)[ \t]*\{#[^}\n]*$/.exec(text.slice(start));
+    if (!m || isWithinCodeBlock(text, start)) return text;
+    return text.slice(0, start) + (m[1] ?? "");
+  },
+};
+
+/** Count `$$` outside code fences / spans. */
+function openDisplayDollar(text: string): number {
+  let at = -1;
+  let open = -1;
+  while ((at = text.indexOf("$$", at + 1)) !== -1) {
+    if (isWithinCodeBlock(text, at)) continue;
+    open = open === -1 ? at : -1;
+    at += 1;
+  }
+  return open;
+}
+
+/**
+ * Math whose closer has not arrived — a `$$` block, `\[ … `, `\( … ` — is
+ * held back whole until it closes: KaTeX cannot draw half an expression, and
+ * showing its TeX source (`E = mc^2 \tag{1}`, `\ce{H…`) is the flash the
+ * RC-B8 verification saw. Runs before remend's own math closing (priority 70).
+ */
+const pendingMath: RemendHandler = {
+  name: "matrx-pending-math",
+  priority: -1,
+  handle: (text) => {
+    let cut = openDisplayDollar(text);
+    for (const [open, close] of [
+      ["\\[", "\\]"],
+      ["\\(", "\\)"],
+    ] as const) {
+      const o = text.lastIndexOf(open);
+      if (o !== -1 && text.indexOf(close, o) === -1 && !isWithinCodeBlock(text, o)) {
+        cut = cut === -1 ? o : Math.min(cut, o);
+      }
+    }
+    return cut === -1 ? text : text.slice(0, cut);
+  },
+};
+
+export const SYNTAX_STREAM_HANDLERS: RemendHandler[] = [
+  pendingFrontmatter,
+  pendingBlockMarker,
+  pendingInline,
+  pendingHeadingId,
+  pendingMath,
+];

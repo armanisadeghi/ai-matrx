@@ -258,7 +258,7 @@ registerAction({
       const exp = await exportDocument(unwrapKindEnvelopes(ctx.content), "pdf", {
         fileName: fileBase(ctx),
       });
-      downloadBlob(new Blob([exp.bytes], { type: exp.mime }), exp.fileName);
+      downloadBlob(new Blob([exp.bytes as Uint8Array<ArrayBuffer>], { type: exp.mime }), exp.fileName);
       toast.success("PDF downloaded", { id: toastId });
     } catch (error) {
       toast.error("Failed to create PDF", {

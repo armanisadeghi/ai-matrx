@@ -82,6 +82,17 @@ function HolderCell({ row }: { row: MandateMemberRow }) {
       />
     );
   }
+  if (row.holderType === "workflow") {
+    // Workflow parity: a workflow holder is a record too — it opens.
+    return (
+      <EntityRef
+        token="workflow"
+        id={row.holderId}
+        name={row.holderName}
+        showIcon={false}
+      />
+    );
+  }
   return <TextCell value={row.holderName} />;
 }
 

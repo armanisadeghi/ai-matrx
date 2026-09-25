@@ -38,7 +38,7 @@ jest.mock("@/components/markdown-core/MarkdownCore", () => {
 jest.mock("@/components/matrx/buttons/MarkdownCopyButton", () => ({ InlineCopyButton: () => null }));
 jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
   __esModule: true,
-  default: ({ code }: { code: string }) => <pre>{code}</pre>,
+  default: ({ code, meta }: { code: string; meta?: string }) => <pre data-meta={meta}>{code}</pre>,
 }));
 jest.mock("@/components/mardown-display/blocks/csv/CsvBlock", () => ({
   __esModule: true,
@@ -71,6 +71,10 @@ jest.mock("@/components/markdown-core/syntax/elements/wikilink-resolver", () => 
     ),
   createWikiPage: jest.fn(() => Promise.resolve({ ok: true, href: "/notes/new-id" })),
 }));
+jest.mock("@/components/rich-content/standard/NestedRichContent", () => {
+  const { StandardBlocks } = jest.requireActual("@/components/rich-content/standard/StandardBlocks");
+  return { __esModule: true, NestedRichContent: ({ source }: { source: string }) => <StandardBlocks source={source} />, default: () => null };
+});
 
 import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { RichContentInline } from "@/components/rich-content/RichContentInline";
@@ -211,7 +215,7 @@ describe("blocks from the directive grammar", () => {
     expect((scope.querySelectorAll('[role="tabpanel"]')[1] as HTMLElement).hidden).toBe(true);
     await act(async () => (tabs[1] as HTMLButtonElement).click());
     expect((scope.querySelectorAll('[role="tabpanel"]')[1] as HTMLElement).hidden).toBe(false);
-    const figure = scope.querySelector("figure#fig\\:kiln")!;
+    const figure = scope.querySelector("figure#user-content-fig\\:kiln")!;
     expect(text(figure.querySelector("figcaption")!)).toBe("Figure 1. The loaded kiln");
     expect(text(scope.querySelector('a[data-xref="fig:kiln"]')!)).toBe("Figure 1");
     expect(text(scope.querySelector("aside")!)).toBe("Wear gloves.");
@@ -253,9 +257,9 @@ describe("headings, anchors and the table of contents", () => {
   it("ids every heading, adds an anchor, builds the contents from [[toc]] and ::toc", async () => {
     for (const marker of ["[[toc]]", "<!-- toc -->", "::toc", ":::toc\n:::"]) {
       const scope = await render(full(`${marker}\n\n## Loading {#sec:loading}\n\nText.\n\n## Cooling down\n\nMore.\n\nBack to @sec:loading.`));
-      expect(scope.querySelector("h2#sec\\:loading")).not.toBeNull();
-      expect(scope.querySelector("h2#cooling-down")).not.toBeNull();
-      expect(scope.querySelector("h2#sec\\:loading [data-heading-anchor]")?.getAttribute("href")).toBe("#sec:loading");
+      expect(scope.querySelector("h2#user-content-sec\\:loading")).not.toBeNull();
+      expect(scope.querySelector("h2#user-content-cooling-down")).not.toBeNull();
+      expect(scope.querySelector("h2#user-content-sec\\:loading [data-heading-anchor]")?.getAttribute("href")).toBe("#sec:loading");
       const toc = scope.querySelector('nav[aria-label="Contents"]')!;
       expect([...toc.querySelectorAll("a")].map((a) => a.getAttribute("href"))).toEqual(["#sec:loading", "#cooling-down"]);
       expect(text(scope.querySelector('a[data-xref="sec:loading"]')!)).toBe("Loading");
@@ -298,7 +302,7 @@ describe("math: chemistry and equation numbers", () => {
     const scope = await render(full("$$\n\\ce{2H2 + O2 -> 2H2O}\n$$\n\n\\[E = mc^2 \\label{eq:energy}\\]\n\nBy \\eqref{eq:energy} we know."));
     expect(scope.querySelector(".katex-error")).toBeNull();
     expect(scope.querySelectorAll(".katex-display")).toHaveLength(2);
-    expect(scope.querySelector("#eq\\:energy")).not.toBeNull();
+    expect(scope.querySelector("#user-content-eq\\:energy")).not.toBeNull();
     expect(text(scope.querySelectorAll(".katex-display")[1]!)).toContain("(1)");
     expect(text(scope.querySelector('a[data-xref="eq:energy"]')!)).toBe("(1)");
   });
@@ -454,5 +458,58 @@ describe("a directive container keeps its children at every level", () => {
     expect(text(panels[0]!)).toContain("kiln fire --cone 6");
     expect(text(scope)).not.toContain(":::");
     expect(text(scope)).not.toContain("```");
+  });
+});
+
+
+describe("verify-RC-B8 fix round", () => {
+  it.each([
+    ["bullet", "- Load shelves\n  > [!caution] Hot surfaces\n  > Wear gloves."],
+    ["numbered", "1. Mix the glaze\n\n   > [!tip] Sieve twice\n   > Use an 80-mesh sieve."],
+  ])("a callout inside a %s list item renders as a callout", async (_k, source) => {
+    for (const renderAt of [full, standard]) {
+      const scope = await render(renderAt(source));
+      expect(scope.querySelector("li [data-callout]")).not.toBeNull();
+      expect(text(scope)).not.toContain("[!");
+    }
+  });
+
+  it("a :::directive inside a list item keeps its body inside it", async () => {
+    const scope = await render(full("- Before firing\n  :::note\n  Check the kiln sitter.\n  :::\n- After"));
+    const callout = scope.querySelector('li [data-callout="note"]');
+    expect(callout).not.toBeNull();
+    expect(text(callout!)).toContain("Check the kiln sitter.");
+    expect(text(scope)).not.toContain(":::");
+  });
+
+  it("a CSV fence is a table at the standard level", async () => {
+    const scope = await render(standard("Before.\n\n```csv\nglaze,cone\nCeladon,10\n```\n\nAfter."));
+    expect(scope.querySelectorAll("[data-csv-table] tr")).toHaveLength(2);
+  });
+
+  it("a short fence with a title keeps its meta at the standard level", async () => {
+    const scope = await render(standard('Intro.\n\n```py title="kiln.py" {2}\nfire()\ncool()\n```'));
+    expect(scope.querySelector("pre[data-meta]")?.getAttribute("data-meta")).toContain('title="kiln.py"');
+  });
+
+  it("a titled image is a numbered figure, counted document-wide", async () => {
+    const doc = ':::figure[First]{#fig:a}\nx\n:::\n\n```js\nsplit()\n```\n\n![Kiln shelf](https://example.com/k.png "Cone 6 shelf layout")\n\nSee @fig:a.';
+    const scope = await render(standard(doc));
+    expect([...scope.querySelectorAll("figcaption")].map(text)).toEqual(["Figure 1. First", "Figure 2. Cone 6 shelf layout"]);
+    expect(scope.querySelector("figure img")).not.toBeNull();
+  });
+
+  it("author ids are prefixed user-content- and anchors still resolve", async () => {
+    const scope = await render(full(":::aside{#evil}\nx\n:::\n\n## Loading {#__proto__}\n\nSee @sec:loading."));
+    expect(scope.querySelector("#evil")).toBeNull();
+    expect(scope.querySelector("#__proto__")).toBeNull();
+    expect(scope.querySelector("#user-content-evil")).not.toBeNull();
+    expect(scope.querySelector("#user-content-__proto__")).not.toBeNull();
+  });
+
+  it("streaming holds back a half-typed heading id and unclosed math", () => {
+    expect(healStreamingMarkdown("## Loading {#sec")).toBe("## Loading");
+    expect(healStreamingMarkdown("Water is \\(\\ce{H")).toBe("Water is ");
+    expect(healStreamingMarkdown("Energy:\n\n$$\nE = mc^2 \\tag{1}")).toBe("Energy:\n\n");
   });
 });

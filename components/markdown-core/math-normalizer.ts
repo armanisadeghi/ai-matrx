@@ -217,9 +217,33 @@ function convertSingleDollar(text: string): string {
   return out;
 }
 
+/**
+ * Apply `fn` only to the text OUTSIDE `$$…$$` math spans (by this step every
+ * inline and display math form has been converted to `$$…$$`; code spans
+ * and fences were already protected by `segment`).
+ */
+function outsideMath(text: string, fn: (prose: string) => string): string {
+  let out = "";
+  let i = 0;
+  while (i < text.length) {
+    const open = text.indexOf("$$", i);
+    if (open === -1) break;
+    const close = text.indexOf("$$", open + 2);
+    if (close === -1) break;
+    out += fn(text.slice(i, open)) + text.slice(open, close + 2);
+    i = close + 2;
+  }
+  return out + fn(text.slice(i));
+}
+
 function convertBracketDisplay(text: string): string {
   // Non-standard `[ … ]` display math some smaller models emit. Converts only
-  // when it is clearly math, never a markdown link, and never a Windows path.
+  // when it is clearly math, never inside existing math (`$\mathbb{E}[X]$`,
+  // verify-RC-B7 #3), never a markdown link, and never a Windows path.
+  return outsideMath(text, convertBracketDisplayInProse);
+}
+
+function convertBracketDisplayInProse(text: string): string {
   return text.replace(
     /\[[\s\n]*([\s\S]*?)[\s\n]*\](?![(\[:])/g,
     (match: string, content: string) => {
@@ -259,8 +283,10 @@ function normalizeText(text: string): string {
   // `$$…$$` inside running text — NO paragraph breaks, so a formula inside a
   // list item or sentence never splits it into a centered block.
   t = t.replace(/\\\(((?:(?!\n[ \t]*\n)[\s\S])*?)\\\)/g, (_m, tex: string) => `$$${tex.trim()}$$`);
-  t = convertBracketDisplay(t);
+  // Single-dollar math first, so the bracket heuristic below sees every
+  // inline formula as a protected `$$…$$` span.
   t = convertSingleDollar(t);
+  t = convertBracketDisplay(t);
   return t;
 }
 

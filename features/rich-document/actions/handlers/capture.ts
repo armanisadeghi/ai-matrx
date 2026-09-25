@@ -245,7 +245,7 @@ registerAction({
         import("@/features/files/handler/handler"),
       ]);
       const exp = await exportDocument(unwrapKindEnvelopes(ctx.content), "pdf");
-      const blob = new Blob([exp.bytes], { type: "application/pdf" });
+      const blob = new Blob([exp.bytes as Uint8Array<ArrayBuffer>], { type: "application/pdf" });
       const name = contentFileName(ctx, ctx.source.type === "chat-message" ? "message" : ctx.source.type);
       const file = new File([blob], `${name}.pdf`, { type: "application/pdf" });
       const uploaded = await fileHandler.upload(

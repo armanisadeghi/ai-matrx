@@ -148,6 +148,14 @@ export function MandateAgentPicker({
     : data?.myBinding?.is_enabled
       ? agentHolderOfBinding(data.myBinding).holderId
       : null;
+  // 🚨 WORKFLOW PARITY (2026-09-25): an enabled personal binding held by a
+  // WORKFLOW has no agent id, so this picker read it as "no override" and
+  // ticked "System default" — the person's real choice invisible and their
+  // "Use default" click a no-op. It is named, and reset stays one click.
+  const overrideIsWorkflow =
+    !override &&
+    data?.myBinding?.is_enabled === true &&
+    (data.myBinding as { holder_type?: string | null }).holder_type === "workflow";
   const overrideAgentName = overrideAgentId
     ? ([...ownedAgents, ...sharedAgents].find((a) => a.id === overrideAgentId)
         ?.name ?? "your agent")
@@ -375,14 +383,21 @@ export function MandateAgentPicker({
               </p>
             </div>
 
+            {overrideIsWorkflow ? (
+              <p className="rounded-md border border-primary/25 bg-primary/[0.05] px-2.5 py-2 text-[11.5px] text-foreground">
+                Your own binding runs a workflow for this step. Pick an agent
+                below to replace it, or use the default.
+              </p>
+            ) : null}
+
             {/* System default row */}
             <button
               type="button"
               onClick={() => void handleReset()}
-              disabled={saving || overrideAgentId == null}
+              disabled={saving || (overrideAgentId == null && !overrideIsWorkflow)}
               className={cn(
                 "flex w-full items-center gap-2 rounded-md border px-2.5 py-2 text-left transition-colors",
-                overrideAgentId == null
+                overrideAgentId == null && !overrideIsWorkflow
                   ? "border-primary/25 bg-primary/[0.05]"
                   : "border-border/60 hover:border-border",
               )}
@@ -396,7 +411,7 @@ export function MandateAgentPicker({
                   System default
                 </span>
               </span>
-              {overrideAgentId == null ? (
+              {overrideAgentId == null && !overrideIsWorkflow ? (
                 <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
               ) : (
                 <span className="inline-flex items-center gap-1 text-[10.5px] text-muted-foreground">

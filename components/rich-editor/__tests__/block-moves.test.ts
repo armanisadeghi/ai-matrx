@@ -84,7 +84,9 @@ function dragTop(editor: Editor, from: number, to: number): void {
   const node = slice.openStart === 0 && slice.openEnd === 0 && slice.content.childCount === 1 ? slice.content.firstChild : null;
   if (node) tr.replaceRangeWith(pos, pos, node);
   else tr.replaceRange(pos, pos, slice);
-  editor.view.dispatch(tr);
+  // ProseMirror tags its drop transaction exactly like this; plugins that react
+  // to drops (Tiptap's paste rules re-mark the whole changed range) key on it.
+  editor.view.dispatch(tr.setMeta("uiEvent", "drop"));
 }
 
 function reorder(blocks: readonly string[], from: number, to: number): string[] {
