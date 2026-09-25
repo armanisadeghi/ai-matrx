@@ -145,7 +145,9 @@ begin
        not like '%freshness_verdict%' then
     raise exception 'RED 4 DID NOT GO RED: custom.enrich_due no longer asks custom.freshness_verdict — the third copy is back';
   end if;
-  if pg_get_functiondef('custom.context_resolve(uuid,jsonb,text)'::regprocedure)
+  -- The one-argument door (lane SUITE-HEALTH-3 retired the three-argument overload, which only
+  -- forwarded to it — suitehealth3_the_retired_context_resolve_shape_is_gone.sql).
+  if pg_get_functiondef('custom.context_resolve(jsonb)'::regprocedure)
        not like '%freshness_verdict%' then
     raise exception 'RED 4 DID NOT GO RED: custom.context_resolve no longer asks custom.freshness_verdict';
   end if;
