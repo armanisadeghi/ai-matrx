@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
+import { hasAdminPower } from "@/utils/auth/adminLaneServer";
 import { createAdminClient } from "@/utils/supabase/adminClient";
-import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { NextRequest, NextResponse } from "next/server";
 import type { CreateAgentAppInput } from "@/features/agent-apps/types";
 import type { Database } from "@/types/database.types";
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     const isGlobal = scope === "global";
     if (isGlobal) {
-      const isAdmin = await checkIsSuperAdmin(supabase, user.id);
+      const isAdmin = await hasAdminPower(supabase, user.id);
       if (!isAdmin) {
         return NextResponse.json(
           { error: "Forbidden: admin privileges required for global apps" },

@@ -9,7 +9,7 @@ jest.mock("@/lib/sandbox/lifecycle-route-proxy", () => ({ hasExactLifecycleRecei
 // below pass or fail for reasons that have nothing to do with admission.
 // `withClaims` derives the claims door from this same `getUser`.
 jest.mock("@/utils/supabase/server", () => ({ createClient: jest.fn(async () => ({ auth: withClaims({ getUser }) })) }));
-jest.mock("@/utils/supabase/userSessionData", () => ({ checkIsSuperAdmin }));
+jest.mock("@/utils/auth/adminLaneServer", () => ({ hasAdminPower: checkIsSuperAdmin }));
 const { withClaims } = require("@/test-utils/supabase-auth") as typeof import("@/test-utils/supabase-auth");
 const { POST } = require("./route") as typeof import("./route");
 const target = { rowId: "11111111-1111-4111-8111-111111111111", sandboxId: "runtime", orchestrator: { url: "https://example.test", apiKey: "", tier: "ec2" }, deletedAt: "2026-01-01T00:00:00Z" };

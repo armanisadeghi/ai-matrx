@@ -131,6 +131,41 @@ export function installAdminLane<T>(client: T, isOpen: () => boolean): T {
   return client;
 }
 
+/** Anything with a `get(name)` — `Headers`, Next's `headers()`, a request. */
+export interface HeaderReader {
+  get(name: string): string | null;
+}
+
+/**
+ * THE server-side lane decision, for every request this app serves.
+ *
+ * - `proxy.ts` stamps `x-matrx-admin-lane` on every request it matches: "1" in
+ *   the admin section, "0" everywhere else. That verdict is final — a page
+ *   reached FROM /administration is still a user page.
+ * - A request the proxy does not match (an `/api/*` Route Handler) has no
+ *   stamp. It is in the lane when it came from an admin page of THIS origin:
+ *   the browser names that page in `Referer` on every same-origin fetch.
+ *
+ * Identity is never decided here — callers still check the person is an admin.
+ */
+export function adminLaneOpenForHeaders(h: HeaderReader): boolean {
+  const stamp = h.get(ADMIN_LANE_HEADER);
+  if (stamp !== null) return stamp === "1";
+  const referer = h.get("referer");
+  const host = h.get("host");
+  if (!referer || !host) return false;
+  try {
+    const url = new URL(referer);
+    return url.host === host && isAdminLanePath(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
+/** The one sentence an admin action says when it is asked outside the lane. */
+export const ADMIN_LANE_REFUSAL =
+  "This is an admin action, and admin actions only work inside the admin section. Open it from Administration and try again.";
+
 /** Browser decision: the page the person is on right now. */
 export function browserAdminLaneOpen(): boolean {
   return typeof window !== "undefined" && isAdminLanePath(window.location.pathname);

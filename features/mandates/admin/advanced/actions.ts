@@ -25,9 +25,9 @@
 // database instead of by string building here.
 
 import { executeSqlQuery } from "@/actions/admin/database";
+import { hasAdminPower } from "@/utils/auth/adminLaneServer";
 import { createClient } from "@/utils/supabase/server";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
-import { checkIsUserAdmin } from "@/utils/supabase/userSessionData";
 import {
   assertSafeIdentifier,
   sqlLiteral,
@@ -64,7 +64,7 @@ async function requireAdmin(): Promise<string | null> {
   } = await getClaimsUser(supabase);
   if (error) return "Your identity could not be verified just now. Try again in a moment.";
   if (!user) return "Not signed in.";
-  const isAdmin = await checkIsUserAdmin(supabase, user.id);
+  const isAdmin = await hasAdminPower(supabase, user.id, "any");
   if (!isAdmin) return "Admin access required.";
   return null;
 }

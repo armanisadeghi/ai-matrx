@@ -25,6 +25,16 @@
  *      `selectIsSuperAdminPerson`, `selectAdminLevelPerson`) are used only by
  *      the files in IDENTITY_ALLOWED — the way into the admin section and the
  *      sign-out warning. Anything else would be identity used as power.
+ *   4. SERVER: no user-side file asks the raw identity question
+ *      (`checkIsSuperAdmin`, `checkIsUserAdmin`, `getAdminStatus`,
+ *      `getCurrentUserAdminStatus`) to widen what it does — it asks
+ *      `hasAdminPower` / `requireSuperAdmin` / `requireAdmin`
+ *      (utils/auth/adminLaneServer.ts), which also demand the admin lane.
+ *      The identity readers that only render the shell or the sign-out warning
+ *      are named in SERVER_IDENTITY_ALLOWED.
+ *   5. `requireSuperAdmin` and `requireAdmin` (utils/auth/adminUtils.ts) still
+ *      call `requireAdminLane()` before anything else — the one door every
+ *      service-role admin action goes through.
  *   3. Every `app/(core)/<feature>/admin` directory (the per-feature admin
  *      maps) is named in `ADMIN_LANE_PATH_PREFIXES`, so a new admin map can
  *      never silently run without the lane. `/organizations/<id>/admin` is an
@@ -69,9 +79,34 @@ const ADMIN_RPC =
   /\.rpc\(\s*["'`](is_platform_admin|is_super_admin|is_admin|is_super_admin_for|is_platform_admin_for)["'`]/;
 const IDENTITY_SELECTOR = /\b(selectIsAdminPerson|selectIsSuperAdminPerson|selectAdminLevelPerson)\b/;
 
+/** User-side server files allowed to read raw admin IDENTITY (never power). */
+const SERVER_IDENTITY_ALLOWED = new Set([
+  "utils/supabase/userSessionData.ts",
+  "utils/auth/adminUtils.ts",
+  "utils/auth/adminLaneServer.ts",
+  // Shell identity: seeds `userAuth.isAdmin/adminLevel` (power needs the lane).
+  "app/(core)/layout.tsx",
+  "app/(dev)/layout.dev.tsx",
+  "app/(meet)/layout.tsx",
+  "app/(transitional)/layout.tsx",
+  "lib/auth/authedLayoutData.ts",
+  // The super-admin sign-out warning protects the person; grants nothing.
+  "app/(auth-pages)/sign-out/page.tsx",
+  // Pairs identity with `requestInAdminLane()` on the same line of logic.
+  "app/(core)/education/library/community/page.tsx",
+]);
+
+const SERVER_IDENTITY_CALL =
+  /\b(checkIsSuperAdmin|checkIsUserAdmin|getAdminStatus|getCurrentUserAdminStatus)\(/;
+
 export interface Finding {
   file: string;
-  rule: "admin-rpc-on-user-side" | "identity-as-power" | "admin-map-without-lane";
+  rule:
+    | "admin-rpc-on-user-side"
+    | "identity-as-power"
+    | "admin-map-without-lane"
+    | "server-identity-as-power"
+    | "admin-door-without-lane";
   detail: string;
 }
 
@@ -101,6 +136,20 @@ export function scanSource(file: string, source: string): Finding[] {
         detail: `line ${i + 1}: ${line.trim()} — a user-side file asks the admin-POWER question. Use the default gates (selectIsSuperAdmin, false outside the admin section) or move the surface under /administration.`,
       });
     }
+    const code = line.trim();
+    const isComment = code.startsWith("//") || code.startsWith("*") || code.startsWith("/*");
+    if (
+      !isComment &&
+      SERVER_IDENTITY_CALL.test(line) &&
+      !/\bfunction\s+(checkIsSuperAdmin|checkIsUserAdmin|getAdminStatus|getCurrentUserAdminStatus)\b/.test(line) &&
+      !SERVER_IDENTITY_ALLOWED.has(file)
+    ) {
+      findings.push({
+        file,
+        rule: "server-identity-as-power",
+        detail: `line ${i + 1}: ${code} — a user-side server file asks "is this person an admin" to widen what it does. Use hasAdminPower(...) or requireSuperAdmin() (utils/auth/adminLaneServer.ts), which also demand the admin lane.`,
+      });
+    }
     if (IDENTITY_SELECTOR.test(line) && !IDENTITY_ALLOWED.has(file)) {
       findings.push({
         file,
@@ -109,6 +158,23 @@ export function scanSource(file: string, source: string): Finding[] {
       });
     }
   });
+  return findings;
+}
+
+/** Pure detector: the shared admin doors still demand the lane first. */
+export function scanAdminDoors(adminUtilsSource: string): Finding[] {
+  const findings: Finding[] = [];
+  for (const fn of ["requireSuperAdmin", "requireAdmin"]) {
+    const start = adminUtilsSource.indexOf(`export async function ${fn}(`);
+    const body = start < 0 ? "" : adminUtilsSource.slice(start, adminUtilsSource.indexOf("\n}\n", start));
+    if (!/await requireAdminLane\(\);/.test(body)) {
+      findings.push({
+        file: "utils/auth/adminUtils.ts",
+        rule: "admin-door-without-lane",
+        detail: `${fn}() no longer calls requireAdminLane() — every service-role admin action behind it would work from a user page.`,
+      });
+    }
+  }
   return findings;
 }
 
@@ -174,6 +240,7 @@ function runLive(): Finding[] {
   const findings: Finding[] = [];
   for (const file of files) findings.push(...scanSource(file, readFileSync(join(ROOT, file), "utf8")));
   findings.push(...scanAdminMaps(coreAdminRoutes(), ADMIN_LANE_PATH_PREFIXES));
+  findings.push(...scanAdminDoors(readFileSync(join(ROOT, "utils/auth/adminUtils.ts"), "utf8")));
   return findings;
 }
 
@@ -181,17 +248,18 @@ function selfTest(): void {
   const planted: Array<[string, string]> = [
     ["features/notes/NotesPage.tsx", `const { data } = await supabase.rpc("is_platform_admin");`],
     ["features/notes/NotesPage.tsx", `const x = useAppSelector(selectIsSuperAdminPerson);`],
+    ["app/api/cms/sites/route.ts", `  const ok = await checkIsSuperAdmin(supabase, user.id);`],
   ];
   const red = [
     ...planted.flatMap(([f, s]) => scanSource(f, s)),
     ...scanAdminMaps(["/newfeature/admin"], ADMIN_LANE_PATH_PREFIXES),
+    ...scanAdminDoors(
+      `export async function requireSuperAdmin(): Promise<string> {\n  const status = 1;\n}\nexport async function requireAdmin(): Promise<string> {\n  await requireAdminLane();\n}\n`,
+    ),
   ];
   const rules = new Set(red.map((f) => f.rule));
-  const allRed =
-    rules.has("admin-rpc-on-user-side") &&
-    rules.has("identity-as-power") &&
-    rules.has("admin-map-without-lane");
-  console.log(`self-test RED: ${red.length} planted finding(s) across ${rules.size}/3 rules`);
+  const allRed = rules.size === 5;
+  console.log(`self-test RED: ${red.length} planted finding(s) across ${rules.size}/5 rules`);
   if (!allRed) {
     console.error("self-test FAILED: a planted offender was not detected");
     process.exit(1);
@@ -200,6 +268,9 @@ function selfTest(): void {
     ...scanSource("app/(admin)/administration/x/page.tsx", `await supabase.rpc("is_super_admin");`),
     ...scanSource("app/(core)/agents/admin/page.tsx", `await supabase.rpc("is_super_admin");`),
     ...scanSource("features/shell/auth/useSignOut.ts", `useAppSelector(selectIsSuperAdminPerson)`),
+    ...scanSource("app/(auth-pages)/sign-out/page.tsx", `await checkIsSuperAdmin(supabase, user.id);`),
+    ...scanSource("app/api/admin/users/route.ts", `await checkIsSuperAdmin(supabase, user.id);`),
+    ...scanSource("app/api/cms/sites/route.ts", `// the old checkIsSuperAdmin(supabase, id) gate`),
     ...scanAdminMaps(["/organizations/[orgId]/admin", "/agents/admin"], ADMIN_LANE_PATH_PREFIXES),
   ];
   if (allowed.length > 0) {

@@ -9,7 +9,7 @@ const mapUserFeedbackRow = jest.fn();
 jest.mock("@/utils/supabase/server", () => ({ createClient }));
 jest.mock("@/utils/supabase/adminClient", () => ({ createAdminClient }));
 jest.mock("@/utils/supabase/resolveUser", () => ({ getClaimsUser }));
-jest.mock("@/utils/supabase/userSessionData", () => ({ checkIsUserAdmin }));
+jest.mock("@/utils/auth/adminLaneServer", () => ({ hasAdminPower: checkIsUserAdmin }));
 jest.mock("@/types/feedback-row-mapper", () => ({
   mapUserFeedbackRow,
   mapUserFeedbackRows: jest.fn(),

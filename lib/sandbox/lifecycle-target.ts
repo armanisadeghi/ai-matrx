@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { hasAdminPower } from "@/utils/auth/adminLaneServer";
 import { createClient } from "@/utils/supabase/server";
-import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { resolvePersistedOrchestrator, type OrchestratorTarget } from "@/lib/sandbox/orchestrator-routing";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
@@ -14,7 +14,7 @@ export async function resolveSandboxLifecycleTarget(rowId: string): Promise<Sand
   if (userError || !user) return { ok: false, status: 401, error: "User not authenticated" };
   const { data: owned } = await supabase.from("sandbox_instances").select("id, sandbox_id, tier, config, deleted_at").eq("id", rowId).eq("user_id", user.id).single();
   let row = owned;
-  if (!row && await checkIsSuperAdmin(supabase, user.id)) {
+  if (!row && await hasAdminPower(supabase, user.id)) {
     const { data } = await createAdminClient().from("sandbox_instances").select("id, sandbox_id, tier, config, deleted_at").eq("id", rowId).single();
     row = data;
   }

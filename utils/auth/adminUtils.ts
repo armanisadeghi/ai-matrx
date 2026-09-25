@@ -8,6 +8,7 @@ import {
   type AdminLevel,
 } from '@/utils/supabase/userSessionData';
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { requireAdminLane } from "@/utils/auth/adminLaneServer";
 
 /**
  * Server-side Admin Utilities
@@ -55,6 +56,9 @@ export async function getCurrentUserAdminStatus(): Promise<{
  * @throws Error if user is not authenticated or not a Super Admin
  */
 export async function requireSuperAdmin(): Promise<string> {
+  // THE ADMIN LANE first: admin power exists only in the admin section
+  // (utils/auth/adminLaneServer.ts) — outside it this throws the plain sentence.
+  await requireAdminLane();
   const status = await getCurrentUserAdminStatus();
 
   if (!status) {
@@ -76,6 +80,7 @@ export async function requireSuperAdmin(): Promise<string> {
  * @throws Error if user is not authenticated or not an admin
  */
 export async function requireAdmin(): Promise<string> {
+  await requireAdminLane();
   const status = await getCurrentUserAdminStatus();
 
   if (!status) {

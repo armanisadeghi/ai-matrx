@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { hasAdminPower } from "@/utils/auth/adminLaneServer";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
-import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { sendEmail } from "@/lib/email/client";
 import { emailTemplates } from "@/lib/email/client";
@@ -155,7 +155,7 @@ export async function GET(request: NextRequest) {
 
     // Highest-bar gate: Super Admin only.
     const adminSupabase = createAdminClient();
-    const isSuperAdmin = await checkIsSuperAdmin(adminSupabase, user.id);
+    const isSuperAdmin = await hasAdminPower(adminSupabase, user.id);
 
     if (!isSuperAdmin) {
       return NextResponse.json(

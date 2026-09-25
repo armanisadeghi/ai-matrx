@@ -13,7 +13,7 @@ adminBuilder.select.mockReturnValue(adminBuilder); adminEq.mockReturnValue(admin
 
 jest.mock("@/utils/supabase/server", () => ({ createClient: jest.fn(async () => ({ auth: mockWithClaims({ getUser: async () => ({ data: { user: { id: "actor-1" } }, error: null }) }), from: () => ownerBuilder })) }));
 jest.mock("@/utils/supabase/adminClient", () => ({ createAdminClient: jest.fn(() => ({ from: () => adminBuilder })) }));
-jest.mock("@/utils/supabase/userSessionData", () => ({ checkIsSuperAdmin: (...args: unknown[]) => mockIsSuperAdmin(...args) }));
+jest.mock("@/utils/auth/adminLaneServer", () => ({ hasAdminPower: (...args: unknown[]) => mockIsSuperAdmin(...args) }));
 jest.mock("@/lib/sandbox/orchestrator-routing", () => ({
   resolvePersistedOrchestrator: (tier: string) => tier === "hosted" || tier === "ec2" ? { ok: true, orchestrator: { tier, url: `https://${tier}.example.test`, apiKey: `${tier}-key` } } : { ok: false, error: "invalid tier" },
   orchestratorJsonHeaders: (target: { apiKey: string }) => ({ "Content-Type": "application/json", "X-API-Key": target.apiKey }),

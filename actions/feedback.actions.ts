@@ -1,8 +1,8 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { hasAdminPower } from "@/utils/auth/adminLaneServer";
 import { createAdminClient } from "@/utils/supabase/adminClient";
-import { checkIsUserAdmin } from "@/utils/supabase/userSessionData";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { notifyFeedbackAssigned } from "@/lib/services/feedback-assignment-notifier";
 import type { Database } from "@/types/database.types";
@@ -48,7 +48,7 @@ async function requireAdminServiceAccess() {
     throw new Error("User not authenticated");
   }
 
-  if (!(await checkIsUserAdmin(supabase, user.id))) {
+  if (!(await hasAdminPower(supabase, user.id, "any"))) {
     throw new Error("Admin access required");
   }
 
@@ -91,7 +91,7 @@ export async function submitFeedback(
     const username = user.user_metadata?.username || user.email || "Anonymous";
 
     // Admin-gated extras
-    const isAdmin = await checkIsUserAdmin(supabase, user.id);
+    const isAdmin = await hasAdminPower(supabase, user.id, "any");
     const categoryId = isAdmin && input.category_id ? input.category_id : null;
     const assignedTo = isAdmin && input.assigned_to ? input.assigned_to : null;
 
@@ -688,7 +688,7 @@ export async function getAllFeedback(): Promise<{
       return { success: false, error: "User not authenticated" };
     }
 
-    if (!(await checkIsUserAdmin(supabase, user.id))) {
+    if (!(await hasAdminPower(supabase, user.id, "any"))) {
       return { success: false, error: "Admin access required" };
     }
 
@@ -737,7 +737,7 @@ export async function updateFeedback(
       return { success: false, error: "User not authenticated" };
     }
 
-    const isAdmin = await checkIsUserAdmin(supabase, user.id);
+    const isAdmin = await hasAdminPower(supabase, user.id, "any");
     if (!isAdmin) {
       return { success: false, error: "Admin access required" };
     }
@@ -836,7 +836,7 @@ export async function getFeedbackById(
     } = await getClaimsUser(supabase);
     if (!user) return { success: false, error: "User not authenticated" };
 
-    if (!(await checkIsUserAdmin(supabase, user.id))) {
+    if (!(await hasAdminPower(supabase, user.id, "any"))) {
       return { success: false, error: "Admin access required" };
     }
 
@@ -879,7 +879,7 @@ export async function getFeedbackRaisedFromReviewRow(
     } = await getClaimsUser(supabase);
     if (!user) return { success: false, error: "User not authenticated" };
 
-    if (!(await checkIsUserAdmin(supabase, user.id))) {
+    if (!(await hasAdminPower(supabase, user.id, "any"))) {
       return { success: false, error: "Admin access required" };
     }
 
@@ -983,7 +983,7 @@ export async function forceCloseFeedback(
       return { success: false, error: "User not authenticated" };
     }
 
-    const isAdmin = await checkIsUserAdmin(supabase, user.id);
+    const isAdmin = await hasAdminPower(supabase, user.id, "any");
     if (!isAdmin) {
       return { success: false, error: "Admin access required" };
     }

@@ -9,6 +9,7 @@
 import { createClient } from "@supabase/supabase-js";
 import {
   ADMIN_LANE_HEADER,
+  adminLaneOpenForHeaders,
   installAdminLane,
   isAdminLanePath,
 } from "./adminLane";
@@ -82,5 +83,37 @@ describe("installAdminLane", () => {
     expect(() => installAdminLane({ supabaseUrl: "x", rest: {} }, () => true)).toThrow(
       /rest\.fetch/,
     );
+  });
+});
+
+describe("adminLaneOpenForHeaders — the one server-side lane decision", () => {
+  const h = (entries: Record<string, string>) => new Headers(entries);
+  const HOST = "aimatrx.com";
+
+  it("trusts the proxy's verdict, both ways", () => {
+    expect(adminLaneOpenForHeaders(h({ [ADMIN_LANE_HEADER]: "1" }))).toBe(true);
+    // A user page reached FROM /administration stays a user page.
+    expect(
+      adminLaneOpenForHeaders(
+        h({ [ADMIN_LANE_HEADER]: "0", host: HOST, referer: `https://${HOST}/administration/users` }),
+      ),
+    ).toBe(false);
+  });
+
+  it("opens an unproxied /api call made from an admin page of this origin", () => {
+    expect(
+      adminLaneOpenForHeaders(h({ host: HOST, referer: `https://${HOST}/administration/cms` })),
+    ).toBe(true);
+    expect(
+      adminLaneOpenForHeaders(h({ host: HOST, referer: `https://${HOST}/cms/admin` })),
+    ).toBe(true);
+  });
+
+  it("stays closed for a user page, another origin, or no referer", () => {
+    expect(adminLaneOpenForHeaders(h({ host: HOST, referer: `https://${HOST}/notes` }))).toBe(false);
+    expect(
+      adminLaneOpenForHeaders(h({ host: HOST, referer: "https://evil.example/administration" })),
+    ).toBe(false);
+    expect(adminLaneOpenForHeaders(h({ host: HOST }))).toBe(false);
   });
 });

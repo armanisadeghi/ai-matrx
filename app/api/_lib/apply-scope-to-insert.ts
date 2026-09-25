@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { hasAdminPower } from "@/utils/auth/adminLaneServer";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
-import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 
 /**
  * Resolves `scope` + `scopeId` from a JSON request body into the four row-level
@@ -102,7 +102,7 @@ export async function applyScopeToInsertPayload(args: {
     // `global_readable` — every tenant on the platform can read it. That is a
     // platform act, so it is deliberate AND admin-gated; the repo's one gate
     // is `checkIsSuperAdmin` (no new gate primitive here).
-    const isSuperAdmin = await checkIsSuperAdmin(client, userId);
+    const isSuperAdmin = await hasAdminPower(client, userId);
     if (!isSuperAdmin) {
       return NextResponse.json(
         {

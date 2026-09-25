@@ -1,9 +1,9 @@
 import { createClient } from "@/utils/supabase/server";
+import { hasAdminPower } from "@/utils/auth/adminLaneServer";
 import { catWriteArgs, categoryRow } from "@/lib/db/category-door";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { toGlobalOwnershipWire } from "@/lib/organizations/globalOwnership";
-import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import {
   coerceLegacyCategoryIsActive,
   platformCategoryToLegacyRow,
@@ -157,7 +157,7 @@ export async function POST(
     let copyOrganizationId = source.organization_id;
     let copyUserId: string | null = source.user_id ?? null;
     if (source.organization_id === systemOrgId) {
-      const isSuperAdmin = await checkIsSuperAdmin(supabase, user.id);
+      const isSuperAdmin = await hasAdminPower(supabase, user.id);
       if (!isSuperAdmin) {
         // The organization is ADMITTED at the boundary, never resolved here —
         // same rule, same header, same refusal copy as the create path.

@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { hasAdminPower } from "@/utils/auth/adminLaneServer";
 import { NextRequest, NextResponse } from "next/server";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
@@ -136,10 +137,7 @@ export async function DELETE(
     if (isGlobal) {
       // Global (system-scope) apps can only be deleted by admins. Use the
       // admin client so RLS doesn't block the destructive write.
-      const { checkIsSuperAdmin } = await import(
-        "@/utils/supabase/userSessionData"
-      );
-      const isAdmin = await checkIsSuperAdmin(supabase, user.id);
+      const isAdmin = await hasAdminPower(supabase, user.id);
       if (!isAdmin) {
         return NextResponse.json(
           {

@@ -1,8 +1,8 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { hasAdminPower } from "@/utils/auth/adminLaneServer";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
-import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { redirect } from "next/navigation";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import type { Database } from "@/types/database.types";
@@ -147,7 +147,7 @@ export async function createSystemAgentFromSeed(
     );
   }
 
-  const isAdmin = await checkIsSuperAdmin(supabase, user.id);
+  const isAdmin = await hasAdminPower(supabase, user.id);
   if (!isAdmin) {
     throw new Error("Forbidden: admin privileges required");
   }

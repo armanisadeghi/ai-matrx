@@ -10,10 +10,10 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { hasAdminPower } from "@/utils/auth/adminLaneServer";
 import { sendEmail, emailTemplates } from "@/lib/email/client";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
-import { checkIsUserAdmin } from "@/utils/supabase/userSessionData";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 // 🚨 THE ONE HELPER. Never build `?org=` by hand — the rule lives once, in the
 // database, where the notice/assist/DM triggers read it too.
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isAdmin = await checkIsUserAdmin(supabase, user.id);
+    const isAdmin = await hasAdminPower(supabase, user.id, "any");
     const isOwner =
       feedback.user_id === user.id || feedback.created_by === user.id;
     const isStoredAdminMessage = storedMessage.sender_type === "admin";

@@ -21,8 +21,8 @@ jest.mock("@/lib/sandbox/orchestrator-routing", () => ({
 jest.mock("@/utils/supabase/server", () => ({
   createClient: (...args: unknown[]) => mockCreateClient(...args),
 }));
-jest.mock("@/utils/supabase/userSessionData", () => ({
-  checkIsSuperAdmin: (...args: unknown[]) => mockCheckIsSuperAdmin(...args),
+jest.mock("@/utils/auth/adminLaneServer", () => ({
+  hasAdminPower: (...args: unknown[]) => mockCheckIsSuperAdmin(...args),
 }));
 
 afterEach(() => {

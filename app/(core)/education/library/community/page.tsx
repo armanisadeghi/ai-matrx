@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { requestInAdminLane } from "@/utils/auth/adminLaneServer";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { getCurrentUserAdminStatus } from "@/utils/auth/adminUtils";
 import {
@@ -17,15 +18,18 @@ export const metadata: Metadata = createRouteMetadata("/education", {
 });
 
 export default async function CommunityLibraryPage() {
-  const [status, initialDecks, openSuggestions] = await Promise.all([
+  const [status, laneOpen, initialDecks, openSuggestions] = await Promise.all([
     getCurrentUserAdminStatus(),
+    // ADMIN POWER, not identity: the curator controls exist only in the admin
+    // section (utils/auth/adminLaneServer.ts) — here an admin is a reader.
+    requestInAdminLane(),
     fetchInitialPublicDecks(),
     fetchOwnerOpenSuggestionCount(),
   ]);
   return (
     <LibraryBrowser
       initialDecks={initialDecks}
-      isSuperAdmin={status?.level === "super_admin"}
+      isSuperAdmin={laneOpen && status?.level === "super_admin"}
       isSignedIn={!!status}
       openSuggestionCount={openSuggestions}
     />

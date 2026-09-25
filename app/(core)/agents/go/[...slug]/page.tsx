@@ -21,10 +21,10 @@
  */
 
 import { redirect } from "next/navigation";
+import { hasAdminPower } from "@/utils/auth/adminLaneServer";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { createClient } from "@/utils/supabase/server";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
-import { checkIsUserAdmin } from "@/utils/supabase/userSessionData";
 import { agentPathFor } from "@/features/agents/addressing/agentAddress";
 
 interface ResolveRow {
@@ -72,7 +72,7 @@ export default async function AgentGoPage({
     // /auth/verifying and retries, instead of reading an admin as a guest and
     // sending them to the member address.
     const { user } = row.agent_type === "builtin" ? await getSessionVerdict() : { user: null };
-    const isAdmin = user ? await checkIsUserAdmin(supabase, user.id) : false;
+    const isAdmin = user ? await hasAdminPower(supabase, user.id, "any") : false;
     // The sub-route comes from OUR route segments, never from a raw string,
     // and is re-validated anyway: an arbitrary value here would be an open
     // redirect inside the app.

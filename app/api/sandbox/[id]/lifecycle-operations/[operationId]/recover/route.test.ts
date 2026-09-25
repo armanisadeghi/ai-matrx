@@ -6,7 +6,7 @@ jest.mock("@/lib/sandbox/lifecycle-route-proxy", () => ({ proxyLifecycleReceipt,
 // caller through `getClaimsUser(client)` → `client.auth.getClaims()`, so the
 // fake must answer at that door with the SAME user its `getUser` returns.
 jest.mock("@/utils/supabase/server", () => ({ createClient: jest.fn(async () => ({ auth: withClaims({ getUser }) })) }));
-jest.mock("@/utils/supabase/userSessionData", () => ({ checkIsSuperAdmin }));
+jest.mock("@/utils/auth/adminLaneServer", () => ({ hasAdminPower: checkIsSuperAdmin }));
 const { withClaims } = require("@/test-utils/supabase-auth") as typeof import("@/test-utils/supabase-auth");
 const { POST } = require("./route") as typeof import("./route");
 const id = "11111111-1111-4111-8111-111111111111"; const operationId = "22222222-2222-4222-8222-222222222222"; const target = { rowId: id, sandboxId: "runtime", orchestrator: { url: "https://example.test", apiKey: "", tier: "ec2" }, deletedAt: null };

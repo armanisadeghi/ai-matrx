@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
-import { checkIsSuperAdmin } from '@/utils/supabase/userSessionData'
 import {
     resolveOrchestratorByTier,
     orchestratorJsonHeaders,
 } from '@/lib/sandbox/orchestrator-routing'
 import type { SandboxTier } from '@/types/sandbox'
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { hasAdminPower } from "@/utils/auth/adminLaneServer";
 
 /**
  * GET /api/sandbox/system?tier=ec2|hosted
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'User not authenticated' }, { status: 401 })
         }
 
-        const isAdmin = await checkIsSuperAdmin(supabase, user.id)
+        const isAdmin = await hasAdminPower(supabase, user.id)
         if (!isAdmin) {
             return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
         }

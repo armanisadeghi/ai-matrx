@@ -311,10 +311,14 @@ async function routeRequest(request: NextRequest) {
  * forwards these mutated headers downstream.
  */
 function stampAdminLane(request: NextRequest): void {
+  // (The proxy stamps from its own path only; `adminLaneOpenForHeaders` reads it.)
   if (isAdminLanePath(request.nextUrl.pathname)) {
     request.headers.set(ADMIN_LANE_HEADER, "1");
   } else {
-    request.headers.delete(ADMIN_LANE_HEADER);
+    // An explicit "0", never a bare delete: it overwrites any copy a browser
+    // sent AND tells `adminLaneOpenForHeaders` the proxy already decided, so
+    // the Referer fallback (for unproxied /api routes) can never reopen it.
+    request.headers.set(ADMIN_LANE_HEADER, "0");
   }
 }
 
