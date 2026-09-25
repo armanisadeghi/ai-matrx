@@ -33,13 +33,15 @@ function render(node: ReactElement) {
   return { root, host };
 }
 
-const seen: Array<Record<string, unknown>> = [];
-jest.mock("@ai-matrx/records-ui", () => ({
-  FormRunner: (props: Record<string, unknown>) => {
-    seen.push(props);
-    return null;
-  },
-}));
+// The factory is required lazily inside the closure (Jest's documented pattern for a shared
+// mock factory) because `jest.mock(...)` calls are hoisted above this file's `import`
+// statements, so a statically-imported reference is not yet initialized when this runs.
+jest.mock("@ai-matrx/records-ui", () =>
+  require("./records-ui-test-double").mockRecordsUiFormRunnerFactory()
+);
+
+import { mockFormRunnerCalls } from "./records-ui-test-double";
+const seen = mockFormRunnerCalls;
 
 import { PublicFormRunner } from "@/app/(link)/f/[formId]/PublicFormRunner";
 import { prefillFromLink, type PublicForm } from "@/features/forms/service";
