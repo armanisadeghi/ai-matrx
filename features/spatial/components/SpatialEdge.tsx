@@ -30,7 +30,7 @@ export function SpatialEdge({ from, to }: { from: Rect; to: Rect }) {
   return (
     <svg
       aria-hidden
-      className="pointer-events-none absolute overflow-visible text-muted-foreground/60"
+      className="pointer-events-none absolute max-w-none overflow-visible text-muted-foreground/60"
       style={{ left: minX, top: minY, width: w, height: h }}
     >
       <path d={d} fill="none" stroke="currentColor" strokeWidth={2.5} strokeDasharray="8 8" />

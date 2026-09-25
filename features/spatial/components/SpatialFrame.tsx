@@ -27,13 +27,13 @@ export function SpatialFrame({ id, rect, title, note }: SpatialFrameProps) {
 
   return (
     <div
-      className="pointer-events-none absolute rounded-2xl border border-dashed border-border/80 bg-background/40"
+      className="pointer-events-none absolute max-w-none rounded-2xl border border-dashed border-border/80 bg-background/40"
       style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
     >
       <button
         type="button"
         onClick={() => store.fitItem(frameId)}
-        className="pointer-events-auto absolute bottom-full left-0 flex max-w-full items-baseline gap-3 pb-3 text-left"
+        className="pointer-events-auto absolute bottom-full left-0 flex max-w-none items-baseline gap-3 pb-3 text-left"
         title={`Fly to ${title}`}
       >
         <span

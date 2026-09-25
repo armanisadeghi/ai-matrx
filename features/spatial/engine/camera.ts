@@ -120,8 +120,10 @@ export function easeInOutCubic(t: number): number {
  * factor is exponential in the delta and the delta is clamped. */
 export function wheelZoomFactor(deltaY: number, deltaMode: number): number {
   const px = deltaMode === 1 ? deltaY * 16 : deltaMode === 2 ? deltaY * 400 : deltaY;
-  const clamped = Math.max(-60, Math.min(60, px));
-  return Math.exp(-clamped * 0.01);
+  // One mouse notch (~100px, clamped to 50) ≈ 1.22× — the Figma/tldraw step.
+  // A pinch arrives as many small deltas and stays smooth.
+  const clamped = Math.max(-50, Math.min(50, px));
+  return Math.exp(-clamped * 0.004);
 }
 
 /** Serialise / parse a camera for deep links (`#cam=x,y,z`). */

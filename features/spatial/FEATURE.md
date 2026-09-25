@@ -50,6 +50,8 @@ stale text. By construction a batched tile renders once per interval instead of 
   `will-change: transform` is set only while the camera moves (permanently on = blurry text).
 - **Generated HTML is `sandbox="allow-scripts"` with no `allow-same-origin`**, inert until its
   tile is selected, and unloads 20 s after leaving the viewport.
+- **Every element placed in world space carries `max-w-none`.** World items sit in a zero-width
+  absolute box, and globals.css applies `* { max-width: 100% }` under 768px.
 - **Components that assume the viewport break inside the plane:** `WindowPanel` (portals to
   `document.body`, window-relative drag bounds) and anything `position: fixed` cannot be tile
   bodies. A kind tuned for the 720px chat column needs a ≥ 720px tile.
@@ -85,3 +87,8 @@ esc deselect · double-click a tile to fly to it · wheel over the SELECTED tile
   pipeline, generated HTML, 100-stream stress test). Unit tests in `__tests__/engine.test.ts`.
   Same day: browser pass fixed controls swallowed by the pan handler, fit under the toolbar
   (`insets`), and the performance rules above; far-zoom tiles no longer commit at all.
+  Independent verification (Sonnet) then found and this session fixed: header drag dropped after
+  the first move (listeners re-bound mid-gesture — now ref-based), tiles collapsed to 2px under
+  768px (global `* { max-width: 100% }` in globals.css — every spatial element is `max-w-none`),
+  a reload right after a move lost it (hash now throttled, not debounced), and a 1.8× zoom per
+  mouse notch (now ~1.22×). Zoom-at-cursor measured exact to 0.1 world px over 23%→400%.

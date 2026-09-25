@@ -32,6 +32,7 @@ import { type Insets, SpatialStore } from "../engine/spatial-store";
 import { SpatialStoreContext } from "../engine/react";
 
 const GRID_WORLD_PX = 24;
+const HASH_THROTTLE_MS = 400;
 
 interface SpatialViewportProps {
   initialCamera?: Camera;
@@ -123,16 +124,24 @@ export function SpatialViewport({
     return () => ro.disconnect();
   }, [store, fitOnMount]);
 
-  // ── camera → URL hash (settled, not per frame) ───────────────────────────
+  // ── camera → URL hash ────────────────────────────────────────────────────
+  // Throttled, not debounced: the address trails the camera by at most
+  // HASH_THROTTLE_MS, so a reload right after a move keeps it (by `pagehide`
+  // the browser has already chosen the URL to reload). 400ms stays under
+  // Safari's ~100 replaceState calls per 30s.
   useEffect(() => {
+    let last = 0;
     let t: ReturnType<typeof setTimeout> | null = null;
+    const write = () => {
+      t = null;
+      last = performance.now();
+      replaceAddressWithoutNavigating(
+        `${window.location.pathname}${window.location.search}#${cameraToHash(store.getCamera())}`,
+      );
+    };
     const unsub = store.subscribeFrame(() => {
-      if (t) clearTimeout(t);
-      t = setTimeout(() => {
-        replaceAddressWithoutNavigating(
-          `${window.location.pathname}${window.location.search}#${cameraToHash(store.getCamera())}`,
-        );
-      }, 350);
+      if (t) return;
+      t = setTimeout(write, Math.max(0, HASH_THROTTLE_MS - (performance.now() - last)));
     });
     return () => {
       unsub();
@@ -297,8 +306,13 @@ export function SpatialViewport({
           aria-hidden
           className="pointer-events-none absolute -bottom-40 -right-40 left-0 top-0 [background-image:radial-gradient(hsl(var(--muted-foreground)/0.28)_1px,transparent_1.2px)]"
         />
-        <div ref={worldRef} className="absolute left-0 top-0 origin-top-left">
-          <div ref={zoomVarRef}>{children}</div>
+        {/* World items are absolutely placed in a zero-width box, so the
+            global mobile rule `* { max-width: 100% }` (globals.css) would
+            clamp every one of them to 0 — each spatial element opts out. */}
+        <div ref={worldRef} className="absolute left-0 top-0 max-w-none origin-top-left">
+          <div ref={zoomVarRef} className="max-w-none">
+            {children}
+          </div>
         </div>
         {overlay}
       </div>

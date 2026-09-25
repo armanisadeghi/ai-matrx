@@ -73,17 +73,28 @@ export function SpatialTile({
   const tier = usePaceTier(id);
   const selected = useSelectedTile() === id;
   const headerRef = useRef<HTMLDivElement>(null);
+  // The drag listeners read the latest rect and onMove through refs. If the
+  // effect depended on them, the first move would re-render the tile, tear the
+  // listeners down mid-gesture and drop the drag.
+  const rectRef = useRef(rect);
+  const onMoveRef = useRef(onMove);
+  useEffect(() => {
+    rectRef.current = rect;
+    onMoveRef.current = onMove;
+  });
+
+  const canMove = !!onMove;
 
   useEffect(() => store.registerItem(id, rect), [store, id, rect]);
 
   // Header drag moves the tile (world delta = screen delta / zoom).
   useEffect(() => {
     const header = headerRef.current;
-    if (!header || !onMove) return;
+    if (!header || !canMove) return;
     let start: { px: number; py: number; x: number; y: number } | null = null;
     const down = (e: PointerEvent) => {
       if (e.button !== 0 || (e.target as HTMLElement).closest("button")) return;
-      start = { px: e.clientX, py: e.clientY, x: rect.x, y: rect.y };
+      start = { px: e.clientX, py: e.clientY, x: rectRef.current.x, y: rectRef.current.y };
       store.select(id);
       header.setPointerCapture(e.pointerId);
       e.stopPropagation();
@@ -91,7 +102,7 @@ export function SpatialTile({
     const move = (e: PointerEvent) => {
       if (!start) return;
       const z = store.getCamera().z;
-      onMove(id, start.x + (e.clientX - start.px) / z, start.y + (e.clientY - start.py) / z);
+      onMoveRef.current?.(id, start.x + (e.clientX - start.px) / z, start.y + (e.clientY - start.py) / z);
     };
     const up = () => {
       start = null;
@@ -106,7 +117,7 @@ export function SpatialTile({
       header.removeEventListener("pointerup", up);
       header.removeEventListener("pointercancel", up);
     };
-  }, [store, id, rect.x, rect.y, onMove]);
+  }, [store, id, canMove]);
 
   const culled = tier === "offscreen";
   const overview = tier === "overview";
@@ -120,7 +131,7 @@ export function SpatialTile({
         store.fitItem(id);
       }}
       className={cn(
-        "absolute flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow",
+        "absolute flex max-w-none flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow",
         selected ? "border-primary shadow-lg ring-2 ring-primary/30" : "border-border",
       )}
       style={{

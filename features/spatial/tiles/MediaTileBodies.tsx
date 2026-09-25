@@ -70,7 +70,7 @@ export function HtmlTileBody({
           srcDoc={srcDoc}
           sandbox="allow-scripts"
           loading="lazy"
-          className={cn("absolute left-0 top-0 origin-top-left border-0", !active && "pointer-events-none")}
+          className={cn("absolute left-0 top-0 max-w-none origin-top-left border-0", !active && "pointer-events-none")}
           style={{
             width: HTML_DESIGN_WIDTH,
             height: `${100 / scale}%`,
