@@ -29,6 +29,10 @@ in the same change.
 
 ## Invariants — do not violate
 
+0. **What is the person's file, and what is Recents, is the DATABASE's rule** — mirrored once in
+   `utils/user-visible.ts` (`pnpm check:user-visible-parity`), never a second client filter:
+   `/Users/armanisadeghi/code/common-docs/systems/media/file-service/USER_FILES_VS_MACHINE_FILES.md`.
+
 1. **`types.ts` is the only type source.** Import `@/features/files/types` directly; never duplicate
    types in subfolders, never declare `CloudFile`/`CloudFolder` inline.
 2. **`storage_uri` is BANNED on the client.** Never select it, never model it. The column grant is

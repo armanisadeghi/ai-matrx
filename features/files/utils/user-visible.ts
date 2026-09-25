@@ -16,7 +16,7 @@
  *
  * Declared once in aidream packages/matrx-files/matrx_files/user_visible.py. The
  * rule and how a machine writer registers: common-docs
- * systems/files/user-files-vs-machine-files.md.
+ * systems/media/file-service/USER_FILES_VS_MACHINE_FILES.md.
  *
  * `public.get_user_file_tree` and the daemon's sync feed both call those, so
  * anything that arrives through the RPC is ALREADY filtered — callers must not

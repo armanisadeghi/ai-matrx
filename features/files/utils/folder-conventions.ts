@@ -473,7 +473,7 @@ export function isSystemPath(path: string | null | undefined): boolean {
  * matrx_files/user_visible.py RECENT_EXCLUDED_ROOTS) and the browser applies
  * its parity-guarded mirror, `isRecentActivityFile` / `isRecentActivityPath`
  * in `features/files/utils/user-visible.ts`. Rule + registry: common-docs
- * systems/files/user-files-vs-machine-files.md.
+ * systems/media/file-service/USER_FILES_VS_MACHINE_FILES.md.
  */
 
 /**
