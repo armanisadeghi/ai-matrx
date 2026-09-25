@@ -914,7 +914,6 @@
     "smol-toml": "^1.9.0",
     "sonner": "latest",
     "sql.js": "^1.14.2",
-    "streamdown": "^2.6.0",
     "stripe": "^22.6.2",
     "styled-components": "^6.5.3",
     "supabase": "^2.117.0",
