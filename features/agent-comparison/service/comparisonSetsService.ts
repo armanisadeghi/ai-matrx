@@ -7,6 +7,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type {
   ComparisonEntryRow,
@@ -58,11 +59,14 @@ export async function renameComparisonSet(
   setId: string,
   name: string,
 ): Promise<void> {
-  const { error } = await supabase()
-    .schema("agent").from("cmp_comparison_sets")
-    .update({ name })
-    .eq("id", setId);
-  if (error) throw error;
+  await writeOne(
+    supabase()
+      .schema("agent").from("cmp_comparison_sets")
+      .update({ name })
+      .eq("id", setId)
+      .select("id"),
+    { action: "rename", noun: "comparison" },
+  );
 }
 
 export async function listComparisonSets(

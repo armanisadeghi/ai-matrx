@@ -5,6 +5,7 @@
 // the same gate in the UI.
 
 import { supabase } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
 import type { Tables, TablesUpdate } from "@/types/database.types";
 
@@ -78,9 +79,12 @@ export async function updateSample(
 }
 
 export async function deleteSample(id: string): Promise<void> {
-  const { error } = await supabase
-    .schema("admin").from("admin_markdown_samples")
-    .delete()
-    .eq("id", id);
-  if (error) throw error;
+  await writeOne(
+    supabase
+      .schema("admin").from("admin_markdown_samples")
+      .delete()
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "sample" },
+  );
 }

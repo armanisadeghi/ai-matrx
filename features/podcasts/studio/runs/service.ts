@@ -8,6 +8,7 @@
 // reopened at /podcast/studio/run/[id].
 
 import { supabase } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { PcStudioRun } from "@/features/podcasts/types";
@@ -64,11 +65,14 @@ export const studioRunsService = {
   },
 
   async updateRun(id: string, patch: PcStudioRunUpdate): Promise<void> {
-    const { error } = await supabase
-      .schema("podcast").from("pc_studio_runs")
-      .update(patch)
-      .eq("id", id);
-    if (error) throw error;
+    await writeOne(
+      supabase
+        .schema("podcast").from("pc_studio_runs")
+        .update(patch)
+        .eq("id", id)
+        .select("id"),
+      { action: "save", noun: "studio run" },
+    );
   },
 
   async fetchRunsByUser(userId: string): Promise<PcStudioRun[]> {

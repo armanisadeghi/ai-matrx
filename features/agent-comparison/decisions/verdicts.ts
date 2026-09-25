@@ -19,6 +19,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 
 export const DECISION_VERDICTS_KEY = "decision_verdicts" as const;
 
@@ -98,11 +99,14 @@ export async function saveDecisionVerdict(
   if (trimmed === "") delete verdicts[questionName];
   else verdicts[questionName] = { answer: trimmed, notedAt: new Date().toISOString() };
 
-  const { error: writeError } = await client
-    .from("cmp_comparison_sets")
-    .update({ metadata: { ...existing, [DECISION_VERDICTS_KEY]: verdicts } })
-    .eq("id", setId);
-  if (writeError) throw writeError;
+  await writeOne(
+    client
+      .from("cmp_comparison_sets")
+      .update({ metadata: { ...existing, [DECISION_VERDICTS_KEY]: verdicts } })
+      .eq("id", setId)
+      .select("id"),
+    { action: "save", noun: "comparison" },
+  );
 
   return verdicts;
 }
