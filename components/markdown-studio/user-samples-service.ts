@@ -4,6 +4,7 @@
 // needed, but explicit created_by on insert is required by the RLS check.
 
 import { supabase } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
@@ -69,10 +70,25 @@ export async function updateUserSample(
 export async function deleteUserSample(id: string): Promise<void> {
   // Soft delete, never a hard one (owner ruling 2026-09-20; db-rules §8):
   // the sole reader `listUserSamples` above filters `deleted_at`.
-  const { error } = await supabase
-    .schema("users").from("user_markdown_samples")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id)
-    .is("deleted_at", null);
-  if (error) throw error;
+  await writeOne(
+    supabase
+      .schema("users").from("user_markdown_samples")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .is("deleted_at", null)
+      .select("id, deleted_at"),
+    {
+      action: "delete",
+      noun: "sample",
+      alreadyDone: {
+        reread: () =>
+          supabase
+            .schema("users").from("user_markdown_samples")
+            .select("id, deleted_at")
+            .eq("id", id)
+            .maybeSingle(),
+        isDone: (row) => row.deleted_at != null,
+      },
+    },
+  );
 }

@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { useToast } from "@/components/ui/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -654,7 +654,7 @@ export function ToolTestSamplesViewer({ toolName, toolId }: ToolTestSamplesViewe
         );
 
         if (error) {
-            const failure = operationFailed("update that sample", error);
+            const failure = error instanceof WriteDidNotLandError ? error : operationFailed("update that sample", error);
             toast({ title: "Update failed", description: failure.message, variant: "destructive" });
             throw failure;
         }

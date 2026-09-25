@@ -30,7 +30,7 @@
  */
 
 import * as React from "react";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { type SupabaseClient } from "@supabase/supabase-js";
 import { toast } from "@/lib/toast";
 import {
@@ -498,7 +498,7 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
     );
     if (error) {
       setSaveStatus("error");
-      toast.error("Save failed");
+      toast.error(error instanceof WriteDidNotLandError ? error.message : "Save failed");
       return;
     }
     flashSaved();
@@ -533,7 +533,7 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
     if (error) {
       setLists((prev) => [snapshotList, ...prev]);
       setActiveId(id);
-      toast.error("Delete failed");
+      toast.error(error instanceof WriteDidNotLandError ? error.message : "Delete failed");
       return;
     }
 
@@ -551,7 +551,7 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
             { action: "restore", noun: "list" },
           );
           if (undoError) {
-            toast.error("Undo failed");
+            toast.error(undoError instanceof WriteDidNotLandError ? undoError.message : "Undo failed");
             return;
           }
           setLists((prev) => [snapshotList, ...prev]);
@@ -647,7 +647,7 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
     if (error && snapshot) {
       setItems((prev) => prev.map((i) => (i.id === id ? snapshot! : i)));
       setSaveStatus("error");
-      toast.error("Save failed");
+      toast.error(error instanceof WriteDidNotLandError ? error.message : "Save failed");
       return;
     }
     flashSaved();
@@ -678,7 +678,7 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
 
       if (error) {
         setItems((prev) => [...prev, snapshot]);
-        toast.error("Delete failed");
+        toast.error(error instanceof WriteDidNotLandError ? error.message : "Delete failed");
         return;
       }
 
@@ -696,7 +696,7 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
               { action: "restore", noun: "item" },
             );
             if (undoError) {
-              toast.error("Undo failed");
+              toast.error(undoError instanceof WriteDidNotLandError ? undoError.message : "Undo failed");
               return;
             }
             setItems((prev) => [...prev, snapshot]);

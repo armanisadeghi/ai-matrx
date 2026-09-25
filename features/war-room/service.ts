@@ -4,7 +4,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOne } from "@/utils/supabase/writeOne";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
@@ -345,11 +345,31 @@ export async function softDeleteThread(id: string): Promise<void> {
 export async function persistThreadPositions(
   updates: { id: string; position: number }[],
 ): Promise<void> {
-  await Promise.all(
+  // Every row must land: a refused or failed position write is collected and
+  // reported, never dropped (the caller surfaces the throw).
+  const results = await Promise.allSettled(
     updates.map(({ id, position }) =>
-      wsDb.from(THREADS).update({ position }).eq("id", id),
+      writeOne(
+        wsDb.from(THREADS).update({ position }).eq("id", id).select("id"),
+        { action: "move", noun: "thread" },
+      ),
     ),
   );
+  const failures = results.filter(
+    (r): r is PromiseRejectedResult => r.status === "rejected",
+  );
+  if (failures.length > 0) {
+    const first = failures[0].reason;
+    console.error(
+      `[war-room] persistThreadPositions: ${failures.length} of ${updates.length} thread positions did not save:`,
+      failures.map((f) => f.reason),
+    );
+    throw first instanceof Error
+      ? first
+      : new Error(
+          `${failures.length} of ${updates.length} thread positions did not save.`,
+        );
+  }
 }
 
 /** Thread ids with no `thread → war_room` membership edge. */

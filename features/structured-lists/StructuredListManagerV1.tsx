@@ -24,7 +24,7 @@
  */
 
 import * as React from "react";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { toast } from "@/lib/toast";
 import {
@@ -530,7 +530,7 @@ export function StructuredListManagerV1({
     );
     if (error) {
       setSaveStatus("error");
-      toast.error("Save failed");
+      toast.error(error instanceof WriteDidNotLandError ? error.message : "Save failed");
       return;
     }
     flashSaved();
@@ -565,7 +565,7 @@ export function StructuredListManagerV1({
       );
       if (error) {
         setLists((prev) => [snapshotList, ...prev]);
-        toast.error("Delete failed");
+        toast.error(error instanceof WriteDidNotLandError ? error.message : "Delete failed");
       }
     }, 5000);
 
@@ -670,7 +670,7 @@ export function StructuredListManagerV1({
     if (error && snapshot) {
       setItems((prev) => prev.map((i) => (i.id === id ? snapshot! : i)));
       setSaveStatus("error");
-      toast.error("Save failed");
+      toast.error(error instanceof WriteDidNotLandError ? error.message : "Save failed");
       return;
     }
     flashSaved();
@@ -697,7 +697,7 @@ export function StructuredListManagerV1({
       );
       if (error) {
         setItems((prev) => [...prev, snapshot]);
-        toast.error("Delete failed");
+        toast.error(error instanceof WriteDidNotLandError ? error.message : "Delete failed");
       }
     }, 5000);
 

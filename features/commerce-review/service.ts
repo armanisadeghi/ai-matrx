@@ -21,6 +21,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createClient } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { guardedUpdate, readAllRows } from "@ai-matrx/data/db";
 import { listArtifactsForAssets } from "@/features/commerce-intake/service";
 import type { Json } from "@/types/database.types";
@@ -493,15 +494,18 @@ export async function recordRecallVerdict(
   auditId: string,
   verdict: RecallVerdict,
 ): Promise<void> {
-  const { error } = await db()
-    .from("recall_audit")
-    .update({
-      human_verdict: verdict,
-      human_verdict_at: new Date().toISOString(),
-    })
-    .eq("id", auditId)
-    .is("human_verdict", null);
-  if (error) throw error;
+  await writeOne(
+    db()
+      .from("recall_audit")
+      .update({
+        human_verdict: verdict,
+        human_verdict_at: new Date().toISOString(),
+      })
+      .eq("id", auditId)
+      .is("human_verdict", null)
+      .select("id"),
+    { action: "save", noun: "recall check", compareAndSet: true },
+  );
 }
 
 // ── Guarded asset writes ────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ import {
   isPersistableCanvasType,
 } from "@/features/canvas/redux/canvasSlice";
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { buildSearchOr } from "@/utils/supabase-search";
@@ -379,12 +380,28 @@ export const canvasItemsService = {
       // Soft delete, never a hard one (owner ruling 2026-09-20; db-rules
       // §8): every reader of `canvas.canvas_items` in this file already
       // filters `deleted_at`.
-      const { error } = await supabase
-        .schema("canvas").from("canvas_items")
-        .update({ deleted_at: new Date().toISOString() })
-        .eq("id", id)
-        .eq("user_id", userId)
-        .is("deleted_at", null);
+      const { error } = await tryWriteOne(
+        supabase
+          .schema("canvas").from("canvas_items")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("id", id)
+          .eq("user_id", userId)
+          .is("deleted_at", null)
+          .select("id, deleted_at"),
+        {
+          action: "delete",
+          noun: "canvas item",
+          alreadyDone: {
+            reread: () =>
+              supabase
+                .schema("canvas").from("canvas_items")
+                .select("id, deleted_at")
+                .eq("id", id)
+                .maybeSingle(),
+            isDone: (row) => row.deleted_at != null,
+          },
+        },
+      );
 
       return { error };
     } catch (error) {

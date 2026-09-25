@@ -374,13 +374,30 @@ export const deleteApp = createAsyncThunk<void, string, ThunkApi>(
     // this repo already filters it, so destroying the row took the person's app
     // AND its whole version history with it while the dialog above promised
     // nothing of the kind. Same class as DD-119.
-    const { error } = await supabase
-      .schema("app")
-      .from("definition")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", appId)
-      .eq("created_by", userId)
-      .is("deleted_at", null);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("app")
+        .from("definition")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", appId)
+        .eq("created_by", userId)
+        .is("deleted_at", null)
+        .select("id, deleted_at"),
+      {
+        action: "delete",
+        noun: "app",
+        alreadyDone: {
+          reread: () =>
+            supabase
+              .schema("app")
+              .from("definition")
+              .select("id, deleted_at")
+              .eq("id", appId)
+              .maybeSingle(),
+          isDone: (row) => row.deleted_at != null,
+        },
+      },
+    );
 
     if (error) {
       dispatch(
