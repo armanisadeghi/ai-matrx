@@ -3,6 +3,7 @@
  * silent-render watchdog. No store/DOM/timers.
  */
 import {
+  watchdogTracksOpen,
   diagnoseOverlayRender,
   rectOnScreen,
 } from "@/features/window-panels/diagnostics/overlayRenderWatchdog";
@@ -82,5 +83,21 @@ describe("diagnoseOverlayRender", () => {
   it("treats a popped-out window as ok (separate OS window)", () => {
     expect(diagnoseOverlayRender({ entry: entry({ popoutMode: "pip", windowed: { x: 5000, y: 5000, width: 0, height: 0 } }), windowsHidden: true, viewportWidth: VW, viewportHeight: VH }))
       .toEqual({ ok: true, reason: null });
+  });
+});
+
+describe("watchdogTracksOpen", () => {
+  it("never watches a multi-instance window, even opened on the default instance", () => {
+    // The Transcription Cleanup false toast: opened as "default", rendered as
+    // `transcription-cleanup-default`, no ack under the overlay id.
+    expect(watchdogTracksOpen({ kind: "window", instanceMode: "multi" }, "default")).toBe(false);
+  });
+  it("watches a singleton window's default instance only", () => {
+    expect(watchdogTracksOpen({ kind: "window", instanceMode: "singleton" }, "default")).toBe(true);
+    expect(watchdogTracksOpen({ kind: "window", instanceMode: "singleton" }, "x-1")).toBe(false);
+  });
+  it("ignores non-window overlays", () => {
+    expect(watchdogTracksOpen({ kind: "dialog" }, "default")).toBe(false);
+    expect(watchdogTracksOpen(undefined, "default")).toBe(false);
   });
 });

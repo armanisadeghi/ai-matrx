@@ -421,6 +421,23 @@ function scream(store: WMApi, watch: Watch, res: Evaluation): void {
   }, RECOVERY_POLL_MS);
 }
 
+/**
+ * Does the watchdog verify this open? Only SINGLETON window-kind overlays: a
+ * multi-instance window renders under a per-instance window id
+ * (`transcription-cleanup-<instanceId>`) that is never the registry slug and
+ * never acks under the overlay id — so watching it, even when it was opened on
+ * the "default" instance (the Tools grid / URL hydration open that way), can
+ * only end in a false "didn't appear" toast over a window that is on screen.
+ */
+export function watchdogTracksOpen(
+  meta: { kind: string; instanceMode?: string } | undefined,
+  instanceId: string,
+): boolean {
+  if (!meta || meta.kind !== "window") return false;
+  if (meta.instanceMode === "multi") return false;
+  return instanceId === DEFAULT_INSTANCE_ID;
+}
+
 // ── Middleware ──────────────────────────────────────────────────────────────
 
 export const overlayRenderWatchdogMiddleware: Middleware<object, WMState> =
@@ -444,13 +461,12 @@ export const overlayRenderWatchdogMiddleware: Middleware<object, WMState> =
         ? payload.instanceId
         : undefined;
 
-    // Only windows participate in the geometry/visibility model.
+    // Only singleton windows participate in the geometry/visibility model;
+    // multi-instance windows use per-instance ids we don't track here.
     const meta = getStaticEntryByOverlayId(overlayId);
-    if (!meta || meta.kind !== "window") return result;
-
-    // Multi-instance windows use per-instance ids we don't track here.
-    const instanceId = instanceIdRaw ?? DEFAULT_INSTANCE_ID;
-    if (instanceId !== DEFAULT_INSTANCE_ID) return result;
+    if (!meta || !watchdogTracksOpen(meta, instanceIdRaw ?? DEFAULT_INSTANCE_ID)) {
+      return result;
+    }
 
     const state = store.getState();
     // `toggleOverlay` may have just CLOSED it — only act when it ended up open.
