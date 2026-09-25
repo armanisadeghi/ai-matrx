@@ -21,8 +21,9 @@
 -- state this database can reach: there is one definition of the word, in one function.
 --
 -- WHAT IT RUNS ON. Any of the three (the preamble decides): MAIN, the rehearsal branch, or the
--- nightly dev clone. It is SELECT-only from end to end — no `begin`, no write, no rollback to
--- get wrong — so it is safe on the live instance and needs no maintenance window.
+-- nightly dev clone. It is SELECT-only from end to end — no write — so it is safe on the live
+-- instance and needs no maintenance window. (Under the release gate it runs in one READ ONLY
+-- transaction carrying the gate limits; see the block after the preamble.)
 --
 --   0  the census function is installed (an absent census is a REFUSAL, never a pass)
 --   1  ZERO halves disagree, in EITHER direction. Red names every one.
@@ -49,6 +50,18 @@
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
+\endif
+
+-- THE GATE DATABASE LIMITS (2026-09-25). When the release gate runs this against MAIN it passes
+-- `-v gate_limits=...` (scripts/gate-db-limits.ts, the same text scripts/lib/gate-db.ts puts on every
+-- TypeScript gate): the clauses then run in ONE read-only transaction whose first statement sets
+-- 60 s statements, 3 s locks and 60 s idle, transaction-local — the only form that holds through
+-- Supavisor's transaction pooler, which drops PGOPTIONS. It is opened here, AFTER the preamble,
+-- because the preamble opens and commits its own. Without the variable (the nightly clone sweep)
+-- nothing changes: each clause runs on its own, as before.
+\if :{?gate_limits}
+begin read only;
+:gate_limits;
 \endif
 
 \echo ''
@@ -209,5 +222,8 @@ begin
                v_person, v_file;
 end $$;
 
+\if :{?gate_limits}
+rollback;
+\endif
 \echo ''
-\echo 'relhalvescensus_green: all clauses PASS. Nothing was written; this suite never opens a transaction.'
+\echo 'relhalvescensus_green: all clauses PASS. Nothing was written (under the release gate, the clauses shared one read-only transaction, rolled back).'

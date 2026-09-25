@@ -843,7 +843,7 @@ function report(title: string, rows: Row[], qualified = false): boolean {
  * deletion.
  */
 /** Is lane STORE-TXN-4's refusal_only word on this database (the column AND its one shape test)? */
-async function refusalOnlyIsInstalled(client: Awaited<ReturnType<typeof connectDirect>>): Promise<boolean> {
+async function refusalOnlyIsInstalled(client: Awaited<ReturnType<typeof openGateDb>>): Promise<boolean> {
   const r = await client.query<{ here: boolean }>(
     `select to_regprocedure('platform.door_body_is_refusal_only(oid)') is not null
         and exists (select 1 from information_schema.columns

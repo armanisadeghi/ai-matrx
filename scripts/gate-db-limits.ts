@@ -3,10 +3,12 @@
  * database through psql. The text comes from `scripts/lib/gate-db.ts` — the one definition — so a
  * psql gate and a TypeScript gate can never drift apart.
  *
- *   psql -X -1 -v ON_ERROR_STOP=1 -c "$(pnpm exec tsx scripts/gate-db-limits.ts check:my-gate)" -f my.sql
+ *   psql -X -v ON_ERROR_STOP=1 -v gate_limits="$(pnpm exec tsx scripts/gate-db-limits.ts check:my-gate)" -f my.sql
  *
- * `-1` makes psql run every -c/-f in ONE transaction, which is what lets `set_config(..., true)`
- * govern the whole file through Supavisor's transaction pooler (PGOPTIONS is dropped there).
+ * The SQL file opens ONE transaction and runs `:gate_limits;` first inside it, so `set_config(...,
+ * true)` governs every statement after it through Supavisor's transaction pooler (PGOPTIONS is
+ * dropped there). Not `psql -1`: a file that \i's a preamble committing its own transaction ends
+ * psql's early and runs the rest ungoverned (measured on the clone, 2026-09-25).
  * An optional second argument raises the statement ceiling (ms) and a third names why — the
  * same rule `openGateDb` enforces.
  */

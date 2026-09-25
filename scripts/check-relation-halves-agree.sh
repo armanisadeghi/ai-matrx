@@ -55,12 +55,12 @@ cd /Users/armanisadeghi/code/matrx-frontend
 # THE GATE DATABASE LIMITS (scripts/lib/gate-db.ts, 2026-09-25). This used to export
 # PGOPTIONS='-c statement_timeout=300000 ...', which Supavisor drops on the floor — measured on the
 # clone, a startup option never reaches the server — so the census ran under the role default and
-# the 300 s was a promise nobody kept. `-1` runs the whole file as ONE transaction and the first
-# statement sets the gate limits inside it (60 s per statement, 3 s locks, 60 s idle), stamped
-# `gate:check:relation-halves-agree` in pg_stat_activity. The file is SELECT-only, so one
-# transaction changes nothing it measures.
+# the 300 s was a promise nobody kept. The suite opens ONE read-only transaction after its preamble
+# and runs `:gate_limits` first inside it (60 s per statement, 3 s locks, 60 s idle), stamped
+# `gate:check:relation-halves-agree` in pg_stat_activity. (`psql -1` cannot do this: the shared
+# preamble commits its own transaction, which would end psql's.)
 LIMITS="$(pnpm exec tsx scripts/gate-db-limits.ts check:relation-halves-agree)" || {
   say "REFUSED: could not read the gate database limits (scripts/gate-db-limits.ts). Nothing attempted."
   exit 78
 }
-"$PSQL" -X -1 -v ON_ERROR_STOP=1 -c "$LIMITS" -f scripts/campaign-tests/relhalvescensus_green.sql
+"$PSQL" -X -v ON_ERROR_STOP=1 -v gate_limits="$LIMITS" -f scripts/campaign-tests/relhalvescensus_green.sql
