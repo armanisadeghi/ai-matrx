@@ -145,10 +145,10 @@ presents the loaded count as a complete Vault or offers Export all.
 vendor format; extra URLs, attachments, OTP/passkeys, provenance, and custom
 fields remain explicit omissions.
 
-Firefox CSV is available through this same selected-login flow for ordinary
-URL, username, and password rows. Its source-level formatter and the shared
-preview/download safeguards are verified; Firefox destination acceptance is
-still separate work and is not claimed here.
+Firefox, RoboForm, and Dashlane CSV are available through this same
+selected-login flow for ordinary logins. Their source-level formatters and
+shared preview/download safeguards are verified; destination ingestion and
+actual browser downloads for these three profiles remain separate acceptance.
 
 The download Blob stays event-local: `URL.createObjectURL` is revoked after
 the click and bytes never enter React state, Redux, storage, analytics, logs,
@@ -385,6 +385,8 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- `2026-09-25` — Added Firefox, RoboForm, and Dashlane ordinary-login CSV choices to selected-login preview and download; external destination ingestion remains unverified.
 
 - `2026-09-20` — Added per-user Vault favorites and server-backed recent views with authorized-list-only state, context/request fences, reconciliation, fixed retry messaging, and separate Open/Favorite controls in both presentations.
 
