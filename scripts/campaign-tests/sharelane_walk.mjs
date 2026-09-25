@@ -108,7 +108,7 @@ try {
   const confirm = await until("the confirm sentence", () => q(t, "[data-lane-confirm]"), 10000);
   pass(
     "2. the confirm names what happens",
-    !!confirm.v?.includes(`Members of ${ORG_NAME} who are not named below will lose access.`),
+    !!confirm.v?.includes(`Everyone in ${ORG_NAME} who is not named below loses access, including the organization's owners.`),
     confirm.v,
   );
   pass("2. nothing applied before confirm", (await lane(t)) === "organization", await lane(t));

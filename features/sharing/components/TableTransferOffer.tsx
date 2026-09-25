@@ -57,7 +57,7 @@ export function TableTransferOffer({
 
   return (
     <div
-      className="mt-4 flex max-w-prose flex-col items-start gap-2 rounded-md border p-4"
+      className="flex max-w-prose flex-col items-start gap-2 rounded-md border p-4 text-left"
       data-table-transfer-offer
     >
       <p className="text-sm font-medium">You are not named on this table.</p>
