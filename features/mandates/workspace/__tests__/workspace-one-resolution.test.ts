@@ -69,8 +69,10 @@ describe("the mandate workspace never walks its own ladder", () => {
   const source = readFileSync(WORKSPACE, "utf8");
 
   it("asks the one resolver for the personal answer", () => {
-    expect(source).toContain('from "../useMandate"');
-    expect(source).toContain("useMandate(personalKey)");
+    // Holder-neutral since workflow parity (2026-09-25): the same one door
+    // (`GET /mandates/{key}/resolution`), painted for an agent OR a workflow.
+    expect(source).toContain('from "../useMandateHolder"');
+    expect(source).toContain("useMandateHolder(personalKey)");
   });
 
   it("reads the rungs from the database door, not from binding rows", () => {

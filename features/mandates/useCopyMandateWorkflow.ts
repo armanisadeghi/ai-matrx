@@ -12,7 +12,6 @@
  */
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { duplicateWorkflow } from "@/features/workflow-runtime/browse/service";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
@@ -23,7 +22,6 @@ export function useCopyMandateWorkflow(): {
   /** Returns the new workflow id, or null when the copy failed. */
   copyWorkflowAndOpen: (workflowId: string) => Promise<string | null>;
 } {
-  const router = useRouter();
   const [copyingWorkflow, setCopying] = useState(false);
 
   const copyWorkflowAndOpen = async (workflowId: string) => {
@@ -33,7 +31,9 @@ export function useCopyMandateWorkflow(): {
       toast.success(
         `Copied into "${copy.name}". Assign it in the Mandate Holder tab to use it for this job.`,
       );
-      router.push(`/workflows/${copy.id}`);
+      // A plain navigation: this hook mounts in hosts with no app router
+      // (the window panel, tests), and the editor is a full page anyway.
+      window.location.assign(`/workflows/${copy.id}`);
       return copy.id;
     } catch (error) {
       if (!isOrganizationSelectionCancelled(error)) {
