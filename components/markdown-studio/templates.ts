@@ -223,6 +223,116 @@ A second quote, this time multi-line:
 > progress depends on the unreasonable person.
 `,
   },
+  {
+    id: "extended-syntax",
+    title: "Every syntax",
+    blurb: "Callouts, front matter, wikilinks, tabs, footnotes, equations — every extended construct, in a kiln manual.",
+    icon: "PenTool",
+    blocks: ["text", "code"],
+    content: `---
+title: Kiln operating manual
+owner: Studio lead
+revision: 4
+tags: [kiln, safety, glaze]
+---
+
+# Kiln operating manual
+
+[[toc]]
+
+## Before you load {#sec:loading}
+
+> [!WARNING]
+> Never open the lid above 150 °C — the thermal shock cracks shelves.
+
+> [!tip]- Why witness cones?
+> The controller measures air; a cone measures *heat work* on the ware.
+
+!!! note "Loading order"
+    Heavy pieces low, glazed pieces on posts, nothing touching the elements.
+
+:::important[Read the schedule]
+Follow [[Kiln schedule]] for today's firing, and file notes in [[Glaze notes|the glaze book]].
+:::
+
+Checklist (tick them off — the preview writes back to the source):
+
+- [ ] Vacuum the element grooves
+- [ ] Check the kiln sitter
+- [x] Log the previous firing
+
+## Firing ranges
+
+::::tabs
+:::tab[Cone 06 bisque]
+About 999 °C. Slow ramp through quartz inversion.
+:::
+:::tab[Cone 6 glaze]
+About 1,222 °C — see @fig:shelves for the shelf layout.
+:::
+::::
+
+::::columns
+:::column
+**Bisque** hardens clay so glaze sticks.
+:::
+:::column
+**Glaze** melts the surface into glass.
+:::
+::::
+
+:::figure[Shelf layout for a full glaze load]{#fig:shelves}
+Three shelves on 3-inch posts, heaviest ware on the bottom shelf.
+:::
+
+:::details[What if a shelf cracks?]
+Stop the firing, let it cool fully, and replace the shelf before the next load.
+:::
+
+Glossary
+: **Bisque** — the first, lower firing.
+: **Cone** — a pyrometric indicator that bends at a set heat work.
+
+## Chemistry and heat {#sec:chem}
+
+Water leaves the clay as H~2~O vapor; heat work grows roughly with t^2^ at the peak. ==Never skip the candling hold.== :fire:
+
+$$
+\\ce{CaCO3 -> CaO + CO2 ^}
+$$
+
+\\[ Q = m c \\Delta T \\label{eq:heat} \\]
+
+Equation \\eqref{eq:heat} sets the energy per load; see @sec:loading for safety.
+
+Temperatures are in :span[degrees Celsius]{color=danger}; the :mark[vent]{color=yellow} must stay open. Press :kbd[Ctrl] + :kbd[S] to save a log, or <kbd>Esc</kbd> to cancel.
+
+*[PPE]: Personal protective equipment
+
+Wear PPE at the kiln. PPE includes kiln gloves and shade 5 glasses.[^1]
+
+<details><summary>Kiln specs</summary>
+
+48 cubic feet, 240 V, 60 A.
+
+</details>
+
+\`\`\`csv
+Firing,Cone,Peak °C,Hold min
+Bisque,06,999,10
+Glaze,6,1222,15
+Raku,010,900,0
+\`\`\`
+
+<!-- pagebreak -->
+
+## Maintenance log
+
+Replace elements every ~150 firings.
+
+[^1]: Shade 5 welding glasses — ordinary sunglasses do not protect against infrared.
+`,
+  },
 ];
 
 export function findTemplateById(id: string): StudioTemplate | undefined {

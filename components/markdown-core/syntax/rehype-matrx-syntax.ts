@@ -32,7 +32,8 @@ function walk(node: Root | Element, visit: (el: Element, parent: Root | Element)
 
 function classList(el: Element): string[] {
   const cls = el.properties?.className;
-  return Array.isArray(cls) ? cls.map(String) : typeof cls === "string" ? cls.split(/\s+/) : [];
+  if (Array.isArray(cls)) return cls.map(String);
+  return typeof cls === "string" ? String(cls).split(/\s+/) : [];
 }
 
 const ANCHOR_CLASS = [

@@ -83,7 +83,8 @@ export const PROSE_INLINE_ELEMENTS = {
   a: LinkElement,
   // Task checkboxes: interactive only under a save adapter
   // (MarkdownSourceEditProvider), read-only state marks otherwise.
-  input: renderMarkdownInput,
+  input: ({ node, ...props }) =>
+    renderMarkdownInput(props as Parameters<typeof renderMarkdownInput>[0]),
   strong: ({ node, children, ...props }) => {
     // NOTE: react-markdown's hast nodes (via hast-util-to-jsx-runtime)
     // never carry a `.parent` reference, so this can never detect a
