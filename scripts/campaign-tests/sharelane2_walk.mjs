@@ -49,6 +49,8 @@ const q = (page, sel) => page.evaluate((s) => document.querySelector(s)?.textCon
 
 const browser = await chromium.launch({ headless: true });
 try {
+  // FROM4=1 resumes at step 4 after a run whose transfer already landed (the transfer is one-shot).
+  if (!process.env.FROM4) {
   const actx = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
   const a = await actx.newPage();
   pass("admin seat signed in", (await signIn(a, ORIGIN, "admin@admin.com", ADMIN_PW, "admin seat")) === "admin@admin.com", "admin@admin.com");
@@ -105,6 +107,7 @@ try {
   await sleep(1500);
   await shot(a, "6-new-owner-reads", 1600);
   await actx.close();
+  }
 
   // 4. Dr. Reyes stays named as editor and still reads it
   const tctx = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
