@@ -164,7 +164,9 @@ export function adminLaneOpenForHeaders(h: HeaderReader): boolean {
 
 /** The one sentence an admin action says when it is asked outside the lane. */
 export const ADMIN_LANE_REFUSAL =
-  "This is an admin action, and admin actions only work inside the admin section. Open it from Administration and try again.";
+  // Starts with "Forbidden:" like every other admin refusal, so the routes
+  // that map that prefix answer 403, never 500.
+  "Forbidden: this is an admin action, and admin actions only work inside the admin section. Open it from Administration and try again.";
 
 /** Browser decision: the page the person is on right now. */
 export function browserAdminLaneOpen(): boolean {

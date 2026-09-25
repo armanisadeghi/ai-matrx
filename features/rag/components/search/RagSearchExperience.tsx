@@ -2477,8 +2477,9 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
           <div className="text-sm font-semibold">Diagnostics</div>
           <div className="text-[11px] text-muted-foreground">
             See what {RAG_VOCAB.segmentsShort.toLowerCase()} are visible to you,
-            and via which ACL route. Toggle "Admin: bypass ACL" in the sidebar
-            to compare against the full database.
+            and via which ACL route.
+            {scope.canBypassAcl &&
+              ' Toggle "Admin: bypass ACL" in the sidebar to compare against the full database.'}
           </div>
         </div>
         <Button onClick={refresh} disabled={loading} size="sm">

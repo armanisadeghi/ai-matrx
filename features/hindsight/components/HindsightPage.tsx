@@ -160,7 +160,9 @@ export function HindsightPage() {
               </button>
             );
           })}
-          {!enrollments.isLoading && active.length === 0 && (
+          {/* Only an ANSWERED empty list is "nothing enrolled" — a pending,
+              paused or failed read is never shown as an empty platform. */}
+          {enrollments.isSuccess && active.length === 0 && (
             <Card className="p-4 text-sm text-muted-foreground">
               Nothing enrolled yet. Enroll the thing you most wish worked better
               — the strongest reason is “we know it needs improvement and we have
