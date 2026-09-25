@@ -79,6 +79,8 @@ export function KindPicker({
   const [rows, setRows] = useState<KindRow[]>([]);
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
+  // The highlighted row, so Enter picks the first match like every command menu.
+  const [highlighted, setHighlighted] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -89,6 +91,7 @@ export function KindPicker({
         .then((found) => {
           if (cancelled) return;
           setRows(found);
+          setHighlighted(found[0]?.id ?? "");
           setState("idle");
         })
         .catch((error: unknown) => {
@@ -123,7 +126,7 @@ export function KindPicker({
             Pick a kind from the shape registry. It is inserted with its example data as a protected block you edit in its own editor.
           </DialogDescription>
         </DialogHeader>
-        <Command shouldFilter={false} className="border-t border-border">
+        <Command shouldFilter={false} value={highlighted} onValueChange={setHighlighted} className="border-t border-border">
           <CommandInput value={query} onValueChange={setQuery} placeholder="Search kinds — flashcards, checklist, timeline…" />
           <CommandList className="max-h-[50dvh]">
             {state === "error" && (
