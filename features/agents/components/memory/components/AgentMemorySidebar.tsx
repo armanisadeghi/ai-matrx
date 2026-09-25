@@ -245,7 +245,7 @@ export function AgentMemorySidebar({ state }: AgentMemorySidebarProps) {
         title="Delete this memory?"
         description={
           pendingDelete
-            ? `"${displayTitleForMemory(pendingDelete)}" will no longer be remembered. This cannot be undone.`
+            ? `"${displayTitleForMemory(pendingDelete)}" will no longer be remembered. This archives it; an admin can restore it.`
             : undefined
         }
         confirmLabel="Delete"
