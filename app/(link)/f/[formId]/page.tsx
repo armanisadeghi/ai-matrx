@@ -28,6 +28,7 @@
 // `state: "unavailable"` and says whose switch it is, and the branch below —
 // which was already the right shape for closed and full — prints it.
 
+import { markdownToPlainText } from "@/lib/markdown/plain-text";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -50,7 +51,9 @@ export async function generateMetadata({
   if (!form) {
     return { title: "Form · AI Matrx", robots: { index: false, follow: false } };
   }
-  const intro = form.presentation?.intro ?? undefined;
+  // A meta description is WORDS: the intro may carry markdown, which would
+  // show its asterisks in link previews and search results.
+  const intro = markdownToPlainText(form.presentation?.intro) || undefined;
   return {
     title: `${form.title} · AI Matrx`,
     ...(intro ? { description: intro } : {}),
