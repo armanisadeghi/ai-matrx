@@ -194,6 +194,8 @@ const MenuItemsContent: React.FC<MenuItemsContentProps> = ({
             return (
               <button
                 key={item.key}
+                type="button"
+                role="menuitem"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (!isDisabled) onAction(item);
@@ -399,6 +401,89 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
   useEffect(() => {
     if (!isOpen) setTrail([]);
   }, [isOpen]);
+
+  // KEYBOARD — the menu is a real `role="menu"`: focus moves to its first
+  // item when it opens (and when a submenu opens or closes), arrows move,
+  // Home/End jump, → opens a submenu, ← goes back, and closing returns focus
+  // to where it was. Without this a menu opened from the keyboard (the chat
+  // message "More options") showed but could not be reached (verify-RC-B9 F4).
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const wasOpenRef = useRef(false);
+  useEffect(() => {
+    if (isOpen && !wasOpenRef.current) {
+      const active = document.activeElement;
+      restoreFocusRef.current = active instanceof HTMLElement ? active : null;
+    }
+    if (!isOpen && wasOpenRef.current) {
+      const target = restoreFocusRef.current ?? anchorElement ?? null;
+      const active = document.activeElement;
+      if (target && (!active || active === document.body || !active.isConnected)) {
+        target.focus();
+      }
+      restoreFocusRef.current = null;
+    }
+    wasOpenRef.current = isOpen;
+  }, [isOpen, anchorElement]);
+
+  const menuItemsIn = (): HTMLElement[] =>
+    Array.from(
+      menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])') ?? [],
+    );
+
+  useEffect(() => {
+    if (!isOpen || isMobile || !menuPosition) return undefined;
+    const id = requestAnimationFrame(() => {
+      const first = menuItemsIn()[0];
+      if (first && !menuRef.current?.contains(document.activeElement)) first.focus();
+      else if (first && trail !== undefined) first.focus();
+    });
+    return () => cancelAnimationFrame(id);
+    // Re-run on drill-in / back so focus lands on the new level's first item.
+  }, [isOpen, isMobile, menuPosition, trail]);
+
+  const handleMenuKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const itemsNow = menuItemsIn();
+    if (itemsNow.length === 0) return;
+    const index = itemsNow.indexOf(document.activeElement as HTMLElement);
+    const focusAt = (i: number) => {
+      e.preventDefault();
+      itemsNow[(i + itemsNow.length) % itemsNow.length]?.focus();
+    };
+    switch (e.key) {
+      case "ArrowDown":
+        focusAt(index + 1);
+        break;
+      case "ArrowUp":
+        focusAt(index < 0 ? itemsNow.length - 1 : index - 1);
+        break;
+      case "Home":
+        focusAt(0);
+        break;
+      case "End":
+        focusAt(itemsNow.length - 1);
+        break;
+      case "ArrowRight": {
+        const current = itemsNow[index];
+        if (current?.dataset.submenuTrigger === "true") {
+          e.preventDefault();
+          current.click();
+        }
+        break;
+      }
+      case "ArrowLeft":
+        if (trail.length) {
+          e.preventDefault();
+          setTrail((prev) => prev.slice(0, -1));
+        }
+        break;
+      case "Tab":
+        e.preventDefault();
+        onClose();
+        break;
+      default:
+        break;
+    }
+  };
 
   // Close on outside click (desktop only — Drawer handles its own backdrop)
   useEffect(() => {
@@ -660,6 +745,9 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
       {/* Menu panel */}
       <div
         ref={menuRef}
+        role="menu"
+        aria-label={activeParent?.label ?? title ?? "Options"}
+        onKeyDown={handleMenuKeyDown}
         style={{
           minWidth: width,
           maxWidth,
