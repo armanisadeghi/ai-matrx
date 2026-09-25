@@ -62,6 +62,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 
 const ARTIFACT_ICONS: Record<ArtifactType, React.FC<{ className?: string }>> = {
   html_page: Globe,
@@ -274,11 +275,40 @@ export function CmsArtifactList() {
         id: "name",
         header: "Name",
         accessorFn: (artifact) => artifact.title?.trim() || "Untitled",
+        width: 220,
         cell: (artifact) => {
           const Icon = ARTIFACT_ICONS[artifact.artifactType] ?? FileText;
           const title = artifact.title?.trim() || "Untitled";
-          return <div className="flex min-w-0 items-start gap-2.5"><Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden /><div className="min-w-0"><span className="block font-medium leading-snug">{title}</span>{artifact.description && <span className="block truncate text-xs text-muted-foreground">{artifact.description}</span>}</div></div>;
+          return <div className="flex min-w-0 items-center gap-2.5"><Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden /><span className="min-w-0 truncate font-medium" title={title}>{title}</span></div>;
         },
+      },
+      {
+        id: "id",
+        header: "ID",
+        accessorKey: "id",
+        filter: "text",
+        width: 120,
+        mobileHidden: true,
+        cell: (artifact) => (
+          <MatrxUuidCell
+            value={artifact.id}
+            label="Artifact ID"
+            href={`/artifacts/${artifact.id}`}
+          />
+        ),
+      },
+      {
+        id: "description",
+        header: "Description",
+        accessorFn: (artifact) => artifact.description ?? "",
+        filter: "text",
+        width: 280,
+        mobileHidden: true,
+        cell: (artifact) => (
+          <span className="block truncate text-xs text-muted-foreground" title={artifact.description ?? ""}>
+            {artifact.description || "—"}
+          </span>
+        ),
       },
       { id: "kind", header: "Kind", accessorFn: (artifact) => ARTIFACT_TYPE_LABELS[artifact.artifactType] ?? artifact.artifactType, mobileHidden: true },
       { id: "updated", header: "Updated", accessorFn: (artifact) => artifact.updatedAt, filter: "date", mobileHidden: true, cell: (artifact) => <time dateTime={artifact.updatedAt} title={new Date(artifact.updatedAt).toLocaleString()}>{formatUpdatedAt(artifact.updatedAt)}</time> },
