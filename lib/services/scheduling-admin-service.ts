@@ -7,6 +7,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { schedulerDb } from "@/utils/supabase/schedulerDb";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { pgErrorToError } from "@ai-matrx/data";
 import { buildSearchOr } from "@/utils/supabase-search";
 import type {
@@ -262,10 +263,14 @@ function unwrapCount(res: {
 // ── Admin mutations ────────────────────────────────────────────────────────
 
 export async function disableTaskAdmin(taskId: string): Promise<void> {
-  const { error } = await schedulerDb(supabase)
-    .schema("scheduler").from("sch_task")
-    .update({ enabled: false })
-    .eq("id", taskId);
+  const { error } = await tryWriteOne(
+    schedulerDb(supabase)
+      .schema("scheduler").from("sch_task")
+      .update({ enabled: false })
+      .eq("id", taskId)
+      .select("id"),
+    { action: "update", noun: "scheduled task" },
+  );
   if (error) throw pgErrorToError(error);
 }
 
@@ -273,14 +278,18 @@ export async function markRunFailedAdmin(
   runId: string,
   reason: string,
 ): Promise<void> {
-  const { error } = await schedulerDb(supabase)
-    .schema("scheduler").from("sch_run")
-    .update({
-      status: "failed",
-      finished_at: new Date().toISOString(),
-      error_message: reason,
-      claim_token: null,
-    })
-    .eq("id", runId);
+  const { error } = await tryWriteOne(
+    schedulerDb(supabase)
+      .schema("scheduler").from("sch_run")
+      .update({
+        status: "failed",
+        finished_at: new Date().toISOString(),
+        error_message: reason,
+        claim_token: null,
+      })
+      .eq("id", runId)
+      .select("id"),
+    { action: "update", noun: "scheduled run" },
+  );
   if (error) throw pgErrorToError(error);
 }

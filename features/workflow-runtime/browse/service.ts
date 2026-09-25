@@ -16,6 +16,7 @@
 // lib/list-scope/FEATURE.md — see migrations/wfx_list_scoped.sql.
 
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import type { Database, Json } from "@/types/database.types";
 import type {
   EntityFacets,
@@ -155,11 +156,15 @@ export async function saveWorkflowRowEdits(
   if (edit.tags !== undefined) patch.tags = edit.tags;
   if (Object.keys(patch).length === 0) return;
 
-  const { error } = await supabase
-    .schema("workflow")
-    .from("definition")
-    .update(patch)
-    .eq("id", workflowId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("workflow")
+      .from("definition")
+      .update(patch)
+      .eq("id", workflowId)
+      .select("id"),
+    { action: "save", noun: "workflow" },
+  );
 
   if (error) throw pgError(error);
 }

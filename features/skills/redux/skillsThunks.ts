@@ -27,6 +27,7 @@ import { callApi } from "@/lib/api/call-api";
 import { operationFailed } from "@/utils/errors";
 import type { RootState } from "@/lib/redux/store";
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import {
   createCodeFile,
@@ -378,11 +379,15 @@ export const deleteSkill = createAsyncThunk<
   } else {
     // Supabase direct soft-deactivate — mirrors the Python endpoint's
     // semantics (is_active=false, reversible via patch).
-    const { error } = await supabase
-      .schema("skill")
-      .from("definition")
-      .update({ is_active: false })
-      .eq("id", skillId);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("skill")
+        .from("definition")
+        .update({ is_active: false })
+        .eq("id", skillId)
+        .select("id"),
+      { action: "delete", noun: "skill" },
+    );
     if (error) throw operationFailed("delete this skill", error);
   }
 

@@ -8,6 +8,7 @@ import {
   MessageTemplateUpdate,
 } from "@/features/message-templates/types/message-templates-db";
 import { createClient } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { makeAssertData, operationFailed } from "@/utils/errors";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -211,11 +212,15 @@ export async function updateTemplate(
 export async function deleteTemplate(id: string): Promise<void> {
   const supabase = getClient();
 
-  const { error } = await supabase
-    .schema("agent")
-    .from("message_template")
-    .delete()
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("agent")
+      .from("message_template")
+      .delete()
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "template" },
+  );
 
   if (error) throw operationFailed("delete this template", error);
 }

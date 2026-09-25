@@ -15,6 +15,7 @@
 // chat.conversation.
 
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import type { Json } from "@/types/database.types";
 import type {
   EntityFacets,
@@ -135,10 +136,14 @@ export async function saveConversationTitle(
   conversationId: string,
   title: string,
 ): Promise<void> {
-  const { error } = await supabase
-    .schema("chat")
-    .from("conversation")
-    .update({ title: title.trim() || null })
-    .eq("id", conversationId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("chat")
+      .from("conversation")
+      .update({ title: title.trim() || null })
+      .eq("id", conversationId)
+      .select("id"),
+    { action: "rename", noun: "conversation" },
+  );
   if (error) throw pgError(error);
 }
