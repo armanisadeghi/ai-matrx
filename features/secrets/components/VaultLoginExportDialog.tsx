@@ -60,6 +60,12 @@ const CSV_PROFILES = [
       "Google's CSV format has no title or notes columns. The preview lists those omissions before download.",
   },
   {
+    value: "dashlane_csv_v1",
+    label: "Dashlane CSV",
+    detail:
+      "Uses Dashlane's ordinary-login CSV template for name, URL, username, password, and note. TOTP and collections stay blank.",
+  },
+  {
     value: "keeper_csv_v1",
     label: "Keeper CSV",
     detail:

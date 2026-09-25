@@ -292210,6 +292210,7 @@
           "profile": {
             "type": "string",
             "enum": [
+              "dashlane_csv_v1",
               "firefox_csv_v1",
               "google_password_manager_csv_v1",
               "keeper_csv_v1",
@@ -292292,6 +292293,7 @@
           "profile": {
             "type": "string",
             "enum": [
+              "dashlane_csv_v1",
               "firefox_csv_v1",
               "google_password_manager_csv_v1",
               "keeper_csv_v1",
@@ -292325,6 +292327,7 @@
           "profile": {
             "type": "string",
             "enum": [
+              "dashlane_csv_v1",
               "firefox_csv_v1",
               "google_password_manager_csv_v1",
               "keeper_csv_v1",

@@ -365,6 +365,11 @@ describe("VaultLoginExportDialog", () => {
       "google_password_manager_csv_v1",
     ],
     [
+      "Dashlane CSV",
+      "Uses Dashlane's ordinary-login CSV template for name, URL, username, password, and note. TOTP and collections stay blank.",
+      "dashlane_csv_v1",
+    ],
+    [
       "Keeper CSV",
       "Uses Keeper's ordinary-login CSV columns for title, URL, username, password, and notes; folder, shared-folder, and custom-field columns are blank.",
       "keeper_csv_v1",
