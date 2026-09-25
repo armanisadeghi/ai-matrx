@@ -13,9 +13,9 @@
  * These pin the four ways that could go wrong again:
  *   · green is silent (a banner on 382 healthy rows is noise, not information)
  *   · a FAILED report is never silent — silence there reads as "all clear"
- *   · red uses the shared status word and carries the server's own consequence
- *     sentence verbatim rather than a second client-written one
- *   · orange NAMES the leader whose Holder is carrying it
+ *   · red is one short line ("Mandate binding needed") plus the fix — never a
+ *     paragraph (Arman, 2026-09-24)
+ *   · orange is one short line too
  */
 import {
   RED_TITLE,
@@ -61,7 +61,7 @@ describe("mandateCoverageAlertVerdict", () => {
     expect(verdict.detail).toContain("503");
   });
 
-  it("uses the platform's one red word, preserves the server consequence, and offers the fix", () => {
+  it("red is one short line with the shared word and offers the fix — no paragraph", () => {
     const verdict = mandateCoverageAlertVerdict({
       row: RED_ROW,
       loading: false,
@@ -72,10 +72,10 @@ describe("mandateCoverageAlertVerdict", () => {
     expect(verdict.bucket).toBe("red");
     // ONE word for the state (FIX-R17) — imported, never re-spelled.
     expect(verdict.title).toBe(RED_TITLE);
-    expect(verdict.title).toContain(RED_WORD);
-    // The SERVER's sentence, verbatim. A second client-written reason beside it
-    // is the two-judges class this whole feature exists to avoid.
-    expect(verdict.detail).toBe(RED_ROW.reason);
+    expect(verdict.title.toLowerCase()).toContain(RED_WORD.toLowerCase());
+    expect(verdict.title).toBe("Mandate binding needed");
+    // Never a novel under the title.
+    expect(verdict.detail).toBe("");
     expect(verdict.offerFix).toBe(true);
   });
 
@@ -101,14 +101,12 @@ describe("mandateCoverageAlertVerdict", () => {
     if (verdict.kind !== "state") throw new Error("unreachable");
     // The whole point: never the word the tab already contradicts.
     expect(verdict.title.toLowerCase()).not.toContain("missing");
-    expect(verdict.detail.toLowerCase()).not.toContain("holder missing");
-    expect(verdict.detail).toContain("Triage Decision Agent");
-    expect(verdict.detail).toContain("every user on the platform");
-    expect(verdict.detail).toContain("no platform default Holder");
+    expect(verdict.title).toContain("Triage Decision Agent");
+    expect(verdict.detail).toBe("");
     expect(verdict.offerFix).toBe(true);
   });
 
-  it("still says 'Holder missing' when nothing actually resolves — the genuine case", () => {
+  it("still says binding needed when nothing actually resolves — the genuine case", () => {
     const verdict = mandateCoverageAlertVerdict({
       row: RED_ROW,
       loading: false,
@@ -121,7 +119,7 @@ describe("mandateCoverageAlertVerdict", () => {
     expect(verdict.title).toBe(RED_TITLE);
   });
 
-  it("names the leader whose Holder is carrying an orange Mandate", () => {
+  it("orange is one short line, never dot-notation keys", () => {
     const verdict = mandateCoverageAlertVerdict({
       row: {
         mandate_key: "education.admin_guidance",
@@ -136,6 +134,7 @@ describe("mandateCoverageAlertVerdict", () => {
     expect(verdict.kind).toBe("state");
     if (verdict.kind !== "state") throw new Error("unreachable");
     expect(verdict.bucket).toBe("orange");
-    expect(verdict.title).toContain("education.creator_guidance");
+    expect(verdict.title).not.toContain(".");
+    expect(verdict.detail).toBe("");
   });
 });

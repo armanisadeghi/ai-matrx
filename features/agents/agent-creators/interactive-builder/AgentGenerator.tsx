@@ -578,40 +578,42 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
                 : "Loading generator configuration…"}
             </div>
           )}
-          {generatorLoadError && (
+          {generatorLoadError && mandateMode ? (
+            // NOTHING FAILS SILENTLY — and never a paragraph: one line, one
+            // button that opens the job so it can be bound (Arman, 2026-09-24).
+            <div
+              data-testid="generator-unavailable"
+              className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive"
+            >
+              <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+              <span className="flex-1 font-medium">Mandate binding needed</span>
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-7"
+                onClick={() =>
+                  openMandateWindow({
+                    initialMandateKey: HOLDER_DRAFT_MANDATE_KEY,
+                  })
+                }
+              >
+                Bind agent or workflow
+              </Button>
+            </div>
+          ) : generatorLoadError ? (
             <div
               data-testid="generator-unavailable"
               className="flex items-start gap-2 p-2 rounded-md bg-destructive/10 border border-destructive/30 text-xs text-destructive"
             >
               <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
-                <div className="font-medium">
-                  {mandateMode
-                    ? "The job that drafts agents cannot run yet"
-                    : "Generator unavailable"}
-                </div>
+                <div className="font-medium">Generator unavailable</div>
                 <div className="text-[11px] opacity-80">
                   {generatorLoadError}
                 </div>
-                {mandateMode ? (
-                  // NOTHING FAILS SILENTLY: the job that drafts agents is itself
-                  // a Mandate, and until a Holder is assigned this door says so
-                  // and opens that Mandate — never a dead Generate button.
-                  <button
-                    type="button"
-                    className="mt-1 inline-block underline"
-                    onClick={() =>
-                      openMandateWindow({
-                        initialMandateKey: HOLDER_DRAFT_MANDATE_KEY,
-                      })
-                    }
-                  >
-                    Open that job
-                  </button>
-                ) : null}
               </div>
             </div>
-          )}
+          ) : null}
 
           <div className="space-y-3 sm:space-y-4">
             {mandate ? (

@@ -68,7 +68,7 @@ export interface MandateCoverageBucketMeta {
  * rendering of that state says this, so the badge, the tile and the list's
  * Status column can never again be three different words for one fact.
  */
-export const RED_WORD = "Holder missing";
+export const RED_WORD = "Binding needed";
 
 export const COVERAGE_META: Record<
   MandateCoverageBucket,

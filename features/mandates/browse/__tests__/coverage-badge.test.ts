@@ -93,11 +93,11 @@ describe("coverageBadgeVerdict", () => {
   // it filters said "Nothing assigned" and the Status column beside it said
   // "Holder missing" — three words, one fact. The surviving one is the
   // platform's own noun, and it lives in `coverage.ts` as `RED_WORD`.
-  it("says Holder missing in red when nothing resolves", () => {
+  it("says Binding needed in red when nothing resolves", () => {
     const verdict = coverageBadgeVerdict(view(), "research.page_summary");
     if (verdict.kind !== "state") throw new Error("expected a state badge");
     expect(verdict.bucket).toBe("red");
-    expect(verdict.label).toBe("Holder missing");
+    expect(verdict.label).toBe("Binding needed");
   });
 
   it("says UNKNOWN — never nothing — when the report failed", () => {

@@ -124,6 +124,6 @@ describe("COVERAGE_META", () => {
     expect(COVERAGE_META.orange.label).toBe("Running on fallback");
     // FIX-R17 — one word for `red` across the tile, the per-row badge and the
     // list's Status column. See `coverage.ts` § RED_WORD.
-    expect(COVERAGE_META.red.label).toBe("Holder missing");
+    expect(COVERAGE_META.red.label).toBe("Binding needed");
   });
 });

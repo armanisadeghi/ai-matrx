@@ -745,10 +745,10 @@ describe("a mandate screen never claims what every call site does", () => {
     expect(offences).toEqual([]);
   });
 
-  it("the red banner title is the status word alone; the consequence is the server's", () => {
+  it("the red banner title is one short line built on the status word — no paragraph", () => {
     const { RED_TITLE } = require("@/features/mandates/workspace/MandateCoverageAlert");
     const { RED_WORD } = require("@/features/mandates/coverage");
-    expect(RED_TITLE).toBe(RED_WORD);
+    expect(RED_TITLE).toBe(`Mandate ${RED_WORD.toLowerCase()}`);
   });
 });
 
@@ -773,7 +773,8 @@ describe("the red coverage state has exactly one human word", () => {
   const { HEALTH_META } = require("@/features/mandates/browse/types");
 
   it("is the platform's own noun, and the list's Status column already said it", () => {
-    expect(RED_WORD).toBe("Holder missing");
+    // Arman, 2026-09-24: "Mandate Binding Needed" — never a bare "Holder".
+    expect(RED_WORD).toBe("Binding needed");
     // The list's Status badge for the same shape — the word that survived,
     // because it is the only one of the three built from an approved noun.
     expect(HEALTH_META["holder missing"].label).toBe(RED_WORD);

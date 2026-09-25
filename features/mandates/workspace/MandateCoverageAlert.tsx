@@ -80,11 +80,13 @@ export type MandateCoverageAlertVerdict =
     };
 
 /**
- * THE TITLE FOR `red`. The title is the shared status word alone. The server's
- * coverage sentence owns the consequence because only the resolver can state
- * what an unheld Mandate does; a screen cannot infer every invocation path.
+ * THE TITLE FOR `red`. One short line and one button — never a paragraph
+ * (Arman, 2026-09-24: "Mandate Binding Needed [Bind Agent or Workflow]").
  */
-export const RED_TITLE = RED_WORD;
+export const RED_TITLE = `Mandate ${RED_WORD.toLowerCase()}`;
+
+/** The one label for the fix control, on every banner that offers it. */
+export const BIND_ACTION_LABEL = "Bind agent or workflow";
 
 /** The same door the Holder tab reads — see `resolvedHolderForBannerOf`. */
 export interface ResolvedHolderForBanner {
@@ -123,8 +125,8 @@ export function mandateCoverageAlertVerdict(args: {
       return {
         kind: "state",
         bucket: "orange",
-        title: "Bound, but no platform default Holder",
-        detail: `Bound to ${args.resolvedHolder.holderName} for ${args.resolvedHolder.scopePhrase}; no platform default Holder is set on this Mandate's own definition.`,
+        title: `No default binding — runs on ${args.resolvedHolder.holderName}`,
+        detail: "",
         offerFix: true,
       };
     }
@@ -132,7 +134,7 @@ export function mandateCoverageAlertVerdict(args: {
       kind: "state",
       bucket: "red",
       title: RED_TITLE,
-      detail: args.row.reason ?? COVERAGE_META.red.description,
+      detail: "",
       offerFix: true,
     };
   }
@@ -140,10 +142,8 @@ export function mandateCoverageAlertVerdict(args: {
   return {
     kind: "state",
     bucket: "orange",
-    title: args.row.leader_key
-      ? `${COVERAGE_META.orange.label} — this Mandate runs on ${args.row.leader_key}'s Holder`
-      : COVERAGE_META.orange.label,
-    detail: args.row.reason ?? COVERAGE_META.orange.description,
+    title: COVERAGE_META.orange.label,
+    detail: "",
     offerFix: true,
   };
 }
@@ -212,7 +212,7 @@ export function MandateCoverageAlert({
       role="alert"
       data-coverage-state={verdict.bucket}
       className={cn(
-        "flex flex-wrap items-start gap-3 rounded-xl border-2 px-4 py-3",
+        "flex flex-wrap items-center gap-3 rounded-lg border px-3 py-2",
         isRed
           ? "border-rose-500/60 bg-rose-500/10"
           : "border-amber-500/50 bg-amber-500/10",
@@ -221,16 +221,16 @@ export function MandateCoverageAlert({
     >
       <Icon
         className={cn(
-          "mt-0.5 h-5 w-5 shrink-0",
+          "h-4 w-4 shrink-0",
           isRed
             ? "text-rose-600 dark:text-rose-400"
             : "text-amber-600 dark:text-amber-400",
         )}
       />
-      <div className="min-w-0 flex-1 space-y-1">
+      <div className="min-w-0 flex-1 space-y-0.5">
         <p
           className={cn(
-            "text-sm font-bold",
+            "text-sm font-semibold",
             isRed
               ? "text-rose-700 dark:text-rose-300"
               : "text-amber-700 dark:text-amber-300",
@@ -238,16 +238,18 @@ export function MandateCoverageAlert({
         >
           {verdict.title}
         </p>
-        <p
-          className={cn(
-            "break-words text-[12.5px]",
-            isRed
-              ? "text-rose-800/90 dark:text-rose-200/90"
-              : "text-amber-800/90 dark:text-amber-200/90",
-          )}
-        >
-          {verdict.detail}
-        </p>
+        {verdict.detail ? (
+          <p
+            className={cn(
+              "break-words text-[12.5px]",
+              isRed
+                ? "text-rose-800/90 dark:text-rose-200/90"
+                : "text-amber-800/90 dark:text-amber-200/90",
+            )}
+          >
+            {verdict.detail}
+          </p>
+        ) : null}
       </div>
       {verdict.offerFix && onAssignHolder ? (
         <Button
@@ -256,7 +258,7 @@ export function MandateCoverageAlert({
           className="shrink-0"
           onClick={onAssignHolder}
         >
-          Assign a Holder
+          {BIND_ACTION_LABEL}
         </Button>
       ) : null}
     </div>
