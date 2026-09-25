@@ -23,7 +23,9 @@ Any Matrx Extend permission or privacy-default change updates this page in the s
 The general policy and terms name the real data boundary for every reviewed provider integration.
 For Google, the public policy distinguishes confirmed `gmail.send`, optional internal-test
 `gmail.readonly` on-demand search/selected-message reading, and the separate outreach-reply
-workflow. It must not say that Gmail reading is absent or that disconnecting Google erases CRM
+workflow. It also distinguishes optional internal-test `gmail.modify` selected-message actions
+from the broader technical reach of that permission and the separately confirmed send flow.
+It must not say that Gmail reading is absent or that disconnecting Google erases CRM
 interactions already saved from correlated replies. An on-demand read is not a claim that
 Gmail reading has received Google's restricted-scope approval.
 For Amazon Selling Partner API, they state the initial non-restricted roles, seller-authorized OAuth
@@ -33,6 +35,8 @@ and generalized-model training. Any added role or Restricted Data Token access u
 before the provider amendment is submitted.
 
 ## Change log
+
+- 2026-09-25: Disclosed the internal-test Gmail selected-message changes, the broader technical `gmail.modify` permission and separate reviewed-send boundary; no new Google approval claimed.
 
 - 2026-09-22: Aligned Gmail disclosures with the bounded on-demand read path and the separately retained outreach-reply CRM copy; did not claim restricted-scope approval.
 

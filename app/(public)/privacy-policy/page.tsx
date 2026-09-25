@@ -299,6 +299,19 @@ const PrivacyPolicyPage = () => {
           does not let AI Matrx delete, organize, or send messages.
         </p>
         <p>
+          Gmail changes are a separate, optional feature in internal testing.
+          If you grant <code>gmail.modify</code>, AI Matrx can change an opened
+          message in the Google account you chose when you explicitly select
+          Archive or Restore to inbox, Mark read or unread, Star or unstar, or
+          Add or remove one of your named labels. The screen retrieves your
+          labels so you can choose one by name; it does not change your whole
+          mailbox in the background. Google&rsquo;s permission also technically
+          permits reading, composing, and sending email, but this Gmail changes
+          screen does not send email. Reviewed Gmail sending remains a separate
+          action that you confirm. Google does not provide this screen with a
+          native Gmail Snooze operation.
+        </p>
+        <p>
           If you separately register a Gmail mailbox for outreach replies, AI
           Matrx checks new messages in that mailbox to determine whether they
           reply to your tracked outreach. This check reads message content
