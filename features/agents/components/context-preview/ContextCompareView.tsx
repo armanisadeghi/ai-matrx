@@ -46,6 +46,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InlineCopyButton } from "@/components/matrx/buttons/InlineCopyButton";
 import MarkdownStream from "@/components/MarkdownStream";
+import { SystemItemsLine } from "./SystemItemsLine";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAllAgents } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentsList } from "@/features/agents/redux/agent-definition/thunks";
@@ -496,6 +497,7 @@ function Summary({ compare }: { compare: ContextCompare }) {
             {e}
           </p>
         ))}
+        <SystemItemsLine items={compare.system_items} />
       </div>
     </section>
   );

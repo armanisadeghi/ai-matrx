@@ -1,4 +1,4 @@
-import { normalizeMathDelimiters } from "../math-normalizer";
+import { isEscapedBracketProse, normalizeMathDelimiters } from "../math-normalizer";
 
 // Source → exact normalized source. Anything not math must come back
 // byte-identical; math comes back in remark-math's `$$` forms.
@@ -38,5 +38,26 @@ describe("normalizeMathDelimiters", () => {
       const once = normalizeMathDelimiters(input);
       expect(normalizeMathDelimiters(once)).toBe(once);
     }
+  });
+});
+
+describe("escaped brackets around prose are literal, not math (verify-RC-B4 R2-3)", () => {
+  it("leaves \\[word\\] as escaped brackets the markdown renders as [word]", () => {
+    expect(normalizeMathDelimiters("See \\[bracket\\] here.")).toBe("See \\[bracket\\] here.");
+    expect(normalizeMathDelimiters("Call it \\[sic\\], then \\[see note\\].")).toBe("Call it \\[sic\\], then \\[see note\\].");
+  });
+
+  it("still converts real display math between \\[ \\]", () => {
+    for (const tex of ["x^2 + y^2", "x", "E = mc^2", "\\alpha", "3.14", "\\frac{a}{b}"]) {
+      expect(normalizeMathDelimiters(`\\[${tex}\\]`)).toContain(`$$\n${tex}\n$$`);
+    }
+  });
+
+  it("the one rule, as the editor uses it", () => {
+    expect(isEscapedBracketProse("bracket")).toBe(true);
+    expect(isEscapedBracketProse(" see note ")).toBe(true);
+    expect(isEscapedBracketProse("x")).toBe(false);
+    expect(isEscapedBracketProse("a+b")).toBe(false);
+    expect(isEscapedBracketProse("\\sin x")).toBe(false);
   });
 });

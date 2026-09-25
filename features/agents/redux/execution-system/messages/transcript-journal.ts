@@ -35,7 +35,8 @@ export type TranscriptJournalKind =
   | "clear"
   | "visible_group_limit"
   | "user_bubble_rendered_empty"
-  | "user_bubble_hidden_host_authored";
+  | "user_bubble_hidden_host_authored"
+  | "user_bubble_hidden_host_launch_only";
 
 export interface TranscriptJournalEvent {
   at: string;

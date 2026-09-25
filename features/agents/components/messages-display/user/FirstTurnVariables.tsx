@@ -23,8 +23,13 @@
  * be remembered by every launcher forever.
  */
 
+import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOwnSubmittedFirstTurnValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import {
+  selectHostSubmittedFirstTurnValues,
+  selectOwnSubmittedFirstTurnValues,
+} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { buildVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
@@ -87,4 +92,70 @@ export function FirstTurnVariables({
   // EVERY audience; the expert audience gate above stays as belt and braces.
   const ownValues = useAppSelector(selectOwnSubmittedFirstTurnValues(conversationId));
   return <UserMessageVariables values={ownValues} />;
+}
+
+/**
+ * FirstTurnLaunchInputs — the honest body of a first turn that carried ONLY
+ * named inputs the host wired (a kit's "Run it once", a surface's job inputs)
+ * and nothing the person typed.
+ *
+ * Before this the bubble said "This message has no displayable text." — a dead
+ * state that was also untrue: the turn DID carry inputs, and they are what the
+ * agent ran on (THE USER-INPUT LAW puts structured input in variables, so a
+ * variables-only turn is the correct, common shape). The inputs are still not
+ * the person's words, so they are never printed as a body: a compact
+ * "Started with" row names them, and a click opens the values through the same
+ * display rule every other variable surface uses.
+ *
+ * Rendered by `AgentUserMessage` only when the turn has nothing else to show,
+ * and only for an audience that may see machine frames.
+ */
+export function FirstTurnLaunchInputs({
+  conversationId,
+  onOpenChange,
+}: {
+  conversationId: string;
+  /**
+   * Told when the person opens or closes the values, so a host that clamps
+   * its body (the collapsible user bubble) can unclamp it — opening the values
+   * inside a collapsed bubble must never land them under a fade.
+   */
+  onOpenChange?: (open: boolean) => void;
+}) {
+  const values = useAppSelector(
+    selectHostSubmittedFirstTurnValues(conversationId),
+  );
+  const [open, setOpen] = useState(false);
+  const lines = buildVariableDisplayLines(values);
+  if (lines.length === 0) return null;
+  const Chevron = open ? ChevronDown : ChevronRight;
+
+  return (
+    <div data-testid="user-message-launch-inputs" className="flex flex-col gap-1">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          const next = !open;
+          setOpen(next);
+          onOpenChange?.(next);
+        }}
+        aria-expanded={open}
+        title={open ? "Hide the inputs" : "Show the inputs this run started with"}
+        className="flex flex-wrap items-center gap-1 rounded text-left text-[11px] text-muted-foreground hover:text-foreground"
+      >
+        <Chevron className="h-3 w-3 shrink-0" />
+        <span className="font-medium">Started with:</span>
+        {lines.map((l) => (
+          <span
+            key={l.key}
+            className="rounded-full border border-border bg-background px-1.5 py-px text-[11px] text-foreground/80"
+          >
+            {l.label}
+          </span>
+        ))}
+      </button>
+      {open ? <UserMessageVariables values={values} /> : null}
+    </div>
+  );
 }

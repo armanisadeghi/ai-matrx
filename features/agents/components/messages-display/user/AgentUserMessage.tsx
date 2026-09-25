@@ -25,11 +25,18 @@ import {
   extractContentBlocks,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { UserActionBar } from "./UserActionBar";
-import { FirstTurnVariables, UserMessageVariables } from "./FirstTurnVariables";
+import {
+  FirstTurnLaunchInputs,
+  FirstTurnVariables,
+  UserMessageVariables,
+} from "./FirstTurnVariables";
 import { ContextPolicyChipStrip } from "@/features/agents/components/context-policies-display/ContextPolicyChipStrip";
 import { useMachineFramesVisible } from "@/features/agents/components/shared/transcript-audience";
 import { useCollapsibleMessageText } from "./useCollapsibleMessageText";
-import { selectOwnSubmittedFirstTurnValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import {
+  selectHostSubmittedFirstTurnValues,
+  selectOwnSubmittedFirstTurnValues,
+} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { MessageAttachmentStrip } from "../MessageAttachmentStrip";
 import { isAttachmentMessagePart } from "@/features/agents/components/context-items/normalize";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -238,12 +245,29 @@ export function AgentUserMessage({
   const hasVisibleVariables =
     isFirstTurnMessage &&
     buildVariableDisplayLines(userVariableValues).length > 0;
-  const hasContent = Boolean(
+  const hasOwnContent = Boolean(
     trimmedText ||
     attachmentParts.length > 0 ||
     hasVisibleVariables ||
     (contextSnapshot && contextSnapshot.length > 0),
   );
+  // 🚨 A VARIABLES-ONLY FIRST TURN IS NOT AN EMPTY TURN. When every input the
+  // turn carried was wired by the host (a kit's "Run it once", a surface's job
+  // inputs) and the person typed nothing — the correct shape under THE
+  // USER-INPUT LAW — the bubble used to claim "This message has no displayable
+  // text." It states what actually started the run instead: a compact
+  // "Started with" row naming the inputs, openable to their values. Only when
+  // nothing else would render, so a bubble with the person's own words never
+  // gains the host's vocabulary.
+  const hostLaunchValues = useAppSelector(
+    selectHostSubmittedFirstTurnValues(conversationId),
+  );
+  const launchOnlyTurn =
+    !hasOwnContent &&
+    isFirstTurnMessage &&
+    buildVariableDisplayLines(hostLaunchValues).length > 0;
+  const showLaunchInputs = launchOnlyTurn && machineFramesVisible;
+  const hasContent = hasOwnContent || showLaunchInputs;
 
   // Collapse signature — a fingerprint of EVERYTHING that renders inside the
   // bubble, so the whole component (variables + context chips + attachments +
@@ -290,7 +314,9 @@ export function AgentUserMessage({
       conversationId,
       authoredByHost
         ? "user_bubble_hidden_host_authored"
-        : "user_bubble_rendered_empty",
+        : launchOnlyTurn
+          ? "user_bubble_hidden_host_launch_only"
+          : "user_bubble_rendered_empty",
       {
         id: shortId(messageId),
         position: record.position,
@@ -303,13 +329,21 @@ export function AgentUserMessage({
         }).length,
       },
     );
-  }, [hasContent, record, conversationId, messageId, authoredByHost]);
+  }, [
+    hasContent,
+    record,
+    conversationId,
+    messageId,
+    authoredByHost,
+    launchOnlyTurn,
+  ]);
 
-  // PROBE-TEMP
-  const probeEntry = useAppSelector((s: RootState) => s.instanceVariableValues.byConversationId[conversationId]);
-  if (typeof window !== "undefined") console.log("PROBE-UM", JSON.stringify({ messageId, firstMessageId, hasMoreOlder, isFirstTurnMessage, hasContent, userVariableValues, sub: probeEntry?.submittedFirstTurnValues ? Object.keys(probeEntry.submittedFirstTurnValues) : null, subHost: probeEntry?.submittedFirstTurnHostValueNames, host: probeEntry?.hostValueNames, user: probeEntry ? Object.keys(probeEntry.userValues) : null }));
   if (!hasContent) {
-    if (authoredByHost || !record) return null;
+    // A launch-only turn on an Expert-audience transcript is the surface
+    // starting the conversation — the same design as a host-authored row: the
+    // inputs are machine frames she never supplied, so the bubble is absent
+    // rather than a stand-in that claims her turn was empty.
+    if (authoredByHost || launchOnlyTurn || !record) return null;
     const storedTextLength = extractFlatText({
       ...record,
       userContent: null,
@@ -401,6 +435,14 @@ export function AgentUserMessage({
                 still shows every one. */}
             {machineFramesVisible && isFirstTurnMessage && (
               <FirstTurnVariables conversationId={conversationId} />
+            )}
+            {showLaunchInputs && (
+              <FirstTurnLaunchInputs
+                conversationId={conversationId}
+                onOpenChange={(open) => {
+                  if (open) setIsCollapsed(false);
+                }}
+              />
             )}
 
             {/* Context policy chips — the TRUE per-turn context this message

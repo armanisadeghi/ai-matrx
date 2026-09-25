@@ -16,11 +16,20 @@ import { useRichEditorContext } from "../../RichEditorContext";
 import { IslandCodeEditor } from "../../islands/IslandCodeEditor";
 import { IslandPreview } from "../../islands/IslandPreview";
 import { inlineIslandLabel, texOf } from "../../islands/island-meta";
+import { isEscapedBracketProse } from "@/components/markdown-core/math-normalizer";
 import {
   VARIABLE_STATE_CLASS,
   classifyVariable,
   toVariableName,
 } from "../../core/variables";
+
+/** The delimiters an inline equation was written with, so an edit keeps them. */
+function mathDelimiters(raw: string): [string, string] {
+  if (raw.startsWith("\\(")) return ["\\(", "\\)"];
+  if (raw.startsWith("\\[")) return ["\\[", "\\]"];
+  if (raw.startsWith("$$")) return ["$$", "$$"];
+  return ["$", "$"];
+}
 
 function imageParts(raw: string): { alt: string; src: string } | null {
   const match = /^!\[([^\]]*)\]\(([^)\s]+)/.exec(raw);
@@ -104,8 +113,18 @@ export function InlineIslandView({ node, updateAttributes, selected, editor }: N
 
   if (islandType === "math_inline") {
     const tex = texOf(raw);
-    const open$ = raw.startsWith("\\(") ? "\\(" : "$";
-    const close$ = raw.startsWith("\\(") ? "\\)" : "$";
+    const [open$, close$] = mathDelimiters(raw);
+    // `\[word\]` is escaped brackets around prose, not math — the reader sees
+    // "[word]", as the renderer shows it (isEscapedBracketProse, the one rule).
+    if (open$ === "\\[" && isEscapedBracketProse(tex)) {
+      return (
+        <NodeViewWrapper as="span" className="rich-editor-inline-island" contentEditable={false}>
+          <span title="Escaped brackets — kept exactly as written" className={cn(selected && "rounded ring-2 ring-primary/50")}>
+            [{raw.slice(2, -2)}]
+          </span>
+        </NodeViewWrapper>
+      );
+    }
     return (
       <NodeViewWrapper as="span" className="rich-editor-inline-island" contentEditable={false}>
         <Popover open={open && !readOnly} onOpenChange={setOpen}>

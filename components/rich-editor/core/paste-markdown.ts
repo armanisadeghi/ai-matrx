@@ -17,6 +17,7 @@ import { Extension, type JSONContent } from "@tiptap/core";
 import { Fragment, Slice, type Node as PMNode, type Schema } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { buildVisualDocument } from "./visual-document";
+import { mergedCellsNotice, normalizePastedHtml } from "./paste-html";
 
 const IDENTITY_ATTRS = ["b", "mdId"] as const;
 
@@ -53,15 +54,33 @@ export function markdownToSlice(text: string, schema: Schema): Slice {
   return new Slice(Fragment.from(blocks), openStart, openEnd);
 }
 
-export const MarkdownTextPaste = Extension.create({
+export interface MarkdownTextPasteOptions {
+  /** Told when a paste changed shape on the way in (merged table cells split). */
+  onNotice: ((message: string) => void) | null;
+}
+
+export const MarkdownTextPaste = Extension.create<MarkdownTextPasteOptions>({
   name: "richEditorMarkdownTextPaste",
+  addOptions() {
+    return { onNotice: null };
+  },
   addProseMirrorPlugins() {
     const schema = this.editor.schema;
+    const onNotice = this.options.onNotice;
     return [
       new Plugin({
         key: new PluginKey("richEditorMarkdownTextPaste"),
         props: {
           clipboardTextParser: (text) => markdownToSlice(text, schema),
+          // Real-world tables (Wikipedia, Docs, Word, Sheets, Notion) squared and
+          // their cells flattened BEFORE the schema parses them — a second block
+          // in a cell must never become a second cell (paste-html.ts).
+          transformPastedHTML: (html) => {
+            const result = normalizePastedHtml(html);
+            const notice = mergedCellsNotice(result.mergedCellsSplit);
+            if (notice) onNotice?.(notice);
+            return result.html;
+          },
         },
       }),
     ];

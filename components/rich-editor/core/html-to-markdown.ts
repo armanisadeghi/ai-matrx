@@ -8,10 +8,12 @@
 
 import { DOMParser as ProseMirrorDOMParser, type Schema } from "@tiptap/pm/model";
 import { createSerializeContext, serializeBlock } from "./markdown-serialize";
+import { normalizePastedHtml } from "./paste-html";
 
+/** Pasted HTML → markdown. Tables are squared and their cells flattened first (paste-html.ts). */
 export function htmlToMarkdown(html: string, schema: Schema): string {
   const container = document.createElement("div");
-  container.innerHTML = html;
+  container.innerHTML = normalizePastedHtml(html).html;
   const doc = ProseMirrorDOMParser.fromSchema(schema).parse(container);
   return serializeBlock(doc, createSerializeContext()).replace(/\s+$/, "");
 }
