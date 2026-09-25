@@ -5,11 +5,11 @@
  * surface that names a person by account id: @-mention chips, comment authors,
  * "shared by", activity rows.
  *
- * Visibility is the platform's, never broadened: the person is read from the
- * members of the viewer's ACTIVE organization through
- * `get_organization_members_with_users`, which refuses anyone without access
- * to that organization. Someone outside it reads as "not someone you can see
- * here" — the peek never reveals an account the viewer could not list.
+ * Access is personal (Arman, 2026-09-23): the person opens when the viewer
+ * shares ANY organization with them — never only the active one. The database
+ * decides (`people_you_share_an_organization_with`, through
+ * features/organizations/people/visiblePeople.ts). Someone the viewer shares
+ * no organization with reads as "not someone you can see" — nothing revealed.
  *
  * There is no profile route a member may open for another member, so the
  * footer carries no Open door; emailing the person is a secondary action in
@@ -18,58 +18,32 @@
 
 import React from "react";
 import { Mail, UserRound } from "lucide-react";
-import { supabase } from "@/utils/supabase/client";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { resolveVisiblePerson, type VisiblePerson } from "@/features/organizations/people/visiblePeople";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
-interface MemberRow {
-  user_id: string;
-  user_email: string | null;
-  user_display_name: string | null;
-  user_avatar_url: string | null;
-  role: string | null;
-  joined_at: string | null;
-}
-
-type State =
-  | { status: "loading" }
-  | { status: "found"; row: MemberRow }
-  | { status: "unavailable"; why: string };
+type State = { status: "loading" } | { status: "found"; person: VisiblePerson } | { status: "unavailable" };
 
 export default function UserPeek({ id, open, onClose }: PeekProps) {
-  const orgId = useAppSelector(selectOrganizationId);
   const [state, setState] = React.useState<State>({ status: "loading" });
 
   React.useEffect(() => {
     let cancelled = false;
-    (async () => {
-      setState({ status: "loading" });
-      if (!orgId) {
-        if (!cancelled) setState({ status: "unavailable", why: "Choose an organization to see its members." });
-        return;
-      }
-      const { data, error } = await supabase.rpc("get_organization_members_with_users", { p_org_id: orgId });
-      if (cancelled) return;
-      if (error) {
-        setState({ status: "unavailable", why: "You can't see this organization's members." });
-        return;
-      }
-      const row = (data as MemberRow[] | null)?.find((m) => m.user_id === id);
-      setState(
-        row
-          ? { status: "found", row }
-          : { status: "unavailable", why: "This person isn't someone you can see in your current organization." },
-      );
-    })();
+    setState({ status: "loading" });
+    resolveVisiblePerson(id)
+      .then((person) => {
+        if (!cancelled) setState(person ? { status: "found", person } : { status: "unavailable" });
+      })
+      .catch(() => {
+        if (!cancelled) setState({ status: "unavailable" });
+      });
     return () => {
       cancelled = true;
     };
-  }, [id, orgId]);
+  }, [id]);
 
-  const row = state.status === "found" ? state.row : null;
-  const name = row?.user_display_name || row?.user_email || "Person";
+  const person = state.status === "found" ? state.person : null;
+  const name = person?.name || "Person";
 
   return (
     <PeekDialog
@@ -80,11 +54,11 @@ export default function UserPeek({ id, open, onClose }: PeekProps) {
       href={null}
       loading={state.status === "loading"}
     >
-      {row ? (
+      {person ? (
         <div className="space-y-3" data-user-peek="">
           <div className="flex items-center gap-3">
-            {row.user_avatar_url ? (
-              <img src={row.user_avatar_url} alt="" className="h-10 w-10 rounded-full object-cover" />
+            {person.avatarUrl ? (
+              <img src={person.avatarUrl} alt="" className="h-10 w-10 rounded-full object-cover" />
             ) : (
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
                 {name.slice(0, 1).toUpperCase()}
@@ -92,29 +66,31 @@ export default function UserPeek({ id, open, onClose }: PeekProps) {
             )}
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-foreground">{name}</p>
-              {row.role ? <p className="text-xs capitalize text-muted-foreground">{row.role}</p> : null}
+              {person.role ? <p className="text-xs capitalize text-muted-foreground">{person.role}</p> : null}
             </div>
           </div>
-          {row.user_email ? (
+          {person.organizationName ? (
+            <PeekField label="Shared organization">
+              <span className="text-sm text-muted-foreground">{person.organizationName}</span>
+            </PeekField>
+          ) : null}
+          {person.email ? (
             <PeekField label="Email">
-              <a
-                href={`mailto:${row.user_email}`}
-                className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-              >
+              <a href={`mailto:${person.email}`} className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline">
                 <Mail className="h-3.5 w-3.5" aria-hidden />
-                {row.user_email}
+                {person.email}
               </a>
             </PeekField>
           ) : null}
-          {row.joined_at ? (
+          {person.joinedAt ? (
             <PeekField label="Member since">
-              <span className="text-sm text-muted-foreground">{new Date(row.joined_at).toLocaleDateString()}</span>
+              <span className="text-sm text-muted-foreground">{new Date(person.joinedAt).toLocaleDateString()}</span>
             </PeekField>
           ) : null}
         </div>
       ) : state.status === "unavailable" ? (
         <p className="text-sm text-muted-foreground" data-user-peek-unavailable="">
-          {state.why}
+          This person isn&apos;t someone you share an organization with.
         </p>
       ) : null}
     </PeekDialog>

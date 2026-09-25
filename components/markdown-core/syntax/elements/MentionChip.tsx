@@ -1,43 +1,36 @@
 "use client";
 
 // A mention chip — `@[Dana](user:<uuid>)` / `@[Tue, Sep 30](date:2026-09-30)`
-// (RC-B11's stored form). A person resolves against the members the viewer
-// may see (people-resolver.ts): found → a chip that opens the platform's
-// person peek (`user` in features/organizations/peek — profile, role, email
-// as a secondary action); not found (outside the viewer's organization,
-// signed out, refused) → the label as plain text, honestly — never a chip
-// that goes nowhere.
+// (RC-B11's stored form). A person resolves against everyone the viewer shares
+// ANY organization with (features/organizations/people/visiblePeople.ts — the
+// database decides; access is personal, never the active org): found → a chip
+// that opens the platform's person peek (`user` in features/organizations/peek
+// — profile, role, email as a secondary action); not found (no shared
+// organization, signed out, refused) → the label as plain text, honestly —
+// never a chip that goes nowhere.
 
-import { useContext, useEffect, useState, type ReactNode } from "react";
-import { ReactReduxContext } from "react-redux";
+import { useEffect, useState, type ReactNode } from "react";
 import { AtSign, CalendarDays } from "lucide-react";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
-import type { MentionedPerson } from "./people-resolver";
+import type { VisiblePerson } from "@/features/organizations/people/visiblePeople";
 
-type Resolver = typeof import("./people-resolver");
+type Resolver = typeof import("@/features/organizations/people/visiblePeople");
 let resolverModule: Promise<Resolver> | null = null;
-const loadResolver = () => (resolverModule ??= import("./people-resolver"));
-
-function useActiveOrgId(): string | null {
-  const ctx = useContext(ReactReduxContext);
-  const state = ctx?.store?.getState() as { appContext?: { organization_id?: string | null } } | undefined;
-  return state?.appContext?.organization_id ?? null;
-}
+const loadResolver = () => (resolverModule ??= import("@/features/organizations/people/visiblePeople"));
 
 export function MentionChip(props: { "data-kind"?: string; "data-id"?: string; "data-label"?: string; children?: ReactNode }) {
   const kind = props["data-kind"];
   const id = String(props["data-id"] ?? "");
   const label = String(props["data-label"] ?? "");
-  const orgId = useActiveOrgId();
-  const [person, setPerson] = useState<{ key: string; value: MentionedPerson | null } | null>(null);
+  const [person, setPerson] = useState<{ key: string; value: VisiblePerson | null } | null>(null);
   const [peekOpen, setPeekOpen] = useState(false);
-  const key = `${orgId ?? ""}|${id}`;
+  const key = id;
 
   useEffect(() => {
     if (kind !== "person") return;
     let live = true;
     loadResolver()
-      .then((m) => m.resolvePerson(id, orgId))
+      .then((m) => m.resolveVisiblePerson(id))
       .then((value) => {
         if (live) setPerson({ key, value });
       })
@@ -47,7 +40,7 @@ export function MentionChip(props: { "data-kind"?: string; "data-id"?: string; "
     return () => {
       live = false;
     };
-  }, [kind, id, orgId, key]);
+  }, [kind, id, key]);
 
   if (kind === "date") {
     return (
@@ -63,7 +56,7 @@ export function MentionChip(props: { "data-kind"?: string; "data-id"?: string; "
   }
   if (!settled) {
     return (
-      <span data-mention="unresolved" title="Not someone you can see in this organization">
+      <span data-mention="unresolved" title="Not someone you share an organization with">
         @{label}
       </span>
     );

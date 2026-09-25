@@ -65,7 +65,7 @@ export const PEEK_REGISTRY: Record<
   // so every surface naming a Person could only send the reader away.
   party: PartyPeek,
   seo_map_topic: SeoMapTopicPeek,
-  // A platform user (member) — visibility is the viewer's active org's members.
+  // A platform user (member) — visible when the viewer shares ANY organization with them.
   user: UserPeek,
   // Add new kinds here as their peek components land.
 };

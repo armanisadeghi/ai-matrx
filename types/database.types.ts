@@ -82476,6 +82476,19 @@ export type Database = {
         Returns: undefined
       }
       partition_runway_snapshot: { Args: never; Returns: Json }
+      people_you_share_an_organization_with: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          email: string
+          joined_at: string
+          organization_id: string
+          organization_name: string
+          role: string
+          user_id: string
+        }[]
+      }
       pin_prompt_app_to_version: {
         Args: { p_app_id: string; p_version_id: string }
         Returns: Json

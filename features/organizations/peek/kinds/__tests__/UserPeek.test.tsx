@@ -19,9 +19,10 @@ jest.mock("@/components/ui/dialog", () => ({
   DialogTitle: ({ children }: { children: React.ReactNode }) => <h1>{children}</h1>,
   DialogFooter: ({ children }: { children: React.ReactNode }) => <div data-footer="">{children}</div>,
 }));
-jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "org-kilnworks" }));
-const rpc = jest.fn();
-jest.mock("@/utils/supabase/client", () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...a) } }));
+const resolveVisiblePerson = jest.fn();
+jest.mock("@/features/organizations/people/visiblePeople", () => ({
+  resolveVisiblePerson: (id: string) => resolveVisiblePerson(id),
+}));
 
 import UserPeek from "../UserPeek";
 
@@ -38,24 +39,29 @@ async function renderPeek(id: string): Promise<HTMLElement> {
 }
 
 beforeEach(() => {
-  rpc.mockReset();
-  rpc.mockResolvedValue({
-    data: [{ user_id: "u-dana", user_email: "dana@kilnworks.example", user_display_name: "Dana Ruiz", user_avatar_url: null, role: "member", joined_at: "2026-03-01T00:00:00Z" }],
-    error: null,
-  });
+  resolveVisiblePerson.mockReset();
+  // Dana shares the viewer's SECOND organization (not the active one).
+  resolveVisiblePerson.mockImplementation((id: string) =>
+    Promise.resolve(
+      id === "u-dana"
+        ? { userId: "u-dana", name: "Dana Ruiz", email: "dana@kilnworks.example", avatarUrl: null, role: "member", joinedAt: "2026-03-01T00:00:00Z", organizationId: "org-glaze-coop", organizationName: "Glaze co-op" }
+        : null,
+    ),
+  );
 });
 
-it("shows a member of the viewer's organization, email as a secondary action, no false Open door", async () => {
+it("shows someone sharing ANY organization with the viewer, email as a secondary action, no false Open door", async () => {
   const el = await renderPeek("u-dana");
-  expect(rpc).toHaveBeenCalledWith("get_organization_members_with_users", { p_org_id: "org-kilnworks" });
+  expect(resolveVisiblePerson).toHaveBeenCalledWith("u-dana");
+  expect(el.textContent).toContain("Glaze co-op");
   expect(el.querySelector("h1")?.textContent).toContain("Dana Ruiz");
   expect(el.querySelector('a[href="mailto:dana@kilnworks.example"]')).not.toBeNull();
   expect(el.textContent).toContain("member");
   expect(el.querySelector("[data-footer]")).toBeNull();
 });
 
-it("someone outside the viewer's organization is not revealed", async () => {
+it("someone the viewer shares no organization with is not revealed", async () => {
   const el = await renderPeek("u-stranger");
-  expect(el.querySelector("[data-user-peek-unavailable]")?.textContent).toMatch(/isn't someone you can see/);
+  expect(el.querySelector("[data-user-peek-unavailable]")?.textContent).toMatch(/share an organization/);
   expect(el.textContent).not.toContain("dana@");
 });

@@ -51,7 +51,7 @@ export const PEEK_KINDS = [
   "party",
   "seo_map_topic",
   // A platform USER (member) by account id — @-mention chips, comment authors,
-  // "shared by". Visibility = the viewer's active organization's members.
+  // "shared by". Visible = shares ANY organization with the viewer (access is personal).
   "user",
 ] as const;
 

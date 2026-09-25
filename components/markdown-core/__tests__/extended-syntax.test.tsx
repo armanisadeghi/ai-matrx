@@ -76,8 +76,8 @@ jest.mock("@/components/rich-content/standard/NestedRichContent", () => {
   return { __esModule: true, NestedRichContent: ({ source }: { source: string }) => <StandardBlocks source={source} />, default: () => null };
 });
 
-jest.mock("@/components/markdown-core/syntax/elements/people-resolver", () => ({
-  resolvePerson: (userId: string) =>
+jest.mock("@/features/organizations/people/visiblePeople", () => ({
+  resolveVisiblePerson: (userId: string) =>
     Promise.resolve(
       userId === "9f1c0000-0000-4000-8000-000000000001"
         ? { userId, name: "Dana Ruiz", email: "dana@kilnworks.example", avatarUrl: null, role: "member" }
