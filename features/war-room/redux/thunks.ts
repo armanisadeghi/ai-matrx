@@ -4,6 +4,7 @@
 // Optimistic where it helps; loud (toast) on failure.
 
 import { toast } from "@/lib/toast";
+import { describeWriteFailure } from "@/lib/errors/writeFailure";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
@@ -1743,8 +1744,9 @@ export const persistThreadPositions =
   async (_dispatch: AppDispatch) => {
     try {
       await service.persistThreadPositions(updates);
-    } catch {
-      toast.error("Couldn't save thread order");
+    } catch (err) {
+      const words = describeWriteFailure(err, { action: "save the thread order" });
+      toast.error(words.title, { description: words.description });
     }
   };
 
