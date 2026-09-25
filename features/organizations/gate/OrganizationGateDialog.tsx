@@ -53,6 +53,44 @@ interface PickerRow {
   id: string;
   name: string;
   is_personal: boolean;
+  slug?: string;
+  role?: string;
+}
+
+export interface WorkspaceChoice extends PickerRow {
+  /** Shown under the name ONLY when two choices share it. */
+  detail: string | null;
+}
+
+/**
+ * THE CHOICES THIS DIALOG MAY OFFER (review 2026-09-25). Two rules:
+ *  · another person's personal workspace is never listed — being a member of
+ *    it gives you access to what is in it, not a place to file your own work
+ *    (a personal row is offered only to its owner);
+ *  · two workspaces with the same name are told apart (their address), so
+ *    "Rincon Plumbing Co" twice is never a coin toss. Same id twice = once.
+ * Pure — exported for tests.
+ */
+export function workspaceChoices(rows: readonly PickerRow[]): WorkspaceChoice[] {
+  const seen = new Set<string>();
+  const kept = rows.filter((row) => {
+    if (seen.has(row.id)) return false;
+    seen.add(row.id);
+    // A prefetched row carries no role; only a known non-owner is dropped.
+    return !(row.is_personal && row.role !== undefined && row.role !== "owner");
+  });
+  const byName = new Map<string, number>();
+  for (const row of kept) {
+    const key = row.name.trim().toLowerCase();
+    byName.set(key, (byName.get(key) ?? 0) + 1);
+  }
+  return kept.map((row) => ({
+    ...row,
+    detail:
+      (byName.get(row.name.trim().toLowerCase()) ?? 0) > 1
+        ? (row.slug ?? row.id.slice(0, 8))
+        : null,
+  }));
 }
 
 export function OrganizationGateDialog() {
@@ -120,7 +158,7 @@ export function OrganizationGateDialog() {
     };
   }, [store]);
 
-  const sorted = [...displayList].sort((a, b) => {
+  const sorted = workspaceChoices(displayList).sort((a, b) => {
     // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
     if (a.is_personal !== b.is_personal) return a.is_personal ? 1 : -1;
     return a.name.localeCompare(b.name);
@@ -202,7 +240,14 @@ export function OrganizationGateDialog() {
                       : "border-transparent hover:bg-muted"
                   }`}
                 >
-                  <span className="truncate font-medium">{org.name}</span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">{org.name}</span>
+                    {org.detail ? (
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {org.detail}
+                      </span>
+                    ) : null}
+                  </span>
                   {org.is_personal ? (
                     <span className="ml-2 shrink-0 text-xs text-muted-foreground">
                       Personal

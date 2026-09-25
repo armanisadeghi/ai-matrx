@@ -27,6 +27,7 @@ import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { AppDispatch } from "@/lib/redux/store";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
 import {
   duplicateAgent,
   duplicateAgentVersion,
@@ -39,6 +40,13 @@ export interface CopyMandateAgentSource {
   defaultAgentId: string | null;
   /** The mandate's pinned version id — null for floating mandates. */
   defaultAgentVersionId: string | null;
+  /**
+   * Where the copy is homed. A PERSONAL copy ("into your account") names the
+   * person's own workspace, so it never asks "Which workspace is this for?";
+   * an organization's copy names that organization. Omitted = the workspace
+   * the person is working in (asked when none is selected).
+   */
+  organizationId?: string | null;
 }
 
 export interface CopyMandateAgentOptions {
@@ -61,7 +69,11 @@ export async function duplicateMandateAgent(
     (source.defaultAgentVersionId == null ? source.defaultAgentId : null);
   if (forkMasterId != null) {
     return dispatch(
-      duplicateAgent({ agentId: forkMasterId, asSystem: false }),
+      duplicateAgent({
+        agentId: forkMasterId,
+        asSystem: false,
+        organizationId: source.organizationId ?? undefined,
+      }),
     ).unwrap();
   }
   if (source.defaultAgentVersionId != null) {
@@ -69,6 +81,7 @@ export async function duplicateMandateAgent(
       duplicateAgentVersion({
         versionId: source.defaultAgentVersionId,
         asSystem: false,
+        organizationId: source.organizationId ?? undefined,
       }),
     ).unwrap();
   }
@@ -96,7 +109,12 @@ export function useCopyMandateAgent(): {
       // Dispatch inside each branch so each thunk action keeps its own type
       // (a ternary between two different thunks has no single dispatch
       // overload).
-      const newId = await duplicateMandateAgent(dispatch, source);
+      // "Copy & Update" makes the person's OWN copy — homed in their own
+      // workspace, never a question about which organization it is for.
+      const newId = await duplicateMandateAgent(dispatch, {
+        ...source,
+        organizationId: source.organizationId ?? (await resolvePersonalOrgId()),
+      });
       // The copy is the critical step — once it exists, open it for editing
       // no matter what. Connecting it is best-effort.
       try {

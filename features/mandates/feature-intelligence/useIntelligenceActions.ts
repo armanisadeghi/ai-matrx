@@ -32,6 +32,7 @@ import {
   type MandateBindingPrincipalInput,
 } from "../overrides";
 import { duplicateMandateAgent } from "../useCopyMandateAgent";
+import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
 import { fetchMandateLadder } from "../workspace/useMandateLadder";
 import { parseConsumptionMap, type ConsumptionMap } from "../provision-shapes";
 import type { HolderDraft } from "@/features/bindings/ScopeHolderBar";
@@ -129,6 +130,13 @@ export function useIntelligenceActions(seat: IntelligenceSeat) {
     let copyId: string | null = null;
     try {
       const running = await runningAnswer(row, seat);
+      // Where the copy lives: the organization this seat manages, or — on a
+      // personal page — the person's OWN workspace. A personal action never
+      // asks "Which workspace is this for?" (review 2026-09-25).
+      const home =
+        seat.level === "organization" && seat.organizationId
+          ? seat.organizationId
+          : await resolvePersonalOrgId();
       // A topic's old per-record agent is a run-scope override. The server
       // runs it verbatim, without the underlying org/user rung's settings.
       // Copy that behavior rather than silently importing rung settings.
@@ -142,8 +150,8 @@ export function useIntelligenceActions(seat: IntelligenceSeat) {
       let report: BindingWriteReport;
       if (sourceType === "workflow") {
         const copy = running.versionId
-          ? await duplicateWorkflowVersion(running.versionId)
-          : await duplicateWorkflow(sourceId);
+          ? await duplicateWorkflowVersion(running.versionId, home)
+          : await duplicateWorkflow(sourceId, home);
         copyId = copy.id;
         report = await putMandateBinding(dispatch, row.mandateKey, principal, {
           holderType: "workflow",
@@ -159,6 +167,7 @@ export function useIntelligenceActions(seat: IntelligenceSeat) {
           overrideAgentId: options?.effectiveTopicAgentId ?? (running.versionId ? null : sourceId),
           defaultAgentId: sourceId,
           defaultAgentVersionId: options?.effectiveTopicAgentId ? null : running.versionId,
+          organizationId: home,
         });
         report = await putMandateBinding(dispatch, row.mandateKey, principal, {
           holderType: "agent",

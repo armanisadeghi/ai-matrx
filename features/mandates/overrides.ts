@@ -33,6 +33,33 @@ import type { Database } from "@/types/database.types";
 import type { paths } from "@/types/python-generated/api-types";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
 import { invalidateMandateCache } from "./service";
+import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
+import {
+  peekSelectedOrganizationId,
+  waitForOrganizationAdmission,
+} from "@/lib/api/organization-admission";
+
+/**
+ * THE TENANCY CONTEXT OF A BINDING WRITE.
+ *  · an org binding is written in THAT organization's context;
+ *  · a PERSONAL binding (the user rung — it wins in every organization) is
+ *    written in the workspace the person has selected, and when they have
+ *    none it is filed in their OWN workspace. A personal choice never asks
+ *    "Which workspace is this for?" (review 2026-09-25: Duplicate & modify on a
+ *    personal page stopped at that question, then refused the write).
+ */
+async function bindingScope(
+  principal: MandateBindingPrincipalInput,
+): Promise<{ scopeOverrides?: { organization_id: string } }> {
+  if (principal.organizationId) {
+    return { scopeOverrides: { organization_id: principal.organizationId } };
+  }
+  if (principal.principalType !== "user") return {};
+  if (peekSelectedOrganizationId()) return {};
+  await waitForOrganizationAdmission();
+  if (peekSelectedOrganizationId()) return {};
+  return { scopeOverrides: { organization_id: await resolvePersonalOrgId() } };
+}
 import type { ConsumptionMap } from "./provision-shapes";
 import {
   mandateBindings,
@@ -500,17 +527,16 @@ export async function putMandateBinding(
   // agent id beside it is a 422 by design, and the two identities must never
   // be smuggled through the same field.
   const isWorkflow = input.holderType === "workflow";
+  const scope = await bindingScope(principal);
   const result = await dispatch(
     callApi({
       path: "/mandates/{mandate_key}/binding",
       method: "PUT",
       pathParams: { mandate_key: mandateKey },
       // An org binding is a write in THAT org's tenancy context, even when an
-      // admin currently has a different workspace selected. Keep the body and
-      // X-Organization-Id on one canonical value at the transport boundary.
-      ...(principal.organizationId
-        ? { scopeOverrides: { organization_id: principal.organizationId } }
-        : {}),
+      // admin currently has a different workspace selected; a personal one
+      // never waits on a workspace choice (`bindingScope`).
+      ...scope,
       body: {
         principal_type: principal.principalType,
         holder_type: input.holderType ?? "agent",
@@ -756,14 +782,13 @@ export async function removeMandateBinding(
   mandateKey: string,
   principal: MandateBindingPrincipalInput,
 ): Promise<void> {
+  const scope = await bindingScope(principal);
   const result = await dispatch(
     callApi({
       path: "/mandates/{mandate_key}/binding",
       method: "DELETE",
       pathParams: { mandate_key: mandateKey },
-      ...(principal.organizationId
-        ? { scopeOverrides: { organization_id: principal.organizationId } }
-        : {}),
+      ...scope,
       body: {
         principal_type: principal.principalType,
         ...(principal.organizationId

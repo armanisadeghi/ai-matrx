@@ -196,3 +196,37 @@ it("retries a failed membership read in place and offers the returned workspace"
   expect(document.body.textContent).toContain("Recovered team");
   expect(document.body.textContent).not.toContain("Connection interrupted");
 });
+
+describe("workspaceChoices (review 2026-09-25)", () => {
+  // Imported lazily so the module mocks above apply.
+  const { workspaceChoices } = jest.requireActual("./OrganizationGateDialog") as typeof import("./OrganizationGateDialog");
+  const row = (id: string, name: string, extra: Record<string, unknown> = {}) => ({
+    id,
+    name,
+    is_personal: false,
+    ...extra,
+  });
+
+  it("never offers another person's personal workspace; offers your own", () => {
+    const choices = workspaceChoices([
+      row("a", "admin's Workspace", { is_personal: true, role: "member" }),
+      row("b", "Alex Hart's Workspace", { is_personal: true, role: "owner" }),
+      row("c", "Ashford Labs", { role: "member" }),
+    ]);
+    expect(choices.map((c) => c.id)).toEqual(["b", "c"]);
+  });
+
+  it("tells two workspaces with the same name apart, and lists one id once", () => {
+    const choices = workspaceChoices([
+      row("r1", "Rincon Plumbing Co", { slug: "rincon-plumbing-co", role: "member" }),
+      row("r2", "Rincon Plumbing Co", { slug: "rincon-plumbing-share-green", role: "member" }),
+      row("r2", "Rincon Plumbing Co", { slug: "rincon-plumbing-share-green", role: "member" }),
+      row("o", "Oak & River", { slug: "oak-and-river", role: "member" }),
+    ]);
+    expect(choices.map((c) => [c.id, c.detail])).toEqual([
+      ["r1", "rincon-plumbing-co"],
+      ["r2", "rincon-plumbing-share-green"],
+      ["o", null],
+    ]);
+  });
+});

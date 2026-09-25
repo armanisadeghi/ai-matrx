@@ -1337,14 +1337,16 @@ export const duplicateAgent = createAsyncThunk<
  */
 export const duplicateAgentVersion = createAsyncThunk<
   string,
-  { versionId: string; asSystem?: boolean },
+  { versionId: string; asSystem?: boolean; organizationId?: string | null },
   ThunkApi
 >(
   "agentDefinition/duplicateVersion",
-  async ({ versionId, asSystem }, { dispatch, getState }) => {
+  async ({ versionId, asSystem, organizationId: explicitOrganizationId }, { dispatch, getState }) => {
+    // Same rule as duplicateAgent: the organization the caller named, else the
+    // one the person is working in.
     const organizationId = asSystem
       ? undefined
-      : await ensureOrgId(selectOrganizationId(getState()));
+      : await ensureOrgId(explicitOrganizationId ?? selectOrganizationId(getState()));
     const { data, error } = await supabase.rpc("agx_duplicate_version", {
       p_version_id: versionId,
       p_as_system: Boolean(asSystem),

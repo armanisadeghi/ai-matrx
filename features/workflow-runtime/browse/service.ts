@@ -219,10 +219,13 @@ export async function deleteWorkflow(workflowId: string): Promise<void> {
  */
 export async function duplicateWorkflow(
   workflowId: string,
+  /** Where the copy is homed when the caller already knows (a personal copy
+   * names the person's own workspace); otherwise the workspace they work in. */
+  organizationId?: string | null,
 ): Promise<{ id: string; name: string }> {
   const { data: newId, error } = await supabase.rpc("wfx_duplicate_definition", {
     p_definition_id: workflowId,
-    p_organization_id: await ensureOrgId(null),
+    p_organization_id: organizationId ?? (await ensureOrgId(null)),
   });
 
   if (error) throw pgError(error);
@@ -245,10 +248,11 @@ export async function duplicateWorkflow(
 /** Copy the snapshot a version-pinned mandate actually runs. */
 export async function duplicateWorkflowVersion(
   versionId: string,
+  organizationId?: string | null,
 ): Promise<{ id: string; name: string }> {
   const { data: newId, error } = await supabase.rpc("wfx_duplicate_version", {
     p_version_id: versionId,
-    p_organization_id: await ensureOrgId(null),
+    p_organization_id: organizationId ?? (await ensureOrgId(null)),
   });
   if (error) throw pgError(error);
   if (!newId) throw new Error("The workflow version was not copied.");
