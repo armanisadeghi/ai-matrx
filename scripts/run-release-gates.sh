@@ -955,6 +955,11 @@ else
         # exits 0 — scream, never block. The lane that blocks is the strict list.
         "Door rows: a door returns only what its caller may read (DD-192)|pnpm check:door-rows:strict"
         "RLS policies that read their own table (42P17)|pnpm check:rls-self-reference"
+        # MANDATE OWNER WRITES (2026-09-25): a plain org member could rewrite or soft-delete an
+        # org-homed mandate, its org binding or its presentation straight through supabase-js,
+        # around the server owner rule. Seat-by-seat probe in a rolled-back transaction;
+        # exits 1 on its own and UNMEASURED without credentials.
+        "Mandate owner writes: only the owner/org admin/super admin changes a mandate|pnpm check:mandate-owner-writes"
         # HR PUNCH WRITE PATH — BLOCKING in --strict (see the strict list above for
         # why RLS does not prevent a client-direct `insert into hr.punch`). Listed
         # here with `:strict` ON PURPOSE for the same reason component-created-by
