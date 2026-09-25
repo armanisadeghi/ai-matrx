@@ -48,7 +48,7 @@ function subscribe(listener: () => void): () => void {
 }
 
 function getSnapshot(): number {
-  return snapshot;
+  return Date.now();
 }
 
 function getServerSnapshot(): number {
