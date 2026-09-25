@@ -132,14 +132,18 @@ describe("the grid cell — a column rule refuses a value", () => {
     expect(noticeText()).not.toEqual("");
   });
 
-  it("2 · says what happened AND what to do — never a sentence with no way out", () => {
+  it("2 · leads with the store's own sentence AND says what to do — never a sentence with no way out", () => {
     renderCell();
     typeAndCommit("not a job number at all");
 
     const said = noticeText();
-    // The store's own heading for a Rule refusal, so a browser refusal and a
-    // database refusal are one object on screen.
-    expect(said).toContain("That value was not accepted");
+    // records-ui 0.85.13 (lane UI-FIX-19): `RefusalNotice` heads with the
+    // store's OWN sentence — the reason this column actually refused the
+    // value — falling back to a generic title only when nothing of the
+    // store's words survived the machine-identity filter. A browser refusal
+    // and a database refusal read as the same object because both lead with
+    // their own words, never a fixed dictionary heading.
+    expect(said.startsWith("Must be at most 8 characters")).toBe(true);
     expect(said).toContain("Correct it and save again, or discard what you typed");
   });
 
@@ -249,7 +253,9 @@ describe("the form-field shape — row modals and the paste preview", () => {
       );
     });
     const said = (container.textContent ?? "").replace(/\s+/g, " ");
-    expect(said).toContain("That value was not accepted");
+    // Same UI-FIX-19 guarantee as the grid cell: the notice leads with the
+    // store's own sentence, not a fixed heading.
+    expect(said.startsWith("Must be at most 12")).toBe(true);
     expect(said).toContain("Must be at most 12");
     expect(said).toContain("Correct it and save again");
     expect(said).toContain("Crew size accepts: At most 12");
