@@ -55,7 +55,7 @@ declare
   v_org uuid; v_home uuid; v_tbl uuid; v_acct uuid; v_accts uuid[]; v_ids uuid[];
   i int; n int; v_docs jsonb[]; v_keys text[]; v_keys2 text[];
   v_state text; v_msg text; v_hint text; v_msg2 text; v_hint2 text; v_state2 text;
-  v_b text; v_s text; v_edge uuid;
+  v_b text; v_s text; v_g text; v_edge uuid;
 begin
   c_admin_j := jsonb_build_object('sub', c_admin, 'role', 'authenticated')::text;
   c_dana_j  := jsonb_build_object('sub', c_dana,  'role', 'authenticated')::text;
@@ -173,10 +173,19 @@ begin
   v_s := coalesce(nullif(current_setting('mx_memo.s', true), ''), '{}');
   select array_agg(k order by k) into v_keys  from jsonb_object_keys((v_b::jsonb) -> 'e') k;
   select array_agg(k order by k) into v_keys2 from jsonb_object_keys((v_s::jsonb) -> 'e') k;
-  if v_keys is null or not exists (select 1 from unnest(v_keys) k where k like 'af:%') then
-    raise exception '3: after five single-row writes the bulky memo holds no af: key — it is not amortising at all (%)', v_keys;
+  -- `af:` HAS ITS OWN SLOT NOW (amended by lane SUITE-HEALTH-2, 2026-09-25). WRITE-PERF-4 moved
+  -- custom.applicable_fields' memo out of the bulky blob into its own GUC through
+  -- platform.memo_k_get / memo_k_put (migrations/campaign/writeperf4_a_fact_about_the_table_is_read_once.sql,
+  -- live body from writeperf4_the_field_set_is_read_once_per_row.sql), so the amortisation is
+  -- asserted where the answer is kept: this table's own af: key, read back through the same door.
+  if platform.memo_k_get('af:' || v_org::text || ':' || v_tbl::text || ':') is null
+     and not coalesce(exists (select 1 from unnest(v_keys) k where k like 'af:%'), false) then
+    raise exception '3: after five single-row writes custom.applicable_fields holds no af: answer for this table in its own memo slot or the blob — it is not amortising at all (%)', v_keys;
   end if;
-  if v_keys2 is null or not exists (select 1 from unnest(v_keys2) k where k like 'tf:%') then
+  -- `tf:` too has its own slot since WRITE-PERF-4 (writeperf4_a_fact_about_the_table_is_read_once.sql):
+  -- custom.table_type_field keeps 'tf:<org>:<table>' through platform.memo_k_put (SUITE-HEALTH-2).
+  if platform.memo_k_get('tf:' || v_org::text || ':' || v_tbl::text) is null
+     and not coalesce(exists (select 1 from unnest(v_keys2) k where k like 'tf:%'), false) then
     raise exception '3: after five single-row writes the small memo holds no tf: key — custom.table_type_field is memoising nothing, which is the defect writeperf3_a_small_answer_is_not_read_out_of_a_big_blob.sql closed (%)', v_keys2;
   end if;
   if not exists (select 1 from unnest(v_keys2) k where k like 'tr:%')
@@ -231,16 +240,22 @@ begin
   raise notice '5  the batch and the single row refuse identically ("%") and none of the batch landed', left(v_msg, 60);
 
   -- ===== 6. AN EDGE ARRIVING FORGETS NOTHING; AN EDGE TAKEN AWAY EMPTIES THE MEMO =====
+  -- READ BY GENERATION (amended by lane SUITE-HEALTH-2, 2026-09-25). Since WRITE-PERF-4 every
+  -- memoised answer lives in its own slot stamped with `mx_memo.g`, and platform.memo_clear()
+  -- forgets them all by minting a new generation (it still empties the old blobs too). The bulky
+  -- blob `mx_memo.b` is no longer where answers are kept, so "the blob is not empty" stopped
+  -- meaning anything; "the generation did not move" is the same promise, read where it lives.
+  v_g := coalesce(current_setting('mx_memo.g', true), '0');
   perform custom.record_write(v_org, v_tbl, jsonb_build_object(
     'reference','CC-2026-90010', 'carrier', v_accts[3]::text));
-  if coalesce(nullif(current_setting('mx_memo.b', true), ''), '{}') = '{}' then
-    raise exception '6: writing a record WITH a relation emptied the bulky memo — an edge arriving must forget nothing';
+  if coalesce(current_setting('mx_memo.g', true), '0') is distinct from v_g then
+    raise exception '6: writing a record WITH a relation emptied the memo (a new generation) — an edge arriving must forget nothing';
   end if;
   perform set_config('role', v_boss, true);   -- taking an edge away is not a client door
   select a.id into v_edge from platform.associations a
    where a.organization_id = v_org and a.source_type = 'record' and a.deleted_at is null limit 1;
   update platform.associations set deleted_at = now() where id = v_edge;
-  if coalesce(nullif(current_setting('mx_memo.b', true), ''), '{}') <> '{}' then
+  if coalesce(current_setting('mx_memo.g', true), '0') is not distinct from v_g then
     raise exception '6: taking an edge away did NOT empty the memo, so a yes could outlive the grant behind it';
   end if;
   update platform.associations set deleted_at = null where id = v_edge;
