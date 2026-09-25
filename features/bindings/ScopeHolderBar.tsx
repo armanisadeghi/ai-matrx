@@ -41,32 +41,23 @@ import {
   type AgentScope,
 } from "@/features/agent-shortcuts/constants";
 import { HolderAssignment } from "./HolderAssignment";
-import {
-  SYSTEM_RUNG_COVERS,
-  SYSTEM_RUNG_HOLDER_RULE,
-  SYSTEM_RUNG_TITLE,
-  systemRungHolderIsPersonal,
-} from "./system-rung";
+import { systemRungHolderIsPersonal } from "./system-rung";
 import {
   DEFAULT_HOLDER_RUNG,
   type DefaultHolderRungOffer,
 } from "./default-holder-rung";
 
-/** The rungs a mandate binding can actually be written at. */
-export type BindingRung = "global" | "org" | "user";
+/**
+ * The rungs a mandate binding can actually be written at. There is no `global`
+ * binding (aidream 1041): the answer for everybody is the job's own default —
+ * `DEFAULT_HOLDER_RUNG` — and the scope picker's "Global" option lands there.
+ */
+export type BindingRung = "org" | "user";
 
 /**
- * Every rung this bar can STAND ON — the three binding rungs plus the mandate's
+ * Every rung this bar can STAND ON — the two binding rungs plus the mandate's
  * own default (`system`), which is not a binding at all but the three
  * `mandate.definition.default_holder_*` columns beneath them.
- *
- * 🔶 THE NAMING COLLISION, NAMED. The campaign's frozen ladder is `system` ·
- * `global` · `org` · `user`, and the register says `global` is never
- * relabelled `system`. `system-rung.ts` nonetheless titles the **global**
- * binding rung "System — decides for every user". Nothing here renames it —
- * that lane is live in these same files — so this rung leads with the word
- * "default" in every sentence a reader sees, and the collision travels to the
- * register as a finding. See `default-holder-rung.ts`.
  */
 export type WorkspaceRung = BindingRung | typeof DEFAULT_HOLDER_RUNG;
 
@@ -217,8 +208,8 @@ export interface ScopeHolderBarProps {
   } | null;
 }
 
-const RUNG_TO_SCOPE: Record<BindingRung, AgentScope> = {
-  global: AGENT_SCOPES.GLOBAL,
+const RUNG_TO_SCOPE: Record<WorkspaceRung, AgentScope> = {
+  [DEFAULT_HOLDER_RUNG]: AGENT_SCOPES.GLOBAL,
   org: AGENT_SCOPES.ORGANIZATION,
   user: AGENT_SCOPES.USER,
 };
@@ -229,8 +220,9 @@ const MANDATE_SCOPES: readonly AgentScope[] = [
   AGENT_SCOPES.USER,
 ];
 
-function scopeToRung(scope: AgentScope): BindingRung {
-  if (scope === AGENT_SCOPES.GLOBAL) return "global";
+function scopeToRung(scope: AgentScope): WorkspaceRung {
+  // "Global" means everybody — and the answer for everybody is the default.
+  if (scope === AGENT_SCOPES.GLOBAL) return DEFAULT_HOLDER_RUNG;
   if (scope === AGENT_SCOPES.ORGANIZATION) return "org";
   return "user";
 }
@@ -301,13 +293,6 @@ function holderRestriction(
     };
   }
   switch (rung) {
-    case "global":
-      return {
-        visibleTabs: ["system"],
-        initialTab: "system",
-        includeSystemInAll: true,
-        sentence: SYSTEM_RUNG_HOLDER_RULE,
-      };
     case "org":
       return {
         includeSystemInAll: true,
@@ -384,13 +369,11 @@ export function ScopeHolderBar({
   // list is "not loaded", never "not a system agent".
   const builtinAgents = useAppSelector(selectBuiltinAgents);
   const systemHolderViolation = useMemo(() => {
-    // The SAME violation at both rungs whose blast radius is the whole
-    // platform: the `global` binding rung, and a SYSTEM-homed mandate's own
-    // default. An org-homed default is a different scope and a different rule,
-    // judged by the server's containment predicate rather than here.
+    // The one rung whose blast radius is the whole platform: a SYSTEM-homed
+    // mandate's own default. An org-homed default is a different scope and a
+    // different rule, judged by the server's containment predicate.
     const platformWide =
-      rung === "global" ||
-      (onDefaultHolderRung && Boolean(defaultHolderOffer?.systemHomed));
+      onDefaultHolderRung && Boolean(defaultHolderOffer?.systemHomed);
     if (!platformWide) return false;
     if (holder.kind !== "agent") return false;
     // ONE RULE, shared with the save refusal in `OneBindingWorkspace` — the
@@ -557,7 +540,7 @@ export function ScopeHolderBar({
                   : ladderLine}
               </p>
               {!allowGlobal && !pinnedList && !onDefaultHolderRung ? (
-                <p>Platform-wide bindings require a super administrator.</p>
+                <p>Setting the Default for everyone requires a super administrator.</p>
               ) : null}
             </div>
           }
@@ -718,9 +701,6 @@ export function pinnedRungWords(
         "Whoever this names runs the job wherever no binding above it answers.",
     };
   }
-  if (rung === "global") {
-    return { noun: SYSTEM_RUNG_TITLE, covers: SYSTEM_RUNG_COVERS };
-  }
   return rungWords(rung);
 }
 
@@ -740,12 +720,6 @@ export function rungWords(rung: WorkspaceRung): {
         noun: "the job's own default",
         covers:
           "Whoever this names runs the job wherever no binding above it answers.",
-      };
-    case "global":
-      return {
-        noun: "the system answer",
-        covers:
-          "Everybody on the platform gets this, unless their organization or they themselves override it.",
       };
     case "org":
       return {
