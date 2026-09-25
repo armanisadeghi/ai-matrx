@@ -3,6 +3,9 @@ import { createRoot, type Root } from "react-dom/client";
 
 const fetchVaultPasswordHistory = jest.fn();
 const revealVaultPasswordHistory = jest.fn();
+let authStateListener:
+  ((event: string, session?: { user: { id: string } } | null) => void) | null =
+  null;
 
 jest.mock("../vault-service", () => ({
   fetchVaultPasswordHistory: (...args: unknown[]) =>
@@ -15,9 +18,10 @@ jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn() } }));
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     auth: {
-      onAuthStateChange: () => ({
-        data: { subscription: { unsubscribe: jest.fn() } },
-      }),
+      onAuthStateChange: (listener: typeof authStateListener) => {
+        authStateListener = listener;
+        return { data: { subscription: { unsubscribe: jest.fn() } } };
+      },
     },
   }),
 }));
@@ -58,6 +62,7 @@ describe("VaultPasswordHistoryPanel", () => {
     root = createRoot(host);
     fetchVaultPasswordHistory.mockReset();
     revealVaultPasswordHistory.mockReset();
+    authStateListener = null;
   });
 
   afterEach(() => {
@@ -87,6 +92,90 @@ describe("VaultPasswordHistoryPanel", () => {
     expect(fetchVaultPasswordHistory).toHaveBeenCalledWith("item-a");
     expect(host.textContent).toContain("No captured password states yet");
     expect(revealVaultPasswordHistory).not.toHaveBeenCalled();
+  });
+
+  test("does not discard the initial metadata request on Supabase INITIAL_SESSION", async () => {
+    let resolve!: (value: {
+      entries: [];
+      count: number;
+      capture_cutoff_at: null;
+      value_availability: "unavailable";
+      next_before_revision: null;
+      omitted_count: number;
+      incomplete: boolean;
+    }) => void;
+    fetchVaultPasswordHistory.mockReturnValue(
+      new Promise((next) => {
+        resolve = next;
+      }),
+    );
+    await act(async () => {
+      root.render(
+        <VaultPasswordHistoryPanel
+          itemId="item-a"
+          field={field}
+          currentUserId="user-a"
+        />,
+      );
+    });
+    act(() =>
+      authStateListener?.("INITIAL_SESSION", { user: { id: "user-a" } }),
+    );
+    await act(async () => {
+      resolve({
+        entries: [],
+        count: 0,
+        capture_cutoff_at: null,
+        value_availability: "unavailable",
+        next_before_revision: null,
+        omitted_count: 0,
+        incomplete: false,
+      });
+    });
+    expect(host.textContent).toContain("No captured password states yet");
+    expect(host.textContent).not.toContain("Loading password history");
+  });
+
+  test("fences an initial auth event for a different account", async () => {
+    let resolve!: (value: {
+      entries: [];
+      count: number;
+      capture_cutoff_at: null;
+      value_availability: "unavailable";
+      next_before_revision: null;
+      omitted_count: number;
+      incomplete: boolean;
+    }) => void;
+    fetchVaultPasswordHistory.mockReturnValue(
+      new Promise((next) => {
+        resolve = next;
+      }),
+    );
+    await act(async () => {
+      root.render(
+        <VaultPasswordHistoryPanel
+          itemId="item-a"
+          field={field}
+          currentUserId="user-a"
+        />,
+      );
+    });
+    act(() =>
+      authStateListener?.("INITIAL_SESSION", { user: { id: "user-b" } }),
+    );
+    await act(async () => {
+      resolve({
+        entries: [],
+        count: 0,
+        capture_cutoff_at: null,
+        value_availability: "unavailable",
+        next_before_revision: null,
+        omitted_count: 0,
+        incomplete: false,
+      });
+    });
+    expect(host.textContent).toContain("Your account changed");
+    expect(host.textContent).not.toContain("No captured password states yet");
   });
 
   test("keeps unavailable old values out of the UI and transport", async () => {

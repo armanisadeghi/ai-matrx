@@ -44,6 +44,7 @@ export function VaultPasswordHistoryPanel({
   const secret = useTransientSecret();
   const generation = useRef(0);
   const revealedIdentity = useRef<string | null>(null);
+  const authenticatedActorId = useRef<string | null | undefined>(undefined);
   const identity = `${itemId}:${field.id}:${field.value_version}:${currentUserId ?? ""}`;
   const identityRef = useRef(identity);
 
@@ -87,15 +88,32 @@ export function VaultPasswordHistoryPanel({
   useEffect(() => {
     const {
       data: { subscription },
-    } = createClient().auth.onAuthStateChange(() => {
+    } = createClient().auth.onAuthStateChange((event, session) => {
+      const nextActorId = session?.user.id ?? null;
+      const previousActorId = authenticatedActorId.current;
+      authenticatedActorId.current = nextActorId;
+      // Supabase emits INITIAL_SESSION immediately after subscription. It
+      // confirms the same identity that mounted this panel; treating it as a
+      // revocation discards the only metadata request and leaves Loading on
+      // screen forever. A later sign-out or a different account still fences
+      // every pending request and clears revealed plaintext synchronously.
+      if (
+        (previousActorId === undefined &&
+          event === "INITIAL_SESSION" &&
+          nextActorId === currentUserId) ||
+        (previousActorId === nextActorId && event !== "SIGNED_OUT")
+      )
+        return;
       generation.current += 1;
       secret.clear();
       revealedIdentity.current = null;
       setWorkingRevision(null);
       setLoadingMore(false);
+      setLoading(false);
+      setError("Your account changed. Reopen this credential from the Vault.");
     });
     return () => subscription.unsubscribe();
-  }, [secret.clear]);
+  }, [currentUserId, secret.clear]);
 
   const reveal = async (revision: number) => {
     const request = ++generation.current;
@@ -269,7 +287,7 @@ export function VaultPasswordHistoryPanel({
           Load earlier changes
         </Button>
       )}
-      {history?.omitted_count > 0 && (
+      {(history?.omitted_count ?? 0) > 0 && (
         <p className="flex gap-1.5 text-[11px] text-muted-foreground">
           <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           Some recorded changes are unavailable, so this timeline is incomplete.
