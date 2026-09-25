@@ -46,7 +46,10 @@ export function memberScopeArgs(
   const orgLevel = options.level === "organization";
   return {
     p_level: options.level,
-    p_scope: scope.kind,
+    // The shell asks counts under a normalized scope (it may say "mine"); the
+    // organization seat has only its own and the system's, so anything that
+    // is not "system" is this organization's own.
+    p_scope: orgLevel ? (scope.kind === "system" ? "system" : "orgs") : scope.kind,
     p_org_id: orgLevel
       ? (options.organizationId ?? undefined)
       : scope.kind === "orgs" && scope.organizationId

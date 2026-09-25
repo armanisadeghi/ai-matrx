@@ -75,6 +75,14 @@ describe("member list scope args", () => {
     expect(args.p_resolve_org_id).toBeUndefined();
   });
 
+  it("organization seat never sends a scope its database door refuses", () => {
+    const args = memberScopeArgs(query({ scope: { kind: "mine" } }), {
+      level: "organization",
+      organizationId: ORG,
+    });
+    expect(args.p_scope).toBe("orgs");
+  });
+
   it("organization counts carry no Mine tab", () => {
     const counts = memberCountsFromAnswer(
       { mine: 4, orgs: 2, system: 469, orgs_narrow: [] },

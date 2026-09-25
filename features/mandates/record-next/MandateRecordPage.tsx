@@ -121,7 +121,16 @@ function MandateRecordPageInner({
       })}
     >
       <div className="h-full overflow-y-auto pb-safe">
-        <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-3 sm:px-6">
+        {/* Under /administration the content already starts below the
+            header; a (core) member page sits under the glass shell header and
+            clears it, exactly as EntityListPage's clearsShellHeader does. */}
+        <div
+          className={
+            level === "system"
+              ? "mx-auto w-full max-w-6xl px-4 pb-10 pt-3 sm:px-6"
+              : "mx-auto w-full max-w-6xl px-4 pb-10 pt-[calc(var(--shell-header-h)+0.75rem)] sm:px-6"
+          }
+        >
           <MandateRecordBody
             mandateKeyOrId={mandateKey}
             host={level === "system" ? "admin-route" : "route"}

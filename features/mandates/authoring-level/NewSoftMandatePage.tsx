@@ -249,7 +249,7 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto w-full max-w-3xl space-y-6 px-4 pb-16 pt-2 sm:px-6">
+      <div className="mx-auto w-full max-w-3xl space-y-6 px-4 pb-16 pt-[calc(var(--shell-header-h)+0.75rem)] sm:px-6">
         <p className="rounded-lg border border-border/60 bg-card px-3 py-2 text-[12px] leading-snug text-muted-foreground">
           {level === "organization" ? (
             <>
