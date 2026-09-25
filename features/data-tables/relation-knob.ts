@@ -31,6 +31,7 @@
 import { useEffect, useState } from "react";
 
 import { fetchKnobIndex } from "@/lib/scoped-config/service";
+import { mayReadAsMember } from "@/features/organizations/organizationsIAmIn";
 
 export const RELATION_KNOB_FEATURE = "data_tables.relation";
 export const RELATION_KNOB_KEY = "relation_columns_enabled";
@@ -40,6 +41,10 @@ export async function relationColumnsEnabledFor(
   organizationId: string | null | undefined,
 ): Promise<boolean> {
   if (!organizationId) return false;
+  // An organization's knobs are read by its members (`platform.knob_index` refuses anyone else
+  // with 403). A person given this table from outside reads it as OFF without asking — the
+  // same answer a failure gives (GATES-TAIL, VERIFIER-21 #7).
+  if (!(await mayReadAsMember(organizationId))) return false;
   try {
     const keys = await fetchKnobIndex({
       organizationId,
