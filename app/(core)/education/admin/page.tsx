@@ -479,7 +479,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
       notes: [
         "Feature: features/education/classes/** (useClasses · useClassContent · ClassesHome · ClassHubView · ClassFormDialog · ClassPicker · AddClassContentSheet) — see features/education/classes/FEATURE.md",
-        "Reuse: legacy scope thunks (features/agent-context/redux/scope) for CRUD; NO new scope semantics",
+        "Reuse: the canonical scope tree writes (features/scopes/redux/thunks/scopeTreeMutations) for CRUD; NO new scope semantics",
         "DB: zero DDL — class=scope, exam dates=scope.settings JSONB, content↔class=platform.associations",
       ],
     },

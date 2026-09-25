@@ -43,14 +43,14 @@ this directory.
    name, nor a scope RPC whose name falls outside the family grammar.
 
    **Who is exempt, and why:** the allowlist at the bottom of `eslint.config.mjs` (§"features/scopes
-   chokepoint allowlist") names every exempt file with its reason — 12 today. Three are server-side or
+   chokepoint allowlist") names every exempt file with its reason — 10 today. Three are server-side or
    service-role doors this `"use client"` service cannot serve (`app/(core)/scopes/s/[scopeId]/page.tsx`,
-   `app/api/admin/system-context/route.ts`, `app/api/stripe/class-checkout/route.ts`); seven are the
+   `app/api/admin/system-context/route.ts`, `app/api/stripe/class-checkout/route.ts`); five are the
    retirement queue — live duplicate paths (`features/scope-system/redux/{contextItemsSlice,templatesSlice,scopeValuesSlice}.ts`,
-   `features/agent-context/redux/scope/{scopeTypesSlice,scopesSlice}.ts`,
    `features/agent-context/{service/hierarchyService.ts,redux/hierarchyThunks.ts}`) that still hold a
-   second apply-template path, a second set-value RPC, a duplicate scope-type read path and a third
-   full-context read (`get_user_full_context`). Delete the allowlist entry when the duplicate path
+   second context-item READ path (`list_scope_type_items` + the only `system_context_item` reader — its
+   writes already go through this service), a second apply-template path, a second set-value RPC, and a
+   third full-context read (`get_user_full_context`). Delete the allowlist entry when the duplicate path
    goes; it is not a standing exemption.
    Retired from that duplicate family (2026-09-25, lane SCOPE-PICKER-RETIRE): the bespoke
    `features/agent-context/components/ScopePicker.tsx` and its companion hook
@@ -63,14 +63,17 @@ this directory.
    and from the duplicate tree `agent-context/redux/scope/{scopeAssignmentsSlice,selectors}.ts` plus the
    `scopeAssignments` reducer key (nothing filled it any more). Their callers use the canonical family:
    `active-context/engagement/{EngagementPicker,EntityEngagementPicker,useActiveEngagementSelection}` and
-   `active-context/binding-target/BindingTargetPicker`. `scopeTypesSlice` / `scopesSlice` stay: every
-   remaining importer is the scope CRUD console or feeds it (`agent-context/components/scope-admin/*`,
-   `features/scope-system/**`, the ten `app/(core)/organizations/[orgId]/{context-items,scopes/**}` pages,
-   `organizations/components/OrgWorkspace.tsx`) or writes through the old thunks
-   (`education/classes/hooks/useClasses.ts`, `kg-suggestions/**`, `agents/components/{inputs/BoundVariableChips,scope-batch-import/ScopeBatchImportBody}.tsx`,
-   `window-panels/{lite-window/LiteWindowExamples,windows/context-scopes/ScopeEditWindow}.tsx`,
-   `agent-context/redux/hierarchyThunks.ts`) — the console lane moves them (the canonical `ScopeTypeNode`
-   has no slug / description yet, which the console reads).
+   `active-context/binding-target/BindingTargetPicker`.
+   Retired last (2026-09-25, lane SCOPE-ADMIN-CANONICAL): the rest of the duplicate tree —
+   `agent-context/redux/scope/{scopeTypesSlice,scopesSlice,types}.ts`, the `scopeTypes` / `scopes`
+   reducer keys, their two allowlist entries, and `hierarchyThunks`' fan-out of scopes into them. The
+   canonical nodes carry the console's fields (`ScopeTypeNode.slug/description/created_at/updated_at`,
+   `ScopeNode.slug/sort_order/created_by/created_at/updated_at`), the console reads them through
+   `redux/selectors/admin.ts`, and every console write goes through its door — scope types and scopes
+   via `redux/thunks/scopeTreeMutations.ts`, which patch the tree in place (no refetch; an archive needs
+   only the id), context items via `scope-system/redux/contextItemsSlice`'s thunks, which now call
+   `scopesService` and echo into `contextItemsByTypeId`. Guard: `features/scopes/__tests__/one-scope-tree.test.ts`.
+   What remains on the queue is the five paths named above.
 
    Write an exempt path as a glob, never as a literal dynamic route: ESLint globs are minimatch,
    where `[scopeId]` is a character class, so `app/(core)/scopes/s/[scopeId]/page.tsx` matches
@@ -356,6 +359,16 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-09-25 — **One scope tree: the admin console reads and writes `scopesTree`.** Lane
+  SCOPE-ADMIN-CANONICAL. Tree nodes gain the console's fields (read by `getScopeTree` and every write
+  decoder; warm cache v4). `redux/selectors/admin.ts` answers the console (`selectScopeTypesByOrg`,
+  `selectScopeTypeBySlugOrId`, `selectScopesByType`, `selectScopeBySlugOrId`, loaded-ness = the tree's).
+  Scope-type/scope writes go through `scopeTreeMutations` (in-place patch; `deleteScope` /
+  `deleteScopeType` read org/type from the tree); `scopeTreeInvalidationMiddleware` refetches only for
+  template application. `scopesService.updateContextItem` takes the whole edit (clears and the columns
+  `update_context_item` lacks go as one RLS row update). `contextItemUpserted` no longer marks an
+  unloaded catalog "ready" with one row, and drops an inactive row. Deleted
+  `agent-context/redux/scope/{scopeTypesSlice,scopesSlice,types}.ts` + reducer keys + allowlist entries.
 - 2026-09-25 — **Two modes of the one picker family replace the last two bespoke pickers.**
   Lane HIERARCHY-CASCADE (Arman: the canonical scope selection family is the one set of pickers;
   primitives first). Engine: `EngagementSelection` + `applyEngagementPick` + `useEngagementEngine`
