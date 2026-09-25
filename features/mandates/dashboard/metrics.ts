@@ -226,7 +226,10 @@ export interface ScanMetrics {
   /** Newest complete candidate scan across every repo, ISO. */
   lastCompleteScanAt: string | null;
   openFindings: number;
+  /** On the conversion list (flag conversion_pending). */
   conversion: number;
+  /** EVERY AI call outside a mandate — the Unconverted page's total. */
+  bypass: number;
   patrolEnabled: boolean | null;
   patrolLastRunAt: string | null;
   patrolNextDueAt: string | null;
@@ -257,6 +260,7 @@ export function scanMetrics(
     lastCompleteScanAt: newest,
     openFindings: board.open_finding_count,
     conversion: board.conversion_count,
+    bypass: board.bypass_count ?? board.conversion_count,
     patrolEnabled: patrol ? patrol.enabled && patrol.trigger_enabled : null,
     patrolLastRunAt: patrol?.last_run_at ?? null,
     patrolNextDueAt: patrol?.next_due_at ?? null,

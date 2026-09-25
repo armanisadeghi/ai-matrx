@@ -87791,6 +87791,18 @@ export interface components {
             conversion_counts_by_repo: {
                 [key: string]: number;
             };
+            /**
+             * Bypass Count
+             * @default 0
+             */
+            bypass_count?: number;
+            /**
+             * Bypass Counts By Repo
+             * @default {}
+             */
+            bypass_counts_by_repo?: {
+                [key: string]: number;
+            };
             /** Open Finding Count */
             open_finding_count: number;
             /** Unverified Repos */

@@ -203,7 +203,10 @@ export interface UnconvertedCall {
 
 export const UNCONVERTED_STATUS_LABEL: Record<UnconvertedStatus, string> = {
   waiting: "Waiting to convert",
-  broken: "Broken",
+  // `broken` is the scanner's NEW_BYPASS: a call outside a mandate that is not
+  // on the frozen conversion list. It is not a failing call — "Broken" read as
+  // one (review 2026-09-25).
+  broken: "New — not on the list",
 };
 
 /** `import anthropic` → anthropic / Import; `host api.x.ai` → api.x.ai / API host. */

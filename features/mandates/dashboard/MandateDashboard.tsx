@@ -490,10 +490,16 @@ export function MandateDashboard() {
           />
           <KpiTile
             label="AI outside mandates"
-            value={n(scan?.conversion)}
-            tone={scan && scan.conversion > 0 ? "warn" : "neutral"}
+            value={n(scan?.bypass)}
+            tone={scan && scan.bypass > 0 ? "warn" : "neutral"}
             loading={boardLoading}
-            href={unconvertedCallsHref("waiting")}
+            href={unconvertedCallsHref()}
+            hint={
+              scan
+                ? `${formatCount(scan.conversion)} on the list · ${formatCount(scan.bypass - scan.conversion)} new`
+                : undefined
+            }
+            title="Every scanned repository. The server's raw-client guard checks aidream alone, so it can read 0 while other repositories still count here."
           />
           <KpiTile
             label="Patrol last run"

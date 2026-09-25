@@ -201008,6 +201008,19 @@
             "type": "object",
             "title": "Conversion Counts By Repo"
           },
+          "bypass_count": {
+            "type": "integer",
+            "title": "Bypass Count",
+            "default": 0
+          },
+          "bypass_counts_by_repo": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Bypass Counts By Repo",
+            "default": {}
+          },
           "open_finding_count": {
             "type": "integer",
             "title": "Open Finding Count"
