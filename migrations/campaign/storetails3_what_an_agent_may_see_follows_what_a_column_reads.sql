@@ -1,9 +1,9 @@
 -- chair-step: a STORE FIX (STORE-LEAK-FORMULA found it while testing, item 5). It ADDS two
---   functions (`custom.context_policy_rank`, `custom.field_context_policy_floor`), REPLACES the
---   bodies of the two Field-row trigger functions STORE-LEAK-FORMULA added (each declared below
---   with the body it was written against), and re-creates the AFTER trigger
---   `custom_record_field_sensitivity_reaches_its_readers` so it also fires when a column's
---   `context_policy` changes. No table, column, policy or grant is added; no row of anybody's
+--   functions (`custom.context_policy_rank`, `custom.field_context_policy_floor`) and REPLACES the
+--   body of `custom._field_reads_what_it_reads` (the BEFORE trigger function every Field write
+--   already passes, as storetails3_a_worked_out_column_never_reads_itself.sql left it — declared
+--   below). No trigger is created or dropped, so nothing takes a table lock. No table, column,
+--   policy or grant is added; no row of anybody's
 --   data is rewritten by this file — the re-derivation of existing columns is the separate,
 --   audited repair `storetails3_every_worked_out_column_is_kept_from_agents_like_its_inputs.sql`.
 --   Inverse: `migrations/inverse/storetails3_what_an_agent_may_see_follows_what_a_column_reads_down.sql`.
@@ -11,9 +11,7 @@
 --   the dev clone first (suite RED on the old bodies, GREEN on these; up, inverse, up).
 -- lock: custom
 -- lane: STORE-TAILS-3
--- based-on: custom._field_reads_what_it_reads() 2f4c1897361cb2a3392a9e9d12d97ef854a449ce890f15733faeca08f09ba286
--- based-on: custom._field_sensitivity_reaches_its_readers() 95a0efdbce9963df35f5d8219d3ed921d5e2f520123603d0d855cfaa69cb81c1
--- based-on: trigger custom_record_field_sensitivity_reaches_its_readers on custom.record 33dc237db3ee86d1b33309189f86d6d3e408adbf5cc58fd52285632d47b82a59
+-- based-on: custom._field_reads_what_it_reads() e9e61b6d546bb5a215bac7a1d3eaa1c45b78f64b0ede25531d5f75539e4c23da
 --
 -- ════════════════════════════════════════════════════════════════════════════════════════
 -- WHAT AN AGENT MAY SEE FOLLOWS WHAT A COLUMN READS
@@ -37,15 +35,13 @@
 --   1. ON EVERY WRITE of a worked-out definition, its `context_policy` is raised to the strictest
 --      word among everything it reads (never lowered here: a person who wants it looser says so,
 --      and the floor still holds).
---   2. WHEN AN INPUT'S WORD BECOMES STRICTER, every column that reads it is raised with it (the
---      AFTER trigger now fires on either word's change).
+--   2. WHEN AN INPUT'S WORD BECOMES STRICTER (any column — Budget is a plain number), every
+--      column that reads it is raised with it, in the same write.
 --   The readers need no change: they read the column's own word, and the store now keeps that
 --   word honest.
 --
--- LOCKS. `create function` / `create or replace function` take nothing on `custom.record`. The
--- drop and re-create of one trigger take SHARE ROW EXCLUSIVE on `custom.record` and its
--- partitions for the length of this transaction only (milliseconds; no data work), under
--- `lock_timeout = 30s`.
+-- LOCKS. `create function` / `create or replace function` take nothing on `custom.record`; no
+-- trigger is created or dropped. No data work.
 
 set local lock_timeout = '30s';
 set local statement_timeout = '120s';
@@ -114,10 +110,39 @@ AS $function$
 declare
   v_deps  jsonb;
   v_floor record;
+  v_path  text[];                      -- STORE-TAILS-3: a circle this definition would close
   v_cp    record;                      -- STORE-TAILS-3: the agent-visibility floor
+  r       record;
 begin
   if new.table_id is distinct from custom.field_kernel_id() or new.data_class = 'kernel' then
     return new;
+  end if;
+
+  -- STORE-TAILS-3: A COLUMN AN AGENT IS NOW KEPT FROM MORE FIRMLY TAKES ITS READERS WITH IT
+  -- (any column, worked out or not — Budget is a plain number). Every formula, lookup and rollup
+  -- that reads it, directly or through another, is given at least the same word, here, in the
+  -- write that raised it; each reader's own write passes this same trigger and carries it on.
+  if tg_op = 'UPDATE'
+     and custom.context_policy_rank(new.data ->> 'context_policy')
+         > custom.context_policy_rank(old.data ->> 'context_policy') then
+    for r in
+      select f.organization_id, f.id
+        from custom.record f
+       where f.organization_id = new.organization_id
+         and f.table_id = custom.field_kernel_id()
+         and f.data_class <> 'kernel'
+         and f.id <> new.id
+         and f.data ->> 'type' = 'formula'
+         and coalesce(f.data -> 'config', '{}'::jsonb) ?| array['expr', 'pick', 'agg']
+         and custom.context_policy_rank(f.data ->> 'context_policy') < custom.context_policy_rank(new.data ->> 'context_policy')
+         and exists (select 1 from custom.field_input_closure(f.organization_id, f.data, f.id) c
+                      where c.input_id = new.id)
+    loop
+      update custom.record
+         set data = jsonb_set(data, '{context_policy}', to_jsonb(new.data ->> 'context_policy'))
+       where organization_id = r.organization_id
+         and id = r.id;
+    end loop;
   end if;
   if coalesce(new.data ->> 'type', '') <> 'formula'
      or not (coalesce(new.data -> 'config', '{}'::jsonb) ?| array['expr', 'pick', 'agg']) then
@@ -130,6 +155,20 @@ begin
                                 old.table_id, new.table_id, old.organization_id,
                                 new.organization_id, old.data_class, new.data_class) then
     return new;
+  end if;
+
+  -- STORE-TAILS-3: A COLUMN THAT WOULD READ ITSELF IS NOT SAVED. The walk starts from the
+  -- definition being written (not the stored one) and comes back to this column's id through
+  -- whatever reads it — by id, or by key for a lookup's far column and the older formula shape.
+  if new.deleted_at is null then
+    v_path := custom.field_cycle(new.organization_id, new.data, new.id);
+    if v_path is not null then
+      raise exception 'The column "%" would be worked out from itself: % — so it was not saved.',
+        coalesce(nullif(new.data ->> 'label', ''), new.data ->> 'key'),
+        array_to_string(v_path, ' reads ')
+        using errcode = '42P17',
+              hint = 'STORE-TAILS-3: a formula, lookup or rollup that reads itself round a circle has no answer. Point one of the columns in that circle at something outside it, and save again.';
+    end if;
   end if;
 
   -- depends_on: the columns of THIS table it reads, by key (the list custom.field_dependants
@@ -154,10 +193,10 @@ begin
     new.data := jsonb_set(new.data, '{sensitivity}', to_jsonb(v_floor.sensitivity));
   end if;
 
-  -- STORE-TAILS-3: WHAT AN AGENT MAY SEE FOLLOWS WHAT THE COLUMN READS, the same way. A column
-  -- worked out from one the organization keeps out of conversations (`exclude`), or gives an
-  -- agent only on request or only as a summary, is kept from an agent at least as firmly —
-  -- raised to the strictest word among everything it reads, never lowered here.
+  -- STORE-TAILS-3: WHAT AN AGENT MAY SEE FOLLOWS WHAT THE COLUMN READS, the same way sensitivity
+  -- does. A column worked out from one the organization keeps out of conversations (`exclude`),
+  -- gives an agent only on request, or only as a summary, is kept from an agent at least as
+  -- firmly — raised to the strictest word among everything it reads, never lowered here.
   select * into v_cp
     from custom.field_context_policy_floor(new.organization_id, new.data, new.id);
   if v_cp.context_policy is not null
@@ -171,60 +210,3 @@ begin
   return new;
 end;
 $function$;
-
-CREATE OR REPLACE FUNCTION custom._field_sensitivity_reaches_its_readers()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'pg_catalog'
-AS $function$
-declare
-  r        record;
-  v_s_rise boolean := custom.sensitivity_rank(new.data ->> 'sensitivity')
-                      > custom.sensitivity_rank(old.data ->> 'sensitivity');
-  -- STORE-TAILS-3: a column an agent is now kept from more firmly takes its readers with it.
-  v_c_rise boolean := custom.context_policy_rank(new.data ->> 'context_policy')
-                      > custom.context_policy_rank(old.data ->> 'context_policy');
-begin
-  if not v_s_rise and not v_c_rise then
-    return null;                        -- only a rise travels; a lowered input lowers nothing
-  end if;
-  for r in
-    select f.organization_id, f.id
-      from custom.record f
-     where f.organization_id = new.organization_id
-       and f.table_id = custom.field_kernel_id()
-       and f.data_class <> 'kernel'
-       and f.id <> new.id
-       and f.data ->> 'type' = 'formula'
-       and coalesce(f.data -> 'config', '{}'::jsonb) ?| array['expr', 'pick', 'agg']
-       and ((v_s_rise and custom.sensitivity_rank(f.data ->> 'sensitivity') < custom.sensitivity_rank(new.data ->> 'sensitivity'))
-         or (v_c_rise and custom.context_policy_rank(f.data ->> 'context_policy') < custom.context_policy_rank(new.data ->> 'context_policy')))
-       and exists (select 1 from custom.field_input_closure(f.organization_id, f.data, f.id) c
-                    where c.input_id = new.id)
-  loop
-    -- The reader's own trigger (half 1) re-derives it, and its own rise travels on in turn.
-    update custom.record
-       set data = case
-             when v_c_rise and custom.context_policy_rank(data ->> 'context_policy') < custom.context_policy_rank(new.data ->> 'context_policy')
-               then jsonb_set(data, '{context_policy}', to_jsonb(new.data ->> 'context_policy'))
-             else data end
-           || case
-             when v_s_rise and custom.sensitivity_rank(data ->> 'sensitivity') < custom.sensitivity_rank(new.data ->> 'sensitivity')
-               then jsonb_build_object('sensitivity', new.data ->> 'sensitivity')
-             else '{}'::jsonb end
-     where organization_id = r.organization_id
-       and id = r.id;
-  end loop;
-  return null;
-end;
-$function$;
-
--- The AFTER trigger now also fires when a column's context_policy changes.
-drop trigger custom_record_field_sensitivity_reaches_its_readers on custom.record;
-create trigger custom_record_field_sensitivity_reaches_its_readers
-  after update on custom.record
-  for each row
-  when (new.table_id = '11111111-0000-4000-8000-000000000002'::uuid
-        and ((old.data ->> 'sensitivity') is distinct from (new.data ->> 'sensitivity')
-          or (old.data ->> 'context_policy') is distinct from (new.data ->> 'context_policy')))
-  execute function custom._field_sensitivity_reaches_its_readers();

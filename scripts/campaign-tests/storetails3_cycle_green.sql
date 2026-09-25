@@ -129,7 +129,7 @@ begin
      set data = jsonb_set(f.data, '{config,of}', '"room_total_seen"')
    where f.organization_id = v_org and f.id = v_qt.id;
   set local session_replication_role = origin;
-  if custom.field_cycle(v_org, v_qt.id) is null then
+  if custom.field_cycle(v_org, (select f.data from custom.record f where f.organization_id = v_org and f.id = v_qt.id), v_qt.id) is null then
     raise exception 'C3: the stored circle is not seen by custom.field_cycle';
   end if;
   perform platform.memo_clear();   -- the triggers that forget a changed Field were off for that write

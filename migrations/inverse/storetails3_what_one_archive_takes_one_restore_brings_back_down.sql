@@ -6,6 +6,9 @@
 --   `history.migration_undo` still undoes each of them through its own `also` list.
 -- lock: custom
 -- lane: STORE-TAILS-3
+-- based-on: custom.record_delete(uuid, uuid) cb756c354d0d3bf516ce07dd2d3e370fe11d85b6942dbb04e510f6017169a276
+-- based-on: custom.table_archive(uuid, uuid, integer, boolean) 6409a759ab79361e8ad339ba615b88a02d186f8ab173b40f513ac29e2c5ff4d4
+-- based-on: custom.record_restore(uuid, uuid) ed5e02a538b49478e9f32d2061daf114d2415186d3cbe5e3f79bb17727394c44
 
 set local lock_timeout = '30s';
 set local statement_timeout = '120s';

@@ -495,6 +495,9 @@ declare
   a        record;
   v_joined integer := 0;
   v_kept   integer := 0;
+  v_recon  boolean := false;           -- an event reconstructed for an archive made before events existed
+  v_refused integer := 0;
+  v_refused_why text;
 begin
   perform custom.assert_store_door(p_organization_id, 'custom.record_restore');
   perform custom.assert_client_may_change(p_organization_id, p_record_id, 'custom.record_restore');
@@ -537,6 +540,7 @@ begin
 
   v_back_ids := array[p_record_id];
   v_back_at  := array[v_root_at];
+  v_recon := coalesce((e.inverse ->> 'reconstructed')::boolean, false);
 
   if e.id is not null then
   -- EVERYTHING THE ARCHIVE TOOK, EXACTLY. Structure first — tables, then fields, then rules,
@@ -585,11 +589,28 @@ begin
       end;
     else
       -- The structure is all back by now, so a record that is refused is refused for itself.
-      update custom.record
-         set deleted_at = null
-       where organization_id = p_organization_id and id = m.id and deleted_at = m.at;
-      v_back := v_back + 1;
-      v_back_ids := v_back_ids || m.id; v_back_at := v_back_at || m.at;
+      -- A RECONSTRUCTED event (an archive made before events existed, rebuilt by a rule) names
+      -- records by inference, so one of them refused on its own (a unique value that another
+      -- record now holds) is left archived and counted, not a reason to bring back nothing.
+      if v_recon then
+        begin
+          update custom.record
+             set deleted_at = null
+           where organization_id = p_organization_id and id = m.id and deleted_at = m.at;
+          v_back := v_back + 1;
+          v_back_ids := v_back_ids || m.id; v_back_at := v_back_at || m.at;
+        exception when check_violation or unique_violation or foreign_key_violation or raise_exception
+                    or invalid_parameter_value or not_null_violation then
+          get stacked diagnostics v_refused_why = message_text;
+          v_refused := v_refused + 1;
+        end;
+      else
+        update custom.record
+           set deleted_at = null
+         where organization_id = p_organization_id and id = m.id and deleted_at = m.at;
+        v_back := v_back + 1;
+        v_back_ids := v_back_ids || m.id; v_back_at := v_back_at || m.at;
+      end if;
     end if;
   end loop;
 
@@ -639,11 +660,28 @@ begin
       loop
         if m.now_at is not null and m.now_at = m.at then
           perform custom.assert_client_may_change(p_organization_id, m.id, 'custom.record_restore');
-          update custom.record
-             set deleted_at = null
-           where organization_id = p_organization_id and id = m.id and deleted_at = m.at;
-          v_back := v_back + 1;
-          v_back_ids := v_back_ids || m.id; v_back_at := v_back_at || m.at;
+          -- A RECONSTRUCTED event (an archive made before events existed, rebuilt by a rule) names
+          -- records by inference, so one of them refused on its own (a unique value that another
+          -- record now holds) is left archived and counted, not a reason to bring back nothing.
+          if v_recon then
+            begin
+              update custom.record
+                 set deleted_at = null
+               where organization_id = p_organization_id and id = m.id and deleted_at = m.at;
+              v_back := v_back + 1;
+              v_back_ids := v_back_ids || m.id; v_back_at := v_back_at || m.at;
+            exception when check_violation or unique_violation or foreign_key_violation or raise_exception
+                        or invalid_parameter_value or not_null_violation then
+              get stacked diagnostics v_refused_why = message_text;
+              v_refused := v_refused + 1;
+            end;
+          else
+            update custom.record
+               set deleted_at = null
+             where organization_id = p_organization_id and id = m.id and deleted_at = m.at;
+            v_back := v_back + 1;
+            v_back_ids := v_back_ids || m.id; v_back_at := v_back_at || m.at;
+          end if;
         else
           v_left := v_left + 1;
         end if;
@@ -712,11 +750,15 @@ begin
          undone_by = coalesce(nullif(current_setting('app.user_id', true), '')::uuid, (select auth.uid()))
    where l.organization_id = p_organization_id and l.id = e.id;
 
-  raise notice 'Brought back with it: % row(s) this archive took%; % record(s) that pointed at them linked back%.', v_back,
+  raise notice '%', format('Brought back with it: %s row(s) this archive took%s%s; %s record(s) that pointed at them linked back%s.',
+    v_back,
     case when v_left > 0
          then format('; %s it also took had already come back or been archived again on their own since, and were left as they are', v_left)
          else '' end,
+    case when v_refused > 0
+         then format('; %s record(s) this reconstructed archive named were refused on their own and left archived (the last said: %s)', v_refused, v_refused_why)
+         else '' end,
     v_joined,
-    case when v_kept > 0 then format(' (%s had changed since and were left)', v_kept) else '' end;
+    case when v_kept > 0 then format(' (%s had changed since and were left)', v_kept) else '' end);
 end
 $function$;

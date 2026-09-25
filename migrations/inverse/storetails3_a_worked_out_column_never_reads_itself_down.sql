@@ -1,16 +1,16 @@
 -- chair-step: the INVERSE of storetails3_a_worked_out_column_never_reads_itself.sql.
---   Drops the Field-row trigger and its function, puts `custom.lookup_value` and
---   `custom.rollup_value` back to the exact bodies that file was written against (its two
---   based-on hashes: the far record read whole through custom.record_values), and drops
+--   Puts `custom.lookup_value`, `custom.rollup_value` (the far record read whole through
+--   custom.record_values) and `custom._field_reads_what_it_reads` (STORE-LEAK-FORMULA's body, no
+--   circle check) back to the exact bodies that file was written against, and drops
 --   `custom.far_value`, `custom.record_value_one` and `custom.field_cycle` with its door row.
 -- lock: custom
 -- lane: STORE-TAILS-3
+-- based-on: custom.lookup_value(uuid, uuid, jsonb) 5a08a3ebfd866cd4c1a2ed6bd5ae78a491adecf12d671ce3c477e4c8ebb539d7
+-- based-on: custom.rollup_value(uuid, uuid, jsonb) 234e4609ec344c07d56fc16e47d96aae2c44d2a357c15938b75475072ce22a9c
+-- based-on: custom._field_reads_what_it_reads() e9e61b6d546bb5a215bac7a1d3eaa1c45b78f64b0ede25531d5f75539e4c23da
 
 set local lock_timeout = '30s';
 set local statement_timeout = '120s';
-
-drop trigger if exists custom_record_field_never_reads_itself on custom.record;
-drop function if exists custom._field_never_reads_itself();
 
 CREATE OR REPLACE FUNCTION custom.lookup_value(p_organization_id uuid, p_record_id uuid, p_field_data jsonb)
  RETURNS jsonb
@@ -87,8 +87,58 @@ begin
 end;
 $function$;
 
+CREATE OR REPLACE FUNCTION custom._field_reads_what_it_reads()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_deps  jsonb;
+  v_floor record;
+begin
+  if new.table_id is distinct from custom.field_kernel_id() or new.data_class = 'kernel' then
+    return new;
+  end if;
+  if coalesce(new.data ->> 'type', '') <> 'formula'
+     or not (coalesce(new.data -> 'config', '{}'::jsonb) ?| array['expr', 'pick', 'agg']) then
+    return new;
+  end if;
+  -- A retirement is not a change of shape (the shared rule): the document stays byte-for-byte
+  -- what it was, so every guard after this one still sees a retirement.
+  if tg_op = 'UPDATE'
+     and custom.is_a_retirement(old.deleted_at, new.deleted_at, old.data, new.data,
+                                old.table_id, new.table_id, old.organization_id,
+                                new.organization_id, old.data_class, new.data_class) then
+    return new;
+  end if;
+
+  -- depends_on: the columns of THIS table it reads, by key (the list custom.field_dependants
+  -- and REC-18's "this field is used by …" read). Worked out from the definition, never typed.
+  select coalesce(jsonb_agg(distinct i.input_key order by i.input_key), '[]'::jsonb)
+    into v_deps
+    from custom.field_inputs_of(new.organization_id, new.data) i
+   where i.input_table::text = new.data ->> 'entity_definition_id'
+     and not i.retired;
+  if new.data -> 'depends_on' is distinct from v_deps then
+    new.data := jsonb_set(new.data, '{depends_on}', v_deps);
+  end if;
+
+  select * into v_floor
+    from custom.field_sensitivity_floor(new.organization_id, new.data, new.id);
+  if v_floor.sensitivity is not null
+     and custom.sensitivity_rank(new.data ->> 'sensitivity') < custom.sensitivity_rank(v_floor.sensitivity) then
+    raise notice 'the column "%" reads %, which is %, so it is % too (it was %)',
+      coalesce(nullif(new.data ->> 'label', ''), new.data ->> 'key'),
+      (select string_agg(format('"%s"', e ->> 'label'), ', ') from jsonb_array_elements(v_floor.reads) e),
+      v_floor.sensitivity, v_floor.sensitivity, coalesce(new.data ->> 'sensitivity', 'nothing');
+    new.data := jsonb_set(new.data, '{sensitivity}', to_jsonb(v_floor.sensitivity));
+  end if;
+  return new;
+end;
+$function$;
+
 drop function if exists custom.far_value(uuid, uuid, text, jsonb);
 drop function if exists custom.record_value_one(uuid, uuid, text);
 delete from platform.client_callable_door
  where declared_by = 'STORE-TAILS-3' and schema_name = 'custom' and function_name = 'field_cycle';
-drop function if exists custom.field_cycle(uuid, uuid);
+drop function if exists custom.field_cycle(uuid, jsonb, uuid);

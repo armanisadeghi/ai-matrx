@@ -1,10 +1,13 @@
 -- chair-step: the INVERSE of storetails3_what_an_agent_may_see_follows_what_a_column_reads.sql.
---   Puts the two Field-row trigger functions back to the exact STORE-LEAK-FORMULA bodies that file
---   was written against, re-creates the AFTER trigger with its sensitivity-only WHEN, and drops
---   `custom.field_context_policy_floor` (with its door row) and `custom.context_policy_rank`.
---   A column the repair raised keeps its stricter word (the repair's own inverse puts it back).
+--   Puts `custom._field_reads_what_it_reads` back to the exact body that file was written against
+--   (storetails3_a_worked_out_column_never_reads_itself.sql's: the circle check, no
+--   agent-visibility floor) and drops `custom.field_context_policy_floor` (with its door row) and
+--   `custom.context_policy_rank`. A column the repair raised keeps its stricter word (the repair's
+--   own inverse puts it back).
 -- lock: custom
 -- lane: STORE-TAILS-3
+-- ground-standing-ok: b — the body this restores calls custom.field_cycle, which the sibling inverse storetails3_a_worked_out_column_never_reads_itself_down.sql drops. The order is fixed: this file was applied AFTER that one's up, so this inverse runs FIRST; the sibling's inverse then puts back the STORE-LEAK-FORMULA body, which calls nothing it drops. Run alone, this inverse leaves field_cycle standing and called.
+-- based-on: custom._field_reads_what_it_reads() 22aaa6382efe9f384d9c696a9902c7a172c9dfbd8019a31b33bacd7c53124c6f
 
 set local lock_timeout = '30s';
 set local statement_timeout = '120s';
@@ -17,6 +20,7 @@ AS $function$
 declare
   v_deps  jsonb;
   v_floor record;
+  v_path  text[];                      -- STORE-TAILS-3: a circle this definition would close
 begin
   if new.table_id is distinct from custom.field_kernel_id() or new.data_class = 'kernel' then
     return new;
@@ -32,6 +36,20 @@ begin
                                 old.table_id, new.table_id, old.organization_id,
                                 new.organization_id, old.data_class, new.data_class) then
     return new;
+  end if;
+
+  -- STORE-TAILS-3: A COLUMN THAT WOULD READ ITSELF IS NOT SAVED. The walk starts from the
+  -- definition being written (not the stored one) and comes back to this column's id through
+  -- whatever reads it — by id, or by key for a lookup's far column and the older formula shape.
+  if new.deleted_at is null then
+    v_path := custom.field_cycle(new.organization_id, new.data, new.id);
+    if v_path is not null then
+      raise exception 'The column "%" would be worked out from itself: % — so it was not saved.',
+        coalesce(nullif(new.data ->> 'label', ''), new.data ->> 'key'),
+        array_to_string(v_path, ' reads ')
+        using errcode = '42P17',
+              hint = 'STORE-TAILS-3: a formula, lookup or rollup that reads itself round a circle has no answer. Point one of the columns in that circle at something outside it, and save again.';
+    end if;
   end if;
 
   -- depends_on: the columns of THIS table it reads, by key (the list custom.field_dependants
@@ -58,49 +76,6 @@ begin
   return new;
 end;
 $function$;
-
-CREATE OR REPLACE FUNCTION custom._field_sensitivity_reaches_its_readers()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'pg_catalog'
-AS $function$
-declare
-  r record;
-begin
-  if custom.sensitivity_rank(new.data ->> 'sensitivity')
-     <= custom.sensitivity_rank(old.data ->> 'sensitivity') then
-    return null;                        -- only a rise travels; a lowered input lowers nothing
-  end if;
-  for r in
-    select f.organization_id, f.id
-      from custom.record f
-     where f.organization_id = new.organization_id
-       and f.table_id = custom.field_kernel_id()
-       and f.data_class <> 'kernel'
-       and f.id <> new.id
-       and f.data ->> 'type' = 'formula'
-       and coalesce(f.data -> 'config', '{}'::jsonb) ?| array['expr', 'pick', 'agg']
-       and custom.sensitivity_rank(f.data ->> 'sensitivity') < custom.sensitivity_rank(new.data ->> 'sensitivity')
-       and exists (select 1 from custom.field_input_closure(f.organization_id, f.data, f.id) c
-                    where c.input_id = new.id)
-  loop
-    -- The reader's own trigger (half 1) re-derives it, and its own rise travels on in turn.
-    update custom.record
-       set data = jsonb_set(data, '{sensitivity}', to_jsonb(new.data ->> 'sensitivity'))
-     where organization_id = r.organization_id
-       and id = r.id;
-  end loop;
-  return null;
-end;
-$function$;
-
-drop trigger custom_record_field_sensitivity_reaches_its_readers on custom.record;
-create trigger custom_record_field_sensitivity_reaches_its_readers
-  after update on custom.record
-  for each row
-  when (new.table_id = '11111111-0000-4000-8000-000000000002'::uuid
-        and (old.data ->> 'sensitivity') is distinct from (new.data ->> 'sensitivity'))
-  execute function custom._field_sensitivity_reaches_its_readers();
 
 delete from platform.client_callable_door
  where declared_by = 'STORE-TAILS-3' and schema_name = 'custom' and function_name = 'field_context_policy_floor';

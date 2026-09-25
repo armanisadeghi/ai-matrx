@@ -71,7 +71,31 @@ for (const row of adminCounts.filter((r) => testCounts.some((t) => t.organizatio
   if (both) { shared = { org: row.organization_id, name: row.organization_name, item: both }; break; }
 }
 if (!shared) {
-  check("a shared item exists for the one-person-only clause", false, "no item sits in both inboxes");
+  // No item sits in both inboxes on the live database today, so the one-person-only clause is
+  // the clone suite's (uichamp_s5b_green.sql PART 2). Here each seat snoozes and restores one of
+  // its OWN items through REST, which is what proves the grant and the door from a real client.
+  console.log("NOTE no item sits in both inboxes on the live database; the one-person-only clause is proven by the clone suite (PART 2)");
+  for (const [c, who, counts] of [[admin, "admin", adminCounts], [test, "test", testCounts]]) {
+    const row = counts.find((r) => r.waiting > 0);
+    if (!row) continue;
+    const { data } = await c.rpc("work_inbox", { p_organization_id: row.organization_id, p_limit: 200 });
+    const item = data?.[0];
+    if (!item) continue;
+    const s = await c.rpc("inbox_snooze", { p_organization_id: row.organization_id, p_item_id: item.item_id, p_until: new Date(Date.now() + 86400e3).toISOString() });
+    check(`${who}: snoozes "${item.title}" in ${row.organization_name}`, !s.error && s.data?.state === "snoozed", s.error?.message ?? s.data?.sentence);
+    const after = await c.rpc("inbox_counts", { p_organization_id: row.organization_id });
+    check(`${who}: the count moved with it (waiting ${row.waiting} → ${row.waiting - 1}, snoozed +1)`, !after.error && after.data?.[0]?.waiting === row.waiting - 1 && after.data?.[0]?.snoozed === row.snoozed + 1, JSON.stringify(after.data?.[0] ?? after.error));
+    const sv = await c.rpc("work_inbox", { p_organization_id: row.organization_id, p_limit: 200, p_view: "snoozed" });
+    check(`${who}: it is in the snoozed view`, !sv.error && sv.data.some((i) => i.item_id === item.item_id && i.snoozed_until));
+    if (item.kind !== "assignment" && item.state === "pending") {
+      const cl = await c.rpc("inbox_clear", { p_organization_id: row.organization_id, p_item_id: item.item_id });
+      check(`${who}: clearing a decision still owed is refused by name`, !!cl.error && /needs a decision/.test(cl.error.message), cl.error?.message);
+    }
+    const u = await c.rpc("inbox_unsnooze", { p_organization_id: row.organization_id, p_item_id: item.item_id });
+    check(`${who}: puts it back`, !u.error && u.data?.changed === true, u.error?.message ?? u.data?.sentence);
+    const back = await c.rpc("inbox_counts", { p_organization_id: row.organization_id });
+    check(`${who}: the count is back to ${row.waiting}`, !back.error && back.data?.[0]?.waiting === row.waiting);
+  }
 } else {
   const until = new Date(Date.now() + 2 * 86400e3).toISOString();
   const s = await admin.rpc("inbox_snooze", { p_organization_id: shared.org, p_item_id: shared.item.item_id, p_until: until });
