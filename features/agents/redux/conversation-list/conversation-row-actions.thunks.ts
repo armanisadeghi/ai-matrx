@@ -25,6 +25,7 @@ import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
+import { assertWriteLanded, describeWriteFailure } from "@/lib/errors/writeFailure";
 import {
   patchConversation,
   renameConversation as renameConversationListItem,
@@ -38,6 +39,22 @@ import {
 } from "../execution-system/conversations/conversations.slice";
 import { selectConversationIsEphemeral } from "../execution-system/conversations/conversations.selectors";
 import { forkConversationServer } from "../execution-system/message-crud/server/fork-conversation-server.thunk";
+
+/** One sentence for a refused row toggle: what did not happen, why, what to do. */
+function refusalWords(err: unknown, action: string): string {
+  const w = describeWriteFailure(err, { action, remedy: "Try again." });
+  return `${w.title} ${w.description}`;
+}
+
+/** A direct update that matched no row is a refusal (RLS answers it without an error). */
+function landedOrRefusal(rows: unknown[] | null, technical: string): unknown {
+  try {
+    assertWriteLanded(rows, technical);
+    return null;
+  } catch (e) {
+    return e;
+  }
+}
 
 interface ThunkApi {
   dispatch: AppDispatch;
@@ -153,18 +170,10 @@ export const setConversationFavorite = createAsyncThunk<
   "conversationRow/setFavorite",
   async (
     { conversationId, isFavorite },
-    { dispatch, getState, rejectWithValue },
+    { dispatch, rejectWithValue },
   ) => {
-    const previous =
-      getState().conversationList.byConversationId[conversationId]
-        ?.isFavorite ?? false;
-
-    // Optimistic patches in both slices.
-    dispatch(patchConversation({ conversationId, patch: { isFavorite } }));
-    dispatch(
-      patchConversationInScopes({ conversationId, patch: { isFavorite } }),
-    );
-
+    // PENDING, NEVER OPTIMISTIC (GATES-TAIL-2): the pin moves once the store agreed; a refusal
+    // never moved it and is said in words.
     // Canonical store is `platform.user_entity_state` (via the `ues_*` RPC
     // chokepoint), NOT the soon-to-be-dropped `cx_conversation.is_favorite`
     // column. `setFavorite` returns a ScopesRpcResult and never throws.
@@ -175,21 +184,15 @@ export const setConversationFavorite = createAsyncThunk<
     );
 
     if (isScopesRpcErr(result)) {
-      dispatch(
-        patchConversation({
-          conversationId,
-          patch: { isFavorite: previous },
-        }),
-      );
-      dispatch(
-        patchConversationInScopes({
-          conversationId,
-          patch: { isFavorite: previous },
-        }),
-      );
-      return rejectWithValue({ message: result.error.message });
+      return rejectWithValue({
+        message: refusalWords(result.error, isFavorite ? "pin this conversation" : "unpin this conversation"),
+      });
     }
 
+    dispatch(patchConversation({ conversationId, patch: { isFavorite } }));
+    dispatch(
+      patchConversationInScopes({ conversationId, patch: { isFavorite } }),
+    );
     return { conversationId, isFavorite };
   },
 );
@@ -218,13 +221,20 @@ export const setConversationArchived = createAsyncThunk<
   "conversationRow/setArchived",
   async (
     { conversationId, archived },
-    { dispatch, getState, rejectWithValue },
+    { dispatch, rejectWithValue },
   ) => {
-    const previousStatus =
-      getState().conversationList.byConversationId[conversationId]?.status ??
-      "active";
-
     const nextStatus: "active" | "archived" = archived ? "archived" : "active";
+    const action = archived ? "archive this conversation" : "restore this conversation";
+
+    // PENDING, NEVER OPTIMISTIC (GATES-TAIL-2).
+    const { data, error } = await supabase
+      .schema("chat").from("conversation")
+      .update({ status: nextStatus, updated_at: new Date().toISOString() })
+      .eq("id", conversationId)
+      .select("id");
+
+    const refusal = error ?? landedOrRefusal(data, `chat.conversation status=${nextStatus} ${conversationId}`);
+    if (refusal) return rejectWithValue({ message: refusalWords(refusal, action) });
 
     dispatch(
       patchConversation({ conversationId, patch: { status: nextStatus } }),
@@ -235,27 +245,6 @@ export const setConversationArchived = createAsyncThunk<
         patch: { status: nextStatus },
       }),
     );
-
-    const { error } = await supabase
-      .schema("chat").from("conversation")
-      .update({ status: nextStatus, updated_at: new Date().toISOString() })
-      .eq("id", conversationId);
-
-    if (error) {
-      dispatch(
-        patchConversation({
-          conversationId,
-          patch: { status: previousStatus },
-        }),
-      );
-      dispatch(
-        patchConversationInScopes({
-          conversationId,
-          patch: { status: previousStatus },
-        }),
-      );
-      return rejectWithValue({ message: error.message });
-    }
 
     return { conversationId, status: nextStatus };
   },
@@ -288,13 +277,30 @@ export const setConversationExcludeFromKg = createAsyncThunk<
   "conversationRow/setExcludeFromKg",
   async (
     { conversationId, excludeFromKg },
-    { dispatch, getState, rejectWithValue },
+    { dispatch, rejectWithValue },
   ) => {
-    const previous =
-      getState().conversationList.byConversationId[conversationId]
-        ?.excludeFromKg ?? false;
+    // PENDING, NEVER OPTIMISTIC (GATES-TAIL-2).
+    const { data, error } = await supabase
+      .schema("chat").from("conversation")
+      .update({
+        exclude_from_kg: excludeFromKg,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", conversationId)
+      .select("id");
 
-    // Optimistic patches in both slices.
+    const refusal = error ?? landedOrRefusal(data, `chat.conversation exclude_from_kg=${excludeFromKg} ${conversationId}`);
+    if (refusal) {
+      return rejectWithValue({
+        message: refusalWords(
+          refusal,
+          excludeFromKg
+            ? "exclude this conversation from the knowledge graph"
+            : "include this conversation in the knowledge graph",
+        ),
+      });
+    }
+
     dispatch(patchConversation({ conversationId, patch: { excludeFromKg } }));
     dispatch(
       patchConversationInScopes({
@@ -302,30 +308,6 @@ export const setConversationExcludeFromKg = createAsyncThunk<
         patch: { excludeFromKg },
       }),
     );
-
-    const { error } = await supabase
-      .schema("chat").from("conversation")
-      .update({
-        exclude_from_kg: excludeFromKg,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", conversationId);
-
-    if (error) {
-      dispatch(
-        patchConversation({
-          conversationId,
-          patch: { excludeFromKg: previous },
-        }),
-      );
-      dispatch(
-        patchConversationInScopes({
-          conversationId,
-          patch: { excludeFromKg: previous },
-        }),
-      );
-      return rejectWithValue({ message: error.message });
-    }
 
     return { conversationId, excludeFromKg };
   },

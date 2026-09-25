@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { AssociationPicker } from "@ai-matrx/associations/react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
+import { toast } from "@/lib/toast";
 import { setConversationFavorite } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 import { useAssociations } from "@/features/scopes/hooks/useAssociations";
 import type {
@@ -104,15 +105,18 @@ export function useConversationRowActions(
       menuFor,
       onOpenRow: (row) => router.push(conversationHomeHref(row)),
       onToggleFavorite: (row) => {
-        // Optimistic locally so the star responds now; the thunk owns the
-        // write and its own revert.
-        list.patchRow(row.id, { is_favorite: !row.is_favorite });
+        // Pending, never optimistic (GATES-TAIL-2): the star moves once the store agreed. The
+        // old optimistic local patch was never reverted, so a refused pin kept its star.
+        const next = !row.is_favorite;
         void dispatch(
-          setConversationFavorite({
-            conversationId: row.id,
-            isFavorite: !row.is_favorite,
-          }),
-        );
+          setConversationFavorite({ conversationId: row.id, isFavorite: next }),
+        ).then((result) => {
+          if (setConversationFavorite.rejected.match(result)) {
+            toast.error(result.payload?.message ?? "Could not change this conversation's pin. Try again.");
+            return;
+          }
+          list.patchRow(row.id, { is_favorite: next });
+        });
       },
     },
     modals: (
