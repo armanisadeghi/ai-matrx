@@ -168,6 +168,7 @@ own fresh conversation):
 
 ## Change log
 
+- `2026-09-25` — **The removal check became the platform primitive.** `softDeleteOne`, `setDetailAudio` and `reviewCardImage` now ride `tryWriteOne` (`utils/supabase/writeOne.ts`), the shared single-record write that returns the written row and refuses zero rows in words; `pnpm check:single-record-writes` ratchets the class repo-wide.
 - `2026-09-25` — **A removal proves it landed.** `deleteCard`, `deleteSet`, `softDeleteDetail` and `mergeCards`' loser removal soft-deleted with a bare `update().eq()`, and a PostgREST update that RLS filters to zero rows returns no error — so a refused removal toasted "Card deleted" while the card stayed. They now go through `softDeleteOne` / a counted `.select("id")` and fail in plain words on zero rows. The editor's confirm no longer claims "permanently… cannot be undone" for what is an archive. Guard: `data/__tests__/card-removal-proves-it-landed.test.ts` (red on the old code, green now).
 
 - `2026-09-17` — **A card's detail layer carries its card's organization.** `fcService.addDetail` omitted `organization_id` on `education.fc_detail` and leaned on the `_inherit_org` trigger, but `public._stamp_org_default` fires on a NULL first and files the layer in the writer's personal workspace. The service now reads the parent card's `organization_id`, writes it, and refuses in plain words when the card cannot be read. Guard: `pnpm check:organization-context`.
