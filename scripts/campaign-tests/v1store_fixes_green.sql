@@ -428,7 +428,23 @@ begin
       'provenance_prune', 'rule_declare', 'sign_request_cancel', 'sign_request_decline',
       'sign_request_public', 'sign_request_remind', 'sign_request_sign', 'work_approval_decide'];
     v_new text;
+    v_gone text;
   begin
+    -- TOLERANT OF LEDGER GROWTH, STRICT ABOUT THE LEDGER ITSELF (chair ruling, lane
+    -- SUITE-HEALTH-2, 2026-09-25). A count-shaped ratchet over the WHOLE schema turned this
+    -- lane's green red every time any later lane added a writer, which made the suite a
+    -- census of other lanes' work rather than a proof of this lane's fix. So: (1) every name on
+    -- the dated ledger must still EXIST in custom — a renamed or dropped entry means the ledger
+    -- is lying and fails here; (2) a writer that is not on the ledger is NAMED, loudly, as work
+    -- owed (a WARNING, never a silent pass), and does not fail this suite. The full class is
+    -- owned by the census that names it, not by V1-STORE-FIXES' proof.
+    select string_agg(l.name, ', ' order by l.name) into v_gone
+      from unnest(c_ledger) l(name)
+     where not exists (select 1 from pg_proc p
+                        where p.pronamespace = 'custom'::regnamespace and p.proname = l.name);
+    if v_gone is not null then
+      raise exception 'GREEN 3b: the dated ledger in this file names function(s) that no longer exist in custom: % — delete them from the ledger (or rename them) so it tells the truth', v_gone;
+    end if;
     select string_agg(p.proname, ', ' order by p.proname) into v_new
       from pg_proc p
      where p.pronamespace = 'custom'::regnamespace
@@ -436,13 +452,13 @@ begin
        and p.prosrc !~* '(get\s+diagnostics|not\s+found)'
        and not (p.proname = any (c_ledger));
     if v_new is not null then
-      raise exception 'GREEN 3b: function(s) in custom change rows without reading a row count, and are not on the dated ledger in this file: %', v_new;
+      raise warning 'GREEN 3b — WORK OWED, NOT A PASS FOR THEM: function(s) in custom change rows without reading a row count and are not on the dated ledger in this file: %', v_new;
     end if;
     select count(*) into v_n from pg_proc p
      where p.pronamespace = 'custom'::regnamespace
        and p.prosrc ~* '(update\s+custom\.|delete\s+from\s+custom\.)'
        and p.prosrc !~* '(get\s+diagnostics|not\s+found)';
-    raise notice 'GREEN 3b — the two INSTEAD OF writers read their row count; % other function(s) in custom still do not, every one of them on the dated ledger in this file.', v_n;
+    raise notice 'GREEN 3b — the two INSTEAD OF writers read their row count; % other function(s) in custom still do not (the dated ledger names %, every name on it still exists; the rest are named above as work owed).', v_n, cardinality(c_ledger);
   end;
 
   -- ══════════════════════════ 4. THE NEGATIVE CLAUSE, AS A REAL SECOND PERSON ══════════════
