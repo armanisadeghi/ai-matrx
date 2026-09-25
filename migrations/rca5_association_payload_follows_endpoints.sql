@@ -12,10 +12,12 @@
 --
 -- THE CLASS FIX — kind-declared, both ends:
 --   1. platform.edge_payload_kind declares, per kind, whether its payload copies content out of an
---      endpoint (`payload_follows_endpoints`, with the reason for every one of the 13 kinds).
---      True: text_anchor (quoted passage of the target), relation_snapshot (frozen copy of the
---      target's values), party_observation (quote + fields asserted from a research source, whose
---      default visibility is personal).
+--      endpoint (`payload_follows_endpoints`, with a reason for every kind registered today).
+--      FAIL-CLOSED: the column defaults TRUE, so a kind registered later is gated until its author
+--      writes down why it carries no endpoint content. True today: text_anchor, text_anchor_set
+--      (quoted passages of the target), relation_snapshot (frozen copy of the target's values),
+--      render_binding (the variable values that filled a rendered document), party_observation
+--      (quote + fields from a research source, default visibility personal).
 --   2. ONE RESTRICTIVE SELECT policy on platform.associations: a row of a declared kind is visible
 --      only to a platform admin or to someone for whom iam.has_access(..., 'viewer') is true on
 --      BOTH ends — the predicate every assoc_* door already applies to every edge (DD-205;
@@ -42,14 +44,14 @@
 set local lock_timeout = '5s';
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- 1. THE DECLARATION (catalog-only ADD COLUMN on a 13-row registry).
+-- 1. THE DECLARATION (ADD COLUMN on a 15-row registry; the default is a constant, so catalog-only).
 -- ─────────────────────────────────────────────────────────────────────────────
 alter table platform.edge_payload_kind
-  add column if not exists payload_follows_endpoints boolean not null default false,
+  add column if not exists payload_follows_endpoints boolean not null default true,
   add column if not exists payload_follows_endpoints_reason text;
 
 comment on column platform.edge_payload_kind.payload_follows_endpoints is
-  'RC-A5. True when this payload copies content out of an endpoint (a quoted passage, a snapshot of a record''s values, a quote from a source). An edge of such a kind is readable only by a platform admin or by someone who can read BOTH ends (policy assoc_payload_follows_endpoints on platform.associations). Content from an endpoint never goes in label or metadata. See common-docs/projects/rich-content-unification/ASSOCIATION-VISIBILITY.md.';
+  'RC-A5. True when this payload copies content out of an endpoint (a quoted passage, a snapshot of a record''s values, the values that filled a document, a quote from a source). An edge of such a kind is readable only by a platform admin or by someone who can read BOTH ends (policy assoc_payload_follows_endpoints on platform.associations). Defaults TRUE (fail-closed): set it false only with a payload_follows_endpoints_reason saying why the payload describes the edge itself. Content from an endpoint never goes in label or metadata. See common-docs/projects/rich-content-unification/ASSOCIATION-VISIBILITY.md.';
 comment on column platform.edge_payload_kind.payload_follows_endpoints_reason is
   'Why payload_follows_endpoints is what it is for this kind — one sentence, required reading for the next kind author.';
 
@@ -58,6 +60,8 @@ update platform.edge_payload_kind k
        payload_follows_endpoints_reason = v.reason
   from (values
     ('text_anchor', true, 'The payload is the exact quoted passage (plus prefix/suffix) of the target document; reading it is reading the target.'),
+    ('text_anchor_set', true, 'The payload is several exact quoted passages of the target document; reading it is reading the target.'),
+    ('render_binding', true, 'The payload holds the variable values that filled a sealed rendered document; reading it is reading that document''s content.'),
     ('relation_snapshot', true, 'The payload is a frozen copy of the target record''s values; reading it is reading the target.'),
     ('party_observation', true, 'The payload quotes and extracts fields from the research source (default visibility personal); reading it is reading the source.'),
     ('map_topic_coverage', false, 'Mapper confidence, source and a one-line reason about the edge itself; no endpoint content.'),
@@ -73,14 +77,14 @@ update platform.edge_payload_kind k
   ) as v(kind, follows, reason)
  where k.kind = v.kind;
 
--- Every registered kind must carry a reason; a new kind added later defaults to false and must say why.
+-- A kind registered after this file was written takes the fail-closed default; say so, by name.
 do $$
-declare v_missing text;
+declare v_defaulted text;
 begin
-  select string_agg(kind, ', ') into v_missing
+  select string_agg(kind, ', ') into v_defaulted
     from platform.edge_payload_kind where payload_follows_endpoints_reason is null;
-  if v_missing is not null then
-    raise exception 'rca5: payload kinds with no payload_follows_endpoints declaration: %', v_missing;
+  if v_defaulted is not null then
+    raise notice 'rca5: payload kinds gated by the fail-closed default (no reason recorded yet): %', v_defaulted;
   end if;
 end $$;
 
