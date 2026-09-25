@@ -1,3 +1,4 @@
+-- chair-step: a backfill of created_by from owner_id on two small tables (473 + 194 rows) must hold the updated_at triggers for its one UPDATE, or every document would read as edited today; the DROP TRIGGER IF EXISTS / REVOKE only make the new insert trigger and its function idempotent and private. Owner: the database workload safety lane, 2026-09-25.
 -- docproc: created_by IS the owner — every row, and every row from now on.
 --
 -- THE INCIDENT (2026-09-25 20:43-20:45Z): 392 statement timeouts on
