@@ -327,7 +327,7 @@ export function VaultWorkspace({
     if (!selectedItemId || !selected) return;
     const touchKey = `${actorId ?? ""}\u0000${selectedOrganizationId ?? ""}\u0000${vaultScopeKey(scope)}\u0000${selectedItemId}`;
     if (!touchKey || vaultItemState.status !== "ready" || deepLinkTouch.current === touchKey) return;
-    void vaultItemState.touch(selectedItemId).then((touched) => {
+    void vaultItemState.touch(selectedItemId, touchKey).then((touched) => {
       if (touched) deepLinkTouch.current = touchKey;
     });
   }, [actorId, selectedItemId, selected, selectedOrganizationId, scope, vaultItemState]);

@@ -27,7 +27,7 @@ function Harness({ actorId = "user", organizationId = "org", scopeKey = "mine", 
   useLayoutEffect(() => { activeState = state; }, [state]);
   useEffect(() => {
     if (!routedTouch || state.status !== "ready" || routedTouchRecorded.current) return;
-    void state.touch("a").then((touched) => {
+    void state.touch("a", "routed-a").then((touched) => {
       if (touched) routedTouchRecorded.current = true;
     });
   }, [routedTouch, state]);
@@ -188,14 +188,27 @@ describe("useVaultItemState", () => {
     expect(activeState.status).toBe("ready");
   });
 
+  it("delivers a second explicit open after an in-flight touch finishes", async () => {
+    const firstTouch = deferred<{ ok: true; data: object }>();
+    getBulk.mockResolvedValue(ok(row("a", false, "2026-09-20T12:00:00Z")));
+    touch.mockReturnValueOnce(firstTouch.promise).mockResolvedValue({ ok: true, data: {} });
+    await act(async () => root.render(<Harness />));
+    let firstOpen: Promise<boolean>;
+    await act(async () => { firstOpen = activeState.touch("a"); });
+    await act(async () => { expect(await activeState.touch("a")).toBe(true); });
+    expect(touch).toHaveBeenCalledTimes(1);
+    await act(async () => { firstTouch.resolve({ ok: true, data: {} }); await firstOpen; });
+    expect(touch).toHaveBeenCalledTimes(2);
+  });
+
   it("does not queue a second routed touch while retry drains the failed open", async () => {
     getBulk.mockResolvedValue(ok(row("a")));
     touch.mockResolvedValueOnce({ ok: false, error: {} }).mockResolvedValue({ ok: true, data: {} });
     await act(async () => root.render(<Harness />));
-    await act(async () => { expect(await activeState.touch("a")).toBe(false); });
+    await act(async () => { expect(await activeState.touch("a", "routed-a")).toBe(false); });
     expect(activeState.status).toBe("error");
-    await act(async () => root.render(<Harness routedTouch />));
     await act(async () => activeState.retry());
+    await act(async () => { expect(await activeState.touch("a", "routed-a")).toBe(true); });
     expect(touch).toHaveBeenCalledTimes(2);
   });
 
