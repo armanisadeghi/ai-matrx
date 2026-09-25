@@ -33,7 +33,6 @@ import {
 } from "@/features/agents/mcp-copy";
 import { MCP_CATEGORY_META } from "@/features/agents/types/mcp.types";
 import {
-  Search,
   Globe,
   Radio,
   Terminal,
@@ -70,7 +69,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
+import { matchesIntegrationSearch } from "@/features/settings/tabs/integration-search-match";
 import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
 import { githubConnectUrl } from "@/features/github-integration/service";
 import { useGitHubConnection } from "@/features/github-integration/useGitHubConnection";
@@ -155,7 +154,7 @@ const STATUS_CONFIG: Record<
   },
 };
 
-type ViewFilter = "all" | "connected" | "available" | "coming_soon";
+export type ViewFilter = "all" | "connected" | "available" | "coming_soon";
 
 /**
  * "Your connections" section summary — the loading-state guard the class of
@@ -183,7 +182,21 @@ export function connectionsSummaryLabel(
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
-export default function IntegrationsPage() {
+export default function IntegrationsPage({
+  search = "",
+  activeCategory: controlledCategory,
+  onCategoryChange,
+  viewFilter: controlledViewFilter,
+  onViewFilterChange,
+  googleProductFocus,
+}: {
+  search?: string;
+  activeCategory?: string;
+  onCategoryChange?: (category: string) => void;
+  viewFilter?: ViewFilter;
+  onViewFilterChange?: (filter: ViewFilter) => void;
+  googleProductFocus?: { productKey: string; request: number } | null;
+} = {}) {
   const organizationId = useAppSelector(selectOrganizationId);
   const dispatch = useAppDispatch();
   const catalog = useAppSelector(selectMcpCatalog);
@@ -202,9 +215,12 @@ export default function IntegrationsPage() {
   const catalogPresentation = (entry: McpCatalogEntry) =>
     catalogConnectionPresentation(entry, githubStatus, github.loading);
 
-  const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState<string>("all");
-  const [viewFilter, setViewFilter] = useState<ViewFilter>("all");
+  const [localCategory, setLocalCategory] = useState("all");
+  const [localViewFilter, setLocalViewFilter] = useState<ViewFilter>("all");
+  const activeCategory = controlledCategory ?? localCategory;
+  const viewFilter = controlledViewFilter ?? localViewFilter;
+  const changeCategory = onCategoryChange ?? setLocalCategory;
+  const changeViewFilter = onViewFilterChange ?? setLocalViewFilter;
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -235,11 +251,12 @@ export default function IntegrationsPage() {
   }
 
   if (search.trim()) {
-    filtered = filterAndSortBySearch(filtered, search, [
-      { get: (entry) => entry.name, weight: "title" },
-      { get: (entry) => entry.vendor, weight: "subtitle" },
-      { get: (entry) => entry.description, weight: "body" },
-    ]);
+    filtered = filtered.filter((entry) =>
+      matchesIntegrationSearch(
+        search,
+        `${entry.name} ${entry.vendor} ${entry.description} ${entry.category}`,
+      ),
+    );
   }
 
   const sorted = [...filtered].sort((a, b) => {
@@ -437,14 +454,6 @@ export default function IntegrationsPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  if (status === "loading" && catalog.length === 0) {
-    return (
-      <div className="flex h-full items-center justify-center p-6">
-        <SuspenseLoader size="sm" message="Loading integrations…" />
-      </div>
-    );
-  }
-
   const categories = Object.entries(MCP_CATEGORY_META)
     .filter(([key]) => categoryCounts[key])
     .sort(([, a], [, b]) => a.order - b.order);
@@ -499,7 +508,7 @@ export default function IntegrationsPage() {
           </div>
         )}
 
-        <section className="space-y-3">
+        <section className="space-y-3" id="integration-connections">
           <div className="flex items-end justify-between gap-3">
             <div>
               <h2 className="text-base font-semibold text-foreground">Your connections</h2>
@@ -516,27 +525,20 @@ export default function IntegrationsPage() {
               per-capability health rows, and the same consent body the "Choose
               what to connect" dialog uses. Replaced the three status-only
               `DirectoryConnectorCards` on 2026-09-17. */}
-          <ConnectorsSettingsPanel />
+          <div id="integration-google" className="scroll-mt-20">
+            <ConnectorsSettingsPanel searchFocus={googleProductFocus} />
+          </div>
         </section>
 
-        <section className="space-y-4">
+        <section id="integration-catalog" className="scroll-mt-20 space-y-4">
           <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-base font-semibold text-foreground">Discover integrations</h2>
               <p className="mt-1 text-sm text-muted-foreground">Find a service, connect it, and start using it in your agents.</p>
             </div>
-            <div className="relative w-full md:max-w-sm">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search integrations..."
-              className="h-11 pl-8 text-base sm:h-8 sm:text-sm"
-            />
-            </div>
           </div>
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-            {(
+            {!search.trim() && (
               [
                 ["all", "All"],
                 ["connected", "Connected"],
@@ -549,7 +551,7 @@ export default function IntegrationsPage() {
                 variant={viewFilter === key ? "default" : "outline"}
                 size="sm"
                 className="h-11 text-sm sm:h-8 sm:text-xs"
-                onClick={() => setViewFilter(key)}
+                onClick={() => changeViewFilter(key)}
               >
                 {label}
               </Button>
@@ -622,12 +624,12 @@ export default function IntegrationsPage() {
           </div>
         </section>
 
-        <div className="flex flex-wrap gap-1.5">
+        {!search.trim() ? <div className="flex flex-wrap gap-1.5">
           <Button
             variant={activeCategory === "all" ? "default" : "outline"}
             size="sm"
             className="h-11 px-3 text-sm sm:h-7 sm:px-2.5 sm:text-xs"
-            onClick={() => setActiveCategory("all")}
+            onClick={() => changeCategory("all")}
           >
             All ({categoryCounts.all ?? 0})
           </Button>
@@ -637,17 +639,23 @@ export default function IntegrationsPage() {
               variant={activeCategory === key ? "default" : "outline"}
               size="sm"
               className="h-11 px-3 text-sm sm:h-7 sm:px-2.5 sm:text-xs"
-              onClick={() => setActiveCategory(key)}
+              onClick={() => changeCategory(key)}
             >
               {meta.label} ({categoryCounts[key]})
             </Button>
           ))}
-        </div>
+        </div> : null}
 
         {/* Server Grid */}
-        {sorted.length === 0 ? (
+        {status === "loading" && catalog.length === 0 ? (
+          <div className="py-8">
+            <SuspenseLoader size="sm" message="Loading integrations…" />
+          </div>
+        ) : sorted.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground text-sm">
-            No integrations match your filters.
+            {search.trim()
+              ? "No hosted integrations match this search."
+              : "No integrations match your filters."}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -776,8 +784,9 @@ function ServerCard({
 
   return (
     <Card
+      id={`integration-server-${entry.serverId}`}
       className={cn(
-        "group/integration transition-all duration-150",
+        "group/integration scroll-mt-20 transition-all duration-150",
         isConnected && "ring-1 ring-green-500/30 bg-green-500/[0.02]",
         isComingSoon && "opacity-55",
       )}

@@ -74,14 +74,17 @@ import { confirmGmailReadDisclosure } from "./gmail-read-disclosure";
 
 export function ConnectorsSettingsPanel({
   className,
+  searchFocus,
 }: {
   className?: string;
+  searchFocus?: { productKey: string; request: number } | null;
 }) {
   return (
     <LazyGoogleAPIProvider>
       <ProviderConnectorsPanel
         provider={GOOGLE_CONNECTOR_PROVIDER}
         className={className}
+        searchFocus={searchFocus}
       />
     </LazyGoogleAPIProvider>
   );
@@ -90,9 +93,11 @@ export function ConnectorsSettingsPanel({
 function ProviderConnectorsPanel({
   provider,
   className,
+  searchFocus,
 }: {
   provider: ConnectorProviderConfig;
   className?: string;
+  searchFocus?: { productKey: string; request: number } | null;
 }) {
   const state = useGoogleConnectorState();
   const runner = useGoogleConsentRunner();
@@ -391,6 +396,8 @@ function ProviderConnectorsPanel({
         </header>
         <ConnectorConsentBody
           provider={provider}
+          rowAnchorPrefix="integration-google-product-"
+          searchFocus={searchFocus}
           accounts={state.accounts}
           rollout={state.rollout}
           isLoading={false}
@@ -461,6 +468,7 @@ function AccountCard({
     <ConnectedAccountHealth
       provider={provider}
       account={account}
+      anchorId={`integration-google-account-${account.id}`}
       health={health}
       organizationName={organizationName}
       onReconnect={onReconnect}

@@ -135,6 +135,7 @@ export interface ConnectedAccountHealthProps {
    */
   management: SharedConnectorManagement;
   className?: string;
+  anchorId?: string;
 }
 
 export function ConnectedAccountHealth({
@@ -149,6 +150,7 @@ export function ConnectedAccountHealth({
   revoking = false,
   management,
   className,
+  anchorId,
 }: ConnectedAccountHealthProps) {
   const connector = getConnector(provider.markConnectorId);
   const lastChecked = relativeTime(account.lastVerifiedAt);
@@ -161,8 +163,9 @@ export function ConnectedAccountHealth({
 
   return (
     <div
+      id={anchorId}
       className={cn(
-        "overflow-hidden rounded-xl border border-border bg-card",
+        "scroll-mt-20 overflow-hidden rounded-xl border border-border bg-card",
         className,
       )}
     >

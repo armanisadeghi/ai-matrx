@@ -192,7 +192,7 @@ export function GitHubConnectionCard({
   );
 
   return (
-    <Card className={connected ? "border-emerald-500/40" : undefined}>
+    <Card id="integration-github" className={cn("scroll-mt-20", connected && "border-emerald-500/40")}>
       <CardContent className="p-3 sm:p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
           <div className="flex min-w-0 flex-1 items-start gap-3">

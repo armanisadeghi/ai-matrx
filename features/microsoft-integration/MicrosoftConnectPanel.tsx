@@ -45,10 +45,12 @@ export interface MicrosoftConnectPanelProps {
    * ONLY to a URL the server minted, and never to one this app built itself.
    */
   readonly navigate?: (url: string) => void;
+  readonly onConnectionsChange?: (connections: MicrosoftConnection[] | "error") => void;
 }
 
 export function MicrosoftConnectPanel({
   navigate,
+  onConnectionsChange,
 }: MicrosoftConnectPanelProps = {}) {
   const searchParams = useSearchParams();
   const [connections, setConnections] = useState<MicrosoftConnection[] | null>(
@@ -71,15 +73,17 @@ export function MicrosoftConnectPanel({
     try {
       const rows = await listMicrosoftConnections(signal);
       setConnections(rows);
+      onConnectionsChange?.(rows);
       setLoadError(null);
     } catch (error) {
       if (signal?.aborted) return;
       // NOT an empty list: "you have none" and "we could not look" are
       // different sentences, and only one of them is true here.
       setConnections(null);
+      onConnectionsChange?.("error");
       setLoadError(extractErrorMessage(error));
     }
-  }, []);
+  }, [onConnectionsChange]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -153,7 +157,7 @@ export function MicrosoftConnectPanel({
   );
 
   return (
-    <section className="space-y-4 sm:space-y-6" data-testid="microsoft-connect-panel">
+    <section id="integration-microsoft" className="scroll-mt-20 space-y-4 sm:space-y-6" data-testid="microsoft-connect-panel">
       <header className="space-y-1">
         <h2 className="text-lg font-semibold text-foreground">Microsoft</h2>
         <p className="text-sm text-muted-foreground">
@@ -206,7 +210,8 @@ export function MicrosoftConnectPanel({
           {connections.map((connection) => (
             <li
               key={connection.id}
-              className="flex flex-col gap-2 rounded-md border border-border p-2.5 sm:flex-row sm:items-center sm:justify-between sm:p-3"
+              id={`integration-microsoft-account-${connection.id}`}
+              className="scroll-mt-20 flex flex-col gap-2 rounded-md border border-border p-2.5 sm:flex-row sm:items-center sm:justify-between sm:p-3"
             >
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -287,7 +292,7 @@ export function MicrosoftConnectPanel({
             <li key={descriptor.campaign} className="flex gap-3">
               <Checkbox
                 id={`ms-campaign-${descriptor.campaign}`}
-                className="mt-0.5"
+                className="mt-0.5 scroll-mt-20"
                 checked={
                   descriptor.alwaysOn || selected.has(descriptor.campaign)
                 }

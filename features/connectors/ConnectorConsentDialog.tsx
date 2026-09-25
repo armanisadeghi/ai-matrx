@@ -221,6 +221,7 @@ function ProductRow({
   outcome,
   onToggle,
   busy,
+  anchorId,
 }: {
   provider: ConnectorProviderConfig;
   health: ConnectorProductHealth;
@@ -228,13 +229,14 @@ function ProductRow({
   outcome: ConsentOutcome | null;
   onToggle: (next: boolean) => void;
   busy: boolean;
+  anchorId?: string;
 }) {
   const Icon = health.product.icon;
   const gated = health.state === "pending_rollout";
   /** Blocked: no toggle at all, because no request could succeed (V17-1). */
   const blocked = health.state === "unavailable";
   return (
-    <div className="flex items-start gap-2 border-b border-border/60 px-1 py-2.5 last:border-b-0 sm:gap-2.5 sm:px-3">
+    <div id={anchorId} tabIndex={anchorId ? -1 : undefined} className="scroll-mt-20 flex items-start gap-2 border-b border-border/60 px-1 py-2.5 outline-none last:border-b-0 focus:ring-2 focus:ring-primary sm:gap-2.5 sm:px-3">
       <Icon
         className={cn(
           "mt-0.5 h-4 w-4 shrink-0",
@@ -380,6 +382,9 @@ export interface ConnectorConsentBodyProps {
   initialAccountId?: string | null;
   /** Pre-switch-on these rows (a surface that knows what the person is using). */
   initialProductKeys?: readonly string[];
+  /** Stable anchors for Settings search; omitted inside the dialog. */
+  rowAnchorPrefix?: string;
+  searchFocus?: { productKey: string; request: number } | null;
   onDone?: () => void;
 }
 
@@ -530,6 +535,8 @@ export function ConnectorConsentBody({
   refetch,
   initialAccountId,
   initialProductKeys,
+  rowAnchorPrefix,
+  searchFocus,
   onDone,
 }: ConnectorConsentBodyProps) {
   const organizations = useAppSelector(selectOrganizationsList);
@@ -597,6 +604,20 @@ export function ConnectorConsentBody({
     account,
     rollout,
   });
+  const focusGroup = provider.products.find(
+    (product) => product.key === searchFocus?.productKey,
+  )?.group;
+  useEffect(() => {
+    if (!searchFocus || !rowAnchorPrefix || !focusGroup) return;
+    const frame = requestAnimationFrame(() => {
+      const row = document.getElementById(
+        `${rowAnchorPrefix}${searchFocus.productKey}`,
+      );
+      row?.focus({ preventScroll: true });
+      row?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusGroup, rowAnchorPrefix, searchFocus]);
 
   /**
    * D4: switching account — including to "a different Google account" — changes
@@ -831,7 +852,12 @@ export function ConnectorConsentBody({
                  headers is a long scroll on a phone. Radix `Collapsible` gives
                  the button semantics, `aria-expanded` and Enter/Space for
                  free — a hand-rolled div would not. */
-              <Collapsible key={group.key} defaultOpen>
+              /* A search jump remounts only its group open, even if the person
+                 collapsed it earlier. Selection lives above these rows. */
+              <Collapsible
+                key={`${group.key}-${group.key === focusGroup ? searchFocus?.request ?? 0 : 0}`}
+                defaultOpen
+              >
                 <CollapsibleTrigger className="group mb-1 flex min-h-11 w-full items-center justify-between gap-2 rounded-md px-0.5 text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:min-h-0">
                   <span className="flex min-w-0 flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:gap-1.5">
                     <span className="flex items-center gap-1.5">
@@ -871,6 +897,7 @@ export function ConnectorConsentBody({
                           }
                           onToggle={(next) => toggle(product, next)}
                           busy={busy}
+                          anchorId={rowAnchorPrefix ? `${rowAnchorPrefix}${product.key}` : undefined}
                         />
                       );
                     })}

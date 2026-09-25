@@ -27,13 +27,13 @@ import type {
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
-interface ProviderCopy {
+export interface ProviderCopy {
   readonly name: string;
   readonly scope: string;
   readonly limitation: string;
 }
 
-const PROVIDERS: Record<StorageOAuthProvider, ProviderCopy> = {
+export const STORAGE_PROVIDER_COPY: Record<StorageOAuthProvider, ProviderCopy> = {
   dropbox: {
     name: "Dropbox",
     scope:
@@ -80,10 +80,12 @@ function returnMessage(status: string): {
 
 export interface StorageConnectionsPanelProps {
   readonly navigate?: (url: string) => void;
+  readonly onConnectionsChange?: (connections: StorageConnection[] | "error") => void;
 }
 
 export function StorageConnectionsPanel({
   navigate,
+  onConnectionsChange,
 }: StorageConnectionsPanelProps = {}) {
   const searchParams = useSearchParams();
   const [connections, setConnections] = useState<StorageConnection[] | null>(
@@ -106,14 +108,17 @@ export function StorageConnectionsPanel({
 
   const refresh = useCallback(async (signal?: AbortSignal) => {
     try {
-      setConnections(await listStorageConnections(signal));
+      const rows = await listStorageConnections(signal);
+      setConnections(rows);
+      onConnectionsChange?.(rows);
       setLoadError(null);
     } catch (error) {
       if (signal?.aborted) return;
       setConnections(null);
+      onConnectionsChange?.("error");
       setLoadError(extractErrorMessage(error));
     }
-  }, []);
+  }, [onConnectionsChange]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -147,7 +152,7 @@ export function StorageConnectionsPanel({
           connection.id,
         );
         toast.success(
-          `${PROVIDERS[connection.provider].name} reports ${result.status}.`,
+          `${STORAGE_PROVIDER_COPY[connection.provider].name} reports ${result.status}.`,
         );
         await refresh();
       } catch (error) {
@@ -161,7 +166,7 @@ export function StorageConnectionsPanel({
 
   const disconnect = useCallback(
     async (connection: StorageConnection) => {
-      const providerName = PROVIDERS[connection.provider].name;
+      const providerName = STORAGE_PROVIDER_COPY[connection.provider].name;
       const accountName =
         connection.accountEmail ??
         connection.accountName ??
@@ -197,7 +202,7 @@ export function StorageConnectionsPanel({
   );
 
   return (
-    <section className="space-y-4 sm:space-y-5" data-testid="storage-connections-panel">
+    <section id="integration-storage" className="scroll-mt-20 space-y-4 sm:space-y-5" data-testid="storage-connections-panel">
       <header className="space-y-1">
         <h2 className="text-lg font-semibold text-foreground">
           File connections
@@ -246,14 +251,15 @@ export function StorageConnectionsPanel({
 
       <div className="grid gap-4 lg:grid-cols-2">
         {(["dropbox", "box"] as const).map((provider) => {
-          const copy = PROVIDERS[provider];
+          const copy = STORAGE_PROVIDER_COPY[provider];
           const providerConnections = (connections ?? []).filter(
             (connection) => connection.provider === provider,
           );
           return (
             <article
               key={provider}
-              className="space-y-3 rounded-lg border border-border p-2.5 sm:space-y-4 sm:p-4"
+              id={`integration-storage-${provider}`}
+              className="scroll-mt-20 space-y-3 rounded-lg border border-border p-2.5 sm:space-y-4 sm:p-4"
             >
               <div className="flex items-start gap-3">
                 <Cloud className="mt-0.5 h-5 w-5 text-muted-foreground" />
@@ -280,7 +286,8 @@ export function StorageConnectionsPanel({
                     return (
                       <li
                         key={connection.id}
-                        className="space-y-2 border-t border-border pt-3 sm:rounded-md sm:border-0 sm:bg-muted/40 sm:p-3"
+                        id={`integration-storage-account-${connection.id}`}
+                        className="scroll-mt-20 space-y-2 border-t border-border pt-3 sm:rounded-md sm:border-0 sm:bg-muted/40 sm:p-3"
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="truncate text-sm font-medium">
