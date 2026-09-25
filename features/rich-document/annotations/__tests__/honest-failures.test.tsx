@@ -8,7 +8,8 @@
  *   1. the passage gate reaches the person as ITS sentence (what, why, text kept), not a generic one;
  *   2. a refusal Retry cannot change offers no Retry — and a passage comment offers the real
  *      remedy: the same words posted on the whole document;
- *   3. an unrecognised error is NAMED (the server's words), never "something went wrong".
+ *   3. an unrecognised error is NAMED by its code, never "something went wrong" (the server's own
+ *      words stay in the console record and copy-for-AI — verify-RC-B11 F4).
  *
  * Use case: a nursing student comments "occurrences — is this per shift?" on a passage of her
  * study guide while passage saving is switched off.
@@ -118,8 +119,8 @@ describe("a failed save says what happened and offers only remedies that work", 
     jest.spyOn(console, "error").mockImplementation(() => {});
     const h = humanError("saving", { message: "column \"client_request_id\" does not exist", code: "42703" });
     expect(h.message).not.toMatch(/something went wrong/i);
-    expect(h.message).toContain('column "client_request_id" does not exist');
-    expect(h.message).toContain("42703");
+    expect(h.message).toMatch(/did not go through .*\(error 42703\)/);
+    expect(h.message).not.toContain("client_request_id"); // developer text stays out (F4)
     expect(h.retryable).toBe(true);
   });
 

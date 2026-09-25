@@ -76,11 +76,13 @@ export function humanError(action: string, e: unknown): SidecarError {
   } else if (isTransportFailure(e)) {
     sentence = `We couldn't reach the server while ${action}. It may or may not have been saved — Retry is safe and never makes a second copy.`;
   } else {
-    // Unrecognised: NAME it. "Something went wrong" tells the person nothing and tells whoever
-    // they report it to nothing either (Arman, 2026-09-25, on a gated highlight that said it).
-    const said = text.trim().replace(/\s+/g, " ");
-    const named = said ? ` The server said: "${said.length > 160 ? `${said.slice(0, 157)}…` : said}"${code ? ` (${code})` : ""}.` : code ? ` (error ${code}).` : "";
-    sentence = `${action} did not go through.${named} Retry, or reload the page if it keeps happening.`;
+    // Unrecognised: NAME it by its code — "something went wrong" tells the person nothing and
+    // tells whoever they report it to nothing either (Arman, 2026-09-25). The server's own words
+    // stay out of the sentence (developer text, verify-RC-B11 F4); they are in the console
+    // record above and in the error display's copy-for-AI.
+    const status = e && typeof e === "object" ? (e as { status?: unknown }).status : undefined;
+    const ref = code ? `error ${code}` : typeof status === "number" ? `HTTP ${status}` : e instanceof Error && e.name !== "Error" ? e.name : "";
+    sentence = `${action} did not go through — the server refused it${ref ? ` (${ref})` : " without saying why"}. Retry, or reload the page if it keeps happening.`;
   }
   return new SidecarError(sentence[0].toUpperCase() + sentence.slice(1), e, retryable);
 }

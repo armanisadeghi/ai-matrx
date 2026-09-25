@@ -266,7 +266,7 @@ describe("F4 — people read sentences, never developer text", () => {
     [{ code: "42501", message: "cmt_add: you cannot comment on this record (document/…)" }, /permission/i],
     [{ message: "association type is not a registered entity type (platform.entity_types) — add it to the registry + upgrade @ai-matrx/associations, never guess a token" }, /next app update/i],
     [new Error("Failed to fetch"), /Retry is safe/i],
-    [{ code: "XX000", message: "relation \"x\" does not exist" }, /Something went wrong/i],
+    [{ code: "XX000", message: "relation \"x\" does not exist" }, /did not go through .*\(error XX000\)/i],
   ])("%#", (raw, expected) => {
     const spy = jest.spyOn(console, "error").mockImplementation(() => {});
     const e = humanError("posting your comment", raw);
