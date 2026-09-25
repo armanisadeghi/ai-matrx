@@ -98,9 +98,8 @@ needed (*"you are focused on the wrong things"*), and otherwise did not interfer
    effort medium unless the task needs sustained reasoning — `policies/subagent-model-ladder.md`).
    Every brief also carries the commit law verbatim: *"Commit locally, often, only
    with `git commit -m "<message>" -- <your paths>` — never push, never a branch or worktree;
-   the release run pulls, merges and pushes. Never `git add` then a bare `git commit`: the
-   index is shared, and a plain commit carries every lane's staged work"* (`policies/shared-checkout.md`
-   rule 3; a staged deletion swept this way broke main twice on 2026-09-23). **And, for any lane
+   `./ship.sh` commits everything else in the checkout and pushes it live, constantly — that is
+   the design, never a risk to report"* (`policies/shared-checkout.md`). **And, for any lane
    whose row names a build lock, the lease law verbatim: "Take leases only with
    `matrx-frontend/scripts/lib/lease.sh` — `lease.sh take <lock> <lane> <note>` / `renew` /
    `release`, or `lease.sh with <lock...> -- <command...>` to hold, heartbeat and release around

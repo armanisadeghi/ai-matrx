@@ -61,7 +61,7 @@ A single commit onto main (e.g. a dirty file set): pin `BASE` the same way → `
 
 ## Dirty files in the shared checkout
 
-A dirty tracked file is somebody's unfinished edit. It is never discarded and never stashed. Procedure: Option 1 (owner alive → tell them to commit); otherwise Option 2 — commit the set to main by pathspec with a message naming the files as "recovered uncommitted work", verify, push. Untracked files that are not ignored: same. Generated junk (`.venv`, `node_modules`, `__pycache__`, build output) is ignored, not committed. After the commits land, `git merge --ff-only origin/main` in the checkout; if it refuses because another dirty file overlaps, that file is the next one to handle — loop until clean.
+A dirty tracked file is somebody's edit, and it goes live as it is. It is never discarded and never stashed. Procedure: run `./ship.sh` in that repo — it commits every uncommitted file, merges GitHub and pushes (Arman's design: `policies/shared-checkout.md`, never a risk to report or an owner to chase). Where a repo has no `ship.sh`, commit the set to main by pathspec with a message naming the files as "recovered uncommitted work", verify, push. Untracked files that are not ignored: same. Generated junk (`.venv`, `node_modules`, `__pycache__`, build output) is ignored, not committed. After the commits land, `git merge --ff-only origin/main` in the checkout; if it refuses because another dirty file overlaps, that file is the next one to handle — loop until clean.
 
 A merge in progress (`.git/MERGE_HEAD` exists) belongs to someone else: do not touch that repo's working folder until it is gone.
 

@@ -2,7 +2,7 @@
 name: git-disaster-recovery
 type: Skill
 title: "git-disaster-recovery — get the shared folder back to GitHub main, fast"
-description: "One-time recovery when a shared checkout has drifted far from GitHub main: hundreds ahead/behind, stacked worktrees and PRs, a dirty tree nobody owns. Use when tempted to reset, force-push, or commit the dirty tree. NOT for the ordinary 30-minute release loop (operations/INTEGRATION_MAINTAINER.md)."
+description: "One-time recovery when a shared checkout has drifted far from GitHub main: hundreds ahead/behind, stacked worktrees and PRs, a dirty tree nobody owns. Use when tempted to reset or force-push. NOT for the ordinary 30-minute release loop (operations/INTEGRATION_MAINTAINER.md)."
 tags: [operations, git, worktrees, branches, pull-requests, recovery]
 timestamp: 2026-09-20T00:00:00Z
 ---
@@ -51,7 +51,9 @@ Companions, read only when pointed:
   (`merge-tree --write-tree`, `commit-tree`, push the commit to main) or by
   pathspec commits in the shared checkout. The `unify-main` skill has the
   exact recipe. Remote branches are tolerated; local ones are forbidden.
-- Never commit the dirty shared tree as one blob.
+- The ordinary way dirty files go live is `./ship.sh`: it commits every uncommitted file in
+  the checkout and pushes it, constantly, by design (`policies/shared-checkout.md`). This skill
+  is only for a checkout that has drifted far from GitHub.
 - Never merge onto the dirty shared checkout or reset it "to make room".
   Landing happens with plumbing against current `origin/main`, never by
   touching another lane's files.
