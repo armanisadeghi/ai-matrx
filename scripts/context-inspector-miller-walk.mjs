@@ -46,8 +46,14 @@ try {
   page.on("pageerror", (e) => (report.consoleErrors[where] ??= []).push(`pageerror: ${String(e).slice(0, 300)}`));
   if (BACKEND) {
     await page.route(`${PROD}/ai/context/preview**`, async (route) => {
-      const response = await route.fetch({ url: route.request().url().replace(PROD, BACKEND) });
-      await route.fulfill({ response });
+      try {
+        const response = await route.fetch({ url: route.request().url().replace(PROD, BACKEND) });
+        await route.fulfill({ response });
+      } catch (error) {
+        // Never let a down local backend crash the walk (its message carries request headers).
+        (report.backendErrors ??= []).push(String(error).split("\n")[0].slice(0, 160));
+        await route.abort().catch(() => undefined);
+      }
     });
   }
   report.seat = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
@@ -146,7 +152,8 @@ try {
   await page.goto(`${ORIGIN}${PATH}?scope=2ba5cb52-9530-4682-a12c-3ededff23c2c`, { waitUntil: "domcontentloaded", timeout: 240000 });
   const { v: filled } = await until("deep link back-fill", async () => {
     const u = new URL(page.url());
-    return u.searchParams.get("org") && u.searchParams.get("scopeType") && (await page.locator("[data-compare-side]").count()) >= 2
+    return u.searchParams.get("org") && u.searchParams.get("scopeType") &&
+      (await page.locator('[data-context-inspector] button[aria-pressed="true"]').count()) >= 3
       ? u.search : null;
   }, 180000);
   report.deepLink = {
@@ -195,6 +202,7 @@ try {
     title: await title.innerText(),
     windowFound: await win.count(),
     projectsColumn: await page.getByText("Projects", { exact: true }).count(),
+    searchBoxes: await page.getByRole("searchbox").evaluateAll((els) => els.map((el) => el.getAttribute("aria-label"))),
   };
   await page.screenshot({ path: `${OUT}/${shot++}-context-switcher-window.png`, fullPage: false });
 } catch (error) {
