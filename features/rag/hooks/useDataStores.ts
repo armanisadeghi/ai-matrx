@@ -19,6 +19,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import type { Database } from "@/types/database.types";
@@ -382,11 +383,14 @@ export function useDataStoreDetail(storeId: string | null) {
       if (Object.keys(body).length === 0) return true;
       try {
         const supabase = createClient();
-        const { error: updateError } = await ragDb(supabase)
-          .from("data_stores")
-          .update(body)
-          .eq("id", storeId);
-        if (updateError) throw updateError;
+        await writeOne(
+          ragDb(supabase)
+            .from("data_stores")
+            .update(body)
+            .eq("id", storeId)
+            .select("id"),
+          { action: "update", noun: "data store" },
+        );
         refresh();
         return true;
       } catch (e) {
@@ -403,11 +407,14 @@ export function useDataStoreDetail(storeId: string | null) {
     if (!storeId) return false;
     try {
       const supabase = createClient();
-      const { error: deleteError } = await ragDb(supabase)
-        .from("data_stores")
-        .delete()
-        .eq("id", storeId);
-      if (deleteError) throw deleteError;
+      await writeOne(
+        ragDb(supabase)
+          .from("data_stores")
+          .delete()
+          .eq("id", storeId)
+          .select("id"),
+        { action: "delete", noun: "data store" },
+      );
       return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not delete data store");

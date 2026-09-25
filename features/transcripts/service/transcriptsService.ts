@@ -2,6 +2,7 @@
 
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
@@ -290,11 +291,15 @@ export async function deleteTranscript(id: string): Promise<void> {
   }
 
   // Soft delete the transcript record
-  const { error } = await supabase
-    .schema("transcripts")
-    .from("transcripts")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("transcripts")
+      .from("transcripts")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "transcript" },
+  );
 
   if (error) {
     console.error("Error deleting transcript:", error);
@@ -306,11 +311,15 @@ export async function deleteTranscript(id: string): Promise<void> {
  * Permanently delete a transcript
  */
 export async function permanentlyDeleteTranscript(id: string): Promise<void> {
-  const { error } = await supabase
-    .schema("transcripts")
-    .from("transcripts")
-    .delete()
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("transcripts")
+      .from("transcripts")
+      .delete()
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "transcript" },
+  );
 
   if (error) {
     console.error("Error permanently deleting transcript:", error);

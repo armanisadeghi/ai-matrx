@@ -9,6 +9,7 @@
 // its default (the config sets supportsArchived: false).
 
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 
 import type {
   EntityFacets,
@@ -125,20 +126,28 @@ export async function saveTranscriptRowEdit(
   if (!title) throw new Error("Title cannot be empty.");
 
   if (row.kind === "transcript") {
-    const { error } = await supabase
-      .schema("transcripts")
-      .from("transcripts")
-      .update({ title })
-      .eq("id", row.id);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("transcripts")
+        .from("transcripts")
+        .update({ title })
+        .eq("id", row.id)
+        .select("id"),
+      { action: "rename", noun: "transcript" },
+    );
     if (error) throw pgError(error);
     return;
   }
   if (row.kind === "session" || row.kind === "cleanup") {
-    const { error } = await supabase
-      .schema("transcripts")
-      .from("studio_sessions")
-      .update({ title })
-      .eq("id", row.id);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("transcripts")
+        .from("studio_sessions")
+        .update({ title })
+        .eq("id", row.id)
+        .select("id"),
+      { action: "rename", noun: "session" },
+    );
     if (error) throw pgError(error);
     return;
   }

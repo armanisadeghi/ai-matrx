@@ -75,6 +75,7 @@ import {
 } from "@/features/rag/components/source-inspector/useOpenCitation";
 import { createClient } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { components } from "@/types/python-generated/api-types";
 import { StatusBadge } from "./StatusBadge";
@@ -197,11 +198,15 @@ export function LibraryDocDetailSheet({
       // Curator-or-owner gated: docproc.processed_documents RLS
       // (processed_documents_owner_all + processed_documents_curator_update)
       // already matches LibraryPatchRequest's authorization exactly.
-      const { error: updateError } = await supabase
-        .schema("docproc")
-        .from("processed_documents")
-        .update({ name: nextName })
-        .eq("id", doc.id);
+      const { error: updateError } = await tryWriteOne(
+        supabase
+          .schema("docproc")
+          .from("processed_documents")
+          .update({ name: nextName })
+          .eq("id", doc.id)
+          .select("id"),
+        { action: "rename", noun: "document" },
+      );
       if (updateError) {
         throw new Error(
           "We couldn't rename this document. Only its owner or a curator can change it.",
