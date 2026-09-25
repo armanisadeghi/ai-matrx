@@ -48,6 +48,14 @@
  *   pnpm check:hardcoded-agents
  *   pnpm check:hardcoded-agents --json
  *   pnpm check:hardcoded-agents --write    # ratchet the baseline down / seed it
+ *   pnpm check:hardcoded-agents --self-test  # each model-choice rule fires on a planted line
+ *
+ * SECOND SCAN — HARD-CODED MODEL CHOICES (added 2026-09-25, BYPASS-CENSUS
+ * frontend-features / frontend-rest). A raw MODEL picked in code is the same
+ * violation as a raw agent id: the mandate cannot rebind it. Each rule below
+ * names one bypass that was converted; a match anywhere in the scanned tree
+ * (comments excluded, `app/(dev)/` excluded) exits 1 — there is no baseline,
+ * every one of these is at zero. Rules: MODEL_CHOICE_RULES.
  */
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
@@ -224,6 +232,101 @@ function scanFile(file: string, out: ScanResult): void {
   }
 }
 
+// ── Hard-coded model choices ────────────────────────────────────────────────
+
+interface ModelRule {
+  id: string;
+  re: RegExp;
+  /** Files (repo-relative) where the pattern is the sanctioned adapter, not a choice. */
+  allowFiles?: string[];
+  fix: string;
+}
+
+export const MODEL_CHOICE_RULES: ModelRule[] = [
+  {
+    id: "xai-realtime-socket-literal",
+    re: /["'`]wss:\/\/api\.x\.ai/,
+    fix: "the realtime socket URL is the token broker credential's `endpoint` (features/voice-agent/transport/tokenManager.ts), never a literal.",
+  },
+  {
+    id: "xai-realtime-model-literal",
+    re: /["'`]grok-voice[\w.-]*["'`]/,
+    allowFiles: ["features/voice-agent/realtimeModel.ts"],
+    fix: "the voice session model comes from the voice mandate's Holder agent (features/voice-agent/realtimeModel.ts). Rebind the mandate; add a wire-name row there only for a new catalog model.",
+  },
+  {
+    id: "observational-memory-model-override",
+    re: /\bmemory_model\s*=(?!=)|\bMEMORY_MODEL_NAMES\b/,
+    fix: "the Observer/Reflector model is the server's observational-memory mandate's Holder; the client never sends `memory_model`.",
+  },
+  {
+    id: "embedding-lab-in-product",
+    re: /\bGoogleEmbeddingLab\b/,
+    allowFiles: ["features/rag/components/GoogleEmbeddingLab.tsx"],
+    fix: "the Google embedding lab picks a raw embedding model and is DEV-ONLY: mount it only under app/(dev)/ (see app/(dev)/demos/embedding-lab).",
+  },
+  {
+    id: "direct-provider-sdk-import",
+    re: /from\s+["'](?:openai|@anthropic-ai\/sdk|@ai-sdk\/[\w-]+|@google\/genai|@google\/generative-ai|groq-sdk)["']/,
+    fix: "no provider SDK in the frontend — every AI call goes through a mandate on aidream (POST /ai/mandates/{key}). Deleted 2026-09-25: lib/ai/providers, lib/ai/adapters, actions/ai.ts, actions/quiz.ts, app/api/generate-quiz.",
+  },
+];
+
+export interface ModelChoiceSite {
+  file: string;
+  line: number;
+  rule: string;
+  text: string;
+}
+
+/** Non-comment lines of `src` that match a rule. Exported for the self-test. */
+export function scanModelChoices(rel: string, src: string): ModelChoiceSite[] {
+  const hits: ModelChoiceSite[] = [];
+  const lines = src.split("\n");
+  let inBlock = false;
+  lines.forEach((raw, i) => {
+    let text = raw;
+    if (inBlock) {
+      const end = text.indexOf("*/");
+      if (end === -1) return;
+      text = text.slice(end + 2);
+      inBlock = false;
+    }
+    const t = text.trimStart();
+    if (t.startsWith("//") || t.startsWith("*")) return;
+    if (t.startsWith("/*")) {
+      if (!t.includes("*/")) inBlock = true;
+      return;
+    }
+    const code = text.replace(/\s\/\/\s.*$/, "");
+    for (const rule of MODEL_CHOICE_RULES) {
+      if (rule.allowFiles?.includes(rel)) continue;
+      if (rule.re.test(code)) hits.push({ file: rel, line: i + 1, rule: rule.id, text: raw.trim() });
+    }
+  });
+  return hits;
+}
+
+function selfTest(): void {
+  const planted: Record<string, string> = {
+    "xai-realtime-socket-literal": 'const U = "wss://api.x.ai/v1/realtime";',
+    "xai-realtime-model-literal": 'const M = "grok-voice-latest";',
+    "observational-memory-model-override": 'request.memory_model = "google/gemini-2.5-flash";',
+    "embedding-lab-in-product": 'import { GoogleEmbeddingLab } from "@/features/rag/components/GoogleEmbeddingLab";',
+    "direct-provider-sdk-import": 'import { google } from "@ai-sdk/google";',
+  };
+  let failed = 0;
+  for (const rule of MODEL_CHOICE_RULES) {
+    const line = planted[rule.id];
+    const fired = line ? scanModelChoices("features/x/planted.ts", line).some((h) => h.rule === rule.id) : false;
+    const commented = line ? scanModelChoices("features/x/planted.ts", `// ${line}`).length === 0 : false;
+    const ok = fired && commented;
+    if (!ok) failed++;
+    console.log(`${ok ? C.green + "✓" : C.red + "✗"}${C.reset} ${rule.id} ${C.dim}(fires on plant: ${fired}; silent in a comment: ${commented})${C.reset}`);
+  }
+  exitAfterDrain(failed > 0 ? 1 : 0);
+}
+
 // ── Allowlist / baseline ────────────────────────────────────────────────────
 
 function loadJsonArray<T>(file: string, isEntry: (e: unknown) => e is T): T[] | null {
@@ -260,11 +363,15 @@ function main(): void {
   const args = new Set(process.argv.slice(2));
   const asJson = args.has("--json");
   const write = args.has("--write");
+  if (args.has("--self-test")) return selfTest();
 
   const files: string[] = [];
   for (const d of SCAN_DIRS) walk(join(ROOT, d), files);
   const result: ScanResult = { violations: [], seedMirrors: [], manifestDefaults: [] };
   for (const f of files) scanFile(f, result);
+  const modelChoices: ModelChoiceSite[] = [];
+  for (const f of files) modelChoices.push(...scanModelChoices(relative(ROOT, f), readFileSync(f, "utf8")));
+  const failing = (n: number) => n > 0 || modelChoices.length > 0;
   const bySite = (a: Site, b: Site) => a.file.localeCompare(b.file) || a.line - b.line;
   result.violations.sort(bySite);
 
@@ -318,12 +425,13 @@ function main(): void {
           manifestDefaults: result.manifestDefaults,
           staleBaseline,
           staleAllow,
+          modelChoices,
         },
         null,
         2,
       ),
     );
-    exitAfterDrain(newSites.length > 0 ? 1 : 0);
+    exitAfterDrain(failing(newSites.length) ? 1 : 0);
   }
 
   console.log(
@@ -382,8 +490,22 @@ function main(): void {
     for (const e of staleAllow) console.log(`  ${C.dim}${e.file} :: ${e.name}${C.reset}`);
   }
 
+  if (modelChoices.length === 0) {
+    console.log(
+      `\n${C.green}✓ No hard-coded model choices.${C.reset} ${C.dim}(${MODEL_CHOICE_RULES.length} rules: ${MODEL_CHOICE_RULES.map((r) => r.id).join(", ")})${C.reset}`,
+    );
+  } else {
+    console.log(`\n${C.red}${C.bold}✗ ${modelChoices.length} hard-coded model choice site(s)${C.reset}`);
+    for (const h of modelChoices) {
+      const rule = MODEL_CHOICE_RULES.find((r) => r.id === h.rule);
+      console.log(`  ${C.cyan}${h.file}:${h.line}${C.reset}  ${h.rule}  ${C.dim}${h.text.slice(0, 120)}${C.reset}`);
+      if (rule) console.log(`    ${C.yellow}Fix:${C.reset} ${C.dim}${rule.fix}${C.reset}`);
+    }
+  }
+
   console.log("");
-  exitAfterDrain(newSites.length > 0 ? 1 : 0);
+  exitAfterDrain(failing(newSites.length) ? 1 : 0);
 }
 
-main();
+// Run only when invoked directly — the self-test/red proofs import the scanner.
+if (resolve(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) main();

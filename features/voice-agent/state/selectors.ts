@@ -70,6 +70,12 @@ export const selectVoiceInstructions = (
   instanceId: string,
 ) => getInstance(state, instanceId).instructions;
 
+/** Wire model resolved from the mandate's Holder; null until resolved. */
+export const selectVoiceRealtimeModel = (
+  state: StateWithVoiceAgent,
+  instanceId: string,
+) => getInstance(state, instanceId).realtimeModel ?? null;
+
 export const selectVoiceTools = (
   state: StateWithVoiceAgent,
   instanceId: string,

@@ -15,7 +15,6 @@ import {
   Search,
   Code2,
   Library,
-  Binary,
 } from "lucide-react";
 
 const HUB_NAV_ITEMS = [
@@ -24,7 +23,6 @@ const HUB_NAV_ITEMS = [
   { name: "Library", href: "/knowledge/library", icon: FileText },
   { name: "Catalog", href: "/knowledge/library-catalog", icon: Library },
   { name: "Search", href: "/knowledge/search", icon: Search },
-  { name: "Embeddings", href: "/knowledge/embeddings", icon: Binary },
   { name: "Repositories", href: "/knowledge/repositories", icon: Code2 },
 ];
 

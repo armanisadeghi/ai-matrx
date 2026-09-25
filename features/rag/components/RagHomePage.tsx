@@ -23,7 +23,6 @@ import {
   Eye,
   AlertTriangle,
   CheckCircle2,
-  Binary,
 } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
@@ -175,13 +174,6 @@ export function RagHomePage() {
                 title="Search"
                 description="Hybrid retrieval (vector + lexical, with optional rerank) across your indexed content. Useful for testing what an agent will see."
                 cta="Run a search"
-              />
-              <NavCard
-                href="/knowledge/embeddings"
-                icon={<Binary className="h-5 w-5" />}
-                title="Embedding Lab"
-                description="Generate catalog-routed Gemini vectors for text or multimodal inputs and inspect the exact output used by vector search."
-                cta="Test embeddings"
               />
             </div>
           </section>

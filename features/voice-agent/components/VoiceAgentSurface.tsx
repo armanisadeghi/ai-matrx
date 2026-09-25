@@ -20,6 +20,9 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { useVoiceAgentInstance } from "../hooks/useVoiceAgentInstance";
 import { useRealtimeAgentConfig } from "../hooks/useRealtimeAgentConfig";
+import { useRealtimeHolderModel } from "../realtimeModel";
+import { useMandate } from "@/features/mandates/useMandate";
+import { VOICE_INTRO_MANDATE_KEY } from "../constants";
 import { useXaiVoiceSession } from "../hooks/useXaiVoiceSession";
 import { usePersistVoiceTranscript } from "../hooks/usePersistVoiceTranscript";
 import {
@@ -88,6 +91,17 @@ export function VoiceAgentSurface({
   const dispatch = useAppDispatch();
 
   const instanceId = useVoiceAgentInstance({ preset, agentId });
+  // The playground has no agent of its own (the person types the persona), but
+  // the MODEL is still a mandate decision: it runs the model of the agent the
+  // `voice.intro` mandate resolves to, never a constant. Agent-backed presets
+  // get their model through useRealtimeAgentConfig below.
+  const { mandate: playgroundModelMandate } = useMandate(
+    !agentId && preset === "playground" ? VOICE_INTRO_MANDATE_KEY : "",
+  );
+  useRealtimeHolderModel({
+    instanceId,
+    agentId: agentId ? null : (playgroundModelMandate?.agentId ?? null),
+  });
   // Resolve the authoritative realtime tool set (server/client/builtin) from the
   // backend and write it into the slice. Non-fatal on error — the slice keeps
   // its seeded builtin tools and the mic still works.

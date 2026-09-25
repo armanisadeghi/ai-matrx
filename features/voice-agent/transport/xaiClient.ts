@@ -22,7 +22,7 @@ import {
 } from "./clientEvents";
 import { int16BufferToBase64 } from "../audio/pcmEncoding";
 import { parseServerEvent, type XaiServerEvent } from "./serverEvents";
-import { XAI_REALTIME_URL } from "../constants";
+import { xaiRealtimeSocketUrl } from "../realtimeModel";
 
 const CONNECT_TIMEOUT_MS = 10_000;
 
@@ -43,6 +43,8 @@ export interface XaiClient {
   connect: (
     token: string,
     sessionConfig: SessionUpdatePayload,
+    /** Broker-issued endpoint + the mandate Holder's wire model. Never a constant. */
+    target: { endpoint: string; model: string },
   ) => Promise<void>;
   sendInputAudio: (frame: ArrayBuffer) => void;
   cancelResponse: () => void;
@@ -105,6 +107,7 @@ export function createXaiClient(): XaiClient {
   function connect(
     token: string,
     sessionConfig: SessionUpdatePayload,
+    target: { endpoint: string; model: string },
   ): Promise<void> {
     if (
       ws &&
@@ -122,7 +125,7 @@ export function createXaiClient(): XaiClient {
 
       let socket: WebSocket;
       try {
-        socket = new WebSocket(XAI_REALTIME_URL, [
+        socket = new WebSocket(xaiRealtimeSocketUrl(target.endpoint, target.model), [
           `xai-client-secret.${token}`,
         ]);
       } catch (err) {

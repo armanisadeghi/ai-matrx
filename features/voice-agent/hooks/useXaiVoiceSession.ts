@@ -49,6 +49,7 @@ import {
   selectVoiceError,
   selectVoiceInstructions,
   selectVoiceMicMuted,
+  selectVoiceRealtimeModel,
   selectVoiceStatus,
   selectVoiceTools,
   selectVoiceVoiceId,
@@ -187,8 +188,13 @@ export function useXaiVoiceSession(
     selectVoiceInstructions(s, instanceId),
   );
   const tools = useAppSelector((s) => selectVoiceTools(s, instanceId));
+  const realtimeModel = useAppSelector((s) =>
+    selectVoiceRealtimeModel(s, instanceId),
+  );
 
   const voiceIdRef = useRef(voiceId);
+  const realtimeModelRef = useRef(realtimeModel);
+  realtimeModelRef.current = realtimeModel;
   const instructionsRef = useRef(instructions);
   const toolsRef = useRef(tools);
   voiceIdRef.current = voiceId;
@@ -937,6 +943,34 @@ export function useXaiVoiceSession(
       return;
     }
 
+    // THE MODEL IS THE MANDATE'S. `realtimeModel` is resolved from the
+    // mandate's Holder agent (`useRealtimeHolderModel`); there is no default
+    // model to fall back on. An unresolved model refuses loudly — the specific
+    // cause (no model / not an xAI realtime model) was already set as the
+    // session error by the resolver when it failed.
+    if (!realtimeModelRef.current) {
+      voiceDebugLog(
+        instanceId,
+        "error",
+        "start.no-model",
+        "refused: the Holder agent's realtime model has not resolved",
+      );
+      console.error(
+        `[voice-agent] ${instanceId}: refused to open a session — no realtime model resolved from the mandate's Holder agent.`,
+      );
+      dispatch(
+        setError({
+          instanceId,
+          error: {
+            code: "realtime-model-unresolved",
+            message:
+              "This voice agent's model has not resolved, so the session was not started. The model comes from the agent the voice mandate is bound to; reload the page, and if it persists check that agent's model.",
+          },
+        }),
+      );
+      return;
+    }
+
     ensureModules();
     const client = xaiClientRef.current!;
     const capture = captureRef.current!;
@@ -1021,7 +1055,7 @@ export function useXaiVoiceSession(
     sessionUnsubsRef.current.push(unsubEvent, unsubError, unsubClose);
 
     try {
-      const token = await tokens.getCurrent();
+      const { token, endpoint } = await tokens.getCurrentCredential();
       voiceDebugLog(
         instanceId,
         "info",
@@ -1051,7 +1085,7 @@ export function useXaiVoiceSession(
           // aloud.
           createResponseOnTurn: relayRef.current ? false : undefined,
           turnSilenceMs: relayRef.current ? RELAY_TURN_SILENCE_MS : undefined,
-        }),
+        }, { endpoint, model: realtimeModelRef.current }),
         capture.start(),
       ]);
       // Attach the Voice Communication Layer relay for this session. Its

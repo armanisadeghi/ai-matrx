@@ -5,10 +5,12 @@
 import type { RealtimeToolSet, VoiceId } from "./types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
-export const XAI_REALTIME_URL =
-  "wss://api.x.ai/v1/realtime?model=grok-voice-latest";
-
-export const XAI_MODEL_ID = "grok-voice-latest";
+// 🚨 NO SOCKET URL AND NO MODEL HERE. The endpoint comes from the token
+// broker's credential and the model from the mandate's Holder agent
+// (`realtimeModel.ts`). `XAI_REALTIME_URL` / `XAI_MODEL_ID` hard-coded
+// `grok-voice-latest` until 2026-09-25 — a model choice outside the mandate
+// system (BYPASS-CENSUS frontend-features). Guarded by
+// `scripts/check-hardcoded-agents.ts` (provider realtime socket rule).
 
 /** Hard-coded by xAI's audio pipeline; do NOT change without coordinating the worklet. */
 export const SAMPLE_RATE_HZ = 24000;

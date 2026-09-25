@@ -30,6 +30,7 @@
 import { useEffect, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { applyAgentConfig } from "../state/voiceAgentSlice";
+import { useRealtimeHolderModel } from "../realtimeModel";
 import type { RealtimeToolSet, ResolvedRealtimeTool } from "../types";
 
 const REALTIME_TOOLS_PATH = (agentId: string): string =>
@@ -125,6 +126,9 @@ export function useRealtimeAgentConfig(
   });
 
   const { instanceId, agentId, surface, addedToolIds, isVersion } = opts;
+  // The session's realtime MODEL comes from the same mandate-resolved Holder
+  // agent as its tools — never a constant (see realtimeModel.ts).
+  useRealtimeHolderModel({ instanceId, agentId });
   // Stable dep for the (possibly undefined) array.
   const addedToolIdsKey = JSON.stringify(addedToolIds ?? []);
 

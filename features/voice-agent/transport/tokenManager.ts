@@ -51,6 +51,8 @@ export interface TokenError {
 export interface TokenManager {
   prime: () => Promise<void>;
   getCurrent: () => Promise<string>;
+  /** Token plus the broker-issued socket endpoint (the only source of the URL). */
+  getCurrentCredential: () => Promise<{ token: string; endpoint: string }>;
   /** Currently cached token value, or null. Cheap, non-async. */
   peek: () => string | null;
   /** Unix-seconds expiry of the cached token, or null. For diagnostics. */
@@ -219,7 +221,19 @@ export function createTokenManager(
           message: "The token broker returned an unexpected credential shape.",
         } satisfies TokenError;
       }
-      current = { value: credential.token, expires_at: credential.expires_at };
+      if (!credential.endpoint) {
+        // The broker's endpoint is the ONLY source of the socket URL — a
+        // credential without one is malformed, never a cue to use a constant.
+        throw {
+          code: "malformed",
+          message: "The token broker returned a realtime credential with no endpoint.",
+        } satisfies TokenError;
+      }
+      current = {
+        value: credential.token,
+        expires_at: credential.expires_at,
+        endpoint: credential.endpoint,
+      };
       return current;
     })();
 
@@ -237,12 +251,16 @@ export function createTokenManager(
   }
 
   async function getCurrent(): Promise<string> {
+    return (await getCurrentCredential()).token;
+  }
+
+  async function getCurrentCredential(): Promise<{ token: string; endpoint: string }> {
     if (!current || isExpired(current)) {
       await fetchToken();
       scheduleRefresh();
     }
     if (!current) throw new Error("Token manager has no token after fetch.");
-    return current.value;
+    return { token: current.value, endpoint: current.endpoint };
   }
 
   function peek(): string | null {
@@ -277,7 +295,16 @@ export function createTokenManager(
     current = null;
   }
 
-  return { prime, getCurrent, peek, expiresAt, invalidate, onError, dispose };
+  return {
+    prime,
+    getCurrent,
+    getCurrentCredential,
+    peek,
+    expiresAt,
+    invalidate,
+    onError,
+    dispose,
+  };
 }
 
 function isExpired(token: VoiceAgentTokenResponse): boolean {

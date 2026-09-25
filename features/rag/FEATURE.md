@@ -12,9 +12,10 @@ This file is only what an agent editing `features/rag/` must obey.
 ## Routes owned here
 
 `/knowledge/library` (+ `[id]/preview`, `/knowledge/viewer/[id]`) · `/knowledge/data-stores` ·
-`/knowledge/repositories` · `/knowledge/search` · `/knowledge/embeddings` ·
+`/knowledge/repositories` · `/knowledge/search` ·
 `/knowledge/library-catalog` · `/knowledge/library-curate`. `/rag/*` is the retained compatibility
-family. 🚨 **`/knowledge` itself is NOT this feature** — it renders `features/knowledge`'s
+family. The Google embedding lab is DEV-ONLY (`/demos/embedding-lab`, ruled 2026-09-25: it picks a raw
+embedding model outside the mandate system, so it is excluded from the product). 🚨 **`/knowledge` itself is NOT this feature** — it renders `features/knowledge`'s
 marketing showcase, while `RagHomePage` sits on `/rag`. Do not "fix" either side without the
 ruling tracked in the node's HANDOFF §3.
 

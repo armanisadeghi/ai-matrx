@@ -99,6 +99,7 @@ const voiceAgentSlice = createSlice({
         tools,
         preset,
         persist,
+        realtimeModel: null,
         status: "idle",
         error: null,
         micMuted: false,
@@ -346,6 +347,8 @@ const voiceAgentSlice = createSlice({
           voiceId?: VoiceId;
           instructions?: string;
           tools?: RealtimeToolSet;
+          /** Wire model from the mandate-resolved Holder (`useRealtimeHolderModel`). */
+          realtimeModel?: string;
         }
       >,
     ) {
@@ -392,6 +395,9 @@ const voiceAgentSlice = createSlice({
       }
       if (action.payload.tools !== undefined) {
         inst.tools = action.payload.tools;
+      }
+      if (action.payload.realtimeModel !== undefined) {
+        inst.realtimeModel = action.payload.realtimeModel;
       }
     },
 

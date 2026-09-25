@@ -103,6 +103,12 @@ export interface VoiceAgentInstance {
   tools: RealtimeToolSet;
   preset: VoiceAgentPreset;
   persist: boolean;
+  /**
+   * The provider wire model the session socket opens with — resolved from the
+   * mandate's Holder agent (`realtimeModel.ts`), never a constant. Null until
+   * resolved; `start()` refuses while null.
+   */
+  realtimeModel: string | null;
 
   // Connection / UI
   status: VoiceStatus;
@@ -134,6 +140,8 @@ export interface VoiceAgentState {
 export interface VoiceAgentTokenResponse {
   /** Ephemeral `client_secret` value. Passed as WebSocket subprotocol `xai-client-secret.<value>`. */
   value: string;
+  /** The realtime socket endpoint the broker issued with the credential — the only source of the URL. */
+  endpoint: string;
   /** Unix-seconds expiry. Used to schedule refresh ~5s before. */
   expires_at: number;
 }
