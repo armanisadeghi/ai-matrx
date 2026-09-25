@@ -58658,6 +58658,9 @@ export type Database = {
           code_path: string | null
           created_at: string
           created_by: string | null
+          default_auto_run: boolean | null
+          default_config_overrides: Json | null
+          default_consumption_map: Json | null
           default_holder_id: string | null
           default_holder_type: string
           default_holder_version_id: string | null
@@ -58696,6 +58699,9 @@ export type Database = {
           code_path?: string | null
           created_at?: string
           created_by?: string | null
+          default_auto_run?: boolean | null
+          default_config_overrides?: Json | null
+          default_consumption_map?: Json | null
           default_holder_id?: string | null
           default_holder_type: string
           default_holder_version_id?: string | null
@@ -58734,6 +58740,9 @@ export type Database = {
           code_path?: string | null
           created_at?: string
           created_by?: string | null
+          default_auto_run?: boolean | null
+          default_config_overrides?: Json | null
+          default_consumption_map?: Json | null
           default_holder_id?: string | null
           default_holder_type?: string
           default_holder_version_id?: string | null
@@ -59580,6 +59589,25 @@ export type Database = {
           vals: Json
           visibility: string
         }[]
+      }
+      _member_scope_ok: {
+        Args: {
+          p_level: string
+          p_org_id: string
+          p_scope: string
+          p_uid: string
+          r_created_by: string
+          r_id: string
+          r_is_system: boolean
+          r_org: string
+          r_personal_home: boolean
+          r_visibility: string
+        }
+        Returns: boolean
+      }
+      _member_shared_org_ids: {
+        Args: { p_id: string; p_level: string; p_org_id: string }
+        Returns: string[]
       }
       _rungs: {
         Args: {
@@ -71024,6 +71052,10 @@ export type Database = {
             Returns: Json
           }
       admin_db_cron_jobs: { Args: never; Returns: Json }
+      admin_door_relation_state: {
+        Args: { p_schema: string; p_table: string }
+        Returns: string
+      }
       admin_relation_catalog: {
         Args: never
         Returns: {
