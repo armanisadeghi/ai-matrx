@@ -8,6 +8,12 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { MeetingsWorkspace } from "@/features/meet/components/MeetingsWorkspace";
 import { SignedOutMeetings } from "@/features/meet/components/SignedOutMeetings";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
+import { MEET_PLACES } from "@/features/meet/intelligence-places";
+
+// The meeting screen is the @ai-matrx/meet package's stage (no header of ours),
+// so the Intelligence icon for its jobs sits here, at the meetings header.
+const MEETING_JOBS = MEET_PLACES.places.flatMap((place) => place.mandateKeys);
 
 export default async function MeetingsPage() {
   const { isAuthenticated } = await getSessionVerdict();
@@ -16,7 +22,14 @@ export default async function MeetingsPage() {
   return (
     <>
       <PageHeader>
-        <h1 className="text-sm font-semibold">Meetings</h1>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <h1 className="truncate text-sm font-semibold">Meetings</h1>
+          <IntelligenceIndicator
+            feature="meet"
+            mandateKeys={MEETING_JOBS}
+            label="The AI jobs in every meeting (live notes, answers, the wrap-up)"
+          />
+        </div>
       </PageHeader>
       <div className="h-full overflow-y-auto">
         <MeetingsWorkspace />
