@@ -13,6 +13,49 @@
  * effectively the repo had no Jest config. PR 1.A replaces it with this.
  */
 import type { Config } from "jest";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+
+/**
+ * EVERY `@ai-matrx/*` SUBPATH, READ FROM THE PACKAGE'S OWN `exports` MAP.
+ *
+ * Jest's resolver ignores `exports`, so each directory subpath (dist/<name>/index.js) used to be
+ * listed by hand below, and the generic rule sent every other one to dist/<name>.js. The day a
+ * package added one nobody listed, every suite that reached it died at import: 2026-09-24,
+ * records-ui 0.85.6 imported `@ai-matrx/design-system/field-formats` (a directory) and every
+ * suite touching records-ui failed with "Could not locate module". The map is now built from the
+ * installed packages' own `exports`, so a new subpath resolves the day it is published. The
+ * hand entries below stay as the fallback for a package whose `exports` is absent.
+ */
+function aiMatrxExportsMap(): Record<string, string> {
+    // Jest loads this file as an ES module (no `__dirname`) and runs from the repo root.
+    const scope = join(process.cwd(), "node_modules", "@ai-matrx");
+    if (!existsSync(scope)) return {};
+    const out: Record<string, string> = {};
+    const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    for (const name of readdirSync(scope)) {
+        let manifest: { exports?: unknown };
+        try {
+            manifest = JSON.parse(readFileSync(join(scope, name, "package.json"), "utf8"));
+        } catch {
+            continue;
+        }
+        if (!manifest.exports || typeof manifest.exports !== "object") continue;
+        for (const [subpath, target] of Object.entries(manifest.exports as Record<string, unknown>)) {
+            if (subpath === "." || subpath === "./package.json" || subpath.includes("*")) continue;
+            const pick = (t: unknown): string | null => {
+                if (typeof t === "string") return t;
+                if (!t || typeof t !== "object") return null;
+                const o = t as Record<string, unknown>;
+                return pick(o.import) ?? pick(o.default) ?? pick(o.require) ?? null;
+            };
+            const file = pick(target);
+            if (!file || !/\.(c|m)?js$/.test(file)) continue;
+            out[`^@ai-matrx/${escape(name)}/${escape(subpath.slice(2))}$`] = `<rootDir>/node_modules/@ai-matrx/${name}/${file.replace(/^\.\//, "")}`;
+        }
+    }
+    return out;
+}
 
 const config: Config = {
     preset: "ts-jest",
@@ -90,6 +133,7 @@ const config: Config = {
         // target in dist, while its leaf subpaths remain files.
         "^@ai-matrx/design-system/data-table$":
             "<rootDir>/node_modules/@ai-matrx/design-system/dist/data-table/index.js",
+        ...aiMatrxExportsMap(),
         "^@ai-matrx/([^/]+)/(.+)$":
             "<rootDir>/node_modules/@ai-matrx/$1/dist/$2.js",
         // BARE specifiers for the packages that ship `exports` but NO `main`
