@@ -10,8 +10,8 @@
 // decides (migrations/mandate_reference_latest_admin_read_2026_09_25.sql).
 //
 // Three consumers, one reader:
-//   * /administration/mandates/unconverted-preview — `fetchUnconvertedCalls`
-//   * /administration/mandates/health-preview     — `fetchReferenceFindings`
+//   * ADMIN_MANDATES_UNCONVERTED (features/mandates/admin-routes.ts) — `fetchUnconvertedCalls`
+//   * ADMIN_MANDATES_HEALTH                                          — `fetchReferenceFindings`
 //   * the admin mandate list's Declared-in / Called-from columns
 //                                                  — `fetchMandateSourceFacts`
 //

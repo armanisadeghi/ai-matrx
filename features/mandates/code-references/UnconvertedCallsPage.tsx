@@ -2,14 +2,13 @@
 
 // features/mandates/code-references/UnconvertedCallsPage.tsx
 //
-// /administration/mandates/unconverted-preview — "Unconverted AI calls": every
+// /administration/intelligence/mandates/unconverted (ADMIN_MANDATES_UNCONVERTED) — "Unconverted AI calls": every
 // place in our code that calls an AI provider directly instead of through a
 // mandate (the code scan's `bypass` references). One row per call site, with
 // the exact line one click away on GitHub. Replaces the conversion list on the
 // old /administration/mandates/references page (common-docs/systems/mandates/
 // OPTIONS.md §2), which stays untouched beside it until the swap.
 
-import { ADMIN_MANDATES_HEALTH } from "@/features/mandates/admin-routes";
 import Link from "next/link";
 import { Copy, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +21,7 @@ import type {
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { createMemoryListService } from "@/lib/entity-list/memoryService";
 import { toast } from "@/lib/toast";
+import { ADMIN_MANDATES_HEALTH, ADMIN_MANDATES_UNCONVERTED } from "@/features/mandates/admin-routes";
 import {
   UNCONVERTED_STATUS_LABEL,
   fetchUnconvertedCalls,
@@ -211,7 +211,7 @@ const CONFIG: EntityListConfig<UnconvertedCall> = {
     copy: {
       label: "Unconverted AI call",
       listLabel: "Unconverted AI calls",
-      location: "/administration/mandates/unconverted-preview",
+      location: ADMIN_MANDATES_UNCONVERTED,
       rowKind: "unconverted-ai-call",
       listKind: "unconverted-ai-call-list",
       humanRow: (row) =>

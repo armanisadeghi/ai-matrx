@@ -2,7 +2,7 @@
 
 // features/mandates/code-references/MandateHealthPage.tsx
 //
-// /administration/mandates/health-preview — "Mandate health": every open way a
+// /administration/intelligence/mandates/health (ADMIN_MANDATES_HEALTH) — "Mandate health": every open way a
 // mandate is broken, one row per finding: how bad, which mandate, what is
 // wrong in plain words, where in the code, and the fix. Merges the old
 // references page's open findings with code ↔ database drift (./health.ts).
@@ -24,6 +24,7 @@ import { createMemoryListService } from "@/lib/entity-list/memoryService";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { AppDispatch } from "@/lib/redux/store";
 import { toast } from "@/lib/toast";
+import { ADMIN_MANDATES_HEALTH } from "@/features/mandates/admin-routes";
 import {
   KIND_LABEL,
   SEVERITY_LABEL,
@@ -273,7 +274,7 @@ function buildConfig(dispatch: AppDispatch, onLoad: (load: HealthLoad) => void):
     copy: {
       label: "Mandate health finding",
       listLabel: "Mandate health",
-      location: "/administration/mandates/health-preview",
+      location: ADMIN_MANDATES_HEALTH,
       rowKind: "mandate-health-finding",
       listKind: "mandate-health-list",
       humanRow: (row) =>
@@ -309,7 +310,7 @@ export function MandateHealthPage() {
       }
       headerActions={
         <Link
-          href="/administration/mandates/unconverted-preview"
+          href={UNCONVERTED_PATH}
           className="whitespace-nowrap rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
         >
           Unconverted AI calls

@@ -20,7 +20,7 @@ import {
   fetchMandateCodeTruthReport,
   type MandateCodeTruth,
 } from "@/features/mandates/admin/service";
-import { adminMandateHref } from "@/features/mandates/browse/url-compat";
+import { adminMandateRecordHref as adminMandateHref } from "@/features/mandates/admin-routes";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import {
   FLAG_WORDS,
@@ -29,8 +29,8 @@ import {
   repoGithubNames,
 } from "./data";
 
-export const UNCONVERTED_PATH = "/administration/mandates/unconverted-preview";
-export const HEALTH_PATH = "/administration/mandates/health-preview";
+export { ADMIN_MANDATES_UNCONVERTED as UNCONVERTED_PATH, ADMIN_MANDATES_HEALTH as HEALTH_PATH } from "@/features/mandates/admin-routes";
+import { ADMIN_MANDATES_UNCONVERTED as UNCONVERTED_PATH } from "@/features/mandates/admin-routes";
 
 export type HealthSeverity = "high" | "medium" | "low";
 
