@@ -132,7 +132,7 @@ jest.mock("../hooks/useActionRunner", () => ({
 // stream-event handling — a stub sync hook would hide it entirely.
 
 import sourceLibraryReducer, { syncEvent, syncRequested } from "../redux/sourceLibrarySlice";
-import appContextReducer, { setOrganization } from "@/lib/redux/slices/appContextSlice";
+import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import { LibraryPage } from "../components/LibraryPage";
 import { MediaApiError } from "../api";
 

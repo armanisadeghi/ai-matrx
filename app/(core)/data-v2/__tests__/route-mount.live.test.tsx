@@ -105,6 +105,7 @@ if (!canRun) {
 
 let authedClient: SupabaseClient;
 let userId = "";
+let accessToken = "";
 /** What the routes' `useAppSelector` answers. Set per test. */
 let activeOrg: string | null = SWITCH_ON_ORG;
 
@@ -126,11 +127,28 @@ jest.mock("@/utils/supabase/client", () => ({
     return authedClient;
   },
 }));
+// Selectors the suite does not replace read a REAL app-context state, built by
+// the canonical builder (THE FIXTURE LAW) with this test's organization. The
+// hub reads the organization's name out of it since 2026-09-24; a shim that
+// called every selector on `undefined` crashed there before the store was asked.
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: (selector: unknown) => (selector as (s: unknown) => unknown)(undefined),
+  useAppSelector: (selector: unknown) => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { makeAppContextState } = require("@/lib/redux/slices/appContextSlice");
+    return (selector as (s: unknown) => unknown)({
+      appContext: makeAppContextState({ organization_id: activeOrg, orgBootstrapResolved: true }),
+    });
+  },
   useAppDispatch: () => () => undefined,
 }));
-jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => userId }));
+// The signed-in person as the routes read them: the id, the session token and
+// "auth is ready" (useUserOrganizations — both routes list the person's own
+// organizations since 2026-09-24 — refuses to fetch until all three hold).
+jest.mock("@/lib/redux/selectors/userSelectors", () => ({
+  selectUserId: () => userId,
+  selectAuthReady: () => Boolean(userId),
+  selectAccessToken: () => accessToken,
+}));
 jest.mock("@/features/scopes/redux/selectors/active-context", () => ({
   selectActiveOrganizationId: () => activeOrg,
 }));
@@ -206,6 +224,7 @@ describeLive("/data-v2 — the route files bind the store, live main database", 
       throw new Error(`Could not sign in as admin@admin.com: ${signedIn.error?.message}`);
     }
     userId = signedIn.data.user.id;
+    accessToken = signedIn.data.session?.access_token ?? "";
   }, 120_000);
 
   beforeEach(() => {
@@ -239,8 +258,44 @@ describeLive("/data-v2 — the route files bind the store, live main database", 
 
   it("draws the person's tables in four lanes, read through the store's own doors", async () => {
     activeOrg = SWITCH_ON_ORG;
+    const { createRecordsClient } = require("@ai-matrx/records/core");
+    const { personActor, recordsDataSource } = require("@ai-matrx/records-ui");
+    const client = createRecordsClient({
+      dataSource: recordsDataSource(authedClient),
+      actor: personActor(userId),
+      organizationId: SWITCH_ON_ORG,
+    });
+    const tables = await client.tableList();
+    if (!tables.ok) throw new Error(`tableList refused: ${tables.error.message}`);
+    // A table in one of the person's own lanes. records-ui files a kernel table
+    // (the Workspace home) under System and a table the app keeps for itself
+    // (`kept_by_the_app`, or a `records_ui_` slug) under the app's own lane —
+    // neither is in the lanes this page promises (records-ui `laneFor`).
+    const named = tables.data.find(
+      (t: { name?: string | null; slug?: string | null; is_kernel?: boolean; kept_by_the_app?: boolean }) =>
+        !t.is_kernel &&
+        t.kept_by_the_app !== true &&
+        !(t.slug ?? "").startsWith("records_ui_") &&
+        typeof t.name === "string" &&
+        t.name.trim().length > 0,
+    );
+    if (!named) {
+      throw new Error(
+        "the live store handed back no named table for this person, so this test " +
+          "cannot prove the page drew one — declare a table in admin's Workspace and re-run.",
+      );
+    }
     const { default: UnifiedDataPage }: typeof import("../page") = require("../page");
-    await mount(<UnifiedDataPage />, (text) => text.includes("Community"));
+    // Settle on the forcing fact itself — the live store's table name on the
+    // page — never on lane chrome, which draws while the tables still read
+    // "reading…" (2026-09-24).
+    await mount(
+      <UnifiedDataPage />,
+      (text) =>
+        text.includes(named.name) ||
+        text.includes("PGRST202") ||
+        text.includes("The store is not being served"),
+    );
 
     const text = container.textContent ?? "";
     // The lane headings and the create affordance are the page's CHROME. They
@@ -251,7 +306,8 @@ describeLive("/data-v2 — the route files bind the store, live main database", 
     // satisfies every line of it (proved 2026-09-22 by replacing
     // `recordsDataSource` with one that returns no rows — this test still
     // passed, while the table-route test below correctly failed).
-    for (const lane of ["Mine", "My organization", "System", "Community"]) {
+    // The four visibility lanes (mine · my organization · community · world).
+    for (const lane of ["Mine", "My organization", "Community", "World"]) {
       expect(text).toContain(lane);
     }
     expect(text).toContain("New table");
@@ -264,24 +320,6 @@ describeLive("/data-v2 — the route files bind the store, live main database", 
     // back, asked for independently through the store's own door, has to be on
     // the screen the page drew. Chrome cannot satisfy it — an empty or stubbed
     // data source leaves the lanes standing but the name absent.
-    const { createRecordsClient } = require("@ai-matrx/records/core");
-    const { personActor, recordsDataSource } = require("@ai-matrx/records-ui");
-    const client = createRecordsClient({
-      dataSource: recordsDataSource(authedClient),
-      actor: personActor(userId),
-      organizationId: SWITCH_ON_ORG,
-    });
-    const tables = await client.tableList();
-    if (!tables.ok) throw new Error(`tableList refused: ${tables.error.message}`);
-    const named = tables.data.find(
-      (t: { name?: string | null }) => typeof t.name === "string" && t.name.trim().length > 0,
-    );
-    if (!named) {
-      throw new Error(
-        "the live store handed back no named table for this person, so this test " +
-          "cannot prove the page drew one — declare a table in admin's Workspace and re-run.",
-      );
-    }
     expect(text).toContain(named.name);
   }, 300_000);
 
@@ -304,6 +342,8 @@ describeLive("/data-v2 — the route files bind the store, live main database", 
     expect(OTHER_ORG).toHaveLength(36);
   }, 300_000);
 
+  const LOADED = /\d+ shown \/ \d+ loaded/;
+
   it("the table route mounts one table's whole screen for a real table id", async () => {
     activeOrg = SWITCH_ON_ORG;
     // A table this person really has, chosen by asking the store — never a
@@ -323,13 +363,15 @@ describeLive("/data-v2 — the route files bind the store, live main database", 
     const { default: UnifiedDataTableRoute }: typeof import("../[tableId]/page") = require("../[tableId]/page");
     await mount(
       <UnifiedDataTableRoute params={Promise.resolve({ tableId: table.id })} />,
-      (text) => text.includes("Inbox") || text.includes("Waiting for this table's views"),
+      (text) => LOADED.test(text) || text.includes("Waiting for this table's views"),
     );
 
     const text = container.textContent ?? "";
-    // The table screen's own header row, which only renders once the Table
-    // record came back through the read door.
-    expect(text).toContain("Inbox");
+    // The table screen's own count line ("4 shown / 4 loaded"), which only
+    // renders once the Table record AND its rows came back through the read
+    // doors. (The table header's "Inbox" moved into records-ui's rail.)
+    expect(text).toMatch(LOADED);
+    expect(text).toContain("Grid");
     expect(text).not.toContain("PGRST202");
     expect(text).not.toContain("The store is not being served");
   }, 300_000);

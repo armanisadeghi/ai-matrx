@@ -82,10 +82,35 @@ describeLive("the approval card, against the live record store", () => {
     root = createRoot(container);
   });
 
-  afterEach(() => {
+  /** Tables this suite declared on admin@admin.com's account — archived after each test. */
+  const made: string[] = [];
+
+  afterEach(async () => {
     act(() => root.unmount());
     container.remove();
-  });
+    // Disposable test tables are archived, never left behind (and never deleted).
+    for (const tableId of made.splice(0)) {
+      const archived = await store.tableArchive({ table_id: tableId });
+      if (!archived.ok) {
+        // eslint-disable-next-line no-console
+        console.warn(`LOUD: suite table ${tableId} could not be archived: ${archived.error.message}`);
+      }
+    }
+  }, 60_000);
+
+  /**
+   * Until the card has stopped "Applying…" — a decision is a real round trip
+   * through the approval queue (custom.work_approval_decide) for Apply AND for
+   * Keep as is since 2026-09-24, so a fixed short wait read the card mid-flight.
+   * Bounded: a card still applying after 30 s is itself the failure.
+   */
+  async function settleDecision(): Promise<void> {
+    for (let i = 0; i < 75; i += 1) {
+      if (!(container.textContent ?? "").includes("Applying…")) return;
+      await settle(1);
+    }
+    throw new Error("The card was still 'Applying…' 30 s after the decision.");
+  }
 
   async function settle(times = 6): Promise<void> {
     for (let i = 0; i < times; i += 1) {
@@ -116,6 +141,7 @@ describeLive("the approval card, against the live record store", () => {
   ): Promise<{ tableId: string; key: string }> {
     const captured = capturedWait(which);
     const { wait, tableId } = await onAFreshTable(store, captured);
+    made.push(tableId);
     const key = wait.change.change === "field" ? wait.change.key : "";
     await act(async () => {
       root.render(
@@ -142,7 +168,7 @@ describeLive("the approval card, against the live record store", () => {
     await act(async () => {
       button("Apply").click();
     });
-    await settle(10);
+    await settleDecision();
 
     // It SAYS what now exists…
     expect(container.textContent ?? "").toContain("is now a column on");
@@ -158,7 +184,7 @@ describeLive("the approval card, against the live record store", () => {
     await act(async () => {
       button("Keep as is").click();
     });
-    await settle(2);
+    await settleDecision();
 
     const shown = container.textContent ?? "";
     // A decline that only said "declined" would teach nobody anything: it names
