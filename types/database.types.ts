@@ -25459,9 +25459,11 @@ export type Database = {
           image_cld_file_id: string | null
           image_dpi: number | null
           is_continuation: boolean
+          locator: Json
           metadata: Json
           page_index: number
           page_number: number
+          portion_kind: string
           processed_document_id: string
           raw_char_count: number
           raw_text: string
@@ -25469,6 +25471,7 @@ export type Database = {
           section_kind: string | null
           section_subtype: string | null
           section_title: string | null
+          speaker: string | null
           used_ocr: boolean
           verification_flags: string[] | null
           verified_at: string | null
@@ -25488,9 +25491,11 @@ export type Database = {
           image_cld_file_id?: string | null
           image_dpi?: number | null
           is_continuation?: boolean
+          locator?: Json
           metadata?: Json
           page_index: number
           page_number: number
+          portion_kind?: string
           processed_document_id: string
           raw_char_count?: number
           raw_text?: string
@@ -25498,6 +25503,7 @@ export type Database = {
           section_kind?: string | null
           section_subtype?: string | null
           section_title?: string | null
+          speaker?: string | null
           used_ocr?: boolean
           verification_flags?: string[] | null
           verified_at?: string | null
@@ -25517,9 +25523,11 @@ export type Database = {
           image_cld_file_id?: string | null
           image_dpi?: number | null
           is_continuation?: boolean
+          locator?: Json
           metadata?: Json
           page_index?: number
           page_number?: number
+          portion_kind?: string
           processed_document_id?: string
           raw_char_count?: number
           raw_text?: string
@@ -25527,6 +25535,7 @@ export type Database = {
           section_kind?: string | null
           section_subtype?: string | null
           section_title?: string | null
+          speaker?: string | null
           used_ocr?: boolean
           verification_flags?: string[] | null
           verified_at?: string | null
@@ -25548,12 +25557,15 @@ export type Database = {
           archived_at: string | null
           archived_reason: string | null
           canonical_clean_id: string | null
+          canonical_identity: string | null
+          capture_method: string | null
           clean_content: string | null
           clean_content_completed_at: string | null
           clean_content_cost_usd: number | null
           cleaner_name: string | null
           cleaner_version: string | null
           content: string | null
+          content_hash: string | null
           created_at: string
           created_by: string | null
           custom_fields: Json
@@ -25564,10 +25576,15 @@ export type Database = {
           extractor_version: string
           file_content_hash: string | null
           id: string
+          intelligence_policy: string | null
+          kept_at: string | null
+          kept_by: string | null
           metadata: Json
           mime_type: string | null
           name: string
           organization_id: string | null
+          origin_client: string | null
+          original_file_id: string | null
           owner_id: string
           params_hash: string | null
           parent_processed_id: string | null
@@ -25581,17 +25598,21 @@ export type Database = {
           total_pages: number | null
           updated_at: string
           updated_by: string | null
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           archived_at?: string | null
           archived_reason?: string | null
           canonical_clean_id?: string | null
+          canonical_identity?: string | null
+          capture_method?: string | null
           clean_content?: string | null
           clean_content_completed_at?: string | null
           clean_content_cost_usd?: number | null
           cleaner_name?: string | null
           cleaner_version?: string | null
           content?: string | null
+          content_hash?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
@@ -25602,10 +25623,15 @@ export type Database = {
           extractor_version?: string
           file_content_hash?: string | null
           id?: string
+          intelligence_policy?: string | null
+          kept_at?: string | null
+          kept_by?: string | null
           metadata?: Json
           mime_type?: string | null
           name: string
           organization_id?: string | null
+          origin_client?: string | null
+          original_file_id?: string | null
           owner_id: string
           params_hash?: string | null
           parent_processed_id?: string | null
@@ -25619,17 +25645,21 @@ export type Database = {
           total_pages?: number | null
           updated_at?: string
           updated_by?: string | null
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           archived_at?: string | null
           archived_reason?: string | null
           canonical_clean_id?: string | null
+          canonical_identity?: string | null
+          capture_method?: string | null
           clean_content?: string | null
           clean_content_completed_at?: string | null
           clean_content_cost_usd?: number | null
           cleaner_name?: string | null
           cleaner_version?: string | null
           content?: string | null
+          content_hash?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
@@ -25640,10 +25670,15 @@ export type Database = {
           extractor_version?: string
           file_content_hash?: string | null
           id?: string
+          intelligence_policy?: string | null
+          kept_at?: string | null
+          kept_by?: string | null
           metadata?: Json
           mime_type?: string | null
           name?: string
           organization_id?: string | null
+          origin_client?: string | null
+          original_file_id?: string | null
           owner_id?: string
           params_hash?: string | null
           parent_processed_id?: string | null
@@ -25657,6 +25692,7 @@ export type Database = {
           total_pages?: number | null
           updated_at?: string
           updated_by?: string | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -56499,6 +56535,8 @@ export type Database = {
       }
       entity_read_kernel_expected: { Args: never; Returns: string }
       entity_read_kernel_fingerprint: { Args: never; Returns: string }
+      entity_read_kernel_members_expected: { Args: never; Returns: Json }
+      entity_read_kernel_members_live: { Args: never; Returns: Json }
       entity_read_lane_correct: {
         Args: never
         Returns: {
@@ -60210,6 +60248,7 @@ export type Database = {
           captured_by_rung: string | null
           captured_chars: number | null
           captured_item_id: string | null
+          captured_processed_document_id: string | null
           claim_expires_at: string | null
           claimed_at: string | null
           claimed_by: string | null
@@ -60244,6 +60283,7 @@ export type Database = {
           captured_by_rung?: string | null
           captured_chars?: number | null
           captured_item_id?: string | null
+          captured_processed_document_id?: string | null
           claim_expires_at?: string | null
           claimed_at?: string | null
           claimed_by?: string | null
@@ -60278,6 +60318,7 @@ export type Database = {
           captured_by_rung?: string | null
           captured_chars?: number | null
           captured_item_id?: string | null
+          captured_processed_document_id?: string | null
           claim_expires_at?: string | null
           claimed_at?: string | null
           claimed_by?: string | null
@@ -65892,6 +65933,8 @@ export type Database = {
           description: string
           json_schema: Json
           kind: string
+          payload_follows_endpoints: boolean
+          payload_follows_endpoints_reason: string | null
           source_type: string | null
           target_type: string | null
           updated_at: string
@@ -65902,6 +65945,8 @@ export type Database = {
           description: string
           json_schema: Json
           kind: string
+          payload_follows_endpoints?: boolean
+          payload_follows_endpoints_reason?: string | null
           source_type?: string | null
           target_type?: string | null
           updated_at?: string
@@ -65912,6 +65957,8 @@ export type Database = {
           description?: string
           json_schema?: Json
           kind?: string
+          payload_follows_endpoints?: boolean
+          payload_follows_endpoints_reason?: string | null
           source_type?: string | null
           target_type?: string | null
           updated_at?: string
@@ -71377,6 +71424,16 @@ export type Database = {
       _provision_shape_guard_impl: {
         Args: { p_cmds: Json }
         Returns: undefined
+      }
+      _provisioner_refuses_a_stale_kernel: {
+        Args: {
+          p_applied_via: string
+          p_lane: string
+          p_org_id: string
+          p_pre: Json
+          p_spec: Json
+        }
+        Returns: Json
       }
       _provisioner_selftest_once: {
         Args: never
@@ -87577,8 +87634,10 @@ export type Database = {
           modified_at: string | null
           organization_id: string
           original_content: string | null
+          processed_document_id: string | null
           published_at: string | null
           quality_override: string | null
+          scrape_parsed_page_id: string | null
           scraped_at: string | null
           served_url: string | null
           source_id: string
@@ -87612,8 +87671,10 @@ export type Database = {
           modified_at?: string | null
           organization_id: string
           original_content?: string | null
+          processed_document_id?: string | null
           published_at?: string | null
           quality_override?: string | null
+          scrape_parsed_page_id?: string | null
           scraped_at?: string | null
           served_url?: string | null
           source_id: string
@@ -87647,8 +87708,10 @@ export type Database = {
           modified_at?: string | null
           organization_id?: string
           original_content?: string | null
+          processed_document_id?: string | null
           published_at?: string | null
           quality_override?: string | null
+          scrape_parsed_page_id?: string | null
           scraped_at?: string | null
           served_url?: string | null
           source_id?: string
@@ -88040,11 +88103,13 @@ export type Database = {
           post_read_score: number | null
           pre_read_breakdown: Json | null
           pre_read_score: number | null
+          processed_document_id: string | null
           rank: number | null
           raw_search_result: Json | null
           read_priority_reason: string | null
           recommended_use: string | null
           redundancy_group: string | null
+          scrape_parsed_page_id: string | null
           scrape_status: string
           scrape_worthiness: number | null
           server_attempts: number
@@ -88094,11 +88159,13 @@ export type Database = {
           post_read_score?: number | null
           pre_read_breakdown?: Json | null
           pre_read_score?: number | null
+          processed_document_id?: string | null
           rank?: number | null
           raw_search_result?: Json | null
           read_priority_reason?: string | null
           recommended_use?: string | null
           redundancy_group?: string | null
+          scrape_parsed_page_id?: string | null
           scrape_status?: string
           scrape_worthiness?: number | null
           server_attempts?: number
@@ -88148,11 +88215,13 @@ export type Database = {
           post_read_score?: number | null
           pre_read_breakdown?: Json | null
           pre_read_score?: number | null
+          processed_document_id?: string | null
           rank?: number | null
           raw_search_result?: Json | null
           read_priority_reason?: string | null
           recommended_use?: string | null
           redundancy_group?: string | null
+          scrape_parsed_page_id?: string | null
           scrape_status?: string
           scrape_worthiness?: number | null
           server_attempts?: number
@@ -90168,73 +90237,109 @@ export type Database = {
       }
       scrape_parsed_page: {
         Row: {
+          canonical_url: string | null
+          capture_method: string | null
+          captured_by_rung: string | null
           char_count: number | null
           content: Json | null
+          content_hash: string | null
           content_type: string | null
           created_at: string
           created_by: string | null
           domain: string | null
           expires_at: string | null
+          final_url: string | null
+          html_file_id: string | null
           id: string
           is_public: boolean | null
           local_path: string | null
           metadata: Json
           organization_id: string
+          origin_client: string | null
+          owner_id: string | null
           page_name: string
+          processed_document_id: string | null
           remote_path: string | null
+          rung_trail: Json
           scraped_at: string | null
+          title: string | null
           updated_at: string
           updated_by: string | null
           url: string | null
           user_id: string | null
           validity: string
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          canonical_url?: string | null
+          capture_method?: string | null
+          captured_by_rung?: string | null
           char_count?: number | null
           content?: Json | null
+          content_hash?: string | null
           content_type?: string | null
           created_at?: string
           created_by?: string | null
           domain?: string | null
           expires_at?: string | null
+          final_url?: string | null
+          html_file_id?: string | null
           id?: string
           is_public?: boolean | null
           local_path?: string | null
           metadata?: Json
           organization_id: string
+          origin_client?: string | null
+          owner_id?: string | null
           page_name: string
+          processed_document_id?: string | null
           remote_path?: string | null
+          rung_trail?: Json
           scraped_at?: string | null
+          title?: string | null
           updated_at?: string
           updated_by?: string | null
           url?: string | null
           user_id?: string | null
           validity: string
           version?: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          canonical_url?: string | null
+          capture_method?: string | null
+          captured_by_rung?: string | null
           char_count?: number | null
           content?: Json | null
+          content_hash?: string | null
           content_type?: string | null
           created_at?: string
           created_by?: string | null
           domain?: string | null
           expires_at?: string | null
+          final_url?: string | null
+          html_file_id?: string | null
           id?: string
           is_public?: boolean | null
           local_path?: string | null
           metadata?: Json
           organization_id?: string
+          origin_client?: string | null
+          owner_id?: string | null
           page_name?: string
+          processed_document_id?: string | null
           remote_path?: string | null
+          rung_trail?: Json
           scraped_at?: string | null
+          title?: string | null
           updated_at?: string
           updated_by?: string | null
           url?: string | null
           user_id?: string | null
           validity?: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -103514,6 +103619,7 @@ export type Database = {
           is_draft: boolean | null
           metadata: Json
           organization_id: string
+          processed_document_id: string | null
           project_id: string | null
           segments: Json
           source_type: string | null
@@ -103539,6 +103645,7 @@ export type Database = {
           is_draft?: boolean | null
           metadata?: Json
           organization_id: string
+          processed_document_id?: string | null
           project_id?: string | null
           segments?: Json
           source_type?: string | null
@@ -103564,6 +103671,7 @@ export type Database = {
           is_draft?: boolean | null
           metadata?: Json
           organization_id?: string
+          processed_document_id?: string | null
           project_id?: string | null
           segments?: Json
           source_type?: string | null
@@ -108287,6 +108395,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           path: string | null
+          processed_document_id: string | null
           provenance: string
           seo_metrics_desired: Json | null
           site_id: string
@@ -108319,6 +108428,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           path?: string | null
+          processed_document_id?: string | null
           provenance: string
           seo_metrics_desired?: Json | null
           site_id: string
@@ -108351,6 +108461,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           path?: string | null
+          processed_document_id?: string | null
           provenance?: string
           seo_metrics_desired?: Json | null
           site_id?: string
@@ -109381,6 +109492,7 @@ export type Database = {
           organization_id: string
           page_id: string
           perf: Json
+          processed_document_id: string | null
           seo_metrics: Json | null
           session_id: string
           site_id: string
@@ -109411,6 +109523,7 @@ export type Database = {
           organization_id: string
           page_id: string
           perf?: Json
+          processed_document_id?: string | null
           seo_metrics?: Json | null
           session_id: string
           site_id: string
@@ -109441,6 +109554,7 @@ export type Database = {
           organization_id?: string
           page_id?: string
           perf?: Json
+          processed_document_id?: string | null
           seo_metrics?: Json | null
           session_id?: string
           site_id?: string
