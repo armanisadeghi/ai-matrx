@@ -804,7 +804,7 @@ function BindingDraft({
           );
           if (missing.length > 0) {
             problems.push(
-              `Its structured output is missing ${missing.map((m) => `\`${m}\``).join(", ")} — whatever reads this job's result requires ${missing.length === 1 ? "it" : "them"}.`,
+              `Its structured output is missing ${missing.join(", ")} — whatever reads this job's result requires ${missing.length === 1 ? "it" : "them"}.`,
             );
           }
           // The same declared-kind verdict the server persists (aidream
@@ -829,7 +829,7 @@ function BindingDraft({
               ...check.missingVariables,
               ...check.missingPolicies,
             ]
-              .map((r) => `\`${r.name}\``)
+              .map((r) => r.name)
               .join(", ");
             problems.push(
               `It doesn't declare ${missing} — this job's caller passes ${missing.includes(",") ? "them" : "it"} and the agent could never receive ${missing.includes(",") ? "them" : "it"}.`,
@@ -1062,9 +1062,11 @@ function BindingDraft({
    * refuses — now in its own words, because `bindGateMessage` stopped throwing
    * a 403's authored detail away in the same wave.
    */
-  const selectedOrgRole = organizations.find(
-    (o) => o.id === organizationId,
-  )?.role;
+  const selectedOrg = organizations.find((o) => o.id === organizationId);
+  const selectedOrgRole = selectedOrg?.role;
+  // Copy-ready pieces, so no rendered sentence nests a lookup or a template.
+  const selectedOrgName = selectedOrg?.name ?? "this organization";
+  const selectedOrgSeat = selectedOrgRole ? "a " + selectedOrgRole : "not a member";
   const canBindThisOrg =
     selectedOrgRole === "owner" || selectedOrgRole === "admin";
 
@@ -1159,7 +1161,7 @@ function BindingDraft({
             : !rungReady
               ? "Pick the organization this answer is for."
               : rung === "org" && !canBindThisOrg
-                ? `Deciding for everyone in ${organizations.find((o) => o.id === organizationId)?.name ?? "this organization"} takes an owner or admin of it, and you are ${selectedOrgRole ? `a ${selectedOrgRole}` : "not a member"} there. Ask an owner to set it, or pick an organization you administer — your own answer above always works.`
+                ? `Deciding for everyone in ${selectedOrgName} takes an owner or admin of it, and you are ${selectedOrgSeat} there. Ask an owner to set it, or pick an organization you administer — your own answer above always works.`
                 : // A contract mismatch is RED, never a refusal (Arman,
                   // 2026-09-25) — see `ContractMismatchNotice` below.
                   mapRefusal);
@@ -1648,7 +1650,7 @@ function BindingDraft({
     data: normalizeTransferJson({
       treatment_surface: jobSurfaceName,
       proposed_write_policies: proposedWritePolicies,
-      status: jobSurfaceName ? "Loaded from the mandate treatment." : "No surface write policies are configured.",
+      status: jobSurfaceName ? "Loaded from the mandate treatment." : "No write policies are configured.",
     }),
   }, "binding");
 
@@ -1769,7 +1771,7 @@ function BindingDraft({
    */
   const createAgentRefusal: string | null =
     rung === "org" && !canBindThisOrg
-      ? `Deciding for everyone in ${organizations.find((o) => o.id === organizationId)?.name ?? "this organization"} takes an owner or admin of it, and you are ${selectedOrgRole ? `a ${selectedOrgRole}` : "not a member"} there — an agent created here could not be bound. Ask an owner, or set your own answer instead.`
+      ? `Deciding for everyone in ${selectedOrgName} takes an owner or admin of it, and you are ${selectedOrgSeat} there — an agent created here could not be bound. Ask an owner, or set your own answer instead.`
       : writingDefinitionDefault && !defaultHolderOffer.offered
         ? defaultHolderOffer.refusal
         : null;

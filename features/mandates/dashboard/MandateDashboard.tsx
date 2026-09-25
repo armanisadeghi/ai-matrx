@@ -270,8 +270,8 @@ export function MandateDashboard() {
             href={mandateListHref({ [COL.contract]: "Mismatch" })}
             title={
               mismatchKeys && mismatchKeys.length > 0
-                ? `A Holder was saved that does not match its job's contract (red in the list's Health column): ${mismatchKeys.join(", ")}`
-                : "Every saved Holder matches its job's contract."
+                ? `A Mandate Holder was saved that does not match its job's contract (red in the list's Health column): ${mismatchKeys.join(", ")}`
+                : "Every saved Mandate Holder matches its job's contract."
             }
           />
         </KpiGrid>

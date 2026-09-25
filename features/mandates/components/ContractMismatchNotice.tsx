@@ -49,7 +49,7 @@ export function ContractMismatchNotice({
   if ((!check || check.state !== "unmet") && lines.length === 0) return null;
   const headline = check?.summary
     ? check.summary
-    : "This Holder does not match the job's contract. You can still save it.";
+    : "This Mandate Holder does not match the job's contract. You can still save it.";
   return (
     <div
       role="alert"

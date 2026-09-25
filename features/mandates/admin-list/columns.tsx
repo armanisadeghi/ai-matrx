@@ -279,10 +279,10 @@ function ContractCell({ row }: { row: MandateAdminRow }) {
       title={
         row.contractCheck === "Mismatch"
           ? row.contractMismatches.map((m) => `${m.where}: ${m.check.summary}`).join("\n\n") ||
-            "A Holder was saved that does not match this job's contract."
+            "A Mandate Holder was saved that does not match this job's contract."
           : row.contractCheck === "Matches"
             ? "Every recorded contract check on this job passed."
-            : "No contract check has been recorded for this job's Holders yet."
+            : "No contract check has been recorded for this job's Mandate Holders yet."
       }
     >
       {row.contractCheck}
@@ -453,7 +453,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
   ),
   facetColumn("serves", "Serves", 150, (row) =>
     row.serves.length === 0 ? (
-      <span title="Shortcut, surface and app links could not be read." className="text-xs text-muted-foreground">
+      <span title="The places this job serves could not be read." className="text-xs text-muted-foreground">
         Unknown
       </span>
     ) : (

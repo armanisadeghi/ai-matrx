@@ -72,9 +72,17 @@ function scream(check: FastPathCheck, verdict: FastPathVerdict): void {
   if (verdict.status === "match") return;
   const message =
     verdict.status === "mismatch"
-      ? `Hard-coded fast path at ${check.surface} ran agent ${check.hardcodedAgentId}, but the "${check.mandateKey}" Mandate resolves to ${verdict.resolvedAgentId}. The fast path is out of step with its Mandate — update the seed mirror or route this surface through the Mandate.`
-      : `Hard-coded fast path at ${check.surface} ran agent ${check.hardcodedAgentId} UNVERIFIED: the "${check.mandateKey}" Mandate could not be resolved to check it (${verdict.error}).`;
-  console.error(`[mandate-fast-path] ${message}`);
+      ? "A hard-coded fast path ran a different agent than its Mandate resolves to. Update the seed mirror or route this call through the Mandate."
+      : `A hard-coded fast path ran unverified: its Mandate could not be resolved to check it (${verdict.error}).`;
+  // The ids travel as structured fields (call site, relation, raw) — never
+  // inside the sentence.
+  console.error(`[mandate-fast-path] ${message}`, {
+    callSite: check.surface,
+    mandateKey: check.mandateKey,
+    hardcodedAgentId: check.hardcodedAgentId,
+    resolvedAgentId:
+      verdict.status === "mismatch" ? verdict.resolvedAgentId : null,
+  });
   try {
     captureError({
       source: "mandate-fast-path",

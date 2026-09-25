@@ -55,10 +55,17 @@ describe("verifyFastPathAgainstMandate", () => {
     expect(captured).toHaveLength(1);
     expect(captured[0].tier).toBe("red");
     expect(captured[0].code).toBe("fast_path_mismatch");
-    expect(captured[0].message).toContain(SEED);
-    expect(captured[0].message).toContain(REBOUND);
+    // The ids reach the admin as structured evidence, never inside the
+    // sentence (no-uuid-in-sentences).
+    expect(captured[0].raw).toMatchObject({
+      hardcodedAgentId: SEED,
+      verdict: { resolvedAgentId: REBOUND },
+    });
+    expect(captured[0].message).not.toContain(SEED);
+    expect(captured[0].message).not.toContain(REBOUND);
     expect(consoleError).toHaveBeenCalledWith(
       expect.stringContaining("[mandate-fast-path]"),
+      expect.objectContaining({ hardcodedAgentId: SEED, resolvedAgentId: REBOUND }),
     );
   });
 
