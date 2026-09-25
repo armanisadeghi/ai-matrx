@@ -35,6 +35,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { waitForConversationPersisted } from "../conversations/conversation-persistence";
 
 interface ThunkApi {
@@ -86,11 +87,15 @@ export const persistVariableAuthorship = createAsyncThunk<
       return;
     }
 
-    const { error } = await supabase
-      .schema("chat")
-      .from("conversation")
-      .update({ host_value_names: names })
-      .eq("id", conversationId);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("chat")
+        .from("conversation")
+        .update({ host_value_names: names })
+        .eq("id", conversationId)
+        .select("id"),
+      { action: "save", noun: "conversation" },
+    );
 
     if (error) {
       console.error(

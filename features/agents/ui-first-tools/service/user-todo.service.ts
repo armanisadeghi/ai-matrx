@@ -3,6 +3,7 @@
  */
 
 import { db } from "./supabase-typed";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { CxUserTodoRow } from "../tools/types";
 
@@ -66,8 +67,10 @@ export async function updateUserTodo(
 }
 
 export async function removeUserTodo(id: string): Promise<void> {
-  const { error } = await db.schema("chat").from("user_todo").delete().eq("id", id);
-  if (error) throw error;
+  await writeOne(
+    db.schema("chat").from("user_todo").delete().eq("id", id).select("id"),
+    { action: "delete", noun: "to-do" },
+  );
 }
 
 export async function clearDoneUserTodos(

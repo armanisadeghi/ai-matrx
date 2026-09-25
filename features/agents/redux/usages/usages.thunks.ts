@@ -8,6 +8,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { pgErrorToError } from "@ai-matrx/data";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
@@ -211,6 +212,7 @@ export const markDriftAlertViewed = createAsyncThunk<void, string, ThunkApi>(
   "agentUsages/markAlertViewed",
   async (alertId, { dispatch }) => {
     dispatch(alertViewed(alertId));
+    // write-lands-exempt: idempotent first-view stamp guarded by .is("viewed_at", null); zero rows means already viewed
     const { error } = await supabase
       .schema("agent")
       .from("drift_alert")
@@ -229,11 +231,15 @@ export const dismissDriftAlert = createAsyncThunk<
   ThunkApi
 >("agentUsages/dismissAlert", async ({ alertId, previousStatus }, { dispatch }) => {
   dispatch(alertDismissed(alertId));
-  const { error } = await supabase
-    .schema("agent")
-    .from("drift_alert")
-    .update({ status: "dismissed", dismissed_at: new Date().toISOString() })
-    .eq("id", alertId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("agent")
+      .from("drift_alert")
+      .update({ status: "dismissed", dismissed_at: new Date().toISOString() })
+      .eq("id", alertId)
+      .select("id"),
+    { action: "change", noun: "alert" },
+  );
   if (error) {
     dispatch(alertDismissRolledBack({ id: alertId, previousStatus }));
     throw pgErrorToError(error);

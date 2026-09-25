@@ -21,6 +21,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
 import { isJsonObject, type JsonObject } from "@/types/json";
@@ -253,22 +254,28 @@ export async function setAgentSampleStatus(
   status: "candidate" | "archived",
 ): Promise<void> {
   const supabase = createClient();
-  const { error } = await supabase
-    .schema("agent")
-    .from("exemplar")
-    .update({ status })
-    .eq("id", sampleId);
-  if (error) throw error;
+  await writeOne(
+    supabase
+      .schema("agent")
+      .from("exemplar")
+      .update({ status })
+      .eq("id", sampleId)
+      .select("id"),
+    { action: status === "archived" ? "archive" : "restore", noun: "sample" },
+  );
 }
 
 export async function deleteAgentSample(sampleId: string): Promise<void> {
   const supabase = createClient();
-  const { error } = await supabase
-    .schema("agent")
-    .from("exemplar")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", sampleId);
-  if (error) throw error;
+  await writeOne(
+    supabase
+      .schema("agent")
+      .from("exemplar")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", sampleId)
+      .select("id"),
+    { action: "delete", noun: "sample" },
+  );
 }
 
 export async function renameAgentSample(
@@ -276,12 +283,15 @@ export async function renameAgentSample(
   label: string,
 ): Promise<void> {
   const supabase = createClient();
-  const { error } = await supabase
-    .schema("agent")
-    .from("exemplar")
-    .update({ label })
-    .eq("id", sampleId);
-  if (error) throw error;
+  await writeOne(
+    supabase
+      .schema("agent")
+      .from("exemplar")
+      .update({ label })
+      .eq("id", sampleId)
+      .select("id"),
+    { action: "rename", noun: "sample" },
+  );
 }
 
 // ── Borrow from real runs ────────────────────────────────────────────────────

@@ -3,6 +3,7 @@
  */
 
 import { db } from "./supabase-typed";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type {
   CxAgentTaskRow,
@@ -92,8 +93,10 @@ export async function updateTask(
 }
 
 export async function removeTask(id: string): Promise<void> {
-  const { error } = await db.schema("chat").from("agent_task").delete().eq("id", id);
-  if (error) throw error;
+  await writeOne(
+    db.schema("chat").from("agent_task").delete().eq("id", id).select("id"),
+    { action: "delete", noun: "task" },
+  );
 }
 
 export async function reorderTasks(
@@ -103,12 +106,15 @@ export async function reorderTasks(
   // Position updates one-by-one; small list so the row-count is bounded.
   // Run sequentially to keep individual errors actionable.
   for (let i = 0; i < orderedIds.length; i++) {
-    const { error } = await db
-      .schema("chat").from("agent_task")
-      .update({ position: i })
-      .eq("id", orderedIds[i])
-      .eq("conversation_id", conversationId);
-    if (error) throw error;
+    await writeOne(
+      db
+        .schema("chat").from("agent_task")
+        .update({ position: i })
+        .eq("id", orderedIds[i])
+        .eq("conversation_id", conversationId)
+        .select("id"),
+      { action: "move", noun: "task" },
+    );
   }
   return listTasks(conversationId);
 }
