@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/utils/supabase/client';
-import { tryWriteOne } from '@/utils/supabase/writeOne';
+import { tryWriteOne, WriteDidNotLandError } from '@/utils/supabase/writeOne';
 import { operationFailed } from '@/utils/errors';
 
 // ---------------------------------------------------------------------------
@@ -313,7 +313,7 @@ export function useAppInstances() {
             { action: 'save', noun: 'tunnel address' },
         );
 
-        if (err) throw operationFailed('save the tunnel address', err);
+        if (err) throw err instanceof WriteDidNotLandError ? err : operationFailed('save the tunnel address', err);
         await fetch_();
     }, [fetch_]);
 

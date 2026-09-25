@@ -18,7 +18,7 @@
 // hook keeps the draft and marks the item `failed`. Nothing here swallows.
 
 import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { associationsDataSource } from "@/features/scopes/host/associationsStore";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
@@ -450,7 +450,7 @@ export async function deleteHighlight(documentId: string): Promise<void> {
       .select("id"),
     { action: "remove", noun: "highlight" },
   );
-  if (error) throw sentence("removing your highlight", error);
+  if (error) throw error instanceof WriteDidNotLandError ? error : sentence("removing your highlight", error);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

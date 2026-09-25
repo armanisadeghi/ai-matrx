@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/lib/toast";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -167,6 +168,7 @@ export default function OfferingsContainer() {
       if (selected?.id === offering.id) closePanel();
     } catch (err) {
       console.error("Delete failed", extractErrorMessage(err));
+      toast.error(extractErrorMessage(err));
     }
   };
 

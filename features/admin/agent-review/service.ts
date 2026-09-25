@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { readAllRows } from "@ai-matrx/data/db";
 import { operationFailed } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
@@ -57,7 +57,9 @@ export async function updateReviewQueueRow(
     { action: "save", noun: "review item" },
   );
 
-  if (error) throw operationFailed("save this review update", error);
+  if (error) {
+    throw error instanceof WriteDidNotLandError ? error : operationFailed("save this review update", error);
+  }
 }
 
 export async function loadReviewQueueItem(id: string): Promise<ReviewQueueRow> {

@@ -19,7 +19,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne, writeOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, writeOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { operationFailed } from "@/utils/errors";
 import type { Json } from "@/types/database.types";
@@ -244,7 +244,9 @@ export async function saveDraftCode(
     );
   }
 
-  throw operationFailed("save the generated code", lastError);
+  throw lastError instanceof WriteDidNotLandError
+    ? lastError
+    : operationFailed("save the generated code", lastError);
 }
 
 /**
@@ -268,7 +270,9 @@ export async function finalizeDraft(handle: DraftHandle): Promise<void> {
     { action: "publish", noun: "app" },
   );
 
-  if (error) throw operationFailed("publish this app", error);
+  if (error) {
+    throw error instanceof WriteDidNotLandError ? error : operationFailed("publish this app", error);
+  }
 }
 
 /**

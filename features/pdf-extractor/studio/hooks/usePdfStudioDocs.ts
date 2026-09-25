@@ -14,7 +14,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/utils/supabase/client";
 import { docprocDb } from "@/utils/supabase/docprocDb";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { filesDb } from "@/features/files/filesDb";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -122,7 +122,7 @@ export function usePdfStudioDocs(opts?: {
       );
       if (err) {
         setDocs(prev);
-        throw operationFailed("archive that document", err);
+        throw err instanceof WriteDidNotLandError ? err : operationFailed("archive that document", err);
       }
     },
     [userId],

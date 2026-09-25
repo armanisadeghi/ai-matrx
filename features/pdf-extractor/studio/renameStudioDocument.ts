@@ -8,7 +8,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { renameFile } from "@/features/files/redux/thunks";
 import { supabase } from "@/utils/supabase/client";
 import { docprocDb } from "@/utils/supabase/docprocDb";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { operationFailed } from "@/utils/errors";
 
 export interface RenameStudioDocumentInput {
@@ -33,7 +33,7 @@ export async function renameStudioDocument(
       .select("id"),
     { action: "rename", noun: "document" },
   );
-  if (error) throw operationFailed("rename this document", error);
+  if (error) throw error instanceof WriteDidNotLandError ? error : operationFailed("rename this document", error);
 
   if (input.sourceKind === "cld_file" && input.sourceId) {
     await input

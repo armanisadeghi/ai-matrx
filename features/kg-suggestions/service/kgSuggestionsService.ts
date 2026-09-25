@@ -23,7 +23,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { operationFailed } from "@/utils/errors";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -264,7 +264,9 @@ async function markDecided(
       .select("id"),
     { action: "save", noun: "suggestion" },
   );
-  if (error) throw operationFailed("save your decision on this suggestion", error);
+  if (error) {
+    throw error instanceof WriteDidNotLandError ? error : operationFailed("save your decision on this suggestion", error);
+  }
 }
 
 export async function rejectKgSuggestion(
@@ -316,7 +318,9 @@ export async function restoreKgSuggestion(row: KgSuggestionRow): Promise<void> {
       .select("id"),
     { action: "restore", noun: "suggestion" },
   );
-  if (error) throw operationFailed("restore this suggestion", error);
+  if (error) {
+    throw error instanceof WriteDidNotLandError ? error : operationFailed("restore this suggestion", error);
+  }
 }
 
 /** Star / unstar a row for follow-up (manager). */
@@ -335,7 +339,9 @@ export async function setKgSuggestionStarred(
       .select("id"),
     { action: "update", noun: "suggestion" },
   );
-  if (error) throw operationFailed("update this suggestion", error);
+  if (error) {
+    throw error instanceof WriteDidNotLandError ? error : operationFailed("update this suggestion", error);
+  }
 }
 
 /**

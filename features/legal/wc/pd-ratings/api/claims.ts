@@ -15,7 +15,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
+import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
 import { operationFailed } from "@/utils/errors";
 
 export interface SavedClaimRow {
@@ -81,7 +81,9 @@ export function useDeleteClaim() {
           .select("id"),
         { action: "delete", noun: "saved case" },
       );
-      if (error) throw operationFailed("delete this saved case", error);
+      if (error) {
+        throw error instanceof WriteDidNotLandError ? error : operationFailed("delete this saved case", error);
+      }
     },
     onSuccess: (_, { userId }) => {
       qc.invalidateQueries({ queryKey: claimsKeys.list(userId) });
