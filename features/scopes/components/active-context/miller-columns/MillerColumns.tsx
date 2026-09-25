@@ -14,6 +14,8 @@ import type {
   ScopeTypeNode,
 } from "@/features/scopes/types";
 import {
+  columnShowsSearch,
+  filterColumnRows,
   itemNodeOf,
   orgNameLookup,
   orgNodeOf,
@@ -21,6 +23,7 @@ import {
   scopeNodeOf,
   taskNodeOf,
   typeNodeOf,
+  useColumnQuery,
   useItemsForTypes,
   useUniverse,
   type CreatePayload,
@@ -31,6 +34,7 @@ import {
 } from "../quick-pick/engine";
 import {
   CheckGlyph,
+  ColumnSearch,
   EmptyPane,
   ErrorPane,
   InlineCreate,
@@ -51,12 +55,22 @@ export interface MillerColumnsCoreProps {
   onCreate?: (payload: CreatePayload) => void | Promise<void>;
   /** Real assignment/filter commit. Demo hosts may omit it for preview logging. */
   onCommit?: (nodes: PickNode[]) => void;
+  /** Show the Projects / Tasks row (full) or pickers (condensed). Default on;
+   *  hosts whose selection never reads projects or tasks turn it off. */
+  includeEngagements?: boolean;
 }
 
 export interface MillerColumnsProps extends Omit<
   MillerColumnsCoreProps,
   "universe"
 > {}
+
+interface ColumnSearchState {
+  value: string;
+  onChange: (value: string) => void;
+  /** Rows the column lists before the query narrows them. */
+  total: number;
+}
 
 function Column({
   title,
@@ -65,6 +79,7 @@ function Column({
   createLabel,
   onCreate,
   condensed,
+  search,
 }: {
   title: string;
   count?: number;
@@ -72,6 +87,8 @@ function Column({
   createLabel?: string;
   onCreate?: (name: string) => void;
   condensed: boolean;
+  /** Per-column search; the box renders only when the column is long. */
+  search?: ColumnSearchState;
 }) {
   const [creating, setCreating] = useState(false);
   return (
@@ -97,6 +114,13 @@ function Column({
           </button>
         )}
       </div>
+      {search && (columnShowsSearch(search.total) || search.value) && (
+        <ColumnSearch
+          value={search.value}
+          onChange={search.onChange}
+          label={`Search ${title}`}
+        />
+      )}
       {creating && onCreate && createLabel && (
         <div className="shrink-0 border-b border-border">
           <InlineCreate
@@ -244,6 +268,7 @@ export function MillerColumnsCore({
   className,
   onCreate,
   onCommit,
+  includeEngagements = true,
 }: MillerColumnsCoreProps) {
   const condensed = variant === "condensed";
   const orgName = orgNameLookup(u);
@@ -303,6 +328,45 @@ export function MillerColumnsCore({
   const createType = activeTypeEntries[0];
   const createItemType = activeScopeEntries[0]?.type ?? createType?.type;
 
+  // Per-column search: each column narrows its OWN rows; a column's query
+  // clears when its source (the org / type / scope feeding it) changes.
+  const [orgQuery, setOrgQuery] = useColumnQuery("orgs");
+  const [typeQuery, setTypeQuery] = useColumnQuery(
+    activeOrgs.map((org) => org.id).join(","),
+  );
+  const [scopeQuery, setScopeQuery] = useColumnQuery(
+    activeTypeEntries.map(({ type }) => type.id).join(","),
+  );
+  const [itemQuery, setItemQuery] = useColumnQuery(
+    activeScopeEntries.map(({ scope }) => scope.id).join(","),
+  );
+  const shownOrgs = filterColumnRows(u.orgs, orgQuery, (org) => org.name);
+  const shownTypeEntries = filterColumnRows(
+    typeEntries,
+    typeQuery,
+    ({ type }) => type.label_plural,
+  );
+  const shownScopeEntries = filterColumnRows(
+    scopeEntries,
+    scopeQuery,
+    ({ scope }) => scope.name,
+  );
+  const itemRows =
+    itemsQ.status === "ready"
+      ? activeScopeEntries.flatMap((entry) => {
+          const scopeNode = scopeNodeOf(entry.org, entry.type, entry.scope);
+          return (itemsQ.itemsByType[entry.type.id] ?? []).map((item) => ({
+            entry,
+            node: itemNodeOf(scopeNode, { id: item.id, label: item.label }),
+          }));
+        })
+      : [];
+  const shownItemRows = filterColumnRows(
+    itemRows,
+    itemQuery,
+    ({ node }) => node.label,
+  );
+
   if (u.treeStatus === "loading") {
     return (
       <div className={cn("rounded-xl border border-border bg-card", className)}>
@@ -346,8 +410,16 @@ export function MillerColumnsCore({
             title="Organizations"
             count={u.orgs.length}
             condensed={condensed}
+            search={{
+              value: orgQuery,
+              onChange: setOrgQuery,
+              total: u.orgs.length,
+            }}
           >
-            {visible(u.orgs, condensed).map((org) => {
+            {orgQuery && shownOrgs.length === 0 && (
+              <EmptyPane text={`No organization matches "${orgQuery}".`} />
+            )}
+            {visible(shownOrgs, condensed).map((org) => {
               const node = orgNodeOf(org);
               return (
                 <ColRow
@@ -364,7 +436,7 @@ export function MillerColumnsCore({
                 />
               );
             })}
-            <MoreRows count={condensed ? u.orgs.length - 5 : 0} />
+            <MoreRows count={condensed ? shownOrgs.length - 5 : 0} />
           </Column>
 
           <Column
@@ -375,6 +447,11 @@ export function MillerColumnsCore({
             }
             count={typeEntries.length}
             condensed={condensed}
+            search={{
+              value: typeQuery,
+              onChange: setTypeQuery,
+              total: typeEntries.length,
+            }}
             createLabel={
               createOrg ? `New scope type in ${createOrg.name}` : undefined
             }
@@ -393,9 +470,12 @@ export function MillerColumnsCore({
             {typeEntries.length === 0 && (
               <EmptyPane text="No scope types here yet." />
             )}
-            {visible(typeEntries, condensed).map(({ org, type }, index) => {
+            {typeQuery && typeEntries.length > 0 && shownTypeEntries.length === 0 && (
+              <EmptyPane text={`No scope type matches "${typeQuery}".`} />
+            )}
+            {visible(shownTypeEntries, condensed).map(({ org, type }, index) => {
               const node = typeNodeOf(org, type);
-              const previousOrg = visible(typeEntries, condensed)[index - 1]
+              const previousOrg = visible(shownTypeEntries, condensed)[index - 1]
                 ?.org.id;
               return (
                 <React.Fragment key={type.id}>
@@ -417,7 +497,7 @@ export function MillerColumnsCore({
                 </React.Fragment>
               );
             })}
-            <MoreRows count={condensed ? typeEntries.length - 5 : 0} />
+            <MoreRows count={condensed ? shownTypeEntries.length - 5 : 0} />
           </Column>
 
           <Column
@@ -428,6 +508,11 @@ export function MillerColumnsCore({
             }
             count={scopeEntries.length}
             condensed={condensed}
+            search={{
+              value: scopeQuery,
+              onChange: setScopeQuery,
+              total: scopeEntries.length,
+            }}
             createLabel={
               createType
                 ? `New ${createType.type.label_singular.toLowerCase()}`
@@ -449,11 +534,17 @@ export function MillerColumnsCore({
             {scopeEntries.length === 0 && (
               <EmptyPane text="No scopes under the selected types yet." />
             )}
-            {visible(scopeEntries, condensed).map(
+            {scopeQuery &&
+              scopeEntries.length > 0 &&
+              shownScopeEntries.length === 0 && (
+                <EmptyPane text={`No scope matches "${scopeQuery}".`} />
+              )}
+            {visible(shownScopeEntries, condensed).map(
               ({ org, type, scope }, index) => {
                 const node = scopeNodeOf(org, type, scope);
-                const previousType = visible(scopeEntries, condensed)[index - 1]
-                  ?.type.id;
+                const previousType = visible(shownScopeEntries, condensed)[
+                  index - 1
+                ]?.type.id;
                 return (
                   <React.Fragment key={scope.id}>
                     {typeGroups && previousType !== type.id && (
@@ -480,7 +571,7 @@ export function MillerColumnsCore({
                 );
               },
             )}
-            <MoreRows count={condensed ? scopeEntries.length - 5 : 0} />
+            <MoreRows count={condensed ? shownScopeEntries.length - 5 : 0} />
           </Column>
 
           <Column
@@ -493,6 +584,11 @@ export function MillerColumnsCore({
             }
             count={itemsQ.status === "ready" ? totalItems : undefined}
             condensed={condensed}
+            search={{
+              value: itemQuery,
+              onChange: setItemQuery,
+              total: itemRows.length,
+            }}
             createLabel={createItemType ? "New context item" : undefined}
             onCreate={
               onCreate && createItemType
@@ -520,24 +616,12 @@ export function MillerColumnsCore({
               totalItems === 0 && (
                 <EmptyPane text="No items defined on these types yet." />
               )}
+            {itemQuery && itemRows.length > 0 && shownItemRows.length === 0 && (
+              <EmptyPane text={`No context item matches "${itemQuery}".`} />
+            )}
             {itemsQ.status === "ready" &&
               visible(
-                activeScopeEntries.flatMap((entry) => {
-                  const scopeNode = scopeNodeOf(
-                    entry.org,
-                    entry.type,
-                    entry.scope,
-                  );
-                  return (itemsQ.itemsByType[entry.type.id] ?? []).map(
-                    (item) => ({
-                      entry,
-                      node: itemNodeOf(scopeNode, {
-                        id: item.id,
-                        label: item.label,
-                      }),
-                    }),
-                  );
-                }),
+                shownItemRows,
                 condensed,
               ).map(({ entry, node }, index, rows) => (
                 <React.Fragment key={node.id}>
@@ -552,12 +636,12 @@ export function MillerColumnsCore({
                   />
                 </React.Fragment>
               ))}
-            <MoreRows count={condensed ? totalItems - 5 : 0} />
+            <MoreRows count={condensed ? shownItemRows.length - 5 : 0} />
           </Column>
         </div>
       </div>
 
-      {!condensed && (
+      {!condensed && includeEngagements && (
         <div className="flex h-[132px] shrink-0 border-t border-border">
           <div className="flex min-w-0 flex-1">
             <Column
@@ -631,7 +715,7 @@ export function MillerColumnsCore({
         dense={condensed}
         onCommit={onCommit}
         beforeActions={
-          condensed && u.engagementStatus === "ready" ? (
+          condensed && includeEngagements && u.engagementStatus === "ready" ? (
             <div className="flex shrink-0 items-center gap-1">
               <CompactEngagementPicker
                 kind="project"

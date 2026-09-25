@@ -14,6 +14,7 @@ import {
   Hash,
   Plus,
   RefreshCw,
+  Search,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -135,6 +136,53 @@ export function EmptyPane({ text }: { text: string }) {
   return (
     <div className="px-3 py-4 text-center text-xs text-muted-foreground">
       {text}
+    </div>
+  );
+}
+
+/* ── column search ───────────────────────────────────────────────────────── */
+
+/** The search row a long column shows under its header (see
+ *  `columnShowsSearch`). Escape clears it; the box never changes the column's
+ *  height budget beyond its own 28px row. */
+export function ColumnSearch({
+  value,
+  onChange,
+  label,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  /** Accessible name, e.g. "Search Clients". */
+  label: string;
+}) {
+  return (
+    <div className="flex h-7 shrink-0 items-center gap-1.5 border-b border-border px-2">
+      <Search className="h-3 w-3 shrink-0 text-muted-foreground" />
+      <input
+        type="search"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape" && value) {
+            e.preventDefault();
+            e.stopPropagation();
+            onChange("");
+          }
+        }}
+        placeholder="Search…"
+        aria-label={label}
+        className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground/60 md:text-xs"
+      />
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          aria-label={`Clear ${label.toLowerCase()}`}
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
     </div>
   );
 }

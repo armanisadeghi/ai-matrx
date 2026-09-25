@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
+  columnShowsSearch,
+  filterColumnRows,
   itemNodeOf,
   orgNameLookup,
   orgNodeOf,
@@ -17,6 +19,7 @@ import {
   scopeNodeOf,
   taskNodeOf,
   typeNodeOf,
+  useColumnQuery,
   useTypeItems,
   useUniverse,
   type CreatePayload,
@@ -28,6 +31,7 @@ import {
 } from "../quick-pick/engine";
 import {
   CheckGlyph,
+  ColumnSearch,
   EmptyPane,
   ErrorPane,
   InlineCreate,
@@ -229,6 +233,17 @@ export function DrillDeckCore({
     return null;
   }, [deck, onCreate, u.orgs]);
 
+  // Per-column search (shared with Miller Columns): the deck is one column, so
+  // its query clears whenever the deck drills or backs out.
+  const [query, setQuery] = useColumnQuery(
+    `${stack.length}:${deck.t}:${"node" in deck ? deck.node.id : ""}`,
+  );
+  const shownRows = filterColumnRows(
+    rows,
+    query,
+    (row) => row.node?.label ?? row.railLabel ?? "",
+  );
+
   const loading =
     u.treeStatus === "loading" ||
     (deck.t === "scope" && itemsQ.status === "loading");
@@ -271,6 +286,14 @@ export function DrillDeckCore({
         )}
       </div>
 
+      {!loading && !errored && (columnShowsSearch(rows.length) || query) && (
+        <ColumnSearch
+          value={query}
+          onChange={setQuery}
+          label={`Search ${title}`}
+        />
+      )}
+
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1 scrollbar-thin">
         {loading && <SkeletonRows count={6} />}
         {u.treeStatus === "error" && (
@@ -292,9 +315,12 @@ export function DrillDeckCore({
               }
             />
           )}
+        {!loading && !errored && query && rows.length > 0 && shownRows.length === 0 && (
+          <EmptyPane text={`Nothing here matches "${query}".`} />
+        )}
         {!loading &&
           !errored &&
-          rows.map((row) => {
+          shownRows.map((row) => {
             const node = row.node;
             const drill = row.drill;
             const selectable = Boolean(

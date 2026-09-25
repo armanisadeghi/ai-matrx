@@ -462,6 +462,48 @@ export function searchNodes(
   return scored.slice(0, limit).map((s) => s.n);
 }
 
+/* ── per-column search (Miller Columns, DrillDeck, every column host) ─────── */
+
+/** A column with MORE rows than this shows its own search box. */
+export const COLUMN_SEARCH_THRESHOLD = 8;
+
+export function columnShowsSearch(rowCount: number): boolean {
+  return rowCount > COLUMN_SEARCH_THRESHOLD;
+}
+
+/** The ContextTree's flatten-and-filter, applied to one column's rows: a row
+ *  stays when every whitespace-separated term of the query appears in its
+ *  label (case-insensitive). An empty query keeps every row, in order. */
+export function filterColumnRows<T>(
+  rows: readonly T[],
+  query: string,
+  labelOf: (row: T) => string,
+): T[] {
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return [...rows];
+  return rows.filter((row) => {
+    const haystack = labelOf(row).toLowerCase();
+    return terms.every((term) => haystack.includes(term));
+  });
+}
+
+/** One column's query. It clears itself whenever `sourceKey` changes (the
+ *  column now lists different rows — another org, type or scope). */
+export function useColumnQuery(
+  sourceKey: string,
+): [string, (query: string) => void] {
+  const [state, setState] = useState({ key: sourceKey, query: "" });
+  // Adjust-state-during-render: a new source forgets the old query for good
+  // (returning to the old source must not resurrect it).
+  if (state.key !== sourceKey) setState({ key: sourceKey, query: "" });
+  const query = state.key === sourceKey ? state.query : "";
+  const setQuery = useCallback(
+    (next: string) => setState({ key: sourceKey, query: next }),
+    [sourceKey],
+  );
+  return [query, setQuery];
+}
+
 /* ── lazy context items per scope type ───────────────────────────────────── */
 
 export interface ItemLite {
@@ -698,6 +740,140 @@ export function useSelectionEngine(single: boolean): SelectionEngine {
     }),
     [selected, single, isOn, toggle, clear],
   );
+}
+
+/* ── drill path engine (one pick per column: org → type → scope → item) ──── */
+
+/** A single path down the four columns — what an inspector-style host holds
+ *  (one organization, one scope type, one scope, one context item). */
+export interface DrillPath {
+  orgId: string | null;
+  typeId: string | null;
+  scopeId: string | null;
+  /** The context item's own id (not the composite `${scopeId}::${itemId}`). */
+  itemId: string | null;
+}
+
+export const EMPTY_DRILL_PATH: DrillPath = {
+  orgId: null,
+  typeId: null,
+  scopeId: null,
+  itemId: null,
+};
+
+/** Picking a node sets ITS column and clears every column to its right;
+ *  picking the node that is already on clears it (and the columns after). */
+export function applyDrillPick(path: DrillPath, node: PickNode): DrillPath {
+  switch (node.kind) {
+    case "org":
+      return path.orgId === node.id
+        ? EMPTY_DRILL_PATH
+        : { ...EMPTY_DRILL_PATH, orgId: node.id };
+    case "type":
+      return {
+        orgId: node.orgId,
+        typeId: path.typeId === node.id ? null : node.id,
+        scopeId: null,
+        itemId: null,
+      };
+    case "scope":
+      return {
+        orgId: node.orgId,
+        typeId: node.typeId ?? null,
+        scopeId: path.scopeId === node.id ? null : node.id,
+        itemId: null,
+      };
+    case "item": {
+      const itemId = node.contextItemId ?? node.id.split("::")[1] ?? null;
+      const same = path.scopeId === node.scopeId && path.itemId === itemId;
+      return {
+        orgId: node.orgId,
+        typeId: node.typeId ?? null,
+        scopeId: node.scopeId ?? null,
+        itemId: same ? null : itemId,
+      };
+    }
+    default:
+      return path;
+  }
+}
+
+/** Locate a scope in the universe — the back-fill for a bare `?scope=` link. */
+export function drillPathForScope(
+  orgs: OrgNode[],
+  scopeId: string,
+): DrillPath | null {
+  for (const org of orgs) {
+    for (const type of org.scope_types) {
+      if (type.scopes.some((scope) => scope.id === scopeId)) {
+        return { orgId: org.id, typeId: type.id, scopeId, itemId: null };
+      }
+    }
+  }
+  return null;
+}
+
+/** The picked nodes of a path, resolved against the universe. */
+export function drillPathNodes(
+  orgs: OrgNode[],
+  path: DrillPath,
+  itemLabel?: string | null,
+): PickNode[] {
+  const org = orgs.find((candidate) => candidate.id === path.orgId);
+  if (!org) return [];
+  const out: PickNode[] = [orgNodeOf(org)];
+  const type = org.scope_types.find((candidate) => candidate.id === path.typeId);
+  if (!type) return out;
+  out.push(typeNodeOf(org, type));
+  const scope = type.scopes.find((candidate) => candidate.id === path.scopeId);
+  if (!scope) return out;
+  const scopeNode = scopeNodeOf(org, type, scope);
+  out.push(scopeNode);
+  if (path.itemId) {
+    out.push(
+      itemNodeOf(scopeNode, {
+        id: path.itemId,
+        label: itemLabel ?? "Context item",
+      }),
+    );
+  }
+  return out;
+}
+
+/** A controlled SelectionEngine over a DrillPath, for any Miller Columns /
+ *  DrillDeck host that wants exactly one pick per column. */
+export function useDrillPathEngine({
+  orgs,
+  path,
+  onChange,
+  itemLabel,
+}: {
+  orgs: OrgNode[];
+  path: DrillPath;
+  onChange: (next: DrillPath) => void;
+  itemLabel?: string | null;
+}): SelectionEngine {
+  return useMemo(() => {
+    const nodes = drillPathNodes(orgs, path, itemLabel);
+    const isOn = (kind: NodeKind, id: string): boolean => {
+      if (kind === "org") return path.orgId === id;
+      if (kind === "type") return path.typeId === id;
+      if (kind === "scope") return path.scopeId === id;
+      if (kind === "item")
+        return (
+          path.itemId !== null && `${path.scopeId}::${path.itemId}` === id
+        );
+      return false;
+    };
+    return {
+      nodes,
+      count: nodes.length,
+      single: true,
+      isOn,
+      toggle: (node) => onChange(applyDrillPick(path, node)),
+      clear: () => onChange(EMPTY_DRILL_PATH),
+    };
+  }, [orgs, path, onChange, itemLabel]);
 }
 
 /** Preview commit: logs the exact payload a live host would persist. */
