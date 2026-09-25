@@ -63,7 +63,6 @@ async function render(props: Partial<React.ComponentProps<typeof BindingTargetPi
 const trigger = () => host.querySelector('button[role="combobox"]') as HTMLButtonElement;
 const open = async () => {
   await act(async () => {
-    trigger().dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0 }));
     trigger().click();
   });
 };
