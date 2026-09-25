@@ -47,23 +47,32 @@ export async function signIn(page, origin, email, password, who = email) {
   // Hydration: the form is server-rendered but only accepts input once the bundle attaches,
   // and a fill that lands before that silently does nothing.
   await page.waitForSelector("#email", { timeout: 120000 });
-  await page.fill("#email", email);
-  await page.fill("#password", password);
-  await page.click('button:has-text("Sign in")');
-  const { v } = await until(
-    `${who} sign-in`,
-    async () => {
-      const seen = await page.evaluate(async () => {
-        try {
-          return await (await fetch("/api/whoami")).json();
-        } catch {
-          return null;
-        }
-      });
-      return seen?.email ?? null;
-    },
-    60000,
-  );
+  // Under load the bundle attaches seconds after the form paints; a press before that is a plain
+  // form post that goes nowhere and the seat reads as "never signed in" (SHARE-PEOPLE-ONLY and
+  // SHARE-LANE-CONTROL both hit it at load 60-110). Wait for the page to finish loading, and if the
+  // first press did not take, fill and press once more, saying so.
+  await page.waitForLoadState("load", { timeout: 120000 }).catch(() => undefined);
+  const whoami = async () => {
+    const seen = await page.evaluate(async () => {
+      try {
+        return await (await fetch("/api/whoami")).json();
+      } catch {
+        return null;
+      }
+    });
+    return seen?.email ?? null;
+  };
+  let v = null;
+  for (let attempt = 1; attempt <= 2 && !v; attempt += 1) {
+    if (attempt > 1) {
+      console.log(`[seat-browser] ${who}: the first sign-in press did not take (page still hydrating) — pressing again`);
+      if (!(await page.locator("#email").count())) break;
+    }
+    await page.fill("#email", email);
+    await page.fill("#password", password);
+    await page.click('button:has-text("Sign in")');
+    ({ v } = await until(`${who} sign-in`, whoami, attempt === 1 ? 45000 : 90000));
+  }
   if (!v) throw new Error(`${who} (${email}) never signed in`);
   return v;
 }

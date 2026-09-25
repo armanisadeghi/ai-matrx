@@ -27,6 +27,20 @@ const must = (label, { data, error }) => {
 const alex = await seat("test@test.com", process.env.TEST_SEAT_PASSWORD);
 const morgan = await seat("admin@admin.com", process.env.AI_ADMIN_PASSWORD);
 
+// RESET=<table id> (with ORG): take Morgan's name back and return the table to "Everyone in …",
+// so the walk can run again from its first state.
+if (process.env.RESET) {
+  const t = process.env.RESET;
+  must("share_revoke", await alex.schema("custom").rpc("share_revoke", {
+    p_organization_id: process.env.ORG, p_subject_id: t, p_principal_kind: "person",
+    p_principal_id: "87a6e699-3622-4869-8843-d0867456c0dd",
+  }));
+  must("share_lane_set", await alex.schema("custom").rpc("share_lane_set", {
+    p_organization_id: process.env.ORG, p_subject_id: t, p_choice: "organization",
+  }));
+  console.log("reset", t);
+  process.exit(0);
+}
 const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
 // ORG=<id> reuses an organization a previous run already made.
 const org = process.env.ORG ? { id: process.env.ORG } : must("org_create", await alex.rpc("org_create", {

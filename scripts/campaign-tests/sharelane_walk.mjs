@@ -130,7 +130,7 @@ try {
     "the honest not-found",
     () => a.evaluate(() => {
       const txt = document.body.innerText;
-      return /not been given|not found|does not exist|no access|You do not have access/i.test(txt) ? txt.slice(0, 600) : null;
+      return /not been given|not found|does not exist|no access|You do not have access|don't have access/i.test(txt) ? txt.slice(0, 600) : null;
     }),
     SLOW,
   );
