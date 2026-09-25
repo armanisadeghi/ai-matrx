@@ -245,7 +245,7 @@ export function TableImpactPanel() {
             ].join("|")
           }
           isLoading={loading}
-          pageSize={50}
+          pageSize={0}
           virtualize={{ enabled: true, rowHeight: 34, overscan: 12, threshold: 1 }}
           urlState={{
             id: "canonicalization-table-impact",
