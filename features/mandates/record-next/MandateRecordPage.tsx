@@ -7,11 +7,13 @@
 // untouched) per common-docs/systems/mandates/UI-REGISTER.md.
 //
 // Shape: the agents-style record header (EntityModeHeader — back | name |
-// modes | actions), the name shown ONCE, the ten existing tabs as the modes
-// with short labels (./record-tabs.ts), and the selected tab in the URL
-// (`?tab=`) so refresh, deep links and browser Back all work. The mode pill is
-// RouteModeNav, which collapses full → icons → one menu when the header is
-// narrow — never two rows.
+// actions), the name shown ONCE, the existing tabs with short labels (./record-tabs.ts), and the selected tab in the URL
+// (`?tab=`) so refresh, deep links and browser Back all work. The tabs sit in
+// their own row under the header (`RecordTabStrip`), every tab NAMED on one
+// row at desktop widths; only a narrow screen moves the ones that do not fit
+// into a "More" menu, which lists them by name. (They used to ride in the
+// header's mode pill, which shares the bar with the name and the actions and
+// collapsed eleven tabs to a single "Definition" pill at 1440px.)
 
 import { Suspense, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -22,7 +24,6 @@ import { toast } from "@/lib/toast";
 import { pushAppHref } from "@/lib/deployment/navigate";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
-import type { RouteNavItem } from "@/features/shell/components/header/RouteModeNav";
 import { softDeleteMandate } from "@/features/mandates/admin/service";
 import { PromoteToSystemMandateButton } from "@/features/mandates/admin/mandate-actions";
 import {
@@ -35,6 +36,7 @@ import {
 } from "@/features/surfaces/manifests/mandate-workspace.manifest";
 import type { MandateWorkspaceData } from "@/features/mandates/workspace/useMandateWorkspaceData";
 import { MandateRecordBody } from "./MandateRecordBody";
+import { RecordTabStrip } from "./RecordTabStrip";
 import {
   DEFAULT_RECORD_TAB,
   MANDATE_LIST_PREVIEW_HREF,
@@ -78,13 +80,6 @@ function MandateRecordPageInner({ mandateKey }: { mandateKey: string }) {
   const onTabChange = (tab: RecordTabId) =>
     router.push(hrefFor(tab), { scroll: false });
 
-  // The admin route is super-admin gated by its layout, so every tab shows.
-  const modes: RouteNavItem[] = visibleRecordTabs(true).map((tab) => ({
-    name: tab.label,
-    href: hrefFor(tab.id),
-    icon: tab.icon,
-  }));
-
   return (
     <SurfaceRuntimeProvider
       surfaceName={MANDATE_WORKSPACE_SURFACE_NAME}
@@ -105,15 +100,23 @@ function MandateRecordPageInner({ mandateKey }: { mandateKey: string }) {
             onTabChange={onTabChange}
             listHref={MANDATE_LIST_PREVIEW_HREF}
             renderChrome={({ name, data, exportMenu, refresh }) => (
-              <RecordHeader
-                name={name}
-                data={data}
-                exportMenu={exportMenu}
-                refresh={refresh}
-                backHref={backHref}
-                modes={modes}
-                activeModeHref={hrefFor(activeTab)}
-              />
+              <>
+                <RecordHeader
+                  name={name}
+                  data={data}
+                  exportMenu={exportMenu}
+                  refresh={refresh}
+                  backHref={backHref}
+                />
+                {/* The admin route is super-admin gated by its layout, so
+                    every tab shows. */}
+                <RecordTabStrip
+                  tabs={visibleRecordTabs(true)}
+                  value={activeTab}
+                  onChange={onTabChange}
+                  className="mb-3"
+                />
+              </>
             )}
           />
         </div>
@@ -128,16 +131,12 @@ function RecordHeader({
   exportMenu,
   refresh,
   backHref,
-  modes,
-  activeModeHref,
 }: {
   name: string;
   data: MandateWorkspaceData;
   exportMenu: React.ReactNode;
   refresh: () => void;
   backHref: string;
-  modes: RouteNavItem[];
-  activeModeHref: string;
 }) {
   const router = useRouter();
   const [removing, setRemoving] = useState(false);
@@ -174,8 +173,6 @@ function RecordHeader({
     <EntityModeHeader
       backHref={backHref}
       entityLabel={name}
-      modes={modes}
-      activeModeHref={activeModeHref}
       right={
         <div className="flex items-center gap-1">
           {exportMenu}

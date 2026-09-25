@@ -39,6 +39,7 @@ import {
   type MandateConsoleData,
 } from "@/features/mandates/admin/service";
 import type { AppDispatch } from "@/lib/redux/store";
+import { readMandateAddress } from "@/features/mandates/mandate-address";
 import type { RecordTabId } from "./record-tabs";
 
 type AdminSection = "test" | "permissions" | "source" | "diagnostics";
@@ -91,13 +92,25 @@ export function RecordAdminPanels({
     string,
     unknown
   > | null>(null);
+  const [schemasFailed, setSchemasFailed] = useState(false);
+  // Read nothing until an admin tab is actually opened: the window switches
+  // mandates constantly, and most switches never visit Test/Access/Usage/Health.
+  // Once opened, the data stays for this mandate (the host keys this panel to
+  // the mandate), so moving between tabs never re-reads it.
+  const section = adminSectionOf(activeTab);
+  const [opened, setOpened] = useState(false);
+  if (isSuperAdmin && section !== null && !opened) setOpened(true);
+  const wanted = opened;
 
   const load = useCallback(() => {
     fetchMandateConsoleData({ mandateKeys: [mandateKey] })
       .then((next) =>
-        // The address may be a row uuid rather than a key — same fallback as
-        // the original: read unscoped rather than show an empty panel.
-        next.mandates.length === 0 ? fetchMandateConsoleData() : next,
+        // The address may be a row uuid rather than a key — only then is the
+        // whole registry read to find it (never for a key that simply is not
+        // there).
+        next.mandates.length === 0 && readMandateAddress(mandateKey) === "id"
+          ? fetchMandateConsoleData()
+          : next,
       )
       .then((next) => {
         setData(next);
@@ -105,22 +118,23 @@ export function RecordAdminPanels({
       })
       .catch((err: unknown) => {
         console.error("[mandate-record-next] admin load failed", err);
-        setLoadError(
-          err instanceof Error ? err.message : "Could not load this mandate.",
-        );
+        setLoadError("The admin details could not be read.");
       });
   }, [mandateKey]);
 
   useEffect(() => {
-    if (!isSuperAdmin) return;
+    if (!wanted) return;
     load();
     dispatch(fetchAgentsListFull());
-  }, [dispatch, isSuperAdmin, load]);
-
-  useEffect(() => onMandateCacheInvalidated(() => load()), [load]);
+  }, [dispatch, wanted, load]);
 
   useEffect(() => {
-    if (!isSuperAdmin) return;
+    if (!wanted) return;
+    return onMandateCacheInvalidated(() => load());
+  }, [wanted, load]);
+
+  useEffect(() => {
+    if (!wanted) return;
     let cancelled = false;
     readCodeTruthOnce(dispatch)
       .then((report) => {
@@ -135,7 +149,7 @@ export function RecordAdminPanels({
     return () => {
       cancelled = true;
     };
-  }, [dispatch, isSuperAdmin]);
+  }, [dispatch, wanted]);
 
   const mandate = useMemo(() => {
     if (!data) return null;
@@ -154,9 +168,16 @@ export function RecordAdminPanels({
   useEffect(() => {
     if (!holderAgentId) return;
     let cancelled = false;
-    void fetchAgentOutputSchemas([holderAgentId]).then((byId) => {
-      if (!cancelled) setOutputSchemas(byId);
-    });
+    setSchemasFailed(false);
+    fetchAgentOutputSchemas([holderAgentId])
+      .then((byId) => {
+        if (!cancelled) setOutputSchemas(byId);
+      })
+      .catch((err: unknown) => {
+        // The panels still render; the contract check says it was not read.
+        console.warn("[mandate-record-next] output schemas unavailable", err);
+        if (!cancelled) setSchemasFailed(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -173,7 +194,6 @@ export function RecordAdminPanels({
   }, [codeTruthByKey, data, mandate, outputSchemas]);
 
   if (!isSuperAdmin) return null;
-  const section = adminSectionOf(activeTab);
 
   return (
     <div hidden={!section} className={section ? "mt-3" : "hidden"}>
@@ -192,6 +212,13 @@ export function RecordAdminPanels({
       ) : !row ? (
         <p className="text-sm text-destructive">Mandate unavailable</p>
       ) : (
+        <>
+        {schemasFailed ? (
+          <p className="mb-2 text-xs text-muted-foreground">
+            The agent&apos;s output contract could not be read, so the contract
+            check below is incomplete.
+          </p>
+        ) : null}
         <MandateDetailView
           key={row.id}
           row={row}
@@ -208,6 +235,7 @@ export function RecordAdminPanels({
           }
           onSaved={load}
         />
+        </>
       )}
     </div>
   );
