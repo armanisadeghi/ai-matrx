@@ -391,7 +391,7 @@ function TryResult({ result }: { result: MandateTestResponse }) {
       ) : null}
       {result.structural.checked && result.structural.ok === false ? (
         <div className="rounded border border-warning/50 bg-warning/5 p-2 text-xs">
-          <p className="font-medium text-foreground">The answer does not match this job&rsquo;s output.</p>
+          <p className="font-medium text-foreground">The answer could not be confirmed against this job&rsquo;s output:</p>
           <ul className="mt-1 list-disc pl-4 text-muted-foreground">
             {(result.structural.errors ?? []).map((error) => (
               <li key={error}>{error}</li>
