@@ -421,7 +421,21 @@ begin
      or (select count(*) from history.row_versions h where h.row_id = v_rabies) <> v_hist then
     raise exception '5e: the reminders wrote on the approval itself';
   end if;
-  raise notice 'PART 5 PASSED — the snooze''s return said once; at 30 days nothing else; at 3 days one reminder per waiting item, none for what she cleared, none twice.';
+  -- AN ARCHIVED ORGANIZATION IS NEVER REMINDED (uichamp_s5b2). One more call-back lands on the
+  -- desk, then the practice closes its old account; the tick says nothing about it.
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', c_admin_j, true);
+  v_id := custom.record_write(v_org, v_calls, jsonb_build_object('subject','Nguyen household: Tofu''s microchip transfer'));
+  perform custom.work_assign(v_org, v_id, c_desk, null, false);
+  perform set_config('role', v_owner, true);
+  perform set_config('request.jwt.claims', '', true);
+  update iam.organizations set archived_at = now() where id = v_org;
+  v_out := custom.inbox_remind_tick();
+  if exists (select 1 from communication.notification n where n.organization_id = v_org and n.target_id = v_id) then
+    raise exception '5f: the tick reminded somebody about work in an ARCHIVED organization';
+  end if;
+  update iam.organizations set archived_at = null where id = v_org;
+  raise notice 'PART 5 PASSED — the snooze''s return said once; at 30 days nothing else; at 3 days one reminder per waiting item, none for what she cleared, none twice, none in an archived organization.';
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 6 — AFTER A DECISION. The owner approves; the ask leaves every inbox and every count.
@@ -441,8 +455,8 @@ begin
     raise exception '6b: the decided ask is still waiting in the desk''s inbox';
   end if;
   select c.waiting into v_n from custom.inbox_counts(v_org) c;
-  if v_n <> 4 then
-    raise exception '6c: the desk''s count after the decision should be 4 (the breed request and three call-backs) and is %', v_n;
+  if v_n <> 5 then
+    raise exception '6c: the desk''s count after the decision should be 5 (the breed request and four call-backs) and is %', v_n;
   end if;
   raise notice 'PART 6 PASSED — decided: gone from the desk''s inbox and count, and a decided ask cannot be snoozed.';
 
