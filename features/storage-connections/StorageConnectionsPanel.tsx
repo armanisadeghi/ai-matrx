@@ -197,7 +197,7 @@ export function StorageConnectionsPanel({
   );
 
   return (
-    <section className="space-y-5" data-testid="storage-connections-panel">
+    <section className="space-y-4 sm:space-y-5" data-testid="storage-connections-panel">
       <header className="space-y-1">
         <h2 className="text-lg font-semibold text-foreground">
           File connections
@@ -253,7 +253,7 @@ export function StorageConnectionsPanel({
           return (
             <article
               key={provider}
-              className="space-y-4 rounded-lg border border-border p-4"
+              className="space-y-3 rounded-lg border border-border p-2.5 sm:space-y-4 sm:p-4"
             >
               <div className="flex items-start gap-3">
                 <Cloud className="mt-0.5 h-5 w-5 text-muted-foreground" />
@@ -280,7 +280,7 @@ export function StorageConnectionsPanel({
                     return (
                       <li
                         key={connection.id}
-                        className="space-y-2 rounded-md bg-muted/40 p-3"
+                        className="space-y-2 border-t border-border pt-3 sm:rounded-md sm:border-0 sm:bg-muted/40 sm:p-3"
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="truncate text-sm font-medium">
@@ -315,6 +315,7 @@ export function StorageConnectionsPanel({
                             <Button
                               variant="outline"
                               size="sm"
+                              className="h-11 sm:h-8"
                               disabled={isBusy}
                               onClick={() => void checkAccess(connection)}
                             >
@@ -328,6 +329,7 @@ export function StorageConnectionsPanel({
                             <Button
                               variant="outline"
                               size="sm"
+                              className="h-11 sm:h-8"
                               disabled={busyKey !== null}
                               onClick={() => void connect(provider)}
                             >
@@ -340,6 +342,7 @@ export function StorageConnectionsPanel({
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="h-11 sm:h-8"
                             disabled={isBusy}
                             onClick={() => void disconnect(connection)}
                           >
@@ -356,15 +359,28 @@ export function StorageConnectionsPanel({
               <Button
                 onClick={() => void connect(provider)}
                 disabled={busyKey !== null}
+                className="h-11 max-w-full px-2 sm:px-4"
+                aria-label={
+                  providerConnections.length
+                    ? `Connect another ${copy.name} account`
+                    : `Connect ${copy.name}`
+                }
               >
                 {busyKey === `connect:${provider}` ? (
                   <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                 ) : (
                   <Plus className="mr-1.5 h-4 w-4" />
                 )}
-                {providerConnections.length
-                  ? `Connect another ${copy.name} account`
-                  : `Connect ${copy.name}`}
+                <span className="sm:hidden">
+                  {providerConnections.length
+                    ? "Connect another account"
+                    : `Connect ${copy.name}`}
+                </span>
+                <span className="hidden sm:inline">
+                  {providerConnections.length
+                    ? `Connect another ${copy.name} account`
+                    : `Connect ${copy.name}`}
+                </span>
               </Button>
             </article>
           );

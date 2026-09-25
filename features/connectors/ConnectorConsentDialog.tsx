@@ -833,13 +833,18 @@ export function ConnectorConsentBody({
                  free — a hand-rolled div would not. */
               <Collapsible key={group.key} defaultOpen>
                 <CollapsibleTrigger className="group mb-1 flex min-h-11 w-full items-center justify-between gap-2 rounded-md px-0.5 text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:min-h-0">
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    <ChevronDown
-                      className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90"
-                      aria-hidden
-                    />
-                    <span className="min-w-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {group.label}
+                  <span className="flex min-w-0 flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:gap-1.5">
+                    <span className="flex items-center gap-1.5">
+                      <ChevronDown
+                        className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90"
+                        aria-hidden
+                      />
+                      <span className="min-w-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {group.label}
+                      </span>
+                    </span>
+                    <span className="pl-5 text-xs text-muted-foreground/80 sm:hidden">
+                      {group.hint}
                     </span>
                   </span>
                   <span className="hidden truncate text-xs text-muted-foreground/80 sm:inline">

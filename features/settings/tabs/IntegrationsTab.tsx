@@ -8,7 +8,7 @@ import { StorageConnectionsPanel } from "@/features/storage-connections/StorageC
 
 export default function IntegrationsTab() {
   return (
-    <div className="space-y-8">
+    <div className="-mx-2 space-y-6 sm:mx-0 sm:space-y-8">
       {/*
         The Microsoft door lives on THIS tab because aidream's OAuth callback
         redirects a person back to `/user-settings/integrations?provider=microsoft`;

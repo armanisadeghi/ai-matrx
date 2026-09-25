@@ -85,16 +85,16 @@ describe("GitHubConnectionCard mobile layout", () => {
     container.remove();
   });
 
-  it("stacks actions below a full-width identity block on phones", () => {
+  it("keeps phone actions compact while the identity uses the full row", () => {
     const refresh = Array.from(container.querySelectorAll("button")).find(
       (button) => button.textContent?.includes("Refresh"),
     );
     if (!refresh?.parentElement)
       throw new Error("GitHub actions did not render");
 
-    expect(refresh.parentElement.className).toContain("grid");
-    expect(refresh.parentElement.className).toContain("w-full");
-    expect(refresh.parentElement.className).toContain("sm:flex");
+    expect(refresh.parentElement.className).toContain("flex-wrap");
+    expect(refresh.parentElement.className).not.toContain("w-full");
+    expect(refresh.className).not.toContain("w-full");
 
     for (const control of container.querySelectorAll("button, a")) {
       if (

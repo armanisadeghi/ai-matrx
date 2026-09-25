@@ -153,7 +153,7 @@ export function MicrosoftConnectPanel({
   );
 
   return (
-    <section className="space-y-6" data-testid="microsoft-connect-panel">
+    <section className="space-y-4 sm:space-y-6" data-testid="microsoft-connect-panel">
       <header className="space-y-1">
         <h2 className="text-lg font-semibold text-foreground">Microsoft</h2>
         <p className="text-sm text-muted-foreground">
@@ -206,7 +206,7 @@ export function MicrosoftConnectPanel({
           {connections.map((connection) => (
             <li
               key={connection.id}
-              className="flex flex-col gap-2 rounded-md border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-2 rounded-md border border-border p-2.5 sm:flex-row sm:items-center sm:justify-between sm:p-3"
             >
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -236,12 +236,17 @@ export function MicrosoftConnectPanel({
                   </p>
                 ) : null}
               </div>
-              <div className="flex shrink-0 gap-2">
+              <div className="flex flex-wrap gap-2 sm:shrink-0">
                 {/*
                   THE DOOR. A connected account that cannot be looked inside is
                   a row that names a thing and refuses to open it.
                 */}
-                <Button asChild variant="outline" size="sm">
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-11 sm:h-8"
+                >
                   <Link href="/connected-sources">
                     <Search className="mr-1.5 h-3.5 w-3.5" />
                     Browse everything
@@ -250,6 +255,7 @@ export function MicrosoftConnectPanel({
                 <Button
                   variant="outline"
                   size="sm"
+                  className="h-11 sm:h-8"
                   disabled={busyConnectionId === connection.id}
                   onClick={() => void recheck(connection.id)}
                 >
@@ -259,6 +265,7 @@ export function MicrosoftConnectPanel({
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="h-11 sm:h-8"
                   disabled={busyConnectionId === connection.id}
                   onClick={() => void disconnect(connection)}
                 >
@@ -271,7 +278,7 @@ export function MicrosoftConnectPanel({
         </ul>
       )}
 
-      <div className="space-y-3 rounded-md border border-border p-4">
+      <div className="space-y-3 rounded-md border border-border p-2.5 sm:p-4">
         <h3 className="text-sm font-medium text-foreground">
           What AI Matrx may read
         </h3>
@@ -311,15 +318,31 @@ export function MicrosoftConnectPanel({
             </li>
           ))}
         </ul>
-        <Button onClick={() => void connect()} disabled={starting}>
+        <Button
+          onClick={() => void connect()}
+          disabled={starting}
+          className="h-11 max-w-full px-2 sm:px-4"
+          aria-label={
+            connections?.length
+              ? "Connect another Microsoft account"
+              : "Connect a Microsoft account"
+          }
+        >
           {starting ? (
             <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
           ) : (
             <Plus className="mr-1.5 h-4 w-4" />
           )}
-          {connections && connections.length
-            ? "Connect another Microsoft account"
-            : "Connect a Microsoft account"}
+          <span className="sm:hidden">
+            {connections?.length
+              ? "Connect another account"
+              : "Connect Microsoft"}
+          </span>
+          <span className="hidden sm:inline">
+            {connections?.length
+              ? "Connect another Microsoft account"
+              : "Connect a Microsoft account"}
+          </span>
         </Button>
         <p className="text-xs text-muted-foreground">
           You will finish signing in on Microsoft&apos;s own page and come back

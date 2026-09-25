@@ -451,7 +451,7 @@ export default function IntegrationsPage() {
 
   return (
     <TooltipProvider>
-      <div className="-mx-2 max-w-6xl space-y-5 px-1 pb-12 pt-3 sm:mx-auto sm:px-4 md:space-y-6 md:p-8">
+      <div className="mx-auto max-w-6xl space-y-5 px-1 pb-12 pt-3 sm:px-4 md:space-y-6 md:p-8">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-2xl">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
@@ -817,6 +817,8 @@ function ServerCard({
               <img
                 src={iconUrl}
                 alt=""
+                decoding="async"
+                referrerPolicy="no-referrer"
                 className={cn(
                   "h-11 w-11 rounded-xl border border-border bg-background object-contain p-1.5",
                   isComingSoon && "grayscale",
@@ -939,7 +941,7 @@ function ServerCard({
                 ) : (
                   <Lock className="h-3 w-3 mr-1" />
                 )}
-                <span className="sm:hidden">Connect</span>
+                <span className="sm:hidden">Connect account</span>
                 <span className="hidden sm:inline">Connect with OAuth</span>
               </Button>
               <Button
