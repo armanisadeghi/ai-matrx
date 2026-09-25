@@ -81,9 +81,21 @@ try {
   await page.goto(`${ORIGIN}/administration/knowledge/podcasts/shows`, { waitUntil: "domcontentloaded", timeout: 120000 });
   const showRow = await until("show row", async () => (await page.getByText(showTitle, { exact: true }).count()) > 0, 60000);
   check("show listed on Podcast Shows", !!showRow.v);
-  const row = page.locator("tr, [role='row'], li, div").filter({ hasText: showTitle }).last();
-  await row.hover().catch(() => {});
-  await row.locator('button[title="Delete"]').first().click({ timeout: 15000 });
+  // The row's own Delete button: walk up from the title to the nearest ancestor holding exactly
+  // one Delete button (the row), and press it the way a click does.
+  const pressed = await page.evaluate((title) => {
+    const el = Array.from(document.querySelectorAll("body *")).find(
+      (n) => n.children.length === 0 && n.textContent?.trim() === title,
+    );
+    for (let a = el; a; a = a.parentElement) {
+      const btns = a.querySelectorAll('button[title="Delete"]');
+      if (btns.length === 1) { btns[0].click(); return true; }
+      if (btns.length > 1) return false;
+    }
+    return false;
+  }, showTitle);
+  if (!pressed) await shot(page, "1-show-row-no-delete-button");
+  check("pressed the show row's Delete", pressed);
   await page.getByRole("alertdialog").waitFor({ timeout: 15000 });
   const showDialog = await page.getByRole("alertdialog").innerText();
   await shot(page, "1-show-archive-confirm");
@@ -96,7 +108,9 @@ try {
   await page.goto(`${ORIGIN}/maps`, { waitUntil: "domcontentloaded", timeout: 120000 });
   const mapRow = await until("map row", async () => (await page.getByText(mapTitle, { exact: true }).count()) > 0, 60000);
   check("map listed on Maps", !!mapRow.v);
-  await page.getByText(mapTitle, { exact: true }).first().click({ button: "right" });
+  // The row's actions menu (the kebab in the ACTIONS column), then its Delete item.
+  const mapTr = page.locator("tr").filter({ hasText: mapTitle }).first();
+  await mapTr.locator("button").last().click({ timeout: 15000 });
   await page.getByRole("menuitem", { name: /^Delete$/ }).first().click({ timeout: 15000 });
   const dlg = page.getByRole("alertdialog").or(page.getByRole("dialog")).first();
   await dlg.waitFor({ timeout: 15000 });
@@ -112,14 +126,25 @@ try {
   const both = await until("both in trash", async () =>
     (await page.getByText(showTitle, { exact: true }).count()) > 0 &&
     (await page.getByText(mapTitle, { exact: true }).count()) > 0, 60000);
-  await shot(page, "3-trash-lists-both");
-  check("Trash lists the archived show and map", !!both.v);
-  for (const title of [showTitle, mapTitle]) {
-    const li = page.locator("li").filter({ hasText: title }).first();
-    await li.getByRole("button", { name: /Restore/ }).click({ timeout: 15000 });
-    await until(`${title} leaves trash`, async () => (await page.getByText(title, { exact: true }).count()) === 0, 30000);
+  await shot(page, "3-trash-page");
+  check("Trash PAGE lists the archived show and map", !!both.v,
+    both.v ? "" : "page reads 'Nothing in the trash' — trash_counts / unfiltered trash_list time out for this seat (the File kind; pre-existing)");
+  if (both.v) {
+    for (const title of [showTitle, mapTitle]) {
+      const li = page.locator("li").filter({ hasText: title }).first();
+      await li.getByRole("button", { name: /Restore/ }).click({ timeout: 15000 });
+      await until(`${title} leaves trash`, async () => (await page.getByText(title, { exact: true }).count()) === 0, 30000);
+    }
+    await shot(page, "4-trash-after-restore");
+  } else {
+    // The same two doors the page's kind filter and Restore button call, from the same seat.
+    for (const [kind, token, id, name] of [["pc_show", "pc_show", show.id, "show"], ["canvas", "canvas_item", map.id, "map"]]) {
+      const { data: rows, error } = await sb.rpc("trash_list", { p_kinds: [kind], p_limit: 200, p_offset: 0 });
+      check(`Trash door lists the archived ${name} (trash_list kind ${kind})`, !error && (rows ?? []).some((r) => r.id === id), error?.message ?? "");
+      const { data: ok, error: rErr } = await sb.rpc("entity_undelete", { p_token: token, p_id: id });
+      check(`Trash restore door brings the ${name} back (entity_undelete)`, !rErr && ok === true, rErr?.message ?? String(ok));
+    }
   }
-  await shot(page, "4-trash-after-restore");
   check("show restored (deleted_at null)", (await live("podcast", "pc_shows", show.id))?.deleted_at === null);
   check("map restored (deleted_at null)", (await live("canvas", "canvas_items", map.id))?.deleted_at === null);
 
@@ -133,6 +158,7 @@ try {
   await shot(page, "6-map-back-on-maps");
   check("map is back on Maps", !!mapBack.v);
 } catch (e) {
+  await browser.contexts()[0]?.pages()[0]?.screenshot({ path: `${OUT}/failure.png` }).catch(() => {});
   check("walk completed without an exception", false, e.message.split("\n")[0]);
 } finally {
   await browser.close();
