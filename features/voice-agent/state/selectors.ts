@@ -14,6 +14,7 @@ const EMPTY_INSTANCE: Readonly<VoiceAgentInstance> = Object.freeze({
   tools: [],
   preset: "intro",
   persist: false,
+  realtimeModel: null,
   status: "idle",
   error: null,
   micMuted: false,
