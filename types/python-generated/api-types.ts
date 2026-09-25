@@ -87730,6 +87730,23 @@ export interface components {
             runs_counted: number;
             /** Runs Failed */
             runs_failed: number;
+            /**
+             * Recent Runs Counted
+             * @default 0
+             */
+            recent_runs_counted?: number;
+            /**
+             * Recent Runs Failed
+             * @default 0
+             */
+            recent_runs_failed?: number;
+            /**
+             * Failing Streak
+             * @default 0
+             */
+            failing_streak?: number;
+            /** Last Success At */
+            last_success_at?: string | null;
             /** Cumulative Wall Seconds */
             cumulative_wall_seconds: number;
             /** Cumulative Vcpu Seconds */

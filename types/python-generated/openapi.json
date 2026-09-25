@@ -200828,6 +200828,32 @@
             "type": "integer",
             "title": "Runs Failed"
           },
+          "recent_runs_counted": {
+            "type": "integer",
+            "title": "Recent Runs Counted",
+            "default": 0
+          },
+          "recent_runs_failed": {
+            "type": "integer",
+            "title": "Recent Runs Failed",
+            "default": 0
+          },
+          "failing_streak": {
+            "type": "integer",
+            "title": "Failing Streak",
+            "default": 0
+          },
+          "last_success_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Success At"
+          },
           "cumulative_wall_seconds": {
             "type": "number",
             "title": "Cumulative Wall Seconds"

@@ -230,8 +230,15 @@ export interface ScanMetrics {
   patrolEnabled: boolean | null;
   patrolLastRunAt: string | null;
   patrolNextDueAt: string | null;
+  /** Lifetime history — never the headline (a fixed outage reads as current). */
   patrolRunsFailed: number | null;
   patrolRunsCounted: number | null;
+  /** RECENT HEALTH, the headline: the last N finished runs. */
+  patrolRecentFailed: number | null;
+  patrolRecentCounted: number | null;
+  /** Consecutive failures ending at the newest finished run (0 = healthy now). */
+  patrolFailingStreak: number | null;
+  patrolLastSuccessAt: string | null;
 }
 
 export function scanMetrics(
@@ -255,6 +262,10 @@ export function scanMetrics(
     patrolNextDueAt: patrol?.next_due_at ?? null,
     patrolRunsFailed: patrol?.runs_failed ?? null,
     patrolRunsCounted: patrol?.runs_counted ?? null,
+    patrolRecentFailed: patrol?.recent_runs_failed ?? null,
+    patrolRecentCounted: patrol?.recent_runs_counted ?? null,
+    patrolFailingStreak: patrol?.failing_streak ?? null,
+    patrolLastSuccessAt: patrol?.last_success_at ?? null,
   };
 }
 

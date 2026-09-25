@@ -511,13 +511,31 @@ export function MandateDashboard() {
             }
           />
           <KpiTile
-            label="Patrol runs failed"
-            value={n(scan?.patrolRunsFailed)}
-            tone={scan && (scan.patrolRunsFailed ?? 0) > 0 ? "bad" : "neutral"}
+            label="Patrol health"
+            value={
+              scan && scan.patrolFailingStreak !== null
+                ? scan.patrolFailingStreak > 0
+                  ? `Failing ×${formatCount(scan.patrolFailingStreak)}`
+                  : "Passing"
+                : null
+            }
+            tone={
+              scan && (scan.patrolFailingStreak ?? 0) > 0
+                ? "bad"
+                : scan && (scan.patrolRecentFailed ?? 0) > 0
+                  ? "warn"
+                  : "neutral"
+            }
             loading={boardLoading}
+            href={REFERENCES_PATH}
             hint={
+              scan && scan.patrolRecentCounted !== null
+                ? `${formatCount(scan.patrolRecentFailed ?? 0)} of last ${formatCount(scan.patrolRecentCounted)} failed · last success ${ago(scan.patrolLastSuccessAt) ?? "never"}`
+                : undefined
+            }
+            title={
               scan && scan.patrolRunsCounted !== null
-                ? `of ${formatCount(scan.patrolRunsCounted)}`
+                ? `All time: ${formatCount(scan.patrolRunsFailed ?? 0)} of ${formatCount(scan.patrolRunsCounted)} runs failed. The headline is the newest runs, so a fixed outage never reads as current.`
                 : undefined
             }
           />

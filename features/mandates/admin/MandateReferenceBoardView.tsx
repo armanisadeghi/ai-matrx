@@ -198,10 +198,20 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
             no trigger — this task has no schedule
           </span>
         )}
-        {patrol.runs_failed > 0 ? (
+        {(patrol.failing_streak ?? 0) > 0 ? (
           <span className="text-xs text-destructive">
-            {patrol.runs_failed} of {patrol.runs_counted} run
-            {patrol.runs_counted === 1 ? "" : "s"} failed
+            failing — the last {patrol.failing_streak} run
+            {patrol.failing_streak === 1 ? "" : "s"} failed
+          </span>
+        ) : (patrol.recent_runs_failed ?? 0) > 0 ? (
+          <span className="text-xs text-amber-700 dark:text-amber-400">
+            passing now — {patrol.recent_runs_failed} of the last{" "}
+            {patrol.recent_runs_counted} failed
+          </span>
+        ) : null}
+        {patrol.runs_failed > 0 ? (
+          <span className="text-xs text-muted-foreground">
+            all time: {patrol.runs_failed} of {patrol.runs_counted} failed
           </span>
         ) : null}
       </div>
