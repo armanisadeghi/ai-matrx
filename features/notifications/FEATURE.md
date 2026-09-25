@@ -18,7 +18,7 @@ controls, never hidden — see `features/shell/FEATURE.md`.
 
 | File | Role |
 |---|---|
-| `components/InboxHeaderButton.tsx` | The bell. Badge = unread notices + conversations with unread + proposals waiting. Popover on desktop, Drawer on mobile; a guest gets the auth gate. Idle cost: one tap-target + three hooks. |
+| `components/InboxHeaderButton.tsx` | The bell. Badge = unread notices + conversations with unread + proposals waiting + what waits on you in your tables (the record store's inbox, every organization of yours). Popover on desktop, Drawer on mobile; a guest gets the auth gate. Idle cost: one tap-target + three hooks. |
 | `components/InboxPanel.tsx` | THE inbox body — mounted by the bell AND by `/notifications` (`app/(core)/notifications/page.tsx`). Pinned rows for Messages and Waiting-on-you, then the notice list, Mark-all-read, honest empty/error states. |
 | `useInbox.ts` | `useInboxCounts()` (badge) and `useInboxList()` (rows + `markRead` / `markAllRead`) over react-query. `INBOX_POLL_INTERVAL_MS`, `INBOX_PANEL_LIMIT`. |
 | `service.ts` | The four door calls. Reads/writes go React → Supabase directly. |
@@ -30,6 +30,7 @@ controls, never hidden — see `features/shell/FEATURE.md`.
 |---|---|
 | `communication.my_notifications(p_limit, p_before, p_unread_only)` | The caller's delivered `in_app` rows, newest first, keyset by `created_at`. Never the provider columns. |
 | `communication.my_notification_unread_count()` | The badge number. |
+| `custom.inbox_counts()` | What waits on this person in the record store, one line per organization (waiting / snoozed / cleared / overdue) — the SAME predicate (`custom._inbox_items`) the inbox screen `custom.work_inbox` lists with and the reminder tick reminds from, so the bell, the inbox and the reminders cannot disagree (lane S5-PRIME-2, 2026-09-24). Read by `fetchMyWorkWaiting`; pinned as "In your tables · <organization>", each opening `/data-v2?org=<id>`. |
 | `communication.mark_my_notifications_read()` | Mark all read (`read_channel = 'in_app'`). Returns the count changed. |
 | `communication.mark_notification_read(id, 'in_app')` | Pre-existing; one row, on open. |
 
@@ -88,6 +89,12 @@ through `@ai-matrx/realtime` — invoke the `supabase-realtime` skill first.
    panel header is the next affordance.
 
 ## Change log
+
+- **2026-09-24** — Lane S5-PRIME-2: the badge counts what waits on the person in the record
+  store (`custom.inbox_counts`, every organization of theirs) and the panel pins one row per
+  organization that opens its inbox. Snoozed and cleared items are not counted — the same door the
+  inbox screen hides them with. The store's own reminders (`custom.inbox.reminder`,
+  `custom.inbox.snooze_ended`) arrive here as ordinary rows. Walk: `scripts/s5prime2-badge-walk.mjs`.
 
 - **2026-09-20** — Merge with `main`: a parallel lane had wired the old
   `NotificationDropdown` to the same doors through its own reader

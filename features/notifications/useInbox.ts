@@ -26,6 +26,8 @@ import { usePendingApprovalCount } from "@/features/approvals/usePendingApproval
 import {
   fetchMyNotifications,
   fetchMyUnreadNotificationCount,
+  fetchMyWorkWaiting,
+  type WorkWaiting,
   markAllMyNotificationsRead,
   markNotificationRead,
 } from "./service";
@@ -49,6 +51,14 @@ export interface InboxCounts {
   conversations: number;
   /** Proposals waiting on this person. `null` = the count could not be read. */
   approvals: number | null;
+  /**
+   * What waits on this person in the record store — approvals, agent proposals and assigned work,
+   * snoozed and cleared ones left out — summed over every organization of theirs. The SAME door
+   * the inbox screen lists with (`custom.inbox_counts`, lane S5-PRIME-2). `null` = unreadable.
+   */
+  work: number | null;
+  /** The same, one line per organization with anything waiting (for the panel's pinned rows). */
+  workByOrganization: WorkWaiting[];
   /** The bell's number — the sum of what is known. */
   total: number;
   /** True when any part of the total is unknown, so the badge can say so. */
@@ -60,6 +70,15 @@ export function useInboxCounts(): InboxCounts {
   const userId = useAppSelector(selectUserId);
   const { totalUnreadConversations } = useConversations();
   const approvals = usePendingApprovalCount();
+  const workWaiting = useQuery({
+    queryKey: [...INBOX_QUERY_KEY, "work-waiting", userId] as const,
+    queryFn: fetchMyWorkWaiting,
+    enabled: userId !== null,
+    refetchInterval: INBOX_POLL_INTERVAL_MS,
+    refetchOnWindowFocus: true,
+    staleTime: 15_000,
+    retry: 1,
+  });
   const unread = useQuery({
     queryKey: unreadKey(userId),
     queryFn: fetchMyUnreadNotificationCount,
@@ -71,13 +90,23 @@ export function useInboxCounts(): InboxCounts {
 
   const notifications = unread.isError ? null : (unread.data ?? 0);
   const approvalCount = approvals.unknown ? null : approvals.count;
+  const workByOrganization = (workWaiting.data ?? []).filter((o) => o.waiting > 0);
+  const work =
+    workWaiting.isError || workWaiting.data === undefined
+      ? null
+      : workByOrganization.reduce((sum, o) => sum + o.waiting, 0);
   return {
     notifications,
     conversations: totalUnreadConversations,
     approvals: approvalCount,
+    work,
+    workByOrganization,
     total:
-      (notifications ?? 0) + totalUnreadConversations + (approvalCount ?? 0),
-    partial: notifications === null || approvalCount === null,
+      (notifications ?? 0) +
+      totalUnreadConversations +
+      (approvalCount ?? 0) +
+      (work ?? 0),
+    partial: notifications === null || approvalCount === null || work === null,
   };
 }
 

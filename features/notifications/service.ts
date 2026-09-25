@@ -111,6 +111,42 @@ export async function fetchMyUnreadNotificationCount(): Promise<number> {
   return data;
 }
 
+/**
+ * WHAT WAITS ON THIS PERSON IN THE RECORD STORE, per organization — `custom.inbox_counts`, the
+ * SAME predicate the inbox screen (`custom.work_inbox`) lists with and the reminder tick reminds
+ * from (lane S5-PRIME-2). Every organization the person belongs to: what waits on a person is
+ * theirs, not the selected organization's. An organization with nothing is not listed.
+ */
+export interface WorkWaiting {
+  organization_id: string;
+  organization_name: string | null;
+  waiting: number;
+  snoozed: number;
+  overdue: number;
+}
+
+function isWorkWaiting(value: unknown): value is WorkWaiting {
+  if (typeof value !== "object" || value === null) return false;
+  const row = value as Record<string, unknown>;
+  return typeof row.organization_id === "string" && typeof row.waiting === "number";
+}
+
+export async function fetchMyWorkWaiting(): Promise<WorkWaiting[]> {
+  // `custom` is the record store's schema, reached by its doors only and absent from the generated
+  // `Database` type (the same untyped-door shape as the calls above; the answer is checked below).
+  const { data, error } = (await createClient()
+    .schema("custom" as never)
+    .rpc("inbox_counts" as never, {} as never)) as UntypedRpcResult;
+  if (error) throw operationFailed("count what is waiting on you", error);
+  if (!Array.isArray(data) || !data.every(isWorkWaiting)) {
+    throw operationFailed(
+      "count what is waiting on you",
+      new Error("custom.inbox_counts did not answer one row per organization."),
+    );
+  }
+  return data;
+}
+
 /** Stamp one notice read (the person opened it). Returns whether a row changed. */
 export async function markNotificationRead(id: string): Promise<boolean> {
   const { data, error } = await communication().rpc("mark_notification_read", {

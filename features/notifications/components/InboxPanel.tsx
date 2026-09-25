@@ -29,6 +29,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   ExternalLink,
+  Inbox as InboxIcon,
   Loader2,
   MessageSquare,
 } from "lucide-react";
@@ -197,7 +198,9 @@ export function InboxPanel({
   const unreadKnown = counts.notifications !== null;
   const hasUnread = (counts.notifications ?? 0) > 0;
   const pinned =
-    counts.conversations > 0 || (counts.approvals ?? 0) > 0;
+    counts.conversations > 0 ||
+    (counts.approvals ?? 0) > 0 ||
+    counts.workByOrganization.length > 0;
 
   return (
     <div
@@ -262,6 +265,21 @@ export function InboxPanel({
               }}
             />
           ) : null}
+          {/* WHAT WAITS ON YOU IN YOUR TABLES, one row per organization, each named — it opens
+              that organization's inbox (`/data-v2?org=`), whichever organization is selected. */}
+          {counts.workByOrganization.map((o) => (
+            <PinnedRow
+              key={o.organization_id}
+              icon={<InboxIcon />}
+              label={`In your tables · ${o.organization_name ?? "an organization"}`}
+              count={o.waiting}
+              onClick={() => {
+                const href = `/data-v2?org=${o.organization_id}`;
+                startTransition(() => router.push(href));
+                onNavigate?.();
+              }}
+            />
+          ))}
         </div>
       ) : null}
 
