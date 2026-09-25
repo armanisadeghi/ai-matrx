@@ -97,6 +97,12 @@ if (step === "setup") {
   await rpc("record_update", { p_organization_id: ORG, p_record_id: state.recordId, p_patch: { status: "Complete" } });
   console.log("status change written: On site -> Complete (must fire once)");
 } else if (step === "retire") {
+  // The schedule, through the scheduler's own door (soft delete: enabled=false, run history kept).
+  const task = process.env.SOURCE_KEY_TASK;
+  const res = await fetch(`https://server.app.matrxserver.com/scheduler/tasks/${task}`, {
+    method: "DELETE", headers: { Authorization: `Bearer ${auth.session.access_token}`, "X-Organization-Id": ORG } });
+  console.log(`schedule retired: ${res.status} ${(await res.text()).slice(0, 200)}`);
+  if (process.env.SOURCE_KEY_SKIP_TABLE === "1") process.exit(0);
   await rpc("table_archive", { p_organization_id: ORG, p_table_id: state.tableId });
   console.log("table archived");
 }

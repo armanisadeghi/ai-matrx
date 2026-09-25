@@ -5,7 +5,7 @@
 -- was `custom_record:<table id>` (GRIDPRIM G4/G8). From this file on it is `record:<table id>`,
 -- as ONE change: the store writes only the new key, reads both for one release, turns an old
 -- client's key into the new one on the way in (so a schedule made from an older screen still
--- fires), and repairs any stored row. The companion file sourcekey_the_old_key_is_refused.sql
+-- fires), and repairs any stored row. The companion file sourcekey_the_old_key_is_refused_by_name.sql
 -- (step 4, once the new @ai-matrx/records is installed and live) refuses the old key outright.
 --
 -- THE USE CASE. Harbor Point Plumbing & Drain (Tacoma, WA) dispatches service calls from a
@@ -46,7 +46,7 @@ declare
   c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
   c_sam_j   constant text := '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}';
   v_org uuid := gen_random_uuid(); v_home uuid; v_calls uuid; v_task uuid; v_old_task uuid;
-  v_call uuid; v_n integer; v_key text; v_cfg jsonb; v_wh jsonb; v_old_wh uuid; v_types text[];
+  v_call uuid; v_n integer; v_key text; v_cfg jsonb; v_wh jsonb; v_old_wh uuid; v_types text[]; v_refused boolean := false;
 begin
   -- ── fixture (asserts nothing) ─────────────────────────────────────────────────────────
   perform set_config('app.actor_system', 'campaign-test/sourcekey', true);
@@ -120,20 +120,31 @@ begin
   returning id into v_old_task;
   insert into scheduler.sch_agent_task (id, prompt, auth_mode)
   values (v_old_task, 'A service call was archived. Tell dispatch which one.', 'auto');
-  insert into scheduler.sch_trigger (task_id, user_id, type, config, organization_id)
-  values (v_old_task, c_admin, 'event', jsonb_build_object('entity_type', 'custom_record:' || v_calls::text,
-            'actions', jsonb_build_array('record.archived'), 'table_id', v_calls::text), v_org);
-  select config into v_cfg from scheduler.sch_trigger where task_id = v_old_task;
-  if v_cfg ->> 'entity_type' is distinct from 'record:' || v_calls::text then
-    raise exception 'T4 RED: an older client''s schedule is stored under "%"', v_cfg ->> 'entity_type';
+  -- Step 1 turns the old key into the new one; step 2 (sourcekey_the_old_key_is_refused_by_name.sql)
+  -- refuses it by name. Either is right; storing it under the old key, or silently, is not.
+  begin
+    insert into scheduler.sch_trigger (task_id, user_id, type, config, organization_id)
+    values (v_old_task, c_admin, 'event', jsonb_build_object('entity_type', 'custom_record:' || v_calls::text,
+              'actions', jsonb_build_array('record.archived'), 'table_id', v_calls::text), v_org);
+  exception when check_violation then
+    if sqlerrm not like '%custom_record%' then raise; end if;
+    v_refused := true;
+  end;
+  if v_refused then
+    raise notice 'T4 PASS — step 2 is live: an older client''s custom_record: schedule is refused by name (23514).';
+  else
+    select config into v_cfg from scheduler.sch_trigger where task_id = v_old_task;
+    if v_cfg ->> 'entity_type' is distinct from 'record:' || v_calls::text then
+      raise exception 'T4 RED: an older client''s schedule is stored under "%"', v_cfg ->> 'entity_type';
+    end if;
+    perform set_config('request.jwt.claims', c_sam_j, true);
+    perform set_config('role', 'authenticated', true);
+    perform custom.record_delete(v_org, v_call);  -- archives: the row stays, deleted_at is set
+    perform set_config('role', 'postgres', true);
+    select count(*) into v_n from scheduler.sch_run where task_id = v_old_task;
+    if v_n <> 1 then raise exception 'T4 RED: the older client''s schedule queued % run(s) on the archive, not 1', v_n; end if;
+    raise notice 'T4 PASS — an older client''s custom_record: schedule is stored as record:<table> and fired once.';
   end if;
-  perform set_config('request.jwt.claims', c_sam_j, true);
-  perform set_config('role', 'authenticated', true);
-  perform custom.record_delete(v_org, v_call);  -- archives: the row stays, deleted_at is set
-  perform set_config('role', 'postgres', true);
-  select count(*) into v_n from scheduler.sch_run where task_id = v_old_task;
-  if v_n <> 1 then raise exception 'T4 RED: the older client''s schedule queued % run(s) on the archive, not 1', v_n; end if;
-  raise notice 'T4 PASS — an older client''s custom_record: schedule is stored as record:<table> and fired once.';
 
   -- ── T5: webhooks, from the office manager's seat ──────────────────────────────────────
   perform set_config('request.jwt.claims', c_admin_j, true);
@@ -146,21 +157,31 @@ begin
   if v_types is distinct from array['record:' || v_calls::text] or v_n <> 1 then
     raise exception 'T5 RED: the declared webhook names % and the table lists % webhook(s)', v_types, v_n;
   end if;
-  insert into files.webhooks (owner_id, organization_id, target_url, secret, description, resource_types)
-  values (c_admin, v_org, 'https://hooks.harborpointplumbing.com/matrx/dispatch-board', encode(extensions.gen_random_bytes(32), 'hex'),
-          'Dispatch board (saved by an older client)', array['custom_record:' || v_calls::text])
-  returning id, resource_types into v_old_wh, v_types;
-  if v_types is distinct from array['record:' || v_calls::text] then
-    raise exception 'T5 RED: a webhook written with the old key is stored as %', v_types;
+  v_refused := false;
+  begin
+    insert into files.webhooks (owner_id, organization_id, target_url, secret, description, resource_types)
+    values (c_admin, v_org, 'https://hooks.harborpointplumbing.com/matrx/dispatch-board', encode(extensions.gen_random_bytes(32), 'hex'),
+            'Dispatch board (saved by an older client)', array['custom_record:' || v_calls::text])
+    returning id, resource_types into v_old_wh, v_types;
+  exception when check_violation then
+    if sqlerrm not like '%custom_record%' then raise; end if;
+    v_refused := true;
+  end;
+  if v_refused then
+    raise notice 'T5 (step 2 is live) — a webhook written with the old key is refused by name (23514).';
+  else
+    if v_types is distinct from array['record:' || v_calls::text] then
+      raise exception 'T5 RED: a webhook written with the old key is stored as %', v_types;
+    end if;
+    perform set_config('role', 'authenticated', true);
+    select count(*) into v_n from custom.table_webhooks(v_org, v_calls);
+    perform custom.table_webhook_archive(v_org, v_old_wh);
+    perform set_config('role', 'postgres', true);
+    if v_n <> 2 or (select is_active from files.webhooks where id = v_old_wh) then
+      raise exception 'T5 RED: the table lists % webhook(s) (want 2) or the older one did not archive', v_n;
+    end if;
   end if;
-  perform set_config('role', 'authenticated', true);
-  select count(*) into v_n from custom.table_webhooks(v_org, v_calls);
-  perform custom.table_webhook_archive(v_org, v_old_wh);
-  perform set_config('role', 'postgres', true);
-  if v_n <> 2 or (select is_active from files.webhooks where id = v_old_wh) then
-    raise exception 'T5 RED: the table lists % webhook(s) (want 2) or the older one did not archive', v_n;
-  end if;
-  raise notice 'T5 PASS — declared webhook names record:<table>, an old-key one is stored as the new key, both listed, archive works.';
+  raise notice 'T5 PASS — the declared webhook names record:<table>; an old-key one is never stored under the old key.';
 
   -- ── T6: nothing under the old key is left in this organization ────────────────────────
   select (select count(*) from scheduler.sch_trigger where organization_id = v_org and config ->> 'entity_type' like 'custom\_record:%')
