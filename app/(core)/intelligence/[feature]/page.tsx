@@ -1,10 +1,16 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { FeatureIntelligence } from "@/features/mandates/feature-intelligence/FeatureIntelligence";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 import { loginHref } from "@/utils/auth/auth-destination";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
-import { canonicalFeature, declaredPlacesFor } from "@/features/mandates/feature-intelligence/registry";
+import { createClient } from "@/utils/supabase/server";
+import { mandateDefinitions } from "@/lib/supabase/mandateStorage";
+import {
+  canonicalFeature,
+  declaredPlacesFor,
+  featureDisplayName,
+} from "@/features/mandates/feature-intelligence/registry";
 
 /**
  * /intelligence/[feature] — the AI jobs of one feature, from the viewer's seat
@@ -15,12 +21,27 @@ import { canonicalFeature, declaredPlacesFor } from "@/features/mandates/feature
 const FEATURE_RE = /^[a-z][a-z0-9_]*$/;
 
 function titleOf(feature: string): string {
-  const declared = declaredPlacesFor(feature)?.label;
-  if (declared) return declared;
-  return feature
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+  return featureDisplayName(feature);
+}
+
+/** A feature exists when it declares places or owns at least one live job. */
+async function featureHasJobs(feature: string): Promise<boolean> {
+  if (declaredPlacesFor(feature)) return true;
+  const supabase = await createClient();
+  const { data } = await mandateDefinitions(supabase)
+    .select("mandate_key")
+    .like("mandate_key", `${feature.replace(/_/g, "\\_")}.%`)
+    .is("deleted_at", null)
+    .limit(1);
+  return (data?.length ?? 0) > 0;
+}
+
+/** A near-miss slug a person types (`podcasts` for `podcast`). */
+function aliasOf(feature: string): string | null {
+  const candidates = feature.endsWith("s")
+    ? [feature.slice(0, -1)]
+    : [`${feature}s`];
+  return candidates.find((candidate) => declaredPlacesFor(candidate)) ?? null;
 }
 
 export async function generateMetadata({
@@ -64,7 +85,13 @@ export default async function FeatureIntelligenceRoute({
     ).toString();
     redirect(`/intelligence/${owner}${query ? `?${query}` : ""}`);
   }
-  const safeFeature = FEATURE_RE.test(feature) ? feature : "";
+  // An unknown slug is a real 404 — never an empty page that looks like a
+  // feature with no jobs. A near-miss of a declared feature redirects.
+  if (!FEATURE_RE.test(feature) || !(await featureHasJobs(feature))) {
+    const alias = FEATURE_RE.test(feature) ? aliasOf(feature) : null;
+    if (alias) redirect(`/intelligence/${alias}`);
+    notFound();
+  }
   return (
     <>
       <PageHeader>
@@ -73,18 +100,12 @@ export default async function FeatureIntelligenceRoute({
         </span>
       </PageHeader>
       <div className="h-full overflow-y-auto overflow-x-hidden pt-[var(--shell-header-h)]">
-        {safeFeature ? (
-          <FeatureIntelligence
-            feature={safeFeature}
-            context={context}
-            focusMandateKey={focus}
-            showTitle={false}
-          />
-        ) : (
-          <p className="p-6 text-sm text-muted-foreground">
-            That is not a feature name. Open intelligence from a page that uses AI.
-          </p>
-        )}
+        <FeatureIntelligence
+          feature={feature}
+          context={context}
+          focusMandateKey={focus}
+          showTitle={false}
+        />
       </div>
     </>
   );

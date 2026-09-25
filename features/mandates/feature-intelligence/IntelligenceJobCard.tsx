@@ -28,6 +28,7 @@ import { agentHref } from "../admin/mandate-health";
 import { MemberHealthBadge } from "../member-list/columns";
 import { useMandateInputSurface } from "../input-surface";
 import { kindPhrase } from "../provision-shapes";
+import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
 import { useMandateLadder, type MandateRung } from "../workspace/useMandateLadder";
 import type { FeatureIntelligenceRow, ResolvedPlace } from "./types";
 
@@ -61,6 +62,18 @@ function decidedWords(row: FeatureIntelligenceRow, orgLevel: boolean): string {
   }
 }
 
+/**
+ * An input as a person reads it: the provision's own label, else the name
+ * humanized — never the raw `remaining_cards` / `organization_id`. A trailing
+ * `_id` names a record, so it reads as that record ("Organization").
+ */
+export function inputDisplayLabel(input: { name: string; label?: string | null }): string {
+  const explicit = input.label && input.label !== input.name ? input.label : null;
+  if (explicit) return displayLabelForKey(input.name, explicit);
+  const base = input.name.replace(/_ids?$/, "");
+  return displayLabelForKey(base || input.name);
+}
+
 function Inputs({ mandateKey }: { mandateKey: string }) {
   const state = useMandateInputSurface(mandateKey);
   if (state.status === "loading") {
@@ -90,7 +103,7 @@ function Inputs({ mandateKey }: { mandateKey: string }) {
                   : "border-border bg-muted/40 text-muted-foreground",
               )}
             >
-              {input.label || input.name}
+              {inputDisplayLabel(input)}
             </span>
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
@@ -175,6 +188,13 @@ export function IntelligenceJobCard({
                 {row.homeLabel}
               </Badge>
             ) : null}
+            {/* The details door sits with the title, so it never wraps onto a
+                row of its own under the action buttons on a phone. */}
+            <Button size="sm" variant="ghost" asChild className="ml-auto h-7 w-7 p-0 lg:ml-0">
+              <Link href={detailsHref} aria-label={`All settings for ${row.shortName}`}>
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
           </div>
           {about ? (
             <p className="line-clamp-2 max-w-2xl text-[13px] leading-relaxed text-muted-foreground">
@@ -204,11 +224,6 @@ export function IntelligenceJobCard({
               {resetLabel}
             </Button>
           ) : null}
-          <Button size="sm" variant="ghost" asChild>
-            <Link href={detailsHref} aria-label={`All settings for ${row.shortName}`}>
-              <ExternalLink className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
         </div>
       </div>
 

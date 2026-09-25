@@ -137,4 +137,16 @@ describe("feature intelligence — features that own more than one prefix", () =
     expect(rows.find((row: { feature: string }) => row.feature === "marketing")).toMatchObject({ jobs: 2, declared: true });
     expect(rows.find((row: { feature: string }) => row.feature === "zzz_new")).toMatchObject({ jobs: 1, declared: false });
   });
+
+  it("never shows a raw prefix, and marks test fixtures", () => {
+    const { buildIndexRows } = jest.requireActual("../IntelligenceIndex");
+    const rows = buildIndexRows(["ner.extract", "kg.link", "cms.page", "rag_kinds.x", "zzz.a", "wfparity.b"]);
+    const label = (feature: string) =>
+      rows.find((row: { feature: string }) => row.feature === feature)?.label;
+    expect(label("ner")).toBe("Entity extraction");
+    expect(label("kg")).toBe("Knowledge graph");
+    expect(label("cms")).toBe("Website content");
+    expect(label("rag_kinds")).toBe("Knowledge base types");
+    expect(rows.filter((row: { fixture: boolean }) => row.fixture).map((row: { feature: string }) => row.feature).sort()).toEqual(["wfparity", "zzz"]);
+  });
 });

@@ -123,3 +123,72 @@ export function featureForKey(mandateKey: string): string {
 export function canonicalFeature(feature: string): string {
   return featureForKey(`${feature}.`);
 }
+
+/**
+ * Display names for key prefixes that have jobs but no places map yet. A raw
+ * prefix ("ner", "kg", "rag_kinds") is never shown to a person; a prefix
+ * missing here falls back to its humanized form — add it here when it shows up.
+ */
+const UNDECLARED_FEATURE_LABELS: Readonly<Record<string, string>> = {
+  shortcut: "Shortcuts",
+  app: "Agent apps",
+  local: "Matrx Local",
+  ner: "Entity extraction",
+  masterworks: "Masterworks",
+  cms: "Website content",
+  iteration: "Iteration",
+  extend: "Browser extension",
+  google: "Google",
+  image_pipeline: "Image pipeline",
+  transcripts: "Transcripts",
+  audio: "Audio",
+  evaluators: "Evaluators",
+  kg: "Knowledge graph",
+  mandate_outcome: "Job outcomes",
+  memory: "Memory",
+  observability: "Observability",
+  agent_factory: "Agent factory",
+  content_gate: "Content gate",
+  docproc: "Document processing",
+  feedback: "Feedback",
+  foundry: "Foundry",
+  human_decisions: "Human decisions",
+  image: "Images",
+  mandate: "Mandates",
+  media_catalog: "Media catalog",
+  mermaid: "Mermaid diagrams",
+  orchestration: "Orchestration",
+  patrol: "Patrol",
+  purpose: "Purpose",
+  rag_kinds: "Knowledge base types",
+  records: "Records",
+  tools: "Tools",
+  web: "Web",
+};
+
+/**
+ * Prefixes that exist only for tests and parity fixtures (`zzz.*`,
+ * `wfparity.*`, `test_*`). Hidden from non-admins; admins see them labeled.
+ */
+export function isFixtureFeature(feature: string): boolean {
+  return (
+    feature === "zzz" ||
+    feature === "wfparity" ||
+    /^(test|fixture|e2e)(_|$)/.test(feature)
+  );
+}
+
+function humanizeFeature(feature: string): string {
+  const words = feature.split(/[_-]+/).filter(Boolean).join(" ");
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : feature;
+}
+
+/** The name a person reads for a feature slug — never the raw prefix. */
+export function featureDisplayName(feature: string): string {
+  const declared = declaredPlacesFor(feature)?.label;
+  if (declared) return declared;
+  const known = UNDECLARED_FEATURE_LABELS[feature];
+  if (known) return known;
+  if (isFixtureFeature(feature)) return `Test fixture (${feature})`;
+  return humanizeFeature(feature);
+}

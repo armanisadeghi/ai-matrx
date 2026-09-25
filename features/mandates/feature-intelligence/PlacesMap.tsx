@@ -33,7 +33,10 @@ export function PlacesMap({
   }
   return (
     <div>
-      <ol className="flex flex-wrap items-stretch gap-1.5" aria-label="Where intelligence runs">
+      <ol
+        className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:items-stretch"
+        aria-label="Where intelligence runs"
+      >
         {places.map((place) => {
           const lit =
             (activeMandateKey !== null && place.mandateKeys.includes(activeMandateKey)) ||
@@ -57,7 +60,7 @@ export function PlacesMap({
             </>
           );
           const className = cn(
-            "block w-[11.5rem] min-w-0 rounded-lg border px-2.5 py-1.5 text-left transition-all",
+            "block h-full w-full min-w-0 rounded-lg border px-2.5 py-1.5 text-left transition-all sm:w-[11.5rem]",
             lit
               ? "border-primary/60 bg-primary/10 shadow-sm"
               : "border-border bg-card hover:border-primary/40",

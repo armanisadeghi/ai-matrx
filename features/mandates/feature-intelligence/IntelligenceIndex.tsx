@@ -14,7 +14,14 @@ import { createClient } from "@/utils/supabase/client";
 import { readAllRows } from "@ai-matrx/data/db";
 import { mandateDefinitions } from "@/lib/supabase/mandateStorage";
 import { featureIntelligenceHref } from "./hrefs";
-import { DECLARED_FEATURES, featureForKey } from "./registry";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import {
+  DECLARED_FEATURES,
+  featureDisplayName,
+  featureForKey,
+  isFixtureFeature,
+} from "./registry";
 
 interface IndexRow {
   feature: string;
@@ -22,13 +29,8 @@ interface IndexRow {
   jobs: number;
   places: number;
   declared: boolean;
-}
-
-function titleCase(value: string): string {
-  return value
-    .split(/[_-]/)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+  /** A test/parity fixture prefix — admins only, labeled as such. */
+  fixture: boolean;
 }
 
 export function buildIndexRows(mandateKeys: readonly string[]): IndexRow[] {
@@ -43,16 +45,18 @@ export function buildIndexRows(mandateKeys: readonly string[]): IndexRow[] {
     jobs: counts.get(entry.feature) ?? 0,
     places: entry.places.length,
     declared: true,
+    fixture: false,
   }));
   const known = new Set(declared.map((row) => row.feature));
   const others: IndexRow[] = [...counts.entries()]
     .filter(([feature]) => !known.has(feature))
     .map(([feature, jobs]) => ({
       feature,
-      label: titleCase(feature),
+      label: featureDisplayName(feature),
       jobs,
       places: 0,
       declared: false,
+      fixture: isFixtureFeature(feature),
     }))
     .sort((a, b) => b.jobs - a.jobs || a.label.localeCompare(b.label));
   return [...declared, ...others];
@@ -82,6 +86,7 @@ function IndexRowLink({ row }: { row: IndexRow }) {
 export function IntelligenceIndex() {
   const [rows, setRows] = useState<IndexRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const isAdmin = useAppSelector(selectIsAdmin);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,7 +111,8 @@ export function IntelligenceIndex() {
   }, []);
 
   const declared = rows?.filter((row) => row.declared) ?? [];
-  const others = rows?.filter((row) => !row.declared) ?? [];
+  const others = rows?.filter((row) => !row.declared && !row.fixture) ?? [];
+  const fixtures = isAdmin ? (rows?.filter((row) => row.fixture) ?? []) : [];
 
   return (
     <div className="mx-auto w-full max-w-3xl px-3 py-5 sm:px-6 lg:py-7">
@@ -133,10 +139,23 @@ export function IntelligenceIndex() {
                 id="intelligence-more"
                 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
               >
-                More features (places not recorded yet)
+                More features
               </h2>
               <ul className="grid gap-1.5 sm:grid-cols-2">
                 {others.map((row) => <IndexRowLink key={row.feature} row={row} />)}
+              </ul>
+            </section>
+          ) : null}
+          {fixtures.length > 0 ? (
+            <section className="mt-6" aria-labelledby="intelligence-fixtures">
+              <h2
+                id="intelligence-fixtures"
+                className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
+              >
+                Test fixtures · admins only
+              </h2>
+              <ul className="grid gap-1.5 sm:grid-cols-2">
+                {fixtures.map((row) => <IndexRowLink key={row.feature} row={row} />)}
               </ul>
             </section>
           ) : null}
