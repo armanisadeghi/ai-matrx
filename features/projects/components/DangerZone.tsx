@@ -20,6 +20,7 @@ import { deleteProject } from "../service";
 import type { Project } from "../types";
 import { useDispatchThunk } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 
 interface DangerZoneProps {
   project: Project;
@@ -72,7 +73,7 @@ export function DangerZone({ project }: DangerZoneProps) {
         <h2 className="text-lg font-semibold text-red-600 dark:text-red-400">
           Danger Zone
         </h2>
-        <p className="text-sm text-muted-foreground">Irreversible actions</p>
+        <p className="text-sm text-muted-foreground">Archive this project</p>
       </div>
 
       <Card className="border-red-200 dark:border-red-800 p-5">
@@ -83,8 +84,7 @@ export function DangerZone({ project }: DangerZoneProps) {
               <h3 className="text-sm font-semibold">Delete this project</h3>
             </div>
             <p className="text-sm text-muted-foreground">
-              Permanently delete <strong>{project.name}</strong> and all of its
-              data. This action cannot be undone.
+              {archiveConfirmSentence(`\u201c${project.name}\u201d`)}
             </p>
           </div>
           <Button
@@ -108,8 +108,7 @@ export function DangerZone({ project }: DangerZoneProps) {
               Delete Project
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete <strong>{project.name}</strong> and
-              all associated data including tasks, members, and invitations.
+              {archiveConfirmSentence(`\u201c${project.name}\u201d`)}
               <br />
               <br />
               Type <strong>{project.name}</strong> to confirm.

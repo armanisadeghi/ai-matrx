@@ -40,6 +40,7 @@ import { podcastEpisodeAdminHref, podcastPublicHref } from "../../utils";
 // 2026-09-07). THE UNIT LAW: the unit is in the name.
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { pushAppHref, replaceAppHref } from "@/lib/deployment/navigate";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 
 /** An episode length reads at a glance: "45 min" / "1h 30m". */
 function formatDuration(seconds: number): string {
@@ -394,7 +395,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete episode?</AlertDialogTitle>
             <AlertDialogDescription>
-              This cannot be undone.
+              {archiveConfirmSentence("the episode")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

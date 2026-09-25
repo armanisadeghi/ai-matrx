@@ -31,6 +31,7 @@ import type {
   LibraryActionTarget,
   LibraryTreeActions,
 } from "./LibraryTreeNode";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 
 interface LibraryPanelProps {
   className?: string;
@@ -335,11 +336,11 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({ className }) => {
         description={
           deleteTarget ? (
             <>
-              Permanently delete <strong>{deleteTarget.item.name}</strong>
-              {deleteTarget.kind === "folder"
-                ? " and everything inside it"
-                : ""}
-              ? This cannot be undone.
+              {archiveConfirmSentence(
+                deleteTarget.kind === "folder"
+                  ? `\u201c${deleteTarget.item.name}\u201d and what is inside it`
+                  : `\u201c${deleteTarget.item.name}\u201d`,
+              )}
             </>
           ) : undefined
         }

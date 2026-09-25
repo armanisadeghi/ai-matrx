@@ -49,6 +49,7 @@ import type {
   AssessmentRow,
   ResultPhase,
 } from "../data/types";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 
 export function AssessmentDetail({
   assessmentId,
@@ -449,7 +450,7 @@ export function AssessmentDetail({
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
         title={`Delete this ${config.noun}?`}
-        description="This can't be undone. Your past attempts are kept."
+        description={`${archiveConfirmSentence(`this ${config.noun}`)} Your past attempts are kept.`}
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={handleDelete}

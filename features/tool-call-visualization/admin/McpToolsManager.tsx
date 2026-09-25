@@ -105,6 +105,7 @@ import {
   createAdminToolRegistryScope,
 } from "@/features/surfaces/manifests/admin-tool-registry.manifest";
 import { MOBILE_TABLE } from "@/components/official/mobile-table/mobileTable";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 
 const PAGE_LOCATION =
   "AI Matrx Admin — Tool Registry · MCP Tools (/administration/agents/mcp-tools)";
@@ -1774,9 +1775,11 @@ export function McpToolsManager() {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Tool</AlertDialogTitle>
               <AlertDialogDescription>
-                Delete{" "}
-                <strong>&ldquo;{deleteConfirmation.toolName}&rdquo;</strong>?
-                This cannot be undone.
+                {archiveConfirmSentence(
+                  deleteConfirmation.toolName
+                    ? `\u201c${deleteConfirmation.toolName}\u201d`
+                    : "the tool",
+                )}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

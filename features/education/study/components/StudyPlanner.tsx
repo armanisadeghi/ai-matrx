@@ -71,6 +71,7 @@ import {
   updateStudyGoal,
 } from "../planner/goalWrites";
 import type { StudyGoalRow, GoalStatus } from "../types";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 
 interface GoalFormState {
   title: string;
@@ -463,8 +464,9 @@ export function StudyPlanner({
         title="Delete goal"
         description={
           <>
-            Permanently delete &ldquo;{pendingDelete?.title}&rdquo;. This cannot
-            be undone.
+            {archiveConfirmSentence(
+              pendingDelete?.title ? `\u201c${pendingDelete.title}\u201d` : "the goal",
+            )}
           </>
         }
         confirmLabel="Delete"

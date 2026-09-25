@@ -21,6 +21,7 @@ import type {
 import { canvasItemsService } from "@/features/canvas/services/canvasItemsService";
 import { deleteMap, duplicateMap } from "./service";
 import { mapHref, type MapListRow } from "./types";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 
 export function useMapRowActions(
   list: EntityListController<MapListRow>,
@@ -112,7 +113,7 @@ export function useMapRowActions(
       title="Delete this map?"
       description={
         pendingDelete
-          ? `"${pendingDelete.title}" will be permanently removed. This cannot be undone.`
+          ? archiveConfirmSentence(`"${pendingDelete.title}"`)
           : ""
       }
       confirmLabel="Delete"

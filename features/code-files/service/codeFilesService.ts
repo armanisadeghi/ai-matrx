@@ -275,7 +275,10 @@ export async function deleteCodeFolder(id: string): Promise<void> {
     supabase
       .schema("code")
       .from("code_file_folders")
-      .update({ is_active: false })
+      // Soft delete in the canonical shape (db-rules §8): `deleted_at`, which
+      // /trash lists and `entity_undelete` restores. `is_active=false` was
+      // invisible to both, so an archived folder could never come back.
+      .update({ deleted_at: new Date().toISOString() })
       .eq("id", id)
       .select("id"),
     { action: "delete", noun: "folder" },

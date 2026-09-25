@@ -33,6 +33,7 @@ import {
   PODCAST_TABLE_ROW_ACTION_REVEAL_CLASS,
 } from "./shows-table-contract";
 import { pushAppHref, replaceAppHref } from "@/lib/deployment/navigate";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 
 function CopyLinkButton({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);
@@ -266,8 +267,7 @@ export function ShowsClient() {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete show?</AlertDialogTitle>
               <AlertDialogDescription>
-                This cannot be undone. Episodes linked to this show will have
-                their show reference removed.
+                {archiveConfirmSentence("the show")}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

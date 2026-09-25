@@ -49,6 +49,7 @@ import {
   showsExportRows,
   showsHumanSummary,
 } from "@/features/podcasts/utils/copy-format";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 
 interface PodcastsTableProps {
   activeTab: "shows" | "episodes";
@@ -531,9 +532,9 @@ export function PodcastsTable({
               Delete {activeTab === "shows" ? "show" : "episode"}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone.
-              {activeTab === "shows" &&
-                " Episodes linked to this show will have their show reference removed."}
+              {archiveConfirmSentence(
+                activeTab === "shows" ? "the show" : "the episode",
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

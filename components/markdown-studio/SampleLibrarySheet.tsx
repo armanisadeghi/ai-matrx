@@ -32,6 +32,7 @@ import type { UserMarkdownSample } from "./user-samples-service";
 // `formatRelativeTime` is THE package formatter (`@ai-matrx/kit/format`,
 // census H1 2026-09-07). This surface previously carried a local copy.
 import { formatRelativeTime } from "@ai-matrx/kit/format";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 
 // Note: the trigger lives in the route header (a `HeaderAction`), so this
 // component is fully controlled from outside — no internal open state or
@@ -75,7 +76,7 @@ export function SampleLibrarySheet({
   const handleDelete = async (sample: UserMarkdownSample) => {
     const ok = await confirm({
       title: "Delete sample?",
-      description: `Permanently delete "${sample.name}". This cannot be undone.`,
+      description: archiveConfirmSentence(`"${sample.name}"`),
       variant: "destructive",
       confirmLabel: "Delete",
     });

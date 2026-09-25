@@ -16,6 +16,7 @@ import {
 import { ShowForm, EpisodeForm } from "./PodcastForm";
 import { podcastService } from "../../service";
 import type { PcShow, PcEpisodeWithShow } from "../../types";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 
 interface PodcastDetailPanelProps {
   activeTab: "shows" | "episodes";
@@ -138,9 +139,7 @@ export function PodcastDetailPanel({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this {label}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone.
-              {activeTab === "shows" &&
-                " Episodes linked to this show will have their show reference removed."}
+              {archiveConfirmSentence(`this ${label}`)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

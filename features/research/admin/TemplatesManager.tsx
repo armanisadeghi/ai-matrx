@@ -76,6 +76,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 
 const SYSTEM_AGENT_TAB = ["system"] as const;
 
@@ -1009,9 +1010,10 @@ export function TemplatesManager() {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Template</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete &ldquo;{deleteTarget?.name}
-                &rdquo;? This cannot be undone. Existing projects using this
-                template will not be affected.
+                {archiveConfirmSentence(
+                  deleteTarget?.name ? `\u201c${deleteTarget.name}\u201d` : "the template",
+                )}{" "}
+                Existing projects using this template will not be affected.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

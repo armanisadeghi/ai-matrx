@@ -152,11 +152,13 @@ const codeFilesAdapter: VirtualSourceAdapter = {
             .schema("code").from("code_file_folders")
             .select(FOLDER_LIST_COLUMNS)
             .is("parent_folder_id", null)
+            .is("deleted_at", null)
             .order("name", { ascending: true })
         : supabase
             .schema("code").from("code_file_folders")
             .select(FOLDER_LIST_COLUMNS)
             .eq("parent_folder_id", args.parentId)
+            .is("deleted_at", null)
             .order("name", { ascending: true }),
       args.parentId === null
         ? supabase
