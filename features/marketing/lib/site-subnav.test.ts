@@ -114,7 +114,6 @@ describe("what the site header renders", () => {
       `${SITE}/settings`,
       `${SITE}/settings/integrations`,
       `${SITE}/settings/access?view=users`,
-      `${SITE}/settings/access?view=organizations`,
       `${SITE}/settings/access?view=public`,
       `${SITE}/settings/intake`,
     ]);

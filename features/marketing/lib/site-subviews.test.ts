@@ -256,15 +256,17 @@ describe("marketing site sub-view registry", () => {
     // brand's Identity home: sub-views 52 - 3 = 49.
     // 2026-08-30 — adversarial-audit repairs: `keywords:research` declared (the
     // routed Research workbench under seo keywords). Sub-views 49 + 1 = 50.
+    // 2026-09-25 — SHARE-PEOPLE-ONLY: "Organization access" retired (a share names a
+    // person, never an organization). Sub-views 50 - 1 = 49.
     expect(MARKETING_SITE_SECTIONS.length).toBe(24);
     expect(
       MARKETING_SITE_SUBVIEWS.reduce(
         (total, entry) => total + entry.views.length,
         0,
       ),
-    ).toBe(50);
+    ).toBe(49);
     expect(countMarketingSiteDestinations(MARKETING_SITE_SECTIONS.length)).toBe(
-      74,
+      73,
     );
   });
 });
