@@ -48,8 +48,8 @@ export async function resolveDefaultAssistantAgentId(
   const roleEntry = entry?.resolved?.roles["assistant"]?.effective[0] ?? null;
   const roleAgent = roleEntry?.agentId ?? null;
   if (roleAgent) {
-    // FAST PATH: the platform-tier role default is the manifest's hard-coded
-    // seed mirror (`AUDIO_ASSISTANT_AGENT_ID`), and it is chosen WITHOUT asking
+    // FAST PATH: the platform-tier role default is the manifest's seeded
+    // agent, and it is chosen WITHOUT asking
     // the Mandate. Verify it beside the run (never awaited) — a mismatch
     // screams to admins. User/org picks are people's choices, not fast paths.
     if (roleEntry?.sourceTier === "manifest") {

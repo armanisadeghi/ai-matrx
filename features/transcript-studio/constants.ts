@@ -124,14 +124,6 @@ export const MODULE_INTERVAL_DEFAULT_MS = 120_000;
 export const TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY =
   MANDATE_KEYS.transcript_studio__document_edit;
 
-// SEED MIRROR ONLY — the mandate's system-default agent id, read by exactly one
-// place: the static surface manifest's `agentRoles[].defaultAgentId`
-// (features/surfaces/manifests/transcript-scribe.manifest.ts), which is
-// module-scope data seeded into `ui_surface_agent_role` and cannot resolve a
-// mandate. Nothing may read this at run time — resolve the mandate instead.
-export const AUDIO_ASSISTANT_AGENT_ID =
-  "86564a0c-fe79-40a7-bf97-6349fb352a9d";
-
 // Tick cadence for the trigger scheduler. 500ms is fine for ~10s+ intervals;
 // the scheduler skips ticks where the elapsed-since-last-flush guard
 // hasn't expired.
