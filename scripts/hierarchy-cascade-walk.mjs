@@ -20,6 +20,8 @@ const env = Object.fromEntries(
 const ORIGIN = process.env.WALK_ORIGIN ?? "http://hierarchy-cascade.localhost:3001";
 const OUT = process.argv[2] ?? "/tmp";
 mkdirSync(OUT, { recursive: true });
+// WALK_SITES=agent-app,research,shortcut (default all) re-runs only the named sites.
+const SITES = new Set((process.env.WALK_SITES ?? "agent-app,research,shortcut").split(","));
 const APP_ID = "d9c30db7-dcce-46c3-a00e-9498342692a9";
 const ORG = "admin's Workspace";
 const PROJECT = "Mobile Note App";
@@ -75,6 +77,22 @@ const sharingTab = async () => {
   await tab.click();
 };
 const fieldText = async () => (await page.locator('[data-engagement-picker="field"]').first().textContent())?.trim();
+// The field reads "…" for a rung whose name is still loading; wait for real names.
+const settledFieldText = async () => {
+  const { v } = await until("field names settle", async () => {
+    const t = await fieldText();
+    return t && !t.includes("…") ? t : null;
+  }, 180000);
+  return v ?? (await fieldText());
+};
+const openBindingTarget = async (trig) => {
+  const deck = page.getByText("Or pick one").first();
+  for (let i = 0; i < 6; i++) {
+    await trig.click();
+    if (await deck.waitFor({ state: "visible", timeout: 20000 }).then(() => true).catch(() => false)) return;
+  }
+  throw new Error("binding target popover never opened");
+};
 
 try {
   // The shared preview can be slow under machine load; a person would press again.
@@ -90,12 +108,13 @@ try {
 
   // ── 1. Agent app settings ──
   where = "agent-app";
+  if (SITES.has("agent-app")) {
   const appUrl = `${ORIGIN}/agent-apps/${APP_ID}/settings`;
   await page.goto(appUrl, { waitUntil: "domcontentloaded", timeout: 240000 });
   await sharingTab();
   await page.waitForSelector('[data-engagement-picker="field"]', { timeout: 240000 });
   await dismissBanners();
-  step({ site: "agent-app", before: await fieldText() });
+  step({ site: "agent-app", before: await settledFieldText() });
   await page.locator('[data-engagement-picker="field"]').click();
   await page.waitForSelector('[data-miller-rungs="engagements"]', { timeout: 60000 });
   await pick(PROJECT, true);
@@ -110,8 +129,7 @@ try {
   await page.reload({ waitUntil: "domcontentloaded" });
   await sharingTab();
   await page.waitForSelector('[data-engagement-picker="field"]', { timeout: 240000 });
-  await until("persisted chain", async () => (await fieldText())?.includes(TASK), 60000);
-  const afterReload = await fieldText();
+  const afterReload = await settledFieldText();
   step({ site: "agent-app", afterReload, persisted: afterReload.includes(PROJECT) && afterReload.includes(TASK), shot: await shot("agent-app-after-reload") });
   // undo
   await page.locator('[data-engagement-picker="field"]').click();
@@ -127,12 +145,13 @@ try {
   await page.reload({ waitUntil: "domcontentloaded" });
   await sharingTab();
   await page.waitForSelector('[data-engagement-picker="field"]', { timeout: 240000 });
-  await sleep(3000);
-  const undone = await fieldText();
+  const undone = await settledFieldText();
   step({ site: "agent-app", undone, clean: !undone.includes(PROJECT), shot: await shot("agent-app-undone") });
+  }
 
   // ── 2. Research start form (inline, Surface A) ──
   where = "research";
+  if (SITES.has("research")) {
   await page.goto(`${ORIGIN}/research/topics/new?mode=manual&step=2`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await dismissBanners();
   const inline = await until("research inline picker", async () => (await page.locator('[data-engagement-picker="inline"]').count()) > 0, 180000);
@@ -157,28 +176,31 @@ try {
     step({ site: "research", error: "inline picker not found" });
     await shot("research-missing");
   }
+  }
 
   // ── 3. Binding target, one node (the surface-binding batch editor of admin's agent) ──
   where = "shortcut";
+  if (SITES.has("shortcut")) {
   await page.goto(`${ORIGIN}/agents/92c37a37-7630-4517-b2a2-b6f1d2427208/surfaces/batch`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await dismissBanners();
   const bt = await until("binding target", async () => (await page.locator("[data-binding-target-picker] button[role=combobox]").count()) > 0, 180000);
   if (bt.v) {
     const trig = page.locator("[data-binding-target-picker] button[role=combobox]").first();
     step({ site: "shortcut", before: (await trig.textContent())?.trim() });
-    await trig.click();
+    await openBindingTarget(trig);
     await page.locator(`button[aria-label^="Select ${ORG}"]`).first().click();
     await sleep(500);
     step({ site: "shortcut", afterOrg: (await trig.textContent())?.trim() });
-    await trig.click();
+    await openBindingTarget(trig);
     // the row beside the check glyph drills into the organization
-    await page.locator(`button:not([aria-label]):has-text("${ORG}")`).first().click();
+    await page.locator(`[data-radix-popper-content-wrapper] button:not([aria-label]):has-text("${ORG}")`).first().click();
     await page.locator(`button[aria-label="Select ${PROJECT}"]`).first().click();
     await sleep(500);
     step({ site: "shortcut", afterProject: (await trig.textContent())?.trim(), shot: await shot("shortcut-single-node") });
   } else {
     step({ site: "shortcut", error: "binding target not found" });
     await shot("shortcut-missing");
+  }
   }
 } catch (e) {
   report.error = String(e).split("\n")[0];
