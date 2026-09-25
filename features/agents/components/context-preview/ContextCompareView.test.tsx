@@ -340,7 +340,11 @@ describe("the four tabs — what the model is fed, exactly (lane INSPECTOR-DIFF)
       expect(JSON.parse(sent)).toEqual(selection);
       const args = view.host.querySelector('[data-selection-block="arguments"] pre')?.textContent ?? "";
       expect(JSON.parse(args)).toEqual(ARGUMENTS);
-      expect(view.host.querySelector('[data-provenance="selection"]')?.textContent).toContain("assemble_turn_context");
+      const said = view.host.querySelector('[data-provenance="selection"]')?.textContent ?? "";
+      expect(said).toContain("assemble_turn_context");
+      // Lane INSPECTOR-DIFF-2: the type travels as a chat sends it — never "expanded" first.
+      expect(said).toContain("a chat's arguments");
+      expect(said).not.toContain("expanded it once");
     } finally {
       await view.unmount();
     }
@@ -393,6 +397,61 @@ describe("the two answers (lane INSPECTOR-TAILS)", () => {
       const rendered = side?.querySelector("[data-markdown-stream]");
       expect(rendered?.textContent).toContain("**Primary Contact:**");
     }
+    } finally {
+      await view.unmount();
+    }
+  });
+});
+
+describe("the two answers run on the turn's bytes (lane INSPECTOR-DIFF-2)", () => {
+  it("prints under each answer the run-path function it ran on and the bytes it was fed", async () => {
+    const answers = {
+      data: {
+        says: "Each turn was built by the run path's own functions.",
+        answers: [
+          {
+            path: "old",
+            answer: "Call Priya Nair at (619) 555-0177.",
+            system_byte_length: 18_412,
+            context_sha256: "a8ed98cbec45aa11bb22cc33",
+            provenance: stamp("chosen"),
+          },
+          {
+            path: "new",
+            answer: "Call Priya Nair at (619) 555-0177.",
+            system_byte_length: 18_412,
+            context_sha256: "a8ed98cbec45aa11bb22cc33",
+            provenance: stamp("record_store"),
+          },
+        ],
+      },
+    };
+    const preview = { data: { compare, injected_block: null } };
+    door.mockReset();
+    door.mockImplementation(async (req: unknown) =>
+      (req as { path?: string }).path === "/ai/context/preview/answer-both" ? answers : preview,
+    );
+    const view = await mount({ agentId: INTAKE_AGENT });
+    try {
+      const box = view.host.querySelector("textarea") as HTMLTextAreaElement;
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!;
+      await act(async () => {
+        setter.call(box, "What is the best phone number to reach Meridian Risk Services?");
+        box.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      const button = [...view.host.querySelectorAll("button")].find((b) => b.textContent === "Answer on both paths")!;
+      await act(async () => button.click());
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      for (const p of ["old", "new"]) {
+        const line = view.host.querySelector(`[data-answer-provenance="${p}"]`)?.textContent ?? "";
+        expect(line).toContain("assemble_turn_context");
+        const bytes = view.host.querySelector(`[data-answer-bytes="${p}"]`)?.textContent ?? "";
+        expect(bytes).toContain("18,412 bytes");
+        expect(bytes).toContain("a8ed98cbec45");
+      }
     } finally {
       await view.unmount();
     }

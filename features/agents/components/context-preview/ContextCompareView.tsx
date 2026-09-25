@@ -449,13 +449,15 @@ function SelectionTab({
   return (
     <div className="flex flex-col gap-3 px-4 pt-3" data-compare-selection>
       <p className="text-[11px] leading-snug text-muted-foreground" data-provenance="selection">
-        Sent to POST /ai/context/preview. The server expanded it once
-        (context_selection.resolve_context_selection) and handed BOTH sides the same arguments
-        below — the ones an agent run passes to {delivered?.today.provenance?.function ?? "assemble_turn_context"} for
-        a new conversation.
+        Sent to POST /ai/context/preview. The server hands{" "}
+        {delivered?.today.provenance?.function ?? "assemble_turn_context"} a chat&apos;s arguments for
+        this pick (a scope type travels as the type alone and the run path resolves it) — the same
+        arguments an agent run passes for a new conversation, on both sides. The values compare reads
+        its scopes from what that function delivered: a delivered type becomes every scope of it you
+        can read.
       </p>
       {sent && <JsonBlock label="What this page sent" value={sent} slot="sent" />}
-      <JsonBlock label="The selection both sides received" value={compare.selection} slot="expanded" />
+      <JsonBlock label="The scopes the values compare read" value={compare.selection} slot="expanded" />
       {delivered ? (
         <JsonBlock label="The assembler's arguments (both sides)" value={delivered.arguments} slot="arguments" />
       ) : (
@@ -757,8 +759,8 @@ function AnswerBoth({
       {heading}
       {picker && <div className="mt-1.5">{picker}</div>}
       <p className="mt-1 text-xs text-muted-foreground">
-        One real turn of this agent per system, same instructions and model, tools off, nothing
-        saved to the chat.
+        One real turn of this agent per system, built by the run path&apos;s own functions from a
+        chat&apos;s arguments — same instructions and model, tools off, nothing saved to the chat.
       </p>
       <Textarea
         value={question}
@@ -804,6 +806,18 @@ function AnswerBoth({
                       <MarkdownStream content={a?.answer ?? ""} hideCopyButton />
                     </div>
                   )}
+                  {typeof a?.system_byte_length === "number" && (
+                    <p
+                      className="mt-1.5 text-[10px] tabular-nums text-muted-foreground"
+                      data-answer-bytes={p}
+                    >
+                      Ran on {a.system_byte_length.toLocaleString()} bytes of system text
+                      {a.context_sha256 ? ` · context sha ${a.context_sha256.slice(0, 12)}` : ""}
+                    </p>
+                  )}
+                  <div className="mt-1" data-answer-provenance={p}>
+                    <ProvenanceLine stamp={a?.provenance} />
+                  </div>
                 </div>
               );
             })}
