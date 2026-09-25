@@ -96,12 +96,9 @@ export interface AppHolder {
   mandateId: string | null;
   mandateKey: AnyMandateKey | null;
   /**
-   * WHICH RUNG DECIDED, for the provenance pill — the server verdict's own five
+   * WHICH RUNG DECIDED, for the provenance pill — the server verdict's own
    * values (`ResolvedMandate["provenance"]`), never a client re-labelling.
-   * `global` is the GLOBAL BINDING rung and `system` is the job's own default
-   * pin: they are deliberately distinct, and collapsing them is how a stale
-   * global binding passed for a built-in default for a whole verification round
-   * (V3-CORRECTNESS N1). Null on the pinned path.
+   * Null on the pinned path.
    */
   provenance: ResolvedMandate["provenance"] | null;
   loading: boolean;

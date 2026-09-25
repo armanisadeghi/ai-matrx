@@ -12,6 +12,7 @@
  * Search: flat results across all notes (label, folder, id).
  */
 
+import { noteDisplayLabel } from "@/features/notes/format";
 import React, { useCallback, useMemo, useState } from "react";
 import { ChevronRight, FileText, Loader2, Search } from "lucide-react";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
@@ -274,7 +275,7 @@ function NotePickerBody({
                       >
                         <FileText className="h-3.5 w-3.5 shrink-0 opacity-50" />
                         <span className="min-w-0 flex-1 truncate">
-                          {note.label || "Untitled"}
+                          {noteDisplayLabel(note)}
                         </span>
                         {note.folder_name && (
                           <span className="shrink-0 truncate text-[0.5625rem] text-muted-foreground/50 max-w-[72px]">
@@ -339,7 +340,7 @@ function NotePickerBody({
                           >
                             <FileText className="h-3 w-3 shrink-0 text-muted-foreground/60" />
                             <span className="truncate">
-                              {note.label || "Untitled"}
+                              {noteDisplayLabel(note)}
                             </span>
                           </button>
                         ))}

@@ -74,8 +74,8 @@ type _RowMatchesLiveContract = LiveListRow extends MandateListRow ? true : never
 const _ROW_MATCHES_LIVE_CONTRACT: _RowMatchesLiveContract = true;
 void _ROW_MATCHES_LIVE_CONTRACT;
 
-/** The rungs the ladder can name. `global` is its own rung, never "system". */
-export type MandateResolvedLayer = "user" | "org" | "system" | "global";
+/** The rungs the ladder can name (no `global` rung — retired in aidream 1041). */
+export type MandateResolvedLayer = "user" | "org" | "system";
 
 export type MandateListHealth =
   | "ok"
@@ -147,11 +147,6 @@ export const LAYER_META: Record<MandateResolvedLayer, BadgeMeta> = {
     label: "System",
     className: "border-border/70 text-muted-foreground",
   },
-  global: {
-    label: "Global",
-    className:
-      "border-violet-500/40 bg-violet-500/10 text-violet-700 dark:text-violet-400",
-  },
 };
 
 export const HEALTH_META: Record<MandateListHealth, BadgeMeta> = {
@@ -161,7 +156,6 @@ export const HEALTH_META: Record<MandateListHealth, BadgeMeta> = {
   "holder missing": { label: "Binding needed", className: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400" },
   "holder unreachable": { label: "Mandate Holder unreachable", className: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400" },
   "version unreachable": { label: "Version unreachable", className: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400" },
-  "global rung dropped": { label: "Global choice dropped", className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400" },
   "org rung dropped": { label: "Org choice dropped", className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400" },
   "user rung dropped": { label: "Your choice dropped", className: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400" },
   "output contract unmet": { label: "Output contract unmet", className: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400" },
@@ -185,7 +179,6 @@ export function layerMeta(value: string | null | undefined): BadgeMeta {
     case "user":
     case "org":
     case "system":
-    case "global":
       return LAYER_META[value];
   }
   console.error(

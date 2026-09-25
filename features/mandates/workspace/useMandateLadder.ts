@@ -11,8 +11,8 @@
 // function — a non-member asking for an org simply gets no `org` rung, which is
 // the truth rather than a refusal.
 //
-// It returns ONE ROW PER RUNG in ladder order (`system` → `global` → `org` →
-// `user`), each row carrying `holder_live` / `version_live` so a rung pointing
+// It returns ONE ROW PER RUNG in ladder order (`system` → `org` → `user`;
+// the `global` rung was retired in aidream 1041), each row carrying `holder_live` / `version_live` so a rung pointing
 // at something that cannot be read is shown as BROKEN instead of rendering as a
 // working override. Design:
 // /common-docs/systems/intelligence/mandates/STATE.md
@@ -30,7 +30,7 @@ import type { Database, Json } from "@/types/database.types";
 import { onMandateCacheInvalidated } from "../service";
 
 /** A rung of the one ladder. `run` never appears here — it is not stored. */
-export type MandateRung = "system" | "global" | "org" | "user";
+export type MandateRung = "system" | "org" | "user";
 
 /**
  * One row of `mandate.resolve`, field for field. Frozen contract — verified
@@ -91,7 +91,7 @@ type GeneratedLadderRow =
   Database["mandate"]["Functions"]["resolve"]["Returns"][number];
 
 function isMandateRung(value: string): value is MandateRung {
-  return value === "system" || value === "global" || value === "org" || value === "user";
+  return value === "system" || value === "org" || value === "user";
 }
 
 function toMandateLadderRow(row: GeneratedLadderRow): MandateLadderRow {
@@ -245,11 +245,9 @@ export function ladderRowWords(
   const title =
     row.rung === "system"
       ? "System default"
-      : row.rung === "global"
-        ? "Global binding"
-        : row.rung === "org"
-          ? organizationName ?? "Your active organization"
-          : "Your own binding";
+      : row.rung === "org"
+        ? organizationName ?? "Your active organization"
+        : "Your own binding";
 
   if (row.rung !== "system" && !row.is_enabled) {
     return {

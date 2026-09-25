@@ -33,7 +33,6 @@ const RUNG_WORDS: Record<WorkflowImpactVerdict["principal_kind"], string> = {
   system: "mandate default",
   org: "organization binding",
   user: "personal binding",
-  global: "global binding",
 };
 
 const DOT: Record<string, string> = {

@@ -9,7 +9,8 @@ import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import { registerAction } from "../registry";
-import { chatWriteBackBlocked } from "../utils";
+import { chatExtensions, chatWriteBackBlocked } from "../utils";
+import { updateMessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
 import { getErrorMessage, serializeError } from "../utils";
 import { acknowledgedPreparedSource, prepareContentEdit, savePreparedContentEdit } from "./preparedEdit";
 
@@ -23,10 +24,35 @@ registerAction({
   renderSlot: "overflow",
   order: 10,
   run: async (ctx) => {
+    // A CHAT ANSWER opens THE ONE editor, expanded, in its own spot (RC-B5):
+    // the same instance and save path as the pencil — never this old editor,
+    // whose display-text seed silently dropped inline reasoning and rewrote
+    // blank-line runs on save (verify-RC-B5 F1, row fcf00f0a).
+    const ext = chatExtensions(ctx);
+    if (ext?.role === "assistant" && ctx.source.type === "chat-message" && ext.editTarget && !ext.editTarget.isStructuredRaw) {
+      const conversationId = ctx.source.conversationId;
+      const loaded =
+        !!conversationId &&
+        !!ctx.getState().messages.byConversationId[conversationId]?.byId?.[ext.editTarget.messageId];
+      if (conversationId && loaded) {
+        ctx.dispatch(
+          updateMessageRecord({
+            conversationId,
+            messageId: ext.editTarget.messageId,
+            patch: { _editingInPlace: "expanded" },
+          }),
+        );
+        ctx.onClose();
+        return;
+      }
+    }
     // Chat structured payloads and user turns stay read-only here: a user turn
-    // saves through its own three-outcome editor (edit-and-resubmit).
+    // saves through its own three-outcome editor (edit-and-resubmit). A chat
+    // answer this store never loaded opens read-only too — nothing here writes
+    // a chat message.
     const canSave =
       Boolean(ctx.sourceAdapter.edit) &&
+      ctx.source.type !== "chat-message" &&
       !chatWriteBackBlocked(ctx) &&
       !ctx.source.readOnly;
     const prepared = canSave ? await prepareContentEdit(ctx) : { source: ctx.source, content: ctx.content };

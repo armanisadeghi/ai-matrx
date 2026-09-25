@@ -10,11 +10,35 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getOrganizationMembers } from "@/features/organizations/service";
+import { membershipsService } from "@/features/organizations/service/membershipsService";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import type { UserLike } from "@/components/user/UserIdentity";
 
 const cache = new Map<string, Promise<Map<string, UserLike>>>();
 
+/**
+ * THE ORGANIZATIONS WHOSE ROSTER THIS PERSON MAY READ (GATES-TAIL, VERIFIER-21 #7). A table can
+ * be given to a person who is not in its organization (access is personal), and every open of it
+ * asked `get_organization_members_with_users` for that organization's people and was refused
+ * with 403 (`iam.has_org_access`: direct membership). The roster is not hers to read, so it is
+ * not asked for: a person field shows no people rather than a refused request. Her own
+ * memberships, once per session, like the rosters below.
+ */
+let myOrganizationIds: Promise<Set<string> | null> | null = null;
+function organizationsIAmIn(): Promise<Set<string> | null> {
+  if (!myOrganizationIds) {
+    myOrganizationIds = membershipsService
+      .forUser("organization")
+      .then((r) => (isScopesRpcErr(r) ? null : new Set(r.data.memberships.map((m) => m.containerId))))
+      .catch(() => null);
+  }
+  return myOrganizationIds;
+}
+
 async function loadOrg(orgId: string): Promise<Map<string, UserLike>> {
+  // When her memberships could not be read, ask as before and let the door answer.
+  const mine = await organizationsIAmIn();
+  if (mine && !mine.has(orgId)) return new Map();
   const members = await getOrganizationMembers(orgId);
   const map = new Map<string, UserLike>();
   for (const m of members) {

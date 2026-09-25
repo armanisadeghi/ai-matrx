@@ -107,14 +107,14 @@ begin
   exception when invalid_parameter_value then null;
   end;
 
-  -- O8. No hand-ordered view anywhere is laid out as the grid (its tab would draw the sort).
+  -- O8. Superseded by lane GRID-MANUAL (2026-09-25, PROGRESS-GRID-MANUAL.md): the records-ui Grid
+  -- now draws a hand-set order (custom.read_records_in_view_order, "Sort: Manual · set by hand"),
+  -- so a hand-ordered view may be laid out as the grid — that is no longer a defect and is not
+  -- asserted here. GRID-MANUAL owns the frontend behavior and is proved by its own headless walk
+  -- (scripts/gridmanual-walk.mjs, 13/13 PASS), not a DB-level green suite; there is no
+  -- gridmanual_green.sql to defer to. What this suite still owns at the DB level is O9 below: a
+  -- view that says manual never also carries a sort, in any layout.
   perform set_config('role', 'postgres', true);
-  if exists (select 1 from platform.saved_view where surface_key = 'custom/records' and deleted_at is null
-              and definition ->> 'order' = 'manual' and definition ->> 'layout' = 'grid') then
-    v_fail := v_fail || format('O8: %s hand-ordered view(s) are laid out as the grid',
-      (select count(*) from platform.saved_view where surface_key = 'custom/records' and deleted_at is null
-          and definition ->> 'order' = 'manual' and definition ->> 'layout' = 'grid'));
-  end if;
   if exists (select 1 from platform.saved_view where surface_key = 'custom/records' and deleted_at is null
               and definition ->> 'order' = 'manual' and jsonb_array_length(coalesce(definition -> 'sorts', '[]'::jsonb)) > 0) then
     v_fail := v_fail || 'O9: a view says manual and still carries a sort'::text;

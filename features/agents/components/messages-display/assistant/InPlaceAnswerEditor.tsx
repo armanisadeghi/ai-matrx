@@ -34,6 +34,8 @@ import { toast } from "@/lib/toast";
 interface InPlaceAnswerEditorProps {
   conversationId: string;
   messageId: string;
+  /** Open full screen ("Open in full-screen editor" — the same editor, expanded). */
+  startExpanded?: boolean;
 }
 
 /**
@@ -41,7 +43,7 @@ interface InPlaceAnswerEditorProps {
  * loaded Redux copy, which for an answer streamed this session is the client's
  * own shape (see `saveAnswerEdit`). The editor mounts once the read lands.
  */
-export function InPlaceAnswerEditor({ conversationId, messageId }: InPlaceAnswerEditorProps) {
+export function InPlaceAnswerEditor({ conversationId, messageId, startExpanded = false }: InPlaceAnswerEditorProps) {
   const dispatch = useAppDispatch();
   const [openedOn, setOpenedOn] = useState<string | null>(null);
 
@@ -73,7 +75,15 @@ export function InPlaceAnswerEditor({ conversationId, messageId }: InPlaceAnswer
       </div>
     );
   }
-  return <LoadedAnswerEditor conversationId={conversationId} messageId={messageId} openedOn={openedOn} close={close} />;
+  return (
+    <LoadedAnswerEditor
+      conversationId={conversationId}
+      messageId={messageId}
+      openedOn={openedOn}
+      close={close}
+      startExpanded={startExpanded}
+    />
+  );
 }
 
 function LoadedAnswerEditor({
@@ -81,23 +91,41 @@ function LoadedAnswerEditor({
   messageId,
   openedOn,
   close,
+  startExpanded,
 }: {
   conversationId: string;
   messageId: string;
   openedOn: string;
   close: () => void;
+  startExpanded: boolean;
 }) {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
   const [draft, setDraft] = useState(openedOn);
-  const [expandedChoice, setExpandedChoice] = useState<boolean | null>(null);
+  const [expandedChoice, setExpandedChoice] = useState<boolean | null>(startExpanded ? true : null);
   const expanded = expandedChoice ?? isMobile;
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const shellRef = useRef<HTMLDivElement>(null);
   const dirty = draft !== openedOn;
+  // The editor reports text changes ~120 ms after a keystroke (its debounce),
+  // so `draft` can lag a fast Escape / Cancel. Any input event since the last
+  // report counts as unsaved text until the report lands — a fast Escape asks
+  // instead of dropping what was just typed.
+  const inputSinceReport = useRef(false);
+  const onDraft = (text: string) => {
+    inputSinceReport.current = false;
+    setDraft(text);
+  };
+
+  // Only typing into the document itself (not the find field) is a draft.
+  const markDocumentInput = (event: { target: EventTarget }) => {
+    if (event.target instanceof Element && event.target.closest(".ProseMirror, .cm-content")) {
+      inputSinceReport.current = true;
+    }
+  };
 
   const cancel = () => {
-    if (dirty) setConfirmDiscard(true);
+    if (dirty || inputSinceReport.current) setConfirmDiscard(true);
     else close();
   };
 
@@ -142,6 +170,8 @@ function LoadedAnswerEditor({
     <div
       ref={shellRef}
       onKeyDownCapture={onKeyDownCapture}
+      onInputCapture={markDocumentInput}
+      onBeforeInputCapture={markDocumentInput}
       onKeyDown={onKeyDown}
       data-in-place-editor={messageId}
       className={cn(
@@ -153,7 +183,7 @@ function LoadedAnswerEditor({
     >
       <RichEditor
         value={openedOn}
-        onChange={setDraft}
+        onChange={onDraft}
         onSave={onSave}
         defaultView="visual"
         surfaceName="matrx-user/assistant-message"

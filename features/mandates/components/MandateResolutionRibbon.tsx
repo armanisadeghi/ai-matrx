@@ -8,17 +8,10 @@
  * pure precedence reference (no highlight). Surfaces with their own name for a
  * layer (research calls run-scope "Topic override") relabel via `labels`.
  *
- * 🚨 THIS COMPONENT MUST CARRY EVERY RUNG THE RUNTIME CAN NAME. It shipped with
- * four while the runtime stamps five: `global` — the GLOBAL BINDING rung, a row
- * somebody edits at runtime — was missing, so a `global` verdict highlighted
- * NOTHING and the reader was shown a chain that did not contain the answer they
- * had just been given. `global` and `system` are deliberately distinct
- * (V3-CORRECTNESS N1: collapsing them let a stale global binding pass for a
- * built-in default for a whole verification round), so the fix is a fifth link,
- * never a relabel of `system`. The rung vocabulary is frozen —
- * `ResolvedMandate["provenance"]` in `features/mandates/service.ts` and
- * `mandate.resolve`'s `rung` column are the same five words; when one gains a
- * rung, so does this.
+ * 🚨 THIS COMPONENT MUST CARRY EVERY RUNG THE RUNTIME CAN NAME — the same four
+ * words as `ResolvedMandate["provenance"]` in `features/mandates/service.ts`
+ * and `mandate.resolve`'s `rung` column. (The `global` rung was retired in
+ * aidream 1041: the answer for everybody is the job's own default.)
  *
  * Shape absorbed from research's per-topic agents page; content is the ONE
  * platform precedence chain (SoR common-docs/systems/intelligence/mandates/STATE.md,
@@ -33,7 +26,6 @@ export type MandateResolutionLayer =
   | "run"
   | "user"
   | "org"
-  | "global"
   | "system";
 
 /** Highest precedence first — the order the runtime consults layers. */
@@ -41,7 +33,6 @@ export const MANDATE_RESOLUTION_LAYERS: readonly MandateResolutionLayer[] = [
   "run",
   "user",
   "org",
-  "global",
   "system",
 ];
 
@@ -49,7 +40,6 @@ const DEFAULT_LABELS: Record<MandateResolutionLayer, string> = {
   run: "Run scope",
   user: "Your override",
   org: "Org override",
-  global: "Platform-wide override",
   system: "System default",
 };
 

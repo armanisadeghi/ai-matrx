@@ -129,13 +129,11 @@ export interface ResolvedMandate {
   holderType: string;
   configOverrides: Partial<FeLlmParams> | null;
   /**
-   * WHICH RUNG ANSWERED, straight from the server verdict — the same five
-   * values `resolve_mandate` stamps. `global` is the GLOBAL BINDING rung (a row
-   * somebody edits at runtime) and `system` is the mandate's own default pin;
-   * they are deliberately distinct (V3-CORRECTNESS N1) and this field never
-   * relabels one as the other.
+   * WHICH RUNG ANSWERED, straight from the server verdict — the values
+   * `resolve_mandate` stamps. `system` is the mandate's own default (there is
+   * no `global` rung — aidream 1041).
    */
-  provenance: "system" | "global" | "org" | "user" | "run";
+  provenance: "system" | "org" | "user" | "run";
   /**
    * The organization the verdict was resolved IN — the caller's ACTIVE org,
    * admitted by the server. Surfaces that claim "this is what runs for you" name

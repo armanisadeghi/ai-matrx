@@ -227,7 +227,7 @@ export function AgentAssistantMessage({
   );
 
   // The pencil (registry `edit`) turned this answer's spot into the editor.
-  const editingInPlace = record?._editingInPlace === true && !isStreamActive;
+  const editingInPlace = !!record?._editingInPlace && !isStreamActive;
 
   // Request-wide notices and source lists belong to its final segment. They
   // must not keep growing above a steering message after this segment closes.
@@ -602,7 +602,11 @@ export function AgentAssistantMessage({
             className="mb-2"
           />
           {editingInPlace && messageId ? (
-            <InPlaceAnswerEditor conversationId={conversationId} messageId={messageId} />
+            <InPlaceAnswerEditor
+              conversationId={conversationId}
+              messageId={messageId}
+              startExpanded={record?._editingInPlace === "expanded"}
+            />
           ) : (
           <div data-message-content>
             <MarkdownStream

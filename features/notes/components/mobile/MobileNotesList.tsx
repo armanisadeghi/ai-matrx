@@ -1,5 +1,6 @@
 "use client";
 
+import { noteDisplayLabel } from "@/features/notes/format";
 import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
 import React, { useRef, useState, useMemo } from "react";
 import { noteCreateErrorMessage } from "../../utils/writeErrors";
@@ -248,7 +249,7 @@ export default function MobileNotesList({
                         >
                           <div className="min-w-0 flex-1">
                             <h3 className="mb-0.5 truncate text-sm font-semibold text-foreground">
-                              {note.label || "Untitled Note"}
+                              {noteDisplayLabel(note)}
                             </h3>
                             <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
                               <div className="flex items-center gap-1">
@@ -334,7 +335,7 @@ export default function MobileNotesList({
                   >
                     <div className="min-w-0 flex-1">
                       <h3 className="mb-0.5 truncate text-sm font-semibold text-foreground">
-                        {note.label || "Untitled Note"}
+                        {noteDisplayLabel(note)}
                       </h3>
                       <p className="mb-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                         {getPreviewText(note.content ?? note.content_preview)}
@@ -452,7 +453,7 @@ export default function MobileNotesList({
                               >
                                 <div className="min-w-0 flex-1">
                                   <p className="truncate text-sm text-muted-foreground">
-                                    {note.label || "Untitled"}
+                                    {noteDisplayLabel(note)}
                                   </p>
                                   {deletedLabel && (
                                     <p className="text-[10px] text-muted-foreground/50">
@@ -485,7 +486,7 @@ export default function MobileNotesList({
                                   onClick={async () => {
                                     const ok = await confirm({
                                       title: "Permanently delete",
-                                      description: `Permanently delete "${note.label || "Untitled"}"? This cannot be undone.`,
+                                      description: `Permanently delete "${noteDisplayLabel(note)}"? This cannot be undone.`,
                                       confirmLabel: "Delete forever",
                                       variant: "destructive",
                                     });

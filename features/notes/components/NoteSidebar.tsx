@@ -19,6 +19,7 @@
 // - Rename Folder dialog
 // - Empty state when no notes exist
 
+import { noteDisplayLabel } from "@/features/notes/format";
 import React, {
   useState,
   useCallback,
@@ -1683,7 +1684,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                         <FileText className="h-3 w-3 shrink-0 text-muted-foreground/40" />
                         <div className="min-w-0 flex-1">
                           <span className="block truncate text-[0.625rem] text-muted-foreground">
-                            {note.label || "Untitled"}
+                            {noteDisplayLabel(note)}
                           </span>
                           {deletedLabel && (
                             <span className="block text-[0.5rem] text-muted-foreground/50">
@@ -1704,7 +1705,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
                           onClick={async () => {
                             const ok = await confirm({
                               title: "Permanently delete",
-                              description: `Permanently delete "${note.label || "Untitled"}"? This cannot be undone.`,
+                              description: `Permanently delete "${noteDisplayLabel(note)}"? This cannot be undone.`,
                               confirmLabel: "Delete forever",
                               variant: "destructive",
                             });

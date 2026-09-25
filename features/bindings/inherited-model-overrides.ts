@@ -4,11 +4,10 @@ import type {
 } from "@/features/mandates/workspace/useMandateLadder";
 import { isJsonObject, type JsonObject } from "@/types/json";
 
-const RUNGS: readonly MandateRung[] = ["system", "global", "org", "user"];
+const RUNGS: readonly MandateRung[] = ["system", "org", "user"];
 
 export const MODEL_OVERRIDE_SOURCE: Record<MandateRung, string> = {
   system: "System",
-  global: "System",
   org: "Organization",
   user: "Personal",
 };

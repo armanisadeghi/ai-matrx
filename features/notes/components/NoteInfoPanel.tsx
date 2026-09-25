@@ -16,6 +16,7 @@
 // a WindowPanel (see NoteInfoWindow) but is a plain component with no window
 // chrome of its own, so it can be embedded anywhere.
 
+import { noteDisplayLabel } from "@/features/notes/format";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FileText,
@@ -226,7 +227,7 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
       <div className="flex items-center gap-2 px-3 pt-3 pb-2 border-b border-border/40">
         <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
         <span className="text-sm font-medium truncate">
-          {note.label || "Untitled"}
+          {noteDisplayLabel(note)}
         </span>
         {/*
          * Public is the only claim this chip can prove from one column.

@@ -20,6 +20,7 @@
 // Org semantics: the note's organization_id is set from the EXPLICIT picks
 // only — never inferred from which org the user happened to browse scopes in.
 
+import { noteDisplayLabel } from "@/features/notes/format";
 import React, { useMemo } from "react";
 import { ShieldAlert, ShieldCheck, StickyNote } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -74,7 +75,7 @@ export function NoteContextSection({ noteId }: { noteId: string }) {
         subject={{
           entityType: "note",
           entityId: noteId,
-          title: note.label || "Untitled note",
+          title: noteDisplayLabel(note),
           icon: StickyNote,
         }}
         defaultOrganizationId={note.organization_id ?? undefined}
@@ -126,7 +127,7 @@ export function NoteContextStatusIcon({
       subject={{
         entityType: "note",
         entityId: noteId,
-        title: note.label || "Untitled note",
+        title: noteDisplayLabel(note),
         icon: StickyNote,
       }}
       writeMode="live"

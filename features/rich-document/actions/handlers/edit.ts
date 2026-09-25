@@ -27,7 +27,7 @@ import {
   isChatUserMessage,
   serializeError,
 } from "../utils";
-import { openAssistantMessageEditor } from "@/features/agents/components/messages-display/message-options/openAssistantMessageEditor";
+import { openStructuredRawViewer } from "@/features/agents/components/messages-display/message-options/openAssistantMessageEditor";
 import { acknowledgedPreparedSource, prepareContentEdit, savePreparedContentEdit } from "./preparedEdit";
 import { updateMessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
 
@@ -53,10 +53,18 @@ registerAction({
     // an assistant turn needs a text-bearing row to save to.
     // A step of a multi-step turn that only called tools has no text: no
     // Edit there (absent, never a control that opens an empty editor).
+    // The in-place editor needs the row loaded in this store (its spot on
+    // screen); a row that is not has no Edit here — never a fallback editor.
+    const target = ext.editTarget;
+    const conversationId = ctx.source.type === "chat-message" ? ctx.source.conversationId : null;
+    const loaded =
+      !!target &&
+      !!conversationId &&
+      !!ctx.getState().messages.byConversationId[conversationId]?.byId?.[target.messageId];
     return (
       ext.role === "assistant" &&
-      Boolean(ext.editTarget?.messageId) &&
-      (Boolean(ext.editTarget?.isStructuredRaw) || (ext.editTarget?.content.length ?? 0) > 0)
+      !!target &&
+      (target.isStructuredRaw || (loaded && target.content.length > 0))
     );
   },
   run: async (ctx) => {
@@ -78,30 +86,24 @@ registerAction({
       const target = ext.editTarget;
       if (!target) return;
       const conversationId = ctx.source.conversationId;
-      // The flag lives on the loaded row; a row this store never loaded has
-      // no spot on screen, so it opens the full-screen editor instead of a
-      // click that does nothing.
-      const loaded =
-        !!conversationId &&
-        !!ctx.getState().messages.byConversationId[conversationId]?.byId?.[target.messageId];
-      if (!target.isStructuredRaw && conversationId && loaded) {
-        ctx.dispatch(
-          updateMessageRecord({
-            conversationId,
-            messageId: target.messageId,
-            patch: { _editingInPlace: true },
-          }),
-        );
+      if (target.isStructuredRaw) {
+        // A structured payload is inspected read-only, never text-edited.
+        openStructuredRawViewer(ctx.dispatch, {
+          content: target.content,
+          messageId: target.messageId,
+          metadata: ctx.metadata,
+        });
         ctx.onClose();
         return;
       }
-      openAssistantMessageEditor(ctx.dispatch, {
-        content: target.content,
-        conversationId: ctx.source.conversationId,
-        messageId: target.messageId,
-        metadata: ctx.metadata,
-        structuredRaw: target.isStructuredRaw,
-      });
+      if (!conversationId) return;
+      ctx.dispatch(
+        updateMessageRecord({
+          conversationId,
+          messageId: target.messageId,
+          patch: { _editingInPlace: true },
+        }),
+      );
       ctx.onClose();
       return;
     }

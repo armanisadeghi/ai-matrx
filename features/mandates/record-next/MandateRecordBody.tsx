@@ -664,7 +664,7 @@ function MandateFactsLine({
  */
 interface FulfillmentView {
   /** The rung that decides. `null` while it is still being asked for. */
-  rung: "system" | "global" | "org" | "user" | "run" | null;
+  rung: "system" | "org" | "user" | "run" | null;
   /** One sentence naming WHO decides — the active org by name, never by id. */
   sentence: string;
   agent: WorkspaceAgentInfo | null;
@@ -703,8 +703,6 @@ function verdictSentence(
       return "Your own binding decides this job — it wins in every organization you work in.";
     case "org":
       return `${activeOrgLabel} overrides this job.`;
-    case "global":
-      return "A global binding overrides this job for everyone on the platform.";
     case "run":
       return "A choice made for this run decides the job — just for that run.";
     case "system":

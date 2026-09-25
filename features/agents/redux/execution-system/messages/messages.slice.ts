@@ -164,9 +164,11 @@ export interface MessageRecord {
   /**
    * The person is editing this answer in place (RC-B5): the message renders
    * the editor where its preview was. Set by the registry's `edit` action,
-   * cleared on save / cancel. Never persisted.
+   * cleared on save / cancel. `"expanded"` opens it full screen (the
+   * "Open in full-screen editor" entry — the same editor, expanded). Never
+   * persisted.
    */
-  _editingInPlace?: boolean;
+  _editingInPlace?: boolean | "expanded";
 }
 
 /**

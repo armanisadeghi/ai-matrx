@@ -12,6 +12,7 @@
 // explicitly via `content_included: false` rather than silently omitting it.
 
 import { humanLines } from "@/features/marketing/lib/copy-payloads";
+import { displayTitle } from "@/components/markdown-core/plain-title";
 import type { NoteListItem } from "@/features/notes/types";
 import type { NoteRecord } from "@/features/notes/redux/notes.types";
 
@@ -20,12 +21,35 @@ export function noteLocation(surface: string): string {
   return `AI Matrx — Notes — ${surface}`;
 }
 
-/** The label a note shows in lists, with the untitled fallback the UI uses. */
+/**
+ * True when `label` is exactly what the old paste path derived from the note's
+ * body — its raw first line (whole, or cut at 60 characters) — rather than a
+ * name a person typed. Only such a label is display-cleaned.
+ */
+export function isRawDerivedLabel(label: string, source: string | null | undefined): boolean {
+  const first = (source ?? "").trim().split(/\n/)[0] ?? "";
+  if (!first) return false;
+  return label === first || label === first.slice(0, 60) || label === first.trim();
+}
+
+/**
+ * The label a note shows everywhere it is NAMED (lists, pickers, headers),
+ * with the untitled fallback. A label that is the raw derived first line of
+ * the body (`# AP Chemistry …`, written before derivations went through the
+ * one title projection) displays through that projection; a label a person
+ * typed is shown exactly as typed. Display only — the stored and editable
+ * label is never changed here.
+ */
 export function noteDisplayLabel(
-  note: { label?: string | null } | null | undefined,
+  note:
+    | { label?: string | null; content?: string | null; content_preview?: string | null }
+    | null
+    | undefined,
 ): string {
   const label = note?.label?.trim();
-  return label && label.length > 0 ? label : "Untitled note";
+  if (!label) return "Untitled note";
+  const source = note?.content ?? note?.content_preview ?? null;
+  return isRawDerivedLabel(label, source) ? displayTitle(label) : label;
 }
 
 function words(content: string | null | undefined): number {

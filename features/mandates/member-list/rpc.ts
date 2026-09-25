@@ -56,7 +56,7 @@ export interface MandateMemberCountsAnswer {
 
 export type MandateMemberFacetsAnswer = Record<string, { value: string; count: number }[]>;
 
-const RUNGS = new Set(["user", "org", "global", "system"]);
+const RUNGS = new Set(["user", "org", "system"]);
 
 /** Wire → row. Pure. A null `created_by_me` (no creator) is "not mine". */
 export function memberRowFromWire(wire: MandateMemberWireRow): MandateMemberRow {

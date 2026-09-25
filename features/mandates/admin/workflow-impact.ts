@@ -29,7 +29,7 @@ export interface WorkflowImpactVerdict {
   holder_kind: "mandate_default" | "binding";
   row_id: string;
   mandate_key: string;
-  principal_kind: "system" | "org" | "user" | "global";
+  principal_kind: "system" | "org" | "user";
   organization_id: string | null;
   subject_user_id: string | null;
   workflow_id: string;

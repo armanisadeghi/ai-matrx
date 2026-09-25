@@ -38,7 +38,7 @@ try {
       report.refused.push({ status: r.status(), method: r.request().method(), url: r.url().replace(/^https?:\/\/[^/]+/, "").slice(0, 140), org: r.request().headers()["x-organization-id"] ?? null });
     }
   });
-  page.on("console", (m) => { if (m.type() === "error") report.consoleErrors.push(m.text().slice(0, 240)); });
+  page.on("console", (m) => { if (m.type() === "error") report.consoleErrors.push(m.text().slice(0, process.env.GT_LONG ? 3000 : 240)); });
   await page.goto(`${ORIGIN}/data-v2/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await page.waitForTimeout(20000);
   report.header = await page.evaluate(() => {

@@ -88,7 +88,7 @@ export function AssistantTurnGroup({
     rawMembers.some((m) => {
       if (!m.messageId || m.isStreamActive) return false;
       const row = state.messages.byConversationId[conversationId]?.byId?.[m.messageId];
-      return row?._editingInPlace === true || row?.status === "edited";
+      return !!row?._editingInPlace || row?.status === "edited";
     }),
   );
   const members = membersForRender(rawMembers, persistedView);

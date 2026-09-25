@@ -152,7 +152,7 @@ export function declaredInOf(
 
 /**
  * Who customized this job: "Default" when nobody did, else one entry per
- * binding kind — the organization names, "Personal", "Global".
+ * binding kind — the organization names, "Personal".
  */
 export function customizedByOf(
   bindings: readonly { principal_type: string; organization_id: string | null }[],
@@ -160,7 +160,6 @@ export function customizedByOf(
 ): string[] {
   const orgs = new Set<string>();
   let personal = false;
-  let global = false;
   for (const binding of bindings) {
     if (binding.principal_type === "org") {
       orgs.add(
@@ -169,11 +168,9 @@ export function customizedByOf(
           "Organization",
       );
     } else if (binding.principal_type === "user") personal = true;
-    else if (binding.principal_type === "global") global = true;
   }
   const out = [...[...orgs].sort()];
   if (personal) out.push("Personal");
-  if (global) out.push("Global");
   return out.length > 0 ? out : ["Default"];
 }
 

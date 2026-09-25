@@ -1,5 +1,6 @@
 "use client";
 
+import { noteDisplayLabel } from "@/features/notes/format";
 import React, { useState, useCallback, useMemo } from "react";
 import {
   ChevronLeft,
@@ -275,7 +276,7 @@ export default function MobileNotesView({
 
             {/* Title — truncated, small */}
             <span className="text-xs font-medium text-muted-foreground truncate min-w-0 flex-1 max-w-[100px]">
-              {selectedNote.label || "Untitled Note"}
+              {noteDisplayLabel(selectedNote)}
             </span>
 
             {/* View mode toggle — 3 pill buttons */}

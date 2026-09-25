@@ -29,7 +29,7 @@ export interface MandateMemberRow {
   holderName: string;
   /** "You", the organization's name, "Default", or "Nobody". */
   decidedBy: string;
-  decidedRung: "user" | "org" | "global" | "system" | null;
+  decidedRung: "user" | "org" | "system" | null;
   /** "Latest", "v3", or "None". */
   pinText: string;
   /** "Default", the names of my organizations that bind it, "Personal". */
