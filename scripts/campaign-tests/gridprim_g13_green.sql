@@ -27,7 +27,7 @@ set local lock_timeout = '10s';
 set local statement_timeout = '180s';
 do $g$ begin
   if not has_function_privilege('authenticated', 'custom.view_record_order_set(uuid, uuid, uuid[])', 'execute')
-     or not has_function_privilege('authenticated', 'custom.read_records_in_view_order(uuid, uuid, boolean, integer, integer)', 'execute') then
+     or not has_function_privilege('authenticated', 'custom.read_records_in_view_order(uuid, uuid, boolean, integer, integer, jsonb)', 'execute') then
     raise exception 'G13-grant: a signed-in person holds no EXECUTE on the G13 doors';
   end if;
 end $g$;
