@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import {
   Select,
@@ -190,24 +191,43 @@ export default function AdminSystemAppsListPage() {
       id: "name",
       accessorKey: "name",
       header: "Name",
-      width: 260,
+      width: 220,
       cell: (app) => (
         <AgentAppRef appId={app.id} name={app.name} slug={app.slug} />
+      ),
+    },
+    {
+      id: "id",
+      accessorKey: "id",
+      header: "ID",
+      filter: "text",
+      width: 120,
+      mobileHidden: true,
+      cell: (app) => (
+        <MatrxUuidCell
+          value={app.id}
+          label="System app ID"
+          href={`/administration/agents/agent-apps/edit/${app.id}`}
+        />
       ),
     },
     {
       id: "slug",
       accessorKey: "slug",
       header: "Slug",
-      width: 180,
-      cell: (app) => <code className="text-xs">{app.slug}</code>,
+      width: 160,
+      cell: (app) => (
+        <code className="block truncate text-xs" title={app.slug}>
+          {app.slug}
+        </code>
+      ),
     },
     {
       id: "status",
       accessorKey: "status",
       header: "Status",
       filter: "select",
-      width: 140,
+      width: 120,
       cell: (app) => {
         const isBusy = busyIds.has(app.id);
         return (
@@ -249,7 +269,7 @@ export default function AdminSystemAppsListPage() {
       accessorFn: (app) =>
         isPubliclyVisible(app.visibility) ? "Public" : "Internal",
       filter: "select",
-      width: 90,
+      width: 75,
       cell: (app) => {
         const isBusy = busyIds.has(app.id);
         return (
@@ -279,14 +299,14 @@ export default function AdminSystemAppsListPage() {
       accessorKey: "category",
       header: "Category",
       filter: "select",
-      width: 160,
+      width: 120,
       cell: (app) => <span className="text-xs">{app.category ?? "—"}</span>,
     },
     {
       id: "runs",
       accessorFn: (app) => app.total_executions ?? 0,
       header: "Runs",
-      width: 90,
+      width: 65,
       cell: (app) => (
         <AppLink
           href={agentAppExecutionsHref(app.id)}
@@ -301,7 +321,7 @@ export default function AdminSystemAppsListPage() {
       id: "updated_at",
       accessorKey: "updated_at",
       header: "Updated",
-      width: 120,
+      width: 100,
       cell: (app) => (
         <span className="block text-right text-xs text-muted-foreground">
           {app.updated_at ? new Date(app.updated_at).toLocaleDateString() : "—"}
