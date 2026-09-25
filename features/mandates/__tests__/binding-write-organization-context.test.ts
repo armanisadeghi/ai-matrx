@@ -13,6 +13,17 @@ jest.mock("../service", () => ({
   invalidateMandateCache: jest.fn(),
 }));
 
+// The workspace the person has selected, and their personal organization —
+// the two answers a personal write can take (overrides.ts, personalWriteContext).
+const selectedOrg = { id: null as string | null };
+jest.mock("@/lib/api/organization-admission", () => ({
+  peekSelectedOrganizationId: () => selectedOrg.id,
+  waitForOrganizationAdmission: jest.fn(async () => undefined),
+}));
+jest.mock("@/lib/organizations/personalOrg", () => ({
+  resolvePersonalOrgId: jest.fn(async () => "personal-org-id"),
+}));
+
 const callApiMock = jest.mocked(callApi);
 const TARGET_ORGANIZATION_ID = "39c38960-d30c-4840-b0c1-c9960de95582";
 
@@ -53,13 +64,27 @@ describe("mandate binding organization context", () => {
     },
   );
 
-  it("keeps personal bindings on the ambient request organization", async () => {
+  it("keeps personal bindings on the ambient request organization when one is selected", async () => {
+    selectedOrg.id = TARGET_ORGANIZATION_ID;
     await removeMandateBinding(dispatchWith({}), "podcast.multihost_script", {
       principalType: "user",
     });
 
     expect(callApiMock).toHaveBeenCalledWith(
       expect.not.objectContaining({ scopeOverrides: expect.anything() }),
+    );
+  });
+
+  it("writes a personal binding in the personal organization when no workspace is selected", async () => {
+    selectedOrg.id = null;
+    await removeMandateBinding(dispatchWith({}), "podcast.multihost_script", {
+      principalType: "user",
+    });
+
+    expect(callApiMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scopeOverrides: { organization_id: "personal-org-id" },
+      }),
     );
   });
 });
