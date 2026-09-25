@@ -155,5 +155,9 @@ describe("findStatusText", () => {
       "No matches in the 50 messages that loaded — earlier history could not be read",
     );
     expect(findStatusText({ query: "", matches: 0, current: 0, history: { state: "done", loaded: 3 } })).toBe("");
+    // Loaded but the newly rendered messages have not been searched yet.
+    expect(
+      findStatusText({ query: "x", matches: 0, current: 0, history: { state: "done", loaded: 231 }, searching: true }),
+    ).toBe("Searching all 231 messages…");
   });
 });

@@ -129,10 +129,13 @@ export function findStatusText(args: {
   matches: number;
   current: number;
   history: FindHistoryState;
+  /** History arrived but its newly rendered messages are not searched yet. */
+  searching?: boolean;
 }): string {
   if (!args.query.trim()) return "";
   if (args.matches > 0) return `${args.current + 1} of ${args.matches}`;
   if (args.history.state === "loading") return `Loading earlier messages… ${args.history.loaded}`;
+  if (args.searching) return `Searching all ${args.history.loaded} messages…`;
   if (args.history.state === "partial") {
     return `No matches in the ${args.history.loaded} messages that loaded — earlier history could not be read`;
   }

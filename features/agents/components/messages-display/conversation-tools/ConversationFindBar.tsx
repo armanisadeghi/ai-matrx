@@ -76,9 +76,16 @@ export function ConversationFindBar({
   // When older history finishes arriving, the newly rendered messages settle
   // over a few frames (cold markdown defers its first paint) — search again
   // once they have, so the answer is over EVERY message.
+  const [settled, setSettled] = useState(false);
   useEffect(() => {
+    setSettled(false);
     if (history.state === "loading") return;
-    const timers = [400, 1200].map((ms) => setTimeout(() => setVersion((v) => v + 1), ms));
+    const timers = [400, 1200].map((ms, i, all) =>
+      setTimeout(() => {
+        setVersion((v) => v + 1);
+        if (i === all.length - 1) setSettled(true);
+      }, ms),
+    );
     return () => timers.forEach(clearTimeout);
   }, [history.state]);
 
@@ -97,7 +104,7 @@ export function ConversationFindBar({
     setCurrent((c) => (c + delta + ranges.length) % ranges.length);
   };
 
-  const status = findStatusText({ query, matches: ranges.length, current, history });
+  const status = findStatusText({ query, matches: ranges.length, current, history, searching: !settled });
 
   return (
     <div
@@ -131,7 +138,7 @@ export function ConversationFindBar({
       <span
         className={cn(
           "min-w-0 max-w-[55%] truncate text-xs tabular-nums",
-          ranges.length === 0 && query.trim() && history.state !== "loading"
+          ranges.length === 0 && query.trim() && history.state !== "loading" && settled
             ? "text-destructive"
             : "text-muted-foreground",
         )}
