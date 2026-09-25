@@ -39,9 +39,9 @@ export const VOICE_PLACES: FeaturePlaces = {
       sources: ["features/voice-agent/components/playground/InstructionsEditor.tsx"],
     },
     {
-      id: "gemini-live",
+      id: "live-voice",
       label: "Gemini live voice",
-      trigger: "Start a live session (the model is the job's holder)",
+      trigger: "Start a live session",
       urlPattern: "/chat/voice/gemini",
       mandateKeys: [MANDATE_KEYS.voice__gemini_live],
       sources: ["features/voice-agent/components/GoogleLiveSurface.tsx"],
