@@ -90,6 +90,7 @@ import {
   recommendedHandlingForFieldKey,
 } from "../credential-identity";
 import { SecretValue, useFieldSecret } from "./SecretValue";
+import { VaultPasswordHistoryPanel } from "./VaultPasswordHistoryPanel";
 import {
   VaultPasswordGenerator,
   isEligibleVaultPasswordField,
@@ -125,7 +126,14 @@ interface VaultItemDetailProps {
   onClose: () => void;
 }
 
-type Panel = "none" | "share" | "give" | "transfer" | "fork" | "audit";
+type Panel =
+  | "none"
+  | "share"
+  | "give"
+  | "transfer"
+  | "fork"
+  | "audit"
+  | "password-history";
 
 type CredentialEditBaseline = {
   displayName: string;
@@ -142,6 +150,7 @@ export function VaultItemDetail({
   onClose,
 }: VaultItemDetailProps) {
   const caps = item.capabilities;
+  const currentUserId = useAppSelector(selectUserId);
   const definition = definitions.get(item.definition_key);
   const [panel, setPanel] = useState<Panel>("none");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -222,6 +231,21 @@ export function VaultItemDetail({
   const hasProtectedExecutionField = item.fields.some(
     isProtectedExecutionField,
   );
+  const passwordHistoryField = item.fields.find(
+    (field) =>
+      field.field_key === "password" &&
+      field.is_active &&
+      field.execution_purpose === "general" &&
+      (field.handling === "visible" || field.handling === "revealable"),
+  );
+  // The server independently repeats all of these checks. Keeping the panel
+  // absent outside the exact current personal-password scope prevents a stale
+  // detail view from even requesting confidential history metadata.
+  const passwordHistoryEligible =
+    item.user_id === currentUserId &&
+    item.organization_id === null &&
+    caps.can_reveal === true &&
+    Boolean(passwordHistoryField);
   const panelEligibility: Record<Panel, boolean> = {
     none: true,
     share: caps.can_manage === true,
@@ -232,6 +256,7 @@ export function VaultItemDetail({
     transfer: caps.can_manage === true && !hasProtectedExecutionField,
     fork: caps.can_use === true && !hasProtectedExecutionField,
     audit: true,
+    "password-history": passwordHistoryEligible,
   };
   const panelEligibilityRef = useRef(panelEligibility);
   panelEligibilityRef.current = panelEligibility;
@@ -289,6 +314,12 @@ export function VaultItemDetail({
       show: panelEligibility.fork,
     },
     { key: "audit", icon: History, label: "Audit trail", show: true },
+    {
+      key: "password-history",
+      icon: History,
+      label: "Password history",
+      show: passwordHistoryEligible,
+    },
   ];
   const overflowActions = allOverflowActions.filter((entry) => entry.show);
 
@@ -646,6 +677,15 @@ export function VaultItemDetail({
       {panel === "audit" && panelEligibility.audit && (
         <AuditPanel itemId={item.id} />
       )}
+      {panel === "password-history" &&
+        panelEligibility["password-history"] &&
+        passwordHistoryField && (
+          <VaultPasswordHistoryPanel
+            itemId={item.id}
+            field={passwordHistoryField}
+            currentUserId={currentUserId}
+          />
+        )}
 
       <ConfirmDialog
         open={confirmDelete}

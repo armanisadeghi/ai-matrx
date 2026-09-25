@@ -62,6 +62,8 @@ import {
   type VaultItemUpdateRequest,
   type VaultItemWire,
   type VaultPrincipal,
+  type VaultPasswordHistoryResponse,
+  type VaultPasswordHistoryRevealResponse,
   type VaultRevealResponse,
   type VaultScope,
   type VaultTransferResponse,
@@ -111,9 +113,7 @@ export type VaultRestoreResult = Pick<
 export class VaultIdentityConfirmationError extends Error {
   constructor(
     public readonly code:
-      | "credentials_rejected"
-      | "context_changed"
-      | "identity_unverified",
+      "credentials_rejected" | "context_changed" | "identity_unverified",
   ) {
     super(code);
   }
@@ -200,7 +200,7 @@ export class VaultImportTransportError extends Error {
             ? "This import retry key conflicts with a different request."
             : code === "idempotency_result_removed"
               ? "The import result is no longer available to confirm."
-          : "This import row was rejected. Review the row without exposing its values.",
+              : "This import row was rejected. Review the row without exposing its values.",
     );
   }
 }
@@ -711,8 +711,7 @@ export function checkVaultDestination(
 }
 
 type VaultItemCreateOptions =
-  | FrozenVaultImport
-  | { idempotencyKey?: never; expectedActor?: never };
+  FrozenVaultImport | { idempotencyKey?: never; expectedActor?: never };
 
 function isFrozenVaultImport(
   options: VaultItemCreateOptions,
@@ -894,6 +893,36 @@ export function revealVaultField(
   return vaultFetch<VaultRevealResponse>(
     `/items/${encodeURIComponent(itemId)}/reveal`,
     { method: "POST", body: JSON.stringify({ field_key: fieldKey }) },
+  );
+}
+
+/** Metadata only. This intentionally bypasses query caches and never asks
+ * Supabase for history, whose classified rows are server-owned. */
+export function fetchVaultPasswordHistory(
+  itemId: string,
+  beforeRevision?: number,
+): Promise<VaultPasswordHistoryResponse> {
+  const query = beforeRevision ? `?before_revision=${beforeRevision}` : "";
+  return vaultFetch<VaultPasswordHistoryResponse>(
+    `/items/${encodeURIComponent(itemId)}/password-history${query}`,
+    { cache: "no-store" },
+  );
+}
+
+/** Explicitly reveal one historical password state. Keep its plaintext in a
+ * transient component holder; no caller may cache or copy it automatically. */
+export function revealVaultPasswordHistory(
+  itemId: string,
+  fieldId: string,
+  revision: number,
+): Promise<VaultPasswordHistoryRevealResponse> {
+  return vaultFetch<VaultPasswordHistoryRevealResponse>(
+    `/items/${encodeURIComponent(itemId)}/password-history/reveal`,
+    {
+      method: "POST",
+      body: JSON.stringify({ field_id: fieldId, revision }),
+      cache: "no-store",
+    },
   );
 }
 
@@ -1153,7 +1182,8 @@ export async function resolveCredentialHome(
       data: { user },
       error: userError,
     } = await getClaimsUser(supabase);
-    if (userError || !user) return { state: "unavailable", why: "Not signed in" };
+    if (userError || !user)
+      return { state: "unavailable", why: "Not signed in" };
     const { data, error } = await supabase
       .schema("users")
       .from("credential_items")
@@ -1169,7 +1199,8 @@ export async function resolveCredentialHome(
         scope: { kind: "organization", organizationId: data.organization_id },
       };
     }
-    if (data.user_id === user.id) return { state: "found", scope: { kind: "mine" } };
+    if (data.user_id === user.id)
+      return { state: "found", scope: { kind: "mine" } };
     return { state: "found", scope: { kind: "shared" } };
   } catch (e) {
     return {
@@ -1188,7 +1219,10 @@ type HoldingsDatabase = {
     Tables: Record<string, never>;
     Views: Record<string, never>;
     Functions: {
-      credential_item_holdings: { Args: { p_item_ids: string[] }; Returns: HoldingRow[] };
+      credential_item_holdings: {
+        Args: { p_item_ids: string[] };
+        Returns: HoldingRow[];
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
@@ -1201,7 +1235,9 @@ async function askCredentialHoldings(
   itemIds: string[],
 ): Promise<Holdings> {
   try {
-    const { data, error } = await (supabase as unknown as SupabaseClient<HoldingsDatabase, "users">)
+    const { data, error } = await (
+      supabase as unknown as SupabaseClient<HoldingsDatabase, "users">
+    )
       .schema("users")
       .rpc("credential_item_holdings", { p_item_ids: itemIds });
     if (error) {
@@ -1211,7 +1247,10 @@ async function askCredentialHoldings(
     }
     return { state: "answered", rows: (data ?? []) as HoldingRow[] };
   } catch (e) {
-    return { state: "unavailable", why: e instanceof Error ? e.message : "the vault did not answer" };
+    return {
+      state: "unavailable",
+      why: e instanceof Error ? e.message : "the vault did not answer",
+    };
   }
 }
 
@@ -1321,9 +1360,15 @@ export async function fetchVaultItems(
   for (const row of (attachmentRows ?? []) as VaultAttachmentMaskedRow[]) {
     readableItemIds.add(row.credential_item_id);
   }
-  const emptyItemIds = items.filter((i) => !readableItemIds.has(i.id)).map((i) => i.id);
+  const emptyItemIds = items
+    .filter((i) => !readableItemIds.has(i.id))
+    .map((i) => i.id);
   if (emptyItemIds.length > 0) {
-    const alarm = emptyReadAlarm(items.length, emptyItemIds, await askCredentialHoldings(supabase, emptyItemIds));
+    const alarm = emptyReadAlarm(
+      items.length,
+      emptyItemIds,
+      await askCredentialHoldings(supabase, emptyItemIds),
+    );
     if (alarm) throw new Error(alarm);
   }
 

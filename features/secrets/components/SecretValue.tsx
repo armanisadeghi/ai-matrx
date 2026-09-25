@@ -595,7 +595,7 @@ export function SecretValue({
   );
 }
 
-function VaultRevealReauthDialog({
+export function VaultRevealReauthDialog({
   open,
   onClose,
 }: {

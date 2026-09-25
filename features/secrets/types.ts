@@ -209,6 +209,17 @@ export type VaultImportEnvRequest = ApiSchemas["VaultImportEnvRequest"];
 export type VaultFieldMetadataRequest = ApiSchemas["VaultFieldMetadataRequest"];
 export type VaultGrantee = ApiSchemas["GranteeIn"];
 export type VaultRevealResponse = ApiSchemas["VaultRevealResponse"];
+/** Value-free history metadata. The old value is returned only by the
+ * explicit, no-store history reveal endpoint. */
+export type VaultPasswordHistoryEntry = ApiSchemas["VaultPasswordHistoryEntry"];
+export type VaultPasswordHistoryResponse =
+  ApiSchemas["VaultPasswordHistoryResponse"];
+export type VaultPasswordHistoryRevealResponse = {
+  item_id: string;
+  field_id: string;
+  revision: number;
+  value: string;
+};
 export type VaultShareRequest = ApiSchemas["VaultShareRequest"];
 export type VaultAuditEntry = ApiSchemas["VaultAuditEntry"];
 export type VaultGrant = ApiSchemas["VaultGrantOut"];
