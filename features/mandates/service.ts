@@ -229,7 +229,7 @@ function parseDroppedRungs(verdict: unknown): DroppedRung[] {
     const e = entry as Record<string, unknown>;
     const rung = e.rung;
     const reason = e.reason;
-    if (rung !== "global" && rung !== "org" && rung !== "user") continue;
+    if (rung !== "org" && rung !== "user") continue;
     if (typeof reason !== "string" || !reason) continue;
     out.push({
       rung,
@@ -245,7 +245,7 @@ function parseDroppedRungs(verdict: unknown): DroppedRung[] {
 
 /** One rung the server verdict set aside, with the reason. */
 export interface DroppedRung {
-  rung: "global" | "org" | "user";
+  rung: "org" | "user";
   bindingId: string | null;
   organizationId: string | null;
   holderId: string | null;

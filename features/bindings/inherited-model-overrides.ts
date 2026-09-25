@@ -27,7 +27,9 @@ export function inheritedModelOverrides(
 ) {
   const merged: JsonObject = {};
   const sources: Record<string, string> = {};
-  for (const rung of RUNGS.slice(1, RUNGS.indexOf(editingRung))) {
+  // The system rung is included: since aidream 1037 the default carries its own
+  // settings, and service.py merges them first (1041 retired the global rung).
+  for (const rung of RUNGS.slice(0, RUNGS.indexOf(editingRung))) {
     const row = rows.find((candidate) => candidate.rung === rung);
     if (!row?.is_enabled || row.config_overrides === null) continue;
     if (!isJsonObject(row.config_overrides)) {
