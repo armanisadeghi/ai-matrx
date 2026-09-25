@@ -49,6 +49,7 @@ import {
   type RecordTabId,
 } from "./record-tabs";
 import { useRecordBackHref } from "./useRecordBackHref";
+import { useRecordTitle } from "@/lib/record-title/record-title";
 import { MandateVisibilityControl } from "./MandateVisibilityControl";
 
 /**
@@ -223,6 +224,9 @@ function RecordHeader({
   onTabChange: (tab: RecordTabId) => void;
 }) {
   const router = useRouter();
+  // The browser tab and the admin breadcrumb say the mandate's name, never
+  // "Mandate" or its key.
+  useRecordTitle(name);
   const { starting, startWorkflow } = useStartMandateWorkflow();
   const userId = useAppSelector(selectUserId);
   const [removing, setRemoving] = useState(false);

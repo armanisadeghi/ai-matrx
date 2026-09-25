@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { buildAdminTree, getAdminCrumbs, type AdminCrumb } from "./route-tree";
+import { useRecordTitleFor } from "@/lib/record-title/record-title";
 
 function CrumbDropdown({ crumb }: { crumb: AdminCrumb }) {
   const pathname = usePathname() ?? "";
@@ -103,7 +104,15 @@ function CrumbDropdown({ crumb }: { crumb: AdminCrumb }) {
 export default function AdminBreadcrumbs({ routes }: { routes: string[] }) {
   const pathname = usePathname() ?? "";
   const tree = React.useMemo(() => buildAdminTree(routes), [routes]);
-  const crumbs = getAdminCrumbs(tree, pathname);
+  // A record page's last segment is an identifier (a key, a uuid); the page
+  // publishes the record's own name, and the crumb says that instead of the
+  // identifier title-cased ("Scraper.page Fetch Verdict").
+  const recordTitle = useRecordTitleFor(pathname);
+  const crumbs = getAdminCrumbs(tree, pathname).map((crumb) =>
+    crumb.isLast && !crumb.isPage && recordTitle
+      ? { ...crumb, label: recordTitle }
+      : crumb,
+  );
 
   return (
     <nav aria-label="breadcrumb" className="flex items-center">
