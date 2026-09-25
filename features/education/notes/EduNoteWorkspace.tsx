@@ -12,6 +12,8 @@ import { NotesView } from "@/features/notes/components/NotesView";
 import { EduNoteActionBar } from "./EduNoteActionBar";
 
 export function EduNoteWorkspace({ noteId }: { noteId: string }) {
+  // Full-height editors own their internal scroll. Marking this viewport as
+  // clipped keeps the education layout's reading-page end padding off it.
   return (
     <div className="flex h-full w-full min-h-0 flex-col overflow-hidden bg-textured">
       <EduNoteActionBar noteId={noteId} />
