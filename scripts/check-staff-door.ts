@@ -43,6 +43,18 @@
  *
  * UNMEASURED IS A FAILURE, NEVER A PASS.
  *
+ * 🚨 SUPERSEDED FOR PLATFORM-ADMIN READS (Arman, 2026-09-24). Law:
+ * common-docs/policies/our-own-admin-database-access.md, and access-belongs-to-the-person.md §7 item 3.
+ * The DD-137b sweep this guard defends took the platform-admin READ away from ~440 tables and blinded
+ * the admin system (the aidream dashboard — our own raw database access). A platform-admin READ is
+ * never removed and is never a finding here:
+ *   - the `platform_admin_read` policy (FOR SELECT, `is_platform_admin()`) is EXCLUDED from limb B;
+ *   - limb D is new and runs FIRST: the law's own check query — every RLS table outside graveyard and
+ *     the Supabase system schemas must carry a permissive platform-admin read arm. More than 0 missing
+ *     FAILS this guard with exit 1 in EVERY mode (strict or not), so removing our access is a red build.
+ * Limbs A and C still stand: `platform_admin_all` is a WRITE lane too, and the suppress flag still
+ * governs writes and the org-admin (audited emergency door) side.
+ *
  *   pnpm check:staff-door             # loud, non-blocking (exit 0)
  *   pnpm check:staff-door --strict    # exit 1 on any finding or UNMEASURED
  *   pnpm check:staff-door --self-test # RED then GREEN against the real database
@@ -213,6 +225,9 @@ select coalesce(json_agg(x order by x->>'token'), '[]'::json) as j from (
        select 1 from pg_policy p
         where p.polrelid = to_regclass(format('%I.%I', et.schema_name, et.table_name))
           and p.polpermissive and p.polcmd in ('r','*')
+          -- common-docs/policies/our-own-admin-database-access.md: the platform-admin READ lane is
+          -- expected everywhere and is never a staff-door finding (Arman, 2026-09-24).
+          and p.polname <> 'platform_admin_read'
           and coalesce(pg_get_expr(p.polqual, p.polrelid), '') ~ 'is_platform_admin|is_super_admin'),
     'declares_closed', et.suppress_platform_admin_lane,
     -- DD-229: the routing key. There is no 'machinery' rls_variant (the CHECK admits only
@@ -231,6 +246,28 @@ select coalesce(json_agg(x order by x->>'token'), '[]'::json) as j from (
     and to_regclass(format('%I.%I', et.schema_name, et.table_name)) is not null
     and cl.resolved_class in ('private','confidential')
 ) q`;
+
+/**
+ * LIMB D — OUR OWN ADMIN DATABASE ACCESS (common-docs/policies/our-own-admin-database-access.md).
+ * The law's check query, verbatim in its predicate, returning the NAMES so a failure says where.
+ * The SCOPE marker comment in the SQL is replaced by the self-test to aim it at its scratch schema.
+ */
+export const ADMIN_READ_MISSING_SQL = `
+select coalesce(json_agg(format('%I.%I', n.nspname, c.relname) order by n.nspname, c.relname), '[]'::json) as j
+from pg_class c join pg_namespace n on n.oid = c.relnamespace
+where c.relkind in ('r','p') and not c.relispartition and c.relrowsecurity
+  and n.nspname not in ('graveyard','auth','storage','realtime','supabase_functions','vault','pgsodium',
+                        'net','cron','extensions','supabase_migrations','_realtime','pg_catalog','information_schema')
+  /*SCOPE*/
+  and not exists (select 1 from pg_policies p
+                   where p.schemaname = n.nspname and p.tablename = c.relname
+                     and p.cmd in ('SELECT','ALL')
+                     and coalesce(p.qual,'') ~ 'is_platform_admin|is_super_admin')`;
+
+async function adminReadMissing(env: { url: string; key: string }, scope = ""): Promise<string[]> {
+  const res = await door(env, ADMIN_READ_MISSING_SQL.replace("/*SCOPE*/", scope));
+  return ((res[0] as { j?: string[] })?.j ?? []);
+}
 
 async function selfTest(env: { url: string; key: string }): Promise<number> {
   console.log(`${C.b}SELF-TEST${C.x} ${C.d}(the detector must find an open staff lane on a private token, and must not flag a closed one)${C.x}`);
@@ -322,6 +359,31 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
     } else {
       console.log(`  ${C.g}✓${C.x} GREEN — the live query stops flagging it the moment the policy is dropped`);
     }
+
+    // LIMB D (common-docs/policies/our-own-admin-database-access.md). The probe has RLS on and, right
+    // now, NO platform-admin read arm — exactly the state the DD-137b sweep left ~440 tables in.
+    const scope = `and n.nspname = '${schema}'`;
+    const dRed = await adminReadMissing(env, scope);
+    if (dRed.length !== 1) {
+      console.log(`  ${C.r}✗${C.x} RED  — limb D did not name the probe that has no platform-admin read (got ${JSON.stringify(dRed)})`); bad++;
+    } else {
+      console.log(`  ${C.g}✓${C.x} RED  — limb D names an RLS table with no platform-admin read: ${dRed[0]}`);
+    }
+    await door(env, `create policy platform_admin_read on ${schema}.probe for select to authenticated
+                     using ((select public.is_platform_admin()))`);
+    const dGreen = await adminReadMissing(env, scope);
+    if (dGreen.length !== 0) {
+      console.log(`  ${C.r}✗${C.x} GREEN — limb D still names the probe after platform_admin_read was created`); bad++;
+    } else {
+      console.log(`  ${C.g}✓${C.x} GREEN — limb D is satisfied the moment platform_admin_read exists`);
+    }
+    // ...and limb B must NOT call that read arm an open staff door on a private, suppressed token.
+    const pRow = ((await door(env, FINDINGS_SQL.replace("where et.is_active", `where et.token = '${token}' and et.is_active`)))[0] as { j?: StaffDoorRow[] })?.j?.[0];
+    if (!pRow || pRow.has_staff_arm || isStaffDoorOpen(pRow)) {
+      console.log(`  ${C.r}✗${C.x} GREEN — platform_admin_read on a private token is still reported as an open staff door`); bad++;
+    } else {
+      console.log(`  ${C.g}✓${C.x} GREEN — platform_admin_read on a private, suppressed token is expected, never a staff-door finding`);
+    }
   } finally {
     // The teardown is not optional, and never silent (DC-027 #8): on 2026-09-14 this block swallowed
     // two `permission denied` failures and its leftover check threw past the report, so
@@ -345,6 +407,23 @@ async function main(): Promise<number> {
     return STRICT ? 1 : 0;
   }
   if (SELF_TEST) return selfTest(env);
+
+  // LIMB D FIRST — our own admin database access (common-docs/policies/our-own-admin-database-access.md).
+  // A hard FAIL (exit 1) in every mode: removing it is a red build, never a warning.
+  let missingAdminRead: string[];
+  try {
+    missingAdminRead = await adminReadMissing(env);
+  } catch (e) {
+    console.log(`  ${C.r}✗${C.x} UNMEASURED — the admin-read census failed: ${String(e)}. This is a FAILURE, not a pass.`);
+    return 1;
+  }
+  if (missingAdminRead.length > 0) {
+    console.error(`  ${C.r}✗${C.x} ${missingAdminRead.length} RLS table(s) have NO platform-admin read arm — the admin system is blind on them (common-docs/policies/our-own-admin-database-access.md). Restore platform_admin_read; never remove it:`);
+    for (const t of missingAdminRead) console.error(`     ${C.r}${t}${C.x}`);
+  } else {
+    console.log(`  ${C.g}✓${C.x} every RLS table carries a platform-admin read arm (our own admin database access)`);
+  }
+  const adminReadFail = missingAdminRead.length > 0;
 
   let rows: Array<StaffDoorRow & { reason?: string }>;
   try {
@@ -418,6 +497,10 @@ async function main(): Promise<number> {
     console.log(`  ${C.g}✓${C.x} no component or ledger under a private or confidential parent carries the staff lane, outside the named residue`);
   }
 
+  if (adminReadFail) {
+    console.log(`${C.r}✗${C.x} ${C.b}our own admin database access is missing on ${missingAdminRead.length} table(s)${C.x}`);
+    return 1;
+  }
   if (findings === 0) {
     console.log(`${C.g}✓${C.x} ${C.b}the staff door is shut${C.x}`);
     return 0;

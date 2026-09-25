@@ -20,6 +20,13 @@
  * population is exactly the tokens staff-door does not look at — the unsuppressed ones that carry a
  * typed `platform.visibility` column (179 of them today, holding 15,106 `personal` rows).
  *
+ * 🚨 SUPERSEDED FOR THE PLATFORM-ADMIN READ LANE (Arman, 2026-09-24). Law:
+ * common-docs/policies/our-own-admin-database-access.md. `platform_admin_read` (FOR SELECT,
+ * `is_platform_admin()`) is our own admin database access — the admin system reads every row,
+ * personal and private included, and a component's rows without asking its parent. It is skipped by
+ * name in `unwalledArms` and `componentDoorsNotThroughParent`; `check:staff-door` limb D is what
+ * FAILS when it is missing. Every other staff arm is still judged exactly as before.
+ *
  * WHAT THIS GUARD ASSERTS, for every active token that is NOT suppressed and carries a typed
  * `platform.visibility` column:
  *   A. `platform_admin_all`'s USING excludes `visibility='personal'` — that policy is PERMISSIVE and
@@ -156,6 +163,12 @@ const W_SYSORG =
   "( SELECT is_super_admin() AS is_super_admin) AND (organization_id IN " +
   "( SELECT so.organization_id FROM iam.system_orgs so WHERE so.global_readable))";
 
+/**
+ * Our own admin database access (common-docs/policies/our-own-admin-database-access.md, Arman
+ * 2026-09-24): the platform-admin READ lane on every RLS table. Expected everywhere, never judged here.
+ */
+export const ADMIN_READ_POLICY = "platform_admin_read";
+
 export interface PolicyRow { polname: string; qual: string }
 /** A composition/containment parent whose FK column really exists on the child table. */
 export interface ParentRow { parent_type: string; fk_column: string }
@@ -170,6 +183,7 @@ export interface RowVisibilityRow {
 export function unwalledArms(row: RowVisibilityRow): string[] {
   const bad: string[] = [];
   for (const p of row.policies) {
+    if (p.polname === ADMIN_READ_POLICY) continue; // our-own-admin-database-access.md: never a finding
     const q = (p.qual ?? "").replace(/\s+/g, " ");
     if (p.polname === "platform_admin_all" && !q.includes(W_ADMIN)) {
       bad.push(`${p.polname}: USING does not exclude visibility='personal'`);
@@ -252,7 +266,9 @@ export function componentDoorsNotThroughParent(row: ComponentRow): string[] {
   if (!row.rls_enabled) {
     return ["row security is DISABLED — every signed-in client reads every row"];
   }
-  const doors = row.policies.filter((p) => !(p.roles ?? []).includes("service_role"));
+  const doors = row.policies.filter(
+    (p) => !(p.roles ?? []).includes("service_role") && p.polname !== ADMIN_READ_POLICY,
+  );
   if (doors.length === 0) return ["no permissive read policy for a signed-in client exists at all"];
   const bad: string[] = [];
   for (const p of doors) {
@@ -359,6 +375,13 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
       { token: "x", variant: "entity", policies: [{ polname: "std_select", qual: `((${W_ADMIN}) OR ((organization_id IS NOT NULL) AND ( SELECT is_super_admin() AS is_super_admin) AND (organization_id IN ( SELECT so.organization_id FROM iam.system_orgs so WHERE so.global_readable))))` }] }, true],
     ["the WALLED system-org super-admin arm, which the generator has emitted since DD-170",
       { token: "x", variant: "entity", policies: [{ polname: "std_select", qual: `((${W_ADMIN}) OR (${W_SYSORG}))` }] }, false],
+    // our-own-admin-database-access.md (Arman 2026-09-24): the admin READ lane is never a finding ...
+    ["platform_admin_read (our own admin database access) beside a walled std_select",
+      { token: "x", variant: "entity", policies: [{ polname: "platform_admin_read", qual: "( SELECT is_platform_admin() AS is_platform_admin)" },
+                                                  { polname: "std_select", qual: `((${W_ADMIN}) OR (created_by = ( SELECT auth.uid() AS uid)))` }] }, false],
+    // ... but the SAME unwalled predicate under any other name still is.
+    ["the same unwalled predicate under a name that is NOT platform_admin_read",
+      { token: "x", variant: "entity", policies: [{ polname: "staff_read", qual: "( SELECT is_platform_admin() AS is_platform_admin)" }] }, true],
   ];
   const OLD_ARM = "(parent_folder_id IS NOT NULL) AND (visibility IS NOT NULL) AND (visibility <> 'public'::platform.visibility)";
   const NEW_ARM = "(parent_folder_id IS NOT NULL) AND (visibility >= 'internal'::platform.visibility) AND (visibility <> 'public'::platform.visibility)";
@@ -410,6 +433,13 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
       { token: "c", relkind: "r", security_invoker: false, rls_enabled: true, keeps_staff_lane: true, parents: cparents,
         policies: [{ polname: "platform_admin_all", qual: "( SELECT is_platform_admin() AS is_platform_admin)", roles: ["authenticated"] },
                    { polname: "std_select", qual: "(document_id IN ( SELECT iam.unnest_uuids(iam.accessible_entity_ids('udt_document'::text, 'viewer'::permission_level, 0, true))))", roles: ["authenticated"] }] }, false],
+    ["platform_admin_read on a component whose parent class CLOSES the staff lane (our own admin database access)",
+      { token: "c", relkind: "r", security_invoker: false, rls_enabled: true, keeps_staff_lane: false, parents: cparents,
+        policies: [{ polname: "platform_admin_read", qual: "( SELECT is_platform_admin() AS is_platform_admin)", roles: ["authenticated"] },
+                   { polname: "std_select", qual: "(document_id IN ( SELECT iam.unnest_uuids(iam.accessible_entity_ids('udt_document'::text, 'viewer'::permission_level, 0, true))))", roles: ["authenticated"] }] }, false],
+    ["a component whose ONLY client door is platform_admin_read still has no member door at all",
+      { token: "c", relkind: "r", security_invoker: false, rls_enabled: true, keeps_staff_lane: false, parents: cparents,
+        policies: [{ polname: "platform_admin_read", qual: "( SELECT is_platform_admin() AS is_platform_admin)", roles: ["authenticated"] }] }, true],
     ["a component that is a security_invoker VIEW — the parent's own row security filters it",
       { token: "c", relkind: "v", security_invoker: true, rls_enabled: false, keeps_staff_lane: false, parents: cparents, policies: [] }, false],
     ["a component that is a DEFINER view — the parent's row security never runs (agent.card's shape)",
