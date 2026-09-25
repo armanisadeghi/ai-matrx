@@ -86,7 +86,7 @@ jest.mock("@/features/files/upload/UploadGuardHost", () => ({
   requestUpload: jest.fn(),
 }));
 
-import { mediaFilesClient, __filesFetchForTest } from "./client";
+import { mediaFilesClient, __filesFetchForTest, __resetOrgLessLaneForTest } from "./client";
 import {
   __resetFileOrganizationsForTest,
   rememberFileOrganization,
@@ -112,6 +112,7 @@ describe("file-session mint — organization admission", () => {
     accessToken = "jwt-token";
     fingerprintId = null;
     subscribers.clear();
+    __resetOrgLessLaneForTest();
     jest.spyOn(console, "warn").mockImplementation(() => {});
   });
 
@@ -158,7 +159,7 @@ describe("file-session mint — organization admission", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it("skips the mint loudly when the bootstrap resolves with no organization", async () => {
+  it("mints for the PERSON when the bootstrap resolves with no organization (identity-only, GATES-TAIL-2)", async () => {
     const fetchMock = mintOk();
     global.fetch = fetchMock as unknown as typeof fetch;
 
@@ -167,11 +168,12 @@ describe("file-session mint — organization admission", () => {
     hydrateOrganization({ organizationId: null, orgBootstrapResolved: true });
     await pending;
 
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(console.warn).toHaveBeenCalledWith(
-      expect.stringContaining("[files-session]"),
-      expect.stringContaining("Private media stays unavailable"),
-    );
+    // The cookie is the person's; the server admits the mint without an organization.
+    expect(fetchMock).toHaveBeenCalled();
+    for (const [url, init] of fetchMock.mock.calls as unknown as [string, RequestInit][]) {
+      expect(url).toMatch(/\/files\/session$/);
+      expect(new Headers(init.headers).get("X-Organization-Id")).toBeNull();
+    }
   });
 
   it("mints for a guest immediately — the fingerprint lane carries no organization", async () => {
@@ -215,7 +217,7 @@ describe("file-session mint — organization admission", () => {
     }
   });
 
-  it("refuses the INTERNAL mint rather than burn it, when no organization resolves", async () => {
+  it("sends the INTERNAL mint without an organization when none resolves (identity-only)", async () => {
     orgBootstrapResolved = true;
     organizationId = null;
     const fetchMock = mintOk();
@@ -229,7 +231,10 @@ describe("file-session mint — organization admission", () => {
     const minted = (
       fetchMock.mock.calls as unknown as [string, RequestInit][]
     ).filter(([url]) => /\/files\/session$/.test(url));
-    expect(minted).toHaveLength(0);
+    expect(minted.length).toBeGreaterThan(0);
+    for (const [, init] of minted) {
+      expect(new Headers(init.headers).get("X-Organization-Id")).toBeNull();
+    }
   });
 });
 
@@ -245,6 +250,7 @@ describe("per-file requests — the file's own organization, not the picker's", 
     accessToken = "jwt-token";
     fingerprintId = null;
     __resetFileOrganizationsForTest();
+    __resetOrgLessLaneForTest();
     jest.spyOn(console, "warn").mockImplementation(() => {});
   });
   afterEach(() => jest.restoreAllMocks());
@@ -276,20 +282,62 @@ describe("per-file requests — the file's own organization, not the picker's", 
     expect(new Headers(init.headers).get("X-Organization-Id")).toBe(FILE_ORG);
   });
 
-  it("a file nobody has told us about keeps the old refusal — nothing guessed", async () => {
-    const fetchMock = jest.fn();
-    global.fetch = fetchMock as unknown as typeof fetch;
-    // jsdom has no Response; the transport builds one for its refusal.
+  // jsdom has no Response; the transport builds one for its refusal.
+  const ensureResponse = () => {
     (globalThis as { Response?: unknown }).Response ??= class {
       status: number;
       constructor(_body: unknown, init: { status: number }) {
         this.status = init.status;
       }
     };
+  };
+
+  it("a read of a file nobody has told us about goes WITHOUT an organization — the server decides by access", async () => {
+    const fetchMock = jest.fn(async () => ({ ok: true, status: 200 }));
+    global.fetch = fetchMock as unknown as typeof fetch;
     const res = await __filesFetchForTest(`https://files.matrxserver.com/files/${FILE}/download`, {
+      headers: { Authorization: "Bearer jwt-token" },
+    });
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(new Headers(init.headers).get("X-Organization-Id")).toBeNull();
+  });
+
+  it("a write with no organization is still refused before sending — nothing guessed", async () => {
+    ensureResponse();
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    const res = await __filesFetchForTest("https://files.matrxserver.com/files/upload", {
+      method: "POST",
       headers: { Authorization: "Bearer jwt-token" },
     });
     expect(fetchMock).not.toHaveBeenCalled();
     expect(res.status).toBe(400);
+    const patch = await __filesFetchForTest(`https://files.matrxserver.com/files/${FILE}`, {
+      method: "PATCH",
+      headers: { Authorization: "Bearer jwt-token" },
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(patch.status).toBe(400);
+  });
+
+  it("a server that still gates the org-less lane is asked once, then the tab stops asking (no refusal storm)", async () => {
+    ensureResponse();
+    const refused = { ok: false, status: 400, json: async () => ({ detail: { code: "organization_required" } }), clone() { return this; } };
+    const fetchMock = jest.fn(async () => refused);
+    global.fetch = fetchMock as unknown as typeof fetch;
+    await __filesFetchForTest("https://files.matrxserver.com/files/session", {
+      method: "POST",
+      headers: { Authorization: "Bearer jwt-token" },
+    });
+    await __filesFetchForTest("https://files.matrxserver.com/files/session", {
+      method: "POST",
+      headers: { Authorization: "Bearer jwt-token" },
+    });
+    await __filesFetchForTest(`https://files.matrxserver.com/files/${FILE}`, {
+      headers: { Authorization: "Bearer jwt-token" },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

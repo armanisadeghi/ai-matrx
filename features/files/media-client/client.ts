@@ -134,6 +134,22 @@ async function filesFetch(
     organizationId = admission === "ready" ? peekSelectedOrganizationId() : null;
   }
 
+  // IDENTITY-ONLY AND ACCESS-DECIDED REQUESTS GO WITHOUT AN ORGANIZATION (GATES-TAIL-2). The
+  // file-session mint is the PERSON's cookie, and a read of one file is decided by her access
+  // to that file (the files service admits both with none: matrx_files/standalone/admission.py).
+  // Every other JWT request (uploads, edits, runs) still needs one. If the server answers
+  // `organization_required` to such a request anyway (a service not yet on that release), the
+  // tab stops sending them — a refusal storm is the 2026-08-31 outage, never again.
+  if (!organizationId && !orgLessLaneRefusedByServer && admittedWithoutOrganization(input, init)) {
+    resetUnresolvedOrganizationReport();
+    const res = await globalThis.fetch(input, { ...init, headers });
+    if (res.status === 400 && (await saysOrganizationRequired(res))) {
+      orgLessLaneRefusedByServer = true;
+      reportUnresolvedOrganizationOnce();
+    }
+    return res;
+  }
+
   if (!organizationId) {
     reportUnresolvedOrganizationOnce();
     // Never a silent skip and never a guaranteed-400 round trip: the package's
@@ -157,6 +173,33 @@ async function filesFetch(
   resetUnresolvedOrganizationReport();
   headers.set("X-Organization-Id", organizationId);
   return globalThis.fetch(input, { ...init, headers });
+}
+
+/** Set once the files service refused an org-less identity/read request with `organization_required`. */
+let orgLessLaneRefusedByServer = false;
+
+const SESSION_PATH = /\/files\/session\/?(?:[?#]|$)/;
+
+/** POST /files/session, or a GET/HEAD about one file — the lanes the server admits with no organization. */
+function admittedWithoutOrganization(input: RequestInfo | URL, init?: RequestInit): boolean {
+  const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+  const method = (init?.method ?? (typeof input === "object" && "method" in input ? input.method : "GET")).toUpperCase();
+  if (method === "POST" && SESSION_PATH.test(url)) return true;
+  return (method === "GET" || method === "HEAD") && fileIdInRequest(input) !== null;
+}
+
+async function saysOrganizationRequired(res: Response): Promise<boolean> {
+  try {
+    const body = (await res.clone().json()) as { detail?: { code?: string; error?: string } };
+    return body?.detail?.code === "organization_required" || body?.detail?.error === "organization_required";
+  } catch {
+    return false;
+  }
+}
+
+/** Test seam: forget that the server refused the org-less lane. */
+export function __resetOrgLessLaneForTest(): void {
+  orgLessLaneRefusedByServer = false;
 }
 
 /** Test seam: the one transport every package door passes through. */
