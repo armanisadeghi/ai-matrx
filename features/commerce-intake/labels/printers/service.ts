@@ -17,6 +17,7 @@
 import { readAllRows } from "@ai-matrx/data/db";
 
 import { createClient } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 
 import {
   type CertificationResultNotes,
@@ -314,18 +315,24 @@ export async function recordCertification(
 
 /** Mark a certification stale — the re-check entry point from the list. */
 export async function markNeedsRecheck(id: string): Promise<void> {
-  const { error } = await db()
-    .from("certified_printer")
-    .update({ status: "needs_recheck" })
-    .eq("id", id);
-  if (error) throw error;
+  await writeOne(
+    db()
+      .from("certified_printer")
+      .update({ status: "needs_recheck" })
+      .eq("id", id)
+      .select("id"),
+    { action: "update", noun: "certified printer" },
+  );
 }
 
 /** Soft delete (the table carries `deleted_at`; we never hard-delete). */
 export async function deleteCertifiedPrinter(id: string): Promise<void> {
-  const { error } = await db()
-    .from("certified_printer")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) throw error;
+  await writeOne(
+    db()
+      .from("certified_printer")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "certified printer" },
+  );
 }

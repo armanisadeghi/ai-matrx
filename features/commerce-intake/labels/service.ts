@@ -26,6 +26,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createClient } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { readAllRows } from "@ai-matrx/data/db";
 
 import { generateCodeValue } from "./codes";
@@ -328,11 +329,14 @@ export async function voidBatch(
     .eq("label_batch_id", batch.id)
     .eq("state", "available");
   if (error) throw error;
-  const { error: batchError } = await labelsDb()
-    .from("label_batch")
-    .update({ state: "void", version: batch.version + 1 })
-    .eq("id", batch.id);
-  if (batchError) throw batchError;
+  await writeOne(
+    labelsDb()
+      .from("label_batch")
+      .update({ state: "void", version: batch.version + 1 })
+      .eq("id", batch.id)
+      .select("id"),
+    { action: "change", noun: "label batch" },
+  );
 }
 
 // ── Minting ─────────────────────────────────────────────────────────────────
@@ -485,6 +489,7 @@ export async function claimLabelCode(
       .maybeSingle();
     const identifierId = (identifier as { id: string } | null)?.id;
     if (identifierId) {
+      // write-lands-exempt: best-effort back-link inside try/catch; the claim stands without it
       await labelsDb()
         .from("label_code")
         .update({ asset_identifier_id: identifierId })

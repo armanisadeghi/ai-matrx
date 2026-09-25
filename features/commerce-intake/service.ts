@@ -28,6 +28,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { readAllRows } from "@ai-matrx/data/db";
 
@@ -643,11 +644,14 @@ export async function saveInstantResult(
 
 /** Soft-delete an asset. Its uploaded files stay in the org's file tree. */
 export async function deleteAsset(assetId: string): Promise<void> {
-  const { error } = await db()
-    .from("intake_asset")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", assetId);
-  if (error) throw error;
+  await writeOne(
+    db()
+      .from("intake_asset")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", assetId)
+      .select("id"),
+    { action: "delete", noun: "item" },
+  );
 }
 
 // ── Artifacts ───────────────────────────────────────────────────────────────
@@ -746,11 +750,14 @@ export async function maxSequenceIndex(batchId: string): Promise<number> {
 /** Soft-delete an artifact row (the retake path — cloud-file removal is the
  *  caller's concern, best-effort). */
 export async function deleteArtifact(artifactId: string): Promise<void> {
-  const { error } = await db()
-    .from("intake_artifact")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", artifactId);
-  if (error) throw error;
+  await writeOne(
+    db()
+      .from("intake_artifact")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", artifactId)
+      .select("id"),
+    { action: "delete", noun: "capture" },
+  );
 }
 
 // ── Identifiers ─────────────────────────────────────────────────────────────
@@ -932,13 +939,16 @@ export async function deferQuestion(
   question: AssetQuestion,
   reason: string,
 ): Promise<void> {
-  const { error } = await db()
-    .from("asset_unknown")
-    .update({
-      deferred_at: new Date().toISOString(),
-      deferred_reason: reason,
-      version: question.version + 1,
-    })
-    .eq("id", question.id);
-  if (error) throw error;
+  await writeOne(
+    db()
+      .from("asset_unknown")
+      .update({
+        deferred_at: new Date().toISOString(),
+        deferred_reason: reason,
+        version: question.version + 1,
+      })
+      .eq("id", question.id)
+      .select("id"),
+    { action: "update", noun: "question" },
+  );
 }
