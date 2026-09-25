@@ -20,6 +20,7 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { TableTransferOffer } from "@/features/sharing/components/TableTransferOffer";
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import {
   PendingTableInvitation,
@@ -609,13 +610,18 @@ export default function UnifiedDataTableRoute({
              not shared with you, deleted, never there, or signed out — and offers the ask to
              whoever can grant it (the table's creator; the organization's admins for a shared
              one). Grants land on the same ladder `custom.where_id_opens` reads. */
-          <AccessGate
-            token="record"
-            id={tableId}
-            onRetry={object.retry}
-            fallbackHref="/data-v2"
-            fallbackLabel="Back to your tables"
-          />
+          <>
+            <AccessGate
+              token="record"
+              id={tableId}
+              onRetry={object.retry}
+              fallbackHref="/data-v2"
+              fallbackLabel="Back to your tables"
+            />
+            {/* SHARE-LANE-2: an organization owner or admin who is not named gets the one thing
+                the role allows — an audited transfer — and never a silent read. */}
+            <TableTransferOffer tableId={tableId} onTransferred={object.retry} />
+          </>
         ) : object.state === "unavailable" ? (
           <div className="flex flex-col items-start gap-2 rounded-md border border-dashed p-6">
             <p className="text-sm font-medium">We could not find out where this table is</p>

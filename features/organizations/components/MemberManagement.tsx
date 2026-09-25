@@ -25,6 +25,9 @@ import type {
   MembershipRole,
   MembershipRoleOption,
 } from "@/components/membership/types";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { MemberPersonalTablesAction } from "@/features/sharing/components/MemberPersonalTablesAction";
 import {
   HrMemberEmployeeSeamProvider,
   MemberEmployeeSeam,
@@ -172,6 +175,13 @@ function OrganizationMembersPanel({
   onTransferOwnership: (member: PanelMember) => Promise<void>;
 }) {
   const memberEmployeeCopyDetails = useMemberEmployeeCopyDetails();
+  const viewerId = useAppSelector(selectUserId);
+  // SHARE-LANE-2: an owner or admin governs a member's personal Tables by transferring them.
+  const viewerGoverns = !isPersonal && (isOwner || userRole === "admin");
+  const people = members.map((m) => ({
+    id: m.userId,
+    name: m.user?.displayName ?? m.user?.email ?? "A member",
+  }));
   const enrichedMembers = members.map((member) => ({
     ...member,
     copyDetails: memberEmployeeCopyDetails(
@@ -184,10 +194,23 @@ function OrganizationMembersPanel({
     <MembersPanel
       members={enrichedMembers}
       renderMemberExtra={(member) => (
-        <MemberEmployeeSeam
-          userId={member.userId}
-          displayName={member.user?.displayName ?? member.user?.email ?? null}
-        />
+        <>
+          <MemberEmployeeSeam
+            userId={member.userId}
+            displayName={member.user?.displayName ?? member.user?.email ?? null}
+          />
+          <MemberPersonalTablesAction
+            organizationId={organizationId}
+            organizationName={organizationName ?? "this organization"}
+            member={{
+              id: member.userId,
+              name: member.user?.displayName ?? member.user?.email ?? "This member",
+            }}
+            people={people}
+            viewerId={viewerId}
+            viewerGoverns={viewerGoverns}
+          />
+        </>
       )}
       roleOptions={ROLE_OPTIONS}
       operationLoading={operationLoading}
