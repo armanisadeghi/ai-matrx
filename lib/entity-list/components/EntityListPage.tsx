@@ -651,6 +651,7 @@ export function EntityListPage<TRow>({
           )}
         </div>
 
+        {!config.tableToolbar && (
         <EntityListToolbar
           query={list.query}
           facets={list.facets}
@@ -697,6 +698,7 @@ export function EntityListPage<TRow>({
               );
           }}
         />
+        )}
 
         {/*
           THE ONE FAILURE SLOT. Every reason this list has no rows is printed
@@ -780,6 +782,20 @@ export function EntityListPage<TRow>({
             onSaveEdits={saveEdits}
             emptyState={resolvedEmptyState}
             {...(tableSelection ? { selection: tableSelection } : {})}
+            {...(config.tableToolbar
+              ? {
+                  tableToolbar: {
+                    tableId: config.tableToolbar.tableId,
+                    search: list.query.search,
+                    searchPlaceholder:
+                      config.searchPlaceholder ??
+                      `Search ${config.entityLabel.plural}…`,
+                    onRefresh: list.refresh,
+                    onHiddenColumnsChange: (hiddenColumns: string[]) =>
+                      setPrefs({ hiddenColumns }),
+                  },
+                }
+              : {})}
             onQueryChange={(next) => {
               if (
                 next.sort !== effectiveSort.sort ||
@@ -789,6 +805,17 @@ export function EntityListPage<TRow>({
               }
               if (next.pageSize !== prefs.pageSize) {
                 setPrefs({ pageSize: next.pageSize });
+              }
+              // Table-toolbar mode only: the search box is the table's, and a
+              // saved view can change search AND filters in one apply — so both
+              // land in one patch (which resets the page) rather than two
+              // commits racing each other.
+              if (
+                next.search !== undefined &&
+                next.search !== list.query.search
+              ) {
+                list.patchQuery({ search: next.search, filters: next.filters });
+                return;
               }
               if (
                 JSON.stringify(next.filters) !==

@@ -1,0 +1,84 @@
+// features/mandates/admin-list/types.ts
+//
+// One row of the admin mandate list preview (/administration/mandates/list-preview).
+// It is the console's health row (`MandateRow`, the ONE builder in
+// ../admin/mandate-health.ts) plus the facts the console never showed:
+// who created it, whose it is, who customized it, and where it comes from.
+// Every field is read from a real source; `null` means that source did not
+// answer, never "none".
+
+import type { MandateCoverageBucket } from "@/features/mandates/coverage";
+import type { MandateRow } from "@/features/mandates/admin/mandate-health";
+import type {
+  ImpactBlocker,
+  ImpactGrade,
+  ImpactVerdict,
+} from "@/features/mandates/admin/impact";
+import type { UngradedReason } from "@/features/mandates/admin/impact-cells";
+
+/** Code-backed (declared in repo code) or soft (exists only as a DB row). */
+export type MandateOrigin = "code" | "soft";
+
+/** What the live code declaration says about this key (`GET /mandates/code-truth`). */
+export type MandateCodeState =
+  | "declared"
+  | "import_failed"
+  | "not_in_code"
+  | "unknown";
+
+/** Where the job runs from, read from shortcut / surface / app rows. */
+export type MandateServes =
+  | "Shortcut"
+  | "Surface"
+  | "Agent app"
+  | "Feature code"
+  | "Nothing found";
+
+/** The default situation of the job's own rung. */
+export type MandateDefaultState = "Own default" | "Fallback" | "No default";
+
+export interface MandateAdminRow extends MandateRow {
+  /** The pretty name — the author's label, else the key's last segment. */
+  name: string;
+  /** "Podcast", "SEO › Ai Visibility", "Shortcuts", "Agent apps". */
+  featureLabel: string;
+  goal: string | null;
+
+  /** Null when the coverage report did not answer — never guessed green. */
+  coverage: MandateCoverageBucket | null;
+  coverageDetail: string | null;
+  defaultVerdict: ImpactVerdict | null;
+  bindingVerdicts: ImpactVerdict[];
+  ungraded: UngradedReason | null;
+  impactGrade: ImpactGrade | "ungraded";
+  impactBlocker: ImpactBlocker | "none" | "ungraded";
+
+  /** "agent" | "workflow" — the default rung's Holder type. */
+  holderType: string;
+  /** Pinned version label ("v3") or "Latest"; "None" with no holder. */
+  pinText: string;
+
+  /** "Default", org names, "Personal", "Global" — one entry per kind. */
+  customizedBy: string[];
+
+  createdBy: string | null;
+  organizationId: string | null;
+  /** "System" or the owning organization's name. */
+  homeLabel: string;
+  isSystem: boolean;
+  createdAt: string | null;
+
+  origin: MandateOrigin;
+  codeState: MandateCodeState;
+  /** "Python · aidream" when a declaration was found, else null. */
+  declaredIn: string | null;
+  /** `aidream/services/podcast/mandates.py:41` when known. */
+  declaredFile: string | null;
+  serves: MandateServes[];
+  /** Surface names, shortcut labels, app names behind `serves`. */
+  servesDetail: string[];
+  defaultState: MandateDefaultState;
+  fallbackKey: string | null;
+  /** Other mandates whose fallback is this one. */
+  backsCount: number;
+}

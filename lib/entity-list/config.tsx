@@ -418,5 +418,19 @@ export interface EntityListConfig<TRow> {
     rows?: (props: EntityAltViewProps<TRow>) => ReactNode;
   };
 
+  /**
+   * OPT-IN: the TABLE's own title row carries search, saved views, working
+   * view tabs and the column picker, instead of the shell's separate toolbar
+   * row. Absent = the shell toolbar, exactly as before.
+   *
+   * On, the shell renders no `EntityListToolbar`; search is still the shell's
+   * query (URL-backed when `urlState` is on), hidden columns are still the
+   * surface's `useListViewPrefs` blob, and `tableId` keys the host's saved
+   * views. The Filters & Sort panel is not rendered — every column filters and
+   * sorts from its own header, so a surface opting in declares no alternate
+   * views and no archive axis it would lose the control for.
+   */
+  tableToolbar?: { tableId: string };
+
   emptyState: { title: string; description: string };
 }

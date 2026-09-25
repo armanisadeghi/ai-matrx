@@ -73,7 +73,20 @@ interface Props<TRow> {
     sort: string;
     direction: "asc" | "desc";
     filters: EntityFilters;
+    /** Present only in table-toolbar mode, where the search box is the table's. */
+    search?: string;
   }) => void;
+  /**
+   * `config.tableToolbar` is on: the table's own title row carries search,
+   * saved views and the column picker (see EntityListConfig.tableToolbar).
+   */
+  tableToolbar?: {
+    tableId: string;
+    search: string;
+    searchPlaceholder: string;
+    onRefresh: () => void;
+    onHiddenColumnsChange: (hidden: string[]) => void;
+  };
   emptyAction?: React.ReactNode;
   /** Resolved empty state from the page (which knows if a search/filter is on). */
   emptyState?: {
@@ -144,6 +157,7 @@ export function EntityListTable<TRow>({
   emptyAction,
   emptyState,
   selection,
+  tableToolbar,
 }: Props<TRow>) {
   const { favorite } = config;
 
@@ -241,7 +255,9 @@ export function EntityListTable<TRow>({
     .filter(
       (spec) =>
         (showSharedColumns || !spec.scopedToShared) &&
-        !hiddenColumns.includes(spec.id),
+        // In table-toolbar mode the table's own column picker hides columns
+        // (controlled `columnState` below), so every column is handed over.
+        (Boolean(tableToolbar) || !hiddenColumns.includes(spec.id)),
     )
     .map((spec) => {
       const facetOptions = spec.facet ? facets.byKind[spec.facet] : undefined;
@@ -300,7 +316,7 @@ export function EntityListTable<TRow>({
         state: {
           page,
           pageSize,
-          search: "",
+          search: tableToolbar?.search ?? "",
           anyOf: "",
           columnFilters: toTableFilters(filters),
           sort: { id: sort, direction },
@@ -312,12 +328,34 @@ export function EntityListTable<TRow>({
             sort: next.sort?.id ?? sort,
             direction: next.sort?.direction ?? direction,
             filters: fromTableFilters(next.columnFilters),
+            ...(tableToolbar ? { search: next.search } : {}),
           });
         },
       }}
       // The page owns the search box; a second one inside the table would be
       // two affordances fighting over one query.
-      toolbar={{ search: false }}
+      toolbar={
+        tableToolbar
+          ? {
+              search: true,
+              searchPlaceholder: tableToolbar.searchPlaceholder,
+              refresh: { onRefresh: tableToolbar.onRefresh },
+            }
+          : { search: false }
+      }
+      {...(tableToolbar
+        ? {
+            tableId: tableToolbar.tableId,
+            columnState: {
+              order: columns.map(
+                (column) => column.id ?? String(column.accessorKey ?? ""),
+              ),
+              hidden: hiddenColumns,
+              onChange: (next: { order: string[]; hidden: string[] }) =>
+                tableToolbar.onHiddenColumnsChange(next.hidden),
+            },
+          }
+        : {})}
       // Row click fires the surface's opener. Side panel / row-window stay off —
       // the kebab menu already carries Quick look and every other record action.
       detail={{ enabled: false }}
