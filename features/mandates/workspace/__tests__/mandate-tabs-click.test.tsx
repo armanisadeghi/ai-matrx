@@ -155,8 +155,8 @@ describe("mandate workspace tabs", () => {
   });
 
   it("switches to Holder on a click, and hides the Definition panel", async () => {
-    await act(async () => tab("Holder").click());
-    expect(selected()).toBe("Holder");
+    await act(async () => tab("Mandate Holder").click());
+    expect(selected()).toBe("Mandate Holder");
     expect(visiblePanel("mandate-panel-holder")).toBe(true);
     expect(visiblePanel("mandate-panel-definition")).toBe(false);
   });

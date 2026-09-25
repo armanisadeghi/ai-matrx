@@ -33,7 +33,7 @@ const question: ConsumptionEntry = {
 describe("feedSentence — names the kind it has actually checked", () => {
   it("says nothing feeds an input with no sources", () => {
     expect(feedSentence([], true)).toBe(
-      "Nothing feeds this — the holder's own default applies.",
+      "Nothing feeds this — the Mandate Holder's own default applies.",
     );
     expect(feedSentence(undefined, true)).toContain("Nothing feeds this");
     expect(isFed([])).toBe(false);
@@ -79,14 +79,14 @@ describe("feedSentence — names the kind it has actually checked", () => {
   });
 
   /**
-   * 🚨 V2 round 3: this sentence printed "the holder's own default applies"
+   * 🚨 V2 round 3: this sentence printed "the Mandate Holder's own default applies"
    * beside a panel reading CURRENT AGENT DEFAULT — Not set. Two other readers
    * (`BindingMiddle`, `batch-model`) already checked whether a default exists;
    * this one asserted it. One fact, three readers, and only two of them asked.
    */
   it("does NOT claim a default the holder does not have", () => {
     expect(feedSentence([], false)).toBe(
-      "Nothing feeds this, and the holder has no default of its own — nothing arrives for it.",
+      "Nothing feeds this, and the Mandate Holder has no default of its own — nothing arrives for it.",
     );
     expect(feedSentence([], false)).not.toContain("default applies");
   });

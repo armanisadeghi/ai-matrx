@@ -242,7 +242,7 @@ export function SurfaceVariableBinding({
                 ) : null}
               </div>
               <div className="flex gap-1.5">
-                <dt className="font-semibold">Required by Holder:</dt>
+                <dt className="font-semibold">Required by Mandate Holder:</dt>
                 <dd>
                   {target.required === undefined
                     ? "Unknown"
@@ -458,9 +458,9 @@ function AgentDefaultDetail({
   if (structured)
     return (
       <PropertyRow
-        label="Holder default"
+        label="Mandate Holder default"
         value={defaultPreview ?? "Not set"}
-        source="Holder declaration"
+        source="Mandate Holder declaration"
         state="Inherited"
       />
     );

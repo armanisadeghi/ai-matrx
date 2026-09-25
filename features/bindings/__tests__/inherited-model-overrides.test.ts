@@ -95,7 +95,7 @@ it("final null cancels an earlier override and restores authored holder settings
     model: "holder-model",
     reasoning_effort: "low",
   });
-  expect(inherited.sources.temperature).toBe("Organization · Holder default");
+  expect(inherited.sources.temperature).toBe("Organization · Mandate Holder default");
 });
 
 it("complex values replace as a whole rather than recursively merging", () => {

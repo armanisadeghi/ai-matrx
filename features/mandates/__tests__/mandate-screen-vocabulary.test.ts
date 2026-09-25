@@ -281,6 +281,8 @@ function bareHolderOffenders(): string[] {
   const files = [
     ...SWEPT_TREES.flatMap(sourceFilesUnder),
     ...MANDATE_ROUTE_TREES.flatMap(sourceFilesUnder),
+    // The provision-mapping cards the one-binding workspace renders.
+    join(REPO_ROOT, "features/surfaces/admin/columns/SurfaceVariableBinding.tsx"),
   ];
   for (const file of files) {
     const source = readFileSync(file, "utf8");
@@ -294,7 +296,7 @@ function bareHolderOffenders(): string[] {
       if (!shortLabel && !looksLikeCopy(text)) continue;
       // Code that the JSX-text pass swallowed between two tags.
       // Code the literal/JSX passes swallowed when two quotes mis-paired.
-      if (/=>|&&|===|[{}<>]|\bconst\b|\breturn\b|\bnew Set\b/.test(text)) continue;
+      if (/=>|&&|===|[{}<>\n]|\bconst\b|\breturn\b|\bnew Set\b/.test(text)) continue;
       if (!BARE_HOLDER.test(text)) continue;
       offenders.push(`${relative(REPO_ROOT, file)}:${line} — "${text}"`);
     }

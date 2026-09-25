@@ -323,7 +323,7 @@ describe("the admin route renders the SYSTEM's answer and only that", () => {
     // gone — so this floor is the job's identity, not the old prose.
     expect(text).toContain("Research Output: Slides");
     expect(text).not.toContain("research_client.output_slides");
-    expect(text).toContain("Holder");
+    expect(text).toContain("Mandate Holder");
     expect(offendingSentences(text)).toEqual([]);
     act(() => root.unmount());
   });
@@ -339,7 +339,7 @@ describe("the admin route renders the SYSTEM's answer and only that", () => {
     );
     expect(bindingProps?.healthNote?.broken).toBe(true);
     expect(bindingProps?.healthNote?.remedy).toContain(
-      "Assign a holder that declares the output this job requires",
+      "Assign a Mandate Holder that declares the output this job requires",
     );
     // …and the page no longer writes a SECOND verdict of its own beside it.
     expect(text).not.toContain("declares no structured output");
@@ -449,19 +449,19 @@ describe("organization scope remains distinct from the viewing administrator", (
     );
     const holder = [
       ...container.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
-    ].find((tab) => tab.textContent === "Holder");
+    ].find((tab) => tab.textContent === "Mandate Holder");
     expect(holder).toBeDefined();
     act(() => holder!.click());
     const table = container.querySelector(
-      'table[aria-label="Configured holders"]',
+      'table[aria-label="Configured Mandate Holders"]',
     );
     expect(table).not.toBeNull();
     expect(table?.textContent).toContain("Global binding");
     expect(table?.textContent).toContain("Write Target Sandbox");
     expect(table?.textContent).not.toContain("Your own binding");
-    expect(table?.textContent).toContain("Pinned holder");
+    expect(table?.textContent).toContain("Pinned Mandate Holder");
     const duplicate = container.querySelector<HTMLButtonElement>(
-      '[aria-label="Duplicate Write Target Sandbox holder"]',
+      '[aria-label="Duplicate Write Target Sandbox Mandate Holder"]',
     );
     expect(duplicate).not.toBeNull();
     act(() => duplicate!.click());
@@ -469,7 +469,7 @@ describe("organization scope remains distinct from the viewing administrator", (
       defaultAgentId: null,
       defaultAgentVersionId: "version-pin",
     });
-    expect(container.textContent).not.toContain("Effective holder");
+    expect(container.textContent).not.toContain("Effective Mandate Holder");
     act(() => root.unmount());
   });
 

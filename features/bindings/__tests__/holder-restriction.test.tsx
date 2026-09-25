@@ -119,7 +119,7 @@ function renderAt(rung: BindingRung): { text: string; root: Root } {
     );
   });
   const help = container.querySelector<HTMLButtonElement>(
-    '[aria-label="Help: Eligible holders"]',
+    '[aria-label="Help: Eligible Mandate Holders"]',
   );
   if (help) act(() => help.click());
   return { text: document.body.textContent ?? "", root };

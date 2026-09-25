@@ -177,7 +177,7 @@ describe("the admin holder section is three controls and nothing else", () => {
     const { container, text, root } = renderSystemBar({
       agentId: "system-agent-1",
     });
-    expect(text).toContain("Holder Type");
+    expect(text).toContain("Mandate Holder Type");
     expect(text).toContain("Assigned Agent");
     expect(
       container.querySelector(
@@ -232,13 +232,13 @@ describe("the admin holder section is three controls and nothing else", () => {
       agentId: "system-agent-1",
       healthNote: {
         sentence: "The system default cannot run this job.",
-        remedy: "Assign a holder that declares the output this job requires.",
+        remedy: "Assign a Mandate Holder that declares the output this job requires.",
         broken: true,
       },
     });
     expect(text).toContain("The system default cannot run this job.");
     expect(text).toContain(
-      "Assign a holder that declares the output this job requires.",
+      "Assign a Mandate Holder that declares the output this job requires.",
     );
     act(() => root.unmount());
   });
@@ -321,7 +321,7 @@ describe("the version selector exposes unavailable states", () => {
     ).toBe(true);
     expect(text).not.toContain("Version");
     // …and the two controls that CAN mean something are still there.
-    expect(text).toContain("Holder Type");
+    expect(text).toContain("Mandate Holder Type");
     expect(text).toContain("Assigned Agent");
     act(() => root.unmount());
   });
@@ -406,7 +406,7 @@ describe("a rung the database dropped is never rendered as a working rung", () =
     expect(health.sentence).toBe(OUTPUT_CONTRACT_DROP.dropped_reason);
     expect(health.broken).toBe(true);
     expect(health.remedy).toContain(
-      "Assign a holder that declares the output this job requires",
+      "Assign a Mandate Holder that declares the output this job requires",
     );
   });
 });

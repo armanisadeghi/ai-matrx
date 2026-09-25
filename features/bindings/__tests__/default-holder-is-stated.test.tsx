@@ -179,21 +179,21 @@ describe("standing on a rung ABOVE the job's own default", () => {
 describe("the empty HOLDER cell names the rung it is empty at", () => {
   it("at the user rung, and says the ladder below still answers", () => {
     const text = render("user", { set: true, name: "Slides Generator" });
-    expect(text).toContain("Local holder:Not assigned");
+    expect(text).toContain("Local Mandate Holder:Not assigned");
     expect(text).toContain("Source: your own answer");
     const help = container.querySelector<HTMLButtonElement>(
-      '[aria-label="Help: Local holder"]',
+      '[aria-label="Help: Local Mandate Holder"]',
     );
     expect(help).not.toBeNull();
     act(() => help!.click());
-    expect(document.body.textContent).toContain("inherited holder");
+    expect(document.body.textContent).toContain("inherited Mandate Holder");
     // The subjectless sentence the walker read is gone for good.
     expect(text).not.toContain("No holder yet — pick an agent");
   });
 
   it("at the bottom rung, where nothing below can answer", () => {
     const text = render("system", { set: false, name: null });
-    expect(text).toContain("Local holder:Not assigned");
+    expect(text).toContain("Local Mandate Holder:Not assigned");
     expect(text).toContain("Default for Write Target Sandbox");
     const personal = [...container.querySelectorAll("button")].find(
       (button) => button.textContent === "Personal override",

@@ -103,6 +103,6 @@ describe("buildBindingSavePayload — agent Holder stays agent-only", () => {
           useLatest: false,
         },
       }),
-    ).toThrow(/ONE holder reference/);
+    ).toThrow(/ONE Mandate Holder reference/);
   });
 });

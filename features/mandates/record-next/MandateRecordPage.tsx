@@ -233,7 +233,7 @@ function RecordHeader({
       title: `Remove ${name}?`,
       description:
         "This mandate will disappear from pickers and stop resolving. " +
-        "Anything bound to it — every rung's holder and mapping — stops applying with it. " +
+        "Anything bound to it — every rung's Mandate Holder and mapping — stops applying with it. " +
         "This is a soft removal: the record and its history are kept, so an admin can restore it if this was a mistake.",
       confirmLabel: "Remove it",
       cancelLabel: "Keep it",

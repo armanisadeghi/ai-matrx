@@ -36,7 +36,7 @@ describe("V2 G3 — the JOB cell says whether the offer covers the holder", () =
         offeredCount: 27,
       }),
     ).toBe(
-      "Pick a holder and these 27 offered values become the inputs it can be fed from.",
+      "Pick a Mandate Holder and these 27 offered values become the inputs it can be fed from.",
     );
   });
 
@@ -51,7 +51,7 @@ describe("V2 G3 — the JOB cell says whether the offer covers the holder", () =
         unfedRequired: 0,
         offeredCount: 5,
       }),
-    ).toBe("Reading what this holder needs…");
+    ).toBe("Reading what this Mandate Holder needs…");
   });
 
   test("full coverage with a question names the question", () => {
@@ -66,7 +66,7 @@ describe("V2 G3 — the JOB cell says whether the offer covers the holder", () =
         offeredCount: 5,
       }),
     ).toBe(
-      "Every input this holder needs is fed — all 5. One of them asks the person at run time.",
+      "Every input this Mandate Holder needs is fed — all 5. One of them asks the person at run time.",
     );
   });
 
@@ -82,7 +82,7 @@ describe("V2 G3 — the JOB cell says whether the offer covers the holder", () =
         offeredCount: 5,
       }),
     ).toBe(
-      "3 of the 5 inputs this holder needs are fed. 1 required input is still unmapped, and a run would refuse.",
+      "3 of the 5 inputs this Mandate Holder needs are fed. 1 required input is still unmapped, and a run would refuse.",
     );
   });
 
@@ -98,7 +98,7 @@ describe("V2 G3 — the JOB cell says whether the offer covers the holder", () =
         offeredCount: 5,
       }),
     ).toBe(
-      "3 of the 5 inputs this holder needs are fed. The other 2 fall back to the holder's own defaults.",
+      "3 of the 5 inputs this Mandate Holder needs are fed. The other 2 fall back to the Mandate Holder's own defaults.",
     );
   });
 });

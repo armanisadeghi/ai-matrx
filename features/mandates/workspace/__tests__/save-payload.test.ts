@@ -9,8 +9,7 @@ describe("buildBindingSavePayload", () => {
       hasOffer: false,
       consumptionMap: {},
       settingsOpened: false,
-      settingsOpened: false,
-    capturedOverrides: undefined,
+      capturedOverrides: undefined,
       storedOverrides: null,
     });
     expect(payload.consumptionMap).toBeUndefined();
@@ -20,7 +19,11 @@ describe("buildBindingSavePayload", () => {
     const map = {
       // D18.2 — a target holds an ORDERED LIST of sources.
       topic: [
-        { mapType: "offered_value" as const, target: "episode_topic", deliver: "variable" as const },
+        {
+          mapType: "offered_value" as const,
+          target: "episode_topic",
+          deliver: "variable" as const,
+        },
       ],
     };
     const payload = buildBindingSavePayload({
@@ -28,8 +31,7 @@ describe("buildBindingSavePayload", () => {
       hasOffer: true,
       consumptionMap: map,
       settingsOpened: false,
-      settingsOpened: false,
-    capturedOverrides: undefined,
+      capturedOverrides: undefined,
       storedOverrides: null,
     });
     expect(payload.consumptionMap).toEqual(map);
@@ -42,8 +44,7 @@ describe("buildBindingSavePayload", () => {
       hasOffer: true,
       consumptionMap: {},
       settingsOpened: false,
-      settingsOpened: false,
-    capturedOverrides: undefined,
+      capturedOverrides: undefined,
       storedOverrides: stored,
     });
     expect(payload.configOverrides).toEqual(stored);
@@ -95,8 +96,7 @@ describe("buildBindingSavePayload", () => {
       hasOffer: true,
       consumptionMap: {},
       settingsOpened: false,
-      settingsOpened: false,
-    capturedOverrides: undefined,
+      capturedOverrides: undefined,
       storedOverrides: null,
     });
     expect(payload.agentId).toBeNull();
@@ -111,8 +111,7 @@ describe("buildBindingSavePayload", () => {
         hasOffer: true,
         consumptionMap: {},
         settingsOpened: false,
-      settingsOpened: false,
-    capturedOverrides: undefined,
+        capturedOverrides: undefined,
         storedOverrides: null,
       }),
     ).toThrow(/never both/);
@@ -132,15 +131,21 @@ describe("the auto-run promise on the wire", () => {
   };
 
   it("carries the answer the screen was allowed to offer", () => {
-    expect(buildBindingSavePayload({ ...base, autoRun: true }).autoRun).toBe(true);
-    expect(buildBindingSavePayload({ ...base, autoRun: false }).autoRun).toBe(false);
+    expect(buildBindingSavePayload({ ...base, autoRun: true }).autoRun).toBe(
+      true,
+    );
+    expect(buildBindingSavePayload({ ...base, autoRun: false }).autoRun).toBe(
+      false,
+    );
   });
 
   it("says NOTHING when this binding has no opinion — never a silent false", () => {
     // `null` means "the layer below decides". Collapsing it to `false` is the
     // auto-run inversion itself: a binding that could never say "run it".
     expect(buildBindingSavePayload(base).autoRun).toBeNull();
-    expect(buildBindingSavePayload({ ...base, autoRun: null }).autoRun).toBeNull();
+    expect(
+      buildBindingSavePayload({ ...base, autoRun: null }).autoRun,
+    ).toBeNull();
   });
 
   it("carries it for a workflow Holder too — the promise is not agent-only", () => {

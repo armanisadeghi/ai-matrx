@@ -198,7 +198,7 @@ describe("the system rung's holder picker refuses a non-system agent", () => {
       fixedRung: "global",
       agentId: "somebody-elses-personal-agent",
     });
-    expect(text).toContain("This holder is NOT a system agent");
+    expect(text).toContain("This Mandate Holder is NOT a system agent");
     act(() => root.unmount());
   });
 
