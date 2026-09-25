@@ -8,7 +8,7 @@
  */
 import { RICH_EDITOR_SHORTCUTS, TYPED_TRIGGERS } from "../core/shortcuts";
 import { SHORTCUT_HANDLERS } from "../visual/shortcut-handlers";
-import { applySourceEdit, makeLink, setLinePrefix, toggleWrap } from "../core/source-format";
+import { applySourceEdit, continueMarkupOnEnter, makeLink, setLinePrefix, toggleWrap } from "../core/source-format";
 
 describe("the shortcut table", () => {
   it.each(RICH_EDITOR_SHORTCUTS.filter((spec) => spec.keys.some((key) => !TYPED_TRIGGERS.has(key))))(
@@ -65,3 +65,35 @@ describe("source-view formatting", () => {
     );
   });
 });
+
+describe("Enter in the source view continues markup", () => {
+  const enter = (text: string, pos = text.length) => {
+    const result = continueMarkupOnEnter(text, pos);
+    return result ? applySourceEdit(text, result) : null;
+  };
+
+  it("a bullet continues with the same marker", () => {
+    expect(enter("* Tires")).toBe("* Tires\n* ");
+  });
+
+  it("a number continues with the next number and the same delimiter", () => {
+    expect(enter("1) Weigh in\n2) Photograph")).toBe("1) Weigh in\n2) Photograph\n3) ");
+  });
+
+  it("a checklist item continues with an open box", () => {
+    expect(enter("- [x] Reserve the truck")).toBe("- [x] Reserve the truck\n- [ ] ");
+  });
+
+  it("Enter on an empty item ends the list", () => {
+    expect(enter("- Tires\n- ")).toBe("- Tires\n");
+  });
+
+  it("a quote continues with its prefix", () => {
+    expect(enter("> Barranca closes at 2")).toBe("> Barranca closes at 2\n> ");
+  });
+
+  it("plain text gets an ordinary newline", () => {
+    expect(enter("Totals reconcile Friday.")).toBeNull();
+  });
+});
+

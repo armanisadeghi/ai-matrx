@@ -11,10 +11,10 @@ import { useEffect, useEffectEvent, useRef } from "react";
 import { EditorState } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
-import { markdown } from "@codemirror/lang-markdown";
 import { json } from "@codemirror/lang-json";
 import { cn } from "@/lib/utils";
 import { monoTheme, richEditorTheme, richHighlight } from "../source/cm-theme";
+import { markdownSourceLanguage } from "../source/markdown-language";
 import type { IslandEditorLanguage } from "./island-meta";
 
 export interface IslandCodeEditorProps {
@@ -62,7 +62,7 @@ export function IslandCodeEditor({
             ...defaultKeymap,
             ...historyKeymap,
           ]),
-          language === "json" ? json() : markdown(),
+          language === "json" ? json() : markdownSourceLanguage,
           richHighlight,
           richEditorTheme,
           monoTheme,

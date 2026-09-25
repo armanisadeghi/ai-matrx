@@ -96,3 +96,39 @@ export function applySourceEdit(text: string, result: SourceEditResult): string 
   }
   return out;
 }
+
+const CONTINUABLE = /^([ \t]*)(?:([-*+])|(\d{1,9})([.)]))([ \t]+)(\[[ xX]\][ \t]+)?(.*)$/;
+const QUOTE = /^([ \t]*(?:>[ \t]?)+)(.*)$/;
+
+/**
+ * Enter at the end of a list item or quote line continues it (next bullet,
+ * next number, an open checkbox, the quote prefix); Enter on an EMPTY item
+ * ends the list. Returns null when Enter should just insert a newline.
+ */
+export function continueMarkupOnEnter(text: string, pos: number): SourceEditResult | null {
+  const lineStart = text.lastIndexOf("\n", pos - 1) + 1;
+  const lineEndBreak = text.indexOf("\n", pos);
+  const lineEnd = lineEndBreak === -1 ? text.length : lineEndBreak;
+  if (text.slice(pos, lineEnd).trim() !== "") return null;
+  const line = text.slice(lineStart, lineEnd);
+  const item = CONTINUABLE.exec(line);
+  if (item) {
+    const [, indent = "", bullet, number, delimiter, gap = " ", task, rest = ""] = item;
+    if (!rest.trim()) {
+      return { changes: [{ from: lineStart, to: lineEnd, insert: "" }], anchor: lineStart, head: lineStart };
+    }
+    const marker = bullet ?? `${Number(number) + 1}${delimiter}`;
+    const insert = `\n${indent}${marker}${gap}${task ? "[ ] " : ""}`;
+    return { changes: [{ from: pos, to: pos, insert }], anchor: pos + insert.length, head: pos + insert.length };
+  }
+  const quote = QUOTE.exec(line);
+  if (quote && line.trimStart().startsWith(">")) {
+    const [, prefix = "> ", rest = ""] = quote;
+    if (!rest.trim()) {
+      return { changes: [{ from: lineStart, to: lineEnd, insert: "" }], anchor: lineStart, head: lineStart };
+    }
+    const insert = `\n${prefix}`;
+    return { changes: [{ from: pos, to: pos, insert }], anchor: pos + insert.length, head: pos + insert.length };
+  }
+  return null;
+}

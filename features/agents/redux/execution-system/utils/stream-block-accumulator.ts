@@ -24,6 +24,7 @@ import {
 import {
   classifyInnerFenceLine,
   fenceNestsInnerFences,
+  trimFenceLine,
 } from "@ai-matrx/content-ir/source";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import {
@@ -1246,8 +1247,9 @@ export class StreamBlockAccumulator {
         return;
       }
       case "code_fence": {
+        // The shared rule's whitespace, never String#trim (verify-RC-B3 residual R4).
         const fenceLine = classifyInnerFenceLine(
-          trimmed,
+          trimFenceLine(rawLine),
           this.subState.fenceTicks,
           fenceNestsInnerFences(this.subState.language),
           this.subState.nestedFences,

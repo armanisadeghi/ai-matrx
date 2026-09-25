@@ -57,6 +57,7 @@ import { FENCE_META_KEY, splitFenceInfo } from "@/components/markdown-core/fence
 import {
   classifyInnerFenceLine,
   fenceNestsInnerFences,
+  trimFenceLine,
 } from "@ai-matrx/content-ir/source";
 import { indexOutsideInlineCode } from "./inline-code-span";
 import {
@@ -1599,7 +1600,8 @@ function extractCodeBlock(
 
   while (i < lines.length) {
     const line = lines[i];
-    const trimmedLine = line.trim();
+    // The shared rule's whitespace, never String#trim (verify-RC-B3 residual R4).
+    const trimmedLine = trimFenceLine(line);
 
     // Closing fence at the start of the line (the normal, CommonMark case).
     if (trimmedLine.startsWith("```")) {
@@ -1670,7 +1672,7 @@ function extractCodeBlock(
       }
 
       const closeTicks = backtickRunLength(line, backtickIndex);
-      const afterFence = line.slice(backtickIndex + closeTicks).trim();
+      const afterFence = trimFenceLine(line.slice(backtickIndex + closeTicks));
       if (closeTicks >= openTicks && afterFence === "" && nestedDepth === 0) {
         const contentBeforeBackticks = line.substring(0, backtickIndex);
         if (contentBeforeBackticks.trim()) {

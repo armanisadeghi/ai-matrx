@@ -161,6 +161,12 @@ export interface MessageRecord {
   _streamSlotStart?: number;
   /** Exclusive source timeline index; set when an inbox injection closes this segment. */
   _streamSlotEnd?: number;
+  /**
+   * The person is editing this answer in place (RC-B5): the message renders
+   * the editor where its preview was. Set by the registry's `edit` action,
+   * cleared on save / cancel. Never persisted.
+   */
+  _editingInPlace?: boolean;
 }
 
 /**

@@ -43,7 +43,7 @@ export const REHYPE_KATEX_OPTIONS = {
   maxExpand: 500,
 } as const;
 
-type Segment = { text: string; protected: boolean };
+type Segment = { text: string; protected: boolean; math?: boolean };
 
 const FENCE_OPEN = /^( {0,3})(`{3,}|~{3,})[^\n]*$/;
 
@@ -150,7 +150,8 @@ function segment(md: string): Segment[] {
           j += 2;
           continue;
         }
-        pushProtected(s.slice(j, close + 2));
+        flushText();
+        out.push({ text: s.slice(j, close + 2), protected: true, math: true });
         j = close + 2;
         continue;
       }
@@ -277,4 +278,36 @@ export function normalizeMathDelimiters(markdown: string): string {
 /** Markdown source that renders `tex` as one display-math block. */
 export function displayMathSource(tex: string): string {
   return `$$\n${tex.trim()}\n$$`;
+}
+
+/** One piece of normalized markdown: prose, code (fence or span), or math. */
+export interface MathSpanPiece {
+  kind: "text" | "code" | "math";
+  /** The source bytes of this piece (for math, including the `$$` delimiters). */
+  text: string;
+  /** Math only: the TeX between the delimiters. */
+  tex?: string;
+  /** Math only: a display block (`$$` on their own lines) vs inline. */
+  display?: boolean;
+}
+
+/**
+ * Split markdown into prose / code / math pieces AFTER normalizing it to the
+ * one dialect — the same boundaries every renderer uses, so a consumer that
+ * must turn math into something else (a document exporter drawing formulas)
+ * never re-derives them. Concatenating every `text` reproduces the normalized
+ * source.
+ */
+export function splitMathSpans(markdown: string): MathSpanPiece[] {
+  return segment(normalizeMathDelimiters(markdown)).map((seg) => {
+    if (!seg.protected) return { kind: "text", text: seg.text };
+    if (!seg.math) return { kind: "code", text: seg.text };
+    const inner = seg.text.slice(2, -2);
+    return {
+      kind: "math",
+      text: seg.text,
+      tex: inner.trim(),
+      display: /^[ \t]*\n/.test(inner),
+    };
+  });
 }

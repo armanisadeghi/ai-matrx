@@ -5,9 +5,8 @@
  * the value looks like prose; plain pre-wrap otherwise.
  */
 
-import { useState } from "react";
 import dynamic from "next/dynamic";
-import { cn } from "@/lib/utils";
+import { Maximize2 } from "lucide-react";
 
 const BasicMarkdownContent = dynamic(
   () =>
@@ -22,71 +21,69 @@ const BasicMarkdownContent = dynamic(
   },
 );
 
-const CLAMP_CHARS = 360;
-
 function looksLikeMarkdown(text: string): boolean {
   return /(\*\*|__|#{1,6}\s|^[-*+]\s|^\d+\.\s|\[.+\]\(.+\)|`)/m.test(text);
 }
 
-export function ExtractionCellDisplay({ value }: { value: string }) {
-  const [expanded, setExpanded] = useState(false);
+export function ExtractionCellDisplay({
+  value,
+  onOpen,
+}: {
+  value: string;
+  onOpen?: () => void;
+}) {
 
   if (!value) {
     return <span className="text-muted-foreground/40">—</span>;
   }
 
-  const long = value.length > CLAMP_CHARS;
   const useMarkdown = looksLikeMarkdown(value);
 
   if (!useMarkdown) {
     return (
-      <div className="min-w-0">
-        <div
-          className={cn(
-            "whitespace-pre-wrap break-words text-xs leading-relaxed",
-            !expanded && long && "line-clamp-4",
-          )}
-        >
+      <div className="relative min-w-0 pr-5">
+        <div className="line-clamp-2 whitespace-pre-wrap break-words text-xs leading-relaxed">
           {value}
         </div>
-        {long && (
+        {onOpen ? (
           <button
             type="button"
-            className="mt-0.5 text-[10px] text-primary hover:underline"
-            onClick={(e) => {
-              e.stopPropagation();
-              setExpanded((v) => !v);
+            className="absolute right-0 top-0 inline-flex size-4 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpen();
             }}
+            title="Open full value"
+            aria-label="Open full value"
           >
-            {expanded ? "Show less" : "Show more"}
+            <Maximize2 className="size-3" aria-hidden />
           </button>
-        )}
+        ) : null}
       </div>
     );
   }
 
   return (
-    <div className="min-w-0">
+    <div className="relative min-w-0 pr-5">
       <div
-        className={cn(
-          "extraction-cell-markdown text-xs leading-relaxed [&_.math-content-wrapper]:my-0 [&_.math-content-wrapper]:text-xs [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs [&_li]:my-0 [&_ol]:my-1 [&_p]:my-1 [&_ul]:my-1",
-          !expanded && long && "max-h-[6.5rem] overflow-hidden",
-        )}
+        className="extraction-cell-markdown max-h-10 overflow-hidden text-xs leading-relaxed [&_.math-content-wrapper]:my-0 [&_.math-content-wrapper]:text-xs [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs [&_li]:my-0 [&_ol]:my-1 [&_p]:my-1 [&_ul]:my-1"
       >
         <BasicMarkdownContent content={value} showCopyButton={false} />
       </div>
-      {long && (
+      {onOpen ? (
         <button
           type="button"
-          className="mt-0.5 text-[10px] text-primary hover:underline"
-          onClick={(e) => {
-            e.stopPropagation();
-            setExpanded((v) => !v);
+          className="absolute right-0 top-0 inline-flex size-4 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpen();
           }}
+          title="Open full value"
+          aria-label="Open full value"
         >
-          {expanded ? "Show less" : "Show more"}
+          <Maximize2 className="size-3" aria-hidden />
         </button>
-      )}
+      ) : null}
     </div>
   );
 }

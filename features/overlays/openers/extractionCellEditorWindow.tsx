@@ -64,8 +64,9 @@ export function useOpenExtractionCellEditor(
             columnLabel: opts.columnLabel,
             pageLabel: opts.pageLabel,
             value: opts.value,
-            writeKey: opts.writeKey,
-            currentPayload: opts.currentPayload,
+            readOnly: opts.readOnly ?? false,
+            writeKey: opts.writeKey ?? null,
+            currentPayload: opts.currentPayload ?? {},
             callbackGroupId:
               opts.callbackGroupId ?? groupRef.current?.callbackGroupId ?? null,
           },

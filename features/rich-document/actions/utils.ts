@@ -104,11 +104,6 @@ export function requireAuth(
   return false;
 }
 
-/** Wrap a plain string into the cx_message JSON content shape. Chat use only. */
-export function wrapTextAsContent(text: string): unknown {
-  return [{ type: "text", text }];
-}
-
 /**
  * Extract the first fenced code block from a markdown string. Returns the
  * raw code and the detected language. Falls back to the full content when

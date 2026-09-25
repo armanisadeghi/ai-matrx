@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { BasicContentEditor } from "@/components/content-refine/BasicContentEditor";
+import { MarkdownCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 import { Button } from "@/components/ui/button";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -36,6 +37,7 @@ export default function ExtractionCellEditorWindow({
 }: ExtractionCellEditorWindowProps) {
   const [draft, setDraft] = useState(target.value);
   const [busy, setBusy] = useState(false);
+  const readOnly = target.readOnly === true;
 
   useEffect(() => {
     setDraft(target.value);
@@ -51,7 +53,7 @@ export default function ExtractionCellEditorWindow({
   }, [busy, callbackGroupId, instanceId, onClose]);
 
   const handleSave = useCallback(async () => {
-    if (busy) return;
+    if (busy || readOnly || !target.writeKey) return;
     if (draft === target.value) {
       handleClose();
       return;
@@ -60,7 +62,7 @@ export default function ExtractionCellEditorWindow({
     try {
       await updateResultPayloadField({
         resultId: target.rowId,
-        currentPayload: target.currentPayload,
+        currentPayload: target.currentPayload ?? {},
         key: target.writeKey,
         value: draft,
       });
@@ -82,7 +84,7 @@ export default function ExtractionCellEditorWindow({
   }, [busy, draft, target, callbackGroupId, instanceId, onClose, handleClose]);
 
   const offset = (hashCode(instanceId) % 6) * 24;
-  const title = `${target.columnLabel} · Page ${target.pageLabel}`;
+  const title = `${readOnly ? "View" : "Edit"} ${target.columnLabel} · Page ${target.pageLabel}`;
 
   return (
     <WindowPanel
@@ -111,23 +113,31 @@ export default function ExtractionCellEditorWindow({
             onClick={handleClose}
             disabled={busy}
           >
-            Cancel
+            {readOnly ? "Close" : "Cancel"}
           </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => void handleSave()}
-            disabled={busy}
-          >
-            {busy ? (
-              <>
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                Saving…
-              </>
-            ) : (
-              "Save"
-            )}
-          </Button>
+          {readOnly ? (
+            <MarkdownCopyButton
+              markdownContent={draft}
+              title={`Copy ${target.columnLabel}`}
+              hideHTMLPreview
+            />
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => void handleSave()}
+              disabled={busy}
+            >
+              {busy ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                "Save"
+              )}
+            </Button>
+          )}
         </div>
       }
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-3"
@@ -150,6 +160,7 @@ export default function ExtractionCellEditorWindow({
           onChange={setDraft}
           onChangeFlush={setDraft}
           initialEditorMode="split"
+          readOnly={readOnly}
           placeholder="Enter cell value…"
           className="min-h-0 flex-1"
           resetKey={`${target.rowId}:${target.columnKey}:${target.value.length}`}

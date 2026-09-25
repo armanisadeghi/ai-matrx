@@ -105,26 +105,33 @@ export function BlockHandle({ editor, container }: { editor: Editor | null; cont
       className="absolute left-0 z-10 flex w-7 items-start justify-center"
       style={{ top: target.top, height: Math.min(target.height, 32) }}
     >
+      {/* The grip is NOT the Radix trigger: a Radix trigger opens on pointerdown and
+          cancels it, which kills the native drag before it starts. The grip opens the
+          menu on click (a drag never produces a click); an inert anchor positions it. */}
+      <button
+        type="button"
+        draggable
+        aria-label="Drag to move, or click for block actions"
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        title="Drag to move · click for actions"
+        className="mt-1 flex h-6 w-5 cursor-grab items-center justify-center rounded text-muted-foreground/70 hover:bg-muted hover:text-foreground active:cursor-grabbing"
+        onClick={() => setMenuOpen(true)}
+        onDragStart={(event) => {
+          if (!select()) return;
+          const slice = editor.state.selection.content();
+          editor.view.dragging = { slice, move: true };
+          const dom = editor.view.nodeDOM(target.pos);
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", editor.state.doc.textBetween(target.pos, target.pos + (editor.state.doc.nodeAt(target.pos)?.nodeSize ?? 0), "\n"));
+          if (dom instanceof HTMLElement) event.dataTransfer.setDragImage(dom, 0, 0);
+        }}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
         <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            draggable
-            aria-label="Drag to move, or click for block actions"
-            title="Drag to move · click for actions"
-            className="mt-1 flex h-6 w-5 cursor-grab items-center justify-center rounded text-muted-foreground/70 hover:bg-muted hover:text-foreground active:cursor-grabbing"
-            onDragStart={(event) => {
-              if (!select()) return;
-              const slice = editor.state.selection.content();
-              editor.view.dragging = { slice, move: true };
-              const dom = editor.view.nodeDOM(target.pos);
-              event.dataTransfer.effectAllowed = "move";
-              event.dataTransfer.setData("text/plain", editor.state.doc.textBetween(target.pos, target.pos + (editor.state.doc.nodeAt(target.pos)?.nodeSize ?? 0), "\n"));
-              if (dom instanceof HTMLElement) event.dataTransfer.setDragImage(dom, 0, 0);
-            }}
-          >
-            <GripVertical className="h-4 w-4" />
-          </button>
+          <span aria-hidden className="pointer-events-none absolute left-0 top-1 h-6 w-5" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" side="left" className="w-52">
           <DropdownMenuItem onSelect={() => select() && moveBlock(editor, "up")}>

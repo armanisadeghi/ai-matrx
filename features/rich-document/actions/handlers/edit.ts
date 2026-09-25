@@ -29,6 +29,9 @@ import {
 } from "../utils";
 import { openAssistantMessageEditor } from "@/features/agents/components/messages-display/message-options/openAssistantMessageEditor";
 import { acknowledgedPreparedSource, prepareContentEdit, savePreparedContentEdit } from "./preparedEdit";
+import { projectAnswerText } from "@/features/agents/redux/execution-system/message-crud/answer-text-splice";
+import { updateMessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
+import { extractFlatText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 
 registerAction({
   id: "edit",
@@ -53,14 +56,43 @@ registerAction({
     return ext.role === "assistant" && Boolean(ext.editTarget?.messageId);
   },
   run: async (ctx) => {
-    // CHAT ASSISTANT MESSAGE — the SAME opener the bar's pencil uses
-    // (`mode: "assistant-message"`, same instance id, same save contract:
-    // the OverlayController self-handles via `editMessage`). Grouped turns
-    // edit their text-bearing row; structured payloads open read-only.
+    // CHAT ASSISTANT MESSAGE — edit IN PLACE (RC-B5, PLAN decision 11): the
+    // answer's spot becomes THE ONE editor and Save returns it to preview
+    // (`InPlaceAnswerEditor`, mounted by `AgentAssistantMessage`). Grouped
+    // turns edit their text-bearing row. Structured payloads keep the
+    // read-only raw view; an answer whose shown text is not its stored text
+    // byte-for-byte (inline <thinking> tags scrubbed from the view) opens the
+    // full-screen editor instead, and says why. The 16-tab full-screen editor
+    // stays one click away ("Open in full-screen editor").
     const ext = chatExtensions(ctx);
     if (ext && ctx.source.type === "chat-message") {
       const target = ext.editTarget;
       if (!target) return;
+      const conversationId = ctx.source.conversationId;
+      const record = conversationId
+        ? ctx.getState().messages.byConversationId[conversationId]?.byId?.[target.messageId]
+        : undefined;
+      const inPlace =
+        !target.isStructuredRaw &&
+        !!conversationId &&
+        !!record &&
+        projectAnswerText(record.content).text === extractFlatText(record);
+      if (inPlace && conversationId) {
+        ctx.dispatch(
+          updateMessageRecord({
+            conversationId,
+            messageId: target.messageId,
+            patch: { _editingInPlace: true },
+          }),
+        );
+        ctx.onClose();
+        return;
+      }
+      if (!target.isStructuredRaw) {
+        toast.info(
+          "This answer carries hidden reasoning inside its text, so it opens in the full-screen editor where all of it is visible.",
+        );
+      }
       openAssistantMessageEditor(ctx.dispatch, {
         content: target.content,
         conversationId: ctx.source.conversationId,

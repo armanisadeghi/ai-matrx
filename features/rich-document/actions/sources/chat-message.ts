@@ -2,8 +2,12 @@
 //
 // Source adapter for chat-message content.
 //
-// `edit` dispatches the editMessage thunk (which wraps the cx_message_edit
-// RPC and round-trips through Supabase).
+// `edit` is THE chat save adapter (RC-B5): `saveAnswerEdit` splices the edited
+// answer text into the row's parts (only the touched text part changes; tool,
+// kind, media and thinking parts are carried through), writes nothing when
+// nothing changed, and persists through `cx_message_edit` (history archived
+// in `content_history`). It replaced wrapping the whole answer as one text
+// part, which silently dropped every tool call and citation on save.
 //
 // `delete` is intentionally NOT wired here — chat deletes are owned by the
 // host action bar (DeleteMessageDialog with fork-vs-delete branching). The
@@ -11,7 +15,6 @@
 // Wiring a "raw" delete here would bypass the user choice.
 
 import type { ContentSource, ContentSourceAdapter } from "../../types";
-import { wrapTextAsContent } from "../utils";
 
 export const chatMessageAdapter: ContentSourceAdapter = {
   instanceKeyPrefix: (source: ContentSource) => {
@@ -35,16 +38,11 @@ export const chatMessageAdapter: ContentSourceAdapter = {
     }
     // Lazy import — message-crud thunks are heavy (~MB of import graph)
     // and only chat surfaces need them.
-    const { editMessage } = await import(
-      "@/features/agents/redux/execution-system/message-crud/edit-message.thunk"
+    const { saveAnswerEdit } = await import(
+      "@/features/agents/redux/execution-system/message-crud/save-answer-edit.thunk"
     );
     await dispatch(
-      editMessage({
-        conversationId,
-        messageId,
-        // Wrap plain text into the cx_message JSON content shape.
-        newContent: wrapTextAsContent(newContent) as never,
-      }),
+      saveAnswerEdit({ conversationId, messageId, newText: newContent }),
     ).unwrap();
   },
 };

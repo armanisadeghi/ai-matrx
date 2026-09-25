@@ -350,6 +350,7 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
       columnLabel: "",
       pageLabel: "",
       value: "",
+      readOnly: false,
       writeKey: null,
       currentPayload: {},
       callbackGroupId: null,

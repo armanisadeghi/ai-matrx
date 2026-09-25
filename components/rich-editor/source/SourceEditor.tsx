@@ -23,14 +23,14 @@ import {
   redo,
   undo,
 } from "@codemirror/commands";
-import { markdown, markdownKeymap, markdownLanguage } from "@codemirror/lang-markdown";
 import { autocompletion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
 import { getSchema } from "@tiptap/core";
 import { cn } from "@/lib/utils";
 import { createRichEditorExtensions } from "../core/extensions";
 import { htmlToMarkdown } from "../core/html-to-markdown";
 import { findMatches, replaceMatches, type FindOptions } from "../core/find-replace";
-import { makeLink, setLinePrefix, toggleWrap, type SourceEditResult } from "../core/source-format";
+import { continueMarkupOnEnter, makeLink, setLinePrefix, toggleWrap, type SourceEditResult } from "../core/source-format";
+import { markdownSourceLanguage } from "./markdown-language";
 import { RICH_EDITOR_SHORTCUTS, TYPED_TRIGGERS } from "../core/shortcuts";
 import { toVariableName } from "../core/variables";
 import { IslandPreview } from "../islands/IslandPreview";
@@ -177,8 +177,21 @@ export function SourceEditor({
         extensions: [
           history(),
           Prec.high(keymap.of(bindings)),
-          keymap.of([indentWithTab, ...markdownKeymap, ...defaultKeymap, ...historyKeymap]),
-          markdown({ base: markdownLanguage }),
+          keymap.of([
+            {
+              key: "Enter",
+              run: (v) => {
+                const { from, to } = v.state.selection.main;
+                if (from !== to) return false;
+                const result = continueMarkupOnEnter(v.state.doc.toString(), from);
+                return result ? applyResult(v, result) : false;
+              },
+            },
+            indentWithTab,
+            ...defaultKeymap,
+            ...historyKeymap,
+          ]),
+          markdownSourceLanguage,
           richHighlight,
           richEditorTheme,
           EditorView.lineWrapping,

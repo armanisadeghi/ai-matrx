@@ -18,6 +18,7 @@ import type {
   ResearchMedia,
   ResearchTemplate,
   ResearchIntent,
+  ResearchSourceRow,
   SourceFilters,
   TopicCreate,
   TopicUpdate,
@@ -1174,30 +1175,71 @@ const ANALYSIS_RANK: Record<Exclude<CurationAnalysisState, "none">, number> = {
  * Reuses the canonical `summarizeImportance`; the raw selects are simple.
  */
 export async function getCurationData(topicId: string): Promise<CurationData> {
-  const { data: kwRows, error: kwErr } = await supabase
-    .schema("research")
-    .from("rs_keyword")
-    .select("id, keyword")
-    .eq("topic_id", topicId);
-  if (kwErr) throw kwErr;
-  const keywords = (kwRows ?? []) as { id: string; keyword: string }[];
+  // Curation decides which sources a person can include, exclude, and batch
+  // tag. Each collection is therefore a complete set, never a silent 1,000-row
+  // PostgREST window. Keep the existing RLS-scoped predicates; `readAllRows`
+  // only pages the exact same visible relation with a stable order.
+  const [keywords, srcRows, tags, contentRows, anRows] = await Promise.all([
+    readAllRows<{ id: string; keyword: string }>(
+      ({ from, to }) =>
+        supabase
+          .schema("research")
+          .from("rs_keyword")
+          .select("id, keyword", { count: "exact" })
+          .eq("topic_id", topicId)
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "research.rs_keyword curation" },
+    ),
+    readAllRows<ResearchSourceRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("research")
+          .from("rs_source")
+          .select("*", { count: "exact" })
+          .eq("topic_id", topicId)
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "research.rs_source curation" },
+    ),
+    readAllRows<{ id: string; name: string }>(
+      ({ from, to }) =>
+        supabase
+          .schema("research")
+          .from("rs_tag")
+          .select("id, name", { count: "exact" })
+          .eq("topic_id", topicId)
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "research.rs_tag curation" },
+    ),
+    readAllRows<{ source_id: string; char_count: number | null; is_current: boolean | null }>(
+      ({ from, to }) =>
+        supabase
+          .schema("research")
+          .from("rs_content")
+          .select("source_id, char_count, is_current", { count: "exact" })
+          .eq("topic_id", topicId)
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "research.rs_content curation" },
+    ),
+    readAllRows<{ source_id: string; status: string; result: string | null }>(
+      ({ from, to }) =>
+        supabase
+          .schema("research")
+          .from("rs_analysis")
+          .select("source_id, status, result", { count: "exact" })
+          .eq("topic_id", topicId)
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "research.rs_analysis curation" },
+    ),
+  ]);
   const kwText = new Map(keywords.map((k) => [k.id, k.keyword]));
-
-  const { data: srcRows, error: srcErr } = await supabase
-    .schema("research")
-    .from("rs_source")
-    .select("*")
-    .eq("topic_id", topicId);
-  if (srcErr) throw srcErr;
-  const sources = (srcRows ?? []).map(rowToResearchSource);
+  const sources = srcRows.map(rowToResearchSource);
 
   // Tags + source⇄tag links
-  const { data: tagRows } = await supabase
-    .schema("research")
-    .from("rs_tag")
-    .select("id, name")
-    .eq("topic_id", topicId);
-  const tags = (tagRows ?? []) as { id: string; name: string }[];
   const tagName = new Map(tags.map((t) => [t.id, t.name]));
   const tagsBySource = new Map<string, { id: string; name: string }[]>();
   if (tags.length > 0) {
@@ -1240,12 +1282,7 @@ export async function getCurationData(topicId: string): Promise<CurationData> {
 
   // Content size (current version)
   const charBySource = new Map<string, number>();
-  const { data: contentRows } = await supabase
-    .schema("research")
-    .from("rs_content")
-    .select("source_id, char_count, is_current")
-    .eq("topic_id", topicId);
-  for (const c of contentRows ?? []) {
+  for (const c of contentRows) {
     if (c.is_current !== true || c.char_count == null) continue;
     charBySource.set(
       c.source_id,
@@ -1255,12 +1292,7 @@ export async function getCurationData(topicId: string): Promise<CurationData> {
 
   // Analysis outcome (best across a source's analyses)
   const analysisBySource = new Map<string, CurationAnalysisState>();
-  const { data: anRows } = await supabase
-    .schema("research")
-    .from("rs_analysis")
-    .select("source_id, status, result")
-    .eq("topic_id", topicId);
-  for (const a of anRows ?? []) {
+  for (const a of anRows) {
     const state: CurationAnalysisState =
       a.status === "failed"
         ? "failed"

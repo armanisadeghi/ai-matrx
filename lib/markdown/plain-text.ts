@@ -63,6 +63,9 @@ const MATH_PATTERNS: ReadonlyArray<readonly [RegExp, string]> = [
   [/\\(?:begin|end)\s*\{[^{}]*\}/g, " "],
   // A TeX line break inside a preview is just a space.
   [/\\\\/g, " "],
+  // TeX spacing commands (\, \; \: thin/medium space, \! negative space).
+  [/\\[,;:]/g, " "],
+  [/\\!/g, ""],
   // \left\{ … \right\} — the escaped-brace forms, which the character-class
   // rule below cannot reach because the brace is preceded by a backslash.
   [/\\(?:left|right)\s*\\?([([\]|){}])/g, "$1"],
@@ -114,7 +117,7 @@ const MATH_REGIONS: ReadonlyArray<RegExp> = [
 ];
 
 /** Make one math expression's INNER content readable as words. */
-function mathToReadable(expression: string): string {
+export function mathToReadable(expression: string): string {
   let text = expression;
   // Structural forms to a fixed point (bounded, so a pathological input can
   // never spin): each pass resolves the innermost fraction/root, exposing the

@@ -377,14 +377,15 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
               ? String(row.canonical_page)
               : (row.source_pages ?? []).join(",") || "—";
           const openEditor = () => {
-            if (!editable || row.id.includes("#") || !writeKey) return;
+            const canEdit = editable && !row.id.includes("#") && !!writeKey;
             openCellEditor({
               rowId: row.id,
               columnKey: column.key,
               columnLabel: column.label,
               pageLabel,
               value,
-              writeKey,
+              readOnly: !canEdit,
+              writeKey: canEdit ? writeKey : undefined,
               currentPayload: (row.payload ?? {}) as Record<string, unknown>,
             });
           };
@@ -402,10 +403,10 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
                   ? "Double-click to edit"
                   : undefined
               }
-              onDoubleClick={openEditor}
+              onDoubleClick={editable && !row.id.includes("#") ? openEditor : undefined}
             >
               <span className="min-w-0 flex-1 whitespace-normal break-words [overflow-wrap:anywhere]">
-                <ExtractionCellDisplay value={value} />
+                <ExtractionCellDisplay value={value} onOpen={openEditor} />
                 {index === 0 && mergedCount > 0 ? (
                   <span className="ml-1.5 rounded bg-secondary/15 px-1 py-0.5 text-[10px] font-medium text-secondary">
                     +{mergedCount} merged

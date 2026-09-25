@@ -7634,7 +7634,8 @@ export default function OverlayController() {
           typeof data?.columnKey === "string" ? data.columnKey : null;
         const writeKey =
           typeof data?.writeKey === "string" ? data.writeKey : null;
-        if (!rowId || !columnKey || !writeKey) return null;
+        const readOnly = data?.readOnly === true;
+        if (!rowId || !columnKey || (!readOnly && !writeKey)) return null;
         const currentPayload =
           data?.currentPayload &&
           typeof data.currentPayload === "object" &&
@@ -7660,7 +7661,8 @@ export default function OverlayController() {
               pageLabel:
                 typeof data?.pageLabel === "string" ? data.pageLabel : "—",
               value: typeof data?.value === "string" ? data.value : "",
-              writeKey,
+              readOnly,
+              writeKey: writeKey ?? undefined,
               currentPayload,
             }}
             onClose={() =>

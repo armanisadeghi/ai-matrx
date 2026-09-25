@@ -11,8 +11,10 @@ export interface ExtractionCellEditorTarget {
   columnLabel: string;
   pageLabel: string;
   value: string;
-  writeKey: string;
-  currentPayload: Record<string, unknown>;
+  /** Read-only cells reuse the same window for complete Markdown viewing. */
+  readOnly?: boolean;
+  writeKey?: string;
+  currentPayload?: Record<string, unknown>;
 }
 
 export interface ExtractionCellEditorSavedEvent {
