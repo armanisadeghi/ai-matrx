@@ -109,7 +109,7 @@ try {
   const row = (n, label) => column(n).locator("button[aria-pressed]", { hasText: label }).first();
   for (const p of PICKS) {
     await until(`${p.label} row`, async () => (await row(p.column, p.label).count()) > 0, 120000);
-    await row(p.column, p.label).click();
+    await row(p.column, p.label).click({ timeout: 180000 });
     await page.waitForTimeout(500);
   }
   await until("compare", async () =>
