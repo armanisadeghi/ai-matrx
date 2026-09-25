@@ -99,6 +99,10 @@ export function ContextParityLine({ state }: { state: State }) {
       </p>
     );
   }
+  // "0 defects" is a clean bill of health — it may only be said when every part of the run
+  // actually finished. A run that could not finish says so instead of a defect count the run
+  // never actually produced (GATES-TAIL, VERIFIER-23 #9: "0 defects" was shown over a run whose
+  // seat parity "could not run in full … left out of the defect count").
   const clean = last.defects === 0 && last.complete;
   const Icon = clean ? ShieldCheck : ShieldAlert;
   return (
@@ -108,12 +112,13 @@ export function ContextParityLine({ state }: { state: State }) {
         aria-hidden
       />
       <span className="font-medium">
-        Last parity: {formatWhen(last.ran_at)}, {last.defects} defect{last.defects === 1 ? "" : "s"}
+        {last.complete
+          ? `Last parity: ${formatWhen(last.ran_at)}, ${last.defects} defect${last.defects === 1 ? "" : "s"}`
+          : `Last parity: ${formatWhen(last.ran_at)}: did not finish (${last.refused} part${last.refused === 1 ? "" : "s"} could not run)`}
       </span>
       <span className="text-muted-foreground">
         (seat {last.seat_defects ?? "—"}, raw copy {last.raw_defects ?? "—"} · {last.organizations} organizations,{" "}
         {last.types} scope types · {last.trigger})
-        {last.refused > 0 ? ` · ${last.refused} part${last.refused === 1 ? "" : "s"} could not run` : ""}
       </span>
       <Link href={CONTEXT_PARITY_ROWS_HREF} className="underline underline-offset-2">
         See the rows

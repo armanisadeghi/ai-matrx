@@ -85,14 +85,24 @@ test("a run with defects gives the count per check and links to the rows", async
   expect(host.textContent).not.toContain("schedule is off");
 });
 
-test("a run that could not finish says how many parts could not run", async () => {
+test("a run that could not finish says so instead of a defect count, and names how many parts could not run", async () => {
   maybeSingle.mockResolvedValue({
     data: { enabled: true, metadata: { last_parity: { ...LAST, defects: 0, raw_defects: 0, refused: 1, complete: false } } },
     error: null,
   });
   await render();
+  expect(host.textContent).toContain("did not finish (1 part could not run)");
+  expect(host.textContent).not.toContain("0 defects");
+});
+
+test("a completed run with zero defects says so plainly", async () => {
+  maybeSingle.mockResolvedValue({
+    data: { enabled: true, metadata: { last_parity: { ...LAST, defects: 0, raw_defects: 0, seat_defects: 0, refused: 0, complete: true } } },
+    error: null,
+  });
+  await render();
   expect(host.textContent).toContain("0 defects");
-  expect(host.textContent).toContain("1 part could not run");
+  expect(host.textContent).not.toContain("did not finish");
 });
 
 test("an unreadable task row says why instead of showing nothing", async () => {
