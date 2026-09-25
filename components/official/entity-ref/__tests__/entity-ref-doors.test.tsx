@@ -44,11 +44,14 @@ jest.mock("next/link", () => ({
   ),
 }));
 
-// The peek host statically drags peek components in; the door test only cares
-// that EntityRef *offers* the peek control for registered kinds.
+// The peek host statically drags peek components in. Keep it shallow here, but
+// retain its props so the test can prove a caller's destination reaches the
+// dialog host when the Quick look button is pressed.
+const mockResourcePeekHost = jest.fn(() => null);
+
 jest.mock("@/features/organizations/peek/ResourcePeekHost", () => ({
   __esModule: true,
-  ResourcePeekHost: () => null,
+  ResourcePeekHost: (props: unknown) => mockResourcePeekHost(props),
 }));
 
 (
@@ -60,6 +63,7 @@ let root: Root;
 
 beforeEach(() => {
   __resetAgentAddressCache();
+  mockResourcePeekHost.mockClear();
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -138,6 +142,23 @@ describe("EntityRef doors for mandates/shortcuts surfaces", () => {
     expect(
       container.querySelector('button[title="Quick look at Summarize"]'),
     ).not.toBeNull();
+  });
+
+  it("passes an overridden destination to the Quick look host", () => {
+    const href = "/administration/agents/agent-apps/edit/app-9";
+    renderRef(
+      <EntityRef token="app" id="app-9" name="Onboarding" href={href} />,
+    );
+
+    const peek = container.querySelector(
+      'button[title="Quick look at Onboarding"]',
+    );
+    expect(peek).not.toBeNull();
+    act(() => peek?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+
+    expect(mockResourcePeekHost).toHaveBeenLastCalledWith(
+      expect.objectContaining({ kind: "app", id: "app-9", href }),
+    );
   });
 
   it("a name with no route and no peek renders as plain text, never a dead link", () => {
