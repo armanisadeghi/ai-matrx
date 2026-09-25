@@ -34,6 +34,7 @@ export type MandateHealth =
   | "unresolved pin"
   | "not a system agent"
   | "agent archived"
+  | "workflow archived"
   | "code ↔ contract drift"
   | "output contract unmet"
   | "no Mandate Holder yet"
@@ -53,6 +54,7 @@ export const HEALTH_PRIORITY: Record<MandateHealth, number> = {
   "unresolved pin": 2,
   "not a system agent": 3,
   "agent archived": 4,
+  "workflow archived": 4,
   "code ↔ contract drift": 5,
   // 🚨 A HOLDER THAT CANNOT PRODUCE THE JOB'S REQUIRED OUTPUT KEYS IS NOT
   // "healthy" (walk of v0.4.1720, FIX-R4). `research_client.output_slides`
@@ -251,7 +253,28 @@ export function buildRow(
   let archived = false;
 
   const holder = holderOfMandate(mandate);
-  if (holder.versionId) {
+  // 🚨 WORKFLOW PARITY (2026-09-25): a job a WORKFLOW holds is not an agent
+  // this console failed to read. Every agent-derived verdict below (unresolved
+  // pin, not a system agent, output schema, code ↔ agent drift) read the
+  // workflow id as an agent id, found nothing, and called every workflow-held
+  // job "unresolved pin" — on the list, the peek and the dashboard counts.
+  const isWorkflowHolder = holder.holderType === "workflow";
+  const workflow = isWorkflowHolder && holder.holderId
+    ? (data.workflowsById?.[holder.holderId] ?? null)
+    : null;
+  if (isWorkflowHolder) {
+    const pin = holder.versionId
+      ? data.workflowVersionsById?.[holder.versionId]
+      : undefined;
+    agentName = workflow?.name ?? "(workflow)";
+    pinnedVersionNumber = pin?.versionNumber ?? null;
+    pinLabel = holder.versionId
+      ? pin
+        ? `v${pin.versionNumber}`
+        : "unknown version"
+      : "latest";
+    archived = Boolean(workflow?.isArchived);
+  } else if (holder.versionId) {
     const version = data.versionsById[holder.versionId];
     const agent = version?.agentId
       ? data.agentsById[version.agentId]
@@ -299,11 +322,15 @@ export function buildRow(
   // owner's RLS) or at a deleted record. Silently reporting green there is
   // exactly the kind of dead end this console exists to prevent. It requires
   // a pin to exist in the first place.
-  const unresolved = hasPin && (agentId == null || agentType == null);
+  // A workflow the console could not read is unresolved too — same rule.
+  const unresolved = isWorkflowHolder
+    ? hasPin && workflow === null
+    : hasPin && (agentId == null || agentType == null);
 
   // Code ↔ AGENT drift compares the code declaration to the BOUND agent. With
   // nothing bound there is no second side, so the comparison cannot be made.
   const codeAgentDrift =
+    !isWorkflowHolder &&
     hasPin &&
     codeTruth?.resolution === "code_declaration_found" &&
     codeTruth.bound_agent_drift != null &&
@@ -339,7 +366,9 @@ export function buildRow(
         : nonSystem
           ? "not a system agent"
           : archived
-            ? "agent archived"
+            ? isWorkflowHolder
+              ? "workflow archived"
+              : "agent archived"
             : codeContractDrift
               ? "code ↔ contract drift"
               : outputContractUnmet
@@ -429,6 +458,7 @@ export const HEALTH_CLASS: Record<MandateHealth, string> = {
   "code ↔ contract drift": "text-foreground border-warning/40 bg-warning/10",
   "output contract unmet": "text-foreground border-destructive/40 bg-destructive/10",
   "agent archived": "text-foreground border-destructive/40 bg-destructive/10",
+  "workflow archived": "text-foreground border-destructive/40 bg-destructive/10",
   "not a system agent": "text-foreground border-destructive/40 bg-destructive/10",
   "unresolved pin": "text-foreground border-destructive/40 bg-destructive/10",
 };
@@ -442,10 +472,12 @@ export const HEALTH_HINT: Partial<Record<MandateHealth, string>> = {
   "code ↔ contract drift":
     "The live code declaration and the mandate's stored contract cache disagree. Code truth is authoritative.",
   "unresolved pin":
-    "This mandate's agent could not be read — it may be another user's personal agent, or a deleted record. Rebind it to a system agent.",
+    "This mandate's Mandate Holder could not be read — it may be another user's personal agent, or a deleted record. Rebind it to a system agent.",
   "not a system agent":
     "This mandate serves every user, but its default is a personal agent only some of them can see.",
   "agent archived": "The pinned agent is archived — rebind before it breaks.",
+  "workflow archived":
+    "The workflow holding this job is archived — un-archive it or bind another before it breaks.",
   "output contract unmet":
     "The Mandate Holder does not declare the structured output keys this job's consumers require, so the assignment fails at run time. Give the Mandate Holder an output schema that declares them, or bind one that already does.",
   "no Mandate Holder yet":

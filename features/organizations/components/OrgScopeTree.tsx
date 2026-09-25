@@ -3,7 +3,9 @@
 /**
  * OrgScopeTree — a compact read-only tree of an org's scope types and their
  * scopes (no items), for the Manage page. Each type links to its scope-type
- * editor; each scope links to its detail editor. Self-fetches from Redux.
+ * editor; each scope links to its detail editor. Reads the canonical scope
+ * tree (`useScopeTree`, ensured idempotently) — it read agent-context's
+ * scopeTypes / scopes slices until 2026-09-25 (lane HIERARCHY-CASCADE).
  *
  * Rendering uses rounded "elbow" connectors color-themed per scope type so the
  * tree reads like a polished file-tree rather than a plain bulleted list.
@@ -13,31 +15,25 @@ import React from "react";
 import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  fetchScopeTypes,
-  selectScopeTypesByOrg,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import {
-  fetchScopes,
-  selectScopesByType,
-} from "@/features/agent-context/redux/scope/scopesSlice";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
 import {
   resolveColor,
   SCOPE_ICON_SURFACE,
 } from "@/features/scopes/constants/scope-colors";
-import type { ScopeType } from "@/features/agent-context/redux/scope/types";
+import type { ScopeTypeNode as ScopeTypeRow } from "@/features/scopes/types";
 
 export function OrgScopeTree({ orgId, slug }: { orgId: string; slug: string }) {
   const dispatch = useAppDispatch();
-  const scopeTypes = useAppSelector((s) => selectScopeTypesByOrg(s, orgId));
+  const { organizations } = useScopeTree();
+  const scopeTypes =
+    organizations.find((org) => org.id === orgId)?.scope_types ?? [];
 
   React.useEffect(() => {
-    if (!orgId) return;
-    dispatch(fetchScopeTypes(orgId));
-    dispatch(fetchScopes({ org_id: orgId }));
-  }, [dispatch, orgId]);
+    void dispatch(ensureScopeTree({}));
+  }, [dispatch]);
 
   if (scopeTypes.length === 0) {
     return (
@@ -62,8 +58,8 @@ export function OrgScopeTree({ orgId, slug }: { orgId: string; slug: string }) {
   );
 }
 
-function ScopeTypeNode({ type, slug }: { type: ScopeType; slug: string }) {
-  const scopes = useAppSelector((s) => selectScopesByType(s, type.id));
+function ScopeTypeNode({ type, slug }: { type: ScopeTypeRow; slug: string }) {
+  const scopes = type.scopes;
   const Icon = resolveIcon(type.icon);
   const color = resolveColor(type);
 

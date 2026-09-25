@@ -52,8 +52,14 @@ import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { selectScopeTypesByOrg } from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import { selectScopesByOrg } from "@/features/agent-context/redux/scope/scopesSlice";
+import type { RootState } from "@/lib/redux/rootReducer";
+import type { ScopeTypeNode } from "@/features/scopes/types";
+
+// The canonical scope tree (scopesTree, ensured app-wide at boot) — this page
+// read agent-context's scopeTypes / scopes slices until 2026-09-25.
+const NO_SCOPE_TYPES: ScopeTypeNode[] = [];
+const scopeTypesOfOrg = (state: RootState, orgId: string): ScopeTypeNode[] =>
+  state.scopesTree.organizations[orgId]?.scope_types ?? NO_SCOPE_TYPES;
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
 import type { UseScopeSuggestionsResult } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
@@ -130,8 +136,8 @@ function OrgCard({
 
   // Scope data for the embedded Context tree + stats. OrgScopeTree dispatches
   // the fetch; these selectors read the same store.
-  const scopeTypes = useAppSelector((s) => selectScopeTypesByOrg(s, org.id));
-  const scopes = useAppSelector((s) => selectScopesByOrg(s, org.id));
+  const scopeTypes = useAppSelector((s) => scopeTypesOfOrg(s, org.id));
+  const scopes = scopeTypes.flatMap((type) => type.scopes);
   const orgSuggestions = scopes.flatMap((sc) => suggestions.forScope(sc.id));
 
   function open() {
@@ -432,8 +438,8 @@ export default function OrganizationsPage() {
       current_view: "list",
       organization_count: organizations.length,
       organizations_summary: organizations.map((o) => {
-        const scopeTypes = selectScopeTypesByOrg(state, o.id);
-        const scopes = selectScopesByOrg(state, o.id);
+        const scopeTypes = scopeTypesOfOrg(state, o.id);
+        const scopes = scopeTypes.flatMap((type) => type.scopes);
         return {
           id: o.id,
           name: o.name,

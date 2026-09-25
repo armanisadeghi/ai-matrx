@@ -56,8 +56,21 @@ this directory.
    `features/agent-context/components/ScopePicker.tsx` and its companion hook
    `features/agent-context/hooks/useScopeAssignment.ts` — both consumerless; entity scope tagging is
    `ContextAssignmentField` / `EntityScopeTagger` only. Neither file was on the allowlist (they reached
-   `context.*` only through the slices), so the allowlist is unchanged; the slices stay until
-   `HierarchyCascade`, `scope-admin/*`, `features/scope-system/**` and the org routes stop importing them.
+   `context.*` only through the slices), so the allowlist is unchanged.
+   Retired next (2026-09-25, lane HIERARCHY-CASCADE): the whole `agent-context/components/hierarchy-selection/`
+   family (`HierarchyCascade`, `HierarchyPills`, `HierarchyTree`, `useHierarchySelection`,
+   `useReduxBridge`), `agent-apps/.../AgentAppHierarchyCascade`, `agent-shortcuts/.../ShortcutScopePicker`,
+   and from the duplicate tree `agent-context/redux/scope/{scopeAssignmentsSlice,selectors}.ts` plus the
+   `scopeAssignments` reducer key (nothing filled it any more). Their callers use the canonical family:
+   `active-context/engagement/{EngagementPicker,EntityEngagementPicker,useActiveEngagementSelection}` and
+   `active-context/binding-target/BindingTargetPicker`. `scopeTypesSlice` / `scopesSlice` stay: every
+   remaining importer is the scope CRUD console or feeds it (`agent-context/components/scope-admin/*`,
+   `features/scope-system/**`, the ten `app/(core)/organizations/[orgId]/{context-items,scopes/**}` pages,
+   `organizations/components/OrgWorkspace.tsx`) or writes through the old thunks
+   (`education/classes/hooks/useClasses.ts`, `kg-suggestions/**`, `agents/components/{inputs/BoundVariableChips,scope-batch-import/ScopeBatchImportBody}.tsx`,
+   `window-panels/{lite-window/LiteWindowExamples,windows/context-scopes/ScopeEditWindow}.tsx`,
+   `agent-context/redux/hierarchyThunks.ts`) — the console lane moves them (the canonical `ScopeTypeNode`
+   has no slug / description yet, which the console reads).
 
    Write an exempt path as a glob, never as a literal dynamic route: ESLint globs are minimatch,
    where `[scopeId]` is a character class, so `app/(core)/scopes/s/[scopeId]/page.tsx` matches
@@ -343,6 +356,19 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-09-25 — **Two modes of the one picker family replace the last two bespoke pickers.**
+  Lane HIERARCHY-CASCADE (Arman: the canonical scope selection family is the one set of pickers;
+  primitives first). Engine: `EngagementSelection` + `applyEngagementPick` + `useEngagementEngine`
+  (organization → project → task, scopes as TAGS — a tag never filters or clears the project/task)
+  and `SingleNodeValue` + `useSingleNodeEngine` (exactly one node of an accepted kind);
+  `fillEngagementSelection`, `resolvePickNode`; org nodes carry the UI-FIX-19 `hint`; PickerMode
+  `select` (host-owned persistence: no commit button, no live badge). Miller Columns and DrillDeck
+  take `rungs="engagements"` (default `"scopes"` — every existing host unchanged). Hosts:
+  `engagement/EngagementPicker` (field | inline; creates a project, task or scope in place through
+  `useCreateProject` / `useCreateTask` / `scopeTreeMutations.createScope` and selects it),
+  `EntityEngagementPicker` (a record's FKs + `useEntityScopes` tags), `useActiveEngagementSelection`
+  (Surface A), `binding-target/BindingTargetPicker` (global / user / one org, project or task).
+  Suite: `quick-pick/__tests__/engagementAndSingleNode.test.ts` (13 red against the prior engine).
 - 2026-09-25 — **Miller Columns and DrillDeck search their own columns; a drill-path engine.**
   Lane CONTEXT-INSPECTOR-3 (Arman: use the existing scope selection components, never
   hand-rolled pickers). A column with more than 8 rows shows a search box that narrows that

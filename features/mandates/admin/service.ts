@@ -131,6 +131,20 @@ export interface MandateConsoleData {
   /** agent.definition_version rows referenced by any pinned default/binding. */
   versionsById: Record<string, MandateVersionInfo>;
   bindingsByMandateId: Record<string, MandateBindingRow[]>;
+  /**
+   * Workflow holders by id (workflow parity, 2026-09-25) — so a job a
+   * workflow holds is named and judged, never read as an unresolved agent.
+   * Optional: fixtures that predate it read as "no workflow known".
+   */
+  workflowsById?: Record<string, MandateWorkflowInfo>;
+  /** workflow.definition_version rows referenced by a pinned workflow holder. */
+  workflowVersionsById?: Record<string, { id: string; workflowId: string; versionNumber: number }>;
+}
+
+export interface MandateWorkflowInfo {
+  id: string;
+  name: string;
+  isArchived: boolean;
 }
 
 export interface FetchMandateConsoleDataOptions {
@@ -254,15 +268,51 @@ export async function fetchMandateConsoleData(
 
   const agentIds = new Set<string>();
   const versionIds = new Set<string>();
-  for (const mandate of mandates) {
-    const holder = holderOfMandate(mandate);
+  const workflowIds = new Set<string>();
+  const workflowVersionIds = new Set<string>();
+  const collect = (holder: { holderType: string; holderId: string | null; versionId: string | null }) => {
+    if (holder.holderType === "workflow") {
+      if (holder.holderId) workflowIds.add(holder.holderId);
+      if (holder.versionId) workflowVersionIds.add(holder.versionId);
+      return;
+    }
     if (holder.holderId) agentIds.add(holder.holderId);
     if (holder.versionId) versionIds.add(holder.versionId);
+  };
+  for (const mandate of mandates) collect(holderOfMandate(mandate));
+  for (const binding of bindings) collect(holderOfBinding(binding));
+
+  const workflowsById: Record<string, MandateWorkflowInfo> = {};
+  if (workflowIds.size > 0) {
+    const { data, error } = await supabase
+      .schema("workflow")
+      .from("definition")
+      .select("id, name, is_archived")
+      .in("id", [...workflowIds]);
+    if (error) throw error;
+    for (const row of data ?? []) {
+      workflowsById[row.id] = {
+        id: row.id,
+        name: row.name,
+        isArchived: row.is_archived === true,
+      };
+    }
   }
-  for (const binding of bindings) {
-    const holder = holderOfBinding(binding);
-    if (holder.holderId) agentIds.add(holder.holderId);
-    if (holder.versionId) versionIds.add(holder.versionId);
+  const workflowVersionsById: NonNullable<MandateConsoleData["workflowVersionsById"]> = {};
+  if (workflowVersionIds.size > 0) {
+    const { data, error } = await supabase
+      .schema("workflow")
+      .from("definition_version")
+      .select("id, definition_id, version_number")
+      .in("id", [...workflowVersionIds]);
+    if (error) throw error;
+    for (const row of data ?? []) {
+      workflowVersionsById[row.id] = {
+        id: row.id,
+        workflowId: row.definition_id,
+        versionNumber: row.version_number,
+      };
+    }
   }
 
   const versionsById: Record<string, MandateVersionInfo> = {};
@@ -317,7 +367,15 @@ export async function fetchMandateConsoleData(
     (bindingsByMandateId[binding.mandate_id] ??= []).push(binding);
   }
 
-  return { mandates, agentsById, versionsById, bindingsByMandateId, outputSchemas };
+  return {
+    mandates,
+    agentsById,
+    versionsById,
+    bindingsByMandateId,
+    outputSchemas,
+    workflowsById,
+    workflowVersionsById,
+  };
 }
 
 /**

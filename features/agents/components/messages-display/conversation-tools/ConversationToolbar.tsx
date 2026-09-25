@@ -13,7 +13,8 @@
 
 import React from "react";
 import { Download, Pin, Search } from "lucide-react";
-import { useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import type { RootState } from "@/lib/redux/store";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,7 +50,7 @@ export function ConversationToolbar({
   setPinnedOnly: (on: boolean) => void;
   pinnedCount: number;
 }) {
-  const store = useAppStore();
+  const dispatch = useAppDispatch();
   const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
 
   return (
@@ -107,7 +108,11 @@ export function ConversationToolbar({
                 <DropdownMenuItem
                   key={format}
                   onSelect={() => {
-                    void exportConversation(store.getState, conversationId, format);
+                    // A thunk hands the export a live getState without subscribing
+                    // this toolbar to the whole store.
+                    dispatch((_d: unknown, getState: () => RootState) => {
+                      void exportConversation(getState, conversationId, format);
+                    });
                   }}
                 >
                   {label}

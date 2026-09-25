@@ -658,9 +658,6 @@ importers:
       react-swipeable:
         specifier: latest
         version: 7.0.2(react@19.3.0)
-      react-syntax-highlighter:
-        specifier: ^16.1.1
-        version: 16.1.1(react@19.3.0)
       react-table:
         specifier: latest
         version: 7.8.0(react@19.3.0)
@@ -688,9 +685,6 @@ importers:
       rehype-katex:
         specifier: latest
         version: 7.0.1
-      rehype-prism-plus:
-        specifier: latest
-        version: 2.0.2
       rehype-raw:
         specifier: latest
         version: 7.0.0
@@ -863,9 +857,6 @@ importers:
       '@types/react-katex':
         specifier: latest
         version: 3.0.4
-      '@types/react-syntax-highlighter':
-        specifier: ^15.5.13
-        version: 15.5.13
       '@types/react-table':
         specifier: latest
         version: 7.7.20
@@ -5392,9 +5383,6 @@ packages:
     peerDependencies:
       '@types/react': '*'
 
-  '@types/react-syntax-highlighter@15.5.13':
-    resolution: {integrity: sha512-uLGJ87j6Sz8UaBAooU0T6lWJ0dBmjZgN1PZTrj05TNql2/XpC6+4HhMT5syIdFUUt+FASfCeLLv4kBygNU+8qA==}
-
   '@types/react-table@7.7.20':
     resolution: {integrity: sha512-ahMp4pmjVlnExxNwxyaDrFgmKxSbPwU23sGQw2gJK4EhCvnvmib2s/O/+y1dfV57dXOwpr2plfyBol+vEHbi2w==}
 
@@ -7886,9 +7874,6 @@ packages:
   fastq@1.20.3:
     resolution: {integrity: sha512-XKv5nnLs6nLF71NgiKJLIZFLkPyIEuOselLG7ujZnGrRfQK8HpvY+WqKhAJUAdLomwVHErVS4LfxFlPq0/FTAw==}
 
-  fault@1.0.4:
-    resolution: {integrity: sha512-CJ0HCB5tL5fYTEA7ToAq5+kTwd++Borf1/bifxd9iT70QcXr4MRrO3Llf8Ifs70q+SJcGHFtnIE/Nw6giCtECA==}
-
   fault@2.0.1:
     resolution: {integrity: sha512-WtySTkS4OKev5JtpHXnib4Gxiurzh5NCGvWrFaZ34m6JehfTUhKZvn9njTfw48t6JumVQOmrKqpmGcdwxnhqBQ==}
 
@@ -8364,12 +8349,6 @@ packages:
 
   hey-listen@1.0.8:
     resolution: {integrity: sha512-COpmrF2NOg4TBWUJ5UVyaCU2A88wEMkUPK4hNqyCkqHbxT92BbvfjoSozkAIIm6XhicGlJHhFdullInrdhwU8Q==}
-
-  highlight.js@10.7.3:
-    resolution: {integrity: sha512-tzcUFauisWKNHaRkN4Wjl/ZA07gENAjFl3J/c480dprkGTg5EQstgaNFqBfUqCq54kZRIEcreTsAgF/m2quD7A==}
-
-  highlightjs-vue@1.0.0:
-    resolution: {integrity: sha512-PDEfEF102G23vHmPhLyPboFCD+BkMGu+GuJe2d9/eH4FsCwvgBpnc9n0pGE+ffKdph38s6foEZiEjdgHdzp+IA==}
 
   hmac-drbg@1.0.1:
     resolution: {integrity: sha512-Tti3gMqLdZfhOQY1Mzf/AanLiqh1WTiJgEj26ZuYQ9fbkLomzGchCws4FyrSd4VkpBfiNhaE1On+lOz894jvXg==}
@@ -9387,9 +9366,6 @@ packages:
   lossless-json@4.3.1:
     resolution: {integrity: sha512-SqD/Bg3ZfltBJ2Z14hJ/BihnvtV553WO4g9/ePtlp4lrnl9jF3AdIJt53A/Wkg/0Li+LMfxaBqgx1MiFZdQlpQ==}
 
-  lowlight@1.20.0:
-    resolution: {integrity: sha512-8Ktj+prEb1RoCPkEOrPMYUN/nCggB7qAWe3a7OpMjWQkh3l2RD5wKRQ+o8Q8YuI9RG/xs95waaI/E6ym/7NsTw==}
-
   lru-cache@10.4.3:
     resolution: {integrity: sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==}
 
@@ -10203,9 +10179,6 @@ packages:
     resolution: {integrity: sha512-kHt7kzLoS9VBZfUsiKjv43mr91ea+U05EyKkEtqp7vNbHxmaVuEqN7XxeEVnGrMtYOAxGrDElSi96K7EgO1zCA==}
     engines: {node: '>=6'}
 
-  parse-numeric-range@1.3.0:
-    resolution: {integrity: sha512-twN+njEipszzlMJd4ONUYgSfZPDxgHhT9Ahed5uTigpQn90FggW4SA/AIPq/6a149fTbE9qBEcSwE3FAEp6wQQ==}
-
   parse5@7.3.0:
     resolution: {integrity: sha512-IInvU7fabl34qmi9gY8XOVxhYyMyuH2xUNpb2q8/Y+7552KlejkRvqvD19nMoUW/uQGGbqNpA6Tufu5FL5BZgw==}
 
@@ -10856,12 +10829,6 @@ packages:
     peerDependencies:
       react: ^16.8.3 || ^17 || ^18 || ^19.0.0 || ^19.0.0-rc
 
-  react-syntax-highlighter@16.1.1:
-    resolution: {integrity: sha512-PjVawBGy80C6YbC5DDZJeUjBmC7skaoEUdvfFQediQHgCL7aKyVHe57SaJGfQsloGDac+gCpTfRdtxzWWKmCXA==}
-    engines: {node: '>= 16.20.2'}
-    peerDependencies:
-      react: '>= 0.14.0'
-
   react-table@7.8.0:
     resolution: {integrity: sha512-hNaz4ygkZO4bESeFfnfOft73iBUj8K5oKi1EcSHPAibEydfsX2MyU6Z8KCr3mv3C9Kqqh71U+DhZkFvibbnPbA==}
     peerDependencies:
@@ -10949,9 +10916,6 @@ packages:
   refractor@3.6.0:
     resolution: {integrity: sha512-MY9W41IOWxxk31o+YvFCNyNzdkc9M20NoZK5vq6jkv4I/uh2zkWcfudj0Q1fovjUQJrNewS9NMzeTtqPf+n5EA==}
 
-  refractor@5.0.0:
-    resolution: {integrity: sha512-QXOrHQF5jOpjjLfiNk5GFnWhRXvxjUVnlFxkeDmewR5sXkr3iM46Zo+CnRR8B+MDVqkULW4EcLVcRBNOPXHosw==}
-
   regenerator-runtime@0.13.11:
     resolution: {integrity: sha512-kY1AZVr2Ra+t+piVaJ4gxaFaReZVH40AKNo7UCX6W+dEwBo/2oZJzqfuN1qLq1oL45o56cPaTXELwrTh8Fpggg==}
 
@@ -10984,12 +10948,6 @@ packages:
 
   rehype-minify-whitespace@6.0.2:
     resolution: {integrity: sha512-Zk0pyQ06A3Lyxhe9vGtOtzz3Z0+qZ5+7icZ/PL/2x1SHPbKao5oB/g/rlc6BCTajqBb33JcOe71Ye1oFsuYbnw==}
-
-  rehype-parse@9.0.1:
-    resolution: {integrity: sha512-ksCzCD0Fgfh7trPDxr2rSylbwq9iYDkSn8TCDmEJ49ljEUBxDVCzCHv7QNzZOfODanX4+bWQ4WZqLCRWYLfhag==}
-
-  rehype-prism-plus@2.0.2:
-    resolution: {integrity: sha512-jTHb8ZtQHd2VWAAKeCINgv/8zNEF0+LesmwJak69GemoPVN9/8fGEARTvqOpKqmN57HwaM9z8UKBVNVJe8zggw==}
 
   rehype-raw@7.0.0:
     resolution: {integrity: sha512-/aE8hCfKlQeA8LmyeyQvQF3eBiLRGNlfBJEvWH7ivp9sBqs7TNqBL5X3v157rM4IFETqDnIOO+z5M/biZbo9Ww==}
@@ -12183,9 +12141,6 @@ packages:
 
   unist-builder@4.0.0:
     resolution: {integrity: sha512-wmRFnH+BLpZnTKpc5L7O67Kac89s9HMrtELpnNaE6TAobq5DTZZs5YaTQfAZBA9bFPECx2uVAPO31c+GVug8mg==}
-
-  unist-util-filter@5.0.1:
-    resolution: {integrity: sha512-pHx7D4Zt6+TsfwylH9+lYhBhzyhEnCXs/lbq/Hstxno5z4gVdyc2WEW0asfjGKPyG4pEKrnBv5hdkO6+aRnQJw==}
 
   unist-util-find-after@5.0.0:
     resolution: {integrity: sha512-amQa0Ep2m6hE2g72AugUItjbuM8X8cGQnFoHk0pGfrFeT9GZhzN5SW8nRsiGKK7Aif4CrACPENkA6P/Lw6fHGQ==}
@@ -18343,10 +18298,6 @@ snapshots:
     dependencies:
       '@types/react': 19.3.0
 
-  '@types/react-syntax-highlighter@15.5.13':
-    dependencies:
-      '@types/react': 19.3.0
-
   '@types/react-table@7.7.20':
     dependencies:
       '@types/react': 19.3.0
@@ -21437,10 +21388,6 @@ snapshots:
     dependencies:
       reusify: 1.1.0
 
-  fault@1.0.4:
-    dependencies:
-      format: 0.2.2
-
   fault@2.0.1:
     dependencies:
       format: 0.2.2
@@ -22058,10 +22005,6 @@ snapshots:
       hermes-estree: 0.25.1
 
   hey-listen@1.0.8: {}
-
-  highlight.js@10.7.3: {}
-
-  highlightjs-vue@1.0.0: {}
 
   hmac-drbg@1.0.1:
     dependencies:
@@ -23266,11 +23209,6 @@ snapshots:
 
   lossless-json@4.3.1(patch_hash=ba30e301793a5b0d08ed4ca0cc34822eaaa724b41800c05f90003e60281af8de): {}
 
-  lowlight@1.20.0:
-    dependencies:
-      fault: 1.0.4
-      highlight.js: 10.7.3
-
   lru-cache@10.4.3: {}
 
   lru-cache@11.5.2: {}
@@ -23366,7 +23304,7 @@ snapshots:
 
   md5.js@1.3.5:
     dependencies:
-      hash-base: 3.0.5
+      hash-base: 3.1.2
       inherits: 2.0.4
       safe-buffer: 5.2.1
 
@@ -24430,8 +24368,6 @@ snapshots:
 
   parse-ms@2.1.0: {}
 
-  parse-numeric-range@1.3.0: {}
-
   parse5@7.3.0:
     dependencies:
       entities: 6.0.1
@@ -25197,16 +25133,6 @@ snapshots:
     dependencies:
       react: 19.3.0
 
-  react-syntax-highlighter@16.1.1(react@19.3.0):
-    dependencies:
-      '@babel/runtime': 7.29.7
-      highlight.js: 10.7.3
-      highlightjs-vue: 1.0.0
-      lowlight: 1.20.0
-      prismjs: 1.30.0
-      react: 19.3.0
-      refractor: 5.0.0
-
   react-table@7.8.0(react@19.3.0):
     dependencies:
       react: 19.3.0
@@ -25340,13 +25266,6 @@ snapshots:
       parse-entities: 2.0.0
       prismjs: 1.27.0
 
-  refractor@5.0.0:
-    dependencies:
-      '@types/hast': 3.0.5
-      '@types/prismjs': 1.26.6
-      hastscript: 9.0.1
-      parse-entities: 4.0.2
-
   regenerator-runtime@0.13.11:
     optional: true
 
@@ -25394,21 +25313,6 @@ snapshots:
     dependencies:
       '@types/hast': 3.0.5
       hast-util-minify-whitespace: 1.0.1
-
-  rehype-parse@9.0.1:
-    dependencies:
-      '@types/hast': 3.0.5
-      hast-util-from-html: 2.0.3
-      unified: 11.0.5
-
-  rehype-prism-plus@2.0.2:
-    dependencies:
-      hast-util-to-string: 3.0.1
-      parse-numeric-range: 1.3.0
-      refractor: 5.0.0
-      rehype-parse: 9.0.1
-      unist-util-filter: 5.0.1
-      unist-util-visit: 5.1.0
 
   rehype-raw@7.0.0:
     dependencies:
@@ -26872,12 +26776,6 @@ snapshots:
   unist-builder@4.0.0:
     dependencies:
       '@types/unist': 3.0.3
-
-  unist-util-filter@5.0.1:
-    dependencies:
-      '@types/unist': 3.0.3
-      unist-util-is: 6.0.1
-      unist-util-visit-parents: 6.0.2
 
   unist-util-find-after@5.0.0:
     dependencies:

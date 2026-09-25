@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2316",
+  "version": "0.4.2315",
   "private": true,
   "scripts": {
     "dev": "bash scripts/agent-dev-server.sh start",
@@ -887,7 +887,6 @@
     "react-redux": "latest",
     "react-resizable-panels": "latest",
     "react-swipeable": "latest",
-    "react-syntax-highlighter": "^16.1.1",
     "react-table": "latest",
     "react-textarea-autosize": "^8.5.9",
     "react-use-websocket": "latest",
@@ -897,7 +896,6 @@
     "redux": "latest",
     "redux-saga": "latest",
     "rehype-katex": "latest",
-    "rehype-prism-plus": "latest",
     "rehype-raw": "latest",
     "rehype-slug": "^6.0.0",
     "remark-breaks": "^4.0.0",
@@ -957,7 +955,6 @@
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "@types/react-katex": "latest",
-    "@types/react-syntax-highlighter": "^15.5.13",
     "@types/react-table": "latest",
     "@typescript/native": "npm:typescript@^7.0.2",
     "@xpd/tailwind-3dtransforms": "latest",
