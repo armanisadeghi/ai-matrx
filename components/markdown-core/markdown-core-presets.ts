@@ -130,6 +130,15 @@ export function remarkWithNumbering(
   return remark.map((plugin) => (plugin === remarkMatrxSyntax ? ([remarkMatrxSyntax, { numbering }] as Plugin) : plugin));
 }
 
+/** A preset's rehype list with the document-wide numbering (footnotes) handed to the extended-syntax pass. */
+export function rehypeWithNumbering(
+  rehype: Options["rehypePlugins"],
+  numbering: DocumentNumbering | null | undefined,
+): Options["rehypePlugins"] {
+  if (!numbering || !rehype) return rehype;
+  return rehype.map((plugin) => (plugin === rehypeMatrxSyntax ? ([rehypeMatrxSyntax, { numbering }] as Plugin) : plugin));
+}
+
 /** The source a preset parses: math presets run the one normalizer. */
 export function prepareCoreSource(source: string, preset: MarkdownPreset): string {
   if (preset === "plain") return source;

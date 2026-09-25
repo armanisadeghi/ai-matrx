@@ -514,3 +514,19 @@ describe("verify-RC-B8 fix round", () => {
     expect(healStreamingMarkdown("Energy:\n\n$$\nE = mc^2 \\tag{1}")).toBe("Energy:\n\n");
   });
 });
+
+
+describe("footnotes are numbered document-wide (verify-RC-B8 round 2)", () => {
+  it("a split document numbers its notes 1, 2 — never a second list starting at 1", async () => {
+    const doc = "Bisque first.[^bisque]\n\n```bash\nkiln fire --cone 06\n```\n\nGlaze second.[^glaze]\n\n[^bisque]: About 999 °C.\n\n[^glaze]: About 1,222 °C.";
+    const scope = await render(standard(doc));
+    expect([...scope.querySelectorAll("a[data-footnote-ref]")].map(text)).toEqual(["1", "2"]);
+    const items = [...scope.querySelectorAll('li[id^="user-content-fn-"]')] as HTMLLIElement[];
+    expect(items.map((li) => [li.id, li.value])).toEqual(
+      expect.arrayContaining([
+        ["user-content-fn-bisque", 1],
+        ["user-content-fn-glaze", 2],
+      ]),
+    );
+  });
+});

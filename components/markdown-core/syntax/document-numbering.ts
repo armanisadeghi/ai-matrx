@@ -31,6 +31,8 @@ export interface DocumentNumbering {
   byLabel: Map<string, NumberedTarget>;
   /** Unlabelled figures/tables by `kind|caption`, in document order (one entry per occurrence). */
   byCaption: Map<string, string[]>;
+  /** Footnote identifier (lower-case) → its number, in order of FIRST reference across the whole document. */
+  footnotes: Map<string, number>;
 }
 
 const FENCE = /^[ \t]{0,3}(`{3,}|~{3,})/;
@@ -63,7 +65,8 @@ function displayMath(text: string): string[] {
 export function computeDocumentNumbering(source: string): DocumentNumbering {
   const byLabel = new Map<string, NumberedTarget>();
   const byCaption = new Map<string, string[]>();
-  if (!source) return { byLabel, byCaption };
+  const footnotes = new Map<string, number>();
+  if (!source) return { byLabel, byCaption, footnotes };
 
   // Prose only: fenced code never numbers anything.
   const prose: string[] = [];
@@ -122,5 +125,14 @@ export function computeDocumentNumbering(source: string): DocumentNumbering {
     const first = labels[0];
     if (first) byLabel.set(first, { kind: "eq", display });
   }
-  return { byLabel, byCaption };
+  // Footnotes: numbered by first reference, document-wide (a definition line
+  // `[^x]:` is not a reference). Inline code spans never count.
+  for (const line of prose) {
+    const plain = line.replace(/`+[^`]*`+/g, "");
+    for (const m of plain.matchAll(/\[\^([^\]\s]+)\](?!:)/g)) {
+      const id = (m[1] ?? "").toLowerCase();
+      if (!footnotes.has(id)) footnotes.set(id, footnotes.size + 1);
+    }
+  }
+  return { byLabel, byCaption, footnotes };
 }

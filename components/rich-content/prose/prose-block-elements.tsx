@@ -38,7 +38,9 @@ const ListItemComponent: React.FC<{
   node?: Element;
   /** A footnote item's id (`user-content-fn-1`) — references and back-links target it. */
   id?: string;
-}> = ({ children, node, id }) => {
+  /** A footnote item's document-wide number (an `<ol>` position). */
+  value?: number;
+}> = ({ children, node, id, value }) => {
   // Detect direction for list item content
   const itemText =
     typeof children === "string"
@@ -63,6 +65,7 @@ const ListItemComponent: React.FC<{
     return (
       <li
         id={id}
+        value={value}
         className={`mb-1 ${getDirectionFontSize(itemDirection)} ${getDirectionClasses(itemDirection)}`}
         dir={itemDirection}
       >
@@ -75,6 +78,7 @@ const ListItemComponent: React.FC<{
   return (
     <li
       id={id}
+      value={value}
       className={`mb-1 ${getDirectionFontSize(itemDirection)} ${getDirectionClasses(itemDirection)}`}
       dir={itemDirection}
     >
@@ -266,7 +270,7 @@ export const PROSE_BLOCK_ELEMENTS = {
   },
   li: ({ node, children, ...props }) => {
     return (
-      <ListItemComponent node={node} id={props.id}>
+      <ListItemComponent node={node} id={props.id} value={typeof props.value === "number" ? props.value : undefined}>
         {children}
       </ListItemComponent>
     );

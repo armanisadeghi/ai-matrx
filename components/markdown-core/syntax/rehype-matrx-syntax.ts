@@ -14,6 +14,7 @@
 
 import type { Element, ElementContent, Root, RootContent } from "hast";
 import { toString as hastToString } from "hast-util-to-string";
+import type { DocumentNumbering } from "./document-numbering";
 
 const HEADINGS = new Set(["h1", "h2", "h3", "h4", "h5", "h6"]);
 
@@ -89,7 +90,13 @@ function tocList(entries: TocEntry[]): Element {
   return root;
 }
 
-export default function rehypeMatrxSyntax() {
+export interface RehypeMatrxSyntaxOptions {
+  /** The whole document's numbering — footnotes are numbered document-wide from it. */
+  numbering?: DocumentNumbering | null;
+}
+
+export default function rehypeMatrxSyntax(options: RehypeMatrxSyntaxOptions = {}) {
+  const numbering = options.numbering ?? null;
   return (tree: Root) => {
     const headings: TocEntry[] = [];
     const tocs: Element[] = [];
@@ -138,8 +145,43 @@ export default function rehypeMatrxSyntax() {
       toc.children = entries.length > 0 ? [tocList(entries)] : [];
     }
 
+    if (numbering && numbering.footnotes.size > 0) numberFootnotes(tree, numbering.footnotes);
     prefixAuthorIds(tree);
   };
+}
+
+const FN_PREFIX = "user-content-fn-";
+
+function footnoteId(href: string): string | null {
+  const at = href.indexOf(FN_PREFIX);
+  if (at < 0) return null;
+  try {
+    return decodeURIComponent(href.slice(at + FN_PREFIX.length)).toLowerCase();
+  } catch {
+    return href.slice(at + FN_PREFIX.length).toLowerCase();
+  }
+}
+
+/**
+ * GitHub numbers footnotes 1… per parsed tree; a document the renderer split
+ * into blocks (or a note whose reference is in another block) restarted at
+ * "1." (verify-RC-B8 round 2). Every reference's number and every note's list
+ * position now come from the document-wide order of first reference.
+ */
+function numberFootnotes(tree: Root, numbers: Map<string, number>): void {
+  walk(tree, (el) => {
+    if (el.tagName === "a" && el.properties?.dataFootnoteRef !== undefined) {
+      const id = footnoteId(String(el.properties?.href ?? ""));
+      const n = id ? numbers.get(id) : undefined;
+      if (n !== undefined) el.children = [{ type: "text", value: String(n) }];
+      return;
+    }
+    if (el.tagName === "li") {
+      const id = footnoteId(String(el.properties?.id ?? ""));
+      const n = id ? numbers.get(id) : undefined;
+      if (n !== undefined) el.properties = { ...el.properties, value: n };
+    }
+  });
 }
 
 /** The prefix GitHub puts on every id an author controls. */

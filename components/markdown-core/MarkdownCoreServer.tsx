@@ -12,7 +12,7 @@ import "server-only";
 
 import ReactMarkdown from "react-markdown";
 import "katex/dist/katex.min.css";
-import { MARKDOWN_PRESETS, prepareCoreSource, remarkWithNumbering } from "./markdown-core-presets";
+import { MARKDOWN_PRESETS, prepareCoreSource, rehypeWithNumbering, remarkWithNumbering } from "./markdown-core-presets";
 import type { MarkdownCoreProps } from "./markdown-core-types";
 import { withCoreSyntaxElements } from "./syntax/elements/core-syntax-elements";
 
@@ -26,7 +26,7 @@ export default function MarkdownCoreServer({
   return (
     <ReactMarkdown
       remarkPlugins={remarkWithNumbering(plugins.remark, numbering)}
-      rehypePlugins={plugins.rehype}
+      rehypePlugins={rehypeWithNumbering(plugins.rehype, numbering)}
       components={withCoreSyntaxElements(components)}
     >
       {prepareCoreSource(children, preset)}
