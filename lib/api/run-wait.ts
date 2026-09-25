@@ -32,7 +32,9 @@
 import { ensureEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 
 /** What a run produces. Anything but text is a job (seconds to minutes). */
-export type RunOutputKind = "text" | "image" | "video" | "audio";
+/** Every output kind a run can wait on — one `<kind>_seconds` knob each. */
+export const RUN_OUTPUT_KINDS = ["text", "image", "video", "audio"] as const;
+export type RunOutputKind = (typeof RUN_OUTPUT_KINDS)[number];
 
 export const RUN_WAIT_KNOB_FEATURE = "agents.run_wait";
 

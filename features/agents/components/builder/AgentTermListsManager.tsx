@@ -153,7 +153,7 @@ function TermListPicker({
           Add
         </button>
       </PopoverTrigger>
-      <PopoverContent className="z-[200] w-72 p-0" align="end" side="bottom" sideOffset={6}>
+      <PopoverContent /* sizing: fixed — search-as-you-type list; a content-sized box would reflow on every keystroke */ className="z-[200] w-72 p-0" align="end" side="bottom" sideOffset={6}>
         <Command>
           <CommandInput placeholder="Search term lists" />
           <CommandList>

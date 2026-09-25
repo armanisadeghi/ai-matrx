@@ -15,6 +15,7 @@
  * `makeAppContextState()`.
  */
 
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -62,16 +63,31 @@ function isTestFile(file: string): boolean {
   return /\.(test|spec)\.tsx?$/.test(file);
 }
 
-function walk(dir: string, found: string[]): string[] {
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (entry.isDirectory()) {
-      if (SKIP_DIRS.has(entry.name) || entry.name.startsWith(".next")) continue;
-      walk(path.join(dir, entry.name), found);
-    } else if (entry.isFile() && isTestFile(entry.name)) {
-      found.push(path.join(dir, entry.name));
-    }
+/**
+ * The repo's own test files: tracked plus untracked-but-not-ignored, exactly
+ * the set a commit can carry. A raw directory walk also read the gitignored
+ * scratch checkouts parked under work/ (2026-09-24: work/lockfile-repair/ held
+ * a copy of this very test, so the guard went red on a file no commit can
+ * ship). Jest ignores <rootDir>/work/ for the same reason. If git cannot list
+ * the files this throws — a guard that silently reads nothing is no guard.
+ */
+function repoTestFiles(): string[] {
+  const listed = execFileSync(
+    "git",
+    ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+    { cwd: repoRoot, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 },
+  )
+    .split("\0")
+    .filter(Boolean);
+  const files = listed
+    .filter((relative) => isTestFile(relative))
+    .filter((relative) => !relative.split("/").some((part) => SKIP_DIRS.has(part)))
+    .map((relative) => path.join(repoRoot, relative))
+    .filter((absolute) => fs.existsSync(absolute));
+  if (files.length === 0) {
+    throw new Error("app-context-fixture-law: git listed no test files under " + repoRoot);
   }
-  return found;
+  return files;
 }
 
 /**
@@ -136,7 +152,7 @@ export function findHandSpelledAppContextFixtures(
   allowlist: readonly string[] = APP_CONTEXT_FIXTURE_ALLOWLIST,
 ): string[] {
   const offenders: string[] = [];
-  for (const absolute of walk(repoRoot, [])) {
+  for (const absolute of repoTestFiles()) {
     const relative = path.relative(repoRoot, absolute).split(path.sep).join("/");
     if (relative === DETECTOR_OWN_TEST) continue;
     if (allowlist.includes(relative)) continue;

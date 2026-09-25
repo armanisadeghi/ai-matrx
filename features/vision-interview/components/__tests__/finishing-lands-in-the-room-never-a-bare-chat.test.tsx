@@ -32,6 +32,7 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
+import userAuthReducer from "@/lib/redux/slices/userAuthSlice";
 import { configureStore } from "@reduxjs/toolkit";
 
 import visionInterviewReducer, {
@@ -134,6 +135,9 @@ function makeStore() {
       messages: messagesReducer,
       activeRequests: activeRequestsReducer,
       appContext: appContextReducer,
+      // The real app store always carries the signed-in person; the document
+      // viewer reads their admin tier (useActionSurfaceProvider).
+      userAuth: userAuthReducer,
     },
     middleware: (getDefault) => getDefault({ serializableCheck: false }),
   });

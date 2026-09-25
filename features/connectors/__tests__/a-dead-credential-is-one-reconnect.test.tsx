@@ -228,6 +228,13 @@ function click(element: Element) {
   });
 }
 
+// The runner resolves the connection the provider window granted (its real
+// contract since the dialog reads the returned account, c24b5d5a93); a
+// renewal comes back on the same connection it renewed.
+beforeEach(() => {
+  run.mockResolvedValue({ connectionId: DEAD.id });
+});
+
 afterEach(() => {
   if (root) act(() => root!.unmount());
   container?.remove();

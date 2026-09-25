@@ -140,41 +140,81 @@ export async function readOutsideShare(
 }
 
 /**
- * What the invite door answered. TWO acts, not one (FIX-10C, VERIFIER-10 F7).
+ * What the outside share answered. THREE outcomes, one door (MOVE-AND-OUTSIDER,
+ * VERIFIER-19 finding 3).
  *
- * An address whose account is ALREADY a member of this organization is not an
- * outside share at all, so the door does the ordinary thing — it grants them
- * the table through `custom.share_grant`, the same door the people picker above
- * uses — and answers `granted: true` with no invitation, no link and no
- * message. It used to refuse and name that function at the person instead,
- * which is the dead end this whole panel exists to remove, rebuilt one floor
- * down.
+ * `custom.table_share_outside_grant` (G14) decides who the address is:
+ *   · an ACCOUNT OUTSIDE the organization — granted at once (`granted: true`,
+ *     `person: "outside_account"`), told so by notification, no link, no
+ *     "not yet joined". Notion and Airtable give an existing account access the
+ *     moment it is named, and so do we;
+ *   · a MEMBER of the organization — granted like a colleague (`person: "member"`);
+ *   · an address NOBODY signed up with — the invitation, with its link
+ *     (`invited: true`, `person: "no_account"`): the only case a link is needed.
+ * Until this lane the dialog called `table_share_outside_invite` for everyone, so
+ * an existing account got an invitation and, opening the table, read "You have
+ * not been given this table".
  */
 export interface OutsideInviteAnswer {
-  /** An `iam.invitations` row was written and a link minted. */
+  /** An `iam.invitations` row was written and a link minted (no account yet). */
   invited: boolean;
-  /** They were already inside, so they were given the table outright. */
+  /** They were given the table outright (an existing account, inside or out). */
   granted: boolean;
+  /** Who the store found the address to be. */
+  person?: "outside_account" | "member" | "no_account";
   say: string;
   /** Null when nobody was invited — an invitation that did not happen has no link. */
   accept_path: string | null;
   delivery: OutsideShareDelivery | null;
 }
 
-export async function inviteOutside(
+export async function shareWithOutsidePerson(
   organizationId: string,
   tableId: string,
   email: string,
   level: string,
 ): Promise<OutsideInviteAnswer> {
-  const { data, error } = await custom().rpc("table_share_outside_invite", {
+  const { data, error } = await custom().rpc("table_share_outside_grant", {
     p_organization_id: organizationId,
     p_table_id: tableId,
-    p_email: email,
+    p_person: email,
     p_level: level,
   });
+  if (error) throw new Error(error.hint ? `${error.message} ${error.hint}` : error.message);
+  const answer = data as unknown as Partial<OutsideInviteAnswer>;
+  return {
+    invited: answer.invited === true,
+    granted: answer.granted === true,
+    ...(answer.person ? { person: answer.person } : {}),
+    say: answer.say ?? "",
+    accept_path: answer.accept_path ?? null,
+    delivery: answer.delivery ?? null,
+  };
+}
+
+/** One table somebody else's organization shared with the person signed in, not yet opened. */
+export interface MyPendingTableInvitation {
+  invitation_id: string;
+  organization_id: string;
+  organization: string | null;
+  table_id: string;
+  table_name: string;
+  level: string;
+  level_label: string;
+  token: string;
+  expires_at: string | null;
+  say: string;
+}
+
+/**
+ * The person's own pending table invitations (`custom.table_share_outside_for_me`),
+ * so a table page that is not given to her yet can say "this was shared with you —
+ * open it" instead of "you have not been given this table".
+ */
+export async function myPendingTableInvitations(): Promise<MyPendingTableInvitation[]> {
+  const { data, error } = await custom().rpc("table_share_outside_for_me", {});
   if (error) throw new Error(error.message);
-  return data as unknown as OutsideInviteAnswer;
+  return (data ?? []) as MyPendingTableInvitation[];
 }
 
 export async function resendOutside(

@@ -20,6 +20,10 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
+import {
+  PendingTableInvitation,
+  usePendingTableInvitation,
+} from "@/features/sharing/outside/PendingTableInvitation";
 import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
@@ -239,6 +243,8 @@ export default function UnifiedDataTableRoute({
     shareHint,
     object.state === "stand-in" ? object.activeOrganizationId : null,
   );
+  /** A table shared with her from outside and not yet opened says so, rather than "not given". */
+  const pendingInvitation = usePendingTableInvitation(tableId, object.state === "not-given");
   const knownOrganizationName =
     object.state === "found"
       ? (myOrganizations.find((o) => o.id === object.organizationId)?.name ??
@@ -495,6 +501,10 @@ export default function UnifiedDataTableRoute({
       <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
         {object.state === "resolving" ? (
           <p className="text-sm text-muted-foreground">Opening the table&hellip;</p>
+        ) : object.state === "not-given" && pendingInvitation === undefined ? (
+          <p className="text-sm text-muted-foreground">Opening the table&hellip;</p>
+        ) : object.state === "not-given" && pendingInvitation ? (
+          <PendingTableInvitation invitation={pendingInvitation} />
         ) : object.state === "not-given" ? (
           /* THE HONEST REFUSAL. The store answers "not given to you" and "not there" the
              same way on purpose — a guessed link learns nothing — so the sentence says both,

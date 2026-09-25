@@ -95,6 +95,29 @@ jest.mock("next/navigation", () => ({
     __esModule: true,
     useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn(), refresh: jest.fn() }),
     useSearchParams: () => new URLSearchParams(),
+    usePathname: () => "/libraries/9978e2a8-71d1-40e2-80da-c0243dd1baab",
+}));
+// The access gate's platform resolver is a network RPC. Answered FROM the
+// read hint exactly as the real one does: a transient fault on a Library the
+// person owns comes back `ok` ("you do have access — try again"). A plain
+// function, so the suite's resetAllMocks cannot strip it.
+jest.mock("@/features/access-gate/service/accessDeniedContext", () => ({
+    fetchAccessDeniedContext: async (
+        token: string,
+        _id: string,
+        read: "access-question" | "fault",
+    ) => ({
+        status: read === "fault" ? "ok" : "missing",
+        disclosure: "full",
+        level: read === "fault" ? "admin" : "none",
+        isOwner: read === "fault",
+        entity: { token, label: "Library", title: "The Bike Shed" },
+        owner: null,
+        organization: null,
+        ancestor: null,
+        request: null,
+        canRequest: false,
+    }),
 }));
 jest.mock("../hooks/useActionRegistry", () => ({
     __esModule: true,
@@ -205,10 +228,15 @@ afterEach(() => {
 const NEVER_SYNCED = "This Library has never been brought up to date.";
 const COULD_NOT_CHECK = "We could not check whether this Library has been brought up to date";
 
-it("a failed row read never claims the Library has never synced — it says it could not check", async () => {
+// Since 2026-09-24 a Library whose row cannot be read, with none held, hands
+// the page to the canonical access gate (LibraryPage: "the one thing this page
+// is about is unavailable"), which tells denied / deleted / missing / fault
+// apart. D5's law is unchanged: a failed read is never "never synced".
+const GATE_FAULT = "You do have access to it — something went wrong on our side.";
+
+it("a failed row read never claims the Library has never synced — the gate says the read failed", async () => {
     // The row read fails (the CORS block the walk recorded); metrics succeeds
-    // independently, exactly as it did live — the stat block is real, the row
-    // is not.
+    // independently, exactly as it did live.
     getLibrary.mockRejectedValue(CORS_BLOCKED());
     getLibraryMetrics.mockResolvedValue(metricsPayload());
     listLibraryJobs.mockResolvedValue({ jobs: [], row_problems: [] });
@@ -217,19 +245,21 @@ it("a failed row read never claims the Library has never synced — it says it c
     await settle();
 
     expect(node.textContent).not.toContain(NEVER_SYNCED);
-    expect(node.textContent).toContain(COULD_NOT_CHECK);
-    // The metrics read is real and unrelated — it must still show through.
-    expect(node.textContent).toContain("Catalogued in this Library");
+    expect(node.textContent).toContain(GATE_FAULT);
+    const retry = Array.from(node.querySelectorAll("button")).find((b) =>
+        (b.textContent ?? "").includes("Try again"),
+    );
+    expect(retry).toBeDefined();
 });
 
-it("Retry on the freshness banner re-runs the row read and clears the honest 'could not check' state", async () => {
+it("Try again on the gate re-runs the row read and draws the Library with its real freshness", async () => {
     getLibrary.mockRejectedValueOnce(CORS_BLOCKED());
     getLibraryMetrics.mockResolvedValue(metricsPayload());
     listLibraryJobs.mockResolvedValue({ jobs: [], row_problems: [] });
 
     const node = await mount();
     await settle();
-    expect(node.textContent).toContain(COULD_NOT_CHECK);
+    expect(node.textContent).toContain(GATE_FAULT);
 
     getLibrary.mockResolvedValueOnce(
         libraryRow({ last_synced_at: "2026-09-19T21:12:06Z", last_sync_duration_ms: 3200 }),
@@ -237,15 +267,55 @@ it("Retry on the freshness banner re-runs the row read and clears the honest 'co
     const retry = Array.from(node.querySelectorAll("button")).find((b) =>
         (b.textContent ?? "").includes("Try again"),
     );
-    expect(retry).toBeDefined();
     await act(async () => {
         retry!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     await settle();
 
+    expect(getLibrary).toHaveBeenCalledTimes(2);
+    expect(node.textContent).not.toContain(GATE_FAULT);
     expect(node.textContent).not.toContain(COULD_NOT_CHECK);
     expect(node.textContent).not.toContain(NEVER_SYNCED);
     expect(node.textContent).toContain("Last brought up to date");
+    expect(node.textContent).toContain("Catalogued in this Library");
+});
+
+it("a failed 'still syncing' poll is recorded, never swallowed — the held Library stays and says the read failed", async () => {
+    // D5 root cause 1: the poll's catch swallowed every failure. The mount read
+    // succeeds with a row mid-run elsewhere; the poll that follows is blocked.
+    const intervals: Array<() => void> = [];
+    const setIntervalSpy = jest
+        .spyOn(window, "setInterval")
+        .mockImplementation(((fn: () => void) => {
+            intervals.push(fn);
+            return intervals.length as unknown as ReturnType<typeof setInterval>;
+        }) as typeof window.setInterval);
+    try {
+        getLibrary.mockResolvedValueOnce(libraryRow({ sync_status: "syncing" }));
+        getLibraryMetrics.mockResolvedValue(metricsPayload());
+        listLibraryJobs.mockResolvedValue({ jobs: [], row_problems: [] });
+
+        const node = await mount();
+        await settle();
+        expect(intervals.length).toBeGreaterThan(0);
+
+        getLibrary.mockRejectedValueOnce(CORS_BLOCKED());
+        await act(async () => {
+            intervals.forEach((tick) => tick());
+        });
+        await settle();
+
+        expect(getLibrary).toHaveBeenCalledTimes(2);
+        expect(node.textContent).toContain(
+            "The connection to the server dropped before this Library could be read.",
+        );
+        expect(node.textContent).not.toContain(NEVER_SYNCED);
+        // The held row is kept: a failed poll is not a gate.
+        expect(node.textContent).not.toContain(GATE_FAULT);
+        expect(node.textContent).toContain("The Bike Shed");
+    } finally {
+        setIntervalSpy.mockRestore();
+    }
 });
 
 it("a completed sync sets last_synced_at locally, so it never reads as never-synced the instant it finishes", async () => {

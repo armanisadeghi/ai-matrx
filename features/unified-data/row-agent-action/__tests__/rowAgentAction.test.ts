@@ -110,4 +110,36 @@ describe("no second read", () => {
     expect(offer.row_fields_summary).toBe("Patient: Tango\nVisit fee: 185.5");
     expect(offer.acting_person_can_edit).toBe(true);
   });
+
+  it("a target missing one of the four required values is refused by name, never silently read", async () => {
+    const { runRowAgentAction } = await import("../rowAgentAction");
+    const rpc = jest.fn();
+    const launches: Array<{ key: string; options: unknown }> = [];
+    const refusals: Array<{ title: string; why: string }> = [];
+    await runRowAgentAction({
+      target: {
+        ...target,
+        tableName: "Appointments",
+        fields: [{ id: "f1", key: "patient", label: "Patient", type: "text", sort: 0 }] as never,
+        document: { patient: "Tango" } as never,
+        // `level` is left off entirely — the one field an older records-ui, or a caller
+        // that regressed to it, would omit.
+      } as never,
+      dataSource: { rpc } as never,
+      actor: { actor: "user", user_id: "87a6e699-3622-4869-8843-d0867456c0dd", on_behalf_of: null } as never,
+      organizationId: "6069a466-1445-42df-a64e-cf37ecdc1b99",
+      actingPersonId: "87a6e699-3622-4869-8843-d0867456c0dd",
+      launchMandate: async (key, options) => {
+        launches.push({ key, options });
+      },
+      onRefused: (refusalTitle, why) => {
+        refusals.push({ title: refusalTitle, why });
+      },
+    });
+    expect(rpc).not.toHaveBeenCalled();
+    expect(launches).toHaveLength(0);
+    expect(refusals).toHaveLength(1);
+    expect(refusals[0]!.title).toBe('Could not start "Draft reminder"');
+    expect(refusals[0]!.why).toBe("The grid did not send this row's level.");
+  });
 });

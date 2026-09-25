@@ -69,7 +69,7 @@ export function OrganizationScopeStrip({
                 Change
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="start" className="w-72 p-2">
+            <PopoverContent /* sizing: fixed — the organization picker searches as you type; a content-sized box would reflow on every keystroke */ align="start" className="w-72 p-2">
               <OrganizationPickerPanel />
             </PopoverContent>
           </Popover>

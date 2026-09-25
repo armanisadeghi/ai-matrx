@@ -507,6 +507,8 @@ export function PermissionsList({
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7"
+                      aria-label={`Revoke access for ${getPermissionLabel(permission)}`}
+                      title={`Revoke access for ${getPermissionLabel(permission)}`}
                       onClick={() =>
                         setConfirmRevoke({ open: true, permission })
                       }

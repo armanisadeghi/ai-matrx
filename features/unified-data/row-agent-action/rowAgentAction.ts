@@ -22,7 +22,6 @@
  * read. `acting_person_can_edit` is the store's own answer (`myLevels`), never a guess.
  */
 
-import { createRecordsClient } from "@ai-matrx/records/core";
 import type { Field, PermissionLevel, RecordDocument, RecordsActor, RecordsDataSource } from "@ai-matrx/records";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
@@ -33,9 +32,8 @@ import type { DataTableRowActionOffer } from "@/types/python-generated/provision
  *
  * NO SECOND READ (records-ui, lane GRID-TAILS): the grid hands over the table's name, its
  * columns, the row as this reader sees it and the reader's level, so nothing is read again on
- * press. 🚨 SWAP ON INSTALL: records-ui 0.85.4 (installed today) does not send them yet, so they
- * are optional here and `runRowAgentAction` reads only what is missing; once the release that
- * carries them is installed, make all four required and delete the reads.
+ * press — records-ui 0.85.7 sends all four; a target missing one is refused by name rather than
+ * silently read again (see `runRowAgentAction`).
  */
 export interface RowAgentActionTarget {
   tableId: string;
@@ -43,10 +41,10 @@ export interface RowAgentActionTarget {
   title: string;
   action: string;
   prompt: string;
-  tableName?: string;
-  fields?: readonly Field[];
-  document?: RecordDocument;
-  level?: PermissionLevel | null;
+  tableName: string;
+  fields: readonly Field[];
+  document: RecordDocument;
+  level: PermissionLevel | null;
 }
 
 /** One column of the offer, as `data.table_row_action` names it. */
@@ -162,10 +160,21 @@ export function launchRefusal(e: unknown): string {
   return "The agent could not be started, and it did not say why.";
 }
 
+/** Which required field of the target is missing, named so the refusal says exactly why. */
+function missingTargetField(target: RowAgentActionTarget): string | null {
+  if (target.tableName === undefined || target.tableName === null) return "tableName";
+  if (target.fields === undefined || target.fields === null) return "fields";
+  if (target.document === undefined || target.document === null) return "document";
+  if (target.level === undefined) return "level";
+  return null;
+}
+
 /**
- * Read what the offer needs through the person's own records client, then launch.
+ * Launch on what the grid already handed over — never a second read.
  * Every refusal is said, in the store's words, through `onRefused` — a button that did
- * nothing when pressed is the failure this whole port exists to avoid.
+ * nothing when pressed is the failure this whole port exists to avoid. A target missing one of
+ * the four required values is refused BY NAME: silently falling back to a store read would hide
+ * a caller that regressed to an older records-ui shape.
  */
 export async function runRowAgentAction(args: {
   target: RowAgentActionTarget;
@@ -177,48 +186,23 @@ export async function runRowAgentAction(args: {
   onRefused: (title: string, why: string) => void;
 }): Promise<void> {
   const { target } = args;
-  // Everything the grid handed over is used as it came; only what an older records-ui did not
-  // send is read (see SWAP ON INSTALL above).
-  const carried = target.tableName !== undefined && target.fields !== undefined && target.document !== undefined && target.level !== undefined;
-  let tableName = target.tableName ?? "";
-  let fields: readonly Field[] = target.fields ?? [];
-  let document: Record<string, unknown> = (target.document ?? {}) as Record<string, unknown>;
-  let level: PermissionLevel | null = target.level ?? null;
-  if (!carried) {
-    const client = createRecordsClient({
-      dataSource: args.dataSource,
-      actor: args.actor,
-      organizationId: args.organizationId,
-    });
-    const [tables, read, record, levels] = await Promise.all([
-      client.tableList(),
-      client.fields({ table_id: target.tableId }),
-      client.recordRead({ record_id: target.recordId }),
-      client.myLevels({ ids: [target.recordId] }),
-    ]);
-    const refusal = [tables, read, record].find((answer) => !answer.ok);
-    if (refusal && !refusal.ok) {
-      args.onRefused(`Could not start "${target.action}"`, refusal.error.message);
-      return;
-    }
-    if (!tables.ok || !read.ok || !record.ok) return;
-    tableName = tables.data.find((t) => t.id === target.tableId)?.name ?? "";
-    fields = read.data;
-    document = (record.data.document ?? {}) as Record<string, unknown>;
-    level = levels.ok ? (levels.data.find((l) => l.id === target.recordId)?.level ?? null) : null;
+  const missing = missingTargetField(target);
+  if (missing) {
+    args.onRefused(`Could not start "${target.action}"`, `The grid did not send this row's ${missing}.`);
+    return;
   }
   const offer = rowAgentOffer({
     target,
-    tableName: tableName || "this table",
-    columns: fields.map((f) => ({
+    tableName: target.tableName || "this table",
+    columns: target.fields.map((f) => ({
       display_name: f.label,
       field_name: f.key,
       data_type: f.type,
       sort: f.sort,
     })),
-    document,
+    document: target.document as Record<string, unknown>,
     actingPersonId: args.actingPersonId,
-    actingPersonCanEdit: level !== null && WRITES.has(level),
+    actingPersonCanEdit: target.level !== null && WRITES.has(target.level),
   });
   try {
     await args.launchMandate(MANDATE_KEYS.data__row_action, rowAgentLaunch(target, offer, args.organizationId));

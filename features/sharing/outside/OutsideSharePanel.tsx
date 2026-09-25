@@ -53,7 +53,7 @@ import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils"
 
 import {
   absoluteInviteUrl,
-  inviteOutside,
+  shareWithOutsidePerson,
   readOutsideShare,
   resendOutside,
   revokeOutside,
@@ -281,11 +281,12 @@ export function OutsideSharePanel({
             disabled={!email.trim() || busy === "invite"}
             onClick={() =>
               void run("invite", async () => {
-                const answer = await inviteOutside(organizationId, tableId, email.trim(), level);
+                const answer = await shareWithOutsidePerson(organizationId, tableId, email.trim(), level);
                 setEmail("");
-                // They were already inside and were given the table outright —
-                // the row for that lives in the grant list above, so ask the
-                // host to re-read it (FIX-10C F7).
+                // An existing account (inside or outside the organization) was
+                // given the table outright — the row for that lives in the grant
+                // list above, so ask the host to re-read it (FIX-10C F7,
+                // MOVE-AND-OUTSIDER). Only an address with no account is invited.
                 if (answer.granted) onGranted?.();
                 return answer;
               })
@@ -296,7 +297,7 @@ export function OutsideSharePanel({
             ) : (
               <Send className="mr-1.5 h-4 w-4" />
             )}
-            Invite
+            Share
           </Button>
         </div>
       ) : null}

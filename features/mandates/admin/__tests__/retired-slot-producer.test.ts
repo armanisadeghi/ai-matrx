@@ -7,6 +7,21 @@ function source(path: string): string {
   return readFileSync(join(REPO_ROOT, path), "utf8");
 }
 
+/**
+ * next.config.js exports a phase function since the one-dev-server guard
+ * (2026-09-24): Next calls it with the build phase. Resolve it exactly that
+ * way — the production build's phase, which is what serves these redirects.
+ */
+function resolvedNextConfig(): {
+  redirects: () => Promise<Array<{ source: string; destination: string; permanent: boolean }>>;
+} {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { PHASE_PRODUCTION_BUILD } = require("next/constants");
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const exported = require(join(REPO_ROOT, "next.config.js"));
+  return typeof exported === "function" ? exported(PHASE_PRODUCTION_BUILD) : exported;
+}
+
 describe("retired Mandate producer contract", () => {
   it("keeps runtime reads and writes on the canonical Mandate tables and API", () => {
     const runtimeSource = [
@@ -32,8 +47,7 @@ describe("retired Mandate producer contract", () => {
   });
 
   it("permanently redirects both retired slot URLs to Mandates", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const nextConfig = require(join(REPO_ROOT, "next.config.js"));
+    const nextConfig = resolvedNextConfig();
     const redirects: Array<{
       source: string;
       destination: string;
@@ -53,8 +67,7 @@ describe("retired Mandate producer contract", () => {
   });
 
   it("permanently redirects the pre-detach /agents/mandates URLs", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const nextConfig = require(join(REPO_ROOT, "next.config.js"));
+    const nextConfig = resolvedNextConfig();
     const redirects: Array<{
       source: string;
       destination: string;

@@ -91,7 +91,7 @@ jest.mock("@/providers/google-provider/GoogleApiProvider", () => ({
   useGoogleAPI: () => ({ isGoogleLoaded: true }),
 }));
 
-const run = jest.fn(() => Promise.resolve());
+const run = jest.fn();
 
 jest.mock("../google-adapter", () => ({
   useGoogleConsentRunner: () => ({ run, ready: true }),
@@ -194,6 +194,13 @@ function mount() {
     );
   });
 }
+
+// The runner resolves the connection the provider window granted (its real
+// contract since the dialog reads the returned account, c24b5d5a93); a
+// renewal comes back on the same connection it renewed.
+beforeEach(() => {
+  run.mockResolvedValue({ connectionId: REFUSED.id });
+});
 
 afterEach(() => {
   act(() => root.unmount());

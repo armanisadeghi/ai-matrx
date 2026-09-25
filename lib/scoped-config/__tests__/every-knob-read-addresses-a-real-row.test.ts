@@ -35,6 +35,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { knobAddress, type KnobRef } from "../effectiveKnobs";
+import { RUN_OUTPUT_KINDS, RUN_WAIT_KNOB_FEATURE, runWaitKnobKey } from "@/lib/api/run-wait";
 
 const ROOT = join(__dirname, "..", "..", "..");
 const AIDREAM = process.env.AIDREAM_DIR ?? join(ROOT, "..", "aidream");
@@ -282,6 +283,9 @@ const COMPUTED_REFS: Record<string, string> = {
     "reads each pair straight out of its own declared TOOL_ORG_KNOBS table via " +
     "refs.map((ref) => ensureEffectiveKnob(...)) — a member access on a local " +
     "declaration, the same shape as the other three entries above",
+  "lib/api/run-wait.ts":
+    "one read per output kind at `agents.run_wait` / runWaitKnobKey(kind); every kind in " +
+    "RUN_OUTPUT_KINDS is proven seeded by the 'run-wait' case below",
 };
 
 describe("the knob address", () => {
@@ -332,6 +336,16 @@ describe("the census of client knob reads", () => {
       }
     }
     expect(misses).toEqual([]);
+  });
+
+  it("run-wait: every output kind a run can wait on addresses a seeded row", () => {
+    // The computed address above is only excused because this proves it: a
+    // new kind added to RUN_OUTPUT_KINDS without its `<kind>_seconds` seed
+    // (migrations/agents_run_wait_knobs.sql) fails here by name.
+    const unseeded = RUN_OUTPUT_KINDS.map((kind) => runWaitKnobKey(kind)).filter(
+      (key) => !pairs.has(`${RUN_WAIT_KNOB_FEATURE} ${key}`),
+    );
+    expect(unseeded).toEqual([]);
   });
 
   it("names every read whose address is assembled at run time", () => {

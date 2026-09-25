@@ -25,8 +25,10 @@ jest.mock("@ai-matrx/design-system/data-table/uuid-cell", () => ({
 jest.mock("next/navigation", () => ({
   usePathname: () => "/cms/html-pages",
   useRouter: () => ({ replace, push: jest.fn() }),
+  // The TABLE view, named in the URL: grid became the default on 2026-09-23
+  // (3d595830ab), and this suite is about the canonical table.
   useSearchParams: () =>
-    new URLSearchParams("q=launch&sort=meta_title&dir=asc"),
+    new URLSearchParams("view=table&q=launch&sort=meta_title&dir=asc"),
 }));
 jest.mock("./HtmlPagesContextMenu", () => ({
   HtmlPagesContextMenu: ({ children }: { children: React.ReactNode }) =>
@@ -60,7 +62,7 @@ describe("HtmlPageListView", () => {
     window.history.replaceState(
       null,
       "",
-      "/cms/html-pages?q=launch&sort=meta_title&dir=asc",
+      "/cms/html-pages?view=table&q=launch&sort=meta_title&dir=asc",
     );
     host = document.createElement("div");
     document.body.append(host);
@@ -130,7 +132,7 @@ describe("HtmlPageListView", () => {
       });
     });
     expect(replace).toHaveBeenLastCalledWith(
-      "/cms/html-pages?q=description&sort=meta_description",
+      "/cms/html-pages?view=table&q=description&sort=meta_description",
       { scroll: false },
     );
 
@@ -151,7 +153,7 @@ describe("HtmlPageListView", () => {
       });
     });
     expect(replace).toHaveBeenLastCalledWith(
-      "/cms/html-pages?q=launch&ix=1&sort=meta_title&dir=asc",
+      "/cms/html-pages?view=table&q=launch&ix=1&sort=meta_title&dir=asc",
       { scroll: false },
     );
   });

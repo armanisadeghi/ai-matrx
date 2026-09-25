@@ -23,7 +23,7 @@
 import { redirect } from "next/navigation";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { createClient } from "@/utils/supabase/server";
-import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { checkIsUserAdmin } from "@/utils/supabase/userSessionData";
 import { agentPathFor } from "@/features/agents/addressing/agentAddress";
 
@@ -68,7 +68,10 @@ export default async function AgentGoPage({
   if (row) {
     // Only a builtin's address depends on the viewer, so only a builtin pays
     // for the admin read. The same test the `(admin)` layout gates on.
-    const { user } = row.agent_type === "builtin" ? await getServerAuth() : { user: null };
+    // The SETTLED verdict: an identity check that could not answer waits on
+    // /auth/verifying and retries, instead of reading an admin as a guest and
+    // sending them to the member address.
+    const { user } = row.agent_type === "builtin" ? await getSessionVerdict() : { user: null };
     const isAdmin = user ? await checkIsUserAdmin(supabase, user.id) : false;
     // The sub-route comes from OUR route segments, never from a raw string,
     // and is re-validated anyway: an arbitrary value here would be an open

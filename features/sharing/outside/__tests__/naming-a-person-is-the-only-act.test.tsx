@@ -32,7 +32,7 @@ const mockRead = jest.fn();
 jest.mock("../outsideShareService", () => ({
   __esModule: true,
   absoluteInviteUrl: (p: string) => `https://app.test${p}`,
-  inviteOutside: jest.fn(),
+  shareWithOutsidePerson: jest.fn(),
   resendOutside: jest.fn(),
   revokeOutside: jest.fn(),
   openOutsideLane: jest.fn(),
@@ -116,7 +116,7 @@ describe("the outside-share panel never draws a switch in front of the invite", 
   it("in the ordinary case (lane on by default) draws the invite and the people list, and no switch", async () => {
     const seen = await draw(answer({}));
     expect(seen.hasEmailField).toBe(true);
-    expect(seen.buttons).toContain("Invite");
+    expect(seen.buttons).toContain("Share");
     expect(seen.text).toContain("dana.whitfield@harborviewpm.net");
     expect(seen.buttons.some((b) => TURN_ON.test(b))).toBe(false);
   });
@@ -134,7 +134,7 @@ describe("the outside-share panel never draws a switch in front of the invite", 
     // The store's old sentence promised a control; the panel never repeats it.
     expect(seen.text).not.toMatch(/you can turn it on/i);
     expect(seen.buttons.some((b) => TURN_ON.test(b))).toBe(false);
-    expect(seen.buttons).not.toContain("Invite");
+    expect(seen.buttons).not.toContain("Share");
     expect(seen.hasEmailField).toBe(false);
   });
 

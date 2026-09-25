@@ -41,12 +41,21 @@ import type {
   ValidateCronResponse,
 } from "./schedulerApi.types";
 import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  applyOrganizationContextHeader,
-  requireOrganizationContext,
-} from "@/lib/api/organization-context";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+// 🚨 THE GATE, NOT THE BARE KERNEL (SOURCE-KEY, 2026-09-24). This client used
+// to read `requireOrganizationContext` directly — fail-closed and SYNCHRONOUS,
+// so a signed-in person with no workspace selected got a bare toast
+// ("Select an organization before sending this request.") from `/schedules/new`
+// with no way to continue: the app-wide "ask, then continue" gate
+// (`OrganizationGateDialog`, mounted once in `DeferredSingletonCore`) never
+// opened, because nothing here ever asked it to. `ensureOrganizationContext`
+// is the awaited half of the same guard `callApi` already uses at its own
+// transport boundary — it resolves the EXPLICIT id if the caller already has
+// one (unchanged), otherwise opens the picker, waits for the choice, commits
+// it as the active organization, and returns it — so the request this
+// function is building for continues with the answer instead of dying and
+// making the person press Create again. See `lib/organization/organization-gate.ts`.
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 
 // ── Base URL + auth ────────────────────────────────────────────────────────
 
@@ -66,11 +75,9 @@ async function authHeaders(
       "Not authenticated — cannot reach aidream /scheduler endpoints",
     );
   }
-  const store = getStoreSingleton();
-  const organizationId = requireOrganizationContext(
-    store ? selectOrganizationId(store.getState()) : null,
-    explicitOrganizationId,
-  );
+  const organizationId = await ensureOrganizationContext({
+    organizationId: explicitOrganizationId,
+  });
   return applyOrganizationContextHeader(
     {
       "Content-Type": "application/json",
