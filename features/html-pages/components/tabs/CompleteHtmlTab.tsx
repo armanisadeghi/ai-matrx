@@ -51,10 +51,12 @@ export function CompleteHtmlTab({ state, actions }: HtmlPreviewTabProps) {
             </div>
             <textarea
                 ref={completeTextareaRef}
-                value={(actions as any).getCurrentHtmlContent?.() || ''}
+                // The same document "Copy Complete HTML" copies. This read a
+                // `getCurrentHtmlContent` that the state never had (hidden by
+                // an `as any`), so the tab sat on its placeholder forever.
+                value={actions.generateCompleteHtmlFromSources()}
                 readOnly
                 className="flex-1 w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent overflow-y-auto"
-                placeholder="Loading complete HTML..."
             />
         </div>
     );

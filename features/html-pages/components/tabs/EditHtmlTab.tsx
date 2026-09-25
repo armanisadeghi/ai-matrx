@@ -15,13 +15,16 @@ export function EditHtmlTab({ state, actions }: HtmlPreviewTabProps) {
         ref={editorWrapperRef}
         className="flex-1 min-h-0 border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden"
       >
+        {/* Edits the page body source (content.html) — the one file every
+            other tab and Publish build from. This used to call a
+            `getCurrentHtmlContent` / `setEditedCompleteHtml` the state never
+            had (hidden by `as any`): the editor opened empty and every edit
+            was silently dropped. */}
         <SmallCodeEditor
           language="html"
-          initialCode={(actions as any).getCurrentHtmlContent?.() || ""}
+          initialCode={state.contentHtml}
           onChange={(newCode) => {
-            if (newCode) {
-              (actions as any).setEditedCompleteHtml?.(newCode);
-            }
+            if (newCode !== undefined) actions.setContentHtml(newCode);
           }}
           height={editorWrapperHeight ? `${editorWrapperHeight}px` : undefined}
         />
