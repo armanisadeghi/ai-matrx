@@ -1439,6 +1439,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
                 onCancel={handleCancelEdit}
                 analysisData={analysisData}
                 messageId={messageId}
+                conversationId={conversationId}
                 tabs={[
                   "write",
                   "matrx_split",

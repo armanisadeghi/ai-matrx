@@ -69,6 +69,8 @@ export interface MatrxSplitProps {
   /** Passed to MarkdownStream preview (e.g. structured blocks in message context) */
   analysisData?: MarkdownStreamProps["analysisData"];
   messageId?: string;
+  /** Preserve conversation-scoped render context inside editor previews. */
+  conversationId?: MarkdownStreamProps["conversationId"];
   allowFullScreenEditor?: boolean;
   /** Extra className on the MarkdownStream in the preview pane */
   previewMarkdownClassName?: string;
@@ -165,6 +167,7 @@ export function MatrxSplit({
   syncScroll = true,
   analysisData,
   messageId,
+  conversationId,
   allowFullScreenEditor,
   previewMarkdownClassName,
   onPreviewChange,
@@ -205,6 +208,7 @@ export function MatrxSplit({
           hideCopyButton={hideCopyButton}
           analysisData={analysisData}
           messageId={messageId}
+          conversationId={conversationId}
           allowFullScreenEditor={allowFullScreenEditor && !readOnly}
           contentClassName={previewMarkdownClassName}
           onContentChange={previewChange}
@@ -219,6 +223,7 @@ export function MatrxSplit({
         hideCopyButton={hideCopyButton}
         analysisData={analysisData}
         messageId={messageId}
+        conversationId={conversationId}
         allowFullScreenEditor={allowFullScreenEditor && !readOnly}
         className={previewMarkdownClassName}
         onContentChange={previewChange}

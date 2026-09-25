@@ -222,7 +222,11 @@ function AgentRunWindowSidebar({
       scopeId={`${surfaceKey ?? "agent-run-window"}:history:${canonicalAgentId}`}
       agentIds={[canonicalAgentId]}
       surfaceId="agent-runner"
-      activeConversationId={activeConversationId}
+      // The active conversation is already rendered and highlighted in the
+      // "In this window" section above. Keep the shared history list's rows
+      // unselected here so one conversation is never highlighted twice in
+      // this window. Other sidebar consumers retain their active-row behavior.
+      activeConversationId={null}
       onOpenConversation={handleOpenConversation}
       openInPlace
       surfaceKey={surfaceKey ?? undefined}

@@ -150,6 +150,7 @@ interface FullScreenMarkdownEditorProps {
   onChange?: (newContent: string) => void;
   analysisData?: Record<string, unknown>;
   messageId?: string;
+  conversationId?: string;
   title?: string;
   description?: string;
   showCopyButton?: boolean;
@@ -1024,6 +1025,7 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
   onPrimaryAction,
   analysisData,
   messageId,
+  conversationId,
   title = "Edit Content",
   description = "A dialog for editing content with options to write in markdown, use a rich text editor, preview the content, analyze it, or view metadata.",
   showCopyButton = true,
@@ -1171,6 +1173,7 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
           textareaClassName="text-base font-mono"
           analysisData={analysisData}
           messageId={messageId}
+          conversationId={conversationId}
           allowFullScreenEditor={false}
         />,
       ),
@@ -1235,6 +1238,7 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
                 isStreamActive={false}
                 analysisData={analysisData}
                 messageId={messageId}
+                conversationId={conversationId}
                 allowFullScreenEditor={false}
               />
             </div>

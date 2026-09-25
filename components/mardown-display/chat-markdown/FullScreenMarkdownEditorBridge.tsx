@@ -235,6 +235,7 @@ export function FullScreenMarkdownEditorBridge({
       initialTab={initialTab}
       analysisData={analysisData}
       messageId={messageId}
+      conversationId={conversationId}
       title={title}
       description={description}
       showSaveButton={showSaveButton}
