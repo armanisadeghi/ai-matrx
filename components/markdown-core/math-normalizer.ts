@@ -252,26 +252,34 @@ function convertBracketDisplayInProse(text: string): string {
   );
 }
 
+/** TeX that no prose carries: a command, a superscript, a brace, a relation or `+`, a subscript on a letter. */
+const BRACKET_TEX_SIGNAL = /\\[A-Za-z]+|[\^{}=<>+]|_\{|(?:^|[^A-Za-z0-9])[A-Za-z]_[A-Za-z0-9](?![A-Za-z0-9])/;
+
 /**
- * `\[word\]` is two ESCAPED BRACKETS around prose — CommonMark's literal
- * "[word]" — not display math. Math between `\[ \]` always carries something
- * a sentence does not: a TeX command, a digit, an operator, a sub/superscript,
- * a brace, or a lone variable. The one rule for every reader: the renderer
- * (below) and the rich editor's island view (components/rich-editor).
+ * THE escaped-bracket rule: a closed `\[ … \]` is display math only when its
+ * content is real TeX and the `\[` does not index an identifier. Everything
+ * else — citations `\[1\]`, dates, task boxes `- \[x\]`, `arr\[i\]`,
+ * `\[bracket\]` — is CommonMark's escaped brackets, literal text
+ * (verify-RC-B4 R3-2). The rule's home is `@ai-matrx/content-ir`
+ * `isEscapedBracketMath` (aidream 094594d3a1, shared vectors
+ * `escaped-bracket-vectors.json`); this is its exact copy until that release
+ * is installed here — then import it and delete this.
  */
-export function isEscapedBracketProse(tex: string): boolean {
-  const body = tex.trim();
-  return /^\p{L}[\p{L}\s'’",.!?;:]*$/u.test(body) && /\p{L}{2,}/u.test(body) && !body.includes("\n");
+export function isEscapedBracketMath(content: string, before: string | undefined): boolean {
+  if (!content.trim()) return false;
+  if (before !== undefined && /[A-Za-z0-9_)\]]/.test(before)) return false;
+  return BRACKET_TEX_SIGNAL.test(content);
 }
 
 function normalizeText(text: string): string {
   let t = text;
   // \[…\] → display block. Blank lines around it so remark-math sees a flow
   // fence; the TeX goes on its own lines (`$$x$$` alone on a line is INLINE).
-  // Escaped brackets around prose stay literal (isEscapedBracketProse).
+  // Escaped brackets that are not TeX stay literal (isEscapedBracketMath).
   t = t.replace(
     /\\\[((?:(?!\n[ \t]*\n)[\s\S])*?)\\\]/g,
-    (match: string, tex: string) => (isEscapedBracketProse(tex) ? match : `\n\n$$\n${tex.trim()}\n$$\n\n`),
+    (match: string, tex: string, offset: number, whole: string) =>
+      isEscapedBracketMath(tex, offset > 0 ? whole[offset - 1] : undefined) ? `\n\n$$\n${tex.trim()}\n$$\n\n` : match,
   );
   // \(…\) → inline. With single-dollar math off, remark-math's inline form is
   // `$$…$$` inside running text — NO paragraph breaks, so a formula inside a
