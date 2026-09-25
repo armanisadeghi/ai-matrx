@@ -20,7 +20,12 @@
 //   - trailing `[id]: partial-url` definition line → held back until its line ends
 //   - `![alt][id]` / `[text][id]` before `[id]:` arrives → held back / plain text
 
-import remend, { isWithinCodeBlock, type RemendHandler } from "remend";
+import remend, {
+  isWithinCodeBlock,
+  isWithinMathBlock,
+  type RemendHandler,
+} from "remend";
+import { isSingleDollarMath, singleDollarMathEnd } from "@ai-matrx/content-ir/source";
 import { SYNTAX_STREAM_HANDLERS } from "./syntax/stream-heal-syntax";
 
 const TRAILING_REFERENCE_DEFINITION = /(^|\n) {0,3}\[[^\]\n]+\]:[^\n]*$/;
@@ -126,10 +131,111 @@ const pendingEmptyEmphasis: RemendHandler = {
   },
 };
 
+/**
+ * An unclosed single-`$` formula on the last line (`For $N = 120{`,
+ * `$\mathbb`) is held back from its `$` until it closes — it would print as
+ * raw TeX. Whether a `$` opens math is THE core rule (isSingleDollarMath from
+ * @ai-matrx/content-ir/source), so currency (`$35 per stop`) keeps showing.
+ * A bare trailing `$` is held for the one chunk until its next character says.
+ */
+const pendingInlineMath: RemendHandler = {
+  name: "matrx-pending-inline-math",
+  priority: 2,
+  handle: (text) => {
+    const lineStart = text.lastIndexOf("\n") + 1;
+    let i = lineStart;
+    while (i < text.length) {
+      const ch = text[i];
+      if (ch === "\\") {
+        i += 2;
+        continue;
+      }
+      if (ch === "`") {
+        // Skip a closed inline code span; an open one is literal to the end.
+        const close = text.indexOf("`", i + 1);
+        if (close === -1) return text;
+        i = close + 1;
+        continue;
+      }
+      if (ch !== "$") {
+        i += 1;
+        continue;
+      }
+      if (text[i + 1] === "$") {
+        // Display math — remend closes `$$`.
+        const close = text.indexOf("$$", i + 2);
+        if (close === -1) return text;
+        i = close + 2;
+        continue;
+      }
+      const end = singleDollarMathEnd(text, i);
+      if (end !== -1) {
+        i = end;
+        continue;
+      }
+      const partial = text.slice(i + 1);
+      const opensMath =
+        partial === "" ||
+        (!/^\s/.test(partial) && isSingleDollarMath(partial.trimEnd(), undefined));
+      if (
+        opensMath &&
+        !isWithinCodeBlock(text, i) &&
+        !isWithinMathBlock(text, i)
+      ) {
+        return text.slice(0, i);
+      }
+      i += 1;
+    }
+    return text;
+  },
+};
+
+const TABLE_ROW = /^\s*\|/;
+const DELIMITER_CELL = /^\s*:?-+:?\s*$/;
+
+function tableCells(row: string): string[] {
+  return row.trim().replace(/^\|/, "").replace(/\|$/, "").split("|");
+}
+
+/**
+ * A table whose header has arrived but whose delimiter row has not (or is
+ * still growing: `|---`, fewer cells than the header) is not a table yet —
+ * parsed as-is it prints raw pipes. Hold the table back until the delimiter
+ * row is whole; hold back a body row whose closing `|` has not arrived.
+ */
+const pendingTable: RemendHandler = {
+  name: "matrx-pending-table",
+  priority: 3,
+  handle: (text) => {
+    const lines = text.split("\n");
+    let start = lines.length;
+    while (start > 0 && TABLE_ROW.test(lines[start - 1])) start -= 1;
+    if (start === lines.length) return text;
+    const offset = lines.slice(0, start).join("\n").length + (start > 0 ? 1 : 0);
+    if (isWithinCodeBlock(text, offset)) return text;
+    const rows = lines.slice(start);
+    const headerCells = tableCells(rows[0]).length;
+    const delimiter = rows[1];
+    const delimiterWhole =
+      delimiter !== undefined &&
+      tableCells(delimiter).every((cell) => DELIMITER_CELL.test(cell)) &&
+      tableCells(delimiter).length === headerCells &&
+      (rows.length > 2 || delimiter.trimEnd().endsWith("|"));
+    if (!delimiterWhole) return text.slice(0, offset).replace(/\n$/, "\n");
+    const last = rows[rows.length - 1];
+    if (rows.length > 2 && !last.trimEnd().endsWith("|")) {
+      return lines.slice(0, lines.length - 1).join("\n");
+    }
+    return text;
+  },
+};
+
 const REMEND_OPTIONS = {
   linkMode: "text-only" as const,
   handlers: [
     pendingBracketedTail,
+    pendingInlineMath,
+    pendingTable,
     pendingReferenceDefinition,
     pendingReferenceUses,
     pendingEmptyEmphasis,
