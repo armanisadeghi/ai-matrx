@@ -44,6 +44,7 @@ import type {
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import type { AgentWritePolicy } from "@/features/cms/types";
 import type { CmsHubSiteSummaryEntry } from "./cms.manifest";
+import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -793,7 +794,8 @@ You can also WRITE here, through apply_surface_write, and which targets you are 
         "Production-grade website editing agent — pages, navigation, footer, contact and social details, shared components. Writes through the guarded CMS tools under the site's agent write policy.",
       kind: "single",
       // Platform agent "Site Editor".
-      defaultAgentId: "d188520f-b7ba-421e-bb5f-48a49cd82ce2",
+      defaultAgentId: null,
+      mandateKey: dbAuthoredMandateKey("cms.site_editing"),
       sortOrder: 100,
     },
     {
@@ -803,7 +805,8 @@ You can also WRITE here, through apply_surface_write, and which targets you are 
         "Designs and adjusts the site's theme tokens (colors, fonts, spacing) from brand direction.",
       kind: "single",
       // Platform agent "Color Concepts".
-      defaultAgentId: "ab003d53-a6cf-4abc-a12e-22d235d90f65",
+      defaultAgentId: null,
+      mandateKey: dbAuthoredMandateKey("cms.theme_design"),
       sortOrder: 110,
     },
     {
@@ -813,7 +816,8 @@ You can also WRITE here, through apply_surface_write, and which targets you are 
         "Writes and improves page copy across the site from briefs, keywords, and brand voice.",
       kind: "single",
       // Platform agent "Website Content Writer".
-      defaultAgentId: "9061c874-11f0-442b-be82-c5d0250806f1",
+      defaultAgentId: null,
+      mandateKey: dbAuthoredMandateKey("cms.content_writing"),
       sortOrder: 120,
     },
   ],

@@ -41,6 +41,7 @@ import type {
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import type { AgentWritePolicy } from "@/features/cms/types";
+import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -736,7 +737,8 @@ active_tab says where the user is and therefore what content and selection conta
       // Platform agent "Site Editor" — authors, edits, verifies, and publishes
       // client-site pages through the guarded CMS tools (bound 2026-08-13; the
       // role sat dormant with no default agent since it was declared).
-      defaultAgentId: "d188520f-b7ba-421e-bb5f-48a49cd82ce2",
+      defaultAgentId: null,
+      mandateKey: dbAuthoredMandateKey("cms.site_editing"),
       sortOrder: 100,
     },
     {
@@ -746,7 +748,8 @@ active_tab says where the user is and therefore what content and selection conta
         "Default agent offered for meta title/description/keywords work on the SEO tab.",
       kind: "single",
       // Platform agent "Website Content Writer".
-      defaultAgentId: "9061c874-11f0-442b-be82-c5d0250806f1",
+      defaultAgentId: null,
+      mandateKey: dbAuthoredMandateKey("cms.seo_metadata"),
       sortOrder: 110,
     },
     {
@@ -756,7 +759,8 @@ active_tab says where the user is and therefore what content and selection conta
         "Default agent offered to review a draft before a human publishes it.",
       kind: "single",
       // Platform agent "Site Editor" (verification is half its job).
-      defaultAgentId: "d188520f-b7ba-421e-bb5f-48a49cd82ce2",
+      defaultAgentId: null,
+      mandateKey: dbAuthoredMandateKey("cms.publish_review"),
       sortOrder: 120,
     },
   ],

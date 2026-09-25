@@ -58,9 +58,8 @@ import { parseMandateWave1 } from "@/features/mandates/provision-shapes";
 import {
   contractOfMandate,
   holderOfMandate,
-  holderOfBinding,
-  type MandateBindingRow,
 } from "@/lib/supabase/mandateStorage";
+import { defaultAnswerSettingsOf } from "@/features/bindings/system-answer-record";
 import { ProvisionOfferComposer } from "./ProvisionOfferComposer";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentCustomExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
@@ -616,14 +615,12 @@ function ReferenceRow({ exemplar }: { exemplar: MandateExemplarRow }) {
 
 export function MandateTestBench({
   mandate,
-  globalBinding,
   baselineLabel = "System default",
   presetLatestCandidate = false,
   autoRunSignal = 0,
   passesUserInput,
 }: {
   mandate: MandateDefinitionRow;
-  globalBinding?: MandateBindingRow;
   /** Code truth: some call site sends this mandate a user message, so the ad-hoc
    * runner offers one. `undefined` = code truth could not answer, which is NOT
    * the same as "no" — the runner offers the field anyway. */
@@ -645,11 +642,9 @@ export function MandateTestBench({
   // composer is one `.update()` away from being the bypass the gated door
   // (`PUT /mandates/{key}/default-holder`) exists to close. The bench only ever
   // needed the effective HOLDER, so that is what it computes and passes down.
-  const bindingHolder = globalBinding ? holderOfBinding(globalBinding) : null;
-  const effectiveHolder =
-    bindingHolder && (bindingHolder.holderId || bindingHolder.versionId)
-      ? bindingHolder
-      : holderOfMandate(mandate);
+  // The answer for everybody is the job's own default (aidream 1041 retired
+  // the global rung), so the default IS the effective holder.
+  const effectiveHolder = holderOfMandate(mandate);
   const store = useAppStore();
   const [exemplars, setExemplars] = useState<MandateExemplarRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1008,7 +1003,7 @@ export function MandateTestBench({
       <TryItNowPanel
         mandate={mandate}
         effectiveHolder={effectiveHolder}
-        consumptionMap={globalBinding?.consumption_map}
+        consumptionMap={defaultAnswerSettingsOf(mandate).consumption_map}
         defaultAgentId={defaultAgentId}
         passesUserInput={passesUserInput}
         onSavedTestCase={() => void loadExemplars()}

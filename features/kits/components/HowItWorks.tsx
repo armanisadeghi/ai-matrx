@@ -12,14 +12,14 @@ import type { KitBinding, KitManifest } from "../types";
 
 function Connector() {
   return (
-    <div className="flex shrink-0 items-center justify-center text-border lg:w-10" aria-hidden>
+    <div className="flex shrink-0 items-center justify-center text-border xl:w-10" aria-hidden>
       {/* horizontal on wide screens */}
-      <svg className="hidden h-4 w-10 lg:block" viewBox="0 0 40 16" fill="none">
+      <svg className="hidden h-4 w-10 xl:block" viewBox="0 0 40 16" fill="none">
         <path d="M0 8 H32" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 3" />
         <path d="M30 3 L37 8 L30 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       {/* vertical on phones */}
-      <svg className="h-7 w-4 lg:hidden" viewBox="0 0 16 28" fill="none">
+      <svg className="h-7 w-4 xl:hidden" viewBox="0 0 16 28" fill="none">
         <path d="M8 0 V20" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 3" />
         <path d="M3 18 L8 25 L13 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
@@ -58,6 +58,27 @@ function Node({
   );
 }
 
+/** `{{model_selection_guidance}}`, breakable only at its underscores — never mid-word. */
+function VariableName({ name }: { name: string }) {
+  const parts = name.split("_");
+  return (
+    <code className="font-mono text-[12.5px]">
+      {"{{"}
+      {parts.map((p, i) => (
+        <span key={i}>
+          {p}
+          {i < parts.length - 1 && (
+            <>
+              _<wbr />
+            </>
+          )}
+        </span>
+      ))}
+      {"}}"}
+    </code>
+  );
+}
+
 export function describeBinding(b: KitBinding): string {
   switch (b.semantic_type) {
     case "collection":
@@ -87,7 +108,7 @@ export function HowItWorks({ manifest }: { manifest: KitManifest }) {
       {lanes.map(({ agent, b, table, workflows }) => (
         <div
           key={`${agent.key}:${b.variable}`}
-          className="flex flex-col items-stretch rounded-xl border border-dashed border-border bg-muted/20 p-3 lg:flex-row lg:items-center"
+          className="flex flex-col items-stretch rounded-xl border border-dashed border-border bg-muted/20 p-3 xl:flex-row xl:items-center"
         >
           <Node tone="table" icon={<Table2 className="h-3.5 w-3.5" />} eyebrow="Your table" title={table?.name ?? b.binding.table_key}>
             {table ? `${table.records.length} example rows · ${table.fields.length} columns` : null}
@@ -105,7 +126,7 @@ export function HowItWorks({ manifest }: { manifest: KitManifest }) {
             tone="agent"
             icon={<BrainCircuit className="h-3.5 w-3.5" />}
             eyebrow="Agent variable"
-            title={<code className="break-all font-mono text-[12.5px]">{`{{${b.variable}}}`}</code>}
+            title={<VariableName name={b.variable} />}
           >
             in {agent.name}
           </Node>

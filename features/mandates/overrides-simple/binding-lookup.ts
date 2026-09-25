@@ -52,9 +52,8 @@ export function findBinding(
   userId: string | null,
   organizationId: string | null,
 ): MandateBindingRowDb | null {
-  // The bottom rung is the definition, never a binding; "global" is the same
-  // answer (aidream 1037).
-  if (rung === DEFAULT_HOLDER_RUNG || rung === "global") return null;
+  // The bottom rung is the definition, never a binding.
+  if (rung === DEFAULT_HOLDER_RUNG) return null;
   if (rung === "org") {
     if (!organizationId) return null;
     return (

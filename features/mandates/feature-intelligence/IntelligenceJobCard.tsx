@@ -46,7 +46,6 @@ function decidedWords(row: FeatureIntelligenceRow, orgLevel: boolean): string {
     case "org":
       return orgLevel ? "Your organization's choice" : `${row.decidedBy}'s choice`;
     case "system":
-    case "global":
       return "Default";
     default:
       return "Not assigned";

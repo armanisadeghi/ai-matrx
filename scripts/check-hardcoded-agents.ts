@@ -25,9 +25,21 @@
  *      that nothing reads at run time (FEATURE.md "manifest seed-mirror
  *      ruling"). The marker is the contract: it says "mirror of the mandate's
  *      system default, not a second authority".
- *   2. `defaultAgentId:` inside features/surfaces/manifests/** — manifests are
- *      seeded into `ui_surface_agent_role` and are seed mirrors by ruling.
- *   3. an entry in the reason-required allowlist (ALLOWLIST_FILE).
+ *   2. an entry in the reason-required allowlist (ALLOWLIST_FILE).
+ *
+ * 🚨 SURFACE MANIFESTS HAVE NO SEED-MIRROR EXEMPTION (2026-09-25). The old
+ * ruling called a manifest's `defaultAgentId` a seed mirror; it was not —
+ * manifest sync copies it into `ui_surface_agent_role.default_agent_id`, and
+ * `resolveSurfaceConfig` RUNS it, ahead of the mandate tier. So under
+ * features/surfaces/manifests/**: every agent-shaped UUID is a violation
+ * whatever comment sits above it, and any `defaultAgentId:` whose value is not
+ * `null` is a violation even when the id arrives through an imported constant
+ * (rule MANIFEST_DEFAULT_AGENT_RE). The legal form is `mandateKey` on the role
+ * (`ManifestAgentRole` makes the literal a type error too).
+ *
+ * AGENT ROSTERS: a UUID keyed `id:` inside a top-level const whose NAME says
+ * agent (`AI_POST_PROCESS_AGENTS = [{ id: "uuid" }]`) is an agent id — the
+ * transcription-cleanup roster launched three that way unseen until 2026-09-25.
  *   Also skipped: tests, `types/`, `.next`, node_modules, demo routes
  *   (`app/(dev)/`) — sample code is not a wired surface.
  *
@@ -75,6 +87,11 @@ const SKIP_FILE = /(\.test\.tsx?$|\.spec\.tsx?$|\.d\.ts$)/;
 const SEED_MIRROR_WINDOW = 10;
 const SEED_MIRROR_RE = /seed[ -]?mirror/i;
 const MANIFEST_DIR_RE = /^features\/surfaces\/manifests\//;
+/** `defaultAgentId: <anything but null>` — an agent id reaching a manifest by any route. */
+const MANIFEST_DEFAULT_AGENT_RE = /\bdefaultAgentId\s*:\s*(?!\s|null\b)([^,}\n]+)/g;
+/** Nearest top-level `const NAME` above a literal names an agent roster. */
+const ROSTER_CONST_RE = /^(?:export\s+)?const\s+([A-Za-z_$][\w$]*)/;
+const ROSTER_NAME_RE = /agent/i;
 
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/g;
 const AGENT_NAME_RE = /agent(?:_|-)?id|agentId|promptId|defaultAgentId|AGENT_ID|_AGENT\b/i;
@@ -166,17 +183,44 @@ function enclosingEntryPoint(src: string, idx: number): string | null {
   return best;
 }
 
-interface ScanResult {
+export interface ScanResult {
   violations: Site[];
   seedMirrors: Site[];
-  manifestDefaults: Site[];
+}
+
+/** Top-level `const` name enclosing line `lineIdx`, if the nearest one above is at column 0. */
+function enclosingConstName(lines: string[], lineIdx: number): string | null {
+  for (let i = lineIdx; i >= 0; i--) {
+    const m = ROSTER_CONST_RE.exec(lines[i]);
+    if (m) return m[1];
+    if (/^(?:export\s+)?(?:function|class|interface|type)\b/.test(lines[i])) return null;
+  }
+  return null;
 }
 
 function scanFile(file: string, out: ScanResult): void {
-  const src = readFileSync(file, "utf8");
-  if (!/-4[0-9a-f]{3}-/.test(src)) return; // cheap pre-filter
-  const rel = relative(ROOT, file);
+  scanSource(relative(ROOT, file), readFileSync(file, "utf8"), out);
+}
+
+/** Scan one file's source. Exported for the self-test. */
+export function scanSource(rel: string, src: string, out: ScanResult): void {
   const lines = src.split("\n");
+  const isManifest = MANIFEST_DIR_RE.test(rel);
+  if (isManifest) {
+    MANIFEST_DEFAULT_AGENT_RE.lastIndex = 0;
+    for (let m = MANIFEST_DEFAULT_AGENT_RE.exec(src); m; m = MANIFEST_DEFAULT_AGENT_RE.exec(src)) {
+      const lineNo = src.slice(0, m.index).split("\n").length;
+      const t = lines[lineNo - 1].trimStart();
+      if (t.startsWith("//") || t.startsWith("*")) continue;
+      out.violations.push({
+        file: rel,
+        line: lineNo,
+        symbol: "manifest:defaultAgentId",
+        uuid: m[1].trim().replace(/^["'`]|["'`]$/g, ""),
+      });
+    }
+  }
+  if (!/-4[0-9a-f]{3}-/.test(src)) return; // cheap pre-filter
   const lineOf = (idx: number) => src.slice(0, idx).split("\n").length;
 
   UUID_RE.lastIndex = 0;
@@ -214,12 +258,20 @@ function scanFile(file: string, out: ScanResult): void {
         isAgent = true;
       }
     }
+    if (!isAgent && symbol === "id") {
+      const roster = enclosingConstName(lines, lineIdx);
+      if (roster && ROSTER_NAME_RE.test(roster)) {
+        symbol = `${roster}[].id`;
+        isAgent = true;
+      }
+    }
     if (!isAgent) continue;
 
     const site: Site = { file: rel, line: lineNo, symbol: symbol ?? "(unnamed)", uuid };
 
-    if (MANIFEST_DIR_RE.test(rel) && symbol === "defaultAgentId") {
-      out.manifestDefaults.push(site);
+    if (isManifest) {
+      // A literal `defaultAgentId: "uuid"` was already reported by the manifest rule.
+      if (symbol !== "defaultAgentId") out.violations.push(site);
       continue;
     }
     const windowStart = Math.max(0, lineIdx - SEED_MIRROR_WINDOW);
@@ -340,6 +392,24 @@ function selfTest(): void {
     if (!ok) failed++;
     console.log(`${ok ? C.green + "✓" : C.red + "✗"}${C.reset} ${rule.id} ${C.dim}(fires on plant: ${fired}; silent in a comment: ${commented})${C.reset}`);
   }
+  // Agent-id rules: each plant must fire (or stay silent) exactly as stated.
+  const U = "7239e128-2a07-4d68-8292-0f530be6f754";
+  const M = "features/surfaces/manifests/planted.manifest.ts";
+  const agentCases: Array<{ name: string; rel: string; src: string; expect: number }> = [
+    { name: "manifest literal defaultAgentId", rel: M, src: `const r = [{ name: "x", defaultAgentId: "${U}" }];`, expect: 1 },
+    { name: "manifest defaultAgentId via imported constant", rel: M, src: `import { X_AGENT_ID } from "@/x";\nconst r = [{ defaultAgentId: X_AGENT_ID, sortOrder: 1 }];`, expect: 1 },
+    { name: "manifest SEED MIRROR marker no longer exonerates", rel: M, src: `// SEED MIRROR of the mandate default\nconst ROOM_AGENT_ID = "${U}";`, expect: 1 },
+    { name: "manifest defaultAgentId: null + mandateKey is legal", rel: M, src: `const r = [{ defaultAgentId: null, mandateKey: MANDATE_KEYS.war_room__room }];`, expect: 0 },
+    { name: "agent roster `id:` literal", rel: "components/x/ai-agents.ts", src: `export const AI_POST_PROCESS_AGENTS = [\n  {\n    id: "${U}",\n  },\n];`, expect: 1 },
+    { name: "non-agent const `id:` literal stays silent", rel: "components/x/rows.ts", src: `export const SAMPLE_ROWS = [\n  {\n    id: "${U}",\n  },\n];`, expect: 0 },
+  ];
+  for (const c of agentCases) {
+    const out: ScanResult = { violations: [], seedMirrors: [] };
+    scanSource(c.rel, c.src, out);
+    const ok = out.violations.length === c.expect;
+    if (!ok) failed++;
+    console.log(`${ok ? C.green + "✓" : C.red + "✗"}${C.reset} ${c.name} ${C.dim}(violations: ${out.violations.length}, expected ${c.expect})${C.reset}`);
+  }
   exitAfterDrain(failed > 0 ? 1 : 0);
 }
 
@@ -383,7 +453,7 @@ function main(): void {
 
   const files: string[] = [];
   for (const d of SCAN_DIRS) walk(join(ROOT, d), files);
-  const result: ScanResult = { violations: [], seedMirrors: [], manifestDefaults: [] };
+  const result: ScanResult = { violations: [], seedMirrors: [] };
   for (const f of files) scanFile(f, result);
   const modelChoices: ModelChoiceSite[] = [];
   for (const f of files) modelChoices.push(...scanModelChoices(relative(ROOT, f), readFileSync(f, "utf8")));
@@ -438,7 +508,6 @@ function main(): void {
           newSites,
           allowlisted,
           seedMirrors: result.seedMirrors,
-          manifestDefaults: result.manifestDefaults,
           staleBaseline,
           staleAllow,
           modelChoices,
@@ -465,7 +534,7 @@ function main(): void {
 
   if (newSites.length === 0) {
     console.log(
-      `${C.green}✓ No NEW hardcoded agent ids.${C.reset} ${C.dim}(${live.length} baselined, ${allowlisted.length} allowlisted, ${result.seedMirrors.length} SEED MIRROR, ${result.manifestDefaults.length} manifest defaultAgentId)${C.reset}`,
+      `${C.green}✓ No NEW hardcoded agent ids.${C.reset} ${C.dim}(${live.length} baselined, ${allowlisted.length} allowlisted, ${result.seedMirrors.length} SEED MIRROR; surface manifests carry no agent id)${C.reset}`,
     );
   } else {
     console.log(

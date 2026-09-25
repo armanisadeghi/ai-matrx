@@ -43,7 +43,10 @@ export interface RichContentProps {
   /** The source text — markdown, math, XML sections, fences. */
   source: string;
   level: RichContentLevel;
-  /** True while the source is still streaming in (standard / full). */
+  /**
+   * True while the source is still streaming in. Inline: heal half-arrived
+   * syntax (omit to inherit a live stream; `false` for whole text).
+   */
   isStreaming?: boolean;
   className?: string;
   /** Nested-rendering depth cap (standard / full). */

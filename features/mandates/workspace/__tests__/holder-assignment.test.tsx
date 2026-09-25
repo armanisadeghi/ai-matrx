@@ -103,7 +103,7 @@ function renderSystemBar(opts: {
         rung="system"
         organizationId={null}
         allowGlobal
-        fixedRung={["system", "global"]}
+        fixedRung="system"
         perspective="system"
         healthNote={opts.healthNote ?? null}
         onRungChange={() => undefined}

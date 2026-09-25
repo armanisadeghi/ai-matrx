@@ -6,13 +6,11 @@
  * whole room. Like the thread surface it is a real chat (parents to
  * `matrx-user/chat` via the `ui_surface` row) with dictionary support.
  *
- * AGENT ID vs AGENT MANDATE: the room agent's runtime default is the
- * `war_room.room` AGENT MANDATE (`WAR_ROOM_ROOM_AGENT_MANDATE` in
- * `features/war-room/constants`) — that is what the War Room actually runs.
- * A manifest is STATIC module-scope data seeded into `ui_surface_agent_role`,
- * so it cannot resolve a mandate; the id below is a SEED MIRROR of the mandate's
- * system default, not a second authority. Rebinding the mandate does not require
- * touching it, and nothing in War Room reads it at run time.
+ * AGENT MANDATE: the role's platform default is the `war_room.room` AGENT MANDATE
+ * (`mandateKey` on the role below) — manifest sync writes the key to
+ * `ui_surface_agent_role.mandate_key` and `resolveSurfaceConfig` resolves the
+ * current Holder at run time, so rebinding the mandate rebinds the role. No agent
+ * id lives in this file (2026-09-25; it used to be a raw `defaultAgentId`).
  *
  * Runtime scope assembly lives in `features/war-room/lib/war-room-scope.ts`
  * (`buildWarRoomRoomScope`); the emitter is the `<SurfaceRuntimeProvider>` in
@@ -27,9 +25,8 @@ import type {
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
-// Seed mirror of the `war_room.room` mandate's system default (see the header).
-const WAR_ROOM_ROOM_AGENT_ID = "7239e128-2a07-4d68-8292-0f530be6f754";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -452,7 +449,8 @@ The cockpit view values (view_mode, projected_tab, density) describe how the use
       description:
         "The room-spanning agent for a whole War Room — aware of every thread and its attachments, helping the user reason across the room.",
       kind: "single",
-      defaultAgentId: WAR_ROOM_ROOM_AGENT_ID,
+      defaultAgentId: null,
+      mandateKey: MANDATE_KEYS.war_room__room,
       allowCustom: true,
       autoRun: "never",
       sortOrder: 10,

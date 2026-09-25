@@ -28,6 +28,7 @@ import type {
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
 
 /** Per-slot summary entry inside `custom_slots_summary`. */
 export interface CleanupSlotSummary {
@@ -553,7 +554,8 @@ export const transcriptsCleanupManifest: SurfaceManifest = {
         "Produces the cleaned transcript from the raw transcript (the Clean container). Runs on mic completion and via the Clean Up button.",
       kind: "single",
       // Platform default: "Transcription Cleaner Context Policies" (system agent).
-      defaultAgentId: "9cae3831-9895-4ddb-97cd-2ded3d3f443b",
+      defaultAgentId: null,
+      mandateKey: dbAuthoredMandateKey("transcripts.clean_with_context"),
       allowCustom: true,
       autoRun: "user-choice",
       sortOrder: 10,

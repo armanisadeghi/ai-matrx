@@ -24,6 +24,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
 } from "@/features/surfaces/types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 export const CRM_CHASEBOX_SURFACE_NAME = "matrx-user/crm-chasebox";
 
@@ -211,7 +212,8 @@ eligibility are decided by one authority server-side.
       // conversational per D-W5-3. It judges each AI-written line against the
       // fact and source page supplied beside it; it has no send, approve,
       // edit, or reject path and never claims one.
-      defaultAgentId: "fa6a4506-a658-41c0-9094-8a370e490849",
+      defaultAgentId: null,
+      mandateKey: MANDATE_KEYS.crm__outreach_draft_reviewer,
       sortOrder: 100,
     },
   ],

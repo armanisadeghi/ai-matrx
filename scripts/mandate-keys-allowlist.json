@@ -58,5 +58,80 @@
     "file": "features/marketing/seo/topical-map/panel/topicCuration.ts",
     "key": "seo.topic_curation",
     "reason": "Declared in aidream d2b14cee (2026-09-18, the Topical Map Topic Agent); package republish pending \u2014 @ai-matrx/agents on npm predates the regenerated key set. Remove this row and swap the literal for MANDATE_KEYS.seo__topic_curation once the package publishes the key."
+  },
+  {
+    "file": "features/surfaces/manifests/cms-site.manifest.ts",
+    "key": "cms.site_editing",
+    "reason": "Declared in aidream 394d97a50a (2026-09-25, surface-role mandates; behavior-neutral seed = the agent the role's raw defaultAgentId named) and LIVE (mandate.definition row origin='code', synced 2026-09-25). The installed @ai-matrx/agents 0.13.7 predates it. Switch to MANDATE_KEYS.cms__site_editing and remove this row once the package republishes."
+  },
+  {
+    "file": "features/surfaces/manifests/cms-site.manifest.ts",
+    "key": "cms.theme_design",
+    "reason": "Declared in aidream 394d97a50a (2026-09-25, surface-role mandates; behavior-neutral seed = the agent the role's raw defaultAgentId named) and LIVE (mandate.definition row origin='code', synced 2026-09-25). The installed @ai-matrx/agents 0.13.7 predates it. Switch to MANDATE_KEYS.cms__theme_design and remove this row once the package republishes."
+  },
+  {
+    "file": "features/surfaces/manifests/cms-site.manifest.ts",
+    "key": "cms.content_writing",
+    "reason": "Declared in aidream 394d97a50a (2026-09-25, surface-role mandates; behavior-neutral seed = the agent the role's raw defaultAgentId named) and LIVE (mandate.definition row origin='code', synced 2026-09-25). The installed @ai-matrx/agents 0.13.7 predates it. Switch to MANDATE_KEYS.cms__content_writing and remove this row once the package republishes."
+  },
+  {
+    "file": "features/surfaces/manifests/cms-page.manifest.ts",
+    "key": "cms.site_editing",
+    "reason": "Declared in aidream 394d97a50a (2026-09-25, surface-role mandates; behavior-neutral seed = the agent the role's raw defaultAgentId named) and LIVE (mandate.definition row origin='code', synced 2026-09-25). The installed @ai-matrx/agents 0.13.7 predates it. Switch to MANDATE_KEYS.cms__site_editing and remove this row once the package republishes."
+  },
+  {
+    "file": "features/surfaces/manifests/cms-page.manifest.ts",
+    "key": "cms.seo_metadata",
+    "reason": "Declared in aidream 394d97a50a (2026-09-25, surface-role mandates; behavior-neutral seed = the agent the role's raw defaultAgentId named) and LIVE (mandate.definition row origin='code', synced 2026-09-25). The installed @ai-matrx/agents 0.13.7 predates it. Switch to MANDATE_KEYS.cms__seo_metadata and remove this row once the package republishes."
+  },
+  {
+    "file": "features/surfaces/manifests/cms-page.manifest.ts",
+    "key": "cms.publish_review",
+    "reason": "Declared in aidream 394d97a50a (2026-09-25, surface-role mandates; behavior-neutral seed = the agent the role's raw defaultAgentId named) and LIVE (mandate.definition row origin='code', synced 2026-09-25). The installed @ai-matrx/agents 0.13.7 predates it. Switch to MANDATE_KEYS.cms__publish_review and remove this row once the package republishes."
+  },
+  {
+    "file": "features/surfaces/manifests/cms-component.manifest.ts",
+    "key": "cms.site_editing",
+    "reason": "Declared in aidream 394d97a50a (2026-09-25, surface-role mandates; behavior-neutral seed = the agent the role's raw defaultAgentId named) and LIVE (mandate.definition row origin='code', synced 2026-09-25). The installed @ai-matrx/agents 0.13.7 predates it. Switch to MANDATE_KEYS.cms__site_editing and remove this row once the package republishes."
+  },
+  {
+    "file": "features/surfaces/manifests/marketing-backlinks.manifest.ts",
+    "key": "seo.backlink_analysis",
+    "reason": "Declared in aidream 394d97a50a (2026-09-25, surface-role mandates; behavior-neutral seed = the agent the role's raw defaultAgentId named) and LIVE (mandate.definition row origin='code', synced 2026-09-25). The installed @ai-matrx/agents 0.13.7 predates it. Switch to MANDATE_KEYS.seo__backlink_analysis and remove this row once the package republishes."
+  },
+  {
+    "file": "features/surfaces/manifests/marketing-backlinks.manifest.ts",
+    "key": "crm.outreach_strategy",
+    "reason": "Declared in aidream 394d97a50a (2026-09-25, surface-role mandates; behavior-neutral seed = the agent the role's raw defaultAgentId named) and LIVE (mandate.definition row origin='code', synced 2026-09-25). The installed @ai-matrx/agents 0.13.7 predates it. Switch to MANDATE_KEYS.crm__outreach_strategy and remove this row once the package republishes."
+  },
+  {
+    "file": "features/surfaces/manifests/crm-outreach-lists.manifest.ts",
+    "key": "crm.outreach_strategy",
+    "reason": "Declared in aidream 394d97a50a (2026-09-25, surface-role mandates; behavior-neutral seed = the agent the role's raw defaultAgentId named) and LIVE (mandate.definition row origin='code', synced 2026-09-25). The installed @ai-matrx/agents 0.13.7 predates it. Switch to MANDATE_KEYS.crm__outreach_strategy and remove this row once the package republishes."
+  },
+  {
+    "file": "features/surfaces/manifests/mermaid-editor.manifest.ts",
+    "key": "mermaid.diagram_editing",
+    "reason": "Declared in aidream 394d97a50a (2026-09-25, surface-role mandates; behavior-neutral seed = the agent the role's raw defaultAgentId named) and LIVE (mandate.definition row origin='code', synced 2026-09-25). The installed @ai-matrx/agents 0.13.7 predates it. Switch to MANDATE_KEYS.mermaid__diagram_editing and remove this row once the package republishes."
+  },
+  {
+    "file": "features/surfaces/manifests/transcripts-cleanup.manifest.ts",
+    "key": "transcripts.clean_with_context",
+    "reason": "Declared in aidream 394d97a50a (2026-09-25, surface-role mandates; behavior-neutral seed = the agent the role's raw defaultAgentId named) and LIVE (mandate.definition row origin='code', synced 2026-09-25). The installed @ai-matrx/agents 0.13.7 predates it. Switch to MANDATE_KEYS.transcripts__clean_with_context and remove this row once the package republishes."
+  },
+  {
+    "file": "components/official-candidate/transcription-cleanup/ai-agents.ts",
+    "key": "transcripts.clean_with_context",
+    "reason": "Declared in aidream 394d97a50a (2026-09-25; seed = the agent id this file used to hard-code) and LIVE (mandate.definition origin='code'). The installed @ai-matrx/agents 0.13.7 predates it. Switch to MANDATE_KEYS.transcripts__clean_with_context and remove this row once the package republishes."
+  },
+  {
+    "file": "components/official-candidate/transcription-cleanup/ai-agents.ts",
+    "key": "transcripts.clean_with_context_variable",
+    "reason": "Declared in aidream 394d97a50a (2026-09-25; seed = the agent id this file used to hard-code) and LIVE (mandate.definition origin='code'). The installed @ai-matrx/agents 0.13.7 predates it. Switch to MANDATE_KEYS.transcripts__clean_with_context_variable and remove this row once the package republishes."
+  },
+  {
+    "file": "components/official-candidate/transcription-cleanup/ai-agents.ts",
+    "key": "transcripts.clean_without_context",
+    "reason": "Declared in aidream 394d97a50a (2026-09-25; seed = the agent id this file used to hard-code) and LIVE (mandate.definition origin='code'). The installed @ai-matrx/agents 0.13.7 predates it. Switch to MANDATE_KEYS.transcripts__clean_without_context and remove this row once the package republishes."
   }
 ]

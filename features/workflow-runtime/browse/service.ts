@@ -169,12 +169,20 @@ export async function setWorkflowFlag(
   workflowId: string,
   patch: Database["workflow"]["Tables"]["definition"]["Update"],
 ): Promise<void> {
-  const { error } = await supabase
+  // `.select` so a write that matched nothing (no such row, or RLS hid it) is a
+  // named failure — never a success that changed nothing.
+  const { data, error } = await supabase
     .schema("workflow")
     .from("definition")
     .update(patch)
-    .eq("id", workflowId);
+    .eq("id", workflowId)
+    .select("id");
   if (error) throw pgError(error);
+  if (!data || data.length === 0) {
+    throw new Error(
+      `The workflow ${workflowId} was not changed: it does not exist or you may not edit it.`,
+    );
+  }
 }
 
 /**

@@ -35,6 +35,8 @@ import {
   DATAFORSEO_DETAIL_LIMIT_MIN,
 } from "@/features/marketing/data/integrations-schema";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -416,7 +418,8 @@ Freshness has two clocks: backlink_summary carries when the KPI snapshot was col
       // Platform agent `backlink_analyst` (builtin, public) — WP5 of the
       // outreach program. Diagnoses the link profile only; it hands off to
       // `outreach_strategist` for anything actionable.
-      defaultAgentId: "7de8df67-a08b-432a-b1ef-f0fd756a244f",
+      defaultAgentId: null,
+      mandateKey: dbAuthoredMandateKey("seo.backlink_analysis"),
       sortOrder: 100,
     },
     {
@@ -428,7 +431,8 @@ Freshness has two clocks: backlink_summary carries when the KPI snapshot was col
       // Platform agent `outreach_strategist` (builtin, public) — WP5 of the
       // outreach program. Plans and drafts ONLY; it never sends, and it has
       // no contact-lookup capability on this surface.
-      defaultAgentId: "6a8c6a97-a473-440f-87b1-ab09e02adfa2",
+      defaultAgentId: null,
+      mandateKey: dbAuthoredMandateKey("crm.outreach_strategy"),
       sortOrder: 110,
     },
     {
@@ -443,7 +447,8 @@ Freshness has two clocks: backlink_summary carries when the KPI snapshot was col
       // footprints are added deterministically by the run's own variants, and
       // volume is measured by the real lookup on this screen — the agent never
       // states a volume, difficulty, or CPC it does not have.
-      defaultAgentId: "ed0b568d-a32d-463c-8dc6-a6f3191ee0d2",
+      defaultAgentId: null,
+      mandateKey: MANDATE_KEYS.seo__keyword_expander,
       sortOrder: 120,
     },
   ],

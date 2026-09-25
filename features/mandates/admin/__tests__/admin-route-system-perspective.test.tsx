@@ -370,11 +370,11 @@ describe("the admin route renders the SYSTEM's answer and only that", () => {
     act(() => root.unmount());
   });
 
-  it("pins the binding UI to the two rungs that decide for everybody, and to nothing else", async () => {
+  it("pins the binding UI to the one rung that decides for everybody, and to nothing else", async () => {
     const { root } = await renderWorkspace("admin-route");
-    // `research_client.output_slides` has NO platform-wide binding, so the job's
-    // own default is what answers — and it is where the page opens.
-    expect(bindingProps?.fixedRung).toEqual(["system", "global"]);
+    // The answer for everybody is the job's own default (no global rung —
+    // aidream 1041), and it is where the page opens.
+    expect(bindingProps?.fixedRung).toEqual("system");
     // Never a person's or an organization's rung.
     expect(bindingProps?.fixedRung).not.toContain("user");
     expect(bindingProps?.fixedRung).not.toContain("org");
@@ -404,19 +404,12 @@ describe("organization scope remains distinct from the viewing administrator", (
     act(() => root.unmount());
   });
 
-  it("lists global and organization configuration without the viewing user's row or an effective verdict", async () => {
+  it("lists the default and organization configuration without the viewing user's row or an effective verdict", async () => {
     const principal = { kind: "org" as const, orgId: "org-1" };
     const { root, container } = await renderWorkspace("route", principal);
     const system = ladderRows[0] as Record<string, unknown>;
     ladderRows = [
       system,
-      {
-        ...system,
-        rung: "global",
-        binding_id: "global-row",
-        dropped_code: null,
-        dropped_reason: null,
-      },
       {
         ...system,
         rung: "org",
@@ -456,7 +449,7 @@ describe("organization scope remains distinct from the viewing administrator", (
       'table[aria-label="Configured Mandate Holders"]',
     );
     expect(table).not.toBeNull();
-    expect(table?.textContent).toContain("Global binding");
+    expect(table?.textContent).toContain("System default");
     expect(table?.textContent).toContain("Write Target Sandbox");
     expect(table?.textContent).not.toContain("Your own binding");
     expect(table?.textContent).toContain("Pinned Mandate Holder");

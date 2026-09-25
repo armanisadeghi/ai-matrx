@@ -20,32 +20,17 @@
 // `default_config_overrides` and `default_auto_run`; the default door
 // (`PUT /mandates/{key}/default-holder`) stores them; the binding door refuses
 // `principal_type: "global"` (409 `mandate_system_answer_is_the_default`) and
-// the database refuses the row too. So there is ONE record, and the functions
+// the database refuses the row too (aidream 1041 retired the rung). So there is ONE record, and the functions
 // below say so rather than choosing.
 //
 // Documented for humans in `features/mandates/FEATURE.md` § The system answer.
 
 import { isJsonObject, type JsonObject } from "@/types/json";
 
-/**
- * IS THERE A LIVE PLATFORM-WIDE BINDING? — a LEGACY row, from before aidream
- * 1037. Nothing writes one any more; a screen that finds one says so (it still
- * outranks the default until it is removed) rather than editing it.
- */
-export function hasLiveGlobalBinding(
-  bindings: readonly { principal_type: string; is_enabled?: boolean | null }[],
-): boolean {
-  return bindings.some(
-    (b) => b.principal_type === "global" && b.is_enabled !== false,
-  );
-}
-
 /** The ONE record a system answer lives in. There is no second. */
 export type SystemAnswerRecord = "definition-default";
 
 export interface SystemAnswerDraft {
-  /** Is there a live legacy `principal_type = 'global'` binding on this mandate? */
-  hasGlobalBinding: boolean;
   /** Does the draft map any of the job's offered values to a holder input? */
   carriesMapping: boolean;
   /** Does the draft carry captured settings overrides for the holder? */

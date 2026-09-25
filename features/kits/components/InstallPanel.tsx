@@ -7,7 +7,6 @@
 
 import Link from "next/link";
 import {
-  AlertTriangle,
   ArrowRight,
   Building2,
   Check,
@@ -15,11 +14,15 @@ import {
   ExternalLink,
   Loader2,
   PackageCheck,
+  Users,
   RotateCw,
   Trash2,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
+import { ErrorNotice } from "./ErrorNotice";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useUserOrganizations } from "@/features/organizations/hooks";
@@ -27,7 +30,6 @@ import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/Unif
 import { toast } from "@/lib/toast";
 import { cn } from "@/utils/cn";
 import { KIT_INSTALLS_TABLE, KIT_ROUTES, KIT_WORD } from "../constants";
-import { removalSummary } from "../installer";
 import type { useKitInstall } from "../hooks/useKitInstall";
 import type { InstallStepView, KitManifest } from "../types";
 
@@ -138,16 +140,35 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
 
   const onRemove = async () => {
     if (!install) return;
-    const s = removalSummary(install);
+    let facts;
+    try {
+      facts = await api.removalFacts();
+    } catch (err) {
+      toast.error(`Could not read what would be removed: ${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
+    if (!facts) return;
+    const tableLines = facts.tables.map(
+      (t) =>
+        `the "${t.name}" table and every row in it (${t.rows} example ${t.rows === 1 ? "row" : "rows"} plus anything added since) — restorable for ${
+          t.retentionDays ? `${t.retentionDays} days` : "as long as the table's own retention setting allows"
+        }`,
+    );
     const what = [
-      s.tables && `${s.tables} ${s.tables === 1 ? "table" : "tables"} and every row in ${s.tables === 1 ? "it" : "them"}`,
-      s.agents && `${s.agents} agent ${s.agents === 1 ? "copy" : "copies"}`,
-      s.workflows && `${s.workflows} ${s.workflows === 1 ? "workflow" : "workflows"}`,
+      ...tableLines,
+      facts.agents > 0 && `${facts.agents === 1 ? "the agent copy" : `${facts.agents} agent copies`} — restorable from the agents archive with no time limit (no purge policy applies)`,
+      facts.workflows > 0 && `${facts.workflows === 1 ? "the workflow" : `${facts.workflows} workflows`} — restorable from the workflows archive with no time limit`,
+    ].filter((x): x is string => typeof x === "string");
+    const breaks = [
+      facts.conversations && facts.conversations > 0
+        ? `${facts.conversations} ${facts.conversations === 1 ? "conversation" : "conversations"} with the agent copy will no longer be able to continue.`
+        : null,
+      "Any workflow, agent or schedule you built on these tables or this agent stops working until they are restored.",
     ].filter(Boolean);
     const ok = await confirm({
-      title: `Remove what "${manifest.name}" created?`,
-      description: `This archives ${what.length ? what.join(", ") : "nothing yet"} — exactly what this install made in ${orgName}, including any rows you added to those tables since. Anything else you have is untouched. Archived items can be restored from their own archive for a while.`,
-      confirmLabel: "Remove",
+      title: `Remove what "${manifest.name}" created in ${orgName}?`,
+      description: `This archives exactly what this install made: ${what.join("; ")}. ${breaks.join(" ")} Nothing else you have is touched.`,
+      confirmLabel: "Archive them",
       variant: "destructive",
     });
     if (!ok) return;
@@ -162,6 +183,18 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
           <div className="mt-1.5 flex items-center gap-1.5 text-sm text-foreground">
             <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="truncate font-medium">{orgName}</span>
+            {!busy && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button type="button" className="ml-1 text-xs font-medium text-primary hover:underline">
+                    change
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-72 p-0">
+                  <OrganizationPickerPanel />
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
         ) : null}
       </div>
@@ -177,17 +210,7 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
             Checking whether this {KIT_WORD.oneLower} is already installed here…
           </div>
         ) : readError ? (
-          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
-            <p className="flex items-start gap-2 text-sm text-foreground">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-              We could not check whether it is installed here.
-            </p>
-            <p className="mt-1 break-words pl-6 text-xs text-muted-foreground">{readError}</p>
-            <Button size="sm" variant="outline" className="ml-6 mt-2" onClick={api.retryRead}>
-              <RotateCw className="mr-1.5 h-3.5 w-3.5" />
-              Check again
-            </Button>
-          </div>
+          <ErrorNotice title="We could not check whether it is installed here." error={readError} onRetry={api.retryRead} retryLabel="Check again" />
         ) : (
           <>
             {installed && !busy ? (
@@ -199,20 +222,20 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
               <p className="text-sm leading-relaxed text-muted-foreground">{consequence(manifest, orgName)}</p>
             ) : null}
 
-            {runError && !busy && (
-              <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
-                <p className="flex items-start gap-2 text-sm font-medium text-foreground">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                  The install stopped.
-                </p>
-                <p className="mt-1 break-words pl-6 text-xs text-muted-foreground">{runError}</p>
-                <p className="mt-1 pl-6 text-xs text-muted-foreground">
-                  Everything already created is listed below and kept. Finishing picks up where it stopped.
-                </p>
+            {api.attached && (
+              <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-xs text-foreground">
+                <Users className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span>{api.attached}</span>
               </div>
             )}
 
-            {(install || busy) && <InstallStepper steps={steps} />}
+            {runError && !busy && (
+              <ErrorNotice title="The install stopped." error={runError}>
+                Everything already created is listed below and kept. Finishing picks up where it stopped.
+              </ErrorNotice>
+            )}
+
+            {(install || busy || api.attached) && <InstallStepper steps={steps} />}
 
             <div className="flex flex-col gap-2">
               {installed && !busy ? (
@@ -223,7 +246,7 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
                   </Link>
                 </Button>
               ) : (
-                <Button className="w-full" onClick={onInstall} disabled={busy}>
+                <Button className="w-full" onClick={onInstall} disabled={busy || !!api.attached}>
                   {phase === "installing" ? (
                     <>
                       <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
@@ -239,7 +262,7 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
                   )}
                 </Button>
               )}
-              {install && !busy && (
+              {install && !busy && !api.attached && (
                 <Button variant="ghost" size="sm" className="w-full text-muted-foreground hover:text-destructive" onClick={onRemove}>
                   <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                   {partial ? "Remove what was created" : `Remove this ${KIT_WORD.oneLower}`}

@@ -208,9 +208,9 @@ jest.mock("@/lib/toast", () => ({
   },
 }));
 
-/** The door refuses exactly as `mandate.guard_binding_containment` does. */
+/** The door refuses with a sentence naming the job (a default-holder refusal). */
 const CONTAINMENT_REFUSAL =
-  "Mandate 'ironclad_mechanic.dispatch_summary' is homed in a single organization, so it cannot carry a GLOBAL binding.";
+  "Mandate 'ironclad_mechanic.dispatch_summary' is homed in a single organization, so its default cannot name that agent.";
 jest.mock("@/features/mandates/overrides", () => ({
   ...jest.requireActual("@/features/mandates/overrides"),
   putMandateDefaultHolder: () => Promise.reject(new Error(CONTAINMENT_REFUSAL)),
@@ -259,7 +259,7 @@ describe("a refusal is keyed to the mandate it is about", () => {
             mandateKey: MANDATE_A,
           })}
           perspective="system"
-          fixedRung={["system", "global"]}
+          fixedRung="system"
           onChanged={() => undefined}
         />,
       );
@@ -276,7 +276,7 @@ describe("a refusal is keyed to the mandate it is about", () => {
             mandateKey: MANDATE_B,
           })}
           perspective="system"
-          fixedRung={["system", "global"]}
+          fixedRung="system"
           onChanged={() => undefined}
         />,
       );
@@ -358,7 +358,7 @@ describe("a refusal with an inline home is never also toasted", () => {
             heldBy: HELD_AGENT_ID,
           })}
           perspective="system"
-          fixedRung={["system", "global"]}
+          fixedRung="system"
           onChanged={() => undefined}
         />,
       );
@@ -388,7 +388,7 @@ describe("a refusal with an inline home is never also toasted", () => {
 
     // The record: the door's own sentence, on the page, where the mandate's
     // key can take it away again.
-    expect(host.textContent).toContain("cannot carry a GLOBAL binding");
+    expect(host.textContent).toContain("its default cannot name that agent");
     // And NOT a second copy in the app-wide portal — the copy that outlived
     // the job on production.
     expect(toasts).toEqual([]);

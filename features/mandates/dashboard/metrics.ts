@@ -54,8 +54,6 @@ export interface BindingMetrics {
   personal: number;
   personalMandates: number;
   personalUsers: number;
-  global: number;
-  globalMandates: number;
   disabled: number;
 }
 
@@ -124,11 +122,9 @@ export function bindingMetrics(
   const orgs = new Set<string>();
   const personalMandates = new Set<string>();
   const users = new Set<string>();
-  const globalMandates = new Set<string>();
   let pinned = 0;
   let org = 0;
   let personal = 0;
-  let global = 0;
   let disabled = 0;
   for (const row of rows) {
     if (row.holder_version_id) pinned += 1;
@@ -141,9 +137,6 @@ export function bindingMetrics(
       personal += 1;
       personalMandates.add(row.mandate_id);
       if (row.subject_user_id) users.add(row.subject_user_id);
-    } else if (row.principal_type === "global") {
-      global += 1;
-      globalMandates.add(row.mandate_id);
     }
   }
   return {
@@ -156,8 +149,6 @@ export function bindingMetrics(
     personal,
     personalMandates: personalMandates.size,
     personalUsers: users.size,
-    global,
-    globalMandates: globalMandates.size,
     disabled,
   };
 }

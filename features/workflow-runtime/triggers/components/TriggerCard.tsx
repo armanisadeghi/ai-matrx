@@ -96,9 +96,21 @@ export function TriggerCard({
               Next: {formatInZone(trigger.nextRunAt, trigger.timezone)}
             </p>
           ) : null}
-          {(isSchedule || isEvent) && !trigger.isActive ? (
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
-              Paused — it won&apos;t run until you turn it back on.
+          {/* A SCREEN NEVER LIES: the paused state is read from the row for
+              EVERY kind. It used to be gated to schedule/event, so a paused
+              webhook rendered as live. One sentence per kind, no kind left out. */}
+          {!trigger.isActive ? (
+            <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
+              <span className="font-medium text-foreground">Paused</span>
+              <span>— {pausedSentence(trigger.kind)}</span>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => onSetActive(true)}
+                className="font-medium text-primary hover:underline disabled:opacity-50"
+              >
+                Turn it back on
+              </button>
             </p>
           ) : null}
         </div>
@@ -157,10 +169,13 @@ export function TriggerCard({
             start a run with none of the row's inputs and fail confusingly —
             the retry lane is the owning surface's action (e.g. product
             capture's Reprocess) or an API fire carrying the entity's inputs. */}
-        {!isSchedule && !isEvent ? (
+        {/* A paused trigger refuses every fire (server: 409 "trigger is
+            disabled"), so "Try it now" is ABSENT while paused — the Paused line
+            above carries the one action that makes it runnable again. */}
+        {!isSchedule && !isEvent && trigger.isActive ? (
           <button
             type="button"
-            disabled={busy || !trigger.isActive}
+            disabled={busy}
             onClick={onFireNow}
             className="inline-flex min-h-7 items-center gap-1 rounded-md border border-border px-2 text-[11px] text-foreground disabled:opacity-50"
           >
@@ -188,9 +203,7 @@ export function TriggerCard({
           onClick={() => {
             void confirm({
               title: `Remove "${trigger.name}"?`,
-              description: isSchedule
-                ? "This workflow will stop running on its own. Runs it already produced are kept."
-                : "Its address stops working immediately, and the password can't be recovered. Runs it already produced are kept.",
+              description: removeSentence(trigger.kind),
               confirmLabel: "Remove it",
               variant: "destructive",
             }).then((ok) => {
@@ -215,4 +228,32 @@ export function TriggerCard({
       ) : null}
     </div>
   );
+}
+
+/** What a paused trigger of each kind does NOT do — exhaustive over the kind
+ *  union, so a new kind cannot ship without its own honest sentence. */
+export function pausedSentence(kind: WorkflowTrigger["kind"]): string {
+  switch (kind) {
+    case "cron":
+      return "it won't run on its schedule until you turn it back on.";
+    case "event":
+      return "data changes won't start it until you turn it back on.";
+    case "webhook":
+      return "its address refuses every call until you turn it back on.";
+    case "manual":
+      return "it can't be started until you turn it back on.";
+  }
+}
+
+function removeSentence(kind: WorkflowTrigger["kind"]): string {
+  switch (kind) {
+    case "cron":
+      return "This workflow will stop running on its schedule. Runs it already produced are kept.";
+    case "event":
+      return "Data changes will stop starting this workflow. Runs it already produced are kept.";
+    case "webhook":
+      return "Its address stops working immediately, and the password can't be recovered. Runs it already produced are kept.";
+    case "manual":
+      return "This way of starting the workflow goes away. Runs it already produced are kept.";
+  }
 }

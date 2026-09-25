@@ -78,7 +78,7 @@ try {
     await row.click();
   }
   await until("value", async () => (await page.locator("[data-inspector-value]").getAttribute("data-inspector-value").catch(() => null)) || null, 60000);
-  const fullPath = page.url().replace(ORIGIN, "");
+  const fullPath = new URL(page.url()).search;
   report.fullPath = fullPath;
 
   // ── 3. Answer on both paths, rendered as markdown. ──

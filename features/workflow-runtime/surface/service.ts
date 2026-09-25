@@ -238,11 +238,19 @@ export async function saveSurfaceConfig(
  */
 export async function fetchWorkflowDefinition(
   definitionId: string,
-): Promise<{ id: string; name: string; definition: WorkflowDefinitionLike } | null> {
+): Promise<{
+  id: string;
+  name: string;
+  /** The workflow's OWN organization — where a run of it lands its work and
+   *  cost. Surfaces read it for the one switch-organization offer, never the
+   *  selected organization. */
+  organizationId: string;
+  definition: WorkflowDefinitionLike;
+} | null> {
   const { data, error } = await supabase
     .schema("workflow")
     .from("definition")
-    .select("id,name,nodes,edges")
+    .select("id,name,organization_id,nodes,edges")
     .eq("id", definitionId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -251,6 +259,7 @@ export async function fetchWorkflowDefinition(
   return {
     id: data.id,
     name: data.name,
+    organizationId: data.organization_id,
     definition: {
       nodes: parseNodes(data.nodes),
       edges: parseEdges(data.edges),

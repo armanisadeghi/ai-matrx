@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { Button } from "@/components/ui/button";
 import {
   Download,
@@ -756,7 +756,7 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
                             onClick={(e) => e.stopPropagation()}
                           />
                         ) : (
-                          <InlineMarkdownWithLinks text={header} />
+                          <RichContent level="inline" source={header} isStreaming={false} />
                         )}
                       </div>
                       {isEditingEnabled && (
@@ -827,7 +827,7 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
                           onFocus={(e) => e.target.select()}
                         />
                       ) : (
-                        <InlineMarkdownWithLinks text={cell} />
+                        <RichContent level="inline" source={cell} isStreaming={false} />
                       )}
                     </td>
                   ))}

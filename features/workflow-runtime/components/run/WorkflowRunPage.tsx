@@ -24,6 +24,7 @@ import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import { toast } from "@/lib/toast";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { RecordOrganizationSwitchOffer } from "@/features/organizations/components/RecordOrganizationSwitchOffer";
 
 import {
   fetchRunDefinitionId,
@@ -40,6 +41,8 @@ import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigati
 interface LoadedWorkflow {
   id: string;
   name: string;
+  /** The workflow's OWN organization — where a run lands its work and cost. */
+  organizationId: string;
   definition: WorkflowDefinitionLike;
   config: RunSurfaceConfig | null;
 }
@@ -131,6 +134,7 @@ export function WorkflowRunPage({
         setWorkflow({
           id: loaded.id,
           name: loaded.name,
+          organizationId: loaded.organizationId,
           definition: loaded.definition,
           config: surface?.config ?? null,
         });
@@ -249,6 +253,16 @@ export function WorkflowRunPage({
         <p className="mt-1 text-sm text-muted-foreground">
           Tell it what to work with, then press Run.
         </p>
+        {/* A run lands its work and cost in an organization. The workflow
+            always opens (access is the person's); when it lives somewhere
+            other than the selected organization — or none is selected — the
+            one offer names ITS organization and switches on one click. Never
+            the selected org, never a silent switch, never a denial. */}
+        <RecordOrganizationSwitchOffer
+          organizationId={workflow.organizationId}
+          what="workflow"
+          className="mt-4"
+        />
         <div className="mt-5">
           <RunStartForm
             definitionId={workflow.id}

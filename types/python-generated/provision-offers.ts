@@ -85,6 +85,12 @@ export interface AmbientPageGuidanceOffer {
   organization_id?: string;
 }
 
+/** Offered shape of provision `audio.speech` (kind `audio.speech.offer`). */
+export interface AudioSpeechOffer {
+  __kind?: "audio.speech.offer";
+  text: string;
+}
+
 /** Offered shape of provision `chat.mandated_start` (kind `chat.mandated_start.offer`). */
 export interface ChatMandatedStartOffer {
   __kind?: "chat.mandated_start.offer";
@@ -382,6 +388,21 @@ export interface ContentIrKindBuilderOffer {
   user_data_sample: string;
 }
 
+/** Offered shape of provision `content_plan.branch_purpose` (kind `content_plan.branch_purpose.offer`). */
+export interface ContentPlanBranchPurposeOffer {
+  __kind?: "content_plan.branch_purpose.offer";
+  site: unknown;
+  branches: string;
+}
+
+/** Offered shape of provision `content_plan.deepen_page` (kind `content_plan.deepen_page.offer`). */
+export interface ContentPlanDeepenPageOffer {
+  __kind?: "content_plan.deepen_page.offer";
+  page: unknown;
+  keyword_rule?: string;
+  research?: string;
+}
+
 /** Offered shape of provision `content_plan.entity_attachment` (kind `content_plan.entity_attachment.offer`). */
 export interface ContentPlanEntityAttachmentOffer {
   __kind?: "content_plan.entity_attachment.offer";
@@ -423,6 +444,16 @@ export interface ContentPlanKeywordStrategyOffer {
   current_plan: string;
   available_keywords: string;
   target_routes: string[];
+}
+
+/** Offered shape of provision `content_plan.merge_wave` (kind `content_plan.merge_wave.offer`). */
+export interface ContentPlanMergeWaveOffer {
+  __kind?: "content_plan.merge_wave.offer";
+  site_context: string;
+  page_type_vocabulary: string;
+  hub_rule?: string;
+  max_nodes: number;
+  candidates: unknown;
 }
 
 /** Offered shape of provision `content_plan.page_brief` (kind `content_plan.page_brief.offer`). */
@@ -558,6 +589,15 @@ export interface ContentPlanPlanShapeOffer {
   archetype_options: unknown;
   current_plan_summary?: string;
   target_page_count?: number;
+}
+
+/** Offered shape of provision `content_plan.research_wave` (kind `content_plan.research_wave.offer`). */
+export interface ContentPlanResearchWaveOffer {
+  __kind?: "content_plan.research_wave.offer";
+  site_context: string;
+  page_type_vocabulary: string;
+  hub_rule?: string;
+  max_nodes: number;
 }
 
 /** Offered shape of provision `conversation.analysis` (kind `conversation.analysis.offer`). */
@@ -723,6 +763,15 @@ export interface DistillationTimelineWindowOffer {
   steps: unknown;
   start_step: number;
   end_step: number;
+}
+
+/** Offered shape of provision `docproc.content_structure` (kind `docproc.content_structure.offer`). */
+export interface DocprocContentStructureOffer {
+  __kind?: "docproc.content_structure.offer";
+  chunks: string;
+  audience: string;
+  topic?: string;
+  max_sections: number;
 }
 
 /** Offered shape of provision `education.analytics_narrate` (kind `education.analytics_narrate.offer`). */
@@ -988,6 +1037,26 @@ export interface EducationVoiceTutorOffer {
   topic?: string;
   revealed?: boolean;
   surface_name?: string;
+}
+
+/** Offered shape of provision `evaluators.comparative_judge` (kind `evaluators.comparative_judge.offer`). */
+export interface EvaluatorsComparativeJudgeOffer {
+  __kind?: "evaluators.comparative_judge.offer";
+  question: string;
+  subject: string;
+  reference?: string;
+  allowed_verdicts: string;
+  web_clause?: string;
+}
+
+/** Offered shape of provision `evaluators.rubric_judge` (kind `evaluators.rubric_judge.offer`). */
+export interface EvaluatorsRubricJudgeOffer {
+  __kind?: "evaluators.rubric_judge.offer";
+  question: string;
+  subject: string;
+  reference?: string;
+  allowed_verdicts: string;
+  web_clause?: string;
 }
 
 /** Offered shape of provision `extend.browser_chat` (kind `extend.browser_chat.offer`). */
@@ -1276,6 +1345,43 @@ export interface HumanDecisionsAbsentHumanDecisionOffer {
   decision_context: unknown;
   answer_schema?: unknown;
   default_answer?: string;
+}
+
+/** Offered shape of provision `image.generate` (kind `image.generate.offer`). */
+export interface ImageGenerateOffer {
+  __kind?: "image.generate.offer";
+  prompt: string;
+}
+
+/** Offered shape of provision `image_pipeline.concept` (kind `image_pipeline.concept.offer`). */
+export interface ImagePipelineConceptOffer {
+  __kind?: "image_pipeline.concept.offer";
+  topic: string;
+  num_concepts: number;
+  audience?: string;
+  style_hint?: string;
+}
+
+/** Offered shape of provision `image_pipeline.prompt_write` (kind `image_pipeline.prompt_write.offer`). */
+export interface ImagePipelinePromptWriteOffer {
+  __kind?: "image_pipeline.prompt_write.offer";
+  concept: unknown;
+  style?: string;
+  aspect_ratio: string;
+  n_prompts: number;
+}
+
+/** Offered shape of provision `image_pipeline.qc_judge` (kind `image_pipeline.qc_judge.offer`). */
+export interface ImagePipelineQcJudgeOffer {
+  __kind?: "image_pipeline.qc_judge.offer";
+  image: string | {
+  [key: string]: unknown;
+  file_id?: string;
+  url?: string;
+  file_uri?: string;
+  mime_type?: string;
+};
+  rubric: string;
 }
 
 /** Offered shape of provision `iteration.rebuild_chain` (kind `iteration.rebuild_chain.offer`). */
@@ -2427,6 +2533,39 @@ export interface RagChunkContextOffer {
   parent_chunk_id?: string;
 }
 
+/** Offered shape of provision `rag.grounded_synthesis` (kind `rag.grounded_synthesis.offer`). */
+export interface RagGroundedSynthesisOffer {
+  __kind?: "rag.grounded_synthesis.offer";
+  question: string;
+  contexts: string;
+  system_addendum?: string;
+}
+
+/** Offered shape of provision `rag.grounding_claim_extract` (kind `rag.grounding_claim_extract.offer`). */
+export interface RagGroundingClaimExtractOffer {
+  __kind?: "rag.grounding_claim_extract.offer";
+  answer: string;
+}
+
+/** Offered shape of provision `rag.grounding_judge` (kind `rag.grounding_judge.offer`). */
+export interface RagGroundingJudgeOffer {
+  __kind?: "rag.grounding_judge.offer";
+  passages: string;
+  claims: string;
+}
+
+/** Offered shape of provision `rag.image_caption` (kind `rag.image_caption.offer`). */
+export interface RagImageCaptionOffer {
+  __kind?: "rag.image_caption.offer";
+  image: string | {
+  [key: string]: unknown;
+  file_id?: string;
+  url?: string;
+  file_uri?: string;
+  mime_type?: string;
+};
+}
+
 /** Offered shape of provision `rag.page_cleaning` (kind `rag.page_cleaning.offer`). */
 export interface RagPageCleaningOffer {
   __kind?: "rag.page_cleaning.offer";
@@ -2445,6 +2584,13 @@ export interface RagRetrievalQueryOffer {
   embedding_model?: string;
   scoped_document_ids?: string[];
   scoped_source_ids?: string[];
+}
+
+/** Offered shape of provision `rag_kinds.grounded_synthesis` (kind `rag_kinds.grounded_synthesis.offer`). */
+export interface RagKindsGroundedSynthesisOffer {
+  __kind?: "rag_kinds.grounded_synthesis.offer";
+  question: string;
+  contexts: string;
 }
 
 /** Offered shape of provision `research.capture_coverage` (kind `research.capture_coverage.offer`). */
@@ -3317,6 +3463,7 @@ export interface ProvisionOffers {
   "agent_factory.build_request": AgentFactoryBuildRequestOffer;
   "alchemy.prepared_content": AlchemyPreparedContentOffer;
   "ambient.page_guidance": AmbientPageGuidanceOffer;
+  "audio.speech": AudioSpeechOffer;
   "chat.mandated_start": ChatMandatedStartOffer;
   "code_editor.session": CodeEditorSessionOffer;
   "commerce_intake.asset_capture": CommerceIntakeAssetCaptureOffer;
@@ -3333,10 +3480,13 @@ export interface ProvisionOffers {
   "content_ir.component_target": ContentIrComponentTargetOffer;
   "content_ir.kind_authoring": ContentIrKindAuthoringOffer;
   "content_ir.kind_builder": ContentIrKindBuilderOffer;
+  "content_plan.branch_purpose": ContentPlanBranchPurposeOffer;
+  "content_plan.deepen_page": ContentPlanDeepenPageOffer;
   "content_plan.entity_attachment": ContentPlanEntityAttachmentOffer;
   "content_plan.entity_roster": ContentPlanEntityRosterOffer;
   "content_plan.family_naming": ContentPlanFamilyNamingOffer;
   "content_plan.keyword_strategy": ContentPlanKeywordStrategyOffer;
+  "content_plan.merge_wave": ContentPlanMergeWaveOffer;
   "content_plan.page_brief": ContentPlanPageBriefOffer;
   "content_plan.page_build": ContentPlanPageBuildOffer;
   "content_plan.page_family": ContentPlanPageFamilyOffer;
@@ -3345,6 +3495,7 @@ export interface ProvisionOffers {
   "content_plan.page_write": ContentPlanPageWriteOffer;
   "content_plan.plan_review": ContentPlanPlanReviewOffer;
   "content_plan.plan_shape": ContentPlanPlanShapeOffer;
+  "content_plan.research_wave": ContentPlanResearchWaveOffer;
   "conversation.analysis": ConversationAnalysisOffer;
   "crm.chasebox_draft_review": CrmChaseboxDraftReviewOffer;
   "crm.journalist_beat_analysis": CrmJournalistBeatAnalysisOffer;
@@ -3361,6 +3512,7 @@ export interface ProvisionOffers {
   "dictionary.workspace": DictionaryWorkspaceOffer;
   "distillation.case_narrative": DistillationCaseNarrativeOffer;
   "distillation.timeline_window": DistillationTimelineWindowOffer;
+  "docproc.content_structure": DocprocContentStructureOffer;
   "education.analytics_narrate": EducationAnalyticsNarrateOffer;
   "education.card_image": EducationCardImageOffer;
   "education.card_image_generation": EducationCardImageGenerationOffer;
@@ -3379,6 +3531,8 @@ export interface ProvisionOffers {
   "education.study_pack_v2": EducationStudyPackV2Offer;
   "education.tutor_message": EducationTutorMessageOffer;
   "education.voice_tutor": EducationVoiceTutorOffer;
+  "evaluators.comparative_judge": EvaluatorsComparativeJudgeOffer;
+  "evaluators.rubric_judge": EvaluatorsRubricJudgeOffer;
   "extend.browser_chat": ExtendBrowserChatOffer;
   "extend.page_capture": ExtendPageCaptureOffer;
   "feedback.item_triage": FeedbackItemTriageOffer;
@@ -3404,6 +3558,10 @@ export interface ProvisionOffers {
   "hindsight.orchestra_crystallization": HindsightOrchestraCrystallizationOffer;
   "hindsight.replay_comparison": HindsightReplayComparisonOffer;
   "human_decisions.absent_human_decision": HumanDecisionsAbsentHumanDecisionOffer;
+  "image.generate": ImageGenerateOffer;
+  "image_pipeline.concept": ImagePipelineConceptOffer;
+  "image_pipeline.prompt_write": ImagePipelinePromptWriteOffer;
+  "image_pipeline.qc_judge": ImagePipelineQcJudgeOffer;
   "iteration.rebuild_chain": IterationRebuildChainOffer;
   "iteration.thinking_display_narration": IterationThinkingDisplayNarrationOffer;
   "kg.chunk_extraction": KgChunkExtractionOffer;
@@ -3501,8 +3659,13 @@ export interface ProvisionOffers {
   "proof_runs.judge_case": ProofRunsJudgeCaseOffer;
   "purpose.unit_config": PurposeUnitConfigOffer;
   "rag.chunk_context": RagChunkContextOffer;
+  "rag.grounded_synthesis": RagGroundedSynthesisOffer;
+  "rag.grounding_claim_extract": RagGroundingClaimExtractOffer;
+  "rag.grounding_judge": RagGroundingJudgeOffer;
+  "rag.image_caption": RagImageCaptionOffer;
   "rag.page_cleaning": RagPageCleaningOffer;
   "rag.retrieval_query": RagRetrievalQueryOffer;
+  "rag_kinds.grounded_synthesis": RagKindsGroundedSynthesisOffer;
   "research.capture_coverage": ResearchCaptureCoverageOffer;
   "research.cross_cutting_discovery": ResearchCrossCuttingDiscoveryOffer;
   "research.final_assembly": ResearchFinalAssemblyOffer;
@@ -3586,6 +3749,7 @@ export const PROVISION_OFFER_KINDS = {
   "agent_factory.build_request": "agent_factory.build_request.offer",
   "alchemy.prepared_content": "alchemy.prepared_content.offer",
   "ambient.page_guidance": "ambient.page_guidance.offer",
+  "audio.speech": "audio.speech.offer",
   "chat.mandated_start": "chat.mandated_start.offer",
   "code_editor.session": "code_editor.session.offer",
   "commerce_intake.asset_capture": "commerce_intake.asset_capture.offer",
@@ -3602,10 +3766,13 @@ export const PROVISION_OFFER_KINDS = {
   "content_ir.component_target": "content_ir.component_target.offer",
   "content_ir.kind_authoring": "content_ir.kind_authoring.offer",
   "content_ir.kind_builder": "content_ir.kind_builder.offer",
+  "content_plan.branch_purpose": "content_plan.branch_purpose.offer",
+  "content_plan.deepen_page": "content_plan.deepen_page.offer",
   "content_plan.entity_attachment": "content_plan.entity_attachment.offer",
   "content_plan.entity_roster": "content_plan.entity_roster.offer",
   "content_plan.family_naming": "content_plan.family_naming.offer",
   "content_plan.keyword_strategy": "content_plan.keyword_strategy.offer",
+  "content_plan.merge_wave": "content_plan.merge_wave.offer",
   "content_plan.page_brief": "content_plan.page_brief.offer",
   "content_plan.page_build": "content_plan.page_build.offer",
   "content_plan.page_family": "content_plan.page_family.offer",
@@ -3614,6 +3781,7 @@ export const PROVISION_OFFER_KINDS = {
   "content_plan.page_write": "content_plan.page_write.offer",
   "content_plan.plan_review": "content_plan.plan_review.offer",
   "content_plan.plan_shape": "content_plan.plan_shape.offer",
+  "content_plan.research_wave": "content_plan.research_wave.offer",
   "conversation.analysis": "conversation.analysis.offer",
   "crm.chasebox_draft_review": "crm.chasebox_draft_review.offer",
   "crm.journalist_beat_analysis": "crm.journalist_beat_analysis.offer",
@@ -3630,6 +3798,7 @@ export const PROVISION_OFFER_KINDS = {
   "dictionary.workspace": "dictionary.workspace.offer",
   "distillation.case_narrative": "distillation.case_narrative.offer",
   "distillation.timeline_window": "distillation.timeline_window.offer",
+  "docproc.content_structure": "docproc.content_structure.offer",
   "education.analytics_narrate": "education.analytics_narrate.offer",
   "education.card_image": "education.card_image.offer",
   "education.card_image_generation": "education.card_image_generation.offer",
@@ -3648,6 +3817,8 @@ export const PROVISION_OFFER_KINDS = {
   "education.study_pack_v2": "education.study_pack_v2.offer",
   "education.tutor_message": "education.tutor_message.offer",
   "education.voice_tutor": "education.voice_tutor.offer",
+  "evaluators.comparative_judge": "evaluators.comparative_judge.offer",
+  "evaluators.rubric_judge": "evaluators.rubric_judge.offer",
   "extend.browser_chat": "extend.browser_chat.offer",
   "extend.page_capture": "extend.page_capture.offer",
   "feedback.item_triage": "feedback.item_triage.offer",
@@ -3673,6 +3844,10 @@ export const PROVISION_OFFER_KINDS = {
   "hindsight.orchestra_crystallization": "hindsight.orchestra_crystallization.offer",
   "hindsight.replay_comparison": "hindsight.replay_comparison.offer",
   "human_decisions.absent_human_decision": "human_decisions.absent_human_decision.offer",
+  "image.generate": "image.generate.offer",
+  "image_pipeline.concept": "image_pipeline.concept.offer",
+  "image_pipeline.prompt_write": "image_pipeline.prompt_write.offer",
+  "image_pipeline.qc_judge": "image_pipeline.qc_judge.offer",
   "iteration.rebuild_chain": "iteration.rebuild_chain.offer",
   "iteration.thinking_display_narration": "iteration.thinking_display_narration.offer",
   "kg.chunk_extraction": "kg.chunk_extraction.offer",
@@ -3770,8 +3945,13 @@ export const PROVISION_OFFER_KINDS = {
   "proof_runs.judge_case": "proof_runs.judge_case.offer",
   "purpose.unit_config": "purpose.unit_config.offer",
   "rag.chunk_context": "rag.chunk_context.offer",
+  "rag.grounded_synthesis": "rag.grounded_synthesis.offer",
+  "rag.grounding_claim_extract": "rag.grounding_claim_extract.offer",
+  "rag.grounding_judge": "rag.grounding_judge.offer",
+  "rag.image_caption": "rag.image_caption.offer",
   "rag.page_cleaning": "rag.page_cleaning.offer",
   "rag.retrieval_query": "rag.retrieval_query.offer",
+  "rag_kinds.grounded_synthesis": "rag_kinds.grounded_synthesis.offer",
   "research.capture_coverage": "research.capture_coverage.offer",
   "research.cross_cutting_discovery": "research.cross_cutting_discovery.offer",
   "research.final_assembly": "research.final_assembly.offer",

@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Package, RotateCw } from "lucide-react";
+import { Package } from "lucide-react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import { KIT_WORD, KITS_HERO } from "../constants";
 import type { KitEntry } from "../types";
 import { KitCard } from "./KitCard";
+import { ErrorNotice } from "./ErrorNotice";
 
 const ALL = "All";
 
@@ -63,17 +63,12 @@ export function KitGallery({ kits, error }: { kits: KitEntry[]; error: string | 
           )}
 
           {error ? (
-            <div className="mt-8 flex max-w-xl items-start gap-3 rounded-xl border border-destructive/20 bg-destructive/5 p-4">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-foreground">The {KIT_WORD.manyLower} could not be loaded.</p>
-                <p className="mt-1 break-words text-xs text-muted-foreground">{error}</p>
-                <Button size="sm" variant="outline" className="mt-3" onClick={() => router.refresh()}>
-                  <RotateCw className="mr-1.5 h-3.5 w-3.5" />
-                  Try again
-                </Button>
-              </div>
-            </div>
+            <ErrorNotice
+              className="mt-8 max-w-xl"
+              title={`The ${KIT_WORD.manyLower} could not be loaded.`}
+              error={error}
+              onRetry={() => router.refresh()}
+            />
           ) : kits.length === 0 ? (
             <div className="mt-8 flex max-w-xl flex-col items-start rounded-xl border border-dashed border-border bg-card/50 p-6">
               <Package className="h-5 w-5 text-muted-foreground" />

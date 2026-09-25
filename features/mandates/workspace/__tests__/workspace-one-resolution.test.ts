@@ -138,10 +138,9 @@ function row(overrides: Partial<MandateLadderRow> = {}): MandateLadderRow {
 }
 
 describe("a rung says what it is", () => {
-  it("calls the global rung global — never system", () => {
-    const words = ladderRowWords(row({ rung: "global" }), null);
-    expect(words.title).toBe("Global binding");
-    expect(words.title.toLowerCase()).not.toContain("system");
+  it("calls the default the default", () => {
+    const words = ladderRowWords(row({ rung: "system" }), null);
+    expect(words.title).toBe("System default");
   });
 
   it("names the organization by name, never by id", () => {

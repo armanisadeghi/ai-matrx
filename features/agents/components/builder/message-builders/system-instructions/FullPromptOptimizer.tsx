@@ -82,8 +82,6 @@ interface FullPromptOptimizerProps {
   onAcceptAsCopy?: (optimizedObject: unknown) => void;
 }
 
-const FULL_OPTIMIZER_PROMPT_ID = "8b7a674a-07ba-43fc-a750-f189c242e70b";
-
 export function FullPromptOptimizer({
   isOpen,
   onClose,
@@ -146,10 +144,10 @@ export function FullPromptOptimizer({
       return;
     }
 
-    // TODO(prompt-to-agent-sweep): public.prompts is graveyarded.
-    // Re-wire this to fetch from agent.definition (same UUID, agent_type='builtin'):
-    //   supabase.schema("agent").from("definition")
-    //     .select("messages, settings").eq("id", FULL_OPTIMIZER_PROMPT_ID).single()
+    // TODO(prompt-to-agent-sweep): public.prompts is graveyarded. Re-wire
+    // through a MANDATE (declare it in aidream seeded with the old optimizer
+    // agent 8b7a674a-…, then launch by mandate key) — never by a raw agent id
+    // (the raw-id constant that lived here was removed 2026-09-25).
     // Until then surface a clear error rather than a silent Supabase 404.
     toast.error("Full Prompt Optimizer is temporarily unavailable", {
       description:

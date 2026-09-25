@@ -29,7 +29,9 @@ export const KIT_ROUTES = {
   installed: (key: string) => `/kits/${encodeURIComponent(key)}/installed`,
   table: (tableId: string) => `/data-v2/${encodeURIComponent(tableId)}`,
   agent: (agentId: string) => `/agents/${encodeURIComponent(agentId)}`,
-  workflow: (workflowId: string) => `/workflows/${encodeURIComponent(workflowId)}/design`,
+  // The workflow's own page (set it up, run it) — the registry's `hrefFor`. There is no
+  // separate step/canvas editor route in this app; `/design` is the run-page designer.
+  workflow: (workflowId: string) => `/workflows/${encodeURIComponent(workflowId)}`,
 } as const;
 
 /** The server door that renders a binding exactly as the agent will see it (PLAN.md § P1). */

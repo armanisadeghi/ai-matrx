@@ -8,7 +8,8 @@
  * manifest makes the surface code-first and owns the `assistant` agent role.
  *
  * `assistant` role: the agent behind the Scribe assistant conversation. The
- * platform default is the seeded audio assistant (AUDIO_ASSISTANT_AGENT_ID);
+ * platform default is the `transcript_studio.document_edit` MANDATE's current
+ * Holder (`mandateKey` below — no agent id lives here since 2026-09-25);
  * users/orgs override via `ui_surface_agent_pref` (resolved in
  * `resolveDefaultAssistantAgentId` — this REPLACED the deleted
  * `userPreferences.transcription.scribeAssistantAgentId` preference,
@@ -58,7 +59,7 @@
  */
 
 import type { SurfaceManifest } from "@/features/surfaces/types";
-import { AUDIO_ASSISTANT_AGENT_ID } from "@/features/transcript-studio/constants";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /** Canonical surface name for the Scribe studio. */
 export const TRANSCRIPT_SCRIBE_SURFACE = "matrx-user/transcript-scribe";
@@ -80,7 +81,8 @@ export const transcriptScribeManifest: SurfaceManifest = {
       description:
         "The agent behind the Scribe assistant conversation. New sessions start with this agent; each session can switch on its own roster.",
       kind: "single",
-      defaultAgentId: AUDIO_ASSISTANT_AGENT_ID,
+      defaultAgentId: null,
+      mandateKey: MANDATE_KEYS.transcript_studio__document_edit,
       allowCustom: true,
       autoRun: "user-choice",
       sortOrder: 10,

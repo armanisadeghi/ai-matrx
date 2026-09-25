@@ -23,7 +23,7 @@
  * reasons about it.
  */
 
-import type { SurfaceAgentRole, SurfaceManifest } from "@/features/surfaces/types";
+import type { ManifestAgentRole, SurfaceManifest } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import { RUN_CONSOLE_GROUPS, RUN_CONSOLE_VALUES } from "./_run-console.manifest";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
@@ -39,7 +39,7 @@ export const MARKETING_RUN_CONSOLE_SURFACE_NAME =
  * `mandateKey`, never a UUID: the agent behind the job is DB-managed and moves
  * without a deploy (the NO HARDCODED AGENTS law).
  */
-const agentRoles: SurfaceAgentRole[] = [
+const agentRoles: ManifestAgentRole[] = [
   {
     name: "topic_assigner",
     label: "Topic assigner",

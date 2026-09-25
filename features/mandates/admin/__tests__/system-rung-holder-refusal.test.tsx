@@ -73,9 +73,20 @@ jest.mock("@/components/official/entity-ref/EntityRef", () => ({
 import { ScopeHolderBar } from "@/features/bindings/ScopeHolderBar";
 import {
   SYSTEM_RUNG_PERSONAL_HOLDER_REFUSAL,
-  SYSTEM_RUNG_TITLE,
   systemRungHolderIsPersonal,
 } from "@/features/bindings/system-rung";
+import { defaultHolderRungOffer } from "@/features/bindings/default-holder-rung";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
+
+/** The real offer for a SYSTEM-homed job, as a super admin sees it. The answer
+ *  for everybody is that job's own default (there is no global rung — aidream 1041). */
+const SYSTEM_DEFAULT_OFFER = defaultHolderRungOffer({
+  homeOrganizationId: SYSTEM_ORGANIZATION_ID,
+  homeOrganizationName: "Matrx System",
+  homeOrganizationRole: null,
+  isSuperAdmin: true,
+});
+const SYSTEM_DEFAULT_LABEL = SYSTEM_DEFAULT_OFFER.label;
 
 const JOB = {
   mandateKey: "research_client.output_slides",
@@ -87,7 +98,7 @@ const JOB = {
 };
 
 function renderBar(opts: {
-  fixedRung?: "global";
+  fixedRung?: "system";
   agentId: string | null;
 }): { text: string; html: string; root: Root } {
   const container = document.createElement("div");
@@ -96,10 +107,11 @@ function renderBar(opts: {
   act(() => {
     root.render(
       <ScopeHolderBar
-        rung="global"
+        rung={opts.fixedRung ?? "user"}
         organizationId={null}
         allowGlobal
         fixedRung={opts.fixedRung}
+        defaultHolderOffer={SYSTEM_DEFAULT_OFFER}
         onRungChange={() => undefined}
         holder={{
           kind: "agent",
@@ -129,52 +141,15 @@ afterEach(() => {
 describe("a pinned rung is STATED, never offered as a choice", () => {
   it("renders no rung selector and says what the rung is", () => {
     const { text, html, root } = renderBar({
-      fixedRung: "global",
+      fixedRung: "system",
       agentId: null,
     });
     // RED at v0.4.1719: `ScopeHolderBar` had no `fixedRung`, so the admin route
     // rendered the scope picker — defaulting to User — on the system page.
     expect(html).not.toContain("scope-picker");
-    expect(text).toContain(SYSTEM_RUNG_TITLE);
+    expect(text).toContain(SYSTEM_DEFAULT_LABEL);
     // No other rung is offered, in words or in controls.
     expect(text).not.toMatch(/everywhere you run/i);
-    act(() => root.unmount());
-  });
-
-  it("offers the OTHER platform rung by name, and no third one", () => {
-    // The admin route manages two rungs that decide for everybody: the job's
-    // own default and the platform-wide binding above it.
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-    const root = createRoot(container);
-    act(() => {
-      root.render(
-        <ScopeHolderBar
-          rung="global"
-          organizationId={null}
-          allowGlobal
-          fixedRung={["global", "system"]}
-          onRungChange={() => undefined}
-          holder={{
-            kind: "agent",
-            agentId: null,
-            agentVersionId: null,
-            useLatest: true,
-            workflowId: null,
-          }}
-          onHolderChange={() => undefined}
-          job={JOB}
-          ladderLine="ladder"
-        />,
-      );
-    });
-    const text = container.textContent ?? "";
-    expect(container.innerHTML).not.toContain("scope-picker");
-    expect(text).toContain(SYSTEM_RUNG_TITLE);
-    expect(text.toLowerCase()).toContain("default");
-    // Never a person's or an organization's rung.
-    expect(text).not.toMatch(/everywhere you run/i);
-    expect(text).not.toMatch(/an organization's answer/i);
     act(() => root.unmount());
   });
 
@@ -187,7 +162,7 @@ describe("a pinned rung is STATED, never offered as a choice", () => {
 
 describe("the system rung's holder picker refuses a non-system agent", () => {
   it("can reach the system catalogue and nothing else", () => {
-    const { root } = renderBar({ fixedRung: "global", agentId: null });
+    const { root } = renderBar({ fixedRung: "system", agentId: null });
     expect(lastDropdownProps?.visibleTabs).toEqual(["system"]);
     expect(lastDropdownProps?.initialTab).toBe("system");
     act(() => root.unmount());
@@ -195,7 +170,7 @@ describe("the system rung's holder picker refuses a non-system agent", () => {
 
   it("says so on screen when a personal agent is standing there", () => {
     const { text, root } = renderBar({
-      fixedRung: "global",
+      fixedRung: "system",
       agentId: "somebody-elses-personal-agent",
     });
     expect(text).toContain("This Mandate Holder is NOT a system agent");

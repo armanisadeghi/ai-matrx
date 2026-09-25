@@ -20,6 +20,8 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
 } from "@/features/surfaces/types";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
 
 export const CRM_OUTREACH_LISTS_SURFACE_NAME = "matrx-user/crm-outreach-lists";
 
@@ -160,7 +162,8 @@ suggest a workaround for one.
         "Turns stored evidence and recommended actions into a prioritized outreach plan; drafts wording on request. Never sends and has no contact lookup.",
       kind: "single",
       // Platform agent `outreach_strategist` (WP5 roster) — plans + drafts, refuses to send.
-      defaultAgentId: "6a8c6a97-a473-440f-87b1-ab09e02adfa2",
+      defaultAgentId: null,
+      mandateKey: dbAuthoredMandateKey("crm.outreach_strategy"),
       sortOrder: 100,
     },
     {
@@ -179,7 +182,8 @@ suggest a workaround for one.
       // this agent is who you talk to about it, and it is deliberately NOT a
       // second writer (a line typed in chat has had none of the server-side
       // citation validation done to it, D-W5-7).
-      defaultAgentId: "2b15f237-0cf7-4917-bd14-918d4bac6be8",
+      defaultAgentId: null,
+      mandateKey: MANDATE_KEYS.crm__outreach_personalization_coach,
       sortOrder: 110,
     },
     {
@@ -191,7 +195,8 @@ suggest a workaround for one.
       // Platform agent `pitch_assistant` (WP5 roster) — conversational copy
       // specialist. Templates it writes become real `agent.message_template`
       // rows through the validated pitch-template door, never around it.
-      defaultAgentId: "db484110-610f-4dd6-8fad-21e805681cd0",
+      defaultAgentId: null,
+      mandateKey: MANDATE_KEYS.crm__outreach_pitch_writer,
       sortOrder: 120,
     },
   ],

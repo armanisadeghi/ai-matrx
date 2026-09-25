@@ -187,8 +187,6 @@ export function BatchMode({
     (mandateKey: string): MandateBindingRow | null => {
       if (console_.status !== "ready") return null;
       const rows = console_.bindings[mandateKey] ?? [];
-      // "Everybody" is each job's own default, never a binding (aidream 1037).
-      if (rung === "global") return null;
       if (rung === "org") {
         if (!organizationId) return null;
         return (
@@ -849,12 +847,6 @@ function holderRefusal({
   }
   if (rung === "org" && !organizationId) {
     return "Pick the organization these answers are for.";
-  }
-  if (rung === "global") {
-    // 🚨 aidream 1037: the answer for everybody lives in ONE record, each job's
-    // own default — batch mode writes bindings, and there is no platform-wide
-    // binding to write.
-    return "The answer for everybody is each job's own default, not a binding — set it on that job's page.";
   }
   if (holderStatus === "loading") return "Reading the Mandate Holder's inputs…";
   if (holderStatus === "error") {

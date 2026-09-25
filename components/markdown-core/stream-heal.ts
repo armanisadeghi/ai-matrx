@@ -92,13 +92,15 @@ function isInsideInlineCode(text: string, offset: number): boolean {
   return (before.match(/`/g)?.length ?? 0) % 2 === 1;
 }
 
-const TRAILING_BRACKETED_TAIL = /(!?)\[([^\]\n]*)\](\[[^\]\n]*)?$/;
+const TRAILING_BRACKETED_TAIL = /(?<!\])(!?)\[([^\]\n]*)\](\[[^\]\n]*)?$/;
 
 /**
  * The tail is a closed `![alt]` / `[text]` whose `(url)` or `[id]` has not
  * started or finished arriving. An image is held back (it is about to become
- * an <img>); a link mid-`[id` shows its text. A bare trailing `[text]` stays —
- * it may be literal brackets.
+ * an <img>); a link shows its text. A bare trailing `[text]` shows its text
+ * too: the next character decides (a `(` makes it a link, anything else
+ * brings the literal brackets back one chunk later) — a raw `[Route 39]` that
+ * becomes a link is the worse flash (verify-RC-B7 r2, streaming table cells).
  */
 const pendingBracketedTail: RemendHandler = {
   name: "matrx-pending-bracketed-tail",
@@ -107,7 +109,6 @@ const pendingBracketedTail: RemendHandler = {
     const match = TRAILING_BRACKETED_TAIL.exec(text);
     if (!match) return text;
     const [whole, bang, label, referencePart] = match;
-    if (!bang && referencePart === undefined) return text;
     if (isWithinCodeBlock(text, match.index)) return text;
     if (isInsideInlineCode(text, match.index)) return text;
     return text.slice(0, text.length - whole.length) + (bang ? "" : label);

@@ -28,7 +28,6 @@ import { MandateTestBench } from "./MandateTestBench";
 import {
   fetchMandateConsoleData,
   fetchVersionSnapshotDefinition,
-  type MandateBindingRow,
   type MandateDefinitionRow,
 } from "./service";
 import { versionLabel, type ImpactVerdict } from "./impact";
@@ -203,7 +202,6 @@ function QuickTest({ mandateKeys }: { mandateKeys: string[] }) {
   const [loaded, setLoaded] = useState<{
     key: string;
     mandate: MandateDefinitionRow;
-    globalBinding: MandateBindingRow | undefined;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -227,9 +225,6 @@ function QuickTest({ mandateKeys }: { mandateKeys: string[] }) {
         setLoaded({
           key: activeKey,
           mandate,
-          globalBinding: data.bindingsByMandateId[mandate.id]?.find(
-            (binding) => binding.principal_type === "global" && binding.is_enabled,
-          ),
         });
       })
       .catch((cause: unknown) => {
@@ -281,7 +276,6 @@ function QuickTest({ mandateKeys }: { mandateKeys: string[] }) {
           <MandateTestBench
             key={loaded.mandate.id}
             mandate={loaded.mandate}
-            globalBinding={loaded.globalBinding}
             baselineLabel="Pinned version"
             presetLatestCandidate
           />

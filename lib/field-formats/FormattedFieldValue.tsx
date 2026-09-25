@@ -15,7 +15,7 @@
 import type { ReactNode } from "react";
 import { ExternalLink, Mail, MapPin, Phone, Star } from "lucide-react";
 
-import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { cn } from "@/utils/cn";
 
 import {
@@ -296,7 +296,7 @@ function renderRich(
             className,
           )}
         >
-          <InlineMarkdownWithLinks text={text} />
+          <RichContent level="inline" source={text} isStreaming={false} />
         </span>
       );
     case "tags": {

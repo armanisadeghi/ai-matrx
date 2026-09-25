@@ -32,6 +32,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { getOrganizationMembers } from "@/features/organizations/service";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { RecordOrganizationSwitchOffer } from "@/features/organizations/components/RecordOrganizationSwitchOffer";
 import { createClient } from "@/utils/supabase/client";
 import { useSharedTable } from "@/features/unified-data/hub/useSharedTable";
 import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
@@ -634,6 +635,20 @@ export default function UnifiedDataTableRoute({
                 own organization's things are not around it. One row, the
                 organization's name, and what they hold. */}
             <TableTitle tableId={tableId} context={whereItLives} />
+            {/* A new record lands in the TABLE'S organization. The table always
+                opens; when it lives somewhere other than the selected
+                organization (or none is selected), the one offer names the
+                table's own organization and switches on one click. A table
+                shared from outside gets no offer — nothing to switch to. */}
+            {object.state === "found" ? (
+              <RecordOrganizationSwitchOffer
+                organizationId={object.organizationId}
+                organizationName={knownOrganizationName}
+                isMember={shared.state === "shared" ? false : undefined}
+                what="table"
+                className="mb-3"
+              />
+            ) : null}
             {/* SIDE BY SIDE IS A FACT, NOT A BANNER (owner, 2026-09-24): no notice that this table
                 also lives in the older system, and no "shared with you" paragraph — the table's
                 row names its organization and the level it was shared at. */}

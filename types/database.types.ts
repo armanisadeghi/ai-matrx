@@ -71147,6 +71147,10 @@ export type Database = {
         Args: { p_subject_id: string; p_subject_type: string }
         Returns: string
       }
+      _output_feedback_subject_readable: {
+        Args: { p_subject_id: string; p_subject_type: string }
+        Returns: boolean
+      }
       _outsider_parent_matches: {
         Args: { p_id: string; p_parent: string; p_resource: string }
         Returns: boolean

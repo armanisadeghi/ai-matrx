@@ -84,6 +84,11 @@ jest.mock("@/components/official/entity-ref/EntityRef", () => ({
 }));
 
 import { ScopeHolderBar, type BindingRung } from "../ScopeHolderBar";
+import {
+  defaultHolderRungOffer,
+  type DefaultHolderRungOffer,
+} from "../default-holder-rung";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 
 const JOB = {
   mandateKey: "mandate.guard_probe",
@@ -94,7 +99,10 @@ const JOB = {
   coverageLine: "",
 };
 
-function renderAt(rung: BindingRung): { text: string; root: Root } {
+function renderAt(
+  rung: BindingRung | "system",
+  defaultHolderOffer: DefaultHolderRungOffer | null = null,
+): { text: string; root: Root } {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
@@ -104,6 +112,7 @@ function renderAt(rung: BindingRung): { text: string; root: Root } {
         rung={rung}
         organizationId={rung === "org" ? "org-1" : null}
         allowGlobal
+        defaultHolderOffer={defaultHolderOffer}
         onRungChange={() => undefined}
         holder={{
           kind: "agent",
@@ -130,11 +139,19 @@ afterEach(() => {
 });
 
 describe("the holder picker is restricted BY RUNG, at the door", () => {
-  it("the system rung can reach the system catalogue and nothing else", () => {
-    const { text, root } = renderAt("global");
+  it("a system-homed default can reach the system catalogue and nothing else", () => {
+    const { text, root } = renderAt(
+      "system",
+      defaultHolderRungOffer({
+        homeOrganizationId: SYSTEM_ORGANIZATION_ID,
+        homeOrganizationName: "Matrx System",
+        homeOrganizationRole: null,
+        isSuperAdmin: true,
+      }),
+    );
     expect(lastDropdownProps?.visibleTabs).toEqual(["system"]);
     expect(lastDropdownProps?.initialTab).toBe("system");
-    expect(text).toContain("only system agents can be bound here");
+    expect(text).toContain("only system agents can hold it");
     act(() => root.unmount());
   });
 

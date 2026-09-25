@@ -18,7 +18,7 @@
  * and the schedule spend money and change what gets published.
  */
 
-import type { SurfaceAgentRole, SurfaceManifest } from "@/features/surfaces/types";
+import type { ManifestAgentRole, SurfaceManifest } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import { RUN_CONSOLE_GROUPS, RUN_CONSOLE_VALUES } from "./_run-console.manifest";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
@@ -26,7 +26,7 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 export const MARKETING_AUTOMATIONS_SURFACE_NAME =
   "matrx-user/marketing-automations";
 
-const agentRoles: SurfaceAgentRole[] = [
+const agentRoles: ManifestAgentRole[] = [
   {
     name: "topic_assigner",
     label: "Topic assigner",

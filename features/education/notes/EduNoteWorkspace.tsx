@@ -13,7 +13,7 @@ import { EduNoteActionBar } from "./EduNoteActionBar";
 
 export function EduNoteWorkspace({ noteId }: { noteId: string }) {
   return (
-    <div className="flex h-full w-full min-h-0 flex-col bg-textured">
+    <div className="flex h-full w-full min-h-0 flex-col overflow-hidden bg-textured">
       <EduNoteActionBar noteId={noteId} />
       <div className="min-h-0 flex-1">
         <NotesView

@@ -90,7 +90,6 @@ export type MandateListHealth =
   // that rung and ran the system default — the list naming a rung that does not
   // run (V-CORRECTNESS §5d). `resolved_layer` is now always the rung that wins,
   // and these three say which rung was dropped to get there.
-  | "global rung dropped"
   | "org rung dropped"
   | "user rung dropped"
   // 🚨 THE OUTPUT HALF OF THE CONTRACT (2026-09-08, FIX-R5). Its holder cannot
@@ -114,8 +113,6 @@ export const HEALTH_EXPLANATION: Partial<Record<MandateListHealth, string>> = {
     "Your organization chose an agent for this job, but its members cannot open that agent — so the choice could not be used and the job runs the rung below. Share the agent with the organization, or bind one it already has.",
   "user rung dropped":
     "Your own choice for this job names an agent you cannot open, so it could not be used and the job runs the rung below. Pick an agent you have access to.",
-  "global rung dropped":
-    "The platform-wide choice for this job names an agent that is not a system agent, so it could not be used and the job runs its own default.",
   "output contract unmet":
     "The agent fulfilling this job does not declare the structured output the job requires, so whatever reads this job's result cannot be produced and the run fails. Give that agent an output schema declaring the required keys, or assign an agent that already does.",
 };
@@ -196,7 +193,6 @@ export function healthMeta(value: string): BadgeMeta {
     case "holder missing":
     case "holder unreachable":
     case "version unreachable":
-    case "global rung dropped":
     case "org rung dropped":
     case "user rung dropped":
     case "output contract unmet":

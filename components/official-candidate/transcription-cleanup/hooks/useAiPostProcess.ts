@@ -17,9 +17,10 @@
  *   instance so the definition snapshot has the right variable names.
  *
  * Flow:
+ *   0. resolveMandate(agent.mandateKey) — the mandate's current Holder id.
  *   1. fetchAgentExecutionMinimal(agentId) — populates redux with the agent's
  *      variable_definitions + context_slots.
- *   2. createManualInstance({ agentId, displayMode: "direct", autoRun: false,
+ *   2. createManualInstance({ agentId, mandateKey, displayMode: "direct", autoRun: false,
  *      apiEndpointMode: "agent" }) — snapshots definitions onto the instance.
  *   3. setUserVariableValues — wire the transcript to its variable key, and
  *      (if the agent declares `contextVariableKey`) wire user context as a
@@ -40,6 +41,7 @@ import { executeInstance } from "@/features/agents/redux/execution-system/thunks
 import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
+import { resolveMandate } from "@/features/mandates/service";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   selectPrimaryRequest,
@@ -108,14 +110,22 @@ export function useAiPostProcess() {
       setError(null);
       setLaunching(true);
       try {
-        // Load the agent's variable_definitions + context_slots into redux.
+        // THE MANDATE DECIDES THE HOLDER. Resolve per run (never cached in a
+        // constant) so a rebinding in the mandate console takes effect on the
+        // next click; an unresolvable mandate throws and lands in `error`.
+        const { agentId } = await resolveMandate(agent.mandateKey);
+        // Load the Holder's variable_definitions + context_slots into redux.
         // createManualInstance snapshots these onto the instance and
         // executeInstance reads through that snapshot, not agentId.
-        await dispatch(fetchAgentExecutionMinimal(agent.id)).unwrap();
+        await dispatch(fetchAgentExecutionMinimal(agentId)).unwrap();
 
         const cid = await dispatch(
           createManualInstance({
-            agentId: agent.id,
+            agentId,
+            // THE MANDATE DOOR: turn 1 posts to /ai/mandates/{key}; the
+            // server resolves the Holder for this principal. agentId above
+            // is display identity + the variable snapshot only.
+            mandateKey: agent.mandateKey,
             sourceFeature: "transcription",
             apiEndpointMode: "agent",
             displayMode: "direct",

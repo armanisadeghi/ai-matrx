@@ -73,12 +73,12 @@ function workspaceData(
 }
 
 describe("whose agent the + Agent door creates", () => {
-  it("creates a SYSTEM agent on the platform-wide rung", () => {
+  it("creates a SYSTEM agent on a system-homed default", () => {
     expect(
       holderDraftOwnerOf({
-        rung: "global",
+        rung: "system",
         organizationId: null,
-        systemHomed: false,
+        systemHomed: true,
       }),
     ).toEqual({ kind: "system" });
   });

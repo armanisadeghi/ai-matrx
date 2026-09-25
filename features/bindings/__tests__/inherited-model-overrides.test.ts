@@ -9,9 +9,8 @@ type Layer = Pick<
 // Expectations follow service.py::_apply_layer and UnifiedConfig.apply_overrides,
 // independently of the editor's merge implementation.
 const layers: Layer[] = [
-  { rung: "system", is_enabled: true, config_overrides: null },
   {
-    rung: "global",
+    rung: "system",
     is_enabled: true,
     config_overrides: {
       temperature: 0.3,
@@ -23,7 +22,7 @@ const layers: Layer[] = [
   { rung: "user", is_enabled: true, config_overrides: { temperature: 1.1 } },
 ];
 
-it("org editing inherits system binding settings, never its local or personal settings", () => {
+it("org editing inherits the default's settings, never its local or personal settings", () => {
   expect(inheritedModelOverrides(layers, "org")).toEqual({
     values: {
       temperature: 0.3,
@@ -53,9 +52,8 @@ it("personal editing uses organization precedence and excludes existing personal
   });
 });
 
-it("system and global editing have no inherited binding parameters", () => {
+it("system editing has no inherited binding parameters", () => {
   expect(inheritedModelOverrides(layers, "system").values).toEqual({});
-  expect(inheritedModelOverrides(layers, "global").values).toEqual({});
 });
 
 it("disabled layers do not contribute", () => {
@@ -78,7 +76,6 @@ it("an enabled layer contributes parameters even when its holder is dropped", ()
 it("final null cancels an earlier override and restores authored holder settings", () => {
   const cleared: Layer[] = [
     layers[0],
-    layers[1],
     {
       rung: "org",
       is_enabled: true,
@@ -101,7 +98,7 @@ it("final null cancels an earlier override and restores authored holder settings
 it("complex values replace as a whole rather than recursively merging", () => {
   const complex: Layer[] = [
     {
-      rung: "global",
+      rung: "system",
       is_enabled: true,
       config_overrides: {
         response_format: {
@@ -124,7 +121,7 @@ it("complex values replace as a whole rather than recursively merging", () => {
 it("does not silently accept malformed inherited settings", () => {
   expect(() =>
     inheritedModelOverrides(
-      [{ rung: "global", is_enabled: true, config_overrides: [] }],
+      [{ rung: "system", is_enabled: true, config_overrides: [] }],
       "org",
     ),
   ).toThrow("System model overrides must be an object");

@@ -18,6 +18,7 @@ import type {
 } from "@/features/surfaces/types";
 import { DETECTABLE_DIAGRAM_TYPES } from "@/components/mermaid/diagram-type";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
 
 const surfaceSpecific: SurfaceValue[] = [
   {
@@ -211,7 +212,8 @@ export const mermaidEditorManifest: SurfaceManifest = {
       kind: "multi",
       // Builtin "Diagram Editor" agent (agent.definition, agent_type='builtin'),
       // seeded 2026-07-07 with the mermaid-diagrams skill via skill_config.included.
-      defaultAgentId: "bdaf5ee0-b490-46a4-884c-3786121bb126",
+      defaultAgentId: null,
+      mandateKey: dbAuthoredMandateKey("mermaid.diagram_editing"),
       maxAgents: 5,
       allowCustom: true,
       autoRun: "never",

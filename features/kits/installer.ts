@@ -1,27 +1,39 @@
 // features/kits/installer.ts — installing a kit, step by step, under the person.
 //
 // THE ORDER (PLAN.md § P2 + the owner's contract change, 2026-09-25):
-//   0. the install record FIRST — a row in the organization's "Kit installs" table
-//   1. each table            → `declareTable` (@ai-matrx/records/core)
-//   2. each table's examples → `recordWriteMany` (one statement per table)
-//   3. each agent            → `agx_duplicate_agent` via the `duplicateAgent` thunk (the ONE fork),
-//                              then renamed/tagged from the manifest
-//   4. each agent's bindings → the merge-field binding written onto the copy's variable
-//   5. each workflow         → aidream `POST /workflows` through `callApi`
-//   6. the install marked installed
+//   0. the install record FIRST — a row in the organization's "Kit installs" table,
+//      claimed under a UNIQUE rule (one live install per kit per organization)
+//   1. per table: `declareTable`, then its example rows (`recordWriteMany`)
+//   2. per agent: `agx_duplicate_agent` via the `duplicateAgent` thunk (the ONE fork),
+//      renamed/tagged from the manifest, then the merge-field bindings written
+//   3. per workflow: aidream `POST /workflows` through `callApi`
+//   4. the install marked installed
 //
 // Every id a step creates is written to the install record BEFORE the next step
 // starts, so a re-run RESUMES from recorded ids. Nothing is ever matched by name:
 // a person's own same-named table is never adopted.
 //
-// Everything runs in the browser, as the person, in the organization they SET —
-// the caller passes that id; nothing here picks one.
+// ONE ORGANIZATION FOR THE WHOLE RUN: the caller captures it at the start and it is
+// passed EXPLICITLY to every writer (the records client, the agent fork, the
+// workflow create). Nothing here reads the active organization mid-install.
+//
+// CONCURRENCY, AT THE DATA LAYER: a brand-new install claims the ledger's `live_key`
+// column, which the store keeps UNIQUE among live records — a second tab's claim is
+// refused by the store and that tab attaches to the existing record. Resuming an
+// existing record takes a lease (`run_id` + `run_until`) and every later write of the
+// record carries the version it last wrote (`expectedVersion`), so a second runner
+// that slipped past the lease loses its next write and stops.
 
-import { createRecordsClient, declareTable, type RecordsClient } from "@ai-matrx/records/core";
-import type { NewFieldSpec } from "@ai-matrx/records/core";
+import {
+  createRecordsClient,
+  declareTable,
+  fieldDeclarationFor,
+  type RecordsClient,
+  type NewFieldSpec,
+} from "@ai-matrx/records/core";
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
-import { createClient } from "@/utils/supabase/client";
-import { supabase } from "@/utils/supabase/client";
+import { guardedUpdate } from "@ai-matrx/data/db";
+import { createClient, supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import type { AppDispatch } from "@/lib/redux/store";
 import { duplicateAgent } from "@/features/agents/redux/agent-definition/thunks";
@@ -50,11 +62,21 @@ export function kitRecordsClient(organizationId: string, userId: string | null):
 
 class InstallError extends Error {}
 
+/** Another tab (or person) holds this install right now. */
+export class InstallBusyError extends Error {}
+
 function refusal(what: string, message: string, hint?: string): InstallError {
   return new InstallError(`${what}: ${message}${hint ? ` (${hint})` : ""}`);
 }
 
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
 // ─── the ledger: "Kit installs" ─────────────────────────────────────────────
+
+/** How long a runner's claim on an install lasts without a write renewing it. */
+const RUN_LEASE_MS = 3 * 60_000;
 
 const LEDGER_FIELDS: NewFieldSpec[] = [
   { key: "kit_key", label: "Kit", type: "text", sort: 10 },
@@ -62,9 +84,14 @@ const LEDGER_FIELDS: NewFieldSpec[] = [
   { key: "status", label: "Status", type: "text", sort: 30 },
   { key: "steps", label: "What it created", type: "long_text", sort: 40 },
   { key: "error", label: "Last problem", type: "long_text", sort: 50 },
+  // The claim: the kit key while the install is live, `removed:<id>` once removed.
+  // UNIQUE among live records (promoted index), so two claims cannot both land.
+  { key: "live_key", label: "Live claim", type: "text", sort: 60 },
+  { key: "run_id", label: "Running in", type: "text", sort: 70 },
+  { key: "run_until", label: "Running until", type: "text", sort: 80 },
 ];
 
-/** The organization's install ledger, if it has one. Found by its reserved slug and its `kit_key` column. */
+/** The organization's install ledger, if it has one. Found by its reserved slug. */
 export async function findLedger(client: RecordsClient): Promise<string | null> {
   const tables = await client.tableList();
   if (!tables.ok) throw refusal("Could not list this organization's tables", tables.error.message, tables.error.hint);
@@ -72,36 +99,108 @@ export async function findLedger(client: RecordsClient): Promise<string | null> 
   return ledger ? ledger.id : null;
 }
 
+/**
+ * The ledger with its full shape: every column, `live_key` unique, and the table
+ * itself kept by the app (it lives in the app lane, not the person's data list)
+ * and closed to agents. Idempotent — safe on every install start.
+ */
 async function ensureLedger(client: RecordsClient): Promise<string> {
-  const found = await findLedger(client);
-  if (found) return found;
-  const made = await declareTable(client, {
-    name: KIT_INSTALLS_TABLE.name,
-    slug: KIT_INSTALLS_TABLE.slug,
-    labelSingular: "Kit install",
-    labelPlural: KIT_INSTALLS_TABLE.name,
-    titleField: "kit_key",
-    fields: LEDGER_FIELDS,
-  });
-  if (!made.ok) throw refusal(`Could not make the "${KIT_INSTALLS_TABLE.name}" table`, made.error.message, made.error.hint);
-  await client.recordUpdate({
-    record_id: made.data,
+  let ledger = await findLedger(client);
+  if (!ledger) {
+    const made = await declareTable(client, {
+      name: KIT_INSTALLS_TABLE.name,
+      slug: KIT_INSTALLS_TABLE.slug,
+      labelSingular: "Kit install",
+      labelPlural: KIT_INSTALLS_TABLE.name,
+      titleField: "kit_key",
+      fields: LEDGER_FIELDS,
+    });
+    if (!made.ok) throw refusal(`Could not make the "${KIT_INSTALLS_TABLE.name}" table`, made.error.message, made.error.hint);
+    ledger = made.data;
+  }
+  const placed = await client.recordUpdate({
+    record_id: ledger,
     patch: {
-      description: `Where this organization records each ${KIT_WORD.oneLower} it installed and exactly what that install created, so a re-run finishes it and a removal takes back only what it made.`,
+      description: `Where this organization records each ${KIT_WORD.oneLower} it installed and exactly what that install created, so a re-run finishes it and a removal takes back only what it made. Kept by the app.`,
+      kept_by_the_app: true,
+      kept_for: "kits",
+      agent_writable: false,
     },
   });
-  return made.data;
+  if (!placed.ok) {
+    throw refusal(`Could not mark the "${KIT_INSTALLS_TABLE.name}" table as kept by the app`, placed.error.message, placed.error.hint);
+  }
+  const fields = await client.fields({ table_id: ledger });
+  if (!fields.ok) throw refusal("Could not read the install table's columns", fields.error.message, fields.error.hint);
+  const have = new Set(fields.data.map((f) => f.key));
+  for (const spec of LEDGER_FIELDS) {
+    if (have.has(spec.key)) continue;
+    const added = await client.fieldDeclare({ table_id: ledger, spec: fieldDeclarationFor(spec) });
+    if (!added.ok) throw refusal(`Could not add the "${spec.label}" column to the install table`, added.error.message, added.error.hint);
+  }
+  const refreshed = await client.fields({ table_id: ledger });
+  if (!refreshed.ok) throw refusal("Could not read the install table's columns", refreshed.error.message, refreshed.error.hint);
+  const liveKey = refreshed.data.find((f) => f.key === "live_key");
+  if (!liveKey) throw new InstallError("The install table has no claim column after adding it.");
+  // The Field row carries the flag in its stored document; the typed shape does not
+  // name it, so it is read off the row as data. Promoting again is idempotent.
+  const liveKeyDoc = liveKey as unknown as Record<string, unknown>;
+  const isUnique = liveKeyDoc.unique === true || (isRecord(liveKey.config) && liveKey.config.unique === true);
+  if (!isUnique) {
+    const made = await client.fieldUpdate({ field_id: liveKey.id, patch: { promoted: true, unique: true } });
+    if (!made.ok) {
+      throw refusal("Could not make the install claim unique, so two installs could start at once", made.error.message, made.error.hint);
+    }
+  }
+  return ledger;
 }
 
 function parseSteps(raw: unknown): KitInstallSteps {
   if (typeof raw !== "string" || !raw.trim()) return {};
   try {
     const parsed: unknown = JSON.parse(raw);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as KitInstallSteps) : {};
+    return isRecord(parsed) ? (parsed as KitInstallSteps) : {};
   } catch {
     console.error("[kits] an install record's steps are not JSON — treated as empty", raw);
     return {};
   }
+}
+
+interface LedgerRow {
+  install: KitInstallRecord;
+  liveKey: string | null;
+  runId: string | null;
+  runUntil: number | null;
+}
+
+async function readLedgerRow(
+  client: RecordsClient,
+  organizationId: string,
+  kitKey: string,
+): Promise<LedgerRow | null> {
+  const ledger = await findLedger(client);
+  if (!ledger) return null;
+  const read = await client.list({ table_id: ledger, filter: { kit_key: kitKey }, limit: 50 });
+  if (!read.ok) throw refusal("Could not read the install record", read.error.message, read.error.hint);
+  const live = read.data.rows.find((r) => r.document.status !== "removed");
+  if (!live) return null;
+  const doc = live.document;
+  const until = typeof doc.run_until === "string" ? Date.parse(doc.run_until) : NaN;
+  return {
+    install: {
+      id: live.id,
+      kit_key: kitKey,
+      kit_version: typeof doc.kit_version === "number" ? doc.kit_version : Number(doc.kit_version) || 1,
+      organization_id: organizationId,
+      status: (typeof doc.status === "string" ? doc.status : "installing") as KitInstallRecord["status"],
+      steps: parseSteps(doc.steps),
+      error: typeof doc.error === "string" && doc.error ? doc.error : null,
+      ledger_table_id: ledger,
+    },
+    liveKey: typeof doc.live_key === "string" && doc.live_key ? doc.live_key : null,
+    runId: typeof doc.run_id === "string" && doc.run_id ? doc.run_id : null,
+    runUntil: Number.isFinite(until) ? until : null,
+  };
 }
 
 /** The live (not removed) install of this kit in this organization, or null. */
@@ -110,43 +209,55 @@ export async function readInstall(
   organizationId: string,
   kitKey: string,
 ): Promise<KitInstallRecord | null> {
-  const ledger = await findLedger(client);
-  if (!ledger) return null;
-  const read = await client.list({ table_id: ledger, filter: { kit_key: kitKey }, limit: 50 });
-  if (!read.ok) throw refusal("Could not read the install record", read.error.message, read.error.hint);
-  const live = read.data.rows.find((r) => r.document.status !== "removed");
-  if (!live) return null;
-  const doc = live.document;
+  return (await readLedgerRow(client, organizationId, kitKey))?.install ?? null;
+}
+
+/** Whether somebody else is running this install right now. */
+export async function installRunningElsewhere(
+  client: RecordsClient,
+  organizationId: string,
+  kitKey: string,
+  myRunId: string | null,
+): Promise<boolean> {
+  const row = await readLedgerRow(client, organizationId, kitKey);
+  return !!row && !!row.runId && row.runId !== myRunId && (row.runUntil ?? 0) > Date.now();
+}
+
+/** A write of the install record that must follow the version this runner last wrote. */
+interface RecordWriter {
+  save: (install: KitInstallRecord, extra?: Record<string, unknown>) => Promise<void>;
+}
+
+function versionedWriter(client: RecordsClient, runId: string, startVersion: number): RecordWriter {
+  let version = startVersion;
   return {
-    id: live.id,
-    kit_key: kitKey,
-    kit_version: typeof doc.kit_version === "number" ? doc.kit_version : Number(doc.kit_version) || 1,
-    organization_id: organizationId,
-    status: (typeof doc.status === "string" ? doc.status : "installing") as KitInstallRecord["status"],
-    steps: parseSteps(doc.steps),
-    error: typeof doc.error === "string" && doc.error ? doc.error : null,
-    ledger_table_id: ledger,
+    async save(install, extra = {}) {
+      const saved = await client.recordUpdate({
+        record_id: install.id,
+        expectedVersion: version,
+        patch: {
+          status: install.status,
+          steps: JSON.stringify(install.steps),
+          error: install.error ?? "",
+          run_id: runId,
+          run_until: new Date(Date.now() + RUN_LEASE_MS).toISOString(),
+          ...extra,
+        },
+      });
+      if (!saved.ok) {
+        throw new InstallBusyError(
+          `This ${KIT_WORD.oneLower} is being installed somewhere else at the same time (another tab or another person), so this run stopped to avoid doing the same work twice. ${saved.error.message}`,
+        );
+      }
+      version = saved.data;
+    },
   };
 }
 
-async function saveInstall(client: RecordsClient, install: KitInstallRecord): Promise<void> {
-  const saved = await client.recordUpdate({
-    record_id: install.id,
-    patch: {
-      status: install.status,
-      steps: JSON.stringify(install.steps),
-      error: install.error ?? "",
-    },
-  });
-  if (!saved.ok) throw refusal("Could not update the install record", saved.error.message, saved.error.hint);
-}
-
-// ─── the plan: which steps an install has ───────────────────────────────────
+// ─── the plan: which steps an install has (the order the installer runs) ────
 
 export function planSteps(manifest: KitManifest): InstallStepView[] {
-  const steps: InstallStepView[] = [
-    { id: "ledger", label: "Record the install", state: "pending" },
-  ];
+  const steps: InstallStepView[] = [{ id: "ledger", label: "Record the install", state: "pending" }];
   for (const t of manifest.tables) {
     steps.push({ id: `table:${t.key}`, label: `Create the "${t.name}" table`, state: "pending" });
     if (t.records.length > 0) {
@@ -183,9 +294,7 @@ export function stepsFromInstall(manifest: KitManifest, install: KitInstallRecor
         return { ...step, state: "done" };
       case "table": {
         const id = key ? s.tables?.[key] : undefined;
-        return id
-          ? { ...step, state: "done", links: [{ label: "Open table", href: KIT_ROUTES.table(id) }] }
-          : step;
+        return id ? { ...step, state: "done", links: [{ label: "Open table", href: KIT_ROUTES.table(id) }] } : step;
       }
       case "records": {
         const ids = key ? s.records?.[key] : undefined;
@@ -193,17 +302,13 @@ export function stepsFromInstall(manifest: KitManifest, install: KitInstallRecor
       }
       case "agent": {
         const id = key ? s.agents?.[key] : undefined;
-        return id
-          ? { ...step, state: "done", links: [{ label: "Open agent", href: KIT_ROUTES.agent(id) }] }
-          : step;
+        return id ? { ...step, state: "done", links: [{ label: "Open agent", href: KIT_ROUTES.agent(id) }] } : step;
       }
       case "bind":
         return key && s.bindings?.[key] ? { ...step, state: "done" } : step;
       case "workflow": {
         const id = key ? s.workflows?.[key] : undefined;
-        return id
-          ? { ...step, state: "done", links: [{ label: "Open workflow", href: KIT_ROUTES.workflow(id) }] }
-          : step;
+        return id ? { ...step, state: "done", links: [{ label: "Open workflow", href: KIT_ROUTES.workflow(id) }] } : step;
       }
       case "finish":
         return install.status === "installed" ? { ...step, state: "done" } : step;
@@ -215,10 +320,6 @@ export function stepsFromInstall(manifest: KitManifest, install: KitInstallRecor
 
 // ─── value resolution ───────────────────────────────────────────────────────
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
-}
-
 /** A seed value that points at a row of another kit table: `{table_key, record_index}`. */
 function resolveSeedValue(value: unknown, steps: KitInstallSteps): unknown {
   if (Array.isArray(value)) return value.map((v) => resolveSeedValue(v, steps));
@@ -226,7 +327,7 @@ function resolveSeedValue(value: unknown, steps: KitInstallSteps): unknown {
     const id = steps.records?.[value.table_key]?.[value.record_index];
     if (!id) {
       throw new InstallError(
-        `An example row points at row ${value.record_index + 1} of the kit's "${value.table_key}" table, which was not created.`,
+        `An example row points at row ${value.record_index + 1} of the kit's "${value.table_key}" table, which has not been created yet.`,
       );
     }
     return id;
@@ -290,22 +391,76 @@ function fieldSpecs(manifest: KitManifest, tableKey: string, steps: KitInstallSt
   });
 }
 
+// ─── the agent writes: guarded, and they must change a row ──────────────────
+
+interface AgentRow {
+  id: string;
+  version: number;
+  tags: string[] | null;
+  variable_definitions: Json | null;
+}
+
+async function readAgentRow(agentId: string): Promise<AgentRow> {
+  const { data, error } = await supabase
+    .schema("agent")
+    .from("definition")
+    .select("id, version, tags, variable_definitions")
+    .eq("id", agentId)
+    .maybeSingle();
+  if (error) throw new InstallError(`The copied agent could not be read: ${error.message}`);
+  if (!data) throw new InstallError("The copied agent could not be found — it may have been deleted, or you may not read it.");
+  return data as AgentRow;
+}
+
+/** One guarded write to the copied agent. `not_found` / `conflict` are named failures, never a silent no-op. */
+async function writeAgent(
+  agentId: string,
+  what: string,
+  build: (current: AgentRow) => Partial<{ name: string; description: string; tags: string[]; variable_definitions: Json }>,
+): Promise<void> {
+  const base = await readAgentRow(agentId);
+  const result = await guardedUpdate<AgentRow>({
+    expectedVersion: base.version,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      supabase
+        .schema("agent")
+        .from("definition")
+        .update({ ...build(base), version: nextVersion })
+        .eq("id", agentId)
+        .eq("version", expectedVersion)
+        .select("id, version, tags, variable_definitions")
+        .maybeSingle(),
+    fetchCurrent: () =>
+      supabase
+        .schema("agent")
+        .from("definition")
+        .select("id, version, tags, variable_definitions")
+        .eq("id", agentId)
+        .maybeSingle(),
+  });
+  if (result.status === "not_found") {
+    throw new InstallError(`Could not ${what}: the copied agent was not found, or you may not edit it.`);
+  }
+  if (result.status === "conflict") {
+    throw new InstallError(`Could not ${what}: the agent changed while the kit was writing to it. Finish the install to try again.`);
+  }
+}
+
 // ─── the run ────────────────────────────────────────────────────────────────
 
 export interface InstallContext {
   client: RecordsClient;
   dispatch: AppDispatch;
+  /** Captured once, at the click. Every writer receives THIS id. */
   organizationId: string;
   manifest: KitManifest;
+  /** This tab's run id — the lease holder. */
+  runId: string;
   /** Called after every state change so the stepper redraws live. */
   onProgress: (steps: InstallStepView[], install: KitInstallRecord | null) => void;
 }
 
-function withState(
-  steps: InstallStepView[],
-  id: string,
-  patch: Partial<InstallStepView>,
-): InstallStepView[] {
+function withState(steps: InstallStepView[], id: string, patch: Partial<InstallStepView>): InstallStepView[] {
   return steps.map((s) => (s.id === id ? { ...s, ...patch } : s));
 }
 
@@ -314,12 +469,14 @@ type CreateWorkflowBody = components["schemas"]["CreateWorkflowRequest"];
 /**
  * Install (or finish installing) a kit. Resumes from the recorded ids. Returns the
  * install record; on failure the record says `failed` with the door's sentence and
- * everything created so far stays recorded.
+ * everything created so far stays recorded. Throws `InstallBusyError` when another
+ * runner holds the install.
  */
 export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord> {
-  const { client, dispatch, organizationId, manifest, onProgress } = ctx;
-  let install = await readInstall(client, organizationId, manifest.key);
-  let view = stepsFromInstall(manifest, install);
+  const { client, dispatch, organizationId, manifest, onProgress, runId } = ctx;
+  let view: InstallStepView[] = planSteps(manifest);
+  let install: KitInstallRecord | null = null;
+  let writer: RecordWriter | null = null;
   const emit = () => onProgress(view, install);
   let current = "ledger";
 
@@ -333,14 +490,15 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
     emit();
   };
   const record = async () => {
-    if (install) await saveInstall(client, install);
+    if (install && writer) await writer.save(install);
   };
 
   try {
-    // 0 — THE INSTALL RECORD, FIRST.
-    if (!install) {
-      start("ledger");
-      const ledger = await ensureLedger(client);
+    // 0 — THE INSTALL RECORD, FIRST, CLAIMED.
+    start("ledger");
+    const ledger = await ensureLedger(client);
+    let row = await readLedgerRow(client, organizationId, manifest.key);
+    if (!row) {
       const written = await client.recordWrite({
         table_id: ledger,
         data: {
@@ -349,28 +507,49 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
           status: "installing",
           steps: "{}",
           error: "",
+          live_key: manifest.key,
+          run_id: runId,
+          run_until: new Date(Date.now() + RUN_LEASE_MS).toISOString(),
         },
       });
-      if (!written.ok) throw refusal("Could not write the install record", written.error.message, written.error.hint);
-      install = {
-        id: written.data,
-        kit_key: manifest.key,
-        kit_version: manifest.version,
-        organization_id: organizationId,
-        status: "installing",
-        steps: {},
-        error: null,
-        ledger_table_id: ledger,
-      };
-      done("ledger");
-    } else {
-      install = { ...install, status: "installing", error: null };
-      await record();
+      if (!written.ok) {
+        if (written.error.code === "already_exists" || written.error.sqlstate === "23505") {
+          throw new InstallBusyError(
+            `This ${KIT_WORD.oneLower} is already being installed in this organization (another tab or another person started it a moment ago). Showing that install.`,
+          );
+        }
+        throw refusal("Could not write the install record", written.error.message, written.error.hint);
+      }
+      row = await readLedgerRow(client, organizationId, manifest.key);
+      if (!row || row.install.id !== written.data) {
+        throw new InstallError("The install record was written but could not be read back.");
+      }
+    } else if (row.runId && row.runId !== runId && (row.runUntil ?? 0) > Date.now()) {
+      throw new InstallBusyError(
+        `This ${KIT_WORD.oneLower} is already being installed in this organization (another tab or another person is running it). Showing that install.`,
+      );
     }
+    install = { ...row.install, status: "installing", error: null };
+    // The lease: an unversioned claim answers the version; every later write follows it.
+    const claimed = await client.recordUpdate({
+      record_id: install.id,
+      patch: {
+        status: "installing",
+        error: "",
+        run_id: runId,
+        run_until: new Date(Date.now() + RUN_LEASE_MS).toISOString(),
+        ...(row.liveKey ? {} : { live_key: manifest.key }),
+      },
+    });
+    if (!claimed.ok) throw refusal("Could not claim the install record", claimed.error.message, claimed.error.hint);
+    writer = versionedWriter(client, runId, claimed.data);
+    await record(); // proves the claim is ours before anything is created
+    view = stepsFromInstall(manifest, install).map((s) => (s.id === "finish" ? { ...s, state: "pending" as const } : s));
+    done("ledger");
     const steps = install.steps;
     const installTag = install.id.slice(0, 8);
 
-    // 1 + 2 — TABLES, THEN THEIR EXAMPLE ROWS.
+    // 1 — PER TABLE: THE TABLE, THEN ITS EXAMPLE ROWS.
     for (const table of manifest.tables) {
       const tableStep = `table:${table.key}`;
       if (!steps.tables?.[table.key]) {
@@ -383,9 +562,7 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
           fields: fieldSpecs(manifest, table.key, steps),
           ...(table.fields[0] ? { titleField: table.fields[0].key } : {}),
         });
-        if (!declared.ok) {
-          throw refusal(`Could not create "${table.name}"`, declared.error.message, declared.error.hint);
-        }
+        if (!declared.ok) throw refusal(`Could not create "${table.name}"`, declared.error.message, declared.error.hint);
         steps.tables = { ...(steps.tables ?? {}), [table.key]: declared.data };
         await record();
         const described = await client.recordUpdate({
@@ -395,39 +572,46 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
           },
         });
         if (!described.ok) {
-          console.warn(`[kits] "${table.name}" was made but its description was not saved: ${described.error.message}`);
+          throw refusal(
+            `"${table.name}" was made but could not be labelled with its install (so it could not be removed safely later)`,
+            described.error.message,
+            described.error.hint,
+          );
         }
         done(tableStep, { links: [{ label: "Open table", href: KIT_ROUTES.table(declared.data) }] });
       }
-    }
-    for (const table of manifest.tables) {
-      if (table.records.length === 0) continue;
-      const recordsStep = `records:${table.key}`;
-      if (steps.records?.[table.key]) continue;
-      start(recordsStep);
-      const tableId = steps.tables![table.key]!;
-      const rows = table.records.map((r) => {
-        const out: Record<string, unknown> = {};
-        for (const [k, v] of Object.entries(r)) out[k] = resolveSeedValue(v, steps);
-        return out;
-      });
-      const written = await client.recordWriteMany({ table_id: tableId, rows });
-      if (!written.ok) {
-        throw refusal(`Could not add the example rows to "${table.name}"`, written.error.message, written.error.hint);
+      if (table.records.length > 0 && !steps.records?.[table.key]) {
+        const recordsStep = `records:${table.key}`;
+        start(recordsStep);
+        const tableId = steps.tables![table.key]!;
+        const rows = table.records.map((r) => {
+          const out: Record<string, unknown> = {};
+          for (const [k, v] of Object.entries(r)) out[k] = resolveSeedValue(v, steps);
+          return out;
+        });
+        const written = await client.recordWriteMany({ table_id: tableId, rows });
+        if (!written.ok) {
+          throw refusal(`Could not add the example rows to "${table.name}"`, written.error.message, written.error.hint);
+        }
+        if (written.data.length !== rows.length) {
+          throw new InstallError(`"${table.name}" was handed ${rows.length} example rows and kept ${written.data.length}.`);
+        }
+        steps.records = { ...(steps.records ?? {}), [table.key]: written.data };
+        await record();
+        done(recordsStep, { detail: `${written.data.length} added` });
       }
-      steps.records = { ...(steps.records ?? {}), [table.key]: written.data };
-      await record();
-      done(recordsStep, { detail: `${written.data.length} added` });
     }
 
-    // 3 + 4 — AGENTS, THEN THEIR BINDINGS.
+    // 2 — AGENTS, THEN THEIR BINDINGS.
     for (const agent of manifest.agents) {
       const agentStep = `agent:${agent.key}`;
       if (!steps.agents?.[agent.key]) {
         start(agentStep);
         let newId: string;
         try {
-          newId = await dispatch(duplicateAgent(agent.source_agent_id)).unwrap();
+          newId = await dispatch(
+            duplicateAgent({ agentId: agent.source_agent_id, organizationId }),
+          ).unwrap();
         } catch (err) {
           const message = err instanceof Error ? err.message : isRecord(err) && typeof err.message === "string" ? err.message : String(err);
           throw new InstallError(`Could not copy the agent: ${message}`);
@@ -435,59 +619,44 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
         steps.agents = { ...(steps.agents ?? {}), [agent.key]: newId };
         await record();
         // Named from the manifest (never "… (Copy)") and tagged with the install.
-        const { data: row, error: readError } = await supabase
-          .schema("agent")
-          .from("definition")
-          .select("tags")
-          .eq("id", newId)
-          .single();
-        if (readError) throw new InstallError(`The agent was copied but could not be read back: ${readError.message}`);
-        const tags = Array.from(new Set([...(row.tags ?? []), `kit:${manifest.key}`, `kit-install:${install.id}`]));
-        const { error: renameError } = await supabase
-          .schema("agent")
-          .from("definition")
-          .update({ name: agent.name, description: agent.description, tags })
-          .eq("id", newId);
-        if (renameError) throw new InstallError(`The agent was copied but could not be renamed: ${renameError.message}`);
+        await writeAgent(newId, "rename the copied agent", (cur) => ({
+          name: agent.name,
+          description: agent.description,
+          tags: Array.from(new Set([...(cur.tags ?? []), `kit:${manifest.key}`, `kit-install:${install!.id}`])),
+        }));
         done(agentStep, { links: [{ label: "Open agent", href: KIT_ROUTES.agent(newId) }] });
       }
       const bindStep = `bind:${agent.key}`;
       if (agent.bindings.length > 0 && !steps.bindings?.[agent.key]) {
         start(bindStep);
         const agentId = steps.agents![agent.key]!;
-        const { data: row, error } = await supabase
-          .schema("agent")
-          .from("definition")
-          .select("variable_definitions")
-          .eq("id", agentId)
-          .single();
-        if (error) throw new InstallError(`Could not read the copied agent's variables: ${error.message}`);
-        // Read and written RAW: every other key of every variable is kept byte-for-byte.
-        const defs = Array.isArray(row.variable_definitions)
-          ? (row.variable_definitions as unknown[]).map((d) => (isRecord(d) ? { ...d } : d))
-          : [];
-        for (const b of agent.bindings) {
-          const idx = defs.findIndex((d) => isRecord(d) && d.name === b.variable);
-          if (idx < 0) {
-            throw new InstallError(
-              `The copied agent has no variable named {{${b.variable}}}, so it cannot be connected. The kit expects the source agent to declare it.`,
-            );
+        await writeAgent(agentId, "connect the agent's variables to your data", (cur) => {
+          // Read and written RAW: every other key of every variable is kept byte-for-byte.
+          const defs = Array.isArray(cur.variable_definitions)
+            ? (cur.variable_definitions as unknown[]).map((d) => (isRecord(d) ? { ...d } : d))
+            : [];
+          for (const b of agent.bindings) {
+            const idx = defs.findIndex((d) => isRecord(d) && d.name === b.variable);
+            if (idx < 0) {
+              throw new InstallError(
+                `The copied agent has no variable named {{${b.variable}}}, so it cannot be connected. The kit expects the source agent to declare it.`,
+              );
+            }
+            const def = defs[idx] as Record<string, unknown>;
+            def.binding = resolveBinding(b.binding, steps);
+            // The bound value is the truth; a stale default would only mislead. A missing
+            // value is announced by the binding itself (`missing`).
+            def.defaultValue = null;
           }
-          (defs[idx] as Record<string, unknown>).binding = resolveBinding(b.binding, steps);
-        }
-        const { error: saveError } = await supabase
-          .schema("agent")
-          .from("definition")
-          .update({ variable_definitions: defs as Json })
-          .eq("id", agentId);
-        if (saveError) throw new InstallError(`Could not save the agent's connections: ${saveError.message}`);
+          return { variable_definitions: defs as Json };
+        });
         steps.bindings = { ...(steps.bindings ?? {}), [agent.key]: true };
         await record();
         done(bindStep);
       }
     }
 
-    // 5 — WORKFLOWS.
+    // 3 — WORKFLOWS.
     for (const wf of manifest.workflows) {
       const wfStep = `workflow:${wf.key}`;
       if (steps.workflows?.[wf.key]) continue;
@@ -497,6 +666,8 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
         callApi({
           path: "/workflows",
           method: "POST",
+          // The captured organization, not whatever is active when this line runs.
+          scopeOverrides: { organization_id: organizationId },
           body: {
             name: wf.name,
             description: wf.description,
@@ -515,19 +686,19 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
       done(wfStep, { links: [{ label: "Open workflow", href: KIT_ROUTES.workflow(workflowId) }] });
     }
 
-    // 6 — DONE.
+    // 4 — DONE. The lease is released.
     start("finish");
     install = { ...install, status: "installed", error: null };
-    await record();
+    await writer.save(install, { run_id: "", run_until: "" });
     done("finish");
     return install;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     view = withState(view, current, { state: "failed", detail: message });
-    if (install) {
+    if (install && writer && !(err instanceof InstallBusyError)) {
       install = { ...install, status: "failed", error: message };
       try {
-        await saveInstall(client, install);
+        await writer.save(install, { run_id: "", run_until: "" });
       } catch (saveErr) {
         console.error("[kits] the failure could not be written to the install record", saveErr);
       }
@@ -537,60 +708,151 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
   }
 }
 
-// ─── removal: exactly the recorded ids ──────────────────────────────────────
+// ─── removal: exactly the recorded ids, and only if they are still this install's ─
 
-export interface RemovalSummary {
-  tables: number;
+export interface RemovalFacts {
+  tables: { id: string; name: string; rows: number; retentionDays: number | null }[];
   agents: number;
   workflows: number;
+  /** Conversations people have had with the copied agent(s). */
+  conversations: number | null;
 }
 
-export function removalSummary(install: KitInstallRecord): RemovalSummary {
+/** What a removal would archive and what depends on it — read before the confirm dialog. */
+export async function removalFacts(client: RecordsClient, install: KitInstallRecord): Promise<RemovalFacts> {
+  const tableIds = Object.values(install.steps.tables ?? {});
+  const agentIds = Object.values(install.steps.agents ?? {});
+  const list = await client.tableList();
+  const tables = tableIds.map((id) => {
+    const t = list.ok ? list.data.find((x) => x.id === id) : undefined;
+    const rowsFromSteps = Object.entries(install.steps.tables ?? {}).find(([, v]) => v === id)?.[0];
+    return {
+      id,
+      name: t?.name ?? "a kit table",
+      rows: rowsFromSteps ? (install.steps.records?.[rowsFromSteps]?.length ?? 0) : 0,
+      retentionDays: t?.retention_days ?? null,
+    };
+  });
+  let conversations: number | null = null;
+  if (agentIds.length > 0) {
+    const { count, error } = await supabase
+      .schema("chat")
+      .from("conversation")
+      .select("id", { count: "exact", head: true })
+      .in("initial_agent_id", agentIds)
+      .is("deleted_at", null);
+    conversations = error ? null : (count ?? 0);
+  }
   return {
-    tables: Object.keys(install.steps.tables ?? {}).length,
-    agents: Object.keys(install.steps.agents ?? {}).length,
+    tables,
+    agents: agentIds.length,
     workflows: Object.keys(install.steps.workflows ?? {}).length,
+    conversations,
   };
 }
 
 /**
  * Archive exactly what this install recorded — its tables (with their rows), its
  * agent copies and its workflows — then mark the record removed. All three are the
- * platform's soft deletes; nothing is destroyed.
+ * platform's soft deletes; nothing is destroyed. An id that no longer carries this
+ * install's label (table description / agent or workflow tag) is REFUSED by name:
+ * something else may be using it now.
  */
 export async function removeInstall(client: RecordsClient, install: KitInstallRecord): Promise<void> {
+  // The record is written at the end with columns an older ledger may not have yet.
+  await ensureLedger(client);
   const problems: string[] = [];
+  const tag = `kit-install:${install.id}`;
+
   for (const id of Object.values(install.steps.workflows ?? {})) {
+    const { data, error } = await supabase.schema("workflow").from("definition").select("id, tags").eq("id", id).maybeSingle();
+    if (error) {
+      problems.push(`workflow ${id} could not be checked (${error.message})`);
+      continue;
+    }
+    if (!data) continue; // already gone
+    if (!(data.tags ?? []).includes(tag)) {
+      problems.push(`workflow ${id} was left alone: it no longer carries this install's label`);
+      continue;
+    }
     try {
       await deleteWorkflow(id);
     } catch (err) {
       problems.push(`workflow ${id}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
+
   for (const id of Object.values(install.steps.agents ?? {})) {
-    const { error } = await supabase
+    const { data: row, error: readError } = await supabase.schema("agent").from("definition").select("id, tags").eq("id", id).maybeSingle();
+    if (readError) {
+      problems.push(`agent ${id} could not be checked (${readError.message})`);
+      continue;
+    }
+    if (!row) continue;
+    if (!(row.tags ?? []).includes(tag)) {
+      problems.push(`agent ${id} was left alone: it no longer carries this install's label`);
+      continue;
+    }
+    const { data, error } = await supabase
       .schema("agent")
       .from("definition")
       .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id);
+      .eq("id", id)
+      .select("id");
     if (error) problems.push(`agent ${id}: ${error.message}`);
+    else if (!data || data.length === 0) problems.push(`agent ${id} was not archived: you may not edit it`);
   }
+
   for (const id of Object.values(install.steps.tables ?? {})) {
-    // The door archives in passes; loop until it says done.
-    for (let pass = 0; pass < 200; pass++) {
+    const read = await client.recordRead({ record_id: id });
+    if (!read.ok) {
+      // Already in the archive (an earlier removal got this far) is done, not a problem.
+      const archived = await client.tableArchived({ table_id: id });
+      if (archived.ok && archived.data) continue;
+      problems.push(`table ${id} could not be checked (${read.error.message})`);
+      continue;
+    }
+    const description = typeof read.data.document.description === "string" ? read.data.document.description : "";
+    if (!description.includes(install.id)) {
+      problems.push(`table ${id} was left alone: its description no longer names this install`);
+      continue;
+    }
+    // The door archives in passes; loop until it says done — and say so if it never does.
+    let finished = false;
+    const MAX_PASSES = 200;
+    for (let pass = 0; pass < MAX_PASSES; pass++) {
       const r = await client.tableArchive({ table_id: id });
       if (!r.ok) {
         problems.push(`table ${id}: ${r.error.message}`);
+        finished = true;
         break;
       }
-      if (r.data.done) break;
+      if (r.data.done) {
+        finished = true;
+        break;
+      }
+    }
+    if (!finished) {
+      problems.push(`table ${id} is only partly archived after ${MAX_PASSES} passes — remove it again to continue where it stopped`);
     }
   }
+
   const next: KitInstallRecord = {
     ...install,
     status: problems.length > 0 ? "failed" : "removed",
     error: problems.length > 0 ? `Removal left some things behind — ${problems.join("; ")}` : null,
   };
-  await saveInstall(client, next);
-  if (problems.length > 0) throw new Error(next.error!);
+  const saved = await client.recordUpdate({
+    record_id: install.id,
+    patch: {
+      status: next.status,
+      error: next.error ?? "",
+      run_id: "",
+      run_until: "",
+      // Free the claim so the kit can be installed again.
+      ...(next.status === "removed" ? { live_key: `removed:${install.id}` } : {}),
+    },
+  });
+  if (!saved.ok) problems.push(`the install record could not be updated (${saved.error.message})`);
+  if (problems.length > 0) throw new Error(next.error ?? problems.join("; "));
 }

@@ -96,7 +96,7 @@
  */
 
 import type {
-  SurfaceAgentRole,
+  ManifestAgentRole,
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
@@ -212,7 +212,7 @@ const surfaceSpecific: SurfaceValue[] = [
  * `features/messaging/lib/messagingMandates.ts`, which the provider hook also
  * reads, so the menu and the runtime can never name different jobs.
  */
-const agentRoles: SurfaceAgentRole[] = MESSAGING_MANDATE_ROLES.map(
+const agentRoles: ManifestAgentRole[] = MESSAGING_MANDATE_ROLES.map(
   (role, index) => ({
     name: role.name,
     label: role.label,

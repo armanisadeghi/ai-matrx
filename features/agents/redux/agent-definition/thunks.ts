@@ -1282,6 +1282,13 @@ export const deleteAgent = createAsyncThunk<void, string, ThunkApi>(
 export interface DuplicateAgentOptions {
   agentId: string;
   asSystem?: boolean;
+  /**
+   * The organization the copy is born in. Pass it when the caller captured the
+   * organization at the start of a multi-step operation (a kit install), so a
+   * switch mid-operation cannot split its writes across two organizations.
+   * Omitted: the organization the person is working in now.
+   */
+  organizationId?: string;
 }
 
 export const duplicateAgent = createAsyncThunk<
@@ -1289,15 +1296,17 @@ export const duplicateAgent = createAsyncThunk<
   string | DuplicateAgentOptions,
   ThunkApi
 >("agentDefinition/duplicate", async (input, { dispatch, getState }) => {
-  const { agentId, asSystem } =
-    typeof input === "string" ? { agentId: input, asSystem: false } : input;
+  const { agentId, asSystem, organizationId: explicitOrganizationId } =
+    typeof input === "string"
+      ? { agentId: input, asSystem: false, organizationId: undefined }
+      : input;
 
-  // A personal copy lives in the organization the person is working in — the
-  // database never picks one (it refuses a copy with none). A system copy is
-  // placed in the platform org by the database itself.
+  // A personal copy lives in the organization the caller named, else the one the
+  // person is working in — the database never picks one (it refuses a copy with
+  // none). A system copy is placed in the platform org by the database itself.
   const organizationId = asSystem
     ? undefined
-    : await ensureOrgId(selectOrganizationId(getState()));
+    : await ensureOrgId(explicitOrganizationId ?? selectOrganizationId(getState()));
 
   const { data, error } = await supabase.rpc("agx_duplicate_agent", {
     p_agent_id: agentId,

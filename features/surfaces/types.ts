@@ -184,6 +184,24 @@ export interface SurfaceAgentRole {
 }
 
 /**
+ * A role AS A MANIFEST DECLARES IT. 🚨 A surface manifest never names an agent
+ * id (Arman, 2026-09-25: nothing works around the mandate system). The role's
+ * platform default is a MANDATE (`mandateKey`) — manifest sync writes the key
+ * to `ui_surface_agent_role.mandate_key` and `resolveSurfaceConfig` resolves
+ * its current Holder, so a rebinding in the mandate console rebinds the role.
+ * `defaultAgentId` is therefore typed `null` here: a raw id in a manifest is a
+ * TYPE ERROR, not a review comment. (Before this, 17 roles carried raw ids that
+ * sync copied into `default_agent_id`, which OUTRANKS the mandate tier in
+ * `resolveSurfaceConfig` — the mandate console could never rebind them.)
+ * Need a new default? Declare a mandate in aidream seeded with that agent.
+ * `scripts/check-hardcoded-agents.ts` enforces the same rule for any id that
+ * reaches a manifest by other means (an imported constant, a cast).
+ */
+export type ManifestAgentRole = Omit<SurfaceAgentRole, "defaultAgentId"> & {
+  defaultAgentId: null;
+};
+
+/**
  * A config namespace the surface consumes from `ui.ui_surface_config`
  * (dictionary, session_defaults, …). Code-only declaration — the handler
  * (validate/merge/empty) is registered in
@@ -502,7 +520,7 @@ export interface SurfaceManifest {
    */
   groups?: readonly SurfaceValueGroup[];
   /** Agent positions this surface uses. Mirrored to ui_surface_agent_role. */
-  agentRoles?: readonly SurfaceAgentRole[];
+  agentRoles?: readonly ManifestAgentRole[];
   /** Config namespaces this surface consumes (code-only declaration). */
   configNamespaces?: readonly SurfaceConfigNamespaceDecl[];
   /**

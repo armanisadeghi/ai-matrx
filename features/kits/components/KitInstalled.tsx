@@ -37,6 +37,7 @@ import { resolveBinding } from "../installer";
 import { previewBinding, type PreviewAnswer } from "../preview";
 import type { KitAgent, KitEntry, KitInstallRecord, KitManifest } from "../types";
 import { InstallStepper } from "./InstallPanel";
+import { ErrorNotice } from "./ErrorNotice";
 import { KitIcon } from "./KitIcon";
 
 function Panel({ icon, title, children, aside }: { icon: React.ReactNode; title: string; children: React.ReactNode; aside?: React.ReactNode }) {
@@ -160,18 +161,16 @@ function BindingPreviewCard({
             )}
           </>
         ) : (
-          <div
-            className={
-              answer.state === "not_deployed"
-                ? "rounded-lg border border-border bg-muted/30 p-3"
-                : "rounded-lg border border-destructive/20 bg-destructive/5 p-3"
-            }
-          >
-            <p className="flex items-start gap-2 text-xs text-foreground">
-              <AlertTriangle className={answer.state === "not_deployed" ? "mt-px h-3.5 w-3.5 shrink-0 text-warning" : "mt-px h-3.5 w-3.5 shrink-0 text-destructive"} />
-              <span>{answer.state === "not_deployed" ? answer.message : `The preview failed: ${answer.message}`}</span>
-            </p>
-          </div>
+          answer.state === "not_deployed" ? (
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="flex items-start gap-2 text-xs text-foreground">
+                <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0 text-warning" />
+                <span>{answer.message}</span>
+              </p>
+            </div>
+          ) : (
+            <ErrorNotice title="The preview could not be shown." error={answer.message} onRetry={() => setAttempt((n) => n + 1)} />
+          )
         )}
       </div>
     </div>
@@ -271,14 +270,13 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
     );
   } else if (api.readError) {
     body = (
-      <div className="max-w-xl rounded-xl border border-destructive/20 bg-destructive/5 p-4">
-        <p className="text-sm text-foreground">We could not read the install record.</p>
-        <p className="mt-1 break-words text-xs text-muted-foreground">{api.readError}</p>
-        <Button size="sm" variant="outline" className="mt-3" onClick={api.retryRead}>
-          <RotateCw className="mr-1.5 h-3.5 w-3.5" />
-          Check again
-        </Button>
-      </div>
+      <ErrorNotice
+        className="max-w-xl"
+        title="We could not read the install record."
+        error={api.readError}
+        onRetry={api.retryRead}
+        retryLabel="Check again"
+      />
     );
   } else if (!install || install.status !== "installed") {
     body = (
@@ -364,7 +362,7 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
                     <div className="p-2">
                       <Grid
                         tableId={id}
-                        pageSize={10}
+                        pageSize={50}
                         onOpenRecord={(recordId) => router.push(`${KIT_ROUTES.table(id)}?record=${encodeURIComponent(recordId)}`)}
                       />
                     </div>

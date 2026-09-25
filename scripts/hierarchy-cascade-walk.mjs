@@ -32,6 +32,9 @@ const report = { steps: [], consoleErrors: {} };
 let where = "sign-in";
 let n = 1;
 const page = await (await browser.newContext({ viewport: { width: 1500, height: 1000 } })).newPage();
+// The shared preview compiles on demand under machine load; a reload can take minutes.
+page.setDefaultTimeout(240000);
+page.setDefaultNavigationTimeout(240000);
 page.on("console", (m) => {
   if (m.type() === "error") (report.consoleErrors[where] ??= []).push(m.text().slice(0, 300));
 });
@@ -80,7 +83,8 @@ try {
       report.seat = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
       break;
     } catch (e) {
-      if (attempt >= 4) throw e;
+      if (attempt >= 8) throw e;
+      await sleep(30000);
     }
   }
 

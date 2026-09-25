@@ -32923,6 +32923,219 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/hindsight/enrollments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin List Enrollments
+         * @description Every enrollment on the platform, newest first.
+         */
+        get: operations["admin_list_enrollments_admin_hindsight_enrollments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/hindsight/enrollments/{enrollment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin Get Enrollment */
+        get: operations["admin_get_enrollment_admin_hindsight_enrollments__enrollment_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/hindsight/reviews/{review_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin Get Review */
+        get: operations["admin_get_review_admin_hindsight_reviews__review_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/rag/search-lab/inventory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin Search Lab Inventory */
+        get: operations["admin_search_lab_inventory_admin_rag_search_lab_inventory_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/rag/search-lab/diagnose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Search Lab Diagnose */
+        post: operations["admin_search_lab_diagnose_admin_rag_search_lab_diagnose_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/rag/search-lab/diagnose/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Search Lab Diagnose Stream */
+        post: operations["admin_search_lab_diagnose_stream_admin_rag_search_lab_diagnose_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/workflows/{definition_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin Get Workflow */
+        get: operations["admin_get_workflow_admin_workflows__definition_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/workflows/{definition_id}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin List Workflow Runs
+         * @description Every run of the workflow, whoever started it (the user route shows the caller's own).
+         */
+        get: operations["admin_list_workflow_runs_admin_workflows__definition_id__runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin Get Run */
+        get: operations["admin_get_run_admin_runs__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/workflows/{definition_id}/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin List Plans */
+        get: operations["admin_list_plans_admin_workflows__definition_id__plans_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/workflow-plans/{plan_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin Get Plan */
+        get: operations["admin_get_plan_admin_workflow_plans__plan_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/review/descend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin Review Descend
+         * @description The review walk over anyone's conversation or workflow run.
+         */
+        get: operations["admin_review_descend_admin_review_descend_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mandates/coverage": {
         parameters: {
             query?: never;
@@ -33008,6 +33221,31 @@ export interface paths {
          *     A short list is never shown as if it were the whole answer.
          */
         post: operations["agent_impact_mandates_impact_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandates/impact/workflows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Workflow Impact
+         * @description The WORKFLOW twin of ``/impact`` (workflow parity): one verdict per
+         *     mandate rung a workflow holds — what changed between the pinned and the
+         *     newest published version (inputs, output kind, steps), the stored
+         *     overrides a workflow never applies, and whether the holder fits the
+         *     mandate's contract TODAY — graded on the agent scale. Read-only. Rungs the
+         *     caller may not read are counted in ``withheld``, never named.
+         */
+        post: operations["workflow_impact_mandates_impact_workflows_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -33209,6 +33447,30 @@ export interface paths {
         get: operations["get_mandate_input_surface_mandates__mandate_key__input_surface_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandates/{mandate_key}/workflow-starter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Mandate Workflow Starter
+         * @description Start a WORKFLOW for this job — the workflow twin of "New agent"
+         *     (workflow parity). Creates a new workflow owned by the caller whose first
+         *     step asks for the job's inputs (its served input surface) and whose
+         *     declared output kind is the job's, then answers where the studio opens it.
+         *     It is not bound: the person builds the steps, then binds it.
+         */
+        post: operations["post_mandate_workflow_starter_mandates__mandate_key__workflow_starter_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -35874,6 +36136,23 @@ export interface paths {
         get: operations["get_agent_version_execution_definition_agents_versions__version_id__execution_definition_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agents/variable-bindings/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Variable Binding */
+        post: operations["preview_variable_binding_agents_variable_bindings_preview_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -40849,6 +41128,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/scheduling/admin/run-now/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Run Now */
+        post: operations["admin_run_now_scheduling_admin_run_now__task_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/scheduler/tasks": {
         parameters: {
             query?: never;
@@ -44117,8 +44413,11 @@ export interface components {
             required?: boolean;
             /** @description UI input component config (defaults to a textarea). */
             customComponent?: components["schemas"]["VariableComponentSpec"] | null;
-            /** @description When set, filled from a scope context item and inherits its component. */
-            binding?: components["schemas"]["ContextItemBinding"] | null;
+            /**
+             * Binding
+             * @description When set, the variable is filled at run time: from a scope context item (inherits its component), or — kind 'merge_field' — by a merge field.
+             */
+            binding?: components["schemas"]["MergeFieldBinding"] | components["schemas"]["ContextItemBinding"] | null;
             /** @description When set, this variable is a model control exposed as an input: its resolved value is sent as that control (controls as first-class variables). */
             control?: components["schemas"]["ControlBinding"] | null;
         } & {
@@ -49233,7 +49532,7 @@ export interface components {
              * Principal Type
              * @enum {string}
              */
-            principal_type: "global" | "org" | "user";
+            principal_type: "org" | "user";
             /** Subject User Id */
             subject_user_id?: string | null;
             /** Organization Id */
@@ -49278,6 +49577,7 @@ export interface components {
              * @default []
              */
             notes?: string[];
+            contract_check?: components["schemas"]["ContractCheck"] | null;
         };
         /** BingApiKeyConnectionRequest */
         BingApiKeyConnectionRequest: {
@@ -61527,6 +61827,68 @@ export interface components {
             models: components["schemas"]["ModelReport"][];
         };
         /**
+         * ContractCheck
+         * @description THE PERSISTED MISMATCH — what a Holder fails of its mandate's contract.
+         *
+         *     Written on the binding row (``metadata.contract_check``) or the mandate's
+         *     default (``metadata.default_holder_contract_check``) at save time, and
+         *     returned by both doors. ``state='unmet'`` is a red binding, never a refused
+         *     one. ``summary`` is the plain-words sentence a screen prints verbatim:
+         *     what the job expects, what the Holder emits.
+         */
+        ContractCheck: {
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "met" | "unmet";
+            /**
+             * Problems
+             * @default []
+             */
+            problems?: string[];
+            /** Expected Output Kind */
+            expected_output_kind?: string | null;
+            /**
+             * Required Output Keys
+             * @default []
+             */
+            required_output_keys?: string[];
+            /**
+             * Holder Type
+             * @default agent
+             * @enum {string}
+             */
+            holder_type?: "agent" | "workflow";
+            /**
+             * Holder Name
+             * @default
+             */
+            holder_name?: string;
+            /** Holder Output Kind */
+            holder_output_kind?: string | null;
+            /**
+             * Holder Output Keys
+             * @default []
+             */
+            holder_output_keys?: string[];
+            /**
+             * Set Aside At Run
+             * @default false
+             */
+            set_aside_at_run?: boolean;
+            /**
+             * Summary
+             * @default
+             */
+            summary?: string;
+            /**
+             * Checked At
+             * @default
+             */
+            checked_at?: string;
+        };
+        /**
          * ControlBinding
          * @description Binds a variable to a model control: the variable's value IS that control's value.
          */
@@ -63939,6 +64301,20 @@ export interface components {
              */
             direction?: "asc" | "desc";
         };
+        /**
+         * DataStoreAdminPage
+         * @description A counted, stable window of data stores for the admin console.
+         */
+        DataStoreAdminPage: {
+            /** Items */
+            items: components["schemas"]["DataStoreAdminRow"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
         /** DataStoreAdminRow */
         DataStoreAdminRow: {
             /** Id */
@@ -64018,6 +64394,20 @@ export interface components {
             organization_id?: string | null;
             /** Organization Name */
             organization_name?: string | null;
+        };
+        /**
+         * DataStoreMemberAdminPage
+         * @description A counted, stable window of members for one data store.
+         */
+        DataStoreMemberAdminPage: {
+            /** Items */
+            items: components["schemas"]["DataStoreMemberAdminRow"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
         };
         /** DataStoreMemberAdminRow */
         DataStoreMemberAdminRow: {
@@ -68171,7 +68561,7 @@ export interface components {
              * Rung
              * @enum {string}
              */
-            rung: "global" | "org" | "system" | "user";
+            rung: "org" | "system" | "user";
             /** Binding Id */
             binding_id?: string | null;
             /** Organization Id */
@@ -74920,7 +75310,7 @@ export interface components {
             count?: number;
             /**
              * Model
-             * @description Catalog model name; defaults to the platform's primary image model.
+             * @description Catalog model name; empty runs the image.generate mandate Holder's model.
              */
             model?: string | null;
         };
@@ -78834,7 +79224,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "global" | "org" | "user";
+            kind: "org" | "user";
             /** Organization Id */
             organization_id: string;
             /** Subject User Id */
@@ -86514,7 +86904,7 @@ export interface components {
              * @default user
              * @enum {string}
              */
-            principal_type?: "global" | "org" | "user";
+            principal_type?: "org" | "user";
             /** Organization Id */
             organization_id?: string | null;
         };
@@ -86526,7 +86916,7 @@ export interface components {
              * Principal Type
              * @enum {string}
              */
-            principal_type: "global" | "org" | "user";
+            principal_type: "org" | "user";
             /** Removed */
             removed: boolean;
         };
@@ -86537,7 +86927,7 @@ export interface components {
              * @default user
              * @enum {string}
              */
-            principal_type?: "global" | "org" | "user";
+            principal_type?: "org" | "user";
             /**
              * Holder Type
              * @default agent
@@ -86845,6 +87235,7 @@ export interface components {
              * @default []
              */
             notes?: string[];
+            contract_check?: components["schemas"]["ContractCheck"] | null;
         };
         /**
          * MandateDefinitionPatch
@@ -87249,7 +87640,7 @@ export interface components {
              * Provenance
              * @enum {string}
              */
-            provenance: "global" | "org" | "run" | "system" | "user";
+            provenance: "org" | "run" | "system" | "user";
             /** Freshness */
             freshness: string;
             /** Provision Key */
@@ -87587,7 +87978,7 @@ export interface components {
              * @default unresolved
              * @enum {string}
              */
-            provenance?: "agent" | "global" | "latest" | "mandate-pinned" | "org" | "run" | "system" | "unresolved" | "user" | "version";
+            provenance?: "agent" | "latest" | "mandate-pinned" | "org" | "run" | "system" | "unresolved" | "user" | "version";
             /** Applied Config Overrides */
             applied_config_overrides?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -89691,6 +90082,126 @@ export interface components {
             outcome_event_id?: string | null;
             /** Matched Terms */
             matched_terms?: string[];
+        };
+        /**
+         * MergeFieldBinding
+         * @description A variable filled by a MERGE FIELD — the declaration ``matrx_records.merge``
+         *     resolves, with the key implied by the variable name (data kits P1).
+         *
+         *     ``semantic_type``: ``collection`` = rows of ``table_id``; ``reference`` = one record
+         *     (``record_id``) through the template; ``value`` = one field (``record_id`` +
+         *     ``field_key``). Resolved under the operating person's own principal; the override
+         *     policy is applied BEFORE the ladder, so ``shown_locked`` / ``server_fixed`` discard a
+         *     client-sent value.
+         */
+        MergeFieldBinding: {
+            /**
+             * Kind
+             * @description Discriminator for this binding kind.
+             * @constant
+             */
+            kind: "merge_field";
+            /**
+             * Source
+             * @description Where the value comes from.
+             * @constant
+             */
+            source: "record";
+            /**
+             * Semantic Type
+             * @description What it resolves into.
+             * @enum {string}
+             */
+            semantic_type: "collection" | "reference" | "value";
+            /**
+             * Table Id
+             * @description custom Table id the value is read from.
+             */
+            table_id: string;
+            /**
+             * Record Id
+             * @description One record of that Table.
+             */
+            record_id?: string | null;
+            /**
+             * Field Key
+             * @description With record_id: the one field.
+             */
+            field_key?: string | null;
+            /**
+             * Match
+             * @description Exact-equality filter {field_key: value} for a collection.
+             */
+            match?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** @description Collection row order. */
+            sort?: components["schemas"]["MergeFieldSort"] | null;
+            /**
+             * Limit
+             * @description Collection row cap (default 40).
+             */
+            limit?: number | null;
+            /** @description How it reads. */
+            transform?: components["schemas"]["MergeFieldTransform"] | null;
+            /**
+             * Missing
+             * @description absent: a NAMED absence in the prompt (default). block: the run refuses.
+             */
+            missing?: ("absent" | "block") | null;
+            /**
+             * Override Policy
+             * @description Default shown_locked (client value discarded).
+             */
+            override_policy?: ("derived" | "must_supply" | "server_fixed" | "shown_locked" | "shown_overridable") | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * MergeFieldSort
+         * @description Row order for a collection merge-field binding.
+         */
+        MergeFieldSort: {
+            /**
+             * Field
+             * @description Field key to order the rows by.
+             */
+            field: string;
+            /**
+             * Dir
+             * @description asc | desc.
+             * @default asc
+             * @enum {string}
+             */
+            dir?: "asc" | "desc";
+        };
+        /**
+         * MergeFieldTransform
+         * @description How the resolved value READS (DYN-16) — applied after resolution.
+         */
+        MergeFieldTransform: {
+            /**
+             * Name
+             * @description list | currency | number | date | upper | title.
+             */
+            name: string;
+            /**
+             * Template
+             * @description list: per-row render, e.g. '- {purpose}: {model.name} (`{model.id}`)'. An entity-reference field exposes .name/.title/.label/.id/.token. Without a template each row reads '- key: value; key: value'.
+             */
+            template?: string | null;
+            /**
+             * Join
+             * @description list: text between rows.
+             */
+            join?: string | null;
+            /**
+             * Max
+             * @description list: rows shown; the rest are announced.
+             */
+            max?: number | null;
+        } & {
+            [key: string]: unknown;
         };
         /** MergeFieldsResponse */
         MergeFieldsResponse: {
@@ -116539,11 +117050,8 @@ export interface components {
             initiation?: ("auto" | "user") | null;
             /** Text */
             text: string;
-            /**
-             * Model
-             * @default tts-default
-             */
-            model?: string;
+            /** Model */
+            model?: string | null;
             /** Voice */
             voice?: string | null;
             /**
@@ -126727,6 +127235,76 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** VariableBindingPreviewRequest */
+        VariableBindingPreviewRequest: {
+            /**
+             * Organization Id
+             * @description The organization the binding is read in. Required — never a default.
+             */
+            organization_id: string;
+            /** @description The merge-field binding to preview. */
+            binding: components["schemas"]["MergeFieldBinding"];
+            /**
+             * Variable Name
+             * @description Optional: the variable's name, used in the trace and sentences.
+             */
+            variable_name?: string | null;
+        };
+        /** VariableBindingPreviewResponse */
+        VariableBindingPreviewResponse: {
+            /**
+             * Text
+             * @description Exactly what the agent receives for {{variable}}.
+             */
+            text: string;
+            /**
+             * Present
+             * @description False when the text is a named absence.
+             */
+            present: boolean;
+            /**
+             * Row Count
+             * @description Rows delivered (1 for a record or a single value).
+             */
+            row_count: number;
+            /**
+             * Total Rows
+             * @description Rows that matched before the cap.
+             */
+            total_rows: number;
+            /**
+             * Truncated
+             * @description True when the cap left rows out (announced in text).
+             */
+            truncated: boolean;
+            /**
+             * Override Policy
+             * @description What a client-sent value does (shown_locked…).
+             */
+            override_policy: string;
+            /**
+             * Absent Reason
+             * @description Why nothing was delivered.
+             */
+            absent_reason?: string | null;
+            /**
+             * Notes
+             * @description Cap, template and freshness notes.
+             */
+            notes?: string[];
+            /**
+             * Withheld
+             * @description Field keys masked for you — named, never shown.
+             */
+            withheld?: string[];
+            /**
+             * Trace
+             * @description The same trace entry a run records.
+             */
+            trace: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
         /**
          * VariableComponentSpec
          * @description The input component a variable renders as (customComponent).
@@ -130769,6 +131347,157 @@ export interface components {
             /** Runs Per Day */
             runs_per_day?: components["schemas"]["DailyCostBreakdown"][];
         };
+        /** WorkflowImpactReport */
+        WorkflowImpactReport: {
+            /** Verdicts */
+            verdicts?: components["schemas"]["WorkflowImpactVerdict"][];
+            withheld?: components["schemas"]["WorkflowImpactWithheld"];
+            /**
+             * Workflows Examined
+             * @default 0
+             */
+            workflows_examined?: number;
+            /** Computed At */
+            computed_at: string;
+        };
+        /**
+         * WorkflowImpactRequest
+         * @description ``workflow_ids`` narrows the read; omitted = every workflow-held rung
+         *     the caller may read. Accepts the injected org scope every app POST carries
+         *     (the read does not use it — scope is per CALLER).
+         */
+        WorkflowImpactRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Initiation
+             * @description How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers.
+             */
+            initiation?: ("auto" | "user") | null;
+            /** Workflow Ids */
+            workflow_ids?: string[] | null;
+        };
+        /** WorkflowImpactVerdict */
+        WorkflowImpactVerdict: {
+            /**
+             * Holder Kind
+             * @enum {string}
+             */
+            holder_kind: "binding" | "mandate_default";
+            /** Row Id */
+            row_id: string;
+            /** Mandate Key */
+            mandate_key: string;
+            /**
+             * Principal Kind
+             * @enum {string}
+             */
+            principal_kind: "org" | "system" | "user";
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Subject User Id */
+            subject_user_id?: string | null;
+            /** Workflow Id */
+            workflow_id: string;
+            /** Workflow Name */
+            workflow_name: string;
+            /** Pinned Version Id */
+            pinned_version_id?: string | null;
+            /** Pinned Version Number */
+            pinned_version_number?: number | null;
+            /** Latest Version Id */
+            latest_version_id?: string | null;
+            /** Latest Version Number */
+            latest_version_number?: number | null;
+            /**
+             * Grade
+             * @enum {string}
+             */
+            grade: "green" | "identical" | "orange" | "red";
+            /** Blocker */
+            blocker?: ("set_aside" | "tracks_latest" | "unreachable") | null;
+            /** Set Aside Reason */
+            set_aside_reason?: string | null;
+            /** Findings */
+            findings?: components["schemas"]["ImpactFinding"][];
+            /** Breaks */
+            breaks?: {
+                [key: string]: "green" | "identical" | "orange" | "red";
+            };
+            /**
+             * Contract Broken
+             * @default false
+             */
+            contract_broken?: boolean;
+            /**
+             * Behind Latest
+             * @default false
+             */
+            behind_latest?: boolean;
+        };
+        /** WorkflowImpactWithheld */
+        WorkflowImpactWithheld: {
+            /**
+             * Total
+             * @default 0
+             */
+            total?: number;
+            /** By Principal Kind */
+            by_principal_kind?: {
+                [key: string]: number;
+            };
+            /** Sentence */
+            sentence?: string | null;
+        };
+        /** WorkflowStarterResult */
+        WorkflowStarterResult: {
+            /** Workflow Id */
+            workflow_id: string;
+            /** Name */
+            name: string;
+            /** Mandate Key */
+            mandate_key: string;
+            /** Inputs */
+            inputs?: string[];
+            /** Output Kind */
+            output_kind?: string | null;
+            /** Skipped */
+            skipped?: components["schemas"]["WorkflowStarterSkipped"][];
+            /** Studio Path */
+            studio_path: string;
+            /** Message */
+            message: string;
+        };
+        /** WorkflowStarterSkipped */
+        WorkflowStarterSkipped: {
+            /** Name */
+            name: string;
+            /** Reason */
+            reason: string;
+        };
         /** WorkleapServiceStatus */
         WorkleapServiceStatus: {
             /**
@@ -132167,7 +132896,7 @@ export interface components {
             only_children?: boolean;
             /**
              * Admin Bypass Acl
-             * @description Admin-only: bypass per-user ACL and search every chunk in every tenant. Useful for the admin search-diagnostic UI to answer 'do these chunks even exist?' independent of ownership / org / share grants. Ignored for non-admins.
+             * @description REFUSED on this route (403): it is a user search, and an admin searches exactly what they can see here (THE ADMIN LANE, 2026-09-25). An ACL-free search belongs to an admin-app door.
              * @default false
              */
             admin_bypass_acl?: boolean;
@@ -185149,6 +185878,10 @@ export interface operations {
             query?: {
                 include_inactive?: boolean;
                 limit?: number;
+                offset?: number;
+                search?: string | null;
+                sort_by?: "created_at" | "is_active" | "kind" | "name" | "updated_at";
+                sort_dir?: "asc" | "desc";
             };
             header?: never;
             path?: never;
@@ -185162,7 +185895,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DataStoreAdminRow"][];
+                    "application/json": components["schemas"]["DataStoreAdminPage"];
                 };
             };
             /** @description Validation Error */
@@ -185310,6 +186043,11 @@ export interface operations {
         parameters: {
             query?: {
                 limit?: number;
+                offset?: number;
+                search?: string | null;
+                source_kind?: string | null;
+                sort_by?: "added_at" | "notes" | "source_id" | "source_kind";
+                sort_dir?: "asc" | "desc";
             };
             header?: never;
             path: {
@@ -185325,7 +186063,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DataStoreMemberAdminRow"][];
+                    "application/json": components["schemas"]["DataStoreMemberAdminPage"];
                 };
             };
             /** @description Validation Error */
@@ -186012,6 +186750,389 @@ export interface operations {
             };
         };
     };
+    admin_list_enrollments_admin_hindsight_enrollments_get: {
+        parameters: {
+            query?: {
+                status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrollmentOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_get_enrollment_admin_hindsight_enrollments__enrollment_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_get_review_admin_hindsight_reviews__review_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                review_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_search_lab_inventory_admin_rag_search_lab_inventory_get: {
+        parameters: {
+            query?: {
+                admin_bypass_acl?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_search_lab_diagnose_admin_rag_search_lab_diagnose_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnoseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_search_lab_diagnose_stream_admin_rag_search_lab_diagnose_stream_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnoseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_get_workflow_admin_workflows__definition_id__get: {
+        parameters: {
+            query?: {
+                is_version?: boolean;
+                version_number?: number | null;
+            };
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_list_workflow_runs_admin_workflows__definition_id__runs_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_get_run_admin_runs__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_list_plans_admin_workflows__definition_id__plans_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_get_plan_admin_workflow_plans__plan_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_review_descend_admin_review_descend_get: {
+        parameters: {
+            query: {
+                unit_kind?: "agent_request" | "assistant_message" | "wf_node_outcome";
+                unit_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     mandate_coverage_mandates_coverage_get: {
         parameters: {
             query?: {
@@ -186127,6 +187248,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImpactReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    workflow_impact_mandates_impact_workflows_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowImpactRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowImpactReport"];
                 };
             };
             /** @description Validation Error */
@@ -186463,6 +187617,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MandateInputSurfaceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_mandate_workflow_starter_mandates__mandate_key__workflow_starter_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mandate_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowStarterResult"];
                 };
             };
             /** @description Validation Error */
@@ -190600,6 +191785,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExecutionAgentDefinition"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_variable_binding_agents_variable_bindings_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VariableBindingPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VariableBindingPreviewResponse"];
                 };
             };
             /** @description Validation Error */
@@ -199029,6 +200247,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ForceDisableResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_run_now_scheduling_admin_run_now__task_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunNowResponse"];
                 };
             };
             /** @description Validation Error */

@@ -39,7 +39,14 @@ export function RichContent({
   headingAnchors = true,
 }: RichContentProps) {
   if (level === "inline") {
-    return <RichContentInline source={source} className={className} links={links} />;
+    return (
+      <RichContentInline
+        source={source}
+        className={className}
+        links={links}
+        streaming={isStreaming}
+      />
+    );
   }
   if (!headingAnchors) {
     return (

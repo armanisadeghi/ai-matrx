@@ -24,6 +24,7 @@
 //   · "Holder" alone is never printed by this file ("Mandate Holder").
 //   · the admin tab bodies render inside this body's own tabs (no graft).
 
+import { DEFAULT_HOLDER_RUNG } from "@/features/bindings/default-holder-rung";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, Copy, TriangleAlert } from "lucide-react";
@@ -98,7 +99,6 @@ import {
   type MandateLadderRow,
 } from "@/features/mandates/workspace/useMandateLadder";
 import {
-  hasGlobalBinding,
   resolvedHolderForBannerOf,
   systemRungHealthOf,
   type WorkspacePerspective,
@@ -802,9 +802,6 @@ function viewFromVerdict(
 }
 
 
-const SYSTEM_PERSPECTIVE_RUNGS_DEFAULT_FIRST = ["system", "global"] as const;
-const SYSTEM_PERSPECTIVE_RUNGS_GLOBAL_FIRST = ["global", "system"] as const;
-
 function BindingSection({
   data,
   principal,
@@ -871,20 +868,12 @@ function BindingSection({
           // The admin door offers the system rung; the server's super-admin
           // gate is the authority and the workspace re-checks it too.
           allowGlobal={authoring}
-          // 🚨 THE ADMIN PANEL IS THE PLATFORM'S OWN RUNGS AND NOTHING ELSE.
-          // Two rungs decide for everybody: the job's OWN default holder
-          // (`mandate.definition.default_holder_*`, holder-only) and the
-          // platform-wide binding above it (which also carries the map, the
-          // settings and auto-run). Pinning to that pair states each by name
-          // and offers no User/Org — an admin managing what the platform
-          // assigns is never one click away from writing a personal override.
-          // The rung that ACTUALLY decides today is first, so the page opens on
-          // the answer it just described above.
+          // 🚨 THE ADMIN PANEL IS THE PLATFORM'S OWN RUNG AND NOTHING ELSE:
+          // the job's own default (aidream 1037/1041 — no global rung). No
+          // User/Org — an admin is never one click from a personal override.
           fixedRung={
             perspective === "system"
-              ? hasGlobalBinding(data)
-                ? SYSTEM_PERSPECTIVE_RUNGS_GLOBAL_FIRST
-                : SYSTEM_PERSPECTIVE_RUNGS_DEFAULT_FIRST
+              ? DEFAULT_HOLDER_RUNG
               : perspective === "organization"
                 ? ["org"]
                 : undefined

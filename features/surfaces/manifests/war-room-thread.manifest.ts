@@ -8,13 +8,11 @@
  * War-room-specific: the default Thread Agent and dictionary support
  * (terminology / pronunciation layered into the agent).
  *
- * The thread agent ID is hardcoded here (matching the `transcripts-cleanup`
- * pattern). AGENT ID vs AGENT MANDATE: the thread agent's runtime default is the
- * `war_room.thread` AGENT MANDATE (`WAR_ROOM_THREAD_AGENT_MANDATE` in
- * `features/war-room/constants`) — that is what the War Room actually runs.
- * A manifest is STATIC module-scope data seeded into `ui_surface_agent_role`,
- * so it cannot resolve a slot; the id below is a SEED MIRROR of the slot's
- * system default, not a second authority.
+ * AGENT MANDATE: the role's platform default is the `war_room.thread` AGENT
+ * MANDATE (`mandateKey` on the role below) — manifest sync writes the key to
+ * `ui_surface_agent_role.mandate_key` and `resolveSurfaceConfig` resolves the
+ * current Holder at run time, so rebinding the mandate rebinds the role. No agent
+ * id lives in this file (2026-09-25; it used to be a raw `defaultAgentId`).
  *
  * Runtime scope assembly lives in `features/war-room/lib/war-room-scope.ts`
  * (`buildWarRoomThreadScope`); the emitter is the `<SurfaceRuntimeProvider>`
@@ -31,9 +29,8 @@ import type {
 } from "@/features/surfaces/types";
 import { TASK_STATUSES } from "@/features/tasks/constants/status";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
-// Seed mirror of the `war_room.thread` slot's system default (see the header).
-const WAR_ROOM_THREAD_AGENT_ID = "3153a326-5e0c-4c31-841d-52e8c5e9c39c";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -538,7 +535,8 @@ sibling_threads is the rest of the room for orientation only — work the thread
       description:
         "The dedicated agent for one War Room thread — reads the thread's attached notes / tasks / files SERVER-SIDE, edits the working document and scratchpad in place, and helps the user in this thread.",
       kind: "single",
-      defaultAgentId: WAR_ROOM_THREAD_AGENT_ID,
+      defaultAgentId: null,
+      mandateKey: MANDATE_KEYS.war_room__thread,
       allowCustom: true,
       autoRun: "never",
       sortOrder: 10,

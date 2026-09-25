@@ -25,7 +25,7 @@ export const MANDATE_LIST_COLUMN = {
   enabled: "isEnabled",
   /** "Latest" | "v3" | "None" — the default holder only */
   pin: "pinText",
-  /** org names | "Personal" | "Global" | "Default" */
+  /** org names | "Personal" | "Default" */
   customizedBy: "customizedBy",
   /** "declared" | "import_failed" | "not_in_code" | "unknown" */
   codeState: "codeState",

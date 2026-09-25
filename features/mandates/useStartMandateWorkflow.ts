@@ -47,10 +47,6 @@ export function workflowStudioHref(studioPath: string): string {
   return `${WORKFLOWS_APP_URL}${studioPath.startsWith("/") ? "" : "/"}${studioPath}`;
 }
 
-export function workflowStarterPath(mandateKey: string): string {
-  return `/mandates/${encodeURIComponent(mandateKey)}/workflow-starter`;
-}
-
 export function useStartMandateWorkflow(): {
   starting: boolean;
   /** Returns the new workflow, or null when it was not created. */
@@ -66,7 +62,11 @@ export function useStartMandateWorkflow(): {
     setStarting(true);
     try {
       const response = await dispatch(
-        callApi({ path: workflowStarterPath(mandateKey), method: "POST", body: {} }),
+        callApi({
+          path: "/mandates/{mandate_key}/workflow-starter",
+          method: "POST",
+          pathParams: { mandate_key: mandateKey },
+        }),
       );
       if (response.error) throw new Error(response.error.message);
       if (!isStarterResult(response.data)) {

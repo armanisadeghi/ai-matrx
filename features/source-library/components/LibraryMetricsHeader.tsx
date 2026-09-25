@@ -153,8 +153,21 @@ function buildTilesFromMetrics(
             // silently swapped in "Posts"/"Episodes"/whatever once it had. See
             // the label skeleton at the top of `Tile`.
             label: kindKnown ? vocabulary.item.many : null,
-            value: metrics ? formatCount(metrics.total) : null,
-            hint: "Catalogued in this Library",
+            // 🚨 A MISSING NUMBER IS NEVER A ZERO. A snapshot that is not a §5
+            // body (an upload adapter's own import summary) carries no `total`,
+            // and `formatCount(undefined)` printed "0" over 50,000 items
+            // ("Dana's Gmail (synthetic)", 2026-09-25). The server now recomputes
+            // such a snapshot; if a body still arrives without a count, the tile
+            // says it does not know rather than inventing one.
+            value: metrics
+                ? typeof metrics.total === "number"
+                    ? formatCount(metrics.total)
+                    : "—"
+                : null,
+            hint:
+                metrics && typeof metrics.total !== "number"
+                    ? "The server did not send a count for this Library"
+                    : "Catalogued in this Library",
         },
         {
             key: "long",

@@ -69877,10 +69877,69 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "maximum": 1000,
+              "maximum": 200,
               "minimum": 1,
-              "default": 200,
+              "default": 50,
               "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "created_at",
+                "is_active",
+                "kind",
+                "name",
+                "updated_at"
+              ],
+              "type": "string",
+              "default": "created_at",
+              "title": "Sort By"
+            }
+          },
+          {
+            "name": "sort_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string",
+              "default": "desc",
+              "title": "Sort Dir"
             }
           }
         ],
@@ -69890,11 +69949,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/DataStoreAdminRow"
-                  },
-                  "title": "Response Admin List Data Stores Rag Admin Data Stores Get"
+                  "$ref": "#/components/schemas/DataStoreAdminPage"
                 }
               }
             }
@@ -70106,10 +70161,85 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "maximum": 10000,
+              "maximum": 200,
               "minimum": 1,
-              "default": 500,
+              "default": 50,
               "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "source_kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Kind"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "added_at",
+                "notes",
+                "source_id",
+                "source_kind"
+              ],
+              "type": "string",
+              "default": "added_at",
+              "title": "Sort By"
+            }
+          },
+          {
+            "name": "sort_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string",
+              "default": "desc",
+              "title": "Sort Dir"
             }
           }
         ],
@@ -70119,11 +70249,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/DataStoreMemberAdminRow"
-                  },
-                  "title": "Response Admin List Data Store Members Rag Admin Data Stores  Store Id  Members Get"
+                  "$ref": "#/components/schemas/DataStoreMemberAdminPage"
                 }
               }
             }
@@ -71224,6 +71350,565 @@
         }
       }
     },
+    "/admin/hindsight/enrollments": {
+      "get": {
+        "tags": [
+          "Admin / User Surfaces"
+        ],
+        "summary": "Admin List Enrollments",
+        "description": "Every enrollment on the platform, newest first.",
+        "operationId": "admin_list_enrollments_admin_hindsight_enrollments_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EnrollmentOut"
+                  },
+                  "title": "Response Admin List Enrollments Admin Hindsight Enrollments Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/hindsight/enrollments/{enrollment_id}": {
+      "get": {
+        "tags": [
+          "Admin / User Surfaces"
+        ],
+        "summary": "Admin Get Enrollment",
+        "operationId": "admin_get_enrollment_admin_hindsight_enrollments__enrollment_id__get",
+        "parameters": [
+          {
+            "name": "enrollment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Enrollment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/hindsight/reviews/{review_id}": {
+      "get": {
+        "tags": [
+          "Admin / User Surfaces"
+        ],
+        "summary": "Admin Get Review",
+        "operationId": "admin_get_review_admin_hindsight_reviews__review_id__get",
+        "parameters": [
+          {
+            "name": "review_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Review Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/rag/search-lab/inventory": {
+      "get": {
+        "tags": [
+          "Admin / User Surfaces"
+        ],
+        "summary": "Admin Search Lab Inventory",
+        "operationId": "admin_search_lab_inventory_admin_rag_search_lab_inventory_get",
+        "parameters": [
+          {
+            "name": "admin_bypass_acl",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Admin Bypass Acl"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/rag/search-lab/diagnose": {
+      "post": {
+        "tags": [
+          "Admin / User Surfaces"
+        ],
+        "summary": "Admin Search Lab Diagnose",
+        "operationId": "admin_search_lab_diagnose_admin_rag_search_lab_diagnose_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagnoseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/rag/search-lab/diagnose/stream": {
+      "post": {
+        "tags": [
+          "Admin / User Surfaces"
+        ],
+        "summary": "Admin Search Lab Diagnose Stream",
+        "operationId": "admin_search_lab_diagnose_stream_admin_rag_search_lab_diagnose_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagnoseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workflows/{definition_id}": {
+      "get": {
+        "tags": [
+          "Admin / User Surfaces"
+        ],
+        "summary": "Admin Get Workflow",
+        "operationId": "admin_get_workflow_admin_workflows__definition_id__get",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          },
+          {
+            "name": "is_version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Is Version"
+            }
+          },
+          {
+            "name": "version_number",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Version Number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workflows/{definition_id}/runs": {
+      "get": {
+        "tags": [
+          "Admin / User Surfaces"
+        ],
+        "summary": "Admin List Workflow Runs",
+        "description": "Every run of the workflow, whoever started it (the user route shows the caller's own).",
+        "operationId": "admin_list_workflow_runs_admin_workflows__definition_id__runs_get",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/runs/{run_id}": {
+      "get": {
+        "tags": [
+          "Admin / User Surfaces"
+        ],
+        "summary": "Admin Get Run",
+        "operationId": "admin_get_run_admin_runs__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workflows/{definition_id}/plans": {
+      "get": {
+        "tags": [
+          "Admin / User Surfaces"
+        ],
+        "summary": "Admin List Plans",
+        "operationId": "admin_list_plans_admin_workflows__definition_id__plans_get",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/workflow-plans/{plan_id}": {
+      "get": {
+        "tags": [
+          "Admin / User Surfaces"
+        ],
+        "summary": "Admin Get Plan",
+        "operationId": "admin_get_plan_admin_workflow_plans__plan_id__get",
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plan Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/review/descend": {
+      "get": {
+        "tags": [
+          "Admin / User Surfaces"
+        ],
+        "summary": "Admin Review Descend",
+        "description": "The review walk over anyone's conversation or workflow run.",
+        "operationId": "admin_review_descend_admin_review_descend_get",
+        "parameters": [
+          {
+            "name": "unit_kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "agent_request",
+                "assistant_message",
+                "wf_node_outcome"
+              ],
+              "type": "string",
+              "default": "assistant_message",
+              "title": "Unit Kind"
+            }
+          },
+          {
+            "name": "unit_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "title": "Unit Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mandates/coverage": {
       "get": {
         "tags": [
@@ -71396,6 +72081,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ImpactReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandates/impact/workflows": {
+      "post": {
+        "tags": [
+          "Mandates Admin"
+        ],
+        "summary": "Workflow Impact",
+        "description": "The WORKFLOW twin of ``/impact`` (workflow parity): one verdict per\nmandate rung a workflow holds — what changed between the pinned and the\nnewest published version (inputs, output kind, steps), the stored\noverrides a workflow never applies, and whether the holder fits the\nmandate's contract TODAY — graded on the agent scale. Read-only. Rungs the\ncaller may not read are counted in ``withheld``, never named.",
+        "operationId": "workflow_impact_mandates_impact_workflows_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkflowImpactRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowImpactReport"
                 }
               }
             }
@@ -71856,6 +72583,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MandateInputSurfaceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandates/{mandate_key}/workflow-starter": {
+      "post": {
+        "tags": [
+          "Mandates"
+        ],
+        "summary": "Post Mandate Workflow Starter",
+        "description": "Start a WORKFLOW for this job — the workflow twin of \"New agent\"\n(workflow parity). Creates a new workflow owned by the caller whose first\nstep asks for the job's inputs (its served input surface) and whose\ndeclared output kind is the job's, then answers where the studio opens it.\nIt is not bound: the person builds the steps, then binds it.",
+        "operationId": "post_mandate_workflow_starter_mandates__mandate_key__workflow_starter_post",
+        "parameters": [
+          {
+            "name": "mandate_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mandate Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowStarterResult"
                 }
               }
             }
@@ -78490,6 +79260,47 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ExecutionAgentDefinition"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents/variable-bindings/preview": {
+      "post": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Preview Variable Binding",
+        "operationId": "preview_variable_binding_agents_variable_bindings_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VariableBindingPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VariableBindingPreviewResponse"
                 }
               }
             }
@@ -92462,6 +93273,48 @@
         }
       }
     },
+    "/scheduling/admin/run-now/{task_id}": {
+      "post": {
+        "tags": [
+          "Scheduling"
+        ],
+        "summary": "Admin Run Now",
+        "operationId": "admin_run_now_scheduling_admin_run_now__task_id__post",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunNowResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/scheduler/tasks": {
       "post": {
         "tags": [
@@ -100851,13 +101704,17 @@
           "binding": {
             "anyOf": [
               {
+                "$ref": "#/components/schemas/MergeFieldBinding"
+              },
+              {
                 "$ref": "#/components/schemas/ContextItemBinding"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "When set, filled from a scope context item and inherits its component."
+            "title": "Binding",
+            "description": "When set, the variable is filled at run time: from a scope context item (inherits its component), or — kind 'merge_field' — by a merge field."
           },
           "control": {
             "anyOf": [
@@ -111368,7 +112225,6 @@
           "principal_type": {
             "type": "string",
             "enum": [
-              "global",
               "org",
               "user"
             ],
@@ -111505,6 +112361,16 @@
             "type": "array",
             "title": "Notes",
             "default": []
+          },
+          "contract_check": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContractCheck"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -141061,6 +141927,99 @@
         ],
         "title": "ContractAuditReport"
       },
+      "ContractCheck": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "met",
+              "unmet"
+            ],
+            "title": "State"
+          },
+          "problems": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Problems",
+            "default": []
+          },
+          "expected_output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Output Kind"
+          },
+          "required_output_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required Output Keys",
+            "default": []
+          },
+          "holder_type": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "workflow"
+            ],
+            "title": "Holder Type",
+            "default": "agent"
+          },
+          "holder_name": {
+            "type": "string",
+            "title": "Holder Name",
+            "default": ""
+          },
+          "holder_output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Output Kind"
+          },
+          "holder_output_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Holder Output Keys",
+            "default": []
+          },
+          "set_aside_at_run": {
+            "type": "boolean",
+            "title": "Set Aside At Run",
+            "default": false
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "default": ""
+          },
+          "checked_at": {
+            "type": "string",
+            "title": "Checked At",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "title": "ContractCheck",
+        "description": "THE PERSISTED MISMATCH — what a Holder fails of its mandate's contract.\n\nWritten on the binding row (``metadata.contract_check``) or the mandate's\ndefault (``metadata.default_holder_contract_check``) at save time, and\nreturned by both doors. ``state='unmet'`` is a red binding, never a refused\none. ``summary`` is the plain-words sentence a screen prints verbatim:\nwhat the job expects, what the Holder emits."
+      },
       "ControlBinding": {
         "properties": {
           "key": {
@@ -146833,6 +147792,39 @@
         ],
         "title": "DataRefSort"
       },
+      "DataStoreAdminPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DataStoreAdminRow"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "DataStoreAdminPage",
+        "description": "A counted, stable window of data stores for the admin console."
+      },
       "DataStoreAdminRow": {
         "properties": {
           "id": {
@@ -147120,6 +148112,39 @@
           "audience"
         ],
         "title": "DataStoreGrantOut"
+      },
+      "DataStoreMemberAdminPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DataStoreMemberAdminRow"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "DataStoreMemberAdminPage",
+        "description": "A counted, stable window of members for one data store."
       },
       "DataStoreMemberAdminRow": {
         "properties": {
@@ -156920,7 +157945,6 @@
           "rung": {
             "type": "string",
             "enum": [
-              "global",
               "org",
               "system",
               "user"
@@ -172149,7 +173173,7 @@
               }
             ],
             "title": "Model",
-            "description": "Catalog model name; defaults to the platform's primary image model."
+            "description": "Catalog model name; empty runs the image.generate mandate Holder's model."
           }
         },
         "additionalProperties": false,
@@ -180010,7 +181034,6 @@
           "kind": {
             "type": "string",
             "enum": [
-              "global",
               "org",
               "user"
             ],
@@ -197390,7 +198413,6 @@
           "principal_type": {
             "type": "string",
             "enum": [
-              "global",
               "org",
               "user"
             ],
@@ -197421,7 +198443,6 @@
           "principal_type": {
             "type": "string",
             "enum": [
-              "global",
               "org",
               "user"
             ],
@@ -197445,7 +198466,6 @@
           "principal_type": {
             "type": "string",
             "enum": [
-              "global",
               "org",
               "user"
             ],
@@ -198405,6 +199425,16 @@
             "type": "array",
             "title": "Notes",
             "default": []
+          },
+          "contract_check": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContractCheck"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -199632,7 +200662,6 @@
           "provenance": {
             "type": "string",
             "enum": [
-              "global",
               "org",
               "run",
               "system",
@@ -200469,7 +201498,6 @@
             "type": "string",
             "enum": [
               "agent",
-              "global",
               "latest",
               "mandate-pinned",
               "org",
@@ -204576,6 +205604,232 @@
           "capture_status"
         ],
         "title": "MentionView"
+      },
+      "MergeFieldBinding": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "merge_field",
+            "title": "Kind",
+            "description": "Discriminator for this binding kind."
+          },
+          "source": {
+            "type": "string",
+            "const": "record",
+            "title": "Source",
+            "description": "Where the value comes from."
+          },
+          "semantic_type": {
+            "type": "string",
+            "enum": [
+              "collection",
+              "reference",
+              "value"
+            ],
+            "title": "Semantic Type",
+            "description": "What it resolves into."
+          },
+          "table_id": {
+            "type": "string",
+            "title": "Table Id",
+            "description": "custom Table id the value is read from."
+          },
+          "record_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Id",
+            "description": "One record of that Table."
+          },
+          "field_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Key",
+            "description": "With record_id: the one field."
+          },
+          "match": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match",
+            "description": "Exact-equality filter {field_key: value} for a collection."
+          },
+          "sort": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MergeFieldSort"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Collection row order."
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit",
+            "description": "Collection row cap (default 40)."
+          },
+          "transform": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MergeFieldTransform"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How it reads."
+          },
+          "missing": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "absent",
+                  "block"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missing",
+            "description": "absent: a NAMED absence in the prompt (default). block: the run refuses."
+          },
+          "override_policy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "derived",
+                  "must_supply",
+                  "server_fixed",
+                  "shown_locked",
+                  "shown_overridable"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Policy",
+            "description": "Default shown_locked (client value discarded)."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "kind",
+          "source",
+          "semantic_type",
+          "table_id"
+        ],
+        "title": "MergeFieldBinding",
+        "description": "A variable filled by a MERGE FIELD — the declaration ``matrx_records.merge``\nresolves, with the key implied by the variable name (data kits P1).\n\n``semantic_type``: ``collection`` = rows of ``table_id``; ``reference`` = one record\n(``record_id``) through the template; ``value`` = one field (``record_id`` +\n``field_key``). Resolved under the operating person's own principal; the override\npolicy is applied BEFORE the ladder, so ``shown_locked`` / ``server_fixed`` discard a\nclient-sent value."
+      },
+      "MergeFieldSort": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field",
+            "description": "Field key to order the rows by."
+          },
+          "dir": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "title": "Dir",
+            "description": "asc | desc.",
+            "default": "asc"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field"
+        ],
+        "title": "MergeFieldSort",
+        "description": "Row order for a collection merge-field binding."
+      },
+      "MergeFieldTransform": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "list | currency | number | date | upper | title."
+          },
+          "template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template",
+            "description": "list: per-row render, e.g. '- {purpose}: {model.name} (`{model.id}`)'. An entity-reference field exposes .name/.title/.label/.id/.token. Without a template each row reads '- key: value; key: value'."
+          },
+          "join": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Join",
+            "description": "list: text between rows."
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max",
+            "description": "list: rows shown; the rest are announced."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "MergeFieldTransform",
+        "description": "How the resolved value READS (DYN-16) — applied after resolution."
       },
       "MergeFieldsResponse": {
         "properties": {
@@ -264667,9 +265921,15 @@
             "title": "Text"
           },
           "model": {
-            "type": "string",
-            "title": "Model",
-            "default": "tts-default"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
           },
           "voice": {
             "anyOf": [
@@ -287415,6 +288675,118 @@
         "type": "object",
         "title": "VariableAssignmentSpec"
       },
+      "VariableBindingPreviewRequest": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id",
+            "description": "The organization the binding is read in. Required — never a default."
+          },
+          "binding": {
+            "$ref": "#/components/schemas/MergeFieldBinding",
+            "description": "The merge-field binding to preview."
+          },
+          "variable_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variable Name",
+            "description": "Optional: the variable's name, used in the trace and sentences."
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization_id",
+          "binding"
+        ],
+        "title": "VariableBindingPreviewRequest"
+      },
+      "VariableBindingPreviewResponse": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "Exactly what the agent receives for {{variable}}."
+          },
+          "present": {
+            "type": "boolean",
+            "title": "Present",
+            "description": "False when the text is a named absence."
+          },
+          "row_count": {
+            "type": "integer",
+            "title": "Row Count",
+            "description": "Rows delivered (1 for a record or a single value)."
+          },
+          "total_rows": {
+            "type": "integer",
+            "title": "Total Rows",
+            "description": "Rows that matched before the cap."
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "description": "True when the cap left rows out (announced in text)."
+          },
+          "override_policy": {
+            "type": "string",
+            "title": "Override Policy",
+            "description": "What a client-sent value does (shown_locked…)."
+          },
+          "absent_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Absent Reason",
+            "description": "Why nothing was delivered."
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes",
+            "description": "Cap, template and freshness notes."
+          },
+          "withheld": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Withheld",
+            "description": "Field keys masked for you — named, never shown."
+          },
+          "trace": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Trace",
+            "description": "The same trace entry a run records."
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "present",
+          "row_count",
+          "total_rows",
+          "truncated",
+          "override_policy",
+          "trace"
+        ],
+        "title": "VariableBindingPreviewResponse"
+      },
       "VariableComponentSpec": {
         "properties": {
           "type": {
@@ -296687,6 +298059,424 @@
         "title": "WorkflowCostRollup",
         "description": "Aggregated cost for one definition across a time window."
       },
+      "WorkflowImpactReport": {
+        "properties": {
+          "verdicts": {
+            "items": {
+              "$ref": "#/components/schemas/WorkflowImpactVerdict"
+            },
+            "type": "array",
+            "title": "Verdicts"
+          },
+          "withheld": {
+            "$ref": "#/components/schemas/WorkflowImpactWithheld"
+          },
+          "workflows_examined": {
+            "type": "integer",
+            "title": "Workflows Examined",
+            "default": 0
+          },
+          "computed_at": {
+            "type": "string",
+            "title": "Computed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "computed_at"
+        ],
+        "title": "WorkflowImpactReport"
+      },
+      "WorkflowImpactRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App",
+            "description": "Stable application slug that initiated the request."
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature",
+            "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "user"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
+          "workflow_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "WorkflowImpactRequest",
+        "description": "``workflow_ids`` narrows the read; omitted = every workflow-held rung\nthe caller may read. Accepts the injected org scope every app POST carries\n(the read does not use it — scope is per CALLER)."
+      },
+      "WorkflowImpactVerdict": {
+        "properties": {
+          "holder_kind": {
+            "type": "string",
+            "enum": [
+              "binding",
+              "mandate_default"
+            ],
+            "title": "Holder Kind"
+          },
+          "row_id": {
+            "type": "string",
+            "title": "Row Id"
+          },
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "principal_kind": {
+            "type": "string",
+            "enum": [
+              "org",
+              "system",
+              "user"
+            ],
+            "title": "Principal Kind"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "subject_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject User Id"
+          },
+          "workflow_id": {
+            "type": "string",
+            "title": "Workflow Id"
+          },
+          "workflow_name": {
+            "type": "string",
+            "title": "Workflow Name"
+          },
+          "pinned_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned Version Id"
+          },
+          "pinned_version_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned Version Number"
+          },
+          "latest_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Version Id"
+          },
+          "latest_version_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Version Number"
+          },
+          "grade": {
+            "type": "string",
+            "enum": [
+              "green",
+              "identical",
+              "orange",
+              "red"
+            ],
+            "title": "Grade"
+          },
+          "blocker": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "set_aside",
+                  "tracks_latest",
+                  "unreachable"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocker"
+          },
+          "set_aside_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set Aside Reason"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/ImpactFinding"
+            },
+            "type": "array",
+            "title": "Findings"
+          },
+          "breaks": {
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "green",
+                "identical",
+                "orange",
+                "red"
+              ]
+            },
+            "type": "object",
+            "title": "Breaks"
+          },
+          "contract_broken": {
+            "type": "boolean",
+            "title": "Contract Broken",
+            "default": false
+          },
+          "behind_latest": {
+            "type": "boolean",
+            "title": "Behind Latest",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "holder_kind",
+          "row_id",
+          "mandate_key",
+          "principal_kind",
+          "workflow_id",
+          "workflow_name",
+          "grade"
+        ],
+        "title": "WorkflowImpactVerdict"
+      },
+      "WorkflowImpactWithheld": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "default": 0
+          },
+          "by_principal_kind": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By Principal Kind"
+          },
+          "sentence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sentence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "WorkflowImpactWithheld"
+      },
+      "WorkflowStarterResult": {
+        "properties": {
+          "workflow_id": {
+            "type": "string",
+            "title": "Workflow Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "inputs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Inputs"
+          },
+          "output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind"
+          },
+          "skipped": {
+            "items": {
+              "$ref": "#/components/schemas/WorkflowStarterSkipped"
+            },
+            "type": "array",
+            "title": "Skipped"
+          },
+          "studio_path": {
+            "type": "string",
+            "title": "Studio Path"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "workflow_id",
+          "name",
+          "mandate_key",
+          "studio_path",
+          "message"
+        ],
+        "title": "WorkflowStarterResult"
+      },
+      "WorkflowStarterSkipped": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "reason"
+        ],
+        "title": "WorkflowStarterSkipped"
+      },
       "WorkleapServiceStatus": {
         "properties": {
           "__kind": {
@@ -299926,7 +301716,7 @@
           "admin_bypass_acl": {
             "type": "boolean",
             "title": "Admin Bypass Acl",
-            "description": "Admin-only: bypass per-user ACL and search every chunk in every tenant. Useful for the admin search-diagnostic UI to answer 'do these chunks even exist?' independent of ownership / org / share grants. Ignored for non-admins.",
+            "description": "REFUSED on this route (403): it is a user search, and an admin searches exactly what they can see here (THE ADMIN LANE, 2026-09-25). An ACL-free search belongs to an admin-app door.",
             "default": false
           },
           "data_store_id": {

@@ -109,14 +109,6 @@ describe("batchTierOf — Arman's three piles plus the two a batch must name", (
     expect(isBatchActionable(v)).toBe(false);
   });
 
-  it("a global binding is an ordinary batch member (Amendment 1)", () => {
-    const v = verdict({
-      holder_kind: "binding",
-      principal: { kind: "global", organization_id: "org-1", subject_user_id: null },
-    });
-    expect(batchTierOf(v)).toBe("safe");
-  });
-
   it("a pin already on the newest version is CURRENT, not blocked", () => {
     const v = verdict({
       pinned_version_id: "v15",

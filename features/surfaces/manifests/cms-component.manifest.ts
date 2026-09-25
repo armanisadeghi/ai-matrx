@@ -35,6 +35,7 @@ import type {
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import type { AgentWritePolicy } from "@/features/cms/types";
+import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -402,7 +403,8 @@ You can also WRITE here, through apply_surface_write: the targets stage the open
         "Default agent offered for HTML/CSS edits to a shared header/footer/sidebar/CTA component.",
       kind: "single",
       // Platform agent "Site Editor" (bound 2026-08-13; dormant since declared).
-      defaultAgentId: "d188520f-b7ba-421e-bb5f-48a49cd82ce2",
+      defaultAgentId: null,
+      mandateKey: dbAuthoredMandateKey("cms.site_editing"),
       sortOrder: 100,
     },
   ],

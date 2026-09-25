@@ -100,7 +100,7 @@ function render(opts: {
         rung={opts.perspective === "person" ? "user" : "system"}
         organizationId={null}
         allowGlobal
-        fixedRung={opts.perspective === "person" ? undefined : ["system", "global"]}
+        fixedRung={opts.perspective === "person" ? undefined : ["system"]}
         perspective={opts.perspective ?? "system"}
         onRungChange={() => undefined}
         holder={{

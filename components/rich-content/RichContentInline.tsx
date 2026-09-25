@@ -43,12 +43,19 @@ export interface RichContentInlineProps {
   className?: string;
   /** `text` inside a link (card previews): formatting kept, no nested anchor. */
   links?: InlineLinks;
+  /**
+   * The source is still arriving (a table cell of a streaming row): the core
+   * heals half-arrived links, emphasis, code and math. Omit to inherit from a
+   * live MarkdownStreamingProvider; `false` for text that is already whole.
+   */
+  streaming?: boolean;
 }
 
 export function RichContentInline({
   source,
   className,
   links = "link",
+  streaming,
 }: RichContentInlineProps) {
   const { text, violations } = guardMarkdownDelimiters(preprocessProse(source));
 
@@ -70,7 +77,11 @@ export function RichContentInline({
       data-rich-content="inline"
       className={cn(INLINE_LEVEL_WRAPPER_CLASS, className)}
     >
-      <MarkdownCore preset="chat" components={inlineLevelElements(links)}>
+      <MarkdownCore
+        preset="chat"
+        components={inlineLevelElements(links)}
+        streaming={streaming}
+      >
         {text}
       </MarkdownCore>
     </span>

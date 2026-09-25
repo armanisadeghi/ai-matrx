@@ -1,4 +1,5 @@
 "use client";
+import { DEFAULT_HOLDER_RUNG } from "@/features/bindings/default-holder-rung";
 import { ContractMismatchList } from "@/features/mandates/components/ContractMismatchNotice";
 import { unmetContractChecks } from "@/features/mandates/contract-check";
 import { storedMandateKey } from "@/features/mandates/mandate-key";
@@ -61,15 +62,11 @@ import {
 } from "./TriadSections";
 import { useCopyMandateAgent } from "../useCopyMandateAgent";
 import { splitMandateKey } from "../mandate-key";
-import {
-  agentHolderOfBinding,
-  holderOfMandate,
-} from "@/lib/supabase/mandateStorage";
+import { holderOfMandate } from "@/lib/supabase/mandateStorage";
 import {
   OneBindingWorkspace,
   type BindingWorkspaceSection,
 } from "@/features/bindings/OneBindingWorkspace";
-import { hasLiveGlobalBinding } from "@/features/bindings/system-answer-record";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ConfigurationTable,
@@ -885,16 +882,8 @@ export function systemRungFactsOf(
   };
   const row = ladder.rows.find((r) => r.rung === "system") ?? null;
   const holder = holderOfMandate(data.mandate);
-  const globalBinding = data.bindings.find(
-    (b) => b.principal_type === "global" && b.is_enabled !== false,
-  );
-  const holderId = globalBinding
-    ? agentHolderOfBinding(globalBinding).holderId
-    : holder.holderId;
-  const holderIsWorkflow =
-    (globalBinding
-      ? (globalBinding as { holder_type?: string | null }).holder_type
-      : data.mandate.default_holder_type) === "workflow";
+  const holderId = holder.holderId;
+  const holderIsWorkflow = data.mandate.default_holder_type === "workflow";
 
   return {
     status: ladder.loading
@@ -906,9 +895,7 @@ export function systemRungFactsOf(
     droppedReason: row?.dropped_reason ?? null,
     holderName: holderIsWorkflow
       ? (() => {
-          const workflowId = globalBinding
-            ? ((globalBinding as { holder_id?: string | null }).holder_id ?? null)
-            : holder.holderId;
+          const workflowId = holder.holderId;
           return workflowId
             ? (data.workflowsById?.[workflowId]?.name ?? null)
             : null;
@@ -978,18 +965,6 @@ export function resolvedHolderForBannerOf(
   return null;
 }
 
-/** The two rungs that decide for everybody, ordered by which one answers now. */
-const SYSTEM_PERSPECTIVE_RUNGS_DEFAULT_FIRST = ["system", "global"] as const;
-const SYSTEM_PERSPECTIVE_RUNGS_GLOBAL_FIRST = ["global", "system"] as const;
-
-/** Does a live platform-wide binding sit above this job's own default? */
-export function hasGlobalBinding(data: MandateWorkspaceData): boolean {
-  // ONE predicate, shared with the thing that picks which record the system
-  // answer is written to (FIX-R13/A) — two readings of the same row cannot
-  // disagree if there is only one reading.
-  return hasLiveGlobalBinding(data.bindings);
-}
-
 function BindingSection({
   data,
   principal,
@@ -1056,20 +1031,14 @@ function BindingSection({
           // The admin door offers the system rung; the server's super-admin
           // gate is the authority and the workspace re-checks it too.
           allowGlobal={authoring}
-          // 🚨 THE ADMIN PANEL IS THE PLATFORM'S OWN RUNGS AND NOTHING ELSE.
-          // Two rungs decide for everybody: the job's OWN default holder
-          // (`mandate.definition.default_holder_*`, holder-only) and the
-          // platform-wide binding above it (which also carries the map, the
-          // settings and auto-run). Pinning to that pair states each by name
-          // and offers no User/Org — an admin managing what the platform
-          // assigns is never one click away from writing a personal override.
-          // The rung that ACTUALLY decides today is first, so the page opens on
-          // the answer it just described above.
+          // 🚨 THE ADMIN PANEL IS THE PLATFORM'S OWN RUNG AND NOTHING ELSE:
+          // the job's own default, which carries the Holder, map, settings and
+          // auto-run (aidream 1037/1041 — there is no global rung). No
+          // User/Org — an admin managing what the platform assigns is never
+          // one click away from writing a personal override.
           fixedRung={
             perspective === "system"
-              ? hasGlobalBinding(data)
-                ? SYSTEM_PERSPECTIVE_RUNGS_GLOBAL_FIRST
-                : SYSTEM_PERSPECTIVE_RUNGS_DEFAULT_FIRST
+              ? DEFAULT_HOLDER_RUNG
               : perspective === "organization"
                 ? ["org"]
                 : undefined
@@ -1149,7 +1118,6 @@ function FulfillmentSection({ resolution }: { resolution: FulfillmentView }) {
               ? {
                   user: "Personal",
                   org: "Organization",
-                  global: "System binding",
                   system: "System default",
                   run: "This run",
                 }[rung]

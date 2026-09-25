@@ -50,7 +50,6 @@ export function holderDraftOwnerOf(input: {
   systemHomed: boolean;
 }): AgentOwner | null {
   const { rung, organizationId, systemHomed } = input;
-  if (rung === "global") return { kind: "system" };
   if (rung === DEFAULT_HOLDER_RUNG) {
     if (systemHomed) return { kind: "system" };
     return organizationId ? { kind: "organization", organizationId } : null;

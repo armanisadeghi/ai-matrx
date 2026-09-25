@@ -288,8 +288,24 @@ export const LEGACY_PIECES: LegacyPiece[] = [
     status: "banned",
     matcher: { kind: "symbol", names: ["renderAnnouncementMessage"] },
     replacement:
-      "Render the message through the markdown core at the inline level (`InlineMarkdownWithLinks` / " +
-      "`BasicMarkdownContent`; target `<RichContent level=\"inline\">`, PLAN §3.1).",
+      "Render the message through the markdown core at the inline level: `<RichContent level=\"inline\">` " +
+      "(PLAN §3.1).",
+  },
+  {
+    // RC-B7 verify r2 (2026-09-25): table cells rendered through this regex
+    // inline renderer, so the core's stream heal and math never reached them
+    // (raw links / `$c_{1}$` in every chat table). Deleted; never again.
+    id: "second-inline-renderer",
+    label: "a second inline markdown renderer (InlineMarkdownWithLinks / applyInlineMarkdownHtmlFormatting)",
+    category: "hand-rolled-helper",
+    status: "banned",
+    matcher: {
+      kind: "symbol",
+      names: ["InlineMarkdownWithLinks", "applyInlineMarkdownHtmlFormatting"],
+    },
+    replacement:
+      "Render inline markdown (table cells, titles, labels) through the ONE core: " +
+      "`<RichContent level=\"inline\" source isStreaming>` — math, links, code and the stream heal come with it.",
   },
   {
     id: "hand-rolled:AutoTextarea",
@@ -310,7 +326,6 @@ export const LEGACY_PIECES: LegacyPiece[] = [
     "components/mardown-display/chat-markdown/ConfigurableMarkdownContent.tsx",
   ),
   entry("MarkdownRenderer", "components/mardown-display/MarkdownRenderer.tsx"),
-  entry("InlineMarkdownWithLinks", "components/mardown-display/blocks/links/InlineMarkdownWithLinks.tsx"),
   entry("CardFaceContent", "components/mardown-display/blocks/flashcards/CardFaceContent.tsx"),
   entry("RichDocument", "features/rich-document/RichDocument.tsx"),
   entry("MarkdownPreview", "features/files/components/core/FilePreview/previewers/MarkdownPreview.tsx"),

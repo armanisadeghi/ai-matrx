@@ -53,7 +53,7 @@ import {
   EditableCell,
   normalizeCellValue,
 } from "@/features/data-tables/components/EditableCell";
-import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { FormattedFieldValue } from "@/lib/field-formats/FormattedFieldValue";
 import { parseFieldInput, resolveFieldFormat } from "@/lib/field-formats/format";
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
@@ -5082,8 +5082,10 @@ const UserTableViewer = ({
                           >
                             {renderCellMarkdown &&
                             typeof rawValue === "string" ? (
-                              <InlineMarkdownWithLinks
-                                text={String(wrapText ? cellData.fullText : cellData.display)}
+                              <RichContent
+                                level="inline"
+                                source={String(wrapText ? cellData.fullText : cellData.display)}
+                                isStreaming={false}
                               />
                             ) : (
                               String(wrapText ? cellData.fullText : cellData.display)

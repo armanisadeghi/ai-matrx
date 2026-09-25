@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { Button } from "@/components/ui/button";
 import {
   Download,
@@ -891,7 +891,14 @@ const StreamingTableRendererCore: React.FC<
                                 onClick={(e) => e.stopPropagation()}
                               />
                             ) : (
-                              <InlineMarkdownWithLinks text={header} />
+                              // Every cell renders through the ONE core's inline
+                              // level (math, links, code — healed while the row
+                              // is still arriving).
+                              <RichContent
+                                level="inline"
+                                source={header}
+                                isStreaming={isStreamActive && rows.length === 0}
+                              />
                             )}
                           </div>
                           {isEditingEnabled && (
@@ -988,7 +995,13 @@ const StreamingTableRendererCore: React.FC<
                               onFocus={(e) => e.target.select()}
                             />
                           ) : row[colIndex] ? (
-                            <InlineMarkdownWithLinks text={row[colIndex]} />
+                            <RichContent
+                              level="inline"
+                              source={row[colIndex]}
+                              isStreaming={
+                                isStreamActive && rowIndex === rows.length - 1
+                              }
+                            />
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}

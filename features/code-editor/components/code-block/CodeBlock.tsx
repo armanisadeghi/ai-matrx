@@ -102,9 +102,17 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  const [lineNumbers, setLineNumbers] = useState(
-    showLineNumbers || fence.showLineNumbers === true,
-  );
+  // Line numbers follow what the caller / fence asks for — including when
+  // the fence line is edited in place (`showLineNumbers` added or removed);
+  // the header toggle overrides it until the request changes again.
+  const requestedLineNumbers = showLineNumbers || fence.showLineNumbers === true;
+  const [lineNumbers, setLineNumbers] = useState(requestedLineNumbers);
+  const [previousRequestedLineNumbers, setPreviousRequestedLineNumbers] =
+    useState(requestedLineNumbers);
+  if (previousRequestedLineNumbers !== requestedLineNumbers) {
+    setPreviousRequestedLineNumbers(requestedLineNumbers);
+    setLineNumbers(requestedLineNumbers);
+  }
   const [showWrapLines, setShowWrapLines] = useState(wrapLines);
   const [minimapEnabled, setMinimapEnabled] = useState(false);
   const [isTopInView, setIsTopInView] = useState(false);

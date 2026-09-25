@@ -315,7 +315,7 @@ function OneMandateBindingWorkspace({
   const pinned = pinnedRungs(fixedRung);
   const [chosenRung, setRung] = useState<WorkspaceRung>(
     pinned?.[0] ??
-      (initialRung === "global" && !allowGlobal ? "user" : initialRung),
+      initialRung,
   );
   /**
    * 🚨 ON THE SYSTEM HOST THE RUNG IS NOT A CHOICE AND NOT A REMEMBERED ONE
@@ -330,12 +330,10 @@ function OneMandateBindingWorkspace({
   // 🚨 AND "EVERYBODY" IS THE DEFAULT, ON EVERY HOST (aidream 1037, Arman
   // 2026-09-25). The system answer lives in ONE record — the job's own default,
   // which now carries its map, settings and auto-run. A scope picker that says
-  // "Global" therefore lands on the default rung; there is no platform-wide
-  // binding to write beside it, and the server refuses one.
+  // "Global" therefore lands on the default rung (`scopeToRung`); there is no
+  // global binding rung at all (aidream 1041).
   const rung: WorkspaceRung =
-    perspective === "system" || chosenRung === "global"
-      ? DEFAULT_HOLDER_RUNG
-      : chosenRung;
+    perspective === "system" ? DEFAULT_HOLDER_RUNG : chosenRung;
   const [organizationId, setOrganizationId] = useState<string | null>(
     initialOrganizationId,
   );
@@ -2763,9 +2761,6 @@ function findBinding(
   // own `default_holder_*`. There is no row to find, and answering with the
   // user's row would edit the wrong rung.
   if (rung === DEFAULT_HOLDER_RUNG) return null;
-  if (rung === "global") {
-    return bindings.find((b) => b.principal_type === "global") ?? null;
-  }
   if (rung === "org") {
     if (!organizationId) return null;
     return (
@@ -2797,17 +2792,11 @@ function effectiveAgentId(
 }
 
 function savedWords(rung: WorkspaceRung, defaultHolderLabel?: string): string {
-  // 🚨 THE RECEIPT NAMES THE ROW THAT NOW EXISTS (FIX-R13/A). The caller passes
-  // `"global"` whenever `systemAnswerRecord()` sent the write to the
-  // platform-wide binding, even while the page stands on the bottom rung —
-  // otherwise the toast would say "the job's own default now names who runs
-  // this job" about a row that was never touched.
+  // THE RECEIPT NAMES THE ROW THAT NOW EXISTS (FIX-R13/A).
   switch (rung) {
     case DEFAULT_HOLDER_RUNG:
       // Named by its HOME, because "the default" alone does not say whose.
       return `Saved — ${defaultHolderLabel ?? "the job's own default"} now names who runs this job.`;
-    case "global":
-      return "Saved — everybody gets this Mandate Holder now.";
     case "org":
       return "Saved — everyone in this organization gets this Mandate Holder now.";
     default:
@@ -2826,8 +2815,6 @@ function ladderLine(
   organizationId: string | null,
 ): string {
   const answered: string[] = [];
-  if (bindings.some((b) => b.principal_type === "global"))
-    answered.push("the system");
   const orgCount = bindings.filter((b) => b.principal_type === "org").length;
   if (orgCount > 0)
     answered.push(

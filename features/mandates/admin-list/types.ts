@@ -64,7 +64,7 @@ export interface MandateAdminRow extends MandateRow {
   /** Pinned version label ("v3") or "Latest"; "None" with no holder. */
   pinText: string;
 
-  /** "Default", org names, "Personal", "Global" — one entry per kind. */
+  /** "Default", org names, "Personal" — one entry per kind. */
   customizedBy: string[];
 
   createdBy: string | null;

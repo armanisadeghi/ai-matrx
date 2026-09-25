@@ -394,13 +394,6 @@ export function MandateDashboard() {
             href={mandateListHref({ [COL.customizedBy]: "Personal" })}
           />
           <KpiTile
-            label="Global"
-            value={n(binds?.globalMandates)}
-            loading={consoleSlot.loading}
-            hint={binds ? `${formatCount(binds.global)} bindings` : undefined}
-            href={mandateListHref({ [COL.customizedBy]: "Global" })}
-          />
-          <KpiTile
             label="Disabled bindings"
             value={n(binds?.disabled)}
             loading={consoleSlot.loading}

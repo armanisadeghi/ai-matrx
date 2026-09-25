@@ -23,7 +23,6 @@ import { join } from "node:path";
 
 import {
   defaultAnswerSettingsOf,
-  hasLiveGlobalBinding,
   systemAnswerRecord,
   systemAnswerSaveWords,
   type SystemAnswerDraft,
@@ -34,7 +33,6 @@ const WORKSPACE = join(BINDINGS_DIR, "OneBindingWorkspace.tsx");
 const FEATURES_DIR = join(BINDINGS_DIR, "..");
 
 const HOLDER_ONLY: SystemAnswerDraft = {
-  hasGlobalBinding: false,
   carriesMapping: false,
   carriesSettings: false,
   carriesAutoRun: false,
@@ -48,7 +46,6 @@ describe("the record the system answer is written to", () => {
     ["a mapping", { carriesMapping: true }],
     ["settings", { carriesSettings: true }],
     ["an auto-run promise", { carriesAutoRun: true }],
-    ["a legacy platform-wide binding beside it", { hasGlobalBinding: true }],
   ] as const)("is the job's own default when the answer carries %s", (_l, extra) => {
     expect(systemAnswerRecord({ ...HOLDER_ONLY, ...extra })).toBe(
       "definition-default",
@@ -73,14 +70,6 @@ describe("the record the system answer is written to", () => {
       config_overrides: null,
       auto_run: null,
     });
-  });
-
-  it("still recognises a legacy platform-wide row through ONE predicate", () => {
-    expect(hasLiveGlobalBinding([])).toBe(false);
-    expect(
-      hasLiveGlobalBinding([{ principal_type: "global", is_enabled: false }]),
-    ).toBe(false);
-    expect(hasLiveGlobalBinding([{ principal_type: "global" }])).toBe(true);
   });
 
   it("names whose answer it is on the Save button, from the job's home", () => {
@@ -125,9 +114,13 @@ describe("the census — nothing in features/ asks for a platform-wide binding",
     // branch would have sent — built by the same builder.
     expect(src).toContain("consumptionMap: settingsPayload.consumptionMap,");
     expect(src).toContain("autoRun: settingsPayload.autoRun ?? null,");
-    // "Global" chosen in a scope picker lands on the default rung.
+    // There is no global rung to choose (aidream 1041): the system host
+    // stands on the default, and "Global" in a scope picker maps to it.
     expect(src).toMatch(
-      /perspective === "system" \|\| chosenRung === "global"\s*\?\s*DEFAULT_HOLDER_RUNG/,
+      /perspective === "system" \? DEFAULT_HOLDER_RUNG : chosenRung/,
+    );
+    expect(readFileSync(join(BINDINGS_DIR, "ScopeHolderBar.tsx"), "utf8")).toMatch(
+      /if \(scope === AGENT_SCOPES\.GLOBAL\) return DEFAULT_HOLDER_RUNG;/,
     );
   });
 });
