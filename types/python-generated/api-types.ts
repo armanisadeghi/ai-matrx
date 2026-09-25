@@ -5568,6 +5568,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vault/items/{item_id}/password-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Password History */
+        get: operations["list_password_history_vault_items__item_id__password_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vault/backups/preview": {
         parameters: {
             query?: never;
@@ -7212,6 +7229,40 @@ export interface paths {
         put?: never;
         /** Gmail Message */
         post: operations["gmail_message_google_integrations_gmail_message_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/gmail/modify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Gmail Modify */
+        post: operations["gmail_modify_google_integrations_gmail_modify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/gmail/labels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Gmail Labels */
+        post: operations["gmail_labels_google_integrations_gmail_labels_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -76131,12 +76182,48 @@ export interface components {
              */
             held_by_this_record?: boolean;
         };
+        /** GmailLabel */
+        GmailLabel: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Type
+             * @default user
+             * @constant
+             */
+            type?: "user";
+        };
+        /** GmailLabelsRequest */
+        GmailLabelsRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Organization Id */
+            organization_id?: string | null;
+            /**
+             * Offset
+             * @default 0
+             */
+            offset?: number;
+        };
+        /** GmailLabelsResult */
+        GmailLabelsResult: {
+            /** Labels */
+            labels: components["schemas"]["GmailLabel"][];
+            /** Has More */
+            has_more: boolean;
+            /** Next Offset */
+            next_offset?: number | null;
+        };
         /** GmailMessageDetail */
         GmailMessageDetail: {
             /** Id */
             id: string;
             /** Thread Id */
             thread_id: string | null;
+            /** Label Ids */
+            label_ids?: string[];
             /** Subject */
             subject: string;
             /** From Address */
@@ -76173,6 +76260,8 @@ export interface components {
             id: string;
             /** Thread Id */
             thread_id: string | null;
+            /** Label Ids */
+            label_ids?: string[];
             /** Subject */
             subject: string;
             /** From Address */
@@ -76183,6 +76272,29 @@ export interface components {
             date: string;
             /** Snippet */
             snippet: string;
+        };
+        /** GmailModifyRequest */
+        GmailModifyRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Message Id */
+            message_id: string;
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "add_label" | "archive" | "mark_read" | "mark_unread" | "remove_label" | "restore_inbox" | "star" | "unstar";
+            /** Label Id */
+            label_id?: string | null;
+        };
+        /** GmailModifyResult */
+        GmailModifyResult: {
+            /** Message Id */
+            message_id: string;
+            /** Label Ids */
+            label_ids: string[];
         };
         /** GmailSearchRequest */
         GmailSearchRequest: {
@@ -76431,7 +76543,7 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
+            key: "analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
             /** Title */
             title: string;
             /** User Outcome */
@@ -76515,14 +76627,14 @@ export interface components {
             /** Capability Key */
             capability_key?: ("calendar" | "contacts" | "tag_manager" | "tasks" | "youtube_analytics") | null;
             /** Capability Keys */
-            capability_keys?: ("analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[] | null;
+            capability_keys?: ("analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[] | null;
         };
         /** GoogleExchangeResponse */
         GoogleExchangeResponse: {
             /** Connection Id */
             connection_id: string;
             /** Connected Capability Keys */
-            connected_capability_keys?: ("analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[];
+            connected_capability_keys?: ("analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[];
             /** Refused Capability Keys */
             refused_capability_keys?: components["schemas"]["GoogleProductRefusal"][];
         };
@@ -76609,7 +76721,7 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
+            key: "analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_modify" | "gmail_read" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
             /** Error */
             error: string;
             /** Message */
@@ -127432,10 +127544,25 @@ export interface components {
              */
             override_policy: string;
             /**
+             * Outcome
+             * @description delivered | absent (the agent is told `text`, a named absence) | blocks_run (missing=block: the run would be STOPPED — the agent is told nothing; `text` is the sentence a person sees).
+             */
+            outcome: string;
+            /**
              * Absent Reason
-             * @description Why nothing was delivered.
+             * @description Why nothing was delivered, for a person.
              */
             absent_reason?: string | null;
+            /**
+             * Absent Kind
+             * @description no_field | empty | forbidden | record_unavailable | table_unavailable | no_rows | switched_off | no_person | no_organization | invalid_binding.
+             */
+            absent_kind?: string | null;
+            /**
+             * Source Note
+             * @description Where the value comes from and whether it can be typed in.
+             */
+            source_note?: string | null;
             /**
              * Notes
              * @description Cap, template and freshness notes.
@@ -128557,7 +128684,7 @@ export interface components {
              * Profile
              * @enum {string}
              */
-            profile: "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1" | "matrx_login_csv_v1" | "nordpass_csv_v1";
+            profile: "firefox_csv_v1" | "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1" | "matrx_login_csv_v1" | "nordpass_csv_v1";
             /** Item Ids */
             item_ids: string[];
             /** Revision */
@@ -128584,7 +128711,7 @@ export interface components {
              * Profile
              * @enum {string}
              */
-            profile: "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1" | "matrx_login_csv_v1" | "nordpass_csv_v1";
+            profile: "firefox_csv_v1" | "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1" | "matrx_login_csv_v1" | "nordpass_csv_v1";
             /** Item Ids */
             item_ids: string[];
         };
@@ -128594,7 +128721,7 @@ export interface components {
              * Profile
              * @enum {string}
              */
-            profile: "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1" | "matrx_login_csv_v1" | "nordpass_csv_v1";
+            profile: "firefox_csv_v1" | "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1" | "matrx_login_csv_v1" | "nordpass_csv_v1";
             /** Revision */
             revision: string;
             /** Items */
@@ -128655,6 +128782,44 @@ export interface components {
             enabled: true;
             /** Already Enabled */
             already_enabled: boolean;
+        };
+        /**
+         * VaultPasswordHistoryEntry
+         * @description A value-free entry in the personal password-history timeline.
+         */
+        VaultPasswordHistoryEntry: {
+            /** Revision */
+            revision: number;
+            /** Recorded At */
+            recorded_at: string;
+            /** Field Id */
+            field_id: string;
+            /** Capture Started At */
+            capture_started_at: string;
+            /**
+             * Value Availability
+             * @default unavailable
+             * @constant
+             */
+            value_availability?: "unavailable";
+        };
+        /**
+         * VaultPasswordHistoryResponse
+         * @description Metadata only; a future explicit reveal contract owns old values.
+         */
+        VaultPasswordHistoryResponse: {
+            /** Entries */
+            entries: components["schemas"]["VaultPasswordHistoryEntry"][];
+            /** Count */
+            count: number;
+            /** Capture Cutoff At */
+            capture_cutoff_at?: string | null;
+            /**
+             * Value Availability
+             * @default unavailable
+             * @constant
+             */
+            value_availability?: "unavailable";
         };
         /** VaultResolveRef */
         VaultResolveRef: {
@@ -145275,6 +145440,41 @@ export interface operations {
             };
         };
     };
+    list_password_history_vault_items__item_id__password_history_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultPasswordHistoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     preview_vault_backup_vault_backups_preview_post: {
         parameters: {
             query?: never;
@@ -148219,6 +148419,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GmailMessageDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    gmail_modify_google_integrations_gmail_modify_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GmailModifyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GmailModifyResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    gmail_labels_google_integrations_gmail_labels_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GmailLabelsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GmailLabelsResult"];
                 };
             };
             /** @description Validation Error */

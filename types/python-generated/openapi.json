@@ -13855,6 +13855,69 @@
         }
       }
     },
+    "/vault/items/{item_id}/password-history": {
+      "get": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "List Password History",
+        "operationId": "list_password_history_vault_items__item_id__password_history_get",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultPasswordHistoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/vault/backups/preview": {
       "post": {
         "tags": [
@@ -18475,6 +18538,88 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GmailMessageDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/gmail/modify": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Gmail Modify",
+        "operationId": "gmail_modify_google_integrations_gmail_modify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GmailModifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GmailModifyResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/gmail/labels": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Gmail Labels",
+        "operationId": "gmail_labels_google_integrations_gmail_labels_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GmailLabelsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GmailLabelsResult"
                 }
               }
             }
@@ -174929,6 +175074,96 @@
         "title": "GmailCcAttribution",
         "description": "Whose address each copied-to recipient is, as the client's ONE integrity\nprimitive decided (`features/crm/gmail/recipient-integrity.ts`).\n\nStored verbatim on the row so a Cc on a Person's timeline says whose address\nit is (VERIFY-B1-B2-R2 N9). The server does not re-decide it and does not\ninvent it — but it DOES gate every one of these addresses, which is the part\nthat was missing."
       },
+      "GmailLabel": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "const": "user",
+            "title": "Type",
+            "default": "user"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "GmailLabel"
+      },
+      "GmailLabelsRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "offset": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Offset",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "title": "GmailLabelsRequest"
+      },
+      "GmailLabelsResult": {
+        "properties": {
+          "labels": {
+            "items": {
+              "$ref": "#/components/schemas/GmailLabel"
+            },
+            "type": "array",
+            "title": "Labels"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "labels",
+          "has_more"
+        ],
+        "title": "GmailLabelsResult"
+      },
       "GmailMessageDetail": {
         "properties": {
           "id": {
@@ -174945,6 +175180,13 @@
               }
             ],
             "title": "Thread Id"
+          },
+          "label_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Label Ids"
           },
           "subject": {
             "type": "string",
@@ -175044,6 +175286,13 @@
             ],
             "title": "Thread Id"
           },
+          "label_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Label Ids"
+          },
           "subject": {
             "type": "string",
             "title": "Subject"
@@ -175076,6 +175325,87 @@
           "snippet"
         ],
         "title": "GmailMessageSummary"
+      },
+      "GmailModifyRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$",
+            "title": "Message Id"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "add_label",
+              "archive",
+              "mark_read",
+              "mark_unread",
+              "remove_label",
+              "restore_inbox",
+              "star",
+              "unstar"
+            ],
+            "title": "Action"
+          },
+          "label_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "connection_id",
+          "message_id",
+          "action"
+        ],
+        "title": "GmailModifyRequest"
+      },
+      "GmailModifyResult": {
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "title": "Message Id"
+          },
+          "label_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Label Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message_id",
+          "label_ids"
+        ],
+        "title": "GmailModifyResult"
       },
       "GmailSearchRequest": {
         "properties": {
@@ -175571,6 +175901,7 @@
               "contacts",
               "docs",
               "drive_files",
+              "gmail_modify",
               "gmail_read",
               "gmail_send",
               "search_console",
@@ -175841,6 +176172,7 @@
                     "contacts",
                     "docs",
                     "drive_files",
+                    "gmail_modify",
                     "gmail_read",
                     "gmail_send",
                     "search_console",
@@ -175885,6 +176217,7 @@
                 "contacts",
                 "docs",
                 "drive_files",
+                "gmail_modify",
                 "gmail_read",
                 "gmail_send",
                 "search_console",
@@ -176199,6 +176532,7 @@
               "contacts",
               "docs",
               "drive_files",
+              "gmail_modify",
               "gmail_read",
               "gmail_send",
               "search_console",
@@ -289079,6 +289413,11 @@
             "title": "Override Policy",
             "description": "What a client-sent value does (shown_locked…)."
           },
+          "outcome": {
+            "type": "string",
+            "title": "Outcome",
+            "description": "delivered | absent (the agent is told `text`, a named absence) | blocks_run (missing=block: the run would be STOPPED — the agent is told nothing; `text` is the sentence a person sees)."
+          },
           "absent_reason": {
             "anyOf": [
               {
@@ -289089,7 +289428,31 @@
               }
             ],
             "title": "Absent Reason",
-            "description": "Why nothing was delivered."
+            "description": "Why nothing was delivered, for a person."
+          },
+          "absent_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Absent Kind",
+            "description": "no_field | empty | forbidden | record_unavailable | table_unavailable | no_rows | switched_off | no_person | no_organization | invalid_binding."
+          },
+          "source_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Note",
+            "description": "Where the value comes from and whether it can be typed in."
           },
           "notes": {
             "items": {
@@ -289124,6 +289487,7 @@
           "total_rows",
           "truncated",
           "override_policy",
+          "outcome",
           "trace"
         ],
         "title": "VariableBindingPreviewResponse"
@@ -291846,6 +292210,7 @@
           "profile": {
             "type": "string",
             "enum": [
+              "firefox_csv_v1",
               "google_password_manager_csv_v1",
               "keeper_csv_v1",
               "lastpass_csv_v1",
@@ -291926,6 +292291,7 @@
           "profile": {
             "type": "string",
             "enum": [
+              "firefox_csv_v1",
               "google_password_manager_csv_v1",
               "keeper_csv_v1",
               "lastpass_csv_v1",
@@ -291957,6 +292323,7 @@
           "profile": {
             "type": "string",
             "enum": [
+              "firefox_csv_v1",
               "google_password_manager_csv_v1",
               "keeper_csv_v1",
               "lastpass_csv_v1",
@@ -292103,6 +292470,85 @@
           "already_enabled"
         ],
         "title": "VaultNativePasskeyEnableResponse"
+      },
+      "VaultPasswordHistoryEntry": {
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Revision"
+          },
+          "recorded_at": {
+            "type": "string",
+            "title": "Recorded At"
+          },
+          "field_id": {
+            "type": "string",
+            "title": "Field Id"
+          },
+          "capture_started_at": {
+            "type": "string",
+            "title": "Capture Started At"
+          },
+          "value_availability": {
+            "type": "string",
+            "const": "unavailable",
+            "title": "Value Availability",
+            "default": "unavailable"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "revision",
+          "recorded_at",
+          "field_id",
+          "capture_started_at"
+        ],
+        "title": "VaultPasswordHistoryEntry",
+        "description": "A value-free entry in the personal password-history timeline."
+      },
+      "VaultPasswordHistoryResponse": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/VaultPasswordHistoryEntry"
+            },
+            "type": "array",
+            "title": "Entries"
+          },
+          "count": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Count"
+          },
+          "capture_cutoff_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capture Cutoff At"
+          },
+          "value_availability": {
+            "type": "string",
+            "const": "unavailable",
+            "title": "Value Availability",
+            "default": "unavailable"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "entries",
+          "count"
+        ],
+        "title": "VaultPasswordHistoryResponse",
+        "description": "Metadata only; a future explicit reveal contract owns old values."
       },
       "VaultResolveRef": {
         "properties": {
