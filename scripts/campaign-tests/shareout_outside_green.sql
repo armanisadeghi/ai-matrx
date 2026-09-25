@@ -96,6 +96,12 @@ begin
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
   values ('custom', 'system_enabled', 'organization', v_org, v_org, 'true'::jsonb,
           'SHARE-OUT seat suite: the Ojai branch keeps its jobs in the record store.');
+  -- The lane starts SHUT by the branch's own choice. The platform default is ON since
+  -- migrations/campaign/sharegate_naming_a_person_is_the_only_act.sql (Store-ON-by-default,
+  -- Arman 2026-09-23), so CLAUSE 1's "shut" is this organization's explicit override.
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('custom', 'external_principal_enabled', 'organization', v_org, v_org, 'false'::jsonb,
+          'The Ojai branch keeps customers out until the office decides to let them follow a job.');
   insert into custom.record (organization_id, table_id, data)
   values (v_org, null, jsonb_build_object('name', 'Ojai Branch')) returning id into v_home;
 
