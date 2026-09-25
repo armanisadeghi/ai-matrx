@@ -160,9 +160,20 @@ begin
   select i.dataset_id into v_ds5 from context.scope_dataset_instances i where i.context_item_id = v_item and i.scope_id = v_scope5;
   perform set_config('role', 'authenticated', true);
   if v_ds5 is null then raise exception 'G11-setup: the unmoved Exam room 5 got no older table'; end if;
-  perform platform.knob_override_set('data_tables', 'older_tables_moved', 'organization', v_org, v_org, 'true'::jsonb,
-                                     'Cedar Ridge moved into the record store');
+  -- THE MOVE IS THE MOVER'S ACT, SO IT IS TAKEN AS THE MOVER (amended by lane SUITE-HEALTH-2,
+  -- 2026-09-25). `data_tables.older_tables_moved` is no longer written through
+  -- platform.knob_override_set — since
+  -- migrations/campaign/flipseams_every_switch_from_old_to_new_is_one_owner_press.sql that door
+  -- answers {"ok": false, "reason": "wrong_door"} and only platform.cutover_seam_press (an owner,
+  -- in a browser, with the seam's readiness met) may set it. This call ignored that answer, so the
+  -- clinic silently never moved. The fixture now records the finished move as the role that owns
+  -- the store, beside the Home and the carried table the mover also writes below.
   perform set_config('role', 'postgres', true);
+  delete from platform.knob_override where feature = 'data_tables' and key = 'older_tables_moved'
+     and scope_kind = 'organization' and scope_id = v_org;
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('data_tables', 'older_tables_moved', 'organization', v_org, v_org, 'true'::jsonb,
+          'Cedar Ridge moved into the record store');
   -- The mover gives a moved organization ONE Home: a record of the organization kernel.
   insert into custom.record (organization_id, table_id, data)
   values (v_org, custom.organization_kernel_id(), jsonb_build_object('name', 'Cedar Ridge Veterinary Clinic'))
