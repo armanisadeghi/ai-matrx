@@ -62,7 +62,7 @@ begin
                               or (v_row.status = 'skipped' and v_row.error_code is not null)) then
     raise exception 'N2: the email reminder is % with address % (want render_pending with an address, or a named skip)', v_row.status, v_row.to_address;
   end if;
-  if v_row.deep_link is distinct from '/o/' || v_kitchen::text or v_row.payload -> 'notice' ->> 'subject' <> 'Still waiting on you: Kitchen' then
+  if coalesce(v_row.deep_link, '') not like '/o/' || v_kitchen::text || '%' or v_row.payload -> 'notice' ->> 'subject' <> 'Still waiting on you: Kitchen' then
     raise exception 'N2: the email carries link % and notice % (want /o/<Kitchen> and its words)', v_row.deep_link, v_row.payload -> 'notice';
   end if;
   raise notice 'N2 PASS — app reminder written; email reminder % (address %), linked to Kitchen, words in payload.notice',

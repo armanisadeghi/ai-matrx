@@ -5,7 +5,7 @@
 --   rows are theirs.
 -- lock: custom
 -- lane: STORE-TAILS-3
--- based-on: custom.agg_deliver(uuid, uuid, uuid, text, uuid, text, text, text, jsonb, text) 100551f910e41f18e1c18133ff5e4d7581d9a9c69bb9403bcf5ee9893c6b0e11
+-- based-on: custom.agg_deliver(uuid, uuid, uuid, text, uuid, text, text, text, jsonb, text) 3dc8d308c985f09d48dde3c8341418525777b005f92642fc699f487a8d68eba2
 -- based-on: custom.inbox_remind_tick() e546142f8b379d387c98f59eeba211e30e36ea237efd2704ab56085aac519aa9
 -- based-on: custom.comment_mention_deliver(uuid, uuid, uuid, uuid, uuid, text, text, text) b072b613795f25eaa067f0d9844f86c35c5b7f5c2f74599c18a4fbb907448b2f
 

@@ -68,6 +68,7 @@ declare
   v_err     text;
   v_errmsg  text;
   v_link    text;
+  v_to      text;
 begin
   perform custom.assert_store_door(p_organization_id, 'custom.agg_deliver');
 
@@ -100,7 +101,8 @@ begin
       from communication.resolve_channel_address(p_channel, p_organization_id, 'user',
                                                  p_recipient_user_id, null, null, null)
      limit 1;
-    if v_addr.address is null then
+    v_to := v_addr.address;
+    if v_to is null then
       v_status := 'skipped';
       v_err    := coalesce(v_addr.refusal, 'no_contact_point');
       v_errmsg := format('There is no %s address for this person, so this notice went to their AI Matrx inbox only.', p_channel);
@@ -114,7 +116,7 @@ begin
      status, error_code, error_message,
      dedupe_key, subject, body, payload, target_kind, target_id, deep_link, visibility)
   values
-    (p_organization_id, p_event_key, coalesce(p_channel, 'in_app'), p_recipient_user_id, 'user', v_addr.address,
+    (p_organization_id, p_event_key, coalesce(p_channel, 'in_app'), p_recipient_user_id, 'user', v_to,
      v_status, v_err, v_errmsg,
      v_key, p_subject, p_body,
      coalesce(p_payload, '{}'::jsonb) ||
