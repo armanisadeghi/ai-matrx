@@ -17,6 +17,9 @@
 // Pure, fence-aware, safe on a streaming prefix (numbers only ever append).
 // ─────────────────────────────────────────────────────────────────────────
 
+import { DirectiveContainerTracker } from "../directive-container";
+import { TITLED_IMAGE_LINE } from "../image-figure";
+
 export interface NumberedTarget {
   kind: "fig" | "tbl" | "eq" | "sec";
   /** "Figure 2", "Table 1", "(3)", or a section's heading text. */
@@ -79,19 +82,31 @@ export function computeDocumentNumbering(source: string): DocumentNumbering {
 
   let figures = 0;
   let tables = 0;
+  let insideFigure: DirectiveContainerTracker | null = null;
+  const addCaption = (key: string, display: string) => {
+    const list = byCaption.get(key) ?? [];
+    list.push(display);
+    byCaption.set(key, list);
+  };
   for (const line of prose) {
+    if (insideFigure) {
+      if (insideFigure.consume(line)) insideFigure = null;
+      continue;
+    }
+    // `![alt](url "Title")` alone on its line is a figure captioned by its title.
+    if (TITLED_IMAGE_LINE.test(line)) {
+      const title = /\s(?:"([^"\n]+)"|'([^'\n]+)')\s*\)[ \t]*$/.exec(line);
+      addCaption(captionKey("fig", title?.[1] ?? title?.[2] ?? ""), `Figure ${++figures}`);
+      continue;
+    }
     const fig = FIGURE_OPEN.exec(line);
     if (fig) {
+      insideFigure = new DirectiveContainerTracker(line);
       const kind = (fig[1] as string).toLowerCase() === "table" ? "tbl" : "fig";
       const display = kind === "fig" ? `Figure ${++figures}` : `Table ${++tables}`;
       const id = idFromAttrs(fig[3]);
       if (id) byLabel.set(id, { kind, display });
-      else {
-        const key = captionKey(kind, fig[2] ?? "");
-        const list = byCaption.get(key) ?? [];
-        list.push(display);
-        byCaption.set(key, list);
-      }
+      else addCaption(captionKey(kind, fig[2] ?? ""), display);
       continue;
     }
     const sec = SECTION.exec(line);

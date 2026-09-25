@@ -1,3 +1,4 @@
+import { STICKY_CHROME_SELECTOR, stickyRestInset } from "./sticky-inset";
 import React, { useEffect, useRef, useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { BsChevronBarContract, BsChevronBarExpand } from "react-icons/bs";
@@ -52,6 +53,7 @@ const StickyButtons: React.FC<StickyButtonsProps> = ({
     // content-box top. No scrolling ancestor means the document scrolls, and
     // its rest position is the viewport top — 0, which is where the header is.
     let restTop = 0;
+    let scroller: HTMLElement | null = null;
     let node = rootRef.current?.parentElement ?? null;
     while (node) {
       const style = getComputedStyle(node);
@@ -60,6 +62,7 @@ const StickyButtons: React.FC<StickyButtonsProps> = ({
           node.getBoundingClientRect().top +
           node.clientTop +
           (parseFloat(style.paddingTop) || 0);
+        scroller = node;
         break;
       }
       node = node.parentElement;
@@ -67,7 +70,12 @@ const StickyButtons: React.FC<StickyButtonsProps> = ({
     const headerBottom =
       document.querySelector(".shell-header")?.getBoundingClientRect().bottom ??
       0;
-    setTopInset(Math.max(0, Math.round(headerBottom - restTop)));
+    // Sticky chrome sharing this scroller (the conversation toolbar) is
+    // stacked above us — rest below it, never over its buttons.
+    const chromeHeights = Array.from(
+      (scroller ?? document).querySelectorAll<HTMLElement>(STICKY_CHROME_SELECTOR),
+    ).map((el) => el.offsetHeight);
+    setTopInset(stickyRestInset({ headerBottom, restTop, chromeHeights }));
   }, []);
 
   const buttonClass = cn(

@@ -7,6 +7,7 @@
 
 "use client";
 
+import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import { docprocDb } from "@/utils/supabase/docprocDb";
 import type {
@@ -98,16 +99,22 @@ export async function listResults(opts: {
   jobId: string;
   runId?: string | null;
 }): Promise<PageExtractionResult[]> {
-  let query = docproc
-    .from("page_extraction_results")
-    .select("*")
-    .eq("job_id", opts.jobId)
-    .order("canonical_page", { ascending: true, nullsFirst: false })
-    .order("created_at", { ascending: true });
-  if (opts.runId) query = query.eq("run_id", opts.runId);
-  const { data, error } = await query;
-  if (error) throw error;
-  return (data ?? []) as PageExtractionResult[];
+  const rows = await readAllRows(
+    ({ from, to }) => {
+      let query = docproc
+        .from("page_extraction_results")
+        .select("*", { count: "exact" })
+        .eq("job_id", opts.jobId);
+      if (opts.runId) query = query.eq("run_id", opts.runId);
+      return query
+        .order("canonical_page", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to);
+    },
+    { label: "docproc.page_extraction_results for extraction dataset" },
+  );
+  return rows as PageExtractionResult[];
 }
 
 /**
@@ -119,14 +126,19 @@ export async function listResults(opts: {
 export async function listResultsForFile(
   fileId: string,
 ): Promise<PageExtractionResult[]> {
-  const { data, error } = await docproc
-    .from("page_extraction_results")
-    .select("*")
-    .eq("file_id", fileId)
-    .order("canonical_page", { ascending: true, nullsFirst: false })
-    .order("created_at", { ascending: true });
-  if (error) throw error;
-  return (data ?? []) as PageExtractionResult[];
+  const rows = await readAllRows(
+    ({ from, to }) =>
+      docproc
+        .from("page_extraction_results")
+        .select("*", { count: "exact" })
+        .eq("file_id", fileId)
+        .order("canonical_page", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "docproc.page_extraction_results for extracted file" },
+  );
+  return rows as PageExtractionResult[];
 }
 
 /**

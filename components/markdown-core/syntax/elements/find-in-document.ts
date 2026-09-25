@@ -5,7 +5,10 @@
 
 export function findInDocument(from: Element | null, id: string): HTMLElement | null {
   if (!from || !id) return null;
-  const selector = `[id="${id.replace(/["\\]/g, "\\$&")}"]`;
+  // Author ids are rendered as `user-content-<id>` (rehype-matrx-syntax); a
+  // link may name either spelling.
+  const esc = (v: string) => `[id="${v.replace(/["\\]/g, "\\$&")}"]`;
+  const selector = id.startsWith("user-content-") ? esc(id) : `${esc(`user-content-${id}`)}, ${esc(id)}`;
   let scope: Element | null = from.parentElement;
   while (scope) {
     const hit = scope.querySelector<HTMLElement>(selector);

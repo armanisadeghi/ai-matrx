@@ -74,6 +74,7 @@ import { isJsonObject } from "@/types/json";
 import { isSiteCommandMode } from "@/features/marketing/crawler/site-commands";
 import { parseLiveRunProgressState } from "@/features/agents/components/live-run/LiveRunProgress";
 import type { Finding } from "@/features/hindsight/types";
+import type { ExtractionCellEditorTargetInput } from "@/features/page-extraction/data-review/extractionCellEditorCallbacks";
 import { isEntityTypeToken } from "@ai-matrx/associations";
 import { UserSearchWindowDataSchema } from "@/features/user-search/types";
 
@@ -7642,16 +7643,8 @@ export default function OverlayController() {
           !Array.isArray(data.currentPayload)
             ? (data.currentPayload as Record<string, unknown>)
             : {};
-        return (
-          <ExtractionCellEditorWindow
-            key={inst.instanceId}
-            instanceId={inst.instanceId}
-            callbackGroupId={
-              typeof data?.callbackGroupId === "string"
-                ? data.callbackGroupId
-                : null
-            }
-            target={{
+        const target: ExtractionCellEditorTargetInput = readOnly
+          ? {
               rowId,
               columnKey,
               columnLabel:
@@ -7661,10 +7654,32 @@ export default function OverlayController() {
               pageLabel:
                 typeof data?.pageLabel === "string" ? data.pageLabel : "—",
               value: typeof data?.value === "string" ? data.value : "",
-              readOnly,
-              writeKey: writeKey ?? undefined,
+              readOnly: true,
+            }
+          : {
+              rowId,
+              columnKey,
+              columnLabel:
+                typeof data?.columnLabel === "string"
+                  ? data.columnLabel
+                  : columnKey,
+              pageLabel:
+                typeof data?.pageLabel === "string" ? data.pageLabel : "—",
+              value: typeof data?.value === "string" ? data.value : "",
+              readOnly: false,
+              writeKey,
               currentPayload,
-            }}
+            };
+        return (
+          <ExtractionCellEditorWindow
+            key={inst.instanceId}
+            instanceId={inst.instanceId}
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
+            target={target}
             onClose={() =>
               dispatch(
                 closeOverlay({

@@ -25,3 +25,21 @@ export function filterGroupsToPinned(
 ): DisplayGroup[] {
   return groups.filter((g) => groupMessageIds(g).some((id) => pinned.has(id)));
 }
+
+/**
+ * What the transcript renders. Find searches the rendered text, so while the
+ * find bar is open EVERY group renders (the window would hide older messages
+ * from the search — verify-RC-B9 F3). The pinned view also reads every group,
+ * so a pinned message never hides behind "load earlier".
+ */
+export function groupsToRender(args: {
+  all: DisplayGroup[];
+  windowed: DisplayGroup[];
+  findOpen: boolean;
+  pinnedOnly: boolean;
+  pinned: ReadonlySet<string>;
+}): DisplayGroup[] {
+  if (args.pinnedOnly) return filterGroupsToPinned(args.all, args.pinned);
+  if (args.findOpen) return args.all;
+  return args.windowed;
+}

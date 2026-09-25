@@ -46,8 +46,9 @@ export function InPlaceAnswerEditor({ conversationId, messageId, storedText }: I
   const shellRef = useRef<HTMLDivElement>(null);
   const dirty = draft !== openedOn;
 
-  const close = () =>
+  const close = () => {
     dispatch(updateMessageRecord({ conversationId, messageId, patch: { _editingInPlace: false } }));
+  };
 
   const cancel = () => {
     if (dirty) setConfirmDiscard(true);
@@ -64,8 +65,24 @@ export function InPlaceAnswerEditor({ conversationId, messageId, storedText }: I
     return result.payload.storedText;
   };
 
+  // Escape belongs to the innermost thing that is open: the slash / variable
+  // menu, an island's own code editor, the find field. Only an Escape none of
+  // them owns leaves the editor. ProseMirror's base keymap marks EVERY Escape
+  // handled (selectParentNode), so `defaultPrevented` cannot tell them apart —
+  // ownership is read in the capture phase, before any child reacts.
+  const escapeOwnedByChild = useRef(false);
+  const onKeyDownCapture = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Escape") return;
+    const target = event.target instanceof Element ? event.target : null;
+    escapeOwnedByChild.current =
+      // The editor's slash / {{ menus mount as Tiptap ReactRenderers on <body>.
+      !!document.querySelector('.react-renderer > [role="listbox"]') ||
+      !!target?.closest(".ProseMirror .cm-editor") ||
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement;
+  };
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "Escape" || event.defaultPrevented) return;
+    if (event.key !== "Escape" || escapeOwnedByChild.current) return;
     // Portaled dialogs (link, consent) bubble through React but are not inside
     // this DOM node — their Escape closes them, not the editor.
     if (!(event.target instanceof Node) || !shellRef.current?.contains(event.target)) return;
@@ -76,6 +93,7 @@ export function InPlaceAnswerEditor({ conversationId, messageId, storedText }: I
   return (
     <div
       ref={shellRef}
+      onKeyDownCapture={onKeyDownCapture}
       onKeyDown={onKeyDown}
       data-in-place-editor={messageId}
       className={cn(

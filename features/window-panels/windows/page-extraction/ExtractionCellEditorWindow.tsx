@@ -17,7 +17,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { updateResultPayloadField } from "@/features/page-extraction/api/runs";
 import {
   emitExtractionCellEditorEvent,
-  type ExtractionCellEditorTarget,
+  type ExtractionCellEditorTargetInput,
 } from "@/features/page-extraction/data-review/extractionCellEditorCallbacks";
 
 const OVERLAY_ID = "extractionCellEditorWindow";
@@ -25,7 +25,7 @@ const OVERLAY_ID = "extractionCellEditorWindow";
 export interface ExtractionCellEditorWindowProps {
   instanceId: string;
   onClose: () => void;
-  target: ExtractionCellEditorTarget;
+  target: ExtractionCellEditorTargetInput;
   callbackGroupId?: string | null;
 }
 
@@ -53,7 +53,7 @@ export default function ExtractionCellEditorWindow({
   }, [busy, callbackGroupId, instanceId, onClose]);
 
   const handleSave = useCallback(async () => {
-    if (busy || readOnly || !target.writeKey) return;
+    if (busy || target.readOnly) return;
     if (draft === target.value) {
       handleClose();
       return;
@@ -62,7 +62,7 @@ export default function ExtractionCellEditorWindow({
     try {
       await updateResultPayloadField({
         resultId: target.rowId,
-        currentPayload: target.currentPayload ?? {},
+        currentPayload: target.currentPayload,
         key: target.writeKey,
         value: draft,
       });

@@ -19,7 +19,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 // The canonical "this read failed — try again" primitive (docs/reuse-first.md).
 // A transcript that could not be read is exactly its `hasData={false}` case.
@@ -72,7 +72,9 @@ import {
 } from "@/features/agents/message-pins/pinned-messages-store";
 import { ConversationToolbar } from "./conversation-tools/ConversationToolbar";
 import { FollowUpSuggestions } from "./conversation-tools/FollowUpSuggestions";
-import { filterGroupsToPinned, groupMessageIds } from "./conversation-tools/pinned-filter";
+import { groupMessageIds, groupsToRender } from "./conversation-tools/pinned-filter";
+import type { FindHistoryState } from "./conversation-tools/find-in-conversation";
+import { loadFullConversationHistory } from "@/features/agents/conversation-export/load-full-history";
 import { useMessageListInteractions } from "./conversation-tools/useMessageListInteractions";
 
 interface AgentConversationDisplayProps {
@@ -160,11 +162,33 @@ export function AgentConversationDisplay({
     void hydratePinnedMessages(messages.map((m) => m.id));
   }, [messages]);
   const pinnedCount = messages.filter((m) => pinnedIds.has(m.id)).length;
-  // The pinned view reads EVERY group (not the render window) so nothing
-  // pinned hides behind "load earlier".
-  const visibleGroups = pinnedOnly
-    ? filterGroupsToPinned(allDisplayGroups, pinnedIds)
-    : displayGroups;
+  // Find searches EVERY message: opening it pages in all older history and
+  // renders every group; the pinned view reads every group too.
+  const store = useAppStore();
+  const [findHistory, setFindHistory] = useState<FindHistoryState>({
+    state: "loading",
+    loaded: 0,
+  });
+  useEffect(() => {
+    if (!findOpen) return;
+    let live = true;
+    setFindHistory({ state: "loading", loaded: 0 });
+    void loadFullConversationHistory(dispatch, store.getState, conversationId, (loaded) => {
+      if (live) setFindHistory({ state: "loading", loaded });
+    }).then((r) => {
+      if (live) setFindHistory({ state: r.complete ? "done" : "partial", loaded: r.loaded });
+    });
+    return () => {
+      live = false;
+    };
+  }, [findOpen, dispatch, store, conversationId]);
+  const visibleGroups = groupsToRender({
+    all: allDisplayGroups,
+    windowed: displayGroups,
+    findOpen,
+    pinnedOnly,
+    pinned: pinnedIds,
+  });
   let latestAssistantKey: string | undefined;
   for (let i = displayGroups.length - 1; i >= 0; i--) {
     if (displayGroups[i].kind === "assistant") {
@@ -482,6 +506,7 @@ export function AgentConversationDisplay({
           rootRef={transcriptRef}
           findOpen={findOpen}
           setFindOpen={setFindOpen}
+          findHistory={findHistory}
           pinnedOnly={pinnedOnly}
           setPinnedOnly={setPinnedOnly}
           pinnedCount={pinnedCount}

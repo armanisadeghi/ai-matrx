@@ -1,6 +1,7 @@
 "use client";
 
 // `[[Page]]` / `[[Page|alias]]` / `![[Page]]` — a link to a REAL record.
+// (States: resolving · found · missing (Create) · unavailable — see wikilink-resolver.ts.)
 //
 // Resolution goes through the platform's one cross-entity search (lazy —
 // wikilink-resolver.ts). States, each honest:
@@ -38,7 +39,7 @@ export function useWikiResolution(target: string): WikiResolution | null {
         if (live) {
           setState({
             target,
-            value: { status: "error", title: target, message: err instanceof Error ? err.message : String(err) },
+            value: { status: "unavailable", title: target, message: err instanceof Error ? err.message : String(err) },
           });
         }
       });
@@ -105,11 +106,18 @@ export function WikiLink(props: WikiLinkProps) {
       </a>
     );
   }
-  if (resolution.status === "error") {
+  if (resolution.status === "unavailable") {
+    // Signed out, refused, or a named record that does not exist / cannot be
+    // opened: say so — no link, and never an offer to create it.
     return (
-      <span data-wikilink="error" title={`This link could not be checked: ${resolution.message}`} className="inline-flex items-baseline gap-0.5 text-muted-foreground underline decoration-dashed underline-offset-2">
+      <span
+        data-wikilink="unavailable"
+        title={`Not available: ${resolution.message}`}
+        className="inline-flex items-baseline gap-0.5 text-muted-foreground"
+      >
         {label}
         <Link2Off className="h-3 w-3 self-center" aria-hidden />
+        <span className="sr-only">(not available)</span>
       </span>
     );
   }

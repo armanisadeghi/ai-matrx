@@ -149,7 +149,9 @@ export function tableToChartSpec(
   const shape = shapeOf(table);
   if (!shape) return null;
   const allowed = chartableTypes(table);
-  const type = requested && allowed.includes(requested) ? requested : autoPick(table, shape);
+  let type = requested && allowed.includes(requested) ? requested : autoPick(table, shape);
+  // A pie cannot draw a negative share — draw bars instead (chartNotice says why).
+  if (type === "pie" && negativeRows(table, shape).length > 0) type = "bar";
   const headers = table.headers.map((h, i) => (h && h.trim()) || `Column ${i + 1}`);
 
   if (type === "scatter") {
@@ -202,6 +204,55 @@ export function tableToChartSpec(
     data,
     stacked: false,
   };
+}
+
+function categoryLabel(table: PlainTable, shape: Shape, row: string[], i: number): string {
+  return shape.categoryCol !== null
+    ? String(row[shape.categoryCol] ?? "").replace(/\*\*/g, "").trim()
+    : `Row ${i + 1}`;
+}
+
+function negativeRows(table: PlainTable, shape: Shape): Array<{ label: string; value: number }> {
+  const col = shape.valueCols[0];
+  const out: Array<{ label: string; value: number }> = [];
+  table.rows.forEach((row, i) => {
+    const v = parseCellNumber(row[col]);
+    if (v !== null && v < 0) out.push({ label: categoryLabel(table, shape, row, i), value: v });
+  });
+  return out;
+}
+
+function formatNumber(n: number): string {
+  return n < 0 ? `−${Math.abs(n)}` : String(n);
+}
+
+/**
+ * The sentence a chart owes its reader when it cannot show every row as asked:
+ * a pie over negative values (drawn as bars instead), or rows with no number
+ * (not plotted). Null when the chart shows everything.
+ */
+export function chartNotice(table: PlainTable, requested?: ChartType): string | null {
+  const shape = shapeOf(table);
+  if (!shape) return null;
+  const allowed = chartableTypes(table);
+  const wanted = requested && allowed.includes(requested) ? requested : autoPick(table, shape);
+  if (wanted === "pie") {
+    const neg = negativeRows(table, shape);
+    if (neg.length > 0) {
+      const list = neg.map((r) => `${r.label} ${formatNumber(r.value)}`).join(", ");
+      return `A pie can't show negative values (${list}), so this is drawn as bars.`;
+    }
+  }
+  const missing: string[] = [];
+  table.rows.forEach((row, i) => {
+    if (shape.valueCols.every((c) => parseCellNumber(row[c]) === null)) {
+      missing.push(categoryLabel(table, shape, row, i));
+    }
+  });
+  if (missing.length === 0) return null;
+  return missing.length === 1
+    ? `1 row has no number and is not plotted (${missing[0]}).`
+    : `${missing.length} rows have no number and are not plotted (${missing.join(", ")}).`;
 }
 
 /** RFC-4180-ish CSV / TSV → table. Null when the text is not a table. */

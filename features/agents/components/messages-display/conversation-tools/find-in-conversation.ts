@@ -113,3 +113,28 @@ export function clearFindHighlights(): void {
   api.registry.delete(FIND_HIGHLIGHT);
   api.registry.delete(FIND_HIGHLIGHT_CURRENT);
 }
+
+export type FindHistoryState =
+  | { state: "loading"; loaded: number }
+  | { state: "done"; loaded: number }
+  | { state: "partial"; loaded: number };
+
+/**
+ * The find bar's status. It never says "No matches" while older history is
+ * still loading, and a search over a history that could not be fully read
+ * says so (verify-RC-B9 F3).
+ */
+export function findStatusText(args: {
+  query: string;
+  matches: number;
+  current: number;
+  history: FindHistoryState;
+}): string {
+  if (!args.query.trim()) return "";
+  if (args.matches > 0) return `${args.current + 1} of ${args.matches}`;
+  if (args.history.state === "loading") return `Loading earlier messages… ${args.history.loaded}`;
+  if (args.history.state === "partial") {
+    return `No matches in the ${args.history.loaded} messages that loaded — earlier history could not be read`;
+  }
+  return `No matches in ${args.history.loaded} messages`;
+}

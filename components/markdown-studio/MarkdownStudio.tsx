@@ -28,6 +28,7 @@ import { useMarkdownAutosave } from "@/components/admin/markdown-tester/useMarkd
 import { printMarkdownContent } from "@/features/conversation/utils/markdown-print";
 import { EditorPanel } from "./EditorPanel";
 import { PreviewPanel, type PreviewMode } from "./PreviewPanel";
+import { AnnotateView } from "./AnnotateView";
 import { SourcePickerPanel } from "./lab/SourcePickerPanel";
 import {
   STUDIO_SOURCES,
@@ -63,7 +64,7 @@ import type { HeaderAction } from "@/features/shell/components/header/variants/t
  * surface write handler, which validates against this array rather than
  * re-typed literals, can never drift apart.
  */
-export const MARKDOWN_STUDIO_MODES = ["studio", "analysis", "editor"] as const;
+export const MARKDOWN_STUDIO_MODES = ["studio", "analysis", "editor", "annotate"] as const;
 type StudioMode = (typeof MARKDOWN_STUDIO_MODES)[number];
 
 const EMPTY = "";
@@ -353,6 +354,12 @@ export function MarkdownStudio() {
         onPress: () => setSourcePickerOpen(true),
       },
       {
+        // RC-B11: the annotation sidecar on a live document (AnnotateView).
+        icon: "Highlighter",
+        label: mode === "annotate" ? "Close annotations" : "Annotate",
+        onPress: () => setMode((m) => (m === "annotate" ? "studio" : "annotate")),
+      },
+      {
         icon: "Printer",
         label: "Print / Save PDF",
         onPress: handlePrint,
@@ -389,6 +396,7 @@ export function MarkdownStudio() {
     handlePrimaryAction,
     handleForkAction,
     handlePrint,
+    mode,
   ]);
 
   // Surface scope — built at trigger time (▶ Run), never on mount, so the
@@ -638,6 +646,13 @@ export function MarkdownStudio() {
               />
               </div>
             </div>
+          ) : mode === "annotate" ? (
+            <AnnotateView
+              documentId={loadedSource?.kind === "document" ? loadedSource.id : null}
+              buffer={content}
+              bufferTitle={loadedSampleName}
+              onOpenDocument={(id) => void loadFromSource("document", id)}
+            />
           ) : mode === "editor" ? (
             <StudioEditorMode
               key={loadedSource ? `${loadedSource.kind}:${loadedSource.id}` : (loadedSampleId ?? "buffer")}

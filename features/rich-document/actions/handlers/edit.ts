@@ -31,7 +31,9 @@ import { openAssistantMessageEditor } from "@/features/agents/components/message
 import { acknowledgedPreparedSource, prepareContentEdit, savePreparedContentEdit } from "./preparedEdit";
 import { projectAnswerText } from "@/features/agents/redux/execution-system/message-crud/answer-text-splice";
 import { updateMessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
-import { extractFlatText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+
+/** Inline reasoning tags the chat view scrubs (`removeThinkingContent`). */
+const INLINE_REASONING = /<(thinking|think|reasoning)>/i;
 
 registerAction({
   id: "edit",
@@ -72,11 +74,15 @@ registerAction({
       const record = conversationId
         ? ctx.getState().messages.byConversationId[conversationId]?.byId?.[target.messageId]
         : undefined;
+      // The editor opens on the STORED bytes (`projectAnswerText`), not the
+      // display projection (`extractFlatText` also collapses blank-line runs
+      // and trims — harmless to render, wrong to write back). The one thing
+      // the stored text may hold that the view hides is inline reasoning.
       const inPlace =
         !target.isStructuredRaw &&
         !!conversationId &&
         !!record &&
-        projectAnswerText(record.content).text === extractFlatText(record);
+        !INLINE_REASONING.test(projectAnswerText(record.content).text);
       if (inPlace && conversationId) {
         ctx.dispatch(
           updateMessageRecord({

@@ -28,6 +28,10 @@ jest.mock("@/features/agents/redux/execution-system/messages/messages.selectors"
 jest.mock("@/features/agents/redux/execution-system/conversations/conversations.selectors", () => ({
   selectConversationTitle: () => () => "Quarterly plan",
 }));
+jest.mock("../load-full-history", () => ({
+  loadFullConversationHistory: async () => ({ complete: true, loaded: 2 }),
+}));
+jest.mock("../draw-math", () => ({ drawDisplayMath: async () => null }));
 jest.mock("@/features/agents/message-pins/pinned-messages-store", () => ({
   isMessagePinned: () => false,
 }));
@@ -83,7 +87,7 @@ describe("exportConversation — Word/PDF/HTML come from the one package exporte
       },
     } as never;
     mockExportDocument.mockClear();
-    await exportConversation(() => state, "c1", format);
+    await exportConversation(jest.fn() as never, () => state, "c1", format);
     expect(mockExportDocument).toHaveBeenCalledTimes(1);
     const [src, fmt] = mockExportDocument.mock.calls[0]!;
     expect(fmt).toBe(format);

@@ -11,7 +11,8 @@ import {
   collectFindRanges,
   findTextMatches,
 } from "../find-in-conversation";
-import { filterGroupsToPinned, groupMessageIds } from "../pinned-filter";
+import { filterGroupsToPinned, groupMessageIds, groupsToRender } from "../pinned-filter";
+import { findStatusText } from "../find-in-conversation";
 import { nextMessageIndex } from "../message-keyboard-nav";
 import { findRegenerateAnchor } from "@/features/agents/redux/execution-system/message-crud/regenerate-anchor";
 import type { DisplayGroup } from "../../display-groups";
@@ -123,5 +124,36 @@ describe("findRegenerateAnchor", () => {
         "a3",
       ),
     ).toEqual({ userMessageId: "u2", userPosition: 3 });
+  });
+});
+
+describe("groupsToRender (verify-RC-B9 F3)", () => {
+  const all = [
+    { kind: "user", key: "u0", messageId: "old" },
+    { kind: "user", key: "u1", messageId: "m-u1" },
+  ] as DisplayGroup[];
+  const windowed = [all[1]];
+  it("renders EVERY group while find is open, so every message is searchable", () => {
+    expect(groupsToRender({ all, windowed, findOpen: true, pinnedOnly: false, pinned: new Set() })).toEqual(all);
+  });
+  it("keeps the window otherwise, and the pinned view reads all groups", () => {
+    expect(groupsToRender({ all, windowed, findOpen: false, pinnedOnly: false, pinned: new Set() })).toEqual(windowed);
+    expect(groupsToRender({ all, windowed, findOpen: false, pinnedOnly: true, pinned: new Set(["old"]) })).toEqual([all[0]]);
+  });
+});
+
+describe("findStatusText", () => {
+  it("never claims 'No matches' before the whole history is searched", () => {
+    expect(findStatusText({ query: "x", matches: 0, current: 0, history: { state: "loading", loaded: 40 } })).toBe(
+      "Loading earlier messages… 40",
+    );
+    expect(findStatusText({ query: "x", matches: 0, current: 0, history: { state: "done", loaded: 231 } })).toBe(
+      "No matches in 231 messages",
+    );
+    expect(findStatusText({ query: "x", matches: 3, current: 1, history: { state: "done", loaded: 231 } })).toBe("2 of 3");
+    expect(findStatusText({ query: "x", matches: 0, current: 0, history: { state: "partial", loaded: 50 } })).toBe(
+      "No matches in the 50 messages that loaded — earlier history could not be read",
+    );
+    expect(findStatusText({ query: "", matches: 0, current: 0, history: { state: "done", loaded: 3 } })).toBe("");
   });
 });

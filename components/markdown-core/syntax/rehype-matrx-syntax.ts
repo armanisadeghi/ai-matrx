@@ -137,7 +137,26 @@ export default function rehypeMatrxSyntax() {
       toc.properties = { ...toc.properties, dataTocCount: entries.length };
       toc.children = entries.length > 0 ? [tocList(entries)] : [];
     }
+
+    prefixAuthorIds(tree);
   };
+}
+
+/** The prefix GitHub puts on every id an author controls. */
+export const USER_ID_PREFIX = "user-content-";
+
+/**
+ * Every id an author chose (`{#x}`, `:::aside{#x}`, `\label{x}`, heading
+ * slugs) goes out as `user-content-x`, so a document can never clobber a
+ * page global (`id="__proto__"`, `id="evil"` — verify-RC-B8 LOW). Links keep
+ * saying `#x`; the in-document link resolves either spelling.
+ */
+function prefixAuthorIds(tree: Root): void {
+  walk(tree, (el) => {
+    const id = el.properties?.id;
+    if (typeof id !== "string" || !id || id === "footnote-label" || id.startsWith(USER_ID_PREFIX)) return;
+    el.properties = { ...el.properties, id: `${USER_ID_PREFIX}${id}` };
+  });
 }
 
 function findCheckbox(li: Element): Element | null {

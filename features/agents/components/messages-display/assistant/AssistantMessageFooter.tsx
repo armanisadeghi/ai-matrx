@@ -307,6 +307,14 @@ export function AssistantMessageContextMenu(
         suppressed={suppressed}
         sourceFeature="chat"
         surfaceName="matrx-user/assistant-message"
+        // The assistant-message surface declares these values (camelCase for
+        // the menu's own handlers, snake_case for surface-value bindings).
+        contextData={{
+          conversationId: rest.conversationId,
+          conversation_id: rest.conversationId,
+          messageId: rest.messageId,
+          message_id: rest.messageId,
+        }}
       >
         {children}
       </RegistryContextMenu>

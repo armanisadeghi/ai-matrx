@@ -338,8 +338,11 @@ export default function RichEditorImpl({
         onTextInsertBefore={(text) => handle.current?.insertText(text, "before")}
         onTextInsertAfter={(text) => handle.current?.insertText(text, "after")}
         onSave={onSave ? save : undefined}
-        className="h-full"
       >
+        {/* A host element, not the editor component: the menu's trigger slots its
+            right-click handlers onto its one child, and a component child that does
+            not forward them leaves the menu dead. */}
+        <div className="h-full min-h-0">
         {view === "visual" ? (
           <VisualEditor
             key={`visual-${mountKey}`}
@@ -363,6 +366,7 @@ export default function RichEditorImpl({
             handleRef={handle}
           />
         )}
+        </div>
       </EditableContextMenu>
     );
 

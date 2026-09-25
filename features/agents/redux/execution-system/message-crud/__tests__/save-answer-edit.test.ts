@@ -19,6 +19,7 @@ import { hydrateMessages, type MessageRecord } from "../../messages/messages.sli
 import { extractFlatText } from "../../messages/messages.selectors";
 import { saveAnswerEdit } from "../save-answer-edit.thunk";
 import { projectAnswerText, spliceAnswerText } from "../answer-text-splice";
+import { removeThinkingContent } from "@ai-matrx/print/markdown";
 
 const rpc = jest.fn();
 const rpcReturns = jest.fn();
@@ -112,8 +113,24 @@ beforeEach(() => {
 });
 
 describe("answer projection", () => {
-  test("is exactly what extractFlatText shows the person", () => {
-    expect(projectAnswerText(STORED).text).toBe(extractFlatText(record()));
+  test("is the stored bytes; the view is the same text with its display scrub", () => {
+    expect(removeThinkingContent(projectAnswerText(STORED).text)).toBe(extractFlatText(record()));
+  });
+
+  test("keeps the bytes the view normalizes, so a one-word edit rewrites nothing else", async () => {
+    const stored = [
+      { type: "text", text: "Step one.\n\n\n## Next\n\nStep two.  \n" },
+    ];
+    // The display projection collapses the blank-line run and trims — writing
+    // THAT back (the replaced path) silently rewrote untouched bytes.
+    expect(extractFlatText(record(stored))).toBe("Step one.\n\n## Next\n\nStep two.");
+    const s = store(stored);
+    const edited = projectAnswerText(stored).text.replace("Step two", "Step 2");
+    await s
+      .dispatch(saveAnswerEdit({ conversationId: CONVERSATION_ID, messageId: MESSAGE_ID, newText: edited }))
+      .unwrap();
+    const [, args] = rpc.mock.calls[0] as [string, { p_new_content: unknown }];
+    expect(args.p_new_content).toEqual([{ type: "text", text: "Step one.\n\n\n## Next\n\nStep 2.  \n" }]);
   });
 });
 

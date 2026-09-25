@@ -143,6 +143,38 @@ function applyHeadingIds(tree: MNode): void {
   });
 }
 
+// ── 5b. a titled image alone in its paragraph is a figure ───────────────
+
+/**
+ * `![Kiln shelf](url "Cone 6 shelf layout")` on its own line → a numbered
+ * figure captioned "Figure n. Cone 6 shelf layout" (the block splitters keep
+ * such a line in the text block — markdown-core image-figure.ts). An image
+ * already inside a `:::figure` is left alone.
+ */
+function titledImageFigures(tree: MNode): void {
+  const visit = (parent: MNode) => {
+    const children = parent.children;
+    if (!children || parent.type === "matrxFigure") return;
+    for (let i = 0; i < children.length; i++) {
+      const child = children[i] as MNode;
+      if (child.type === "paragraph") {
+        const meaningful = (child.children ?? []).filter((n) => !(n.type === "text" && !(n.value ?? "").trim()));
+        const only = meaningful.length === 1 ? meaningful[0] : null;
+        const title = only?.type === "image" && typeof only.title === "string" ? only.title.trim() : "";
+        if (only && title) {
+          const figure = el("figure", { className: ["matrx-figure", "my-4", "text-center"] }, [only], "matrxFigure");
+          figure.matrxFigure = { kind: "fig", caption: [text(title)], id: null };
+          figure.position = child.position;
+          children[i] = figure;
+          continue;
+        }
+      }
+      visit(child);
+    }
+  };
+  visit(tree);
+}
+
 // ── 6. numbering: figures, tables, equations, sections ─────────────────
 
 /**
@@ -391,6 +423,7 @@ export default function remarkMatrxSyntax(options: RemarkMatrxSyntaxOptions = {}
     const abbrs = collectAbbreviations(tree, file);
     applyHeadingIds(tree);
     applyTocMarkers(tree, file);
+    titledImageFigures(tree);
     const xrefs = numberTargets(tree, numbering);
     resolveMathRefs(tree, xrefs);
     const { defined, referenced } = footnoteIds(tree);

@@ -30,6 +30,7 @@ import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/Bas
 import { InlineCodeSnippet } from "@/components/mardown-display/chat-markdown/InlineCodeSnippet";
 import XmlBlock from "@/components/mardown-display/blocks/xml/XmlBlock";
 import MarkdownPreviewBlock from "@/components/mardown-display/blocks/markdown-preview/MarkdownPreviewBlock";
+import { FENCE_META_KEY } from "@/components/markdown-core/fence-meta";
 import { fenceNestsInnerFences } from "@ai-matrx/content-ir/source";
 import { NestedRichContent } from "./NestedRichContent";
 import { DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
@@ -44,6 +45,9 @@ import {
 // the full engine's BlockComponentRegistry tiers them.
 const CodeBlock = lazy(
   () => import("@/features/code-editor/components/code-block/CodeBlock"),
+);
+const CsvBlock = lazy(
+  () => import("@/components/mardown-display/blocks/csv/CsvBlock"),
 );
 const MermaidBlock = lazy(
   () => import("@/components/mardown-display/blocks/mermaid/MermaidBlock"),
@@ -78,14 +82,19 @@ function CodeFence({
   code,
   language,
   isStreaming,
+  meta,
 }: {
   code: string;
   language?: string;
   isStreaming?: boolean;
+  /** The fence info string after the language (title="…", {2,4}) — fence-meta.ts. */
+  meta?: string;
 }) {
   const probe = code.trim();
   if (!probe) return null;
-  if (probe.split("\n").length <= 2 && probe.length < 120) {
+  // A fence that carries a title or highlighted lines always gets the full
+  // code block — the compact snippet has nowhere to draw either.
+  if (!meta && probe.split("\n").length <= 2 && probe.length < 120) {
     return (
       <InlineCodeSnippet code={code} language={language} className="my-3" />
     );
@@ -95,6 +104,7 @@ function CodeFence({
       <CodeBlock
         code={code}
         language={language || "text"}
+        meta={meta}
         fontSize={14}
         className="my-3"
         isStreamActive={isStreaming}
@@ -161,8 +171,22 @@ export function StandardBlock({
     if (language && XML_LANGUAGES.has(language)) {
       return <XmlBlock content={content} language={language} />;
     }
+    // ```csv / ```tsv — the same sortable table the full engine renders.
+    if (language === "csv" || language === "tsv") {
+      return (
+        <Suspense fallback={<PlainCode code={content} />}>
+          <CsvBlock content={content} delimiter={language === "tsv" ? "\t" : ","} className="my-3" />
+        </Suspense>
+      );
+    }
+    const fenceMeta = block.metadata?.[FENCE_META_KEY];
     return (
-      <CodeFence code={content} language={language} isStreaming={isStreaming} />
+      <CodeFence
+        code={content}
+        language={language}
+        isStreaming={isStreaming}
+        meta={typeof fenceMeta === "string" && fenceMeta ? fenceMeta : undefined}
+      />
     );
   }
 

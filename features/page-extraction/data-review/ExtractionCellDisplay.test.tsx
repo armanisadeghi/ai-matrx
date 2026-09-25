@@ -13,18 +13,18 @@ import { ExtractionCellDisplay } from "./ExtractionCellDisplay";
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-function renderCell(value: string, onOpen = jest.fn()) {
+function renderCell(value: string, onView = jest.fn()) {
   const container = document.createElement("div");
   const root = createRoot(container);
   act(() => {
-    root.render(<ExtractionCellDisplay value={value} onOpen={onOpen} />);
+    root.render(<ExtractionCellDisplay value={value} onView={onView} />);
   });
-  return { container, onOpen, root };
+  return { container, onView, root };
 }
 
 describe("ExtractionCellDisplay", () => {
-  it("keeps plain prose to two lines and opens the complete value without changing the row", () => {
-    const { container, onOpen, root } = renderCell("A ".repeat(800));
+  it("keeps plain prose to two lines and invokes the view-only full-value action", () => {
+    const { container, onView, root } = renderCell("A ".repeat(800));
 
     expect(container.querySelector(".line-clamp-2")).not.toBeNull();
     expect(container.textContent).not.toContain("Show more");
@@ -32,7 +32,7 @@ describe("ExtractionCellDisplay", () => {
       '[aria-label="Open full value"]',
     ) as HTMLButtonElement;
     act(() => open.click());
-    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(onView).toHaveBeenCalledTimes(1);
 
     act(() => root.unmount());
   });

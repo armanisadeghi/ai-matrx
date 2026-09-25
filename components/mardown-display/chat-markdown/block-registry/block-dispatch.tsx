@@ -1495,7 +1495,15 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
     // preserved.
     const sizingProbe = block.content.trim();
     const lineCount = sizingProbe.split("\n").length;
-    const isSmallBlock = lineCount <= 2 && sizingProbe.length < 120;
+    // The fence meta (title, highlighted lines) rides on the static splitter's
+    // metadata or the stream accumulator's block data. A fence that carries it
+    // always gets the full code block — the compact snippet cannot draw a
+    // title or a highlighted line (RC-B8 verification: short titled fences
+    // lost both).
+    const fenceMeta =
+      readFenceMeta(block.metadata) ?? readFenceMeta(block.serverData);
+    const isSmallBlock =
+      !fenceMeta && lineCount <= 2 && sizingProbe.length < 120;
 
     if (!sizingProbe) return null;
 
@@ -1511,10 +1519,6 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
     }
 
     // Regular code block — attach-to-context when we have a real message id.
-    // The fence meta (title, highlighted lines) rides on the static splitter's
-    // metadata or the stream accumulator's block data.
-    const fenceMeta =
-      readFenceMeta(block.metadata) ?? readFenceMeta(block.serverData);
     return (
       <CodeBlockWithContextAttach
         key={index}

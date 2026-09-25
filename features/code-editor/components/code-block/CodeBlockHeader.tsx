@@ -375,8 +375,8 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
           ? "text-blue-600 dark:text-blue-400"
           : undefined,
       label: minimapEnabled ? "Hide minimap" : "Show minimap",
-      description: !isEditing ? "Only available in edit mode" : undefined,
-      disabled: !isEditing,
+      // Edit-mode only: absent outside it, never a greyed dead row (RC-B9 F7).
+      hidden: !isEditing,
       category: "View",
       showToast: false,
       action: () => toggleMinimap(noopEvent()),
@@ -388,8 +388,8 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
       key: "format",
       icon: Zap,
       label: "Format code",
-      description: isEditing ? "Shift+Alt+F" : "Only available in edit mode",
-      disabled: !isEditing,
+      description: "Shift+Alt+F",
+      hidden: !isEditing,
       category: "Edit",
       showToast: false,
       action: () => handleFormat(noopEvent()),
@@ -401,8 +401,8 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
       key: "reset",
       icon: RotateCcw,
       label: "Reset to original",
-      description: !isEditing ? "Only available in edit mode" : undefined,
-      disabled: !isEditing,
+      // Edit-mode only: absent outside it, never a greyed dead row (RC-B9 F7).
+      hidden: !isEditing,
       category: "Edit",
       showToast: false,
       action: () => handleReset(noopEvent()),

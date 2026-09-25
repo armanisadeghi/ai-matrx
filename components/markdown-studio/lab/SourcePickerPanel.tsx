@@ -9,6 +9,7 @@
 import React, { useEffect, useState } from "react";
 import {
   BrainCircuit,
+  FileText,
   FlaskConical,
   FolderOpen,
   GraduationCap,
@@ -37,6 +38,7 @@ import {
 } from "./content-sources";
 
 const ICONS: Record<string, LucideIcon> = {
+  FileText,
   StickyNote,
   GraduationCap,
   MessageSquare,

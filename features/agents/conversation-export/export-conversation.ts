@@ -5,7 +5,9 @@
 // not an HTML chunk; never a second DOCX generator in the app). Heavy modules
 // load at click time.
 
-import type { RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
+import { loadFullConversationHistory } from "./load-full-history";
 import { toast } from "@/lib/toast";
 import { extractFlatText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
@@ -35,7 +37,8 @@ export function conversationMarkdownFromState(
     .filter((r) => !r.deletedAt)
     .map((r) => ({
       role: String(r.role),
-      text: extractFlatText(r),
+      // Envelopes are storage plumbing — a reader gets the table, not the tag.
+      text: unwrapKindEnvelopes(extractFlatText(r)),
       createdAt: r.createdAt ?? null,
       pinned: isMessagePinned(r.id),
     }));
@@ -74,29 +77,59 @@ export function conversationDocumentSource(markdown: string, title: string): str
   return `---\ntitle: "${safe}"\nheader: "{title} | | {date}"\nfooter: "Page {page} of {pages}"\ndate: today\n---\n\n${markdown}`;
 }
 
+/**
+ * Export EVERY message: older history is paged in first (with progress), and
+ * a history that could not be fully read is said out loud — in the toast AND
+ * at the top of the file — never passed off as the whole conversation.
+ */
 export async function exportConversation(
+  dispatch: AppDispatch,
   getState: () => RootState,
   conversationId: string,
   format: ConversationExportFormat,
 ): Promise<void> {
-  const { title, markdown, messageCount } = conversationMarkdownFromState(getState(), conversationId);
+  const toastId = toast.loading("Loading every message in this conversation…");
+  const history = await loadFullConversationHistory(dispatch, getState, conversationId, (loaded) =>
+    toast.loading(`Loading every message in this conversation… ${loaded} loaded`, { id: toastId }),
+  );
+  const built = conversationMarkdownFromState(getState(), conversationId);
+  const { title, messageCount } = built;
+  const markdown = history.complete
+    ? built.markdown
+    : built.markdown.replace(
+        /\n/,
+        "\n\n> Earlier messages could not be loaded, so this export starts part-way through the conversation.\n",
+      );
   if (messageCount === 0) {
-    toast.error("Nothing to export yet", { description: "This conversation has no messages." });
+    toast.error("Nothing to export yet", { id: toastId, description: "This conversation has no messages." });
     return;
   }
   const base = fileSafe(title);
-  const toastId = toast.loading(`Preparing ${format.toUpperCase()}…`);
+  toast.loading(`Preparing ${format.toUpperCase()} of ${messageCount} messages…`, { id: toastId });
   try {
     if (format === "md") {
       download(new Blob([markdown], { type: "text/markdown;charset=utf-8" }), `${base}.md`);
     } else {
-      const { exportDocument } = await import("@ai-matrx/print/document");
-      const exp = await exportDocument(conversationDocumentSource(markdown, title), format, {
+      const [{ exportDocument }, { prepareDocumentMarkdown }, { drawDisplayMath }] = await Promise.all([
+        import("@ai-matrx/print/document"),
+        import("./document-markdown"),
+        import("./draw-math"),
+      ]);
+      // Real tables, drawn formulas — never envelopes or raw `$$` (verify-RC-B9 F1).
+      const prepared = await prepareDocumentMarkdown(markdown, { renderDisplayMath: drawDisplayMath });
+      const exp = await exportDocument(conversationDocumentSource(prepared, title), format, {
         fileName: base,
       });
       download(new Blob([exp.bytes as BlobPart], { type: exp.mime }), exp.fileName);
     }
-    toast.success(`Conversation exported (${messageCount} messages)`, { id: toastId });
+    if (history.complete) {
+      toast.success(`Conversation exported (${messageCount} messages)`, { id: toastId });
+    } else {
+      toast.warning(`Exported ${messageCount} messages — earlier history could not be loaded`, {
+        id: toastId,
+        description: "The file says so at the top. Try again to include everything.",
+      });
+    }
   } catch (error) {
     console.error("[exportConversation] failed", { format, error });
     toast.error(`Couldn't export as ${format.toUpperCase()}`, {

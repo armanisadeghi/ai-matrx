@@ -50,7 +50,7 @@ describe("prepareDocumentMarkdown", () => {
   it("falls back to readable math when a formula cannot be drawn — never raw TeX delimiters", async () => {
     const out = await prepareDocumentMarkdown(ANSWER, { renderDisplayMath: async () => null });
     expect(out.replace(/```[\s\S]*?```/g, "")).not.toContain("$$");
-    expect(out).toContain("∫\\_0^1 x  dx = 1/2");
+    expect(out).toContain("∫\\_0^1 x dx = 1/2");
   });
 });
 

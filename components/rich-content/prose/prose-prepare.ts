@@ -152,6 +152,40 @@ export function protectFencedCode(source: string): { text: string; restore: (s: 
   };
 }
 
+const LIST_ITEM_LINE = /^[ \t]*(?:[*+-]|\d+[.)])[ \t]/;
+const INDENT_RUN = /^( +)(?! |[*+-][ \t]|\d+[.)][ \t])/;
+
+/**
+ * Leading spaces become nbsp so a model's hand-indented text keeps its shape
+ * — EXCEPT where the indentation is markdown structure: a list marker line,
+ * and any indented line that continues a list item (a quote, a callout, a
+ * `:::` directive, a second paragraph under `- item`). Flattening those to
+ * nbsp printed `> [!caution]` and `:::` as literal text inside list items
+ * (verify-RC-B8 failure 1). A list context ends at the first non-indented,
+ * non-blank line that is not itself a list item.
+ */
+export function preserveIndentation(source: string): string {
+  let inList = false;
+  let changed = false;
+  const lines = source.split("\n").map((line) => {
+    if (LIST_ITEM_LINE.test(line)) {
+      inList = true;
+      return line;
+    }
+    if (!line.trim()) return line;
+    if (!/^[ \t]/.test(line)) {
+      inList = false;
+      return line;
+    }
+    if (inList) return line;
+    const m = INDENT_RUN.exec(line);
+    if (!m) return line;
+    changed = true;
+    return "\u00A0\u00A0".repeat((m[1] as string).length) + line.slice((m[1] as string).length);
+  });
+  return changed ? lines.join("\n") : source;
+}
+
 /**
  * Massage raw model prose into the markdown the core parses: escape non-HTML
  * angle-bracket tokens, keep indentation, normalize list/bold spacing, turn
@@ -222,10 +256,7 @@ export function preprocessProse(rawContent: string): string {
   // space short, the lookahead then sees " -" (a space, not a marker) and the
   // nested bullet is flattened to text (verifier F2, 2026-09-25; guard
   // __tests__/prose-prepare-nested-lists.test.ts).
-  processed = processed.replace(
-    /^( +)(?! |[*+-][ \t]|\d+[.)][ \t])/gm,
-    (spaces) => "\u00A0\u00A0".repeat(spaces.length),
-  );
+  processed = preserveIndentation(processed);
 
   // Convert bracketed bare URLs [https://...] into proper markdown links
   // This prevents dangling brackets when long URLs wrap across lines

@@ -25,7 +25,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ChartType } from "./chart-spec";
-import { chartableTypes, tableToChartSpec, type PlainTable } from "./table-chart";
+import { chartNotice, chartableTypes, tableToChartSpec, type PlainTable } from "./table-chart";
 
 const ChartCanvas = dynamic(() => import("./ChartCanvas"), {
   ssr: false,
@@ -86,6 +86,7 @@ export function TableChartPanel({
   const [picked, setPicked] = useState<ChartType | undefined>(undefined);
   const spec = tableToChartSpec(table, picked);
   if (!spec) return null;
+  const notice = chartNotice(table, picked);
   const heading = title ?? `${TYPE_META[spec.type].label} chart`;
 
   return (
@@ -98,7 +99,7 @@ export function TableChartPanel({
         <div className="flex items-center gap-0.5" role="radiogroup" aria-label="Chart type">
           {types.map((t) => {
             const { Icon, label } = TYPE_META[t];
-            const on = spec.type === t;
+            const on = (picked ?? spec.type) === t;
             return (
               <button
                 key={t}
@@ -130,6 +131,11 @@ export function TableChartPanel({
           )}
         </div>
       </div>
+      {notice && (
+        <p className="border-b border-border px-3 py-1.5 text-xs text-muted-foreground" role="status">
+          {notice}
+        </p>
+      )}
       <div className="h-[300px] w-full p-2">
         <ChartCanvas spec={spec} />
       </div>

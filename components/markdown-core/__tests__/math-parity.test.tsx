@@ -124,6 +124,20 @@ const CASES: Case[] = [
     listItemsWithMath: 2,
   },
   {
+    // verify-RC-B7 #3: the `[ … ]` display-math heuristic rewrote the
+    // brackets INSIDE inline math, splitting it into prose + a display block.
+    name: "brackets inside inline math stay inside it",
+    source: "A pickup lands mid-window, so the expected wait is $\\mathbb{E}[\\Delta] = T/2 = 15$ minutes.",
+    math: [inline("\\mathbb{E}[\\Delta] = T/2 = 15")],
+    literal: ["so the expected wait is", "minutes."],
+  },
+  {
+    name: "brackets inside \\(…\\) inline math stay inside it",
+    source: "The variance \\(\\operatorname{Var}[X] = \\sigma^2\\) is fixed per route.",
+    math: [inline("\\operatorname{Var}[X] = \\sigma^2")],
+    literal: ["The variance", "is fixed per route."],
+  },
+  {
     name: "$$ display block",
     source: "Energy:\n\n$$\nE = mc^2\n$$\n\nDone.",
     math: [display("E = mc^2")],

@@ -105,6 +105,12 @@ export interface RegistryContextMenuProps {
   suppressed?: boolean;
   sourceFeature?: React.ComponentProps<typeof NonEditableContextMenu>["sourceFeature"];
   surfaceName?: string;
+  /**
+   * The surface's declared values (e.g. `conversation_id` for the assistant
+   * message surface) — merged into the menu scope so bound agents and
+   * shortcuts receive them.
+   */
+  contextData?: Record<string, unknown>;
   children: React.ReactNode;
 }
 
@@ -125,7 +131,7 @@ export function RegistryContextMenu(
       surfaceName={props.surfaceName}
       suppressed={suppressed}
       contentSource={source}
-      contextData={{ content: ctx.content }}
+      contextData={{ ...props.contextData, content: ctx.content }}
       excludedRichActions={excludes}
       richDocCtxExtras={{
         callbacks: actions?.callbacks,

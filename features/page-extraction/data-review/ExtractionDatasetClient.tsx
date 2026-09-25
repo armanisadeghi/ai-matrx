@@ -35,9 +35,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import {
   MatrxDataTable,
+  type ColumnFiltersState,
   type MatrxColumnDef,
   type MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table";
+import { passesColumnFilter } from "@ai-matrx/design-system/data-table/filter-engine";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -110,6 +112,77 @@ const PAGE_SIZES = [50, 100, 250, 1000] as const;
 const MACHINE_COLUMN_SOURCES: readonly ColumnSource[] = ["agent", "validation"];
 const REVIEW_COLUMN_SOURCES: readonly ColumnSource[] = ["manual"];
 
+export function extractionColumnFilterKind(
+  type: ExtractionColumn["type"],
+): "auto" | "number" | "boolean" {
+  switch (type) {
+    case "number":
+    case "integer":
+      return "number";
+    case "boolean":
+      return "boolean";
+    case "string":
+      return "auto";
+  }
+}
+
+function columnFiltersEqual(
+  left: ColumnFiltersState,
+  right: ColumnFiltersState,
+): boolean {
+  const leftEntries = Object.entries(left);
+  if (leftEntries.length !== Object.keys(right).length) return false;
+  return leftEntries.every(
+    ([key, filter]) => JSON.stringify(filter) === JSON.stringify(right[key]),
+  );
+}
+
+export function extractionDatasetPageIndex(
+  currentFilters: ColumnFiltersState,
+  next: Pick<MatrxDataTableQueryState, "columnFilters" | "page">,
+): number {
+  return columnFiltersEqual(currentFilters, next.columnFilters)
+    ? next.page - 1
+    : 0;
+}
+
+export function processExtractionDatasetRows(
+  rows: PageExtractionResult[],
+  state: Pick<MatrxDataTableQueryState, "columnFilters" | "search" | "sort">,
+  columns: readonly ExtractionColumn[],
+  visibleColumns: readonly ExtractionColumn[],
+): PageExtractionResult[] {
+  const q = state.search.trim().toLowerCase();
+  const columnFiltered = rows.filter((row) =>
+    Object.entries(state.columnFilters).every(([key, filter]) => {
+      if (!filter) return true;
+      const column = columns.find((candidate) => candidate.key === key);
+      return !column || passesColumnFilter(cellValueFor(row, column), filter);
+    }),
+  );
+  const filtered = q
+    ? columnFiltered.filter((row) =>
+        visibleColumns.some((column) =>
+          cellToString(cellValueFor(row, column)).toLowerCase().includes(q),
+        ),
+      )
+    : columnFiltered;
+  if (!state.sort) return filtered;
+  const column = columns.find((candidate) => candidate.key === state.sort?.id);
+  if (!column) return filtered;
+  const direction = state.sort.direction === "asc" ? 1 : -1;
+  return [...filtered].sort((a, b) => {
+    const av = cellToString(cellValueFor(a, column));
+    const bv = cellToString(cellValueFor(b, column));
+    const an = Number(av);
+    const bn = Number(bv);
+    if (!Number.isNaN(an) && !Number.isNaN(bn) && av !== "" && bv !== "") {
+      return (an - bn) * direction;
+    }
+    return av.localeCompare(bv) * direction;
+  });
+}
+
 export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -121,6 +194,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
 
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>({});
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [hidden, setHidden] = useState<Set<string>>(new Set());
@@ -269,10 +343,10 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
       search: query,
       anyOf: "",
       layeredFilters: [],
-      columnFilters: {},
+      columnFilters,
       sort: sortKey ? { id: sortKey, direction: sortDir } : null,
     }),
-    [pageIndex, pageSize, query, sortDir, sortKey],
+    [columnFilters, pageIndex, pageSize, query, sortDir, sortKey],
   );
 
   const onQueryStateChange = useCallback(
@@ -280,45 +354,21 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
       const queryChanged = next.search !== query;
       if (queryChanged) setSelected(new Set());
       setQuery(next.search);
-      setPageIndex(next.page - 1);
+      setColumnFilters(next.columnFilters);
+      setPageIndex(extractionDatasetPageIndex(columnFilters, next));
       setPageSize(next.pageSize);
       setSortKey(next.sort?.id ?? null);
       setSortDir(next.sort?.direction ?? "asc");
     },
-    [query],
+    [columnFilters, query],
   );
 
-  // Preserve the dataset's established semantics: search only the columns the
-  // reviewer has made visible, then sort values numerically when both sides
-  // are numbers and lexically otherwise. MatrxDataTable owns the controls,
-  // paging and column chrome; this processor owns the dataset-specific rows.
+  // The source is read to completion before this local processor runs. Keep
+  // the dataset-specific visible-column search and numeric sort, while using
+  // the canonical typed column-filter predicate for every declared field.
   const processRows = useCallback(
-    (rows: PageExtractionResult[], state: MatrxDataTableQueryState) => {
-      const q = state.search.trim().toLowerCase();
-      const filtered = q
-        ? rows.filter((row) =>
-            visibleColumns.some((column) =>
-              cellToString(cellValueFor(row, column)).toLowerCase().includes(q),
-            ),
-          )
-        : rows;
-      if (!state.sort) return filtered;
-      const column = columns.find(
-        (candidate) => candidate.key === state.sort?.id,
-      );
-      if (!column) return filtered;
-      const direction = state.sort.direction === "asc" ? 1 : -1;
-      return [...filtered].sort((a, b) => {
-        const av = cellToString(cellValueFor(a, column));
-        const bv = cellToString(cellValueFor(b, column));
-        const an = Number(av);
-        const bn = Number(bv);
-        if (!Number.isNaN(an) && !Number.isNaN(bn) && av !== "" && bv !== "") {
-          return (an - bn) * direction;
-        }
-        return av.localeCompare(bv) * direction;
-      });
-    },
+    (rows: PageExtractionResult[], state: MatrxDataTableQueryState) =>
+      processExtractionDatasetRows(rows, state, columns, visibleColumns),
     [columns, visibleColumns],
   );
 
@@ -365,7 +415,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
         accessorFn: (row: PageExtractionResult) => cellValueFor(row, column),
         sortValue: (row: PageExtractionResult) => cellValueFor(row, column),
         sortable: true,
-        filter: false as const,
+        filter: extractionColumnFilterKind(column.type),
         width: 240,
         headerClassName: "whitespace-nowrap",
         cell: (row: PageExtractionResult) => {
@@ -376,17 +426,28 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
             row.canonical_page != null
               ? String(row.canonical_page)
               : (row.source_pages ?? []).join(",") || "—";
+          const canEdit = editable && !row.id.includes("#") && !!writeKey;
           const openEditor = () => {
-            const canEdit = editable && !row.id.includes("#") && !!writeKey;
+            if (!editable || row.id.includes("#") || !writeKey) return;
             openCellEditor({
               rowId: row.id,
               columnKey: column.key,
               columnLabel: column.label,
               pageLabel,
               value,
-              readOnly: !canEdit,
-              writeKey: canEdit ? writeKey : undefined,
+              readOnly: false,
+              writeKey,
               currentPayload: (row.payload ?? {}) as Record<string, unknown>,
+            });
+          };
+          const openViewer = () => {
+            openCellEditor({
+              rowId: row.id,
+              columnKey: column.key,
+              columnLabel: column.label,
+              pageLabel,
+              value,
+              readOnly: true,
             });
           };
           const mergedCount = mergedCountById.get(row.id) ?? 0;
@@ -403,10 +464,10 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
                   ? "Double-click to edit"
                   : undefined
               }
-              onDoubleClick={editable && !row.id.includes("#") ? openEditor : undefined}
+              onDoubleClick={canEdit ? openEditor : undefined}
             >
               <span className="min-w-0 flex-1 whitespace-normal break-words [overflow-wrap:anywhere]">
-                <ExtractionCellDisplay value={value} onOpen={openEditor} />
+                <ExtractionCellDisplay value={value} onView={openViewer} />
                 {index === 0 && mergedCount > 0 ? (
                   <span className="ml-1.5 rounded bg-secondary/15 px-1 py-0.5 text-[10px] font-medium text-secondary">
                     +{mergedCount} merged
@@ -1087,13 +1148,6 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
                     ),
                   },
                 ],
-                actions: (
-                  <span className="text-xs text-muted-foreground">
-                    {loading
-                      ? "Loading…"
-                      : `${processedRows.length.toLocaleString()} rows`}
-                  </span>
-                ),
               }}
               emptyState={{
                 icon: <Eye className="h-8 w-8 opacity-50" />,

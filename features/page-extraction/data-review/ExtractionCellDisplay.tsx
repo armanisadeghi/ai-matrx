@@ -27,10 +27,10 @@ function looksLikeMarkdown(text: string): boolean {
 
 export function ExtractionCellDisplay({
   value,
-  onOpen,
+  onView,
 }: {
   value: string;
-  onOpen?: () => void;
+  onView?: () => void;
 }) {
 
   if (!value) {
@@ -45,13 +45,13 @@ export function ExtractionCellDisplay({
         <div className="line-clamp-2 whitespace-pre-wrap break-words text-xs leading-relaxed">
           {value}
         </div>
-        {onOpen ? (
+        {onView ? (
           <button
             type="button"
             className="absolute right-0 top-0 inline-flex size-4 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
             onClick={(event) => {
               event.stopPropagation();
-              onOpen();
+              onView();
             }}
             title="Open full value"
             aria-label="Open full value"
@@ -70,13 +70,13 @@ export function ExtractionCellDisplay({
       >
         <BasicMarkdownContent content={value} showCopyButton={false} />
       </div>
-      {onOpen ? (
+      {onView ? (
         <button
           type="button"
           className="absolute right-0 top-0 inline-flex size-4 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
           onClick={(event) => {
             event.stopPropagation();
-            onOpen();
+            onView();
           }}
           title="Open full value"
           aria-label="Open full value"

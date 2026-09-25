@@ -34,6 +34,7 @@ import {
   DIRECTIVE_CONTAINER_OPEN,
   DirectiveContainerTracker,
 } from "@/components/markdown-core/directive-container";
+import { TITLED_IMAGE_LINE } from "@/components/markdown-core/image-figure";
 import type {
   TypedRenderBlock,
   ServerOnlyBlockType,
@@ -2564,7 +2565,9 @@ export const splitContentIntoBlocksWith = (
     // line break). This also avoids the old bug where a two-image line emitted
     // one block that rendered only the first image.
     const imageCheck = detectImageMarkdown(line);
-    if (imageCheck.isImage && countInlineImages(line) < 2) {
+    // A TITLED image stays in the text block: the core draws it as a
+    // numbered figure with its title as the caption (markdown-core image-figure.ts).
+    if (imageCheck.isImage && countInlineImages(line) < 2 && !TITLED_IMAGE_LINE.test(line)) {
       if (currentText.trim()) {
         blocks.push({ type: "text", content: currentText.trimEnd() });
         currentText = "";

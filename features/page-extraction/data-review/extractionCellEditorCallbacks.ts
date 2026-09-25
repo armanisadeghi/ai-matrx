@@ -5,17 +5,28 @@
 
 import { callbackManager } from "@/utils/callbackManager";
 
-export interface ExtractionCellEditorTarget {
+interface ExtractionCellEditorTargetBase {
   rowId: string;
   columnKey: string;
   columnLabel: string;
   pageLabel: string;
   value: string;
-  /** Read-only cells reuse the same window for complete Markdown viewing. */
-  readOnly?: boolean;
-  writeKey?: string;
-  currentPayload?: Record<string, unknown>;
 }
+
+/** Read-only cells reuse the existing window without ever receiving write data. */
+export interface ExtractionCellViewerTarget extends ExtractionCellEditorTargetBase {
+  readOnly: true;
+}
+
+export interface ExtractionCellEditorTarget extends ExtractionCellEditorTargetBase {
+  readOnly?: false;
+  writeKey: string;
+  currentPayload: Record<string, unknown>;
+}
+
+export type ExtractionCellEditorTargetInput =
+  | ExtractionCellViewerTarget
+  | ExtractionCellEditorTarget;
 
 export interface ExtractionCellEditorSavedEvent {
   type: "saved";
@@ -37,9 +48,9 @@ export interface ExtractionCellEditorHandlers {
   onWindowClose?: (e: ExtractionCellEditorCloseEvent) => void;
 }
 
-export interface ExtractionCellEditorWindowData extends ExtractionCellEditorTarget {
+export type ExtractionCellEditorWindowData = ExtractionCellEditorTargetInput & {
   callbackGroupId?: string | null;
-}
+};
 
 export function createExtractionCellEditorCallbackGroup(
   handlers: ExtractionCellEditorHandlers,

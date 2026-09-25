@@ -31,6 +31,7 @@ import {
   DIRECTIVE_CONTAINER_OPEN,
   DirectiveContainerTracker,
 } from "@/components/markdown-core/directive-container";
+import { TITLED_IMAGE_LINE } from "@/components/markdown-core/image-figure";
 import {
   classifyLine,
   isPlainText,
@@ -1025,7 +1026,9 @@ export class StreamBlockAccumulator {
     const image = hasCandidate(flags, Candidate.IMAGE)
       ? detectImageMarkdown(rawLine)
       : null;
-    if (image?.isImage && image.src && countInlineImages(rawLine) < 2) {
+    // A TITLED image stays text — the core draws it as a numbered figure
+    // (markdown-core image-figure.ts; same rule as the static splitter).
+    if (image?.isImage && image.src && countInlineImages(rawLine) < 2 && !TITLED_IMAGE_LINE.test(rawLine)) {
       this.closeCurrentBlock(dispatch);
       this.openBlock("image", dispatch);
       // The line is complete here, so its URL is too: carry src/alt on the

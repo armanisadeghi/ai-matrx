@@ -47,6 +47,7 @@ import { useDoubleClickEdit } from "./editing/useDoubleClickEdit";
 import { useSpecimenMode } from "../specimen/SpecimenContext";
 import { MarkdownTableScrollArea } from "./MarkdownTableScrollArea";
 import { ChartThisButton, TableChartPanel } from "../blocks/chart/TableChart";
+import { tableActionRowClass } from "./table-action-row";
 import {
   appendRow,
   appendColumn,
@@ -859,10 +860,7 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
       )}
       {!isStreamActive && !specimenMode && (
         <div
-          className={cn(
-            "flex gap-2 mt-2",
-            isMobile ? "flex-wrap justify-start" : "justify-end",
-          )}
+          className={tableActionRowClass(isMobile)}
         >
           {internalTableData.normalizedData && (
             <Button

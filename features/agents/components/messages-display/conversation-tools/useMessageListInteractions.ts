@@ -31,11 +31,22 @@ function groupsIn(root: HTMLElement): HTMLElement[] {
 const TRIGGER =
   '[data-message-actions-trigger], [aria-label="More options"], [aria-label="Message options"], [aria-label="More actions"]';
 
-function openActions(group: HTMLElement): boolean {
+export function openActions(group: HTMLElement): boolean {
   const marked = group.querySelector<HTMLElement>("[data-message-actions-trigger]");
   const all = group.querySelectorAll<HTMLElement>(TRIGGER);
   const trigger = marked ?? all[all.length - 1];
   if (!trigger) return false;
+  trigger.focus();
+  // A Radix menu trigger (aria-haspopup="menu") opens on keydown / pointerdown,
+  // never on a bare click — so it gets the key the person would have pressed
+  // on it (Enter also moves focus into the menu). Anything else is a plain
+  // button (the mobile sheet) and is pressed.
+  if (trigger.getAttribute("aria-haspopup") === "menu") {
+    trigger.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Enter", code: "Enter", bubbles: true, cancelable: true }),
+    );
+    return true;
+  }
   trigger.click();
   return true;
 }

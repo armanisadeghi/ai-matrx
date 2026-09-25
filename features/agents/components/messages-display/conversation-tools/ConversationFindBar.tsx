@@ -17,7 +17,9 @@ import {
   FIND_HIGHLIGHT_CURRENT,
   clearFindHighlights,
   collectFindRanges,
+  findStatusText,
   paintFindHighlights,
+  type FindHistoryState,
 } from "./find-in-conversation";
 
 const HIGHLIGHT_CSS = `
@@ -27,9 +29,12 @@ const HIGHLIGHT_CSS = `
 
 export function ConversationFindBar({
   rootRef,
+  history,
   onClose,
 }: {
   rootRef: React.RefObject<HTMLElement | null>;
+  /** Older history is paged in while the bar is open — search covers all of it. */
+  history: FindHistoryState;
   onClose: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -83,11 +88,7 @@ export function ConversationFindBar({
     setCurrent((c) => (c + delta + ranges.length) % ranges.length);
   };
 
-  const status = !query.trim()
-    ? ""
-    : ranges.length === 0
-      ? "No matches"
-      : `${current + 1} of ${ranges.length}`;
+  const status = findStatusText({ query, matches: ranges.length, current, history });
 
   return (
     <div
@@ -120,10 +121,13 @@ export function ConversationFindBar({
       />
       <span
         className={cn(
-          "shrink-0 text-xs tabular-nums",
-          ranges.length === 0 && query.trim() ? "text-destructive" : "text-muted-foreground",
+          "min-w-0 max-w-[55%] truncate text-xs tabular-nums",
+          ranges.length === 0 && query.trim() && history.state !== "loading"
+            ? "text-destructive"
+            : "text-muted-foreground",
         )}
         aria-live="polite"
+        title={status}
       >
         {status}
       </span>

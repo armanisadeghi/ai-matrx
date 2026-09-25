@@ -45,6 +45,7 @@ import SaveTableModal from "../../tables/SaveTableModal";
 import { SendToWorkbookButton } from "../../tables/SendToWorkbookButton";
 import { SendToGoogleSheetButton } from "../../tables/SendToGoogleSheetButton";
 import { ChartThisButton, TableChartPanel } from "../chart/TableChart";
+import { tableActionRowClass } from "../../tables/table-action-row";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { TableEditToolbar } from "../../tables/editing/TableEditToolbar";
@@ -1038,10 +1039,7 @@ const StreamingTableRendererCore: React.FC<
           {/* Action Buttons - Only show when not streaming and table is complete */}
           {tableIsComplete && !specimenMode && (
             <div
-              className={cn(
-                "flex gap-2 mt-2",
-                isMobile ? "flex-wrap justify-start" : "justify-end",
-              )}
+              className={tableActionRowClass(isMobile)}
             >
               {/* Column visibility — only when there's a column to hide and
                   not while editing (edit mode forces all columns visible). */}
@@ -1051,6 +1049,8 @@ const StreamingTableRendererCore: React.FC<
                     <Button
                       variant="outline"
                       size="sm"
+                      aria-label="Choose visible columns"
+                      title="Choose visible columns"
                       className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
                     >
                       <Columns3 className="h-4 w-4" />

@@ -18,6 +18,17 @@ import { expandTextBlocksInList } from "../markdown-classification/processors/ut
 import { RenderBlock } from "./block-registry/BlockRenderer";
 import { renderBlockToContentBlock } from "./render-block-to-content-block";
 import { DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
+import { MarkdownSourceEditProvider } from "@/components/markdown-core/syntax/elements/MarkdownSourceEdit";
+
+/** Task checkboxes toggle only when the message has a save path; otherwise they stay read-only marks. */
+function MaybeSourceEdit({ source, save, children }: { source: string; save?: (next: string) => void; children: React.ReactNode }) {
+  if (!save) return <>{children}</>;
+  return (
+    <MarkdownSourceEditProvider source={source} save={save}>
+      {children}
+    </MarkdownSourceEditProvider>
+  );
+}
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 import { ShimmerText } from "@/components/loaders/ShimmerText";
 import {
@@ -1362,6 +1373,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
       <MarkdownStreamingProvider value={!!isStreamActive}>
         {/* One figure/table/equation numbering for the whole answer, however it splits. */}
         <DocumentNumberingProvider source={currentContent}>
+        {/* A message that can be saved lets its task checkboxes write back (splice API). */}
+        <MaybeSourceEdit source={currentContent} save={isStreamActive ? undefined : onContentChange ? handleSaveEdit : undefined}>
         <div className="mb-1 w-full min-w-0 text-left overflow-x-clip" data-matrx-doc-root="">
           <div className={containerStyles}>
             {hasUnifiedSpecial && requestId
@@ -1455,6 +1468,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
             </MarkdownErrorBoundary>
           )}
         </div>
+        </MaybeSourceEdit>
         </DocumentNumberingProvider>
       </MarkdownStreamingProvider>
     );

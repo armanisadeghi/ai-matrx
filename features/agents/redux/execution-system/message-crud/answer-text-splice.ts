@@ -4,7 +4,7 @@
  *
  * An assistant row's `content` is an array of parts: text segments, tool
  * calls, thinking, media, kind payloads. The person edits ONE string — the
- * answer text, exactly as `extractFlatText` projects it — and this module maps
+ * answer text as STORED — and this module maps
  * that edit back onto the parts:
  *
  *   - Only the text part(s) the edit actually touches change. Every other
@@ -18,11 +18,13 @@
  * one on save — a citation-bearing answer (many segments) came back as one
  * block even when the person fixed a single typo. This keeps the segments.
  *
- * The projection mirrors `extractFlatText` exactly (consecutive text
- * segments concatenate; any other contributing part is joined with "\n"),
- * minus its `<thinking>` scrub. `editableAnswerText` returns null when the
- * two disagree (an answer with inline thinking tags) — such an answer is
- * not spliceable byte-for-byte and the host says so instead of guessing.
+ * The projection joins parts exactly as `extractFlatText` does (consecutive
+ * text segments concatenate; any other contributing part is joined with
+ * "\n") but WITHOUT its display scrub (`removeThinkingContent` also collapses
+ * blank-line runs and trims): the editor must hold the stored bytes, or a
+ * one-word fix would rewrite whitespace across the whole answer. An answer
+ * whose stored text carries inline reasoning tags is not edited in place
+ * (the registry `edit` action routes it to the full-screen editor).
  */
 
 import { NON_ANSWER_BLOCK_TYPES } from "../active-requests/active-requests.selectors";

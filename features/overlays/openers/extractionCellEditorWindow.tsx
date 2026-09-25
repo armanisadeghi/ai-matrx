@@ -12,14 +12,14 @@ import {
   createExtractionCellEditorCallbackGroup,
   extractionCellEditorInstanceId,
   type ExtractionCellEditorHandlers,
-  type ExtractionCellEditorTarget,
+  type ExtractionCellEditorTargetInput,
 } from "@/features/page-extraction/data-review/extractionCellEditorCallbacks";
 
 const OVERLAY_ID = "extractionCellEditorWindow" as const;
 
-export interface OpenExtractionCellEditorOptions extends ExtractionCellEditorTarget {
+export type OpenExtractionCellEditorOptions = ExtractionCellEditorTargetInput & {
   callbackGroupId?: string;
-}
+};
 
 export interface ExtractionCellEditorHandle {
   instanceId: string;
@@ -58,15 +58,24 @@ export function useOpenExtractionCellEditor(
         openOverlay({
           overlayId: OVERLAY_ID,
           instanceId,
-          data: {
+          data: opts.readOnly ? {
             rowId: opts.rowId,
             columnKey: opts.columnKey,
             columnLabel: opts.columnLabel,
             pageLabel: opts.pageLabel,
             value: opts.value,
-            readOnly: opts.readOnly ?? false,
-            writeKey: opts.writeKey ?? null,
-            currentPayload: opts.currentPayload ?? {},
+            readOnly: true,
+            callbackGroupId:
+              opts.callbackGroupId ?? groupRef.current?.callbackGroupId ?? null,
+          } : {
+            rowId: opts.rowId,
+            columnKey: opts.columnKey,
+            columnLabel: opts.columnLabel,
+            pageLabel: opts.pageLabel,
+            value: opts.value,
+            readOnly: false,
+            writeKey: opts.writeKey,
+            currentPayload: opts.currentPayload,
             callbackGroupId:
               opts.callbackGroupId ?? groupRef.current?.callbackGroupId ?? null,
           },

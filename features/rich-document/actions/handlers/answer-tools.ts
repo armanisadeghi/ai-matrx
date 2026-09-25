@@ -153,7 +153,7 @@ EXPORTS.forEach(({ format, label, icon, color }, i) => {
       const { exportConversation } = await import(
         "@/features/agents/conversation-export/export-conversation"
       );
-      await exportConversation(ctx.getState, conversationId, format);
+      await exportConversation(ctx.dispatch, ctx.getState, conversationId, format);
     },
   });
 });

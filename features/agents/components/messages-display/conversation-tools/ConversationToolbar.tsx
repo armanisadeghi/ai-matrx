@@ -14,7 +14,7 @@
 import React from "react";
 import { Download, Pin, Search } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +29,7 @@ import {
   exportConversation,
 } from "@/features/agents/conversation-export/export-conversation";
 import { ConversationFindBar } from "./ConversationFindBar";
+import type { FindHistoryState } from "./find-in-conversation";
 
 const BTN =
   "inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
@@ -38,6 +39,7 @@ export function ConversationToolbar({
   rootRef,
   findOpen,
   setFindOpen,
+  findHistory,
   pinnedOnly,
   setPinnedOnly,
   pinnedCount,
@@ -46,6 +48,7 @@ export function ConversationToolbar({
   rootRef: React.RefObject<HTMLElement | null>;
   findOpen: boolean;
   setFindOpen: (open: boolean) => void;
+  findHistory: FindHistoryState;
   pinnedOnly: boolean;
   setPinnedOnly: (on: boolean) => void;
   pinnedCount: number;
@@ -55,14 +58,17 @@ export function ConversationToolbar({
 
   return (
     <div
-      className="sticky top-0 z-10 flex justify-end px-2 pt-1"
+      // Sticky chrome: above code blocks' floating controls (z-30 > their
+      // z-20), which rest below it (`data-sticky-chrome`, verify-RC-B9 F5).
+      className="sticky top-0 z-30 flex justify-end px-2 pt-1"
+      data-sticky-chrome=""
       data-find-ignore=""
       aria-label="Conversation tools"
       role="toolbar"
     >
       {findOpen ? (
         <div className="w-full max-w-md">
-          <ConversationFindBar rootRef={rootRef} onClose={() => setFindOpen(false)} />
+          <ConversationFindBar rootRef={rootRef} history={findHistory} onClose={() => setFindOpen(false)} />
         </div>
       ) : (
         <div className="flex items-center gap-0.5 rounded-lg bg-background/80 backdrop-blur-sm">
@@ -108,10 +114,10 @@ export function ConversationToolbar({
                 <DropdownMenuItem
                   key={format}
                   onSelect={() => {
-                    // A thunk hands the export a live getState without subscribing
-                    // this toolbar to the whole store.
-                    dispatch((_d: unknown, getState: () => RootState) => {
-                      void exportConversation(getState, conversationId, format);
+                    // A thunk hands the export a live getState without
+                    // subscribing this toolbar to the whole store.
+                    dispatch((d: AppDispatch, getState: () => RootState) => {
+                      void exportConversation(d, getState, conversationId, format);
                     });
                   }}
                 >

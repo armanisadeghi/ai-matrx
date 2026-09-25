@@ -39,8 +39,10 @@ import {
 } from "@/lib/records/recordUnavailable";
 import { operationFailed } from "@/utils/errors";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { loadDocument } from "@/features/rich-document/annotations/documentSource";
 
 export const STUDIO_SOURCE_KINDS = [
+  "document",
   "note",
   "study-guide",
   "chat-message",
@@ -297,6 +299,49 @@ async function loadCardSide(
 // ─── Registry ────────────────────────────────────────────────────────────────
 
 export const STUDIO_SOURCES: Record<StudioSourceKind, StudioSourceDef> = {
+  document: {
+    kind: "document",
+    token: "document",
+    label: "Document",
+    icon: "FileText",
+    // THE VIEW LAW: my own recent documents (never annotations — a sidecar type).
+    list: async (search) => {
+      const userId = requireUserId();
+      const { data, error } = await supabase
+        .schema("content")
+        .from("document")
+        .select("id, title, updated_at, document_type_id")
+        .eq("created_by", userId)
+        .is("deleted_at", null)
+        .order("updated_at", { ascending: false })
+        .limit(STUDIO_SOURCE_RECENT_LIMIT * 2);
+      if (error) throw operationFailed("list your recent documents", error);
+      const { data: annotationType } = await supabase
+        .schema("platform")
+        .from("categories")
+        .select("id")
+        .eq("dimension", "document_type")
+        .eq("slug", "annotation")
+        .maybeSingle();
+      return (data ?? [])
+        .filter((d) => d.document_type_id !== annotationType?.id)
+        .filter((d) => matches(search, d.title, d.id))
+        .slice(0, STUDIO_SOURCE_RECENT_LIMIT)
+        .map((d) => ({ id: d.id, label: d.title || "Untitled document", sublabel: formatWhen(d.updated_at) }));
+    },
+    load: async (id) => {
+      const doc = await loadDocument(id);
+      if (!doc) throw absent("document", "document", id, "content.document");
+      return {
+        kind: "document",
+        id,
+        title: doc.title,
+        content: doc.body,
+        contentSource: { type: "raw" },
+        notice: "Annotate shows the live document; Studio and Editor work on a copy.",
+      };
+    },
+  },
   note: {
     kind: "note",
     token: "note",

@@ -6,6 +6,7 @@
  */
 
 import {
+  chartNotice,
   chartableTypes,
   parseCellNumber,
   parseDelimitedTable,
@@ -149,5 +150,28 @@ describe("parseDelimitedTable", () => {
   it("returns null for text that is not a table", () => {
     expect(parseDelimitedTable("just one line")).toBeNull();
     expect(parseDelimitedTable("")).toBeNull();
+  });
+});
+
+describe("pie never drops data silently (verify-RC-B9 F8)", () => {
+  const table = {
+    headers: ["Region", "Q1"],
+    rows: [
+      ["Midwest", "12"],
+      ["Northeast", "9"],
+      ["Pacific", "15"],
+      ["Southwest", "-8.2"],
+      ["Mountain", "n/a"],
+    ],
+  };
+  it("a pie request over negative values draws bars and says why", () => {
+    expect(tableToChartSpec(table, "pie")?.type).toBe("bar");
+    expect(chartNotice(table, "pie")).toBe(
+      "A pie can't show negative values (Southwest −8.2), so this is drawn as bars.",
+    );
+  });
+  it("names the rows a chart leaves out for having no number", () => {
+    expect(chartNotice(table, "bar")).toBe("1 row has no number and is not plotted (Mountain).");
+    expect(chartNotice({ headers: ["a", "b"], rows: [["x", "1"], ["y", "2"]] }, "bar")).toBeNull();
   });
 });
