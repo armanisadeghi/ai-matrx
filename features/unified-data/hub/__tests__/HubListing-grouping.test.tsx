@@ -119,17 +119,12 @@ describe("HubListing groups same-titled 'kept by the app' rows", () => {
         expect(savedViewsLink?.getAttribute("href")).toBe("/data-v2/t-saved-views");
     });
 
-    it("the header count reflects distinct names, not raw row count", async () => {
-        const { host, root } = await render({ phase: "read", items: ITEMS });
-        mounts.push({ root, host });
-        // 14 items collapse to 2 distinct titles: "Crew choices" and "Saved views".
-        const toggle = host.querySelector('[data-hub-listing-toggle="kept-by-the-app"]');
-        expect(toggle?.textContent).toContain("2");
-    });
-
     // ONE COUNT FROM ONE DOOR (ACCESS-FIX-18, VERIFIER-18 M3). The header counted the GROUPS
     // ("Kept by the app 4") while the sentence under the list counted the TABLES ("the 5
-    // tables the app keeps for itself"). A count on a list of tables counts tables.
+    // tables the app keeps for itself"). A count on a list of tables counts tables. This
+    // replaces COPY-SWEEP's "the header count reflects distinct names" (7b42ce5fc5), which
+    // pinned exactly the disagreement the verifier found; the grouped ROWS stay (the tests
+    // above).
     it("counts the tables in its header, not the rows they are grouped into", async () => {
         const { host, root } = await render({ phase: "read", items: ITEMS });
         mounts.push({ root, host });

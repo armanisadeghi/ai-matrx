@@ -171,7 +171,11 @@ export function HubListing({
     state.phase === "read" && capability.groupDuplicateTitles
       ? groupItemsByTitle(state.items)
       : null;
-  const count = state.phase === "read" ? (grouped ? grouped.length : state.items.length) : null;
+  // ONE COUNT FROM ONE DOOR (ACCESS-FIX-18, VERIFIER-18 M3): the header counts the TABLES, as
+  // the sentence under the list and the package's own list do. It counted the grouped rows,
+  // so one page read "Kept by the app 4" beside "the 5 tables the app keeps for itself".
+  // Grouping is how the rows are drawn, not how many there are.
+  const count = state.phase === "read" ? state.items.length : null;
 
   return (
     <section data-hub-listing={capability.id} className="rounded-lg border border-border bg-card">
