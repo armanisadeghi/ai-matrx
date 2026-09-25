@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
+import { usePendingWrites } from "@/lib/errors/usePendingWrites";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
   listBindingsForExecutor,
@@ -67,35 +69,33 @@ export function ExecutorSurfaceDetailPanel({
     void load();
   }, [load]);
 
+  // PENDING, NEVER OPTIMISTIC (GATES-TAIL-2): the switch keeps its position and shows busy until
+  // `tool.binding` is written; a refusal leaves it as it was and is said in words with a remedy.
+  const pendingWrites = usePendingWrites();
   const handleToggleActive = async (row: ExecutorBindingRow, next: boolean) => {
-    setBindings((cur) =>
-      cur.map((b) =>
-        b.tool_id === row.tool_id ? { ...b, is_active: next } : b,
-      ),
+    const label = row.tool_name ?? `Unknown tool (${row.tool_id})`;
+    const result = await pendingWrites.run(
+      row.tool_id,
+      () =>
+        updateBinding({
+          toolId: row.tool_id,
+          executorName: row.executor_name,
+          isActive: next,
+        }),
+      {
+        action: `${next ? "turn on" : "turn off"} ${label} on ${executor.name}`,
+        remedy: "Try again, or reload the bindings.",
+      },
     );
-    try {
-      await updateBinding({
-        toolId: row.tool_id,
-        executorName: row.executor_name,
-        isActive: next,
-      });
-      recordToast.success(
-        {
-          type: "tool",
-          id: row.tool_id,
-          title: row.tool_name ?? `Unknown tool (${row.tool_id})`,
-        },
-        `${row.tool_name ?? `Unknown tool (${row.tool_id})`} ${next ? "active on" : "deactivated on"} ${executor.name}`,
-      );
-      onMutated();
-    } catch (e) {
-      setBindings((cur) =>
-        cur.map((b) =>
-          b.tool_id === row.tool_id ? { ...b, is_active: !next } : b,
-        ),
-      );
-      toast.error(e instanceof Error ? e.message : "Update failed");
-    }
+    if (!result.ok) return;
+    setBindings((cur) =>
+      cur.map((b) => (b.tool_id === row.tool_id ? { ...b, is_active: next } : b)),
+    );
+    recordToast.success(
+      { type: "tool", id: row.tool_id, title: label },
+      `${label} ${next ? "active on" : "deactivated on"} ${executor.name}`,
+    );
+    onMutated();
   };
 
   const handleRemove = async (row: ExecutorBindingRow) => {
@@ -131,7 +131,10 @@ export function ExecutorSurfaceDetailPanel({
       );
       onMutated();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Remove failed");
+      toastWriteFailure(e, {
+        action: `remove ${row.tool_name ?? "this tool"} from ${executor.name}`,
+        remedy: "Try again, or reload the bindings.",
+      });
     }
   };
 
@@ -281,6 +284,7 @@ export function ExecutorSurfaceDetailPanel({
           <BindingList
             rows={bindings}
             onToggleActive={handleToggleActive}
+            isPending={pendingWrites.isPending}
             onRemove={handleRemove}
           />
         )}
@@ -341,10 +345,11 @@ function EmptyState({ children }: { children: React.ReactNode }) {
 interface BindingListProps {
   rows: ExecutorBindingRow[];
   onToggleActive: (row: ExecutorBindingRow, next: boolean) => void;
+  isPending: (toolId: string) => boolean;
   onRemove: (row: ExecutorBindingRow) => void;
 }
 
-function BindingList({ rows, onToggleActive, onRemove }: BindingListProps) {
+function BindingList({ rows, onToggleActive, isPending, onRemove }: BindingListProps) {
   return (
     <div className="divide-y divide-border">
       {rows.map((row) => (
@@ -352,6 +357,7 @@ function BindingList({ rows, onToggleActive, onRemove }: BindingListProps) {
           key={`${row.executor_name}:${row.tool_id}`}
           row={row}
           onToggleActive={onToggleActive}
+          pending={isPending(row.tool_id)}
           onRemove={onRemove}
         />
       ))}
@@ -362,10 +368,12 @@ function BindingList({ rows, onToggleActive, onRemove }: BindingListProps) {
 function BindingRow({
   row,
   onToggleActive,
+  pending,
   onRemove,
 }: {
   row: ExecutorBindingRow;
   onToggleActive: (row: ExecutorBindingRow, next: boolean) => void;
+  pending: boolean;
   onRemove: (row: ExecutorBindingRow) => void;
 }) {
   return (
@@ -408,9 +416,12 @@ function BindingRow({
             <Switch
               checked={row.is_active}
               onCheckedChange={(v) => onToggleActive(row, v)}
+              disabled={pending}
+              aria-busy={pending || undefined}
+              aria-label={pending ? "Saving" : row.is_active ? "Turn off" : "Turn on"}
               className="scale-75"
             />
-            <span>Active</span>
+            <span>{pending ? "Saving…" : "Active"}</span>
           </label>
           <Button
             variant="ghost"

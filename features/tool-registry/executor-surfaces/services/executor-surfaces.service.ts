@@ -20,6 +20,7 @@
  * decisions beyond presence/absence of bindings.
  */
 
+import { assertWriteLanded } from "@/lib/errors/writeFailure";
 import { createClient } from "@/utils/supabase/client";
 import { readAllRows } from "@ai-matrx/data/db";
 import type { Database } from "@/types/database.types";
@@ -218,12 +219,15 @@ export async function updateBinding(args: {
   executorName: string;
   isActive: boolean;
 }): Promise<void> {
-  const { error } = await sb()
+  const { data, error } = await sb()
     .schema("tool").from("binding")
     .update({ is_active: args.isActive })
     .eq("tool_id", args.toolId)
-    .eq("executor_name", args.executorName);
+    .eq("executor_name", args.executorName)
+    .select("tool_id");
   if (error) throw error;
+  // RLS answers a filtered update with zero rows and no error — that is a refusal, not a save.
+  assertWriteLanded(data, `tool.binding update ${args.executorName}/${args.toolId}`);
 }
 
 export async function removeBinding(args: {
