@@ -138,6 +138,8 @@ export function serializeBlock(node: PMNode, ctx: SerializeContext): string {
       return serializeBlockquote(node, ctx);
     case "horizontalRule":
       return attr<string>(node, "mdRaw") ?? "---";
+    case "table":
+      return serializeTable(node);
     case "sourceLocked":
     case "islandBlock":
       return String(node.attrs.raw ?? "");
@@ -240,11 +242,82 @@ function serializeListItem(
 
 function serializeBlockquote(node: PMNode, ctx: SerializeContext): string {
   const prefix = attr<string>(node, "mdPrefix") ?? "> ";
-  const body = serializeChildren(node, "blockquote", ctx);
+  const alert = attr<string>(node, "mdAlert");
+  const children = serializeChildren(node, "blockquote", ctx);
+  const body = alert ? (children ? `${alert}\n${children}` : alert) : children;
   return body
     .split("\n")
     .map((line) => (line === "" ? prefix.trimEnd() : prefix + line))
     .join("\n");
+}
+
+// ── Tables (GFM) ───────────────────────────────────────────────────────────
+
+export type ColumnAlign = "left" | "center" | "right" | null;
+
+function cellText(cell: PMNode): string {
+  const paragraph = cell.firstChild;
+  return paragraph ? serializeInline(paragraph) : "";
+}
+
+/** A cell the person typed: a literal pipe must be escaped or it splits the cell. */
+function freshCell(text: string): string {
+  return text.replace(/\n/g, " ").replace(/(?<!\\)\|/g, "\\|");
+}
+
+function delimiterFor(align: ColumnAlign): string {
+  if (align === "left") return ":---";
+  if (align === "right") return "---:";
+  if (align === "center") return ":---:";
+  return "---";
+}
+
+function parseJsonArray(value: string | null): unknown[] | null {
+  if (!value) return null;
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function serializeTable(table: PMNode): string {
+  const pipes = attr<string>(table, "mdPipes") ?? "both";
+  const lead = pipes === "both" || pipes === "lead";
+  const trail = pipes === "both" || pipes === "trail";
+  const lines: string[] = [];
+  let aligns: ColumnAlign[] = [];
+  table.forEach((row, _offset, index) => {
+    const cells: PMNode[] = [];
+    row.forEach((cell) => cells.push(cell));
+    if (index === 0) {
+      aligns = cells.map((cell) => (cell.attrs.align as ColumnAlign) ?? null);
+    }
+    const texts = cells.map(cellText);
+    const stored = parseJsonArray(attr<string>(row, "mdCells"));
+    const raw = attr<string>(row, "mdRaw");
+    let line: string;
+    if (raw !== null && stored && JSON.stringify(stored) === JSON.stringify(texts)) {
+      line = raw;
+    } else {
+      const body = texts.map((text, cellIndex) =>
+        stored && stored[cellIndex] === text ? text : freshCell(text),
+      );
+      line = `${lead ? "| " : ""}${body.join(" | ")}${trail ? " |" : ""}`;
+    }
+    lines.push(line);
+    if (index === 0) {
+      const storedAligns = attr<string>(table, "mdAligns");
+      const delim = attr<string>(table, "mdDelim");
+      lines.push(
+        delim !== null && storedAligns === JSON.stringify(aligns)
+          ? delim
+          : `${lead ? "| " : ""}${aligns.map(delimiterFor).join(" | ")}${trail ? " |" : ""}`,
+      );
+    }
+  });
+  return lines.join("\n");
 }
 
 // ── Inline ─────────────────────────────────────────────────────────────────

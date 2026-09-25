@@ -42,7 +42,7 @@ interface Session {
 
 function open(text: string): Session {
   const { json, plan } = buildVisualDocument(text, schema);
-  const editor = new Editor({ element: null, extensions, content: json as JSONContent });
+  const editor = new Editor({ element: document.createElement("div"), extensions, content: json as JSONContent });
   const baseline = captureBaseline(editor.state.doc, plan);
   return { editor, baseline, save: () => serializeVisualDocument(editor.state.doc, baseline) };
 }

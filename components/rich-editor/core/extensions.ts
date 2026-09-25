@@ -45,7 +45,8 @@ import {
   ListKeymap,
   OrderedList,
 } from "@tiptap/extension-list";
-import { Dropcursor, Gapcursor, Placeholder, UndoRedo } from "@tiptap/extensions";
+import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
+import { Dropcursor, Focus, Gapcursor, Placeholder, UndoRedo } from "@tiptap/extensions";
 
 /** A fidelity attribute: never rendered, never inherited by a split. */
 const mdAttr = () => ({ default: null, rendered: false, keepOnSplit: false });
@@ -61,6 +62,18 @@ export const MD_ID_NODE_TYPES = [
   "horizontalRule",
   "sourceLocked",
 ] as const;
+
+/** `<pre>` → a fenced code block, fence longer than any backtick run inside. */
+function fenceFromPre(element: HTMLElement): string {
+  const code = element.querySelector("code");
+  const language =
+    /(?:^|\s)(?:language|lang)-([\w+#.-]+)/.exec(code?.className ?? element.className)?.[1] ?? "";
+  const text = (code ?? element).textContent?.replace(/\n$/, "") ?? "";
+  let longest = 0;
+  for (const run of text.match(/`+/g) ?? []) longest = Math.max(longest, run.length);
+  const fence = "`".repeat(Math.max(3, longest + 1));
+  return `${fence}${language}\n${text}\n${fence}`;
+}
 
 export const SourceBlockNode = Node.create({
   name: "sourceBlock",
@@ -86,7 +99,7 @@ export const SourceBlockNode = Node.create({
 
 export const IslandBlockNode = Node.create({
   name: "islandBlock",
-  group: "topblock",
+  group: "topblock block",
   atom: true,
   selectable: true,
   draggable: true,
@@ -106,6 +119,12 @@ export const IslandBlockNode = Node.create({
           raw: element.getAttribute("data-md-raw") ?? "",
           islandType: element.getAttribute("data-md-island") ?? "fence",
         }),
+      },
+      {
+        // Pasted code (<pre>, <pre><code class="language-x">) becomes a fence island.
+        tag: "pre",
+        preserveWhitespace: "full",
+        getAttrs: (element) => ({ raw: fenceFromPre(element), islandType: "fence" }),
       },
     ];
   },
@@ -174,6 +193,14 @@ export const InlineIslandNode = Node.create({
   parseHTML() {
     return [
       {
+        // Pasted images keep their bytes as a markdown image island.
+        tag: "img[src]",
+        getAttrs: (element) => ({
+          raw: `![${(element.getAttribute("alt") ?? "").replace(/[[\]]/g, "")}](${element.getAttribute("src") ?? ""})`,
+          islandType: "md_image",
+        }),
+      },
+      {
         tag: "span[data-md-inline]",
         getAttrs: (element) => ({
           raw: element.getAttribute("data-md-raw") ?? "",
@@ -214,7 +241,12 @@ export const MarkdownFidelityAttributes = Extension.create({
           mdIndent: mdAttr(),
         },
       },
-      { types: ["blockquote"], attributes: { mdPrefix: mdAttr() } },
+      { types: ["blockquote"], attributes: { mdPrefix: mdAttr(), mdAlert: mdAttr() } },
+      {
+        types: ["table"],
+        attributes: { mdId: mdAttr(), mdDelim: mdAttr(), mdAligns: mdAttr(), mdPipes: mdAttr() },
+      },
+      { types: ["tableRow"], attributes: { mdRaw: mdAttr(), mdCells: mdAttr() } },
       { types: ["horizontalRule", "hardBreak"], attributes: { mdRaw: mdAttr() } },
       {
         types: ["bold", "italic", "strike"],
@@ -251,6 +283,31 @@ const NewlineHardBreak = HardBreak.extend({
         return true;
       });
     return { "Shift-Enter": newline, "Mod-Enter": newline };
+  },
+});
+
+/**
+ * GFM table cells hold one line of inline text, never blocks; alignment is a
+ * column property the delimiter row records.
+ */
+const cellAlign = {
+  align: {
+    default: null,
+    parseHTML: (element: HTMLElement) => element.style.textAlign || null,
+    renderHTML: (attributes: Record<string, unknown>) =>
+      attributes.align ? { style: `text-align: ${String(attributes.align)}` } : {},
+  },
+};
+const InlineTableCell = TableCell.extend({
+  content: "paragraph",
+  addAttributes() {
+    return { ...this.parent?.(), ...cellAlign };
+  },
+});
+const InlineTableHeader = TableHeader.extend({
+  content: "paragraph",
+  addAttributes() {
+    return { ...this.parent?.(), ...cellAlign };
   },
 });
 
@@ -291,12 +348,17 @@ export function createRichEditorExtensions(
       autolink: false,
       linkOnPaste: true,
     }),
+    Table.configure({ resizable: false }),
+    TableRow,
+    InlineTableHeader,
+    InlineTableCell,
     SourceBlockNode,
     IslandBlockNode,
     SourceLockedNode,
     InlineIslandNode,
     MarkdownFidelityAttributes,
     UndoRedo,
+    Focus.configure({ className: "has-focus", mode: "shallowest" }),
     Gapcursor,
     Dropcursor,
     Placeholder.configure({ placeholder: options.placeholder ?? "Write…" }),

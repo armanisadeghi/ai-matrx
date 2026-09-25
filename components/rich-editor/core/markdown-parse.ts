@@ -17,6 +17,7 @@
 // CRLF line endings or Private Use characters is locked outright.
 
 import { Lexer, type Token, type Tokens } from "marked";
+import { isPageBreakLine } from "@ai-matrx/print/directives";
 import type { JSONContent } from "@tiptap/core";
 import type { Schema } from "@tiptap/pm/model";
 import type { SourceBlock, SourceIsland } from "@ai-matrx/content-ir/source";
@@ -61,8 +62,10 @@ interface ParseState {
 
 const LEXER_OPTIONS = { gfm: true, breaks: false, pedantic: false } as const;
 
+/** Reason string that marks a held-as-source page-break directive line. */
+export const PAGE_BREAK_REASON = "page break";
+
 const LOCK_REASONS: Record<string, string> = {
-  table: "a table",
   html: "raw HTML",
   code: "an indented code block",
   def: "a link reference definition",
@@ -326,17 +329,85 @@ function blockJSON(token: Token, state: ParseState): JSONContent | null {
       const prefix = /^ {0,3}> ?/.exec(quote.raw)?.[0] ?? "> ";
       const children = childrenJSON(quote.tokens, state);
       if (!children || children.length === 0) return null;
+      const alert = takeAlertMarker(children);
+      if (children.length === 0) return null;
       return {
         type: "blockquote",
-        attrs: { mdId: state.nextId(), mdPrefix: prefix },
+        attrs: { mdId: state.nextId(), mdPrefix: prefix, mdAlert: alert },
         content: children,
       };
     }
     case "hr":
       return { type: "horizontalRule", attrs: { mdId: state.nextId(), mdRaw: body } };
+    case "table": {
+      const table = token as Tokens.Table;
+      const lines = body.split("\n");
+      if (lines.length !== table.rows.length + 2) return null;
+      const header = lines[0] ?? "";
+      const leadPipe = header.trimStart().startsWith("|");
+      const trailPipe = header.trimEnd().endsWith("|");
+      const pipes = leadPipe && trailPipe ? "both" : leadPipe ? "lead" : trailPipe ? "trail" : "none";
+      const aligns = table.align.map((align) => align ?? null);
+      const cellJSON = (cell: Tokens.TableCell, isHeader: boolean, index: number): JSONContent => {
+        const content = inlineJSON(cell.tokens, [], 0, state);
+        return {
+          type: isHeader ? "tableHeader" : "tableCell",
+          attrs: { align: aligns[index] ?? null },
+          content: [{ type: "paragraph", ...(content.length ? { content } : {}) }],
+        };
+      };
+      const rowJSON = (cells: Tokens.TableCell[], isHeader: boolean, line: string): JSONContent => ({
+        type: "tableRow",
+        attrs: {
+          mdRaw: restorePlaceholders(line, state.islands),
+          mdCells: JSON.stringify(
+            cells.map((cell) => restorePlaceholders(inlineRaw(cell.tokens), state.islands)),
+          ),
+        },
+        content: cells.map((cell, index) => cellJSON(cell, isHeader, index)),
+      });
+      return {
+        type: "table",
+        attrs: {
+          mdId: state.nextId(),
+          mdDelim: restorePlaceholders(lines[1] ?? "", state.islands),
+          mdAligns: JSON.stringify(aligns),
+          mdPipes: pipes,
+        },
+        content: [
+          rowJSON(table.header, true, header),
+          ...table.rows.map((row, index) => rowJSON(row, false, lines[index + 2] ?? "")),
+        ],
+      };
+    }
     default:
       return null;
   }
+}
+
+const ALERT_MARKER = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?=\n|$)/i;
+
+/**
+ * GFM alerts (`> [!NOTE]`): the marker line becomes the quote's `mdAlert` and
+ * leaves the text, so the callout edits as prose and writes the marker back.
+ */
+function takeAlertMarker(children: JSONContent[]): string | null {
+  const first = children[0];
+  const text = first?.type === "paragraph" ? first.content?.[0] : undefined;
+  if (!first || !text || text.type !== "text" || text.marks?.length) return null;
+  const match = ALERT_MARKER.exec(text.text ?? "");
+  if (!match) return null;
+  const rest = (text.text ?? "").slice(match[0].length);
+  if (rest === "") {
+    first.content = first.content?.slice(1);
+    if (!first.content?.length) children.shift();
+  } else if (rest.startsWith("\n")) {
+    text.text = rest.slice(1);
+    if (!text.text) first.content = first.content?.slice(1);
+  } else {
+    return null;
+  }
+  return match[0];
 }
 
 function listItemJSON(item: Tokens.ListItem, state: ParseState): JSONContent | null {
@@ -408,6 +479,9 @@ export function parseProseBlock(
   const { text, islands } = withPlaceholders(block);
   const { segments, lead } = splitAtBlankLines(text);
   if (lead) return { children: [], lockedReason: "leading blank lines" };
+  if (segments.some((segment) => segment.text === "")) {
+    return { children: [], lockedReason: "markdown the parser could not map" };
+  }
 
   const state: ParseState = { schema, islands, adjacency, nextId };
   const children: ParsedChild[] = [];
@@ -459,7 +533,7 @@ function splitAtBlankLines(text: string): {
   segments: Array<{ text: string; after: string }>;
   lead: string;
 } {
-  if (!/^[ \t]+$/m.test(text)) return { segments: [{ text, after: "" }], lead: "" };
+  if (!/^[ \t]+$/m.test(text)) return { segments: [trimSegmentEnd(text, "")], lead: "" };
   const ranges: Array<{ start: number; end: number }> = [];
   let current: { start: number; end: number } | null = null;
   let position = 0;
@@ -476,11 +550,23 @@ function splitAtBlankLines(text: string): {
     position = lineEnd + 1;
   }
   if (current) ranges.push(current);
-  const segments = ranges.map((range, index) => ({
-    text: text.slice(range.start, range.end),
-    after: text.slice(range.end, ranges[index + 1]?.start ?? text.length),
-  }));
+  const segments = ranges.map((range, index) =>
+    trimSegmentEnd(
+      text.slice(range.start, range.end),
+      text.slice(range.end, ranges[index + 1]?.start ?? text.length),
+    ),
+  );
   return { segments, lead: text.slice(0, ranges[0]?.start ?? text.length) };
+}
+
+/**
+ * Trailing spaces at the very end of a run: marked rewrites them in a list's
+ * `raw` (a space becomes a newline), so they are kept aside, byte for byte, as
+ * the run's trailing bytes instead of being lexed.
+ */
+function trimSegmentEnd(text: string, after: string): { text: string; after: string } {
+  const tail = /[ \t]+$/.exec(text)?.[0] ?? "";
+  return tail ? { text: text.slice(0, text.length - tail.length), after: tail + after } : { text, after };
 }
 
 /** One top-level token → rich text that round-trips exactly, or a locked atom. */
@@ -490,9 +576,13 @@ function parseTopToken(token: Token, state: ParseState): ParsedChild {
   const raw = restorePlaceholders(body, islands);
   const scratch = new Map(adjacency);
   const scratchState: ParseState = { ...state, adjacency: scratch };
-  let json = blockJSON(token, scratchState);
-  let lockedReason: string | null = null;
-  if (json) {
+  const pageBreak =
+    (token.type === "paragraph" || token.type === "html") && isPageBreakLine(raw);
+  let json = pageBreak ? null : blockJSON(token, scratchState);
+  let lockedReason: string | null = pageBreak ? PAGE_BREAK_REASON : null;
+  if (pageBreak) {
+    // held as source: the page-break grammar belongs to @ai-matrx/print
+  } else if (json) {
     try {
       const node = schema.nodeFromJSON(json);
       node.check();

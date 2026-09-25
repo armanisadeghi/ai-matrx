@@ -148,78 +148,83 @@ function countOccurrences(haystack: string, needle: string): number {
   }
 }
 
-function regionIslandDeltas(
-  before: readonly SourceIsland[],
-  after: readonly SourceIsland[],
-  afterText: string,
-  regionStart: number,
-): IslandDelta[] {
-  const remaining = new Map<string, SourceIsland[]>();
-  for (const island of after) {
-    const key = islandKey(island);
-    const list = remaining.get(key);
-    if (list) list.push(island);
-    else remaining.set(key, [island]);
+interface RegionIslands {
+  before: readonly SourceIsland[];
+  after: readonly SourceIsland[];
+  afterText: string;
+  regionStart: number;
+}
+
+/**
+ * Island accounting over every edited region at once, so a block the person
+ * MOVED (gone from one region, identical in another) is a move, not a loss.
+ */
+function islandDeltas(regions: readonly RegionIslands[]): IslandDelta[] {
+  const gone: Array<{ island: SourceIsland; region: number }> = [];
+  const added: Array<{ island: SourceIsland; region: number }> = [];
+  regions.forEach((region, index) => {
+    const remaining = new Map<string, SourceIsland[]>();
+    for (const island of region.after) {
+      const list = remaining.get(islandKey(island));
+      if (list) list.push(island);
+      else remaining.set(islandKey(island), [island]);
+    }
+    for (const island of region.before) {
+      const list = remaining.get(islandKey(island));
+      if (list && list.length) list.shift();
+      else gone.push({ island, region: index });
+    }
+    for (const list of remaining.values()) {
+      for (const island of list) added.push({ island, region: index });
+    }
+  });
+
+  // Moves: the same island left one place and arrived in another.
+  const unmatchedGone: typeof gone = [];
+  for (const entry of gone) {
+    const at = added.findIndex((candidate) => islandKey(candidate.island) === islandKey(entry.island));
+    if (at === -1) unmatchedGone.push(entry);
+    else added.splice(at, 1);
   }
-  const gone: SourceIsland[] = [];
-  for (const island of before) {
-    const list = remaining.get(islandKey(island));
-    if (list && list.length) list.shift();
-    else gone.push(island);
-  }
-  const added = [...remaining.values()].flat().sort((x, y) => x.start - y.start);
 
   const deltas: IslandDelta[] = [];
-  const afterCounts = new Map<string, number>();
-  for (const island of after) {
-    afterCounts.set(islandKey(island), (afterCounts.get(islandKey(island)) ?? 0) + 1);
-  }
   const swallowedBudget = new Map<string, number>();
-  for (const island of gone) {
-    const key = islandKey(island);
-    if (!swallowedBudget.has(key)) {
-      const asText = countOccurrences(afterText, island.raw);
-      swallowedBudget.set(key, Math.max(0, asText - (afterCounts.get(key) ?? 0)));
+  for (const { island, region } of unmatchedGone) {
+    const info = regions[region];
+    const key = `${region}\u0000${islandKey(island)}`;
+    if (!swallowedBudget.has(key) && info) {
+      const asIslands = info.after.filter((other) => islandKey(other) === islandKey(island)).length;
+      swallowedBudget.set(key, Math.max(0, countOccurrences(info.afterText, island.raw) - asIslands));
     }
     const budget = swallowedBudget.get(key) ?? 0;
     if (budget > 0) {
       swallowedBudget.set(key, budget - 1);
-      deltas.push({
-        kind: "swallowed",
-        islandType: island.islandType,
-        before: island.raw,
-        after: null,
-        at: island.start,
-      });
+      deltas.push({ kind: "swallowed", islandType: island.islandType, before: island.raw, after: null, at: island.start });
       continue;
     }
-    const replacement = added.findIndex((candidate) => candidate.islandType === island.islandType);
+    const replacement = added.findIndex(
+      (candidate) => candidate.region === region && candidate.island.islandType === island.islandType,
+    );
     if (replacement !== -1) {
       const [next] = added.splice(replacement, 1);
       deltas.push({
         kind: "changed",
         islandType: island.islandType,
         before: island.raw,
-        after: next?.raw ?? null,
+        after: next?.island.raw ?? null,
         at: island.start,
       });
     } else {
-      deltas.push({
-        kind: "removed",
-        islandType: island.islandType,
-        before: island.raw,
-        after: null,
-        at: island.start,
-      });
+      deltas.push({ kind: "removed", islandType: island.islandType, before: island.raw, after: null, at: island.start });
     }
   }
-  for (const island of added) {
+  for (const { island, region } of added) {
     deltas.push({
       kind: "added",
       islandType: island.islandType,
       before: null,
       after: island.raw,
-      at: regionStart,
+      at: regions[region]?.regionStart ?? 0,
     });
   }
   return deltas;
@@ -274,7 +279,6 @@ export function planSave(
     islands.filter((island) => island.start >= start && island.end <= end);
 
   const regions: SaveRegion[] = [];
-  const deltas: IslandDelta[] = [];
   const bounds: Array<[number, number, number, number]> = [];
   let prevStored = 0;
   let prevCurrent = 0;
@@ -288,20 +292,20 @@ export function planSave(
   }
   bounds.push([prevStored, stored.length, prevCurrent, current.length]);
 
+  const regionIslands: RegionIslands[] = [];
   for (const [sStart, sEnd, cStart, cEnd] of bounds) {
     const before = stored.slice(sStart, sEnd);
     const after = current.slice(cStart, cEnd);
     if (before === after) continue;
     regions.push({ start: sStart, end: sEnd, text: after });
-    deltas.push(
-      ...regionIslandDeltas(
-        within(storedIslands, sStart, sEnd),
-        within(currentIslands, cStart, cEnd),
-        after,
-        sStart,
-      ),
-    );
+    regionIslands.push({
+      before: within(storedIslands, sStart, sEnd),
+      after: within(currentIslands, cStart, cEnd),
+      afterText: after,
+      regionStart: sStart,
+    });
   }
+  const deltas = islandDeltas(regionIslands);
 
   const approved = options.approvedIslands ?? new Set<string>();
   const needsConsent = deltas.filter(
