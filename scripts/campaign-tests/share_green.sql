@@ -308,11 +308,13 @@ begin
   begin
     perform custom.share_grant('5ba50000-0000-4a00-8a00-000000000a01', '5ba50000-0000-4a00-8a00-000000000301',
                                'organization', '5ba50000-0000-4a00-8a00-000000000a02', 'viewer');
-    raise exception '3f FAILED — a share reached another organization with the wall shut.';
-  exception when insufficient_privilege then
+    raise exception '3f FAILED — a share reached an organization.';
+  -- SHARE-PEOPLE-ONLY (owner ruling 2026-09-23, access is personal): a share names a person, so an
+  -- organization principal is refused by name before any cross-organization wall is asked.
+  exception when invalid_parameter_value then
     get stacked diagnostics v_msg = message_text;
-    if v_msg not like '%has not agreed to links%' then
-      raise exception '3f FAILED — the wall refusal does not say why: %', v_msg;
+    if v_msg <> 'Shares name a person, not an organization.' then
+      raise exception '3f FAILED — the organization refusal does not say why: %', v_msg;
     end if;
   end;
 end $t$;

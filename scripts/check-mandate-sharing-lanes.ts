@@ -197,9 +197,11 @@ async function main(): Promise<void> {
     await asOperator(client);
     await client.query(`delete from iam.permissions where resource_type = 'mandate' and resource_id = $1`, [mandateId]);
 
-    // ── 2. Organization grant (ShareModal's Organizations tab) ───────────────
+    // ── 2. Organization availability (org configuration, e.g. contributed to its library) ──
+    // SHARE-PEOPLE-ONLY (2026-09-25): a SHARE names a person and share_resource_with_org refuses an
+    // organization; org-wide reach is written only through the availability door.
     await asSeat(client, creator);
-    await client.query(`select public.share_resource_with_org('mandate', $1, $2, 'viewer')`, [mandateId, sharedOrg]);
+    await client.query(`select public.grant_org_availability('mandate', $1, $2, 'viewer')`, [mandateId, sharedOrg]);
     await asSeat(client, viewer);
     r = await listKeys(client, { level: "person", scope: "orgs" });
     expect(r.keys.has(key), `granted to an organization → in a member's Organizations tab${r.error ? ` (${r.error})` : ""}`);

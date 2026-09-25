@@ -21,7 +21,7 @@
 -- RED TWIN: argsruled2_shared_with_me_red.sql runs the inverse and requires clause 1 to fail.
 
 \set suite 'argsruled2_shared_with_me_green.sql'
-\set requires 'function:public.get_cx_conversations_shared_with_me|function:public.share_resource_with_user|function:public.share_resource_with_org|relation:chat.conversation'
+\set requires 'function:public.get_cx_conversations_shared_with_me|function:public.share_resource_with_user|function:public.grant_org_availability|relation:chat.conversation'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
@@ -56,7 +56,7 @@ begin
   perform set_config('role', 'authenticated', true);
   v_res := public.share_resource_with_user('conversation', v_by_name, c_friend, 'commenter');
   if (v_res ->> 'success')::boolean is not true then raise exception 'setup: share by name failed: %', v_res; end if;
-  v_res := public.share_resource_with_org('conversation', v_by_org, v_equine, 'viewer');
+  v_res := public.grant_org_availability('conversation', v_by_org, v_equine, 'viewer');  -- SHARE-PEOPLE-ONLY: org reach is availability, never a share
   if (v_res ->> 'success')::boolean is not true then raise exception 'setup: share with organization failed: %', v_res; end if;
 
   -- 4 · the owner's own conversations are not "shared with me"
