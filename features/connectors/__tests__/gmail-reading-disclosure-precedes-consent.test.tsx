@@ -12,6 +12,8 @@ import type { ConsentRequest } from "../consent-plan";
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const confirmDisclosure = jest.fn<Promise<boolean>, [unknown]>();
+let mockOrganizations: Array<{ id: string; name: string; role: string }> = [];
+let mockActiveOrganizationId: string | null = null;
 const run = jest.fn<
   Promise<{ connectionId: string }>,
   [ConsentRequest, unknown?]
@@ -31,11 +33,11 @@ jest.mock("@/lib/redux/hooks", () => ({
 }));
 
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
-  selectOrganizationId: () => null,
+  selectOrganizationId: () => mockActiveOrganizationId,
 }));
 
 jest.mock("@/features/scopes/redux/selectors/tree", () => ({
-  selectOrganizationsList: () => [],
+  selectOrganizationsList: () => mockOrganizations,
 }));
 
 jest.mock("@/providers/google-provider/LazyGoogleAPIProvider", () => ({
@@ -123,6 +125,8 @@ afterEach(() => {
   container.remove();
   confirmDisclosure.mockReset();
   run.mockClear();
+  mockOrganizations = [];
+  mockActiveOrganizationId = null;
 });
 
 describe("Gmail reading disclosure", () => {
@@ -188,6 +192,13 @@ describe("Gmail reading disclosure", () => {
 });
 
 describe("Gmail changes disclosure", () => {
+  it("offers only personal connection when an organization owner selects Gmail changes", () => {
+    mockOrganizations = [{ id: "org-1", name: "Example Team", role: "owner" }];
+    mockActiveOrganizationId = "org-1";
+    mount("gmail_modify");
+    expect(container.textContent).toContain("Gmail changes connect only to your personal Google account");
+    expect(container.querySelector('[aria-label="Connect for Example Team"]')).toBeNull();
+  });
   it("explains Google's broader grant and blocks OAuth when declined", async () => {
     confirmDisclosure.mockResolvedValue(false);
     mount("gmail_modify");

@@ -49,7 +49,7 @@ jest.mock("../google-adapter", () => {
     ...actual,
     useGoogleConsentRunner: () => ({ run, ready: true }),
     useGoogleConnectorState: () => ({
-      accounts: [before],
+      accounts: [activeAccount],
       rollout,
       resourceCountByAccount: {},
       isLoading: false,
@@ -65,7 +65,8 @@ import { ConnectorsSettingsPanel } from "../ConnectorsSettingsPanel";
 
 const provider = GOOGLE_CONNECTOR_PROVIDER;
 const gmailRead = provider.products.find((product) => product.key === "gmail_read")!;
-const rollout: ConnectorCapabilityRollout[] = gmailRead.capabilityKeys.map((capabilityKey) => ({
+const gmailModify = provider.products.find((product) => product.key === "gmail_modify")!;
+const rollout: ConnectorCapabilityRollout[] = [...gmailRead.capabilityKeys, ...gmailModify.capabilityKeys].map((capabilityKey) => ({
   capabilityKey,
   phase: "available",
   eligible: true,
@@ -86,6 +87,7 @@ const before: ConnectorAccount = {
   lastVerifiedAt: "2026-09-24T12:00:00Z",
   lastRefusalSentence: null,
 };
+let activeAccount = before;
 const after: ConnectorAccount = {
   ...before,
   grantedScopes: [...provider.identityScopes, ...gmailRead.scopes],
@@ -113,6 +115,26 @@ async function pressGmailReading(): Promise<{ container: HTMLDivElement; root: R
 afterEach(() => {
   run.mockReset();
   jest.mocked(toast.success).mockClear();
+  activeAccount = before;
+});
+
+it("does not offer Gmail changes on an organization-owned account in Settings", async () => {
+  activeAccount = { ...before, ownerKind: "organization", organizationId: "org-1" };
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<ConnectorsSettingsPanel />));
+    expect(container.textContent).toContain("Gmail changes are available only on personal Google connections");
+    const modifyRow = [...container.querySelectorAll("li")].find((node) =>
+      (node.textContent ?? "").includes("Gmail changes"),
+    );
+    expect(modifyRow).toBeUndefined();
+    expect(run).not.toHaveBeenCalled();
+  } finally {
+    act(() => root.unmount());
+    container.remove();
+  }
 });
 
 it("does not say Connected when the returned account is absent from the refreshed inventory", async () => {

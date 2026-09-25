@@ -179,6 +179,79 @@ it("lists a first-time personal modify-only connection without requiring a secon
   expect(container.textContent).not.toContain("No personal Google account");
 });
 
+it("keeps an opened message bound to its source account when inventory falls back to another", async () => {
+  const accountA = { ...owned, id: "account-a", scopes: [GOOGLE_SCOPE.gmailModify] };
+  const accountB = { ...owned, id: "account-b", scopes: [GOOGLE_SCOPE.gmailModify] };
+  mockInventory.mockReturnValue({
+    data: { connections: [accountA, accountB], resources: [] }, isLoading: false, isError: false,
+  });
+  mockSearch.mockImplementation(async (id: string) => ({
+    messages: [{ id: `message-${id}`, subject: `Note from ${id}`, from_address: "sender@example.com", date: "Today", snippet: "Preview" }],
+    has_more: false, access_mode: "on_demand_read_only",
+  }));
+  mockRead.mockImplementation(async (_id: string, messageId: string) => ({
+    id: messageId, label_ids: ["INBOX"], subject: messageId, from_address: "sender@example.com", to_address: "reviewer@example.com", date: "Today", snippet: "Preview", text_body: "Body", truncated: false, access_mode: "on_demand_read_only",
+  }));
+  mockModify.mockResolvedValue({ message_id: "message-account-b", label_ids: [] });
+  await act(async () => root.render(<GmailReadReview />));
+  const input = container.querySelector<HTMLInputElement>("#gmail-read-query")!;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "in:inbox");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  const search = async () => act(async () => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+  const open = async () => act(async () => container.querySelector<HTMLButtonElement>("section[aria-label='Gmail search results'] button")!.click());
+  await search();
+  await open();
+  expect(container.textContent).toContain("message-account-a");
+
+  mockInventory.mockReturnValue({
+    data: { connections: [accountB], resources: [] }, isLoading: false, isError: false,
+  });
+  await act(async () => root.render(<GmailReadReview />));
+  expect(container.textContent).not.toContain("message-account-a");
+  expect(container.querySelector("[aria-label='Gmail message actions']")).toBeNull();
+  expect(mockModify).not.toHaveBeenCalled();
+
+  await search();
+  await open();
+  const archive = [...container.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent?.trim() === "Archive");
+  await act(async () => archive!.click());
+  expect(mockModify).toHaveBeenCalledWith({ connectionId: "account-b", messageId: "message-account-b", action: "archive" });
+});
+
+it("discards an in-flight read when the selected mailbox disappears", async () => {
+  const accountA = { ...owned, id: "account-a", scopes: [GOOGLE_SCOPE.gmailModify] };
+  const accountB = { ...owned, id: "account-b", scopes: [GOOGLE_SCOPE.gmailModify] };
+  mockInventory.mockReturnValue({
+    data: { connections: [accountA, accountB], resources: [] }, isLoading: false, isError: false,
+  });
+  mockSearch.mockResolvedValue({
+    messages: [{ id: "message-a", subject: "A", from_address: "sender@example.com", date: "Today", snippet: "A" }],
+    has_more: false, access_mode: "on_demand_read_only",
+  });
+  let finishRead!: (value: unknown) => void;
+  mockRead.mockReturnValue(new Promise((resolve) => { finishRead = resolve; }));
+  await act(async () => root.render(<GmailReadReview />));
+  const input = container.querySelector<HTMLInputElement>("#gmail-read-query")!;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "in:inbox");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await act(async () => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+  await act(async () => container.querySelector<HTMLButtonElement>("section[aria-label='Gmail search results'] button")!.click());
+  mockInventory.mockReturnValue({
+    data: { connections: [accountB], resources: [] }, isLoading: false, isError: false,
+  });
+  await act(async () => root.render(<GmailReadReview />));
+  await act(async () => finishRead({
+    id: "message-a", label_ids: ["INBOX"], subject: "Old A", from_address: "sender@example.com", to_address: "reviewer@example.com", date: "Today", snippet: "A", text_body: "Old body", truncated: false, access_mode: "on_demand_read_only",
+  }));
+  expect(container.textContent).not.toContain("Old A");
+  expect(container.querySelector("[aria-label='Gmail message actions']")).toBeNull();
+  expect(mockModify).not.toHaveBeenCalled();
+});
+
 afterEach(async () => {
   await act(async () => root.unmount());
   container.remove();

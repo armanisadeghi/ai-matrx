@@ -143,6 +143,13 @@ function ProviderConnectorsPanel({
   ) => {
     const account = state.accounts.find((row) => row.id === accountId);
     if (!account) return;
+    if (account.ownerKind === "organization" && productKeys.includes("gmail_modify")) {
+      setFailure({
+        sentence: "Gmail changes can connect only to a personal Google account. Choose your own account in the consent panel below.",
+        details: null,
+      });
+      return;
+    }
     const rows = accountHealth({ provider, account, rollout: state.rollout });
     // The row's own verb, so the toast matches the button that was pressed: a
     // product this account never granted says Connect, not Reconnect (D3).
@@ -467,11 +474,14 @@ function AccountCard({
       : MANAGEMENT_ALLOWED;
 
   return (
+    <>
     <ConnectedAccountHealth
       provider={provider}
       account={account}
       anchorId={`integration-google-account-${account.id}`}
-      health={health}
+      health={account.ownerKind === "organization"
+        ? health.filter((row) => row.product.key !== "gmail_modify")
+        : health}
       organizationName={organizationName}
       onReconnect={onReconnect}
       onReconnectAccount={onReconnectAccount}
@@ -480,5 +490,11 @@ function AccountCard({
       revoking={revoking}
       management={management}
     />
+    {account.ownerKind === "organization" ? (
+      <p className="-mt-2 px-3 text-xs text-muted-foreground">
+        Gmail changes are available only on personal Google connections. Use the consent panel below with your own account.
+      </p>
+    ) : null}
+    </>
   );
 }

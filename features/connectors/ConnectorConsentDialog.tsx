@@ -597,6 +597,7 @@ export function ConnectorConsentBody({
   const mayConnectForOrganization =
     activeOrganization?.role === "owner" || activeOrganization?.role === "admin";
   const [forOrganization, setForOrganization] = useState(false);
+  const gmailChangesSelected = selected.includes("gmail_modify");
 
   const plan = buildConsentPlan({
     provider,
@@ -656,6 +657,12 @@ export function ConnectorConsentBody({
   };
 
   const connect = async () => {
+    if (gmailChangesSelected && account?.ownerKind === "organization") {
+      const sentence = "Gmail changes can connect only to a personal Google account. Choose your own account or connect a different one.";
+      setAnswer(sentence);
+      toast.info(sentence);
+      return;
+    }
     if (!plan.request) {
       // The press is never swallowed: it says, in words, why there is nothing
       // to send to the provider — inline for the person reading the dialog and
@@ -675,7 +682,7 @@ export function ConnectorConsentBody({
       if (!changesDisclosed) return;
       const result = await runner.run(plan.request, {
         owner:
-          forOrganization && activeOrganization
+          !gmailChangesSelected && forOrganization && activeOrganization
             ? { type: "organization", organizationId: activeOrganization.id }
             : { type: "user" },
         loginHint: account?.label ?? null,
@@ -910,7 +917,11 @@ export function ConnectorConsentBody({
           })}
         </div>
 
-        {mayConnectForOrganization && activeOrganization ? (
+        {gmailChangesSelected ? (
+          <p className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
+            Gmail changes connect only to your personal Google account. Choose your own account or connect a different one.
+          </p>
+        ) : mayConnectForOrganization && activeOrganization ? (
           <label className="flex items-start gap-2.5 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
             <Switch
               checked={forOrganization}
