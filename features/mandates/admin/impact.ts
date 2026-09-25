@@ -614,6 +614,10 @@ export async function fetchImpact(
   // of 30 agents took 23.6 s of server CPU, and the console holds ~383 holder
   // agents. Firing every page at once would pin the serving loop; two at a
   // time keeps the read honest without starving everyone else.
+  // Re-measured 2026-09-25 as admin@admin.com after the server's concurrent
+  // reads (aidream R36d): 376 holder agents, 13 pages, 0.3–0.9 s per page,
+  // ~2.6–2.9 s wall at two at a time; four or six at a time was no faster
+  // (noisy, 1.7–3.2 s), so two stays.
   const readPage = async (page: string[]): Promise<ImpactReport> => {
     const response = await dispatch(
       callApi({
