@@ -35,6 +35,7 @@ import {
   Tags,
   Gauge,
   PlugZap,
+  Plug,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -127,6 +128,12 @@ export function OrgManage({
       id: "scopes",
       label: "Scopes",
       icon: FolderTree,
+      show: canManageSettings,
+    },
+    {
+      id: "mandates",
+      label: "Mandates",
+      icon: Plug,
       show: canManageSettings,
     },
     {
@@ -447,6 +454,22 @@ export function OrgManage({
                 <OrgScopeTree orgId={displayOrganization.id} slug={slug} />
               </Card>
             </section>
+          )}
+
+          {canManageSettings && (
+            <SectionCard
+              id="mandates"
+              icon={Plug}
+              title="Mandates"
+              description="Choose which agent or workflow runs each AI job for this organization. Your choice replaces the system default for every member."
+            >
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/organizations/${slug}/settings/mandates`}>
+                  Manage mandates
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Link>
+              </Button>
+            </SectionCard>
           )}
 
           {/* Industries — org's industry memberships (Shared Knowledge Resources) */}

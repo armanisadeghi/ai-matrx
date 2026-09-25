@@ -872,6 +872,22 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "New mandate",
+        description:
+          "Create a mandate definition: its goal, output kind, and input contract.",
+        iconName: "Plug",
+        link: "/administration/mandates/new",
+        isNew: true,
+      },
+      {
+        title: "Mandate tables (raw)",
+        description:
+          "Raw rows of mandate.definition / binding / provision / treatment, the shortcut compat view, and app.definition, with full CRUD.",
+        iconName: "Plug",
+        link: "/administration/mandates/advanced",
+        isNew: true,
+      },
+      {
         title: "Lookups",
         description:
           "CRUD for tool-registry lookup tables: ui.ui_client, ui.ui_surface (basic), tool.executor. Foundation tables every other registry feature reads.",
@@ -1472,6 +1488,14 @@ export const adminCategoriesData: AdminCategory[] = [
           "Non-functional preview of the job, place, and batch management workspaces.",
         iconName: "PanelsTopLeft",
         link: "/administration/preview/unified-management",
+        isNew: true,
+      },
+      {
+        title: "One Binding UI Preview",
+        description:
+          "Non-functional mockup of the one flow that binds a job to a place at any level. Mock data only.",
+        iconName: "PanelsTopLeft",
+        link: "/administration/preview/one-binding-ui",
         isNew: true,
       },
     ],

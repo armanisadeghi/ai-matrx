@@ -226,10 +226,10 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           // sidebar highlight that would name the wrong screen. Specific
           // before general, exactly as the route→surface map does it.
           destination("/administration/mandates/references"),
+          destination("/administration/mandates/new"),
+          destination("/administration/mandates/advanced"),
           destination("/administration/mandates", [
             "/administration/mandates/[mandateKey]",
-            "/administration/mandates/advanced",
-            "/administration/mandates/new",
           ]),
         ],
       },
@@ -728,8 +728,8 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         name: "Unified Management",
         iconName: "PanelsTopLeft",
         destinations: [
+          destination("/administration/preview/one-binding-ui"),
           destination("/administration/preview/unified-management", [
-            "/administration/preview/one-binding-ui",
             "/administration/preview/unified-management/batch",
             "/administration/preview/unified-management/jobs",
             "/administration/preview/unified-management/places",
