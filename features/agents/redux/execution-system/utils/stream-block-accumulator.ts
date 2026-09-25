@@ -1022,13 +1022,16 @@ export class StreamBlockAccumulator {
     // The prefilter only checks the line starts with `![` (or `[Image URL:`).
     // Validate with the SAME detector the V2 splitter uses so the two agree:
     // incomplete or reference-style images (![alt][id]) fall through to text.
-    if (
-      hasCandidate(flags, Candidate.IMAGE) &&
-      detectImageMarkdown(rawLine).isImage &&
-      countInlineImages(rawLine) < 2
-    ) {
+    const image = hasCandidate(flags, Candidate.IMAGE)
+      ? detectImageMarkdown(rawLine)
+      : null;
+    if (image?.isImage && image.src && countInlineImages(rawLine) < 2) {
       this.closeCurrentBlock(dispatch);
       this.openBlock("image", dispatch);
+      // The line is complete here, so its URL is too: carry src/alt on the
+      // block's data exactly as the static splitter does (the renderer reads
+      // them; without them a live image drew nothing until reload).
+      this.pendingMediaData = { src: image.src, alt: image.alt ?? "" };
       this.appendToCurrentBlock(trimmed);
       this.closeCurrentBlock(dispatch);
       this.openBlock("text", dispatch);
@@ -1036,12 +1039,13 @@ export class StreamBlockAccumulator {
     }
 
     // ── Video ─────────────────────────────────────────────────────────
-    if (
-      hasCandidate(flags, Candidate.VIDEO) &&
-      detectVideoMarkdown(rawLine).isVideo
-    ) {
+    const video = hasCandidate(flags, Candidate.VIDEO)
+      ? detectVideoMarkdown(rawLine)
+      : null;
+    if (video?.isVideo && video.src) {
       this.closeCurrentBlock(dispatch);
       this.openBlock("video", dispatch);
+      this.pendingMediaData = { src: video.src, alt: video.alt ?? "" };
       this.appendToCurrentBlock(trimmed);
       this.closeCurrentBlock(dispatch);
       this.openBlock("text", dispatch);
@@ -2077,8 +2081,14 @@ export class StreamBlockAccumulator {
   }
 
   private buildBlockData(): Record<string, unknown> | null {
-    // Audio blocks carry the resolved link so the renderer has a `src`.
-    if (this.currentBlockType === "audio" && this.pendingMediaData) {
+    // Media blocks (image, video, audio) carry the resolved link so the
+    // renderer has a `src` — the same fields the static splitter sets.
+    if (
+      (this.currentBlockType === "audio" ||
+        this.currentBlockType === "image" ||
+        this.currentBlockType === "video") &&
+      this.pendingMediaData
+    ) {
       return { ...this.pendingMediaData };
     }
     if (this.subState.kind === "code_fence") {

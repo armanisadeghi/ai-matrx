@@ -83,6 +83,10 @@ import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artif
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { FENCE_META_KEY } from "@/components/markdown-core/fence-meta";
+import {
+  detectImageMarkdown,
+  detectVideoMarkdown,
+} from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import {
   isRenderableStructuredAgentAnswer,
@@ -843,6 +847,21 @@ const renderNestedSection: BlockRenderFn = ({ block, index, isStreamActive }) =>
     />
   ) : null;
 
+/**
+ * A media block whose URL could not be read renders its own text (the line
+ * the author wrote) and says so in the console — never an empty gap.
+ */
+function missingMediaFallback(
+  ctx: BlockDispatchContext,
+  kind: "image" | "video" | "audio",
+): React.ReactElement | null {
+  console.warn(
+    `[BlockRenderer] ${kind} block without a readable URL — showing its text.`,
+    ctx.block.content.slice(0, 200),
+  );
+  return ctx.block.content ? ctx.renderBasicMarkdown(ctx.block.content) : null;
+}
+
 /** The raw fence meta string a code block carries, if any (fence-meta.ts). */
 function readFenceMeta(
   source: Record<string, unknown> | undefined,
@@ -1538,23 +1557,27 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
     );
   },
 
-  image: ({ block, index }) => {
-    // The splitter only emits an "image" block when it parsed a URL out of
-    // the markdown — but guard honestly rather than asserting: a missing
-    // src would otherwise silently reach ImageBlock's required `src: string`
-    // prop as `undefined`, and it fetches that src unconditionally.
-    if (!block.src) return null;
-    return (
-      <BlockComponents.ImageBlock key={index} src={block.src} alt={block.alt} />
-    );
+  image: (ctx) => {
+    const { block, index } = ctx;
+    // Both splitters set `src` on a complete image line. A block without one
+    // (an older payload) re-reads its own markdown; if even that yields no
+    // URL, the line shows as its text — never an empty gap, never a fetch of
+    // an undefined src.
+    const media = block.src
+      ? { src: block.src, alt: block.alt }
+      : detectImageMarkdown(block.content);
+    if (!media.src) return missingMediaFallback(ctx, "image");
+    return <BlockComponents.ImageBlock key={index} src={media.src} alt={media.alt} />;
   },
 
-  video: ({ block, index }) => {
+  video: (ctx) => {
+    const { block, index } = ctx;
     // Route every markdown video through the canonical file-aware renderer.
     // A Matrx signed URL recovers its file_id before actions render, so copy
     // and share can never expose the private playback credential.
-    if (!block.src) return null;
-    return <VideoOutputBlockRenderer key={index} data={{ url: block.src }} />;
+    const src = block.src ?? detectVideoMarkdown(block.content).src;
+    if (!src) return missingMediaFallback(ctx, "video");
+    return <VideoOutputBlockRenderer key={index} data={{ url: src }} />;
   },
 
   // NOTE: like `table` — normally consumed by the unified artifact stage
@@ -1579,7 +1602,8 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
     </div>
   ),
 
-  audio: ({ block, index }) => {
+  audio: (ctx) => {
+    const { block, index } = ctx;
     // Audio that streamed in as a markdown/text link (the splitter's
     // `detectAudioMarkdown`). The URL is on `block.src`, mirroring the
     // markdown `image`/`video` cases. This is the live-stream twin of the
@@ -1587,7 +1611,7 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
     // `AudioOutputBlockRenderer` so the URL is resolved durably (file_id
     // recovery / public-URL preference) and "Copy link" never leaks a raw
     // signed S3 URL, even for an audio-only turn shown mid-stream.
-    if (!block.src) return null;
+    if (!block.src) return missingMediaFallback(ctx, "audio");
     return (
       <AudioOutputBlockRenderer
         key={index}
