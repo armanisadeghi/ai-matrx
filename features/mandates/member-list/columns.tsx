@@ -128,25 +128,8 @@ export function memberMandateColumns(): Spec[] {
       },
     },
     facetColumn("featureLabel", "Feature", 150, (row) => <TextCell value={row.featureLabel} />),
-    {
-      id: "mandateKey",
-      label: "Key",
-      column: {
-        id: "mandateKey",
-        accessorKey: "mandateKey",
-        header: "Key",
-        filter: "text",
-        width: 220,
-        cell: (row) => (
-          <span
-            className="block truncate font-mono text-[11px] text-muted-foreground"
-            title={row.mandateKey}
-          >
-            {row.mandateKey}
-          </span>
-        ),
-      },
-    },
+    // No Key column here: a member reads the Mandate's name, never its key
+    // (owner ruling — the admin list's Key column is the one place a key shows).
     facetColumn("holderName", "Mandate Holder", 210, (row) => <HolderCell row={row} />),
     facetColumn("customizedBy", "Customized by", 160, (row) => (
       <span className="block truncate text-xs" title={row.customizedBy.join(", ")}>

@@ -113,7 +113,8 @@ export function featurePrefixes(feature: string): readonly string[] {
 
 /** The feature whose page shows this key (an extra prefix maps to its owner). */
 export function featureForKey(mandateKey: string): string {
-  const prefix = mandateKey.split(".")[0] ?? mandateKey;
+  const dot = mandateKey.indexOf(".");
+  const prefix = dot === -1 ? mandateKey : mandateKey.slice(0, dot);
   const owner = DECLARED_FEATURES.find((entry) => entry.extraPrefixes?.includes(prefix));
   return owner?.feature ?? prefix;
 }

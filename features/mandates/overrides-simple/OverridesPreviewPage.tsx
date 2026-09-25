@@ -20,15 +20,11 @@ import { MandateOverridesSimple } from "./MandateOverridesSimple";
 export function OverridesPreviewPage({ mandateKey }: { mandateKey: string }) {
   const { data, loading, error, failure, refresh } =
     useMandateWorkspaceData(mandateKey);
-  const name = useMandateDisplayName(
-    data?.mandate.mandate_key ?? mandateKey,
-    data?.mandate.label,
-  );
+  const resolvedKey = data ? data.mandate.mandate_key : mandateKey;
+  const name = useMandateDisplayName(resolvedKey, data?.mandate.label);
   // The new pages this one sits beside — the list preview and the record
   // preview — never the old ones.
-  const mandateHref = mandateRecordPreviewHref(
-    data?.mandate.mandate_key ?? mandateKey,
-  );
+  const mandateHref = mandateRecordPreviewHref(resolvedKey);
 
   return (
     <div className="h-full overflow-y-auto">

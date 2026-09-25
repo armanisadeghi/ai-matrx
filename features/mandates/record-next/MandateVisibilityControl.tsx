@@ -20,6 +20,7 @@ import { Globe, Lock, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { invalidateMandateCache } from "@/features/mandates/service";
+import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import type { MandateWorkspaceData } from "@/features/mandates/workspace/useMandateWorkspaceData";
 
 type Mandate = MandateWorkspaceData["mandate"];
@@ -62,7 +63,7 @@ export function MandateVisibilityControl({
           }}
           resourceType="mandate"
           resourceId={mandate.id}
-          resourceName={mandate.label || mandate.mandate_key}
+          resourceName={mandateDisplayName(mandate.mandate_key, mandate.label)}
           resourceNoun="mandate"
         />
       ) : null}

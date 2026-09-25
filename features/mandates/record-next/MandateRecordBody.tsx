@@ -479,7 +479,7 @@ function OneMandateRecordBody({
                 action: "Change binding",
                 resource: {
                   kind: "Mandate",
-                  name: data.mandate.label?.trim() || data.mandate.mandate_key,
+                  name: mandateDisplayName(data.mandate.mandate_key, data.mandate.label),
                   type: "mandate",
                   id: data.mandate.id,
                 },
@@ -674,7 +674,7 @@ function resolvedHolderOfVerdict(
   if (!verdict || error) {
     return {
       status: "unavailable",
-      message: "Nothing runs this job for you right now.",
+      message: "No Mandate Holder could be resolved for you right now.",
     };
   }
   if (verdict.holderType === "workflow") {

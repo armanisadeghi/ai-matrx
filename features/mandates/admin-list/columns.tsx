@@ -359,6 +359,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
           className="block truncate font-mono text-[11px] text-muted-foreground"
           title={row.mandateKey}
         >
+          {/* key-is-the-subject: the admin list's Key column — the one place an owner ruling lets a key show (Mandate name → Feature → Key) */}
           {row.mandateKey}
         </span>
       ),
