@@ -24,7 +24,11 @@ jest.mock("@/utils/supabase/client", () => ({
 }));
 
 jest.mock("@/lib/redux/store-singleton", () => ({
-  getStoreSingleton: () => ({ getState: () => ({}) }),
+  // The organization gate (lib/organization/organization-gate.ts) reads
+  // `state.appContext.organization_id` itself, so the store answers in that shape.
+  getStoreSingleton: () => ({
+    getState: () => ({ appContext: { organization_id: "org-1" } }),
+  }),
 }));
 
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({

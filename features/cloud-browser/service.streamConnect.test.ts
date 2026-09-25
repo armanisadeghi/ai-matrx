@@ -147,7 +147,9 @@ describe("Cloud Browser stream transport", () => {
     );
 
     const minting = mintStreamTicket("run-1", "control");
-    await Promise.resolve();
+    // The organization is resolved through the awaited gate now, so flush a
+    // macrotask rather than a single microtask before asserting the mint.
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(postJson).toHaveBeenCalledWith(
       "/browser-manager/runs/run-1/stream-ticket",
       { mode: "control", takeover: false },

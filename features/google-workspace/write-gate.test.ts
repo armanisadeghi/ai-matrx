@@ -42,7 +42,11 @@ jest.mock("@/features/google-workspace/connection", () => ({
 // resolves to a real organization rather than throwing
 // `OrganizationContextError`.
 jest.mock("@/lib/redux/store-singleton", () => ({
-  getStoreSingleton: () => ({ getState: () => ({}) }),
+  // The organization gate (lib/organization/organization-gate.ts) reads
+  // `state.appContext.organization_id` itself, so the store answers in that shape.
+  getStoreSingleton: () => ({
+    getState: () => ({ appContext: { organization_id: mockOrganizationId } }),
+  }),
 }));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => mockOrganizationId,

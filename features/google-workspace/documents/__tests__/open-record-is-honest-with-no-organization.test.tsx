@@ -82,7 +82,11 @@ jest.mock("@/features/marketing/google/service", () => ({
 // `@ai-matrx/agents/matrx` kernel, so this is the real fail-closed refusal, not
 // a stand-in for it.
 jest.mock("@/lib/redux/store-singleton", () => ({
-  getStoreSingleton: () => ({ getState: () => ({}) }),
+  // The organization gate (lib/organization/organization-gate.ts) reads
+  // `state.appContext.organization_id` itself, so the store answers in that shape.
+  getStoreSingleton: () => ({
+    getState: () => ({ appContext: { organization_id: activeOrganizationId } }),
+  }),
 }));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => activeOrganizationId,

@@ -151,7 +151,12 @@ jest.mock("@/lib/api/organization-context", () => ({
     return id;
   },
 }));
-jest.mock("@/lib/redux/store-singleton", () => ({ getStoreSingleton: () => null }));
+// The organization gate reads `state.appContext.organization_id` itself.
+jest.mock("@/lib/redux/store-singleton", () => ({
+  getStoreSingleton: () => ({
+    getState: () => ({ appContext: { organization_id: "5dc930e9-bd65-44a1-8369-af773f6e1a5b" } }),
+  }),
+}));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
 }));
