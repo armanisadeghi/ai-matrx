@@ -127,6 +127,10 @@ const EXPECTED: ReadonlyArray<{ name: string; why: string }> = [
     why: "reconciles every closed schema's grants after function and grant DDL",
   },
   {
+    name: "admin_read_follows_rls",
+    why: "gives every table the moment it has row-level security a platform_admin_read policy (our own admin database access — common-docs/policies/our-own-admin-database-access.md), so a table made outside iam.apply_rls never blinds the admin system",
+  },
+  {
     name: "provision_shape_guard",
     why: "blocks unprovisioned entity shapes and records unsettled FK, tenancy, and function-door debts",
   },
