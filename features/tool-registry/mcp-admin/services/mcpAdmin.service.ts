@@ -29,6 +29,8 @@ export async function listServerConfigs(serverId: string): Promise<McpConfigRow[
     .schema("tool").from("mcp_config")
     .select("*")
     .eq("server_id", serverId)
+    // Archived recipes (deleted_at) are gone from the list and never launch.
+    .is("deleted_at", null)
     .order("is_default", { ascending: false })
     .order("label", { ascending: true });
   if (error) throw error;
@@ -161,10 +163,20 @@ export async function updateServerConfig(
   );
 }
 
-export async function deleteServerConfig(configId: string): Promise<void> {
+/**
+ * Archive a launch recipe — never destroy it (tool.mcp_config carries deleted_at; archive,
+ * never delete). Every reader filters deleted_at, so an archived recipe never launches and
+ * a connection that picked it falls back to the server's default recipe.
+ */
+export async function archiveServerConfig(configId: string): Promise<void> {
   await writeOne(
-    sb().schema("tool").from("mcp_config").delete().eq("id", configId).select("id"),
-    { action: "delete", noun: "server config" },
+    sb()
+      .schema("tool").from("mcp_config")
+      .update({ deleted_at: new Date().toISOString(), is_default: false })
+      .eq("id", configId)
+      .is("deleted_at", null)
+      .select("id"),
+    { action: "archive", noun: "server config" },
   );
 }
 

@@ -9,6 +9,7 @@ import type {
   McpServerConfigEntry,
 } from "@/features/agents/types/mcp.types";
 import { runWithSessionRetry } from "@/lib/supabase/authRetry";
+import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 
 // ---------------------------------------------------------------------------
 // Catalog
@@ -48,6 +49,9 @@ export async function connectMcpServer(
     p_config_id: params.configId,
     p_transport: params.transport,
     p_endpoint_override: params.endpointOverride,
+    // A NEW connection is filed in the organization the person is working in —
+    // named explicitly, never chosen by the database (the row stays personal).
+    p_organization_id: requireSelectedOrgId(),
   });
 
   if (error) throw new Error(`Failed to connect MCP server: ${error.message}`);
@@ -67,6 +71,8 @@ export async function fetchMcpServerConfigs(
     .from("mcp_config")
     .select("*")
     .eq("server_id", serverId)
+    // Archived recipes (deleted_at) never launch.
+    .is("deleted_at", null)
     .order("is_default", { ascending: false });
 
   if (error)

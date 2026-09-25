@@ -55,7 +55,7 @@ import {
   formatRelativeAge,
   createServerConfig,
   updateServerConfig,
-  deleteServerConfig,
+  archiveServerConfig,
   countConfigUserConnections,
   type McpServerRow,
   type McpConfigRow,
@@ -971,22 +971,22 @@ function ConfigsTab({
   const onDelete = async (config: McpConfigRow) => {
     const refCount = await countConfigUserConnections(config.id).catch(() => 0);
     const ok = await confirm({
-      title: `Delete config "${config.label}"?`,
+      title: `Archive config "${config.label}"?`,
       description:
         refCount > 0
-          ? `${refCount} user connection${refCount === 1 ? "" : "s"} reference this config. They'll be set to NULL config_id (still valid via the server's default config).`
-          : "No user connections reference this config. Safe to delete.",
-      confirmLabel: "Delete",
+          ? `${refCount} user connection${refCount === 1 ? "" : "s"} picked this config. An archived config never launches, so they fall back to the server's default config.`
+          : "No user connections picked this config. An archived config never launches.",
+      confirmLabel: "Archive",
       variant: "destructive",
     });
     if (!ok) return;
     try {
-      await deleteServerConfig(config.id);
+      await archiveServerConfig(config.id);
       dismissRecordToasts({ type: "mcp_server_config", id: config.id });
       await load();
-      toast.success(`Config ${config.label} deleted`);
+      toast.success(`Config ${config.label} archived`);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Delete failed");
+      toast.error(e instanceof Error ? e.message : "Archive failed");
     }
   };
 

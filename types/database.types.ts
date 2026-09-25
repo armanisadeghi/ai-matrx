@@ -19489,6 +19489,23 @@ export type Database = {
         Args: { p_archive: string; p_organization_id: string; p_scope: string }
         Returns: boolean
       }
+      annotation_create: {
+        Args: {
+          p_anchor?: Json
+          p_body?: string
+          p_color?: string
+          p_id: string
+          p_organization_id: string
+          p_source_id: string
+          p_source_type: string
+          p_title?: string
+        }
+        Returns: {
+          created: boolean
+          document_id: string
+          edge_id: string
+        }[]
+      }
       document_get: {
         Args: { p_document_id: string; p_include_body?: boolean }
         Returns: {
@@ -21858,6 +21875,41 @@ export type Database = {
           p_value_text: string
         }
         Returns: undefined
+      }
+      named_system_context_items: {
+        Args: { p_refs: string[] }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          display_name: string
+          feed_config: Json
+          feed_error: string | null
+          feed_status: string | null
+          feed_type: Database["public"]["Enums"]["context_feed_type"]
+          id: string
+          is_active: boolean
+          item_class: string
+          key: string
+          last_fed_at: string | null
+          metadata: Json
+          organization_id: string
+          sensitivity: Database["public"]["Enums"]["context_sensitivity"]
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+          value: Json | null
+          value_type: Database["public"]["Enums"]["context_value_type"]
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "system_context_item"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       parse_reference_fence: { Args: { p_value_text: string }; Returns: Json }
       provision_scope_dataset: {
@@ -83039,6 +83091,7 @@ export type Database = {
           p_entity_id: string
           p_entity_type: string
           p_scope_ids?: string[]
+          p_system_item_refs?: string[]
           p_user_id: string
         }
         Returns: Json
@@ -84071,6 +84124,7 @@ export type Database = {
         Args: {
           p_config_id?: string
           p_endpoint_override?: string
+          p_organization_id?: string
           p_server_id: string
           p_transport?: Database["public"]["Enums"]["mcp_transport"]
         }
@@ -101677,6 +101731,7 @@ export type Database = {
           config: Json
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           description: string
           id: string
           is_active: boolean
@@ -101694,6 +101749,7 @@ export type Database = {
           config?: Json
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string
           id?: string
           is_active?: boolean
@@ -101711,6 +101767,7 @@ export type Database = {
           config?: Json
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string
           id?: string
           is_active?: boolean
@@ -101748,6 +101805,7 @@ export type Database = {
           config_type: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           env_schema: Json
           id: string
           is_default: boolean
@@ -101771,6 +101829,7 @@ export type Database = {
           config_type?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           env_schema?: Json
           id?: string
           is_default?: boolean
@@ -101794,6 +101853,7 @@ export type Database = {
           config_type?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           env_schema?: Json
           id?: string
           is_default?: boolean
@@ -101828,6 +101888,7 @@ export type Database = {
           color: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           description: string | null
           discovery_ttl_seconds: number
           docs_url: string | null
@@ -101868,6 +101929,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           discovery_ttl_seconds?: number
           docs_url?: string | null
@@ -101908,6 +101970,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           discovery_ttl_seconds?: number
           docs_url?: string | null
@@ -101950,8 +102013,10 @@ export type Database = {
           config_id: string | null
           connected_at: string | null
           created_at: string
+          created_by: string
           credential_item_id: string | null
           custom_fields: Json
+          deleted_at: string | null
           display_name: string
           endpoint_url_override: string | null
           error_count: number
@@ -101966,21 +102031,26 @@ export type Database = {
           oauth_client_id: string | null
           oauth_scopes_granted: string[] | null
           oauth_token_endpoint: string | null
+          organization_id: string | null
           provider: string
           server_id: string | null
           status: Database["public"]["Enums"]["mcp_connection_status"]
           token_expires_at: string | null
           transport_used: Database["public"]["Enums"]["mcp_transport"]
           updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           auth_method?: string | null
           config_id?: string | null
           connected_at?: string | null
           created_at?: string
+          created_by: string
           credential_item_id?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           display_name: string
           endpoint_url_override?: string | null
           error_count?: number
@@ -101995,21 +102065,26 @@ export type Database = {
           oauth_client_id?: string | null
           oauth_scopes_granted?: string[] | null
           oauth_token_endpoint?: string | null
+          organization_id?: string | null
           provider?: string
           server_id?: string | null
           status?: Database["public"]["Enums"]["mcp_connection_status"]
           token_expires_at?: string | null
           transport_used?: Database["public"]["Enums"]["mcp_transport"]
           updated_at?: string
+          updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           auth_method?: string | null
           config_id?: string | null
           connected_at?: string | null
           created_at?: string
+          created_by?: string
           credential_item_id?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           display_name?: string
           endpoint_url_override?: string | null
           error_count?: number
@@ -102024,13 +102099,16 @@ export type Database = {
           oauth_client_id?: string | null
           oauth_scopes_granted?: string[] | null
           oauth_token_endpoint?: string | null
+          organization_id?: string | null
           provider?: string
           server_id?: string | null
           status?: Database["public"]["Enums"]["mcp_connection_status"]
           token_expires_at?: string | null
           transport_used?: Database["public"]["Enums"]["mcp_transport"]
           updated_at?: string
+          updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -102057,6 +102135,7 @@ export type Database = {
           arg_injection: Json
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           id: string
           is_active: boolean
           metadata: Json
@@ -102077,6 +102156,7 @@ export type Database = {
           arg_injection?: Json
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           is_active?: boolean
           metadata?: Json
@@ -102097,6 +102177,7 @@ export type Database = {
           arg_injection?: Json
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           is_active?: boolean
           metadata?: Json
@@ -102488,6 +102569,7 @@ export type Database = {
           config: Json
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           description: string
           id: string
           is_active: boolean

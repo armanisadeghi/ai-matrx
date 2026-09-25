@@ -85,6 +85,15 @@ an agent must never assume one has run.
 
 ## Change Log
 
+- **2026-09-25** — Configs are ARCHIVED, never deleted (`tool.mcp_config.deleted_at`,
+  lane B-TOOL): `archiveServerConfig` stamps `deleted_at` and clears `is_default`; every
+  reader (this page, the agent settings list, aidream `mcp_connections` + matrx-ai
+  `mcp_sync`/`external_mcp`) filters `deleted_at IS NULL`, so an archived recipe never
+  launches and a connection that picked it falls back to the server default.
+  `tool.mcp_user_conn` is owned through `created_by` (user_id retired) and a new
+  connection is filed in the selected organization (`upsert_mcp_connection(…,
+  p_organization_id)`, checked with `iam.has_org_access`).
+
 - **2026-08-29** — Routed Refresh sync to server-wide catalog reconciliation; no-auth MCP servers no longer fail on a missing Vault-backed user connection.
 
 - **2026-08-29** — Missing OAuth-discovered endpoints and stdio probe skips are
