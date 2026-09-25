@@ -30,6 +30,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
 import { ContextCompareView } from "@/features/agents/components/context-preview/ContextCompareView";
+import { createClient } from "@/utils/supabase/client";
+import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
+import type { RecordsDataSource } from "@ai-matrx/records";
 
 type ScopeSystemTier = "overview" | "scope" | "scope_type" | "context_item";
 type ScopeSystemVariation = "a1" | "a2" | "fk_a" | "fk_b" | "d_elements" | "d_attributes";
@@ -409,7 +412,11 @@ export default function ContextInspectorPage() {
           </CardContent>
         </Card>
       )}
-      <CompareOneScope />
+      <CompareOneScope
+        pageOrganizationId={organizationId.trim() || null}
+        pageOrganizationName={selectedOrganization?.name ?? null}
+        organizationName={(id) => organizations.find((o) => o.id === id)?.name ?? null}
+      />
     </div>
   );
 }
@@ -422,7 +429,16 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * here. The server resolves the scope under its own organization and computes
  * the answer for you, the signed-in person.
  */
-function CompareOneScope() {
+function CompareOneScope({
+  pageOrganizationId,
+  pageOrganizationName,
+  organizationName,
+}: {
+  /** This page's own Organization field — used only when the scope cannot name its own. */
+  pageOrganizationId: string | null;
+  pageOrganizationName: string | null;
+  organizationName: (id: string) => string | null;
+}) {
   const [draft, setDraft] = useState("");
   const [agentDraft, setAgentDraft] = useState("");
   const [target, setTarget] = useState<{ scopeId: string; agentId?: string } | null>(null);
@@ -435,6 +451,31 @@ function CompareOneScope() {
       setTarget({ scopeId: fromLink });
     }
   }, []);
+  // 🚨 THE SCOPE NAMES ITS OWN ORGANIZATION (ORG-GATE-AUDIT, VERIFIER-20 #2). The compare used
+  // to ride the SHELL's active organization, so the owner's link opened on "Select an
+  // organization before sending this request" and this page's own Organization field did
+  // nothing. Access is personal: the scope id is asked where it lives (`custom.where_id_opens`,
+  // the one door every object page uses), and THAT organization is the request's. Only when
+  // this database cannot answer does the page's own Organization field stand in — never the
+  // shell picker.
+  const dataSource = useMemo<Pick<RecordsDataSource, "rpc">>(() => {
+    const client = createClient();
+    return {
+      rpc: (fn, args, opts) =>
+        client.schema((opts?.schema ?? "custom") as never).rpc(fn as never, args as never) as never,
+    };
+  }, []);
+  const scopeHome = useObjectOrganization(dataSource, target?.scopeId ?? null);
+  const compareOrganizationId =
+    scopeHome.state === "found"
+      ? scopeHome.organizationId
+      : scopeHome.state === "stand-in" || scopeHome.state === "unavailable"
+        ? pageOrganizationId
+        : null;
+  const compareOrganizationName = compareOrganizationId
+    ? (organizationName(compareOrganizationId) ??
+      (compareOrganizationId === pageOrganizationId ? pageOrganizationName : null))
+    : null;
   const agentOk = !agentDraft.trim() || UUID_RE.test(agentDraft.trim());
   const valid = UUID_RE.test(draft.trim()) && agentOk;
   return (
@@ -488,14 +529,45 @@ function CompareOneScope() {
             .
           </p>
         )}
-        {target && (
-          <div className="flex min-h-[24rem] flex-col rounded-md border border-border">
-            <ContextCompareView
-              key={`${target.scopeId}:${target.agentId ?? ""}`}
-              scopeIds={[target.scopeId]}
-              agentId={target.agentId}
-            />
-          </div>
+        {target && scopeHome.state === "resolving" && (
+          <p className="text-xs text-muted-foreground" data-compare-organization="resolving">
+            Finding which organization this scope lives in…
+          </p>
+        )}
+        {target && scopeHome.state === "not-given" && (
+          <Alert>
+            <AlertDescription>
+              This scope was not found, or it has not been shared with you. Check the id from the
+              scope&apos;s page address.
+            </AlertDescription>
+          </Alert>
+        )}
+        {target && scopeHome.state !== "resolving" && scopeHome.state !== "not-given" && !compareOrganizationId && (
+          <Alert>
+            <AlertDescription>
+              {scopeHome.state === "unavailable" ? `${scopeHome.why} ` : ""}
+              Choose the organization in this page&apos;s Organization field above and the compare
+              runs in it.
+            </AlertDescription>
+          </Alert>
+        )}
+        {target && compareOrganizationId && (
+          <>
+            <p className="text-xs text-muted-foreground" data-compare-organization={compareOrganizationId}>
+              Compared in {compareOrganizationName ?? "the scope's organization"}
+              {scopeHome.state === "found"
+                ? " — the organization this scope lives in."
+                : " — this page's Organization field, because the scope could not name its own."}
+            </p>
+            <div className="flex min-h-[24rem] flex-col rounded-md border border-border">
+              <ContextCompareView
+                key={`${target.scopeId}:${target.agentId ?? ""}:${compareOrganizationId}`}
+                scopeIds={[target.scopeId]}
+                agentId={target.agentId}
+                organizationId={compareOrganizationId}
+              />
+            </div>
+          </>
         )}
       </CardContent>
     </Card>

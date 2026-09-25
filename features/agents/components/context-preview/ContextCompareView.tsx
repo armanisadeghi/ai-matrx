@@ -435,11 +435,14 @@ export function ContextCompareView({
   conversationId,
   agentId,
   scopeIds,
+  organizationId,
 }: {
   conversationId?: string;
   agentId?: string;
   /** Explicit scopes (the admin inspector); otherwise the active selections. */
   scopeIds?: string[];
+  /** The organization the compared scope names — sent as the request's organization. */
+  organizationId?: string | null;
 }) {
   const { status, data, error, refresh } = useContextPreview({
     conversationId,
@@ -447,6 +450,7 @@ export function ContextCompareView({
     enabled: true,
     path: "both",
     scopeIds,
+    organizationId,
   });
   const compare = data?.compare ?? null;
   const diff = useMemo(

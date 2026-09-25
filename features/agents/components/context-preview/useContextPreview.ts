@@ -55,6 +55,13 @@ export function useContextPreview(opts: {
    * own organization.
    */
   scopeIds?: string[];
+  /**
+   * The organization the OBJECT being previewed names (the admin inspector's
+   * scope, read from the scope's own id). Wins over everything: access is
+   * personal, and the object names its organization — the active selection and
+   * the picker are never consulted for it (ORG-GATE-AUDIT, VERIFIER-20 #2).
+   */
+  organizationId?: string | null;
 }): ContextPreviewState {
   const { conversationId, agentId, enabled, path = "old" } = opts;
   const explicitScopeIds = opts.scopeIds;
@@ -84,6 +91,9 @@ export function useContextPreview(opts: {
   // No synchronous setState — safe to call from the effect below; state only
   // changes when the response lands. The manual Refresh button wraps this
   // with an immediate "loading" flip (event handler, so that's allowed).
+  // The object's organization (explicit) wins over a conversation's durable one.
+  const requestOrganizationId =
+    opts.organizationId ?? conversationScope.organizationId ?? null;
   const fetchPreview = useCallback(() => {
     const seq = ++requestSeq.current;
     void dispatch(
@@ -96,8 +106,8 @@ export function useContextPreview(opts: {
           scope_ids: scopeIds,
           ...(path !== "old" ? { path } : {}),
         },
-        scopeOverrides: conversationScope.organizationId
-          ? { organization_id: conversationScope.organizationId }
+        scopeOverrides: requestOrganizationId
+          ? { organization_id: requestOrganizationId }
           : undefined,
       }),
     ).then((result) => {
@@ -124,7 +134,7 @@ export function useContextPreview(opts: {
     agentId,
     scopeIds,
     path,
-    conversationScope.organizationId,
+    requestOrganizationId,
     dispatch,
   ]);
 
