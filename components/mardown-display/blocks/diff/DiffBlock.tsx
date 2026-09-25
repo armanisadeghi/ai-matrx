@@ -7,6 +7,11 @@
  * (added/removed lines highlighted, split or unified). Great for showing edits,
  * refactors, or revisions. Light shell: the diff lib is isolated in DiffCanvas,
  * loaded ONLY via `next/dynamic ssr:false`.
+ *
+ * A plain unified diff (`--- a/x`, `+++ b/x`, `@@ … @@`, `+`/`-` lines) — what
+ * people and models actually write in a ```diff fence — renders as a code
+ * block in the `diff` language: added/removed/hunk lines tinted, syntax
+ * colored, streaming live. It used to fall to "needs a JSON object".
  */
 
 import React, { useMemo, useState } from "react";
@@ -16,6 +21,7 @@ import { toast } from "@/lib/toast";
 
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
+import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 
 interface DiffSpec {
   title?: string;
@@ -66,7 +72,29 @@ function parseDiff(raw: string): DiffSpec | { error: string } {
   };
 }
 
-export const DiffBlock: React.FC<DiffBlockProps> = ({ content = "", isStreamActive = false, className }) => {
+/** A unified diff (not a JSON spec): at least one hunk header or +/- line. */
+export function isUnifiedDiff(raw: string): boolean {
+  const s = raw.trimStart();
+  if (!s || s.startsWith("{") || s.startsWith("[")) return false;
+  return /^(@@ .* @@|\+\+\+ |--- |[+-](?![+-]{2}))/m.test(s);
+}
+
+export const DiffBlock: React.FC<DiffBlockProps> = (props) => {
+  const content = props.content ?? "";
+  if (isUnifiedDiff(content)) {
+    return (
+      <CodeBlock
+        code={content}
+        language="diff"
+        isStreamActive={props.isStreamActive}
+        className={props.className}
+      />
+    );
+  }
+  return <DiffSpecBlock {...props} />;
+};
+
+const DiffSpecBlock: React.FC<DiffBlockProps> = ({ content = "", isStreamActive = false, className }) => {
   const parsed = useMemo(() => (isStreamActive ? null : parseDiff(content)), [content, isStreamActive]);
   const spec = parsed && !("error" in parsed) ? parsed : null;
   const error = parsed && "error" in parsed ? parsed.error : null;
