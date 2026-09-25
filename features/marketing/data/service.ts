@@ -2558,12 +2558,15 @@ export async function confirmDiscoveredAsset(
         },
       },
     );
-    if (input.item.site_id) {
+    const siteId = input.item.site_id;
+    if (siteId) {
+      // An archived brand or site keeps its identity untouched: zero rows there
+      // is "already archived", not a refusal (alreadyDone below).
       await writeOne(
         db
           .from("site")
           .update(identityPatch)
-          .eq("id", input.item.site_id)
+          .eq("id", siteId)
           .is("deleted_at", null)
           .select("id, deleted_at"),
         {
@@ -2574,7 +2577,7 @@ export async function confirmDiscoveredAsset(
               db
                 .from("site")
                 .select("id, deleted_at")
-                .eq("id", input.item.site_id)
+                .eq("id", siteId)
                 .maybeSingle(),
             isDone: (row) => row.deleted_at != null,
           },
