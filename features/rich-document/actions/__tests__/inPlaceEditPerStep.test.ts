@@ -72,3 +72,18 @@ test("a tool-call-only step offers no Edit at all", () => {
   const { ctx } = stepContext("step-3", "");
   expect(edit.visible?.(ctx)).toBe(false);
 });
+
+test("'Open in full-screen editor' on a chat answer opens THE ONE editor expanded — never the old editor", async () => {
+  const { ctx, dispatch } = stepContext("answer-1", "Tokyo gained roughly 81,000 residents.");
+  const fullscreen = getAction("open-fullscreen-editor")!;
+  await fullscreen.run(ctx);
+  const types = dispatch.mock.calls.map(([a]) => (a as { type: string }).type);
+  expect(types).not.toContain("overlay/openOverlay");
+  expect(types.some((t) => /openOverlay/i.test(t))).toBe(false);
+  expect(dispatch).toHaveBeenCalledWith(
+    expect.objectContaining({
+      type: "messages/updateMessageRecord",
+      payload: { conversationId: "conv-1", messageId: "answer-1", patch: { _editingInPlace: "expanded" } },
+    }),
+  );
+});

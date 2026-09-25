@@ -18,6 +18,7 @@ import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import { hydrateMessages, type MessageRecord } from "../../messages/messages.slice";
 import { extractFlatText } from "../../messages/messages.selectors";
 import { saveAnswerEdit, saveMessageDisplayEdit } from "../save-answer-edit.thunk";
+import { chatMessageAdapter } from "@/features/rich-document/actions/sources/chat-message";
 import { projectAnswerText, spliceAnswerText, spliceDisplayEdit } from "../answer-text-splice";
 import { commitInlineContentEdit, flushPendingInlineEdit } from "../commit-inline-edit.thunk";
 import { removeThinkingContent } from "@ai-matrx/print/markdown";
@@ -383,5 +384,51 @@ describe("every display-text editor saves through the one door (old full-screen 
     });
     const [, args] = rpc.mock.calls[0] as [string, { p_new_content: unknown }];
     expect(args.p_new_content).toEqual([{ type: "text", text: "Intro line.  \n\n\n\nKeep 7.25% APR.\n" }]);
+  });
+});
+
+describe("verify-RC-B5 F1: a display-text editor never drops inline reasoning", () => {
+  // Row fcf00f0a, live: the old full-screen editor opened on the display text
+  // (reasoning scrubbed), "roughly"→"nearly" was saved as the stored answer,
+  // and the <thinking> section vanished from the row.
+  const tokyo = [
+    { type: "thinking", text: "Provider reasoning." },
+    {
+      type: "text",
+      text: "<thinking>check the 2025 figure against the TMG press release</thinking>\nTokyo gained roughly 81,000 residents between 2024 and 2025.",
+    },
+  ];
+
+  test("through the adapter WITH its base, the reasoning survives and only the word changes", async () => {
+    const s = store(tokyo);
+    const display = extractFlatText(record(tokyo));
+    expect(display).toBe("Tokyo gained roughly 81,000 residents between 2024 and 2025.");
+    await chatMessageAdapter.edit!({
+      newContent: display.replace("roughly", "nearly"),
+      previousContent: display,
+      source: { type: "chat-message", conversationId: CONVERSATION_ID, messageId: MESSAGE_ID },
+      dispatch: s.dispatch,
+    });
+    const [, args] = rpc.mock.calls[0] as [string, { p_new_content: unknown }];
+    expect(args.p_new_content).toEqual([
+      tokyo[0],
+      {
+        type: "text",
+        text: "<thinking>check the 2025 figure against the TMG press release</thinking>\nTokyo gained nearly 81,000 residents between 2024 and 2025.",
+      },
+    ]);
+  });
+
+  test("through the adapter WITHOUT a base (the old side door), nothing is written", async () => {
+    const s = store(tokyo);
+    const display = extractFlatText(record(tokyo));
+    await expect(
+      chatMessageAdapter.edit!({
+        newContent: display.replace("roughly", "nearly"),
+        source: { type: "chat-message", conversationId: CONVERSATION_ID, messageId: MESSAGE_ID },
+        dispatch: s.dispatch,
+      }),
+    ).rejects.toThrow(/did not say what text it opened on/);
+    expect(rpc).not.toHaveBeenCalled();
   });
 });

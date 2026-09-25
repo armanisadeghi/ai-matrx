@@ -29,9 +29,9 @@
  * `FullScreenMarkdownEditor` directly from `windowRegistry.ts`.
  */
 
-import { useCallback, useRef } from "react";
+import { useCallback } from "react";
 import dynamic from "next/dynamic";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   closeOverlay,
   type FullScreenEditorMode,
@@ -110,10 +110,6 @@ export function FullScreenMarkdownEditorBridge({
   primaryActions,
 }: FullScreenMarkdownEditorBridgeProps) {
   const dispatch = useAppDispatch();
-  const store = useAppStore();
-  // The text the editor opened on (then: last saved). `content` itself follows
-  // every keystroke, so it cannot be the base of a splice.
-  const openedOn = useRef(content);
 
   const handleChange = useCallback(
     (newContent: string) => {
@@ -143,50 +139,27 @@ export function FullScreenMarkdownEditorBridge({
         //    fork-vs-overwrite dialog for "Edit & resubmit").
       if (callbackGroupId) {
           await emitFullScreenEditorSave(callbackGroupId, newContent);
-        } else if (conversationId && messageId) {
-          // 2. Self-handle: persist directly via editMessage. Works for any
-          //    message (user or assistant) — `mode` is no longer the gate.
-          //    Preserve the message's non-text blocks (attachments/chips);
-          //    the editor only edits text.
-          // The editor opened on the message's DISPLAY text: splice only the
-          // changed span into the stored row (RC-B5), never the display text.
-          const { saveMessageDisplayEdit } =
-            await import("@/features/agents/redux/execution-system/message-crud/save-answer-edit.thunk");
-          await saveMessageDisplayEdit(dispatch, store.getState, {
-            conversationId,
-            messageId,
-            previous: openedOn.current,
-            next: newContent,
-          });
-          openedOn.current = newContent;
-          const { toast } = await import("@/lib/toast");
-          toast.success("Message saved");
         } else if (typeof onSave === "function") {
           // 3. In-process callback (direct mount only).
           await onSave(newContent);
         } else {
           // 4. Loud recovery: the editor was opened with no way to save.
           //    A recovery firing here means a callsite wired the editor
-          //    without a save target — surface it, never swallow.
+          //    without a save target — surface it, never swallow. There is
+          //    deliberately NO chat-message self-handle any more (RC-B5): this
+          //    editor opens on display text, and writing that back dropped
+          //    inline reasoning and rewrote blank-line runs. A chat answer is
+          //    edited only by THE ONE editor, in place.
           console.error(
             "[FullScreenMarkdownEditorBridge] save with no target — " +
-              "no callbackGroupId, no conversationId/messageId, no onSave. " +
+              "no callbackGroupId, no onSave. " +
               `instanceId=${instanceId} mode=${String(mode)}`,
           );
           throw new Error("Couldn't save — this editor has no save target");
         }
       dispatch(closeOverlay({ overlayId: "fullScreenEditor", instanceId }));
     },
-    [
-      dispatch,
-      store,
-      instanceId,
-      mode,
-      conversationId,
-      messageId,
-      callbackGroupId,
-      onSave,
-    ],
+    [dispatch, instanceId, mode, callbackGroupId, onSave],
   );
 
   // Multi-outcome footer actions. Each button emits a save event tagged with

@@ -54,7 +54,25 @@ export function chatContext(
     metadata: config.actions.metadata ?? null,
     dispatch: jest.fn() as never,
     getState: (() => ({
-      messages: { byConversationId: {} },
+      // The chat menu renders for a LOADED row (Edit needs its spot on screen).
+      messages: {
+        byConversationId: {
+          "conv-1": {
+            orderedIds: ["msg-2"],
+            byId: {
+              "msg-2": {
+                id: "msg-2",
+                conversationId: "conv-1",
+                role,
+                content: [{ type: "text", text: RICH_MESSAGE }],
+                status: "active",
+                position: 1,
+                metadata: {},
+              },
+            },
+          },
+        },
+      },
       conversations: { byConversationId: {} },
       activeRequests: { byRequestId: {} },
       instanceContext: { byConversationId: {} },

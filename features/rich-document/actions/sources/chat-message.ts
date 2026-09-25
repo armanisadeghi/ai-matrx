@@ -41,15 +41,20 @@ export const chatMessageAdapter: ContentSourceAdapter = {
     const { saveAnswerEdit } = await import(
       "@/features/agents/redux/execution-system/message-crud/save-answer-edit.thunk"
     );
-    // An editor opened on the DISPLAY text (every non-in-place editor) hands
-    // the text it opened on: only the changed span is spliced into the
-    // stored text. Without it, the text is taken as stored bytes.
+    // Every editor reaching a chat answer through this adapter opened on its
+    // DISPLAY text (whitespace-normalized, reasoning scrubbed), so it MUST say
+    // what it opened on: only the changed span is spliced into the stored
+    // text. A caller that does not is refused — writing display text as the
+    // stored answer silently dropped inline reasoning (verify-RC-B5 F1). The
+    // in-place editor, which holds the stored bytes, saves via
+    // `saveAnswerEdit` directly.
+    if (previousContent === undefined) {
+      throw new Error(
+        "This editor did not say what text it opened on, so the answer was not saved (it could drop hidden reasoning). Edit the answer in place instead.",
+      );
+    }
     await dispatch(
-      saveAnswerEdit(
-        previousContent !== undefined
-          ? { conversationId, messageId, displayEdit: { previous: previousContent, next: newContent } }
-          : { conversationId, messageId, newText: newContent },
-      ),
+      saveAnswerEdit({ conversationId, messageId, displayEdit: { previous: previousContent, next: newContent } }),
     ).unwrap();
   },
 };

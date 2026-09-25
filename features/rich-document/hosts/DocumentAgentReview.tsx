@@ -111,6 +111,10 @@ export function DocumentAgentReview({
         ctx,
         source: prepared.source,
         newContent: splice.text,
+        // The proposal was spliced into the text this review opened on (for a
+        // chat answer: its display projection) — the adapter maps the change
+        // onto the stored bytes.
+        previousContent: prepared.content,
       });
       toast.success(definition.applySuccessToast, {
         description: `${splice.changes.length} changed ${splice.changes.length === 1 ? "part" : "parts"} saved; everything else untouched.`,

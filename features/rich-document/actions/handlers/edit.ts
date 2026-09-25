@@ -79,8 +79,9 @@ registerAction({
     // any of them is being edited, so the row's spot exists on screen — and
     // every step then carries its own right-click menu (this same action,
     // targeting that step's row), which is the per-step door.
-    // Structured payloads keep the read-only raw view. The 16-tab full-screen
-    // editor stays one click away ("Open in full-screen editor").
+    // Structured payloads keep the read-only raw view. "Open in full-screen
+    // editor" opens this same editor expanded — no other editor writes a chat
+    // answer.
     const ext = chatExtensions(ctx);
     if (ext && ctx.source.type === "chat-message") {
       const target = ext.editTarget;

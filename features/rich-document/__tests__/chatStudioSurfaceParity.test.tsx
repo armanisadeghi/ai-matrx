@@ -68,6 +68,7 @@ import { RichDocument } from "../RichDocument";
 import { RichDocumentActionProvider } from "../RichDocumentActionProvider";
 import { buildChatMessageActions } from "../chat/chatMessageActions";
 import { getAction } from "../actions/registry";
+import { hydrateMessages } from "@/features/agents/redux/execution-system/messages/messages.slice";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 enableMapSet();
@@ -98,6 +99,31 @@ function makeStore() {
     middleware: (gdm) => gdm({ serializableCheck: false, immutableCheck: false }),
   });
   store.dispatch({ type: "test/seed" });
+  // The chat bar renders for a LOADED row (Edit needs the row's spot on screen).
+  store.dispatch(
+    hydrateMessages({
+      conversationId: "conv-1",
+      messages: [
+        {
+          id: "msg-2",
+          conversationId: "conv-1",
+          agentId: null,
+          role: "assistant",
+          content: [{ type: "text", text: "answer" }],
+          contentHistory: null,
+          userContent: null,
+          position: 1,
+          source: "server",
+          status: "active",
+          isVisibleToModel: true,
+          isVisibleToUser: true,
+          metadata: {},
+          createdAt: "2026-09-25T00:00:00.000Z",
+          deletedAt: null,
+        },
+      ],
+    }),
+  );
   return store;
 }
 

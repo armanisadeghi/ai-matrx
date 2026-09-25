@@ -1,74 +1,16 @@
 /**
- * openAssistantMessageEditor — the ONE way to open the full-screen editor on
- * an assistant message. Used by both the action-bar pencil and the ⋯ menu's
- * "Edit content" so the two paths share a single save contract
- * (`mode: "assistant-message"` → OverlayController dispatches `editMessage`
- * on save; no callback rides Redux).
+ * openStructuredRawViewer — the read-only raw view of a message whose stored
+ * content is a structured (non-text) payload.
  *
- * Structured content (`structuredRaw: true` — the message's stored content is
- * a non-text payload such as a media-block array, and `content` is its
- * pretty-printed JSON) opens as a clearly-labeled READ-ONLY raw view instead:
- * no save target, no save button. Saving the JSON string back through
- * `editMessage`/`mergeEditedText` would wrap it in a text block and corrupt
- * the row — an honest read-only raw view beats an empty editable one (the
- * pre-2026-08-30 behavior, where the editor rendered NOTHING for media-array
- * content and the creator could not see what the agent returned).
- *
- * Kept in its own module (not the action registry) so the action bar can
- * import it without pulling the whole registry into its chunk — the registry
- * is deliberately lazy-loaded behind the ⋯ menu.
+ * The assistant TEXT editor that used to live here (`openAssistantMessageEditor`,
+ * `mode: "assistant-message"` → the old full-screen editor's `editMessage`
+ * self-handle) is gone (RC-B5): it opened on display text and its save dropped
+ * inline reasoning and rewrote blank-line runs. A chat answer is edited only by
+ * THE ONE editor, in place (`InPlaceAnswerEditor`, splice-safe save).
  */
 
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { AppDispatch } from "@/lib/redux/store";
-
-export interface OpenAssistantMessageEditorArgs {
-  content: string;
-  conversationId: string | null;
-  messageId: string | null;
-  metadata?: Record<string, unknown> | null;
-  /**
-   * True when `content` is the pretty-printed JSON of a structured (non-text)
-   * stored payload — opens the read-only raw view. See module doc.
-   */
-  structuredRaw?: boolean;
-}
-
-export function openAssistantMessageEditor(
-  dispatch: AppDispatch,
-  {
-    content,
-    conversationId,
-    messageId,
-    metadata,
-    structuredRaw,
-  }: OpenAssistantMessageEditorArgs,
-): void {
-  if (structuredRaw) {
-    openStructuredRawViewer(dispatch, { content, messageId, metadata });
-    return;
-  }
-  dispatch(
-    openOverlay({
-      overlayId: "fullScreenEditor",
-      instanceId: `assistant-edit-${messageId}`,
-      data: {
-        content,
-        mode: "assistant-message",
-        conversationId: conversationId ?? undefined,
-        messageId: messageId ?? undefined,
-        tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
-        initialTab: "matrx_split",
-        analysisData: (metadata ?? undefined) as
-          | Record<string, unknown>
-          | undefined,
-        title: undefined,
-        showSaveButton: true,
-        showCopyButton: true,
-      },
-    }),
-  );
-}
 
 export interface OpenStructuredRawViewerArgs {
   /** Pretty-printed JSON of the stored payload (extractInspectableText). */
