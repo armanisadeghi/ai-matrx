@@ -1,3 +1,4 @@
+-- chair-step: RC-B6 turns the two output_feedback writers into declared SECURITY DEFINER doors (signed-in grant, as the person, subject must be readable); replaces two existing function bodies, so it is not additive-with-a-knob.
 -- lane: RC-B6
 -- lock: platform
 -- based-on: platform.upsert_output_feedback(text, uuid, text, text, text, text, text, text, text, uuid, uuid) 36acf64907faf8577fe268df1a67ce1540291d4e17f4bb917f50c3fb1e79fdb6

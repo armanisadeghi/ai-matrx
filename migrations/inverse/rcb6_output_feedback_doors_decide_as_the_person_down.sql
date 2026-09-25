@@ -1,4 +1,8 @@
 -- INVERSE of migrations/campaign/rcb6_output_feedback_doors_decide_as_the_person.sql (lane RC-B6).
+-- lane: RC-B6
+-- lock: platform
+-- based-on: platform.upsert_output_feedback(text, uuid, text, text, text, text, text, text, text, uuid, uuid) 39c4ab4818ff8772422f9035c82238f9265336e01e2cdddd546911af93f80d49
+-- based-on: platform.clear_output_feedback(text, uuid) 60d519f0e9ed63d829caa52a57a803942d3457dcd48f4d29fca11dde606407c1
 -- Restores both writers to SECURITY INVOKER with their exact prior bodies, drops the two door
 -- rows and the readability helper. (This re-breaks client feedback writes under the doors-only
 -- policy — that is the state before the file.)
