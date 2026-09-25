@@ -3,6 +3,7 @@
 import { readAllRows } from "@ai-matrx/data/db";
 
 import { supabase } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { toast } from "@/lib/toast";
 import type { Database } from "@/types/database.types";
 import type { SettingSwap } from "@/features/ai-models/server/replace-model-references";
@@ -693,12 +694,15 @@ export const aiModelService = {
     providerId: string,
     cache: ProviderModelsCache,
   ): Promise<void> {
-    const { error } = await supabase
-      .schema("ai")
-      .from("provider")
-      .update({ provider_models_cache: cache })
-      .eq("id", providerId);
-    if (error) throw error;
+    await writeOne(
+      supabase
+        .schema("ai")
+        .from("provider")
+        .update({ provider_models_cache: cache })
+        .eq("id", providerId)
+        .select("id"),
+      { action: "update", noun: "provider" },
+    );
   },
 
   async fetchProviderWithCache(providerId: string): Promise<AiProvider | null> {
@@ -828,12 +832,15 @@ export const aiModelService = {
   },
 
   async deleteProvider(id: string): Promise<void> {
-    const { error } = await supabase
-      .schema("ai")
-      .from("provider")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) throw error;
+    await writeOne(
+      supabase
+        .schema("ai")
+        .from("provider")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .select("id"),
+      { action: "delete", noun: "provider" },
+    );
   },
 
   // ── Endpoint CRUD (ai.endpoint — one row per serving vendor) ──
@@ -881,12 +888,15 @@ export const aiModelService = {
   },
 
   async deleteEndpoint(id: string): Promise<void> {
-    const { error } = await supabase
-      .schema("ai")
-      .from("endpoint")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) throw error;
+    await writeOne(
+      supabase
+        .schema("ai")
+        .from("endpoint")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .select("id"),
+      { action: "delete", noun: "endpoint" },
+    );
   },
 
   // ── API CRUD (ai.api — one row per wire contract / translator) ──
@@ -931,12 +941,15 @@ export const aiModelService = {
   },
 
   async deleteApi(id: string): Promise<void> {
-    const { error } = await supabase
-      .schema("ai")
-      .from("api")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) throw error;
+    await writeOne(
+      supabase
+        .schema("ai")
+        .from("api")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .select("id"),
+      { action: "delete", noun: "API" },
+    );
   },
 
   // ── Offering CRUD (ai.offering — model × endpoint × api, per-offering pricing/overrides) ──
@@ -999,12 +1012,15 @@ export const aiModelService = {
   },
 
   async deleteOffering(id: string): Promise<void> {
-    const { error } = await supabase
-      .schema("ai")
-      .from("offering")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) throw error;
+    await writeOne(
+      supabase
+        .schema("ai")
+        .from("offering")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .select("id"),
+      { action: "delete", noun: "offering" },
+    );
   },
 
   /** Resolved user-facing config for one model (ai.model_config view) —
@@ -1110,12 +1126,15 @@ export const aiModelService = {
   },
 
   async deleteAlias(id: string): Promise<void> {
-    const { error } = await supabase
-      .schema("ai")
-      .from("model_alias")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) throw error;
+    await writeOne(
+      supabase
+        .schema("ai")
+        .from("model_alias")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .select("id"),
+      { action: "delete", noun: "model alias" },
+    );
   },
 
   // ── Setting CRUD (ai.setting — canonical settings vocabulary) ──
@@ -1163,12 +1182,15 @@ export const aiModelService = {
   },
 
   async deleteSetting(id: string): Promise<void> {
-    const { error } = await supabase
-      .schema("ai")
-      .from("setting")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) throw error;
+    await writeOne(
+      supabase
+        .schema("ai")
+        .from("setting")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .select("id"),
+      { action: "delete", noun: "setting" },
+    );
   },
 
   async create(payload: AiModelInsert): Promise<AiModel> {
@@ -1208,12 +1230,15 @@ export const aiModelService = {
   },
 
   async remove(id: string): Promise<void> {
-    const { error } = await supabase
-      .schema("ai")
-      .from("model_definition")
-      .delete()
-      .eq("id", id);
-    if (error) throw error;
+    await writeOne(
+      supabase
+        .schema("ai")
+        .from("model_definition")
+        .delete()
+        .eq("id", id)
+        .select("id"),
+      { action: "delete", noun: "model" },
+    );
   },
 
   async fetchUsage(modelId: string): Promise<ModelUsageResult> {
@@ -1371,11 +1396,14 @@ export const aiModelService = {
     field: keyof Omit<AiModel, "id">,
     value: AiModel[keyof AiModel],
   ): Promise<void> {
-    const { error } = await supabase
-      .schema("ai")
-      .from("model_definition")
-      .update(modelFieldUpdate(field, value))
-      .eq("id", id);
-    if (error) throw error;
+    await writeOne(
+      supabase
+        .schema("ai")
+        .from("model_definition")
+        .update(modelFieldUpdate(field, value))
+        .eq("id", id)
+        .select("id"),
+      { action: "update", noun: "model" },
+    );
   },
 };
