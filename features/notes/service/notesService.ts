@@ -1,5 +1,6 @@
 // features/notes/service/notesService.ts
 
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -890,14 +891,22 @@ export async function renameFolder(
   // onto a name this organization already holds violates the name key, and
   // until 2026-09-18 that error was never read — the folder kept its old name
   // while every note below was rewritten to the new one.
-  const { error: folderError } = await supabase
-    .schema("workbench")
-    .from("note_folders")
-    .update({ name: newName, path: newName })
-    .eq("created_by", userId)
-    .eq("id", folder.id)
-    .eq("organization_id", organizationId)
-    .is("deleted_at", null);
+  // It must also PROVE it landed: a rename RLS refused, or aimed at a folder
+  // archived meanwhile, writes zero rows with no error — and the notes below
+  // would then be rewritten to a name no folder carries. (The folder row
+  // always exists here: notes.folder_id is a foreign key to note_folders.)
+  const { error: folderError } = await tryWriteOne(
+    supabase
+      .schema("workbench")
+      .from("note_folders")
+      .update({ name: newName, path: newName })
+      .eq("created_by", userId)
+      .eq("id", folder.id)
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .select("id"),
+    { action: "rename", noun: "folder" },
+  );
   if (folderError) {
     console.error("Error renaming folder:", folderError);
     throw folderError;

@@ -111,6 +111,7 @@ import {
 } from "../service/notesService";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { recordToast, toast } from "@/lib/toast";
+import { describeWriteFailure } from "@/lib/errors/writeFailure";
 import { getFolderIconAndColor, isDefaultFolder } from "../utils/folderUtils";
 import { CreateFolderDialog } from "./CreateFolderDialog";
 import { RenameFolderDialog } from "./RenameFolderDialog";
@@ -855,8 +856,10 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
         }, newName);
         // Re-fetch notes list to reflect renamed folder_name
         dispatch(fetchNotesList());
-      } catch {
-        // Error handled in service
+      } catch (error) {
+        // The service only logs; the person must see why the rename did not land.
+        const words = describeWriteFailure(error, { action: "rename this folder" });
+        toast.error(words.title, { description: words.description });
       }
     },
     [dispatch, renameFolderTarget, groupedNotes, activeOrgId],
