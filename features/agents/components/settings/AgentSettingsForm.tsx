@@ -27,8 +27,8 @@ import {
   Layers,
 } from "lucide-react";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
-import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
-import { EMPTY_SELECTION } from "@/features/agent-context/components/hierarchy-selection/types";
+import { EngagementPicker } from "@/features/scopes/components/active-context/engagement/EngagementPicker";
+import { EMPTY_ENGAGEMENT_SELECTION } from "@/features/scopes/components/active-context/quick-pick/engine";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { parseAgentCatalogProfile } from "@/features/agents/surface-catalog-profile";
@@ -674,10 +674,10 @@ export function AgentSettingsForm({
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-500/40 via-purple-500/40 to-blue-500/40 opacity-70 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
               <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-pink-500/40 via-purple-500/40 to-blue-500/40 opacity-70 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
               <div className="pt-1">
-                <HierarchyCascade
-                  levels={["organization", "scope", "task"]}
+                <EngagementPicker
+                  rungs={["organization", "task"]}
                   value={{
-                    ...EMPTY_SELECTION,
+                    ...EMPTY_ENGAGEMENT_SELECTION,
                     organizationId: draft.organizationId || null,
                     taskId: draft.taskId || null,
                   }}
@@ -685,7 +685,6 @@ export function AgentSettingsForm({
                     handleUpdate("organizationId", sel.organizationId);
                     handleUpdate("taskId", sel.taskId);
                   }}
-                  layout="vertical"
                 />
               </div>
             </div>

@@ -38,7 +38,7 @@ import {
   useAppHolder,
 } from "@/features/agent-apps/lib/appHolder";
 import { AgentAppImageField } from "@/features/agent-apps/components/inputs/AgentAppImageField";
-import { AgentAppHierarchyCascade } from "@/features/agent-apps/components/inputs/AgentAppHierarchyCascade";
+import { EntityEngagementPicker } from "@/features/scopes/components/active-context/engagement/EntityEngagementPicker";
 import { ShellPicker } from "@/features/agent-apps/components/builder/ShellPicker";
 import { ShellConfigPanel } from "@/features/agent-apps/components/builder/ShellConfigPanel";
 import { SlotOverrideEditor } from "@/features/agent-apps/components/builder/SlotOverrideEditor";
@@ -610,9 +610,14 @@ export function AgentAppSettingsContent({
               <EmbedSnippet slug={app.slug} />
             </div>
 
-            <div className="border-t border-border/60 pt-4">
-              <AgentAppHierarchyCascade
-                appId={app.id}
+            <div className="border-t border-border/60 pt-4 space-y-1.5">
+              <div className="text-sm font-medium text-foreground">
+                Organization, project, task and scope tags
+              </div>
+              <EntityEngagementPicker
+                // Agent apps live in app.definition (registry token `app`).
+                entityType="app"
+                entityId={app.id}
                 organizationId={app.organization_id}
                 projectId={app.project_id}
                 taskId={app.task_id}

@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
-import { EMPTY_SELECTION } from "@/features/agent-context/components/hierarchy-selection/types";
+import { EngagementPicker } from "@/features/scopes/components/active-context/engagement/EngagementPicker";
+import { EMPTY_ENGAGEMENT_SELECTION } from "@/features/scopes/components/active-context/quick-pick/engine";
 
 interface MobileProjectSelectorProps {
   selectedProjectId: string | null;
@@ -25,16 +25,15 @@ export default function MobileProjectSelector({
       </div>
 
       <div className="flex-1 overflow-y-auto py-4 px-1">
-        <HierarchyCascade
-          levels={["organization", "scope", "project"]}
+        <EngagementPicker
+          rungs={["organization", "project"]}
           value={{
-            ...EMPTY_SELECTION,
+            ...EMPTY_ENGAGEMENT_SELECTION,
             projectId: selectedProjectId,
           }}
           onChange={(sel) => {
             onSelectProject(sel.projectId);
           }}
-          layout="vertical"
         />
       </div>
     </div>

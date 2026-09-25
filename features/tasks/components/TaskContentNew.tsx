@@ -34,9 +34,9 @@ import {
   createProjectThunk,
   toggleTaskCompleteThunk,
 } from "@/features/tasks/redux/thunks";
-import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
-import { useHierarchyReduxBridge } from "@/features/agent-context/components/hierarchy-selection/useReduxBridge";
-import { EMPTY_SELECTION } from "@/features/agent-context/components/hierarchy-selection/types";
+import { EngagementPicker } from "@/features/scopes/components/active-context/engagement/EngagementPicker";
+import { useActiveEngagementSelection } from "@/features/scopes/components/active-context/engagement/useActiveEngagementSelection";
+import { EMPTY_ENGAGEMENT_SELECTION } from "@/features/scopes/components/active-context/quick-pick/engine";
 import CompactTaskItem from "./CompactTaskItem";
 import TaskDetailsPanel from "./TaskDetailsPanel";
 import AllTasksView from "./AllTasksView";
@@ -79,7 +79,8 @@ export default function TaskContentNew() {
   const orgId = useAppSelector(selectOrganizationId);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
 
-  const { value: ctxValue, onChange: ctxOnChange } = useHierarchyReduxBridge();
+  const { value: ctxValue, onChange: ctxOnChange } =
+    useActiveEngagementSelection();
 
   const appProjectId = useAppSelector(selectProjectId);
   const appProjectName = useAppSelector(selectProjectName);
@@ -196,8 +197,8 @@ export default function TaskContentNew() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-textured">
       <div className="shrink-0 px-4 py-2 border-b border-border bg-card">
-        <HierarchyCascade
-          levels={["organization", "scope", "project"]}
+        <EngagementPicker
+          rungs={["organization", "scope", "project"]}
           value={ctxValue}
           onChange={ctxOnChange}
           requireProject
@@ -362,10 +363,10 @@ export default function TaskContentNew() {
 
                     <div className="flex items-center gap-2">
                       {shouldShowProjectSelector && projects.length > 0 ? (
-                        <HierarchyCascade
-                          levels={["organization", "scope", "project"]}
+                        <EngagementPicker
+                          rungs={["organization", "project"]}
                           value={{
-                            ...EMPTY_SELECTION,
+                            ...EMPTY_ENGAGEMENT_SELECTION,
                             projectId: selectedProjectForTask,
                           }}
                           onChange={(sel) => {

@@ -26,8 +26,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectProjects } from "@/features/tasks/redux/selectors";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { createSubtaskThunk } from "@/features/tasks/redux/thunks";
-import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
-import { EMPTY_SELECTION } from "@/features/agent-context/components/hierarchy-selection/types";
+import { EngagementPicker } from "@/features/scopes/components/active-context/engagement/EngagementPicker";
+import { EMPTY_ENGAGEMENT_SELECTION } from "@/features/scopes/components/active-context/quick-pick/engine";
 import { toast } from "@/lib/toast";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import type { TaskItemType } from "@/components/mardown-display/blocks/tasks/TaskChecklist";
@@ -359,16 +359,15 @@ export default function ImportTasksModal({
                 )}
 
                 {projectSelection === "existing" && (
-                  <HierarchyCascade
-                    levels={["organization", "scope", "project"]}
+                  <EngagementPicker
+                    rungs={["organization", "project"]}
                     value={{
-                      ...EMPTY_SELECTION,
+                      ...EMPTY_ENGAGEMENT_SELECTION,
                       projectId: selectedProjectId,
                     }}
                     onChange={(sel) => {
                       if (sel.projectId) setSelectedProjectId(sel.projectId);
                     }}
-                    layout="vertical"
                   />
                 )}
               </div>

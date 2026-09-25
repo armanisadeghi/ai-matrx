@@ -43,7 +43,7 @@ endpoint map). **State** — feature-local Zustand (`state/topicStore.ts` via
   AI-proposed topic, editable keywords, and quota/settings, then use `researchStartDestination`
   only after the explicit Start Research action. The originating feature may link the returned
   topic, but it must not generate a Document or treat that topic as completed research.
-- **New-topic project selection uses `HierarchyCascade` + `useHierarchyReduxBridge`.** Organization
+- **New-topic project selection uses the canonical `EngagementPicker` (organization → project, scopes as tags) + `useActiveEngagementSelection`** (both under `features/scopes/components/active-context/engagement/`; they replaced `HierarchyCascade` + `useHierarchyReduxBridge` on 2026-09-25). Organization
   is explicit before the filtered project list; selecting it updates the app-wide active
   organization and clears any project chosen under the previous organization. Never pass a hidden
   active-org filter into the flat `ProjectPicker` on this intake.

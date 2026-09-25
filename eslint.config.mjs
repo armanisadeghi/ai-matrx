@@ -1297,8 +1297,9 @@ const scopesChokepointSyntaxRestrictions = [
 // Modeled on the scopesService chokepoint above: the selector bans IMPORTING the
 // write action creators from the slice; the active-context allowlist override at
 // the bottom of the file re-enables them for Surface A. A legitimate Surface-A
-// writer that lives OUTSIDE active-context/** (e.g. the canonical
-// useHierarchyReduxBridge, the logout-reset watcher) must carry an explicit
+// writer that lives OUTSIDE active-context/** (e.g. the logout-reset watcher;
+// the engagement pickers' Surface-A adapter, useActiveEngagementSelection,
+// lives inside it) must carry an explicit
 // `// eslint-disable-next-line no-restricted-syntax` WITH a one-line justification,
 // so every exception is visible and reviewed. The selector reports on the whole
 // ImportDeclaration, so the disable comment goes directly above the `import` line.

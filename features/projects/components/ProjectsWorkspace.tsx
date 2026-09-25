@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
+import { EngagementPicker } from "@/features/scopes/components/active-context/engagement/EngagementPicker";
 import {
-  EMPTY_SELECTION,
-  type HierarchySelection,
-} from "@/features/agent-context/components/hierarchy-selection/types";
+  EMPTY_ENGAGEMENT_SELECTION,
+  type EngagementSelection,
+} from "@/features/scopes/components/active-context/quick-pick/engine";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { FolderKanban } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -29,7 +29,7 @@ function CompactProjectItem({
 
 export function ProjectsWorkspace() {
   const [selection, setSelection] =
-    useState<HierarchySelection>(EMPTY_SELECTION);
+    useState<EngagementSelection>(EMPTY_ENGAGEMENT_SELECTION);
   const { flatProjects } = useNavTree();
 
   const activeProjects = selection.organizationId
@@ -39,11 +39,10 @@ export function ProjectsWorkspace() {
   return (
     <div className="flex flex-col min-h-0 h-full bg-card">
       <div className="px-2 py-2 border-b shrink-0 bg-muted/10">
-        <HierarchyCascade
-          levels={["organization"]}
+        <EngagementPicker
+          rungs={["organization"]}
           value={selection}
           onChange={setSelection}
-          layout="vertical"
         />
       </div>
 

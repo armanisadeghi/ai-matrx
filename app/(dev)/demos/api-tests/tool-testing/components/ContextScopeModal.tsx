@@ -14,11 +14,11 @@ import {
   CredenzaClose,
 } from "@/components/ui/credenza-modal/credenza";
 import { Settings2, X } from "lucide-react";
-import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
+import { EngagementPicker } from "@/features/scopes/components/active-context/engagement/EngagementPicker";
 import {
-  EMPTY_SELECTION,
-  type HierarchySelection,
-} from "@/features/agent-context/components/hierarchy-selection/types";
+  EMPTY_ENGAGEMENT_SELECTION,
+  type EngagementSelection,
+} from "@/features/scopes/components/active-context/quick-pick/engine";
 
 interface ScopeOverride {
   organization_id?: string;
@@ -37,8 +37,8 @@ export function ContextScopeModal({
 }: ContextScopeModalProps) {
   const [open, setOpen] = useState(false);
 
-  const [draft, setDraft] = useState<HierarchySelection>({
-    ...EMPTY_SELECTION,
+  const [draft, setDraft] = useState<EngagementSelection>({
+    ...EMPTY_ENGAGEMENT_SELECTION,
     organizationId: scopeOverride.organization_id ?? null,
     projectId: scopeOverride.project_id ?? null,
     taskId: scopeOverride.task_id ?? null,
@@ -47,7 +47,7 @@ export function ContextScopeModal({
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       setDraft({
-        ...EMPTY_SELECTION,
+        ...EMPTY_ENGAGEMENT_SELECTION,
         organizationId: scopeOverride.organization_id ?? null,
         projectId: scopeOverride.project_id ?? null,
         taskId: scopeOverride.task_id ?? null,
@@ -72,7 +72,7 @@ export function ContextScopeModal({
   };
 
   const handleClear = () => {
-    setDraft(EMPTY_SELECTION);
+    setDraft(EMPTY_ENGAGEMENT_SELECTION);
     onScopeChange({});
     setOpen(false);
   };
@@ -98,7 +98,7 @@ export function ContextScopeModal({
         </Button>
       </CredenzaTrigger>
 
-      <CredenzaContent className="sm:max-w-md">
+      <CredenzaContent className="sm:max-w-2xl">
         <CredenzaHeader>
           <CredenzaTitle>Test Context Scope</CredenzaTitle>
         </CredenzaHeader>
@@ -109,11 +109,11 @@ export function ContextScopeModal({
             data is fetched live using your authenticated session.
           </p>
 
-          <HierarchyCascade
-            levels={["organization", "scope", "project", "task"]}
+          <EngagementPicker
+            presentation="inline"
+            rungs={["organization", "project", "task"]}
             value={draft}
             onChange={setDraft}
-            layout="vertical"
           />
 
           {activeScopeCount > 0 && (

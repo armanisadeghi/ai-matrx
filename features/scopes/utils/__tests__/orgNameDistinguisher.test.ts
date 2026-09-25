@@ -51,8 +51,11 @@ const read = (rel: string) => readFileSync(join(ROOT, rel), "utf8");
 // through `distinguisher`, which `OrganizationPickerPanel` passes as the slug.
 const ORGANIZATION_LISTS = [
   "features/secrets/components/VaultWorkspace.tsx",
-  "features/agent-shortcuts/components/ShortcutScopePicker.tsx",
-  "features/agent-context/components/hierarchy-selection/useHierarchySelection.ts",
+  // The canonical scope selection family (Miller Columns, DrillDeck, the
+  // engagement and binding-target pickers) draws every organization row from
+  // the engine's org node. It replaced ShortcutScopePicker and the hierarchy
+  // cascade (lane HIERARCHY-CASCADE, 2026-09-25).
+  "features/scopes/components/active-context/quick-pick/engine.ts",
   "features/marketing/components/settings/MoveSiteOrganizationCard.tsx",
   "features/rag/components/library/LibraryPublishPanel.tsx",
 ];
@@ -66,8 +69,15 @@ describe("every organization list tells a shared name apart", () => {
     expect(read("features/organizations/components/OrganizationPickerPanel.tsx")).toMatch(/distinguisher:\s*org\.slug/);
   });
 
-  it("no cmdk item in the hierarchy cascade takes a name alone as its identity", () => {
-    const cascade = read("features/agent-context/components/hierarchy-selection/HierarchyCascade.tsx");
-    expect(cascade).not.toMatch(/<CommandItem[^>]*\bvalue=\{\s*opt\.name\s*\}/s);
+  it("Miller Columns and DrillDeck hand the org node its whole list, and draw the hint", () => {
+    for (const rel of [
+      "features/scopes/components/active-context/miller-columns/MillerColumns.tsx",
+      "features/scopes/components/active-context/drill-deck/DrillDeck.tsx",
+    ]) {
+      const src = read(rel);
+      expect(src).toMatch(/orgNodeOf\(org, u\.orgs\)/);
+      expect(src).not.toMatch(/orgNodeOf\(org\)/);
+      expect(src).toMatch(/<NodeLabel node=/);
+    }
   });
 });

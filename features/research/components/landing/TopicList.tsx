@@ -19,8 +19,8 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-service";
 import { useHierarchyFilter } from "@/components/hierarchy-filter/useHierarchyFilter";
-import { HierarchyPills } from "@/features/agent-context/components/hierarchy-selection/HierarchyPills";
-import { EMPTY_SELECTION } from "@/features/agent-context/components/hierarchy-selection/types";
+import { EngagementPicker } from "@/features/scopes/components/active-context/engagement/EngagementPicker";
+import { EMPTY_ENGAGEMENT_SELECTION } from "@/features/scopes/components/active-context/quick-pick/engine";
 import {
   useAllTopics,
   useTopicsForProject,
@@ -494,10 +494,11 @@ export default function TopicList() {
         <div className="mx-auto w-full max-w-[1800px] px-4 py-3 sm:px-6 lg:px-8 xl:px-12">
           <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
             <div className="min-w-0">
-              <HierarchyPills
-                levels={["organization", "scope", "project", "task"]}
+              <EngagementPicker
+                rungs={["organization", "project"]}
+                allowCreate={false}
                 value={{
-                  ...EMPTY_SELECTION,
+                  ...EMPTY_ENGAGEMENT_SELECTION,
                   organizationId: filter.selectedOrgId,
                   projectId: filter.selectedProjectId,
                 }}

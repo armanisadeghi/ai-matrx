@@ -20,8 +20,8 @@ import { Button } from "@/components/ui/button";
 import { Search, Inbox, FolderKanban, Loader2 } from "lucide-react";
 import CompactTaskItem from "@/features/tasks/components/CompactTaskItem";
 import TaskDetailsPanel from "@/features/tasks/components/TaskDetailsPanel";
-import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
-import { EMPTY_SELECTION } from "@/features/agent-context/components/hierarchy-selection/types";
+import { EngagementPicker } from "@/features/scopes/components/active-context/engagement/EngagementPicker";
+import { EMPTY_ENGAGEMENT_SELECTION } from "@/features/scopes/components/active-context/quick-pick/engine";
 import {
   selectFilteredTasks,
   UNASSIGNED_PROJECT_ID,
@@ -191,10 +191,10 @@ export function QuickTasksSidebar() {
   return (
     <div className="flex flex-col min-h-0 h-full bg-card">
       <div className="px-2 py-2 border-b shrink-0 bg-muted/10">
-        <HierarchyCascade
-          levels={["organization", "scope", "project", "task"]}
+        <EngagementPicker
+          rungs={["organization", "project", "task"]}
           value={{
-            ...EMPTY_SELECTION,
+            ...EMPTY_ENGAGEMENT_SELECTION,
             organizationId: selectedOrgId,
             projectId: selectedProjectId,
             taskId: selectedTaskId,
@@ -209,7 +209,6 @@ export function QuickTasksSidebar() {
             if (sel.taskId !== selectedTaskId)
               dispatch(setQuickTasksSelectedTaskId(sel.taskId));
           }}
-          layout="vertical"
         />
       </div>
 

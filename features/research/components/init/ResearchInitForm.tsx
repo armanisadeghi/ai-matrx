@@ -44,9 +44,9 @@ import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
-import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
-import { useHierarchyReduxBridge } from "@/features/agent-context/components/hierarchy-selection/useReduxBridge";
-import type { HierarchySelection } from "@/features/agent-context/components/hierarchy-selection/types";
+import { EngagementPicker } from "@/features/scopes/components/active-context/engagement/EngagementPicker";
+import { useActiveEngagementSelection } from "@/features/scopes/components/active-context/engagement/useActiveEngagementSelection";
+import type { EngagementSelection } from "@/features/scopes/components/active-context/quick-pick/engine";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { TemplatePicker } from "./TemplatePicker";
 import { AiReviewQuotaDialog } from "./AiReviewQuotaDialog";
@@ -1160,7 +1160,7 @@ export default function ResearchInitForm() {
   const api = useResearchApi();
   const dispatch = useAppDispatch();
   const { value: activeHierarchy, onChange: updateActiveHierarchy } =
-    useHierarchyReduxBridge();
+    useActiveEngagementSelection();
   // Research creation requires an explicit active organization. The hierarchy
   // bridge is a Surface-A writer, so changing the organization in this form
   // updates the app-wide active organization and clears stale descendants.
@@ -1313,7 +1313,7 @@ export default function ResearchInitForm() {
     });
   };
 
-  const hierarchyValue: HierarchySelection = {
+  const hierarchyValue: EngagementSelection = {
     ...activeHierarchy,
     projectId: selectedProjectId,
     projectName: selectedProjectName,
@@ -1321,7 +1321,7 @@ export default function ResearchInitForm() {
     taskName: null,
   };
 
-  const handleHierarchyChange = (next: HierarchySelection) => {
+  const handleHierarchyChange = (next: EngagementSelection) => {
     const organizationChanged =
       next.organizationId !== activeHierarchy.organizationId;
     const projectChanged = next.projectId !== selectedProjectId;
@@ -2467,13 +2467,10 @@ export default function ResearchInitForm() {
                       Optionally link this topic to a project.
                     </p>
                   </div>
-                  <HierarchyCascade
-                    levels={["organization", "scope", "project"]}
+                  <EngagementPicker
+                    rungs={["organization", "scope", "project"]}
                     value={hierarchyValue}
                     onChange={handleHierarchyChange}
-                    layout="vertical"
-                    minRows={2}
-                    className="max-w-md"
                   />
                 </div>
               </div>
@@ -2517,13 +2514,11 @@ export default function ResearchInitForm() {
                 </p>
               </div>
 
-              <HierarchyCascade
-                levels={["organization", "scope", "project"]}
+              <EngagementPicker
+                presentation="inline"
+                rungs={["organization", "scope", "project"]}
                 value={hierarchyValue}
                 onChange={handleHierarchyChange}
-                layout="vertical"
-                minRows={2}
-                className="max-w-md"
               />
             </div>
           </div>

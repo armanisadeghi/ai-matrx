@@ -40,6 +40,16 @@ variables-vs-Context-Policies rules and the teardown plan were centralized into 
 
 ## Change Log
 
+- 2026-09-25 — **The hierarchy-selection family is gone** (`components/hierarchy-selection/`:
+  `HierarchyCascade`, `HierarchyPills`, `HierarchyTree`, `useHierarchySelection`,
+  `useReduxBridge`, `types`). Every caller now uses the canonical scope selection family —
+  `features/scopes/components/active-context/engagement/EngagementPicker` (organization → project
+  → task, scopes as tags; Miller Columns `rungs="engagements"`), `EntityEngagementPicker` (a
+  record's FKs + `useEntityScopes` tags) and `useActiveEngagementSelection` (Surface A). A scope
+  tag no longer filters the project list (that filter read `scopeAssignmentsSlice`). The
+  shortcut rung picker moved to `binding-target/BindingTargetPicker`. `hierarchyService.createTask`
+  files the task under the organization it is handed (the project's), not the active one.
+  Lane HIERARCHY-CASCADE.
 
 - 2026-09-17 — **A refused project or task create now REACHES the person.** `createProjectThunk` / `createTaskThunk` resolve the organization through `ensureOrgId`, which stopped falling back to the personal workspace and started THROWING on 2026-09-17. A rejected thunk on its own is a dead Create button, so both writes go through `withOrganizationRefusalShown` (`lib/organizations/organizationRefusalToast.ts`): the person is told the project/task was not created and where to pick an organization, and the throw still propagates so no surface shows a record that was never written. Guard: `pnpm check:org-refusal-honesty` (+ `:self-test`).
 

@@ -6,13 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
-import { HierarchyTree } from "@/features/agent-context/components/hierarchy-selection/HierarchyTree";
-import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
-import { HierarchyPills } from "@/features/agent-context/components/hierarchy-selection/HierarchyPills";
+import { EngagementPicker } from "@/features/scopes/components/active-context/engagement/EngagementPicker";
+import { BindingTargetPicker } from "@/features/scopes/components/active-context/binding-target/BindingTargetPicker";
 import {
-  EMPTY_SELECTION,
-  type HierarchySelection,
-} from "@/features/agent-context/components/hierarchy-selection/types";
+  EMPTY_ENGAGEMENT_SELECTION,
+  type EngagementSelection,
+} from "@/features/scopes/components/active-context/quick-pick/engine";
 
 // ─── Shared debug widget ──────────────────────────────────────────────────
 
@@ -21,11 +20,9 @@ function SelectionDebug({
   value,
 }: {
   label: string;
-  value: HierarchySelection;
+  value: EngagementSelection;
 }) {
-  const scopeIds = Object.values(value.scopeSelections ?? {}).filter(
-    (v): v is string => !!v,
-  );
+  const scopeIds = value.scopeIds;
 
   const isEmpty =
     !value.organizationId &&
@@ -106,142 +103,88 @@ function SelectionDebug({
 
 // ─── Page ─────────────────────────────────────────────────────────────────
 
+type TargetRung = "global" | "user" | "organization" | "project" | "task";
+
 export default function HierarchySelectionDemoPage() {
-  const [treeVal, setTreeVal] = useState<HierarchySelection>(EMPTY_SELECTION);
-  const [cascadeHVal, setCascadeHVal] =
-    useState<HierarchySelection>(EMPTY_SELECTION);
-  const [cascadeVVal, setCascadeVVal] =
-    useState<HierarchySelection>(EMPTY_SELECTION);
-  const [pillsVal, setPillsVal] = useState<HierarchySelection>(EMPTY_SELECTION);
+  const [inlineVal, setInlineVal] = useState<EngagementSelection>(
+    EMPTY_ENGAGEMENT_SELECTION,
+  );
+  const [fieldVal, setFieldVal] = useState<EngagementSelection>(
+    EMPTY_ENGAGEMENT_SELECTION,
+  );
+  const [target, setTarget] = useState<{ rung: TargetRung; id?: string }>({
+    rung: "user",
+  });
 
   return (
     <div className="p-6 max-w-[1200px] mx-auto space-y-8">
       <div>
         <h1 className="text-xl font-bold">Hierarchy Selection System</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Variants of the org / scope / project / task picker. All share one
-          data hook backed by a single{" "}
-          <code className="text-[11px] bg-muted px-1 rounded">
-            get_user_full_context
-          </code>{" "}
-          RPC call cached in Redux. Scopes are MULTI-SELECT — any number of
-          scopes across any types (checkbox semantics, never radio).
+          The canonical scope selection family in its two host modes:
+          organization → project → task with scopes as tags (Miller Columns,
+          engagement rungs), and one binding target of any rung (DrillDeck,
+          single node). Scopes are MULTI-SELECT tags — any number, any type.
         </p>
       </div>
 
       <Separator />
 
-      <section>
+      <section className="grid grid-cols-1 gap-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              EngagementPicker
+              <Badge variant="secondary" className="text-[9px] h-4">
+                inline
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <EngagementPicker
+              presentation="inline"
+              value={inlineVal}
+              onChange={setInlineVal}
+            />
+            <SelectionDebug label="inline" value={inlineVal} />
+          </CardContent>
+        </Card>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Tree */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                HierarchyTree
+                EngagementPicker
                 <Badge variant="secondary" className="text-[9px] h-4">
-                  sidebar / explorer
+                  field
                 </Badge>
               </CardTitle>
-              <p className="text-[10px] text-muted-foreground">
-                Expandable tree with search. Best for full-page sidebars.
-              </p>
             </CardHeader>
             <CardContent>
-              <div className="h-[280px] border border-border rounded-lg overflow-hidden">
-                <HierarchyTree
-                  levels={["organization", "scope", "project", "task"]}
-                  value={treeVal}
-                  onChange={setTreeVal}
-                />
-              </div>
-              <SelectionDebug label="tree" value={treeVal} />
+              <EngagementPicker value={fieldVal} onChange={setFieldVal} />
+              <SelectionDebug label="field" value={fieldVal} />
             </CardContent>
           </Card>
 
-          {/* Cascade horizontal */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                HierarchyCascade
+                BindingTargetPicker
                 <Badge variant="secondary" className="text-[9px] h-4">
-                  horizontal
+                  single node
                 </Badge>
               </CardTitle>
-              <p className="text-[10px] text-muted-foreground">
-                Cascading dependent dropdowns. Best for top-of-page context
-                bars.
-              </p>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-3 border border-border rounded-lg bg-card">
-                <HierarchyCascade
-                  levels={["organization", "scope", "project"]}
-                  value={cascadeHVal}
-                  onChange={setCascadeHVal}
-                  layout="horizontal"
-                />
-              </div>
-              <SelectionDebug label="cascade h" value={cascadeHVal} />
-            </CardContent>
-          </Card>
-
-          {/* Cascade vertical */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                HierarchyCascade
-                <Badge variant="secondary" className="text-[9px] h-4">
-                  vertical
-                </Badge>
-              </CardTitle>
-              <p className="text-[10px] text-muted-foreground">
-                Stacked dropdowns. Best for narrow sidebars and settings panels.
+            <CardContent>
+              <BindingTargetPicker<TargetRung>
+                scope={target.rung}
+                scopeId={target.id}
+                onScopeChange={(rung, id) => setTarget({ rung, id })}
+              />
+              <p className="mt-2 text-[10px] font-mono text-muted-foreground">
+                {target.rung}
+                {target.id ? ` · ${target.id}` : ""}
               </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-3 border border-border rounded-lg bg-card w-64">
-                <HierarchyCascade
-                  levels={["organization", "scope", "project", "task"]}
-                  value={cascadeVVal}
-                  onChange={setCascadeVVal}
-                  layout="vertical"
-                />
-              </div>
-              <SelectionDebug label="cascade v" value={cascadeVVal} />
-            </CardContent>
-          </Card>
-
-          {/* Pills */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                HierarchyPills
-                <Badge variant="secondary" className="text-[9px] h-4">
-                  filter pills
-                </Badge>
-              </CardTitle>
-              <p className="text-[10px] text-muted-foreground">
-                Compact pill filters. Best for list pages, tables, and filter
-                bars.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-3 border border-border rounded-lg bg-card">
-                <HierarchyPills
-                  levels={["organization", "scope", "project"]}
-                  value={pillsVal}
-                  onChange={setPillsVal}
-                />
-              </div>
-              <div className="p-3 border border-border rounded-lg bg-card">
-                <HierarchyPills
-                  levels={["organization", "scope", "project", "task"]}
-                  value={pillsVal}
-                  onChange={setPillsVal}
-                  size="md"
-                />
-              </div>
-              <SelectionDebug label="pills" value={pillsVal} />
             </CardContent>
           </Card>
         </div>
