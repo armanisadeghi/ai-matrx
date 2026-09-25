@@ -71,7 +71,7 @@ import {
   AGENT_SCOPES,
   type AgentScope,
 } from "@/features/agent-shortcuts/constants";
-import { ShortcutScopePicker } from "@/features/agent-shortcuts/components/ShortcutScopePicker";
+import { BindingTargetPicker } from "@/features/scopes/components/active-context/binding-target/BindingTargetPicker";
 import { CategorySelect } from "@/features/agent-shortcuts/components/CategorySelect";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
 import { useAgentShortcutCrud } from "@/features/agent-shortcuts/hooks/useAgentShortcutCrud";
@@ -1044,7 +1044,7 @@ function BindingEditorDialog({
           )}
 
           {/* Scope tier */}
-          <ShortcutScopePicker
+          <BindingTargetPicker
             scope={scope}
             scopeId={scopeId}
             onScopeChange={(s, id) => {

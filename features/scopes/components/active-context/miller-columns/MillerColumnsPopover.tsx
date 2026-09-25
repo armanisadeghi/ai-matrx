@@ -11,7 +11,12 @@ import {
 import { ContextSheet } from "@/features/scopes/components/context-assignment/ContextSheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { MillerColumns, type MillerColumnsProps } from "./MillerColumns";
+import {
+  MillerColumns,
+  MillerColumnsCore,
+  type MillerColumnsProps,
+} from "./MillerColumns";
+import type { Universe } from "../quick-pick/engine";
 
 export interface MillerColumnsPopoverProps extends MillerColumnsProps {
   trigger?: React.ReactNode;
@@ -19,6 +24,11 @@ export interface MillerColumnsPopoverProps extends MillerColumnsProps {
   onOpenChange?: (open: boolean) => void;
   align?: "start" | "center" | "end";
   contentClassName?: string;
+  /** A host that already owns the universe (its engine reads it) passes it,
+   *  so the popover shows the same data it writes against. */
+  universe?: Universe;
+  /** Mobile sheet title. */
+  sheetTitle?: string;
 }
 
 /**
@@ -33,6 +43,8 @@ export function MillerColumnsPopover({
   contentClassName,
   className,
   variant = "condensed",
+  universe,
+  sheetTitle = "Select context",
   ...pickerProps
 }: MillerColumnsPopoverProps) {
   const isMobile = useIsMobile();
@@ -48,22 +60,30 @@ export function MillerColumnsPopover({
       Select context
     </Button>
   );
-  const picker = open ? (
+  const pickerClassName = cn(
+    "h-[300px] w-[min(760px,calc(100vw-2rem))] max-w-full rounded-none border-0",
+    className,
+  );
+  const picker = !open ? null : universe ? (
+    <MillerColumnsCore
+      {...pickerProps}
+      universe={universe}
+      variant={variant}
+      className={pickerClassName}
+    />
+  ) : (
     <MillerColumns
       {...pickerProps}
       variant={variant}
-      className={cn(
-        "h-[300px] w-[min(760px,calc(100vw-2rem))] max-w-full rounded-none border-0",
-        className,
-      )}
+      className={pickerClassName}
     />
-  ) : null;
+  );
 
   if (isMobile) {
     return (
       <>
         <span onClick={() => setOpen(true)}>{triggerNode}</span>
-        <ContextSheet open={open} onOpenChange={setOpen} title="Select context">
+        <ContextSheet open={open} onOpenChange={setOpen} title={sheetTitle}>
           <div className="h-full min-h-0 overflow-x-auto p-2">{picker}</div>
         </ContextSheet>
       </>

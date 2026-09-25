@@ -16,7 +16,7 @@ import {
   AGENT_SCOPES,
   type AgentScope,
 } from "@/features/agent-shortcuts/constants";
-import { ShortcutScopePicker } from "@/features/agent-shortcuts/components/ShortcutScopePicker";
+import { BindingTargetPicker } from "@/features/scopes/components/active-context/binding-target/BindingTargetPicker";
 import { SurfaceVariableBindingList } from "./SurfaceVariableBinding";
 import { buildBindingTargets } from "@/features/surfaces/utils/buildBindingTargets";
 import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
@@ -409,7 +409,7 @@ function BindingForm({
       onCancel={onCancel}
     >
       <div className="space-y-5">
-        <ShortcutScopePicker
+        <BindingTargetPicker
           scope={scope}
           scopeId={scopeId}
           onScopeChange={(s, id) => {

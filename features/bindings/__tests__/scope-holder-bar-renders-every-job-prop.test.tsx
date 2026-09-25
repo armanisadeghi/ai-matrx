@@ -47,8 +47,8 @@ jest.mock("@/features/agents/redux/agent-definition/thunks", () => ({
   fetchAgentsListFull: () => ({ type: "noop" }),
   fetchAgentVersionHistory: () => ({ type: "noop" }),
 }));
-jest.mock("@/features/agent-shortcuts/components/ShortcutScopePicker", () => ({
-  ShortcutScopePicker: () => <div data-testid="scope-picker" />,
+jest.mock("@/features/scopes/components/active-context/binding-target/BindingTargetPicker", () => ({
+  BindingTargetPicker: () => <div data-testid="scope-picker" />,
 }));
 // The workflow picker is where `outputKind` actually lands — it is a FILTER on
 // what may hold this job, not a sentence — so the mock surfaces the prop it was

@@ -132,8 +132,8 @@ jest.mock("@ai-matrx/agents/catalog/react", () => ({
 jest.mock("@/features/agent-shortcuts/components/AgentVersionPicker", () => ({
   AgentVersionPicker: () => <div data-testid="version-picker" />,
 }));
-jest.mock("@/features/agent-shortcuts/components/ShortcutScopePicker", () => ({
-  ShortcutScopePicker: () => <div data-testid="scope-picker" />,
+jest.mock("@/features/scopes/components/active-context/binding-target/BindingTargetPicker", () => ({
+  BindingTargetPicker: () => <div data-testid="scope-picker" />,
 }));
 jest.mock("@/features/workflow-runtime/listings/WorkflowListDropdown", () => ({
   WorkflowListDropdown: () => <div data-testid="workflow-picker" />,

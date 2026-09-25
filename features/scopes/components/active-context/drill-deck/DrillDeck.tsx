@@ -36,6 +36,7 @@ import {
   ErrorPane,
   InlineCreate,
   KindGlyph,
+  NodeLabel,
   PickerFooter,
   SkeletonRows,
 } from "../quick-pick/parts";
@@ -46,7 +47,11 @@ type Deck =
   | { t: "type"; node: PickNode }
   | { t: "scope"; node: PickNode }
   | { t: "projects" }
-  | { t: "tasks" };
+  | { t: "tasks" }
+  // rungs="engagements": an organization's projects, one project's tasks,
+  // and an organization's tasks.
+  | { t: "project"; node: PickNode }
+  | { t: "orgTasks"; node: PickNode };
 
 interface DeckRow {
   key: string;
@@ -67,6 +72,10 @@ export interface DrillDeckCoreProps {
   onBack?: () => void;
   onCreate?: (payload: CreatePayload) => void | Promise<unknown>;
   onCommit?: (nodes: PickNode[]) => void;
+  /** Which rungs the deck walks. `scopes` (default): organization → scope type
+   *  → scope → context item, plus the Projects / Tasks rails. `engagements`:
+   *  organization → project → task (and the organization's tasks). */
+  rungs?: "scopes" | "engagements";
 }
 
 /**
@@ -85,7 +94,9 @@ export function DrillDeckCore({
   onBack,
   onCreate,
   onCommit,
+  rungs = "scopes",
 }: DrillDeckCoreProps) {
+  const engagementRungs = rungs === "engagements";
   const [stack, setStack] = useState<Deck[]>([{ t: "root" }]);
   const [creating, setCreating] = useState(false);
   const deck: Deck = stack.at(-1) ?? { t: "root" };
@@ -100,9 +111,43 @@ export function DrillDeckCore({
 
   const rows: DeckRow[] = useMemo(() => {
     const out: DeckRow[] = [];
+    if (engagementRungs) {
+      if (deck.t === "root") {
+        for (const org of u.orgs) {
+          const node = orgNodeOf(org, u.orgs);
+          out.push({ key: node.id, node, drill: { t: "org", node } });
+        }
+      } else if (deck.t === "org") {
+        for (const project of u.projects) {
+          if (project.orgId !== deck.node.id) continue;
+          const node = projectNodeOf(project, orgName);
+          out.push({ key: node.id, node, drill: { t: "project", node } });
+        }
+        out.push({
+          key: "rail:org-tasks",
+          drill: { t: "orgTasks", node: deck.node },
+          railLabel: "Tasks",
+          railCount: u.tasks.filter((task) => task.orgId === deck.node.id)
+            .length,
+        });
+      } else if (deck.t === "project") {
+        for (const task of u.tasks) {
+          if (task.projectId === deck.node.id) {
+            out.push({ key: task.id, node: taskNodeOf(task, orgName) });
+          }
+        }
+      } else if (deck.t === "orgTasks") {
+        for (const task of u.tasks) {
+          if (task.orgId === deck.node.id) {
+            out.push({ key: task.id, node: taskNodeOf(task, orgName) });
+          }
+        }
+      }
+      return out;
+    }
     if (deck.t === "root") {
       for (const org of u.orgs) {
-        const node = orgNodeOf(org);
+        const node = orgNodeOf(org, u.orgs);
         out.push({ key: node.id, node, drill: { t: "org", node } });
       }
       if (includeEngagements) {
@@ -152,13 +197,13 @@ export function DrillDeckCore({
       for (const project of u.projects) {
         out.push({ key: project.id, node: projectNodeOf(project, orgName) });
       }
-    } else {
+    } else if (deck.t === "tasks") {
       for (const task of u.tasks) {
         out.push({ key: task.id, node: taskNodeOf(task, orgName) });
       }
     }
     return out;
-  }, [deck, includeEngagements, itemsQ.items, orgName, u]);
+  }, [deck, engagementRungs, includeEngagements, itemsQ.items, orgName, u]);
 
   const title =
     deck.t === "root"
@@ -167,10 +212,36 @@ export function DrillDeckCore({
         ? "Projects"
         : deck.t === "tasks"
           ? "Tasks"
-          : deck.node.label;
+          : deck.t === "orgTasks"
+            ? `Tasks · ${deck.node.label}`
+            : deck.node.label;
 
   const createConfig = useMemo(() => {
     if (!onCreate) return null;
+    if (engagementRungs) {
+      if (deck.t === "org") {
+        const node = deck.node;
+        return {
+          label: `New project in ${node.label}`,
+          run: (name: string) =>
+            onCreate({ kind: "project", orgId: node.id, name }),
+        };
+      }
+      if (deck.t === "project" || deck.t === "orgTasks") {
+        const node = deck.node;
+        return {
+          label: "New task",
+          run: (name: string) =>
+            onCreate({
+              kind: "task",
+              name,
+              projectId: deck.t === "project" ? node.id : null,
+              orgId: node.orgId,
+            }),
+        };
+      }
+      return null;
+    }
     if (deck.t === "org") {
       const node = deck.node;
       return {
@@ -231,7 +302,7 @@ export function DrillDeckCore({
       };
     }
     return null;
-  }, [deck, onCreate, u.orgs]);
+  }, [deck, engagementRungs, onCreate, u.orgs]);
 
   // Per-column search (shared with Miller Columns): the deck is one column, so
   // its query clears whenever the deck drills or backs out.
@@ -365,7 +436,7 @@ export function DrillDeckCore({
                     <Briefcase className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   )}
                   <span className="min-w-0 flex-1 truncate text-foreground">
-                    {node?.label ?? row.railLabel}
+                    {node ? <NodeLabel node={node} /> : row.railLabel}
                   </span>
                   {row.railCount !== undefined && (
                     <span className="shrink-0 text-[10px] text-muted-foreground">

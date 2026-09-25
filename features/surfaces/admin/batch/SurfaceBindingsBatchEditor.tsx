@@ -27,7 +27,7 @@ import {
   AGENT_SCOPES,
   type AgentScope,
 } from "@/features/agent-shortcuts/constants";
-import { ShortcutScopePicker } from "@/features/agent-shortcuts/components/ShortcutScopePicker";
+import { BindingTargetPicker } from "@/features/scopes/components/active-context/binding-target/BindingTargetPicker";
 import {
   BatchSurfaceSelector,
   type UpdateCandidate,
@@ -427,7 +427,7 @@ export function SurfaceBindingsBatchEditor({
           {/* Scope */}
           <section className="space-y-1.5">
             <Label className="text-xs">Scope (applies to every surface)</Label>
-            <ShortcutScopePicker
+            <BindingTargetPicker
               scope={scope}
               scopeId={scopeId}
               onScopeChange={(s, id) => {

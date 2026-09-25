@@ -6,7 +6,7 @@
  * Fixed `surfaceName` → pick an agent → pick scope → map surface values to
  * the agent's variables / context policies → save.
  *
- * Reuses AgentListInlinePicker, ShortcutScopePicker, SurfaceVariableBindingList.
+ * Reuses AgentListInlinePicker, BindingTargetPicker, SurfaceVariableBindingList.
  *  * (the retired junction is gone — associations are the only path).
  *
  * Drop this into any surface UI, or open it via SurfaceAgentBindWindow.
@@ -28,7 +28,7 @@ import {
   AGENT_SCOPES,
   type AgentScope,
 } from "@/features/agent-shortcuts/constants";
-import { ShortcutScopePicker } from "@/features/agent-shortcuts/components/ShortcutScopePicker";
+import { BindingTargetPicker } from "@/features/scopes/components/active-context/binding-target/BindingTargetPicker";
 import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import {
@@ -476,7 +476,7 @@ export function SurfaceAgentBindPanel({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 space-y-5">
-        <ShortcutScopePicker
+        <BindingTargetPicker
           scope={scope}
           scopeId={scopeId}
           onScopeChange={(s, id) => {

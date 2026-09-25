@@ -39,6 +39,7 @@ import {
   type ScopeColor,
 } from "@/features/scopes/constants/scope-colors";
 import type { OrgNode, ScopeTypeNode } from "@/features/scopes/types";
+import { orgNameDistinguisher } from "@/features/scopes/utils/formatOrgDisplayName";
 
 /* ── node model ──────────────────────────────────────────────────────────── */
 
@@ -70,6 +71,12 @@ export interface PickNode {
   scopeId?: string;
   /** Present only for `item` nodes; avoids reparsing the composite node id. */
   contextItemId?: string;
+  /** Present on `task` nodes that belong to a project. */
+  projectId?: string | null;
+  /** Drawn beside the label, muted — an organization whose name another
+   *  organization in the same list also carries shows its web address
+   *  (UI-FIX-19: the same name, told apart). */
+  hint?: string;
 }
 
 export const nodeKey = (n: Pick<PickNode, "kind" | "id">): string =>
@@ -137,7 +144,13 @@ export type CreatePayload =
     }
   | { kind: "item"; typeId: string; typeName: string; name: string }
   | { kind: "project"; orgId: string | null; name: string }
-  | { kind: "task"; name: string };
+  | {
+      kind: "task";
+      name: string;
+      /** The project the new task belongs to, when the host drilled into one. */
+      projectId?: string | null;
+      orgId?: string | null;
+    };
 
 /** Preview create — add-at-any-level. Logs the exact write a live host would
  *  perform, adds a shared draft node, returns the new id. */
@@ -319,7 +332,13 @@ export function useUniverse(): Universe {
 
 /* ── node builders + search ──────────────────────────────────────────────── */
 
-export function orgNodeOf(o: OrgNode): PickNode {
+/** An organization row. Pass the whole list it is drawn in (`all`) so a name
+ *  another organization also carries is told apart by its address (UI-FIX-19). */
+export function orgNodeOf(
+  o: OrgNode,
+  all: ReadonlyArray<{ id: string; name: string }> = [],
+): PickNode {
+  const hint = orgNameDistinguisher(o, all);
   return {
     kind: "org",
     id: o.id,
@@ -327,6 +346,7 @@ export function orgNodeOf(o: OrgNode): PickNode {
     label: o.is_personal ? `${o.name} (personal)` : o.name,
     path: [],
     orgId: o.id,
+    ...(hint ? { hint } : {}),
   };
 }
 
@@ -401,6 +421,7 @@ export function taskNodeOf(
     label: t.title,
     path: [orgName(t.orgId), "Tasks"],
     orgId: t.orgId,
+    projectId: t.projectId,
   };
 }
 
@@ -415,7 +436,7 @@ export function buildIndex(u: Universe): PickNode[] {
   const orgName = orgNameLookup(u);
   const out: PickNode[] = [];
   for (const o of u.orgs) {
-    out.push(orgNodeOf(o));
+    out.push(orgNodeOf(o, u.orgs));
     for (const t of o.scope_types) {
       out.push(typeNodeOf(o, t));
       for (const s of t.scopes) out.push(scopeNodeOf(o, t, s));
@@ -672,12 +693,16 @@ export function useItemsForTypes(typeIds: string[]): {
 
 /* ── selection engine (multi by default, optional single-select) ─────────── */
 
-export type PickerMode = "assignment" | "active" | "filter";
+/** `select`: the host owns persistence and reacts to every pick itself (a
+ *  form field, a binding target) — the footer shows no commit button and no
+ *  live badge, only the summary and Clear. */
+export type PickerMode = "assignment" | "active" | "filter" | "select";
 
 export const MODE_LABEL: Record<PickerMode, string> = {
   assignment: "Assign",
   active: "Set active",
   filter: "Filter",
+  select: "Select",
 };
 
 export interface SelectionEngine {
@@ -874,6 +899,339 @@ export function useDrillPathEngine({
       clear: () => onChange(EMPTY_DRILL_PATH),
     };
   }, [orgs, path, onChange, itemLabel]);
+}
+
+/* ── engagement rungs (org → project → task, scopes as tags) ──────────────── */
+
+/** The rungs an engagement host offers. `scope` is not a step between the
+ *  others: scopes are TAGS on whatever the host holds (any number, any type,
+ *  inside the chosen organization). */
+export type EngagementRung = "organization" | "scope" | "project" | "task";
+
+export const ALL_ENGAGEMENT_RUNGS: readonly EngagementRung[] = [
+  "organization",
+  "scope",
+  "project",
+  "task",
+];
+
+/** What an engagement host holds: one organization, one project, one task
+ *  (each a plain FK on the host's row) plus any number of scope tags. */
+export interface EngagementSelection {
+  organizationId: string | null;
+  organizationName: string | null;
+  projectId: string | null;
+  projectName: string | null;
+  taskId: string | null;
+  taskName: string | null;
+  scopeIds: string[];
+}
+
+export const EMPTY_ENGAGEMENT_SELECTION: EngagementSelection = {
+  organizationId: null,
+  organizationName: null,
+  projectId: null,
+  projectName: null,
+  taskId: null,
+  taskName: null,
+  scopeIds: [],
+};
+
+type EngagementLookup = Pick<Universe, "orgs" | "projects" | "tasks">;
+
+/** Apply one pick to an engagement selection.
+ *  - organization: sets it and clears everything under it (a project, task or
+ *    scope of another organization is invalid); the same one again clears all.
+ *  - project: sets it (and its organization), clears the task; again clears.
+ *  - task: sets it (and its project and organization); again clears the task.
+ *  - scope: toggles the tag; never touches project or task (a tag is not a
+ *    filter). A first tag sets the organization when none is held.
+ *  Scope types and context items are not engagement picks (no-op). */
+export function applyEngagementPick(
+  sel: EngagementSelection,
+  node: PickNode,
+  u: EngagementLookup,
+): EngagementSelection {
+  const orgName = (id: string | null): string | null =>
+    id ? (u.orgs.find((o) => o.id === id)?.name ?? null) : null;
+  switch (node.kind) {
+    case "org":
+      return sel.organizationId === node.id
+        ? EMPTY_ENGAGEMENT_SELECTION
+        : {
+            ...EMPTY_ENGAGEMENT_SELECTION,
+            organizationId: node.id,
+            organizationName: orgName(node.id),
+          };
+    case "project": {
+      if (sel.projectId === node.id) {
+        return {
+          ...sel,
+          projectId: null,
+          projectName: null,
+          taskId: null,
+          taskName: null,
+        };
+      }
+      const orgId = node.orgId ?? sel.organizationId;
+      const orgChanged = orgId !== sel.organizationId;
+      return {
+        ...sel,
+        organizationId: orgId,
+        organizationName: orgChanged ? orgName(orgId) : sel.organizationName,
+        projectId: node.id,
+        projectName: node.label,
+        taskId: null,
+        taskName: null,
+        scopeIds: orgChanged ? [] : sel.scopeIds,
+      };
+    }
+    case "task": {
+      if (sel.taskId === node.id) {
+        return { ...sel, taskId: null, taskName: null };
+      }
+      const task = u.tasks.find((t) => t.id === node.id);
+      const projectId = task?.projectId ?? node.projectId ?? sel.projectId;
+      const project = projectId
+        ? u.projects.find((p) => p.id === projectId)
+        : undefined;
+      const orgId =
+        node.orgId ?? task?.orgId ?? project?.orgId ?? sel.organizationId;
+      const orgChanged = orgId !== sel.organizationId;
+      return {
+        ...sel,
+        organizationId: orgId,
+        organizationName: orgChanged ? orgName(orgId) : sel.organizationName,
+        projectId: projectId ?? null,
+        projectName:
+          projectId === sel.projectId
+            ? sel.projectName
+            : (project?.name ?? null),
+        taskId: node.id,
+        taskName: node.label,
+        scopeIds: orgChanged ? [] : sel.scopeIds,
+      };
+    }
+    case "scope": {
+      const on = sel.scopeIds.includes(node.id);
+      const scopeIds = on
+        ? sel.scopeIds.filter((id) => id !== node.id)
+        : [...sel.scopeIds, node.id];
+      if (sel.organizationId || !node.orgId) return { ...sel, scopeIds };
+      return {
+        ...sel,
+        organizationId: node.orgId,
+        organizationName: orgName(node.orgId),
+        scopeIds,
+      };
+    }
+    default:
+      return sel;
+  }
+}
+
+const ENGAGEMENT_RUNG_OF: Partial<Record<NodeKind, EngagementRung>> = {
+  org: "organization",
+  project: "project",
+  task: "task",
+  scope: "scope",
+};
+
+/** Resolve one node of any kind against the universe (null when it is not
+ *  there — a record the person cannot read, or one not loaded yet). Items are
+ *  not resolvable here (they load per type); pass their composite id. */
+export function resolvePickNode(
+  u: EngagementLookup,
+  kind: NodeKind,
+  id: string,
+): PickNode | null {
+  const orgName = orgNameLookup(u as Universe);
+  if (kind === "org") {
+    const org = u.orgs.find((o) => o.id === id);
+    return org ? orgNodeOf(org, u.orgs) : null;
+  }
+  if (kind === "project") {
+    const project = u.projects.find((p) => p.id === id);
+    return project ? projectNodeOf(project, orgName) : null;
+  }
+  if (kind === "task") {
+    const task = u.tasks.find((t) => t.id === id);
+    return task ? taskNodeOf(task, orgName) : null;
+  }
+  for (const org of u.orgs) {
+    for (const type of org.scope_types) {
+      if (kind === "type" && type.id === id) return typeNodeOf(org, type);
+      if (kind === "scope") {
+        const scope = type.scopes.find((s) => s.id === id);
+        if (scope) return scopeNodeOf(org, type, scope);
+      }
+    }
+  }
+  return null;
+}
+
+/** The picked nodes of an engagement selection, in rung order. A held id the
+ *  universe does not know yet still shows, under the name the host holds. */
+export function engagementNodes(
+  u: EngagementLookup,
+  sel: EngagementSelection,
+): PickNode[] {
+  const out: PickNode[] = [];
+  const held = (
+    kind: NodeKind,
+    id: string | null,
+    name: string | null,
+  ): void => {
+    if (!id) return;
+    out.push(
+      resolvePickNode(u, kind, id) ?? {
+        kind,
+        id,
+        label: name ?? KIND_LABEL[kind],
+        path: [],
+        orgId: sel.organizationId,
+      },
+    );
+  };
+  held("org", sel.organizationId, sel.organizationName);
+  held("project", sel.projectId, sel.projectName);
+  held("task", sel.taskId, sel.taskName);
+  for (const id of sel.scopeIds) held("scope", id, null);
+  return out;
+}
+
+/** Fill the rungs a held selection implies but does not name: a host that
+ *  holds only a project (or a task) still shows it under its organization
+ *  (and a task under its project). Names come from the universe when absent. */
+export function fillEngagementSelection(
+  u: EngagementLookup,
+  sel: EngagementSelection,
+): EngagementSelection {
+  let next = sel;
+  if (next.taskId && !next.projectId) {
+    const task = u.tasks.find((t) => t.id === next.taskId);
+    if (task?.projectId) next = { ...next, projectId: task.projectId };
+    if (!next.organizationId && task?.orgId)
+      next = { ...next, organizationId: task.orgId };
+  }
+  if (next.projectId && !next.organizationId) {
+    const project = u.projects.find((p) => p.id === next.projectId);
+    if (project?.orgId) next = { ...next, organizationId: project.orgId };
+  }
+  if (next.organizationId && !next.organizationName) {
+    const name = u.orgs.find((o) => o.id === next.organizationId)?.name;
+    if (name) next = { ...next, organizationName: name };
+  }
+  if (next.projectId && !next.projectName) {
+    const name = u.projects.find((p) => p.id === next.projectId)?.name;
+    if (name) next = { ...next, projectName: name };
+  }
+  if (next.taskId && !next.taskName) {
+    const name = u.tasks.find((t) => t.id === next.taskId)?.title;
+    if (name) next = { ...next, taskName: name };
+  }
+  return next;
+}
+
+/** A controlled SelectionEngine over an EngagementSelection — Miller Columns
+ *  (`rungs="engagements"`) and every engagement host run on it. A pick on a
+ *  rung the host does not offer is ignored. */
+export function useEngagementEngine({
+  universe,
+  value,
+  onChange,
+  rungs = ALL_ENGAGEMENT_RUNGS,
+}: {
+  universe: EngagementLookup;
+  value: EngagementSelection;
+  onChange: (next: EngagementSelection) => void;
+  rungs?: readonly EngagementRung[];
+}): SelectionEngine {
+  return useMemo(() => {
+    const held = fillEngagementSelection(universe, value);
+    const nodes = engagementNodes(universe, held);
+    const offered = (kind: NodeKind): boolean => {
+      const rung = ENGAGEMENT_RUNG_OF[kind];
+      return rung !== undefined && rungs.includes(rung);
+    };
+    const isOn = (kind: NodeKind, id: string): boolean => {
+      if (kind === "org") return held.organizationId === id;
+      if (kind === "project") return held.projectId === id;
+      if (kind === "task") return held.taskId === id;
+      if (kind === "scope") return held.scopeIds.includes(id);
+      return false;
+    };
+    return {
+      nodes,
+      count: nodes.length,
+      single: false,
+      isOn,
+      toggle: (node) => {
+        if (!offered(node.kind)) return;
+        onChange(applyEngagementPick(held, node, universe));
+      },
+      clear: () => onChange(EMPTY_ENGAGEMENT_SELECTION),
+    };
+  }, [universe, value, onChange, rungs]);
+}
+
+/* ── single node, any rung (one binding target) ──────────────────────────── */
+
+/** Exactly one node — an organization OR a project OR a task OR a scope (…). */
+export interface SingleNodeValue {
+  kind: NodeKind;
+  id: string;
+}
+
+/** Picking a selectable node makes it THE node; picking it again clears it; a
+ *  node of a kind the host does not accept changes nothing. */
+export function applySingleNodePick(
+  value: SingleNodeValue | null,
+  node: PickNode,
+  selectableKinds: readonly NodeKind[],
+): SingleNodeValue | null {
+  if (!selectableKinds.includes(node.kind)) return value;
+  if (value && value.kind === node.kind && value.id === node.id) return null;
+  return { kind: node.kind, id: node.id };
+}
+
+/** A controlled SelectionEngine holding exactly one node of an accepted kind.
+ *  `onChange` receives the typed node (or null when cleared). */
+export function useSingleNodeEngine({
+  universe,
+  value,
+  onChange,
+  selectableKinds,
+}: {
+  universe: EngagementLookup;
+  value: SingleNodeValue | null;
+  onChange: (node: PickNode | null) => void;
+  selectableKinds: readonly NodeKind[];
+}): SelectionEngine {
+  return useMemo(() => {
+    const resolved = value
+      ? (resolvePickNode(universe, value.kind, value.id) ?? {
+          kind: value.kind,
+          id: value.id,
+          label: KIND_LABEL[value.kind],
+          path: [],
+          orgId: null,
+        })
+      : null;
+    const nodes = resolved ? [resolved] : [];
+    return {
+      nodes,
+      count: nodes.length,
+      single: true,
+      isOn: (kind, id) => value?.kind === kind && value.id === id,
+      toggle: (node) => {
+        if (!selectableKinds.includes(node.kind)) return;
+        const next = applySingleNodePick(value, node, selectableKinds);
+        onChange(next ? node : null);
+      },
+      clear: () => onChange(null),
+    };
+  }, [universe, value, onChange, selectableKinds]);
 }
 
 /** Preview commit: logs the exact payload a live host would persist. */

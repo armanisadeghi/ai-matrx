@@ -69,7 +69,7 @@ import type { AgentVariableDefinition } from "./ScopeMappingEditor";
 import { ContextPolicyMappingEditor } from "./ContextPolicyMappingEditor";
 import { DefaultVariableValuesEditor } from "./DefaultVariableValuesEditor";
 import { DefaultContextPolicyValuesEditor } from "./DefaultContextPolicyValuesEditor";
-import { ShortcutScopePicker } from "./ShortcutScopePicker";
+import { BindingTargetPicker } from "@/features/scopes/components/active-context/binding-target/BindingTargetPicker";
 import { ShortcutContextsPicker } from "./ShortcutContextsPicker";
 import { CategorySelect } from "./CategorySelect";
 import { useAgentShortcutCrud } from "../hooks/useAgentShortcutCrud";
@@ -468,7 +468,7 @@ export function ShortcutForm({
 
       {allowScopeEdit && onScopeChange && (
         <>
-          <ShortcutScopePicker
+          <BindingTargetPicker
             scope={scope}
             scopeId={scopeId}
             onScopeChange={onScopeChange}

@@ -53,8 +53,8 @@ jest.mock("@/features/agents/redux/agent-definition/thunks", () => ({
   fetchAgentsListFull: () => ({ type: "noop" }),
   fetchAgentVersionHistory: () => ({ type: "noop" }),
 }));
-jest.mock("@/features/agent-shortcuts/components/ShortcutScopePicker", () => ({
-  ShortcutScopePicker: () => <div data-testid="scope-picker" />,
+jest.mock("@/features/scopes/components/active-context/binding-target/BindingTargetPicker", () => ({
+  BindingTargetPicker: () => <div data-testid="scope-picker" />,
 }));
 jest.mock("@/features/workflow-runtime/listings/WorkflowListDropdown", () => ({
   WorkflowListDropdown: () => <div data-testid="workflow-picker" />,

@@ -15,9 +15,10 @@
 // routes survive as entry points and PRE-SELECT the rung (D1, resolved
 // 2026-08-31 by the defaults rule).
 //
-// The rung control is `ShortcutScopePicker` — the same described select the
-// shortcut UI has used for months, each rung carrying its own sentence and
-// revealing an entity picker when it needs one. It is given `allowedScopes`
+// The rung control is `BindingTargetPicker` — the canonical single-node
+// binding-target picker every shortcut and surface binding uses (it replaced
+// ShortcutScopePicker, 2026-09-25): each rung carries its own sentence and a
+// record rung opens the canonical drill-down to pick exactly one. It is given `allowedScopes`
 // because a mandate binding is written for a user, an org, or everybody
 // (`agent.mandate_binding.principal_type`) and has no project or task rung:
 // offering one would be a control that cannot be saved.
@@ -34,7 +35,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import type { AgentTab } from "@ai-matrx/agents/catalog";
-import { ShortcutScopePicker } from "@/features/agent-shortcuts/components/ShortcutScopePicker";
+import { BindingTargetPicker } from "@/features/scopes/components/active-context/binding-target/BindingTargetPicker";
 import {
   AGENT_SCOPES,
   type AgentScope,
@@ -591,8 +592,8 @@ export function ScopeHolderBar({
                 </Button>
               </div>
             ) : (
-              <ShortcutScopePicker
-                className="[&>div:first-child>label]:sr-only"
+              <BindingTargetPicker
+                hideLabel
                 scope={RUNG_TO_SCOPE[rung]}
                 scopeId={organizationId ?? undefined}
                 allowGlobal={allowGlobal}

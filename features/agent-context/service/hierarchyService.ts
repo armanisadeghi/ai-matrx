@@ -419,6 +419,9 @@ export const hierarchyService = {
   async createTask(data: {
     title: string;
     project_id: string;
+    /** The organization the task is filed under — the project's own. Only a
+     *  caller with none held falls back to the active one (ensureOrgId). */
+    organization_id?: string;
     parent_task_id?: string;
     description?: string;
     status?: string;
@@ -426,12 +429,12 @@ export const hierarchyService = {
   }): Promise<HierarchyTask> {
     const userId = requireUserId();
 
-    const { priority, ...taskRest } = data;
+    const { priority, organization_id: organizationId, ...taskRest } = data;
     const { data: task, error } = await workspaceDb(supabase)
       .from("tasks")
       .insert({
         ...taskRest,
-        organization_id: await ensureOrgId(undefined),
+        organization_id: await ensureOrgId(organizationId),
         status: data.status ?? "not_started",
         priority: toTaskPriority(priority),
         created_by: userId,

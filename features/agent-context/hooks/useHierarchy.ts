@@ -237,10 +237,7 @@ export function useCreateTask() {
       description?: string;
       status?: string;
       priority?: string;
-    }) => {
-      const { organization_id: _orgId, ...serviceData } = data;
-      return hierarchyService.createTask(serviceData);
-    },
+    }) => hierarchyService.createTask(data),
     onSuccess: (task, variables) => {
       // Upsert the new task into the normalized slice immediately
       dispatch(

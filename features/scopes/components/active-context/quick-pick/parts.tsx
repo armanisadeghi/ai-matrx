@@ -90,6 +90,21 @@ export function KindGlyph({ node }: { node: PickNode }) {
   );
 }
 
+/** A node's label, with its muted hint (UI-FIX-19: an organization whose name
+ *  another organization shares is told apart by its address). */
+export function NodeLabel({ node }: { node: PickNode }) {
+  return (
+    <>
+      {node.label}
+      {node.hint ? (
+        <span className="ml-1.5 text-[10px] text-muted-foreground">
+          {node.hint}
+        </span>
+      ) : null}
+    </>
+  );
+}
+
 /* ── panes ───────────────────────────────────────────────────────────────── */
 
 export function SkeletonRows({ count = 5 }: { count?: number }) {
@@ -267,7 +282,9 @@ export function PickerFooter({
   onCommit?: (nodes: SelectionEngine["nodes"]) => void;
   onLiveEmit?: (nodes: SelectionEngine["nodes"]) => void;
 }) {
-  const live = mode !== "assignment";
+  // `select`: the host reacts to every pick itself — no commit, no badge.
+  const hostOwned = mode === "select";
+  const live = mode !== "assignment" && !hostOwned;
   const first = useRef(true);
   useEffect(() => {
     if (!live || !onLiveEmit) return;
@@ -302,7 +319,7 @@ export function PickerFooter({
           Clear
         </button>
       )}
-      {live ? (
+      {hostOwned ? null : live ? (
         <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-success/40 px-2 py-0.5 text-[10px] font-medium text-success">
           <span className="h-1.5 w-1.5 rounded-full bg-success" />
           Live · {MODE_LABEL[mode]}
