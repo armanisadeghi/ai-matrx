@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 /**
  * AgentRunPage
  *
@@ -96,6 +98,12 @@ interface AgentRunnerPageProps {
    * URL promotion does not clobber an in-flight stream).
    */
   retainOnUnmount?: boolean;
+  /**
+   * Pinned directly above the composer — where the person acts. The run
+   * route mounts the one switch-organization offer here, naming the AGENT'S
+   * own organization (a run lands its work and cost in an organization).
+   */
+  aboveInput?: ReactNode;
 }
 
 export function AgentRunnerPage({
@@ -108,6 +116,7 @@ export function AgentRunnerPage({
   preferFresh = false,
   freshSessionKey = 0,
   retainOnUnmount = false,
+  aboveInput,
 }: AgentRunnerPageProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -349,6 +358,7 @@ export function AgentRunnerPage({
             sendButtonVariant: "blue",
             showSubmitOnEnterToggle: true,
           }}
+          aboveInput={aboveInput}
         />
       </div>
     </div>

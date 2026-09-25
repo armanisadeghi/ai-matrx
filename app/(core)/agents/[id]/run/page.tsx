@@ -3,6 +3,7 @@ import { AgentRunnerPage } from "@/features/agents/components/run/AgentRunnerPag
 import { AgentRunHeader } from "@/features/agents/components/run/AgentRunHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { RecordOrganizationSwitchOffer } from "@/features/organizations/components/RecordOrganizationSwitchOffer";
 
 
 export default async function AgentRunRoute({
@@ -46,7 +47,19 @@ export default async function AgentRunRoute({
         />
       </PageHeader>
       <div className="h-full pt-[var(--shell-header-h)]">
-        <AgentRunnerPage agentId={id} />
+        {/* A run lands its work and cost in an organization: when the agent
+            lives in another one than the selected (or none is selected), the
+            one offer names the AGENT'S organization, above the composer. */}
+        <AgentRunnerPage
+          agentId={id}
+          aboveInput={
+            <RecordOrganizationSwitchOffer
+              organizationId={agent.organizationId}
+              what="agent"
+              className="mb-2"
+            />
+          }
+        />
       </div>
     </>
   );
