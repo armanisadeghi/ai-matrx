@@ -24,8 +24,17 @@ import { RichContentDepthProvider } from "../depth";
 import { fenceNestsInnerFences } from "@ai-matrx/content-ir/source";
 import MarkdownPreviewBlock from "@/components/mardown-display/blocks/markdown-preview/MarkdownPreviewBlock";
 import { StandardBlock } from "./StandardBlocks";
+import {
+  computeDocumentNumbering,
+  type DocumentNumbering,
+} from "@/components/markdown-core/syntax/document-numbering";
+import { DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
 
-export type StaticProse = ComponentType<{ content: string }>;
+/** The injected prose leaf. `numbering` is the WHOLE document's (one pass at the root). */
+export type StaticProse = ComponentType<{
+  content: string;
+  numbering?: DocumentNumbering | null;
+}>;
 
 /** XML control sections whose body is prose — the same set StandardBlock nests. */
 const SECTION_TYPES = new Set([
@@ -52,17 +61,19 @@ function StaticBlock({
   depth,
   cap,
   Prose,
+  numbering,
 }: {
   block: SplitterBlock;
   depth: number;
   cap: number;
   Prose: StaticProse;
+  numbering: DocumentNumbering;
 }) {
   const { type, content } = block;
 
   if (type === "text" || type === "table") {
     if (!content.trim()) return null;
-    return <Prose content={content} />;
+    return <Prose content={content} numbering={numbering} />;
   }
 
   if (SECTION_TYPES.has(type) && depth + 1 <= cap) {
@@ -76,7 +87,7 @@ function StaticBlock({
             : "my-2"
         }
       >
-        <StaticStandard source={content} depth={depth + 1} cap={cap} Prose={Prose} />
+        <StaticStandard source={content} depth={depth + 1} cap={cap} Prose={Prose} numbering={numbering} />
       </div>
     );
   }
@@ -95,7 +106,7 @@ function StaticBlock({
         <MarkdownPreviewBlock
           content={content}
           renderedPreview={
-            <StaticStandard source={content} depth={depth + 1} cap={cap} Prose={Prose} />
+            <StaticStandard source={content} depth={depth + 1} cap={cap} Prose={Prose} numbering={numbering} />
           }
         />
       </RichContentDepthProvider>
@@ -141,21 +152,48 @@ export function StaticStandard({
   cap,
   className,
   Prose,
+  numbering,
 }: {
   source: string;
   depth: number;
   cap: number;
   className?: string;
   Prose: StaticProse;
+  /** Set by the root; nested documents keep the root's numbers. */
+  numbering?: DocumentNumbering;
 }) {
   // The same splitter as the client levels, minus the kind-envelope hooks
   // (metadata only — block types and boundaries are identical).
   const blocks = splitContentIntoBlocksWith(source, NO_SPLITTER_ENVELOPES);
-  return (
-    <div data-rich-content="standard" className={className ?? "min-w-0"}>
+  // The ROOT computes the document-wide numbering once (figures, tables,
+  // equations number across blocks). Every standard root carries
+  // `data-matrx-doc-root`, exactly as the client StandardBlocks does —
+  // find-in-document and the TOC look for it on server pages too.
+  const isRoot = numbering === undefined;
+  const docNumbering = numbering ?? computeDocumentNumbering(source);
+  const body = (
+    <div
+      data-rich-content="standard"
+      data-matrx-doc-root=""
+      className={className ?? "min-w-0"}
+    >
       {blocks.map((block, index) => (
-        <StaticBlock key={index} block={block} depth={depth} cap={cap} Prose={Prose} />
+        <StaticBlock
+          key={index}
+          block={block}
+          depth={depth}
+          cap={cap}
+          Prose={Prose}
+          numbering={docNumbering}
+        />
       ))}
     </div>
+  );
+  // Client blocks beneath (code cards, capped sections) read the same
+  // numbering from the one provider.
+  return isRoot ? (
+    <DocumentNumberingProvider source={source}>{body}</DocumentNumberingProvider>
+  ) : (
+    body
   );
 }

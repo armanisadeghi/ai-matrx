@@ -32,6 +32,7 @@ import { guardMarkdownDelimiters } from "@ai-matrx/kit/delimiter-guard";
 import MarkdownCoreServer from "@/components/markdown-core/MarkdownCoreServer";
 import { cn } from "@/lib/utils";
 import { StaticStandard } from "../standard/static-standard";
+import type { DocumentNumbering } from "@/components/markdown-core/syntax/document-numbering";
 import {
   DEFAULT_RICH_CONTENT_DEPTH_CAP,
   type RichContentVariant,
@@ -74,14 +75,21 @@ function guarded(source: string, renderPath: string) {
 }
 
 /** The server twin of BasicMarkdownContent's static markup (same frame, same map). */
-export function ProseServer({ content }: { content: string }) {
+export function ProseServer({
+  content,
+  numbering,
+}: {
+  content: string;
+  /** The whole document's numbering (from the static root); none for a lone leaf. */
+  numbering?: DocumentNumbering | null;
+}) {
   const direction = detectTextDirection(content);
   const { text, report } = guarded(content, "RichContentServer.prose");
   return (
     <>
       <div className={proseFrameClass(direction)} dir={direction}>
         <style dangerouslySetInnerHTML={{ __html: PROSE_FRAME_CSS }} />
-        <MarkdownCoreServer preset="chat" components={PROSE_BLOCK_ELEMENTS}>
+        <MarkdownCoreServer preset="chat" components={PROSE_BLOCK_ELEMENTS} numbering={numbering}>
           {text}
         </MarkdownCoreServer>
       </div>

@@ -38,7 +38,13 @@ import {
 import { StaticStandard } from "./standard/static-standard";
 
 /** The prose leaf alone (frame + one prose map), statically. */
-export function StaticProseLeaf({ content }: { content: string }) {
+export function StaticProseLeaf({
+  content,
+}: {
+  content: string;
+  /** Accepted for the StaticProse contract; the client core reads the numbering from DocumentNumberingProvider. */
+  numbering?: unknown;
+}) {
   if (!content.trim()) return null;
   const direction = detectTextDirection(content);
   const { text, violations } = guardMarkdownDelimiters(preprocessProse(content));

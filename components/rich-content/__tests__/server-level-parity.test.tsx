@@ -278,5 +278,31 @@ describe("server level renders the same HTML as the client levels", () => {
     expect(staticSsr).toBe(server);
     expect(staticSsr).toBe(client);
   });
+
+  it("document root: data-matrx-doc-root and figure numbers across a split match the app", () => {
+    // A pottery studio's firing log: two figures separated by a code block,
+    // so each is parsed in its own block — the second must still be Figure 2.
+    const F = "```";
+    const log = [
+      ":::figure[The loaded kiln]{#fig:kiln}",
+      "Photo goes here.",
+      ":::",
+      "",
+      `${F}text`,
+      "cone 6, 8 hours",
+      F,
+      "",
+      ":::figure[Bisque shelf]{#fig:bisque}",
+      "Photo goes here.",
+      ":::",
+    ].join("\n");
+    const server = serverHtml(<RichContentServer level="standard" source={log} />);
+    const staticSsr = serverHtml(<RichContentStaticStandard source={log} />);
+    const client = clientHtml(<StandardBlocks source={log} />);
+    expect(server).toContain("data-matrx-doc-root");
+    expect(server).toContain("Figure 2");
+    expect(server).toBe(client);
+    expect(staticSsr).toBe(client);
+  });
 });
 
