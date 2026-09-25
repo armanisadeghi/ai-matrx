@@ -153,7 +153,7 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
                   aria-label={MODE_META[m].label}
                   title={MODE_META[m].label}
                   className={cn(
-                    "inline-flex min-h-8 items-center gap-1 whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-medium transition-colors sm:min-h-0",
+                    "inline-flex min-h-11 min-w-11 items-center justify-center gap-1 whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-medium transition-colors lg:min-h-0 lg:min-w-0",
                     mode === m
                       ? "bg-foreground text-background"
                       : "text-muted-foreground hover:text-foreground",

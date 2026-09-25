@@ -37,6 +37,9 @@ import {
 } from "./lab/content-sources";
 import { syncPaneScroll } from "./lab/sync-scroll";
 import { syncStudioSourceUrl } from "./lab/studio-url";
+import { loadStudioSource } from "./lab/content-sources";
+import { isRecordUnavailableError } from "@/lib/records/recordUnavailable";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import type { ContentSource } from "@/features/rich-document/types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
@@ -87,6 +90,13 @@ export function MarkdownStudio() {
     null,
   );
   const [sourceLoading, setSourceLoading] = useState<string | null>(null);
+  // A requested record that could not be read — rendered through AccessGate.
+  const [sourceGate, setSourceGate] = useState<{
+    kind: StudioSourceKind;
+    token: string;
+    id: string;
+    error: unknown;
+  } | null>(null);
   const isAdmin = useAppSelector(selectIsSuperAdmin);
   const searchParams = useSearchParams();
 
@@ -128,6 +138,7 @@ export function MarkdownStudio() {
     setLoadedSampleId(null);
     setLoadedSampleName(null);
     setLoadedSource(null);
+    setSourceGate(null);
     clearSourceParams();
   };
 
@@ -136,6 +147,7 @@ export function MarkdownStudio() {
     setLoadedSampleId(null);
     setLoadedSampleName(template.title);
     setLoadedSource(null);
+    setSourceGate(null);
     syncStudioSourceUrl(null);
     toast.success(`Loaded template: ${template.title}`);
   }, []);
@@ -145,6 +157,7 @@ export function MarkdownStudio() {
     setLoadedSampleId(sample.id);
     setLoadedSampleName(sample.name);
     setLoadedSource(null);
+    setSourceGate(null);
     syncStudioSourceUrl(null);
   }, []);
 
@@ -157,7 +170,8 @@ export function MarkdownStudio() {
     const def = STUDIO_SOURCES[kind];
     setSourceLoading(def.label);
     try {
-      const loaded = await def.load(id);
+      const loaded = await loadStudioSource(kind, id);
+      setSourceGate(null);
       setContent(loaded.content);
       setLoadedSampleId(null);
       setLoadedSampleName(loaded.title);
@@ -166,11 +180,17 @@ export function MarkdownStudio() {
       deepLinkHandledRef.current = `${kind}:${id}`;
       syncStudioSourceUrl({ kind, id });
     } catch (err) {
-      toast.error(
-        `Could not open that ${def.label.toLowerCase()}: ${
-          err instanceof Error ? err.message : String(err)
-        }`,
-      );
+      // An absent record is never a toast and never database text: the
+      // platform's AccessGate asks which of deleted / missing / no access /
+      // signed out it really is and says it in plain words, with a way on.
+      if (isRecordUnavailableError(err)) {
+        deepLinkHandledRef.current = `${kind}:${id}`;
+        setSourceGate({ token: err.token ?? def.token, id, error: err, kind });
+        syncStudioSourceUrl({ kind, id });
+      } else {
+        // loadStudioSource only ever throws "We couldn't …" sentences here.
+        toast.error(err instanceof Error ? err.message : `We couldn't open this ${def.label.toLowerCase()}.`);
+      }
     } finally {
       setSourceLoading(null);
     }
@@ -465,7 +485,9 @@ export function MarkdownStudio() {
       isEditable
       getWriteHandlers={getWriteHandlers}
     >
-    <div className="flex h-full w-full flex-col bg-textured">
+    {/* matrx-touch-targets: the platform's 44px touch floor for every
+        control in the studio on phones/touch (desktop density untouched). */}
+    <div className="matrx-touch-targets flex h-full w-full flex-col bg-textured">
       <PageHeader>
         <HeaderToggle
           options={[
@@ -538,7 +560,20 @@ export function MarkdownStudio() {
 
         {/* ── Body ─────────────────────────────────────────────────── */}
         <main className="flex-1 min-h-0 overflow-hidden">
-          {mode === "studio" ? (
+          {sourceGate &&
+          deepLinkKind === sourceGate.kind &&
+          deepLinkId === sourceGate.id ? (
+            <div className="h-full overflow-y-auto">
+              <AccessGate
+                token={sourceGate.token}
+                id={sourceGate.id}
+                error={sourceGate.error}
+                onRetry={() => void loadFromSource(sourceGate.kind, sourceGate.id)}
+                fallbackHref="/markdown-studio"
+                fallbackLabel="Start fresh in the studio"
+              />
+            </div>
+          ) : mode === "studio" ? (
             <div className="flex h-full flex-col gap-2 p-3 lg:grid lg:grid-cols-2 lg:gap-3">
               {/* Phones get ONE full-height pane at a time — two stacked panes
                   left the editor about two lines tall (RC-B1 verify D5). */}
@@ -555,7 +590,7 @@ export function MarkdownStudio() {
                     aria-selected={mobilePane === pane}
                     onClick={() => setMobilePane(pane)}
                     className={cn(
-                      "min-h-9 whitespace-nowrap rounded px-3 text-xs font-medium transition-colors",
+                      "min-h-11 whitespace-nowrap rounded px-3 text-xs font-medium transition-colors",
                       mobilePane === pane
                         ? "bg-foreground text-background"
                         : "text-muted-foreground",

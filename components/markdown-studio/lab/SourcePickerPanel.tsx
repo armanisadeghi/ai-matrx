@@ -31,6 +31,7 @@ import {
   STUDIO_SOURCES,
   STUDIO_SOURCE_KINDS,
   isUuid,
+  listStudioSource,
   type StudioSourceKind,
   type StudioSourceListItem,
 } from "./content-sources";
@@ -86,8 +87,7 @@ export function SourcePickerPanel({
     let cancelled = false;
     const t = setTimeout(
       () => {
-        STUDIO_SOURCES[kind]
-          .list(query)
+        listStudioSource(kind, query)
           .then((rows) => {
             if (cancelled) return;
             setItems(rows);
@@ -127,7 +127,7 @@ export function SourcePickerPanel({
       description="Load a read-only copy of a real record. Editing here never changes the original."
       position="left"
       defaultSize={38}
-      contentClassName="flex min-h-0 flex-1 flex-col p-0"
+      contentClassName="matrx-touch-targets flex min-h-0 flex-1 flex-col p-0"
     >
       <div className="flex flex-wrap gap-1 border-b border-border px-4 py-3">
         {kinds.map((k) => {
@@ -184,8 +184,7 @@ export function SourcePickerPanel({
           )}
           {!loading && error && (
             <p className="px-2 py-4 text-xs text-destructive">
-              Could not list {def.label.toLowerCase()}s: {error}. Paste an id
-              above to open one directly.
+              {error} Paste an id above to open one directly.
             </p>
           )}
           {!loading && !error && items.length === 0 && (

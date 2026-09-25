@@ -42,14 +42,16 @@ export function EditorPanel({
   }, [content]);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card/30">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-border px-3 py-2">
-        <div className="flex items-center gap-2">
+    <div className="@container flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card/30">
+      {/* Header — ONE row at every width: nothing wraps, the counts step
+          down (lines only) when the pane is narrow (a phone), measured on the
+          pane itself, never the screen. */}
+      <div className="flex min-w-0 items-center justify-between gap-2 whitespace-nowrap border-b border-border px-3 py-2">
+        <div className="flex shrink-0 items-center gap-2">
           <Type className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-xs font-medium tracking-wide">Source</span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex min-w-0 items-center gap-1.5">
           <Badge
             variant="outline"
             className="h-5 px-1.5 text-[10px] font-mono"
@@ -59,13 +61,13 @@ export function EditorPanel({
           </Badge>
           <Badge
             variant="outline"
-            className="h-5 px-1.5 text-[10px] font-mono"
+            className="hidden h-5 px-1.5 text-[10px] font-mono @sm:inline-flex"
           >
             {stats.words} {stats.words === 1 ? "word" : "words"}
           </Badge>
           <Badge
             variant="outline"
-            className="h-5 px-1.5 text-[10px] font-mono"
+            className="hidden h-5 px-1.5 text-[10px] font-mono @sm:inline-flex"
           >
             {stats.chars} chars
           </Badge>
@@ -74,6 +76,7 @@ export function EditorPanel({
             size="sm"
             className="h-6 w-6 p-0"
             onClick={onClear}
+            aria-label="Clear editor"
             title="Clear editor"
             disabled={!content}
           >

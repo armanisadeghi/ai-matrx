@@ -252,6 +252,26 @@
    every label, and a clipped label ("Analysi") reads as broken. Inactive
    thumbs go icon-only (the button keeps its aria-label + title); the active
    thumb keeps its label so the current view is always named. */
+/* Touch: the 26px thumb keeps its painted size inside the 44px header, but
+   its HIT area grows to the full 44px height (vertical only, so the two
+   adjacent thumbs never steal each other's taps). */
+@media (pointer: coarse), (max-width: 1023px) {
+  .hdr-toggle-thumb {
+    position: relative;
+    touch-action: manipulation;
+  }
+  .hdr-toggle-thumb::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 2.75rem;
+    transform: translateY(-50%);
+    background: transparent;
+  }
+}
+
 @media (max-width: 480px) {
   .hdr-toggle-thumb:not(.hdr-toggle-thumb-active) {
     padding: 0 0.5rem;

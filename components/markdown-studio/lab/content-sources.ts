@@ -33,6 +33,11 @@ import {
 } from "@/components/admin/markdown-tester/samples-service";
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
 import { supabase } from "@/utils/supabase/client";
+import {
+  isRecordUnavailableError,
+  recordUnavailable,
+} from "@/lib/records/recordUnavailable";
+import { operationFailed } from "@/utils/errors";
 import { requireUserId } from "@/utils/auth/getUserId";
 
 export const STUDIO_SOURCE_KINDS = [
@@ -83,6 +88,8 @@ export interface StudioSourceDef {
   /** Lucide icon name for the picker (rendered by the picker). */
   icon: string;
   adminOnly?: boolean;
+  /** Canonical entity token — an absent record renders <AccessGate token id/>. */
+  token: string;
   /** Recent items for the picker (bounded — the picker also takes a pasted id). */
   list: (search: string) => Promise<StudioSourceListItem[]>;
   load: (id: string) => Promise<LoadedStudioContent>;
@@ -130,7 +137,7 @@ async function loadNoteContent(
     kind === "study-guide"
       ? await loadStudyGuide(id)
       : await NotesAPI.getById(id, { failureMode: "throw" });
-  if (!note) throw new Error(`No note with id ${id} is visible to you.`);
+  if (!note) throw absent("note", "note", id, "workbench.notes");
   return {
     kind,
     id,
@@ -157,7 +164,7 @@ async function listAssistantMessages(
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(STUDIO_SOURCE_RECENT_LIMIT * 2);
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("list your recent chat messages", error);
   return (data ?? [])
     .map((row) => {
       const text = extractInspectableText(messageRowToRecord(row)).text;
@@ -180,8 +187,8 @@ async function loadAssistantMessage(id: string): Promise<LoadedStudioContent> {
     .eq("id", id)
     .is("deleted_at", null)
     .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error(`No chat message with id ${id} is visible to you.`);
+  if (error) throw operationFailed("open this chat message", error);
+  if (!data) throw absent("chat message", "message", id, "chat.message");
   const record = messageRowToRecord(data);
   const { text, isStructuredRaw } = extractInspectableText(record);
   // THE ONE chat → registry builder — the same one the /chat bars call.
@@ -255,7 +262,7 @@ async function listCards(search: string): Promise<StudioSourceListItem[]> {
     .is("deleted_at", null)
     .order("updated_at", { ascending: false })
     .limit(STUDIO_SOURCE_RECENT_LIMIT * 2);
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("list your recent flashcards", error);
   return (data ?? [])
     .filter((c) => matches(search, c.front, c.back, c.id))
     .slice(0, STUDIO_SOURCE_RECENT_LIMIT)
@@ -272,9 +279,9 @@ async function loadCardSide(
   id: string,
 ): Promise<LoadedStudioContent> {
   const res = await fcService.getCardsByIds([id]);
-  if (res.error) throw new Error(res.error);
+  if (res.error) throw operationFailed("open this flashcard", res.error);
   const card = res.data?.[0];
-  if (!card) throw new Error(`No flashcard with id ${id} is visible to you.`);
+  if (!card) throw absent("flashcard", "fc_card", id, "education.fc_card");
   const text = (side === "front" ? card.front : card.back) ?? "";
   return {
     kind: side === "front" ? "flashcard-front" : "flashcard-back",
@@ -292,6 +299,7 @@ async function loadCardSide(
 export const STUDIO_SOURCES: Record<StudioSourceKind, StudioSourceDef> = {
   note: {
     kind: "note",
+    token: "note",
     label: "Note",
     icon: "StickyNote",
     list: async (search) =>
@@ -309,6 +317,7 @@ export const STUDIO_SOURCES: Record<StudioSourceKind, StudioSourceDef> = {
   },
   "study-guide": {
     kind: "study-guide",
+    token: "note",
     label: "Study guide",
     icon: "GraduationCap",
     list: async (search) =>
@@ -324,6 +333,7 @@ export const STUDIO_SOURCES: Record<StudioSourceKind, StudioSourceDef> = {
   },
   "chat-message": {
     kind: "chat-message",
+    token: "message",
     label: "Chat message",
     icon: "MessageSquare",
     list: listAssistantMessages,
@@ -331,6 +341,7 @@ export const STUDIO_SOURCES: Record<StudioSourceKind, StudioSourceDef> = {
   },
   "agent-prompt": {
     kind: "agent-prompt",
+    token: "agent",
     label: "Agent prompt",
     icon: "BrainCircuit",
     list: listAgents,
@@ -338,6 +349,7 @@ export const STUDIO_SOURCES: Record<StudioSourceKind, StudioSourceDef> = {
   },
   "flashcard-front": {
     kind: "flashcard-front",
+    token: "fc_card",
     label: "Card front",
     icon: "PanelTop",
     list: listCards,
@@ -345,6 +357,7 @@ export const STUDIO_SOURCES: Record<StudioSourceKind, StudioSourceDef> = {
   },
   "flashcard-back": {
     kind: "flashcard-back",
+    token: "fc_card",
     label: "Card back",
     icon: "PanelBottom",
     list: listCards,
@@ -352,6 +365,7 @@ export const STUDIO_SOURCES: Record<StudioSourceKind, StudioSourceDef> = {
   },
   "admin-sample": {
     kind: "admin-sample",
+    token: "admin_markdown_sample",
     label: "Test sample",
     icon: "FlaskConical",
     adminOnly: true,
@@ -366,7 +380,13 @@ export const STUDIO_SOURCES: Record<StudioSourceKind, StudioSourceDef> = {
         })),
     load: async (id) => {
       const sample = await getSample(id);
-      if (!sample) throw new Error(`No test sample with id ${id}.`);
+      if (!sample)
+        throw absent(
+          "test sample",
+          "admin_markdown_sample",
+          id,
+          "admin.admin_markdown_samples",
+        );
       return {
         kind: "admin-sample",
         id,
@@ -377,6 +397,54 @@ export const STUDIO_SOURCES: Record<StudioSourceKind, StudioSourceDef> = {
     },
   },
 };
+
+/** A zero-row single-record read: the platform's honest absent-record error
+ *  (never a database string), carrying the token AccessGate resolves. */
+function absent(
+  entity: string,
+  token: string,
+  recordId: string,
+  relation: string,
+): Error {
+  return recordUnavailable({ entity, reason: "unknown", recordId, token, relation });
+}
+
+/**
+ * THE ONE door every studio load goes through. A malformed id is an absent
+ * record (never a Postgres cast error); a zero-row read stays a
+ * RecordUnavailableError for <AccessGate>; any other failure becomes a plain
+ * "We couldn't open this …" with the raw response kept as `cause` for the
+ * Error Inspector. No database text ever reaches a person (RC-B1 verify r2).
+ */
+export async function loadStudioSource(
+  kind: StudioSourceKind,
+  id: string,
+): Promise<LoadedStudioContent> {
+  const def = STUDIO_SOURCES[kind];
+  const label = def.label.toLowerCase();
+  if (!isUuid(id)) throw absent(label, def.token, id, def.token);
+  try {
+    return await def.load(id);
+  } catch (err) {
+    if (isRecordUnavailableError(err)) throw err;
+    if (err instanceof Error && err.message.startsWith("We couldn't")) throw err;
+    throw operationFailed(`open this ${label}`, err);
+  }
+}
+
+/** The same door for the picker's recent lists. */
+export async function listStudioSource(
+  kind: StudioSourceKind,
+  search: string,
+): Promise<StudioSourceListItem[]> {
+  const def = STUDIO_SOURCES[kind];
+  try {
+    return await def.list(search);
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith("We couldn't")) throw err;
+    throw operationFailed(`list your recent ${def.label.toLowerCase()}s`, err);
+  }
+}
 
 export function isStudioSourceKind(value: string | null): value is StudioSourceKind {
   return !!value && (STUDIO_SOURCE_KINDS as readonly string[]).includes(value);
