@@ -41,6 +41,7 @@ import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
+import { useUserRole } from "@/features/organizations/hooks";
 
 /** The organization's member-visibility setting, at its one registry address. */
 const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" } as const;
@@ -48,22 +49,17 @@ const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" 
 import {
   HUB_CAPABILITIES,
   attachChangedBy,
+  seesOnlyWhatIsShared,
   type HubItem,
   type HubReadContext,
   withHubTableFacts,
 } from "./capabilities";
+import { ArchivedTablesList, type ArchivedTable } from "./ArchivedTablesList";
 import { HubListing, type HubListingState } from "./HubListing";
 import { AllOrganizationsTables, OrganizationScopeStrip } from "./OrganizationScope";
 import * as doors from "./doors";
 import type { TableFactRow } from "./doors";
 
-/** An archived Table, with the one thing a person wants to do to it. */
-interface ArchivedTable {
-  id: string;
-  name: string;
-  archivedAt: string;
-  archivedByName: string | null;
-}
 
 export interface OrganizationHubProps {
   organizationId: string;
@@ -184,14 +180,16 @@ export function OrganizationHub({
    */
   const userId = useAppSelector(selectUserId);
   const memberVisibility = useEffectiveKnob(organizationId, userId, MEMBER_VISIBILITY);
-  const sharedOnly = memberVisibility === "shared_only";
+  // THE SENTENCE IS THE READER'S (UI-FIX-19): shared-only speaks to a member, never to the
+  // owner or an admin, whose own lane still reaches every table.
+  const { role: myRole } = useUserRole(organizationId);
+  const sharedOnly = seesOnlyWhatIsShared(memberVisibility, myRole);
   const [states, setStates] = useState<Record<string, HubListingState>>({});
   const [open, setOpen] = useState<Record<string, boolean>>({ tables: true });
   const [archivedTables, setArchivedTables] = useState<ArchivedTable[] | null>(null);
   const [archiveTrouble, setArchiveTrouble] = useState<string | null>(null);
   /** Said when the archive is bigger than the hub reads in one visit. Never a failure. */
   const [archiveNote, setArchiveNote] = useState<string | null>(null);
-  const [restoring, setRestoring] = useState<string | null>(null);
 
   // EVERY CAPABILITY, ONE CALL EACH, IN PARALLEL. Ten doors, ten round trips
   // for the whole organization — not ten per table.
@@ -319,17 +317,15 @@ export function OrganizationHub({
     void readArchive();
   }, [readArchive]);
 
+  // A REFUSED RESTORE IS THE ROW'S, NEVER THE ARCHIVE READ'S (UI-FIX-19): the refusal goes back
+  // to the list, which draws it on the row and keeps every other row where it was.
   const bringBack = useCallback(
     async (tableId: string) => {
-      setRestoring(tableId);
       const answered = await client.recordRestore({ record_id: tableId });
-      setRestoring(null);
-      if (!answered.ok) {
-        setArchiveTrouble(answered.error.message);
-        return;
-      }
+      if (!answered.ok) return answered.error;
       await readArchive();
       router.refresh();
+      return null;
     },
     [client, readArchive, router],
   );
@@ -482,49 +478,12 @@ export function OrganizationHub({
           and the way back is on the row (the archived-items law, 2026-09-09). */}
       <section data-hub-archive className="rounded-lg border border-border bg-card p-3">
         <ArchivedDisclosure noun="tables" count={archivedTables?.length}>
-          {archiveNote ? <p className="py-2 text-xs text-muted-foreground">{archiveNote}</p> : null}
-          {archiveTrouble ? (
-            <p className="py-2 text-xs text-destructive">
-              The archive did not answer, so nothing was read — this is not an empty archive.{" "}
-              {archiveTrouble}
-            </p>
-          ) : archivedTables === null ? (
-            <p className="py-2 text-xs text-muted-foreground">Asking the store&rsquo;s archive…</p>
-          ) : archivedTables.length === 0 ? (
-            <p className="py-2 text-xs text-muted-foreground">
-              Nothing has been archived here. Archiving a table takes it out of everyone&rsquo;s
-              list and keeps its records, so it can always come back.
-            </p>
-          ) : (
-            <ul>
-              {archivedTables.map((table) => (
-                <li
-                  key={table.id}
-                  className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-border py-2 first:border-t-0"
-                >
-                  <span className="text-sm text-foreground">{table.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {table.archivedByName ? `${table.archivedByName}, ` : ""}
-                    {new Date(table.archivedAt).toLocaleString(undefined, {
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="ml-auto"
-                    disabled={restoring === table.id}
-                    onClick={() => void bringBack(table.id)}
-                  >
-                    {restoring === table.id ? "Bringing it back…" : "Bring it back"}
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <ArchivedTablesList
+            tables={archivedTables}
+            readTrouble={archiveTrouble}
+            note={archiveNote}
+            onBringBack={bringBack}
+          />
         </ArchivedDisclosure>
         <div className="mt-2">
           <ArchivedPortals />

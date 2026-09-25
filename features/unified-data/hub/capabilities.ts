@@ -204,6 +204,25 @@ export function emptyInLane(capabilityTitle: string, lane: VisibilityLane): stri
   return `No ${capabilityTitle.toLowerCase()} in ${VISIBILITY_LANE_TITLE[lane]}. ${LANE_EMPTY_SENTENCE[lane]}`;
 }
 
+/**
+ * DOES THE SHARED-ONLY SENTENCE SPEAK TO THIS PERSON? (UI-FIX-19, VERIFIER-19 #8)
+ *
+ * `shared_only` closes the organization-member lane only (`iam.member_lane_open`): the owner's and
+ * the admins' own lanes still reach every table, so the owner of admin's Workspace was told
+ * "This organization shows each member only what is shared with them" beside a count that was
+ * every table. The sentence is for a member who is not an owner or admin. An owner or admin — and
+ * anyone whose role is not known yet — reads the ordinary sentence, "The tables you can open in
+ * this organization", which is true of every seat.
+ */
+export function seesOnlyWhatIsShared(
+  memberVisibility: unknown,
+  role: string | null | undefined,
+): boolean {
+  if (memberVisibility !== "shared_only") return false;
+  if (!role) return false;
+  return role !== "owner" && role !== "admin";
+}
+
 /** The Tables sentence for a member who sees only what is shared with them. */
 export const SHARED_ONLY_EMPTY =
   "In this organization you see only the tables someone has shared with you, and none has been " +
