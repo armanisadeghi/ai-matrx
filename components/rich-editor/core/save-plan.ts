@@ -13,25 +13,28 @@
 //      it on purpose. Removed and changed islands are listed so the screen can
 //      ask; an island whose bytes are still there but that is no longer an
 //      island (an unclosed fence or tag swallowed it) is listed separately.
-//      This is also the editor's half of the island-edit contract: content-ir
-//      is moving to refuse any splice that touches an island, with island
-//      changes going through an explicit island-replace call — so an island
-//      change is classified HERE, never left for spliceSave to accept.
+//      This is the editor's half of content-ir's strict splice contract
+//      (0.13): an island change is classified HERE and applied only through
+//      `islandEdit` (see spliceInSteps), never slipped into a prose edit.
 //   3. The splice itself (`@ai-matrx/content-ir/source` spliceSave, integrity
-//      required): every island outside the edits must survive at its mapped
-//      position; the change set carries anchors through the save.
+//      required), in two proven steps — islands, then prose. Every island
+//      outside the edits must survive at its mapped position; the change sets
+//      carry anchors through the save (`mapSavePosition`).
 //
 // The result's `text` is always exactly `current` — the plan never rewrites
 // what the person wrote; it only decides whether it may be stored.
 
 import {
+  islandEdit,
   listIslands,
+  mapPosition,
   spliceSave,
   tokenizeSource,
   SourceSpliceError,
   type SourceBlock,
+  type MapOptions,
+  type MappedPosition,
   type SourceChange,
-  type SourceEdit,
   type SourceIsland,
   type SpliceIntegrity,
 } from "@ai-matrx/content-ir/source";
@@ -44,7 +47,7 @@ export interface SaveRegion {
   readonly text: string;
 }
 
-export type IslandDeltaKind = "removed" | "changed" | "swallowed" | "added";
+export type IslandDeltaKind = "removed" | "changed" | "swallowed" | "moved" | "added";
 
 export interface IslandDelta {
   readonly kind: IslandDeltaKind;
@@ -66,9 +69,13 @@ export interface SavePlan {
   readonly islandDeltas: readonly IslandDelta[];
   /** Removed / changed / swallowed islands the person did not approve. */
   readonly needsConsent: readonly IslandDelta[];
-  readonly changes: readonly SourceChange[];
+  /**
+   * The change sets of the save's splice steps, in order (island step, then
+   * prose step). Carry an anchor through with `mapSavePosition`.
+   */
+  readonly changeSteps: ReadonlyArray<readonly SourceChange[]>;
   readonly integrity: SpliceIntegrity | null;
-  /** A refusal nobody can consent past (a broken invariant or disturbed island). */
+  /** Why the save could not be proven; the person may still save (validation offers, never blocks). */
   readonly error: string | null;
 }
 
@@ -179,15 +186,26 @@ function islandDeltas(regions: readonly RegionIslands[]): IslandDelta[] {
     }
   });
 
-  // Moves: the same island left one place and arrived in another.
+  // Moves: the same island left one place and arrived in another. Recorded (the
+  // splice lifts it out of its old place with islandEdit) but never a question.
+  const deltas: IslandDelta[] = [];
   const unmatchedGone: typeof gone = [];
   for (const entry of gone) {
     const at = added.findIndex((candidate) => islandKey(candidate.island) === islandKey(entry.island));
-    if (at === -1) unmatchedGone.push(entry);
-    else added.splice(at, 1);
+    if (at === -1) {
+      unmatchedGone.push(entry);
+      continue;
+    }
+    const [arrival] = added.splice(at, 1);
+    deltas.push({
+      kind: "moved",
+      islandType: entry.island.islandType,
+      before: entry.island.raw,
+      after: arrival?.island.raw ?? entry.island.raw,
+      at: entry.island.start,
+    });
   }
 
-  const deltas: IslandDelta[] = [];
   const swallowedBudget = new Map<string, number>();
   for (const { island, region } of unmatchedGone) {
     const info = regions[region];
@@ -230,23 +248,108 @@ function islandDeltas(regions: readonly RegionIslands[]): IslandDelta[] {
   return deltas;
 }
 
+interface SpliceStep {
+  text: string;
+  changes: readonly SourceChange[];
+  integrity: SpliceIntegrity;
+}
+
 /**
- * Apply the regions to the stored text. THE ONE CALL INTO THE PACKAGE'S
- * SPLICE: when content-ir ships its explicit island-replace API, regions whose
- * deltas carry an approved island change route through it here.
+ * THE ONE PLACE THE SAVE CALLS THE PACKAGE'S SPLICE, under content-ir's strict
+ * contract (0.13): an island changes ONLY through `islandEdit`, and a prose
+ * edit must carry every island in its range back byte-identical. So a save is
+ * two proven steps over the stored text:
+ *   1. island step — every island that was changed, removed, swallowed or moved
+ *      AWAY is rewritten in place with `islandEdit` (its new bytes, or nothing);
+ *   2. prose step — block-aligned edits from that text to what is on screen,
+ *      which by now only ADD islands, never change one.
+ * Integrity is required on both (the package default).
  */
-function applyRegions(
-  stored: string,
-  blocks: readonly SourceBlock[],
-  regions: readonly SaveRegion[],
-): { text: string; changes: readonly SourceChange[]; integrity: SpliceIntegrity } {
-  const edits: SourceEdit[] = regions.map((region) => ({
-    start: region.start,
-    end: region.end,
-    text: region.text,
-  }));
-  const result = spliceSave(stored, edits, { blocks, requireIntegrity: true });
-  return { text: result.text, changes: result.changes, integrity: result.integrity };
+function spliceInSteps(stored: string, current: string, deltas: readonly IslandDelta[]): SpliceStep[] {
+  const steps: SpliceStep[] = [];
+  const islandEdits = deltas
+    .filter((delta) => delta.kind !== "added" && delta.before !== null)
+    .map((delta) =>
+      islandEdit(
+        { start: delta.at, end: delta.at + (delta.before ?? "").length },
+        delta.kind === "changed" ? (delta.after ?? "") : "",
+      ),
+    )
+    .sort((x, y) => x.start - y.start);
+  let text = stored;
+  if (islandEdits.length) {
+    const result = spliceSave(stored, islandEdits);
+    steps.push({ text: result.text, changes: result.changes, integrity: result.integrity });
+    text = result.text;
+  }
+  if (text !== current) {
+    const plan = regionsBetween(text, current);
+    const result = spliceSave(
+      text,
+      plan.regions.map((region) => ({ start: region.start, end: region.end, text: region.text })),
+      { blocks: plan.storedBlocks },
+    );
+    steps.push({ text: result.text, changes: result.changes, integrity: result.integrity });
+  }
+  return steps;
+}
+
+interface RegionsBetween {
+  storedBlocks: readonly SourceBlock[];
+  regions: SaveRegion[];
+  regionIslands: RegionIslands[];
+}
+
+/** Stored blocks identical in the new text (in order) are anchors; everything between two that differs is one region. */
+function regionsBetween(stored: string, current: string): RegionsBetween {
+  const storedBlocks = tokenizeSource(stored);
+  const currentBlocks = tokenizeSource(current);
+  const a = storedBlocks.filter((block) => block.kind !== "gap");
+  const b = currentBlocks.filter((block) => block.kind !== "gap");
+  const anchors = matchBlocks(a.map(blockKey), b.map(blockKey));
+  const storedIslands = listIslands(storedBlocks);
+  const currentIslands = listIslands(currentBlocks);
+  const within = (islands: readonly SourceIsland[], start: number, end: number) =>
+    islands.filter((island) => island.start >= start && island.end <= end);
+
+  const bounds: Array<[number, number, number, number]> = [];
+  let prevStored = 0;
+  let prevCurrent = 0;
+  for (const [ai, bi] of anchors) {
+    const sa = a[ai];
+    const sb = b[bi];
+    if (!sa || !sb) continue;
+    bounds.push([prevStored, sa.start, prevCurrent, sb.start]);
+    prevStored = sa.end;
+    prevCurrent = sb.end;
+  }
+  bounds.push([prevStored, stored.length, prevCurrent, current.length]);
+
+  const regions: SaveRegion[] = [];
+  const regionIslands: RegionIslands[] = [];
+  for (const [sStart, sEnd, cStart, cEnd] of bounds) {
+    const before = stored.slice(sStart, sEnd);
+    const after = current.slice(cStart, cEnd);
+    if (before === after) continue;
+    regions.push({ start: sStart, end: sEnd, text: after });
+    regionIslands.push({
+      before: within(storedIslands, sStart, sEnd),
+      after: within(currentIslands, cStart, cEnd),
+      afterText: after,
+      regionStart: sStart,
+    });
+  }
+  return { storedBlocks, regions, regionIslands };
+}
+
+/** Carry a stored-text position through a save (every step, in order). */
+export function mapSavePosition(plan: SavePlan, pos: number, options?: MapOptions): MappedPosition {
+  let mapped: MappedPosition = { pos, deleted: false };
+  for (const step of plan.changeSteps) {
+    const next = mapPosition(step, mapped.pos, options);
+    mapped = { pos: next.pos, deleted: mapped.deleted || next.deleted };
+  }
+  return mapped;
 }
 
 export function planSave(
@@ -261,75 +364,41 @@ export function planSave(
     regions: [],
     islandDeltas: [],
     needsConsent: [],
-    changes: [],
+    changeSteps: [],
     integrity: { ok: true, bytesOutsideEditsIdentical: true, disturbed: [] },
     error: null,
   };
   if (stored === current) return unchanged;
 
-  const storedBlocks = tokenizeSource(stored);
-  const currentBlocks = tokenizeSource(current);
-  const a = storedBlocks.filter((block) => block.kind !== "gap");
-  const b = currentBlocks.filter((block) => block.kind !== "gap");
-  const anchors = matchBlocks(a.map(blockKey), b.map(blockKey));
-
-  const storedIslands = listIslands(storedBlocks);
-  const currentIslands = listIslands(currentBlocks);
-  const within = (islands: readonly SourceIsland[], start: number, end: number) =>
-    islands.filter((island) => island.start >= start && island.end <= end);
-
-  const regions: SaveRegion[] = [];
-  const bounds: Array<[number, number, number, number]> = [];
-  let prevStored = 0;
-  let prevCurrent = 0;
-  for (const [ai, bi] of anchors) {
-    const sa = a[ai];
-    const sb = b[bi];
-    if (!sa || !sb) continue;
-    bounds.push([prevStored, sa.start, prevCurrent, sb.start]);
-    prevStored = sa.end;
-    prevCurrent = sb.end;
-  }
-  bounds.push([prevStored, stored.length, prevCurrent, current.length]);
-
-  const regionIslands: RegionIslands[] = [];
-  for (const [sStart, sEnd, cStart, cEnd] of bounds) {
-    const before = stored.slice(sStart, sEnd);
-    const after = current.slice(cStart, cEnd);
-    if (before === after) continue;
-    regions.push({ start: sStart, end: sEnd, text: after });
-    regionIslands.push({
-      before: within(storedIslands, sStart, sEnd),
-      after: within(currentIslands, cStart, cEnd),
-      afterText: after,
-      regionStart: sStart,
-    });
-  }
+  const { regions, regionIslands } = regionsBetween(stored, current);
   const deltas = islandDeltas(regionIslands);
 
   const approved = options.approvedIslands ?? new Set<string>();
   const needsConsent = deltas.filter(
     (delta) =>
       delta.kind !== "added" &&
+      delta.kind !== "moved" &&
       !(delta.kind !== "swallowed" && delta.before !== null && approved.has(delta.before)),
   );
 
   let error: string | null = null;
-  let changes: readonly SourceChange[] = [];
+  let changeSteps: ReadonlyArray<readonly SourceChange[]> = [];
   let integrity: SpliceIntegrity | null = null;
   try {
-    const applied = applyRegions(stored, storedBlocks, regions);
-    changes = applied.changes;
-    integrity = applied.integrity;
-    if (applied.text !== current) {
+    const steps = spliceInSteps(stored, current, deltas);
+    changeSteps = steps.map((step) => step.changes);
+    integrity = steps[steps.length - 1]?.integrity ?? null;
+    if ((steps[steps.length - 1]?.text ?? stored) !== current) {
       error =
-        "The save could not be proven: splicing the edited blocks into the stored text did not reproduce what is on screen. Nothing was saved.";
+        "The save could not be proven: splicing the edited blocks into the stored text did not reproduce what is on screen.";
     }
   } catch (caught) {
     error =
       caught instanceof SourceSpliceError && caught.code === "integrity"
-        ? "This edit would change protected content outside the part you edited (for example, an unclosed code block or tag swallowing what follows). Close it or undo, then save."
-        : `The save could not be proven (${caught instanceof Error ? caught.message : String(caught)}). Nothing was saved.`;
+        ? "This edit would change protected content outside the part you edited (for example, an unclosed code block or tag swallowing what follows)."
+        : caught instanceof SourceSpliceError && caught.code === "island_edit"
+          ? `A protected block changed in a way the editor could not account for (${caught.message}).`
+          : `The save could not be proven (${caught instanceof Error ? caught.message : String(caught)}).`;
   }
 
   return {
@@ -339,7 +408,7 @@ export function planSave(
     regions,
     islandDeltas: deltas,
     needsConsent,
-    changes,
+    changeSteps,
     integrity,
     error,
   };

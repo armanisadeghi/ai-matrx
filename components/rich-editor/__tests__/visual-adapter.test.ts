@@ -23,7 +23,7 @@ import {
   serializeVisualDocument,
   type VisualBaseline,
 } from "../core/visual-document";
-import { planSave } from "../core/save-plan";
+import { mapSavePosition, planSave } from "../core/save-plan";
 import {
   ALL_FIXTURES,
   INTAKE_PROMPT,
@@ -238,5 +238,31 @@ describe("the save gate", () => {
     expect(plan.needsConsent).toEqual([]);
     expect(plan.islandDeltas.map((delta) => delta.kind)).toEqual(["added"]);
     expect(plan.error).toBeNull();
+  });
+});
+
+describe("the strict splice contract (content-ir 0.13: islands change only through islandEdit)", () => {
+  const STORED = "Greet {{customer_name}} warmly.\n\n```sql\nselect 1;\n```\n\nClose politely.";
+
+  it("a prose edit and an island removal in the same paragraph save as two proven steps", () => {
+    const current = "Greet warmly, always.\n\n```sql\nselect 1;\n```\n\nClose politely.";
+    const plan = planSave(STORED, current, { approvedIslands: new Set(["{{customer_name}}"]) });
+    expect(plan.error).toBeNull();
+    expect(plan.needsConsent).toEqual([]);
+    expect(plan.changeSteps).toHaveLength(2);
+  });
+
+  it("a code block edited in its own editor is spliced with islandEdit and nothing else moves", () => {
+    const current = STORED.replace("select 1;", "select 2;");
+    const plan = planSave(STORED, current, { approvedIslands: new Set(["```sql\nselect 1;\n```"]) });
+    expect(plan.error).toBeNull();
+    expect(plan.changeSteps).toHaveLength(1);
+    expect(mapSavePosition(plan, STORED.indexOf("Close politely")).pos).toBe(current.indexOf("Close politely"));
+  });
+
+  it("an anchor after a two-step save lands on the same words", () => {
+    const current = "Greet warmly, always.\n\n```sql\nselect 1;\n```\n\nClose politely.";
+    const plan = planSave(STORED, current, { approvedIslands: new Set(["{{customer_name}}"]) });
+    expect(mapSavePosition(plan, STORED.indexOf("politely")).pos).toBe(current.indexOf("politely"));
   });
 });
