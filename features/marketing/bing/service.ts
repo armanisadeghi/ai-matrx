@@ -12,12 +12,8 @@ import type {
   BingSiteBinding,
 } from "@/features/marketing/bing/types";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  applyOrganizationContextHeader,
-  requireOrganizationContext,
-} from "@/lib/api/organization-context";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 
 const CONNECTION_SELECT =
   "id, owner_type, owner_user_id, organization_id, provider, provider_subject, status, last_verified_at, last_error, created_at, updated_at, metadata";
@@ -144,13 +140,14 @@ function backendBase(): string {
  * `OrganizationContextError` (with the select-an-organization remedy) BEFORE
  * any networking. Same pattern as `features/marketing/seo/dataforseo/client.ts`.
  */
-function organizationContextHeaders(
+async function organizationContextHeaders(
   base: Record<string, string>,
-): Record<string, string> {
-  const store = getStoreSingleton();
-  const organizationId = requireOrganizationContext(
-    store ? selectOrganizationId(store.getState()) : null,
-  );
+  request: { method: string; interactive?: boolean },
+): Promise<Record<string, string>> {
+  // ORG-GATE-AUDIT: THE GATE, never the bare kernel. Connecting, binding a site or
+  // disconnecting Bing with no organization selected asks, then continues this
+  // same request instead of a bare refusal.
+  const organizationId = await ensureOrganizationForRequest(request);
   return applyOrganizationContextHeader(base, organizationId);
 }
 
@@ -167,10 +164,13 @@ async function aidreamPost(
     throw new Error("Sign in to manage Bing Webmaster.");
   const response = await fetch(`${backendBase()}${path}`, {
     method: "POST",
-    headers: organizationContextHeaders({
-      Authorization: `Bearer ${session.access_token}`,
-      "Content-Type": "application/json",
-    }),
+    headers: await organizationContextHeaders(
+      {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      { method: "POST" },
+    ),
     body: JSON.stringify(body),
   });
   if (!response.ok) {
@@ -212,9 +212,11 @@ export async function startBingOAuth(
   const response = await fetch(
     `${backendBase()}/api/bing-integrations/authorize-url?${query.toString()}`,
     {
-      headers: organizationContextHeaders({
-        Authorization: `Bearer ${session.access_token}`,
-      }),
+      // A GET, but the person pressed Connect: it asks.
+      headers: await organizationContextHeaders(
+        { Authorization: `Bearer ${session.access_token}` },
+        { method: "GET", interactive: true },
+      ),
     },
   );
   if (!response.ok) {

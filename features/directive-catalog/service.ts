@@ -25,12 +25,8 @@ import {
   type DirectiveApplyStateResult,
 } from "@/features/directive-catalog/types";
 import { parseHttpError } from "@/lib/api/errors";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  applyOrganizationContextHeader,
-  requireOrganizationContext,
-} from "@/lib/api/organization-context";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 
 /**
  * Organization admission rides with auth: the server's AuthMiddleware
@@ -42,11 +38,13 @@ import {
  * `organization_required` 400 gate one hop earlier (same pattern as
  * `features/scheduling/service/schedulerClient.ts`).
  */
-function authedDirectiveHeaders(token: string): Record<string, string> {
-  const store = getStoreSingleton();
-  const organizationId = requireOrganizationContext(
-    store ? selectOrganizationId(store.getState()) : null,
-  );
+async function authedDirectiveHeaders(
+  token: string,
+): Promise<Record<string, string>> {
+  // ORG-GATE-AUDIT: THE GATE, never the bare kernel — every directive call is
+  // a write the person pressed, so with no organization selected it asks, then
+  // continues this same request instead of throwing a bare refusal.
+  const organizationId = await ensureOrganizationForRequest({ method: "POST" });
   return applyOrganizationContextHeader(
     {
       "Content-Type": "application/json",
@@ -119,7 +117,7 @@ export async function executeDirective(
 
   const response = await fetch(url, {
     method: "POST",
-    headers: authedDirectiveHeaders(token),
+    headers: await authedDirectiveHeaders(token),
     body: JSON.stringify(body),
   });
   if (!response.ok) {
@@ -173,7 +171,7 @@ export async function confirmDirective(
 
   const response = await fetch(url, {
     method: "POST",
-    headers: authedDirectiveHeaders(token),
+    headers: await authedDirectiveHeaders(token),
     body: JSON.stringify(body),
   });
   if (!response.ok) {
@@ -225,7 +223,7 @@ export async function fetchDirectiveApplyState(
 
   const response = await fetch(url, {
     method: "POST",
-    headers: authedDirectiveHeaders(token),
+    headers: await authedDirectiveHeaders(token),
     body: JSON.stringify(body),
   });
   if (!response.ok) throw await parseHttpError(response);

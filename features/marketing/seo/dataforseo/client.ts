@@ -26,12 +26,8 @@ import type {
   SiteLinkGapSeedResponse,
 } from "./types";
 
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  applyOrganizationContextHeader,
-  requireOrganizationContext,
-} from "@/lib/api/organization-context";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 
 /**
  * Organization admission rides with auth: the server's AuthMiddleware
@@ -43,13 +39,14 @@ import {
  * matching the server's `organization_required` 400 gate one hop earlier.
  * Same pattern as `features/scheduling/service/schedulerClient.ts`.
  */
-function organizationContextHeaders(
+async function organizationContextHeaders(
   base: Record<string, string>,
-): Record<string, string> {
-  const store = getStoreSingleton();
-  const organizationId = requireOrganizationContext(
-    store ? selectOrganizationId(store.getState()) : null,
-  );
+  method: string,
+): Promise<Record<string, string>> {
+  // ORG-GATE-AUDIT: THE GATE, never the bare kernel. A run the person starts
+  // with no organization selected asks, then continues this same request; a
+  // background read keeps the fail-closed refusal.
+  const organizationId = await ensureOrganizationForRequest({ method });
   return applyOrganizationContextHeader(base, organizationId);
 }
 
@@ -80,11 +77,14 @@ async function seoRequest<T>(
 ): Promise<T> {
   const response = await fetch(`${normalizedBaseUrl(serverUrl)}${path}`, {
     ...init,
-    headers: organizationContextHeaders({
-      Authorization: `Bearer ${accessToken}`,
-      ...(init?.body ? { "Content-Type": "application/json" } : {}),
-      ...((init?.headers as Record<string, string> | undefined) ?? {}),
-    }),
+    headers: await organizationContextHeaders(
+      {
+        Authorization: `Bearer ${accessToken}`,
+        ...(init?.body ? { "Content-Type": "application/json" } : {}),
+        ...((init?.headers as Record<string, string> | undefined) ?? {}),
+      },
+      init?.method ?? "GET",
+    ),
   });
   const payload: unknown = await response.json().catch(() => null);
   if (!response.ok) {
@@ -114,10 +114,13 @@ async function seoStreamTerminal<T>(
 ): Promise<T> {
   const response = await fetch(`${normalizedBaseUrl(serverUrl)}${path}`, {
     method: "POST",
-    headers: organizationContextHeaders({
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    }),
+    headers: await organizationContextHeaders(
+      {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      "POST",
+    ),
     body: JSON.stringify(body),
     signal,
   });

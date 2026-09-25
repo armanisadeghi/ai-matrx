@@ -25,8 +25,7 @@ import { useHtmlPreviewState } from "@/features/html-pages/hooks/useHtmlPreviewS
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { useNewNoteOrganization } from "@/features/notes/hooks/useNewNoteOrganization";
 
 interface ContentManagerMenuProps {
   content: string;
@@ -44,7 +43,9 @@ export function ContentManagerMenu({
   const [isHtmlEditorOpen, setIsHtmlEditorOpen] = useState(false);
   const buttonRef = React.useRef<HTMLButtonElement>(null);
   const user = useAppSelector(selectUser);
-  const organizationId = useAppSelector(selectOrganizationId);
+  // ORG-GATE-AUDIT: "Save to Scratch" with no organization selected asks (the
+  // new-note resolver), then saves — never the bare kernel's refusal.
+  const resolveNewNoteOrganization = useNewNoteOrganization();
 
   // HTML Preview Editor state
   const htmlPreviewState = useHtmlPreviewState({
@@ -60,7 +61,7 @@ export function ContentManagerMenu({
 
   // Notes handlers
   const handleSaveToScratch = async () => {
-    const capturedOrganizationId = requireOrganizationContext(organizationId);
+    const capturedOrganizationId = await resolveNewNoteOrganization();
     await NotesAPI.create({
       label: "New Note",
       content: content,

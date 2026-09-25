@@ -11,6 +11,7 @@ import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { RecordsMount, WhereItLives, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 
 const SELECT_COLS = "id, table_name, description, version, updated_at";
 
@@ -100,6 +101,8 @@ export default function OrgTablesPage() {
         <RecordsMount
           letTheStoreDecideRights
           config={{ dataSource, actor: personActor(userId), organizationId: resolvedOrgId }}
+          // The page's toasts: a landed move's sentence outlives the list's re-read (UI-FIX-19).
+          host={{ notify: RECORDS_NOTIFY }}
         >
           <OrgResourceList
             key={reread}

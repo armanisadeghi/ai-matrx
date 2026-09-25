@@ -7,11 +7,8 @@
  * only metadata and user intent.
  */
 import { createClient } from "@/utils/supabase/client";
-import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
-import {
-  applyOrganizationContextHeader,
-  requireOrganizationContext,
-} from "@/lib/api/organization-context";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 
 export const MAX_VAULT_ATTACHMENT_BYTES = 25 * 1024 * 1024;
@@ -20,8 +17,13 @@ function backendBase(): string {
   return AIDREAM_PRODUCTION_URL;
 }
 
-async function authorizationHeader(): Promise<Record<string, string>> {
-  const organizationId = requireOrganizationContext(requireSelectedOrgId());
+async function authorizationHeader(
+  method: string,
+): Promise<Record<string, string>> {
+  // ORG-GATE-AUDIT: THE GATE, never the bare kernel. Attaching or replacing a
+  // Vault file with no organization selected asks, then continues this same
+  // upload; a download read keeps the fail-closed refusal.
+  const organizationId = await ensureOrganizationForRequest({ method });
   const supabase = createClient();
   const {
     data: { session },
@@ -61,7 +63,7 @@ export async function uploadVaultAttachment<T>(
   form.set("handling", metadata.handling);
   const response = await fetch(
     `${backendBase()}/api/vault/items/${encodeURIComponent(itemId)}/attachments`,
-    { method: "POST", headers: await authorizationHeader(), body: form },
+    { method: "POST", headers: await authorizationHeader("POST"), body: form },
   );
   if (!response.ok) throw await responseError(response);
   return (await response.json()) as T;
@@ -80,7 +82,7 @@ export async function replaceVaultAttachment<T>(
   form.set("file", file);
   const response = await fetch(
     `${backendBase()}/api/vault/items/${encodeURIComponent(itemId)}/attachments/${encodeURIComponent(attachmentId)}/file`,
-    { method: "PUT", headers: await authorizationHeader(), body: form },
+    { method: "PUT", headers: await authorizationHeader("PUT"), body: form },
   );
   if (!response.ok) throw await responseError(response);
   return (await response.json()) as T;
@@ -93,7 +95,7 @@ export async function downloadVaultAttachment(
 ): Promise<void> {
   const response = await fetch(
     `${backendBase()}/api/vault/items/${encodeURIComponent(itemId)}/attachments/${encodeURIComponent(attachmentId)}/download`,
-    { headers: await authorizationHeader(), cache: "no-store" },
+    { headers: await authorizationHeader("GET"), cache: "no-store" },
   );
   if (!response.ok) throw await responseError(response);
   const blob = await response.blob();

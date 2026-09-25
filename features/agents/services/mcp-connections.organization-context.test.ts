@@ -1,7 +1,7 @@
 // ORG-GATE-AUDIT regression — see lib/organization/__tests__/gate-harness.ts.
-// Pre-fix, organizationContextHeaders was synchronous over the bare kernel:
-// starting a DataForSEO collection with no organization selected threw and the
-// picker never opened.
+// Pre-fix, authHeaders fed `explicit ?? selectOrganizationId(store)` to the
+// bare kernel: invoking an MCP tool with no organization selected was a bare
+// refusal and the picker never opened.
 const getSession = jest.fn();
 const getState = jest.fn();
 
@@ -24,11 +24,11 @@ import {
   selectOrganization,
 } from "@/lib/organization/__tests__/gate-harness";
 import {
-  createDataForSeoCollection,
-  listDataForSeoOperations,
-} from "./client";
+  discoverMcpServerTools,
+  invokeMcpServerTool,
+} from "./mcp-connections.service";
 
-describe("DataForSEO client — organization gate", () => {
+describe("MCP connections — organization gate", () => {
   beforeEach(() => {
     jest.resetAllMocks();
     resetGate();
@@ -37,26 +37,24 @@ describe("DataForSEO client — organization gate", () => {
   });
   afterEach(resetGate);
 
-  it("starting a collection with no organization selected asks, then the SAME call continues", async () => {
-    const fetchMock = mockFetchJson({ run_id: "run-1" });
+  it("invoking a tool with no organization selected asks, then the SAME call continues", async () => {
+    const fetchMock = mockFetchJson({ ok: true, content: [] });
     const opened = mountPickerAnswering(CHOSEN_ORG);
 
-    await createDataForSeoCollection("https://seo.example.test", "jwt", {
-      operation: "serp.google.organic",
-    } as unknown as Parameters<typeof createDataForSeoCollection>[2]);
+    await invokeMcpServerTool("server-linear", "list_issues", { team: "ENG" });
 
     expect(opened).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(organizationHeaderOf(fetchMock)).toBe(CHOSEN_ORG);
   });
 
-  it("listing operations (a read) never opens the picker", async () => {
-    const fetchMock = mockFetchJson({ operations: [] });
+  it("tool discovery (a read) never opens the picker", async () => {
+    const fetchMock = mockFetchJson({ server_id: "s", server_slug: null, tools: [] });
     const opened = mountPickerAnswering(CHOSEN_ORG);
 
-    await expect(
-      listDataForSeoOperations("https://seo.example.test", "jwt"),
-    ).rejects.toMatchObject({ code: "organization_context_required" });
+    await expect(discoverMcpServerTools("server-linear")).rejects.toMatchObject({
+      code: "organization_context_required",
+    });
     expect(opened).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
   });

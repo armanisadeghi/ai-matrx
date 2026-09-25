@@ -1,11 +1,8 @@
 /** Live Cloud Browser data and control-plane client. */
 import { getJson, postJson, requestRaw } from "@/lib/python-client";
 import { supabase } from "@/utils/supabase/client";
-import {
-  peekSelectedOrganizationId,
-  waitForOrganizationAdmission,
-} from "@/lib/api/organization-admission";
-import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { waitForOrganizationAdmission } from "@/lib/api/organization-admission";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { getResourceAccess } from "@/utils/permissions/access";
 import { canViewAccess } from "@/utils/permissions/access-core";
@@ -628,9 +625,12 @@ async function startRun(profileId?: string): Promise<string> {
     let start = startRunAttempts.get(key);
     if (!start) {
       await waitForOrganizationAdmission();
+      // ORG-GATE-AUDIT: THE GATE, never the bare kernel. Starting a browser is
+      // something the person did (they opened Cloud Browser), so with no
+      // organization selected it asks, then this same start continues.
       start = {
         activationKey: crypto.randomUUID(),
-        organizationId: requireOrganizationContext(peekSelectedOrganizationId()),
+        organizationId: await ensureOrganizationContext(),
       };
       startRunAttempts.set(key, start);
     }
@@ -959,9 +959,13 @@ export async function mintStreamTicket(
   // A stream ticket and its lease must stay in the organization that admitted
   // the initiating request even if the person changes organization mid-connect.
   await waitForOrganizationAdmission();
-  const organizationId = requireOrganizationContext(
-    peekSelectedOrganizationId(),
-  );
+  // ORG-GATE-AUDIT: the automatic open on mount/reload never raises a dialog
+  // with nothing behind it; a press of Take control / Reconnect (`takeover`)
+  // is the person's act, so with no organization selected it asks, then
+  // continues this same connect.
+  const organizationId = await ensureOrganizationContext({
+    interactive: takeover,
+  });
   const { data } = await postJson<unknown>(
     `/browser-manager/runs/${runId}/stream-ticket`,
     { mode, takeover },

@@ -30,7 +30,7 @@ import {
 import { operationFailed } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { requireOrganizationContext } from "@/lib/api/organization-context";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/store";
@@ -1366,6 +1366,16 @@ export const copyNote = createAsyncThunk<
       ? "New Note"
       : `${record.label} (Copy)`;
 
+  // Keep the copy in the original's org — EXCEPT when duplicating a note
+  // someone shared with us: the sharee may not be a member of the owner's org
+  // and std_insert would 42501, so their copy is homed in the organization
+  // they are working in. ORG-GATE-AUDIT: that branch goes through THE GATE —
+  // pressing Duplicate with no organization selected asks, then this same
+  // copy continues, instead of a bare refusal.
+  const copyOrganizationId = record._sharedWithMe
+    ? await ensureOrganizationContext()
+    : requireOrganizationContext(record.organization_id);
+
   const { data, error } = await supabase
     .schema("workbench")
     .from("notes")
@@ -1381,13 +1391,7 @@ export const copyNote = createAsyncThunk<
       // A duplicate is private by default — don't inherit a shared
       // visibility, and don't fall through to the DB 'internal' default.
       visibility: "personal",
-      // Keep the copy in the original's org — EXCEPT when duplicating a
-      // note someone shared with us: the sharee may not be a member of the
-      // owner's org and std_insert would 42501. Home their copy in their
-      // own active/personal org instead.
-      organization_id: record._sharedWithMe
-        ? requireOrganizationContext(selectOrganizationId(state))
-        : requireOrganizationContext(record.organization_id),
+      organization_id: copyOrganizationId,
     })
     .select()
     .single();

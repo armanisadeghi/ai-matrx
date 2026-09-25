@@ -25,12 +25,8 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  applyOrganizationContextHeader,
-  requireOrganizationContext,
-} from "@/lib/api/organization-context";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import type { paths } from "@/types/python-generated/api-types";
 import type {
   ConversationAttachment,
@@ -95,20 +91,18 @@ export interface AttachableCandidate {
   metadata: Record<string, unknown> | null;
 }
 
-async function authHeaders(): Promise<Record<string, string>> {
+async function authHeaders(method: string): Promise<Record<string, string>> {
   const supabase = createClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Not signed in");
   // Organization admission rides with auth — aidream refuses any Bearer-JWT
-  // request that names no organization. Resolved through the ONE fail-closed
-  // kernel, so a missing organization throws with its remedy before any
-  // networking (same pattern as `mcp-connections.service.ts`).
-  const store = getStoreSingleton();
-  const organizationId = requireOrganizationContext(
-    store ? selectOrganizationId(store.getState()) : null,
-  );
+  // request that names no organization. Resolved through THE GATE, never the
+  // bare kernel (ORG-GATE-AUDIT): attaching or detaching with no organization
+  // selected asks, then continues this same request; a background list read
+  // keeps the fail-closed refusal before any networking.
+  const organizationId = await ensureOrganizationForRequest({ method });
   return applyOrganizationContextHeader(
     {
       Authorization: `Bearer ${session.access_token}`,
@@ -152,8 +146,8 @@ async function failureMessage(
 }
 
 async function attachFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers = await authHeaders();
   const method = init?.method ?? "GET";
+  const headers = await authHeaders(method);
   let resp: Response;
   try {
     resp = await fetch(`${AIDREAM_PRODUCTION_URL}/api${path}`, {

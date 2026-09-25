@@ -15,11 +15,11 @@
 import { createClient } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { makeAssertData } from "@/utils/errors";
-import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import {
-  applyOrganizationContextHeader,
-  requireOrganizationContext,
-} from "@/lib/api/organization-context";
+  ensureOrganizationContext,
+  ensureOrganizationForRequest,
+} from "@/lib/organization/organization-gate";
 import {
   downloadVaultAttachment as downloadVaultAttachmentBytes,
   replaceVaultAttachment as replaceVaultAttachmentBytes,
@@ -196,17 +196,33 @@ export class VaultImportTransportError extends Error {
   }
 }
 
+/**
+ * The active organization as an IDENTITY READ — never asks. The export/import
+ * actor freeze and every re-check after it compare this value before and after
+ * a send; opening the picker mid-comparison would change the very thing being
+ * compared, so these reads go through the gate NON-interactively (fail-closed,
+ * exactly as before).
+ */
+function readActiveOrganizationForIdentity(): Promise<string> {
+  return ensureOrganizationContext({ interactive: false });
+}
+
 async function authHeaders(
   expectedActor?: VaultExpectedActor,
   contextError: () => Error = () =>
     new VaultImportTransportError("context_changed"),
+  method = "GET",
 ): Promise<{
   organizationId: string;
   headers: Record<string, string>;
 }> {
+  // ORG-GATE-AUDIT: ordinary transport goes through THE GATE — saving,
+  // rotating or deleting a secret with no organization selected asks, then
+  // continues this same request; a background read keeps the fail-closed
+  // refusal. An actor-frozen send never asks (see readActiveOrganizationForIdentity).
   const initialOrganizationId = expectedActor
     ? null
-    : requireOrganizationContext(requireSelectedOrgId());
+    : await ensureOrganizationForRequest({ method });
   const supabase = createClient();
   const {
     data: { session },
@@ -225,7 +241,7 @@ async function authHeaders(
   // Imports reread request context after final auth await; ordinary transport
   // keeps its existing fail-before-auth behavior.
   const organizationId =
-    initialOrganizationId ?? requireOrganizationContext(requireSelectedOrgId());
+    initialOrganizationId ?? (await readActiveOrganizationForIdentity());
   if (
     expectedActor &&
     (expectedActor.userId !== user.id ||
@@ -257,7 +273,7 @@ export async function getVaultExportActor(): Promise<VaultVerifiedExportActor> {
   if (error || !user || !user.email) throw new Error("Not signed in");
   return {
     userId: user.id,
-    organizationId: requireOrganizationContext(requireSelectedOrgId()),
+    organizationId: await readActiveOrganizationForIdentity(),
     email: user.email,
   };
 }
@@ -585,7 +601,11 @@ async function vaultFetch<T>(
   init?: RequestInit,
   expectedActor?: VaultExpectedActor,
 ): Promise<T> {
-  const { organizationId, headers: auth } = await authHeaders(expectedActor);
+  const { organizationId, headers: auth } = await authHeaders(
+    expectedActor,
+    undefined,
+    init?.method ?? "GET",
+  );
   const suppliedHeaders = Object.fromEntries(
     new Headers(init?.headers).entries(),
   );
@@ -685,7 +705,7 @@ export async function getVaultImportActor(): Promise<VaultExpectedActor> {
     error,
   } = await getClaimsUser(supabase);
   if (error || !user) throw new Error("Not signed in");
-  const organizationId = requireOrganizationContext(requireSelectedOrgId());
+  const organizationId = await readActiveOrganizationForIdentity();
   return { userId: user.id, organizationId };
 }
 

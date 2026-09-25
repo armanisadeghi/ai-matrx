@@ -1,7 +1,7 @@
 // ORG-GATE-AUDIT regression — see lib/organization/__tests__/gate-harness.ts.
-// Pre-fix, organizationContextHeaders was synchronous over the bare kernel:
-// starting a DataForSEO collection with no organization selected threw and the
-// picker never opened.
+// Pre-fix, organizationContextHeaders read the selection into the bare kernel
+// synchronously: disconnecting Bing or pressing Connect with no organization
+// selected threw and the picker never opened.
 const getSession = jest.fn();
 const getState = jest.fn();
 
@@ -23,12 +23,9 @@ import {
   resetGate,
   selectOrganization,
 } from "@/lib/organization/__tests__/gate-harness";
-import {
-  createDataForSeoCollection,
-  listDataForSeoOperations,
-} from "./client";
+import { disconnectBing, startBingOAuth } from "./service";
 
-describe("DataForSEO client — organization gate", () => {
+describe("Bing Webmaster — organization gate", () => {
   beforeEach(() => {
     jest.resetAllMocks();
     resetGate();
@@ -37,27 +34,24 @@ describe("DataForSEO client — organization gate", () => {
   });
   afterEach(resetGate);
 
-  it("starting a collection with no organization selected asks, then the SAME call continues", async () => {
-    const fetchMock = mockFetchJson({ run_id: "run-1" });
+  it("disconnecting with no organization selected asks, then the SAME call continues", async () => {
+    const fetchMock = mockFetchJson({});
     const opened = mountPickerAnswering(CHOSEN_ORG);
 
-    await createDataForSeoCollection("https://seo.example.test", "jwt", {
-      operation: "serp.google.organic",
-    } as unknown as Parameters<typeof createDataForSeoCollection>[2]);
+    await disconnectBing("conn-bing-1");
 
     expect(opened).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(organizationHeaderOf(fetchMock)).toBe(CHOSEN_ORG);
   });
 
-  it("listing operations (a read) never opens the picker", async () => {
-    const fetchMock = mockFetchJson({ operations: [] });
+  it("pressing Connect (a GET, but the person's act) also asks", async () => {
+    const fetchMock = mockFetchJson({ authorize_url: "https://www.bing.com/webmasters/oauth" });
     const opened = mountPickerAnswering(CHOSEN_ORG);
 
-    await expect(
-      listDataForSeoOperations("https://seo.example.test", "jwt"),
-    ).rejects.toMatchObject({ code: "organization_context_required" });
-    expect(opened).not.toHaveBeenCalled();
-    expect(fetchMock).not.toHaveBeenCalled();
+    await startBingOAuth({ type: "user" } as Parameters<typeof startBingOAuth>[0]).catch(() => undefined);
+
+    expect(opened).toHaveBeenCalledTimes(1);
+    expect(organizationHeaderOf(fetchMock)).toBe(CHOSEN_ORG);
   });
 });

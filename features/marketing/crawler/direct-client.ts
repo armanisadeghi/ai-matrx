@@ -8,12 +8,8 @@ import {
 } from "@/lib/api/errors";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { supabase } from "@/utils/supabase/client";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  applyOrganizationContextHeader,
-  requireOrganizationContext,
-} from "@/lib/api/organization-context";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
 import { isJsonRecord, type CrawlEvent } from "@/features/marketing/types";
 import type { CrawlRenderMode } from "@/features/marketing/crawler/crawl-options";
@@ -397,13 +393,14 @@ async function bearerToken(): Promise<string> {
  * `OrganizationContextError` (with the select-an-organization remedy) BEFORE
  * any networking. Same pattern as `features/marketing/seo/dataforseo/client.ts`.
  */
-function organizationContextHeaders(
+async function organizationContextHeaders(
   base: Record<string, string>,
-): Record<string, string> {
-  const store = getStoreSingleton();
-  const organizationId = requireOrganizationContext(
-    store ? selectOrganizationId(store.getState()) : null,
-  );
+  request: { method: string; interactive?: boolean },
+): Promise<Record<string, string>> {
+  // ORG-GATE-AUDIT: THE GATE, never the bare kernel. Starting, re-scraping or
+  // cancelling a crawl with no organization selected asks, then continues
+  // this same request instead of a bare refusal.
+  const organizationId = await ensureOrganizationForRequest(request);
   return applyOrganizationContextHeader(base, organizationId);
 }
 
@@ -486,11 +483,14 @@ async function streamCommand(
   const token = await bearerToken();
   const response = await fetch(crawlerCommandUrl(path), {
     method: "POST",
-    headers: organizationContextHeaders({
-      Accept: "application/x-ndjson",
-      Authorization: `Bearer ${token}`,
-      ...(body ? { "Content-Type": "application/json" } : {}),
-    }),
+    headers: await organizationContextHeaders(
+      {
+        Accept: "application/x-ndjson",
+        Authorization: `Bearer ${token}`,
+        ...(body ? { "Content-Type": "application/json" } : {}),
+      },
+      { method: "POST" },
+    ),
     body: body ? JSON.stringify(body) : undefined,
     signal: callbacks.signal,
   });
@@ -678,10 +678,13 @@ export async function cancelCrawl(sessionId: string): Promise<void> {
     crawlerCommandUrl(`sessions/${sessionId}/cancel`),
     {
       method: "POST",
-      headers: organizationContextHeaders({
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-      }),
+      headers: await organizationContextHeaders(
+        {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        { method: "POST" },
+      ),
     },
   );
   if (!response.ok)

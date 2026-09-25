@@ -27,12 +27,8 @@ import {
 } from "@/features/marketing/google/health";
 import { readAllRows } from "@ai-matrx/data/db";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  applyOrganizationContextHeader,
-  requireOrganizationContext,
-} from "@/lib/api/organization-context";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import { operationFailed } from "@/utils/errors";
 // Keep this small exchange control local rather than deriving it from the
 // deployed OpenAPI snapshot: the frontend and backend deploy independently,
@@ -396,16 +392,44 @@ function backendBase(): string {
  * select-an-organization remedy) BEFORE any networking. Same pattern as
  * `features/marketing/seo/dataforseo/client.ts`.
  */
-function organizationContextHeaders(
+async function organizationContextHeaders(
   base: Record<string, string>,
+  request: { method: string; interactive?: boolean },
   organizationIdOverride?: string,
-): Record<string, string> {
-  const store = getStoreSingleton();
-  const organizationId = requireOrganizationContext(
-    organizationIdOverride ??
-      (store ? selectOrganizationId(store.getState()) : null),
-  );
+): Promise<Record<string, string>> {
+  // ORG-GATE-AUDIT: THE GATE, never the bare kernel. A Google write the person
+  // pressed (connect, create a Doc, send a reviewed email, apply an approval)
+  // with no organization selected asks, then continues this same request; a
+  // read — including the read-shaped POSTs below — keeps the fail-closed
+  // refusal and never raises a dialog on mount.
+  const organizationId = await ensureOrganizationForRequest({
+    method: request.method,
+    interactive: request.interactive,
+    organizationId: organizationIdOverride,
+  });
   return applyOrganizationContextHeader(base, organizationId);
+}
+
+/**
+ * POST routes that are READS (a search, a preview, a report): components fetch
+ * them on mount and on refresh, so a missing organization must never open the
+ * picker from them — the screen's own organization notice answers instead.
+ */
+const READ_SHAPED_GOOGLE_POSTS: readonly string[] = [
+  "/api/google-integrations/gmail/search",
+  "/api/google-integrations/gmail/message",
+  "/api/google-integrations/youtube/preview",
+  "/api/google-integrations/youtube/analytics",
+  "/api/google-integrations/ads/customers",
+  "/api/google-integrations/ads/report",
+  "/api/google-integrations/calendar/agenda",
+  "/api/google-integrations/tasks/preview",
+  "/api/google-integrations/tag-manager/inventory",
+  "/api/google-workspace/sheets/read",
+];
+
+function googlePostAsks(path: string): boolean {
+  return !READ_SHAPED_GOOGLE_POSTS.some((read) => path.startsWith(read));
 }
 
 export async function postGoogleBackend(
@@ -441,11 +465,12 @@ export async function postGoogleBackend(
   }
   const response = await fetch(`${backendBase()}${path}`, {
     method: "POST",
-    headers: organizationContextHeaders(
+    headers: await organizationContextHeaders(
       {
         Authorization: `Bearer ${session.access_token}`,
         "Content-Type": "application/json",
       },
+      { method: "POST", interactive: googlePostAsks(path) },
       organizationIdOverride,
     ),
     body: JSON.stringify(body),
@@ -471,9 +496,10 @@ export async function getGoogleBackend(
   if (!session?.access_token) throw new Error("Sign in to manage Google.");
   const response = await fetch(`${backendBase()}${path}`, {
     method: "GET",
-    headers: organizationContextHeaders({
-      Authorization: `Bearer ${session.access_token}`,
-    }),
+    headers: await organizationContextHeaders(
+      { Authorization: `Bearer ${session.access_token}` },
+      { method: "GET" },
+    ),
     signal,
   });
   if (!response.ok) {

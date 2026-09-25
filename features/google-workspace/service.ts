@@ -11,9 +11,7 @@ import {
   reviewedSendRequestBody,
   type ReviewedGmailSendOutcome,
 } from "@/features/crm/gmail/reviewed-send-contract";
-import { requireOrganizationContext } from "@/lib/api/organization-context";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { isGoogleWorkspaceResourceType } from "@/features/google-workspace/resource-types";
 
 export const DEFAULT_GOOGLE_SHEET_RANGE = "A1:C10";
@@ -71,11 +69,13 @@ function nullableString(
  * these calls: the effective organization, or a loud
  * `OrganizationContextError` — never a silent send with no organization.
  */
-function effectiveOrganizationId(): string {
-  const store = getStoreSingleton();
-  return requireOrganizationContext(
-    store ? selectOrganizationId(store.getState()) : null,
-  );
+function effectiveOrganizationId(): Promise<string> {
+  // ORG-GATE-AUDIT: THE GATE, never the bare kernel. Each caller is a write the
+  // person pressed (register a picked file, create a Doc or Sheet), so with no
+  // organization selected it asks, then continues this same request. The
+  // answer is handed to `postGoogleBackend` as the header override too, so the
+  // body and the header can never name two organizations.
+  return ensureOrganizationContext();
 }
 
 async function responseRecord(
@@ -161,7 +161,7 @@ export async function registerSelectedGoogleFile(
   connectionId: string,
   fileId: string,
 ): Promise<SelectedGoogleFile> {
-  const organizationId = effectiveOrganizationId();
+  const organizationId = await effectiveOrganizationId();
   const response = await postGoogleBackend(
     "/api/google-workspace/files/register",
     {
@@ -170,6 +170,7 @@ export async function registerSelectedGoogleFile(
       organization_id: organizationId,
     },
     "Unable to register the selected Google file.",
+    organizationId,
   );
   return selectedFile(await responseRecord(response));
 }
@@ -218,11 +219,12 @@ export async function createGoogleDocument(
   title: string,
   text: string,
 ): Promise<GoogleWriteOutcome<SelectedGoogleFile>> {
-  const organizationId = effectiveOrganizationId();
+  const organizationId = await effectiveOrganizationId();
   const response = await postGoogleBackend(
     "/api/google-workspace/documents/create",
     { connection_id: connectionId, title, text, organization_id: organizationId },
     "Unable to create the Google Doc.",
+    organizationId,
   );
   return writeOutcome(response, selectedFile);
 }
@@ -233,11 +235,12 @@ export async function createGoogleSheet(
   title: string,
   values: string[][],
 ): Promise<GoogleWriteOutcome<SelectedGoogleFile>> {
-  const organizationId = effectiveOrganizationId();
+  const organizationId = await effectiveOrganizationId();
   const response = await postGoogleBackend(
     "/api/google-workspace/sheets/create",
     { connection_id: connectionId, title, values, organization_id: organizationId },
     "Unable to create the Google Sheet.",
+    organizationId,
   );
   return writeOutcome(response, selectedFile);
 }
@@ -346,11 +349,11 @@ export async function writeGoogleSheet(
 export async function sendReviewedGmail(
   draft: ReviewedGmailDraft,
 ): Promise<ReviewedGmailSendOutcome> {
-  const store = getStoreSingleton();
-  const organizationId = requireOrganizationContext(
-    draft.context.organizationId ??
-      (store ? selectOrganizationId(store.getState()) : null),
-  );
+  // ORG-GATE-AUDIT: a CRM record's own organization wins and never asks; a
+  // send with no record and no organization selected asks, then continues.
+  const organizationId = await ensureOrganizationContext({
+    organizationId: draft.context.organizationId,
+  });
   const response = await postGoogleBackend(
     "/api/google-workspace/gmail/send-reviewed",
     reviewedSendRequestBody({

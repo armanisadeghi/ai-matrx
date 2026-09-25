@@ -48,6 +48,7 @@ import {
   ROW_CHANGE_AGENT_LABEL,
   useRowChangeAgentOffer,
 } from "@/features/unified-data/row-change-agent/RowChangeAgentLink";
+import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 
 /**
  * THE PAGE'S TITLE IS THE TABLE'S OWN NAME (owner, 2026-09-24: a table he knows must look like
@@ -571,6 +572,9 @@ export default function UnifiedDataTableRoute({
             host={{
               Link,
               density: "condensed",
+              // The page's toasts: the where-it-lives chip's "now lives in …" outlives the
+              // re-read that re-mounts the header (UI-FIX-19).
+              notify: RECORDS_NOTIFY,
               members,
               onAskForOne,
               openRecords: onOpenRecordsFromANumber,

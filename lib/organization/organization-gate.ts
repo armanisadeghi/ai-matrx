@@ -265,3 +265,44 @@ export async function requestOrganizationContextChoice(): Promise<string> {
   if (!chosen) throw new OrganizationSelectionCancelled();
   return requireOrganizationContext(undefined, chosen);
 }
+
+// ---------------------------------------------------------------------------
+// The per-request form (ORG-GATE-AUDIT, 2026-09-24)
+// ---------------------------------------------------------------------------
+
+const READ_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+/**
+ * The gate, for a feature client that builds its own `fetch` headers.
+ *
+ * 🚨 A SERVICE NEVER FEEDS THE BARE KERNEL THE ACTIVE SELECTION. The class this
+ * closes (SCHEDULE-PROMPT, then ORG-GATE-AUDIT): a client read
+ * `requireOrganizationContext(selectOrganizationId(state))` itself, so a person
+ * with no organization selected who pressed a WRITE got a raw
+ * "Select an organization before sending this request." toast and
+ * `OrganizationGateDialog` never opened. Guarded by
+ * `scripts/check-org-gate-not-bare-kernel.ts` (in `pnpm check:organization-context`).
+ *
+ * The method decides whether to ASK — the same line `callApi` draws:
+ *   - a write/action (POST, PUT, PATCH, DELETE) is something a person did, so
+ *     with nothing selected it asks, waits, and continues with the answer;
+ *   - a read (GET/HEAD/OPTIONS) is overwhelmingly background (fetch-on-mount,
+ *     refocus refetch, polling), so it never opens a dialog with nothing behind
+ *     it (4821555e98) and keeps the fail-closed refusal the screen already
+ *     renders as `OrganizationRequiredNotice`.
+ * An explicit `organizationId` the caller already resolved always wins and
+ * never asks. `interactive` overrides the method for a background write.
+ */
+export function ensureOrganizationForRequest(options: {
+  method?: string | null;
+  organizationId?: string | null;
+  interactive?: boolean;
+  prefetchedOrganizations?: OrganizationRequiredWireMembership[] | null;
+}): Promise<string> {
+  const method = (options.method ?? "GET").toUpperCase();
+  return ensureOrganizationContext({
+    organizationId: options.organizationId,
+    interactive: options.interactive ?? !READ_METHODS.has(method),
+    prefetchedOrganizations: options.prefetchedOrganizations ?? null,
+  });
+}

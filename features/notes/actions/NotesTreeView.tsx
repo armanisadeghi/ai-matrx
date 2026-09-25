@@ -22,9 +22,8 @@ import { useNotesRedux } from "../hooks/useNotesRedux";
 import { useAllFolders, getFolderIconAndColor } from "../utils/folderUtils";
 import { NotesAPI } from "../service/notesApi";
 import type { Note } from "../types";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { requireOrganizationContext } from "@/lib/api/organization-context";
+import { useNewNoteOrganization } from "../hooks/useNewNoteOrganization";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 export interface NotesTreeViewProps {
   onSelectNote?: (note: Note) => void;
@@ -40,7 +39,10 @@ export function NotesTreeView({
   className,
 }: NotesTreeViewProps) {
   const { notes, isLoading, findOrCreateEmptyNote } = useNotesRedux();
-  const organizationId = useAppSelector(selectOrganizationId);
+  // ORG-GATE-AUDIT: the new-note resolver (waits for boot, then ASKS), never
+  // the bare kernel on the active selection — creating a note or folder with
+  // no organization selected opens the picker and continues this same create.
+  const resolveNewNoteOrganization = useNewNoteOrganization();
   const allFolders = useAllFolders(notes);
   const [expandedFolder, setExpandedFolder] = useState<string | null>(null);
   const [creatingNoteIn, setCreatingNoteIn] = useState<string | null>(null);
@@ -117,7 +119,7 @@ export function NotesTreeView({
       }
       setBusyAction(`note-${folder}`);
       try {
-        const capturedOrganizationId = requireOrganizationContext(organizationId);
+        const capturedOrganizationId = await resolveNewNoteOrganization();
         const note = await NotesAPI.create({
           label,
           content: "",
@@ -126,6 +128,8 @@ export function NotesTreeView({
         });
         onSelectNote?.(note);
       } catch (cause) {
+        // Cancelling the picker is "nothing happened" — no toast.
+        if (isOrganizationSelectionCancelled(cause)) return;
         // A create that closes its input row and says nothing is a dead button.
         toast.error(noteCreateErrorMessage(cause));
       } finally {
@@ -134,7 +138,7 @@ export function NotesTreeView({
         setNewNoteLabel("");
       }
     },
-    [newNoteLabel, onSelectNote],
+    [newNoteLabel, onSelectNote, resolveNewNoteOrganization],
   );
 
   const handleNoteInputKeyDown = useCallback(
@@ -165,19 +169,20 @@ export function NotesTreeView({
     }
       setBusyAction("folder");
       try {
-      const capturedOrganizationId = requireOrganizationContext(organizationId);
+      const capturedOrganizationId = await resolveNewNoteOrganization();
       await NotesAPI.ensureFolderMaterialized(name, capturedOrganizationId);
       const note = await findOrCreateEmptyNote(name);
       setExpandedFolder(name);
       onSelectNote?.(note);
     } catch (cause) {
+      if (isOrganizationSelectionCancelled(cause)) return;
       toast.error(noteCreateErrorMessage(cause));
     } finally {
       setBusyAction(null);
       setCreatingFolder(false);
       setNewFolderName("");
     }
-  }, [newFolderName, findOrCreateEmptyNote, onSelectNote]);
+  }, [newFolderName, findOrCreateEmptyNote, onSelectNote, resolveNewNoteOrganization]);
 
   const handleFolderInputKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

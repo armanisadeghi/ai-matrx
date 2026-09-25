@@ -9,11 +9,8 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
-import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
-import {
-  applyOrganizationContextHeader,
-  requireOrganizationContext,
-} from "@/lib/api/organization-context";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import type {
   AuthenticatorCode,
   AuthenticatorEntry,
@@ -24,11 +21,17 @@ function backendBase(): string {
   return AIDREAM_PRODUCTION_URL;
 }
 
-async function authHeaders(json: boolean): Promise<{
+async function authHeaders(
+  json: boolean,
+  method: string,
+): Promise<{
   organizationId: string;
   headers: Record<string, string>;
 }> {
-  const organizationId = requireOrganizationContext(requireSelectedOrgId());
+  // ORG-GATE-AUDIT: THE GATE, never the bare kernel. Enrolling or removing an
+  // authenticator with no organization selected asks, then continues this
+  // same request; the polled current-code read never opens a dialog.
+  const organizationId = await ensureOrganizationForRequest({ method });
   const supabase = createClient();
   const {
     data: { session },
@@ -43,7 +46,10 @@ async function authHeaders(json: boolean): Promise<{
 
 async function authFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const isForm = init?.body instanceof FormData;
-  const { organizationId, headers: auth } = await authHeaders(!isForm);
+  const { organizationId, headers: auth } = await authHeaders(
+    !isForm,
+    init?.method ?? "GET",
+  );
   const suppliedHeaders = Object.fromEntries(
     new Headers(init?.headers).entries(),
   );

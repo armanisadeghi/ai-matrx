@@ -1,0 +1,13 @@
+{
+  "_doc": "Reasoned exceptions for scripts/check-org-gate-not-bare-kernel.ts. Each file reads the active selection into the bare kernel ON PURPOSE. An entry that no longer matches fails the check — strike it. Never add a feature client that a person's press reaches: route it through lib/organization/organization-gate.ts instead.",
+  "files": {
+    "lib/api/call-api.ts": "Transport kernel. resolveScope runs AFTER ensureOrganizationContextForCall (the gate, interactive:false by 4821555e98 — ~30 background call sites) and asserts the already-resolved value.",
+    "lib/python-client.ts": "Transport kernel, deliberately non-interactive (its header comment): overwhelmingly fetch-on-mount/polling traffic; action seams resolve through the gate first and pass opts.organizationId.",
+    "lib/api/matrx-transport.ts": "Transport kernel: per-request policy header for the package transport; non-interactive fail-closed by design (guest lane exempt).",
+    "lib/api/context-api.ts": "Background GET thunk (fetchContextState) that maps the refusal to rejectWithValue; a read must never open the picker.",
+    "features/notes/hooks/useNewNoteOrganization.ts": "IS the notes gate: returns the active selection when one exists, waits for boot, then ASKS via ensureOrganizationContext.",
+    "features/notes/hooks/useActiveNote.ts": "Background auto-create of a default note on mount (no press behind it); opening the picker there would ask with nothing to explain why.",
+    "components/agent-copy/AlchemyHost.tsx": "Package port read only while actions are offered, and actions are withheld (capabilities.actions = []) whenever no organization is selected — the control is absent, not refused.",
+    "app/(admin)/administration/compute/resilience-lab/page.tsx": "Admin resilience bench: a scenario helper takes organizationId as a parameter (the alias match is a same-named hook variable elsewhere in the module); a missing organization lands in the scenario's own result line."
+  }
+}

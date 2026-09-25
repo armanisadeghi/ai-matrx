@@ -12,8 +12,7 @@
 
 import { postGoogleBackend } from "@/features/marketing/google/service";
 import { requireOrganizationContext } from "@/lib/api/organization-context";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 
 import { supabase } from "@/utils/supabase/client";
 
@@ -193,10 +192,12 @@ export async function refreshGoogleDocument(args: {
   fileId: string;
   organizationId?: string | null;
 }): Promise<GoogleDocumentRecordResponse> {
-  const store = getStoreSingleton();
-  const organizationId = requireOrganizationContext(
-    args.organizationId ?? (store ? selectOrganizationId(store.getState()) : null),
-  );
+  // ORG-GATE-AUDIT: the record's OWN organization wins and never asks. The
+  // birth door (opening a picked file that has no Record yet) has no record
+  // organization; with none selected it asks, then continues this same open.
+  const organizationId = await ensureOrganizationContext({
+    organizationId: args.organizationId,
+  });
   const response = await postGoogleBackend(
     REFRESH_PATH,
     { organization_id: organizationId, file_id: args.fileId },

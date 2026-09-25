@@ -13,12 +13,8 @@
 import { createClient } from "@/utils/supabase/client";
 import type { McpToolSchema } from "@/features/agents/services/mcp-client/tool-discovery";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  applyOrganizationContextHeader,
-  requireOrganizationContext,
-} from "@/lib/api/organization-context";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import type { components } from "@/types/python-generated/api-types";
 import type { AttachableAvailability } from "@/features/connectors/attachable-resources";
 
@@ -27,6 +23,7 @@ function backendBase(): string {
 }
 
 async function authHeaders(
+  method: string,
   explicitOrganizationId?: string,
 ): Promise<Record<string, string>> {
   const supabase = createClient();
@@ -36,16 +33,14 @@ async function authHeaders(
   if (!session?.access_token) throw new Error("Not signed in");
   // Organization admission rides with auth: aidream's AuthMiddleware
   // (matrx-connect, 2026-08-30) refuses any Bearer-JWT request that names no
-  // organization via `X-Organization-Id`. Resolved through the ONE
-  // fail-closed kernel — a missing organization throws
-  // `OrganizationContextError` (with the select-an-organization remedy)
-  // BEFORE any networking. Same pattern as
-  // `features/marketing/seo/dataforseo/client.ts`.
-  const store = getStoreSingleton();
-  const organizationId = requireOrganizationContext(
-    explicitOrganizationId ??
-      (store ? selectOrganizationId(store.getState()) : null),
-  );
+  // organization via `X-Organization-Id`. Resolved through THE GATE, never
+  // the bare kernel (ORG-GATE-AUDIT): a connect / invoke / disconnect with no
+  // organization selected asks, then continues this same request; a
+  // background read keeps the fail-closed refusal before any networking.
+  const organizationId = await ensureOrganizationForRequest({
+    method,
+    organizationId: explicitOrganizationId,
+  });
   return applyOrganizationContextHeader(
     {
       Authorization: `Bearer ${session.access_token}`,
@@ -60,7 +55,7 @@ async function mcpFetch<T>(
   init?: RequestInit,
   explicitOrganizationId?: string,
 ): Promise<T> {
-  const headers = await authHeaders(explicitOrganizationId);
+  const headers = await authHeaders(init?.method ?? "GET", explicitOrganizationId);
   let resp: Response;
   try {
     resp = await fetch(`${backendBase()}/api/mcp-connections${path}`, {

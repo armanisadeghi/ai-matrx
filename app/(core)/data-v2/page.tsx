@@ -36,6 +36,7 @@ import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { openPath } from "@/lib/deep-link/openPath";
+import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 
 export default function UnifiedDataPage() {
   const router = useRouter();
@@ -142,6 +143,8 @@ export default function UnifiedDataPage() {
             host={{
               Link,
               density: "condensed",
+              // The page's toasts: a landed move's sentence outlives the list's re-read (UI-FIX-19).
+              notify: RECORDS_NOTIFY,
               members,
               share: recordStoreShare,
               // AGT-N-9 / PRODUCTS row 11. The package builds the record SCOPE and
