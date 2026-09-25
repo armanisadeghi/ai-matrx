@@ -191,7 +191,9 @@ begin
   if v_def ->> 'order' is distinct from 'manual' then
     raise exception 'C3: G13''s hand-set order was dropped by an update that did not send it: %', v_def;
   end if;
-  if v_def ->> 'group_field' is distinct from 'service_stage' or v_def -> 'sorts' -> 0 ->> 'field' is distinct from 'promised_on'
+  -- ORDER-FIX (2026-09-25): placing the rows makes the hand-set order the view's sort, so the
+  -- promised-on sort it replaced is gone — a view is ordered by its sort OR by hand, never both.
+  if v_def ->> 'group_field' is distinct from 'service_stage' or v_def ? 'sorts'
      or v_def -> 'presentation' -> 'hiddenFields' is distinct from '["quote"]'::jsonb
      or v_def -> 'filters' is distinct from '{"mechanic": "Dev"}'::jsonb then
     raise exception 'C4: the view''s other keys or its filter were dropped by an update that did not send them: %', v_def;
@@ -206,9 +208,16 @@ begin
   if v_def ? 'group_field' or v_def ->> 'layout' <> 'calendar' then
     raise exception 'C6: a key sent as null was not removed, or the rest moved: %', v_def;
   end if;
-  -- A caller cannot overwrite what the server owns.
+  -- A caller cannot overwrite what the server owns. ORDER-FIX: an `order` word other than
+  -- "sorted" is refused by name (it used to be dropped without a word); the rest are ignored.
+  begin
+    perform custom.view_declare(v_org, v_tickets, jsonb_build_object('view_id', v_rush,
+      'definition', jsonb_build_object('order', 'sort', 'layout', 'gallery')));
+    raise exception 'C7a: a caller''s order word "sort" was accepted or dropped without a word';
+  exception when invalid_parameter_value then null;
+  end;
   perform custom.view_declare(v_org, v_tickets, jsonb_build_object('view_id', v_rush,
-    'definition', jsonb_build_object('order', 'sort', 'table_id', v_parts, 'moved_from', null, 'layout', 'gallery')));
+    'definition', jsonb_build_object('table_id', v_parts, 'moved_from', null, 'layout', 'gallery')));
   select definition into v_def from platform.saved_view where id = v_rush;
   if v_def ->> 'table_id' <> v_tickets::text or v_def ? 'order'
      or v_def -> 'moved_from' ->> 'surface_key' is distinct from 'matrx-user/data-tables' or v_def ->> 'layout' <> 'gallery' then
@@ -219,7 +228,7 @@ begin
   if (select definition -> 'filters' from platform.saved_view where id = v_board) <> '{}'::jsonb then
     raise exception 'C8: sending filters: null did not clear the view''s filter';
   end if;
-  raise notice 'C PASS — a layout press kept the grid choices, the hand-set order, the grouping, sort, hidden column, filter and name; null cleared Group by; server-owned keys held.';
+  raise notice 'C PASS — a layout press kept the grid choices, the hand-set order (which replaced the sort), the grouping, hidden column, filter and name; null cleared Group by; server-owned keys held.';
 
   -- ── D. A VIEW OF ANOTHER TABLE IS NOT REWRITTEN THROUGH THIS ONE ────────────────────────────
   begin
