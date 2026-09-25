@@ -22,6 +22,7 @@ import {
   SystemItemDefaultsEditor,
   type SystemItemDefaultsData,
 } from "./SystemItemDefaultsEditor";
+import type { FeatureKnobSetResult } from "@/features/admin/limits/types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -50,7 +51,12 @@ afterEach(() => {
   host.remove();
 });
 
-async function render(data: SystemItemDefaultsData, save = jest.fn(async () => ({ ok: true as const }))) {
+type Save = (keys: string[] | null) => Promise<FeatureKnobSetResult>;
+
+async function render(
+  data: SystemItemDefaultsData,
+  save: jest.MockedFunction<Save> = jest.fn<ReturnType<Save>, Parameters<Save>>(async () => ({ ok: true })),
+) {
   const load = jest.fn(async () => data);
   await act(async () => {
     root.render(<SystemItemDefaultsEditor load={load} save={save} />);
@@ -102,7 +108,11 @@ it("names a key on the list that is not a System item instead of dropping it", a
 });
 
 it("resets to the platform default with null and says a refused save's reason", async () => {
-  const save = jest.fn(async () => ({ ok: false as const, reason: "admin_only", detail: "Only an admin may change this." }));
+  const save = jest.fn<ReturnType<Save>, Parameters<Save>>(async () => ({
+    ok: false,
+    reason: "admin_only",
+    detail: "Only an admin may change this.",
+  }));
   await render({ value: ["company_name"], defaultValue: DEFAULTS, items: ITEMS }, save);
   await act(async () => button("Use the default").click());
   expect(save).toHaveBeenCalledWith(null);
