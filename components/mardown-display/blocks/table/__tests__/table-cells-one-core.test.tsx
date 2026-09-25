@@ -59,6 +59,7 @@ jest.mock("@/features/overlays/openers/tableViewerWindow", () => ({
 
 import { StreamingTableRenderer } from "@/components/mardown-display/blocks/table/StreamingTableRenderer";
 import { MarkdownStreamingProvider } from "@/components/markdown-core/streaming-context";
+import { RichContent } from "@/components/rich-content/RichContent";
 
 // A hauling dispatcher's route sheet: each row links the route page, names
 // its code, bolds the stop count and gives the route's cost coefficient.
@@ -137,3 +138,91 @@ it("renders the finished table's math, links and code through the core", async (
   expect(container.querySelectorAll("td code")).toHaveLength(ROWS);
   expect(visibleCellText()).not.toMatch(/\]\(|\*\*|`|\$/);
 });
+
+// ── Any cadence, any path (verify-RC-B7 r3) ──────────────────────────────────
+// The studio replay splits text statically, so the table block carries no
+// "streaming" status of its own — only the live stream around it knows. The
+// last cell of a row cut mid-cell (`[terms 1](htt`, `**-`, a lone backtick)
+// showed raw. These stream CHARACTER BY CHARACTER with the table's own
+// isStreamActive false and only the surrounding live stream saying so.
+
+async function renderInLiveStream(content: string) {
+  await act(async () => {
+    root.render(
+      <MarkdownStreamingProvider value={true}>
+        <StreamingTableRenderer content={content} isStreamActive={false} />
+      </MarkdownStreamingProvider>,
+    );
+  });
+}
+
+async function streamCharByChar(text: string): Promise<string[]> {
+  const flashes: string[] = [];
+  for (let end = 1; end < text.length; end += 1) {
+    await renderInLiveStream(text.slice(0, end));
+    const visible = visibleCellText();
+    for (const raw of RAW) {
+      if (visible.includes(raw)) {
+        const at = visible.lastIndexOf(raw);
+        flashes.push(`@${end} ${raw} «${visible.slice(Math.max(0, at - 30), at + 20)}»`);
+      }
+    }
+    if (flashes.length > 6) break;
+  }
+  return flashes;
+}
+
+// The verifier's shape: a terms column with links, bold and code per row.
+const TERMS_TABLE = [
+  "| # | Term | Rule | Code |",
+  "| --- | --- | --- | --- |",
+  ...Array.from({ length: 12 }, (_, i) => {
+    const n = i + 1;
+    return `| ${n} | [terms ${n}](https://greenroutehauling.com/terms/${n}) | **-${n}% late fee** | \`FEE-${n}\` |`;
+  }),
+].join("\n");
+
+// The 15K admin sample's table section (captured 2026-09-25).
+const SAMPLE_TABLE = [
+  "| Command | Description |",
+  "| --- | --- |",
+  "| `git status` | List all *new or modified* files |",
+  "| `git diff` | Show file differences that **haven't been** staged |",
+].join("\n");
+
+it("never shows raw markdown in the cut-off last cell, character by character (terms table)", async () => {
+  expect(await streamCharByChar(TERMS_TABLE)).toEqual([]);
+}, 900_000);
+
+it("never shows raw markdown in the cut-off last cell, character by character (15K sample table)", async () => {
+  expect(await streamCharByChar(SAMPLE_TABLE)).toEqual([]);
+}, 900_000);
+
+it("a finished table outside any stream is never healed", async () => {
+  // A literal trailing `[A]` grade in a finished last cell stays as written.
+  const graded = "| Route | Grade |\n| --- | --- |\n| 14 | [A] |";
+  await act(async () => {
+    root.render(<StreamingTableRenderer content={graded} isStreamActive={false} />);
+  });
+  expect(visibleCellText()).toContain("[A]");
+});
+
+it("the standard level (studio / nested content) never shows raw markdown in a cut-off cell", async () => {
+  const flashes: string[] = [];
+  for (let end = 1; end < TERMS_TABLE.length; end += 1) {
+    await act(async () => {
+      root.render(<RichContent level="standard" source={TERMS_TABLE.slice(0, end)} isStreaming />);
+    });
+    const visible = visibleCellText();
+    for (const raw of RAW) {
+      if (visible.includes(raw)) flashes.push(`@${end} ${raw} «${visible.slice(-50)}»`);
+    }
+    if (flashes.length > 6) break;
+  }
+  expect(flashes).toEqual([]);
+  await act(async () => {
+    root.render(<RichContent level="standard" source={TERMS_TABLE} isStreaming={false} />);
+  });
+  expect(container.querySelectorAll("td a")).toHaveLength(12);
+}, 900_000);
+

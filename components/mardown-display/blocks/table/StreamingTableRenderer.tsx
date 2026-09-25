@@ -9,6 +9,7 @@ import React, {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { RichContent } from "@/components/rich-content/RichContent";
+import { useMarkdownStreaming } from "@/components/markdown-core/streaming-context";
 import { Button } from "@/components/ui/button";
 import {
   Download,
@@ -324,6 +325,12 @@ const StreamingTableRendererCore: React.FC<
   const toast = useToastManager();
   const isMobile = useIsMobile();
   const openTableWindow = useOpenTableViewerWindow();
+  // The trailing row may still be arriving whenever the text around this table
+  // is a live stream — its block status alone is not enough (a statically
+  // split replay carries none; verify-RC-B7 r3: the cut-off last cell of a row
+  // showed raw `[terms 1](htt`). The heal applies to that row's cells only.
+  const inLiveStream = useMarkdownStreaming();
+  const trailingRowStreaming = isStreamActive || inLiveStream;
   // A DECLARED SPECIMEN CARRIES NO ACTIONS (feedback 729b59bd). Inside a
   // specimen document this whole toolbar is absent — Export, Send to
   // Workbook, Send to Google Sheet, Save as data, Edit, and Window (which
@@ -897,7 +904,9 @@ const StreamingTableRendererCore: React.FC<
                               <RichContent
                                 level="inline"
                                 source={header}
-                                isStreaming={isStreamActive && rows.length === 0}
+                                isStreaming={
+                                  trailingRowStreaming && rows.length === 0
+                                }
                               />
                             )}
                           </div>
@@ -999,7 +1008,8 @@ const StreamingTableRendererCore: React.FC<
                               level="inline"
                               source={row[colIndex]}
                               isStreaming={
-                                isStreamActive && rowIndex === rows.length - 1
+                                trailingRowStreaming &&
+                                rowIndex === rows.length - 1
                               }
                             />
                           ) : (
