@@ -24,6 +24,7 @@ export interface OfferedValue {
   guaranteed?: boolean;
   lazy?: boolean;
   description?: string;
+  label?: string;
   example?: string;
 }
 
@@ -2061,12 +2062,25 @@ export interface MasterworksBenchOffer {
   __kind?: "masterworks.bench.offer";
   case: string;
   subject?: string;
+  source_material?: string;
+  source_material_open?: string;
 }
 
 /** Offered shape of provision `masterworks.vanilla_arm` (kind `masterworks.vanilla_arm.offer`). */
 export interface MasterworksVanillaArmOffer {
   __kind?: "masterworks.vanilla_arm.offer";
   case: string;
+  brief?: string;
+  context_note?: string;
+  job_open?: string;
+  job_close?: string;
+  edit_task?: string;
+  deliverable_task?: string;
+  context_open?: string;
+  context_close?: string;
+  domain?: string;
+  who?: string;
+  opening_line?: string;
 }
 
 /** Offered shape of provision `media.youtube_transcription` (kind `media.youtube_transcription.offer`). */
