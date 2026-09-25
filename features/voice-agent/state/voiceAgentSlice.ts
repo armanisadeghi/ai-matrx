@@ -347,8 +347,6 @@ const voiceAgentSlice = createSlice({
           voiceId?: VoiceId;
           instructions?: string;
           tools?: RealtimeToolSet;
-          /** Wire model from the mandate-resolved Holder (`useRealtimeHolderModel`). */
-          realtimeModel?: string;
         }
       >,
     ) {
@@ -382,6 +380,8 @@ const voiceAgentSlice = createSlice({
           voiceId?: VoiceId;
           instructions?: string;
           tools?: RealtimeToolSet;
+          /** Wire model from the mandate-resolved Holder (`useRealtimeHolderModel`). */
+          realtimeModel?: string;
         }
       >,
     ) {
