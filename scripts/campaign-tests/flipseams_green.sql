@@ -52,6 +52,11 @@ declare
   v_archived uuid[];
   v_before jsonb;
   v_written uuid;
+  v_auto uuid;
+  v_auto_table uuid;
+  v_any uuid;
+  v_cfg jsonb;
+  c_task constant uuid := '8b8ae1b1-09ac-40ba-b69d-2046d1371759';   -- a task admin@admin.com owns in admin's Workspace
 begin
   if to_regprocedure('platform.cutover_seams(uuid)') is null
      or to_regprocedure('platform.cutover_seam_press(text, uuid, text, text)') is null then
@@ -157,7 +162,13 @@ begin
      where d.organization_id = c_ws and d.deleted_at is not null and d.metadata #>> '{moved_to,table_id}' = d.id::text;
     perform workbench.udt_dataset_unarchive(x) from unnest(v_moved) x;
     select value into v_before from platform.knob_override where feature = 'data_tables' and key = 'older_tables_moved' and organization_id = c_ws;
-    update platform.cutover_seam set prerequisites = jsonb_set(prerequisites, '{0,met}', 'true'::jsonb) where seam_key = 'older_tables';
+    -- Stage the integrations fact as met (in production only the census writes it, through its
+    -- door; the stage borrows that door's marker inside this rolled-back part).
+    perform set_config('matrx.cutover_census_door', 'on', true);
+    update platform.cutover_seam set prerequisites = (
+      select jsonb_agg(case when e ->> 'key' = 'integrations_repointed' then e || '{"met": true}'::jsonb else e end)
+        from jsonb_array_elements(prerequisites) e) where seam_key = 'older_tables';
+    perform set_config('matrx.cutover_census_door', '', true);
 
     -- 10.0 A copy that fell behind its older table refuses the flip, naming the rows.
     perform set_config('role', 'authenticated', true);
@@ -180,10 +191,38 @@ begin
       raise exception '10.0: the flip went through although the copies are behind';
     end if;
 
+    -- 10.A AUTOMATIONS FOLLOW THE SWITCH (CUTOVER-PLAN D8). The office manager's "when a service
+    --      call's status changes or one is deleted, run the dispatcher" watches the first staged
+    --      table; a second automation watches "any older table", which has nothing to follow.
+    perform set_config('role', 'postgres', true);
+    v_auto_table := v_moved[1];
+    v_cfg := jsonb_build_object('entity_type', 'user_table_row', 'table_id', v_auto_table::text,
+                                'actions', jsonb_build_array('row.updated', 'row.deleted'),
+                                'changed_fields', jsonb_build_array('status'));
+    insert into scheduler.sch_trigger (task_id, user_id, type, config, enabled, organization_id, created_by)
+    values (c_task, c_admin, 'event', v_cfg, true, c_ws, c_admin) returning id into v_auto;
+    insert into scheduler.sch_trigger (task_id, user_id, type, config, enabled, organization_id, created_by)
+    values (c_task, c_admin, 'event', jsonb_build_object('entity_type', 'user_table_row', 'actions', jsonb_build_array('row.created')), true, c_ws, c_admin)
+    returning id into v_any;
+    perform set_config('role', 'authenticated', true);
+    v := platform.cutover_seam_press('older_tables', c_ws, 'new', 'an automation watches any table');
+    if v ->> 'reason' <> 'not_ready' or v ->> 'says' !~ 'names its table' then
+      raise exception '10.Aa: an automation with no table to follow did not hold the switch back: %', v;
+    end if;
+    perform set_config('role', 'postgres', true);
+    update scheduler.sch_trigger set deleted_at = clock_timestamp() where id = v_any;   -- the manager picks a table instead (staged)
+    perform set_config('role', 'authenticated', true);
+
     v := platform.cutover_seams(c_ws);
     if not (select (s ->> 'may_flip')::boolean from jsonb_array_elements(v -> 'seams') s where s ->> 'key' = 'older_tables') then
       raise exception '10a: older tables are not offered for flip: %', (select s -> 'readiness' from jsonb_array_elements(v -> 'seams') s where s ->> 'key' = 'older_tables');
     end if;
+    perform set_config('role', 'postgres', true);
+    -- Every live older table of the organization is what the flip must take (the staged ones plus
+    -- any the organization already held live on this clone).
+    select array_agg(d.id order by d.id) into v_moved from workbench.udt_datasets d
+     where d.organization_id = c_ws and d.deleted_at is null;
+    perform set_config('role', 'authenticated', true);
     v := platform.cutover_seam_press('older_tables', c_ws, 'new', 'the owner validated the copies');
     if not (v ->> 'ok')::boolean then raise exception '10b: the tables flip failed: %', v; end if;
     select array_agg(x::uuid order by x::uuid) into v_archived from jsonb_array_elements_text(v -> 'did' -> 'archived') x;
@@ -191,6 +230,15 @@ begin
     perform set_config('role', 'postgres', true);
     if exists (select 1 from workbench.udt_datasets d where d.organization_id = c_ws and d.deleted_at is null) then raise exception '10d: an older table stayed live'; end if;
     if platform.knob_resolve('data_tables', 'older_tables_moved', c_ws) <> 'true'::jsonb then raise exception '10e: the tables-moved setting is off after the flip'; end if;
+    select config into v_cfg from scheduler.sch_trigger where id = v_auto;
+    if v_cfg ->> 'entity_type' <> 'record:' || v_auto_table::text
+       or v_cfg -> 'actions' <> '["record.archived", "record.updated"]'::jsonb
+       or v_cfg -> 'changed_fields' <> '["status"]'::jsonb then
+      raise exception '10.Ab: the automation still listens to the archived older table after the switch: %', v_cfg;
+    end if;
+    if (select metadata -> 'cutover_rekeyed' ->> 'press' from scheduler.sch_trigger where id = v_auto) is distinct from (v ->> 'press_id') then
+      raise exception '10.Ac: the automation does not say which press moved it';
+    end if;
     -- 10.1 LOSSLESS UNDO: a row archived in a copy after the switch holds the switch back until
     --      it is carried back into the older table.
     select r.id into v_written from custom.record r
@@ -219,10 +267,17 @@ begin
     if (select count(*) from workbench.udt_datasets d where d.id = any (v_moved) and d.deleted_at is null) <> cardinality(v_moved) then
       raise exception '10g: the reversal did not bring back every table it archived';
     end if;
+    if (select config from scheduler.sch_trigger where id = v_auto)
+         is distinct from jsonb_build_object('entity_type', 'user_table_row', 'table_id', v_auto_table::text,
+                                             'actions', jsonb_build_array('row.updated', 'row.deleted'),
+                                             'changed_fields', jsonb_build_array('status'))
+       or (select metadata ? 'cutover_rekeyed' from scheduler.sch_trigger where id = v_auto) then
+      raise exception '10.Ad: Switch back did not put the automation back exactly: %', (select config from scheduler.sch_trigger where id = v_auto);
+    end if;
     if (select value from platform.knob_override where feature = 'data_tables' and key = 'older_tables_moved' and organization_id = c_ws) is distinct from v_before then
       raise exception '10h: the reversal did not put the setting back to what it was (%)', v_before;
     end if;
-    raise notice 'PART 10 PASSED — % older tables archived by one press and brought back by one press.', cardinality(v_moved);
+    raise notice 'PART 10 PASSED — % older tables archived by one press and brought back by one press; the row-change automation followed the table there and back.', cardinality(v_moved);
     raise exception 'FLIPSEAMS_ROLLBACK_PART_10';
   exception when raise_exception then
     if sqlerrm <> 'FLIPSEAMS_ROLLBACK_PART_10' then raise; end if;
