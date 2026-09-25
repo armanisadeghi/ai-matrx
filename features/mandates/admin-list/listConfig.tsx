@@ -39,7 +39,9 @@ async function removeMandate(row: MandateAdminRow): Promise<void> {
     title: `Remove "${row.name}"?`,
     description:
       `Everywhere that runs this job stops finding it: the lists, the pickers, and any call that names the key "${row.mandateKey}" will report it missing. ` +
-      `Anything bound to it — ${row.overridesCount === 0 ? "it has no customizations" : `its ${row.overridesCount} customization${row.overridesCount === 1 ? "" : "s"}`}, every holder and mapping — stops applying with it. ` +
+      (row.overridesCount === 0
+        ? "It has no customizations, so nothing bound to it is lost. "
+        : `Its ${row.overridesCount} customization${row.overridesCount === 1 ? "" : "s"} — every holder, setting and mapping bound to it — stop applying with it. `) +
       `This is a soft removal: the record and its history are kept, so an admin can restore it if this was a mistake.`,
     confirmLabel: "Remove it",
     cancelLabel: "Keep it",
