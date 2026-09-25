@@ -33,11 +33,12 @@ export function useFeatureIntelligence(args: {
   feature: string;
   level: IntelligenceLevel;
   organizationId: string | null;
+  userId: string | null;
   context: IntelligenceContext;
   /** False while the seat is still being worked out. */
   enabled: boolean;
 }): FeatureIntelligenceState {
-  const { feature, level, organizationId, enabled } = args;
+  const { feature, level, organizationId, userId, enabled } = args;
   const contextKey = JSON.stringify(args.context);
   const [epoch, setEpoch] = useState(0);
   const [state, setState] = useState<FeatureIntelligenceState>({
@@ -57,7 +58,12 @@ export function useFeatureIntelligence(args: {
     setState((prev) => ({ ...prev, loading: prev.rows.length === 0, error: null }));
     (async () => {
       try {
-        const rows = await fetchFeatureIntelligence({ feature, level, organizationId });
+        const rows = await fetchFeatureIntelligence({
+          feature,
+          level,
+          organizationId,
+          userId,
+        });
         const declared = resolveDeclaredPlaces(feature, context);
         let registered: ResolvedPlace[] = [];
         let placesError: string | null = null;
@@ -89,7 +95,7 @@ export function useFeatureIntelligence(args: {
     return () => {
       cancelled = true;
     };
-  }, [feature, level, organizationId, contextKey, enabled, epoch]);
+  }, [feature, level, organizationId, userId, contextKey, enabled, epoch]);
 
   return state;
 }

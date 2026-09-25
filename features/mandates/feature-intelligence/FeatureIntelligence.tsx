@@ -20,6 +20,7 @@ import {
   selectPersonalOrganizationId,
 } from "@/lib/redux/slices/appContextSlice";
 import { useUserRole } from "@/features/organizations/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { memberMandateRecordHref } from "../member-list/routes";
 import { useFeatureIntelligence } from "./useFeatureIntelligence";
 import { rungFor, useIntelligenceActions } from "./useIntelligenceActions";
@@ -68,6 +69,7 @@ export function FeatureIntelligence({
   const activeOrgId = useAppSelector(selectOrganizationId);
   const activeOrgName = useAppSelector(selectOrganizationName);
   const personalOrgId = useAppSelector(selectPersonalOrganizationId);
+  const userId = useAppSelector(selectUserId);
   const { isAdmin, loading: roleLoading } = useUserRole(activeOrgId ?? undefined);
   const canManageOrg =
     Boolean(activeOrgId) && activeOrgId !== personalOrgId && isAdmin;
@@ -80,6 +82,7 @@ export function FeatureIntelligence({
     feature,
     level: seatLevel,
     organizationId: activeOrgId,
+    userId,
     context,
     enabled: !roleLoading || !activeOrgId,
   });
