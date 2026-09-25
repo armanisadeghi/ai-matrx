@@ -219,10 +219,17 @@ begin
   if has_table_privilege('authenticated', 'custom.record', 'select') then
     raise exception 'S5 FAILED — custom.record became directly readable, so its policy text is a door again.';
   end if;
-  if not public.is_super_admin_for('87a6e699-3622-4869-8843-d0867456c0dd') then
+  if not exists (select 1 from admin.admins a where a.user_id = '87a6e699-3622-4869-8843-d0867456c0dd' and a.level = 'super_admin') then
     raise exception 'S5 FAILED — admin@admin.com is no longer a platform admin.';
   end if;
-  raise notice 'S5 PASSED — platform-admin arms unchanged';
+  -- whether the platform-admin lane is OPEN is its own switch (platform.admin_lane_open), which
+  -- neither SHARE-LANE-2 file reads or writes; said, never asserted.
+  if to_regprocedure('platform.admin_lane_open()') is null then
+    raise notice 'S5 PASSED — platform-admin arms unchanged (this database has no admin-lane switch)';
+  else
+    execute 'select platform.admin_lane_open()::text' into v_body;
+    raise notice 'S5 PASSED — platform-admin arms unchanged (admin lane open here: %)', v_body;
+  end if;
 end $t$;
 
 -- ── PART T: the transfer (sharelane2_the_owner_transfers_a_personal_table.sql)
