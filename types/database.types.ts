@@ -19256,7 +19256,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
+          visibility: Database["platform"]["Enums"]["visibility"]
           word_count?: number
         }
         Update: {
@@ -19485,11 +19485,118 @@ export type Database = {
     }
     Functions: {
       _capture_bypassed: { Args: never; Returns: boolean }
+      _search_args_ok: {
+        Args: { p_archive: string; p_organization_id: string; p_scope: string }
+        Returns: boolean
+      }
+      document_get: {
+        Args: { p_document_id: string; p_include_body?: boolean }
+        Returns: {
+          archived_at: string
+          body: string
+          body_omitted: boolean
+          char_count: number
+          content_hash: string
+          content_version: number
+          created_by: string
+          data_class: Database["platform"]["Enums"]["data_class"]
+          folder_id: string
+          format: string
+          icon: string
+          id: string
+          organization_id: string
+          preview: string
+          published_content_version: number
+          sealed_at: string
+          summary: string
+          title: string
+          type_slug: string
+          updated_at: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          word_count: number
+        }[]
+      }
       document_search_vector: {
         Args: { p_body: string; p_summary: string; p_title: string }
         Returns: unknown
       }
+      find_document: {
+        Args: { p_key: string; p_organization_id: string; p_type_slug: string }
+        Returns: string
+      }
+      local_sync_changes: {
+        Args: { p_limit?: number; p_since?: string }
+        Returns: {
+          content_hash: string
+          content_version: number
+          file_path: string
+          id: string
+          last_device_id: string
+          organization_id: string
+          title: string
+          type_slug: string
+          updated_at: string
+          version: number
+        }[]
+      }
+      read_published: {
+        Args: { p_document_id: string }
+        Returns: {
+          body: string
+          content_version: number
+          document_id: string
+          format: string
+          organization_id: string
+          published_at: string
+          summary: string
+          title: string
+          type_slug: string
+        }[]
+      }
+      read_published_by_slug: {
+        Args: { p_organization_id: string; p_slug: string; p_type_slug: string }
+        Returns: {
+          body: string
+          content_version: number
+          document_id: string
+          format: string
+          organization_id: string
+          published_at: string
+          summary: string
+          title: string
+          type_slug: string
+        }[]
+      }
       realtime_topic_admits: { Args: { p_topic: string }; Returns: boolean }
+      search_documents: {
+        Args: {
+          p_archive?: string
+          p_limit?: number
+          p_offset?: number
+          p_organization_id?: string
+          p_query: string
+          p_scope?: string
+          p_type_slugs?: string[]
+        }
+        Returns: {
+          archived_at: string
+          headline: string
+          id: string
+          organization_id: string
+          preview: string
+          rank: number
+          summary: string
+          title: string
+          type_slug: string
+          updated_at: string
+        }[]
+      }
+      thin_autosave_versions: { Args: { p_dry_run?: boolean }; Returns: Json }
+      type_settings: {
+        Args: { p_organization_id?: string; p_type_slug: string }
+        Returns: Json
+      }
       univer_save: {
         Args: {
           p_document_id: string
@@ -19542,6 +19649,46 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      version_diff: {
+        Args: { p_document_id: string; p_from: number; p_to: number }
+        Returns: Json
+      }
+      version_get: {
+        Args: { p_content_version: number; p_document_id: string }
+        Returns: {
+          actor_id: string
+          body: string
+          body_content_version: number
+          change_kind: string
+          content_hash: string
+          content_version: number
+          created_at: string
+          format: string
+          label: string
+          note: string
+          origin: string
+          payload_hash: string
+          summary: string
+          title: string
+        }[]
+      }
+      version_list: {
+        Args: { p_before?: number; p_document_id: string; p_limit?: number }
+        Returns: {
+          actor_id: string
+          actor_tier: string
+          body_content_version: number
+          change_kind: string
+          content_version: number
+          created_at: string
+          has_body: boolean
+          is_published: boolean
+          label: string
+          note: string
+          origin: string
+          title: string
+        }[]
       }
       version_publish: {
         Args: { p_content_version?: number; p_document_id: string }
@@ -72717,6 +72864,11 @@ export type Database = {
         }[]
       }
       table_lives_in: { Args: { p_table_id: string }; Returns: string }
+      text_anchor_problem: { Args: { p: Json }; Returns: string }
+      text_anchor_target_problem: {
+        Args: { p: Json; p_target_id: string; p_target_type: string }
+        Returns: string
+      }
       undeclared_carrying_cycles: {
         Args: never
         Returns: {

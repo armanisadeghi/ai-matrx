@@ -1,5 +1,8 @@
 -- chair-step: RC-A1 inverse of rcstore_l — removes the doors (type_settings, document_get, find_document, local_sync_changes, version_list/get/diff, search_documents, read_published, read_published_by_slug, thin_autosave_versions) and their doors and grants, the per-type and global knobs rcstore_l seeded, the text_anchor_set and render_binding payload kinds, restores text_anchor to its v1 schema, the visibility column default and the guard body without default visibility.
 -- based-on: content._document_guard_data_class() 55f97dd783db647942af17d6a6fd10f53236aa65a61530503e30f24cddfac79a
+-- ground-standing-ok: b — the inverses run newest first: this file (rcstore_l) runs long before
+-- rcstore_a_content_schema_down.sql, which refuses while any function or table still lives in schema
+-- content; the restored guard body and content._capture_bypassed leave together, never apart.
 
 set local lock_timeout = '5s';
 
