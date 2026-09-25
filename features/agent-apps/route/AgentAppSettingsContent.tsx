@@ -57,6 +57,8 @@ import {
 } from "@/features/agents/redux/agent-apps/thunks";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { AGENT_APPS_SURFACE_NAME } from "@/features/surfaces/manifests/agent-apps.manifest";
+import { useDeclarePageObjectOrganization } from "@/features/shell/pageObjectOrganization";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import {
   validateAppCategory,
   validateAppTags,
@@ -106,6 +108,20 @@ export function AgentAppSettingsContent({
   const holder = useAppHolder(app);
   const agent = useAppSelector((state) =>
     holder.agentId ? selectAgentById(state, holder.agentId) : undefined,
+  );
+
+  // This is an OBJECT page: the app already knows its organization, so a red
+  // "Choose org" over it would be a lie (GATES-TAIL, VERIFIER-23 #8 note (a)).
+  const { organizations: myOrganizations } = useUserOrganizations();
+  const appOrganizationId = app?.organization_id ?? null;
+  useDeclarePageObjectOrganization(
+    appOrganizationId
+      ? {
+          organizationId: appOrganizationId,
+          name: myOrganizations.find((o) => o.id === appOrganizationId)?.name ?? null,
+          shownByPage: false,
+        }
+      : null,
   );
 
   const [name, setName] = useState(app?.name ?? "");

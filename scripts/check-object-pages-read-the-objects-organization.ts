@@ -74,6 +74,9 @@ export const OBJECT_HELPERS: readonly string[] = [
   "features/files/components/surfaces/single-file/SingleFileShell.tsx",
   "features/files/api/fileOrganization.ts",
   "features/files/api/files.ts",
+  // /agent-apps/<id>/settings — the app already knows its organization (GATES-TAIL, VERIFIER-23
+  // #8 note (a): the settings page showed a red "Choose org" in a fresh session).
+  "features/agent-apps/route/AgentAppSettingsContent.tsx",
 ];
 
 /**
@@ -171,6 +174,7 @@ export const MUST_ASK_THE_OBJECT: Readonly<Record<string, RegExp>> = {
   "app/(core)/data-v2/[tableId]/page.tsx": /\buseDeclarePageObjectOrganization\s*\(/,
   "features/files/components/surfaces/single-file/SingleFileShell.tsx": /\buseDeclarePageObjectOrganization\s*\(/,
   "features/scheduling/components/detail/ScheduleDetail.tsx": /\buseDeclarePageObjectOrganization\s*\(/,
+  "features/agent-apps/route/AgentAppSettingsContent.tsx": /\buseDeclarePageObjectOrganization\s*\(/,
 };
 
 /**
