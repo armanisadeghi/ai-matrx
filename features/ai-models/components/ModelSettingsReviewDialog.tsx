@@ -49,8 +49,8 @@ import { suggestSettingSwaps } from "./suggestSettingSwaps";
 
 function formatSwapValue(value: unknown): string {
   if (value === undefined) return "remove the setting";
-  if (typeof value === "string") return value;
-  return JSON.stringify(value);
+  const text = typeof value === "string" ? value : JSON.stringify(value);
+  return text.length > 80 ? `${text.slice(0, 77)}…` : text;
 }
 
 const INSTANCE_KEY = "model-replace-review";
@@ -206,10 +206,10 @@ export function ModelSettingsReviewDialog({
                 </span>
               </div>
               <ul className="mt-2 divide-y divide-border rounded-md border border-border">
-                {suggestions.map((s) => (
+                {suggestions.map((s, index) => (
                   <li key={s.id} className="flex items-start gap-3 px-3 py-2">
                     <Checkbox
-                      id={`swap-${s.id}`}
+                      id={`model-replace-swap-${index}`}
                       className="mt-0.5"
                       checked={!!ticked[s.id]}
                       disabled={applying}
@@ -218,12 +218,16 @@ export function ModelSettingsReviewDialog({
                       }
                     />
                     <label
-                      htmlFor={`swap-${s.id}`}
+                      htmlFor={`model-replace-swap-${index}`}
                       className="min-w-0 flex-1 cursor-pointer text-sm leading-snug"
                     >
                       <span className="text-foreground">
                         If an agent has <code className="text-xs">{s.key}</code>{" "}
-                        = <strong>{formatSwapValue(s.from)}</strong>,{" "}
+                        ={" "}
+                        <strong className="break-all">
+                          {formatSwapValue(s.from)}
+                        </strong>
+                        ,{" "}
                         {s.to === undefined ? (
                           <strong>remove the setting</strong>
                         ) : (
