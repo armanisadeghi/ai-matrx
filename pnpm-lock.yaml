@@ -42,7 +42,7 @@ importers:
         version: 0.5.16(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/content-ir':
         specifier: latest
-        version: 0.14.2
+        version: 0.15.0
       '@ai-matrx/content-ir-react':
         specifier: latest
         version: 0.11.10(react@19.3.0)
@@ -1044,8 +1044,8 @@ packages:
     peerDependencies:
       react: '>=19.0.0'
 
-  '@ai-matrx/content-ir@0.14.2':
-    resolution: {integrity: sha512-PmQdrbpun1CEEW/MsuGeZ1v6gEWZ9HV8c+sDOJ4vjUvIoedRnVB/DwNowy/kM5/qFAHldMrjrqqRpCDnqyOKWg==}
+  '@ai-matrx/content-ir@0.15.0':
+    resolution: {integrity: sha512-dLDehVB5VBK/LwXlu5F+JKYVV5owb34aelyidFHb5J+rzfhCczauusJ+LYYPm2UPQ0Ysfp9yJeSiZ1V13ol+Mw==}
     engines: {node: '>=20'}
 
   '@ai-matrx/data@0.18.1':
@@ -12732,10 +12732,10 @@ snapshots:
 
   '@ai-matrx/content-ir-react@0.11.10(react@19.3.0)':
     dependencies:
-      '@ai-matrx/content-ir': 0.14.2
+      '@ai-matrx/content-ir': 0.15.0
       react: 19.3.0
 
-  '@ai-matrx/content-ir@0.14.2':
+  '@ai-matrx/content-ir@0.15.0':
     dependencies:
       ajv: 8.20.0
 
