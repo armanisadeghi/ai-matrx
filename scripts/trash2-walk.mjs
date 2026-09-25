@@ -106,7 +106,13 @@ async function signInPatiently(page, email, password, who) {
     try {
       return await signIn(page, ORIGIN, email, password, who);
     } catch (e) {
-      if (attempt >= 3) throw e;
+      // A press that landed late still signs the page in; ask the app before pressing again.
+      await page.waitForLoadState("domcontentloaded", { timeout: 120000 }).catch(() => undefined);
+      const seen = await page.evaluate(async () => {
+        try { return (await (await fetch("/api/whoami")).json())?.email ?? null; } catch { return null; }
+      }).catch(() => null);
+      if (seen === email) return seen;
+      if (attempt >= 4) throw e;
       console.log(`[trash2-walk] ${who}: sign-in attempt ${attempt} failed (${e.message.split("\n")[0]}) — retrying`);
     }
   }
@@ -160,9 +166,10 @@ try {
   const { data: audit } = await admin.sb.rpc("org_admin_list_audit", { p_org_id: org.id, p_limit: 20 });
   check("organization audit row trash.restore names test@test.com's show",
     (audit ?? []).some((a) => a.action === "trash.restore" && a.target_user_id === tester.uid && a.detail?.id === tShow.id));
-  const { data: notes } = await tester.sb.schema("communication").from("notification")
-    .select("id, event_key, subject, body").eq("event_key", "trash.restored_by_org_admin").eq("target_id", tShow.id);
-  check("test@test.com got the in-app notice", (notes ?? []).length === 1, notes?.[0]?.subject ?? "none");
+  // Read the way the bell reads it: the person's own inbox door.
+  const { data: inbox, error: inboxErr } = await tester.sb.schema("communication").rpc("my_notifications", { p_limit: 50 });
+  const notes = (inbox ?? []).filter((n) => n.event_key === "trash.restored_by_org_admin" && n.target_id === tShow.id);
+  check("test@test.com got the in-app notice (their inbox)", notes.length === 1, inboxErr?.message ?? notes[0]?.subject ?? "none");
   await aCtx.close();
 
   // ── test@test.com: only their own Trash; no Organization Trash ────────────────────────────
