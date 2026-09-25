@@ -418,6 +418,8 @@ model overrides.
 
 ## Change Log
 
+- `2026-09-25` — **The `inline` display mode's "Agent Result" card shows its run and always closes.** Reported live: /notes → right-click → "Clean up webpage content" (a shortcut stored `display_mode = "inline"`) opened an empty card while the run streamed and saved. Not the mandate launch path — `POST /v2/ai/mandates/shortcut.clean_up_webpage_content` returned 200 and the transcript WAS in the DOM. The shell (`agent-widgets/AgentInlineOverlay.tsx`) gave `AgentRunner` (absolutely positioned layers, no intrinsic height) only `max-h-[60dvh]`, so it collapsed to 0px — the card measured 600×35, header only. The shell now has a definite height, says "not connected to a run" in words when it has none (plus a `console.error` naming the id), closes on Escape, has a labelled 28px close button, and carries `pointer-events-auto` so a Radix layer's `<body>` lock cannot kill its X. Every other `AgentRunner` host already sized its runner. Guard: `AgentInlineOverlay.test.tsx` (4 cases, all red against the old shell).
+
 - `2026-09-22` — Cold pending calls follow the regenerated backend contract without SMS authorization metadata; delegated calls route through their actual client executors.
 
 - 2026-09-19 — **THE FOURTH ORGANIZATION STATE (R37) on `/agents/new/manual`.** `CreateManualAgentClient` rendered `OrganizationRequiredNotice` from `bootstrapResolved && !organizationId`, which is also the FAILED organization read (`setOrgBootstrapFailure` sets that flag TRUE). It now reads `useOrganizationRequired().organizationState` and renders `OrganizationContextNotice`, so a failed read says so and offers Try again instead of asking for a pick nobody checked was needed. Guard: `pnpm check:org-three-states` rule 5.
