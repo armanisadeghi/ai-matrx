@@ -122,21 +122,38 @@ async function revealTestOrganizations(page) {
   });
 }
 
-/** Click the row whose own text is exactly this organization's name. */
+/**
+ * THE PURE MATCH, run identically in a real browser (via `page.evaluate`, which serializes
+ * this function's source and re-runs it there) and in this file's own self-test against jsdom.
+ * No closed-over variables — only `document`/`window`, which both environments provide.
+ *
+ * 🚨 SCOPED TO THE ORGANIZATION PICKER, NEVER "any leaf of the whole page" (lane TAILS-24,
+ * VERIFIER-23, "Outside the list"): the old version searched every element in `body` for one
+ * whose own text was exactly the wanted name, so asking for the organization "AI Matrx" matched
+ * the sidebar's "AI Matrx" navigation item first — same text, drawn earlier in the document —
+ * and the page landed on the Dashboard with a red "Choose org" instead of switching organization.
+ * `@ai-matrx/design-system`'s `OrganizationPicker` renders each row as a `button[role="option"]`
+ * inside a `[data-slot="organization-picker"]` container (the picker is drawn twice per page:
+ * sidebar + the "pick an organization" hold notice), with the organization's name as the first
+ * `.truncate` span inside it — so matching by ROLE, inside that container, by NAME, can never
+ * land on brand chrome or a nav link outside it.
+ */
+export function findOrganizationOptionAndClick(wanted) {
+  const options = Array.from(document.querySelectorAll('[data-slot="organization-picker"] [role="option"]'));
+  const target = options.find((el) => {
+    const nameSpan = el.querySelector(".truncate");
+    const text = (nameSpan ?? el).textContent ?? "";
+    return text.trim() === wanted;
+  });
+  if (!target) return false;
+  target.scrollIntoView?.({ block: "center" });
+  target.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
+  return true;
+}
+
+/** Click the organization-picker row whose own name is exactly this organization's name. */
 async function clickOrganizationRow(page, name) {
-  return page.evaluate((wanted) => {
-    const leaf = Array.from(document.querySelectorAll("body *")).find(
-      (el) => el.children.length === 0 && (el.textContent ?? "").trim() === wanted,
-    );
-    if (!leaf) return false;
-    const target =
-      leaf.closest("button, [role='option'], [role='menuitem'], [role='button'], a, li") ??
-      leaf.parentElement;
-    if (!target) return false;
-    target.scrollIntoView({ block: "center" });
-    target.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
-    return true;
-  }, name);
+  return page.evaluate(findOrganizationOptionAndClick, name);
 }
 
 /**
