@@ -35,27 +35,51 @@ const EDITOR_HREF = "/resources/term-lists";
  * server places each list where the model's vendor wants it on every run.
  */
 export function AgentTermListsManager({ agentId }: { agentId: string }) {
-  const [attached, setAttached] = useState<AttachedTermList[]>([]);
-  const [loading, setLoading] = useState(true);
+  // `loading` is DERIVED, never a separate flag the effect sets synchronously:
+  // it's "the fetch for this agentId hasn't landed yet", read straight off
+  // whether `fetched.agentId` still matches the current prop. That is what
+  // lets the effect below call setState only from inside its async callbacks
+  // (a real external event — the response arriving), never from its own body.
+  const [fetched, setFetched] = useState<{ agentId: string; attached: AttachedTermList[] }>({
+    agentId: "",
+    attached: [],
+  });
+  const loading = fetched.agentId !== agentId;
+  const attached = loading ? [] : fetched.attached;
 
   const reload = async () => {
     try {
-      setAttached(await listAttachedTermLists(agentId));
+      setFetched({ agentId, attached: await listAttachedTermLists(agentId) });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't load term lists");
-    } finally {
-      setLoading(false);
     }
   };
 
+  // Fetches on mount and whenever the agent changes; `reload()` above is
+  // reused from the "attach" handler below (an event, not an effect). The
+  // effect body only subscribes to that external fetch and guards it against
+  // a stale response landing after `agentId` moves on.
   useEffect(() => {
-    void reload();
+    let active = true;
+    void listAttachedTermLists(agentId)
+      .then((rows) => {
+        if (active) setFetched({ agentId, attached: rows });
+      })
+      .catch((e: unknown) => {
+        if (active) {
+          toast.error(e instanceof Error ? e.message : "Couldn't load term lists");
+          setFetched({ agentId, attached: [] });
+        }
+      });
+    return () => {
+      active = false;
+    };
   }, [agentId]);
 
   const detach = async (item: AttachedTermList) => {
     try {
       await detachTermList(agentId, item.termListId);
-      setAttached((cur) => cur.filter((a) => a.termListId !== item.termListId));
+      setFetched((cur) => ({ ...cur, attached: cur.attached.filter((a) => a.termListId !== item.termListId) }));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't remove the term list");
     }

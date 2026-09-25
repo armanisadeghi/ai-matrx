@@ -227,6 +227,19 @@ describeLive("/data-v2 — the route files bind the store, live main database", 
     accessToken = signedIn.data.session?.access_token ?? "";
   }, 120_000);
 
+  afterAll(async () => {
+    // Without this, `authedClient`'s `GoTraeClient` leaves its cross-tab
+    // `BroadcastChannel` open — in a real browser that channel is native and
+    // costs nothing, but the `node:worker_threads` polyfill this file installs
+    // above (jsdom ships no `BroadcastChannel`) IS a real Node handle, and
+    // Node's own docs say it "will keep the Node.js process alive… unless
+    // `channel.close()` is called". `dispose()` is the client's own public
+    // teardown for exactly this (stops auto-refresh, closes the channel);
+    // guarded because `beforeAll` may have thrown before `authedClient` was
+    // ever assigned.
+    await authedClient?.auth.dispose();
+  });
+
   beforeEach(() => {
     container = document.createElement("div");
     document.body.appendChild(container);
