@@ -6,6 +6,7 @@
 // output kind the list row does not carry.
 
 import { createClient } from "@/utils/supabase/client";
+import { readAllRows } from "@ai-matrx/data/db";
 import { mandateDefinitions } from "@/lib/supabase/mandateStorage";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import {
@@ -54,20 +55,25 @@ async function pageOf(
   scope: string,
 ): Promise<MandateMemberRow[]> {
   const orgLevel = query.level === "organization";
-  const answer = await callMandateMemberList<MandateMemberPageAnswer>({
-    p_mode: "page",
-    p_level: query.level,
-    p_scope: scope,
-    ...(orgLevel
-      ? { p_org_id: query.organizationId ?? undefined }
-      : { p_resolve_org_id: query.organizationId ?? undefined }),
-    p_filters: { mandateKey: { kind: "text", value: `${query.feature}.` } },
-    p_sort: "name",
-    p_dir: "asc",
-    p_limit: PAGE,
-    p_offset: 0,
-  });
-  return answer.rows.map(memberRowFromWire);
+  const rows: MandateMemberRow[] = [];
+  for (let offset = 0; ; offset += PAGE) {
+    const answer = await callMandateMemberList<MandateMemberPageAnswer>({
+      p_mode: "page",
+      p_level: query.level,
+      p_scope: scope,
+      ...(orgLevel
+        ? { p_org_id: query.organizationId ?? undefined }
+        : { p_resolve_org_id: query.organizationId ?? undefined }),
+      p_filters: { mandateKey: { kind: "text", value: `${query.feature}.` } },
+      p_sort: "name",
+      p_dir: "asc",
+      p_limit: PAGE,
+      p_offset: offset,
+    });
+    rows.push(...answer.rows.map(memberRowFromWire));
+    if (offset + answer.rows.length >= answer.total || answer.rows.length === 0) break;
+  }
+  return rows;
 }
 
 /**
@@ -98,24 +104,28 @@ export async function fetchFeatureIntelligence(
 ): Promise<FeatureIntelligenceRow[]> {
   // The feature's definitions the viewer can see (RLS), read first: they say
   // which lanes to ask and carry the output kind the list row does not.
-  const [{ data, error }, systemOrgId] = await Promise.all([
-    mandateDefinitions(createClient())
-      .select("mandate_key, output_kind, description, organization_id, created_by")
-      .like("mandate_key", `${query.feature}.%`)
-      .is("deleted_at", null),
+  const [defsAll, systemOrgId] = await Promise.all([
+    readAllRows(
+      ({ from, to }) => mandateDefinitions(createClient())
+        .select("mandate_key, output_kind, description, organization_id, created_by", { count: "exact" })
+        .like("mandate_key", `${query.feature}.%`)
+        .is("deleted_at", null)
+        .order("mandate_key", { ascending: true })
+        .range(from, to),
+      { label: `mandate definitions for ${query.feature}` },
+    ),
     resolveSystemOrgId(),
   ]);
-  if (error) throw new Error(`Job definitions: ${error.message}`);
-  const defsAll = (data ?? []).filter((row) => keyInFeature(row.mandate_key, query.feature));
-  if (defsAll.length === 0) return [];
+  const featureDefs = defsAll.filter((row) => keyInFeature(row.mandate_key, query.feature));
+  if (featureDefs.length === 0) return [];
   const defs = new Map(
-    defsAll.map((row) => [
+    featureDefs.map((row) => [
       row.mandate_key,
       { outputKind: row.output_kind ?? null, description: row.description ?? null },
     ]),
   );
 
-  const lanes = lanesFor(defsAll, systemOrgId, query.userId, query.level);
+  const lanes = lanesFor(featureDefs, systemOrgId, query.userId, query.level);
   const pages = await Promise.all(lanes.map((lane) => pageOf(query, lane)));
   const byId = new Map<string, MandateMemberRow>();
   for (const row of pages.flat()) {

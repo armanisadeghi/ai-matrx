@@ -14,7 +14,7 @@ The page and the icon people use to manage the AI jobs of the part of the app th
 
 ## Map
 - `FeatureIntelligence.tsx` — page body, feature-agnostic. Props: `feature`, `context`, `focusMandateKey`, `runOverrides`, `showTitle`. Seat: person, or organization when the viewer administers the active (non-personal) organization.
-- `service.ts` — rows from `public.mnd_member_list` (holder-neutral: agent or workflow), scopes system+mine+orgs (person) / system+orgs (organization), narrowed by key prefix; output kind from the definition.
+- `service.ts` — complete paged rows from `public.mnd_member_list` (holder-neutral: agent or workflow), scopes system+mine+orgs (person) / system+orgs (organization), narrowed by key prefix; output kind from a complete definition read.
 - `IntelligenceJobCard.tsx` — one job: effective holder and system → organization → person ladder, can use (`useMandateInputSurface`), makes, runs in, actions.
 - `useIntelligenceActions.ts` — Duplicate & modify copies the deciding holder snapshot, including pinned agent/workflow versions, then binds and verifies the copy at the viewer's rung before opening it. The deciding rung's map and settings follow the copy. Use my own uses `HolderAssignment` in `UseOwnDialog.tsx`; Reset removes the viewer's binding and reveals the inherited choice. All writes use `putMandateBinding`/`removeMandateBinding`.
 - `places.ts` + `PlacesMap.tsx` — where each job runs. Sources: DECLARED feature maps (`features/flashcards/data/intelligence-places.ts`, `features/research/components/intelligence/places.ts`, each proved by its own test) and REGISTERED screens (`ui.ui_surface_agent_role` ⋈ `ui.ui_surface`). Unnamed jobs read "Not recorded yet".
