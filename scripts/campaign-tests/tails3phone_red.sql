@@ -125,7 +125,12 @@ begin
   end if;
   raise notice 'PART 3 RED — % of the 7 real spellings a veterinary practice actually types were REFUSED by the old pattern, and % landed. That is the defect the new Rule closed.', v_refused, v_pass;
   raise notice 'ALL CLAUSES PASSED';
-  raise exception 'tails3phone_red.sql: TEARDOWN — rolling back, as designed';
+  -- SUITE-TAIL-3: this used to be `raise exception`, which aborted the do-block before the
+  -- `rollback;` below could ever run — the script's actual rollback happened only on
+  -- disconnect, and psql's exit code stayed non-zero (3) even on a full pass. `raise notice`
+  -- lets the do-block finish normally so the explicit `rollback;` below does the work, with
+  -- an honest exit code: 0 on a real pass, non-zero only when a clause actually raised above.
+  raise notice 'tails3phone_red.sql: TEARDOWN — rolling back, as designed';
 end;
 $t$;
 

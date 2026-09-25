@@ -650,7 +650,12 @@ begin
   raise notice 'PART 7 PASSED — a stranger is refused both form doors; the sign-in page carries the name, logo and accent; a portal with no look of its own opens on the organization''s name through portal_public and portal_me.';
 
   raise notice 'ALL CLAUSES PASSED';
-  raise exception 'TEARDOWN — this suite rolls back and leaves nothing';
+  -- SUITE-TAIL-3: this used to be `raise exception`, which aborted the do-block before the
+  -- `rollback;` below could ever run — the script's actual rollback happened only on
+  -- disconnect, and psql's exit code stayed non-zero (3) even on a full pass. `raise notice`
+  -- lets the do-block finish normally so the explicit `rollback;` below does the work, with
+  -- an honest exit code: 0 on a real pass, non-zero only when a clause actually raised above.
+  raise notice 'TEARDOWN — this suite rolls back and leaves nothing';
 end $t$;
 
 rollback;

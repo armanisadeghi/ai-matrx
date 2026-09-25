@@ -20,6 +20,7 @@
 \if :matrx_skip
 \quit
 \endif
+begin;
 set local lock_timeout = '10s';
 set local statement_timeout = '60s';
 do $suite$
@@ -305,5 +306,13 @@ begin
   -- raise, but ONLY for a suite that printed these exact words first, so that a suite which
   -- died halfway can never be forgiven its exit. Do not reword this line.
   raise notice 'ALL CLAUSES PASSED';
-  raise exception 'TEARDOWN — this suite rolls back and leaves nothing';
+  -- SUITE-TAIL-3: this used to be `raise exception`, which made a passing run and a real
+  -- failure indistinguishable to any automated reader of the exit code (psql exits 3 either
+  -- way) even though the notice above already printed ALL CLAUSES PASSED. A `raise notice`
+  -- here plus the explicit `begin;` / `rollback;` around this do-block gets the same "leaves
+  -- nothing" guarantee with an honest exit code: 0 on a real pass, non-zero only when a clause
+  -- actually raised above and this line was never reached.
+  raise notice 'TEARDOWN — this suite rolls back and leaves nothing';
 end $suite$;
+
+rollback;

@@ -23,6 +23,7 @@
 \if :matrx_skip
 \quit
 \endif
+begin;
 set local lock_timeout = '10s';
 set local statement_timeout = '60s';
 do $suite$
@@ -351,5 +352,11 @@ begin
   -- raise, but ONLY for a suite that printed these exact words first, so that a suite which
   -- died halfway can never be forgiven its exit. Do not reword this line.
   raise notice 'ALL CLAUSES PASSED';
-  raise exception 'ROLLBACK VERIFIED — the red twin plants real pre-fix bytes and leaves nothing';
+  -- SUITE-TAIL-3: `raise notice` (not `raise exception`) here, plus the explicit `begin;` /
+  -- `rollback;` around this do-block, gets an honest exit code — 0 on a real pass, non-zero
+  -- only when a clause actually raised above and this line was never reached — while still
+  -- leaving nothing behind.
+  raise notice 'ROLLBACK VERIFIED — the red twin plants real pre-fix bytes and leaves nothing';
 end $suite$;
+
+rollback;
