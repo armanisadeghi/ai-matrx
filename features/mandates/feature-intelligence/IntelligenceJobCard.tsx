@@ -162,7 +162,7 @@ export function IntelligenceJobCard({
   const canDuplicate =
     Boolean(row.holderId) && (row.holderType === "agent" || row.holderType === "workflow");
   const HolderIcon = row.holderType === "workflow" ? Workflow : BrainCircuit;
-  const about = row.goal ?? row.description;
+  const about = row.description || row.goal?.split(/(?<=[.!?])\s+/)[0] || row.goal;
 
   return (
     <li
