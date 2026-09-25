@@ -1,7 +1,8 @@
 import { fillUrlPattern, mergePlaces, resolveDeclaredPlaces } from "../places";
 import { keyInFeature, lanesFor, shortMandateName } from "../service";
 import { featureIntelligenceHref } from "../hrefs";
-import type { ResolvedPlace } from "../types";
+import { effectiveRunOverride } from "../run-override";
+import type { FeatureIntelligenceRow, ResolvedPlace } from "../types";
 
 const place = (over: Partial<ResolvedPlace>): ResolvedPlace => ({
   id: "p",
@@ -46,6 +47,13 @@ describe("feature intelligence — places", () => {
 });
 
 describe("feature intelligence — rows", () => {
+  it("does not treat a topic pin to the resolved agent as a second active choice", () => {
+    const row = { holderType: "agent", holderId: "agent-1" } as FeatureIntelligenceRow;
+    const choice = { holderId: "agent-1", holderName: "Agent", manageHref: "/topics/1/agents", contextLabel: "This topic" };
+    expect(effectiveRunOverride(row, choice)).toBeNull();
+    expect(effectiveRunOverride(row, { ...choice, holderId: "agent-2" })).toEqual({ ...choice, holderId: "agent-2" });
+  });
+
   it("matches keys by first segment only", () => {
     expect(keyInFeature("flashcards.generate_cards", "flashcards")).toBe(true);
     expect(keyInFeature("education.study_pack_flashcards", "flashcards")).toBe(false);
@@ -70,7 +78,7 @@ describe("feature intelligence — rows", () => {
     ]);
     expect(
       lanesFor([{ organization_id: "o", created_by: "other" }], sys, "me", "person").sort(),
-    ).toEqual(["orgs", "shared"]);
+    ).toEqual(["orgs"]);
     expect(lanesFor([{ organization_id: "o", created_by: "me" }], sys, "me", "organization")).toEqual([
       "orgs",
     ]);

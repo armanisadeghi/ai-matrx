@@ -424,6 +424,18 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
     }
     wasOpenRef.current = isOpen;
   }, [isOpen, anchorElement]);
+  // Hosts that UNMOUNT the menu on close (the chat message bars) never see
+  // isOpen go false — restore focus on unmount too, when it was left behind.
+  useEffect(
+    () => () => {
+      const target = restoreFocusRef.current;
+      const active = document.activeElement;
+      if (target?.isConnected && (!active || active === document.body || !active.isConnected)) {
+        target.focus();
+      }
+    },
+    [],
+  );
 
   const menuItemsIn = (): HTMLElement[] =>
     Array.from(
@@ -432,11 +444,20 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
 
   useEffect(() => {
     if (!isOpen || isMobile || !menuPosition) return undefined;
-    const id = requestAnimationFrame(() => {
+    // The panel only becomes focusable once it is laid out and visible, which
+    // can trail the position commit by a frame or two — poll, bounded.
+    let frames = 0;
+    let id = 0;
+    const tryFocus = () => {
       const first = menuItemsIn()[0];
-      if (first && !menuRef.current?.contains(document.activeElement)) first.focus();
-      else if (first && trail !== undefined) first.focus();
-    });
+      if (first && menuRef.current?.contains(document.activeElement)) return;
+      if (first && getComputedStyle(first).visibility === "visible") {
+        first.focus();
+        if (document.activeElement === first) return;
+      }
+      if (++frames < 30) id = requestAnimationFrame(tryFocus);
+    };
+    id = requestAnimationFrame(tryFocus);
     return () => cancelAnimationFrame(id);
     // Re-run on drill-in / back so focus lands on the new level's first item.
   }, [isOpen, isMobile, menuPosition, trail]);

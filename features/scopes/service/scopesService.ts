@@ -92,6 +92,7 @@ import type {
 } from "@/features/scopes/types";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import { readTemplateIsPersonal } from "./templateAudience";
+import type { Database } from "@/types/database.types";
 
 // One denormalized scope row for tags: which entity, which scope, plus the
 // scope's name and its type's singular label (sidebar grouping).
@@ -309,7 +310,7 @@ export const scopesService = {
         .select(
           `id, organization_id, label_singular, label_plural, icon, color,
            max_assignments_per_entity, sort_order, parent_type_id,
-           default_variable_keys`,
+           default_variable_keys, slug, description, created_at, updated_at`,
         )
         .in("organization_id", orgIds)
         .is("deleted_at", null)
@@ -323,10 +324,12 @@ export const scopesService = {
         .from("scopes")
         .select(
           `id, scope_type_id, organization_id, name, description,
-           parent_scope_id, settings`,
+           parent_scope_id, settings, slug, sort_order, created_by,
+           created_at, updated_at`,
         )
         .in("organization_id", orgIds)
         .is("deleted_at", null)
+        .order("sort_order", { ascending: true })
         .order("name", { ascending: true });
 
       // VIEW LAW: org-scoped — restricted to orgIds (see scopeTypesP above).
@@ -350,7 +353,7 @@ export const scopesService = {
       const scopesByType = new Map<string, ScopeNode[]>();
       for (const s of scopesRes.data ?? []) {
         const list = scopesByType.get(s.scope_type_id) ?? [];
-        list.push(s as ScopeNode);
+        list.push(toScopeNode(s));
         scopesByType.set(s.scope_type_id, list);
       }
 
@@ -379,6 +382,7 @@ export const scopesService = {
       for (const t of scopeTypesRes.data ?? []) {
         const node: ScopeTypeNode = {
           ...t,
+          description: t.description ?? "",
           scopes: scopesByType.get(t.id) ?? [],
         };
         const list = scopeTypesByOrg.get(t.organization_id) ?? [];
@@ -1557,24 +1561,57 @@ export const scopesService = {
     }
   },
 
-  /** `update_context_item` — org resolved from the row's scope type, org-admin checked inside. */
+  /**
+   * THE context-item edit door.
+   *
+   * `update_context_item` (SECURITY DEFINER, org-admin checked inside) takes
+   * the everyday columns and COALESCEs each one, so it can neither clear a
+   * column nor reach the ones it has no parameter for (custom input
+   * component, review interval, reference-cell config). A patch that needs
+   * either goes as one RLS-checked row update of `context.context_items` —
+   * the path the scope console has always used for those columns. Both
+   * answer with the authoritative row.
+   */
   async updateContextItem(
     params: UpdateContextItemParams,
   ): Promise<ScopesRpcResult<ContextItemRow>> {
     try {
       requireUserId();
+      const { item_id, ...fields } = params;
+      const needsRowUpdate =
+        Object.values(fields).some((v) => v === null) ||
+        fields.custom_component !== undefined ||
+        fields.review_interval_days !== undefined ||
+        fields.allowed_reference_types !== undefined ||
+        fields.max_items !== undefined ||
+        fields.allowed_scope_type_ids !== undefined ||
+        fields.reference_source !== undefined;
+      if (needsRowUpdate) {
+        const patch: Database["context"]["Tables"]["context_items"]["Update"] = {};
+        for (const [k, v] of Object.entries(fields)) {
+          if (v !== undefined) (patch as Record<string, unknown>)[k] = v;
+        }
+        const { data, error } = await contextDb(supabase)
+          .from("context_items")
+          .update(patch)
+          .eq("id", item_id)
+          .select()
+          .single();
+        if (error) return err(...mapPgErrorPair(error));
+        return decodeContextItemRow(data, "context_items update");
+      }
       const { data, error } = await supabase.rpc("update_context_item", {
-        p_item_id: params.item_id,
-        p_display_name: params.display_name,
-        p_description: params.description,
-        p_category: params.category,
-        p_value_type: params.value_type,
-        p_fetch_hint: params.fetch_hint,
-        p_sensitivity: params.sensitivity,
-        p_tags: params.tags,
-        p_sort_order: params.sort_order,
-        p_status: params.status,
-        p_status_note: params.status_note,
+        p_item_id: item_id,
+        p_display_name: fields.display_name,
+        p_description: fields.description,
+        p_category: fields.category ?? undefined,
+        p_value_type: fields.value_type,
+        p_fetch_hint: fields.fetch_hint,
+        p_sensitivity: fields.sensitivity,
+        p_tags: fields.tags,
+        p_sort_order: fields.sort_order,
+        p_status: fields.status,
+        p_status_note: fields.status_note ?? undefined,
       });
       if (error) return err(...mapPgErrorPair(error));
       return decodeContextItemRow(data, "update_context_item");
@@ -1750,8 +1787,43 @@ function decodeScopeTypeNode(
     sort_order: row.sort_order ?? 0,
     parent_type_id: row.parent_type_id ?? null,
     default_variable_keys: row.default_variable_keys ?? [],
+    slug: row.slug ?? null,
+    description: row.description ?? "",
+    created_at: row.created_at ?? "",
+    updated_at: row.updated_at ?? "",
     scopes: [],
   });
+}
+
+/** One `context.scopes` row (table read or `to_jsonb` RPC echo) as its tree node. */
+function toScopeNode(row: {
+  id: string;
+  scope_type_id: string;
+  organization_id: string;
+  name?: string | null;
+  description?: string | null;
+  parent_scope_id?: string | null;
+  settings?: ScopeNode["settings"] | null;
+  slug?: string | null;
+  sort_order?: number | null;
+  created_by?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}): ScopeNode {
+  return {
+    id: row.id,
+    scope_type_id: row.scope_type_id,
+    organization_id: row.organization_id,
+    name: row.name ?? "",
+    description: row.description ?? "",
+    parent_scope_id: row.parent_scope_id ?? null,
+    settings: row.settings ?? {},
+    slug: row.slug ?? null,
+    sort_order: row.sort_order ?? 0,
+    created_by: row.created_by ?? null,
+    created_at: row.created_at ?? "",
+    updated_at: row.updated_at ?? "",
+  };
 }
 
 function decodeScopeNode(data: unknown, rpc: string): ScopesRpcResult<ScopeNode> {
@@ -1766,15 +1838,7 @@ function decodeScopeNode(data: unknown, rpc: string): ScopesRpcResult<ScopeNode>
   ) {
     return err("internal", `${rpc} returned a row without org/type ids`);
   }
-  return ok({
-    id: row.id,
-    scope_type_id: row.scope_type_id,
-    organization_id: row.organization_id,
-    name: row.name ?? "",
-    description: row.description ?? "",
-    parent_scope_id: row.parent_scope_id ?? null,
-    settings: row.settings ?? {},
-  });
+  return ok(toScopeNode(row));
 }
 
 function decodeContextItemRow(

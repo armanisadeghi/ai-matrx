@@ -165,6 +165,12 @@ export interface ScopeNode {
   description: string;
   parent_scope_id: string | null;
   settings: Json;
+  /** Kebab URL segment, unique per scope type (the admin console's routes use it). */
+  slug: string | null;
+  sort_order: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ScopeTypeNode {
@@ -178,6 +184,11 @@ export interface ScopeTypeNode {
   sort_order: number;
   parent_type_id: string | null;
   default_variable_keys: string[];
+  /** Kebab URL segment, unique per organization (the admin console's routes use it). */
+  slug: string | null;
+  description: string;
+  created_at: string;
+  updated_at: string;
   scopes: ScopeNode[];
 }
 
@@ -479,14 +490,23 @@ export interface UpdateContextItemParams {
   item_id: string;
   display_name?: string;
   description?: string;
-  category?: string;
+  /** `null` clears it. */
+  category?: string | null;
   value_type?: ContextItemValueType;
   fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"];
   sensitivity?: Database["public"]["Enums"]["context_sensitivity"];
   tags?: string[];
   sort_order?: number;
   status?: Database["public"]["Enums"]["context_item_status"];
-  status_note?: string;
+  /** `null` clears it. */
+  status_note?: string | null;
+  // ── Columns `update_context_item` does not take (see scopesService.updateContextItem) ──
+  custom_component?: Json | null;
+  review_interval_days?: number | null;
+  allowed_reference_types?: string[] | null;
+  max_items?: number;
+  allowed_scope_type_ids?: string[] | null;
+  reference_source?: Json | null;
 }
 
 /** What `apply_template` reports back (jsonb envelope from the RPC). */
@@ -685,4 +705,14 @@ export function isScopesRpcErr<T>(
   r: ScopesRpcResult<T>,
 ): r is { ok: false; error: ScopesRpcError } {
   return r.ok === false;
+}
+
+/**
+ * The success value of a scopes write, or a thrown `Error` carrying the
+ * service's own message — for call sites that handle a refused write in one
+ * try/catch with a toast (the scope CRUD console).
+ */
+export function unwrapScopesRpc<T>(r: ScopesRpcResult<T>): T {
+  if (isScopesRpcErr(r)) throw new Error(r.error.message);
+  return r.data;
 }

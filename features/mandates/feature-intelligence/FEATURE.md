@@ -14,9 +14,9 @@ The page and the icon people use to manage the AI jobs of the part of the app th
 
 ## Map
 - `FeatureIntelligence.tsx` — page body, feature-agnostic. Props: `feature`, `context`, `focusMandateKey`, `runOverrides`, `showTitle`. Seat: person, or organization when the viewer administers the active (non-personal) organization.
-- `service.ts` — rows from `public.mnd_member_list` (holder-neutral: agent or workflow), scopes system+mine+shared+orgs (person) / system+orgs (organization), narrowed by key prefix; output kind from the definition.
-- `IntelligenceJobCard.tsx` — one job: runs now (+ who chose it), can use (`useMandateInputSurface` — served, never derived), makes, runs in, actions.
-- `useIntelligenceActions.ts` — Duplicate & modify (agent via `useCopyMandateAgent`, workflow via `duplicateWorkflow`; the copy is bound at the seat's rung with the deciding rung's map + settings), Use my own (`HolderAssignment` in `UseOwnDialog.tsx`), Reset (`removeMandateBinding`). All writes through `putMandateBinding`/`removeMandateBinding`.
+- `service.ts` — rows from `public.mnd_member_list` (holder-neutral: agent or workflow), scopes system+mine+orgs (person) / system+orgs (organization), narrowed by key prefix; output kind from the definition.
+- `IntelligenceJobCard.tsx` — one job: effective holder and system → organization → person ladder, can use (`useMandateInputSurface`), makes, runs in, actions.
+- `useIntelligenceActions.ts` — Duplicate & modify copies the deciding holder snapshot, including pinned agent/workflow versions, then binds and verifies the copy at the viewer's rung before opening it. The deciding rung's map and settings follow the copy. Use my own uses `HolderAssignment` in `UseOwnDialog.tsx`; Reset removes the viewer's binding and reveals the inherited choice. All writes use `putMandateBinding`/`removeMandateBinding`.
 - `places.ts` + `PlacesMap.tsx` — where each job runs. Sources: DECLARED feature maps (`features/flashcards/data/intelligence-places.ts`, `features/research/components/intelligence/places.ts`, each proved by its own test) and REGISTERED screens (`ui.ui_surface_agent_role` ⋈ `ui.ui_surface`). Unnamed jobs read "Not recorded yet".
 - `IntelligenceIndicator.tsx` — the icon. `mandateKeys` explicit, or omitted to list what the page registered via `useDeclaredSurfaceMandates` for `feature`. Placed: research topic header, flashcards "Generate". The header Agents menu (`SurfaceMandatesSection`) links each feature on the page to its intelligence page.
 
@@ -25,10 +25,11 @@ Write `<feature>/…/intelligence-places.ts` (a `FeaturePlaces`) beside the code
 
 ## Landmines
 - The member list names `holderId` for workflows as the workflow definition id; agent pins come from the ladder (`fetchMandateLadder`) at duplicate time.
-- A workflow copy duplicates the live definition, even when the running rung pins a workflow version.
+- A pinned workflow copy duplicates the selected workflow version; an unpinned workflow copy duplicates the live definition.
 - An organization-level copy is created by the admin; members can use it only if they can open it (the server's answer is shown).
-- The research topic's own per-role choice (`rs_topic.agent_config`) runs ahead of every ladder rung for that topic; the page shows it on the job row and links to the Agents page that manages it.
+- The research topic's own per-role choice (`rs_topic.agent_config`) runs ahead of every ladder rung for that topic. The page shows it as a separate layer. A successful replacement is bound and verified before the topic choice is removed with a guarded JSON merge; a rejected replacement leaves that topic choice in place. An unreadable or archived topic agent is shown as needing attention.
 - The Intelligence icon is an owner-approved exception to "disclosure adds no visible content" (Arman 2026-09-25); it is a management door, not a disclosure roster.
 
 ## Change Log
+- 2026-09-25 — verified against code: exact holder copy and binding verification, precedence ladder, guarded topic choice removal.
 - 2026-09-25 — created: page, generic + research routes, icon, places maps (flashcards, research), header-menu door.

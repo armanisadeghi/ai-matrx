@@ -88,7 +88,6 @@ export function lanesFor(
     else if (userId && def.created_by === userId) lanes.add("mine");
     else {
       lanes.add("orgs");
-      lanes.add("shared");
     }
   }
   return [...lanes];

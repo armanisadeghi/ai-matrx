@@ -1,5 +1,5 @@
 import { supabase } from "@/utils/supabase/client";
-import { readAllRows } from "@ai-matrx/data/db";
+import { mergeJsonColumn, readAllRows } from "@ai-matrx/data/db";
 import { requireUserId } from "@/utils/auth/getUserId";
 import type { Database } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
@@ -332,6 +332,46 @@ export async function updateTopic(
     .single();
   if (error) throw error;
   return rowToResearchTopic(data);
+}
+
+/** Remove one legacy topic agent choice without overwriting sibling keys. */
+export async function removeTopicAgentChoice(
+  topicId: string,
+  key: string,
+  expectedAgentId: string,
+): Promise<void> {
+  const read = () => supabase
+    .schema("research")
+    .from("rs_topic")
+    .select("id,version,agent_config")
+    .eq("id", topicId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  const result = await mergeJsonColumn({
+    fetchCurrent: read,
+    readColumn: (row) => row.agent_config,
+    merge: (current) => {
+      if (current[key] !== expectedAgentId) {
+        throw new Error("The topic choice changed while this page was open. Refresh and try again.");
+      }
+      const next = { ...current };
+      delete next[key];
+      return next;
+    },
+    applyUpdate: ({ value, expectedVersion, nextVersion }) => supabase
+      .schema("research")
+      .from("rs_topic")
+      .update({ agent_config: value, version: nextVersion })
+      .eq("id", topicId)
+      .eq("version", expectedVersion)
+      .is("deleted_at", null)
+      .select("id,version,agent_config")
+      .maybeSingle(),
+  });
+  if (result.status === "saved") return;
+  if (result.status === "not_found") throw new Error("The topic could not be read.");
+  if (result.status === "conflict") throw new Error("The topic changed during the update. Refresh and try again.");
+  throw result.error;
 }
 
 /**

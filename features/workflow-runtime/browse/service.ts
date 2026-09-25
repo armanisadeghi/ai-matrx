@@ -236,3 +236,24 @@ export async function duplicateWorkflow(
   if (!created) throw new Error("The copy was created but could not be read.");
   return { id: created.id, name: created.name };
 }
+
+/** Copy the snapshot a version-pinned mandate actually runs. */
+export async function duplicateWorkflowVersion(
+  versionId: string,
+): Promise<{ id: string; name: string }> {
+  const { data: newId, error } = await supabase.rpc("wfx_duplicate_version", {
+    p_version_id: versionId,
+    p_organization_id: await ensureOrgId(null),
+  });
+  if (error) throw pgError(error);
+  if (!newId) throw new Error("The workflow version was not copied.");
+  const { data: created, error: readError } = await supabase
+    .schema("workflow")
+    .from("definition")
+    .select("id,name")
+    .eq("id", newId)
+    .single();
+  if (readError) throw pgError(readError);
+  if (!created) throw new Error("The workflow copy was created but could not be read.");
+  return created;
+}

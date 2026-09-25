@@ -6,8 +6,9 @@
  * policy) precisely so globally-placed consumers — sidebar pickers, every
  * ContextAssignment* component, resolvers — can read it without ever
  * re-fetching. The flip side of "never refetch" is "always invalidate on
- * write": this middleware watches the fulfilled action of every structural
- * mutation in the app and force-refreshes the tree once.
+ * write": the per-row write doors patch the tree in place, and this
+ * middleware watches the BULK structural writes (template application) and
+ * force-refreshes the tree once.
  *
  * Adding a new structural mutation anywhere? Add its `/fulfilled` type to
  * STRUCTURAL_MUTATIONS below — one line, and every surface stays fresh.
@@ -23,15 +24,11 @@ import type { Middleware, ThunkDispatch, UnknownAction } from "@reduxjs/toolkit"
 import type { RootState } from "@/lib/redux/store";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
+// Scope-type and scope writes are NOT here: their doors
+// (`thunks/scopeTreeMutations.ts`) patch the tree in place with the
+// authoritative row, so a refetch would only cost a round-trip. What stays is
+// the bulk write whose result the tree cannot fold row by row.
 const STRUCTURAL_MUTATIONS = new Set<string>([
-  // scope types (features/agent-context/redux/scope/scopeTypesSlice)
-  "scopeTypes/create/fulfilled",
-  "scopeTypes/update/fulfilled",
-  "scopeTypes/delete/fulfilled",
-  // scopes (features/agent-context/redux/scope/scopesSlice)
-  "scopes/create/fulfilled",
-  "scopes/update/fulfilled",
-  "scopes/delete/fulfilled",
   // templates create whole sets of types + scopes (features/scope-system)
   "templates/apply/fulfilled",
   "templates/applyByKey/fulfilled",

@@ -5,8 +5,10 @@
 // SECURITY DEFINER RPC family (`create_scope_type`, `update_scope_type`,
 // `delete_scope_type`, `create_scope`, `update_scope`, `delete_scope`;
 // C17 HYBRID ruling, 2026-08-29). On success the authoritative row is folded
-// straight into `scopesSlice` via the per-row patch reducers — no refetch,
-// no reliance on the legacy-action mirror block.
+// straight into `scopesSlice` via the per-row patch reducers — no refetch.
+// These are THE write doors for scope types and scopes (the agent-context
+// scopeTypes/scopes slices and their thunks were deleted 2026-09-25, lane
+// SCOPE-ADMIN-CANONICAL).
 //
 // Never throws — every thunk returns the service's ScopesRpcResult envelope;
 // callers branch with `isScopesRpcErr` and surface errors through their own
@@ -74,16 +76,47 @@ export function updateScopeType(
   };
 }
 
+/** The organization a scope type lives in, read from the tree. */
+function orgIdForScopeType(state: RootState, typeId: string): string | null {
+  for (const orgId of state.scopesTree.organizationIds) {
+    const org = state.scopesTree.organizations[orgId];
+    if (org?.scope_types.some((t) => t.id === typeId)) return orgId;
+  }
+  return null;
+}
+
+/** Where a scope lives (organization + scope type), read from the tree. */
+function homeForScope(
+  state: RootState,
+  scopeId: string,
+): { organizationId: string; scopeTypeId: string } | null {
+  for (const orgId of state.scopesTree.organizationIds) {
+    const org = state.scopesTree.organizations[orgId];
+    for (const t of org?.scope_types ?? []) {
+      if (t.scopes.some((s) => s.id === scopeId)) {
+        return { organizationId: orgId, scopeTypeId: t.id };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Archive a scope type (`delete_scope_type` is a soft archive). The tree drops
+ * it in place; `organization_id` is read from the tree when not given.
+ */
 export function deleteScopeType(params: {
   type_id: string;
-  organization_id: string;
+  organization_id?: string;
 }): AppThunk<Promise<ScopesRpcResult<{ id: string }>>> {
-  return async (dispatch) => {
+  return async (dispatch, getState) => {
+    const organizationId =
+      params.organization_id ?? orgIdForScopeType(getState(), params.type_id);
     const res = await scopesService.deleteScopeType(params.type_id);
-    if (!isScopesRpcErr(res)) {
+    if (!isScopesRpcErr(res) && organizationId) {
       dispatch(
         scopesActions.scopeTypeRemoved({
-          organizationId: params.organization_id,
+          organizationId,
           scopeTypeId: params.type_id,
         }),
       );
@@ -116,18 +149,29 @@ export function updateScope(
   };
 }
 
+/**
+ * Archive a scope (`delete_scope` is a soft archive). The tree drops it in
+ * place; its organization and type are read from the tree when not given.
+ */
 export function deleteScope(params: {
   scope_id: string;
-  organization_id: string;
-  scope_type_id: string;
+  organization_id?: string;
+  scope_type_id?: string;
 }): AppThunk<Promise<ScopesRpcResult<{ id: string }>>> {
-  return async (dispatch) => {
+  return async (dispatch, getState) => {
+    const home =
+      params.organization_id && params.scope_type_id
+        ? {
+            organizationId: params.organization_id,
+            scopeTypeId: params.scope_type_id,
+          }
+        : homeForScope(getState(), params.scope_id);
     const res = await scopesService.deleteScope(params.scope_id);
-    if (!isScopesRpcErr(res)) {
+    if (!isScopesRpcErr(res) && home) {
       dispatch(
         scopesActions.scopeRemoved({
-          organizationId: params.organization_id,
-          scopeTypeId: params.scope_type_id,
+          organizationId: home.organizationId,
+          scopeTypeId: home.scopeTypeId,
           scopeId: params.scope_id,
         }),
       );

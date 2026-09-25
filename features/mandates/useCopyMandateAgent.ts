@@ -25,6 +25,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import type { AppDispatch } from "@/lib/redux/store";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import {
   duplicateAgent,
@@ -50,6 +51,30 @@ export interface CopyMandateAgentOptions {
   copiedOnlyMessage?: string;
 }
 
+/** Fork the holder snapshot the mandate runs; binding is owned by the caller. */
+export async function duplicateMandateAgent(
+  dispatch: AppDispatch,
+  source: CopyMandateAgentSource,
+): Promise<string> {
+  const forkMasterId =
+    source.overrideAgentId ??
+    (source.defaultAgentVersionId == null ? source.defaultAgentId : null);
+  if (forkMasterId != null) {
+    return dispatch(
+      duplicateAgent({ agentId: forkMasterId, asSystem: false }),
+    ).unwrap();
+  }
+  if (source.defaultAgentVersionId != null) {
+    return dispatch(
+      duplicateAgentVersion({
+        versionId: source.defaultAgentVersionId,
+        asSystem: false,
+      }),
+    ).unwrap();
+  }
+  throw new Error("This step has no default agent to copy.");
+}
+
 export function useCopyMandateAgent(): {
   copying: boolean;
   /** Returns the new agent id, or null when the copy itself failed. */
@@ -71,25 +96,7 @@ export function useCopyMandateAgent(): {
       // Dispatch inside each branch so each thunk action keeps its own type
       // (a ternary between two different thunks has no single dispatch
       // overload).
-      const forkMasterId =
-        source.overrideAgentId ??
-        (source.defaultAgentVersionId == null ? source.defaultAgentId : null);
-      let newId: string;
-      if (forkMasterId != null) {
-        newId = await dispatch(
-          duplicateAgent({ agentId: forkMasterId, asSystem: false }),
-        ).unwrap();
-      } else if (source.defaultAgentVersionId != null) {
-        newId = await dispatch(
-          duplicateAgentVersion({
-            versionId: source.defaultAgentVersionId,
-            asSystem: false,
-          }),
-        ).unwrap();
-      } else {
-        toast.error("This step has no default agent to copy.");
-        return null;
-      }
+      const newId = await duplicateMandateAgent(dispatch, source);
       // The copy is the critical step — once it exists, open it for editing
       // no matter what. Connecting it is best-effort.
       try {

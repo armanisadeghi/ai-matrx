@@ -13,6 +13,7 @@
 import { useEffect, useState } from "react";
 import { BrainCircuit, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectOrganizationId,
@@ -28,6 +29,7 @@ import { IntelligenceJobCard, type RunOverride } from "./IntelligenceJobCard";
 import { PlacesMap } from "./PlacesMap";
 import { UseOwnDialog } from "./UseOwnDialog";
 import { declaredPlacesFor } from "./places";
+import { effectiveRunOverride } from "./run-override";
 import type {
   FeatureIntelligenceRow,
   IntelligenceContext,
@@ -46,6 +48,8 @@ export interface FeatureIntelligenceProps {
    * topic's own agent). Keyed by mandate key.
    */
   runOverrides?: Readonly<Record<string, RunOverride>>;
+  /** Remove an older context-specific choice after a mandate choice is saved. */
+  clearRunOverride?: (mandateKey: string) => Promise<void>;
   /** False when the route's header already names the page. */
   showTitle?: boolean;
   className?: string;
@@ -63,6 +67,7 @@ export function FeatureIntelligence({
   context = {},
   focusMandateKey = null,
   runOverrides = {},
+  clearRunOverride,
   showTitle = true,
   className,
 }: FeatureIntelligenceProps) {
@@ -205,8 +210,9 @@ export function FeatureIntelligence({
         </p>
       ) : (
         <ul className="space-y-3">
-          {state.rows.map((row) => (
-            <IntelligenceJobCard
+          {state.rows.map((row) => {
+            const topicChoice = effectiveRunOverride(row, runOverrides[row.mandateKey]);
+            return <IntelligenceJobCard
               key={row.id}
               row={row}
               places={state.places}
@@ -215,20 +221,38 @@ export function FeatureIntelligence({
                 (hoveredPlaceKeys?.has(row.mandateKey) ?? false)
               }
               orgLevel={orgLevel}
+              organizationId={activeOrgId}
               busy={actions.busyKey === row.mandateKey}
-              canReset={row.decidedRung === rungFor(seatLevel)}
+              canReset={Boolean(topicChoice && !orgLevel) || row.decidedRung === rungFor(seatLevel)}
+              resetLabel={topicChoice && !orgLevel
+                ? "Remove topic choice"
+                : orgLevel ? "Remove organization choice" : "Remove my choice"}
               detailsHref={memberMandateRecordHref(
                 seatLevel,
                 row.mandateKey,
                 orgLevel ? activeOrgId : null,
               )}
-              runOverride={runOverrides[row.mandateKey] ?? null}
+              runOverride={topicChoice}
               onHover={setHoverKey}
-              onDuplicate={() => void actions.duplicateAndModify(row)}
+              onDuplicate={() => void actions.duplicateAndModify(row, {
+                effectiveTopicAgentId: topicChoice?.holderId,
+                afterBind: topicChoice && clearRunOverride
+                  ? () => clearRunOverride(row.mandateKey)
+                  : undefined,
+              })}
               onUseOwn={() => setOwnFor(row)}
-              onReset={() => void actions.resetToDefault(row)}
-            />
-          ))}
+              onReset={() => {
+                if (topicChoice && !orgLevel && clearRunOverride) {
+                  void clearRunOverride(row.mandateKey).then(
+                    () => toast.success("This topic now uses the active mandate choice."),
+                    (error: unknown) => toast.error(error instanceof Error ? error.message : String(error)),
+                  );
+                } else {
+                  void actions.resetToDefault(row);
+                }
+              }}
+            />;
+          })}
         </ul>
       )}
 
@@ -238,7 +262,13 @@ export function FeatureIntelligence({
           whoFor={whoFor}
           busy={actions.busyKey === ownFor.mandateKey}
           onClose={() => setOwnFor(null)}
-          onSave={(draft) => actions.setOwn(ownFor, draft)}
+          onSave={(draft) => actions.setOwn(
+            ownFor,
+            draft,
+            effectiveRunOverride(ownFor, runOverrides[ownFor.mandateKey]) && clearRunOverride
+              ? () => clearRunOverride(ownFor.mandateKey)
+              : undefined,
+          )}
         />
       ) : null}
     </div>

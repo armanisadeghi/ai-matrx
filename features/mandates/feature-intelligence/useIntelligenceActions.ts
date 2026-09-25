@@ -17,23 +17,26 @@
 // `removeMandateBinding`); the server's refusal is shown verbatim.
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import { extractErrorMessage } from "@/utils/errors";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
-import { duplicateWorkflow } from "@/features/workflow-runtime/browse/service";
+import { duplicateWorkflow, duplicateWorkflowVersion } from "@/features/workflow-runtime/browse/service";
 import {
   putMandateBinding,
   removeMandateBinding,
   type BindingWriteReport,
   type MandateBindingPrincipalInput,
 } from "../overrides";
-import { useCopyMandateAgent } from "../useCopyMandateAgent";
+import { duplicateMandateAgent } from "../useCopyMandateAgent";
 import { fetchMandateLadder } from "../workspace/useMandateLadder";
 import { parseConsumptionMap, type ConsumptionMap } from "../provision-shapes";
 import type { HolderDraft } from "@/features/bindings/ScopeHolderBar";
 import type { FeatureIntelligenceRow, IntelligenceLevel } from "./types";
+import { fetchFeatureIntelligence } from "./service";
 
 export interface IntelligenceSeat {
   level: IntelligenceLevel;
@@ -90,80 +93,103 @@ async function runningAnswer(
 
 export function useIntelligenceActions(seat: IntelligenceSeat) {
   const dispatch = useAppDispatch();
-  const { copyAndOpen } = useCopyMandateAgent();
+  const router = useRouter();
+  const userId = useAppSelector(selectUserId);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const principal = principalFor(seat);
   const where =
     seat.level === "organization" ? "for your organization" : "for you";
 
-  const duplicateAndModify = async (row: FeatureIntelligenceRow) => {
-    if (!row.holderId || (row.holderType !== "agent" && row.holderType !== "workflow")) {
+  const readChoice = async (row: FeatureIntelligenceRow) => {
+    const rows = await fetchFeatureIntelligence({
+      feature: row.mandateKey.split(".")[0],
+      level: seat.level,
+      organizationId: seat.organizationId,
+      userId,
+    });
+    return rows.find((candidate) => candidate.mandateKey === row.mandateKey);
+  };
+
+  const choiceIsActive = async (row: FeatureIntelligenceRow, copyId: string) => {
+    const updated = await readChoice(row);
+    return updated?.decidedRung === rungFor(seat.level) && updated.holderId === copyId;
+  };
+
+  const duplicateAndModify = async (
+    row: FeatureIntelligenceRow,
+    options?: { effectiveTopicAgentId?: string; afterBind?: () => Promise<void> },
+  ) => {
+    const sourceId = options?.effectiveTopicAgentId ?? row.holderId;
+    const sourceType = options?.effectiveTopicAgentId ? "agent" : row.holderType;
+    if (!sourceId || (sourceType !== "agent" && sourceType !== "workflow")) {
       toast.error("No agent or workflow is assigned to this job yet, so there is nothing to duplicate. Use your own instead.");
       return;
     }
     setBusyKey(row.mandateKey);
+    let copyId: string | null = null;
     try {
       const running = await runningAnswer(row, seat);
-      if (row.holderType === "workflow") {
-        let copy: { id: string; name: string };
+      // A topic's old per-record agent is a run-scope override. The server
+      // runs it verbatim, without the underlying org/user rung's settings.
+      // Copy that behavior rather than silently importing rung settings.
+      const configOverrides = options?.effectiveTopicAgentId
+        ? null
+        : running.configOverrides;
+      const consumptionMap = options?.effectiveTopicAgentId
+        ? undefined
+        : running.consumptionMap;
+      let destination: string;
+      let report: BindingWriteReport;
+      if (sourceType === "workflow") {
+        const copy = running.versionId
+          ? await duplicateWorkflowVersion(running.versionId)
+          : await duplicateWorkflow(sourceId);
+        copyId = copy.id;
+        report = await putMandateBinding(dispatch, row.mandateKey, principal, {
+          holderType: "workflow",
+          holderId: copy.id,
+          holderVersionId: null,
+          agentId: null,
+          configOverrides,
+          consumptionMap,
+        });
+        destination = `/workflows/${copy.id}`;
+      } else {
+        copyId = await duplicateMandateAgent(dispatch, {
+          overrideAgentId: options?.effectiveTopicAgentId ?? (running.versionId ? null : sourceId),
+          defaultAgentId: sourceId,
+          defaultAgentVersionId: options?.effectiveTopicAgentId ? null : running.versionId,
+        });
+        report = await putMandateBinding(dispatch, row.mandateKey, principal, {
+          holderType: "agent",
+          agentId: copyId,
+          configOverrides,
+          consumptionMap,
+        });
+        destination = `/agents/${copyId}/build`;
+      }
+      const active = report.contractCheck?.state !== "unmet" && await choiceIsActive(row, copyId);
+      if (!active) {
+        toast.info(report.contractCheck?.summary ?? "Your copy is connected, but the mandate has set it aside. It needs attention before it can run.");
+      } else if (options?.afterBind) {
+        // Only remove an older topic choice after the new mandate answer is
+        // proven runnable. A saved red binding may be edited without taking
+        // the working topic choice away.
         try {
-          copy = await duplicateWorkflow(row.holderId);
+          await options.afterBind();
         } catch (error) {
-          if (!isOrganizationSelectionCancelled(error)) {
-            toast.error(`Could not copy the workflow: ${extractErrorMessage(error)}`);
-          }
+          toast.error(`Your copy is connected, but this topic still uses its older choice: ${extractErrorMessage(error)}`);
+          router.push(destination);
           return;
         }
-        try {
-          const report = await putMandateBinding(dispatch, row.mandateKey, principal, {
-            holderType: "workflow",
-            holderId: copy.id,
-            holderVersionId: null,
-            agentId: null,
-            configOverrides: running.configOverrides,
-            consumptionMap: running.consumptionMap,
-          });
-          reportToast(report, `"${copy.name}" now runs this job ${where}. Opening it to edit.`);
-        } catch (error) {
-          toast.error(
-            `Copied into "${copy.name}", but it could not be set for this job: ${extractErrorMessage(error)}`,
-          );
-        }
-        window.location.assign(`/workflows/${copy.id}`);
-        return;
       }
-      await copyAndOpen(
-        {
-          overrideAgentId: running.versionId ? null : row.holderId,
-          defaultAgentId: row.holderId,
-          defaultAgentVersionId: running.versionId,
-        },
-        {
-          connect: async (newAgentId) => {
-            try {
-              const report = await putMandateBinding(
-                dispatch,
-                row.mandateKey,
-                principal,
-                {
-                  holderType: "agent",
-                  agentId: newAgentId,
-                  configOverrides: running.configOverrides,
-                  consumptionMap: running.consumptionMap,
-                },
-              );
-              for (const note of report.notes) toast.info(note);
-            } catch (error) {
-              toast.error(`The copy could not be set for this job: ${extractErrorMessage(error)}`);
-              throw error;
-            }
-          },
-          connectedMessage: `Your copy now runs this job ${where}. Opening it to edit.`,
-          copiedOnlyMessage: "Your copy was made and is opening, but this job still runs the original.",
-        },
-      );
+      if (active) reportToast(report, `Your copy now runs this job ${where}. Opening it to edit.`);
+      router.push(destination);
     } catch (error) {
-      toast.error(`Could not duplicate: ${extractErrorMessage(error)}`);
+      if (isOrganizationSelectionCancelled(error)) return;
+      toast.error(copyId
+        ? `The copy was created, but this page could not confirm it runs the job: ${extractErrorMessage(error)}`
+        : `Could not duplicate: ${extractErrorMessage(error)}`);
     } finally {
       setBusyKey(null);
     }
@@ -172,6 +198,7 @@ export function useIntelligenceActions(seat: IntelligenceSeat) {
   const setOwn = async (
     row: FeatureIntelligenceRow,
     draft: HolderDraft,
+    afterBind?: () => Promise<void>,
   ): Promise<boolean> => {
     setBusyKey(row.mandateKey);
     try {
@@ -185,7 +212,23 @@ export function useIntelligenceActions(seat: IntelligenceSeat) {
         holderVersionId: isWorkflow ? (draft.workflowVersionId ?? null) : null,
         configOverrides: null,
       });
-      reportToast(report, `Your choice now runs this job ${where}.`);
+      const selectedId = isWorkflow ? draft.workflowId : draft.agentId;
+      const active = selectedId && report.contractCheck?.state !== "unmet"
+        ? await choiceIsActive(row, selectedId)
+        : false;
+      if (active) {
+        if (afterBind) {
+          try {
+            await afterBind();
+          } catch (error) {
+            toast.error(`Your choice is connected, but this topic still uses its older choice: ${extractErrorMessage(error)}`);
+            return true;
+          }
+        }
+        reportToast(report, `Your choice now runs this job ${where}.`);
+      } else {
+        toast.info(report.contractCheck?.summary ?? "Your choice was saved but is not active yet. Open its details to repair it.");
+      }
       return true;
     } catch (error) {
       toast.error(extractErrorMessage(error));
@@ -199,11 +242,14 @@ export function useIntelligenceActions(seat: IntelligenceSeat) {
     setBusyKey(row.mandateKey);
     try {
       await removeMandateBinding(dispatch, row.mandateKey, principal);
-      toast.success(
-        seat.level === "organization"
-          ? "Your organization's choice was removed. Members get the default again."
-          : "Your choice was removed. The job runs the default again.",
-      );
+      try {
+        const inherited = await readChoice(row);
+        toast.success(inherited?.holderId
+          ? `Choice removed. ${inherited.holderName} now runs this job (${inherited.decidedBy}).`
+          : "Choice removed. This job has no assigned intelligence now.");
+      } catch {
+        toast.success("Choice removed. Refresh to see the inherited assignment.");
+      }
     } catch (error) {
       toast.error(`Could not reset: ${extractErrorMessage(error)}`);
     } finally {

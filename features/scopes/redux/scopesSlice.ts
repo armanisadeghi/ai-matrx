@@ -14,7 +14,7 @@
 // Per-feature patches plumb through `treeReceived`, `scopeUpserted`, etc.
 // No selectors live here — selectors are in ./selectors/.
 
-import { createAction, createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { definePolicy } from "@/lib/sync/policies/define";
 import {
   REHYDRATE_ACTION_TYPE,
@@ -33,60 +33,6 @@ import type {
   TaskBucketEntry,
   TaskNode,
 } from "@/features/scopes/types";
-
-// ─── Legacy mutation mirroring (cache coherence) ─────────────────────
-//
-// The live scope/type editors still run on the legacy thunks in
-// features/agent-context/redux/scope/{scopesSlice,scopeTypesSlice}.ts,
-// which only patch their own entity adapters. Without mirroring, every
-// create/edit/delete left THIS tree (the sidebar ActiveScopePicker, the
-// /scopes hub) stale until a manual refresh. These action creators match
-// the legacy thunks' fulfilled types BY STRING so there is zero import
-// coupling — when Phase 5 deletes the legacy slices and routes mutations
-// through scopesService (which dispatches the patch reducers directly),
-// this whole block is deleted with them.
-
-interface LegacyScopeRow {
-  id: string;
-  organization_id: string;
-  scope_type_id: string;
-  name: string;
-  description?: string | null;
-  parent_scope_id?: string | null;
-  settings?: ScopeNode["settings"] | null;
-}
-
-interface LegacyScopeTypeRow {
-  id: string;
-  organization_id: string;
-  label_singular?: string;
-  label_plural?: string;
-  icon?: string | null;
-  color?: string | null;
-  max_assignments_per_entity?: number | null;
-  sort_order?: number | null;
-  parent_type_id?: string | null;
-  default_variable_keys?: string[] | null;
-}
-
-const legacyScopeCreated = createAction<LegacyScopeRow>(
-  "scopes/create/fulfilled",
-);
-const legacyScopeUpdated = createAction<LegacyScopeRow>(
-  "scopes/update/fulfilled",
-);
-const legacyScopeDeleted = createAction<{ id: string }>(
-  "scopes/delete/fulfilled",
-);
-const legacyScopeTypeCreated = createAction<LegacyScopeTypeRow>(
-  "scopeTypes/create/fulfilled",
-);
-const legacyScopeTypeUpdated = createAction<LegacyScopeTypeRow>(
-  "scopeTypes/update/fulfilled",
-);
-const legacyScopeTypeDeleted = createAction<{ id: string }>(
-  "scopeTypes/delete/fulfilled",
-);
 
 export interface ScopesState {
   organizations: Record<string, OrgNode>;
@@ -136,9 +82,8 @@ const initialState: ScopesState = {
 };
 
 const scopesSlice = createSlice({
-  // Mounted as `state.scopesTree` in rootReducer (the legacy slice still
-  // owns `state.scopes` until Phase 5 deletes it). Action prefix follows
-  // the mount key to avoid action-type collisions with the legacy slice.
+  // Mounted as `state.scopesTree` in rootReducer. The action prefix follows
+  // the mount key.
   name: "scopesTree",
   initialState,
   reducers: {
@@ -391,19 +336,22 @@ const scopesSlice = createSlice({
     contextItemUpserted(state, action: PayloadAction<ContextItemRow>) {
       const item = action.payload;
       const prev = state.contextItemsByTypeId[item.scope_type_id];
-      const items = (prev?.items ?? []).filter((i) => i.id !== item.id);
+      // A catalog never loaded stays unloaded: folding one row into it would
+      // mark a one-item list "ready" and hide every other item of the type.
+      if (!prev || prev.status !== "ready") return;
+      // An archived item leaves the ACTIVE catalog (the same rule as archive).
+      if ((item as { is_active?: boolean }).is_active === false) {
+        prev.items = prev.items.filter((i) => i.id !== item.id);
+        return;
+      }
+      const items = prev.items.filter((i) => i.id !== item.id);
       items.push(item);
       items.sort(
         (a, b) =>
           (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
           a.display_name.localeCompare(b.display_name),
       );
-      state.contextItemsByTypeId[item.scope_type_id] = {
-        status: "ready",
-        items,
-        fetchedAt: prev?.fetchedAt ?? Date.now(),
-        error: null,
-      };
+      prev.items = items;
     },
     /** Echoed archive — drops the item from its type's catalog. */
     contextItemRemoved(
@@ -452,98 +400,8 @@ const scopesSlice = createSlice({
       state.treeError = null;
       state.treeFetchedAt = loaded?.treeFetchedAt ?? Date.now();
     });
-    // Mirror legacy editor mutations into this tree (see header block).
-    builder
-      .addCase(legacyScopeCreated, (state, action) =>
-        upsertScopeFromLegacy(state, action.payload),
-      )
-      .addCase(legacyScopeUpdated, (state, action) =>
-        upsertScopeFromLegacy(state, action.payload),
-      )
-      .addCase(legacyScopeDeleted, (state, action) => {
-        for (const orgId of state.organizationIds) {
-          for (const type of state.organizations[orgId]?.scope_types ?? []) {
-            const idx = type.scopes.findIndex(
-              (s) => s.id === action.payload.id,
-            );
-            if (idx >= 0) {
-              type.scopes.splice(idx, 1);
-              return;
-            }
-          }
-        }
-      })
-      .addCase(legacyScopeTypeCreated, (state, action) =>
-        upsertScopeTypeFromLegacy(state, action.payload),
-      )
-      .addCase(legacyScopeTypeUpdated, (state, action) =>
-        upsertScopeTypeFromLegacy(state, action.payload),
-      )
-      .addCase(legacyScopeTypeDeleted, (state, action) => {
-        for (const orgId of state.organizationIds) {
-          const org = state.organizations[orgId];
-          if (!org) continue;
-          const idx = org.scope_types.findIndex(
-            (t) => t.id === action.payload.id,
-          );
-          if (idx >= 0) {
-            org.scope_types.splice(idx, 1);
-            return;
-          }
-        }
-      });
   },
 });
-
-function upsertScopeFromLegacy(state: ScopesState, row: LegacyScopeRow): void {
-  const org = state.organizations[row.organization_id];
-  if (!org) return; // tree not loaded for this org — nothing to go stale
-  const type = org.scope_types.find((t) => t.id === row.scope_type_id);
-  if (!type) return;
-  const idx = type.scopes.findIndex((s) => s.id === row.id);
-  const prev = idx >= 0 ? type.scopes[idx] : null;
-  const node: ScopeNode = {
-    id: row.id,
-    scope_type_id: row.scope_type_id,
-    organization_id: row.organization_id,
-    name: row.name ?? prev?.name ?? "",
-    description: row.description ?? prev?.description ?? "",
-    parent_scope_id: row.parent_scope_id ?? null,
-    settings: row.settings ?? prev?.settings ?? {},
-  };
-  if (idx >= 0) type.scopes[idx] = node;
-  else type.scopes.push(node);
-}
-
-function upsertScopeTypeFromLegacy(
-  state: ScopesState,
-  row: LegacyScopeTypeRow,
-): void {
-  const org = state.organizations[row.organization_id];
-  if (!org) return;
-  const idx = org.scope_types.findIndex((t) => t.id === row.id);
-  const prev = idx >= 0 ? org.scope_types[idx] : null;
-  const node: ScopeTypeNode = {
-    id: row.id,
-    organization_id: row.organization_id,
-    label_singular: row.label_singular ?? prev?.label_singular ?? "",
-    label_plural: row.label_plural ?? prev?.label_plural ?? "",
-    icon: row.icon ?? prev?.icon ?? "folder",
-    color: row.color ?? prev?.color ?? "",
-    max_assignments_per_entity:
-      row.max_assignments_per_entity ??
-      prev?.max_assignments_per_entity ??
-      null,
-    sort_order: row.sort_order ?? prev?.sort_order ?? 0,
-    parent_type_id: row.parent_type_id ?? prev?.parent_type_id ?? null,
-    default_variable_keys:
-      row.default_variable_keys ?? prev?.default_variable_keys ?? [],
-    // The legacy row carries no nested scopes — preserve what the tree has.
-    scopes: prev?.scopes ?? [],
-  };
-  if (idx >= 0) org.scope_types[idx] = node;
-  else org.scope_types.push(node);
-}
 
 export const scopesActions = scopesSlice.actions;
 export default scopesSlice.reducer;
@@ -579,9 +437,11 @@ export const scopesTreePolicy = definePolicy<ScopesState>({
   sliceName: "scopesTree",
   preset: "warm-cache",
   // v3 adds is_test_fixture / created_by / is_own and drops archived
-  // organizations from the tree (VERIFIER-8 MEDIUM-3). A v2 cache carries
-  // neither, so it is discarded rather than shown as "no fixtures, none mine".
-  version: 3,
+  // organizations from the tree (VERIFIER-8 MEDIUM-3). v4 adds the admin
+  // console's fields (scope type slug / description / timestamps; scope slug /
+  // sort_order / created_by / timestamps — lane SCOPE-ADMIN-CANONICAL). An
+  // older cache lacks them, so it is discarded rather than shown slug-less.
+  version: 4,
   broadcast: {
     actions: ["scopesTree/treeFetchFulfilled", "scopesTree/scopesReset"],
   },

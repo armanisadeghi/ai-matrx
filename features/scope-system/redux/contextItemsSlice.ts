@@ -10,7 +10,10 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import { contextDb } from "@/utils/supabase/contextDb";
 import { runWithSessionRetry } from "@/lib/supabase/authRetry";
-import type { TablesUpdate } from "@/types/database.types";
+import type { Json } from "@/types/database.types";
+import { scopesService } from "@/features/scopes/service/scopesService";
+import { scopesActions } from "@/features/scopes/redux/scopesSlice";
+import { unwrapScopesRpc } from "@/features/scopes/types";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 import type { ReferenceSource } from "@/features/scopes/utils/referenceSource";
@@ -166,117 +169,102 @@ export const listSystemContextItems = createAsyncThunk(
   },
 );
 
+// ─── Writes — every one through its scopesService door ─────────────────
+//
+// These thunks keep this console cache's action types (its reducers and the
+// console's `.unwrap()` calls rely on them) but own no database access: each
+// goes through THE door in `scopesService`, and echoes the authoritative row
+// into the canonical tree's catalog (`scopesTree.contextItemsByTypeId`) so the
+// console and every picker agree without a refetch (lane SCOPE-ADMIN-CANONICAL).
+
 export const updateContextItem = createAsyncThunk(
   "contextItems/update",
-  async (params: {
-    id: string;
-    display_name?: string;
-    description?: string;
-    category?: string | null;
-    value_type?: ContextValueType;
-    custom_component?: VariableCustomComponent | null;
-    fetch_hint?: ContextFetchHint;
-    sensitivity?: ContextSensitivity;
-    tags?: string[];
-    status?: ContextItemStatus;
-    status_note?: string | null;
-    review_interval_days?: number | null;
-    sort_order?: number;
-    allowed_reference_types?: string[] | null;
-    max_items?: number;
-    allowed_scope_type_ids?: string[] | null;
-    reference_source?: ReferenceSource | null;
-  }) => {
-    const patch: TablesUpdate<{ schema: "context" }, "context_items"> = {};
-    if (params.display_name !== undefined)
-      patch.display_name = params.display_name;
-    if (params.sort_order !== undefined) patch.sort_order = params.sort_order;
-    if (params.description !== undefined)
-      patch.description = params.description;
-    if (params.category !== undefined) patch.category = params.category;
-    if (params.value_type !== undefined) patch.value_type = params.value_type;
-    if (params.custom_component !== undefined)
-      patch.custom_component = params.custom_component;
-    if (params.fetch_hint !== undefined) patch.fetch_hint = params.fetch_hint;
-    if (params.sensitivity !== undefined)
-      patch.sensitivity = params.sensitivity;
-    if (params.tags !== undefined) patch.tags = params.tags;
-    if (params.status !== undefined) patch.status = params.status;
-    if (params.status_note !== undefined)
-      patch.status_note = params.status_note;
-    if (params.review_interval_days !== undefined)
-      patch.review_interval_days = params.review_interval_days;
-    if (params.allowed_reference_types !== undefined)
-      patch.allowed_reference_types = params.allowed_reference_types;
-    if (params.max_items !== undefined) patch.max_items = params.max_items;
-    if (params.allowed_scope_type_ids !== undefined)
-      patch.allowed_scope_type_ids = params.allowed_scope_type_ids;
-    if (params.reference_source !== undefined)
-      patch.reference_source = params.reference_source as TablesUpdate<
-        { schema: "context" },
-        "context_items"
-      >["reference_source"];
-    const { data, error } = await contextDb(supabase)
-      .from("context_items")
-      .update(patch)
-      .eq("id", params.id)
-      .select()
-      .single();
-    if (error) throw error;
-    return data as ContextItem;
+  async (
+    params: {
+      id: string;
+      display_name?: string;
+      description?: string;
+      category?: string | null;
+      value_type?: ContextValueType;
+      custom_component?: VariableCustomComponent | null;
+      fetch_hint?: ContextFetchHint;
+      sensitivity?: ContextSensitivity;
+      tags?: string[];
+      status?: ContextItemStatus;
+      status_note?: string | null;
+      review_interval_days?: number | null;
+      sort_order?: number;
+      allowed_reference_types?: string[] | null;
+      max_items?: number;
+      allowed_scope_type_ids?: string[] | null;
+      reference_source?: ReferenceSource | null;
+    },
+    { dispatch },
+  ) => {
+    const { id, custom_component, reference_source, ...rest } = params;
+    const row = unwrapScopesRpc(
+      await scopesService.updateContextItem({
+        item_id: id,
+        ...rest,
+        ...(custom_component !== undefined
+          ? { custom_component: custom_component as unknown as Json | null }
+          : {}),
+        ...(reference_source !== undefined
+          ? { reference_source: reference_source as unknown as Json | null }
+          : {}),
+      }),
+    );
+    dispatch(scopesActions.contextItemUpserted(row));
+    return row as unknown as ContextItem;
   },
 );
 
+/** Archive (soft: `is_active=false`, values retained) through `delete_context_item`. */
 export const deleteContextItem = createAsyncThunk(
   "contextItems/delete",
-  async (id: string) => {
-    // Soft delete to preserve historical values; matches the is_active column
-    // pattern used elsewhere in ctx_context_items.
-    const { error } = await contextDb(supabase)
-      .from("context_items")
-      .update({ is_active: false })
-      .eq("id", id);
-    if (error) throw error;
+  async (id: string, { dispatch, getState }) => {
+    const scopeTypeId = (getState() as StateWithContextItems).contextItems
+      .entities[id]?.scope_type_id;
+    unwrapScopesRpc(await scopesService.deleteContextItem(id));
+    if (scopeTypeId) {
+      dispatch(scopesActions.contextItemRemoved({ scopeTypeId, itemId: id }));
+    }
     return id;
   },
 );
 
 export const createContextItem = createAsyncThunk(
   "contextItems/create",
-  async (params: {
-    scope_type_id: string;
-    key: string;
-    display_name: string;
-    value_type?: ContextValueType;
-    description?: string;
-    category?: string;
-    fetch_hint?: ContextFetchHint;
-    sensitivity?: ContextSensitivity;
-    tags?: string[];
-    sort_order?: number;
-    allowed_reference_types?: string[];
-    max_items?: number;
-    allowed_scope_type_ids?: string[];
-    reference_source?: ReferenceSource | null;
-  }) => {
-    const { data, error } = await supabase.rpc("create_context_item", {
-      p_scope_type_id: params.scope_type_id,
-      p_key: params.key,
-      p_display_name: params.display_name,
-      p_value_type: params.value_type ?? "string",
-      p_description: params.description ?? "",
-      p_category: params.category ?? undefined,
-      p_fetch_hint: params.fetch_hint ?? "on_demand",
-      p_sensitivity: params.sensitivity ?? "internal",
-      p_tags: params.tags ?? [],
-      p_sort_order: params.sort_order ?? undefined,
-      p_allowed_reference_types: params.allowed_reference_types ?? undefined,
-      p_max_items: params.max_items ?? undefined,
-      p_allowed_scope_type_ids: params.allowed_scope_type_ids ?? undefined,
-      p_reference_source: params.reference_source ?? undefined,
-    });
-    if (error) throw error;
-    return data as ContextItem;
+  async (
+    params: {
+      scope_type_id: string;
+      key: string;
+      display_name: string;
+      value_type?: ContextValueType;
+      description?: string;
+      category?: string;
+      fetch_hint?: ContextFetchHint;
+      sensitivity?: ContextSensitivity;
+      tags?: string[];
+      sort_order?: number;
+      allowed_reference_types?: string[];
+      max_items?: number;
+      allowed_scope_type_ids?: string[];
+      reference_source?: ReferenceSource | null;
+    },
+    { dispatch },
+  ) => {
+    const { reference_source, ...rest } = params;
+    const row = unwrapScopesRpc(
+      await scopesService.createContextItem({
+        ...rest,
+        ...(reference_source
+          ? { reference_source: reference_source as unknown as Json }
+          : {}),
+      }),
+    );
+    dispatch(scopesActions.contextItemUpserted(row));
+    return row as unknown as ContextItem;
   },
 );
 
