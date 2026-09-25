@@ -1,4 +1,4 @@
-import { fillUrlPattern, mergePlaces, resolveDeclaredPlaces } from "../places";
+import { fillUrlPattern, keepVisibleJobs, mergePlaces, resolveDeclaredPlaces } from "../places";
 import { keyInFeature, lanesFor, shortMandateName } from "../service";
 import { featureIntelligenceHref } from "../hrefs";
 import { effectiveRunOverride } from "../run-override";
@@ -85,6 +85,19 @@ describe("feature intelligence — rows", () => {
     expect(lanesFor([{ organization_id: "o", created_by: "me" }], sys, "me", "organization")).toEqual([
       "orgs",
     ]);
+  });
+});
+
+describe("feature intelligence — registered places", () => {
+  it("keeps only the jobs the viewer can see, and drops a screen left with none", () => {
+    const kept = keepVisibleJobs(
+      [
+        place({ id: "a", mandateKeys: ["seo.x", "seo.hidden"], origin: "registered" }),
+        place({ id: "b", mandateKeys: ["seo.hidden"], origin: "registered" }),
+      ],
+      new Set(["seo.x"]),
+    );
+    expect(kept.map((p) => [p.id, p.mandateKeys])).toEqual([["a", ["seo.x"]]]);
   });
 });
 

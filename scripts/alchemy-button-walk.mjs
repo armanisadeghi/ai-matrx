@@ -29,6 +29,30 @@ const browser = await chromium.launch({ headless: true });
 const report = { steps: [], consoleErrors: [] };
 const context = await browser.newContext({ viewport: { width: 1500, height: 1000 } });
 await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: ORIGIN });
+// Headless Chromium's clipboard is not reliable under load; record every write the page makes
+// (the menu's copy goes through navigator.clipboard.writeText or a ClipboardItem).
+await context.addInitScript(() => {
+  window.__copied = [];
+  const c = navigator.clipboard;
+  const ex = document.execCommand.bind(document);
+  document.execCommand = (cmd, ...rest) => {
+    if (cmd === "copy") { const sel = String(document.getSelection() ?? ""); const ta = document.activeElement; window.__copied.push(ta && "value" in ta ? ta.value : sel); }
+    return ex(cmd, ...rest);
+  };
+  if (c) {
+    const w = c.writeText?.bind(c);
+    c.writeText = async (t) => { window.__copied.push(String(t)); try { await w?.(t); } catch {} };
+    const wr = c.write?.bind(c);
+    c.write = async (items) => {
+      for (const it of items) {
+        for (const type of it.types) {
+          if (type === "text/plain") window.__copied.push(await (await it.getType(type)).text());
+        }
+      }
+      try { await wr?.(items); } catch {}
+    };
+  }
+});
 const page = await context.newPage();
 page.on("pageerror", (e) => report.consoleErrors.push(`pageerror: ${String(e).slice(0, 300)}`));
 
@@ -47,16 +71,26 @@ async function copyVariant(label) {
     if (n.includes("ai")) trigger = buttons.nth(i);
   }
   if (!trigger) trigger = buttons.last();
-  await page.evaluate(() => navigator.clipboard.writeText(""));
+  await page.evaluate(() => { window.__copied = []; });
   await trigger.click();
-  const item = page.getByText(label, { exact: true }).first();
-  const { v: shown } = await until(`menu item ${label}`, async () => (await item.count()) > 0, 15000);
+  const item = page.locator(`[role=menu] :text-is("${label}"), [data-radix-popper-content-wrapper] :text-is("${label}")`).first();
+  const { v: shown } = await until(`menu item ${label}`, async () => (await item.count()) > 0, 20000);
   if (!shown) {
-    throw new Error(`no menu item "${label}"`);
+    // A dev-server reload (another lane's edit) can land mid-walk; the address carries the
+    // selection, so reopening it restores the same page. Bounded, and said in the report.
+    await page.screenshot({ path: `${OUT}/retry-${copyVariant.tries ?? 0}.png` }).catch(() => undefined);
+    report.steps.push({ retried: `menu item "${label}" not shown; reopening ${page.url().replace(ORIGIN, "")}` });
+    if ((copyVariant.tries = (copyVariant.tries ?? 0) + 1) > 4) throw new Error(`no menu item "${label}"`);
+    await page.goto(page.url(), { waitUntil: "domcontentloaded", timeout: 240000 });
+    await page.waitForTimeout(8000);
+    return copyVariant(label);
   }
   await item.click();
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: `${OUT}/after-copy-${label.replace(/\W+/g, "-")}.png` }).catch(() => undefined);
+  report.steps.push({ toasts: await page.locator("[data-sonner-toast]").allInnerTexts().catch(() => []) });
   const { v: text } = await until("clipboard", async () => {
-    const t = await page.evaluate(() => navigator.clipboard.readText());
+    const t = await page.evaluate(() => (window.__copied ?? []).at(-1) ?? null);
     return t && t.length > 20 ? t : null;
   }, 30000);
   await page.keyboard.press("Escape").catch(() => undefined);

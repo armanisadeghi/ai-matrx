@@ -12,6 +12,8 @@
 // the role's Lucide icon in its accent disc, the role NAME and the stage
 // label together, the live tab clearly lit and its expert named.
 
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import {
@@ -99,6 +101,21 @@ export function StageTabs({ className }: { className?: string }) {
           </button>
         );
       })}
+      <IntelligenceIndicator
+        feature="vision_interview"
+        mandateKeys={[
+          MANDATE_KEYS.vision_interview__sounding_board,
+          MANDATE_KEYS.vision_interview__archaeologist,
+          MANDATE_KEYS.vision_interview__amplifier,
+          MANDATE_KEYS.vision_interview__cartographer,
+          MANDATE_KEYS.vision_interview__adversary,
+          MANDATE_KEYS.vision_interview__architect,
+          MANDATE_KEYS.vision_interview__scribe,
+          MANDATE_KEYS.vision_interview__answer_tracker,
+        ]}
+        label="The room's experts, the Scribe and the answer tracker"
+        className="self-center"
+      />
     </div>
   );
 }

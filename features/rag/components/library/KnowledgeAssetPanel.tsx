@@ -50,6 +50,8 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { AnimatedKpiCard, type KpiTone } from "./AnimatedKpiCard";
 import { DerivativeResultsDialog } from "./DerivativeResultsDialog";
 import {
@@ -636,6 +638,20 @@ function RepresentationCard({
             >
               {meta.shortLabel}
             </span>
+            {kind === "section_summary" && (
+              <IntelligenceIndicator
+                feature="knowledge"
+                mandateKeys={[MANDATE_KEYS.knowledge__section_summarizer]}
+                label="Section summaries"
+              />
+            )}
+            {kind === "synthetic_qa" && (
+              <IntelligenceIndicator
+                feature="knowledge"
+                mandateKeys={[MANDATE_KEYS.knowledge__qa_generator]}
+                label="Synthetic Q&A"
+              />
+            )}
           </div>
         </div>
         <CountUpInline value={displayCount} muted={!built} />

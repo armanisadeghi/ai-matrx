@@ -71,6 +71,12 @@ const CSV_PROFILES = [
     detail:
       "Uses LastPass's ordinary-login CSV columns for title, URL, username, password, and notes; grouping, favorite, and TOTP use the ordinary-login defaults.",
   },
+  {
+    value: "firefox_csv_v1",
+    label: "Firefox CSV",
+    detail:
+      "Uses Firefox's ordinary-login URL, username, and password columns. The preview lists any title or notes omissions before download.",
+  },
 ] as const;
 type VaultLoginCsvProfile = (typeof CSV_PROFILES)[number]["value"];
 

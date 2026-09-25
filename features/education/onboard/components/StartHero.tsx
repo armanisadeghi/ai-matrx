@@ -44,6 +44,8 @@ import {
   classifyIngestUrl,
 } from "../formatSupport";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 
 type InputMode = "upload" | "paste" | "link";
@@ -388,6 +390,14 @@ function InputPanel({
             />
             <p className="text-xs text-muted-foreground">
               {describeUrlSupport(props.url).note}
+              {classifyIngestUrl(props.url) === "youtube" ? (
+                <IntelligenceIndicator
+                  feature="media"
+                  mandateKeys={[MANDATE_KEYS.media__youtube_analyzer]}
+                  label="Transcribes the video"
+                  className="ml-1.5 h-4 w-4 align-text-bottom"
+                />
+              ) : null}
             </p>
           </div>
         )}

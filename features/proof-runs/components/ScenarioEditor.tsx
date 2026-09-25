@@ -27,7 +27,9 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { cn } from "@/lib/utils";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
@@ -137,6 +139,13 @@ function ExpectationRow({
               )}
               {needs.label}
             </span>
+            {isJudge ? (
+              <IntelligenceIndicator
+                feature="proof_runs"
+                mandateKeys={[MANDATE_KEYS.proof_runs__judge]}
+                label="The judge that answers this rule's rubric when the check runs"
+              />
+            ) : null}
             {expectation.required === false ? (
               <span className="text-[10px] text-muted-foreground">
                 informational

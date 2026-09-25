@@ -31,6 +31,8 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -193,6 +195,13 @@ export function PdfStudioHeaderControls({
       </div>
 
       <div className="flex items-center justify-self-end">
+        {doc && (
+          <IntelligenceIndicator
+            feature="pdf"
+            mandateKeys={[MANDATE_KEYS.pdf__content_cleaner, MANDATE_KEYS.rag__pdf_page_cleaner]}
+            label="AI clean"
+          />
+        )}
         {doc && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

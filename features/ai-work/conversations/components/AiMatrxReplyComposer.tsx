@@ -27,7 +27,9 @@
 
 import { useId, useState } from "react";
 import { AlertTriangle, CircleAlert, Info, Loader2, Send } from "lucide-react";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { Button } from "@/components/ui/button";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callConversationContinue } from "@/lib/api/call-api";
@@ -293,6 +295,11 @@ export function AiMatrxReplyComposer({
           )}
           Send to AI Matrx
         </Button>
+        <IntelligenceIndicator
+          feature="coding_session"
+          mandateKeys={[MANDATE_KEYS.coding_session__conversation_responder]}
+          label="Who answers a reply on a coding-tool conversation"
+        />
         {/* Honest about BOTH the state and the reason it cannot send — a
             disabled button that says nothing is the dead control this product
             forbids. */}

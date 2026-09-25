@@ -17,6 +17,8 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Clock, Eye, Repeat2 } from "lucide-react";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -141,6 +143,14 @@ export function PendingExamplesPanel({
       )}
       <div className="text-xs font-medium uppercase text-muted-foreground">
         Waiting for the next review ({examples.length})
+        {isAdmin ? (
+          <IntelligenceIndicator
+            feature="hindsight"
+            mandateKeys={[MANDATE_KEYS.hindsight__replay_judge]}
+            label="The judge that ranks a replay against what really happened"
+            className="ml-1.5 align-middle"
+          />
+        ) : null}
       </div>
       <div className="space-y-1">
         {examples.map((ex) => {

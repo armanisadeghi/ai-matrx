@@ -145,6 +145,11 @@ presents the loaded count as a complete Vault or offers Export all.
 vendor format; extra URLs, attachments, OTP/passkeys, provenance, and custom
 fields remain explicit omissions.
 
+Firefox CSV is available through this same selected-login flow for ordinary
+URL, username, and password rows. Its source-level formatter and the shared
+preview/download safeguards are verified; Firefox destination acceptance is
+still separate work and is not claimed here.
+
 The download Blob stays event-local: `URL.createObjectURL` is revoked after
 the click and bytes never enter React state, Redux, storage, analytics, logs,
 or model context. Preview/download bind `getUser(access_token)` to the exact

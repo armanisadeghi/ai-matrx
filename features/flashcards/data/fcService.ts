@@ -11,17 +11,18 @@
 
 "use client";
 
-import { displayTitle, withDisplayTitle } from "@/components/markdown-core/plain-title";
+import {
+  displayTitle,
+  withDisplayTitle,
+} from "@/components/markdown-core/plain-title";
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
-import {
-  mergeJsonColumn,
-  type JsonObject,
-} from "@ai-matrx/data/db";
+import { mergeJsonColumn, type JsonObject } from "@ai-matrx/data/db";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { resolveChildOrgId } from "@/lib/organizations/childOrganization";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { EDGE_ROLE } from "./types";
 import type {
   FcResult,
@@ -105,23 +106,15 @@ async function softDeleteOne(
   context: string,
   noun: string,
 ): Promise<FcResult<null>> {
-  try {
-    const { data, error } = await EDU()
+  const { error } = await tryWriteOne(
+    EDU()
       .from(table)
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", id)
-      .select("id");
-    if (error) return fail(context, error);
-    if (!data || data.length === 0) {
-      return fail(
-        context,
-        `Nothing was removed: this ${noun} no longer exists, or your access does not allow removing it`,
-      );
-    }
-    return { data: null, error: null };
-  } catch (e) {
-    return fail(context, e);
-  }
+      .select("id"),
+    { action: "remove", noun },
+  );
+  return error ? fail(context, error) : { data: null, error: null };
 }
 
 export const fcService = {
@@ -298,7 +291,9 @@ export const fcService = {
    * into explicit Mine/Org/Shared tabs is a UX change, not a bug fix; when
    * that lands, wire `applyListScope` here instead of this comment.
    */
-  async listSets(options: { signal?: AbortSignal } = {}): Promise<FcResult<FcSetRow[]>> {
+  async listSets(
+    options: { signal?: AbortSignal } = {},
+  ): Promise<FcResult<FcSetRow[]>> {
     try {
       const query = EDU()
         .from("fc_set")
@@ -309,7 +304,12 @@ export const fcService = {
         ? await query.abortSignal(options.signal)
         : await query;
       if (error) return fail("listSets", error);
-      return { data: ((data ?? []) as FcSetRow[]).map((r) => withDisplayTitle(r, "name")), error: null };
+      return {
+        data: ((data ?? []) as FcSetRow[]).map((r) =>
+          withDisplayTitle(r, "name"),
+        ),
+        error: null,
+      };
     } catch (e) {
       return fail("listSets", e);
     }
@@ -511,7 +511,10 @@ export const fcService = {
         .limit(1)
         .maybeSingle();
       if (error) return fail("findChatGeneratedSetForConversation", error);
-      return { data: data ? withDisplayTitle(data as FcSetRow, "name") : null, error: null };
+      return {
+        data: data ? withDisplayTitle(data as FcSetRow, "name") : null,
+        error: null,
+      };
     } catch (e) {
       return fail("findChatGeneratedSetForConversation", e);
     }
@@ -534,7 +537,10 @@ export const fcService = {
         .limit(1)
         .maybeSingle();
       if (error) return fail("findSurfaceSavedSetForConversation", error);
-      return { data: data ? withDisplayTitle(data as FcSetRow, "name") : null, error: null };
+      return {
+        data: data ? withDisplayTitle(data as FcSetRow, "name") : null,
+        error: null,
+      };
     } catch (e) {
       return fail("findSurfaceSavedSetForConversation", e);
     }
@@ -554,7 +560,8 @@ export const fcService = {
     cards: NewCardInput[],
   ): Promise<FcResult<SetWithCards>> {
     if (conversationId) {
-      const twin = await this.findChatGeneratedSetForConversation(conversationId);
+      const twin =
+        await this.findChatGeneratedSetForConversation(conversationId);
       if (twin.data) {
         const updated = await this.updateSet(twin.data.id, {
           name: input.name,
@@ -1003,10 +1010,17 @@ export const fcService = {
     audioFileId: string,
   ): Promise<FcResult<null>> {
     try {
-      const { error } = await EDU()
-        .from("fc_detail")
-        .update({ audio_file_id: audioFileId, generation_status: "audio_ready" })
-        .eq("id", detailId);
+      const { error } = await tryWriteOne(
+        EDU()
+          .from("fc_detail")
+          .update({
+            audio_file_id: audioFileId,
+            generation_status: "audio_ready",
+          })
+          .eq("id", detailId)
+          .select("id"),
+        { action: "save", noun: "card audio" },
+      );
       if (error) return fail("setDetailAudio", error);
       return { data: null, error: null };
     } catch (e) {
@@ -1016,7 +1030,12 @@ export const fcService = {
 
   /** Soft-delete one detail row (all reads filter `deleted_at is null`). */
   async softDeleteDetail(detailId: string): Promise<FcResult<null>> {
-    return softDeleteOne("fc_detail", detailId, "softDeleteDetail", "card detail");
+    return softDeleteOne(
+      "fc_detail",
+      detailId,
+      "softDeleteDetail",
+      "card detail",
+    );
   },
 
   /**
@@ -1088,27 +1107,34 @@ export const fcService = {
       const reviewedAt = new Date().toISOString();
       for (const row of rows ?? []) {
         const prior =
-          row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
+          row.metadata &&
+          typeof row.metadata === "object" &&
+          !Array.isArray(row.metadata)
             ? (row.metadata as JsonObject)
             : {};
-        const { error: writeErr } = await EDU()
-          .from("fc_detail")
-          .update({
-            metadata: {
-              ...prior,
-              human_review: {
-                verdict,
-                reviewed_at: reviewedAt,
-                surface: opts.surface ?? "set_illustrate_review",
-                ...(opts.reason ? { reason: opts.reason } : {}),
-              },
-            } as JsonObject,
-          })
-          .eq("id", row.id);
+        const { error: writeErr } = await tryWriteOne(
+          EDU()
+            .from("fc_detail")
+            .update({
+              metadata: {
+                ...prior,
+                human_review: {
+                  verdict,
+                  reviewed_at: reviewedAt,
+                  surface: opts.surface ?? "set_illustrate_review",
+                  ...(opts.reason ? { reason: opts.reason } : {}),
+                },
+              } as JsonObject,
+            })
+            .eq("id", row.id)
+            .select("id"),
+          { action: "save", noun: "image review" },
+        );
         if (writeErr) return fail("reviewCardImage", writeErr);
       }
 
-      if (verdict === "rejected") return await this.removeCardImage(cardId, face);
+      if (verdict === "rejected")
+        return await this.removeCardImage(cardId, face);
       return { data: null, error: null };
     } catch (e) {
       return fail("reviewCardImage", e);

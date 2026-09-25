@@ -21,6 +21,7 @@ import {
 } from "@ai-matrx/media/core";
 import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
+import { RemoteImageGate } from "@/components/rich-content/prose/remote-image-policy";
 
 const MAX_IMAGE_HEIGHT = 700;
 
@@ -29,7 +30,7 @@ interface ImageBlockProps {
   alt?: string;
 }
 
-const ImageBlock: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image" }) => {
+const ImageBlockImpl: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image" }) => {
   // IDENTITY BEATS THE STORED STRING.
   //
   // A markdown image is frequently one of OUR files whose URL was written into
@@ -428,5 +429,12 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image" }) 
     </div>
   );
 };
+
+/** A remote image obeys the surrounding policy (remote-image-policy.tsx); our own files always draw. */
+const ImageBlock: React.FC<ImageBlockProps> = (props) => (
+  <RemoteImageGate src={props.src} alt={props.alt} block>
+    <ImageBlockImpl {...props} />
+  </RemoteImageGate>
+);
 
 export default ImageBlock;

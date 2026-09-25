@@ -33,7 +33,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { toast } from "@/lib/toast";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -407,7 +409,18 @@ export function IngestTimelineDialog({
     >
       <DialogContent className="matrx-touch-targets max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Add a case that unfolded over time</DialogTitle>
+          <DialogTitle>
+            Add a case that unfolded over time
+            <IntelligenceIndicator
+              feature="distillation"
+              mandateKeys={[
+                MANDATE_KEYS.distillation__timeline_unfolder,
+                MANDATE_KEYS.distillation__timeline_distiller,
+              ]}
+              label="Reads the case moment by moment, then suggests rules from each step"
+              className="ml-1.5 align-middle"
+            />
+          </DialogTitle>
           <DialogDescription>
             A case report, an incident write-up, a negotiation log — anything
             where what you knew changed as it went. The system reads it step by

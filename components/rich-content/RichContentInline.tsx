@@ -31,6 +31,7 @@ import {
   inlineLevelElements,
   type InlineLinks,
 } from "./prose/inline-level-elements";
+import { RemoteImageGate, RemoteImagePolicyProvider, type RemoteImagePolicy } from "@/components/rich-content/prose/remote-image-policy";
 
 // The element map lives ONCE in prose/inline-level-elements.tsx (shared with
 // the server level and the static leaf). Never re-declare it here — a copy
@@ -49,6 +50,8 @@ export interface RichContentInlineProps {
    * live MarkdownStreamingProvider; `false` for text that is already whole.
    */
   streaming?: boolean;
+  /** Remote images: "ask" (default at this level — click to load) or "load". */
+  remoteImages?: RemoteImagePolicy;
 }
 
 export function RichContentInline({
@@ -56,6 +59,7 @@ export function RichContentInline({
   className,
   links = "link",
   streaming,
+  remoteImages = "ask",
 }: RichContentInlineProps) {
   const { text, violations } = guardMarkdownDelimiters(preprocessProse(source));
 
@@ -73,18 +77,20 @@ export function RichContentInline({
   if (!source.trim()) return null;
 
   return (
-    <span
-      data-rich-content="inline"
-      className={cn(INLINE_LEVEL_WRAPPER_CLASS, className)}
-    >
-      <MarkdownCore
-        preset="chat"
-        components={inlineLevelElements(links)}
-        streaming={streaming}
+    <RemoteImagePolicyProvider value={remoteImages}>
+      <span
+        data-rich-content="inline"
+        className={cn(INLINE_LEVEL_WRAPPER_CLASS, className)}
       >
-        {text}
-      </MarkdownCore>
-    </span>
+        <MarkdownCore
+          preset="chat"
+          components={inlineLevelElements(links)}
+          streaming={streaming}
+        >
+          {text}
+        </MarkdownCore>
+      </span>
+    </RemoteImagePolicyProvider>
   );
 }
 

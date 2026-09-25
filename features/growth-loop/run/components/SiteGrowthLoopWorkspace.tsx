@@ -43,6 +43,23 @@ import { LoopBlockerCard } from "./LoopBlockerCard";
 import { LoopHistoryFeed } from "./LoopHistoryFeed";
 import { LoopStageRail } from "./LoopStageRail";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+
+/** The judges that score each finished step (measuring is never scored). */
+const STEP_QUALITY_JUDGES = [
+  MANDATE_KEYS.growth_loop__quality_research,
+  MANDATE_KEYS.growth_loop__quality_plan,
+  MANDATE_KEYS.growth_loop__quality_brief,
+  MANDATE_KEYS.growth_loop__quality_realize,
+  MANDATE_KEYS.growth_loop__quality_fill,
+  MANDATE_KEYS.growth_loop__quality_publish,
+  MANDATE_KEYS.growth_loop__quality_serve,
+  MANDATE_KEYS.growth_loop__quality_crawl,
+  MANDATE_KEYS.growth_loop__quality_analyze,
+  MANDATE_KEYS.growth_loop__quality_suggest,
+  MANDATE_KEYS.growth_loop__quality_writeback,
+] as const;
 
 function stageTitle(stageId: string): string {
   const stage = STAGES.find((s) => s.id === stageId);
@@ -190,6 +207,11 @@ export function SiteGrowthLoopWorkspace() {
                   feature="growth_loop"
                   label="Growth Loop agents"
                 />
+                <IntelligenceIndicator
+                  feature="growth_loop"
+                  mandateKeys={[MANDATE_KEYS.growth_loop__supervisor]}
+                  label="Hands each step to an agent"
+                />
                 {live.status === "paused" ? (
                   <Button
                     size="sm"
@@ -334,7 +356,16 @@ export function SiteGrowthLoopWorkspace() {
             </div>
           </SectionCard>
 
-          <SectionCard title="What has happened">
+          <SectionCard
+            title="What has happened"
+            headerExtra={
+              <IntelligenceIndicator
+                feature="growth_loop"
+                mandateKeys={STEP_QUALITY_JUDGES}
+                label="Scores each finished step"
+              />
+            }
+          >
             <div className="p-3">
               <LoopHistoryFeed events={history.events} subject={subject} />
             </div>

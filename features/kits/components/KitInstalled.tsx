@@ -6,7 +6,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -20,6 +20,7 @@ import {
   Workflow,
 } from "lucide-react";
 import { Grid, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { useRecords } from "@ai-matrx/records/react";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
@@ -55,18 +56,38 @@ function Panel({ icon, title, children, aside }: { icon: React.ReactNode; title:
 
 // ─── What the agent sees ────────────────────────────────────────────────────
 
+/**
+ * Mounted beside each table's grid, inside the records provider: the live list
+ * (realtime-aware) re-reads when any row of the table changes, and this tells
+ * the page so the "What the agent sees" preview re-reads too — no polling.
+ */
+function TableChangeWatcher({ tableId, onChange }: { tableId: string; onChange: (tableId: string) => void }) {
+  const live = useRecords(tableId, { pageSize: 50 });
+  const rows = live.data?.rows;
+  const seen = useRef<typeof rows>(undefined);
+  useEffect(() => {
+    if (!rows) return;
+    if (seen.current && seen.current !== rows) onChange(tableId);
+    seen.current = rows;
+  }, [rows, tableId, onChange]);
+  return null;
+}
+
 function BindingPreviewCard({
   organizationId,
   agent,
   variable,
   install,
   manifest,
+  dataVersion,
 }: {
   organizationId: string;
   agent: KitAgent;
   variable: string;
   install: KitInstallRecord;
   manifest: KitManifest;
+  /** Bumps whenever a row of the bound table changes on this page. */
+  dataVersion: number;
 }) {
   const dispatch = useAppDispatch();
   const [answer, setAnswer] = useState<PreviewAnswer | null>(null);
@@ -90,7 +111,21 @@ function BindingPreviewCard({
     return () => {
       cancelled = true;
     };
-  }, [dispatch, organizationId, spec, variable, install.steps, attempt]);
+  }, [dispatch, organizationId, spec, variable, install.steps, attempt, dataVersion]);
+
+  // Re-read when the person comes back to this page (after editing elsewhere) —
+  // event-driven, never polling. Refresh stays for "now".
+  useEffect(() => {
+    const again = () => {
+      if (document.visibilityState === "visible") setAttempt((n) => n + 1);
+    };
+    window.addEventListener("focus", again);
+    document.addEventListener("visibilitychange", again);
+    return () => {
+      window.removeEventListener("focus", again);
+      document.removeEventListener("visibilitychange", again);
+    };
+  }, []);
 
   return (
     <div className="p-4">
@@ -247,6 +282,8 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
   const [dataSource] = useState(() => recordsDataSource(createClient()));
+  const [tableVersions, setTableVersions] = useState<Record<string, number>>({});
+  const bumpTable = (tableId: string) => setTableVersions((v) => ({ ...v, [tableId]: (v[tableId] ?? 0) + 1 }));
   const install = api.install;
   const orgId = api.organizationId;
 
@@ -360,6 +397,7 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
                     }
                   >
                     <div className="p-2">
+                      <TableChangeWatcher tableId={id} onChange={bumpTable} />
                       <Grid
                         tableId={id}
                         pageSize={50}
@@ -376,7 +414,7 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
             {m.agents.some((a) => a.bindings.length > 0) && (
               <Panel icon={<Eye className="h-3.5 w-3.5" />} title="What the agent sees">
                 <p className="border-b border-border px-4 py-2 text-xs text-muted-foreground">
-                  Exactly the text your data turns into when the agent runs. Edit a row on the left, then refresh.
+                  Exactly the text your data turns into when the agent runs. It updates as you edit the table and when you come back to this page.
                 </p>
                 <div className="divide-y divide-border">
                   {m.agents.flatMap((a) =>
@@ -388,6 +426,7 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
                         variable={b.variable}
                         install={install}
                         manifest={m}
+                        dataVersion={tableVersions[install.steps.tables?.[b.binding.table_key] ?? ""] ?? 0}
                       />
                     )),
                   )}

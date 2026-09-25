@@ -17,7 +17,9 @@
  * nothing.
  */
 
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { useResolvedStaffHolder } from "../staff-holder-store";
 
@@ -42,6 +44,14 @@ export function StaffHeader({ seedAgentId, seedAgentName }: StaffHeaderProps) {
       <span className="shrink-0 text-sm font-medium text-foreground">
         Your staff
       </span>
+      <IntelligenceIndicator
+        feature="personal_staff"
+        mandateKeys={[
+          MANDATE_KEYS.personal_staff__front_line,
+          MANDATE_KEYS.personal_staff__escalation,
+        ]}
+        label="Your front-line assistant and the desk it escalates to"
+      />
       {holderName ? (
         <>
           <span aria-hidden className="shrink-0 text-muted-foreground/50">

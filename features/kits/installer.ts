@@ -42,7 +42,8 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { duplicateAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { callApi } from "@/lib/api/call-api";
 import type { components } from "@/types/python-generated/api-types";
-import { deleteWorkflow } from "@/features/workflow-runtime/browse/service";
+import { setWorkflowFlag } from "@/features/workflow-runtime/browse/service";
+import { saveAgentField } from "@/features/agents/redux/agent-definition/thunks";
 import { KIT_INSTALLS_TABLE, KIT_ROUTES, KIT_WORD } from "./constants";
 import type {
   InstallStepView,
@@ -157,6 +158,38 @@ async function nameBasedUuid(name: string): Promise<string> {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+/**
+ * EVERY record of a table matching a filter — paged until a short page, never one
+ * capped read. A count or an existence check over a capped list goes confidently
+ * wrong (the claim id below is derived from this count).
+ */
+async function listAll(
+  client: RecordsClient,
+  tableId: string,
+  filter: Record<string, string>,
+): Promise<{ id: string; document: Record<string, unknown> }[]> {
+  const PAGE = 200;
+  const out: { id: string; document: Record<string, unknown> }[] = [];
+  for (let offset = 0; ; offset += PAGE) {
+    const page = await client.list({ table_id: tableId, filter, limit: PAGE, offset });
+    if (!page.ok) throw refusal("Could not read the install records", page.error.message, page.error.hint);
+    for (const r of page.data.rows) out.push({ id: r.id, document: r.document as Record<string, unknown> });
+    if (page.data.rows.length < PAGE) return out;
+  }
+}
+
+/** The option tables a table's choice columns keep their choices in (the store makes them on declare). */
+async function optionTablesOf(client: RecordsClient, tableId: string): Promise<string[]> {
+  const fields = await client.fields({ table_id: tableId });
+  if (!fields.ok) return [];
+  const ids = new Set<string>();
+  for (const f of fields.data) {
+    const id = isRecord(f.config) ? f.config.options_table_id : null;
+    if (typeof id === "string" && id) ids.add(id);
+  }
+  return [...ids];
+}
+
 function parseSteps(raw: unknown): KitInstallSteps {
   if (typeof raw !== "string" || !raw.trim()) return {};
   try {
@@ -181,9 +214,8 @@ async function readLedgerRow(
 ): Promise<LedgerRow | null> {
   const ledger = await findLedger(client);
   if (!ledger) return null;
-  const read = await client.list({ table_id: ledger, filter: { kit_key: kitKey }, limit: 50 });
-  if (!read.ok) throw refusal("Could not read the install record", read.error.message, read.error.hint);
-  const live = read.data.rows.find((r) => r.document.status !== "removed");
+  const rows = await listAll(client, ledger, { kit_key: kitKey });
+  const live = rows.find((r) => r.document.status !== "removed");
   if (!live) return null;
   const doc = live.document;
   const until = typeof doc.run_until === "string" ? Date.parse(doc.run_until) : NaN;
@@ -499,9 +531,7 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
     const ledger = await ensureLedger(client);
     let row = await readLedgerRow(client, organizationId, manifest.key);
     if (!row) {
-      const earlier = await client.list({ table_id: ledger, filter: { kit_key: manifest.key }, limit: 200 });
-      if (!earlier.ok) throw refusal("Could not read earlier installs", earlier.error.message, earlier.error.hint);
-      const generation = earlier.data.rows.length;
+      const generation = (await listAll(client, ledger, { kit_key: manifest.key })).length;
       const claimId = await nameBasedUuid(`${organizationId}:${manifest.key}:${generation}`);
       const written = await client.recordWriteMany({
         table_id: ledger,
@@ -570,6 +600,13 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
         if (!declared.ok) throw refusal(`Could not create "${table.name}"`, declared.error.message, declared.error.hint);
         steps.tables = { ...(steps.tables ?? {}), [table.key]: declared.data };
         await record();
+        // A choice column's choices live in a table the store makes on declare — it is
+        // this install's too, and removal takes it back with the main table.
+        const optionTables = await optionTablesOf(client, declared.data);
+        if (optionTables.length > 0) {
+          steps.optionTables = { ...(steps.optionTables ?? {}), [table.key]: optionTables };
+          await record();
+        }
         const described = await client.recordUpdate({
           record_id: declared.data,
           patch: {
@@ -713,10 +750,25 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
   }
 }
 
+/** Archive one table in passes; answers the problem, or null when it is done. */
+async function archiveTable(client: RecordsClient, tableId: string): Promise<string | null> {
+  const archived = await client.tableArchived({ table_id: tableId });
+  if (archived.ok && archived.data) return null; // already in the archive
+  const MAX_PASSES = 200;
+  for (let pass = 0; pass < MAX_PASSES; pass++) {
+    const r = await client.tableArchive({ table_id: tableId });
+    if (!r.ok) return r.error.message;
+    if (r.data.done) return null;
+  }
+  return `only partly archived after ${MAX_PASSES} passes — remove it again to continue where it stopped`;
+}
+
 // ─── removal: exactly the recorded ids, and only if they are still this install's ─
 
 export interface RemovalFacts {
   tables: { id: string; name: string; rows: number; retentionDays: number | null }[];
+  /** Choice lists the store made for those tables' choice columns. */
+  optionTables: number;
   agents: number;
   workflows: number;
   /** Conversations people have had with the copied agent(s). */
@@ -748,8 +800,11 @@ export async function removalFacts(client: RecordsClient, install: KitInstallRec
       .is("deleted_at", null);
     conversations = error ? null : (count ?? 0);
   }
+  let optionTables = 0;
+  for (const id of tableIds) optionTables += new Set([...(await optionTablesOf(client, id))]).size;
   return {
     tables,
+    optionTables,
     agents: agentIds.length,
     workflows: Object.keys(install.steps.workflows ?? {}).length,
     conversations,
@@ -763,7 +818,11 @@ export async function removalFacts(client: RecordsClient, install: KitInstallRec
  * install's label (table description / agent or workflow tag) is REFUSED by name:
  * something else may be using it now.
  */
-export async function removeInstall(client: RecordsClient, install: KitInstallRecord): Promise<void> {
+export async function removeInstall(
+  client: RecordsClient,
+  install: KitInstallRecord,
+  dispatch: AppDispatch,
+): Promise<void> {
   // The record is written at the end with columns an older ledger may not have yet.
   await ensureLedger(client);
   const problems: string[] = [];
@@ -781,7 +840,8 @@ export async function removeInstall(client: RecordsClient, install: KitInstallRe
       continue;
     }
     try {
-      await deleteWorkflow(id);
+      // The workflows list's own Archive — restorable from its Archived view.
+      await setWorkflowFlag(id, { is_archived: true });
     } catch (err) {
       problems.push(`workflow ${id}: ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -798,14 +858,12 @@ export async function removeInstall(client: RecordsClient, install: KitInstallRe
       problems.push(`agent ${id} was left alone: it no longer carries this install's label`);
       continue;
     }
-    const { data, error } = await supabase
-      .schema("agent")
-      .from("definition")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id)
-      .select("id");
-    if (error) problems.push(`agent ${id}: ${error.message}`);
-    else if (!data || data.length === 0) problems.push(`agent ${id} was not archived: you may not edit it`);
+    try {
+      // The agents list's own Archive (`is_archived`) — restorable from its Archived view.
+      await dispatch(saveAgentField({ agentId: id, field: "isArchived", value: true as never })).unwrap();
+    } catch (err) {
+      problems.push(`agent ${id} was not archived: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   for (const id of Object.values(install.steps.tables ?? {})) {
@@ -813,7 +871,15 @@ export async function removeInstall(client: RecordsClient, install: KitInstallRe
     if (!read.ok) {
       // Already in the archive (an earlier removal got this far) is done, not a problem.
       const archived = await client.tableArchived({ table_id: id });
-      if (archived.ok && archived.data) continue;
+      if (archived.ok && archived.data) {
+        // The main table went first last time; its recorded choice lists still go.
+        const key = Object.entries(install.steps.tables ?? {}).find(([, v]) => v === id)?.[0];
+        for (const optionId of key ? (install.steps.optionTables?.[key] ?? []) : []) {
+          const p = await archiveTable(client, optionId);
+          if (p) problems.push(`the choice list ${optionId} of table ${id}: ${p}`);
+        }
+        continue;
+      }
       problems.push(`table ${id} could not be checked (${read.error.message})`);
       continue;
     }
@@ -822,24 +888,14 @@ export async function removeInstall(client: RecordsClient, install: KitInstallRe
       problems.push(`table ${id} was left alone: its description no longer names this install`);
       continue;
     }
-    // The door archives in passes; loop until it says done — and say so if it never does.
-    let finished = false;
-    const MAX_PASSES = 200;
-    for (let pass = 0; pass < MAX_PASSES; pass++) {
-      const r = await client.tableArchive({ table_id: id });
-      if (!r.ok) {
-        problems.push(`table ${id}: ${r.error.message}`);
-        finished = true;
-        break;
-      }
-      if (r.data.done) {
-        finished = true;
-        break;
-      }
+    const tableKey = Object.entries(install.steps.tables ?? {}).find(([, v]) => v === id)?.[0];
+    const options = new Set([...(tableKey ? (install.steps.optionTables?.[tableKey] ?? []) : []), ...(await optionTablesOf(client, id))]);
+    for (const optionId of options) {
+      const p = await archiveTable(client, optionId);
+      if (p) problems.push(`the choice list ${optionId} of table ${id}: ${p}`);
     }
-    if (!finished) {
-      problems.push(`table ${id} is only partly archived after ${MAX_PASSES} passes — remove it again to continue where it stopped`);
-    }
+    const p = await archiveTable(client, id);
+    if (p) problems.push(`table ${id}: ${p}`);
   }
 
   const next: KitInstallRecord = {

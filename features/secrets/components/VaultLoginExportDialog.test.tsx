@@ -374,6 +374,11 @@ describe("VaultLoginExportDialog", () => {
       "Uses LastPass's ordinary-login CSV columns for title, URL, username, password, and notes; grouping, favorite, and TOTP use the ordinary-login defaults.",
       "lastpass_csv_v1",
     ],
+    [
+      "Firefox CSV",
+      "Uses Firefox's ordinary-login URL, username, and password columns. The preview lists any title or notes omissions before download.",
+      "firefox_csv_v1",
+    ],
   ])("binds %s to a fresh preview", async (label, detail, profile) => {
     await render();
     const checkbox = document.querySelector('[role="checkbox"]');

@@ -128,6 +128,8 @@ export type KitInstallStatus = "installing" | "installed" | "failed" | "removed"
  */
 export interface KitInstallSteps {
   tables?: Record<string, string>;
+  /** Per table key: the choice-list tables the store made for its choice columns. */
+  optionTables?: Record<string, string[]>;
   records?: Record<string, string[]>;
   agents?: Record<string, string>;
   bindings?: Record<string, boolean>;

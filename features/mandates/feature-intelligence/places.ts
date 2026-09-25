@@ -46,19 +46,42 @@ interface RegisteredSurfaceRow {
   url_pattern: string | null;
 }
 
-/** Screens whose manifest names one of these jobs. */
-export async function fetchRegisteredPlaces(
-  mandateKeys: readonly string[],
+/**
+ * Screens whose manifest names a job under one of these key prefixes — asked
+ * without waiting for the job list, so the page reads both side by side. Keep
+ * the answer to the jobs the viewer can see with `keepVisibleJobs`.
+ */
+export async function fetchRegisteredPlacesForFeature(
+  prefixes: readonly string[],
   context: IntelligenceContext,
 ): Promise<ResolvedPlace[]> {
-  if (mandateKeys.length === 0) return [];
+  if (prefixes.length === 0) return [];
   const { data: roles, error } = await supabase
     .schema("ui")
     .from("ui_surface_agent_role")
     .select("surface_name,label,mandate_key")
-    .in("mandate_key", [...mandateKeys]);
+    .or(prefixes.map((prefix) => `mandate_key.like."${prefix}.%"`).join(","));
   if (error) throw new Error(`Registered places: ${error.message}`);
-  const roleRows = (roles ?? []) as RegisteredRoleRow[];
+  return placesFromRoles((roles ?? []) as RegisteredRoleRow[], context);
+}
+
+/** Registered places narrowed to visible jobs; a place left with none is dropped. */
+export function keepVisibleJobs(
+  places: readonly ResolvedPlace[],
+  visible: ReadonlySet<string>,
+): ResolvedPlace[] {
+  return places
+    .map((place) => ({
+      ...place,
+      mandateKeys: place.mandateKeys.filter((key) => visible.has(key)),
+    }))
+    .filter((place) => place.mandateKeys.length > 0);
+}
+
+async function placesFromRoles(
+  roleRows: readonly RegisteredRoleRow[],
+  context: IntelligenceContext,
+): Promise<ResolvedPlace[]> {
   if (roleRows.length === 0) return [];
 
   const names = [...new Set(roleRows.map((row) => row.surface_name))];

@@ -31,6 +31,7 @@ import {
   type DocumentNumbering,
 } from "@/components/markdown-core/syntax/document-numbering";
 import { DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
+import { RemoteImageGate } from "@/components/rich-content/prose/remote-image-policy";
 
 /** The injected prose leaf. `numbering` is the WHOLE document's (one pass at the root). */
 export type StaticProse = ComponentType<{
@@ -174,11 +175,14 @@ function StaticBlock({
 
   if (type === "image" && block.src) {
     return (
-      <img
-        src={block.src}
-        alt={block.alt || ""}
-        className="my-2 h-auto max-w-full rounded-md object-contain"
-      />
+      <RemoteImageGate src={block.src} alt={block.alt} block>
+        <img
+          src={block.src}
+          alt={block.alt || ""}
+          referrerPolicy="no-referrer"
+          className="my-2 h-auto max-w-full rounded-md object-contain"
+        />
+      </RemoteImageGate>
     );
   }
 

@@ -17,6 +17,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 /** Canonical `ui_surface.name` this sheet registers its write handler against —
  *  the same surface LibraryPage, its parent, mounts. */
@@ -579,6 +581,12 @@ export function LibraryDocDetailSheet({
                     {reprocessing ? "Re-processing…" : "Re-process"}
                   </Button>
                 )}
+                <IntelligenceIndicator
+                  feature="rag"
+                  mandateKeys={[MANDATE_KEYS.rag__pdf_page_cleaner]}
+                  label="PDF page cleanup"
+                  className="self-center"
+                />
                 <Button
                   size="sm"
                   variant="outline"
@@ -606,7 +614,7 @@ export function LibraryDocDetailSheet({
                   <Button
                     size="sm"
                     variant="destructive"
-                    title="Delete this document AND remove the source file from cloud storage. Cannot be undone."
+                    title="Move this document and its source file to the trash. Restorable from the trash."
                     onClick={() => {
                       setConfirmDeleteMode("file");
                       setConfirmDeleteOpen(true);
@@ -1114,7 +1122,7 @@ export function LibraryDocDetailSheet({
                     <li>All data-store bindings pointing to this file</li>
                   </ul>
                   <p className="text-destructive mt-3 text-sm">
-                    This cannot be undone.
+                    This moves the document family to the trash; an admin can restore it from there.
                   </p>
                 </>
               )}

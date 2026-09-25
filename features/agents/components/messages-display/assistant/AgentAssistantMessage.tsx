@@ -75,7 +75,10 @@ import {
 import { MessageCitationsProvider } from "@/components/mardown-display/chat-markdown/citations/MessageCitationsContext";
 import { MessageSourcesRow } from "../citations/MessageSourcesRow";
 import { AssistantError } from "../../run/AssistantError";
-import { friendlyStreamError } from "../../run/friendlyStreamError";
+import {
+  bindingUnresolvedFailure,
+  friendlyStreamError,
+} from "../../run/friendlyStreamError";
 import { AssistantWarning } from "../../run/AssistantWarning";
 import { BreathingOrb } from "./BreathingOrb";
 import {
@@ -221,6 +224,9 @@ export function AgentAssistantMessage({
     requestId ? selectProviderRetry(requestId) : () => null,
   );
   const phase = useAppSelector(selectStreamPhase(conversationId));
+  const agentIdForDoor = useAppSelector(
+    (s) => s.conversations.byConversationId[conversationId]?.agentId ?? null,
+  );
 
   const record = useAppSelector(
     messageId ? selectMessageById(conversationId, messageId) : () => undefined,
@@ -503,6 +509,36 @@ export function AgentAssistantMessage({
         // inside a live Vision Interview, between the reply and the composer.
         // The bubble now shows a declared sentence with its remedy and the raw
         // text keeps its place under Details. See `friendlyStreamError.ts`.
+        // A run refused for missing bound data is NOT retryable: say what is
+        // missing and open the variable, never "try again".
+        const unresolved = bindingUnresolvedFailure({
+          errorType: streamError?.error_type ?? null,
+          code: typeof code === "string" ? code : null,
+          userMessage: streamError?.user_message ?? null,
+          details: streamError?.details,
+        });
+        if (unresolved) {
+          return (
+            <AssistantError
+              message={unresolved.message}
+              detail={streamError?.message ?? undefined}
+              errorType={streamError?.error_type}
+              code={code}
+              door={
+                agentIdForDoor && unresolved.variable
+                  ? {
+                      label: `Open “${unresolved.variable}”`,
+                      href: `/agents/${agentIdForDoor}/build?panels=agent_variable:${encodeURIComponent(
+                        `${agentIdForDoor}|${unresolved.variable}`,
+                      )}`,
+                    }
+                  : agentIdForDoor
+                    ? { label: "Open the agent", href: `/agents/${agentIdForDoor}/build` }
+                    : null
+              }
+            />
+          );
+        }
         const spoken = friendlyStreamError({
           userMessage: streamError?.user_message ?? null,
           message: streamError?.message ?? null,

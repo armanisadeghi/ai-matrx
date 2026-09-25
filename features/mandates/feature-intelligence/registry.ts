@@ -39,6 +39,18 @@ import { ALCHEMY_PLACES } from "@/components/agent-copy/intelligence-places";
 import { DICTIONARY_PLACES } from "@/features/dictionary/intelligence-places";
 import { TOOL_VIZ_PLACES } from "@/features/tool-call-visualization/intelligence-places";
 import { ORCHESTRAS_PLACES } from "@/features/agents/orchestras/intelligence-places";
+import { WORKFLOW_PLACES } from "@/features/workflow-runtime/intelligence-places";
+import { GROWTH_LOOP_PLACES } from "@/features/growth-loop/intelligence-places";
+import { MEDIA_PLACES } from "@/features/education/onboard/intelligence-places";
+import { RAG_PLACES } from "@/features/rag/intelligence-places";
+import { KNOWLEDGE_PLACES } from "@/features/knowledge/intelligence-places";
+import { PDF_PLACES } from "@/features/pdf-extractor/intelligence-places";
+import { VISION_INTERVIEW_PLACES } from "@/features/vision-interview/intelligence-places";
+import { HINDSIGHT_PLACES } from "@/features/hindsight/intelligence-places";
+import { MEET_PLACES } from "@/features/meet/intelligence-places";
+import { CODING_SESSION_PLACES } from "@/features/ai-work/conversations/intelligence-places";
+import { PROOF_RUNS_PLACES } from "@/features/proof-runs/intelligence-places";
+import { DISTILLATION_PLACES } from "@/features/masterwork/distillation-intelligence-places";
 import type { FeaturePlaces } from "./types";
 
 export const DECLARED_FEATURES: readonly FeaturePlaces[] = [
@@ -75,6 +87,18 @@ export const DECLARED_FEATURES: readonly FeaturePlaces[] = [
   DICTIONARY_PLACES,
   TOOL_VIZ_PLACES,
   ORCHESTRAS_PLACES,
+  WORKFLOW_PLACES,
+  GROWTH_LOOP_PLACES,
+  MEDIA_PLACES,
+  RAG_PLACES,
+  KNOWLEDGE_PLACES,
+  PDF_PLACES,
+  VISION_INTERVIEW_PLACES,
+  HINDSIGHT_PLACES,
+  MEET_PLACES,
+  CODING_SESSION_PLACES,
+  PROOF_RUNS_PLACES,
+  DISTILLATION_PLACES,
 ];
 
 export function declaredPlacesFor(feature: string): FeaturePlaces | null {

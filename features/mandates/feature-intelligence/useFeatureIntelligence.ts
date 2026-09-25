@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { onMandateCacheInvalidated } from "../service";
 import { fetchFeatureIntelligence } from "./service";
+import { featurePrefixes } from "./registry";
 import {
-  fetchRegisteredPlaces,
+  fetchRegisteredPlacesForFeature,
+  keepVisibleJobs,
   mergePlaces,
   resolveDeclaredPlaces,
 } from "./places";
@@ -58,23 +60,23 @@ export function useFeatureIntelligence(args: {
     setState((prev) => ({ ...prev, loading: prev.rows.length === 0, error: null }));
     (async () => {
       try {
-        const rows = await fetchFeatureIntelligence({
-          feature,
-          level,
-          organizationId,
-          userId,
-        });
+        // The jobs and the registered screens are read side by side: the
+        // screens are asked by the feature's key prefixes, then kept to the
+        // jobs this viewer can see.
+        const [rows, registeredAnswer] = await Promise.all([
+          fetchFeatureIntelligence({ feature, level, organizationId, userId }),
+          fetchRegisteredPlacesForFeature(featurePrefixes(feature), context).then(
+            (places) => ({ places, error: null as string | null }),
+            (error: unknown) => ({
+              places: [] as ResolvedPlace[],
+              error: error instanceof Error ? error.message : String(error),
+            }),
+          ),
+        ]);
         const declared = resolveDeclaredPlaces(feature, context);
-        let registered: ResolvedPlace[] = [];
-        let placesError: string | null = null;
-        try {
-          registered = await fetchRegisteredPlaces(
-            rows.map((row) => row.mandateKey),
-            context,
-          );
-        } catch (error) {
-          placesError = error instanceof Error ? error.message : String(error);
-        }
+        const visible = new Set(rows.map((row) => row.mandateKey));
+        const registered = keepVisibleJobs(registeredAnswer.places, visible);
+        const placesError = registeredAnswer.error;
         if (cancelled) return;
         setState({
           rows,

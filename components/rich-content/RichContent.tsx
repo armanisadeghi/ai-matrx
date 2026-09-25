@@ -37,6 +37,7 @@ export function RichContent({
   variant,
   links,
   headingAnchors = true,
+  remoteImages,
 }: RichContentProps) {
   if (level === "inline") {
     return (
@@ -45,6 +46,7 @@ export function RichContent({
         className={className}
         links={links}
         streaming={isStreaming}
+        remoteImages={remoteImages}
       />
     );
   }
@@ -58,6 +60,7 @@ export function RichContent({
           className={className}
           depthCap={depthCap}
           variant={variant}
+          remoteImages={remoteImages}
         />
       </HeadingAnchorsProvider>
     );
@@ -70,6 +73,7 @@ export function RichContent({
         className={className}
         depthCap={depthCap}
         variant={variant}
+        remoteImages={remoteImages}
       />
     );
   }

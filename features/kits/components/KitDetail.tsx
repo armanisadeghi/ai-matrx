@@ -172,8 +172,9 @@ export function KitDetail({
       </PageHeader>
       <div className="h-full overflow-y-auto bg-textured">
         <div className="mx-auto w-full max-w-6xl px-4 pb-20 pt-[calc(var(--shell-header-h)+1.25rem)] sm:px-6">
+          {/* Phone order: who it is → install → how it works. Wide: install rail on the right. */}
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="min-w-0 space-y-10">
+            <div className="min-w-0 lg:col-start-1 lg:row-start-1">
               {/* Identity */}
               <header>
                 <div className="flex items-start gap-4">
@@ -199,7 +200,9 @@ export function KitDetail({
                   </ul>
                 )}
               </header>
+            </div>
 
+            <div className="min-w-0 space-y-10 lg:col-start-1 lg:row-start-2">
               <Section icon={<Link2 className="h-3.5 w-3.5" />} title="How it works">
                 <HowItWorks manifest={m} />
               </Section>
@@ -281,7 +284,7 @@ export function KitDetail({
               )}
             </div>
 
-            <aside className="order-first lg:order-none lg:sticky lg:top-[calc(var(--shell-header-h)+1.25rem)] lg:self-start">
+            <aside className="lg:sticky lg:top-[calc(var(--shell-header-h)+1.25rem)] lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start">
               <InstallPanel manifest={m} api={api} />
             </aside>
           </div>

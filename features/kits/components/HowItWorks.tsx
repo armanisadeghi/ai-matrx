@@ -1,5 +1,7 @@
 "use client";
 
+import { count } from "../format";
+
 // HowItWorks — the kit drawn as the thing it is: your table → a connection → the
 // agent's variable → the workflow that runs it. One lane per binding. Boxes are
 // plain styled cards; the connectors are inline SVG so they stay crisp in both
@@ -111,7 +113,7 @@ export function HowItWorks({ manifest }: { manifest: KitManifest }) {
           className="flex flex-col items-stretch rounded-xl border border-dashed border-border bg-muted/20 p-3 xl:flex-row xl:items-center"
         >
           <Node tone="table" icon={<Table2 className="h-3.5 w-3.5" />} eyebrow="Your table" title={table?.name ?? b.binding.table_key}>
-            {table ? `${table.records.length} example rows · ${table.fields.length} columns` : null}
+            {table ? `${count(table.records.length, "example row")} · ${count(table.fields.length, "column")}` : null}
           </Node>
           <Connector />
           <Node tone="link" icon={<Link2 className="h-3.5 w-3.5" />} eyebrow="Connection" title={describeBinding(b.binding)}>

@@ -8,6 +8,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Archive, Eye, Pause, Play, RefreshCw } from "lucide-react";
 
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 import { Badge } from "@/components/ui/badge";
@@ -154,6 +156,12 @@ export function EnrollmentDetailPanel({
               )}
               {runReview.isPending ? "Reviewing…" : "Review now"}
             </Button>
+            <IntelligenceIndicator
+              feature="hindsight"
+              mandateKeys={[MANDATE_KEYS.hindsight__reviewer]}
+              label="The reviewer that reads these runs and proposes fixes"
+              className="self-center"
+            />
             <Button
               size="sm"
               variant="outline"

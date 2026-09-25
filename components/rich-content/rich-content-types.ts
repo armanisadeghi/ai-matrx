@@ -64,4 +64,12 @@ export interface RichContentProps {
    * section is not on screen. Default `true`; the inline level never has them.
    */
   headingAnchors?: boolean;
+  /**
+   * Remote images (not our files, not same-origin): "ask" shows a click-to-load
+   * placeholder naming the host; "load" draws them (no referrer). Default
+   * "ask" at the inline and standard levels — text people write never makes a
+   * reader's browser call a third party on its own (remote-image-policy.tsx).
+   * The full level keeps "load" unless set.
+   */
+  remoteImages?: "load" | "ask";
 }

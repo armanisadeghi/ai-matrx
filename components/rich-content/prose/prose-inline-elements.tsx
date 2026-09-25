@@ -32,6 +32,7 @@ import { isHeadingAnchorProps } from "@/components/markdown-core/heading-anchors
 import { MatrxVariableInline } from "@/components/mardown-display/chat-markdown/matrx-variables/MatrxVariableInline";
 import { CitationMarkerInline } from "@/components/mardown-display/chat-markdown/citations/CitationMarkerInline";
 import { InDocAnchor } from "@/components/markdown-core/syntax/elements/InDocAnchor";
+import { RemoteImageGate } from "@/components/rich-content/prose/remote-image-policy";
 import {
   isInDocHref,
   renderMarkdownInput,
@@ -203,12 +204,16 @@ export const PROSE_INLINE_ELEMENTS = {
       // one line sit side by side and wrap. Standalone images on their own
       // line take the dedicated full-width ImageBlock path (the splitter
       // only leaves an image here when it shares a line with other content).
-      <img
-        className="inline-block h-auto max-w-full rounded-md my-2 mr-2 object-contain align-top"
-        style={{ maxHeight: 700 }}
-        {...props}
-        alt={props.alt || "Image"}
-      />
+      // A remote image obeys the level's policy (remote-image-policy.tsx).
+      <RemoteImageGate src={props.src} alt={props.alt}>
+        <img
+          className="inline-block h-auto max-w-full rounded-md my-2 mr-2 object-contain align-top"
+          style={{ maxHeight: 700 }}
+          referrerPolicy="no-referrer"
+          {...props}
+          alt={props.alt || "Image"}
+        />
+      </RemoteImageGate>
     ) : (
       <span
         data-rc-refused-image=""

@@ -38,6 +38,7 @@ import {
   type RichContentVariant,
 } from "./rich-content-types";
 import { StaticStandard } from "./standard/static-standard";
+import { RemoteImagePolicyProvider } from "@/components/rich-content/prose/remote-image-policy";
 
 /** The prose leaf alone (frame + one prose map), statically. */
 export function StaticProseLeaf({
@@ -85,9 +86,11 @@ export function RichContentStaticProse({
 }) {
   if (!source.trim()) return null;
   return (
-    <RichContentVariantRoot variant={variant}>
-      <StaticProseLeaf content={source} />
-    </RichContentVariantRoot>
+    <RemoteImagePolicyProvider value="ask">
+      <RichContentVariantRoot variant={variant}>
+        <StaticProseLeaf content={source} />
+      </RichContentVariantRoot>
+    </RemoteImagePolicyProvider>
   );
 }
 
@@ -111,15 +114,17 @@ export function RichContentStaticStandard({
   className?: string;
 }) {
   return (
-    <RichContentVariantRoot variant={variant}>
-      <StaticStandard
-        source={source}
-        depth={0}
-        cap={depthCap}
-        className={className}
-        Prose={StaticProseLeaf}
-      />
-    </RichContentVariantRoot>
+    <RemoteImagePolicyProvider value="ask">
+      <RichContentVariantRoot variant={variant}>
+        <StaticStandard
+          source={source}
+          depth={0}
+          cap={depthCap}
+          className={className}
+          Prose={StaticProseLeaf}
+        />
+      </RichContentVariantRoot>
+    </RemoteImagePolicyProvider>
   );
 }
 
@@ -141,7 +146,7 @@ export function RichContentStaticInline({
   if (!source.trim()) return null;
   const { text, violations } = guardMarkdownDelimiters(preprocessProse(source));
   return (
-    <>
+    <RemoteImagePolicyProvider value="ask">
       <span
         data-rich-content="inline"
         className={cn(INLINE_LEVEL_WRAPPER_CLASS, className)}
@@ -156,7 +161,7 @@ export function RichContentStaticInline({
           renderPath="RichContentStaticInline"
         />
       ) : null}
-    </>
+    </RemoteImagePolicyProvider>
   );
 }
 

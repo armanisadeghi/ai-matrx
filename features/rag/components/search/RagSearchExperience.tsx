@@ -104,6 +104,8 @@ import { AgentConversationColumn } from "@/features/agents/components/shared/Age
 import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
 import { useMandate } from "@/features/mandates/useMandate";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import { createRagSearchScope } from "@/features/surfaces/manifests/rag-search.manifest";
 import {
@@ -521,6 +523,11 @@ function ScopeSidebar({
         <div className="flex items-center gap-2 text-xs">
           <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="font-semibold">Pipeline</span>
+          <IntelligenceIndicator
+            feature="rag"
+            mandateKeys={[MANDATE_KEYS.rag__hyde_generator, MANDATE_KEYS.rag__query_expander]}
+            label="HyDE expansion and multi-query"
+          />
         </div>
         <KindToggle value={scope.kindFilter} onChange={scope.setKindFilter} />
         <label

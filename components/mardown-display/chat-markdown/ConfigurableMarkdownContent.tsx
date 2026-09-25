@@ -33,6 +33,7 @@ import {
   useMediaLoadRecovery,
 } from "@ai-matrx/media/core";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
+import { RemoteImageGate } from "@/components/rich-content/prose/remote-image-policy";
 import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
 
 /**
@@ -42,7 +43,17 @@ import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
  * hotlinked card/web image) hides gracefully instead of rendering the
  * broken-image glyph.
  */
-export function DurableMarkdownImg({
+/** A remote image obeys the surrounding policy (remote-image-policy.tsx); our own files always draw. */
+export function DurableMarkdownImg(props: React.ComponentProps<"img">) {
+  const src = typeof props.src === "string" ? props.src : "";
+  return (
+    <RemoteImageGate src={src} alt={props.alt}>
+      <DurableMarkdownImgImpl {...props} />
+    </RemoteImageGate>
+  );
+}
+
+function DurableMarkdownImgImpl({
   src,
   alt,
   className,

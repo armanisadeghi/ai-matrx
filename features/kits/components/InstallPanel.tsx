@@ -1,5 +1,7 @@
 "use client";
 
+import { count } from "../format";
+
 // InstallPanel — the detail page's right rail: WHERE it installs (the organization
 // the person set), WHAT it will create (said before the click), the live stepper,
 // and — after — the doors to what was made, or the honest failure with "Finish
@@ -116,7 +118,7 @@ function consequence(manifest: KitManifest, orgName: string): string {
   const rows = manifest.tables.reduce((n, t) => n + t.records.length, 0);
   if (manifest.tables.length > 0) {
     parts.push(
-      `${manifest.tables.length === 1 ? "1 table" : `${manifest.tables.length} tables`}${rows > 0 ? ` with ${rows} example rows` : ""}`,
+      `${count(manifest.tables.length, "table")}${rows > 0 ? ` with ${count(rows, "example row")}` : ""}`,
     );
   }
   if (manifest.agents.length > 0) parts.push(manifest.agents.length === 1 ? "a copy of 1 agent" : `copies of ${manifest.agents.length} agents`);
@@ -150,14 +152,18 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
     if (!facts) return;
     const tableLines = facts.tables.map(
       (t) =>
-        `the "${t.name}" table and every row in it (${t.rows} example ${t.rows === 1 ? "row" : "rows"} plus anything added since) — restorable for ${
+        `the "${t.name}" table and every row in it (${t.rows === 1 ? "1 example row" : `${t.rows} example rows`} plus anything added since) — restorable from the table archive for ${
           t.retentionDays ? `${t.retentionDays} days` : "as long as the table's own retention setting allows"
         }`,
     );
     const what = [
       ...tableLines,
-      facts.agents > 0 && `${facts.agents === 1 ? "the agent copy" : `${facts.agents} agent copies`} — restorable from the agents archive with no time limit (no purge policy applies)`,
-      facts.workflows > 0 && `${facts.workflows === 1 ? "the workflow" : `${facts.workflows} workflows`} — restorable from the workflows archive with no time limit`,
+      facts.optionTables > 0 &&
+        `${facts.optionTables === 1 ? "the choice list" : `${facts.optionTables} choice lists`} the store made for ${facts.tables.length === 1 ? "that table's" : "those tables'"} choice columns`,
+      facts.agents > 0 &&
+        `${facts.agents === 1 ? "the agent copy" : `${facts.agents} agent copies`} — archived, so it is restorable from the Archived view of your agents list`,
+      facts.workflows > 0 &&
+        `${facts.workflows === 1 ? "the workflow" : `${facts.workflows} workflows`} — archived, so restorable from the Archived view of your workflows list`,
     ].filter((x): x is string => typeof x === "string");
     const breaks = [
       facts.conversations && facts.conversations > 0

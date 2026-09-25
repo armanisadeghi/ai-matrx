@@ -85,21 +85,49 @@ function primaryToken(field: Field): string {
   return placeholdersFor(field)[0]?.token ?? `{${field.key}}`;
 }
 
+/** Words that mark a column as the row's NAME when the table declares none. */
+const NAME_LIKE = /(^|_)(name|title|label)$/;
+/** Words that mark a column as describing the row — what the agent most needs next. */
+const DESCRIPTIVE =
+  /(desc|description|summary|notes?|details?|about|why|purpose|role|category|type|group)/;
+
+/** The row's name column: the table's own title field (REC-2), else a name-like key. */
+export function titleFieldOf(
+  table: Pick<Table, "title_field"> | null,
+  fields: readonly Field[],
+): Field | undefined {
+  const declared = table?.title_field;
+  return (
+    (declared
+      ? fields.find((f) => f.key === declared || f.id === declared)
+      : undefined) ??
+    fields.find((f) => NAME_LIKE.test(f.key)) ??
+    fields[0]
+  );
+}
+
 /**
- * The starting template for a table: `- {title}: {next field}`. Built from the
- * table's own title column (REC-2) and the first other field, so the author
- * starts from something that already reads well and edits from there.
+ * The starting template for a table: `- {title}: {descriptive} ({descriptive})`.
+ * It LEADS with the table's name column (the store's `title_field`), then one or
+ * two descriptive columns — so the author starts from something that already
+ * reads well ("- Dana Whitfield: Head coach (Strength)") and edits from there.
  */
 export function defaultTemplate(
   table: Pick<Table, "title_field"> | null,
   fields: readonly Field[],
 ): string {
   if (fields.length === 0) return "- {name}";
-  const title = fields.find((f) => f.key === table?.title_field) ?? fields[0];
-  const other = fields.find((f) => f.key !== title.key);
-  return other
-    ? `- ${primaryToken(title)}: ${primaryToken(other)}`
-    : `- ${primaryToken(title)}`;
+  const title = titleFieldOf(table, fields) ?? fields[0];
+  const rest = fields.filter((f) => f.id !== title.id);
+  const described = [
+    ...rest.filter((f) => DESCRIPTIVE.test(f.key)),
+    ...rest.filter((f) => !DESCRIPTIVE.test(f.key)),
+  ].slice(0, 2);
+  const [first, second] = described;
+  if (!first) return `- ${primaryToken(title)}`;
+  return second
+    ? `- ${primaryToken(title)}: ${primaryToken(first)} (${primaryToken(second)})`
+    : `- ${primaryToken(title)}: ${primaryToken(first)}`;
 }
 
 /** A binding is ready to save/preview only when its shape has everything it needs. */

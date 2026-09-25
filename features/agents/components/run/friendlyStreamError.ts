@@ -113,3 +113,45 @@ export function friendlyStreamError(input: {
 
   return { message: GENERIC_FAILURE, detail: raw ?? recorded ?? null };
 }
+
+/**
+ * A run REFUSED because a variable bound to the author's data had nothing to
+ * give (aidream `ScopeBindingUnresolved` → `error_type: "binding_unresolved"`,
+ * `details: {variable, table_id, table_name, reason, retryable: false}`).
+ *
+ * Retrying cannot help — the data, not the request, is missing — so this is an
+ * actionable state, never "try again". The server's own `user_message` wins;
+ * without one, the sentence names the variable and the table and says the two
+ * ways out.
+ */
+export interface BindingUnresolvedFailure {
+  message: string;
+  variable: string | null;
+  tableName: string | null;
+}
+
+export function bindingUnresolvedFailure(input: {
+  errorType?: string | null;
+  code?: string | number | null;
+  userMessage?: string | null;
+  details?: unknown;
+}): BindingUnresolvedFailure | null {
+  const details =
+    input.details && typeof input.details === "object"
+      ? (input.details as Record<string, unknown>)
+      : {};
+  const isIt =
+    input.errorType === "binding_unresolved" ||
+    input.code === "binding_unresolved";
+  if (!isIt) return null;
+  const variable = typeof details.variable === "string" ? details.variable : null;
+  const tableName =
+    typeof details.table_name === "string" ? details.table_name : null;
+  const declared = (input.userMessage ?? "").trim();
+  const message =
+    declared ||
+    `This agent needs ${variable ? `“${variable}”` : "a value"}${
+      tableName ? ` from ${tableName}` : " from your data"
+    }, which has no value right now. Fill it in, or change what happens when that data is missing.`;
+  return { message, variable, tableName };
+}

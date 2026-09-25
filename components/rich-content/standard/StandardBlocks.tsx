@@ -41,6 +41,7 @@ import {
   MarkdownStreamingProvider,
   useMarkdownStreaming,
 } from "@/components/markdown-core/streaming-context";
+import { RemoteImageGate } from "@/components/rich-content/prose/remote-image-policy";
 
 // Heavy engines stay behind React.lazy (an async edge inside the parent's
 // existing chunk graph — no new loadable; code-splitting rule 3), exactly as
@@ -201,11 +202,14 @@ export function StandardBlock({
 
   if (type === "image" && block.src) {
     return (
-      <img
-        src={block.src}
-        alt={block.alt || ""}
-        className="my-2 h-auto max-w-full rounded-md object-contain"
-      />
+      <RemoteImageGate src={block.src} alt={block.alt} block>
+        <img
+          src={block.src}
+          alt={block.alt || ""}
+          referrerPolicy="no-referrer"
+          className="my-2 h-auto max-w-full rounded-md object-contain"
+        />
+      </RemoteImageGate>
     );
   }
 

@@ -111,7 +111,10 @@ export default function RouteHeader({
         <div
           ref={rightRef}
           data-route-header-right
-          className="relative z-10 flex min-w-0 items-center justify-end"
+          // Actions never yield: the title truncates instead. With `min-w-0`
+          // here a long title crushed a phone's header door to an 8px sliver
+          // (Intelligence rollout, 2026-09-25).
+          className="relative z-10 flex shrink-0 items-center justify-end"
         >
           {right}
         </div>

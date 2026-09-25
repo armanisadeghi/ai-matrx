@@ -51,6 +51,7 @@ import {
   proseFrameClass,
 } from "../prose/prose-block-elements";
 import { DelimiterViolationReport } from "./DelimiterViolationReport";
+import { RemoteImagePolicyProvider } from "@/components/rich-content/prose/remote-image-policy";
 
 export type RichContentServerLevel = "inline" | "standard";
 
@@ -140,19 +141,26 @@ export function RichContentServer({
   variant,
   links,
 }: RichContentServerProps) {
+  // Public and shared pages render text people wrote: remote images wait for a click.
   if (level === "inline") {
-    return <InlineServer source={source} className={className} links={links} />;
+    return (
+      <RemoteImagePolicyProvider value="ask">
+        <InlineServer source={source} className={className} links={links} />
+      </RemoteImagePolicyProvider>
+    );
   }
   return (
-    <RichContentVariantRoot variant={variant}>
-      <StaticStandard
-        source={source}
-        depth={0}
-        cap={depthCap}
-        className={className}
-        Prose={ProseServer}
-      />
-    </RichContentVariantRoot>
+    <RemoteImagePolicyProvider value="ask">
+      <RichContentVariantRoot variant={variant}>
+        <StaticStandard
+          source={source}
+          depth={0}
+          cap={depthCap}
+          className={className}
+          Prose={ProseServer}
+        />
+      </RichContentVariantRoot>
+    </RemoteImagePolicyProvider>
   );
 }
 

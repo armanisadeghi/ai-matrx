@@ -114,7 +114,16 @@ export async function detectSetup(client: RecordsClient, organizationId: string,
   for (const b of bindings) {
     if (!fieldsByTable[b.binding.table_id]) fieldsByTable[b.binding.table_id] = await readFields(client, b.binding.table_id);
   }
-  const ids = tablesToInclude(bindings, fieldsByTable);
+  // App-kept tables (a choice list, the "Kit installs" ledger, a feature's own table)
+  // are the app's, not the person's data — they are never offered as kit tables.
+  const kept = new Set<string>();
+  const facts = await client.tableFacts();
+  if (facts.ok && facts.data) {
+    for (const f of facts.data) {
+      if ((f as unknown as Record<string, unknown>).kept_by_the_app === true) kept.add(f.table_id);
+    }
+  }
+  const ids = tablesToInclude(bindings, fieldsByTable).filter((id) => !kept.has(id));
   const direct = new Set(bindings.map((b) => b.binding.table_id));
 
   const tables: DetectedTable[] = [];

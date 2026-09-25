@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Eye, Loader2 } from "lucide-react";
+import { Eye, Loader2, RotateCw } from "lucide-react";
 import type { CustomDataBinding } from "@/features/agents/types/agent-definition.types";
 import {
   previewVariableBinding,
@@ -41,6 +41,20 @@ export function CustomDataBindingPreview({
     key: string;
     state: PreviewState;
   } | null>(null);
+  // Bumped by Refresh and by the person coming back to the page (the data may
+  // have changed elsewhere). Event-driven — never polling.
+  const [revision, setRevision] = useState(0);
+  useEffect(() => {
+    const again = () => {
+      if (document.visibilityState === "visible") setRevision((n) => n + 1);
+    };
+    window.addEventListener("focus", again);
+    document.addEventListener("visibilitychange", again);
+    return () => {
+      window.removeEventListener("focus", again);
+      document.removeEventListener("visibilitychange", again);
+    };
+  }, []);
 
   useEffect(() => {
     if (!complete || !organizationId) return;
@@ -52,15 +66,26 @@ export function CustomDataBindingPreview({
         signal: controller.signal,
       })
         .then((state) => setResult({ key, state }))
-        .catch(() => {
-          // Aborted — a newer edit superseded this request.
+        .catch((err: unknown) => {
+          // Only an abort (a newer edit superseded this request) is silent.
+          if (err instanceof DOMException && err.name === "AbortError") return;
+          setResult({
+            key,
+            state: {
+              state: "error",
+              message:
+                err instanceof Error
+                  ? err.message
+                  : "The preview could not be loaded.",
+            },
+          });
         });
     }, PREVIEW_DEBOUNCE_MS);
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [key, complete, organizationId, binding, variableName]);
+  }, [key, complete, organizationId, binding, variableName, revision]);
 
   const state: PreviewState = !complete
     ? { status: "incomplete" }
@@ -73,6 +98,16 @@ export function CustomDataBindingPreview({
       <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
         <Eye className="h-3.5 w-3.5 text-muted-foreground" />
         What the agent will see
+        {complete && (
+          <button
+            type="button"
+            onClick={() => setRevision((n) => n + 1)}
+            className="ml-auto inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-normal text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <RotateCw className="h-3 w-3" />
+            Refresh
+          </button>
+        )}
       </div>
       {"status" in state ? (
         state.status === "incomplete" ? (
@@ -95,7 +130,7 @@ export function CustomDataBindingPreview({
       ) : (
         <>
           {!state.present && (
-            <p className="text-[11px] text-amber-700 dark:text-amber-300">
+            <p className="text-[11px] text-warning">
               No data right now
               {state.absentReason ? ` — ${state.absentReason}` : ""}. This is
               what the agent is told instead:

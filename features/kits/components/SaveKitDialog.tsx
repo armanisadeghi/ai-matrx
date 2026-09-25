@@ -1,5 +1,7 @@
 "use client";
 
+import { count } from "../format";
+
 // SaveKitDialog — "Save as kit": a person's own setup (an agent whose variables read
 // their tables, those tables, the workflows that use them) becomes a kit their
 // organization can install. Built only from what the person can already read; the
@@ -375,8 +377,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
                     <p className="text-sm font-medium text-foreground">
                       {t.name}
                       <span className="ml-2 text-xs font-normal text-muted-foreground">
-                        {t.fields.length} columns · {t.rows.length}
-                        {t.capped ? "+" : ""} rows
+                        {count(t.fields.length, "column")} · {t.capped ? `${t.rows.length}+ rows` : count(t.rows.length, "row")}
                       </span>
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -505,7 +506,7 @@ export function SaveKitDialog({ isOpen, onClose, initialAgentId, editKitKey }: S
                   <p className="text-xs text-muted-foreground">{built.manifest.tagline}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {built.manifest.tables.length} {built.manifest.tables.length === 1 ? "table" : "tables"} ·{" "}
-                    {built.manifest.tables.reduce((n, t) => n + t.records.length, 0)} example rows · 1 agent ·{" "}
+                    {count(built.manifest.tables.reduce((n, t) => n + t.records.length, 0), "example row")} · 1 agent ·{" "}
                     {built.manifest.workflows.length} {built.manifest.workflows.length === 1 ? "workflow" : "workflows"} ·{" "}
                     {(built.manifest.agents[0]?.bindings.length ?? 0) === 1 ? "1 connected variable" : `${built.manifest.agents[0]?.bindings.length ?? 0} connected variables`}
                   </p>

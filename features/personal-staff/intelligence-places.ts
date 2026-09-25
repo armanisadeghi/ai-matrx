@@ -22,10 +22,19 @@ export const PERSONAL_STAFF_PLACES: FeaturePlaces = {
       mandateKeys: [K.personal_staff__front_line],
       sources: [
         "features/personal-staff/components/StaffRoom.tsx",
+        "features/personal-staff/components/StaffHeader.tsx",
         "features/personal-staff/mandate.ts",
         "app/(core)/staff/page.tsx",
         "features/surfaces/manifests/staff.manifest.ts",
       ],
+    },
+    {
+      id: "escalation",
+      label: "Staff room",
+      trigger: "Your assistant hands a request it is unsure of to the escalation desk",
+      urlPattern: "/staff",
+      mandateKeys: [K.personal_staff__escalation],
+      sources: ["features/personal-staff/components/StaffHeader.tsx"],
     },
   ],
 };

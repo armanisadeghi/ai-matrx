@@ -156,7 +156,7 @@ export function useKitInstall(manifest: KitManifest) {
     setRunError(null);
     setActionError(null);
     try {
-      await removeInstall(kitRecordsClient(capturedOrg, userId), install);
+      await removeInstall(kitRecordsClient(capturedOrg, userId), install, dispatch);
       setInstall(null);
       setSteps(stepsFromInstall(manifest, null));
       return true;

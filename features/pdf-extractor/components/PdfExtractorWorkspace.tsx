@@ -32,6 +32,8 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -1117,6 +1119,11 @@ function AiCleanView({
           <Zap className="w-3 h-3 mr-1.5" />
           {hasError ? "Re-run Cleanup" : "Run AI Cleanup"}
         </Button>
+        <IntelligenceIndicator
+          feature="pdf"
+          mandateKeys={[MANDATE_KEYS.pdf__content_cleaner, MANDATE_KEYS.rag__pdf_page_cleaner]}
+          label="AI text cleanup"
+        />
         {hasError && (
           <Button
             size="sm"

@@ -22,7 +22,9 @@
 
 import { useState } from "react";
 import { ArrowRight, Check, Flag, Pencil, X } from "lucide-react";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -230,6 +232,15 @@ export function RoomHeader({
                 <Flag className="mr-1 h-3.5 w-3.5" aria-hidden />
                 Finish
               </Button>
+              <IntelligenceIndicator
+                feature="vision_interview"
+                mandateKeys={[
+                  MANDATE_KEYS.vision_interview__transcript_cleaner,
+                  MANDATE_KEYS.vision_interview__vision_author,
+                  MANDATE_KEYS.vision_interview__requirements_author,
+                ]}
+                label="What Finish writes: the clean transcript and the two documents"
+              />
             </span>
           ) : null
         }

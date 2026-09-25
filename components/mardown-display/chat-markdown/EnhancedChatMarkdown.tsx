@@ -14,6 +14,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { cn } from "@/styles/themes/utils";
 import { splitContentIntoBlocksV2 } from "../markdown-classification/processors/utils/content-splitter-v2";
+import { settledOneShotBlocks } from "./settle-stream-blocks";
 import { expandTextBlocksInList } from "../markdown-classification/processors/utils/expand-text-blocks";
 import { RenderBlock } from "./block-registry/BlockRenderer";
 import { renderBlockToContentBlock } from "./render-block-to-content-block";
@@ -740,6 +741,20 @@ export const EnhancedChatMarkdownInternal: React.FC<
   const { blocks, blockError } = useMemo(() => {
     if (isWaitingForContent) return { blocks: [], blockError: false };
 
+    // THE FINAL PASS (RC-B3 ruling, 2026-09-26): once the stream completes,
+    // the screen equals the one-shot reading — a late orphan reasoning closer
+    // is the one case where the live accumulator's blocks differ from it.
+    if (hasReduxRenderBlocks && reduxRenderBlocks) {
+      const settled = settledOneShotBlocks({
+        isStreamActive: !!isStreamActive,
+        blockIds: reduxRenderBlocks.map((rb) => rb.blockId),
+        content: currentContent,
+      });
+      if (settled) {
+        return { blocks: expandTextBlocksInList(settled), blockError: false };
+      }
+    }
+
     // Fast path: Redux already has client-generated render blocks from the
     // StreamBlockAccumulator. Convert to RenderBlock shape and skip the
     // expensive splitContentIntoBlocksV2 entirely.
@@ -823,6 +838,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
     }
   }, [
     currentContent,
+    isStreamActive,
     isWaitingForContent,
     useServerBlocks,
     serverProcessedBlocks,

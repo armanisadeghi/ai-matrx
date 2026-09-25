@@ -14,16 +14,28 @@
  * Contract: `common-docs/projects/data-kits/PLAN.md` § P1.
  */
 
-import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import { Loader2 } from "lucide-react";
 import {
   useFields,
   useRecords,
   useTable,
   useTables,
+  isEntityReferenceConfig,
   type Field,
 } from "@ai-matrx/records/react";
-import { fieldName, rowNameIn, tableName } from "@ai-matrx/records-ui";
+import {
+  fieldName,
+  keptByTheApp,
+  rowNameIn,
+  tableName,
+} from "@ai-matrx/records-ui";
 import { Input, Textarea } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
@@ -44,6 +56,7 @@ import {
   SHAPE_CHOICES,
   defaultTemplate,
   placeholdersFor,
+  titleFieldOf,
   type CustomDataShape,
 } from "./customDataBinding";
 import { CustomDataBindingPreview } from "./CustomDataBindingPreview";
@@ -71,9 +84,15 @@ export function CustomDataBindingPicker({
   const fields = useFields(tableId);
   const shape = binding.semantic_type;
   const needsRecord = shape !== "collection";
+  // Grows by a page at a time ("Load more") so EVERY record is reachable; the
+  // picker's type-ahead then narrows what has been read.
+  const [recordLimit, setRecordLimit] = useState(RECORD_PICKER_PAGE);
   const records = useRecords(needsRecord ? tableId : null, {
-    pageSize: RECORD_PICKER_PAGE,
+    pageSize: recordLimit,
   });
+  // Tables the app keeps for itself (choice lists, ledgers) are out of sight
+  // unless the author asks for them.
+  const [showAppTables, setShowAppTables] = useState(false);
   const templateRef = useRef<HTMLTextAreaElement | null>(null);
   const pendingCaretRef = useRef<number | null>(null);
 
@@ -195,17 +214,42 @@ export function CustomDataBindingPicker({
     });
   };
 
-  const tableOptions: CreatableOption[] = (tables.data ?? []).map((t) => ({
-    value: t.id,
-    label: tableName(t),
-    hint: t.label_plural ?? undefined,
-  }));
+  const allTables = tables.data ?? [];
+  const appKeptCount = allTables.filter((t) => keptByTheApp(t)).length;
+  const tableOptions: CreatableOption[] = allTables
+    .filter((t) => showAppTables || !keptByTheApp(t) || t.id === tableId)
+    .map((t) => ({
+      value: t.id,
+      label: tableName(t),
+      hint: keptByTheApp(t) ? "kept by the app" : (t.label_plural ?? undefined),
+    }));
 
+  // A record's name alone can repeat ("Dana Whitfield" three times), so each
+  // option also shows the row's next one or two filled columns.
+  const titleField = titleFieldOf(tableRow ?? null, fieldList);
+  const hintFields = fieldList
+    .filter(
+      (f) => f.id !== titleField?.id && !isEntityReferenceConfig(f.config),
+    )
+    .slice(0, 6);
   const recordOptions: CreatableOption[] = (records.data?.rows ?? []).map(
-    (row) => ({
-      value: row.id,
-      label: rowNameIn(tableRow ?? null, row),
-    }),
+    (row) => {
+      const hint = hintFields
+        .map((f) => row.document[f.key])
+        .filter(
+          (v): v is string | number =>
+            (typeof v === "string" && v.trim() !== "") || typeof v === "number",
+        )
+        .slice(0, 2)
+        .map((v) => String(v))
+        .join(" · ");
+      return {
+        value: row.id,
+        label: rowNameIn(tableRow ?? null, row),
+        hint: hint || undefined,
+        keywords: hint || undefined,
+      };
+    },
   );
 
   const storedTableMissing =
@@ -240,6 +284,19 @@ export function CustomDataBindingPicker({
             label: "Open Data to add or edit tables",
             href: "/data-v2",
           }}
+          footerActions={
+            appKeptCount > 0
+              ? [
+                  {
+                    label: showAppTables
+                      ? "Hide the tables the app keeps"
+                      : `Show ${appKeptCount} ${appKeptCount === 1 ? "table" : "tables"} the app keeps`,
+                    note: "Choice lists and other tables the app manages for itself.",
+                    onSelect: () => setShowAppTables((v) => !v),
+                  },
+                ]
+              : undefined
+          }
           disabled={readonly}
           loading={tables.loading}
           ariaLabel="Table"
@@ -257,7 +314,7 @@ export function CustomDataBindingPicker({
           </p>
         )}
         {storedTableMissing && (
-          <p className="text-[11px] text-amber-700 dark:text-amber-300">
+          <p className="text-[11px] text-warning">
             The table this variable is bound to is not in the organization you
             have selected — it may live in another organization, or it was
             removed. Switch organization to edit it, or pick a table here to
@@ -318,14 +375,26 @@ export function CustomDataBindingPicker({
                   label: "Open this table to add records",
                   href: `/data-v2/${tableId}`,
                 }}
+                footerActions={
+                  recordsCapped
+                    ? [
+                        {
+                          label: `Load ${Math.min(RECORD_PICKER_PAGE, (recordTotal ?? 0) - recordOptions.length)} more records`,
+                          note: `Showing ${recordOptions.length} of ${recordTotal}.`,
+                          onSelect: () =>
+                            setRecordLimit((n) => n + RECORD_PICKER_PAGE),
+                        },
+                      ]
+                    : undefined
+                }
                 disabled={readonly}
                 loading={records.loading}
                 ariaLabel="Record"
               />
               {recordsCapped && (
                 <p className="text-[11px] text-muted-foreground">
-                  Showing the first {recordOptions.length} of {recordTotal}{" "}
-                  records.
+                  Showing {recordOptions.length} of {recordTotal} records —
+                  &ldquo;Load more&rdquo; in the list reaches the rest.
                 </p>
               )}
               {records.error && (

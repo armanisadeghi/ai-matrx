@@ -37,6 +37,8 @@ import { RunStartForm } from "../RunStartForm";
 import { RunStage } from "./RunStage";
 import { MasterworkRulesProvider } from "@/features/masterwork/rules-context/MasterworkRulesContext";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 interface LoadedWorkflow {
   id: string;
@@ -193,6 +195,11 @@ export function WorkflowRunPage({
       }
       right={
         <div className="flex items-center">
+          <IntelligenceIndicator
+            feature="workflow"
+            mandateKeys={[MANDATE_KEYS.workflow__step_intelligence]}
+            label="AI steps of this workflow"
+          />
           {runId ? (
             <TapTargetButton
               icon={<RotateCcw />}
