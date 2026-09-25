@@ -18,7 +18,7 @@
  */
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { Loader2, Maximize2, Minimize2, X } from "lucide-react";
+import { Loader2, Maximize2, Minimize2 } from "lucide-react";
 import { useIsMobile } from "@ai-matrx/design-system";
 import RichEditor from "@/components/rich-editor/RichEditor";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -124,6 +124,8 @@ function LoadedAnswerEditor({
       // The editor's slash / {{ menus mount as Tiptap ReactRenderers on <body>.
       !!document.querySelector('.react-renderer > [role="listbox"]') ||
       !!target?.closest(".ProseMirror .cm-editor") ||
+      // Focus mode hides the toolbar; the editor's own Escape leaves it.
+      !shellRef.current?.querySelector('[role="tablist"][aria-label="View"]') ||
       target instanceof HTMLInputElement ||
       target instanceof HTMLTextAreaElement;
   };
@@ -158,6 +160,12 @@ function LoadedAnswerEditor({
         sourceFeature="chat"
         contentSource={{ type: "chat-message", conversationId, messageId }}
         className={expanded ? "h-full" : "h-auto min-h-0"}
+        onCancel={cancel}
+        cancelLabel={dirty ? "Cancel" : "Close"}
+        // A chat column is narrow: the outline stays one click away.
+        defaultOutlineOpen={false}
+        // Save with nothing changed simply returns to the answer.
+        onNothingToSave={close}
         toolbarExtras={
           <>
             <button
@@ -168,15 +176,6 @@ function LoadedAnswerEditor({
               aria-label={expanded ? "Back into the conversation" : "Expand to full screen"}
             >
               {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            </button>
-            <button
-              type="button"
-              onClick={cancel}
-              className="flex h-8 items-center gap-1 rounded-md px-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-              title="Leave without saving (Esc)"
-            >
-              <X className="h-3.5 w-3.5" />
-              {dirty ? "Cancel" : "Close"}
             </button>
           </>
         }
