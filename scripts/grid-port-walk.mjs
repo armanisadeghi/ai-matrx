@@ -1034,7 +1034,7 @@ async function main() {
         await hp.waitForTimeout(3000);
         const url = hp.url();
         const formText = await hp.evaluate(() => document.body.innerText);
-        pass("rowchange-form", url.includes(`entityType=custom_record%3A${TABLES.harborCalls}`) && /The table you opened this from/.test(formText) && /A row is changed/.test(formText),
+        pass("rowchange-form", url.includes(`entityType=record%3A${TABLES.harborCalls}`) && /The table you opened this from/.test(formText) && /A row is changed/.test(formText),
           "the schedule form opens on this table with the store's change words");
         await hp.locator("#title").fill("Draft the invoice when a service call is complete");
         await hp.getByRole("checkbox").filter({ has: hp.locator("xpath=..") }).first().waitFor().catch(() => {});
@@ -1059,7 +1059,7 @@ async function main() {
         await hp.waitForTimeout(4000);
         const trig = posted?.trigger ?? posted?.triggers?.[0] ?? null;
         const cfg = trig?.config ?? trig ?? {};
-        pass("rowchange-trigger-built", cfg.entity_type === `custom_record:${TABLES.harborCalls}` && cfg.table_id === TABLES.harborCalls && JSON.stringify(cfg.actions) === '["record.updated"]' && JSON.stringify(cfg.changed_fields) === '["status"]',
+        pass("rowchange-trigger-built", cfg.entity_type === `record:${TABLES.harborCalls}` && cfg.table_id === TABLES.harborCalls && JSON.stringify(cfg.actions) === '["record.updated"]' && JSON.stringify(cfg.changed_fields) === '["status"]',
           `the form sends ${JSON.stringify(cfg).slice(0, 220)}`);
         if (process.env.GRID_PORT_SCHEDULE_OUT) writeFileSync(process.env.GRID_PORT_SCHEDULE_OUT, JSON.stringify(posted, null, 2));
         await hp.screenshot({ path: `${OUT}/gridport-${SURFACE === "sheet" ? "sheet-" : ""}${SEAT}-15-row-change-schedule.png` });

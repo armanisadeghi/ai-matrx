@@ -4,6 +4,7 @@
 // in the list view and the trigger card on the detail view.
 
 import cronstrue from "cronstrue";
+import { isRecordSourceKey } from "./recordSourceKey";
 import { format, formatDistanceToNowStrict } from "date-fns";
 import type {
   ContextMatchConfig,
@@ -87,8 +88,8 @@ export function humanizeTrigger(
     case "event": {
       const c = config as Partial<EventConfig>;
       // Both stores read the same: an older row (`user_table_row`, `row.*`) and a record-store
-      // record (`custom_record:<table>`, `record.*`, GRIDPRIM G8).
-      if (c.entity_type === "user_table_row" || c.entity_type?.startsWith("custom_record:")) {
+      // record (`record:<table>` — or an older trigger's `custom_record:<table>` — `record.*`, G8).
+      if (c.entity_type === "user_table_row" || isRecordSourceKey(c.entity_type)) {
         const what =
           !c.actions || c.actions.length === 0
             ? "changes"

@@ -117,7 +117,7 @@ export const WEBHOOK_EVENT_CATALOGUE: ReadonlyArray<{
 /**
  * THE EVENTS OF ONE RECORD-STORE TABLE (lane INTEG-CLIENTS, CUTOVER-PLAN F19; GRID-PRIMITIVES G4).
  * A record-store table's changes reach a webhook only when that webhook names the table
- * (`resource_types` = `custom_record:<table id>`), which `custom.table_webhook_declare` does —
+ * (`resource_types` = `record:<table id>`, lane SOURCE-KEY), which `custom.table_webhook_declare` does —
  * admin on the table, https only, the signing secret returned once. These are that door's
  * words, exactly; an empty choice hears every one of them.
  */

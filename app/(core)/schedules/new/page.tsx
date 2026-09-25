@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { ScheduleForm } from "@/features/scheduling/components/form/ScheduleForm";
+import { recordSourceKey, recordSourceTable } from "@/features/scheduling/utils/recordSourceKey";
 
 // useSearchParams must sit under a Suspense boundary (repo precedent:
 // education/practice-tests/new, crm/chasebox) or the route degrades to a
@@ -21,15 +22,16 @@ function NewScheduleContent() {
   // A data table's "when a row changes, run…" door: `?trigger=event&tableId=<uuid>`.
   const trigger = searchParams.get("trigger");
   const tableId = searchParams.get("tableId");
-  // A record-store table's changes are `custom_record:<table id>` events (GRIDPRIM G8); the
-  // grid sends that word only when the store said such a schedule can fire.
+  // A record-store table's changes are `record:<table id>` events (GRIDPRIM G8, lane SOURCE-KEY);
+  // the grid sends that word only when the store said such a schedule can fire. A link made by an
+  // older client says `custom_record:<table id>`; it names the same table and is saved as the new key.
   const entityType = searchParams.get("entityType");
   const initialTrigger =
     trigger === "event"
       ? {
           type: "event" as const,
           entity_type:
-            entityType && tableId && entityType === `custom_record:${tableId}` ? entityType : "user_table_row",
+            tableId && recordSourceTable(entityType) === tableId ? recordSourceKey(tableId) : "user_table_row",
           ...(tableId ? { table_id: tableId } : {}),
         }
       : null;

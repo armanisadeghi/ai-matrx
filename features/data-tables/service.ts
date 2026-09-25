@@ -32,7 +32,7 @@ import { rewriteFormulaReferences } from "./formulas";
 import * as recordStore from "./data-source/record-store";
 import { placeTableInRecordStore, recordStoreHomeOf } from "./data-source/table-home";
 import { recordChangeActions } from "./data-source/record-store-grid";
-import { recordChangeTrigger } from "@ai-matrx/records";
+import { toRecordSourceKey } from "@/features/scheduling/utils/recordSourceKey";
 
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { parseTableMetadata } from "./types";
@@ -1508,6 +1508,8 @@ export async function rowChangeScheduleFor(args: {
   if (!home) return { entityType: "user_table_row", actions: [] };
   const answer = await recordChangeActions(home, args.tableId);
   if (!answer.ok) return null;
-  return { entityType: recordChangeTrigger(args.tableId).entity_type, actions: answer.data.actions };
+  // The STORE's word for this table's changes (`record:<table id>`), never the installed
+  // package's: a client on an older @ai-matrx/records must not save a key the store refuses.
+  return { entityType: toRecordSourceKey(answer.data.entity_type), actions: answer.data.actions };
 }
 

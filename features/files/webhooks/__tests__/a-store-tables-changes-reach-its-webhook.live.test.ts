@@ -96,6 +96,6 @@ describeLive("a record-store table's changes reach the webhook declared for it",
       .gte("occurred_at", since);
     if (changed.error) throw new Error(changed.error.message);
     expect(logged.error).toBeNull();
-    expect((logged.data ?? []).some((r) => r.action === "record.updated" && r.entity_type === `custom_record:${SERVICE_CALLS}`)).toBe(true);
+    expect((logged.data ?? []).some((r) => r.action === "record.updated" && r.entity_type === `record:${SERVICE_CALLS}`)).toBe(true);
   });
 });

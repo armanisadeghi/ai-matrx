@@ -650,6 +650,8 @@
     "check:door-names-resolve:self-test": "tsx scripts/check-door-names-resolve.ts --self-test",
     "check:assist-emit-door": "tsx scripts/check-assist-emit-door.ts",
     "check:assist-emit-door:self-test": "tsx scripts/check-assist-emit-door.ts --self-test",
+    "check:no-custom-record-source-key": "tsx scripts/check-no-custom-record-source-key.ts",
+    "check:no-custom-record-source-key:self-test": "tsx scripts/check-no-custom-record-source-key.ts --self-test",
     "check:proxy-auth-hot-path": "tsx scripts/check-proxy-auth-hot-path.ts",
     "check:proxy-auth-hot-path:self-test": "tsx scripts/check-proxy-auth-hot-path.ts --self-test",
     "check:one-reference-builder": "tsx scripts/check-one-reference-builder.ts",

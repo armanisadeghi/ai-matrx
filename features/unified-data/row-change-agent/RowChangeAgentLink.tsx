@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { Zap } from "lucide-react";
 
 import { recordChangeActions } from "@/features/data-tables/data-source/record-store-grid";
+import { toRecordSourceKey } from "@/features/scheduling/utils/recordSourceKey";
 
 type Answer =
   | { state: "asking" }
@@ -59,7 +60,7 @@ export function useRowChangeAgentOffer({
     let live = true;
     void recordChangeActions({ store: "record", organizationId, userId }, tableId).then((door) => {
       if (!live) return;
-      if (door.ok) setAnswer({ state: "offered", entityType: door.data.entity_type });
+      if (door.ok) setAnswer({ state: "offered", entityType: toRecordSourceKey(door.data.entity_type) });
       else if (door.absent) setAnswer({ state: "absent" });
       else setAnswer({ state: "refused", why: door.error.message });
     });

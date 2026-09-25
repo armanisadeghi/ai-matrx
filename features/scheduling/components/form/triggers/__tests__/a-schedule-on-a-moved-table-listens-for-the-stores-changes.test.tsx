@@ -41,7 +41,7 @@ jest.mock("@/features/data-tables/service", () => ({
   }),
   rowChangeScheduleFor: async ({ tableId }: { tableId: string }) =>
     tableId === SERVICE_CALLS
-      ? { entityType: `custom_record:${SERVICE_CALLS}`, actions: [] }
+      ? { entityType: `record:${SERVICE_CALLS}`, actions: [] }
       : { entityType: "user_table_row", actions: [] },
 }));
 jest.mock("@/features/data-tables/data-source/locate-table", () => ({
@@ -94,7 +94,7 @@ it("a schedule made on the table before its move is re-keyed to the store's chan
   });
   await settle();
   const last = saved.at(-1);
-  expect(last?.entity_type).toBe(`custom_record:${SERVICE_CALLS}`);
+  expect(last?.entity_type).toBe(`record:${SERVICE_CALLS}`);
   expect(last?.table_id).toBe(SERVICE_CALLS);
   // `row.updated` is the older store's word; it never fires on a store table, so it is dropped.
   expect(last?.actions).toBeUndefined();
@@ -108,4 +108,27 @@ it("an older table keeps the older word", async () => {
   });
   await settle();
   expect(saved.filter((v) => v.entity_type !== "user_table_row")).toEqual([]);
+});
+
+it("a trigger saved by an older client under custom_record:<table> is read as the store table and saved as record:<table> (lane SOURCE-KEY)", async () => {
+  const saved: EventConfig[] = [];
+  await act(async () => {
+    root.render(
+      <EventForm
+        value={{ entity_type: `custom_record:${SERVICE_CALLS}`, table_id: SERVICE_CALLS, actions: ["record.updated"] }}
+        onChange={(v) => saved.push(v)}
+      />,
+    );
+  });
+  await settle();
+  // The store's words are offered (it IS a store table), and "A row is changed" stays ticked.
+  expect(host.textContent).toContain("A row is changed");
+  expect(host.textContent).not.toContain("A row is deleted");
+  act(() => {
+    (Array.from(host.querySelectorAll("label")).find((l) => l.textContent === "A row is added")!.querySelector("button") as HTMLButtonElement).click();
+  });
+  const last = saved.at(-1);
+  expect(last?.entity_type).toBe(`record:${SERVICE_CALLS}`);
+  expect(last?.actions).toEqual(["record.updated", "record.created"]);
+  expect(saved.some((v) => v.entity_type.startsWith("custom_record:"))).toBe(false);
 });
