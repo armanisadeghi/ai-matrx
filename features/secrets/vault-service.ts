@@ -643,12 +643,24 @@ async function vaultFetch<T>(
     if (frozenImport) {
       if ([408, 429, 500, 502, 503, 504].includes(resp.status))
         throw new VaultImportTransportError("retryable");
-      if (resp.status === 401 || resp.status === 403) {
+      if (resp.status === 401) {
         throw new VaultImportTransportError("context_changed");
       }
-      if (resp.status === 409)
+      let receiptCode: unknown = null;
+      try {
+        const body: unknown = await resp.json();
+        receiptCode =
+          body && typeof body === "object" && "error" in body
+            ? (body.error as { code?: unknown } | null)?.code
+            : null;
+      } catch {
+        // An unreadable error body cannot prove a receipt-specific condition.
+      }
+      if (resp.status === 403 && receiptCode === "idempotency_context_denied")
+        throw new VaultImportTransportError("context_changed");
+      if (resp.status === 409 && receiptCode === "idempotency_key_conflict")
         throw new VaultImportTransportError("idempotency_key_conflict");
-      if (resp.status === 410)
+      if (resp.status === 410 && receiptCode === "idempotency_result_removed")
         throw new VaultImportTransportError("idempotency_result_removed");
       throw new VaultImportTransportError("request_rejected");
     }

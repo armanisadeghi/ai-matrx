@@ -81,6 +81,13 @@ function errorResponse(status: number): Response {
   } as Response;
 }
 
+function receiptErrorResponse(status: number, code: string): Response {
+  return {
+    ...errorResponse(status),
+    json: async () => ({ error: { code, request_id: "request-1" } }),
+  } as Response;
+}
+
 describe("Vault and Authenticator organization transport", () => {
   const fetchMock = jest.fn<Promise<Response>, Parameters<typeof fetch>>();
 
@@ -342,7 +349,7 @@ describe("Vault and Authenticator organization transport", () => {
   ])(
     "frozen import response %i preserves its honest terminal recovery reason",
     async (status, code, message) => {
-      fetchMock.mockResolvedValueOnce(errorResponse(status));
+      fetchMock.mockResolvedValueOnce(receiptErrorResponse(status, code));
       await expect(
         createVaultItem(
           { display_name: "Imported", source: "system_import" },
@@ -358,6 +365,25 @@ describe("Vault and Authenticator organization transport", () => {
     },
   );
 
+  test.each([409, 410])(
+    "frozen import response %i requires a structured receipt code",
+    async (status) => {
+      fetchMock.mockResolvedValueOnce(errorResponse(status));
+      await expect(
+        createVaultItem(
+          { display_name: "Imported", source: "system_import" },
+          {
+            idempotencyKey: "00000000-0000-4000-8000-000000000001",
+            expectedActor: {
+              userId: "user-1",
+              organizationId: ORGANIZATION_ID,
+            },
+          },
+        ),
+      ).rejects.toMatchObject({ code: "request_rejected" });
+    },
+  );
+
   test("refuses incomplete frozen-import options before network I/O", async () => {
     const missingKey = {
       expectedActor: { userId: "user-1", organizationId: ORGANIZATION_ID },
@@ -368,6 +394,17 @@ describe("Vault and Authenticator organization transport", () => {
       missingKey,
     );
     await expect(missingKeyCall).rejects.toMatchObject({
+      code: "request_rejected",
+    });
+    const missingActor = {
+      idempotencyKey: "00000000-0000-4000-8000-000000000001",
+    };
+    // @ts-expect-error an idempotency key always carries its frozen actor.
+    const missingActorCall = createVaultItem(
+      { display_name: "Imported", source: "system_import" },
+      missingActor,
+    );
+    await expect(missingActorCall).rejects.toMatchObject({
       code: "request_rejected",
     });
     await expect(
@@ -383,6 +420,21 @@ describe("Vault and Authenticator organization transport", () => {
       ),
     ).rejects.toMatchObject({ code: "request_rejected" });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("an ordinary create preserves an unreadable successful response as a decode failure", async () => {
+    const decodeFailure = new SyntaxError("truncated response");
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => {
+        throw decodeFailure;
+      },
+    } as Response);
+
+    await expect(
+      createVaultItem({ display_name: "Created", source: "manual" }),
+    ).rejects.toBe(decodeFailure);
   });
 
   test.each([408, 429, 500, 502, 503, 504])(

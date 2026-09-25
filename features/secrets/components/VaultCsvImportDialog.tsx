@@ -636,6 +636,14 @@ export function VaultCsvImportDialog({
               setError(cause.message);
               return "retryable" as const;
             }
+            if (
+              cause instanceof VaultImportTransportError &&
+              (cause.code === "idempotency_key_conflict" ||
+                cause.code === "idempotency_result_removed")
+            ) {
+              setError(cause.message);
+              return "definitive" as const;
+            }
             setError(
               "This row was rejected. Review the import before creating a new session.",
             );

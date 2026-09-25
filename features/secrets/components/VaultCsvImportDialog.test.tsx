@@ -223,7 +223,13 @@ jest.mock("../vault-service", () => ({
         | "request_rejected"
         | "retryable",
     ) {
-      super(code);
+      super(
+        code === "idempotency_key_conflict"
+          ? "This import retry key conflicts with a different request."
+          : code === "idempotency_result_removed"
+            ? "The import result is no longer available to confirm."
+            : code,
+      );
       this.code = code;
     }
   },
@@ -835,6 +841,11 @@ describe("VaultCsvImportDialog", () => {
       );
       expect(document.body.textContent).not.toContain(
         "Your account or request organization changed",
+      );
+      expect(document.body.textContent).toContain(
+        code === "idempotency_key_conflict"
+          ? "This import retry key conflicts with a different request."
+          : "The import result is no longer available to confirm.",
       );
     },
   );
