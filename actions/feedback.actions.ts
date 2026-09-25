@@ -17,6 +17,7 @@ import {
   CreateAnnouncementInput,
   UpdateAnnouncementInput,
   SystemAnnouncement,
+  FeedbackType,
 } from "@/types/feedback.types";
 import {
   mapUserFeedbackRow,
