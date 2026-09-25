@@ -30,7 +30,18 @@ import { isSingleDollarMath } from "@ai-matrx/content-ir/source";
 export const REMARK_MATH_OPTIONS = { singleDollarTextMath: false } as const;
 
 /** rehype-katex options for EVERY math-capable renderer. */
-export const REHYPE_KATEX_OPTIONS = { strict: "ignore" } as const;
+export const REHYPE_KATEX_OPTIONS = {
+  strict: "ignore",
+  // SAFETY LIMITS — math is rendered from anyone's text (shared notes,
+  // public pages), so it must not be able to inflate or script the page
+  // (verifier F3, 2026-09-25; guard __tests__/katex-limits.test.tsx):
+  /** No command (`\href`, `\url`, `\includegraphics`, `\htmlClass`…) is trusted. */
+  trust: false,
+  /** Largest size any user-given length may take, in em (`\rule{1000em}` → 10em). */
+  maxSize: 10,
+  /** Macro expansions per formula before KaTeX stops (a `\def` loop ends here). */
+  maxExpand: 500,
+} as const;
 
 type Segment = { text: string; protected: boolean };
 
