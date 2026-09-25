@@ -31,6 +31,8 @@ interface ContextItemBindingEditorProps {
   binding: VariableBinding | undefined;
   onChange: (binding: VariableBinding | undefined) => void;
   readonly?: boolean;
+  /** The variable being bound — named in the custom-data preview. */
+  variableName?: string;
 }
 
 const ON_MISSING_OPTIONS: {
@@ -67,6 +69,7 @@ export function ContextItemBindingEditor({
   binding,
   onChange,
   readonly,
+  variableName,
 }: ContextItemBindingEditorProps) {
   // Org and source are picker-only concerns (the binding stores the item's
   // id/type/key). A stored binding with no scopeTypeId IS a System binding.
@@ -152,6 +155,7 @@ export function ContextItemBindingEditor({
                     binding={customData}
                     onChange={onChange}
                     readonly={readonly}
+                    variableName={variableName}
                   />
                 </CustomDataRecordsScope>
               ) : null,

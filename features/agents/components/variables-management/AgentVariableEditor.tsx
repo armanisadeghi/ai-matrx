@@ -252,7 +252,9 @@ export function AgentVariableEditor({
       return;
     }
     if (!organizationId || organizationState !== "ready") {
-      toast.error("Choose an organization before creating a picklist. A list has to live in one.");
+      toast.error(
+        "Choose an organization before creating a picklist. A list has to live in one.",
+      );
       return;
     }
     if (staticOptions.length === 0) return;
@@ -404,6 +406,7 @@ export function AgentVariableEditor({
         binding={variable.binding}
         onChange={handleBindingChange}
         readonly={readonly}
+        variableName={variable.name}
       />
 
       {/* ── Component configuration ───────────────────────────────────────
@@ -411,9 +414,9 @@ export function AgentVariableEditor({
           local configurator is replaced by an inheritance note. */}
       {isDataBound ? (
         <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
-          <span className="font-medium">Filled from your data</span> every
-          time the agent runs. The person running it sees the value locked and
-          cannot type over it, so no input type is needed here.
+          <span className="font-medium">Filled from your data</span> every time
+          the agent runs. The person running it sees the value locked and cannot
+          type over it, so no input type is needed here.
         </div>
       ) : isBound ? (
         <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">

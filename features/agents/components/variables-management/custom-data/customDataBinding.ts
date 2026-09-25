@@ -74,6 +74,7 @@ export function placeholdersFor(field: Field): TemplatePlaceholder[] {
     return [
       { token: `{${field.key}.name}`, label: `${label} · name` },
       { token: `{${field.key}.id}`, label: `${label} · id` },
+      { token: `{${field.key}.token}`, label: `${label} · token` },
     ];
   }
   return [{ token: `{${field.key}}`, label }];

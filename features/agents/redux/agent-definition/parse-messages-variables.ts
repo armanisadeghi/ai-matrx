@@ -393,15 +393,22 @@ const MERGE_FIELD_BINDING_KNOWN_KEYS = [
   "override_policy",
 ] as const;
 
-function parseStringRecord(
+function parseScalarRecord(
   value: unknown,
   path: string,
-): Record<string, string> | undefined {
+): Record<string, string | number | boolean | null> | undefined {
   if (value === undefined || value === null) return undefined;
-  if (!isRecord(value)) fail(path, "must be an object of string values");
-  const out: Record<string, string> = {};
+  if (!isRecord(value)) fail(path, "must be an object of scalar values");
+  const out: Record<string, string | number | boolean | null> = {};
   for (const [key, entry] of Object.entries(value)) {
-    if (typeof entry !== "string") fail(`${path}.${key}`, "must be a string");
+    if (
+      entry !== null &&
+      typeof entry !== "string" &&
+      typeof entry !== "number" &&
+      typeof entry !== "boolean"
+    ) {
+      fail(`${path}.${key}`, "must be a string, number, boolean, or null");
+    }
     out[key] = entry;
   }
   return out;
@@ -455,7 +462,7 @@ function parseMergeFieldBinding(
   if (recordId) parsed.record_id = recordId;
   const fieldKey = parseOptionalString(value.field_key, `${path}.field_key`);
   if (fieldKey) parsed.field_key = fieldKey;
-  const match = parseStringRecord(value.match, `${path}.match`);
+  const match = parseScalarRecord(value.match, `${path}.match`);
   if (match) parsed.match = match;
   if (value.limit !== undefined && value.limit !== null) {
     if (

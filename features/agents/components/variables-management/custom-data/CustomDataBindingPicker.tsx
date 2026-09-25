@@ -55,12 +55,15 @@ interface CustomDataBindingPickerProps {
   binding: CustomDataBinding;
   onChange: (binding: CustomDataBinding) => void;
   readonly?: boolean;
+  /** The bound variable's name — used in the preview's sentences and trace. */
+  variableName?: string;
 }
 
 export function CustomDataBindingPicker({
   binding,
   onChange,
   readonly,
+  variableName,
 }: CustomDataBindingPickerProps) {
   const tables = useTables();
   const tableId = binding.table_id || null;
@@ -430,7 +433,7 @@ export function CustomDataBindingPicker({
         </Select>
       </div>
 
-      <CustomDataBindingPreview binding={binding} />
+      <CustomDataBindingPreview binding={binding} variableName={variableName} />
     </div>
   );
 }

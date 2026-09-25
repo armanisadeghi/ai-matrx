@@ -27,7 +27,13 @@ type PreviewState =
  * "What the agent will see" — the server's own resolution of this binding.
  * Until the server route is live it says so calmly; it never invents text.
  */
-export function CustomDataBindingPreview({ binding }: { binding: CustomDataBinding }) {
+export function CustomDataBindingPreview({
+  binding,
+  variableName,
+}: {
+  binding: CustomDataBinding;
+  variableName?: string;
+}) {
   const organizationId = useCustomDataOrganizationId();
   const complete = isCompleteBinding(binding);
   const key = JSON.stringify(binding);
@@ -41,7 +47,10 @@ export function CustomDataBindingPreview({ binding }: { binding: CustomDataBindi
     const controller = new AbortController();
     const timer = setTimeout(() => {
       setResult({ key, state: { status: "loading" } });
-      previewVariableBinding(organizationId, binding, controller.signal)
+      previewVariableBinding(organizationId, binding, {
+        variableName,
+        signal: controller.signal,
+      })
         .then((state) => setResult({ key, state }))
         .catch(() => {
           // Aborted — a newer edit superseded this request.
@@ -51,7 +60,7 @@ export function CustomDataBindingPreview({ binding }: { binding: CustomDataBindi
       clearTimeout(timer);
       controller.abort();
     };
-  }, [key, complete, organizationId, binding]);
+  }, [key, complete, organizationId, binding, variableName]);
 
   const state: PreviewState = !complete
     ? { status: "incomplete" }
@@ -85,16 +94,35 @@ export function CustomDataBindingPreview({ binding }: { binding: CustomDataBindi
         <p className="text-[11px] text-destructive">{state.message}</p>
       ) : (
         <>
+          {!state.present && (
+            <p className="text-[11px] text-amber-700 dark:text-amber-300">
+              No data right now
+              {state.absentReason ? ` — ${state.absentReason}` : ""}. This is
+              what the agent is told instead:
+            </p>
+          )}
           <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/50 p-2 font-mono text-[11px] text-foreground">
-            {state.text || "(nothing — the agent is told there is no data)"}
+            {state.text}
           </pre>
-          {(state.rowCount !== null || state.truncated) && (
+          {state.present && state.rowCount !== null && (
             <p className="text-[11px] text-muted-foreground">
-              {state.rowCount !== null &&
-                `${state.rowCount} ${state.rowCount === 1 ? "row" : "rows"}`}
+              {state.rowCount} {state.rowCount === 1 ? "row" : "rows"}
+              {state.totalRows !== null && state.totalRows > state.rowCount
+                ? ` of ${state.totalRows}`
+                : ""}
               {state.truncated && " · cut short at your row limit"}
             </p>
           )}
+          {state.withheld.length > 0 && (
+            <p className="text-[11px] text-muted-foreground">
+              Hidden from you, so not shown: {state.withheld.join(", ")}
+            </p>
+          )}
+          {state.notes.map((note) => (
+            <p key={note} className="text-[11px] text-muted-foreground">
+              {note}
+            </p>
+          ))}
         </>
       )}
     </div>

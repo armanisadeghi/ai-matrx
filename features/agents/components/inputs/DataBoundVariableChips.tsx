@@ -84,7 +84,7 @@ function DataBoundChip({
             is filled from your data every time the agent runs, so it is locked
             here.
           </p>
-          <CustomDataBindingPreview binding={binding} />
+          <CustomDataBindingPreview binding={binding} variableName={name} />
         </div>
       </PopoverContent>
     </Popover>

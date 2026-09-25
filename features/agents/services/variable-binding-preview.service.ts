@@ -1,12 +1,14 @@
 /**
  * "What the agent will see" for a custom-data variable binding.
  *
- * aidream `POST /agents/variable-bindings/preview` `{ organization_id, binding }`
- * → `{ text, row_count, truncated, trace }` (data-kits PLAN § P1, DYN-24). The
+ * aidream `POST /agents/variable-bindings/preview`
+ * `{ organization_id, binding, variable_name? }` → `{ text, present, row_count,
+ * total_rows, truncated, override_policy, absent_reason, notes, withheld, trace }`
+ * (aidream `api/routers/agent_variable_bindings.py`; data-kits PLAN § P1). The
  * server resolves the binding exactly as a run would, under the caller's own
  * principal, so the editor shows the real text — never a client-side imitation.
  *
- * CONTRACT NOTE: the route is being built in aidream right now and is not yet in
+ * CONTRACT NOTE: the route is on aidream main but not yet in this repo's
  * `types/python-generated/api-types.ts`, so `apiPost` cannot name it. Until the
  * next `pnpm sync-types` carries it, this calls the canonical raw transport and
  * VALIDATES the response at ingress (no asserted type). When the route lands in
@@ -24,8 +26,16 @@ export type VariableBindingPreview =
   | {
       state: "ready";
       text: string;
+      /** False when `text` is a named absence rather than data. */
+      present: boolean;
       rowCount: number | null;
+      totalRows: number | null;
       truncated: boolean;
+      absentReason: string | null;
+      /** Cap, template and freshness notes, shown as the server words them. */
+      notes: string[];
+      /** Field keys masked for this person — named, never shown. */
+      withheld: string[];
     }
   | { state: "unavailable" }
   | { state: "error"; message: string };
@@ -34,15 +44,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function stringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((v): v is string => typeof v === "string")
+    : [];
+}
+
 export async function previewVariableBinding(
   organizationId: string,
   binding: CustomDataBinding,
-  signal?: AbortSignal,
+  options: { variableName?: string; signal?: AbortSignal } = {},
 ): Promise<VariableBindingPreview> {
+  const { variableName, signal } = options;
   try {
     const { data } = await postJson<unknown>(
       "/agents/variable-bindings/preview",
-      { organization_id: organizationId, binding },
+      {
+        organization_id: organizationId,
+        binding,
+        ...(variableName ? { variable_name: variableName } : {}),
+      },
       { signal, captureErrors: false },
     );
     if (!isRecord(data) || typeof data.text !== "string") {
@@ -55,8 +76,14 @@ export async function previewVariableBinding(
     return {
       state: "ready",
       text: data.text,
+      present: data.present !== false,
       rowCount: typeof data.row_count === "number" ? data.row_count : null,
+      totalRows: typeof data.total_rows === "number" ? data.total_rows : null,
       truncated: data.truncated === true,
+      absentReason:
+        typeof data.absent_reason === "string" ? data.absent_reason : null,
+      notes: stringList(data.notes),
+      withheld: stringList(data.withheld),
     };
   } catch (err) {
     if (

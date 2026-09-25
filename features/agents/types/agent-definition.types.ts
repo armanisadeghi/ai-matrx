@@ -238,7 +238,7 @@ export interface CustomDataBinding {
   record_id?: string;
   field_key?: string;
   /** Optional equality filter for a whole-table read, keyed by field key. */
-  match?: Record<string, string>;
+  match?: Record<string, string | number | boolean | null>;
   /** Row cap for a whole-table read; truncation is announced server-side. */
   limit?: number;
   /** `{field_key}` / `{field.name}` / `{field.id}` placeholders; absent for `value`. */
