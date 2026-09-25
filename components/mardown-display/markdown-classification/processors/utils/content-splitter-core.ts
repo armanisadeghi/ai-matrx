@@ -54,6 +54,7 @@ import {
   classifyInnerFenceLine,
   fenceNestsInnerFences,
 } from "@ai-matrx/content-ir/source";
+import { indexOutsideInlineCode } from "./inline-code-span";
 import {
   findBalancedXmlClose,
   initialXmlBalance,
@@ -686,7 +687,8 @@ function detectMidLineAttributeXml(line: string): {
 } | null {
   for (const type of ATTRIBUTE_XML_BLOCKS) {
     const prefix = `<${type}`;
-    const idx = line.indexOf(prefix);
+    // A tag MENTIONED in inline code is prose, never an opener (RC-B3r).
+    const idx = indexOutsideInlineCode(line, prefix);
     if (idx === -1) continue;
 
     // Must NOT be at the very start of the trimmed line (that's handled by detectAttributeXmlBlock)
@@ -1053,6 +1055,9 @@ export function startUnrecognizedXmlContainer(
   // Mirrored in aidream block_detector.py `is_page_break_line`.
   if (isPageBreakLine(line)) return null;
   const firstTrimmed = line.trimStart();
+  // Only a line that STARTS with `<` can open an element: `description: >-`
+  // (YAML) and `cat > file <<'EOF'` (shell) are not tags (RC-B3r).
+  if (!firstTrimmed.startsWith("<")) return null;
   const openingTag = readXmlTag(firstTrimmed, 0);
   if (!openingTag || openingTag.isClosing) return null;
   const rootTag = openingTag.tagName;
@@ -1126,6 +1131,11 @@ export function isCompleteUnrecognizedXmlContainer(source: string): boolean {
  * already have consumed through this closer — reaching the text path with a
  * closer on the line proves it's orphan.
  */
+const THINKING_OPENERS: Record<"thinking" | "reasoning", readonly string[]> = {
+  thinking: ["<thinking>", "<think>"],
+  reasoning: ["<reasoning>"],
+};
+
 function detectOrphanThinkingClose(trimmedLine: string): {
   type: "thinking" | "reasoning";
   /** Text on the same line BEFORE the closer — region body. */
@@ -1139,7 +1149,7 @@ function detectOrphanThinkingClose(trimmedLine: string): {
     ["reasoning", "</reasoning>"],
   ];
   for (const [type, closer] of CLOSERS) {
-    const idx = trimmedLine.indexOf(closer);
+    const idx = indexOutsideInlineCode(trimmedLine, closer);
     if (idx === -1) continue;
     return {
       type,
@@ -2429,6 +2439,39 @@ export const splitContentIntoBlocksWith = (
         orphanClose.type === "thinking"
           ? ["<thinking>", "<think>"]
           : ["<reasoning>"];
+      // A SELF-CONTAINED span (`… <thinking> note </thinking> …` on one
+      // line) is not an orphan: only the tagged bytes are the region, the
+      // prose around it stays prose — never the whole preceding text (RC-B3r;
+      // same rule as the live accumulator's `selfOpened`).
+      let sameLineOpener = -1;
+      let sameLineLen = 0;
+      for (const opener of THINKING_OPENERS[orphanClose.type]) {
+        const idx = orphanClose.before.lastIndexOf(opener);
+        if (idx > sameLineOpener) {
+          sameLineOpener = idx;
+          sameLineLen = opener.length;
+        }
+      }
+      if (sameLineOpener >= 0) {
+        const proseBefore = `${currentText}${orphanClose.before.slice(0, sameLineOpener)}`;
+        if (proseBefore.trim()) {
+          blocks.push({ type: "text", content: proseBefore.trimEnd() });
+        }
+        currentText = "";
+        const span = orphanClose.before.slice(sameLineOpener + sameLineLen).trim();
+        if (span) {
+          blocks.push({
+            type: orphanClose.type,
+            content: span,
+            metadata: { isComplete: true },
+          });
+        }
+        if (orphanClose.remainder) {
+          lines.splice(i + 1, 0, orphanClose.remainder);
+        }
+        i++;
+        continue;
+      }
       let openerIdx = -1;
       let openerLen = 0;
       for (const opener of openers) {

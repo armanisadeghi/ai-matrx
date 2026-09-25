@@ -12,6 +12,9 @@ const XML_NAME_START = /[A-Za-z_]/;
 const XML_NAME_CHARACTER = /[\w.:-]/;
 
 export function readXmlTag(content: string, start: number): ReadXmlTag | null {
+  // A tag starts with `<` — without this, `description: >-` read as a tag
+  // named "escription:" (RC-B3r).
+  if (content[start] !== "<") return null;
   let cursor = start + 1;
   const isClosing = content[cursor] === "/";
   if (isClosing) cursor++;

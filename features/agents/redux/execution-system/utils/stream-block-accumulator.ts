@@ -15,6 +15,7 @@
  */
 
 import { FENCE_META_KEY, splitFenceInfo } from "@/components/markdown-core/fence-meta";
+import { indexOutsideInlineCode } from "@/components/mardown-display/markdown-classification/processors/utils/inline-code-span";
 import {
   findBalancedXmlClose,
   initialXmlBalance,
@@ -330,7 +331,8 @@ function findMidLineAttrXml(rawLine: string): {
 } | null {
   for (const tag of ATTR_XML_TAGS) {
     const prefix = `<${tag}`;
-    const idx = rawLine.indexOf(prefix);
+    // A tag MENTIONED in inline code is prose, never an opener (RC-B3r).
+    const idx = indexOutsideInlineCode(rawLine, prefix);
     if (idx === -1) continue;
     if (rawLine.trimStart().startsWith(prefix)) continue;
     const after = rawLine[idx + prefix.length];
