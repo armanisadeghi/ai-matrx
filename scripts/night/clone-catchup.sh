@@ -457,12 +457,26 @@ else
   grep -E 'MISMATCHES|NOT REPAIRED|levelled|RESULT|REFUSED|READ FAILED' "$WORK/body-drift.out" | while read -r l; do say "  ${l#\[*\] }"; done
 fi
 
+# ── INVALID INDEXES (lane STORE-READ-PERF-3 found five; guard built lane INDEX-GUARD, 2026-09-25) ──
+# A CREATE INDEX CONCURRENTLY that a build error or a cancel interrupts leaves an INVALID index
+# behind (never rolled back), and `if not exists` treats an invalid index as present, so nothing
+# ever retries it — the planner cannot use it, and it is still MAINTAINED on every write. Report
+# only, here: this job reads production and writes only the clone, so it never repairs production
+# itself (scripts/night/invalid-indexes.sh --fix --target production is a deliberate, separate,
+# named act). A red result is surfaced the same way body drift is, and named.
+INDEX_RC=0
+say "─── invalid indexes: production and the clone, read-only ───"
+zsh "$FRONTEND/scripts/night/invalid-indexes.sh" > "$WORK/invalid-indexes.out" 2>&1; INDEX_RC=$?
+grep -E 'invalid indexes|RESULT|REFUSED|READ FAILED' "$WORK/invalid-indexes.out" | while read -r l; do say "  ${l#\[*\] }"; done
+
 say "parity repairs made: $REPAIRED; superseded on production: $SUPERSEDED"
 for n in "${SUPERSEDED_NAMES[@]:-}"; do [ -n "$n" ] && say "  superseded, not carried: $n"; done
 for n in "${FAILED_NAMES[@]:-}"; do [ -n "$n" ] && say "  did not land: $n"; done
 say "clone-catchup done: $APPLIED applied, $REPAIRED parity repair(s), $SUPERSEDED superseded, $FAILED failed, $REFUSE_N refused."
 [ "$BODY_RC" -ne 0 ] && say "body drift: bodies remain unlevelled (exit $BODY_RC) — named above."
+[ "$INDEX_RC" -ne 0 ] && say "invalid indexes: at least one remains on production or the clone (exit $INDEX_RC) — named above. Fix with scripts/night/invalid-indexes.sh --fix --target <clone|production>."
 [ "$FAILED" -gt 0 ] && exit 70
 [ "$REFUSE_N" -gt 0 ] && exit 71
 [ "$BODY_RC" -ne 0 ] && exit 72
+[ "$INDEX_RC" -ne 0 ] && exit 73
 exit 0

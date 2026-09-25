@@ -1,0 +1,8 @@
+{
+  "_comment": "Campaign files that use `create index concurrently if not exists` with no invalid-index guard, from BEFORE this check existed (lane INDEX-GUARD, 2026-09-25). All three are already applied/ledgered on production (readperf_the_page_scan_has_its_indexes.sql and readperf_the_class_finds_its_row_without_a_scan.sql are the files whose failed builds lane STORE-READ-PERF-3 found and fixed with storereadperf3_the_invalid_record_indexes_are_rebuilt.sql). A ledgered file is never rewritten for this — see the check's header. A NEW file using the pattern is NOT exempt just by being added here; this list is a closed census, not a way to silence the check.",
+  "files": [
+    "readperf_the_page_scan_has_its_indexes.sql",
+    "readperf_the_class_finds_its_row_without_a_scan.sql",
+    "redsuites2_a_new_organizations_first_migration_verb.sql"
+  ]
+}
