@@ -168,6 +168,11 @@ this directory.
 - `components/active-context/` — Surface A (the only `appContextSlice` writers): `ActiveScopePicker`,
   `ActiveScopeChips`, `ContradictionBanner`, `ActiveContextButton`, `ContextLensBar`, `LensChip`,
   `ActiveContextLensChip`, `quick-pick/` (interaction law: **row = forward, checkbox = select**).
+  `miller-columns/` + `drill-deck/` share `quick-pick/engine.ts`: every column longer than
+  `COLUMN_SEARCH_THRESHOLD` (8) shows its own search (`filterColumnRows`, `useColumnQuery`,
+  `parts.tsx#ColumnSearch`); `useDrillPathEngine` is the one-pick-per-column selection (a pick
+  clears the columns after it; `drillPathForScope` back-fills a bare scope id) — used by the
+  context inspector (`features/agents/components/context-preview/inspector/`).
 - `components/entity-context/` — Surface B (durable tagging only): `EntityScopeTagger`,
   `EntityTargetPicker`.
 - The container-centric association UI (cards / list / pickers / attached-items sheet /
@@ -338,6 +343,13 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-09-25 — **Miller Columns and DrillDeck search their own columns; a drill-path engine.**
+  Lane CONTEXT-INSPECTOR-3 (Arman: use the existing scope selection components, never
+  hand-rolled pickers). A column with more than 8 rows shows a search box that narrows that
+  column only and clears when its source changes; `useDrillPathEngine` gives hosts one pick per
+  column. The context inspector now mounts `MillerColumnsCore` (full, `includeEngagements`
+  off). Suites: `quick-pick/__tests__/columnSearch.test.ts`,
+  `miller-columns/__tests__/MillerColumns.columnSearch.test.tsx`.
 - 2026-09-21 — **A deleted scope type leaves the page, its parts follow it down, and
   the archive is a door (F6).** Three defects in one: `getScopeTree` read
   `context.scope_types` and `context.scopes` with NO `deleted_at` filter (the
