@@ -17,6 +17,7 @@ import { NotesAPI } from "@/features/notes/service/notesApi";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { toast } from "@/lib/toast";
 import type { ContentSource } from "@/features/rich-document/types";
+import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 
 const COPY_FOLDER = "Rich editor proving copies";
 
@@ -73,6 +74,7 @@ export function StudioEditorMode({
       const next = await createCopy(opened);
       toast.success(`Created “${next.label}” — saves now go to this copy only.`);
     } catch (error) {
+      if (presentOrganizationRefusal(error, { act: "created", subject: "The proving copy" })) return;
       toast.error(`The copy was not created: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setBusy(null);

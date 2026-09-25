@@ -29,6 +29,8 @@ import {
   contextLines,
   type RequestAccessTarget,
 } from "@/features/access-gate/service/requestAccess";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
+import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 
 export type { RequestAccessTarget } from "@/features/access-gate/service/requestAccess";
 
@@ -124,6 +126,9 @@ function RequestAccessDialog({
       else toast.success(result.message);
       onOpenChange(false);
     } catch (error: unknown) {
+      // Declining the organization picker is an answer, not a failure.
+      if (isOrganizationSelectionCancelled(error)) return;
+      if (presentOrganizationRefusal(error, { act: "sent", subject: "Your request" })) return;
       toast.error(
         error instanceof Error ? error.message : "We couldn't send that request.",
       );

@@ -29,6 +29,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { SYSTEM_HOME } from "@/features/mandates/list-door";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import {
   fetchMandateCodeTruthReport,
   fetchMandateConsoleData,
@@ -134,7 +135,10 @@ export function MandateDashboard() {
   // organization picker in place of its tiles — never a skeleton that waits
   // for a choice nobody was asked to make. Every other section reads the
   // database directly and never waits on an organization.
-  const needsOrganization = !organizationId;
+  // Three states, never a refusal spelled from a nullable id (check:org-three-states): the notice
+  // shows only once boot settled with none; while it resolves the tiles read as loading.
+  const { organizationState } = useOrganizationRequired();
+  const needsOrganization = organizationState === "required";
   const [reloads, setReloads] = useState(0);
   const [showAllFeatures, setShowAllFeatures] = useState(false);
 
@@ -171,7 +175,7 @@ export function MandateDashboard() {
   const cov = coverageCounts(coverageSlot.data, keys);
   const drift = driftMetrics(truthSlot.data, keys, codeBackedKeys(consoleSlot.data));
   const scan = scanMetrics(boardSlot.data);
-  const boardLoading = boardSlot.loading && !needsOrganization;
+  const boardLoading = (boardSlot.loading || !organizationId) && !needsOrganization;
   const boardError = needsOrganization ? null : boardSlot.error;
 
   const anyLoading =

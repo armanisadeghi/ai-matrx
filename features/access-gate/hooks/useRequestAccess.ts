@@ -15,6 +15,7 @@ import {
 } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { submitFeedback } from "@/actions/feedback.actions";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { createSettingAccessRequest } from "@/features/access-gate/service/accessRequests";
 import { REQUEST_ACCESS_MANUAL_ACTION } from "@/features/messaging/actions/settingRequestActionRegistry";
 import {
@@ -59,17 +60,18 @@ export function useRequestAccess(target: RequestAccessTarget) {
     try {
       const ctx = context();
       if (owner.kind === "system") {
-        if (!activeOrganizationId) {
-          throw new Error(
-            "Pick an organization from the avatar menu, then send this again.",
-          );
-        }
+        // The request is filed under an organization; with none selected yet, ASK and continue
+        // (ensureOrganizationContext waits for boot and opens the picker) — never a refusal
+        // spelled from a nullable id while boot is still resolving (check:org-three-states).
+        const organizationId = await ensureOrganizationContext({
+          organizationId: activeOrganizationId,
+        });
         const result = await submitFeedback({
           // No "request" type exists in the feedback vocabulary; `metadata.kind`
           // = "access_request" is what marks it (FEATURE.md, RequestAccess).
           feedback_type: "other",
           route: typeof window === "undefined" ? "" : window.location.pathname,
-          organization_id: activeOrganizationId,
+          organization_id: organizationId,
           description: `Access request: ${requestTitle(target)}\n\n${requestBody(target, ctx, note)}`,
           metadata: feedbackMetadata(target, ctx),
         });

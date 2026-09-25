@@ -138,12 +138,22 @@ async function startItem(id: string): Promise<void> {
     const { isOrganizationSelectionCancelled } = await import(
       "@/lib/organization/selection-cancelled"
     );
+    const { isOrganizationRequiredError } = await import(
+      "@/lib/organizations/organizationRequiredError"
+    );
+    const { organizationRefusalMessage } = await import(
+      "@/lib/organizations/organizationRefusalToast"
+    );
     if (isOrganizationSelectionCancelled(err)) {
       items = items.filter((i) => i.id !== id);
     } else {
       patch(id, {
         status: "error",
-        error: err instanceof Error ? err.message : "Playback failed",
+        error: isOrganizationRequiredError(err)
+          ? organizationRefusalMessage({ act: "played", subject: "This item" })
+          : err instanceof Error
+            ? err.message
+            : "Playback failed",
       });
     }
     active = null;

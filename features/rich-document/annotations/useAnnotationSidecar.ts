@@ -44,6 +44,8 @@ import type {
   ResolvedItem,
   SidecarCapabilities,
 } from "./types";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
+import { organizationRefusalMessage } from "@/lib/organizations/organizationRefusalToast";
 
 /** An own-author event this soon after THIS tab wrote is its echo. */
 const OWN_ECHO_WINDOW_MS = 5000;
@@ -55,6 +57,9 @@ const commentsChannel = defineChannelNamespace({
 });
 
 function message(e: unknown): string {
+  // The write path resolves the organization (ensureOrgId); a refusal for want of one is said in
+  // words with its remedy, never as the transport's error text.
+  if (isOrganizationRequiredError(e)) return organizationRefusalMessage({ act: "saved", subject: "This annotation" });
   return e instanceof Error ? e.message : String(e);
 }
 

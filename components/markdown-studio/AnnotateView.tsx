@@ -28,6 +28,9 @@ import {
 } from "@/features/rich-document/annotations/documentSource";
 import type { AnnotationSource } from "@/features/rich-document/annotations/types";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 
 /** A heading, else the first line of prose — never a directive, fence or front-matter line. */
 function titleFrom(bufferTitle: string | null, buffer: string): string {
@@ -104,7 +107,9 @@ export function AnnotateView({
                 });
                 onOpenDocument(id);
               } catch (e) {
-                toast.error(e instanceof Error ? e.message : String(e));
+                if (isOrganizationSelectionCancelled(e)) return;
+                if (presentOrganizationRefusal(e, { act: "created", subject: "The document" })) return;
+                toastWriteFailure(e, { action: "create a document from this text", remedy: "Try again." });
               } finally {
                 setCreating(false);
               }

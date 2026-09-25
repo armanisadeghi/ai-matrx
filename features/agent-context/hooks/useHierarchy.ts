@@ -28,6 +28,7 @@ import {
   removeTaskFromSlice,
 } from "@/features/agent-context/redux/tasksSlice";
 import { matchesSearch } from "@ai-matrx/kit/search-scoring";
+import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 
 const KEYS = {
   tree: () => ["hierarchy-tree"] as const,
@@ -275,8 +276,12 @@ export function useCreateTask() {
         action: toastDoor("task", task.id),
       });
     },
-    onError: (err: Error) =>
-      toast.error("Failed to create task", { description: err.message }),
+    onError: (err: Error) => {
+      // createTask files the task under the project's organization, falling back to the active
+      // one (ensureOrgId); with none, the refusal is said with its remedy.
+      if (presentOrganizationRefusal(err, { act: "created", subject: "The task" })) return;
+      toast.error("Failed to create task", { description: err.message });
+    },
   });
 }
 
