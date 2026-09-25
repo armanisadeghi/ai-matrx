@@ -1,6 +1,6 @@
 /**
  * LANE DATA-V2-FACE — designate a copied older table's default view as the Sheet, AS A PERSON, through
- * the store's own view door (`custom.view_declare`, the same call the table page makes). This is the
+ * the store's one designation door (`custom.view_designate`, the table page's "Make … the default"). This is the
  * write the older-table mover should make for every copy; it is done here for one admin-owned test
  * table so the designated face can be seen.
  *
@@ -34,20 +34,17 @@ if (signed.error) {
   process.exit(1);
 }
 console.log(`signed in as ${signed.data.user?.email}`);
-const answered = await supabase.schema("custom").rpc("view_declare", {
+// THE ONE DESIGNATION DOOR (lane VIEW-SWITCH-NOT-DESIGNATION, 2026-09-25): `custom.view_designate`,
+// editor on the table. `view_declare` now refuses a change to the default view's layout or
+// is_default by name — a look at a table never changes how it opens.
+const answered = await supabase.schema("custom").rpc("view_designate", {
   p_organization_id: FACE_ORG,
   p_table_id: FACE_TABLE,
-  // THE WHOLE VIEW, not one key: `view_declare` replaces the definition and the name (measured
-  // 2026-09-24 — a spec of `{definition:{layout}}` renamed the default "All records" to "Saved view"
-  // and dropped its is_default, and the page then seeded a second default).
-  p_spec: {
-    view_id: FACE_VIEW,
-    name: process.env.FACE_VIEW_NAME ?? "All records",
-    definition: { layout, sorts: [], filters: {}, is_default: true, table_id: FACE_TABLE },
-  },
+  p_view_id: FACE_VIEW,
+  p_layout: layout,
 });
 if (answered.error) {
-  console.error(`view_declare refused: ${answered.error.message}`);
+  console.error(`view_designate refused: ${answered.error.message}`);
   process.exit(1);
 }
 console.log(`view ${FACE_VIEW} now has layout "${layout}" (door answered ${JSON.stringify(answered.data)})`);
