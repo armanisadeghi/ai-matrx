@@ -43,6 +43,7 @@ import {
 import {
   CLASS_META,
   Field,
+  SENSITIVITY_HINT,
   SENSITIVITY_OPTIONS,
   VALUE_TYPE_OPTIONS,
   type Sensitivity,
@@ -164,7 +165,7 @@ export function EditItemDialog({
               rows={2}
             />
           </Field>
-          <Field label="Sensitivity">
+          <Field label="Sensitivity" hint={SENSITIVITY_HINT}>
             <Select
               value={sensitivity}
               onValueChange={(v) => setSensitivity(v as Sensitivity)}
@@ -209,7 +210,8 @@ export function EditItemDialog({
                   className="font-mono text-sm"
                   placeholder="# Heading\n\nWrite the Markdown value…"
                 />
-              ) : item.value_type === "object" || item.value_type === "array" ? (
+              ) : item.value_type === "object" ||
+                item.value_type === "array" ? (
                 <Textarea
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
@@ -370,7 +372,7 @@ export function AddItemDialog({
             </Field>
           </div>
 
-          <Field label="Sensitivity">
+          <Field label="Sensitivity" hint={SENSITIVITY_HINT}>
             <Select
               value={sensitivity}
               onValueChange={(v) => setSensitivity(v as Sensitivity)}
