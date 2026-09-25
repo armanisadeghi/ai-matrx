@@ -29,6 +29,7 @@ import { FormRunner, type FormSubmitOutcome } from "@ai-matrx/records-ui";
 import type { Field, RuleExpression } from "@ai-matrx/records";
 
 import type { PublicForm } from "@/features/forms/service";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 /**
  * What the runner's `whichAsked` port answers — records-ui's `FormAsked`, 0.84.10 onwards.
@@ -92,7 +93,7 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
     const fromLink = /(?:^|[#&])resume=([A-Za-z0-9_-]{16,})/.exec(window.location.hash)?.[1] ?? null;
     if (fromLink) {
       // The secret is this person's; it does not stay in the address bar to be screenshotted.
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      replaceAddressWithoutNavigating(window.location.pathname + window.location.search);
     }
     const stored = fromLink ?? readStoredPlace(form.form_id);
     if (!stored) return;

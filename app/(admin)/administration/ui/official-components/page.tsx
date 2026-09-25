@@ -37,6 +37,7 @@ import {
   ADMIN_OFFICIAL_COMPONENTS_SURFACE_NAME,
   createAdminOfficialComponentsScope,
 } from "@/features/surfaces/manifests/admin-official-components.manifest";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 // Inner component that uses useSearchParams — must be wrapped in <Suspense>
 function OfficialComponentsContent() {
@@ -67,7 +68,7 @@ function OfficialComponentsContent() {
       if (q) params.set("q", q);
       if (category !== "all") params.set("category", category);
       const qs = params.toString();
-      router.replace(`${pathname}${qs ? `?${qs}` : ""}`);
+      replaceAddressWithoutNavigating(`${pathname}${qs ? `?${qs}` : ""}`);
     },
     [router, pathname],
   );

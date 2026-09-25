@@ -81,6 +81,7 @@ import {
 import { MobilePanelShell, useMobilePanelClose } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { buildRagDataStoresContextData } from "@/features/rag/agent-context/buildRagDataStoresContextData";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 /** Canonical `ui_surface.name` this page emits. */
 const RAG_DATA_STORES_SURFACE = "matrx-user/knowledge-data-stores";
@@ -150,7 +151,7 @@ export function DataStoresPage() {
       else params.delete("store_id");
       const qs = params.toString();
       // Discrete selection — Back closes the store the user just opened.
-      router.push(`/knowledge/data-stores${qs ? `?${qs}` : ""}`);
+      pushAddressOrNavigate(router, `/knowledge/data-stores${qs ? `?${qs}` : ""}`);
     },
     [router, search],
   );

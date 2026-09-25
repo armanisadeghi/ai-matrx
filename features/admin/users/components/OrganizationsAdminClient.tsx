@@ -56,6 +56,7 @@ import {
   unavailableHere,
   withAvailability,
 } from "@/features/context-menu-v3/utils/availability";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 interface MemberDisplayRow extends AdminOrganizationMembershipRow {
   email: string | null;
@@ -229,14 +230,14 @@ export function OrganizationsAdminClient() {
     const params = new URLSearchParams(searchParams.toString());
     params.set("org", organization.id);
     // Discrete focus change — Back returns to the previous focus.
-    router.push(`${pathname}?${params.toString()}`);
+    pushAddressWithoutNavigating(`${pathname}?${params.toString()}`);
   }
 
   function setUserFocus(userId: string) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("user", userId);
     params.delete("org");
-    router.push(`${pathname}?${params.toString()}`);
+    pushAddressWithoutNavigating(`${pathname}?${params.toString()}`);
   }
 
   function clearUserFocus() {
@@ -244,7 +245,7 @@ export function OrganizationsAdminClient() {
     params.delete("user");
     if (effectiveSelectedOrganizationId)
       params.set("org", effectiveSelectedOrganizationId);
-    router.push(`${pathname}?${params.toString()}`);
+    pushAddressWithoutNavigating(`${pathname}?${params.toString()}`);
   }
 
   async function mutateMembership(

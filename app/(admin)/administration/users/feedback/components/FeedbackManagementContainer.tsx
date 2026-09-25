@@ -25,6 +25,7 @@ import {
     useFeedbackConsoleEditorStore,
     type FeedbackConsoleEditorStore,
 } from '@/features/admin/users/components/FeedbackConsoleEditorStore';
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const VALID_TABS = ['feedback', 'work-queue', 'announcements', 'categories'] as const;
 type TabValue = typeof VALID_TABS[number];
@@ -147,7 +148,7 @@ export default function FeedbackManagementContainer() {
             params.set('tab', tab);
         }
         const query = params.toString();
-        router.replace(`${pathname}${query ? `?${query}` : ''}`, { scroll: false });
+        replaceAddressWithoutNavigating(`${pathname}${query ? `?${query}` : ''}`);
     }, [searchParams, router, pathname]);
 
     const [isCreateAnnouncementOpen, setIsCreateAnnouncementOpen] = useState(false);

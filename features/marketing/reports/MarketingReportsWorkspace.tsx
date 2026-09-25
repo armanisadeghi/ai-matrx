@@ -69,6 +69,7 @@ import {
   formatReportPlacement,
   reportPlacementSentence,
 } from "./report-presentation";
+import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 const SURFACE_NAME = "matrx-user/marketing-reports";
 
@@ -244,9 +245,7 @@ export function MarketingReportsWorkspace() {
     const next = new URLSearchParams(searchParams.toString());
     next.set("site", siteId);
     // Discrete site switch — Back returns to the previous site.
-    router.push(`${marketingRoutes.reports()}?${next.toString()}`, {
-      scroll: false,
-    });
+    pushAddressOrNavigate(router, `${marketingRoutes.reports()}?${next.toString()}`, { scroll: false });
   };
 
   return (

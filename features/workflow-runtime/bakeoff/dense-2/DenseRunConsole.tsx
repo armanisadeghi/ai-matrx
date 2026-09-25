@@ -72,6 +72,7 @@ import { PlanLedger } from "./PlanLedger";
 import { FocusPane } from "./FocusPane";
 import { ActivityRail } from "./ActivityRail";
 import { IntakePanel } from "./IntakePanel";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 type DefinitionLoad =
   | { state: "loading" }
@@ -145,10 +146,10 @@ export function DenseRunConsole({ definitionId }: { definitionId: string }) {
   const { ensureLane } = useWorkflowRun(adoptedRunId);
 
   const openRun = (id: string) => {
-    router.replace(`${pathname}?run=${id}`);
+    replaceAddressWithoutNavigating(`${pathname}?run=${id}`);
   };
   const clearRun = () => {
-    router.replace(pathname);
+    replaceAddressWithoutNavigating(pathname);
   };
 
   const title = load.state === "ready" ? load.name : "Workflow";

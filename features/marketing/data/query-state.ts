@@ -12,6 +12,7 @@ import {
   decodeLayeredFilterRules,
   encodeLayeredFilterRules,
 } from "@ai-matrx/design-system/data-table/layered-filters";
+import { pushAddressWithoutNavigating, replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const PAGE_SIZE_OPTIONS = new Set([10, 25, 50, 100, 250]);
 
@@ -255,13 +256,13 @@ export function useMarketingTableState(options: MarketingTableStateOptions) {
     if (urlTimer.current) clearTimeout(urlTimer.current);
     if (!textOnly) {
       lastWrittenUrl.current = query;
-      router.push(href, { scroll: false });
+      pushAddressWithoutNavigating(href);
       return;
     }
     // Debounced so one search is one entry, not one per keystroke.
     urlTimer.current = setTimeout(() => {
       lastWrittenUrl.current = query;
-      router.replace(href, { scroll: false });
+      replaceAddressWithoutNavigating(href);
     }, 250);
   };
 
@@ -281,7 +282,7 @@ export function useMarketingTableState(options: MarketingTableStateOptions) {
     );
     const query = nextParams.toString();
     lastWrittenUrl.current = query;
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    replaceAddressWithoutNavigating(query ? `${pathname}?${query}` : pathname);
   };
 
   return { state, queryState, onStateChange, replaceState };

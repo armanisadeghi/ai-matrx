@@ -75,6 +75,7 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
+import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 /** Canonical `ui_surface.name` this page emits — the catalog half. */
 const RAG_LIBRARY_SURFACE = "matrx-user/knowledge-library";
@@ -149,7 +150,7 @@ export function LibraryCatalogPage() {
       }
       const qs = params.toString();
       // Discrete selection — Back closes the item the user just opened.
-      router.push(`/knowledge/library-catalog${qs ? `?${qs}` : ""}`);
+      pushAddressOrNavigate(router, `/knowledge/library-catalog${qs ? `?${qs}` : ""}`);
     },
     [router, search],
   );

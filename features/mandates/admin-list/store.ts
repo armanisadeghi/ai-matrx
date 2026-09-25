@@ -1,50 +1,39 @@
 // features/mandates/admin-list/store.ts
 //
-// THE ONE LOAD behind the admin mandate list preview.
+// The aidream-server REPORTS behind the admin mandate list — never the corpus.
 //
-// The list needs facts no single door carries — the console's health rows,
-// the live code declarations, coverage, goals, shortcut/surface/app links,
-// organization names and the impact grades — for the platform's ~800 rows. So
-// it loads the whole authorized corpus ONCE per page visit into this module
-// store and the entity-list service pages, sorts, filters and counts it in
-// memory (./service.ts). Two phases: everything the columns and filters need
-// first; the impact grades (the slowest read) second, bumping `version` so
-// the shell re-asks and the Grade/Blocker cells fill in.
+// Paging, sorting, filtering, search, tab counts and facets all run in the
+// database (`public.mnd_admin_list`, ./service.ts). What the database cannot
+// know is what the aidream server classifies across the whole platform: the
+// live code declarations (`GET /mandates/code-truth`), coverage
+// (`GET /mandates/coverage`) and the impact grades (graded per holder agent).
+// Those are read ONCE per page visit into this module store; the service packs
+// what a query needs into `p_facts` (./facts.ts), and each page's rows are
+// built from them.
+//
+// Two phases: code truth + coverage first; the impact grades (the slowest
+// read, which needs every holder agent id from the database) second, bumping
+// `version` so the shell re-asks and the Grade/Blocker cells fill in.
 //
 // A failed source is recorded in `failures` and its cells read as unknown —
 // never as "none".
 
 import type { AppDispatch } from "@/lib/redux/store";
-import { supabase } from "@/utils/supabase/client";
 import {
   fetchMandateCodeTruthReport,
-  fetchMandateConsoleData,
   type MandateCodeTruth,
 } from "@/features/mandates/admin/service";
-import {
-  fetchStandingImpact,
-  type StandingImpact,
-} from "@/features/mandates/admin/impact";
-import { fetchMandateCatalogue } from "@/features/mandates/catalogue";
+import { fetchStandingImpact } from "@/features/mandates/admin/impact";
 import { fetchMandateCoverage } from "@/features/mandates/coverage";
-import { fetchProvisions } from "@/features/mandates/provisions";
-import { ALL_HOMES } from "@/features/mandates/list-door";
-import {
-  agentHolderOfBinding,
-  holderOfMandate,
-} from "@/lib/supabase/mandateStorage";
-import { fetchOrganizationNamesByIds } from "@/features/administration/kg-inspector/utils/organizationNames";
-import {
-  buildAdminRows,
-  type MandateAdminSources,
-  type MandateServeLink,
-} from "./rows";
-import type { MandateAdminRow } from "./types";
+import type { MandateAdminReports } from "./facts";
+import { callMandateAdminList } from "./rpc";
 
 export interface MandateAdminListState {
   status: "idle" | "loading" | "ready" | "failed";
-  rows: MandateAdminRow[];
-  /** Provision key → offered value names, for the Inputs cell. */
+  reports: MandateAdminReports;
+  /** True once the impact read answered or failed (the Grade cells stop saying "loading"). */
+  impactSettled: boolean;
+  /** Provision key → offered value names, for the Inputs cell (filled per page). */
   offersByProvision: Map<string, string[]>;
   /** Source name → its own error sentence. */
   failures: Record<string, string>;
@@ -53,20 +42,27 @@ export interface MandateAdminListState {
   version: number;
 }
 
+const EMPTY_REPORTS: MandateAdminReports = {
+  codeTruth: null,
+  coverage: null,
+  impact: null,
+};
+
 let state: MandateAdminListState = {
   status: "idle",
-  rows: [],
+  reports: EMPTY_REPORTS,
+  impactSettled: false,
   offersByProvision: new Map(),
   failures: {},
   error: null,
   version: 0,
 };
-let inflight: Promise<MandateAdminRow[]> | null = null;
+let inflight: Promise<MandateAdminReports> | null = null;
 let generation = 0;
 const listeners = new Set<() => void>();
 
-function publish(next: Partial<MandateAdminListState>) {
-  state = { ...state, ...next, version: state.version + 1 };
+function publish(next: Partial<MandateAdminListState>, bump = true) {
+  state = { ...state, ...next, version: bump ? state.version + 1 : state.version };
   for (const listener of listeners) listener();
 }
 
@@ -85,195 +81,87 @@ function describe(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-async function fetchServeLinks(
-  mandateIds: Map<string, string>,
-): Promise<MandateServeLink[]> {
-  const [shortcuts, roles, apps] = await Promise.all([
-    supabase
-      .schema("mandate")
-      .from("vw_shortcut")
-      .select("mandate_key, label, surface_name")
-      .is("deleted_at", null)
-      .not("mandate_key", "is", null),
-    supabase
-      .schema("ui")
-      .from("ui_surface_agent_role")
-      .select("mandate_key, surface_name, label")
-      .not("mandate_key", "is", null),
-    supabase
-      .schema("app")
-      .from("definition")
-      .select("mandate_id, name")
-      .is("deleted_at", null)
-      .not("mandate_id", "is", null),
-  ]);
-  if (shortcuts.error) throw new Error(`Shortcuts: ${shortcuts.error.message}`);
-  if (roles.error) throw new Error(`Surfaces: ${roles.error.message}`);
-  if (apps.error) throw new Error(`Agent apps: ${apps.error.message}`);
-  const links: MandateServeLink[] = [];
-  for (const row of shortcuts.data ?? []) {
-    if (!row.mandate_key) continue;
-    links.push({
-      mandateKey: row.mandate_key,
-      kind: "Shortcut",
-      detail: row.surface_name
-        ? `${row.label ?? "Shortcut"} (${row.surface_name})`
-        : (row.label ?? "Shortcut"),
-    });
-  }
-  for (const row of roles.data ?? []) {
-    if (!row.mandate_key) continue;
-    links.push({
-      mandateKey: row.mandate_key,
-      kind: "Surface",
-      detail: row.surface_name,
-    });
-  }
-  for (const row of apps.data ?? []) {
-    const key = row.mandate_id ? mandateIds.get(row.mandate_id) : undefined;
-    if (!key) continue;
-    links.push({ mandateKey: key, kind: "Agent app", detail: row.name });
-  }
-  return links;
+/** Merge offers read for one page — never a re-ask (no version bump). */
+export function mergeProvisionOffers(offers: Map<string, string[]>): void {
+  if (offers.size === 0) return;
+  const next = new Map(state.offersByProvision);
+  for (const [key, values] of offers) next.set(key, values);
+  publish({ offersByProvision: next }, false);
 }
 
-async function loadAll(
+export function recordMandateAdminFailure(source: string, message: string): void {
+  if (state.failures[source] === message) return;
+  publish({ failures: { ...state.failures, [source]: message } }, false);
+}
+
+async function loadReports(
   dispatch: AppDispatch,
   myGeneration: number,
-): Promise<MandateAdminRow[]> {
-  const consoleData = await fetchMandateConsoleData({ home: ALL_HOMES });
+): Promise<MandateAdminReports> {
   const failures: Record<string, string> = {};
-
-  const mandateIds = new Map(
-    consoleData.mandates.map((m) => [m.id, m.mandate_key]),
-  );
-  const orgIds = new Set<string>();
-  for (const mandate of consoleData.mandates) {
-    if (mandate.organization_id) orgIds.add(mandate.organization_id);
-  }
-  for (const bindings of Object.values(consoleData.bindingsByMandateId)) {
-    for (const binding of bindings) {
-      if (binding.organization_id) orgIds.add(binding.organization_id);
-    }
-  }
-
-  const [truth, coverage, catalogue, links, names] = await Promise.allSettled([
+  const [truth, coverage] = await Promise.allSettled([
     fetchMandateCodeTruthReport(dispatch),
     fetchMandateCoverage(dispatch),
-    fetchMandateCatalogue(dispatch),
-    fetchServeLinks(mandateIds),
-    fetchOrganizationNamesByIds([...orgIds]),
   ]);
   if (truth.status === "rejected") failures.codeTruth = describe(truth.reason);
-  if (coverage.status === "rejected")
-    failures.coverage = describe(coverage.reason);
-  if (catalogue.status === "rejected")
-    failures.catalogue = describe(catalogue.reason);
-  if (links.status === "rejected") failures.serves = describe(links.reason);
-
-  const sources: MandateAdminSources = {
-    console: consoleData,
+  if (coverage.status === "rejected") failures.coverage = describe(coverage.reason);
+  const reports: MandateAdminReports = {
     codeTruth:
       truth.status === "fulfilled"
         ? Object.fromEntries(
-            truth.value.mandates.map((s): [string, MandateCodeTruth] => [
-              s.mandate_key,
-              s,
-            ]),
+            truth.value.mandates.map((s): [string, MandateCodeTruth] => [s.mandate_key, s]),
           )
         : null,
     coverage: coverage.status === "fulfilled" ? coverage.value : null,
-    catalogue: catalogue.status === "fulfilled" ? catalogue.value : null,
     impact: null,
-    impactFailed: false,
-    serveLinks: links.status === "fulfilled" ? links.value : null,
-    organizationNames: names.status === "fulfilled" ? names.value : {},
   };
-  const rows = buildAdminRows(sources);
-  if (myGeneration !== generation) return rows;
-  publish({ status: "ready", rows, failures, error: null });
+  if (myGeneration !== generation) return reports;
+  publish({ status: "ready", reports, failures, error: null, impactSettled: false });
 
-  // ── Phase two: impact grades + provision offers. ─────────────────────────
-  const agentIds = new Set<string>();
-  for (const mandate of consoleData.mandates) {
-    const holder = holderOfMandate(mandate);
-    const agentId =
-      holder.holderType === "agent"
-        ? (holder.holderId ??
-          (holder.versionId
-            ? consoleData.versionsById[holder.versionId]?.agentId
-            : null))
-        : null;
-    if (agentId) agentIds.add(agentId);
-    for (const binding of consoleData.bindingsByMandateId[mandate.id] ?? []) {
-      const bh = agentHolderOfBinding(binding);
-      const id =
-        bh.holderId ??
-        (bh.versionId ? consoleData.versionsById[bh.versionId]?.agentId : null);
-      if (id) agentIds.add(id);
-    }
-  }
-  const provisionKeys = [
-    ...new Set(rows.map((r) => r.provisionKey).filter((k): k is string => !!k)),
-  ];
-  void fetchProvisions(provisionKeys)
-    .then((offers) => {
-      if (myGeneration !== generation) return;
-      const next = new Map<string, string[]>();
-      for (const [key, offer] of offers) {
-        next.set(key, offer.values.map((value) => value.name));
-      }
-      publish({ offersByProvision: next });
-    })
-    .catch((error: unknown) => {
-      if (myGeneration !== generation) return;
-      publish({ failures: { ...state.failures, inputs: describe(error) } });
-    });
-
-  let impact: StandingImpact | null = null;
-  let impactFailed = false;
+  // ── Phase two: impact grades, over every holder agent in the corpus. ─────
   try {
-    impact =
-      agentIds.size > 0
+    const agentIds = await callMandateAdminList<string[]>({ p_mode: "agents" });
+    const impact =
+      agentIds.length > 0
         ? await fetchStandingImpact(dispatch, [...agentIds].sort())
         : null;
+    if (myGeneration !== generation) return reports;
+    const graded = { ...reports, impact };
+    publish({ reports: graded, impactSettled: true });
+    return graded;
   } catch (error) {
-    impactFailed = true;
-    failures.impact = describe(error);
+    if (myGeneration !== generation) return reports;
+    publish({
+      impactSettled: true,
+      failures: { ...state.failures, impact: describe(error) },
+    });
+    return reports;
   }
-  if (myGeneration !== generation) return rows;
-  const graded = buildAdminRows({ ...sources, impact, impactFailed });
-  publish({
-    rows: graded,
-    failures: { ...state.failures, ...failures },
-  });
-  return graded;
 }
 
 /**
- * The loaded rows, loading them if nobody has yet. The promise resolves after
- * PHASE ONE — the list renders then; phase two lands through `version`.
+ * The reports, loading them if nobody has yet. Resolves after PHASE ONE — the
+ * list renders then; the grades land through `version`.
  */
-export function ensureMandateAdminList(
+export function ensureMandateAdminReports(
   dispatch: AppDispatch,
-): Promise<MandateAdminRow[]> {
-  if (state.status === "ready") return Promise.resolve(state.rows);
+): Promise<MandateAdminReports> {
+  if (state.status === "ready") return Promise.resolve(state.reports);
   if (inflight) return inflight;
   const myGeneration = ++generation;
   publish({ status: "loading", error: null });
-  inflight = new Promise<MandateAdminRow[]>((resolve, reject) => {
+  inflight = new Promise<MandateAdminReports>((resolve, reject) => {
     let settled = false;
     const unsubscribe = subscribeMandateAdminList(() => {
       if (settled || myGeneration !== generation) return;
       if (state.status === "ready") {
         settled = true;
         unsubscribe();
-        resolve(state.rows);
+        resolve(state.reports);
       }
     });
-    loadAll(dispatch, myGeneration).catch((error: unknown) => {
+    loadReports(dispatch, myGeneration).catch((error: unknown) => {
       unsubscribe();
-      inflight = null;
       if (myGeneration !== generation) return;
       const failure = error instanceof Error ? error : new Error(describe(error));
       publish({ status: "failed", error: failure });
@@ -288,9 +176,17 @@ export function ensureMandateAdminList(
   return inflight;
 }
 
-/** Drop the loaded corpus; the next read loads it fresh. */
-export function invalidateMandateAdminList(): void {
-  generation += 1;
-  inflight = null;
-  publish({ status: "idle" });
+/**
+ * Something changed (a write anywhere, a Remove, an advance): re-ask the list.
+ * The database half is always fresh; `reloadReports` also drops the server
+ * reports, for writes that change what they classify (a rebind, an advance).
+ */
+export function invalidateMandateAdminList(reloadReports = false): void {
+  if (reloadReports) {
+    generation += 1;
+    inflight = null;
+    publish({ status: "idle", impactSettled: false });
+    return;
+  }
+  publish({});
 }

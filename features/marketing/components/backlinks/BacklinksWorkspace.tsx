@@ -129,6 +129,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 function compactNumber(value: number | null | undefined): string {
   return value === null || value === undefined
@@ -602,9 +603,7 @@ export function BacklinksWorkspace({
     params.delete("reviewBatch");
     const query = params.toString();
     // Programmatic: consuming a one-shot route intent off the current entry.
-    router.replace(query ? `${pathname}?${query}` : pathname, {
-      scroll: false,
-    });
+    replaceAddressWithoutNavigating(query ? `${pathname}?${query}` : pathname);
     if (analysisDisabled) {
       toast.error(
         "Reviewing pages is unavailable right now. The backlog was not changed.",

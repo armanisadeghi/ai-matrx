@@ -77,6 +77,7 @@ import { LeaveAdjustDialog } from "./LeaveAdjustDialog";
 import { hrPageRefusalProps } from "./refusal";
 import { LeaveDeskShell } from "./LeaveDeskShell";
 import { leaveBalancesHref, leaveLedgerHrefFrom } from "./routes";
+import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 type Scope = "mine" | "team" | "organization";
 
@@ -173,13 +174,11 @@ export function LeaveBalancesSurface() {
   const filtersActive = policyParam !== null || negativeOnly;
 
   function navigate(next: { scope?: Scope; policy?: string | null; negative?: boolean }) {
-    router.replace(
-      leaveBalancesHref(orgRef, {
+    replaceAddressOrNavigate(router, leaveBalancesHref(orgRef, {
         scope: next.scope ?? scope,
         policy: next.policy === undefined ? policyParam : next.policy,
         negative: next.negative === undefined ? negativeOnly : next.negative,
-      }),
-    );
+      }));
   }
 
   const columns: MatrxColumnDef<LeaveBalanceRow>[] = [

@@ -36,6 +36,15 @@ import {
 } from "@/features/mandates/admin/mandate-contract-cells";
 import { updateMandateDefinition } from "@/features/mandates/admin/service";
 import {
+  CreateSystemTwinButton,
+  LineageChip,
+  RebindToTwinButton,
+} from "@/features/mandates/admin/mandate-actions";
+import { ShieldCheck } from "lucide-react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectAgentLineageIndex } from "@/features/agents/redux/agent-definition/selectors";
+import { invalidateMandateAdminList } from "./store";
+import {
   useMandateAdminListActions,
   useMandateAdminListState,
 } from "./context";
@@ -94,6 +103,60 @@ function BlockerCell({ row }: { row: MandateAdminRow }) {
       busy={actions?.advancing ?? true}
       onAdvanceAnyway={(verdict) => actions?.advanceAnyway(verdict)}
     />
+  );
+}
+
+/**
+ * THE CONSOLE'S HEALTH CELL, carried over: a detected problem ships with its
+ * fix in place — never a red badge that tells the admin to go find the answer.
+ * The fix buttons are the console's own (../admin/mandate-actions.tsx), by
+ * import; a save reloads the list and the server reports it reads.
+ */
+function HealthCell({ row }: { row: MandateAdminRow }) {
+  const lineageIndex = useAppSelector(selectAgentLineageIndex);
+  const twin = row.agentId ? (lineageIndex[row.agentId]?.systemTwin ?? null) : null;
+  const reload = () => invalidateMandateAdminList(true);
+  return (
+    <div
+      className="flex flex-wrap items-center gap-1"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <Badge
+        variant="outline"
+        className={HEALTH_CLASS[row.health]}
+        title={HEALTH_HINT[row.health]}
+      >
+        {row.health === "not a system agent" ? "NOT a system agent" : row.health}
+      </Badge>
+      {row.health === "code ↔ agent drift" && row.codeTruth && (
+        <span className="basis-full text-[10px] leading-tight text-rose-600">
+          code: {row.codeTruth.code_variables.join(", ") || "none"}
+          {" · "}agent:{" "}
+          {row.codeTruth.bound_agent?.declared_variables.join(", ") || "none"}
+        </span>
+      )}
+      {row.health === "not a system agent" && twin && (
+        <>
+          <LineageChip label="system twin" agent={twin} Icon={ShieldCheck} />
+          <RebindToTwinButton
+            mandate={row.mandate}
+            twin={twin}
+            currentAgentId={row.agentId}
+            codeTruth={row.codeTruth}
+            onSaved={reload}
+          />
+        </>
+      )}
+      {row.health === "not a system agent" && !twin && row.agentId && (
+        <CreateSystemTwinButton
+          mandate={row.mandate}
+          agentId={row.agentId}
+          agentName={row.agentName}
+          codeTruth={row.codeTruth}
+          onSaved={reload}
+        />
+      )}
+    </div>
   );
 }
 
@@ -224,15 +287,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
   facetColumn("impactBlocker", "Blocker", 190, (row) => (
     <BlockerCell row={row} />
   )),
-  facetColumn("health", "Health", 170, (row) => (
-    <Badge
-      variant="outline"
-      className={HEALTH_CLASS[row.health]}
-      title={HEALTH_HINT[row.health]}
-    >
-      {row.health}
-    </Badge>
-  )),
+  facetColumn("health", "Health", 190, (row) => <HealthCell row={row} />),
   {
     id: "inputSummary",
     label: "Inputs",

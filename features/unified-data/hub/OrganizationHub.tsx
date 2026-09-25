@@ -42,6 +42,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 import { useUserRole } from "@/features/organizations/hooks";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 /** The organization's member-visibility setting, at its one registry address. */
 const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" } as const;
@@ -117,7 +118,7 @@ export function OrganizationHub({
       if (all) next.set("scope", "all");
       else next.delete("scope");
       const query = next.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+      replaceAddressWithoutNavigating(query ? `${pathname}?${query}` : pathname);
     },
     [router, pathname, searchParams],
   );

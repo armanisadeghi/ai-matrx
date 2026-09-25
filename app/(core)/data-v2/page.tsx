@@ -14,7 +14,7 @@
 // The per-person `custom.code_paths_enabled` half is gone (lane NAV-FIX).
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ActionInbox, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
@@ -37,6 +37,7 @@ import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { openPath } from "@/lib/deep-link/openPath";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
+import { replaceAddressWithoutNavigating, currentPathWithSearch } from "@/lib/url-state/addressWithoutNavigating";
 
 export default function UnifiedDataPage() {
   const router = useRouter();
@@ -54,7 +55,6 @@ export default function UnifiedDataPage() {
    * list is the active organization's, as before. The active organization is never moved.
    */
   const searchParams = useSearchParams();
-  const pathname = usePathname();
   const namedOrganizationId = searchParams.get("org");
   const { organizations: myOrganizations, loading: myOrganizationsLoading } = useUserOrganizations();
   const namedOrganization = namedOrganizationId
@@ -81,9 +81,8 @@ export default function UnifiedDataPage() {
     if (!namedOrganizationId || previous === null) return;
     const next = new URLSearchParams(searchParams.toString());
     next.delete("org");
-    const query = next.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  }, [active.organizationId, namedOrganizationId, pathname, router, searchParams]);
+    replaceAddressWithoutNavigating(currentPathWithSearch(next));
+  }, [active.organizationId, namedOrganizationId, searchParams]);
   // ONE SWITCH: does THIS organization keep its data in the record store? Set
   // once, for everybody, on the unified data ramp screen. There is no second,
   // per-person switch any more (lane NAV-FIX, 19 September).

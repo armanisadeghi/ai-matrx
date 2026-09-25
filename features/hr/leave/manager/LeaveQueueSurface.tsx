@@ -87,6 +87,7 @@ import { LeaveDecisionDialog, LeaveReassignDialog } from "./LeaveDecisionDialogs
 import { LeaveDeskShell } from "./LeaveDeskShell";
 import { leaveQueueHref } from "./routes";
 import { useLeaveQueue, type LeaveQueueRow } from "./useLeaveQueue";
+import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 /** THE VIEW LAW: every list declares its scope in words. */
 const SCOPES: { key: HrInboxScope; label: string; sentence: string }[] = [
@@ -211,7 +212,7 @@ export function LeaveQueueSurface() {
 
   function setScope(next: HrInboxScope) {
     setSelectedIds([]);
-    router.replace(leaveQueueHref(orgRef, { scope: next }));
+    replaceAddressOrNavigate(router, leaveQueueHref(orgRef, { scope: next }));
   }
 
   async function runBulk(intent: "approve" | "reject", reason?: string) {
@@ -509,7 +510,7 @@ export function LeaveQueueSurface() {
                 type="button"
                 size="sm"
                 variant="outline"
-                onClick={() => router.replace(leaveQueueHref(orgRef, { scope }))}
+                onClick={() => replaceAddressOrNavigate(router, leaveQueueHref(orgRef, { scope }))}
               >
                 Show everything waiting
               </Button>

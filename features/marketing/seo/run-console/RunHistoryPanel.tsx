@@ -79,6 +79,7 @@ import {
   type SelectedRunRef,
   type StatusGroup,
 } from "./runHistoryFilters";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const formatDuration = (ms: number | null): string =>
   formatDurationMs(ms, { style: "compact" });
@@ -742,7 +743,7 @@ export function RunHistoryPanel() {
     );
     const qs = params.toString();
     startTransition(() =>
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false }),
+      replaceAddressWithoutNavigating(qs ? `${pathname}?${qs}` : pathname),
     );
   };
   const setFilters = (next: RunHistoryFilters) => commit(next, null);

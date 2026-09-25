@@ -35,6 +35,7 @@ import {
   type TermList,
 } from "../types";
 import { TermEntriesTable } from "./TermEntriesTable";
+import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 function draftOf(list: TermList): TermListDraft {
   return {
@@ -81,7 +82,7 @@ export function TermListsWorkspace() {
     void reload();
   }, []);
 
-  const select = (id: string) => router.replace(`/resources/term-lists?id=${id}`);
+  const select = (id: string) => replaceAddressOrNavigate(router, `/resources/term-lists?id=${id}`);
 
   const createNew = async () => {
     if (creating) return;
@@ -158,7 +159,7 @@ export function TermListsWorkspace() {
             onSaved={() => void reload()}
             onArchived={() => {
               void reload();
-              router.replace("/resources/term-lists");
+              replaceAddressOrNavigate(router, "/resources/term-lists");
             }}
           />
         ) : (

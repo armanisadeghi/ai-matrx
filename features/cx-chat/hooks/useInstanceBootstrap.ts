@@ -55,6 +55,7 @@ import { loadConversation } from "@/features/agents/redux/execution-system/thunk
 import { toast } from "@/lib/toast";
 import { DEFAULT_AGENT_ID } from "@/features/cx-chat/components/agent/local-agents";
 import type { RootState } from "@/lib/redux/store";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 // ── URL parsing ───────────────────────────────────────────────────────────────
 
@@ -195,9 +196,7 @@ export function useInstanceBootstrap() {
       //    Programmatic bootstrap resolution, not a user step — Back must
       //    leave the page, not un-resolve the instance.
       if (searchParams.get("instance") !== resolvedId) {
-        router.replace(withInstanceParam(pathname, searchParams, resolvedId), {
-          scroll: false,
-        });
+        replaceAddressWithoutNavigating(withInstanceParam(pathname, searchParams, resolvedId));
       }
 
       // 4. Load the full conversation bundle for /c/ routes. loadConversation

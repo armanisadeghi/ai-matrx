@@ -41,6 +41,7 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { normalizeWebsiteUrl } from "@/features/marketing/lib/website-url";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 export function BrandIdentitySiteSurface({
   children,
@@ -74,7 +75,7 @@ export function BrandIdentitySiteSurface({
     const selected = rows.find((row) => row.id === siteId);
     const next = new URLSearchParams(searchParams.toString());
     next.set("site", selected ? marketingSeg(selected) : siteId);
-    startTransition(() => router.push(`${pathname}?${next.toString()}`));
+    startTransition(() => pushAddressWithoutNavigating(`${pathname}?${next.toString()}`));
   };
 
   const createWebsite = async (typed: string): Promise<string | null> => {

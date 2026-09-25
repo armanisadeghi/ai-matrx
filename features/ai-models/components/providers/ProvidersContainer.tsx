@@ -42,6 +42,7 @@ import type {
   AiProviderUpdate,
 } from "../../types";
 import { AI_PROVIDER_DEEP_LINK_PARAM } from "../../doors";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 function rowToFormData(row: AiProvider): ProviderFormData {
   return {
@@ -478,7 +479,7 @@ export default function ProvidersContainer() {
     if (providerId) params.set(AI_PROVIDER_DEEP_LINK_PARAM, providerId);
     else params.delete(AI_PROVIDER_DEEP_LINK_PARAM);
     const query = params.toString();
-    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    pushAddressWithoutNavigating(query ? `${pathname}?${query}` : pathname);
   };
 
   const openProvider = (provider: AiProvider) => {

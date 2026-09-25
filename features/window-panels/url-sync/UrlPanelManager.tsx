@@ -11,7 +11,7 @@ import {
 import { getHydrator } from "./UrlPanelRegistry";
 import { canonicalizeTokenKey, resolveCanonicalTypeKey } from "./panelKeyAliases";
 import { initUrlHydration } from "./initUrlHydration";
-import { replaceAddressWithoutNavigating } from "./replaceAddressWithoutNavigating";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { LAZY_WINDOW_MOUNT_DEADLINE_MS } from "../constants/lazyWindowMount";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toastErrorAlreadyCaptured } from "@/lib/toast";

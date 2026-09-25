@@ -26,6 +26,7 @@ import {
   createAdminAiModelsScope,
 } from "@/features/surfaces/manifests/admin-ai-models.manifest";
 import { AI_MODEL_DEEP_LINK_PARAM, AI_MODEL_NEW_VALUE } from "../doors";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 export default function AiModelsContainer() {
   const router = useRouter();
@@ -89,9 +90,7 @@ export default function AiModelsContainer() {
       else params.delete(AI_MODEL_DEEP_LINK_PARAM);
       const query = params.toString();
       // Discrete open/close of a model — Back undoes exactly that step.
-      router.push(query ? `${pathname}?${query}` : pathname, {
-        scroll: false,
-      });
+      pushAddressWithoutNavigating(query ? `${pathname}?${query}` : pathname);
     },
     [pathname, router, searchParams],
   );

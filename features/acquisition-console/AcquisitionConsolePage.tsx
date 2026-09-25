@@ -31,6 +31,7 @@ import { supabase } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import { BLOCKED_COLUMNS, CONNECTED_COLUMNS, HAVE_COLUMNS } from "./columns";
 import { loadConsole, type ConsoleData } from "./service";
+import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 const EMPTY: ConsoleData = {
   have: [],
@@ -130,7 +131,7 @@ export function AcquisitionConsolePage() {
       if (next === "all") query.delete("rulebook");
       else query.set("rulebook", next);
       const suffix = query.toString();
-      router.replace(suffix ? `/acquisition?${suffix}` : "/acquisition");
+      replaceAddressOrNavigate(router, suffix ? `/acquisition?${suffix}` : "/acquisition");
     },
     [params, router],
   );

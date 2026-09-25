@@ -83,6 +83,7 @@ import { PromiseList, RouteList } from "./Manifest";
 import { FocusWindow } from "./FocusWindow";
 import { Chapters } from "./Chapters";
 import { Wire } from "./Wire";
+import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 const BASE = "/workflows/bakeoff/reimagine-2";
 
@@ -340,7 +341,7 @@ export function CommissionPage({ definitionId }: { definitionId: string }) {
                     submission,
                   );
                   if (newRunId) {
-                    router.replace(`${BASE}/${definitionId}?run=${newRunId}`);
+                    replaceAddressOrNavigate(router, `${BASE}/${definitionId}?run=${newRunId}`);
                   }
                 }}
               />

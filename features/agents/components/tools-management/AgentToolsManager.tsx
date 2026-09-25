@@ -106,6 +106,7 @@ import {
 import { githubConnectUrl } from "@/features/github-integration/service";
 import { fetchMcpServerConfigs } from "@/features/agents/services/mcp.service";
 import { headerFieldKey } from "@/features/agents/services/mcp-connections.service";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
 import type {
   CustomToolDefinition,
@@ -2958,7 +2959,7 @@ function McpCredentialForm({ entry }: { entry: McpCatalogEntry }) {
   return null;
 }
 
-function BearerTokenForm({ entry }: { entry: McpCatalogEntry }) {
+export function BearerTokenForm({ entry }: { entry: McpCatalogEntry }) {
   const dispatch = useAppDispatch();
   const connectingServerId = useAppSelector(selectMcpConnectingServerId);
   const [token, setToken] = useState("");
@@ -2983,6 +2984,7 @@ function BearerTokenForm({ entry }: { entry: McpCatalogEntry }) {
       ).unwrap();
       setToken("");
     } catch (err) {
+      if (isOrganizationSelectionCancelled(err)) return;
       setError(err instanceof Error ? err.message : "Connection failed");
     }
   };
@@ -3054,7 +3056,7 @@ function BearerTokenForm({ entry }: { entry: McpCatalogEntry }) {
   );
 }
 
-function ApiKeyForm({ entry }: { entry: McpCatalogEntry }) {
+export function ApiKeyForm({ entry }: { entry: McpCatalogEntry }) {
   const dispatch = useAppDispatch();
   const connectingServerId = useAppSelector(selectMcpConnectingServerId);
   const [apiKey, setApiKey] = useState("");
@@ -3082,6 +3084,7 @@ function ApiKeyForm({ entry }: { entry: McpCatalogEntry }) {
       ).unwrap();
       setApiKey("");
     } catch (err) {
+      if (isOrganizationSelectionCancelled(err)) return;
       setError(err instanceof Error ? err.message : "Connection failed");
     }
   };
@@ -3172,7 +3175,7 @@ function ApiKeyForm({ entry }: { entry: McpCatalogEntry }) {
   );
 }
 
-function EnvVarForm({ entry }: { entry: McpCatalogEntry }) {
+export function EnvVarForm({ entry }: { entry: McpCatalogEntry }) {
   const dispatch = useAppDispatch();
   const connectingServerId = useAppSelector(selectMcpConnectingServerId);
   const [configs, setConfigs] = useState<McpServerConfigEntry[]>([]);
@@ -3235,6 +3238,7 @@ function EnvVarForm({ entry }: { entry: McpCatalogEntry }) {
       ).unwrap();
       setEnvValues({});
     } catch (err) {
+      if (isOrganizationSelectionCancelled(err)) return;
       setError(err instanceof Error ? err.message : "Connection failed");
     }
   };

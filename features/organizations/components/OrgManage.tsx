@@ -68,6 +68,7 @@ import { OrgCompetitorLabelsSettings } from "@/features/marketing/competitors/Or
 import { SpendBudgetCard } from "@/features/entitlements/guardrails/SpendBudgetCard";
 import { ProviderAccountsSection } from "@/features/organizations/provider-accounts/ProviderAccountsSection";
 import { OrgDataSwitches } from "@/features/unified-data/cutover/OrgDataSwitches";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 interface OrgManageProps {
   organization: Organization;
@@ -308,7 +309,7 @@ export function OrgManage({
                     const url = new URL(window.location.href);
                     url.hash = s.id;
                     url.searchParams.delete("sectionOffset");
-                    window.history.pushState(window.history.state, "", url);
+                    pushAddressWithoutNavigating(url);
                     window.dispatchEvent(new HashChangeEvent("hashchange"));
                     document
                       .getElementById(s.id)

@@ -74,6 +74,7 @@ import { SharpStatusBand } from "./SharpStatusBand";
 import { SharpPlanSpine } from "./SharpPlanSpine";
 import { SharpScreen, type SharpTab } from "./SharpScreen";
 import { SharpActivityRail } from "./SharpActivityRail";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 interface LoadedDefinition {
   id: string;
@@ -114,9 +115,7 @@ export function SharpRunPage({ definitionId }: { definitionId: string }) {
 
   const openRun = useCallback(
     (id: string | null) => {
-      router.replace(id ? `${pathname}?run=${id}` : pathname, {
-        scroll: false,
-      });
+      replaceAddressWithoutNavigating(id ? `${pathname}?run=${id}` : pathname);
     },
     [router, pathname],
   );

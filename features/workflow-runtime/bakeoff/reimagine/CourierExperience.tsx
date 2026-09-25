@@ -67,6 +67,7 @@ import { JourneyLine, JourneyStrip } from "./JourneyLine";
 import { Marquee } from "./Marquee";
 import { OrderWindow, WatchWindow } from "./TheWindow";
 import { WireTicker } from "./WireTicker";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 type DefinitionState =
   | { phase: "loading" }
@@ -259,12 +260,12 @@ export function CourierExperience({ definitionId }: { definitionId: string }) {
     ).then((newRunId) => {
       if (!newRunId) return; // already toasted by the starter
       setPinnedNodeId(null);
-      router.replace(`${pathname}?run=${newRunId}`, { scroll: false });
+      replaceAddressWithoutNavigating(`${pathname}?run=${newRunId}`);
     });
   };
   const runAgain = () => {
     setPinnedNodeId(null);
-    router.replace(pathname, { scroll: false });
+    replaceAddressWithoutNavigating(pathname);
   };
 
   const showDeadRunNotice = Boolean(runId) && runProbe === "unreachable";

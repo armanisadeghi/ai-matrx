@@ -4,6 +4,7 @@ import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.
 import type { AppDispatch } from "@/lib/redux/store";
 import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { bumpFreshSession } from "../redux/codeWorkspaceSlice";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 /** Focus-registry prefix — mirrors `chat-route` on `/chat`. */
 export const CODE_WORKSPACE_ROUTE = "code-route" as const;
@@ -34,5 +35,5 @@ export function beginFreshCodeChat({
   const next = new URLSearchParams(searchParams.toString());
   next.set("agentId", agentId);
   next.delete("conversationId");
-  router.replace(`${pathname}?${next.toString()}`);
+  replaceAddressWithoutNavigating(`${pathname}?${next.toString()}`);
 }

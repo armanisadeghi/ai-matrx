@@ -61,6 +61,7 @@ import {
   type AgentVersionDiffSides,
 } from "@/features/agents/format";
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 interface AgentVersionDiffPageProps {
   agentId: string;
@@ -118,7 +119,7 @@ export function AgentVersionDiffPage({
     }
     const qs = params.toString();
     // Discrete tab switch — Back returns to the previous tab.
-    router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    pushAddressWithoutNavigating(qs ? `${pathname}?${qs}` : pathname);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 

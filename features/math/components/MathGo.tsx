@@ -11,6 +11,7 @@ import { MathProblemProps } from "../types";
 import ControlPanel from "./ControlPanel";
 import { BackgroundGradient } from "@/components/ui/background-gradient";
 import SolutionAnswer from "./SolutionAnswer";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const MathProblem: React.FC<MathProblemProps> = ({
     id,
@@ -61,7 +62,7 @@ const MathProblem: React.FC<MathProblemProps> = ({
         params.set("subStage", subStage);
         params.set("solution", currentSolution.toString());
         params.set("step", currentStep.toString());
-        router.push(`?${params.toString()}`, { scroll: false });
+        pushAddressWithoutNavigating(`?${params.toString()}`);
     }, [stage, subStage, currentSolution, currentStep]);
 
     const addContent = (content: JSX.Element) => {

@@ -11,10 +11,10 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { BrainCircuit, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
-import type { EntityListService } from "@/lib/entity-list/config";
+import type { EntityBulkAction } from "@/lib/entity-list/selection";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAccessToken,
@@ -26,17 +26,20 @@ import { useOrganizationRequired } from "@/features/organizations/useOrganizatio
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { onMandateCacheInvalidated } from "@/features/mandates/service";
 import {
+  batchEligibilityOf,
   rungIdentityOf,
   type ImpactVerdict,
 } from "@/features/mandates/admin/impact";
 import { useImpactAdvance } from "@/features/mandates/admin/impact-advance";
+import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
+import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import { adminMandateListConfig } from "./listConfig";
 import {
   MandateAdminListActionsContext,
   useMandateAdminListState,
 } from "./context";
-import { ensureMandateAdminList, invalidateMandateAdminList } from "./store";
-import { countsOf, facetsOf, pageOf, type MandateAdminViewer } from "./service";
+import { invalidateMandateAdminList } from "./store";
+import { createMandateAdminService } from "./service";
 import type { MandateAdminRow } from "./types";
 
 /** What each secondary read feeds, in the words of the columns it fills. */
@@ -49,14 +52,6 @@ const SOURCE_LABEL: Record<string, string> = {
   inputs: "Inputs",
 };
 
-function organizationNamesOf(rows: MandateAdminRow[]): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const row of rows) {
-    if (row.organizationId && !row.isSystem) out[row.organizationId] = row.homeLabel;
-  }
-  return out;
-}
-
 export function MandateAdminListPage() {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
@@ -66,31 +61,75 @@ export function MandateAdminListPage() {
   const { organizationState } = useOrganizationRequired();
   const listState = useMandateAdminListState();
 
-  // Any mandate write anywhere (the Enabled switch included) reloads the list.
+  // Any mandate write anywhere (the Enabled switch included) re-asks the list.
   useEffect(() => onMandateCacheInvalidated(() => invalidateMandateAdminList()), []);
 
+  // The Health cell's twin fixes read the agent lineage index.
+  useEffect(() => {
+    if (accessToken) dispatch(fetchAgentsListFull());
+  }, [accessToken, dispatch]);
+
   const verdictByRung = new Map<string, ImpactVerdict>();
-  for (const row of listState.rows) {
-    for (const verdict of [row.defaultVerdict, ...row.bindingVerdicts]) {
-      if (verdict) verdictByRung.set(rungIdentityOf(verdict.apply_token), verdict);
-    }
+  for (const verdict of listState.reports.impact?.verdicts ?? []) {
+    verdictByRung.set(rungIdentityOf(verdict.apply_token), verdict);
   }
   const writes = useImpactAdvance({
     verdictByRung,
-    onWritten: () => invalidateMandateAdminList(),
+    onWritten: () => invalidateMandateAdminList(true),
   });
+  const openImpactBatchWindow = useOpenImpactBatchWindow();
+
+  // ── Batch work over the selection — the old console's "Review as batch"
+  // and "Advance selected", carried over by import. ────────────────────────
+  const bulkActions: EntityBulkAction<MandateAdminRow>[] = [
+    {
+      id: "review-batch",
+      label: "Review as batch",
+      icon: BrainCircuit,
+      variant: "outline",
+      run: ({ rows }) => {
+        const agentIds = [
+          ...new Set(
+            rows
+              .map((row) => row.defaultVerdict?.agent_id ?? row.agentId)
+              .filter((id): id is string => Boolean(id)),
+          ),
+        ];
+        openImpactBatchWindow({
+          agentIds,
+          mode: "post_batch",
+          batchLabel: "Mandate list",
+          sourceSentence: `${rows.length} mandate${rows.length === 1 ? "" : "s"} selected on the mandate list`,
+          preselectedRungIds: rows
+            .map((row) => row.defaultVerdict)
+            .filter((v): v is ImpactVerdict => v !== null)
+            .map((v) => rungIdentityOf(v.apply_token)),
+          surfaceName: "administration-mandates",
+        });
+        return { keepSelection: true };
+      },
+    },
+    {
+      id: "advance",
+      label: "Advance selected",
+      run: async ({ rows }) => {
+        const verdicts = rows
+          .map((row) => row.defaultVerdict)
+          .filter((v): v is ImpactVerdict => v !== null && batchEligibilityOf(v).batchable);
+        if (verdicts.length === 0) {
+          return {
+            message: "None of the selected mandates can advance: each is already current, blocked, or a person's own pin.",
+            keepSelection: true,
+          };
+        }
+        // `advance` opens its own confirm naming what moves (useImpactAdvance).
+        await writes.advance(verdicts, `Mandate list: ${rows.length} selected`);
+      },
+    },
+  ];
 
   const ready = authReady && Boolean(accessToken) && Boolean(organizationId);
-  const viewer: MandateAdminViewer = { userId };
-  const load = () => ensureMandateAdminList(dispatch);
-  const service: EntityListService<MandateAdminRow> = {
-    fetchPage: async (query, sort) => pageOf(await load(), query, viewer, sort),
-    fetchCounts: async (query) => {
-      const rows = await load();
-      return countsOf(rows, query, viewer, organizationNamesOf(rows));
-    },
-    fetchFacets: async (query) => facetsOf(await load(), query, viewer),
-  };
+  const service = createMandateAdminService(dispatch);
 
   if (!ready) {
     return (
@@ -119,6 +158,12 @@ export function MandateAdminListPage() {
           ...adminMandateListConfig,
           service,
           serviceKey: `${userId ?? ""}:${listState.version}`,
+          bulkActions,
+          bulkSelection: {
+            noun: "mandate",
+            // Only a graded mandate has a rung the batch panel can act on.
+            isRowSelectable: (row) => row.defaultVerdict !== null || Boolean(row.agentId),
+          },
         }}
         defaultScope={{ kind: "system" }}
         clearsShellHeader={false}

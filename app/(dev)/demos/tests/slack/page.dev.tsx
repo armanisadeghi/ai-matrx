@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import SlackManager from './components/SlackManager';
 import { TextInputDialog } from '@/components/dialogs/text-input/TextInputDialog';
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const clientId = process.env.NEXT_PUBLIC_SLACK_CLIENT_ID;
 const scopes = [
@@ -45,7 +46,7 @@ const SlackPage = () => {
       setIsLoggedIn(true);
 
       // Remove token from URL to prevent it from being exposed
-      window.history.replaceState({}, document.title, window.location.pathname);
+      replaceAddressWithoutNavigating(window.location.pathname);
     }
   }, []);
 

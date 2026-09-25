@@ -37,6 +37,7 @@ import { BacklinkAnchorProfile } from "@/features/marketing/components/backlinks
 import { BacklinkObservationTable } from "@/features/marketing/components/backlinks/BacklinkObservationTable";
 import type { BacklinkObservationRow } from "@/features/marketing/data/backlinks-types";
 import type { BacklinkEnrichmentRunState } from "@/features/marketing/components/backlinks/lib/enrichment-run";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const ANCHOR_PROFILE_KEY = "anchor-profile";
 
@@ -90,7 +91,7 @@ export function BacklinkInsightsTab({
     startNavigation(() => {
       const qs = params.toString();
       // Discrete lens switch — Back returns to the previous lens.
-      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      pushAddressWithoutNavigating(qs ? `${pathname}?${qs}` : pathname);
     });
   };
 

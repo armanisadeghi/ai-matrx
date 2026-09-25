@@ -35,6 +35,7 @@ import type { WorkflowDefinitionLike } from "../../trigger-points";
 import { RunStartForm } from "../RunStartForm";
 import { RunStage } from "./RunStage";
 import { MasterworkRulesProvider } from "@/features/masterwork/rules-context/MasterworkRulesContext";
+import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 interface LoadedWorkflow {
   id: string;
@@ -155,7 +156,7 @@ export function WorkflowRunPage({
       setShowForm(false);
       toast.success("Off it goes.");
       // The run id rides the URL so a refresh re-adopts and resumes.
-      router.replace(`/workflows/${definitionId}?run=${started}`);
+      replaceAddressOrNavigate(router, `/workflows/${definitionId}?run=${started}`);
     },
     [definitionId, router],
   );
@@ -170,7 +171,7 @@ export function WorkflowRunPage({
   const runAgain = useCallback(() => {
     if (!definitionId) return;
     setShowForm(true);
-    router.replace(`/workflows/${definitionId}`);
+    replaceAddressOrNavigate(router, `/workflows/${definitionId}`);
   }, [definitionId, router]);
 
   const header = (

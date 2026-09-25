@@ -32,6 +32,7 @@ import {
   useMarketingSiteOptional,
 } from "@/features/marketing/lib/brand-context";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { pushAddressOrNavigate, replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 export type PlanView =
   "tree" | "table" | "map" | "entities" | "setup" | "ai-runs" | "brief";
@@ -133,7 +134,7 @@ export function usePlanWorkspaceParams() {
     (stage: string, next: PlanView) => {
       if (!siteId) return;
       const params = new URLSearchParams({ stage });
-      router.push(`${viewHref(next)}?${params.toString()}`, { scroll: false });
+      pushAddressOrNavigate(router, `${viewHref(next)}?${params.toString()}`, { scroll: false });
     },
     [router, siteId, viewHref],
   );
@@ -145,7 +146,7 @@ export function usePlanWorkspaceParams() {
    */
   const clearResearchTopicReturn = useCallback(() => {
     if (!siteId || !researchTopicReturnId) return;
-    router.replace(viewHref(view), { scroll: false });
+    replaceAddressOrNavigate(router, viewHref(view), { scroll: false });
   }, [researchTopicReturnId, router, siteId, view, viewHref]);
 
   /** The list this workspace sits under — brand-scoped when we know the brand. */

@@ -186,6 +186,7 @@ import { DimensionCoverage } from "@/features/marketing/seo/value-system/coverag
 import { RulingDialog, type RulingDraft } from "./RulingDialog";
 import { AddLevelDialog } from "../pickers/AddLevelDialog";
 import { RulingSession } from "./RulingSession";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const REVIEW_SORTS = new Set(["clicks", "impressions", "score", "keyword"]);
 
@@ -421,7 +422,7 @@ export function ValueWorkbench() {
       : params.delete("cols");
     // P27 — adding or removing a column is a discrete change, so Back undoes
     // exactly it.
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    pushAddressWithoutNavigating(`${pathname}?${params.toString()}`);
   };
   const focusKeyword = searchParams.get("kw");
   const focusBand = searchParams.get("band");

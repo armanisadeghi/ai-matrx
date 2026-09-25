@@ -15,6 +15,8 @@ import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import noBarrelFiles from "eslint-plugin-no-barrel-files";
 import tseslint from "typescript-eslint";
 
+import { noNavigationForQueryState } from "./scripts/lint-rules/no-navigation-for-query-state.mjs";
+
 // eslint-plugin-react's `version: "detect"` (what eslint-config-next sets) calls
 // the `context.getFilename()` method that ESLint 10 removed, which made EVERY
 // lint run crash with `contextOrFilename.getFilename is not a function`. The
@@ -186,6 +188,9 @@ const OUR_STORAGE_HOST_RE =
 
 const matrxLintPlugin = {
   rules: {
+    // lane URL-STATE (2026-09-24): the address changes without a navigation
+    // only through lib/url-state/addressWithoutNavigating.ts.
+    "no-navigation-for-query-state": noNavigationForQueryState,
     "no-raw-storage-media": {
       meta: {
         type: "problem",
@@ -1662,6 +1667,9 @@ export default [
       // File ID is identity. Resolving an owned file to a browser URL and
       // refetching it bypasses the handler's authorization/byte path.
       "matrx/no-file-url-refetch": "error",
+      // Query state never costs a navigation, and no raw history write
+      // bypasses the one door (lane URL-STATE, 2026-09-24).
+      "matrx/no-navigation-for-query-state": "error",
       // Single-path JSON extraction — no parallel raw-stream scanners.
       // Loud but non-blocking, matching the other doctrine bans here.
       "matrx/no-parallel-stream-json-scan": "warn",

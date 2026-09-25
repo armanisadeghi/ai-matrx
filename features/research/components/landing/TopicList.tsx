@@ -30,6 +30,7 @@ import {
 import { StatusBadge } from "../shared/StatusBadge";
 import type { ResearchTopic } from "../../types";
 import { supabase } from "@/utils/supabase/client";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
@@ -390,7 +391,7 @@ export default function TopicList() {
     else params.delete("q");
     // Free-text search: replace so typing does not push one entry per
     // keystroke. Discrete controls on this surface push.
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    replaceAddressWithoutNavigating(`${pathname}?${params.toString()}`);
   };
 
   const [navigatingId, setNavigatingId] = useState<string | null>(null);

@@ -86,6 +86,7 @@ import { researchStartDestination } from "@/features/research/utils/init-route";
 // Universal v3 context menu — lightweight shell, imported statically;
 // MenuContent lazy-loads on first open.
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 // context-menu-exempt: entity — the form that runs BEFORE the research exists — no row has been created yet, so there is no record to name
 
@@ -1347,14 +1348,14 @@ export default function ResearchInitForm() {
     params.set("mode", mode);
     if (step >= 2) params.set("step", "2");
     else params.delete("step");
-    router.push(`${pathname}?${params.toString()}`);
+    pushAddressWithoutNavigating(`${pathname}?${params.toString()}`);
   };
 
   const handleModeSelect = (mode: Mode) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("mode", mode);
     params.delete("step");
-    router.push(`${pathname}?${params.toString()}`);
+    pushAddressWithoutNavigating(`${pathname}?${params.toString()}`);
   };
 
   const handleContinue = () => {
@@ -1384,7 +1385,7 @@ export default function ResearchInitForm() {
     params.delete("mode");
     params.delete("step");
     const qs = params.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname);
+    pushAddressWithoutNavigating(qs ? `${pathname}?${qs}` : pathname);
   };
 
   // ── Template handling ─────────────────────────────────────────────────────

@@ -28,6 +28,7 @@ import {
   codeWorkspaceSurfaceKey,
 } from "./begin-fresh-code-chat";
 import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 interface ChatPanelSlotProps {
   /** Base path used by header controls inside the runner. Defaults to the
@@ -79,7 +80,7 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
     const next = new URLSearchParams(searchParams.toString());
     next.set("agentId", defaultAgentId);
     // Programmatic: resolving the default agent on mount is not a user step.
-    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+    replaceAddressWithoutNavigating(`${pathname}?${next.toString()}`);
     // We deliberately depend on `defaultAgentId` only — once the URL has
     // an agentId it stays sticky across reruns.
     // eslint-disable-next-line react-hooks/exhaustive-deps

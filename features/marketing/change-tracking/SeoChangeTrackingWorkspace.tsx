@@ -92,6 +92,7 @@ import {
   type UntrackedSnapshotChange,
 } from "./data";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const STATUS_OPTIONS = [
   "planned",
@@ -1857,9 +1858,7 @@ export function SeoChangeTrackingWorkspace({
     }
     const query = params.toString();
     // Discrete drill-in/out — Back undoes exactly this selection.
-    router.push(query ? `${pathname}?${query}` : pathname, {
-      scroll: false,
-    });
+    pushAddressWithoutNavigating(query ? `${pathname}?${query}` : pathname);
   };
   const [composerOpen, setComposerOpen] = useState(false);
   const [seed, setSeed] = useState<ComposerSeed>({});

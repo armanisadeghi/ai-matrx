@@ -58,6 +58,7 @@ import {
   type PackStatus,
 } from "@/features/admin/shared-knowledge/packs/data";
 import type { StarterPackSummary } from "@/features/marketing/seo/value-system/types";
+import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 export function LibraryCuratePage() {
   const router = useRouter();
@@ -81,9 +82,7 @@ export function LibraryCuratePage() {
       if (id) params.set("pack", id);
       else params.delete("pack");
       // Discrete selection — Back closes the pack the user just opened.
-      router.push(`/knowledge/library-curate${params.size ? `?${params}` : ""}`, {
-        scroll: false,
-      });
+      pushAddressOrNavigate(router, `/knowledge/library-curate${params.size ? `?${params}` : ""}`, { scroll: false });
     },
     [router, search],
   );

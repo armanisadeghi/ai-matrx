@@ -70,6 +70,7 @@ import {
 import FeedbackDetailDialog from "./FeedbackDetailDialog";
 import { feedbackBrief, feedbackRowSummary } from "../format";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const TABLE_ID = "admin-feedback";
 const DONE: FeedbackStatus[] = ["resolved", "closed", "wont_fix", "deferred"];
@@ -316,9 +317,7 @@ export default function FeedbackTable() {
       id
         ? next.set(FEEDBACK_DEEP_LINK_PARAM, id)
         : next.delete(FEEDBACK_DEEP_LINK_PARAM);
-      router.replace(`${pathname}${next.size ? `?${next}` : ""}`, {
-        scroll: false,
-      });
+      replaceAddressWithoutNavigating(`${pathname}${next.size ? `?${next}` : ""}`);
     },
     [params, pathname, router],
   );

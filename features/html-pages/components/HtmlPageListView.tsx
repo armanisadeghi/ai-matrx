@@ -58,6 +58,7 @@ import {
   Rocket,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 interface HtmlPageListViewProps {
   pages: HtmlPageSummary[];
@@ -135,7 +136,7 @@ export default function HtmlPageListView({
     }
     const qs = htmlPagesListStateToSearchParams(next).toString();
     const href = qs ? `${pathname}?${qs}` : pathname;
-    router.replace(href, { scroll: false });
+    replaceAddressWithoutNavigating(href);
     saveHtmlPagesListReturn(qs);
   };
 

@@ -32,6 +32,7 @@ import { ThumbnailStrip } from "./ThumbnailStrip";
 import { InspectorRail, type StudioInspectorTab } from "./InspectorRail";
 import type { PdfRegion } from "@/features/pdf/components/viewer/annotation-layer/types";
 import type { AnnotationLayerMode } from "@/features/pdf/components/viewer/annotation-layer/types";
+import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 interface StudioShellProps {
   fileId: string;
@@ -92,9 +93,7 @@ export function StudioShell({ fileId }: StudioShellProps) {
       if (next.annotation === null) params.delete("annotation");
       else if (next.annotation) params.set("annotation", next.annotation);
       const qs = params.toString();
-      router.replace(`/files/f/${fileId}/studio${qs ? `?${qs}` : ""}`, {
-        scroll: false,
-      });
+      replaceAddressOrNavigate(router, `/files/f/${fileId}/studio${qs ? `?${qs}` : ""}`, { scroll: false });
     },
     [router, searchParams, fileId],
   );

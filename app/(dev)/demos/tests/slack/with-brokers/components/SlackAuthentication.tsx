@@ -6,6 +6,7 @@ import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
 import { SLACK_BROKER_IDS } from './BrokerSlackClient';
 import { MessageSquare, Shield, CheckCircle2, XCircle, Loader2, ChevronRight } from 'lucide-react';
 import { FaSlack } from "react-icons/fa";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 // Define scopes required for our Slack app
 const scopes = [
@@ -76,7 +77,7 @@ export function SlackAuthentication() {
       localStorage.setItem('slackTokens', JSON.stringify(updatedTokens));
       setSavedTokens(updatedTokens);
       
-      window.history.replaceState({}, document.title, window.location.pathname);
+      replaceAddressWithoutNavigating(window.location.pathname);
       
       setTimeout(() => setIsConnecting(false), 1000);
     }

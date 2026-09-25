@@ -32,6 +32,7 @@ import { selectRun } from "../redux/selectors";
 import { adoptCloudBrowserRunFromStream } from "../redux/adoptRunFromStream";
 import { useOpenCloudBrowserCanvas } from "../hooks/useOpenCloudBrowserCanvas";
 import { CLOUD_BROWSER_HANDOFF_PARAM } from "../constants";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 function CloudBrowserHandoffDeepLinkInner(): null {
   const params = useSearchParams();
@@ -84,9 +85,7 @@ function CloudBrowserHandoffDeepLinkInner(): null {
       const next = new URLSearchParams(params.toString());
       next.delete(CLOUD_BROWSER_HANDOFF_PARAM);
       const query = next.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, {
-        scroll: false,
-      });
+      replaceAddressWithoutNavigating(query ? `${pathname}?${query}` : pathname);
     })();
 
     return () => {

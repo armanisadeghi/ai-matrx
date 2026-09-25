@@ -54,6 +54,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
+import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 export default function TaskContentNew() {
   const router = useRouter();
@@ -123,7 +124,7 @@ export default function TaskContentNew() {
     } else {
       params.delete("task");
     }
-    router.replace(`/tasks?${params.toString()}`, { scroll: false });
+    replaceAddressOrNavigate(router, `/tasks?${params.toString()}`, { scroll: false });
   };
 
   const handleTaskToggle = async (_projectId: string, taskId: string) => {
@@ -428,9 +429,7 @@ export default function TaskContentNew() {
                     const params = new URLSearchParams(searchParams.toString());
                     params.delete("task");
                     const qs = params.toString();
-                    router.replace(qs ? `/tasks?${qs}` : "/tasks", {
-                      scroll: false,
-                    });
+                    replaceAddressOrNavigate(router, qs ? `/tasks?${qs}` : "/tasks", { scroll: false });
                   }}
                 />
               ) : (

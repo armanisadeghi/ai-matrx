@@ -66,6 +66,7 @@ import { FocusPanel } from "./FocusPanel";
 import { ActivityRail } from "./ActivityRail";
 import { Delivered, PromiseStrip } from "./Delivered";
 import { Intake } from "./Intake";
+import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 type Loaded =
   | { state: "loading" }
@@ -321,9 +322,7 @@ function ReadyPage({
   const startRun = async (submission: ServedSubmission) => {
     const newRunId = await startServedRun(loaded.definitionId, submission);
     if (newRunId) {
-      router.replace(
-        `/workflows/bakeoff/sharp-2/${loaded.definitionId}?run=${newRunId}`,
-      );
+      replaceAddressOrNavigate(router, `/workflows/bakeoff/sharp-2/${loaded.definitionId}?run=${newRunId}`);
     }
   };
 

@@ -22,6 +22,7 @@ import {
   parseModelQueryExtras,
   type ModelQueryExtras,
 } from "../utils/canonicalTableQuery";
+import { pushAddressWithoutNavigating, replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 export type TabState = {
   tableQuery?: ModelQueryExtras;
@@ -224,10 +225,10 @@ export function useTabUrlState() {
       const textKeys = tabIds.flatMap((id) => [`${id}.q`, `${id}.label`]);
       const mode = historyModeForParamChange(current, params, textKeys);
       const href = `${pathname}?${params.toString()}`;
-      // These parameters only drive this client-owned catalog. Next integrates
-      // native history with useSearchParams; avoid a server navigation per keypress.
-      if (mode === "replace") window.history.replaceState(null, "", href);
-      else window.history.pushState(null, "", href);
+      // These parameters only drive this client-owned catalog: the one address
+      // door keeps useSearchParams in step with no server navigation per keypress.
+      if (mode === "replace") replaceAddressWithoutNavigating(href);
+      else pushAddressWithoutNavigating(href);
     },
     [pathname, searchParams, tabIds],
   );

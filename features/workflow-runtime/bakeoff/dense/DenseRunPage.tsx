@@ -37,6 +37,7 @@ import {
 import type { WorkflowDefinitionLike } from "../../trigger-points";
 import { DenseIntake } from "./DenseIntake";
 import { DenseConsole } from "./DenseConsole";
+import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 interface LoadedWorkflow {
   id: string;
@@ -117,7 +118,7 @@ export function DenseRunPage({ definitionId }: { definitionId: string }) {
       if (!started) return;
       toast.success("Off it goes.");
       // The run id rides the URL so a refresh re-adopts and resumes.
-      router.replace(`/workflows/bakeoff/dense/${definitionId}?run=${started}`);
+      replaceAddressOrNavigate(router, `/workflows/bakeoff/dense/${definitionId}?run=${started}`);
     },
     [definitionId, router, startServedRun],
   );
@@ -126,7 +127,7 @@ export function DenseRunPage({ definitionId }: { definitionId: string }) {
 
   const runAgain = useCallback(() => {
     if (collectsInput) {
-      router.replace(`/workflows/bakeoff/dense/${definitionId}`);
+      replaceAddressOrNavigate(router, `/workflows/bakeoff/dense/${definitionId}`);
       return;
     }
     void begin({ inputs: {}, inputSources: {} });

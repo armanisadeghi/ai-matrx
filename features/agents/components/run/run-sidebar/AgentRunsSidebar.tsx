@@ -18,6 +18,7 @@ import { ConversationHoverPreview } from "@/features/agents/components/previews/
 import { ItemRow } from "@/components/official/item/ItemRow";
 import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
 import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 interface AgentRunsSidebarProps {
   agentId: string;
@@ -83,7 +84,7 @@ export function AgentRunsSidebar({
   const handleConversationSelect = (conversationId: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("conversationId", conversationId);
-    router.push(`${pathname}?${params.toString()}`);
+    pushAddressWithoutNavigating(`${pathname}?${params.toString()}`);
   };
 
   const agentName = useAppSelector((state) => selectAgentName(state, agentId));

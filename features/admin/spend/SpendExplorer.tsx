@@ -46,6 +46,7 @@ import { BatchSavingsPanel } from "@/features/batch-savings/BatchSavingsPanel";
 import { ADMIN_BILLING_SPEND_SURFACE_NAME } from "@/features/surfaces/manifests/admin-billing-spend.manifest";
 import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildBillingSpendExplorerScope } from "./spend-surface-scope";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 /** Mirrors the database's cap in `admin_spend_breakdown`. */
 const DATABASE_WINDOW_DAY_CAP = 92;
@@ -189,7 +190,7 @@ function MountedSpendExplorer({ refreshKey }: { refreshKey: number }) {
       new URLSearchParams(searchParams.toString()),
       next,
     );
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    replaceAddressWithoutNavigating(`${pathname}?${params.toString()}`);
   };
 
   const drill = (dim: SpendDimension, key: string) => {

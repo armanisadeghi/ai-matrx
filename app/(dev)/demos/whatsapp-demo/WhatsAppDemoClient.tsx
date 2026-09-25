@@ -9,6 +9,7 @@ import {
   type WADataMode,
 } from "@/features/whatsapp-clone/hooks/WhatsAppDataModeProvider";
 import { WhatsAppShell } from "@/features/whatsapp-clone/shell/WhatsAppShell";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 interface WhatsAppDemoClientProps {
   initialMode: WADataMode;
@@ -30,7 +31,7 @@ export function WhatsAppDemoClient({
     setMode(next);
     const usp = new URLSearchParams(params?.toString() ?? "");
     usp.set("mock", next === "mock" ? "1" : "0");
-    router.replace(`?${usp.toString()}`, { scroll: false });
+    replaceAddressWithoutNavigating(`?${usp.toString()}`);
   };
 
   return (

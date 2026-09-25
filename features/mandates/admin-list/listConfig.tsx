@@ -9,8 +9,11 @@
 // by the page (it needs the viewer and dispatch), so it is left empty here.
 
 import { useState } from "react";
-import { Copy, ExternalLink, Eye } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { Copy, ExternalLink, Eye, Trash2 } from "lucide-react";
+import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { softDeleteMandate } from "@/features/mandates/admin/service";
+import { invalidateMandateAdminList } from "./store";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import type {
   EntityListConfig,
@@ -25,6 +28,33 @@ import type { MandateAdminRow } from "./types";
 
 function copy(text: string, what: string) {
   void navigator.clipboard.writeText(text).then(() => toast.success(`Copied ${what}`));
+}
+
+/**
+ * Remove a mandate — the old console's Remove, carried over: soft, confirmed,
+ * and the confirm names what a person actually loses and what survives.
+ */
+async function removeMandate(row: MandateAdminRow): Promise<void> {
+  const ok = await confirm({
+    title: `Remove "${row.name}"?`,
+    description:
+      `Everywhere that runs this job stops finding it: the lists, the pickers, and any call that names the key "${row.mandateKey}" will report it missing. ` +
+      `Anything bound to it — ${row.overridesCount === 0 ? "it has no customizations" : `its ${row.overridesCount} customization${row.overridesCount === 1 ? "" : "s"}`}, every holder and mapping — stops applying with it. ` +
+      `This is a soft removal: the record and its history are kept, so an admin can restore it if this was a mistake.`,
+    confirmLabel: "Remove it",
+    cancelLabel: "Keep it",
+    variant: "destructive",
+  });
+  if (!ok) return;
+  const ref = { type: "mandate", id: row.id, title: row.mandateKey };
+  try {
+    await softDeleteMandate(row.id);
+    dismissRecordToasts(ref);
+    recordToast.success(ref, `Removed "${row.name}" — resolving it now refuses.`);
+    invalidateMandateAdminList();
+  } catch (error: unknown) {
+    toast.error(error instanceof Error ? error.message : "That job was not removed.");
+  }
 }
 
 function useMandateAdminRowActions(
@@ -56,6 +86,18 @@ function useMandateAdminRowActions(
           items: [
             { id: "copy-key", label: "Copy key", icon: Copy, onSelect: () => copy(row.mandateKey, "key") },
             { id: "copy-id", label: "Copy id", icon: Copy, onSelect: () => copy(row.id, "id") },
+          ],
+        },
+        {
+          id: "danger",
+          items: [
+            {
+              id: "remove",
+              label: "Remove",
+              icon: Trash2,
+              tone: "destructive",
+              onSelect: () => void removeMandate(row),
+            },
           ],
         },
       ],

@@ -76,6 +76,7 @@ import type { StarterPackAdoption, StarterPackSummary } from "../types";
 import { PackReview } from "./PackReview";
 import { ReadyDefaultsBanner } from "./ReadyDefaultsBanner";
 import { ResetToPackDialog } from "./ResetToPackDialog";
+import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 const STATUS_META: Record<
   string,
@@ -570,10 +571,10 @@ export function StarterPackCatalog() {
 
   const openReview = (packId: string) =>
     router.push(packReviewHref(brandId, siteId, packId));
-  const closeReview = () => router.push(`${basePath}?pack=${activeId ?? ""}`);
+  const closeReview = () => pushAddressOrNavigate(router, `${basePath}?pack=${activeId ?? ""}`);
   const selectPack = (packId: string) => {
     setSelectedId(packId);
-    router.push(`${basePath}?pack=${packId}`);
+    pushAddressOrNavigate(router, `${basePath}?pack=${packId}`);
   };
 
   // ── REVIEW ──────────────────────────────────────────────────────────────

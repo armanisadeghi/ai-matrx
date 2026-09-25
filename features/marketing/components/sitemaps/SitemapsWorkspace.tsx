@@ -53,6 +53,7 @@ import { webCopy, webLocation } from "@/features/marketing/lib/copy-payloads";
 import type { SiteSitemap } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 export function SitemapsWorkspace() {
   const { site, brandId } = useMarketingSite();
@@ -79,9 +80,7 @@ export function SitemapsWorkspace() {
       else next.delete("scope");
       const query = next.toString();
       // Discrete scope toggle — Back undoes exactly this toggle.
-      router.push(query ? `${pathname}?${query}` : pathname, {
-        scroll: false,
-      });
+      pushAddressWithoutNavigating(query ? `${pathname}?${query}` : pathname);
     },
     [router, pathname, searchParams],
   );

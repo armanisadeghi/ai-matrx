@@ -10,7 +10,7 @@
 
 import { use, useCallback, useMemo, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { RecordsMount, TablePage, WhereItLives, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { useTable } from "@ai-matrx/records/react";
 import type { AgentBuildAsk, OpenRecordsAsk, PageView } from "@ai-matrx/records-ui";
@@ -49,6 +49,7 @@ import {
   useRowChangeAgentOffer,
 } from "@/features/unified-data/row-change-agent/RowChangeAgentLink";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
+import { replaceAddressWithoutNavigating, currentPathWithSearch } from "@/lib/url-state/addressWithoutNavigating";
 
 /**
  * THE PAGE'S TITLE IS THE TABLE'S OWN NAME (owner, 2026-09-24: a table he knows must look like
@@ -162,20 +163,21 @@ export default function UnifiedDataTableRoute({
       return null;
     }
   }, [rawFilter]);
-  const pathname = usePathname();
   /**
    * AND THE ADDRESS FOLLOWS THEM. Half a deep link is a link that works when
    * you arrive and lies when you copy it out of the bar afterwards. `replace`
    * rather than `push`, because which view you are looking at is not a place
-   * you want the Back button to walk you through one layout at a time.
+   * you want the Back button to walk you through one layout at a time. And a
+   * history write, not `router.replace`: switching a layout is bookkeeping on
+   * this page, never a server round trip (lane URL-STATE).
    */
   const onViewChanged = useCallback(
     (view: PageView | string) => {
       const next = new URLSearchParams(searchParams.toString());
       next.set("view", view);
-      router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+      replaceAddressWithoutNavigating(currentPathWithSearch(next));
     },
-    [router, pathname, searchParams],
+    [searchParams],
   );
   const userId = useAppSelector(selectUserId);
   /**

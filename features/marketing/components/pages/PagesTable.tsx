@@ -67,6 +67,7 @@ import {
 import { cn } from "@/lib/utils";
 import { GscClassBar } from "@/features/marketing/search-console/components/ambassador/GscClassBar";
 import { GOOGLE_SEARCH_CONSOLE_PROVIDER } from "@/features/marketing/lib/provider-names";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const STATUS_OPTIONS = [
   { value: "active", label: "Active" },
@@ -169,9 +170,7 @@ function CoverageChips() {
       next.delete("page");
       const query = next.toString();
       // Discrete coverage filter — Back undoes exactly this choice.
-      router.push(query ? `${pathname}?${query}` : pathname, {
-        scroll: false,
-      });
+      pushAddressWithoutNavigating(query ? `${pathname}?${query}` : pathname);
     },
     [router, pathname, searchParams],
   );
@@ -188,9 +187,7 @@ function CoverageChips() {
       next.delete("page");
       const query = next.toString();
       // Discrete scope filter — Back undoes exactly this choice.
-      router.push(query ? `${pathname}?${query}` : pathname, {
-        scroll: false,
-      });
+      pushAddressWithoutNavigating(query ? `${pathname}?${query}` : pathname);
     },
     [router, pathname, searchParams],
   );

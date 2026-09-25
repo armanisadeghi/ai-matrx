@@ -68,6 +68,7 @@ import {
   usePublishOpenCreate,
 } from "./BundlesSurfaceRuntime";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 type Filter = "active" | "all";
 
@@ -117,9 +118,7 @@ function BundlesAdminPageInner() {
     else params.delete(BUNDLE_DEEP_LINK_PARAM);
     const query = params.toString();
     // Discrete selection — Back closes the bundle the user just opened.
-    router.push(query ? `${pathname}?${query}` : pathname, {
-      scroll: false,
-    });
+    pushAddressWithoutNavigating(query ? `${pathname}?${query}` : pathname);
   };
 
   const loadList = async () => {

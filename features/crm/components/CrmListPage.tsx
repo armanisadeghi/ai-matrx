@@ -119,6 +119,7 @@ import { CRM_CREATE_NAME_PARAM, CRM_CREATE_PARAM } from "../routes";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { CRM_SURFACE_NAME } from "@/features/surfaces/manifests/crm.manifest";
 import { buildCrmListContextData } from "../agent-context/buildCrmListContextData";
+import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 const SURFACE_KEY = "crm-parties";
 const SURFACE_DEFAULTS = {
@@ -527,7 +528,7 @@ export function CrmListPage({
     const query = next.toString();
     // Programmatic: consuming the one-shot create intent off the current
     // entry so a refresh cannot re-open the create dialog.
-    router.replace(query ? `/crm?${query}` : "/crm", { scroll: false });
+    replaceAddressOrNavigate(router, query ? `/crm?${query}` : "/crm", { scroll: false });
   }, [
     requestedCreateKind,
     requestedCreateName,

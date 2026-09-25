@@ -10,6 +10,7 @@ import {
 } from "@/features/whatsapp-clone/hooks/WhatsAppDataModeProvider";
 import { WhatsAppShellInner } from "@/features/whatsapp-clone/shell/WhatsAppShellInner";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const DEMO_WINDOW_ID = "whatsapp-shell-demo";
 
@@ -34,7 +35,7 @@ export function WhatsAppWindowDemoClient({
     setMode(next);
     const usp = new URLSearchParams(params?.toString() ?? "");
     usp.set("mock", next === "mock" ? "1" : "0");
-    router.replace(`?${usp.toString()}`, { scroll: false });
+    replaceAddressWithoutNavigating(`?${usp.toString()}`);
   };
 
   return (

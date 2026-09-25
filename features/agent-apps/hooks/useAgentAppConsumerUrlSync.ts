@@ -33,6 +33,7 @@ import type {
   AgentAppVisibilityFilter,
 } from "@/features/agent-apps/redux/agent-app-consumers/slice";
 import type { UseAgentAppConsumerReturn } from "@/features/agent-apps/hooks/useAgentAppConsumer";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const VALID_TABS: AgentAppTab[] = ["mine", "shared", "all"];
 const VALID_SORTS: AgentAppSortOption[] = [
@@ -141,9 +142,7 @@ export function useAgentAppConsumerUrlSync(
     const currentStr = searchParams.toString();
     if (nextStr === currentStr) return;
 
-    router.replace(nextStr ? `${pathname}?${nextStr}` : pathname, {
-      scroll: false,
-    });
+    replaceAddressWithoutNavigating(nextStr ? `${pathname}?${nextStr}` : pathname);
   }, [
     consumer.tab,
     consumer.sortBy,

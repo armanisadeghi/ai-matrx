@@ -25,6 +25,7 @@ import {
 import { useSiteOptions } from "@/features/marketing/data/hooks";
 import type { MarketingSite } from "@/features/marketing/types";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 export interface FrontDoorSiteState {
   /** Every site the caller can open, name-ordered. */
@@ -107,7 +108,7 @@ export function FrontDoorSiteSelect({
         onValueChange={(siteId) =>
           // Discrete site switch — Back returns to the previous site.
           startTransition(() =>
-            router.push(`${basePath}?site=${encodeURIComponent(siteId)}`),
+            pushAddressOrNavigate(router, `${basePath}?site=${encodeURIComponent(siteId)}`),
           )
         }
         disabled={isNavigating}

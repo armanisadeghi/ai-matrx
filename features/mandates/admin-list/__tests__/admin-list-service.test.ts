@@ -1,137 +1,100 @@
 /**
- * The admin mandate list's in-memory query engine and origin derivations.
- * Real mandate keys from the platform corpus; the rows carry only the fields
- * the engine reads.
+ * The admin mandate list's server contract (the client half) and its origin
+ * derivations. Paging, sorting, filtering, search and counts run in
+ * `public.mnd_admin_list`; what the browser owns is WHICH aidream-classified
+ * facts a query must carry, their packing, and reading the answers back.
+ * Real mandate keys from the platform corpus.
  */
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
 import type { EntityListQuery } from "@/lib/entity-list/types";
-import {
-  countsOf,
-  facetsOf,
-  pageOf,
-  queryRows,
-} from "../service";
-import {
-  customizedByOf,
-  declaredInOf,
-  featureLabelOf,
-} from "../rows";
-import type { MandateAdminRow } from "../types";
 import type { MandateCodeTruth } from "@/features/mandates/admin/service";
+import type { StandingImpact } from "@/features/mandates/admin/impact";
+import type { MandateCoverageResponse } from "@/features/mandates/coverage";
+import { buildFacts, sectionsFor, ALL_FACT_SECTIONS } from "../facts";
+import { countsFromAnswer, scopeArgs } from "../service";
+import { customizedByOf, declaredInOf, featureLabelOf } from "../rows";
 
-const ME = "user-me";
-const ORG = "org-acme";
-
-function row(partial: Partial<MandateAdminRow> & { mandateKey: string }): MandateAdminRow {
-  return {
-    id: partial.mandateKey,
-    name: partial.mandateKey,
-    featureLabel: partial.mandateKey.split(".")[0],
-    agentName: "Agent",
-    holderType: "agent",
-    pinText: "Latest",
-    coverage: "green",
-    impactGrade: "ungraded",
-    impactBlocker: "ungraded",
-    health: "ok",
-    inputSummary: "",
-    outputSummary: "",
-    overridesCount: 0,
-    customizedBy: ["Default"],
-    isEnabled: true,
-    updatedAt: null,
-    createdAt: null,
-    origin: "code",
-    codeState: "declared",
-    declaredIn: "Python · aidream",
-    serves: ["Feature code"],
-    servesDetail: [],
-    defaultState: "Own default",
-    backsCount: 0,
-    fallbackKey: null,
-    homeLabel: "System",
-    goal: null,
-    createdBy: null,
-    organizationId: "system",
-    isSystem: true,
-    ...partial,
-  } as MandateAdminRow;
+function query(partial: Partial<EntityListQuery> = {}): EntityListQuery {
+  return { ...DEFAULT_ENTITY_LIST_QUERY, scope: { kind: "system" }, ...partial };
 }
 
-const ROWS: MandateAdminRow[] = [
-  row({ mandateKey: "flashcards.enrich_card", name: "Enrich Card" }),
-  row({ mandateKey: "podcast.audience_adapter", name: "Audience Adapter" }),
-  row({
-    mandateKey: "shortcut.action_item_extractor",
-    name: "Action Item Extractor",
-    origin: "soft",
-    codeState: "not_in_code",
-    declaredIn: null,
-    serves: ["Shortcut"],
-    isSystem: false,
-    organizationId: ORG,
-    homeLabel: "Acme",
-    createdBy: ME,
-    customizedBy: ["Acme", "Personal"],
-  }),
-  row({
-    mandateKey: "app.cover_letter",
-    name: "Cover Letter",
-    origin: "soft",
-    serves: ["Agent app", "Surface"],
-    isSystem: false,
-    organizationId: ORG,
-    homeLabel: "Acme",
-  }),
-];
+const truth = (key: string, extra: Record<string, unknown>) =>
+  ({ mandate_key: key, resolution: "code_declaration_found", drift: "match", bound_agent_drift: "match", source: null, ...extra }) as unknown as MandateCodeTruth;
 
-const viewer = { userId: ME };
-const q = (patch: Partial<EntityListQuery>): EntityListQuery => ({
-  ...DEFAULT_ENTITY_LIST_QUERY,
-  ...patch,
-});
-
-describe("scopes", () => {
-  it("Mine is what the viewer created; Org and System split by home", () => {
-    expect(queryRows(ROWS, q({ scope: { kind: "mine" } }), viewer, null).map((r) => r.mandateKey)).toEqual([
-      "shortcut.action_item_extractor",
-    ]);
-    expect(queryRows(ROWS, q({ scope: { kind: "system" } }), viewer, null)).toHaveLength(2);
-    expect(queryRows(ROWS, q({ scope: { kind: "orgs", organizationId: ORG } }), viewer, null)).toHaveLength(2);
+describe("which facts a query carries", () => {
+  it("carries nothing for a plain page — the database answers alone", () => {
+    expect(sectionsFor(query(), "name")).toEqual([]);
   });
 
-  it("counts every tab under the same search and filters, with org narrowing", () => {
-    const counts = countsOf(ROWS, q({ filters: { origin: { kind: "select", values: ["soft"] } } }), viewer, { [ORG]: "Acme" });
-    expect(counts.byKind).toEqual({ mine: 1, orgs: 2, system: 0 });
-    expect(counts.narrow.orgs).toEqual([{ id: ORG, label: "Acme", count: 2 }]);
+  it("carries a section for each filtered or sorted server-classified column", () => {
+    const q = query({ filters: { coverage: { kind: "select", values: ["red"] }, origin: { kind: "select", values: ["soft"] } } });
+    expect(sectionsFor(q, "impactGrade").sort()).toEqual(["coverage", "grade"]);
+    // The Default column's "Fallback" reads the coverage report's orange keys.
+    expect(sectionsFor(query({ filters: { defaultState: { kind: "select", values: ["Fallback"] } } }))).toEqual(["coverage"]);
+  });
+
+  it("carries the feature labels while searching (the scorer reads them)", () => {
+    expect(sectionsFor(query({ search: "podcast" }), null)).toEqual(["featureLabel"]);
   });
 });
 
-describe("origin filters", () => {
-  it("filters a multi-valued column by any of its values", () => {
-    const rows = queryRows(ROWS, q({ scope: { kind: "orgs", organizationId: null }, filters: { serves: { kind: "select", values: ["Surface"] } } }), viewer, null);
-    expect(rows.map((r) => r.mandateKey)).toEqual(["app.cover_letter"]);
+describe("packing the facts", () => {
+  const reports = {
+    codeTruth: {
+      "seo.ai_visibility_decision_analyst": truth("seo.ai_visibility_decision_analyst", {
+        source: { module: "aidream.services.seo.ai_visibility", source_file: "aidream/services/seo/ai_visibility/mandates.py", line: 3 },
+        bound_agent_drift: "variables_differ",
+      }),
+      "podcast.audience_adapter": truth("podcast.audience_adapter", { resolution: "code_exists_but_import_failed" }),
+    },
+    coverage: { red: [{ mandate_key: "flashcards.enrich_card" }], orange: [{ mandate_key: "podcast.show_notes" }] } as unknown as MandateCoverageResponse,
+    impact: null as StandingImpact | null,
+  };
+
+  it("sends only the sections asked for", () => {
+    expect(Object.keys(buildFacts(reports, ["coverage"]))).toEqual(["coverage"]);
+    expect(buildFacts(reports, ["coverage"]).coverage).toEqual({
+      known: true,
+      red: ["flashcards.enrich_card"],
+      orange: ["podcast.show_notes"],
+    });
   });
 
-  it("a facet's counts ignore its own filter, so other options stay visible", () => {
-    const facets = facetsOf(ROWS, q({ scope: { kind: "system" }, filters: { origin: { kind: "select", values: ["code"] } } }), { userId: ME });
-    expect(facets.byKind.origin).toEqual([{ value: "code", count: 2 }]);
-    const all = facetsOf(ROWS, q({ scope: { kind: "orgs", organizationId: null }, filters: { origin: { kind: "select", values: ["code"] } } }), viewer);
-    expect(all.byKind.origin).toEqual([{ value: "soft", count: 2 }]);
-    expect(all.byKind.customizedBy).toEqual([]);
+  it("an unanswered report sends no section, so the column reads unknown — never a verdict", () => {
+    const facts = buildFacts({ codeTruth: null, coverage: null, impact: null }, ALL_FACT_SECTIONS);
+    expect(facts.coverage).toBeUndefined();
+    expect(facts.grade).toBeUndefined();
+  });
+
+  it("code facts: sub-area labels, health overlays, declared state", () => {
+    const facts = buildFacts(reports, ["featureLabel", "health", "codeState"]) as {
+      featureLabel: Record<string, string>;
+      health: Record<string, string[]>;
+      codeState: Record<string, string[]>;
+    };
+    expect(facts.featureLabel["seo.ai_visibility_decision_analyst"]).toBe("SEO › AI Visibility");
+    expect(facts.featureLabel["podcast.audience_adapter"]).toBeUndefined();
+    expect(facts.health.agentDrift).toEqual(["seo.ai_visibility_decision_analyst"]);
+    expect(facts.health.importFailed).toEqual(["podcast.audience_adapter"]);
+    expect(facts.codeState.import_failed).toEqual(["podcast.audience_adapter"]);
+    expect(facts.codeState.declared).toContain("seo.ai_visibility_decision_analyst");
   });
 });
 
-describe("sort, search and paging", () => {
-  it("sorts by the column's own value and pages the whole result", () => {
-    const page = pageOf(ROWS, q({ scope: { kind: "system" } }), viewer, { sort: "name", direction: "desc", favoritesFirst: false, pageSize: 1 });
-    expect(page.total).toBe(2);
-    expect(page.rows[0].name).toBe("Enrich Card");
+describe("reading the answers", () => {
+  it("scope arguments: the org narrowing only on the Org tab", () => {
+    expect(scopeArgs(query({ scope: { kind: "orgs", organizationId: "org-1" } })).p_org_id).toBe("org-1");
+    expect(scopeArgs(query({ scope: { kind: "orgs", organizationId: null } })).p_org_id).toBeUndefined();
+    expect(scopeArgs(query({ search: "  " })).p_search).toBeUndefined();
   });
 
-  it("search matches the key and ranks over the whole scope", () => {
-    const rows = queryRows(ROWS, q({ scope: { kind: "system" }, search: "audience" }), viewer, null);
-    expect(rows[0].mandateKey).toBe("podcast.audience_adapter");
+  it("tab counts and org narrowing", () => {
+    expect(
+      countsFromAnswer({ mine: 102, orgs: 103, system: 469, orgs_narrow: [{ id: "o1", label: "Titanium", count: 2 }] }),
+    ).toEqual({ byKind: { mine: 102, orgs: 103, system: 469 }, narrow: { orgs: [{ id: "o1", label: "Titanium", count: 2 }] } });
+    expect(countsFromAnswer({ mine: 0, orgs: 0, system: 1, orgs_narrow: [] }).narrowUnavailable).toEqual({
+      orgs: "No organization mandates.",
+    });
   });
 });
 

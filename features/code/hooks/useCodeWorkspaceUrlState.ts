@@ -43,6 +43,7 @@ import {
   withCodeWorkspaceUrlState,
   type CodeWorkspaceUrlState,
 } from "../url-state";
+import { pushAddressWithoutNavigating, replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 /**
  * Bidirectional, route-only state for `/code`. The URL stores location and
@@ -67,7 +68,8 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
   const bottomOpen = useAppSelector(selectTerminalOpen);
   const bottomTab = useAppSelector(selectTerminalActiveTab);
   const activeTab = useAppSelector(selectActiveTab);
-  // Next does not update this value for native `history.pushState`. Track its
+  // Next did not update this value for a raw `history.pushState` carrying
+  // `__NA` (the door passes `null` now, so it does). Track its
   // serialized value, not the ReadonlyURLSearchParams object identity: that
   // object can be replaced during an unrelated render while still describing
   // the pre-push URL, which would otherwise replay stale state and erase a
@@ -302,14 +304,15 @@ export function useCodeWorkspaceUrlState(initialSandboxId: string | null = null)
     }
     const href = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
     if (hasNormalizedRef.current && !isHistoryNavigationRef.current) {
-      window.history.pushState(window.history.state, "", href);
+      pushAddressWithoutNavigating(href);
     } else {
-      window.history.replaceState(window.history.state, "", href);
+      replaceAddressWithoutNavigating(href);
       hasNormalizedRef.current = true;
     }
     isHistoryNavigationRef.current = false;
     appliedLocationRef.current = nextSearch;
-    // `history.pushState` does not update Next's search-param hook. Keep the
+    // The door keeps Next's search-param hook in step now (it used to pass
+    // `window.history.state`, whose `__NA` skipped Next's patch). Keep the
     // restore authority aligned with the URL we just wrote so a later render
     // cannot replay the previous location over a user-selected tab.
     setLocationSearch(nextSearch);

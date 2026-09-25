@@ -74,6 +74,7 @@ import { ActivityFeed } from "./ActivityFeed";
 import { DeliveredSection } from "./DeliveredSection";
 import { IntakeCard } from "./IntakeCard";
 import { pickFollowTarget, planSummary } from "./plan-model";
+import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 type Resolution =
   | { phase: "loading" }
@@ -253,9 +254,7 @@ export function RefineRunPage({ id }: { id: string }) {
           definition={resolution.definition}
           recentRuns={recentRuns}
           onOpened={(newRunId) =>
-            router.replace(
-              `${BASE}/${resolution.definitionId}?run=${newRunId}`,
-            )
+            replaceAddressOrNavigate(router, `${BASE}/${resolution.definitionId}?run=${newRunId}`)
           }
         />
       )}

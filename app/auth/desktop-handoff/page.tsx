@@ -10,13 +10,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { loginHref } from "@/utils/auth/auth-destination";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const HANDOFF_PATH = "/auth/desktop-handoff";
 
 /** Remove every query value before this retired route renders its guidance. */
 export function scrubDesktopHandoffUrl(): void {
   if (window.location.search || window.location.hash) {
-    window.history.replaceState(window.history.state, "", HANDOFF_PATH);
+    replaceAddressWithoutNavigating(HANDOFF_PATH);
   }
 }
 

@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import type { SourceFilters, SourceSortBy, SortDir } from '../types';
 import { DEFAULT_SOURCE_FILTERS } from '../types';
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 export function useSourceFilters() {
     const searchParams = useSearchParams();
@@ -39,12 +40,12 @@ export function useSourceFilters() {
         }
 
         // Discrete filter/page change — Back undoes exactly one step.
-        router.push(`${pathname}?${params.toString()}`, { scroll: false });
+        pushAddressWithoutNavigating(`${pathname}?${params.toString()}`);
     }, [searchParams, router, pathname]);
 
     const resetFilters = useCallback(() => {
         // Discrete "clear filters" — Back restores what was cleared.
-        router.push(pathname, { scroll: false });
+        pushAddressWithoutNavigating(pathname);
     }, [router, pathname]);
 
     const hasActiveFilters = !!(

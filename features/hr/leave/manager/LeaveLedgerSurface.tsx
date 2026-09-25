@@ -46,6 +46,7 @@ import {
 import { hrPageRefusalProps } from "./refusal";
 import { LeaveDeskShell } from "./LeaveDeskShell";
 import { leaveBalancesHref, leaveLedgerHref, leaveQueueHref } from "./routes";
+import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 function isFilter(value: string | null): value is LeaveLedgerFilter {
   return value === "all" || value === "added" || value === "used";
@@ -103,13 +104,11 @@ export function LeaveLedgerSurface({
    * arithmetic, which §5 names as a defect outright.
    */
   function setAsOf(next: string | null) {
-    router.replace(leaveLedgerHref(employmentId, policyId, orgRef, { asOf: next, show: filter }));
+    replaceAddressOrNavigate(router, leaveLedgerHref(employmentId, policyId, orgRef, { asOf: next, show: filter }));
   }
 
   function setFilter(next: LeaveLedgerFilter) {
-    router.replace(
-      leaveLedgerHref(employmentId, policyId, orgRef, { asOf: asOfParam, show: next }),
-    );
+    replaceAddressOrNavigate(router, leaveLedgerHref(employmentId, policyId, orgRef, { asOf: asOfParam, show: next }));
   }
 
   return (

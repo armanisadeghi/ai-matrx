@@ -86,6 +86,7 @@ import {
 import { useApproachRegistry } from "../browse/useApproachRegistry";
 import { ApproachCard, ACCENT } from "../browse/ApproachCard";
 import { relevantApproachKeys } from "./approachRelevance";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const WIZARD_ID = "masterwork-new";
 
@@ -624,7 +625,7 @@ export function NewRulebookFlow() {
     if (next === 2) params.set("step", "2");
     else params.delete("step");
     const qs = params.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname);
+    pushAddressWithoutNavigating(qs ? `${pathname}?${qs}` : pathname);
   };
 
   const handleContinue = () => {

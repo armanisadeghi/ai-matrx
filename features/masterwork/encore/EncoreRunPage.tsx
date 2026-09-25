@@ -49,6 +49,7 @@ import {
   type EncoreMasterwork,
   type EncoreRun,
 } from "./service";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
   const userId = useAppSelector(selectUserId);
@@ -276,7 +277,7 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
           <OpenRunPanel
             open={openRun}
             run={runs.find((r) => r.id === openRun.runId) ?? null}
-            onClose={() => router.replace(pathname)}
+            onClose={() => replaceAddressWithoutNavigating(pathname)}
           />
         ) : null}
         <div className="rounded-lg border border-border bg-card p-4">

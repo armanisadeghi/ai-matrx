@@ -130,6 +130,7 @@ import { ProInput } from "@/components/official/ProInput";
 // via the DOM-content fallback).
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 // ===========================================================================
 // Agent Chat surface — the "Agent Chat" tab embeds the canonical agent system
@@ -860,7 +861,7 @@ function SearchTab({
       if (scope.storeId) next.set("store_id", scope.storeId);
       // A SUBMITTED search is one discrete action (not one per keystroke) —
       // Back returns to the previous search.
-      router.push(`/knowledge/search${next.toString() ? `?${next}` : ""}`);
+      pushAddressOrNavigate(router, `/knowledge/search${next.toString() ? `?${next}` : ""}`);
     } catch (e) {
       if (seq !== seqRef.current) return;
       setError(e instanceof Error ? e.message : "Search failed");

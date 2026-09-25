@@ -58,6 +58,7 @@ import { PlanRail, PlanStrip } from "./PlanRail";
 import { IntakePanel } from "./IntakePanel";
 import { LiveDesk } from "./LiveDesk";
 import { DeliveryShelf, EmissionRoll } from "./DeliveryShelf";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 interface LoadedDefinition {
   id: string;
@@ -227,7 +228,7 @@ export function RefineRunPage({ definitionId }: { definitionId: string }) {
     if (!ready) return;
     void startServedRun(ready.id, submission).then((newRunId) => {
       if (newRunId) {
-        router.replace(`${pathname}?run=${newRunId}`, { scroll: false });
+        replaceAddressWithoutNavigating(`${pathname}?run=${newRunId}`);
       }
     });
   };
@@ -370,7 +371,7 @@ export function RefineRunPage({ definitionId }: { definitionId: string }) {
                       stepLabels={stepLabels}
                       startedAt={startedAt}
                       onStartAnother={() =>
-                        router.replace(pathname, { scroll: false })
+                        replaceAddressWithoutNavigating(pathname)
                       }
                     />
                     <EmissionRoll

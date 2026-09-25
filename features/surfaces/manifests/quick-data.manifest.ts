@@ -54,7 +54,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "is_loading",
     label: "Loading",
     description:
-      "True while the window's table list is being fetched (get_user_tables). Always populated while the window is mounted.",
+      "True while the window's table list is being fetched (older and record-store tables, one list). Always populated while the window is mounted.",
     valueType: "boolean",
     alwaysAvailable: true,
     typicalCharCount: 5,

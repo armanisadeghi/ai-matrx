@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 /**
  * URL-driven selection for the surfaces admin shell:
@@ -32,7 +33,7 @@ export function useSurfacesAdminSelection() {
         else nextParams.delete("binding");
       }
       const qs = nextParams.toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      replaceAddressWithoutNavigating(qs ? `${pathname}?${qs}` : pathname);
     },
     [params, pathname, router],
   );

@@ -93,6 +93,7 @@ import {
 } from "@/features/tool-registry/mcp-admin/format";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const PAGE_LOCATION =
   "AI Matrx Admin — Tool Registry · MCP Servers (/administration/agents/mcp-servers)";
@@ -140,9 +141,7 @@ export function McpServersAdminPage() {
     else params.delete(MCP_SERVER_DEEP_LINK_PARAM);
     const query = params.toString();
     // Discrete selection — Back closes the server the user just opened.
-    router.push(query ? `${pathname}?${query}` : pathname, {
-      scroll: false,
-    });
+    pushAddressWithoutNavigating(query ? `${pathname}?${query}` : pathname);
   };
 
   const load = async () => {

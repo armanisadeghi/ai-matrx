@@ -25,6 +25,7 @@ import { UniversalSettingsRows } from "@/features/settings/universal/UniversalSe
 import { knobMatchesControlSearch } from "@/features/settings/search/controlSearch";
 import { fetchKnobOverrideCounts } from "@/lib/scoped-config/service";
 import { registerDirectiveHandler } from "@/lib/client-directives/directiveRegistry";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 /** `?knob=<feature.key>` — what a mandate page or a doc links a knob by. */
 const KNOB_PARAM = "knob";
@@ -90,7 +91,7 @@ function SystemKnobRows() {
       const next = new URLSearchParams(searchParams?.toString() ?? "");
       next.delete(KNOB_PARAM);
       const suffix = next.toString();
-      router.replace(suffix ? `?${suffix}` : "?", { scroll: false });
+      replaceAddressWithoutNavigating(suffix ? `?${suffix}` : "?");
     }
   };
 

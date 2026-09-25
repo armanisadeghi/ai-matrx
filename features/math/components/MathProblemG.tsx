@@ -10,6 +10,7 @@ import ControlPanel from './ControlPanel';
 import { BackgroundGradient } from "@/components/ui/background-gradient";
 import SolutionAnswer from "./SolutionAnswer";
 import { MathProblemProps } from '../types';
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 type FlowPosition = {
     stage: 'overview' | 'intro' | 'problem' | 'task' | 'step' | 'solutionAnswer' | 'transition' | 'finalStatement' | 'congratulations';
@@ -66,7 +67,7 @@ const MathProblem: React.FC<MathProblemProps> = (
         };
 
         const urlParams = serializePositionToURL(currentPosition);
-        router.push(`?${urlParams}`, {scroll: false});
+        pushAddressWithoutNavigating(`?${urlParams}`);
     }, [currentPosition]);
 
     useEffect(() => {

@@ -10,6 +10,7 @@ import ColorManipulation from './components/ColorManipulation';
 import ColorPicker from './components/ColorPicker';
 import TailwindColors from './components/TailwindColors';
 import { getColorInfo } from '@/utils/color-utils/color-change-util';
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const DEFAULT_COLOR = '#3d87cc';
 const DEFAULT_BACKGROUND = 'bg-background';
@@ -30,7 +31,7 @@ export default function ColorUtilityPage() {
 
     const handleColorChange = useCallback((newColor: Colord) => {
         setColor(newColor);
-        router.push(`?color=${newColor.toHex()}`, { scroll: false });
+        pushAddressWithoutNavigating(`?color=${newColor.toHex()}`);
     }, [router]);
 
     const handleFormatChange = useCallback((newFormat: string) => {

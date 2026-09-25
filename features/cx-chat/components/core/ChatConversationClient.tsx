@@ -30,6 +30,7 @@ import { AgentConversationDisplay } from "@/features/agents/components/messages-
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
 import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
 import { pushAppHref } from "@/lib/deployment/navigate";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const AgentPickerSheet = dynamic(
   () =>
@@ -138,7 +139,7 @@ export default function ChatConversationClient({
       // `commitUrlParams` would, so every url-state-backed control on the page
       // (and the shell's NavActiveSync) re-reads instead of going stale.
       const newUrl = `/demos/chat/c/${latestConversationId}?agent=${agentId}`;
-      window.history.replaceState(window.history.state, "", newUrl);
+      replaceAddressWithoutNavigating(newUrl);
       window.dispatchEvent(new Event("matrx:url-state"));
 
       window.dispatchEvent(

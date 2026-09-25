@@ -414,6 +414,7 @@ function countParams(p: URLSearchParams): number {
 }
 
 import type { CloudFolderRecord } from "@/features/files/types";
+import { pushAddressWithoutNavigating, replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 /**
  * Encode a logical folder path (`"Reports/2026 Q1"`) into URL path
@@ -492,9 +493,9 @@ export function navigateFilesFolderPath(
   const url = buildFilesAllFolderUrl(folderPath);
   if (isOnFilesAllRoute()) {
     if (options?.replace) {
-      window.history.replaceState(window.history.state, "", url);
+      replaceAddressWithoutNavigating(url);
     } else {
-      window.history.pushState(window.history.state, "", url);
+      pushAddressWithoutNavigating(url);
     }
     window.dispatchEvent(new Event("matrx:url-state"));
     return;

@@ -64,6 +64,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAdminUserMenuSection } from "./admin-user-menu-section";
 import { pushAppHref } from "@/lib/deployment/navigate";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const ROSTER_PAGE_SIZE = 50;
 
@@ -516,7 +517,7 @@ export function AccountsTableClient() {
     params.delete("user");
     const query = params.toString();
     // Discrete close — Back re-opens the user the admin was just reading.
-    router.push(query ? `${pathname}?${query}` : pathname);
+    pushAddressWithoutNavigating(query ? `${pathname}?${query}` : pathname);
   }
 
   return (

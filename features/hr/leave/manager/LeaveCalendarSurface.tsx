@@ -70,6 +70,7 @@ import {
 import { hrPageRefusalProps } from "./refusal";
 import { LeaveDeskShell } from "./LeaveDeskShell";
 import { leaveCalendarHref } from "./routes";
+import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 
 type CalendarView = "month" | "week";
 
@@ -377,9 +378,7 @@ export function LeaveCalendarSurface() {
   }, [entries, grid.days]);
 
   function goTo(nextAnchor: string, nextView: CalendarView = view) {
-    router.replace(
-      leaveCalendarHref(orgRef, { on: nextAnchor, view: nextView }),
-    );
+    replaceAddressOrNavigate(router, leaveCalendarHref(orgRef, { on: nextAnchor, view: nextView }));
   }
 
   const step = view === "month" ? 1 : 7;

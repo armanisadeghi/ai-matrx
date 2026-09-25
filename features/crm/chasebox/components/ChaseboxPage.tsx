@@ -47,6 +47,7 @@ import {
   type ChaseboxRow,
 } from "../types";
 import { ChaseboxDraftDialog } from "./ChaseboxDraftDialog";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const PAGE_SIZE = 25;
 
@@ -96,7 +97,7 @@ export function ChaseboxPage() {
       params.set("queue", next);
       // Switching queues is a discrete decision: one entry, and Back returns
       // to the queue the user was just looking at.
-      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+      pushAddressWithoutNavigating(`${pathname}?${params.toString()}`);
     },
     [pathname, router, searchParams],
   );

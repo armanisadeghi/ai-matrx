@@ -68,6 +68,7 @@ import {
   buildLinkEdgeMenuSection,
   type LinkEdgeMenuRow,
 } from "@/features/marketing/components/inspection/link-edge-actions";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 function humanLinkEdgeRow(row: InspectionLinkRow): string {
   return humanLines([
@@ -247,9 +248,7 @@ export function LinksInspectionTable({
     next === "graph" ? params.delete("view") : params.set("view", next);
     const encoded = params.toString();
     // Discrete view switch — Back returns to the previous view.
-    router.push(encoded ? `${pathname}?${encoded}` : pathname, {
-      scroll: false,
-    });
+    pushAddressWithoutNavigating(encoded ? `${pathname}?${encoded}` : pathname);
   };
   const table = useMarketingTableState({
     defaultSort: { id: "created_at", direction: "desc" },

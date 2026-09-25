@@ -1,0 +1,4 @@
+{
+  "_doc": "Reasoned exceptions for scripts/check-org-gate-not-bare-kernel.ts --cancel-fallback (the CANCEL-FALLBACKS class). Each file catches OrganizationSelectionCancelled and renders an inline fallback on purpose. An entry that no longer matches fails the check — strike it.",
+  "files": {}
+}

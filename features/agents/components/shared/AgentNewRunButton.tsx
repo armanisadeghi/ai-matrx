@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { startNewConversation } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { PlusTapButton } from "@ai-matrx/tap-target/buttons";
 import { selectFocusedConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 interface AgentNewRunButtonProps {
   surfaceKey: string;
@@ -23,7 +24,7 @@ export function AgentNewRunButton({ surfaceKey }: AgentNewRunButtonProps) {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("conversationId");
     // Discrete: starting a new run — Back returns to the run the user left.
-    router.push(`${pathname}?${params.toString()}`);
+    pushAddressWithoutNavigating(`${pathname}?${params.toString()}`);
 
     dispatch(
       startNewConversation({

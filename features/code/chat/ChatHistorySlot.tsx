@@ -13,6 +13,7 @@ import { SidePanelHeader, SidePanelAction } from "../views/SidePanelChrome";
 import { AVATAR_RESERVE } from "../styles/tokens";
 import { useCodeWorkspaceHistory } from "./useCodeWorkspaceHistory";
 import { beginFreshCodeChat } from "./begin-fresh-code-chat";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 interface ChatHistorySlotProps {
   className?: string;
@@ -59,7 +60,7 @@ export const ChatHistorySlot: React.FC<ChatHistorySlotProps> = ({
       if (conv.agentId) next.set("agentId", conv.agentId);
       // Discrete: opening a past conversation — Back returns to the one
       // the user was reading.
-      router.push(`${pathname}?${next.toString()}`);
+      pushAddressWithoutNavigating(`${pathname}?${next.toString()}`);
     },
     [pathname, router, searchParams],
   );

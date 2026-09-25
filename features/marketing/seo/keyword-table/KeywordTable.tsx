@@ -109,6 +109,7 @@ import {
   useKeywordRows,
   type KeywordRowsResult,
 } from "./useKeywordRows";
+import { pushAddressWithoutNavigating, replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 export interface KeywordTableSurface {
   /** Stable id — names the copy payloads and the surface in a toast. */
@@ -293,8 +294,8 @@ export function KeywordTable({
     });
     const qs = merged.toString();
     const href = qs ? `${pathname}?${qs}` : pathname;
-    if (options.history === "replace") router.replace(href, { scroll: false });
-    else router.push(href, { scroll: false });
+    if (options.history === "replace") replaceAddressWithoutNavigating(href);
+    else pushAddressWithoutNavigating(href);
   };
   const patch = (partial: Partial<KeywordTableState>) =>
     push({ ...state, search: searchDraft, page: 1, ...partial });
