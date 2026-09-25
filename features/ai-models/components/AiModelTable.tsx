@@ -70,6 +70,8 @@ import { isContentType, type ContentType } from "../capabilities/types";
 import { applyAiModelFilters, sortAiModels } from "../utils/filterUtils";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { aiModelHref, aiProviderHref } from "../doors";
+import { aiModelService } from "../service";
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import {
   modelFiltersToColumns,
   modelQueryToTab,
@@ -405,7 +407,7 @@ interface RowActionsProps {
   onDelete: (item: AiModel) => void;
 }
 
-function RowActions({
+export function RowActions({
   item,
   onView,
   onEdit,
@@ -413,6 +415,20 @@ function RowActions({
   onDelete,
 }: RowActionsProps) {
   const [pendingDelete, setPendingDelete] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+
+  const handleConfirmDelete = async () => {
+    setDeleting(true);
+    try {
+      await aiModelService.remove(item.id);
+      setPendingDelete(false);
+      onDelete(item);
+    } catch (err) {
+      toastWriteFailure(err, { action: "delete this model", remedy: "Try again." });
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <>
@@ -499,15 +515,13 @@ function RowActions({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                setPendingDelete(false);
-                onDelete(item);
-              }}
+              disabled={deleting}
+              onClick={() => void handleConfirmDelete()}
             >
-              Delete Model
+              {deleting ? "Deleting…" : "Delete Model"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1328,6 +1342,21 @@ function CanonicalModelActions({
   onDelete: (model: AiModel) => void;
 }) {
   const [confirmDelete, setConfirmDelete] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+
+  const handleConfirmDelete = async () => {
+    setDeleting(true);
+    try {
+      await aiModelService.remove(model.id);
+      setConfirmDelete(false);
+      onDelete(model);
+    } catch (err) {
+      toastWriteFailure(err, { action: "delete this model", remedy: "Try again." });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <>
       <ViewTapButton
@@ -1363,14 +1392,9 @@ function CanonicalModelActions({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setConfirmDelete(false);
-                onDelete(model);
-              }}
-            >
-              Delete Model
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction disabled={deleting} onClick={() => void handleConfirmDelete()}>
+              {deleting ? "Deleting…" : "Delete Model"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
