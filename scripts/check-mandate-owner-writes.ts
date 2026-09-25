@@ -30,7 +30,8 @@
 
 import { randomUUID } from "node:crypto";
 import type pg from "pg";
-import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { loadDbEnv } from "./lib/direct-db";
+import { openGateDb } from "./lib/gate-db";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const OWNER_EMAIL = "admin@admin.com";
@@ -82,7 +83,7 @@ async function attempt(
 async function main(): Promise<void> {
   const env = loadDbEnv();
   if (!("host" in env)) fail("UNMEASURED: no database credentials. A guard that cannot measure has not passed.");
-  const client = await connectDirect(env, "check-mandate-owner-writes").catch((error: unknown) =>
+  const client = await openGateDb(env, { gate: "check:mandate-owner-writes" }).catch((error: unknown) =>
     fail(`UNMEASURED: could not reach the database — ${String(error)}`),
   );
 
@@ -98,8 +99,8 @@ async function main(): Promise<void> {
 
   try {
     await client.query("begin");
-    await client.query("set local statement_timeout = '120s'");
-    await client.query("set local lock_timeout = '10s'");
+    await client.query("set local statement_timeout = '60s'"); // the gate ceiling (scripts/lib/gate-db.ts)
+    await client.query("set local lock_timeout = '3s'"); // the gate ceiling (scripts/lib/gate-db.ts)
 
     const ids = await client.query<{ email: string; id: string }>(
       `select email, id from auth.users where email = any($1)`,

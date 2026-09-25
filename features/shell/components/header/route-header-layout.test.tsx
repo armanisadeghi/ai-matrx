@@ -94,3 +94,17 @@ describe("ellipsizeLooseText — a clipped title always ends in an ellipsis", ()
     );
   });
 });
+
+describe("foldCount — the primary action outlasts the title's comfort width", () => {
+  it("keeps the last action beside a … while the title stays above its floor", () => {
+    // /organizations at 375px: three 36px actions, 73px comfortable, 113px at the floor.
+    expect(foldCount([36, 36, 36], 73, 44, 113)).toBe(2);
+    // /workbooks: one 90px wrapper, 81px comfortable, 113px at the floor -> stays.
+    expect(foldCount([90], 81, 44, 113)).toBe(0);
+  });
+
+  it("folds even the primary when the title would drop below its floor", () => {
+    // /documents: a 137px labelled "New document" beside a 169px row.
+    expect(foldCount([137], 73, 44, 113)).toBe(1);
+  });
+});

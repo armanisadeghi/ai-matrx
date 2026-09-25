@@ -94,3 +94,36 @@ describe("a census that hits lock contention", () => {
     expect(rollbacks).toBe(2);
   });
 });
+
+describe("single flight (2026-09-25, the live database freeze)", () => {
+  function lockClient(got: boolean) {
+    const statements: string[] = [];
+    return {
+      statements,
+      query: async (sql: string) => {
+        statements.push(sql);
+        if (sql.includes("pg_try_advisory_xact_lock")) return { rows: [{ got }] };
+        return { rows: sql === "select census" ? [{ n: 1 }] : [] };
+      },
+    };
+  }
+
+  it("a second caller does not start the census: it skips and is UNMEASURED by name", async () => {
+    const c = lockClient(false);
+    const out = await censusWithPatience(c, "census 12", "select census", "900s", [], "census:x");
+    expect(out.rows).toEqual([]);
+    expect(out.unmeasured).toMatch(/SKIPPED - another run is computing this census/);
+    expect(c.statements).not.toContain("select census");
+    expect(c.statements.at(-1)).toBe("rollback");
+  });
+
+  it("the caller that gets the lock runs the census inside the same transaction", async () => {
+    const c = lockClient(true);
+    const out = await censusWithPatience(c, "census 12", "select census", "900s", [], "census:x");
+    expect(out.unmeasured).toBeNull();
+    expect(out.rows).toEqual([{ n: 1 }]);
+    const lockAt = c.statements.findIndex((s) => s.includes("pg_try_advisory_xact_lock"));
+    expect(lockAt).toBeGreaterThan(c.statements.indexOf("begin"));
+    expect(lockAt).toBeLessThan(c.statements.indexOf("select census"));
+  });
+});

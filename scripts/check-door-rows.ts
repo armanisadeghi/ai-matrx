@@ -128,6 +128,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import pg from "pg";
+import { gateSessionCap, openGateDb } from "./lib/gate-db";
 
 const ROOT = process.cwd();
 
@@ -190,7 +191,10 @@ const OFFSET = Number(flag("offset") ?? "0") || 0;
 const TABLE_OUT = flag("table");
 const JSON_OUT = flag("json");
 const CALL_TIMEOUT_MS = Number(flag("timeout") ?? "6000") || 6000;
-const POOL = Math.max(1, Number(flag("pool") ?? "6") || 6);
+// At most two sessions per gate (scripts/lib/gate-db.ts, the 2026-09-25 live database freeze):
+// six sessions per lane, two lanes an hour, each calling ~900 functions, was the heaviest
+// recurring load on the machine that froze. `--pool` above 2 is capped, and says so.
+const POOL = gateSessionCap(Number(flag("pool") ?? "2") || 2, "check:door-rows");
 /**
  * THE GATE'S OWN WALL CLOCK (RED-SUITES 2026-09-21). Whoever runs this gate has one too, and
  * theirs kills the process — which turns a partial run into whatever the last line printed.
@@ -232,16 +236,13 @@ function parseEnvFile(path: string): Record<string, string> {
   return out;
 }
 
-function newClient(env: DbEnv): pg.Client {
-  return new pg.Client({
-    user: env.user,
-    password: env.password,
-    host: env.host,
-    port: env.port,
-    database: env.database,
-    ssl: { rejectUnauthorized: false },
-    statement_timeout: 60_000,
-  });
+/**
+ * One governed session (scripts/lib/gate-db.ts): 60 s statements, 3 s locks, 60 s idle in a
+ * transaction, all transaction-local — the `statement_timeout: 60_000` this used to pass in the
+ * pg config was a startup parameter, which Supavisor drops, so it never applied.
+ */
+function openClient(env: DbEnv): Promise<pg.Client> {
+  return openGateDb(env, { gate: POPULATION === "signed-in" ? "check:door-rows:wide" : "check:door-rows" });
 }
 
 interface DbEnv {
@@ -452,8 +453,7 @@ async function main(): Promise<number> {
     return STRICT ? 1 : 0;
   }
 
-  const db = newClient(env);
-  await db.connect();
+  const db = await openClient(env);
 
   try {
     const q = async <T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> =>
@@ -514,8 +514,7 @@ async function main(): Promise<number> {
     const deadline = BUDGET_MS > 0 ? Date.now() + BUDGET_MS : Infinity;
     let ranOutOfTime = false;
     const worker = async (w: number): Promise<void> => {
-      const c = w === 0 ? db : newClient(env);
-      if (w !== 0) await c.connect();
+      const c = w === 0 ? db : await openClient(env);
       try {
         const cq = async <T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> =>
           (await c.query(sql, params)).rows as T[];

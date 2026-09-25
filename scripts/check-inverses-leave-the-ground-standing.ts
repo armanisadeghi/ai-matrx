@@ -868,7 +868,8 @@ export function judge(
  * and the catalogue does not record that — `pg_proc` has no filename.
  */
 async function liveArm(inverses: string[]): Promise<number> {
-  const { loadDbEnv, connectDirect } = await import("./lib/direct-db");
+  const { loadDbEnv } = await import("./lib/direct-db");
+  const { openGateDb } = await import("./lib/gate-db");
   const env = loadDbEnv();
   if ("missing" in env) {
     console.error(
@@ -878,7 +879,7 @@ async function liveArm(inverses: string[]): Promise<number> {
     return 1;
   }
   console.log(`[INFO] live arm on ${env.host}/${env.database} (connection from ${env.from}).`);
-  const db = await connectDirect(env, "check:inverses-leave-the-ground-standing");
+  const db = await openGateDb(env, { gate: "check:inverses-leave-the-ground-standing" });
   try {
     const trig = await db.query<{ trig: string; tbl: string; fn: string }>(
       `select t.tgname as trig,
@@ -970,14 +971,15 @@ async function liveArm(inverses: string[]): Promise<number> {
  * smaller" is either a real retirement (say so) or a failed query (never write it down).
  */
 async function recordCensus(allowShrink: boolean): Promise<number> {
-  const { loadDbEnv, connectDirect } = await import("./lib/direct-db");
+  const { loadDbEnv } = await import("./lib/direct-db");
+  const { openGateDb } = await import("./lib/gate-db");
   const env = loadDbEnv();
   if ("missing" in env) {
     console.error(`[FAIL] cannot record the census - missing ${env.missing.join(", ")}.`);
     return 1;
   }
   console.log(`[INFO] recording from ${env.host}/${env.database} (connection from ${env.from}).`);
-  const db = await connectDirect(env, "check:inverses-leave-the-ground-standing --record-census");
+  const db = await openGateDb(env, { gate: "check:inverses-leave-the-ground-standing --record-census" });
   try {
     const q = await db.query<{ row: string }>(
       `select n.nspname || '.' || c.relname || '|' || t.tgname || '|' ||

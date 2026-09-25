@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
-import PageHeader from "@/features/shell/components/header/PageHeader";
 import { VaultRouteHeader } from "@/features/secrets/components/VaultRouteHeader";
 import { VaultPage } from "@/features/secrets/components/VaultPage";
 
@@ -24,9 +23,7 @@ export default async function VaultRoute() {
 
   return (
     <>
-      <PageHeader>
-        <VaultRouteHeader />
-      </PageHeader>
+      <VaultRouteHeader />
       <VaultPage />
     </>
   );

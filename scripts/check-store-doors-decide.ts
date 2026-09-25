@@ -38,8 +38,9 @@
  */
 
 import { formatDurationMs } from "@ai-matrx/kit/format";
-import { connectDirect, loadDbEnv } from "./lib/direct-db";
-import { censusWithPatience } from "./lib/census-with-patience";
+import { loadDbEnv } from "./lib/direct-db";
+import { openGateDb, tryGateLock } from "./lib/gate-db";
+import { CONTENTION_BACKOFF, censusWithPatience } from "./lib/census-with-patience";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 function fail(message: string): never {
@@ -475,6 +476,15 @@ const SHARED_ONLY_CENSUS = (pretend: string | null) =>
           why
      from custom.shared_only_disagreements(${pretend === null ? "null" : `'${pretend}'`})`;
 
+/**
+ * ONE RUN AT A TIME (2026-09-25). Census 12 and census 13 cost minutes of database time each;
+ * on the day the live database froze, several copies of census 12 were running at once. A
+ * transaction-scoped advisory lock on these keys means a second caller skips and says so,
+ * instead of stacking a second copy on the server.
+ */
+const SHARED_ONLY_LOCK = "census:custom.shared_only_disagreements";
+const LIST_DOOR_LOCK = "census:custom.list_door_disagreements";
+
 /** The kinds that are never allowed, whatever else is true. */
 const SHARED_ONLY_NEVER = ["doors-disagree", "mirror-admits-more", "unmeasured"];
 
@@ -627,7 +637,7 @@ async function t10Probe(
   await client.query("begin");
   try {
     await client.query("set local statement_timeout = '300s'");
-    await client.query("set local lock_timeout = '20s'");
+    await client.query("set local lock_timeout = '3s'"); // the gate ceiling (scripts/lib/gate-db.ts)
     await client.query(T10_FIXTURE(visibilityKnob));
     const rows = (await client.query(
       LIST_DOOR_CENSUS(pretend, T10_ORG, exhaustive),
@@ -737,7 +747,7 @@ async function twoSeatProbe(
   await client.query("begin");
   try {
     await client.query("set local statement_timeout = '120s'");
-    await client.query("set local lock_timeout = '20s'");
+    await client.query("set local lock_timeout = '3s'"); // the gate ceiling (scripts/lib/gate-db.ts)
     await client.query(TWO_SEAT_FIXTURE(grantLevel, visibilityKnob));
 
     for (const [name, sql] of TWO_SEAT_WRITE_CLAUSES) {
@@ -858,7 +868,17 @@ async function main(): Promise<void> {
     );
   }
 
-  const client = await connectDirect(env, "check-store-doors-decide").catch((error: unknown) => {
+  // THE GATE DATABASE HELPER (2026-09-25). Its ceiling is raised to 900 s BY NAME: census 12
+  // (`custom.shared_only_disagreements`) measured 30 s on the clone and 255-338 s on live under
+  // load, and census 13 (`custom.list_door_disagreements`) ~57 s; each asks the one ladder for
+  // every (member, record) pair, so it is a census by nature. What stops it stacking is the
+  // single-flight lock below, not a shorter clock that would turn a verdict into a crash.
+  const client = await openGateDb(env, {
+    gate: "check:store-doors-decide",
+    statementTimeoutMs: 900_000,
+    statementTimeoutReason:
+      "censuses 12 and 13 ask the one ladder for every (member, record) pair: 30 s on the clone, 255-338 s on live under load",
+  }).catch((error: unknown) => {
     fail(`LIVE PULL FAILED - could not reach the database: ${String(error)}`);
   });
 
@@ -1058,6 +1078,12 @@ async function main(): Promise<void> {
         let redShared: Row[];
         try {
           await client.query("set local statement_timeout = '900s'");
+          if (!(await tryGateLock(client, SHARED_ONLY_LOCK))) {
+            fail(
+              `SELF-TEST NOT MEASURED - another run is computing census 12 right now (advisory lock ` +
+                `"matrx-gate:${SHARED_ONLY_LOCK}"). A second copy is not started; re-run when it finishes.`,
+            );
+          }
           redShared = (await client.query<Row>(SHARED_ONLY_CENSUS(pretend))).rows;
         } finally {
           await client.query("rollback").catch(() => undefined);
@@ -1129,7 +1155,7 @@ async function main(): Promise<void> {
       // does not go red, census 16's green above is reading something that cannot move.
       await client.query("begin");
       try {
-        await client.query("set local lock_timeout = '20s'");
+        await client.query("set local lock_timeout = '3s'"); // the gate ceiling (scripts/lib/gate-db.ts)
         await client.query(`
           do $plant$
           declare v_def text; v_src text;
@@ -1178,7 +1204,7 @@ async function main(): Promise<void> {
       // zero above is a zero about nothing.
       await client.query("begin");
       try {
-        await client.query("set local lock_timeout = '20s'");
+        await client.query("set local lock_timeout = '3s'"); // the gate ceiling (scripts/lib/gate-db.ts)
         await client.query(`
           create or replace function custom.portals(p_organization_id uuid)
            returns table(portal_id uuid, title text, slug text, client_table_id uuid,
@@ -1319,6 +1345,9 @@ async function main(): Promise<void> {
       client,
       "census 12 (the three answers in every shared_only organization)",
       SHARED_ONLY_CENSUS(null),
+      "900s",
+      CONTENTION_BACKOFF,
+      SHARED_ONLY_LOCK,
     );
     const sharedOnlyAll: Row[] = census12.rows;
     if (census12.unmeasured) unmeasured.push(census12.unmeasured);
@@ -1353,7 +1382,16 @@ async function main(): Promise<void> {
     let listDoors: Row[];
     try {
       await client.query("set local statement_timeout = '900s'");
-      listDoors = (await client.query<Row>(LIST_DOOR_CENSUS(null, null, exhaustive))).rows;
+      if (!(await tryGateLock(client, LIST_DOOR_LOCK))) {
+        const skipped =
+          `census 13 (every list-shaped door): SKIPPED - another run is computing it right now ` +
+          `(advisory lock "matrx-gate:${LIST_DOOR_LOCK}").`;
+        console.log(`[LOUD] ${skipped}`);
+        unmeasured.push(skipped);
+        listDoors = [];
+      } else {
+        listDoors = (await client.query<Row>(LIST_DOOR_CENSUS(null, null, exhaustive))).rows;
+      }
     } finally {
       await client.query("rollback").catch(() => undefined);
     }

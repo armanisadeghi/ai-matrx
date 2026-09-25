@@ -59,7 +59,8 @@
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { loadDbEnv } from "./lib/direct-db";
+import { openGateDb } from "./lib/gate-db";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 /**
@@ -1172,7 +1173,7 @@ async function main(): Promise<number> {
     return 1;
   }
 
-  const client = await connectDirect(env, "check-unpinned-security-columns").catch((e: unknown) => {
+  const client = await openGateDb(env, { gate: "check:unpinned-security-columns" }).catch((e: unknown) => {
     console.error(`[FAIL] LIVE PULL FAILED — could not connect: ${String(e)}`);
     return null;
   });

@@ -51,6 +51,16 @@ export PGHOST="$SUPABASE_MATRIX_HOST" PGPORT="$SUPABASE_MATRIX_PORT" \
 
 night_assert_target_readonly production || exit $?
 
-export PGOPTIONS='-c statement_timeout=300000 -c lock_timeout=5000'
 cd /Users/armanisadeghi/code/matrx-frontend
-"$PSQL" -X -v ON_ERROR_STOP=1 -f scripts/campaign-tests/relhalvescensus_green.sql
+# THE GATE DATABASE LIMITS (scripts/lib/gate-db.ts, 2026-09-25). This used to export
+# PGOPTIONS='-c statement_timeout=300000 ...', which Supavisor drops on the floor — measured on the
+# clone, a startup option never reaches the server — so the census ran under the role default and
+# the 300 s was a promise nobody kept. `-1` runs the whole file as ONE transaction and the first
+# statement sets the gate limits inside it (60 s per statement, 3 s locks, 60 s idle), stamped
+# `gate:check:relation-halves-agree` in pg_stat_activity. The file is SELECT-only, so one
+# transaction changes nothing it measures.
+LIMITS="$(pnpm exec tsx scripts/gate-db-limits.ts check:relation-halves-agree)" || {
+  say "REFUSED: could not read the gate database limits (scripts/gate-db-limits.ts). Nothing attempted."
+  exit 78
+}
+"$PSQL" -X -1 -v ON_ERROR_STOP=1 -c "$LIMITS" -f scripts/campaign-tests/relhalvescensus_green.sql

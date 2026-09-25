@@ -44,10 +44,10 @@
  *   pnpm check:anon-column-surface              # the comparison
  *   pnpm check:anon-column-surface --self-test  # RED then GREEN against the real database
  */
+import { openGateDb } from "./lib/gate-db";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createRequire } from "node:module";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import {
   ANON_COLUMN_SURFACE,
@@ -58,9 +58,6 @@ import {
   type LiveAnonColumn,
 } from "../lib/security/public-exposure";
 
-const require_ = createRequire(import.meta.url);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const pg: any = require_("pg");
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SELF_TEST = process.argv.includes("--self-test");
@@ -117,17 +114,17 @@ function resolveDbEnv(): Record<string, string> {
 
 async function connect() {
   const env = resolveDbEnv();
-  const client = new pg.Client({
-    host: env.SUPABASE_MATRIX_HOST,
-    port: Number(env.SUPABASE_MATRIX_PORT),
-    user: env.SUPABASE_MATRIX_USER,
-    password: env.SUPABASE_MATRIX_PASSWORD,
-    database: env.SUPABASE_MATRIX_DATABASE_NAME,
-    ssl: { rejectUnauthorized: false },
-    application_name: "check-anon-column-surface",
-    connectionTimeoutMillis: 20000,
-  });
-  await client.connect();
+  // The gate database helper (scripts/lib/gate-db.ts): transaction-local limits, two sessions max.
+  const client = await openGateDb(
+    {
+      host: env.SUPABASE_MATRIX_HOST,
+      port: Number(env.SUPABASE_MATRIX_PORT),
+      user: env.SUPABASE_MATRIX_USER,
+      password: env.SUPABASE_MATRIX_PASSWORD,
+      database: env.SUPABASE_MATRIX_DATABASE_NAME,
+    },
+    { gate: "check:anon-column-surface" },
+  );
   // Supavisor pools in transaction mode: a server connection can arrive with a
   // non-LOCAL SET ROLE another client left behind. Reading privileges as the
   // wrong role is a wrong answer that looks like a right one.

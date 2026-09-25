@@ -23,8 +23,14 @@ import {
   type ReactNode,
 } from "react";
 
-/** The title never gets less than this (or its natural width, when that is smaller). */
+/** Secondary actions fold before the title's text gets less than this. */
 export const TITLE_MIN_PX = 96;
+/**
+ * The primary (last) action folds only when keeping it would leave the title's text
+ * less than this — "Workbo…" beside a visible New beats "Workbooks" beside a "…"
+ * that hides the page's one primary action.
+ */
+export const TITLE_FLOOR_PX = 56;
 /** Fallback width of an action we have never measured, and of the "…" trigger. */
 export const DEFAULT_ACTION_PX = 36;
 
@@ -61,6 +67,20 @@ export function foldCount(
   widths: readonly number[],
   available: number,
   overflowWidth: number = DEFAULT_ACTION_PX,
+  /** Room when the title yields down to TITLE_FLOOR_PX to keep the primary action. */
+  primaryAvailable: number = available,
+): number {
+  const n = widths.length;
+  const fold = foldSecondary(widths, available, overflowWidth);
+  if (fold < n || n === 0) return fold;
+  const primary = widths[n - 1] + (n > 1 ? overflowWidth : 0);
+  return primary <= primaryAvailable ? n - 1 : n;
+}
+
+function foldSecondary(
+  widths: readonly number[],
+  available: number,
+  overflowWidth: number,
 ): number {
   const n = widths.length;
   let rest = widths.reduce((sum, w) => sum + w, 0);

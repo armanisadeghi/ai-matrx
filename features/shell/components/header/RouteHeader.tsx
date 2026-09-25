@@ -47,6 +47,7 @@ import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
 import PageHeader from "./PageHeader";
 import {
   DEFAULT_ACTION_PX,
+  TITLE_FLOOR_PX,
   TITLE_MIN_PX,
   ellipsizeLooseText,
   flattenActions,
@@ -85,13 +86,27 @@ function naturalWidth(el: HTMLElement): number {
   return w;
 }
 
+/** Width of the left region's icon-only controls (back chevron etc.) — not title. */
+function iconControlsWidth(el: HTMLElement): number {
+  let total = 0;
+  el.querySelectorAll<HTMLElement>("button, a, [role='button']").forEach((c) => {
+    if (c.parentElement?.closest("button, a, [role='button']")) return;
+    if (!c.textContent?.trim()) total += c.offsetWidth;
+  });
+  return total;
+}
+
 export default function RouteHeader({
   left,
   center,
   right,
   fallback = false,
 }: RouteHeaderProps) {
-  const rootRef = useRef<HTMLDivElement>(null);
+  // State, not a ref: the row mounts through a portal whose target is found in an
+  // effect, so on RouteHeader's own first layout pass there is no row yet. A ref
+  // left the measuring effect bailed out forever on pages whose actions never
+  // change (nothing folded, the center never bounded).
+  const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const leftRef = useRef<HTMLDivElement>(null);
   const rightRef = useRef<HTMLDivElement>(null);
   const overflowRef = useRef<HTMLSpanElement>(null);
@@ -112,7 +127,6 @@ export default function RouteHeader({
   });
 
   useLayoutEffect(() => {
-    const root = rootRef.current;
     if (!root) return;
 
     const measure = () => {
@@ -128,14 +142,22 @@ export default function RouteHeader({
           if (key) widthsRef.current.set(key, el.offsetWidth);
         });
 
-      const reserve = leftEl
-        ? Math.min(naturalWidth(leftEl), TITLE_MIN_PX)
-        : 0;
+      // The title keeps TITLE_MIN_PX of TEXT beside any back chevron, or its
+      // whole natural width when that is smaller.
+      const natural = leftEl ? naturalWidth(leftEl) : 0;
+      const chrome = leftEl ? iconControlsWidth(leftEl) : 0;
+      const reserve = Math.min(natural, chrome + TITLE_MIN_PX);
+      const floor = Math.min(natural, chrome + TITLE_FLOOR_PX);
       const overflowWidth = overflowRef.current?.offsetWidth || DEFAULT_ACTION_PX;
       const widths = current.map(
         (a) => widthsRef.current.get(a.key) ?? DEFAULT_ACTION_PX,
       );
-      const nextFold = foldCount(widths, root.clientWidth - reserve, overflowWidth);
+      const nextFold = foldCount(
+        widths,
+        root.clientWidth - reserve,
+        overflowWidth,
+        root.clientWidth - floor,
+      );
       if (nextFold !== currentFold) setFolded(nextFold);
 
       setBoundedCenterWidth(
@@ -161,8 +183,9 @@ export default function RouteHeader({
       cancelAnimationFrame(frame);
       ro.disconnect();
     };
-    // Re-measure whenever the set of actions or the fold point changes.
-  }, [actionKeys, fold]);
+    // Re-measure when the row mounts and whenever the set of actions or the
+    // fold point changes.
+  }, [root, actionKeys, fold]);
 
   const overflowActions = actions.slice(0, fold);
   const rowActions = actions.slice(fold);
@@ -170,7 +193,7 @@ export default function RouteHeader({
   return (
     <PageHeader fallback={fallback}>
       <div
-        ref={rootRef}
+        ref={setRoot}
         data-route-header-root
         className="relative flex w-full min-w-0 items-center justify-between"
       >

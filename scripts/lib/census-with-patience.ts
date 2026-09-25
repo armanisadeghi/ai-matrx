@@ -10,6 +10,7 @@
  * the query to the caller, so it is generic rather than a second definition of `Row`.
  */
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { tryGateLock } from "./gate-db";
 export type CensusRow = Record<string, unknown>;
 
 /**
@@ -38,17 +39,34 @@ export interface Measured<R = CensusRow> {
 }
 
 export async function censusWithPatience<R = CensusRow>(
-  client: { query: (sql: string) => Promise<{ rows: unknown[] }> },
+  client: { query: (sql: string, values?: unknown[]) => Promise<{ rows: unknown[] }> },
   label: string,
   sql: string,
   timeout = "900s",
   /** The waits between attempts. Only a test passes anything else. */
   waits: readonly number[] = CONTENTION_BACKOFF,
+  /**
+   * ONE RUN AT A TIME (2026-09-25, the live database freeze). A census that costs minutes of
+   * database time is taken under a transaction-scoped advisory lock on this key; a second
+   * caller — another lane, another machine — does NOT pile a second copy onto the server. It
+   * skips at once and reports the census UNMEASURED by name, which is never a pass.
+   */
+  singleFlightKey?: string,
 ): Promise<Measured<R>> {
   for (let attempt = 0; ; attempt++) {
     await client.query("begin");
     try {
       await client.query(`set local statement_timeout = '${timeout}'`);
+      if (singleFlightKey && !(await tryGateLock(client, singleFlightKey))) {
+        await client.query("rollback").catch(() => undefined);
+        const skipped =
+          `${label}: SKIPPED - another run is computing this census right now (advisory lock ` +
+          `"matrx-gate:${singleFlightKey}"). Two copies at once is what froze the live database ` +
+          "on 2026-09-25, so the second caller does not start one. Read the other run's verdict, " +
+          "or re-run when it has finished.";
+        console.log(`[LOUD] ${skipped}`);
+        return { rows: [], unmeasured: skipped };
+      }
       const rows = (await client.query(sql)).rows as R[];
       await client.query("rollback").catch(() => undefined);
       if (attempt > 0) {

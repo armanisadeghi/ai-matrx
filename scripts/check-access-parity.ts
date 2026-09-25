@@ -67,7 +67,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { loadDbEnv } from "./lib/direct-db";
+import { openGateDb } from "./lib/gate-db";
 import type { Client } from "pg";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -493,9 +494,11 @@ async function main(): Promise<number> {
     return 1;
   }
   console.log(`  ${C.d}${env.host}/${env.database} (credentials from ${env.from})${C.x}`);
-  const db = await connectDirect(env, "check-access-parity");
+  // No session `set statement_timeout` here any more: through the transaction pooler it stuck to
+  // a pooled backend and was inherited by the next client (2026-09-25). The gate helper sets the
+  // ceiling inside every transaction instead.
+  const db = await openGateDb(env, { gate: "check-access-parity" });
   try {
-    await db.query("set statement_timeout = '180s'");
     if (SELF_TEST) return await selfTest(db);
 
     let rows: TokenRow[];

@@ -63,7 +63,8 @@ import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { loadDbEnv } from "./lib/direct-db";
+import { openGateDb } from "./lib/gate-db";
 import {
   findContractGaps,
   type ContractRow,
@@ -520,7 +521,7 @@ async function fetchLiveContracts(): Promise<LiveContracts | { failure: string }
   if ("missing" in env) {
     return { failure: `direct Postgres env incomplete: ${env.missing.join(", ")}` };
   }
-  const client = await connectDirect(env, "check-hr-punch-write-path:corpus");
+  const client = await openGateDb(env, { gate: "check:hr-punch-write-path:corpus" });
   try {
     const rows = await client.query<ContractRow>(
       `select schema_name, function_name, home_migration, must_contain, reason

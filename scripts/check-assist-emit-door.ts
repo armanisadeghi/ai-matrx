@@ -17,7 +17,8 @@
  * organization scoping inside the dedupe refresh's own WHERE.
  */
 import process from "node:process";
-import { connectDirect, DB_VARS, loadDbEnv } from "./lib/direct-db";
+import { DB_VARS, loadDbEnv } from "./lib/direct-db";
+import { openGateDb } from "./lib/gate-db";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const DOOR =
@@ -198,7 +199,7 @@ END;`,
     console.error(`Missing direct DB connection values: ${DB_VARS.join(", ")}`);
     return 2;
   }
-  const db = await connectDirect(env, "matrx-frontend check-assist-emit-door");
+  const db = await openGateDb(env, { gate: "check-assist-emit-door" });
   try {
     const result = await db.query<DoorRow>(`
       select

@@ -457,6 +457,8 @@
     "check:data-integrity": "tsx scripts/check-data-integrity.ts",
     "check:impl-doors": "tsx scripts/check-impl-doors.ts",
     "check:impl-doors:strict": "tsx scripts/check-impl-doors.ts --strict",
+    "check:gate-db-sessions": "tsx scripts/check-gate-db-sessions.ts",
+    "check:gate-db-sessions:self-test": "tsx scripts/check-gate-db-sessions.ts --self-test",
     "check:door-rows": "tsx scripts/check-door-rows.ts",
     "check:door-rows:strict": "tsx scripts/check-door-rows.ts --strict",
     "check:door-rows:self-test": "tsx scripts/check-door-rows.ts --self-test",

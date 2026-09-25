@@ -73,7 +73,8 @@ import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { tryReadAllRowsRest } from "@ai-matrx/data/db";
-import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { loadDbEnv } from "./lib/direct-db";
+import { openGateDb } from "./lib/gate-db";
 import { readHeader } from "./lib/migration-target";
 import { basedOnCheck, findReplaceOccurrences, type Query } from "./migration-based-on";
 import { exitAfterDrain } from "./lib/exit-after-drain";
@@ -536,7 +537,7 @@ async function basedOnArm(pending: string[]): Promise<{ gaps: BasedOnGap[]; skip
         `Not a pass — an unmeasured check.`,
     };
 
-  const client = await connectDirect(env, "matrx-frontend check:migrations (DD-220)");
+  const client = await openGateDb(env, { gate: "check:migrations (DD-220)" });
   const q: Query = async (sql, params) =>
     (await client.query(sql, (params ?? []) as never[])).rows as Record<string, unknown>[];
   const gaps: BasedOnGap[] = [];

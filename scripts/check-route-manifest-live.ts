@@ -36,7 +36,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import pg from "pg";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { connectDirect, DB_VARS, loadDbEnv } from "./lib/direct-db";
+import { DB_VARS, loadDbEnv } from "./lib/direct-db";
+import { openGateDb } from "./lib/gate-db";
 import {
   generateRouteManifest,
   type RouteManifest,
@@ -181,7 +182,7 @@ async function readDbRows(app: string): Promise<RouteRow[]> {
         `${env.looked.join(", ") || "no env file"}`,
     );
   }
-  const client: pg.Client = await connectDirect(env, "check-route-manifest-live");
+  const client: pg.Client = await openGateDb(env, { gate: "check:route-manifest:live" });
   try {
     const { rows } = await client.query<{
       pattern: string;
