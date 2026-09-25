@@ -428,6 +428,7 @@ how that savior page gets built.
 
 ## Change log
 
+- `2026-09-24` — Claude (Opus): **`config.tableToolbar` (opt-in)** — the table's own title row carries search, saved views (`tableId`), working view tabs and the column picker (controlled `columnState` over the same `useListViewPrefs.hiddenColumns`); the shell toolbar row is not rendered. Absent = unchanged. First consumer: `/administration/mandates/list-preview` (`features/mandates/admin-list/`).
 - `2026-09-22` — Claude (Opus): **No two rows in a list are indistinguishable**
   (jobs-bar cold-walk-21, defect D). New `lookalikes.ts`: given the rows a view
   is about to render, it returns a short distinguishing note ONLY for the rows
