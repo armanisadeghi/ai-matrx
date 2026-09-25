@@ -58,21 +58,21 @@ try {
   const pause = page.getByRole("button", { name: /^Pause$/ }).first();
   await pause.waitFor({ timeout: 240000 });
   await pause.click();
-  report.dialogOnPause = await page.getByText("Which workspace is this for?").isVisible({ timeout: 4000 }).catch(() => false);
+  report.dialogOnPause = await page.getByText("Which workspace is this for?").waitFor({ state: "visible", timeout: 4000 }).then(() => true).catch(() => false);
   for (let i = 0; i < 20 && !writes.length; i += 1) await page.waitForTimeout(500);
   await page.waitForTimeout(1500);
   report.afterPause = { writes: [...writes], db: await readTask(id), toasts: await page.evaluate(() => [...document.querySelectorAll("[data-sonner-toast]")].map((t) => t.textContent?.trim())) };
   await page.screenshot({ path: `${OUT}/schedule-after-pause.png` });
   await page.reload({ waitUntil: "domcontentloaded" });
-  report.afterReloadReadsEnable = await page.getByRole("button", { name: /^Enable$/ }).first().isVisible({ timeout: 120000 }).catch(() => false);
+  report.afterReloadReadsEnable = await page.getByRole("button", { name: /^Enable$/ }).first().waitFor({ state: "visible", timeout: 120000 }).then(() => true).catch(() => false);
   await page.screenshot({ path: `${OUT}/schedule-after-reload.png` });
 
   writes.length = 0;
   await page.getByRole("button", { name: /^Delete$/ }).first().click();
   await page.getByRole("alertdialog").getByRole("button", { name: /^Delete$/ }).click();
-  report.dialogOnDelete = await page.getByText("Which workspace is this for?").isVisible({ timeout: 4000 }).catch(() => false);
+  report.dialogOnDelete = await page.getByText("Which workspace is this for?").waitFor({ state: "visible", timeout: 4000 }).then(() => true).catch(() => false);
   for (let i = 0; i < 20 && !writes.length; i += 1) await page.waitForTimeout(500);
-  await page.waitForTimeout(2000);
+  await page.waitForURL(/\/schedules\/?$/, { timeout: 30000 }).catch(() => undefined);
   report.afterDelete = { writes: [...writes], url: page.url(), db: await readTask(id) };
   await page.screenshot({ path: `${OUT}/schedule-after-delete.png` });
 } finally {
