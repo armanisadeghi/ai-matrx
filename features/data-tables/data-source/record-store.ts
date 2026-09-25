@@ -59,7 +59,7 @@ import type {
   TableMetadata,
 } from "../types";
 import type { RecordStoreHome } from "./table-home";
-import { migrateRetype, readRecordsInViewOrder, viewRecordOrderSet } from "./record-store-grid";
+import { handOrderAbsence, migrateRetype, readRecordsInViewOrder, viewRecordOrderSet } from "./record-store-grid";
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
 import {
   choiceFromOption,
@@ -230,7 +230,6 @@ async function readEveryRow(
 // Reorder control is not drawn — never a button that cannot save.
 
 const HAND_ORDER_VIEW = "Hand-set order";
-const NO_VIEW = "00000000-0000-0000-0000-000000000000";
 
 type HandOrder = StoreHandOrder & { viewId: string | null };
 
@@ -245,18 +244,6 @@ async function tableViews(
   return (views.data as unknown as Array<{ view_id: string; created_at: string; definition?: Record<string, unknown> | null }>)
     .slice()
     .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
-}
-
-const handOrderPresence = new Map<string, Promise<string | null>>();
-
-/** Null when the store keeps hand-set orders here; else the store's sentence for why not. */
-function handOrderDoorAbsent(home: RecordStoreHome): Promise<string | null> {
-  let known = handOrderPresence.get(home.organizationId);
-  if (!known) {
-    known = readRecordsInViewOrder(home, NO_VIEW, 1, 0).then((probe) => (!probe.ok && probe.absent ? probe.error.message : null));
-    handOrderPresence.set(home.organizationId, known);
-  }
-  return known;
 }
 
 function manualViewId(views: Awaited<ReturnType<typeof tableViews>>): string | null {
@@ -276,10 +263,9 @@ async function readHandOrder(
   const views = await tableViews(client, tableId);
   const viewId = manualViewId(views);
   if (!viewId) {
-    // No hand-ordered view yet: is the door on this database at all? Asked ONCE per
-    // organization per page load (a view that cannot exist, so a present door answers 23503
-    // and an absent one PGRST202) — never once per table open.
-    const absent = await handOrderDoorAbsent(home);
+    // No hand-ordered view yet: does this store keep a hand-set order at all? The registry
+    // (`custom.view_keys()`) says so, once per page load — never a probe that answers an error.
+    const absent = await handOrderAbsence();
     if (absent) return { status: absent, enabled: false, order: [], viewId: null };
     return { status: "served", enabled: rowOrder === "manual", order: [], viewId: null };
   }

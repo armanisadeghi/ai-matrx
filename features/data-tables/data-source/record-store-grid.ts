@@ -114,3 +114,38 @@ export function viewRecordOrderSet(home: RecordStoreHome, viewId: string, record
     p_record_ids: [...recordIds],
   });
 }
+
+// ─── G13: whether this store keeps a hand-set order at all ───────────────────
+//
+// LANE FE-TAILS (2026-09-24). This used to be a PROBE: a read of a view id that cannot exist,
+// answered 23503 by a store that has the door (and PGRST202 by one that does not). The answer
+// was right and the request was a designed failure — PostgREST returns a 409 for it, so every
+// table opened in the Sheet put an error in the console (the admin debug badge's "2 errors").
+// A console never carries a designed error. The store now SAYS what a view accepts:
+// `custom.view_keys()` is the registry, and G13's order is its `order` key (writer `server`,
+// written only by `custom.view_record_order_set`). One read, once per page load, never an error
+// on a store that has it.
+
+const ORDER_KEY = "order";
+const NO_HAND_ORDER =
+  "The record store this page is connected to does not keep a hand-set row order yet — it arrives with the grid primitives' database update (lane GRID-PRIMITIVES).";
+
+let handOrderKnown: Promise<string | null> | null = null;
+
+/** Null when the store keeps hand-set orders; else the one sentence for why the Reorder control is absent. */
+export function handOrderAbsence(): Promise<string | null> {
+  handOrderKnown ??= (async () => {
+    const answer = (await dataSource().rpc("view_keys", {}, { schema: "custom" })) as {
+      data: unknown;
+      error: { message: string; code?: string; hint?: string; details?: string } | null;
+    };
+    if (answer.error) {
+      // Not remembered: a failed read is not an answer about the store, so the next open asks again.
+      handOrderKnown = null;
+      return ABSENT_CODES.has(answer.error.code ?? "") ? NO_HAND_ORDER : mapPgError(answer.error, "custom.view_keys").message;
+    }
+    const keys = Array.isArray(answer.data) ? (answer.data as Array<{ path?: unknown }>) : [];
+    return keys.some((k) => k.path === ORDER_KEY) ? null : NO_HAND_ORDER;
+  })();
+  return handOrderKnown;
+}

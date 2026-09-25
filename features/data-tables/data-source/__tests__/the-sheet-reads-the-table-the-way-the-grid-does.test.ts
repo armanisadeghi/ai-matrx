@@ -60,6 +60,7 @@ jest.mock("@ai-matrx/records/core", () => ({
 }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
 jest.mock("../record-store-grid", () => ({
+  handOrderAbsence: jest.fn(async () => null),
   readRecordsInViewOrder: jest.fn(async () => ({ ok: false, absent: true, error: { message: "absent here" } })),
   viewRecordOrderSet: jest.fn(),
   migrateRetype: jest.fn(),
