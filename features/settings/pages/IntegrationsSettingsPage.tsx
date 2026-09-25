@@ -531,14 +531,81 @@ export default function IntegrationsPage({
         </section>
 
         <section id="integration-catalog" className="scroll-mt-20 space-y-4">
-          <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 md:flex-row md:items-center md:justify-between">
-            <div>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
               <h2 className="text-base font-semibold text-foreground">Discover integrations</h2>
               <p className="mt-1 text-sm text-muted-foreground">Find a service, connect it, and start using it in your agents.</p>
             </div>
+            <div className="shrink-0">
+              {/* Copy / export — SANITIZED. Payloads project through
+                  mcpEntryMeta, which drops endpoint URLs, auth strategies,
+                  connection ids and token expiry. Never pass a raw entry. */}
+              {sorted.length > 0 && (
+                <CopyButtons
+                  size="icon"
+                  label="Integrations"
+                  human={() => mcpListSummary(sorted)}
+                  agent={() => ({
+                    kind: "mcp-integrations",
+                    location: mcpLocation("Settings — Integrations"),
+                    description:
+                      "The integrations matching the current filters. Sanitized: no endpoint URLs, auth strategies, connection ids or tokens.",
+                    data: {
+                      filters: {
+                        view: viewFilter,
+                        category: activeCategory,
+                        search: search || null,
+                      },
+                      counts: mcpConnectionCounts(sorted),
+                      integrations: sorted.map(mcpEntryMeta),
+                    },
+                    summary: mcpListSummary(sorted),
+                    attributes: {
+                      ...mcpConnectionCounts(sorted),
+                      view: viewFilter,
+                      category: activeCategory,
+                      sanitized: true,
+                    },
+                  })}
+                  agentVariant={{ position: "last" }}
+                  aiVariants={[
+                    keyFieldsAiVariant({
+                      kind: "mcp-integrations",
+                      location: mcpLocation("Settings — Integrations"),
+                      description:
+                        "Integrations projected to core fields. Sanitized.",
+                      visible: sorted,
+                      project: mcpEntryBrief,
+                      query: {
+                        view: viewFilter,
+                        category: activeCategory,
+                        search: search || null,
+                      },
+                      attributes: {
+                        ...mcpConnectionCounts(sorted),
+                        sanitized: true,
+                      },
+                    }),
+                  ]}
+                  export={{
+                    items: [
+                      jsonExportItem(() => ({
+                        counts: mcpConnectionCounts(sorted),
+                        integrations: sorted.map(mcpEntryMeta),
+                      })),
+                      csvExportItem(
+                        () => sorted.map(mcpEntryBrief),
+                        "CSV (all matching)",
+                        MCP_CSV_COLUMNS,
+                      ),
+                    ],
+                  }}
+                />
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-            {!search.trim() && (
+          {!search.trim() && <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+            {(
               [
                 ["all", "All"],
                 ["connected", "Connected"],
@@ -556,72 +623,7 @@ export default function IntegrationsPage({
                 {label}
               </Button>
             ))}
-            {/* Copy / export — SANITIZED. Payloads project through
-                mcpEntryMeta, which drops endpoint URLs, auth strategies,
-                connection ids and token expiry. Never pass a raw entry. */}
-            {sorted.length > 0 && (
-              <CopyButtons
-                size="icon"
-                label="Integrations"
-                human={() => mcpListSummary(sorted)}
-                agent={() => ({
-                  kind: "mcp-integrations",
-                  location: mcpLocation("Settings — Integrations"),
-                  description:
-                    "The integrations matching the current filters. Sanitized: no endpoint URLs, auth strategies, connection ids or tokens.",
-                  data: {
-                    filters: {
-                      view: viewFilter,
-                      category: activeCategory,
-                      search: search || null,
-                    },
-                    counts: mcpConnectionCounts(sorted),
-                    integrations: sorted.map(mcpEntryMeta),
-                  },
-                  summary: mcpListSummary(sorted),
-                  attributes: {
-                    ...mcpConnectionCounts(sorted),
-                    view: viewFilter,
-                    category: activeCategory,
-                    sanitized: true,
-                  },
-                })}
-                agentVariant={{ position: "last" }}
-                aiVariants={[
-                  keyFieldsAiVariant({
-                    kind: "mcp-integrations",
-                    location: mcpLocation("Settings — Integrations"),
-                    description:
-                      "Integrations projected to core fields. Sanitized.",
-                    visible: sorted,
-                    project: mcpEntryBrief,
-                    query: {
-                      view: viewFilter,
-                      category: activeCategory,
-                      search: search || null,
-                    },
-                    attributes: {
-                      ...mcpConnectionCounts(sorted),
-                      sanitized: true,
-                    },
-                  }),
-                ]}
-                export={{
-                  items: [
-                    jsonExportItem(() => ({
-                      counts: mcpConnectionCounts(sorted),
-                      integrations: sorted.map(mcpEntryMeta),
-                    })),
-                    csvExportItem(
-                      () => sorted.map(mcpEntryBrief),
-                      "CSV (all matching)",
-                      MCP_CSV_COLUMNS,
-                    ),
-                  ],
-                }}
-              />
-            )}
-          </div>
+          </div>}
         </section>
 
         {!search.trim() ? <div className="flex flex-wrap gap-1.5">
@@ -950,7 +952,7 @@ function ServerCard({
                 ) : (
                   <Lock className="h-3 w-3 mr-1" />
                 )}
-                <span className="sm:hidden">Connect account</span>
+                <span className="sm:hidden">Connect</span>
                 <span className="hidden sm:inline">Connect with OAuth</span>
               </Button>
               <Button
