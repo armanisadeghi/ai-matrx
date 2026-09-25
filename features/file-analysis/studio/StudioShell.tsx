@@ -12,6 +12,8 @@
 "use client";
 
 import { rememberFileOrganization } from "@/features/files/api/fileOrganization";
+import { useDeclarePageObjectOrganization } from "@/features/shell/pageObjectOrganization";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -43,6 +45,13 @@ interface StudioShellProps {
 
 export function StudioShell({ fileId, organizationId }: StudioShellProps) {
   rememberFileOrganization(fileId, organizationId);
+  // The shell header believes the file (VERIFIER-21 #7), as on /files/f/<id>.
+  const { organizations } = useUserOrganizations();
+  useDeclarePageObjectOrganization(
+    organizationId
+      ? { organizationId, name: organizations.find((o) => o.id === organizationId)?.name ?? null, shownByPage: false }
+      : null,
+  );
   const router = useRouter();
   const searchParams = useSearchParams();
 
