@@ -85,11 +85,13 @@ const pendingText = () =>
     document.body.innerText.split("\tACTIONS")[1] ?? "",
   );
 const atFirstRow = await pendingText();
-const pendingAtFirstRow = ["Grading", "Checking…"].filter((word) => atFirstRow.includes(word));
+const pendingAtFirstRow = ["Grading", "Checking…"].filter((word) =>
+  atFirstRow.split("\n").some((line) => line.trim() === word),
+);
 await page.waitForFunction(
   () => {
     const text = document.body.innerText.split("\tACTIONS")[1] ?? "";
-    return text.length > 0 && !/\bGrading\b|Checking…/.test(text);
+    return text.length > 0 && !/(^|\n)\s*(Grading|Checking…)\s*(\n|$)/.test(text);
   },
   null,
   {
@@ -104,7 +106,7 @@ report(`domcontentloaded ${navDone}s · first real row ${firstRow}s (cells still
 } catch (error) {
   console.log(`FAILED at ${at()}s: ${String(error).split("\n")[0]}`);
   const tail = await page.evaluate(() => document.body.innerText.split("\tACTIONS")[1] ?? "");
-  const stuck = tail.split("\n").map((l) => l.trim()).filter((l) => /Grading|Checking/.test(l));
+  const stuck = tail.split("\n").map((l) => l.trim()).filter((l) => l === "Grading" || l === "Checking…");
   console.log(`still-reading cells: ${stuck.length} ${JSON.stringify(stuck.slice(0, 5))}`);
   await page.screenshot({ path: process.env.SHOT ?? "/tmp/mandate-list-first-paint-failure.png" }).catch(() => {});
   printRequests();

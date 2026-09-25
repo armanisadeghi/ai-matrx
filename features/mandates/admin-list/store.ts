@@ -72,6 +72,16 @@ let state: MandateAdminListState = {
   version: 0,
 };
 let generation = 0;
+/**
+ * Bumps on every invalidation (a write, a Remove, an advance). A report
+ * landing does NOT bump it: the database half of the list did not change, so
+ * the service may reuse the database answer it already holds (./service.ts).
+ */
+let dbEpoch = 0;
+
+export function getMandateAdminDbEpoch(): number {
+  return dbEpoch;
+}
 const listeners = new Set<() => void>();
 
 function publish(next: Partial<MandateAdminListState>, bump = true) {
@@ -188,6 +198,7 @@ export function ensureMandateAdminReports(
  * reports, for writes that change what they classify (a rebind, an advance).
  */
 export function invalidateMandateAdminList(reloadReports = false): void {
+  dbEpoch += 1;
   if (reloadReports) {
     generation += 1;
     // A write that changes what the reports classify makes the old ones wrong,
