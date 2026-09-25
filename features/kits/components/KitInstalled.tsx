@@ -27,8 +27,7 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
-import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
@@ -180,27 +179,26 @@ function BindingPreviewCard({
 }
 
 // ─── Try it ─────────────────────────────────────────────────────────────────
+//
+// The run opens in the agent run WINDOW, not inline: a builder's answer is a SHAPED
+// job (e.g. a "create agent definition" directive), and a headless-for-text run
+// flattens it into a string (the runtime says so: "do NOT run a shaped job
+// headless-for-text"). The window renders it through the ONE pipeline, streams
+// live, survives navigation, and the person can keep talking.
 
-function TryItPanel({ agent, agentId, organizationId }: { agent: KitAgent; agentId: string; organizationId: string }) {
-  const live = useLiveAgentRun();
+function TryItPanel({ agent, agentId }: { agent: KitAgent; agentId: string }) {
+  const openRunWindow = useOpenAgentRunWindow();
   const tryIt = agent.try_it ?? {};
   const vars = Object.entries(tryIt.variables ?? {});
 
   const run = () => {
-    void live
-      .run({
-        agentId,
-        surfaceKey: "kits.try-it",
-        sourceFeature: "agent_run",
-        initiation: "user",
-        organizationId,
-        expect: "text",
-        ...(tryIt.user_input ? { userInput: tryIt.user_input } : {}),
-        ...(vars.length > 0 ? { variables: tryIt.variables } : {}),
-      })
-      .catch(() => {
-        // The error is on screen through `live.error` and the display's own status.
-      });
+    openRunWindow({
+      initialAgentId: agentId,
+      initialAgentName: agent.name,
+      ...(tryIt.user_input ? { initialDraftText: tryIt.user_input } : {}),
+      ...(vars.length > 0 ? { initialVariableValues: tryIt.variables } : {}),
+      initialAutoRun: true,
+    });
   };
 
   return (
@@ -229,26 +227,14 @@ function TryItPanel({ agent, agentId, organizationId }: { agent: KitAgent; agent
           </div>
         )}
         <div className="flex flex-wrap items-center gap-3">
-          <Button size="sm" onClick={run} disabled={live.isRunning}>
-            {live.isRunning ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Play className="mr-1.5 h-3.5 w-3.5" />}
-            {live.isRunning ? "Running…" : "Run it once"}
+          <Button size="sm" onClick={run}>
+            <Play className="mr-1.5 h-3.5 w-3.5" />
+            Run it once
           </Button>
-          <p className="text-[11px] text-muted-foreground">Runs your copy once with the example above. It uses AI credits like any run.</p>
-        </div>
-        {live.error && !live.hasLiveRun && (
-          <p className="flex items-start gap-1.5 text-xs text-destructive">
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            {live.error}
+          <p className="text-[11px] text-muted-foreground">
+            Opens a window and runs your copy once with the example above — it uses AI credits like any run, and you can keep talking to it there.
           </p>
-        )}
-        {(live.hasLiveRun || (live.isRunning && !live.conversationId)) && (
-          <LiveRunDisplay
-            conversationId={live.conversationId}
-            pending={live.isRunning && !live.conversationId}
-            label={agent.name}
-            onDismiss={live.dismiss}
-          />
-        )}
+        </div>
       </div>
     </Panel>
   );
@@ -412,7 +398,7 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
             )}
             {m.agents.map((a) => {
               const id = steps.agents?.[a.key];
-              return id ? <TryItPanel key={a.key} agent={a} agentId={id} organizationId={orgId} /> : null;
+              return id ? <TryItPanel key={a.key} agent={a} agentId={id} /> : null;
             })}
           </div>
         </div>
