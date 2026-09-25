@@ -450,7 +450,7 @@ export function ListsTreeNav({ lists, activeListData }: ListsTreeNavProps) {
         open={deleteListOpen}
         onOpenChange={setDeleteListOpen}
         title={`Delete "${deleteListTarget?.list_name}"?`}
-        description="This will permanently delete the list and all its items. This action cannot be undone."
+        description="This moves the list and its items to the Trash. It stops appearing in your lists — restorable from the Trash."
         onConfirm={handleDeleteList}
       />
     </div>
