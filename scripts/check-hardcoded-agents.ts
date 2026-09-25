@@ -268,7 +268,16 @@ export const MODEL_CHOICE_RULES: ModelRule[] = [
   {
     id: "google-session-model-literal",
     re: /["'`](?:gemini-[\w.-]*live[\w.-]*|gemini-[\w.-]*native-audio[\w.-]*|gemini-robotics[\w.-]*|lyria-[\w.-]*|deep-research-[\w.-]*|antigravity-[\w.-]*|gemini-embedding-[\w.-]*)["'`]/,
-    allowFiles: ["features/rag/api/google-embeddings.ts", "features/rag/components/GoogleEmbeddingLab.tsx"],
+    allowFiles: [
+      "features/rag/api/google-embeddings.ts",
+      "features/rag/components/GoogleEmbeddingLab.tsx",
+      // OPEN BYPASS (2026-09-25): the research topic's Google background agents still
+      // send a raw model — their managed-agent models are not agent-assignable, so no
+      // mandate Holder can be born yet (BYPASS-CENSUS frontend-features). Remove these
+      // two entries in the change that converts them.
+      "features/research/service/google-background.ts",
+      "features/research/components/agents/GoogleBackgroundAgentCard.tsx",
+    ],
     fix: "Gemini Live, Lyria music and the Google background agents run their MANDATE's Holder model, resolved on aidream (services/google_specialized.py: voice.gemini_live, audio.live_music, research_client.google_*). The client sends a job/mandate key, never a model. (Embedding lab files are the dev-only exception.)",
   },
   {
