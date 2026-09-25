@@ -109,6 +109,30 @@ export const selectOwnSubmittedFirstTurnValues = (conversationId: string) =>
   );
 
 /**
+ * The complement of {@link selectOwnSubmittedFirstTurnValues}: the frozen
+ * first-turn values the HOST wired at launch (a kit's "Run it once" example,
+ * a surface's job inputs). Never rendered as the person's words — the user
+ * bubble reads this only to state honestly that a turn with nothing typed was
+ * started WITH named inputs ("Started with: …"), instead of claiming the turn
+ * had nothing in it.
+ */
+export const selectHostSubmittedFirstTurnValues = (conversationId: string) =>
+  createSelector(
+    (state: RootState) =>
+      state.instanceVariableValues.byConversationId[conversationId],
+    (entry) => {
+      if (!entry?.submittedFirstTurnValues) return EMPTY_RECORD;
+      const hostNames = entry.submittedFirstTurnHostValueNames ?? [];
+      if (hostNames.length === 0) return EMPTY_RECORD;
+      const host: Record<string, unknown> = {};
+      for (const [name, value] of Object.entries(entry.submittedFirstTurnValues)) {
+        if (hostNames.includes(name)) host[name] = value;
+      }
+      return Object.keys(host).length > 0 ? host : EMPTY_RECORD;
+    },
+  );
+
+/**
  * Raw scope-resolved values for an instance.
  */
 export const selectScopeVariableValues =
