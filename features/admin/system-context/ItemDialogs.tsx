@@ -196,7 +196,20 @@ export function EditItemDialog({
               label="Value"
               hint="Saving updates the value in place — every version is kept in history."
             >
-              {item.value_type === "object" || item.value_type === "array" ? (
+              {item.value_type === "markdown" ? (
+                <ProTextarea
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  autoGrow
+                  minHeight={128}
+                  maxHeight={320}
+                  enableVoice={false}
+                  enableCleanup={false}
+                  enableTextStats
+                  className="font-mono text-sm"
+                  placeholder="# Heading\n\nWrite the Markdown value…"
+                />
+              ) : item.value_type === "object" || item.value_type === "array" ? (
                 <Textarea
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
@@ -425,7 +438,20 @@ export function AddItemDialog({
                 label="Initial value"
                 hint="Optional — you can set it later."
               >
-                {valueType === "object" || valueType === "array" ? (
+                {valueType === "markdown" ? (
+                  <ProTextarea
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    autoGrow
+                    minHeight={128}
+                    maxHeight={320}
+                    enableVoice={false}
+                    enableCleanup={false}
+                    enableTextStats
+                    className="font-mono text-sm"
+                    placeholder="# Heading\n\nWrite the Markdown value…"
+                  />
+                ) : valueType === "object" || valueType === "array" ? (
                   <Textarea
                     value={value}
                     onChange={(e) => setValue(e.target.value)}
