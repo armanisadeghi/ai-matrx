@@ -13,6 +13,8 @@
  * a 600 KB search transcript kept as a file. The download itself is the files API — the network,
  * stubbed with the bytes a real file holds; the module's own decoding and error sentence are real.
  */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { hrefForFile, readFileText } from "../recordsFiles";
 
 jest.mock("@/features/files/api/files", () => ({ downloadFile: jest.fn() }));
@@ -50,5 +52,18 @@ describe("a value kept as a file", () => {
     await expect(readFileText({ fileId: "0d4f6a2e-1111-4c3b-8e5f-9a8b7c6d5e4f" })).rejects.toThrow(
       /whole text is in file 0d4f6a2e-1111-4c3b-8e5f-9a8b7c6d5e4f, and it could not be read: 404 Not Found/,
     );
+  });
+});
+
+describe("the table page binds the file ports", () => {
+  // The break: the module exists but the table page's RecordsMount host never spreads it, so
+  // the cell says "in a file" with no way to open it and the export has no way to read it.
+  const page = readFileSync(join(process.cwd(), "app/(core)/data-v2/[tableId]/page.tsx"), "utf8");
+  it("imports the one files module", () => {
+    expect(page).toMatch(/import \{ RECORDS_FILES \} from "@\/features\/unified-data\/recordsFiles";/);
+  });
+  it("spreads both ports into the RecordsMount host", () => {
+    const host = page.slice(page.indexOf("host={{"), page.indexOf("layouts: ["));
+    expect(host).toContain("...RECORDS_FILES,");
   });
 });

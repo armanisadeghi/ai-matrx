@@ -50,6 +50,7 @@ import {
 } from "@/features/unified-data/row-change-agent/RowChangeAgentLink";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { replaceAddressWithoutNavigating, currentPathWithSearch } from "@/lib/url-state/addressWithoutNavigating";
+import { RECORDS_FILES } from "@/features/unified-data/recordsFiles";
 
 /**
  * THE PAGE'S TITLE IS THE TABLE'S OWN NAME (owner, 2026-09-24: a table he knows must look like
@@ -577,6 +578,10 @@ export default function UnifiedDataTableRoute({
               // The page's toasts: the where-it-lives chip's "now lives in …" outlives the
               // re-read that re-mounts the header (UI-FIX-19).
               notify: RECORDS_NOTIFY,
+              // A VALUE KEPT AS A FILE (BIG-VALUES-TAILS): the cell's "Open the whole text"
+              // opens /files/f/<id> and the export reads the whole text as the person.
+              // records-ui 0.85.12+ reads these two ports; an older build ignores them.
+              ...RECORDS_FILES,
               members,
               onAskForOne,
               openRecords: onOpenRecordsFromANumber,
