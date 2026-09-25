@@ -129,7 +129,11 @@ BEGIN
   SELECT so.organization_id INTO v_sys FROM iam.system_orgs so WHERE so.key = 'system';
   p_facts := coalesce(p_facts, '{}'::jsonb);
   RETURN QUERY
-  WITH corpus AS (
+  WITH buckets AS (
+    SELECT b.b, public.agx_since_bucket(b.b) AS since, b.o
+    FROM unnest(ARRAY['1h','24h','7d','30d','90d','1y']) WITH ORDINALITY AS b(b, o)
+  ),
+  corpus AS (
     SELECT m.*
     FROM mandate.definition m
     WHERE m.deleted_at IS NULL
@@ -219,7 +223,7 @@ BEGIN
            array_agg(DISTINCT l_detail) FILTER (WHERE l_detail IS NOT NULL) AS s_detail
     FROM links l GROUP BY l_key
   ),
-  shaped AS (
+  shaped AS MATERIALIZED (
     SELECT
       c.id, c.mandate_key, c.created_by, c.organization_id,
       (c.organization_id = v_sys) AS is_system,
@@ -254,7 +258,7 @@ BEGIN
     LEFT JOIN served sv ON sv.s_key = c.mandate_key
     LEFT JOIN iam.organizations ho ON ho.id = c.organization_id
   ),
-  judged AS (
+  judged AS MATERIALIZED (
     SELECT s.*,
       -- ── server-classified facts (see header) ──────────────────────────────
       CASE WHEN coalesce((p_facts->'coverage'->>'known')::boolean, false) THEN
@@ -276,13 +280,19 @@ BEGIN
       -- ── holder verdicts (buildRow) ────────────────────────────────────────
       (s.h_has_pin AND (s.h_agent_id IS NULL OR s.h_agent_type IS NULL)) AS v_unresolved,
       (s.h_agent_read AND s.h_agent_type IS DISTINCT FROM 'builtin') AS v_nonsystem,
-      (s.h_has_pin AND s.h_agent_id IS NOT NULL AND s.h_agent_read
-        AND cardinality(s.required_output_keys) > 0
-        AND coalesce(cardinality(mandate.missing_output_keys(s.required_output_keys, s.h_output_schema::jsonb)), 0) > 0)
+      -- CASE, not AND: the contract judge is the costly call, and only a
+      -- pinned, readable holder of a job that requires output keys needs it.
+      CASE WHEN s.h_has_pin AND s.h_agent_id IS NOT NULL AND s.h_agent_read
+                AND cardinality(s.required_output_keys) > 0
+           -- Same verdict as mandate.missing_output_keys (some required key
+           -- the schema does not declare), with the schema read ONCE per row
+           -- instead of once per required key.
+           THEN NOT (s.required_output_keys <@ mandate.output_schema_keys(s.h_output_schema::jsonb))
+           ELSE false END
         AS v_output_unmet
     FROM shaped s
   ),
-  finished AS (
+  finished AS MATERIALIZED (
     SELECT j.*,
       CASE
         WHEN j.h_has_pin AND coalesce(p_facts->'health'->'agentDrift', '[]'::jsonb) ? j.mandate_key
@@ -355,9 +365,9 @@ BEGIN
       'overridesCount', to_jsonb(ARRAY[f.overrides_count::text]),
       'customizedBy',  to_jsonb(f.customized_by),
       'isEnabled',     to_jsonb(ARRAY[CASE WHEN f.is_enabled THEN 'true' ELSE 'false' END]),
-      'updatedAt',     to_jsonb(ARRAY(SELECT b FROM unnest(ARRAY['1h','24h','7d','30d','90d','1y']) b
-                                       WHERE f.updated_at IS NOT NULL
-                                         AND f.updated_at >= public.agx_since_bucket(b))),
+      'updatedAt',     to_jsonb(ARRAY(SELECT bk.b FROM buckets bk
+                                       WHERE f.updated_at IS NOT NULL AND f.updated_at >= bk.since
+                                       ORDER BY bk.o)),
       'id',            to_jsonb(ARRAY[f.id::text]),
       'origin',        to_jsonb(ARRAY[CASE WHEN f.origin = 'code' THEN 'code' ELSE 'soft' END]),
       'codeState',     to_jsonb(ARRAY[f.code_state]),
@@ -368,9 +378,9 @@ BEGIN
       'fallbackKey',   to_jsonb(ARRAY[coalesce(f.fallback_mandate_key, 'None')]),
       'homeLabel',     to_jsonb(ARRAY[f.home_label]),
       'goal',          CASE WHEN f.goal IS NULL THEN '[]'::jsonb ELSE to_jsonb(ARRAY[f.goal]) END,
-      'createdAt',     to_jsonb(ARRAY(SELECT b FROM unnest(ARRAY['1h','24h','7d','30d','90d','1y']) b
-                                       WHERE f.created_at IS NOT NULL
-                                         AND f.created_at >= public.agx_since_bucket(b)))
+      'createdAt',     to_jsonb(ARRAY(SELECT bk.b FROM buckets bk
+                                       WHERE f.created_at IS NOT NULL AND f.created_at >= bk.since
+                                       ORDER BY bk.o))
     ) AS vals,
     -- Per-column SORT keys — admin-list/fields.ts `sort`.
     jsonb_build_object(
