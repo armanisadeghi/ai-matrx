@@ -131,10 +131,15 @@ function BindingPreviewCard({
     <div className="p-4">
       <div className="flex flex-wrap items-center gap-1.5 text-xs">
         <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11.5px] font-medium text-foreground">{`{{${variable}}}`}</code>
-        <span className="text-muted-foreground">in</span>
-        <span className="font-medium text-foreground">{agent.name}</span>
+        {/* The panel already names the agent; say what this one variable reads. */}
         <span className="text-muted-foreground">reads</span>
-        <span className="font-medium text-foreground">{table?.name ?? spec.binding.table_key}</span>
+        <span className="font-medium text-foreground">
+          {spec.binding.semantic_type === "value" && spec.binding.field_key
+            ? (table?.fields.find((f) => f.key === spec.binding.field_key)?.label ?? spec.binding.field_key)
+            : spec.binding.semantic_type === "reference"
+              ? `a whole row of ${table?.name ?? spec.binding.table_key}`
+              : (table?.name ?? spec.binding.table_key)}
+        </span>
         <button
           type="button"
           onClick={() => setAttempt((n) => n + 1)}
@@ -154,7 +159,7 @@ function BindingPreviewCard({
         ) : answer.state === "ok" ? (
           <>
             <div className="mb-1.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-              {answer.preview.row_count !== null && (
+              {answer.preview.row_count !== null && spec.binding.semantic_type !== "value" && (
                 <span>
                   {answer.preview.row_count} {answer.preview.row_count === 1 ? "row" : "rows"} delivered
                   {answer.preview.total_rows !== null && answer.preview.total_rows !== answer.preview.row_count

@@ -81,8 +81,10 @@ fi
 night_resolve_psql || exit $?
 WORK="$(mktemp -d)"
 
-INVALID_SQL="select n.nspname || '.' || i.relname, c.relname,
-       case when not x.indisready then 'not ready' when not x.indisvalid then 'invalid' else 'ok' end
+# night_readonly_psql/psql -qAt print with the default '|' separator and take no -F override, so
+# this builds ONE text column, delimited with \x1f (never a byte a schema/table/index name holds).
+INVALID_SQL="select (case when not x.indisready then 'not ready' when not x.indisvalid then 'invalid' else 'ok' end)
+       || E'\\x1f' || n.nspname || '.' || i.relname || E'\\x1f' || n.nspname || '.' || c.relname
   from pg_index x
   join pg_class i on i.oid = x.indexrelid
   join pg_class c on c.oid = x.indrelid
@@ -127,7 +129,7 @@ report() {
   fi
   n=$(print -r -- "$out" | grep -c . )
   say "invalid indexes ($label): $n"
-  print -r -- "$out" | while IFS=$'\t' read -r idx tbl why; do
+  print -r -- "$out" | while IFS=$'\x1f' read -r why idx tbl; do
     say "  $why  $idx -> $tbl"
   done
   return 1
@@ -159,16 +161,16 @@ night_conn "$TARGET" || exit $?
 LIST_SQL="select n.nspname || '.' || i.relname
   from pg_index x join pg_class i on i.oid = x.indexrelid join pg_namespace n on n.oid = i.relnamespace
  where not (x.indisvalid and x.indisready)"
-mapfile_out="$("$PSQL" "${DB_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c "begin read only; $LIST_SQL; commit;" 2>"$WORK/list.err")" || { say "READ FAILED on $TARGET: $(head -3 "$WORK/list.err")"; exit 2; }
+"$PSQL" "${DB_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c "begin read only; $LIST_SQL; commit;" > "$WORK/todo" 2>"$WORK/list.err" || { say "READ FAILED on $TARGET: $(head -3 "$WORK/list.err")"; exit 2; }
 
-if [ -z "$mapfile_out" ]; then
+if [ ! -s "$WORK/todo" ]; then
   say "invalid-indexes ($TARGET): 0 — nothing to fix"
   exit 0
 fi
 
 say "─── fix: REINDEX INDEX CONCURRENTLY, one at a time, autocommit (no transaction) ───"
 FAILED=0
-print -r -- "$mapfile_out" | while IFS= read -r idx; do
+while IFS= read -r idx; do
   [ -n "$idx" ] || continue
   if "$PSQL" "${DB_ARGS[@]}" -q -v ON_ERROR_STOP=1 -c "reindex index concurrently $idx;" > "$WORK/reindex.out" 2>&1; then
     say "  rebuilt $idx"
@@ -180,8 +182,8 @@ print -r -- "$mapfile_out" | while IFS= read -r idx; do
   # copy, mid-swap) or `_ccnew` (the new copy, pre-swap) behind — both still maintained on every
   # write, the exact class this job exists to close one level down. Clear them unconditionally.
   "$PSQL" "${DB_ARGS[@]}" -q -c "drop index concurrently if exists ${idx}_ccold; drop index concurrently if exists ${idx}_ccnew;" > /dev/null 2>&1
-done
+done < "$WORK/todo"
 
-report "$TARGET after fix" "${DB_ARGS[@]}"; AFTER_RC=$?
+report "${TARGET}_after_fix" "${DB_ARGS[@]}"; AFTER_RC=$?
 [ "$FAILED" = "1" ] && exit 2
 exit $AFTER_RC

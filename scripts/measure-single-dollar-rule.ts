@@ -55,6 +55,29 @@ const pandoc: Rule = (content, after) =>
 const pandocDigitGuard: Rule = (content, after) =>
   pandoc(content, after) && (!/^[0-9]/.test(content) || TEX.test(content));
 
+/**
+ * Pandoc delimiters + the content must not read as prose, code or a price:
+ *   - no unescaped `%` — TeX's comment character (KaTeX drops the rest of the
+ *     formula), and the mark of a percentage (`$\ge$20% owners**…**$`);
+ *   - it does not start with a closing bracket or end with an opening one
+ *     (`[$X] plus [$Y]` — two bracketed placeholders, not one formula);
+ *   - it does not start or end with a straight quote (`"$", "$"` in data);
+ *   - it does not end with `:` `;` `,` `/` (`$HOME/.local/bin:$PATH`,
+ *     `$AAPL/$TSLA` — a separator between two `$` words).
+ */
+const pandocContent: Rule = (content, after) =>
+  pandoc(content, after) &&
+  !/(?:^|[^\\])%/.test(content) &&
+  !/^[)\]}"]/.test(content) &&
+  !/[(\[{":;,/]$/.test(content);
+
+/**
+ * `pandocContent`, and a formula that opens with a digit is not glued to a following
+ * letter — `$10$N9qo…` is the cost field of a bcrypt hash, not the number ten.
+ */
+const pandocContentGlue: Rule = (content, after) =>
+  pandocContent(content, after) && !(/^[0-9]/.test(content) && after !== undefined && /[A-Za-z]/.test(after));
+
 /** Every `$…$` span the scan finds with this rule: [open, closeExclusive]. */
 function spans(m: SourceModule, text: string, rule: Rule): Array<[number, number]> {
   const out: Array<[number, number]> = [];
@@ -116,7 +139,8 @@ async function main(): Promise<number> {
   const m: SourceModule = modulePath
     ? ((await import(pathToFileURL(resolve(modulePath)).href)) as SourceModule)
     : await import("@ai-matrx/content-ir/source");
-  const candidates: Record<string, Rule> = { pandoc, pandoc_digit_guard: pandocDigitGuard };
+  const candidates: Record<string, Rule> = { pandoc, pandoc_digit_guard: pandocDigitGuard, pandoc_content: pandocContent, pandoc_content_glue: pandocContentGlue };
+  const sampled = process.env.SAMPLE_RULE ?? "pandoc";
 
   const env = loadDbEnv();
   if ("missing" in env) {
@@ -169,13 +193,13 @@ async function main(): Promise<number> {
                 if (nowKeys.has(`${a}:${b}`)) continue;
                 t.gained += 1;
                 changed = true;
-                if (name === "pandoc") record(source, plan.assistant, row.id, text, a, b, "gained");
+                if (name === sampled) record(source, plan.assistant, row.id, text, a, b, "gained");
               }
               for (const [a, b] of now) {
                 if (nextKeys.has(`${a}:${b}`)) continue;
                 t.lost += 1;
                 changed = true;
-                if (name === "pandoc") record(source, plan.assistant, row.id, text, a, b, "lost");
+                if (name === sampled) record(source, plan.assistant, row.id, text, a, b, "lost");
               }
               if (changed) t.rowsChanged += 1;
             }
@@ -195,7 +219,10 @@ async function main(): Promise<number> {
 
   function record(source: string, assistant: boolean, id: string, text: string, a: number, b: number, change: string) {
     const content = text.slice(a + 1, b - 1);
-    const key = `${source} ${change} ${shape(content)}`;
+    // Notes (a person's words) are shown only as shapes, with a shaped neighbourhood.
+    const key = assistant
+      ? `${source} ${change} ${shape(content)}`
+      : `${source} ${change} ${shape(text.slice(Math.max(0, a - 12), a))}⟦${shape(content)}⟧${shape(text.slice(b, b + 12))}`;
     shapes.set(key, (shapes.get(key) ?? 0) + 1);
     if (!assistant || !samplesOut) return;
     // Model output only: the span, a little context either side, and the verdict-relevant

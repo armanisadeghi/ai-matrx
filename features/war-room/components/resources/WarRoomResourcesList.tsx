@@ -549,8 +549,9 @@ export function WarRoomResourcesList({
             </>
           ) : (
             <>
-              Permanently delete <b>{confirm?.title}</b>. This cannot be undone
-              and is separate from removing the association.
+              Archive <b>{confirm?.title}</b>. It stops appearing here and in
+              your library; an admin can restore it from the trash. This is
+              separate from removing the association.
             </>
           )
         }
