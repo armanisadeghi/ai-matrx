@@ -228,8 +228,9 @@ export interface ScanMetrics {
   openFindings: number;
   /** On the conversion list (flag conversion_pending). */
   conversion: number;
-  /** EVERY AI call outside a mandate — the Unconverted page's total. */
-  bypass: number;
+  /** EVERY AI call outside a mandate — the Unconverted page's total.
+   * `null` = a server too old to report it; never stood in for by `conversion`. */
+  bypass: number | null;
   patrolEnabled: boolean | null;
   patrolLastRunAt: string | null;
   patrolNextDueAt: string | null;
@@ -260,7 +261,7 @@ export function scanMetrics(
     lastCompleteScanAt: newest,
     openFindings: board.open_finding_count,
     conversion: board.conversion_count,
-    bypass: board.bypass_count ?? board.conversion_count,
+    bypass: board.bypass_count ?? null,
     patrolEnabled: patrol ? patrol.enabled && patrol.trigger_enabled : null,
     patrolLastRunAt: patrol?.last_run_at ?? null,
     patrolNextDueAt: patrol?.next_due_at ?? null,
