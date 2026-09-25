@@ -180,7 +180,6 @@ export function useHighlightedLines(
       let sliceStart = performance.now();
       while (delta) {
         const piece = takeLines(delta, SLICE_LINES);
-        tokenizer.lastStableGrammarState = undefined;
         await tokenizer.enqueue(piece);
         current.consumed += piece;
         delta = delta.slice(piece.length);
