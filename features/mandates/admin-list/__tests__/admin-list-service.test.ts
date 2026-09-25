@@ -157,13 +157,31 @@ describe("derivations", () => {
     expect(featureLabelOf("shortcut.action_item_extractor", null)).toBe("Shortcuts");
   });
 
-  it("declared in: language and repo of the code declaration, none when not found", () => {
+  it("declared in: the code declaration's file, or the generated declared key set", () => {
     const truth = {
       mandate_key: "podcast.audience_adapter",
       resolution: "code_declaration_found",
       source: { class_name: "X", module: "aidream.services.podcast.mandates", source_file: "aidream/services/podcast/mandates.py", line: 41 },
     } as unknown as MandateCodeTruth;
-    expect(declaredInOf(truth)).toEqual({ declaredIn: "Python · aidream", declaredFile: "aidream/services/podcast/mandates.py:41" });
-    expect(declaredInOf({ ...truth, resolution: "no_code_declaration_found" } as MandateCodeTruth).declaredIn).toBeNull();
+    expect(declaredInOf("podcast.audience_adapter", truth)).toEqual({
+      declaredIn: "Python · aidream",
+      declaredFile: "aidream/services/podcast/mandates.py:41",
+      codeState: "declared",
+    });
+    // Class inspection missed it, but aidream declares it (generated key set).
+    expect(
+      declaredInOf("flashcards.enrich_card", {
+        ...truth,
+        resolution: "no_code_declaration_found",
+        source: null,
+      } as unknown as MandateCodeTruth),
+    ).toEqual({ declaredIn: "Python · aidream", declaredFile: null, codeState: "declared" });
+    // A shortcut authored in the database is declared nowhere.
+    expect(declaredInOf("shortcut.action_item_extractor", undefined)).toEqual({
+      declaredIn: null,
+      declaredFile: null,
+      codeState: "not_in_code",
+    });
   });
+
 });

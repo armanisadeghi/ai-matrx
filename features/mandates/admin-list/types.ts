@@ -23,8 +23,7 @@ export type MandateOrigin = "code" | "soft";
 export type MandateCodeState =
   | "declared"
   | "import_failed"
-  | "not_in_code"
-  | "unknown";
+  | "not_in_code";
 
 /** Where the job runs from, read from shortcut / surface / app rows. */
 export type MandateServes =

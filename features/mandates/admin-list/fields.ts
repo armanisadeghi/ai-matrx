@@ -13,7 +13,6 @@ export const CODE_STATE_LABEL: Record<MandateCodeState, string> = {
   declared: "Declared",
   import_failed: "Import failed",
   not_in_code: "Not in code",
-  unknown: "Unknown",
 };
 
 /** Relative-age bucket for date filters — the DATE_FILTER_OPTIONS values. */
@@ -119,7 +118,7 @@ export const FIELDS: Record<string, FieldReader> = {
     label: (v) => CODE_STATE_LABEL[v as MandateCodeState] ?? v,
   },
   declaredIn: {
-    values: (r) => [r.codeState === "unknown" ? "Unknown" : (r.declaredIn ?? "None")],
+    values: (r) => [r.declaredIn ?? "None"],
     sort: (r) => r.declaredIn ?? "",
   },
   serves: {

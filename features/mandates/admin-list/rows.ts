@@ -25,6 +25,7 @@ import { resolveMandateGoal } from "@/features/mandates/goal";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { splitMandateKey } from "@/features/mandates/mandate-key";
 import { holderOfMandate } from "@/lib/supabase/mandateStorage";
+import { isMandateKey } from "@ai-matrx/agents/mandates";
 import type {
   MandateAdminRow,
   MandateCodeState,
@@ -101,43 +102,40 @@ export function featureLabelOf(
   return `${top} › ${prettySegment(sub)}`;
 }
 
-/** The repo + language of a code declaration, from its module path. */
-export function declaredInOf(truth: MandateCodeTruth | undefined): {
+/**
+ * Where a key is declared in code. Two real sources, strongest first:
+ *   1. `GET /mandates/code-truth` found the NamedAgent class — gives the file.
+ *   2. The key is in `@ai-matrx/agents`' generated key set, which THE ONE
+ *      GENERATOR emits from aidream's `declared_mandates()` (Python) — so the
+ *      declaration exists in aidream even when the class inspection misses it.
+ */
+export function declaredInOf(
+  mandateKey: string,
+  truth: MandateCodeTruth | undefined,
+): {
   declaredIn: string | null;
   declaredFile: string | null;
+  codeState: MandateCodeState;
 } {
+  const found = truth?.resolution === "code_declaration_found";
+  const importFailed = truth?.resolution === "code_exists_but_import_failed";
+  const inGeneratedSet = isMandateKey(mandateKey);
+  if (!found && !importFailed && !inGeneratedSet) {
+    return { declaredIn: null, declaredFile: null, codeState: "not_in_code" };
+  }
   const source = truth?.source;
-  if (!truth || truth.resolution === "no_code_declaration_found") {
-    return { declaredIn: null, declaredFile: null };
-  }
-  const file = source?.source_file ?? truth.call_sites?.[0]?.source_file ?? null;
-  const line = source?.line ?? truth.call_sites?.[0]?.line ?? null;
-  const repo = (source?.module ?? file ?? "").startsWith("aidream")
-    ? "aidream"
-    : (file?.split("/")[0] ?? "aidream");
-  const language = file?.endsWith(".ts") || file?.endsWith(".tsx")
-    ? "TypeScript"
-    : "Python";
+  const file =
+    source?.source_file ?? truth?.call_sites?.[0]?.source_file ?? null;
+  const line = source?.line ?? truth?.call_sites?.[0]?.line ?? null;
+  const language =
+    file && (file.endsWith(".ts") || file.endsWith(".tsx"))
+      ? "TypeScript"
+      : "Python";
   return {
-    declaredIn: `${language} · ${repo}`,
+    declaredIn: `${language} · aidream`,
     declaredFile: file ? `${file}${line ? `:${line}` : ""}` : null,
+    codeState: importFailed ? "import_failed" : "declared",
   };
-}
-
-function codeStateOf(
-  truth: MandateCodeTruth | undefined,
-  known: boolean,
-): MandateCodeState {
-  if (!known) return "unknown";
-  if (!truth) return "not_in_code";
-  switch (truth.resolution) {
-    case "code_declaration_found":
-      return "declared";
-    case "code_exists_but_import_failed":
-      return "import_failed";
-    default:
-      return "not_in_code";
-  }
 }
 
 /**
@@ -240,7 +238,10 @@ export function buildAdminRows(sources: MandateAdminSources): MandateAdminRow[] 
     }
 
     const isSystem = mandate.organization_id === SYSTEM_ORGANIZATION_ID;
-    const { declaredIn, declaredFile } = declaredInOf(truth);
+    const { declaredIn, declaredFile, codeState } = declaredInOf(
+      base.mandateKey,
+      truth,
+    );
     const bindings = data.bindingsByMandateId[mandate.id] ?? [];
 
     return {
@@ -281,8 +282,8 @@ export function buildAdminRows(sources: MandateAdminSources): MandateAdminRow[] 
       isSystem,
       createdAt: mandate.created_at ?? null,
       origin,
-      codeState: codeStateOf(truth, codeTruth !== null),
-      declaredIn: codeTruth === null ? null : declaredIn,
+      codeState,
+      declaredIn,
       declaredFile,
       serves: [...serveKinds],
       servesDetail: [...new Set(links.map((link) => link.detail))],

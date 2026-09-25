@@ -338,11 +338,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
     "Declared in",
     150,
     (row) =>
-      row.codeState === "unknown" ? (
-        <span className="text-xs text-muted-foreground" title="The code declarations could not be read.">
-          Unknown
-        </span>
-      ) : row.declaredIn ? (
+      row.declaredIn ? (
         <span className="block truncate text-xs" title={row.declaredFile ?? undefined}>
           {row.declaredIn}
         </span>
