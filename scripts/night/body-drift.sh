@@ -191,7 +191,7 @@ report() {  # report <label>
   local label="$1" n co
   n=$(grep -c '^MISMATCH' "$WORK/$label.diff" 2>/dev/null || true); n=${n:-0}
   co="$(sed -nE 's/^COPYONLY\t//p' "$WORK/$label.diff")"
-  say "body drift ($label): $TARGET vs $SOURCE over [$SCHEMAS] — source $(wc -l < "$WORK/$label.source.tsv" | tr -d ' ') bodies, copy $(wc -l < "$WORK/$label.copy.tsv" | tr -d ' ') — MISMATCHES $n (differs $(grep -c $'\tdiffers$' "$WORK/$label.diff" || true), absent $(grep -c $'\tabsent$' "$WORK/$label.diff" || true)); copy-only ${co:-0} (not counted)"
+  say "body drift ($label): $TARGET vs $SOURCE over [$SCHEMAS] — source $(wc -l < "$WORK/$label.source.tsv" | tr -d ' ') objects, copy $(wc -l < "$WORK/$label.copy.tsv" | tr -d ' ') — MISMATCHES $n (differs $(grep -c $'\tdiffers$' "$WORK/$label.diff" || true), absent $(grep -c $'\tabsent$' "$WORK/$label.diff" || true)); copy-only ${co:-0} (not counted)"
   grep '^MISMATCH' "$WORK/$label.diff" | while IFS=$'\t' read -r _ kind key why; do say "  $why  $kind  $key"; done
   [ -n "$LIST_FILE" ] && cp "$WORK/$label.diff" "$LIST_FILE.$label"
   MISMATCHES=$n
