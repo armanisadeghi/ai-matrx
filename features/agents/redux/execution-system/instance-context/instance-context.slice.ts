@@ -44,6 +44,14 @@ function inferType(value: unknown): ContextObjectType {
   return "json";
 }
 
+/**
+ * Context keys that belong to ONE turn: they ride with the next message and
+ * are consumed when it is sent (the sent user message keeps them in its
+ * frozen `context_snapshot`). A quoted passage is the canonical case — it
+ * must not silently re-attach itself to every later message.
+ */
+export const PER_TURN_CONTEXT_KEYS: readonly string[] = ["quoted_passages"];
+
 // =============================================================================
 // Slice
 // =============================================================================
@@ -191,6 +199,16 @@ const instanceContextSlice = createSlice({
     },
 
     /**
+     * Drop the per-turn keys (`PER_TURN_CONTEXT_KEYS`) once a message carrying
+     * them has been submitted.
+     */
+    consumePerTurnContext(state, action: PayloadAction<string>) {
+      const context = state.byConversationId[action.payload];
+      if (!context) return;
+      for (const key of PER_TURN_CONTEXT_KEYS) delete context[key];
+    },
+
+    /**
      * Clear all context for an instance.
      */
     clearInstanceContext(state, action: PayloadAction<string>) {
@@ -223,6 +241,7 @@ export const {
   setContextEntries,
   replaceSurfaceContextEntries,
   removeContextEntry,
+  consumePerTurnContext,
   clearInstanceContext,
   removeInstanceContext,
 } = instanceContextSlice.actions;

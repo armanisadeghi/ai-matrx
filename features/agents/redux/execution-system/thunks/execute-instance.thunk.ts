@@ -66,6 +66,7 @@ import {
   selectContextPayload,
   selectInstanceContextEntries,
 } from "../instance-context/instance-context.selectors";
+import { consumePerTurnContext } from "../instance-context/instance-context.slice";
 import {
   buildAmbientContext,
   isFirstTurn,
@@ -758,6 +759,10 @@ export const executeInstance = createAsyncThunk<
       // transcript needs an optimistic row.
       const contextSnapshot =
         selectInstanceContextEntries(conversationId)(stateAtSubmit);
+      // Per-turn context (a quoted passage) rode with THIS message — it is in
+      // the payload and in the user row's frozen snapshot — so it is consumed
+      // now and never re-attaches itself to the next message.
+      if (!retry) dispatch(consumePerTurnContext(conversationId));
 
       let userMessageClientTempId: string | undefined;
       if (
