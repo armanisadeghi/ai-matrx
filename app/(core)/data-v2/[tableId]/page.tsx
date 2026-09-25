@@ -35,6 +35,7 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { createClient } from "@/utils/supabase/client";
 import { useSharedTable } from "@/features/unified-data/hub/useSharedTable";
 import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
+import { useDeclarePageObjectOrganization } from "@/features/shell/pageObjectOrganization";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
@@ -226,7 +227,7 @@ export default function UnifiedDataTableRoute({
    * else — for a table shared with her from outside — the owner organization the share door
    * names. Never the active organization.
    */
-  const { organizations: myOrganizations } = useUserOrganizations();
+  const { organizations: myOrganizations, loading: myOrganizationsLoading } = useUserOrganizations();
   /**
    * A TABLE ANOTHER ORGANIZATION GAVE THIS PERSON. The store already admitted her (the door
    * above answered); `useSharedTable` asks `custom.tables_shared_with_me`, which lists only
@@ -254,6 +255,16 @@ export default function UnifiedDataTableRoute({
       ? (myOrganizations.find((o) => o.id === object.organizationId)?.name ??
         (shared.state === "shared" ? shared.organizationName : null))
       : null;
+  /**
+   * THE SHELL HEADER BELIEVES THE TABLE (GATES-TAIL, VERIFIER-21 #7). The table named its own
+   * organization and the title row shows it, so the header's red "Choose org" would be a lie:
+   * nothing here waits for a choice. The declaration silences it for as long as this page is up.
+   */
+  useDeclarePageObjectOrganization(
+    object.state === "found"
+      ? { organizationId: object.organizationId, name: knownOrganizationName, shownByPage: true }
+      : null,
+  );
   /** The organization this page reads as: the TABLE'S. */
   const readingOrganizationId: string | null =
     object.state === "found"
@@ -297,7 +308,14 @@ export default function UnifiedDataTableRoute({
     // Somebody else's organization's roster is not this person's to read, and
     // the package's own "no members" sentence is the honest answer on a shared
     // table. Their own organization answers normally.
+    // A person given this table by a share (not a member of its organization) has no roster to
+    // read: `get_organization_members_with_users` refuses her with 403 on every open (VERIFIER-21
+    // #7, two console errors). Membership is read from HER organization list, not inferred from
+    // the share door, which only lists organizations she is not in when the share is org-shaped.
     if (!readsAsMember || !readingOrganizationId) return [];
+    // While her list loads, answer empty; the port's identity changes when it lands, so the
+    // package asks again.
+    if (myOrganizationsLoading || !myOrganizations.some((o) => o.id === readingOrganizationId)) return [];
     const roster = await getOrganizationMembers(readingOrganizationId);
     return roster.map((member) => ({
       userId: member.userId,
@@ -305,7 +323,7 @@ export default function UnifiedDataTableRoute({
       email: member.user?.email ?? null,
       avatarUrl: member.user?.avatarUrl ?? null,
     }));
-  }, [readingOrganizationId, readsAsMember]);
+  }, [readingOrganizationId, readsAsMember, myOrganizations, myOrganizationsLoading]);
 
   /**
    * A NUMBER ON THE CANVAS CLICKS THROUGH — `@ai-matrx/records-ui`'s

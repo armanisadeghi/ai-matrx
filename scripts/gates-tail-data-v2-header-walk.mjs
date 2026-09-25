@@ -27,7 +27,7 @@ try {
   console.log(`seat: ${await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin")}`);
   await context.route(/\/rest\/v1\/rpc\//, (route) => {
     const name = route.request().url().split("/rpc/")[1]?.split("?")[0] ?? "";
-    if (WRITE.test(name)) {
+    if (WRITE.test(name) && !/(shared_with_me|_read|^read_|where_id_opens|my_levels)/.test(name)) {
       report.aborted.push(name);
       return route.abort();
     }

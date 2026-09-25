@@ -37,6 +37,7 @@ import {
   selectShouldPromptForOrganization,
 } from "@/lib/redux/slices/appContextSlice";
 import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
+import { usePageObjectOrganization } from "@/features/shell/pageObjectOrganization";
 
 export default function HeaderChooseOrgButton() {
   const shouldPrompt = useAppSelector(selectShouldPromptForOrganization);
@@ -44,6 +45,24 @@ export default function HeaderChooseOrgButton() {
   const organizationName = useAppSelector(selectOrganizationName);
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
+  // An object page (a table, a file) reads its organization FROM THE OBJECT, so nothing on it is
+  // waiting for a choice and the red warning would be a lie (GATES-TAIL, VERIFIER-21 #7). The
+  // page declared the object's organization: say it quietly, or say nothing.
+  const objectOrganization = usePageObjectOrganization();
+
+  if (objectOrganization && !open) {
+    if (objectOrganization.shownByPage || !objectOrganization.name) return null;
+    return (
+      <span
+        data-page-object-organization={objectOrganization.organizationId}
+        title={`This page shows something that lives in ${objectOrganization.name}. It opens whatever organization you are working in.`}
+        className="hidden max-w-[14rem] items-center gap-1.5 truncate px-2 text-xs text-muted-foreground sm:inline-flex"
+      >
+        <Building2 size={14} strokeWidth={2} aria-hidden="true" />
+        <span className="truncate">Viewing in {objectOrganization.name}</span>
+      </span>
+    );
+  }
 
   // Stay mounted while the picker is open: selecting an org flips
   // `shouldPrompt` false, but the user may still want the "Set as default"

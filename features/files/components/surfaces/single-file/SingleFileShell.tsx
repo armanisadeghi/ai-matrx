@@ -38,6 +38,8 @@ import { selectFileById } from "@/features/files/redux/selectors";
 import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";
 import { getPreviewCapability } from "@/features/files/utils/preview-capabilities";
 import { rememberFileOrganization } from "@/features/files/api/fileOrganization";
+import { useDeclarePageObjectOrganization } from "@/features/shell/pageObjectOrganization";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import { MobileStack } from "../MobileStack";
 import { FileTabsBody, type FileTab } from "../FileTabsBody";
 import { FileViewerControlsProvider } from "../FileViewerControlsContext";
@@ -60,6 +62,18 @@ export interface SingleFileShellProps {
 export function SingleFileShell({ fileId, organizationId, className }: SingleFileShellProps) {
   // Seeded during render, before any child fires its first per-file request.
   rememberFileOrganization(fileId, organizationId);
+  // The shell header believes the file: never a red "Choose org" over a file that opens in its
+  // own organization — a quiet "Viewing in <org>" when she is in it, else nothing (VERIFIER-21 #7).
+  const { organizations } = useUserOrganizations();
+  useDeclarePageObjectOrganization(
+    organizationId
+      ? {
+          organizationId,
+          name: organizations.find((o) => o.id === organizationId)?.name ?? null,
+          shownByPage: false,
+        }
+      : null,
+  );
   const isMobile = useIsMobile();
   if (isMobile) {
     // Mobile: defer to the existing push-nav stack. It already has a

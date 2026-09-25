@@ -172,3 +172,61 @@ describe("HeaderChooseOrgButton — the trigger tells the truth about itself", (
     expect(trigger().className).not.toContain("text-red-600");
   });
 });
+
+// ── GATES-TAIL (VERIFIER-21 #7): an object page whose organization is known from the object ──
+
+describe("HeaderChooseOrgButton — never a red warning on a page whose object names its organization", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const pageOrg = require("@/features/shell/pageObjectOrganization") as typeof import("@/features/shell/pageObjectOrganization");
+
+  beforeEach(() => {
+    store.organization_id = null; // "Choose org" would show
+    store.organization_name = null;
+    store.orgBootstrapResolved = true;
+    store.orgBootstrapFailure = null;
+    pageOrg.__resetPageObjectOrganizationForTest();
+  });
+  afterEach(() => {
+    act(() => root.unmount());
+    document.body.innerHTML = "";
+  });
+
+  it("shows nothing when the page already names the object's organization", () => {
+    act(() => {
+      pageOrg.declarePageObjectOrganization({ organizationId: "3e790542-fdaf-40b2-8bf3-658bf94fe67f", name: "Arman's Org", shownByPage: true });
+    });
+    mount();
+    expect(host.textContent).not.toContain("Choose org");
+    expect(host.querySelector(".text-red-600")).toBeNull();
+    expect(host.textContent).not.toContain("Arman's Org");
+  });
+
+  it("says 'Viewing in <org>', quietly, when only the header can name it", () => {
+    act(() => {
+      pageOrg.declarePageObjectOrganization({ organizationId: "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f", name: "Admin's Workspace", shownByPage: false });
+    });
+    mount();
+    expect(host.textContent).toContain("Viewing in Admin's Workspace");
+    expect(host.textContent).not.toContain("Choose org");
+    expect(host.querySelector(".text-red-600")).toBeNull();
+  });
+
+  it("shows nothing when the object's organization has no name here", () => {
+    act(() => {
+      pageOrg.declarePageObjectOrganization({ organizationId: "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f", name: null, shownByPage: false });
+    });
+    mount();
+    expect(host.textContent).not.toContain("Choose org");
+    expect(host.querySelector(".text-red-600")).toBeNull();
+  });
+
+  it("warns again once the object page is gone", () => {
+    let release = () => {};
+    act(() => {
+      release = pageOrg.declarePageObjectOrganization({ organizationId: "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f", name: null, shownByPage: true });
+    });
+    mount();
+    act(() => release());
+    expect(trigger().textContent).toContain("Choose org");
+  });
+});

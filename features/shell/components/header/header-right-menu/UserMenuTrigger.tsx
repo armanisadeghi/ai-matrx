@@ -5,6 +5,7 @@ import { UserData } from "@/utils/userDataMapper";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectShouldPromptForOrganization } from "@/lib/redux/slices/appContextSlice";
 import { ShellUserAvatarImage } from "./ShellUserAvatarImage";
+import { usePageObjectOrganization } from "@/features/shell/pageObjectOrganization";
 
 interface UserMenuTriggerProps {
   userData: UserData;
@@ -20,7 +21,11 @@ export default function UserMenuTrigger({
   // the user to choose one (alongside the in-header HeaderChooseOrgButton). Gated on
   // the bootstrap-resolved flag so it never flashes red during boot before the
   // default/personal org has resolved.
-  const promptForOrg = useAppSelector(selectShouldPromptForOrganization);
+  // The red ring is the header warning's twin: silent on an object page whose object names its
+  // organization (GATES-TAIL, VERIFIER-21 #7).
+  const objectOrganization = usePageObjectOrganization();
+  const promptForOrg =
+    useAppSelector(selectShouldPromptForOrganization) && objectOrganization === null;
 
   return (
     <label

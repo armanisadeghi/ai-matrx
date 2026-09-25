@@ -166,6 +166,10 @@ export const MUST_ASK_THE_OBJECT: Readonly<Record<string, RegExp>> = {
   "app/(core)/files/f/[fileId]/studio/page.tsx": /organizationId=\{data\.organization_id\}/,
   // The per-file request seam: a read or write about ONE file names that file's organization.
   "features/files/api/files.ts": /withFileOrganization\(fileId, opts\)/,
+  // The shell header believes the object (VERIFIER-21 #7): an object page declares the
+  // organization its object named, so the header never shows its red "Choose org" over it.
+  "app/(core)/data-v2/[tableId]/page.tsx": /\buseDeclarePageObjectOrganization\s*\(/,
+  "features/files/components/surfaces/single-file/SingleFileShell.tsx": /\buseDeclarePageObjectOrganization\s*\(/,
 };
 
 /**
