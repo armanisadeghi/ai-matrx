@@ -444,14 +444,6 @@ export default function UnifiedDataTableRoute({
     },
     [dataSource, launchMandate, readingOrganizationId, userId],
   );
-  /**
-   * 🚨 SPREAD ONLY UNTIL `@ai-matrx/records-ui` 0.85.0 IS INSTALLED. The port ships in 0.85.0
-   * (lane DEFAULT-GRID-PARITY); 0.84.8's host type does not declare it, so a named property
-   * would not compile. A spread is still type-checked for every property the installed type
-   * DOES declare, so once 0.85.0 is installed a wrong shape here fails the build.
-   * SWAP ON INSTALL: `runAgentAction: onRunAgentAction,` inside `host={{…}}`.
-   */
-  const agentPorts = { runAgentAction: onRunAgentAction };
 
   /** TABLE-PARITY N2, in the table's one menu: absent until the store says a row change reaches a schedule. */
   const rowChangeOffer = useRowChangeAgentOffer({
@@ -614,7 +606,7 @@ export default function UnifiedDataTableRoute({
               members,
               onAskForOne,
               openRecords: onOpenRecordsFromANumber,
-              ...agentPorts,
+              runAgentAction: onRunAgentAction,
               share: recordStoreShare,
               // AGT-N-9 / PRODUCTS row 11. The package builds the record SCOPE and
               // hands it here; this returns the platform's ONE chat column bound to

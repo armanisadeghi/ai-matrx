@@ -254,6 +254,10 @@ export function useAgentLauncher(
         isEphemeral: opts?.isEphemeral,
         jsonExtraction: opts?.jsonExtraction,
         onConversationCreated: opts?.onConversationCreated,
+        // The org of the row the job runs FOR, when the caller knows it. It was dropped here,
+        // so every mandate launch resolved and ran in the ambient workspace instead.
+        ...(opts?.organizationId !== undefined ? { organizationId: opts.organizationId } : {}),
+        ...(opts?.contextAnchor !== undefined ? { contextAnchor: opts.contextAnchor } : {}),
       };
       return dispatch(launchAgentExecution(payload)).unwrap();
     },

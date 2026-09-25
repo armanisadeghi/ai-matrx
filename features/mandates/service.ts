@@ -409,6 +409,14 @@ function assertRunnableVerdict(
 export interface ResolveMandateOptions {
   /** An unassigned optional Mandate disables its affordance without error capture. */
   optional?: boolean;
+  /**
+   * THE ORGANIZATION THE CALLER HAS ALREADY PROVED — the org of the RECORD the job runs on
+   * (access is personal, owner 2026-09-23: an object resolves its organization FROM THE
+   * OBJECT). Given, the ladder is asked for THAT organization and the active-workspace wait is
+   * skipped; the server still decides, and still refuses an organization this person may not
+   * act in. Left out, the question is asked for the selected workspace, exactly as before.
+   */
+  organizationId?: string | null;
 }
 
 /**
@@ -418,6 +426,16 @@ export interface ResolveMandateOptions {
  * `AnyMandateKey`; narrow an unknown string with `isMandateKey` at its
  * boundary rather than widening this back.
  */
+/** The selected workspace, once admitted — or the named refusal when there is none. */
+async function selectedOrganizationFor(mandateKey: AnyMandateKey): Promise<string> {
+  const admission = await waitForOrganizationAdmission();
+  const organizationId = peekSelectedOrganizationId();
+  if (admission !== "ready" || !organizationId) {
+    throw new MandateOrganizationUnresolvedError(mandateKey, admission === "ready" ? "unresolved" : admission);
+  }
+  return organizationId;
+}
+
 export function resolveMandate(
   mandateKey: AnyMandateKey,
   options: { optional: true },
@@ -446,11 +464,7 @@ export async function resolveMandate(
   // Deliberately never `getActiveOrgId()`: its personal-org fallback would
   // resolve on the personal workspace while a company org is actually selected,
   // which under this ruling is a DIFFERENT AGENT running.
-  const admission = await waitForOrganizationAdmission();
-  const organizationId = peekSelectedOrganizationId();
-  if (admission !== "ready" || !organizationId) {
-    throw new MandateOrganizationUnresolvedError(mandateKey, admission === "ready" ? "unresolved" : admission);
-  }
+  const organizationId = options.organizationId ?? (await selectedOrganizationFor(mandateKey));
 
   const cacheKey = mandateCacheKey(userId, organizationId, mandateKey);
   const cached = cache.get(cacheKey);

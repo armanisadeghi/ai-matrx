@@ -212,7 +212,9 @@ export const launchAgentExecution = createAsyncThunk<
       );
     }
     if (!agentId) {
-      const resolved = await resolveMandate(mandateKey);
+      // The run's own organization (the org of the row it is FOR) is the question's
+      // organization too — never the ambient workspace when the caller named one.
+      const resolved = await resolveMandate(mandateKey, organizationId ? { organizationId } : undefined);
       resolvedMandate = resolved;
       agentId = resolved.agentId;
     }

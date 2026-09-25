@@ -34,6 +34,8 @@
 # Usage:
 #   scripts/night/body-drift.sh --target clone|branch [--source production|clone] [--repair]
 #                               [--schemas platform,iam,history,custom] [--list-file <path>]
+#                               [--repair-kinds table,column,...]   level only these kinds (a lane's
+#                               live rehearsal on the copy is left standing, and still counted)
 #   scripts/night/body-drift.sh --self-test      no database: the differ's fixtures + this
 #                                                script's bare-PATH tool resolution
 # Exit: 0 level (after repair, if asked) · 1 mismatches remain · 2 a read failed · 78 refused.
@@ -41,7 +43,7 @@
 set -u
 source /Users/armanisadeghi/code/matrx-frontend/scripts/night/lib-night.sh
 
-TARGET="" SOURCE=production REPAIR=0 SELFTEST=0 LIST_FILE=""
+TARGET="" SOURCE=production REPAIR=0 SELFTEST=0 LIST_FILE="" REPAIR_KINDS=all
 SCHEMAS="platform,iam,history,custom"
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -50,6 +52,7 @@ while [ $# -gt 0 ]; do
     --schemas)   SCHEMAS="${2:-}"; shift 2 ;;
     --list-file) LIST_FILE="${2:-}"; shift 2 ;;
     --repair)    REPAIR=1; shift ;;
+    --repair-kinds) REPAIR_KINDS="${2:-}"; shift 2 ;;
     --self-test) SELFTEST=1; shift ;;
     *) say "REFUSED: unknown argument '$1'."; exit 78 ;;
   esac
@@ -105,6 +108,55 @@ fi
 night_assert_target_readonly "$SOURCE" "${SRC_ARGS[@]}" || exit $?
 
 SCHEMA_ARRAY="'{${SCHEMAS}}'::text[]"
+# ── RELATIONS (lane BRANCH-REFRESH-4, the chair's second step) ───────────────
+# A body check alone let `platform.entity_types.anonymous_read_status` (d347) be missing from the
+# clone unseen. So the same one-direction hashing covers every plain or partitioned TABLE in the
+# schemas (not a partition: a partition's columns, constraints and indexes are its parent's), and
+# per table: each COLUMN (type, not null, default, identity, generated), each CONSTRAINT
+# (pg_get_constraintdef; not one inherited from a parent), each INDEX that backs no constraint
+# (pg_get_indexdef), each TRIGGER declared on it (pg_get_triggerdef + enabled state), each RLS
+# POLICY (permissive, command, roles, using, with check), and the table's own RLS switches.
+# Keys: table `s.t`, column `s.t.col`, constraint/trigger/policy `s.t.name`, index `s.index`.
+REL_SQL="union all
+select 'table', n.nspname || '.' || c.relname,
+       encode(sha256(convert_to('owner ' || pg_get_userbyid(c.relowner) || '|rls ' || c.relrowsecurity || '|force ' || c.relforcerowsecurity, 'utf8')), 'hex')
+  from pg_class c join pg_namespace n on n.oid = c.relnamespace
+ where n.nspname = any($SCHEMA_ARRAY) and c.relkind in ('r','p') and not c.relispartition
+   and not exists (select 1 from pg_depend d where d.classid = 'pg_class'::regclass and d.objid = c.oid and d.deptype = 'e')
+union all
+select 'column', n.nspname || '.' || c.relname || '.' || a.attname,
+       encode(sha256(convert_to(format_type(a.atttypid, a.atttypmod) || '|notnull ' || a.attnotnull || '|default ' || coalesce(pg_get_expr(ad.adbin, ad.adrelid), '') || '|identity ' || a.attidentity::text || '|generated ' || a.attgenerated::text, 'utf8')), 'hex')
+  from pg_class c join pg_namespace n on n.oid = c.relnamespace
+  join pg_attribute a on a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped
+  left join pg_attrdef ad on ad.adrelid = c.oid and ad.adnum = a.attnum
+ where n.nspname = any($SCHEMA_ARRAY) and c.relkind in ('r','p') and not c.relispartition
+   and not exists (select 1 from pg_depend d where d.classid = 'pg_class'::regclass and d.objid = c.oid and d.deptype = 'e')
+union all
+select 'constraint', n.nspname || '.' || c.relname || '.' || k.conname,
+       encode(sha256(convert_to(pg_get_constraintdef(k.oid), 'utf8')), 'hex')
+  from pg_constraint k join pg_class c on c.oid = k.conrelid join pg_namespace n on n.oid = c.relnamespace
+ where n.nspname = any($SCHEMA_ARRAY) and c.relkind in ('r','p') and not c.relispartition and k.conparentid = 0
+   and k.contype in ('p','u','f','c','x')
+union all
+select 'index', n.nspname || '.' || i.relname,
+       encode(sha256(convert_to(pg_get_indexdef(x.indexrelid), 'utf8')), 'hex')
+  from pg_index x join pg_class i on i.oid = x.indexrelid join pg_class c on c.oid = x.indrelid
+  join pg_namespace n on n.oid = c.relnamespace
+ where n.nspname = any($SCHEMA_ARRAY) and c.relkind in ('r','p') and not c.relispartition
+   and not exists (select 1 from pg_constraint k where k.conindid = x.indexrelid and k.contype in ('p','u','x'))
+union all
+select 'trigger', n.nspname || '.' || c.relname || '.' || t.tgname,
+       encode(sha256(convert_to(pg_get_triggerdef(t.oid) || '|enabled ' || t.tgenabled::text, 'utf8')), 'hex')
+  from pg_trigger t join pg_class c on c.oid = t.tgrelid join pg_namespace n on n.oid = c.relnamespace
+ where n.nspname = any($SCHEMA_ARRAY) and not t.tgisinternal and t.tgparentid = 0 and not c.relispartition
+union all
+select 'policy', n.nspname || '.' || c.relname || '.' || pol.polname,
+       encode(sha256(convert_to(pol.polpermissive::text || '|' || pol.polcmd::text || '|' ||
+         (select string_agg(case r when 0 then 'public' else pg_get_userbyid(r) end, ',' order by 1) from unnest(pol.polroles) r) || '|' ||
+         coalesce(pg_get_expr(pol.polqual, pol.polrelid), '') || '|' || coalesce(pg_get_expr(pol.polwithcheck, pol.polrelid), ''), 'utf8')), 'hex')
+  from pg_policy pol join pg_class c on c.oid = pol.polrelid join pg_namespace n on n.oid = c.relnamespace
+ where n.nspname = any($SCHEMA_ARRAY) and not c.relispartition"
+
 # One statement; search_path pinned so both sides print qualified names identically.
 CATALOGUE_SQL="set local search_path = pg_catalog;
 select 'function', n.nspname || '.' || p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')',
@@ -120,7 +172,8 @@ select case c.relkind when 'm' then 'matview' else 'view' end, n.nspname || '.' 
          regexp_replace(pg_get_viewdef(c.oid), ' AS "?[A-Za-z_][A-Za-z0-9_]*"?(,?)$', '\\1', 'gn'), 'utf8')), 'hex')
   from pg_class c join pg_namespace n on n.oid = c.relnamespace
  where n.nspname = any($SCHEMA_ARRAY) and c.relkind in ('v','m')
-   and not exists (select 1 from pg_depend d where d.classid = 'pg_class'::regclass and d.objid = c.oid and d.deptype = 'e')"
+   and not exists (select 1 from pg_depend d where d.classid = 'pg_class'::regclass and d.objid = c.oid and d.deptype = 'e')
+$REL_SQL"
 
 measure() {  # measure <label> -> $WORK/<label>.{source,copy}.tsv and $WORK/<label>.diff
   local label="$1"
@@ -142,6 +195,83 @@ report() {  # report <label>
   grep '^MISMATCH' "$WORK/$label.diff" | while IFS=$'\t' read -r _ kind key why; do say "  $why  $kind  $key"; done
   [ -n "$LIST_FILE" ] && cp "$WORK/$label.diff" "$LIST_FILE.$label"
   MISMATCHES=$n
+}
+
+# ── rel_repair <kind> <key> <absent|differs> <pass> — a relation object, levelled or refused ──
+# MECHANICAL, from the source's own catalogue: a missing table (plain, not partitioned: created
+# empty with the source's owner, RLS switches and grants; its columns and constraints follow as
+# their own items), a missing column (type, default, not null), a changed default or nullability,
+# a missing constraint or index, a missing or changed trigger or policy (drop + create in one
+# transaction), a table's RLS switches or owner. REFUSED BY NAME, never attempted: a column TYPE
+# change, an identity/generated column, a changed constraint or index definition, a partitioned
+# table. A column the SOURCE dropped shows as copy-only and is never dropped here (no DROP COLUMN,
+# ever — soft-delete law and data).
+rel_repair() {
+  local kind="$1" key="$2" why="$3" pass="$4" q="${2//\'/\'\'}" gen="" out
+  local SQ="set local search_path = pg_catalog;"
+  local REL="n.nspname || '.' || c.relname"
+  case "$kind:$why" in
+    table:absent) gen="$SQ select case when c.relkind = 'p' then 'REFUSE a partitioned table is built by its own migration (its partitions and bounds are not mechanical)' else
+        format('create table %I.%I (); alter table %s owner to %I; ', n.nspname, c.relname, $REL, pg_get_userbyid(c.relowner))
+        || case when c.relrowsecurity then format('alter table %s enable row level security; ', $REL) else '' end
+        || case when c.relforcerowsecurity then format('alter table %s force row level security; ', $REL) else '' end
+        || format('revoke all on table %s from public, anon, authenticated, service_role; ', $REL)
+        || coalesce((select string_agg(format('grant %s on table %s to %s;', a.privilege_type, $REL, case when a.grantee = 0 then 'public' else quote_ident(pg_get_userbyid(a.grantee)) end), ' ')
+                       from aclexplode(c.relacl) a where a.grantee <> c.relowner), '') end
+      from pg_class c join pg_namespace n on n.oid = c.relnamespace where $REL = '$q'" ;;
+    table:differs) gen="$SQ select format('alter table %s %s row level security; alter table %s %s row level security; alter table %s owner to %I;', $REL, case when c.relrowsecurity then 'enable' else 'disable' end, $REL, case when c.relforcerowsecurity then 'force' else 'no force' end, $REL, pg_get_userbyid(c.relowner))
+      from pg_class c join pg_namespace n on n.oid = c.relnamespace where $REL = '$q'" ;;
+    column:absent) gen="$SQ select case when a.attidentity <> '' or a.attgenerated <> '' then 'REFUSE an identity or generated column is added by its own migration'
+        else format('alter table %s add column %I %s%s%s;', $REL, a.attname, format_type(a.atttypid, a.atttypmod),
+               coalesce(' default ' || pg_get_expr(ad.adbin, ad.adrelid), ''), case when a.attnotnull then ' not null' else '' end) end
+      from pg_class c join pg_namespace n on n.oid = c.relnamespace join pg_attribute a on a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped
+      left join pg_attrdef ad on ad.adrelid = c.oid and ad.adnum = a.attnum where $REL || '.' || a.attname = '$q'" ;;
+    column:differs)
+      local CQ="$SQ select format_type(a.atttypid, a.atttypmod) || E'\\x1f' || a.attnotnull::text || E'\\x1f' || coalesce(pg_get_expr(ad.adbin, ad.adrelid), '') || E'\\x1f' || a.attidentity::text || a.attgenerated::text
+        from pg_class c join pg_namespace n on n.oid = c.relnamespace join pg_attribute a on a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped
+        left join pg_attrdef ad on ad.adrelid = c.oid and ad.adnum = a.attnum where $REL || '.' || a.attname = '$q'"
+      local src cpy tbl="${key%.*}" col="${key##*.}"
+      src="$(night_readonly_psql "${SRC_ARGS[@]}" --sql "$CQ" 2>/dev/null)"
+      cpy="$("$PSQL" "${COPY_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c "begin read only; $CQ; commit;" 2>/dev/null)"
+      local -a S C; S=("${(@ps:\x1f:)src}"); C=("${(@ps:\x1f:)cpy}")
+      if [ "${S[1]}" != "${C[1]}" ]; then gen="select 'REFUSE a column TYPE change (${C[1]} on the copy, ${S[1]} on the $SOURCE) rewrites data; it belongs to a migration'"
+      elif [ "${S[4]:-}" != "${C[4]:-}" ]; then gen="select 'REFUSE an identity/generated change belongs to a migration'"
+      else
+        local stmt=""
+        [ "${S[2]}" != "${C[2]}" ] && stmt+="alter table $tbl alter column \"$col\" $([ "${S[2]}" = true ] && print 'set' || print 'drop') not null; "
+        if [ "${S[3]:-}" != "${C[3]:-}" ]; then
+          if [ -n "${S[3]:-}" ]; then stmt+="alter table $tbl alter column \"$col\" set default ${S[3]}; "; else stmt+="alter table $tbl alter column \"$col\" drop default; "; fi
+        fi
+        gen="select \$bd\$${stmt}\$bd\$"
+      fi ;;
+    constraint:absent) gen="$SQ select format('alter table %s add constraint %I %s;', $REL, k.conname, pg_get_constraintdef(k.oid))
+      from pg_constraint k join pg_class c on c.oid = k.conrelid join pg_namespace n on n.oid = c.relnamespace where $REL || '.' || k.conname = '$q' and k.conparentid = 0" ;;
+    constraint:differs) gen="select 'REFUSE a constraint whose definition changed is re-validated against data by its own migration'" ;;
+    index:absent) gen="$SQ select pg_get_indexdef(i.oid) || ';' from pg_class i join pg_namespace n on n.oid = i.relnamespace where n.nspname || '.' || i.relname = '$q' and i.relkind in ('i','I')" ;;
+    index:differs) gen="select 'REFUSE an index whose definition changed is rebuilt deliberately (a rebuild locks the table)'" ;;
+    trigger:*) gen="$SQ select format('drop trigger if exists %I on %s; ', t.tgname, $REL) || pg_get_triggerdef(t.oid) || '; '
+        || case t.tgenabled when 'D' then format('alter table %s disable trigger %I;', $REL, t.tgname) when 'R' then format('alter table %s enable replica trigger %I;', $REL, t.tgname) when 'A' then format('alter table %s enable always trigger %I;', $REL, t.tgname) else '' end
+      from pg_trigger t join pg_class c on c.oid = t.tgrelid join pg_namespace n on n.oid = c.relnamespace where $REL || '.' || t.tgname = '$q' and t.tgparentid = 0 and not t.tgisinternal" ;;
+    policy:*) gen="$SQ select format('drop policy if exists %I on %s; create policy %I on %s as %s for %s to %s%s%s;', pol.polname, $REL, pol.polname, $REL,
+          case when pol.polpermissive then 'permissive' else 'restrictive' end,
+          case pol.polcmd when 'r' then 'select' when 'a' then 'insert' when 'w' then 'update' when 'd' then 'delete' else 'all' end,
+          (select string_agg(case r when 0 then 'public' else quote_ident(pg_get_userbyid(r)) end, ', ') from unnest(pol.polroles) r),
+          coalesce(' using (' || pg_get_expr(pol.polqual, pol.polrelid) || ')', ''), coalesce(' with check (' || pg_get_expr(pol.polwithcheck, pol.polrelid) || ')', ''))
+      from pg_policy pol join pg_class c on c.oid = pol.polrelid join pg_namespace n on n.oid = c.relnamespace where $REL || '.' || pol.polname = '$q'" ;;
+  esac
+  out="$(night_readonly_psql "${SRC_ARGS[@]}" --sql "$gen" 2>&1)" || { say "  NOT REPAIRED (pass $pass) $kind $key — could not read the $SOURCE's definition: ${out:0:200}"; return 1; }
+  if [ -z "$out" ]; then say "  NOT REPAIRED (pass $pass) $kind $key — the $SOURCE no longer holds it"; return 1; fi
+  if [[ "$out" == REFUSE* ]]; then
+    [ "$pass" = 1 ] && say "  REFUSED ($why) $kind $key — ${out#REFUSE }"
+    return 1
+  fi
+  { print -r -- "set local lock_timeout = '30s'; set local statement_timeout = '120s'; set local search_path = pg_catalog; set local check_function_bodies = off;"
+    print -r -- "$out"; } > "$WORK/rel.sql"
+  if "$PSQL" "${COPY_ARGS[@]}" -q -1 -v ON_ERROR_STOP=1 -f "$WORK/rel.sql" > "$WORK/rel.out" 2>&1; then
+    say "  levelled ($why) $kind $key"
+  else
+    say "  NOT REPAIRED (pass $pass) $kind $key — $(grep -m1 -E 'ERROR' "$WORK/rel.out" | cut -c1-240)"
+  fi
 }
 
 measure before || exit 2
@@ -172,11 +302,22 @@ if [ "$REPAIR" = "1" ] && [ "$BEFORE" -gt 0 ]; then
   say "─── repair: levelling each mismatch from the $SOURCE's own body ───"
   REPAIRED=0 NOT_REPAIRED=0
   # Two passes: a body that named something not yet levelled lands on the second.
-  for pass in 1 2; do
-    grep '^MISMATCH' "$WORK/$([ $pass = 1 ] && print before || print mid).diff" > "$WORK/todo" 2>/dev/null || : > "$WORK/todo"
+  # Three passes, each in dependency order: a table before its columns, columns before the
+  # constraints and indexes that name them, bodies before the triggers and policies that call them.
+  for pass in 1 2 3; do
+    grep '^MISMATCH' "$WORK/$([ $pass = 1 ] && print before || print mid).diff" 2>/dev/null \
+      | awk -F'\t' 'BEGIN{o["table"]=1;o["column"]=2;o["constraint"]=3;o["index"]=4;o["function"]=5;o["view"]=6;o["matview"]=7;o["trigger"]=8;o["policy"]=9} {print o[$2] "\t" $0}' \
+      | sort -t$'\t' -k1,1n -s | cut -f2- > "$WORK/todo" || : > "$WORK/todo"
     [ -s "$WORK/todo" ] || break
     while IFS=$'\t' read -r _ kind key why; do
       q="${key//\'/\'\'}"
+      if [ "$REPAIR_KINDS" != all ] && [[ ",$REPAIR_KINDS," != *",$kind,"* ]]; then
+        [ "$pass" = 1 ] && say "  left as it is ($why) $kind $key — --repair-kinds $REPAIR_KINDS"
+        continue
+      fi
+      case "$kind" in
+        table|column|constraint|index|trigger|policy) rel_repair "$kind" "$key" "$why" "$pass"; continue ;;
+      esac
       case "$kind" in
         function)
           DEF_SQL="set local search_path = pg_catalog; select pg_get_functiondef(p.oid) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname || '.' || p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' = '$q'" ;;

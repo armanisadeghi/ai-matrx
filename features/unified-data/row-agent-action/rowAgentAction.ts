@@ -133,6 +133,24 @@ export function rowAgentLaunch(
 }
 
 /**
+ * The launch thunk rejects with `rejectWithValue` (a string or a `{ message }`), not an Error —
+ * so "could not be started" alone would drop the one sentence that says why.
+ */
+export function launchRefusal(e: unknown): string {
+  if (e instanceof Error && e.message) return e.message;
+  if (typeof e === "string" && e.trim()) return e;
+  if (e && typeof e === "object") {
+    const o = e as Record<string, unknown>;
+    for (const k of ["message", "error", "reason", "detail"]) {
+      const v = o[k];
+      if (typeof v === "string" && v.trim()) return v;
+      if (v && typeof v === "object" && typeof (v as { message?: unknown }).message === "string") return (v as { message: string }).message;
+    }
+  }
+  return "The agent could not be started, and it did not say why.";
+}
+
+/**
  * Read what the offer needs through the person's own records client, then launch.
  * Every refusal is said, in the store's words, through `onRefused` — a button that did
  * nothing when pressed is the failure this whole port exists to avoid.
@@ -184,7 +202,7 @@ export async function runRowAgentAction(args: {
   } catch (e) {
     args.onRefused(
       `Could not start "${target.action}"`,
-      e instanceof Error ? e.message : "The agent could not be started.",
+      launchRefusal(e),
     );
   }
 }
