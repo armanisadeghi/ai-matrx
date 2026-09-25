@@ -33,6 +33,7 @@ import type {
 import {
   fetchMandateConsoleData,
   mandateAgentInfoOf,
+  namesOf,
   type MandateAgentInfo,
   type MandateConsoleData,
   type MandateVersionInfo,
@@ -136,6 +137,12 @@ export function consoleDataFromPage(page: MandateAdminPageConsole): MandateConso
       agentId: row.agent_id,
       versionNumber: row.version_number,
       name: row.name,
+      ...(row.variable_definitions !== undefined || row.context_policies !== undefined
+        ? {
+            variableNames: namesOf(row.variable_definitions, "name"),
+            contextPolicyKeys: namesOf(row.context_policies, "key"),
+          }
+        : {}),
     };
   }
   const workflowsById: Record<string, MandateWorkflowInfo> = {};

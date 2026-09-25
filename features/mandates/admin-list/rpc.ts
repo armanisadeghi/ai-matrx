@@ -51,7 +51,15 @@ export interface MandateAdminPageConsole {
     context_policies: unknown;
     output_schema: unknown;
   }[];
-  versions: { id: string; agent_id: string | null; version_number: number; name: string | null }[];
+  versions: {
+    id: string;
+    agent_id: string | null;
+    version_number: number;
+    name: string | null;
+    /** Carried since migrations/mnd_admin_list_pinned_version_declarations_2026_09_25.sql. */
+    variable_definitions?: unknown;
+    context_policies?: unknown;
+  }[];
   workflows: { id: string; name: string; is_archived: boolean | null }[];
   workflow_versions: { id: string; definition_id: string; version_number: number }[];
 }

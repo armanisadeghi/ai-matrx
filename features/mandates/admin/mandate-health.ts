@@ -255,6 +255,7 @@ export function buildRow(
   let agentName = "(unknown agent)";
   let agentType: string | null = null;
   let pinnedVersionNumber: number | null = null;
+  let pinnedVersionDeclarations: string[] | null = null;
   let liveCounter: number | null = null;
   let newestSnapshotVersion: number | null = null;
   let pinLabel = "latest";
@@ -290,6 +291,12 @@ export function buildRow(
       ? data.agentsById[version.agentId]
       : undefined;
     const pinned = version?.versionNumber ?? null;
+    if (version?.variableNames || version?.contextPolicyKeys) {
+      pinnedVersionDeclarations = [
+        ...(version.variableNames ?? []),
+        ...(version.contextPolicyKeys ?? []),
+      ];
+    }
     agentId = agent?.id ?? version?.agentId ?? null;
     agentName = agent?.name ?? version?.name ?? "(unknown agent)";
     agentType = agent?.agentType ?? null;
@@ -433,12 +440,15 @@ export function buildRow(
     requiredVariables: contract.requiredVariables,
     provisionKey: parseMandateWave1(mandate).provisionKey,
     draftInputDescriptions: draftInputDescriptions(mandate),
-    holderDeclarations: agentId
-      ? [
-          ...(data.agentsById[agentId]?.variableNames ?? []),
-          ...(data.agentsById[agentId]?.contextPolicyKeys ?? []),
-        ]
-      : [],
+    // A PINNED version answers with ITS declarations — the ones the job runs
+    // with and the server's input surface serves — never the live agent's.
+    holderDeclarations: pinnedVersionDeclarations ??
+      (agentId
+        ? [
+            ...(data.agentsById[agentId]?.variableNames ?? []),
+            ...(data.agentsById[agentId]?.contextPolicyKeys ?? []),
+          ]
+        : []),
     requiredContextPolicyKeys: contract.requiredContextPolicyKeys,
     contextGateClosed,
     holderContextClosed,
