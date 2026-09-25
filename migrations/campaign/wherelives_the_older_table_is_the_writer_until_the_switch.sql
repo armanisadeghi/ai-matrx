@@ -104,7 +104,6 @@ comment on function custom.where_tables_live(uuid[]) is
   'WHERE-LIVES-SWITCH: the one client door to "where does each of these tables live?" — one row per id: lives_in ''older'' (read and write the older table; its copy is read-only until the organization''s Data tables switch) or ''record'' (the record store), and the sentence why. Answers from platform.table_lives_in, never from whether a copy exists. Says only which store to ask; that store''s own door decides existence and access.';
 
 revoke all on function custom.where_tables_live(uuid[]) from public, anon;
-grant execute on function custom.where_tables_live(uuid[]) to authenticated, service_role;
 
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, declared_by, reason, signed_in_callers)
@@ -114,6 +113,9 @@ select 'custom', 'where_tables_live', iam.door_identity_args(p.oid), platform.do
        true
   from pg_proc p where p.oid = 'custom.where_tables_live(uuid[])'::regprocedure
 on conflict (schema_name, function_name, identity_argtypes) do nothing;
+
+-- Declared first, then granted: the DDL guard takes back a client grant on an undeclared definer.
+grant execute on function custom.where_tables_live(uuid[]) to authenticated, service_role;
 
 -- ── 3. THE COPY IS READ-ONLY UNTIL THE SWITCH ─────────────────────────────────────────────────
 create or replace function custom._older_table_copy_refusal(p_table_id uuid)
@@ -147,7 +149,6 @@ comment on function custom._older_table_copy_refusal(uuid) is
 -- The fence runs as the writer (it is not SECURITY DEFINER), so every role that can write the store
 -- may ask this; it names the table only to a member of its organization.
 revoke all on function custom._older_table_copy_refusal(uuid) from public;
-grant execute on function custom._older_table_copy_refusal(uuid) to anon, authenticated, service_role;
 
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, declared_by, reason, signed_in_callers, anonymous_callers, anonymous_purpose)
@@ -158,6 +159,8 @@ select 'custom', '_older_table_copy_refusal', iam.door_identity_args(p.oid), pla
        'The copy fence runs as whichever role writes custom.record, including a public form submitted by a visitor who is not signed in; without EXECUTE that write would fail on permission instead of on the fence. A signed-out caller learns only that an id is a copy, never its name.'
   from pg_proc p where p.oid = 'custom._older_table_copy_refusal(uuid)'::regprocedure
 on conflict (schema_name, function_name, identity_argtypes) do nothing;
+
+grant execute on function custom._older_table_copy_refusal(uuid) to anon, authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION custom._context_copy_fence()
  RETURNS trigger

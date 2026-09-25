@@ -46,6 +46,10 @@ begin
      or has_function_privilege('anon', 'custom.where_tables_live(uuid[])', 'execute') then
     raise exception '0b: a client reaches the private fact, or a signed-out visitor reaches the door';
   end if;
+  if not has_function_privilege('anon', 'custom._older_table_copy_refusal(uuid)', 'execute')
+     or not has_function_privilege('authenticated', 'custom.where_tables_live(uuid[])', 'execute') then
+    raise exception '0f: the fence''s question is not reachable by every writer role, or a signed-in person cannot ask the door';
+  end if;
 
   -- Fixtures must be what the story says, or the suite proves nothing.
   if not exists (select 1 from workbench.udt_datasets where id = c_heat and deleted_at is null)
