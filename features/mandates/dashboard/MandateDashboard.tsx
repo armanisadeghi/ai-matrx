@@ -28,7 +28,7 @@ import { KpiGrid, KpiTile } from "@/components/official/kpi/KpiTile";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { SYSTEM_HOME } from "@/features/mandates/list-door";
-import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import {
   fetchMandateCodeTruthReport,
   fetchMandateConsoleData,
@@ -47,6 +47,7 @@ import {
   bindingMetrics,
   coverageCounts,
   definitionMetrics,
+  codeBackedKeys,
   driftMetrics,
   scanMetrics,
   systemKeys,
@@ -127,11 +128,12 @@ const ago = (iso: string | null | undefined) =>
 export function MandateDashboard() {
   const dispatch = useAppDispatch();
   const organizationId = useAppSelector(selectOrganizationId);
-  // The code-scan read carries the active organization. With none chosen it
-  // never starts — say so instead of showing skeletons forever.
-  const { organizationState } = useOrganizationRequired();
-  const organizationUnanswered =
-    organizationState === "required" || organizationState === "unavailable";
+  // The code-scan read is a server request, and every signed-in server request
+  // is filed under an organization. With none selected the section shows the
+  // organization picker in place of its tiles — never a skeleton that waits
+  // for a choice nobody was asked to make. Every other section reads the
+  // database directly and never waits on an organization.
+  const needsOrganization = !organizationId;
   const [reloads, setReloads] = useState(0);
   const [showAllFeatures, setShowAllFeatures] = useState(false);
 
@@ -165,12 +167,10 @@ export function MandateDashboard() {
   const defs = definitionMetrics(consoleSlot.data, truthSlot.data);
   const binds = bindingMetrics(consoleSlot.data);
   const cov = coverageCounts(coverageSlot.data, keys);
-  const drift = driftMetrics(truthSlot.data, keys);
+  const drift = driftMetrics(truthSlot.data, keys, codeBackedKeys(consoleSlot.data));
   const scan = scanMetrics(boardSlot.data);
-  const boardLoading = boardSlot.loading && !organizationUnanswered;
-  const boardError = organizationUnanswered
-    ? "choose an organization in the header to read the code scan."
-    : boardSlot.error;
+  const boardLoading = boardSlot.loading && !needsOrganization;
+  const boardError = needsOrganization ? null : boardSlot.error;
 
   const anyLoading =
     consoleSlot.loading || coverageSlot.loading || truthSlot.loading || boardLoading;
@@ -397,17 +397,17 @@ export function MandateDashboard() {
       <Section icon={GitBranch} title="Code vs database" error={truthSlot.error}>
         <KpiGrid>
           <KpiTile
-            label="Match"
+            label="Code matches DB"
             value={n(drift?.match)}
             tone="good"
-            loading={truthSlot.loading}
-            hint={drift ? `of ${formatCount(drift.total)}` : undefined}
+            loading={truthSlot.loading || consoleSlot.loading}
+            hint={drift ? `of ${formatCount(drift.codeBacked)} code-backed` : undefined}
           />
           <KpiTile
             label="Inputs differ"
             value={n(drift?.diff)}
             tone={drift && drift.diff > 0 ? "warn" : "neutral"}
-            loading={truthSlot.loading}
+            loading={truthSlot.loading || consoleSlot.loading}
           />
           <KpiTile
             label="Code only"
@@ -438,6 +438,13 @@ export function MandateDashboard() {
       </Section>
 
       <Section icon={Radar} title="Code scan" error={boardError}>
+        {needsOrganization ? (
+          <OrganizationRequiredNotice
+            compact
+            what="The code scan"
+            className="rounded-md border border-border"
+          />
+        ) : (
         <KpiGrid>
           <KpiTile
             label="Last complete scan"
@@ -495,6 +502,7 @@ export function MandateDashboard() {
             }
           />
         </KpiGrid>
+        )}
       </Section>
     </div>
   );

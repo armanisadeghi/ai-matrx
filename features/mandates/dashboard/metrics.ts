@@ -163,7 +163,16 @@ export function bindingMetrics(
 
 export interface DriftMetrics {
   total: number;
+  /**
+   * Code-backed mandates only. A soft mandate has no code declaration, so its
+   * "match" (empty inputs vs empty inputs) says nothing about code and DB
+   * agreeing — counting it made the tile read "469 of 469" over a registry
+   * where most jobs have no code at all.
+   */
+  codeBacked: number;
+  /** Code-backed mandates whose code and DB inputs agree. */
   match: number;
+  /** Code-backed mandates whose code and DB inputs differ. */
   diff: number;
   codeOnly: number;
   dbOnly: number;
@@ -172,14 +181,24 @@ export interface DriftMetrics {
   importFailed: number;
 }
 
+/** Keys whose definition is declared in code (`origin === "code"`). */
+export function codeBackedKeys(data: MandateConsoleData | null): string[] | null {
+  return data
+    ? data.mandates.filter((row) => row.origin === "code").map((row) => row.mandate_key)
+    : null;
+}
+
 export function driftMetrics(
   report: MandateCodeTruthReport | null,
   keys: readonly string[] | null,
+  codeKeys: readonly string[] | null,
 ): DriftMetrics | null {
-  if (!report || !keys) return null;
+  if (!report || !keys || !codeKeys) return null;
   const wanted = new Set(keys);
+  const code = new Set(codeKeys);
   const out: DriftMetrics = {
     total: 0,
+    codeBacked: 0,
     match: 0,
     diff: 0,
     codeOnly: 0,
@@ -191,9 +210,13 @@ export function driftMetrics(
   for (const item of report.mandates) {
     if (!wanted.has(item.mandate_key)) continue;
     out.total += 1;
-    if (item.drift === "match") out.match += 1;
-    else if (item.drift === "diff") out.diff += 1;
-    else if (item.drift === "code_only") out.codeOnly += 1;
+    const isCode = code.has(item.mandate_key);
+    if (isCode) out.codeBacked += 1;
+    if (item.drift === "match") {
+      if (isCode) out.match += 1;
+    } else if (item.drift === "diff") {
+      if (isCode) out.diff += 1;
+    } else if (item.drift === "code_only") out.codeOnly += 1;
     else if (item.drift === "db_only") out.dbOnly += 1;
     if (item.resolution === "code_exists_but_import_failed") out.importFailed += 1;
     const spilled = new Set(item.bound_agent_spilled_variables ?? []);
