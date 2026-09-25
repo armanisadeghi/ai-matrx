@@ -74,7 +74,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 jest.mock("@/features/scopes/redux/thunks/scopeTreeMutations", () => ({
   createScope: (params: unknown) => ({ type: "test/createScope", params }),
 }));
-const setScopes = jest.fn(async () => undefined);
+const setScopes = jest.fn(async (_ids: string[]) => ({ ok: true }));
 let heldScopeIds: string[] = [];
 jest.mock("@/features/scopes/hooks/useEntityScopes", () => ({
   useEntityScopes: () => ({ scopeIds: heldScopeIds, setScopes }),

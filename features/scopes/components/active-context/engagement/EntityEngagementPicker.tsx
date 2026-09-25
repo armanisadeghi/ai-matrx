@@ -14,6 +14,7 @@
 // scope is a tag, not a filter.
 
 import { useMemo } from "react";
+import { toast } from "@/lib/toast";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import type { EntityType } from "@/features/scopes/types";
 import type {
@@ -72,7 +73,16 @@ export function EntityEngagementPicker({
     const sameTags =
       next.scopeIds.length === scopeIds.length &&
       next.scopeIds.every((id) => scopeIds.includes(id));
-    if (!sameTags) void setScopes(next.scopeIds);
+    if (!sameTags) {
+      // A refused tag write is said out loud — the tags revert to what is stored.
+      void setScopes(next.scopeIds).then((res) => {
+        if (!res.ok) {
+          toast.error("Couldn't save the scope tags", {
+            description: res.error ?? "The tags were not changed.",
+          });
+        }
+      });
+    }
     if (next.projectId !== projectId) onProjectChange(next.projectId);
     if (next.taskId !== taskId) onTaskChange(next.taskId);
   };
