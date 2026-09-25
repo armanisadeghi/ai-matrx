@@ -96,17 +96,31 @@ begin
 
   -- ── 1  THE AFTER SIDE OF `custom.record` FIRES ONCE PER STATEMENT ──────────────────────
   -- Read from the catalogue, which needs no grant.
-  select count(*) into n from pg_trigger t
-   where t.tgrelid='custom.record'::regclass and not t.tgisinternal
-     and (t.tgtype & 2) = 0 and (t.tgtype & 1) = 1;
-  if n <> 2 then
-    raise exception '1a: % AFTER-ROW triggers on custom.record, expected the 2 that stay row-level on purpose', n;
-  end if;
+  -- NAMED, NOT COUNTED (amended by lane SUITE-HEALTH-2, 2026-09-25). This lane left TWO row-level
+  -- AFTER triggers on purpose. Three later ledgered lanes each added one more, every one of them
+  -- either narrowed by a WHEN clause to a rare row or a CONSTRAINT trigger (which PostgreSQL only
+  -- allows FOR EACH ROW) — none fires per row on an ordinary write:
+  --   custom_record_field_sensitivity_reaches_its_readers
+  --     migrations/campaign/storeleakformula_a_worked_out_column_is_as_sensitive_as_what_it_reads.sql
+  --   zz_w4_approvals_withdraw_on_archive
+  --     migrations/campaign/uichamp_s5_an_archived_thing_takes_its_approvals_out_of_the_inbox.sql
+  --   zzzz_relation_halves_agree (constraint trigger, deferred)
+  --     migrations/campaign/oldtables_w0_the_two_halves_of_a_relation_can_never_disagree.sql
+  -- So the clause names the whole set, and the three later ones must stay narrowed (WHEN) or be
+  -- constraint triggers — an unconditional per-row AFTER trigger is still a red.
   select string_agg(t.tgname, ', ' order by t.tgname) into v_txt from pg_trigger t
    where t.tgrelid='custom.record'::regclass and not t.tgisinternal
      and (t.tgtype & 2) = 0 and (t.tgtype & 1) = 1;
-  if v_txt <> 'custom_record_field_type_converts_values, zzz_pipelines_on_entry' then  -- matrx-real-data:allow zzz_pipelines_on_entry is the real live trigger name from migrations/campaign/pipelines_a_stage_is_a_field_and_its_moves_are_rules.sql, not fixture data
-    raise exception '1b: the two AFTER-ROW triggers left are "%" — not the two this lane named', v_txt;
+  if v_txt is distinct from 'custom_record_field_sensitivity_reaches_its_readers, custom_record_field_type_converts_values, zz_w4_approvals_withdraw_on_archive, zzz_pipelines_on_entry, zzzz_relation_halves_agree' then  -- matrx-real-data:allow live trigger names on custom.record created by applied migrations, not fixture data
+    raise exception '1a: the AFTER-ROW triggers on custom.record are "%" — not the two this lane kept plus the three narrowed ones later lanes added', v_txt;
+  end if;
+  select count(*) into n from pg_trigger t
+   where t.tgrelid='custom.record'::regclass and not t.tgisinternal
+     and (t.tgtype & 2) = 0 and (t.tgtype & 1) = 1
+     and t.tgname in ('custom_record_field_sensitivity_reaches_its_readers', 'zz_w4_approvals_withdraw_on_archive', 'zzzz_relation_halves_agree')
+     and t.tgqual is null and t.tgconstraint = 0;
+  if n <> 0 then
+    raise exception '1b: % of the later row-level AFTER triggers lost their WHEN clause, so they now fire on every row', n;
   end if;
   -- COUNTED BY NAME, NOT BY TOTAL (amended by lane WRITE-PERF-3, 2026-09-21). This clause used
   -- to assert that `custom.record` carried exactly fourteen AFTER-STATEMENT triggers in total,

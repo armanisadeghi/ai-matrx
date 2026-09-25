@@ -140472,6 +140472,49 @@
               }
             ],
             "title": "Output Tokens"
+          },
+          "system_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Sha256"
+          },
+          "system_byte_length": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Byte Length"
+          },
+          "context_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Sha256"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -292251,6 +292294,7 @@
           "profile": {
             "type": "string",
             "enum": [
+              "apple_passwords_csv_v1",
               "dashlane_csv_v1",
               "firefox_csv_v1",
               "google_password_manager_csv_v1",
@@ -292334,6 +292378,7 @@
           "profile": {
             "type": "string",
             "enum": [
+              "apple_passwords_csv_v1",
               "dashlane_csv_v1",
               "firefox_csv_v1",
               "google_password_manager_csv_v1",
@@ -292368,6 +292413,7 @@
           "profile": {
             "type": "string",
             "enum": [
+              "apple_passwords_csv_v1",
               "dashlane_csv_v1",
               "firefox_csv_v1",
               "google_password_manager_csv_v1",

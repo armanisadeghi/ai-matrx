@@ -168,7 +168,7 @@ describe("the control and Current Access", () => {
     act(() => radio("mine")!.click());
     expect(onChoose).not.toHaveBeenCalled();
     expect(host.querySelector("[data-lane-confirm]")?.textContent).toContain(
-      "Members of Oak & River who are not named below will lose access.",
+      "Everyone in Oak & River who is not named below loses access, including the organization's owners.",
     );
     act(() => btn("Keep it")!.click());
     expect(host.querySelector("[data-lane-confirm]")).toBeNull();

@@ -389,6 +389,11 @@ describe("VaultLoginExportDialog", () => {
       "Uses RoboForm's documented ordinary-login template for name, URL, login, password, and note. Folder placement stays blank.",
       "roboform_csv_v1",
     ],
+    [
+      "Apple Passwords CSV",
+      "Uses Apple Passwords' ordinary-login title, URL, username, password, and notes columns. OTPAuth stays blank.",
+      "apple_passwords_csv_v1",
+    ],
   ])("binds %s to a fresh preview", async (label, detail, profile) => {
     await render();
     const checkbox = document.querySelector('[role="checkbox"]');

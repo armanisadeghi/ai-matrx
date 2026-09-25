@@ -808,9 +808,9 @@ export default function AgentAppsCategoriesAdminPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Category</AlertDialogTitle>
               <AlertDialogDescription>
-                Delete &quot;{deleteTarget.name}&quot;? Agent apps assigned to
-                this category will be orphaned (the category column is a loose
-                text reference). This cannot be undone.
+                This archives the category &quot;{deleteTarget.name}&quot;. It
+                stops appearing in this list; agent apps that reference it
+                keep the reference, and an admin can restore it.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

@@ -385,6 +385,7 @@ function ReplyRow({
               try {
                 await api.editComment(reply.id, text, base);
                 setEditing(false);
+                return true;
               } catch (e) {
                 if (e instanceof EditConflictError) {
                   setConflict({ mine: text, theirs: e.currentBody });
@@ -490,6 +491,7 @@ function ThreadActions({
             try {
               await api.editComment(id, text, base);
               setEditing(false);
+              return true;
             } catch (e) {
               if (e instanceof EditConflictError) {
                 setConflict({ mine: text, theirs: e.currentBody });

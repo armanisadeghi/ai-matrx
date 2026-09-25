@@ -34277,6 +34277,16 @@ export type Database = {
         Args: { p_key: string; p_organization_id: string; p_record_id: string }
         Returns: Json
       }
+      vault_assert_current_password_field: {
+        Args: {
+          p_after_ciphertext: string
+          p_execution_purpose: string
+          p_field_id: string
+          p_handling: string
+          p_item_id: string
+        }
+        Returns: boolean
+      }
       vault_write_revision: {
         Args: {
           p_actor_id: string
@@ -55409,6 +55419,8 @@ export type Database = {
           daily_auto_rag_budget_usd: number
           daily_auto_rag_cost_used_usd: number
           daily_auto_rag_window_start: string
+          memory_context_instructions: string | null
+          memory_context_preamble: string | null
           organization_id: string
           suggestion_sweeps_enabled: boolean | null
           updated_at: string
@@ -55422,6 +55434,8 @@ export type Database = {
           daily_auto_rag_budget_usd?: number
           daily_auto_rag_cost_used_usd?: number
           daily_auto_rag_window_start?: string
+          memory_context_instructions?: string | null
+          memory_context_preamble?: string | null
           organization_id: string
           suggestion_sweeps_enabled?: boolean | null
           updated_at?: string
@@ -55435,6 +55449,8 @@ export type Database = {
           daily_auto_rag_budget_usd?: number
           daily_auto_rag_cost_used_usd?: number
           daily_auto_rag_window_start?: string
+          memory_context_instructions?: string | null
+          memory_context_preamble?: string | null
           organization_id?: string
           suggestion_sweeps_enabled?: boolean | null
           updated_at?: string
@@ -59841,42 +59857,80 @@ export type Database = {
           vals: Json
         }[]
       }
-      _member_list_rows: {
-        Args: {
-          p_level: string
-          p_q: string
-          p_res_org: string
-          p_res_user: string
-        }
-        Returns: {
-          created_at: string
-          created_by: string
-          customized_by: string[]
-          decided_by: string
-          decided_rung: string
-          feature_label: string
-          goal: string
-          health: string
-          holder_id: string
-          holder_name: string
-          holder_type: string
-          home_label: string
-          id: string
-          is_enabled: boolean
-          is_personal_home: boolean
-          is_system: boolean
-          mandate_key: string
-          name: string
-          organization_id: string
-          origin: string
-          pin_text: string
-          score: number
-          sortv: Json
-          updated_at: string
-          vals: Json
-          visibility: string
-        }[]
-      }
+      _member_list_rows:
+        | {
+            Args: {
+              p_level: string
+              p_q: string
+              p_res_org: string
+              p_res_user: string
+            }
+            Returns: {
+              created_at: string
+              created_by: string
+              customized_by: string[]
+              decided_by: string
+              decided_rung: string
+              feature_label: string
+              goal: string
+              health: string
+              holder_id: string
+              holder_name: string
+              holder_type: string
+              home_label: string
+              id: string
+              is_enabled: boolean
+              is_personal_home: boolean
+              is_system: boolean
+              mandate_key: string
+              name: string
+              organization_id: string
+              origin: string
+              pin_text: string
+              score: number
+              sortv: Json
+              updated_at: string
+              vals: Json
+              visibility: string
+            }[]
+          }
+        | {
+            Args: {
+              p_keys: string[]
+              p_level: string
+              p_q: string
+              p_res_org: string
+              p_res_user: string
+            }
+            Returns: {
+              created_at: string
+              created_by: string
+              customized_by: string[]
+              decided_by: string
+              decided_rung: string
+              feature_label: string
+              goal: string
+              health: string
+              holder_id: string
+              holder_name: string
+              holder_type: string
+              home_label: string
+              id: string
+              is_enabled: boolean
+              is_personal_home: boolean
+              is_system: boolean
+              mandate_key: string
+              name: string
+              organization_id: string
+              origin: string
+              pin_text: string
+              score: number
+              sortv: Json
+              updated_at: string
+              vals: Json
+              visibility: string
+            }[]
+          }
       _member_scope_ok: {
         Args: {
           p_level: string

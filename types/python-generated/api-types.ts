@@ -61255,6 +61255,13 @@ export interface components {
             input_tokens?: number | null;
             /** Output Tokens */
             output_tokens?: number | null;
+            /** System Sha256 */
+            system_sha256?: string | null;
+            /** System Byte Length */
+            system_byte_length?: number | null;
+            /** Context Sha256 */
+            context_sha256?: string | null;
+            provenance?: components["schemas"]["ContextProvenance"] | null;
         };
         /**
          * ContextAnswerBothRequest
@@ -128684,7 +128691,7 @@ export interface components {
              * Profile
              * @enum {string}
              */
-            profile: "dashlane_csv_v1" | "firefox_csv_v1" | "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1" | "matrx_login_csv_v1" | "nordpass_csv_v1" | "roboform_csv_v1";
+            profile: "apple_passwords_csv_v1" | "dashlane_csv_v1" | "firefox_csv_v1" | "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1" | "matrx_login_csv_v1" | "nordpass_csv_v1" | "roboform_csv_v1";
             /** Item Ids */
             item_ids: string[];
             /** Revision */
@@ -128711,7 +128718,7 @@ export interface components {
              * Profile
              * @enum {string}
              */
-            profile: "dashlane_csv_v1" | "firefox_csv_v1" | "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1" | "matrx_login_csv_v1" | "nordpass_csv_v1" | "roboform_csv_v1";
+            profile: "apple_passwords_csv_v1" | "dashlane_csv_v1" | "firefox_csv_v1" | "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1" | "matrx_login_csv_v1" | "nordpass_csv_v1" | "roboform_csv_v1";
             /** Item Ids */
             item_ids: string[];
         };
@@ -128721,7 +128728,7 @@ export interface components {
              * Profile
              * @enum {string}
              */
-            profile: "dashlane_csv_v1" | "firefox_csv_v1" | "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1" | "matrx_login_csv_v1" | "nordpass_csv_v1" | "roboform_csv_v1";
+            profile: "apple_passwords_csv_v1" | "dashlane_csv_v1" | "firefox_csv_v1" | "google_password_manager_csv_v1" | "keeper_csv_v1" | "lastpass_csv_v1" | "matrx_login_csv_v1" | "nordpass_csv_v1" | "roboform_csv_v1";
             /** Revision */
             revision: string;
             /** Items */

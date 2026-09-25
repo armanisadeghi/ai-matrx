@@ -89,6 +89,12 @@ const CSV_PROFILES = [
     detail:
       "Uses RoboForm's documented ordinary-login template for name, URL, login, password, and note. Folder placement stays blank.",
   },
+  {
+    value: "apple_passwords_csv_v1",
+    label: "Apple Passwords CSV",
+    detail:
+      "Uses Apple Passwords' ordinary-login title, URL, username, password, and notes columns. OTPAuth stays blank.",
+  },
 ] as const;
 type VaultLoginCsvProfile = (typeof CSV_PROFILES)[number]["value"];
 

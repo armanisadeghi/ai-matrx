@@ -72,7 +72,15 @@ export function SiteAccessWorkspace({
     whoCanSee,
     setWhoCanSee,
     organizationDefault,
-  } = useSharing("web_site", site.id, true);
+  } = useSharing(
+    "web_site",
+    site.id,
+    true,
+    site.name,
+    // SHARE-LANE-2: the site's own organization, so "Who can see this" reads
+    // "Everyone in <organization>" instead of "Everyone in this organization".
+    site.organization_id,
+  );
 
   // Ownership has three states; only a resolved, error-free answer may
   // unlock (or hide) the grant controls.

@@ -43,8 +43,12 @@ const sharing = {
   refreshVisibility: jest.fn(),
 };
 
+const useSharingCalls: unknown[][] = [];
 jest.mock("@/utils/permissions/hooks", () => ({
-  useSharing: () => sharing,
+  useSharing: (...args: unknown[]) => {
+    useSharingCalls.push(args);
+    return sharing;
+  },
   useIsOwner: () => ({ isOwner: true, loading: false, error: null }),
 }));
 jest.mock("@/features/agent-context/hooks/useNavTree", () => ({
@@ -69,7 +73,9 @@ jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({
   NonEditableContextMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 jest.mock("@/features/marketing/components/site/MarketingSiteContext", () => ({
-  useMarketingSite: () => ({ site: { id: TABLE, name: "Oak & River nursery", domain: "oakandriver.co" } }),
+  useMarketingSite: () => ({
+    site: { id: TABLE, name: "Oak & River nursery", domain: "oakandriver.co", organization_id: ORG },
+  }),
 }));
 
 let host: HTMLDivElement;
@@ -128,5 +134,9 @@ describe("every share host renders the one Who can see this control", () => {
     const { SiteAccessWorkspace } = await import("@/features/marketing/components/access/SiteAccessWorkspace");
     act(() => root.render(<SiteAccessWorkspace view={"users" as never} />));
     expectControlAndDefaultRow();
+    // SHARE-LANE-2: the site hands the hook its OWN organization, so the control can name it
+    // ("Everyone in Oak & River") instead of falling back to "Everyone in this organization".
+    const siteCall = useSharingCalls.filter((a) => a[0] === "web_site").at(-1);
+    expect(siteCall?.[4]).toBe(ORG);
   });
 });

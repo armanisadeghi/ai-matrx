@@ -29,7 +29,7 @@ const MENTION_QUERY = /(^|\s)@([^\s@]{0,40}(?: [^\s@]{1,20})?)$/;
 export interface MentionComposerProps {
   source: AnnotationSource;
   /** Return `false` to keep the text in the box (e.g. an edit conflict the person must settle). */
-  onSubmit: (text: string, secondary?: string) => Promise<void | false> | void | false;
+  onSubmit: (text: string, secondary?: string) => Promise<void | boolean> | void | boolean;
   onCancel?: () => void;
   placeholder?: string;
   submitLabel?: string;

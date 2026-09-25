@@ -193,7 +193,10 @@ export function WhoCanSeeThis({ whoCanSee, canChange, onChoose }: WhoCanSeeThisP
           data-lane-confirm
         >
           <span className="flex-1">
-            Members of {orgName} who are not named below will lose access.
+            {/* SHARE-LANE-2: exactly true since the kernel stopped letting organization owners and
+                admins open a personal Table; their governance is the audited transfer. */}
+            Everyone in {orgName} who is not named below loses access, including the
+            organization&apos;s owners.
           </span>
           <span className="flex gap-1.5">
             <Button size="sm" className="h-7" onClick={() => void apply("mine")}>
