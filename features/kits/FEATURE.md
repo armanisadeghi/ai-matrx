@@ -44,6 +44,15 @@ The product word lives ONLY in `constants.ts` (`KIT_WORD`) — "Kits" is a worki
 
 ---
 
+## Save as kit (a person's setup → an org kit)
+
+- **Entry points:** the agent options menu ("Save as kit", `features/agents/components/shared/AgentOptionsMenu.tsx`, desktop + mobile) and the gallery ("Create a kit from my setup" — header action + the org section). Both open the `saveKitDialog` overlay (`features/overlays/openers/saveKitDialog.tsx`).
+- **Flow** (`components/SaveKitDialog.tsx`): agent (canonical `AgentListDropdown`) → data (tables its `merge_field` bindings read + one relation hop; rows included by default, capped by `KIT_SAVE.seedRowCap`) → details → walkthrough (drafted by `draftGuide`) → workflows (the org's `workflow.definition` rows that name the agent or a table, via `readAllRows`) → review → save. Edit mode (`editKitKey`) edits details + walkthrough only.
+- **Serialization** (`serialize.ts`, pure; `snapshot.ts` reads): store Field docs → `declareTable` specs (`relation`+`allowed_types` → `entity_reference`+`allowedTypes`; `list`+`parity_type` → select with options from its options table; `text`+`format: long` → `long_text`); rows → seed values (system `_` keys dropped, entity refs normalized to `{token,id}`, relations to included tables → `{table_key, record_index}`); bindings → `table_key`/`record_index`; workflow ids → `{{agent:agent}}` / `{{table:key}}`. What cannot be carried (formula/lookup/rollup columns, relations to tables outside the kit) is left out and SAID in review. Guard: `__tests__/serialize-roundtrip.test.ts` (an installed kit saves back to the same manifest).
+- **Storage** (`publish.ts`): a `catalog_entries` row, `organization_id` = the SET org, `visibility: internal` (org members read it — std_select `iam.my_orgs()`), `created_by` = the person, key `<slug>.<org8>` (the catalog's `UNIQUE (app, kind, key)` is global) with `-2…` on collision. Edit/unpublish (`is_active=false`) are offered to the creator only; NOTE std_update also lets anyone with `editor` on the row update it, and org members get that on internal rows (probed 2026-09-25 as a plain member). "Share publicly" is not offered (admin-only).
+- **Fork rule:** installing needs `viewer` on the source agent (`agx_duplicate_agent`). The flow warns when the agent is `personal` or in another org and opens the canonical share modal (`useOpenShareModal`, resourceType `agent`).
+- **Gallery:** "<Org>'s kits" (client, the SET org) above "From AI Matrx" (server, the system org via `resolveSystemOrgId`); `fetchKits(client, organizationId)` is always scoped.
+
 ## Install steps
 
 record the install → declare each table (relations to other kit tables resolved) → `recordWriteMany` the example rows (`{table_key, record_index}` values resolved) → `duplicateAgent` thunk (`agx_duplicate_agent`, the ONE fork; its refusal sentence is shown verbatim) → rename/tag from the manifest → write bindings → `callApi POST /workflows` with `{{table:k}}` / `{{agent:k}}` substituted → mark installed. Failure: the stepper marks the failing step with the door's sentence, the record says `failed`, and the rail offers **Finish install** (resume) or **Remove what was created** (confirm dialog names exactly what is archived). Removal archives only recorded ids: `tableArchive` passes, agent `deleted_at`, `deleteWorkflow` — all soft.
@@ -59,5 +68,6 @@ record the install → declare each table (relations to other kit tables resolve
 
 ## Change Log
 
+- `2026-09-25` — Save as kit: dialog, serializer + round-trip test, org-scoped gallery, owner edit/unpublish, agent-menu + gallery entry points.
 - `2026-09-25` — Verification fixes: deterministic-id claim + lease, guarded/verified writes, captured org, app-kept ledger, cleared bound defaults, plain errors with Details, per-table order, org change link, removal dialog with dependents + restore windows (tables: the table's `retention_days`; agents/workflows: platform floor, never purged), workflow link → `/workflows/<id>` (no step/canvas editor route exists).
 - `2026-09-25` — Created: gallery, detail, installer (install record first, resumable, exact-id removal), installed view (Grid, binding preview, Try it), nav entry.
