@@ -20,6 +20,8 @@ function readHeadings(root: Element, self: Element): Entry[] {
   const out: Entry[] = [];
   root.querySelectorAll<HTMLElement>("h1[id], h2[id], h3[id], h4[id]").forEach((h) => {
     if (h.id === "footnote-label" || h.classList.contains("sr-only") || self.contains(h)) return;
+    // An embedded record's own headings are not this document's sections.
+    if (h.closest("[data-wiki-embed]")) return;
     const clone = h.cloneNode(true) as HTMLElement;
     clone.querySelectorAll("[data-heading-anchor]").forEach((a) => a.remove());
     out.push({ id: h.id, depth: Number(h.tagName.slice(1)), text: (clone.textContent ?? "").trim() });

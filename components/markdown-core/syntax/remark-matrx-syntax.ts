@@ -351,7 +351,10 @@ function unwrapStandaloneEmbeds(tree: MNode): void {
       if (child.type !== "paragraph") continue;
       const meaningful = (child.children ?? []).filter((n) => !(n.type === "text" && !(n.value ?? "").trim()));
       const only = meaningful.length === 1 ? meaningful[0] : null;
-      if (only?.data?.hName === "matrx-embed") children[i] = only;
+      if (only?.data?.hName === "matrx-embed") {
+        only.data.hProperties = { ...(only.data.hProperties ?? {}), dataBlock: true };
+        children[i] = only;
+      }
     }
   });
 }

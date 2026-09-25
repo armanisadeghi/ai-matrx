@@ -33,22 +33,31 @@ function useNoteBody(id: string | null): { body: string | null; error: string | 
   return state && state.id === id ? { body: state.body, error: state.error } : { body: null, error: null };
 }
 
-export function WikiEmbed(props: { "data-target"?: string; "data-alias"?: string; children?: ReactNode }) {
+export function WikiEmbed(props: { "data-target"?: string; "data-alias"?: string; "data-block"?: unknown; children?: ReactNode }) {
   const target = String(props["data-target"] ?? "");
   const resolution = useWikiResolution(target);
-  const noteId = resolution?.status === "found" && resolution.token === "note" ? resolution.id : null;
+  // Only an embed on its own line shows the record's body — inside running
+  // text it is a compact reference (block content cannot sit in a paragraph).
+  const isBlock = props["data-block"] !== undefined && props["data-block"] !== false;
+  const noteId = isBlock && resolution?.status === "found" && resolution.token === "note" ? resolution.id : null;
   const { body, error } = useNoteBody(noteId);
 
   if (!resolution || resolution.status !== "found") {
     return (
-      <span className="my-2 block rounded-md border border-dashed border-border px-3 py-2 text-sm" data-wiki-embed={resolution?.status ?? "resolving"}>
+      <span
+        className={isBlock ? "my-2 block rounded-md border border-dashed border-border px-3 py-2 text-sm" : "inline-block rounded-md border border-dashed border-border px-1.5"}
+        data-wiki-embed={resolution?.status ?? "resolving"}
+      >
         <WikiLink {...props} />
       </span>
     );
   }
 
   return (
-    <span data-wiki-embed="found" className="my-3 block overflow-hidden rounded-md border border-border bg-card">
+    <span
+      data-wiki-embed="found"
+      className={isBlock ? "my-3 block overflow-hidden rounded-md border border-border bg-card" : "inline-block overflow-hidden rounded-md border border-border bg-card align-middle"}
+    >
       <span className="flex items-center gap-2 border-b border-border bg-muted/40 px-3 py-1.5 text-xs">
         <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
         <span className="min-w-0 truncate font-medium text-foreground">{resolution.title}</span>
