@@ -26,20 +26,10 @@ jest.mock("@/features/scopes/service/associationsService", () => ({
 jest.mock("@/utils/supabase/client", () => ({ supabase: { schema } }));
 
 import {
-  loadStudyAnnotations,
   loadStudyGuideIndex,
-  saveStudyAnnotation,
 } from "./service";
 import { STUDY_NOTES_FOLDER } from "@/features/education/notes/study-notes-folder";
 import type { Note } from "@/features/notes/types";
-
-const annotationInput = {
-  noteId: "guide-1",
-  noteTitle: "Guide",
-  quote: "A selected passage",
-  kind: "highlight" as const,
-  organizationId: "org-1",
-};
 
 interface RecordedQuery {
   select(...args: unknown[]): RecordedQuery;
@@ -108,80 +98,6 @@ beforeEach(() => {
     const result = await loadPage({ from: 0, to: 999 });
     if (result.error) throw result.error;
     return result.data ?? [];
-  });
-});
-
-describe("study guide annotations", () => {
-  it("creates a document-level note without a selected passage", async () => {
-    notesCreate.mockResolvedValue(annotationNote());
-    await saveStudyAnnotation({
-      ...annotationInput,
-      kind: "note",
-      quote: "",
-      comment: "My own summary of this guide",
-      anchor: undefined,
-    });
-    expect(notesCreate).toHaveBeenCalledWith(expect.objectContaining({
-      content: "My own summary of this guide",
-      custom_fields: { studyAnnotation: { kind: "note", quote: "", anchor: null } },
-    }));
-    expect(associationAdd).toHaveBeenCalledTimes(1);
-  });
-
-  it("does not create an empty document-level note", async () => {
-    await expect(saveStudyAnnotation({ ...annotationInput, kind: "note", quote: "", comment: "  " })).rejects.toThrow(/write a note/i);
-    expect(notesCreate).not.toHaveBeenCalled();
-  });
-
-  it("refuses a missing organization before creating a note or association", async () => {
-    await expect(saveStudyAnnotation({ ...annotationInput, organizationId: "" })).rejects.toThrow(/organization/i);
-
-    expect(notesCreate).not.toHaveBeenCalled();
-    expect(associationAdd).not.toHaveBeenCalled();
-  });
-
-  it("preserves the saved annotation in a typed error and retries its link without a second create", async () => {
-    const saved = annotationNote();
-    notesCreate.mockResolvedValue(saved);
-    associationAdd.mockResolvedValueOnce({ ok: false, error: new Error("link unavailable") });
-
-    await expect(saveStudyAnnotation(annotationInput)).rejects.toMatchObject({
-      name: "StudyAnnotationLinkError",
-      note: { id: saved.id },
-    });
-    expect(notesCreate).toHaveBeenCalledTimes(1);
-
-    notesGetById.mockResolvedValue(saved);
-    await expect(saveStudyAnnotation({ ...annotationInput, existingAnnotationId: saved.id })).resolves.toBe(saved);
-    expect(notesCreate).toHaveBeenCalledTimes(1);
-    expect(notesGetById).toHaveBeenCalledWith(saved.id, { failureMode: "throw" });
-    expect(associationAdd).toHaveBeenCalledTimes(2);
-  });
-});
-
-describe("study guide annotation reads", () => {
-  it("always restricts linked annotation notes to the authenticated creator", async () => {
-    associationListForEntity.mockResolvedValue({
-      ok: true,
-      data: { edges: [{ direction: "incoming", otherType: "note", role: "source", otherId: "annotation-1" }] },
-    });
-    const recorded = queryRecorder();
-    schema.mockReturnValue({ from: jest.fn(() => recorded.query) });
-
-    await loadStudyAnnotations("guide-1");
-
-    expect(recorded.calls).toContainEqual({ method: "eq", args: ["created_by", "learner-1"] });
-  });
-
-  it("refuses to reuse a saved annotation for a different passage", async () => {
-    notesGetById.mockResolvedValue(annotationNote());
-    await expect(saveStudyAnnotation({
-      ...annotationInput,
-      quote: "A different passage",
-      existingAnnotationId: "annotation-1",
-    })).rejects.toThrow(/no longer matches/);
-    expect(notesCreate).not.toHaveBeenCalled();
-    expect(associationAdd).not.toHaveBeenCalled();
   });
 });
 

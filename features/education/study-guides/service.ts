@@ -5,7 +5,6 @@ import { NotesAPI } from "@/features/notes/service/notesApi";
 import { STUDY_NOTES_FOLDER } from "@/features/education/notes/study-notes-folder";
 import { hydrateNoteContextLinks } from "@/features/notes/service/noteContextAssociations";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { OrganizationContextError } from "@ai-matrx/agents/matrx";
 import type { Note, NoteListItem } from "@/features/notes/types";
 
 export interface StudyTerm {
@@ -13,32 +12,6 @@ export interface StudyTerm {
   setId: string;
   term: string;
   definition: string;
-}
-
-export interface StudyAnnotationAnchor {
-  start: number;
-  end: number;
-  prefix: string;
-  suffix: string;
-}
-
-export interface StudyAnnotationInput {
-  noteId: string;
-  noteTitle: string;
-  quote: string;
-  comment?: string;
-  kind: "highlight" | "note";
-  organizationId: string;
-  anchor?: StudyAnnotationAnchor;
-  /** Retry a failed association without creating a second note. */
-  existingAnnotationId?: string;
-}
-
-export class StudyAnnotationLinkError extends Error {
-  constructor(public readonly note: Note, cause: unknown) {
-    super("Your note was saved, but it could not be linked to this guide. Open the saved note to read or edit it.", { cause });
-    this.name = "StudyAnnotationLinkError";
-  }
 }
 
 /**
@@ -62,81 +35,6 @@ export async function loadStudyGuideIndex(): Promise<NoteListItem[]> {
 }
 
 export const loadStudyGuide = (noteId: string): Promise<Note | null> => NotesAPI.getById(noteId, { failureMode: "throw" });
-
-export async function loadStudyAnnotations(noteId: string): Promise<Note[]> {
-  const userId = requireUserId();
-  const result = await associationsService.listForEntity("note", noteId);
-  if (!result.ok) throw new Error("Could not load your linked notes.", { cause: result.error });
-  const ids = result.data.edges.filter((edge) =>
-    edge.direction === "incoming" && edge.otherType === "note" && edge.role === "source",
-  ).map((edge) => edge.otherId);
-  if (!ids.length) return [];
-  // Page the note read, and bound URL length independently of the result count.
-  const rows: Note[] = [];
-  for (let offset = 0; offset < ids.length; offset += 100) {
-    const batch = await readAllRows(
-      ({ from, to }) => supabase.schema("workbench").from("notes").select("*", { count: "exact" })
-        .in("id", ids.slice(offset, offset + 100)).eq("created_by", userId)
-        .is("deleted_at", null).not("custom_fields->studyAnnotation", "is", null)
-        .order("created_at", { ascending: false }).order("id").range(from, to),
-      { label: "workbench.notes study annotations" },
-    );
-    rows.push(...await hydrateNoteContextLinks(batch));
-  }
-  return rows.sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? "") || a.id.localeCompare(b.id));
-}
-
-export async function saveStudyAnnotation(input: StudyAnnotationInput): Promise<Note> {
-  if (!input.organizationId.trim()) {
-    throw new OrganizationContextError(
-      "organization_context_required",
-      "Select an organization before sending this request.",
-    );
-  }
-  if (!input.quote.trim() && (input.kind !== "note" || !input.comment?.trim())) {
-    throw new Error(input.kind === "highlight" ? "Select a passage first." : "Write a note before saving.");
-  }
-  const userId = requireUserId();
-  const note = input.existingAnnotationId
-    ? await NotesAPI.getById(input.existingAnnotationId, { failureMode: "throw" })
-    : await NotesAPI.create({
-      label: `${input.kind === "highlight" ? "Highlight" : "Note"}: ${input.noteTitle}`,
-      content: input.comment?.trim() || input.quote,
-      organization_id: input.organizationId,
-      folder_name: "Study annotations",
-      visibility: "personal",
-      custom_fields: {
-        studyAnnotation: {
-          kind: input.kind,
-          quote: input.quote,
-          anchor: input.anchor ?? null,
-        },
-      },
-    });
-  if (!note || note.created_by !== userId) throw new Error("The saved note is no longer available.");
-  if (input.existingAnnotationId) {
-    const fields = note.custom_fields;
-    const annotation = fields && typeof fields === "object" && !Array.isArray(fields) && "studyAnnotation" in fields
-      ? fields.studyAnnotation : null;
-    if (note.organization_id !== input.organizationId || !annotation || typeof annotation !== "object"
-      || Array.isArray(annotation) || !("kind" in annotation) || !("quote" in annotation)
-      || annotation.kind !== input.kind || annotation.quote !== input.quote) {
-      throw new Error("The saved annotation no longer matches this passage. Select the passage again.");
-    }
-  }
-  try {
-    const linked = await associationsService.add({
-      sourceType: "note", sourceId: note.id,
-      targetType: "note", targetId: input.noteId,
-      orgId: input.organizationId, role: "source",
-      label: note.label,
-    });
-    if (!linked.ok) throw linked.error;
-  } catch (error) {
-    throw new StudyAnnotationLinkError(note, error);
-  }
-  return note;
-}
 
 /** The same canonical membership edges used by Flashcard Studio. */
 export async function loadStudyTerms(noteId: string): Promise<StudyTerm[]> {
