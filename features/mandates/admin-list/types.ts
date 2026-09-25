@@ -16,6 +16,8 @@ import type {
 } from "@/features/mandates/admin/impact";
 import type { UngradedReason } from "@/features/mandates/admin/impact-cells";
 import type { WorkflowImpactVerdict } from "@/features/mandates/admin/workflow-impact";
+import type { MandateSourceFacts } from "@/features/mandates/code-references/data";
+import type { MandateContractState } from "./rpc";
 
 /** Code-backed (declared in repo code) or soft (exists only as a DB row). */
 export type MandateOrigin = "code" | "soft";
@@ -93,4 +95,19 @@ export interface MandateAdminRow extends MandateRow {
    * and until coverage lands Coverage is not one either.
    */
   factsPending: { codeTruth: boolean; coverage: boolean };
+  /**
+   * The persisted contract verdicts across the default and every live binding
+   * (features/mandates/contract-check.ts), classified by the database.
+   */
+  contractCheck: MandateContractState;
+  /**
+   * Where the code scan finds this key (`fetchMandateSourceFacts`): declaring
+   * repos, calling repos, languages, call sites. `null` = the scan has no
+   * reference to it (nobody looked — never "unused"), or the read failed
+   * (`sourcesFailed`).
+   */
+  sources: MandateSourceFacts | null;
+  /** The scan read for this page has not answered yet — cells say so. */
+  sourcesPending: boolean;
+  sourcesFailed: boolean;
 }

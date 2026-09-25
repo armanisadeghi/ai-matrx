@@ -270,7 +270,7 @@ export const PROSE_BLOCK_ELEMENTS = {
   },
   li: ({ node, children, ...props }) => {
     return (
-      <ListItemComponent node={node} id={props.id} value={typeof props.value === "number" ? props.value : undefined}>
+      <ListItemComponent node={node} id={props.id} value={props.value !== undefined && Number.isFinite(Number(props.value)) ? Number(props.value) : undefined}>
         {children}
       </ListItemComponent>
     );

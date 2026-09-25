@@ -240,7 +240,7 @@ function numberTargets(tree: MNode, numbering: DocumentNumbering | null): Map<st
         const caption = el(
           "figcaption",
           { className: ["mt-1.5", "text-center", "text-sm", "text-muted-foreground"] },
-          [el("span", { className: ["font-semibold", "text-foreground"] }, [text(`${display}.`)]), ...(meta.caption.length > 0 ? [text(" "), ...meta.caption] : [])],
+          [el("span", { className: ["font-semibold", "text-foreground"], dataContentChrome: true }, [text(`${display}.`)]), ...(meta.caption.length > 0 ? [text(" "), ...meta.caption] : [])],
         );
         const body = child.children ?? [];
         // A table's caption sits above it; a figure's below.

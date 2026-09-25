@@ -100,6 +100,8 @@ const place = (
 export const RESEARCH_PLACES: FeaturePlaces = {
   feature: "research",
   label: "Research",
+  // The topic Outputs studio's jobs (blog, slides, SEO package, reviews…).
+  extraPrefixes: ["research_client"],
   places: [
     place("new", "New topic", "Suggest setup", "/research/topics/new"),
     place(

@@ -30,8 +30,28 @@ export interface SourceProjection {
   unmappedChars: number;
 }
 
-const SKIP_SELECTOR =
-  "[data-annotation-skip],button,input,textarea,select,[aria-hidden='true'],.katex-mathml,script,style";
+export const CONTENT_CHROME_ATTR = "data-content-chrome";
+
+/**
+ * THE ONE MARKER: the renderer puts `data-content-chrome` on every element whose
+ * text it invents (heading anchors, default callout titles, "Figure 1." prefixes,
+ * the table of contents, wikilink/embed/cross-reference labels, code-block
+ * language labels). Besides it, only structure no renderer file of ours emits:
+ * controls, hidden text, KaTeX output (a formula's text is never its TeX source),
+ * and remark-gfm's footnote numbers.
+ */
+const SKIP_SELECTOR = [
+  `[${CONTENT_CHROME_ATTR}]`,
+  "[data-annotation-skip]",
+  "button", "input", "textarea", "select", "[role=tab]", "[role=menuitem]",
+  "[aria-hidden='true']", ".sr-only", ".katex",
+  "[data-footnote-ref]", "[data-footnote-backref]", "#footnote-label",
+  "script", "style",
+].join(",");
+
+/** A run with no letters or digits (a stray "#", "·", "?") may only match right at the cursor. */
+const PUNCTUATION_ONLY = /^[^\p{L}\p{N}]+$/u;
+const PUNCTUATION_WINDOW = 4;
 
 /** How far ahead of the cursor a run may match, by its length (anti-drift). */
 function windowFor(length: number): number {
@@ -76,7 +96,8 @@ export function projectSource(root: Node, source: string): SourceProjection {
       continue;
     }
     const at = source.indexOf(text, cursor);
-    if (at >= 0 && at - cursor <= windowFor(text.length)) {
+    const limit = PUNCTUATION_ONLY.test(text) ? PUNCTUATION_WINDOW : windowFor(text.length);
+    if (at >= 0 && at - cursor <= limit) {
       nodes.push({ node, sourceStart: at, length: text.length });
       cursor = at + text.length;
     } else {

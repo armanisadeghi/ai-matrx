@@ -20,6 +20,7 @@ import {
 } from "@ai-matrx/data/db";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { resolveChildOrgId } from "@/lib/organizations/childOrganization";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { EDGE_ROLE } from "./types";
 import type {
@@ -325,7 +326,19 @@ export const fcService = {
   ): Promise<FcResult<FcCardRow[]>> {
     try {
       if (cards.length === 0) return { data: [], error: null };
-      const orgId = await resolveOrgId(opts.orgId);
+      // A card belongs with its SET: it is filed in the set's organization,
+      // never the selected one (callers used to pass nothing, so cards landed
+      // in whatever organization was picked). The set's org wins; the
+      // caller's org applies only when the set names none.
+      const { data: parentSet, error: parentError } = await EDU()
+        .from("fc_set")
+        .select("organization_id")
+        .eq("id", setId)
+        .maybeSingle();
+      if (parentError) return fail("addCards", parentError);
+      const orgId = await resolveOrgId(
+        resolveChildOrgId(parentSet, opts.orgId, "flashcard") ?? undefined,
+      );
       const rows = cards.map((c) => ({
         organization_id: orgId,
         front: c.front,
@@ -367,7 +380,7 @@ export const fcService = {
             targetId: setId,
             role: EDGE_ROLE.member,
             position: base + i,
-            orgId: opts.orgId,
+            orgId,
           });
           if (!member.ok)
             console.error("[fcService.addCards] member edge failed:", member);

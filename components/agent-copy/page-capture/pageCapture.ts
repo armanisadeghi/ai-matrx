@@ -43,6 +43,12 @@ export interface PageCaptureSection {
   value: unknown;
   /** The one-line brief (counts, a sentence). Defaults to the value's shape. */
   brief?: unknown;
+  /**
+   * A section too big to hold on the page (a table's records): `value` is the
+   * honest stub saying it is not included, and `load` reads it at copy time for
+   * the "with …" variants. Never a second read while the page is only open.
+   */
+  load?: () => Promise<unknown>;
 }
 
 export interface PageCaptureRequest {
@@ -73,6 +79,8 @@ export interface PageCapture {
 export interface PageCaptureContribution {
   owner: string;
   sections: PageCaptureSection[];
+  /** Names a descendant knows and the page does not (a table's name read inside its mount). */
+  identity?: Record<string, PageCaptureValue>;
 }
 
 const COMPACT_CHARS = 6000;
@@ -132,7 +140,13 @@ export function mergePageCapture(
 ): PageCapture {
   const owners = new Map<string, string>(base.sections.map((s) => [s.id, "page"]));
   const sections = [...base.sections];
+  const identity = { ...base.identity };
   for (const c of contributions) {
+    for (const [k, v] of Object.entries(c.identity ?? {})) {
+      // A descendant fills in what the page left unnamed; it never overrides a name the page gave.
+      const prior = identity[k];
+      if (prior === undefined || prior === null || (isNamed(prior) && !prior.name)) identity[k] = v;
+    }
     for (const s of c.sections) {
       const prior = owners.get(s.id);
       if (prior) {
@@ -144,7 +158,7 @@ export function mergePageCapture(
       sections.push(s);
     }
   }
-  return { ...base, sections };
+  return { ...base, identity, sections };
 }
 
 function pageBlock(c: PageCapture) {
@@ -377,4 +391,29 @@ export function adminPageCapture(
   base: CaptureBase & { identity?: Record<string, PageCaptureValue> },
 ): PageCapture {
   return finish("admin-page", base, base.identity ?? {});
+}
+
+/** The sections with a `load`, by title — what a "with …" variant adds. */
+export function loadableSections(c: PageCapture): PageCaptureSection[] {
+  return c.sections.filter((s) => typeof s.load === "function");
+}
+
+/** The capture with every loadable section read now; a failed read says so in its place. */
+export async function resolvePageCapture(c: PageCapture): Promise<PageCapture> {
+  const sections = await Promise.all(
+    c.sections.map(async (s) => {
+      if (!s.load) return s;
+      try {
+        const value = await s.load();
+        return { ...s, value, load: undefined };
+      } catch (e) {
+        return {
+          ...s,
+          value: `${s.title} could not be read: ${e instanceof Error ? e.message : String(e)}`,
+          load: undefined,
+        };
+      }
+    }),
+  );
+  return { ...c, sections };
 }

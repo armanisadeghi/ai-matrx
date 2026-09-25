@@ -55,7 +55,7 @@ export function CrossRef(props: CrossRefProps) {
 
   if (resolvedStatically || runtime) {
     return (
-      <InDocAnchor href={`#${label}`} data-xref={label} className="no-underline hover:underline">
+      <InDocAnchor href={`#${label}`} data-xref={label} data-content-chrome="" className="no-underline hover:underline">
         {runtime ?? props.children}
       </InDocAnchor>
     );
@@ -64,6 +64,7 @@ export function CrossRef(props: CrossRefProps) {
     <span
       ref={probe}
       data-xref={label}
+      data-content-chrome=""
       data-xref-missing={looked ? "" : undefined}
       title={props.title}
       className={cn(looked && "rounded-sm bg-amber-500/15 px-0.5 text-amber-700 dark:text-amber-300")}

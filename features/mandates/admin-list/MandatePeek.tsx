@@ -13,7 +13,7 @@ import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { adminMandateHref } from "@/features/mandates/browse/url-compat";
+import { adminMandateRecordHref as adminMandateHref } from "@/features/mandates/admin-routes";
 import { agentHref } from "@/features/mandates/admin/mandate-health";
 import {
   MandateInputsCell,

@@ -2,8 +2,7 @@
 
 // features/mandates/admin-list/MandateAdminListPage.tsx
 //
-// /administration/intelligence/mandates — the NEW admin mandate list (also
-// served at /administration/mandates/list-preview until the swap), built
+// /administration/intelligence/mandates — the NEW admin mandate list, built
 // beside the old console (features/mandates/admin/MandatesConsole.tsx, left
 // untouched) on the canonical `EntityListPage`. One top row: Mine / Org /
 // System on the left, New mandate on the right; the table's own title row
@@ -30,6 +29,12 @@ import {
   type ImpactVerdict,
 } from "@/features/mandates/admin/impact";
 import { useImpactAdvance } from "@/features/mandates/admin/impact-advance";
+import {
+  advanceWorkflowPins,
+  workflowAdvanceEligibility,
+} from "@/features/mandates/admin/workflow-advance";
+import type { WorkflowImpactVerdict } from "@/features/mandates/admin/workflow-impact";
+import { recordToast, toast } from "@/lib/toast";
 import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import { adminMandateListConfig } from "./listConfig";
@@ -88,6 +93,9 @@ export function MandateAdminListPage() {
       icon: BrainCircuit,
       variant: "outline",
       run: ({ rows }) => {
+        const workflowOnly = rows.filter(
+          (row) => !row.defaultVerdict && !row.agentId && row.workflowVerdicts.length > 0,
+        ).length;
         const agentIds = [
           ...new Set(
             rows
@@ -95,6 +103,15 @@ export function MandateAdminListPage() {
               .filter((id): id is string => Boolean(id)),
           ),
         ];
+        if (agentIds.length === 0) {
+          return {
+            message:
+              workflowOnly > 0
+                ? "The batch panel reviews agent pins. Workflow pins are graded in the Grade column — use Advance selected to move them."
+                : "None of the selected mandates has a graded pin to review.",
+            keepSelection: true,
+          };
+        }
         openImpactBatchWindow({
           agentIds,
           mode: "post_batch",
@@ -116,14 +133,45 @@ export function MandateAdminListPage() {
         const verdicts = rows
           .map((row) => row.defaultVerdict)
           .filter((v): v is ImpactVerdict => v !== null && batchEligibilityOf(v).batchable);
-        if (verdicts.length === 0) {
+        // Workflow parity: every workflow-held rung of the selection that can
+        // move to its newest published version (default and bindings alike).
+        const workflowVerdicts = rows
+          .flatMap((row) => row.workflowVerdicts)
+          .filter(
+            (v): v is WorkflowImpactVerdict => workflowAdvanceEligibility(v, userId ?? null).batchable,
+          );
+        if (verdicts.length === 0 && workflowVerdicts.length === 0) {
           return {
             message: "None of the selected mandates can advance: each is already current, blocked, or a person's own pin.",
             keepSelection: true,
           };
         }
         // `advance` opens its own confirm naming what moves (useImpactAdvance).
-        await writes.advance(verdicts, `Mandate list: ${rows.length} selected`);
+        if (verdicts.length > 0) {
+          await writes.advance(verdicts, `Mandate list: ${rows.length} selected`);
+        }
+        if (workflowVerdicts.length > 0) {
+          const results = await advanceWorkflowPins(dispatch, workflowVerdicts);
+          if (results) {
+            const moved = results.filter((r) => r.moved).length;
+            const refused = results.filter((r) => !r.moved);
+            if (moved > 0) {
+              toast.success(`Moved ${moved} workflow pin${moved === 1 ? "" : "s"} to the newest published version.`);
+              invalidateMandateAdminList(true);
+            }
+            // Each row's own sentence, on its mandate's record toast.
+            const refOf = (key: string) => {
+              const row = rows.find((candidate) => candidate.mandateKey === key);
+              return { type: "mandate", id: row?.id ?? key, title: key };
+            };
+            for (const row of refused) {
+              recordToast.error(refOf(row.verdict.mandate_key), row.sentence ?? "Not moved.");
+            }
+            for (const row of results.filter((r) => r.moved && r.sentence)) {
+              recordToast.info(refOf(row.verdict.mandate_key), row.sentence as string);
+            }
+          }
+        }
         return { keepSelection: false };
       },
     },
@@ -162,8 +210,11 @@ export function MandateAdminListPage() {
           bulkActions,
           bulkSelection: {
             noun: "mandate",
-            // Only a graded mandate has a rung the batch panel can act on.
-            isRowSelectable: (row) => row.defaultVerdict !== null || Boolean(row.agentId),
+            // Only a mandate with a pin (agent or workflow) has a rung to act on.
+            isRowSelectable: (row) =>
+              row.defaultVerdict !== null ||
+              Boolean(row.agentId) ||
+              row.workflowVerdicts.length > 0,
           },
         }}
         defaultScope={{ kind: "system" }}

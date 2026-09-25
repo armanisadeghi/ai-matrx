@@ -10,7 +10,11 @@
 
 import { ENTITY_LIST_URL_PARAMS } from "@/lib/entity-list/urlQuery";
 import type { EntityFilters } from "@/lib/entity-list/types";
-import { ADMIN_MANDATES_HOME } from "@/features/mandates/admin-routes";
+import {
+  ADMIN_MANDATES_HOME,
+  ADMIN_MANDATES_UNCONVERTED,
+} from "@/features/mandates/admin-routes";
+import type { UnconvertedStatus } from "@/features/mandates/code-references/data";
 
 export const MANDATE_LIST_PATH = ADMIN_MANDATES_HOME;
 
@@ -31,6 +35,8 @@ export const MANDATE_LIST_COLUMN = {
   codeState: "codeState",
   /** agent name | "Workflow" */
   holder: "agentName",
+  /** "Mismatch" | "Matches" | "Not checked" */
+  contract: "contractCheck",
 } as const;
 
 type Column = (typeof MANDATE_LIST_COLUMN)[keyof typeof MANDATE_LIST_COLUMN];
@@ -51,4 +57,15 @@ export function mandateListHref(
     [ENTITY_LIST_URL_PARAMS.filters]: JSON.stringify(bag),
   });
   return `${MANDATE_LIST_PATH}?${params.toString()}`;
+}
+
+/** The unconverted-calls page, filtered to one status (its own column id). */
+export function unconvertedCallsHref(status?: UnconvertedStatus): string {
+  if (!status) return ADMIN_MANDATES_UNCONVERTED;
+  const params = new URLSearchParams({
+    [ENTITY_LIST_URL_PARAMS.filters]: JSON.stringify({
+      status: { kind: "select", values: [status] },
+    } satisfies EntityFilters),
+  });
+  return `${ADMIN_MANDATES_UNCONVERTED}?${params.toString()}`;
 }

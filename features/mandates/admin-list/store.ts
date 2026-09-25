@@ -29,6 +29,10 @@ import {
 import { fetchStandingImpact } from "@/features/mandates/admin/impact";
 import { fetchWorkflowImpact } from "@/features/mandates/admin/workflow-impact";
 import { fetchMandateCoverage } from "@/features/mandates/coverage";
+import {
+  fetchMandateSourceFacts,
+  type MandateSourceFacts,
+} from "@/features/mandates/code-references/data";
 import type { MandateAdminReports } from "./facts";
 import { callMandateAdminList } from "./rpc";
 
@@ -51,6 +55,12 @@ export interface MandateAdminListState {
   settled: Record<MandateAdminReportName, boolean>;
   /** Provision key → offered value names, for the Inputs cell (filled per page). */
   offersByProvision: Map<string, string[]>;
+  /**
+   * Mandate key → where the code scan finds it (filled per page, off the
+   * first-paint path). A key in `sourceChecked` but not here has no reference.
+   */
+  sourceFacts: Map<string, MandateSourceFacts>;
+  sourceChecked: Set<string>;
   /** Source name → its own error sentence. */
   failures: Record<string, string>;
   error: Error | null;
@@ -70,6 +80,8 @@ let state: MandateAdminListState = {
   reports: EMPTY_REPORTS,
   settled: NOTHING_SETTLED,
   offersByProvision: new Map(),
+  sourceFacts: new Map(),
+  sourceChecked: new Set(),
   failures: {},
   error: null,
   version: 0,
@@ -113,6 +125,39 @@ export function mergeProvisionOffers(offers: Map<string, string[]>): void {
   const next = new Map(state.offersByProvision);
   for (const [key, values] of offers) next.set(key, values);
   publish({ offersByProvision: next }, false);
+}
+
+const sourceInFlight = new Set<string>();
+
+/**
+ * Read the code-scan facts for one page's keys (never the fleet), once per key
+ * per visit. Landing bumps `version` so the page is asked again and its source
+ * cells fill in; the database half is reused (./service.ts `readDbOnce`).
+ */
+export function ensureMandateSourceFacts(keys: readonly string[]): void {
+  const missing = [
+    ...new Set(keys.filter((key) => !state.sourceChecked.has(key) && !sourceInFlight.has(key))),
+  ];
+  if (missing.length === 0) return;
+  for (const key of missing) sourceInFlight.add(key);
+  const land = (facts: Map<string, MandateSourceFacts> | null, error?: unknown) => {
+    for (const key of missing) sourceInFlight.delete(key);
+    const checked = new Set(state.sourceChecked);
+    for (const key of missing) checked.add(key);
+    const next = new Map(state.sourceFacts);
+    for (const [key, value] of facts ?? []) next.set(key, value);
+    publish({
+      sourceChecked: checked,
+      sourceFacts: next,
+      ...(error !== undefined
+        ? { failures: { ...state.failures, sources: describe(error) } }
+        : {}),
+    });
+  };
+  fetchMandateSourceFacts(missing).then(
+    (facts) => land(facts),
+    (error: unknown) => land(null, error),
+  );
 }
 
 export function recordMandateAdminFailure(source: string, message: string): void {

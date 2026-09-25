@@ -40,7 +40,10 @@ export function calloutNode(
   const foldable = fold !== "none";
   const titleChildren: MNode[] = [
     el("matrx-callout-icon", { dataType: type }),
-    el("span", { className: ["min-w-0"] }, title && title.length > 0 ? title : [text(CALLOUT_LABEL[type])]),
+    // A default title ("Note") is renderer text, not the source's: marked as content chrome.
+    title && title.length > 0
+      ? el("span", { className: ["min-w-0"] }, title)
+      : el("span", { className: ["min-w-0"], dataContentChrome: true }, [text(CALLOUT_LABEL[type])]),
   ];
   if (foldable) titleChildren.push(el("matrx-callout-icon", { dataType: "chevron" }));
   const titleNode = el(

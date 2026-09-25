@@ -17,6 +17,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { usePageCaptureContribution } from "@/components/agent-copy/page-capture/usePageCapture";
 import { ShieldCheck, ShieldAlert } from "lucide-react";
 
 import { supabase } from "@/utils/supabase/client";
@@ -147,6 +148,12 @@ export function ContextParityLastRun() {
       live = false;
     };
   }, []);
+  // The alchemy capture: the parity guard's last run, as this card shows it.
+  usePageCaptureContribution(
+    "context-parity-last-run",
+    () => [{ id: "context-parity", title: "Context parity guard", role: "data", value: state }],
+    JSON.stringify(state),
+  );
   return (
     <div className="rounded-lg border border-border bg-card px-4 py-3">
       <ContextParityLine state={state} />

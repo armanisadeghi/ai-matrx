@@ -33,7 +33,9 @@ export type FactSection =
   | "codeState"
   | "declaredIn"
   | "featureLabel"
-  | "health";
+  | "health"
+  /** Not a fact: asks the database for the ~0.5 s whole-corpus scan read. */
+  | "sources";
 
 /** Which fact section each column's filter or sort reads. */
 const SECTIONS_BY_COLUMN: Record<string, FactSection[]> = {
@@ -45,6 +47,10 @@ const SECTIONS_BY_COLUMN: Record<string, FactSection[]> = {
   declaredIn: ["declaredIn"],
   featureLabel: ["featureLabel"],
   health: ["health"],
+  declaredRepos: ["sources"],
+  calledFrom: ["sources"],
+  callSites: ["sources"],
+  languages: ["sources"],
 };
 
 export const ALL_FACT_SECTIONS: FactSection[] = [
@@ -55,6 +61,7 @@ export const ALL_FACT_SECTIONS: FactSection[] = [
   "declaredIn",
   "featureLabel",
   "health",
+  "sources",
 ];
 
 /**
@@ -98,6 +105,11 @@ export function buildFacts(
 ): Record<string, unknown> {
   const want = new Set(sections);
   const facts: Record<string, unknown> = {};
+
+  // The source columns (Declared in, Called from, Call sites, Language) are
+  // computed by the database from the code scan — only when a filter, a sort
+  // or the facets need them, because the whole-corpus read costs ~0.5 s.
+  if (want.has("sources")) facts.sources = "all";
 
   if (want.has("coverage") && reports.coverage) {
     facts.coverage = {

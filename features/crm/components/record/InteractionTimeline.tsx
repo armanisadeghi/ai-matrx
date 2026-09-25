@@ -45,6 +45,7 @@ import { useOrgMembers } from "../../deals/useOrgMembers";
 import { GmailSentRecordDetails } from "../../gmail/GmailSentRecordDetails";
 import { isGmailSentRecord } from "../../gmail/sent-record-facts";
 import { logInteraction, removeInteraction } from "../../service";
+import { resolveChildOrgId } from "@/lib/organizations/childOrganization";
 import { parseInteraction } from "../../agent-context/crmRecordSurfaceWrite";
 import type {
   InteractionChannel,
@@ -143,7 +144,10 @@ export function InteractionTimeline({
    * The ONE place compose is opened from this surface, so the Person header's
    * action and this card's action cannot pass different ids.
    */
-  const composeOrgId = partyOrganizationId ?? orgId;
+  // An interaction belongs with its PARTY: the party's organization wins over
+  // the host's (a deal's may have diverged; the DB raises on a mismatch).
+  const composeOrgId =
+    resolveChildOrgId(partyOrganizationId, orgId, "interaction") ?? orgId;
   const openCompose = () => {
     if (!partyLabel) return;
     openGmailCompose({
@@ -191,7 +195,7 @@ export function InteractionTimeline({
     try {
       await logInteraction({
         partyId,
-        orgId,
+        orgId: composeOrgId,
         channel,
         direction,
         subject: subject || undefined,
@@ -235,7 +239,7 @@ export function InteractionTimeline({
       const parsed = parseInteraction(raw);
       await logInteraction({
         partyId,
-        orgId,
+        orgId: composeOrgId,
         channel: parsed.channel,
         direction: parsed.direction,
         subject: parsed.subject,

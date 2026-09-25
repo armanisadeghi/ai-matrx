@@ -24,6 +24,9 @@
 
 "use client";
 
+import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
+import { adminPageCapture } from "@/components/agent-copy/page-capture/pageCapture";
+import { PageCaptureButton } from "@/components/agent-copy/page-capture/PageCaptureButton";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, Loader2, Pencil, Play, Power } from "lucide-react";
@@ -883,8 +886,29 @@ export default function SystemJobsPage() {
     );
   }
 
+  // The alchemy capture (lane ALCHEMY-BUTTON): both job lists, the open job, both load errors.
+  usePageCapture(() =>
+    adminPageCapture({
+      title: "System jobs",
+      route: "/administration/automation/scheduling/system-jobs",
+      selection: {
+        Organization: { id: organizationId ?? null, name: null },
+        "Open server job": clickedJob ? { id: clickedJob.id, name: clickedJob.title ?? null } : null,
+        "Open database job": clickedDbJob ? { id: String(clickedDbJob.jobid), name: clickedDbJob.jobname ?? null } : null,
+      },
+      errors: [loadError, dbLoadError],
+      sections: [
+        { id: "server-jobs", title: "Server jobs", role: "data", value: rows, brief: `${rows.length} server jobs` },
+        { id: "database-jobs", title: "Database jobs", role: "data", value: dbRows, brief: `${dbRows.length} database jobs` },
+      ],
+    }),
+  );
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-4">
+      <div className="flex justify-end">
+        <PageCaptureButton />
+      </div>
       <div
         className="min-h-0 flex-1 basis-3/5"
         data-surface-value="system_job_count"

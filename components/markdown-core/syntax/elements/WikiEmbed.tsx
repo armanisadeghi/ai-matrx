@@ -47,6 +47,7 @@ export function WikiEmbed(props: { "data-target"?: string; "data-alias"?: string
       <span
         className={isBlock ? "my-2 block rounded-md border border-dashed border-border px-3 py-2 text-sm" : "inline-block rounded-md border border-dashed border-border px-1.5"}
         data-wiki-embed={resolution?.status ?? "resolving"}
+        data-content-chrome=""
       >
         <WikiLink {...props} />
       </span>
@@ -56,6 +57,7 @@ export function WikiEmbed(props: { "data-target"?: string; "data-alias"?: string
   return (
     <span
       data-wiki-embed="found"
+      data-content-chrome=""
       className={isBlock ? "my-3 block overflow-hidden rounded-md border border-border bg-card" : "inline-block overflow-hidden rounded-md border border-border bg-card align-middle"}
     >
       <span className="flex items-center gap-2 border-b border-border bg-muted/40 px-3 py-1.5 text-xs">

@@ -113,6 +113,7 @@ export const InlineCodeSnippet: React.FC<InlineCodeSnippetProps> = ({
             "text-xs font-mono font-medium text-muted-foreground",
             langColor,
           )}
+          data-content-chrome=""
         >
           {language || "code"}
         </span>

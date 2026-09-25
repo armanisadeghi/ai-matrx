@@ -101,6 +101,33 @@ export interface MandateAgentInfo {
   contextPolicyKeys: string[];
 }
 
+/**
+ * One `agent.definition` row (the console's by-id columns) → the console's
+ * agent info. THE ONE MAPPING — the admin list builds its page rows from the
+ * same columns returned by `public.mnd_admin_list` and reads them through here.
+ */
+export function mandateAgentInfoOf(row: {
+  id: string;
+  name: string | null;
+  version: number | null;
+  is_archived: boolean | null;
+  agent_type: string | null;
+  auto_context_disabled: boolean | null;
+  variable_definitions: unknown;
+  context_policies: unknown;
+}): MandateAgentInfo {
+  return {
+    id: row.id,
+    name: row.name ?? row.id,
+    version: row.version,
+    isArchived: Boolean(row.is_archived),
+    agentType: row.agent_type,
+    autoContextDisabled: row.auto_context_disabled === true,
+    variableNames: namesOf(row.variable_definitions, "name"),
+    contextPolicyKeys: namesOf(row.context_policies, "key"),
+  };
+}
+
 export interface MandateVersionInfo {
   id: string;
   agentId: string | null;
@@ -383,16 +410,7 @@ export async function fetchMandateConsoleData(
       readAgents([...agentIds].filter((id) => !asked.has(id))),
     ]);
     for (const row of [...first, ...rest]) {
-      agentsById[row.id] = {
-        id: row.id,
-        name: row.name ?? row.id,
-        version: row.version,
-        isArchived: Boolean(row.is_archived),
-        agentType: row.agent_type,
-        autoContextDisabled: row.auto_context_disabled === true,
-        variableNames: namesOf(row.variable_definitions, "name"),
-        contextPolicyKeys: namesOf(row.context_policies, "key"),
-      };
+      agentsById[row.id] = mandateAgentInfoOf(row);
       // Present-with-null is the honest "declares none"; ABSENT (an agent this
       // read could not return) stays absent so the verdict stays UNKNOWN.
       outputSchemas[row.id] = (row as { output_schema?: unknown }).output_schema ?? null;

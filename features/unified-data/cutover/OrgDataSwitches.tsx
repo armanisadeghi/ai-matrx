@@ -12,6 +12,7 @@ import { Check, CircleDashed, Loader2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { usePageCaptureContribution } from "@/components/agent-copy/page-capture/usePageCapture";
 import { pressSeam, readSeamBoard, type Seam, type SeamBoard, type SeamState } from "./seamSwitches";
 
 type Pending = { seam: Seam; to: SeamState } | null;
@@ -49,6 +50,21 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
   React.useEffect(() => {
     void load();
   }, [load]);
+
+  // The alchemy capture (lane ALCHEMY-BUTTON): the switch board as shown, the problem, the last press.
+  usePageCaptureContribution(
+    "org-data-switches",
+    () => [
+      {
+        id: "data-switches",
+        title: "Old system to new system switches",
+        role: "data",
+        value: { board, problem, pending: pending ? { seam: pending.seam.key, to: pending.to } : null, outcome },
+        brief: problem ?? (board ? "Board loaded" : "Loading"),
+      },
+    ],
+    `${board ? JSON.stringify(board).length : 0}|${problem}|${outcome?.says}|${pending?.seam.key}`,
+  );
 
   const press = async () => {
     if (!pending) return;

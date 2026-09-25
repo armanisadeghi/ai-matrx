@@ -47,3 +47,30 @@ describe("a list-nested callout or directive round-trips through the editor", ()
     expect(again).toBe(text);
   });
 });
+
+
+describe("editing beside a list-nested callout saves byte-exact", () => {
+  it("typing into the NEXT item changes exactly those bytes — the callout under the first item is untouched", () => {
+    const [, text] = CASES[0] as [string, string];
+    const session = open(text);
+    let at = -1;
+    session.editor.state.doc.descendants((node, pos) => {
+      if (at !== -1) return false;
+      if (node.isText && node.text?.includes("Close the lid")) {
+        at = pos + node.text.indexOf("Close the lid") + "Close the lid".length;
+        return false;
+      }
+      return true;
+    });
+    expect(at).toBeGreaterThan(-1);
+    session.editor.commands.command(({ tr }) => {
+      tr.insert(at, session.editor.schema.text(" firmly"));
+      return true;
+    });
+    const saved = session.save();
+    expect(saved).toBe(text.replace("Close the lid", "Close the lid firmly"));
+    const plan = planSave(text, saved);
+    expect(plan.needsConsent).toEqual([]);
+    expect(plan.text).toBe(saved);
+  });
+});

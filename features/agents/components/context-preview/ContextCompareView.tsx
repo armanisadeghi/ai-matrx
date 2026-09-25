@@ -15,6 +15,17 @@
  * or a defect. The diff is on the VALUE, so one changed value moves it
  * (DD-251).
  *
+ * FOUR TABS (lane INSPECTOR-DIFF, Arman 2026-09-25: "The data is definitely not
+ * byte-identical so you should just set up a diff view"). "What the model gets
+ * today" is the server's `delivered.today` — the bytes of the ONE assembler an
+ * agent run calls (`turn_context.assemble_turn_context`), stamped with its
+ * provenance (function, module, git sha). "Record store" is the same function
+ * with the record store answering. "Diff" (the default) puts the compare's
+ * structural findings over a real diff of the two — first what the model is
+ * fed, then the values each resolver answered (the `<agent_context>`
+ * rendering, which the model is fed only when a turn has no organization).
+ * "Selection" is what was sent and the exact arguments both sides received.
+ *
  * "Answer on both paths" runs one real agent turn per resolver on the same
  * question (`POST /ai/context/preview/answer-both`): same agent, instructions
  * and model, tools off, nothing persisted. It needs the agent whose answer is
@@ -24,13 +35,15 @@
  * without an agent the sentence says where to open it from.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { DiffViewer } from "@ai-matrx/diff/react";
 import { AlertTriangle, BrainCircuit, ChevronDown, GitCompareArrows, MessageSquareText, RefreshCw } from "lucide-react";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InlineCopyButton } from "@/components/matrx/buttons/InlineCopyButton";
 import MarkdownStream from "@/components/MarkdownStream";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -49,6 +62,12 @@ type ContextCompare = components["schemas"]["ContextCompare"];
 type CompareSide = components["schemas"]["ContextCompareSide"];
 type Difference = components["schemas"]["ContextCompareDifference"];
 type AnswerBoth = components["schemas"]["ContextAnswerBothResponse"];
+type Delivered = components["schemas"]["ContextDelivered"];
+type DeliveredSide = components["schemas"]["ContextDeliveredSide"];
+type Provenance = components["schemas"]["ContextProvenance"];
+
+/** The inspector's four result tabs; `diff` is the default. */
+export type CompareTab = "diff" | "today" | "store" | "selection";
 type DifferenceClass = Difference["difference_class"];
 
 /** Each class, in plain words and a colour the reader can scan for. */
@@ -92,24 +111,6 @@ function show(value: unknown): string {
   }
 }
 
-/**
- * Lines one block carries that the other does not — the highlight set. System
- * context (dates, times) is computed a few milliseconds apart on each side and
- * the server leaves it out of the diff and says so, so its lines are never
- * highlighted either.
- */
-function lineDiff(a: string, b: string): { onlyA: Set<string>; onlyB: Set<string> } {
-  const la = a.split("\n").map((l) => l.trimEnd());
-  const lb = b.split("\n").map((l) => l.trimEnd());
-  const sa = new Set(la);
-  const sb = new Set(lb);
-  const counts = (l: string) => l.trim() !== "" && !l.endsWith("[system]");
-  return {
-    onlyA: new Set(la.filter((l) => counts(l) && !sb.has(l))),
-    onlyB: new Set(lb.filter((l) => counts(l) && !sa.has(l))),
-  };
-}
-
 /** The one context item a compare is narrowed to (the inspector's last step). */
 export interface CompareFocus {
   itemId: string;
@@ -141,15 +142,19 @@ function notInBlockSentence(side: CompareSide, focus: CompareFocus): string {
   return `This side does not hand the agent ${focus.label} for this scope.`;
 }
 
+/** Where the values blocks come from — the compare's own resolvers, said on the page. */
+const VALUES_PROVENANCE: Record<"old" | "new", string> = {
+  old: "From context_compare._old_side: build_agent_context(path=\"old\") answered by the current context system, rendered by AgentContext.build_system_prompt_block. With an organization the model is not fed this block; it gets these values through its bound variables and context tools.",
+  new: "From context_compare._new_side: the record store's custom.resolve_context, through the same post-resolver code, rendered by AgentContext.build_system_prompt_block. With an organization the model is not fed this block either.",
+};
+
 function Block({
   side,
   title,
-  differs,
   focus,
 }: {
   side: CompareSide;
   title: string;
-  differs: Set<string>;
   focus?: CompareFocus;
 }) {
   const fullBlock = side.block ?? "";
@@ -178,18 +183,7 @@ function Block({
       ) : block ? (
         <div className="group/block relative mt-1.5">
           <pre className="whitespace-pre-wrap break-words rounded-md border border-border bg-muted/40 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-foreground">
-            {block.split("\n").map((line, i) => (
-              <span
-                key={i}
-                className={cn(
-                  "block",
-                  differs.has(line.trimEnd()) &&
-                    "-mx-1 rounded-sm bg-amber-400/25 px-1 dark:bg-amber-400/20",
-                )}
-              >
-                {line || " "}
-              </span>
-            ))}
+            {block}
           </pre>
           <InlineCopyButton
             content={block}
@@ -202,6 +196,269 @@ function Block({
         <div className="mt-1.5 rounded-md border border-border bg-muted/30 px-2.5 py-2 text-xs italic text-muted-foreground">
           No block — this side delivers no context for this selection.
         </div>
+      )}
+      <p className="mt-1 text-[11px] leading-snug text-muted-foreground" data-provenance-values={side.path}>
+        {VALUES_PROVENANCE[side.path]}
+      </p>
+    </div>
+  );
+}
+
+/** The provenance line every tab prints — the server's own sentence, then its identity. */
+function ProvenanceLine({ stamp }: { stamp?: Provenance | null }) {
+  if (!stamp) return null;
+  return (
+    <p className="text-[11px] leading-snug text-muted-foreground" data-provenance={stamp.resolver}>
+      {stamp.says}{" "}
+      <span className="font-mono text-foreground/70">
+        {stamp.module}.{stamp.function} @ {stamp.git_sha.slice(0, 10)}
+      </span>
+    </p>
+  );
+}
+
+/** One copyable monospaced block of what the model is fed. */
+function FedBlock({ label, text, slot }: { label: string; text?: string | null; slot: string }) {
+  return (
+    <div className="min-w-0" data-fed-block={slot}>
+      <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{label}</div>
+      {text ? (
+        <div className="group/block relative mt-1">
+          <pre className="max-h-[28rem] overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-muted/40 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-foreground">
+            {text}
+          </pre>
+          <InlineCopyButton
+            content={text}
+            formatJson={false}
+            size="sm"
+            className="opacity-0 transition-opacity pointer-coarse:opacity-100 group-hover/block:opacity-100"
+          />
+        </div>
+      ) : (
+        <p className="mt-1 rounded-md border border-border bg-muted/30 px-2.5 py-2 text-xs italic text-muted-foreground">
+          Nothing — this turn is fed no {slot === "intro" ? "intro" : "selection block"}.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function bytesLine(side: DeliveredSide): string {
+  if (!side.available) return side.unavailable_reason ?? "This side did not answer.";
+  if (!side.injected_block) return "No block — nothing is fed for this selection.";
+  return `${(side.block_byte_length ?? 0).toLocaleString()} bytes · sha256 ${(side.block_sha256 ?? "").slice(0, 12)}`;
+}
+
+/** One side of what the model is fed, exactly — the "today" and "record store" tabs. */
+function FedSide({
+  side,
+  values,
+  valuesTitle,
+  says,
+  focus,
+}: {
+  side: DeliveredSide | undefined;
+  values: CompareSide;
+  valuesTitle: string;
+  says?: string;
+  focus?: CompareFocus;
+}) {
+  return (
+    <div className="flex flex-col gap-3 px-4 pt-3" data-fed-side={side?.path ?? "missing"}>
+      {side ? (
+        <>
+          <ProvenanceLine stamp={side.provenance} />
+          <p className="text-xs tabular-nums text-foreground" data-fed-bytes>
+            {bytesLine(side)}
+          </p>
+          {side.available && (
+            <>
+              <FedBlock label="System prompt — the first turn only" text={side.intro} slot="intro" />
+              <FedBlock label="Every message — the selection" text={side.active} slot="active" />
+            </>
+          )}
+          {says && <p className="text-xs text-muted-foreground">{says}</p>}
+        </>
+      ) : (
+        <NoDelivered />
+      )}
+      <Block side={values} title={valuesTitle} focus={focus} />
+    </div>
+  );
+}
+
+/** An older server that does not report what the model is fed — said, never blank. */
+function NoDelivered() {
+  return (
+    <p className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-foreground" data-fed-missing>
+      The server answering is older than this page: it does not yet report the exact bytes the
+      model is fed. They appear here once that version is live; the values below are the
+      resolvers&apos; answers.
+    </p>
+  );
+}
+
+/** The Diff tab: the structural findings, then a real diff of what is fed and of the values. */
+function DiffTab({
+  compare,
+  delivered,
+  focus,
+}: {
+  compare: ContextCompare;
+  delivered?: Delivered | null;
+  focus?: CompareFocus;
+}) {
+  const today = delivered?.today;
+  const store = delivered?.record_store;
+  const valuesOld = compare.old.block ?? "";
+  const valuesNew = compare.new.block ?? "";
+  const shownOld = focus ? focusLines(valuesOld, focus.key).join("\n") : valuesOld;
+  const shownNew = focus ? focusLines(valuesNew, focus.key).join("\n") : valuesNew;
+  let fedVerdict: string;
+  if (!today) fedVerdict = "";
+  else if (!store || !store.available)
+    fedVerdict = `The record store could not be fed through the same function: ${store?.unavailable_reason ?? "it did not answer"}.`;
+  else if (delivered?.identical)
+    fedVerdict = `Byte-identical — both systems feed the model the same ${(today.block_byte_length ?? 0).toLocaleString()} bytes (sha256 ${(today.block_sha256 ?? "").slice(0, 12)}).`;
+  else
+    fedVerdict = `Different — ${(today.block_byte_length ?? 0).toLocaleString()} bytes today, ${(store.block_byte_length ?? 0).toLocaleString()} bytes from the record store.`;
+  return (
+    <div className="flex flex-col" data-compare-diff>
+      <Summary compare={compare} />
+      <section className="px-4 pt-4" data-diff-fed>
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-primary">What the model is fed</h3>
+        {today ? (
+          <>
+            <p
+              className={cn(
+                "mt-1 text-sm font-medium",
+                delivered?.identical ? "text-foreground" : "text-amber-700 dark:text-amber-300",
+              )}
+              data-fed-identical={String(Boolean(delivered?.identical))}
+            >
+              {fedVerdict}
+            </p>
+            <div className="mt-1 space-y-0.5">
+              <ProvenanceLine stamp={today.provenance} />
+              {store?.available && <ProvenanceLine stamp={store.provenance} />}
+            </div>
+            {store?.available && (
+              <div className="mt-2 overflow-hidden rounded-md border border-border" data-diff-viewer="fed">
+                <DiffViewer
+                  original={today.injected_block ?? ""}
+                  modified={store.injected_block ?? ""}
+                  originalLabel="What the model gets today"
+                  modifiedLabel="Record store"
+                  engine="light"
+                  defaultView="inline"
+                  showLineNumbers
+                  wrap
+                  readOnly
+                />
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="mt-1">
+            <NoDelivered />
+          </div>
+        )}
+      </section>
+      <section className="px-4 pt-4" data-diff-values>
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+          The values each system answered
+        </h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {focus ? `${focus.label} only. ` : ""}
+          The current system&apos;s resolver beside the record store&apos;s, rendered the same way.
+          With an organization this rendering is not in the prompt; it is what the agent can reach
+          through its bound variables and context tools.
+        </p>
+        {compare.old.available && compare.new.available ? (
+          shownOld === shownNew ? (
+            <div className="mt-1.5 rounded-md border border-border bg-muted/30 px-2.5 py-2 text-xs text-foreground" data-values-identical>
+              {shownOld ? "Identical on both systems:" : "Neither system delivers a value here."}
+              {shownOld && (
+                <pre className="mt-1 whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed">{shownOld}</pre>
+              )}
+            </div>
+          ) : (
+            <div className="mt-2 overflow-hidden rounded-md border border-border" data-diff-viewer="values">
+              <DiffViewer
+                original={shownOld}
+                modified={shownNew}
+                originalLabel="Current system"
+                modifiedLabel="Record store"
+                engine="light"
+                defaultView="inline"
+                showLineNumbers
+                wrap
+                readOnly
+              />
+            </div>
+          )
+        ) : (
+          <p className="mt-1.5 rounded-md border border-border bg-muted/30 px-2.5 py-2 text-xs text-foreground">
+            {(!compare.old.available ? compare.old.unavailable_reason : compare.new.unavailable_reason) ??
+              "One side did not answer."}
+          </p>
+        )}
+      </section>
+      <Differences
+        differences={
+          focus
+            ? (compare.differences ?? []).filter((d) => d.item_id === focus.itemId)
+            : (compare.differences ?? [])
+        }
+      />
+    </div>
+  );
+}
+
+/** One labelled JSON value in the Selection tab. */
+function JsonBlock({ label, value, slot }: { label: string; value: unknown; slot: string }) {
+  const text = JSON.stringify(value ?? null, null, 2);
+  return (
+    <div className="min-w-0" data-selection-block={slot}>
+      <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="group/block relative mt-1">
+        <pre className="overflow-auto whitespace-pre-wrap break-all rounded-md border border-border bg-muted/40 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-foreground">
+          {text}
+        </pre>
+        <InlineCopyButton
+          content={text}
+          formatJson={false}
+          size="sm"
+          className="opacity-0 transition-opacity pointer-coarse:opacity-100 group-hover/block:opacity-100"
+        />
+      </div>
+    </div>
+  );
+}
+
+function SelectionTab({
+  sent,
+  compare,
+  delivered,
+}: {
+  sent?: ContextSelection;
+  compare: ContextCompare;
+  delivered?: Delivered | null;
+}) {
+  return (
+    <div className="flex flex-col gap-3 px-4 pt-3" data-compare-selection>
+      <p className="text-[11px] leading-snug text-muted-foreground" data-provenance="selection">
+        Sent to POST /ai/context/preview. The server expanded it once
+        (context_selection.resolve_context_selection) and handed BOTH sides the same arguments
+        below — the ones an agent run passes to {delivered?.today.provenance?.function ?? "assemble_turn_context"} for
+        a new conversation.
+      </p>
+      {sent && <JsonBlock label="What this page sent" value={sent} slot="sent" />}
+      <JsonBlock label="The selection both sides received" value={compare.selection} slot="expanded" />
+      {delivered ? (
+        <JsonBlock label="The assembler's arguments (both sides)" value={delivered.arguments} slot="arguments" />
+      ) : (
+        <NoDelivered />
       )}
     </div>
   );
@@ -561,6 +818,8 @@ export function ContextCompareView({
   onAgentChange,
   selection,
   focus,
+  tab,
+  onTabChange,
 }: {
   conversationId?: string;
   agentId?: string;
@@ -582,6 +841,12 @@ export function ContextCompareView({
    * exactly as an agent run would.
    */
   focus?: CompareFocus;
+  /**
+   * The open result tab, when the host keeps it across picks (the inspector
+   * remounts this view on every pick). Default: Diff.
+   */
+  tab?: CompareTab;
+  onTabChange?: (tab: CompareTab) => void;
 }) {
   const { status, data, error, refresh } = useContextPreview({
     conversationId,
@@ -591,10 +856,14 @@ export function ContextCompareView({
     selection,
   });
   const compare = data?.compare ?? null;
-  const diff = useMemo(
-    () => lineDiff(compare?.old.block ?? "", compare?.new.block ?? ""),
-    [compare],
-  );
+  const delivered = data?.delivered ?? null;
+  const [ownTab, setOwnTab] = useState<CompareTab>("diff");
+  const activeTab = tab ?? ownTab;
+  const chooseTab = (next: string) => {
+    const t = next as CompareTab;
+    setOwnTab(t);
+    onTabChange?.(t);
+  };
 
   // The alchemy capture: the request both sides answered, each side's block as
   // shown, the summary, every difference and the new side's checks.
@@ -712,24 +981,63 @@ export function ContextCompareView({
         )}
         {compare && (
           <>
-            <Summary compare={compare} />
-            {focus && (
-              <p className="px-4 pt-3 text-xs text-muted-foreground" data-compare-focus={focus.key}>
-                Showing {focus.label} only. The summary above counts the whole scope.
-              </p>
-            )}
-            <section className="flex flex-col gap-3 px-4 pt-4 md:flex-row">
-              <Block side={compare.old} title="Current system" differs={diff.onlyA} focus={focus} />
-              <Block side={compare.new} title="Record store" differs={diff.onlyB} focus={focus} />
-            </section>
-            <Differences
-              differences={
-                focus
-                  ? (compare.differences ?? []).filter((d) => d.item_id === focus.itemId)
-                  : (compare.differences ?? [])
-              }
-            />
-            <Checks side={compare.new} />
+            <Tabs value={activeTab} onValueChange={chooseTab} className="pt-2" data-compare-tabs={activeTab}>
+              <div className="overflow-x-auto px-4 scrollbar-none">
+                <TabsList className="h-8 w-max">
+                  <TabsTrigger value="diff" className="h-6 px-2.5 text-xs" data-compare-tab="diff">
+                    Diff
+                  </TabsTrigger>
+                  <TabsTrigger value="today" className="h-6 px-2.5 text-xs" data-compare-tab="today">
+                    What the model gets today
+                  </TabsTrigger>
+                  <TabsTrigger value="store" className="h-6 px-2.5 text-xs" data-compare-tab="store">
+                    Record store
+                  </TabsTrigger>
+                  <TabsTrigger value="selection" className="h-6 px-2.5 text-xs" data-compare-tab="selection">
+                    Selection
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+              {focus && (
+                <p className="px-4 pt-2 text-xs text-muted-foreground" data-compare-focus={focus.key}>
+                  Showing {focus.label} only where a block names it. The summary counts the whole
+                  scope, and what the model is fed is always the whole turn.
+                </p>
+              )}
+              <TabsContent value="diff" className="mt-0">
+                <DiffTab compare={compare} delivered={delivered} focus={focus} />
+              </TabsContent>
+              <TabsContent value="today" className="mt-0">
+                <FedSide
+                  side={delivered?.today}
+                  values={compare.old}
+                  valuesTitle="Values the current system answered"
+                  says={delivered?.says}
+                  focus={focus}
+                />
+              </TabsContent>
+              <TabsContent value="store" className="mt-0">
+                <FedSide
+                  side={
+                    delivered
+                      ? (delivered.record_store ?? {
+                          path: "record_store",
+                          available: false,
+                          unavailable_reason: "The server ran no record-store side for this preview.",
+                        })
+                      : undefined
+                  }
+                  values={compare.new}
+                  valuesTitle="Values the record store answered"
+                  says={delivered?.says}
+                  focus={focus}
+                />
+                <Checks side={compare.new} />
+              </TabsContent>
+              <TabsContent value="selection" className="mt-0">
+                <SelectionTab sent={selection} compare={compare} delivered={delivered} />
+              </TabsContent>
+            </Tabs>
             <AnswerBoth
               key={agentId ?? "no-agent"}
               agentId={agentId}

@@ -4,11 +4,12 @@
  * useContextPreview — fetches the SERVER-RESOLVED agent context for the
  * user's current settings from `POST /ai/context/preview`.
  *
- * TRUTHFULNESS CONTRACT: the endpoint calls the exact same functions the
- * agent-run path calls (`resolve_agent_context_block`, `build_agent_context`,
- * and `resolve_scope_bindings` when an agent is given) with the same
- * arguments — the response is what the model actually receives, not a
- * recreation. Never replace this with a client-side approximation.
+ * TRUTHFULNESS CONTRACT: the endpoint builds its block with the ONE function
+ * the agent-run path calls (`turn_context.assemble_turn_context`, plus
+ * `resolve_scope_bindings` when an agent is given) with the same arguments —
+ * the response is what the model actually receives, not a recreation, and it
+ * says so in `provenance` (function, module, git sha). Never replace this with
+ * a client-side approximation.
  *
  * organization_id is local-first: an existing conversation's durable org
  * overrides the active app org, while an agent-only preview inherits the

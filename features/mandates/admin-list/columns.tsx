@@ -54,7 +54,7 @@ import {
   useMandateAdminListActions,
   useMandateAdminListState,
 } from "./context";
-import { CODE_STATE_LABEL, FIELDS } from "./fields";
+import { CODE_STATE_LABEL, FIELDS, NONE_FOUND } from "./fields";
 import type { MandateAdminRow } from "./types";
 
 type Spec = EntityColumnSpec<MandateAdminRow>;
@@ -264,6 +264,65 @@ function ListCell({ values, detail }: { values: string[]; detail?: string[] }) {
   );
 }
 
+/** Contract column: red when any Holder was saved against its contract. */
+const CONTRACT_CLASS: Record<MandateAdminRow["contractCheck"], string> = {
+  Mismatch: "border-rose-500/50 bg-rose-500/10 text-rose-700 dark:text-rose-300",
+  Matches: "border-emerald-500/40 text-emerald-700 dark:text-emerald-300",
+  "Not checked": "text-muted-foreground",
+};
+
+function ContractCell({ row }: { row: MandateAdminRow }) {
+  return (
+    <Badge
+      variant="outline"
+      className={CONTRACT_CLASS[row.contractCheck]}
+      title={
+        row.contractCheck === "Mismatch"
+          ? row.contractMismatches.map((m) => `${m.where}: ${m.check.summary}`).join("\n\n") ||
+            "A Holder was saved that does not match this job's contract."
+          : row.contractCheck === "Matches"
+            ? "Every recorded contract check on this job passed."
+            : "No contract check has been recorded for this job's Holders yet."
+      }
+    >
+      {row.contractCheck}
+    </Badge>
+  );
+}
+
+/** One code-scan cell: still reading, unreadable, none found, or the values. */
+function SourceCell({
+  row,
+  pick,
+}: {
+  row: MandateAdminRow;
+  pick: (sources: NonNullable<MandateAdminRow["sources"]>) => string | string[];
+}) {
+  if (row.sourcesPending) return <Checking what="the code scan" />;
+  if (row.sourcesFailed) {
+    return (
+      <span className="text-xs text-amber-700 dark:text-amber-300" title="The code scan read failed — see the notice above the list.">
+        Unavailable
+      </span>
+    );
+  }
+  if (!row.sources) {
+    return (
+      <span
+        className="text-xs text-muted-foreground"
+        title="The code scan has no reference to this key. Until every repository has a complete scan this means nobody looked — not that it is unused."
+      >
+        {NONE_FOUND}
+      </span>
+    );
+  }
+  const value = pick(row.sources);
+  if (Array.isArray(value)) {
+    return value.length > 0 ? <ListCell values={value} /> : <Muted>{NONE_FOUND}</Muted>;
+  }
+  return <span className="text-xs tabular-nums">{value}</span>;
+}
+
 export const ADMIN_MANDATE_COLUMNS: Spec[] = [
   {
     id: "name",
@@ -355,6 +414,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
     <BlockerCell row={row} />
   )),
   facetColumn("health", "Health", 190, (row) => <HealthCell row={row} />),
+  facetColumn("contractCheck", "Contract", 110, (row) => <ContractCell row={row} />),
   {
     id: "inputSummary",
     label: "Inputs",
@@ -400,6 +460,24 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
       <ListCell values={row.serves} detail={row.servesDetail} />
     ),
   ),
+  // ── Where the code scan finds it (fetchMandateSourceFacts; filtered and
+  // sorted by the database across the whole list) ─────────────────────────
+  facetColumn("declaredRepos", "Declared in", 150, (row) => (
+    <SourceCell row={row} pick={(s) => s.declaredIn} />
+  )),
+  facetColumn("calledFrom", "Called from", 170, (row) => (
+    <SourceCell row={row} pick={(s) => s.calledFrom} />
+  )),
+  facetColumn(
+    "callSites",
+    "Call sites",
+    80,
+    (row) => <SourceCell row={row} pick={(s) => String(s.callSites)} />,
+    { sortWords: NUMBER_WORDS },
+  ),
+  facetColumn("languages", "Language", 120, (row) => (
+    <SourceCell row={row} pick={(s) => s.languages} />
+  )),
   facetColumn("defaultState", "Default", 110, (row) => (
     <span
       className="text-xs"
@@ -457,7 +535,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
   ),
   facetColumn(
     "declaredIn",
-    "Declared in",
+    "Code declaration",
     150,
     (row) =>
       row.declaredIn ? (

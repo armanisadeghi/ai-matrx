@@ -21,7 +21,7 @@ import type {
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
 import { EMPTY_FACETS, EMPTY_SCOPE_COUNTS } from "@/lib/entity-list/types";
-import { adminMandateHref } from "@/features/mandates/browse/url-compat";
+import { ADMIN_MANDATES_HOME, adminMandateRecordHref as adminMandateHref } from "@/features/mandates/admin-routes";
 import { ADMIN_MANDATE_COLUMNS } from "./columns";
 import { MandatePeek } from "./MandatePeek";
 import type { MandateAdminRow } from "./types";
@@ -140,7 +140,7 @@ export const adminMandateListConfig: EntityListConfig<MandateAdminRow> = {
   copy: {
     label: "Mandate",
     listLabel: "Mandates",
-    location: "/administration/mandates/list-preview",
+    location: ADMIN_MANDATES_HOME,
     rowKind: "mandate",
     listKind: "mandate-list",
     humanRow: (row) =>

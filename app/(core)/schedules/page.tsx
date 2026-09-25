@@ -10,6 +10,9 @@ import {
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { useScheduledTasks } from "@/features/scheduling/hooks/useScheduledTasks";
+import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
+import { adminPageCapture } from "@/components/agent-copy/page-capture/pageCapture";
+import { PageCaptureButton } from "@/components/agent-copy/page-capture/PageCaptureButton";
 import { ScheduleList } from "@/features/scheduling/components/list/ScheduleList";
 import {
   buildScheduleListPayload,
@@ -19,6 +22,24 @@ import {
 
 export default function SchedulesPage() {
   const { refetch, tasks, status, error } = useScheduledTasks();
+  // The alchemy capture (lane ALCHEMY-BUTTON): the page, its counts, the schedules, the error.
+  usePageCapture(() =>
+    adminPageCapture({
+      title: "Schedules",
+      route: "/schedules",
+      selection: {},
+      errors: [error ? String(error) : null],
+      sections: [
+        {
+          id: "schedules",
+          title: "Schedules",
+          role: "data",
+          value: { status, total: tasks.length, enabled: tasks.filter((t) => t.enabled).length, tasks },
+          brief: `${tasks.length} schedules, ${tasks.filter((t) => t.enabled).length} enabled`,
+        },
+      ],
+    }),
+  );
 
   return (
     <>
@@ -62,7 +83,9 @@ export default function SchedulesPage() {
                   }}
                 />
               </>
-            ) : null}
+            ) : (
+              <PageCaptureButton size="icon" />
+            )}
             <RefreshCwTapButton
               ariaLabel="Refresh"
               onClick={() => refetch()}

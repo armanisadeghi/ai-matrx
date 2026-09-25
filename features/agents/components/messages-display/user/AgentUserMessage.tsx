@@ -305,6 +305,9 @@ export function AgentUserMessage({
     );
   }, [hasContent, record, conversationId, messageId, authoredByHost]);
 
+  // PROBE-TEMP
+  const probeEntry = useAppSelector((s: RootState) => s.instanceVariableValues.byConversationId[conversationId]);
+  if (typeof window !== "undefined") console.log("PROBE-UM", JSON.stringify({ messageId, firstMessageId, hasMoreOlder, isFirstTurnMessage, hasContent, userVariableValues, sub: probeEntry?.submittedFirstTurnValues ? Object.keys(probeEntry.submittedFirstTurnValues) : null, subHost: probeEntry?.submittedFirstTurnHostValueNames, host: probeEntry?.hostValueNames, user: probeEntry ? Object.keys(probeEntry.userValues) : null }));
   if (!hasContent) {
     if (authoredByHost || !record) return null;
     const storedTextLength = extractFlatText({

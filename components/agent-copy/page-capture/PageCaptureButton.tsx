@@ -13,9 +13,11 @@
 
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
+  loadableSections,
   pageCaptureGroomer,
   pageCaptureMarkdown,
   pageCapturePayload,
+  resolvePageCapture,
 } from "./pageCapture";
 import { getActivePageCapture, usePageCaptureVersion } from "./usePageCapture";
 
@@ -29,6 +31,7 @@ export function PageCaptureButton({
   usePageCaptureVersion();
   const capture = getActivePageCapture();
   if (!capture) return null;
+  const loadable = loadableSections(capture);
   const live = () => {
     const c = getActivePageCapture();
     if (!c) throw new Error("This page stopped describing itself; reload it and copy again.");
@@ -44,11 +47,24 @@ export function PageCaptureButton({
         agent={() => pageCapturePayload(live(), "everything")}
         agentVariant={{ id: "everything", label: "Everything on this page", position: "first" }}
         aiVariants={[
+          ...(loadable.length > 0
+            ? [
+                {
+                  id: "everything-loaded",
+                  label: `Everything, with ${loadable.map((s) => s.title.toLowerCase()).join(" and ")}`,
+                  hint: "Reads them from the store now",
+                  build: async () => pageCapturePayload(await resolvePageCapture(live()), "everything"),
+                },
+              ]
+            : []),
           {
             id: "data-only",
             label: "Only the data",
-            hint: "The page and your choices, without the request log",
-            build: () => pageCapturePayload(live(), "data"),
+            hint:
+              loadable.length > 0
+                ? `The page, your choices and ${loadable.map((s) => s.title.toLowerCase()).join(" and ")}, without the request log`
+                : "The page and your choices, without the request log",
+            build: async () => pageCapturePayload(await resolvePageCapture(live()), "data"),
           },
         ]}
         groomer={() => pageCaptureGroomer(live())}

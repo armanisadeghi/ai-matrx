@@ -8,8 +8,14 @@
 // Each page's rows are then built by THE ONE ROW BUILDER (./rows.ts →
 // mandate-health.ts `buildRow`) from that page's own definition rows, so a
 // cell renders exactly what it always did; the facts only the whole corpus
-// knows (customized by, serves, backs count, home name) come from the database
-// answer and win.
+// knows (customized by, serves, backs count, home name, contract) come from
+// the database answer and win.
+//
+// ONE CALL PER PAGE (2026-09-25): the page answer carries its own definition
+// rows, bindings and holders (`console`), so the first rows paint from that
+// single request — no follow-up definitions/bindings/agents reads. The
+// code-scan cells (Declared in, Called from, Call sites, Language) are read
+// for the page's keys AFTER the paint (./store.ts `ensureMandateSourceFacts`).
 //
 // Scopes (admin list — the creator ruling):
 //   mine    created by the viewer
@@ -26,7 +32,11 @@ import type {
 } from "@/lib/entity-list/types";
 import {
   fetchMandateConsoleData,
+  mandateAgentInfoOf,
+  type MandateAgentInfo,
   type MandateConsoleData,
+  type MandateVersionInfo,
+  type MandateWorkflowInfo,
 } from "@/features/mandates/admin/service";
 import { fetchProvisions } from "@/features/mandates/provisions";
 import { ALL_FACT_SECTIONS, buildFacts, sectionsFor, type MandateAdminReports } from "./facts";
@@ -35,11 +45,13 @@ import {
   type MandateAdminCountsAnswer,
   type MandateAdminFacetsAnswer,
   type MandateAdminPageAnswer,
+  type MandateAdminPageConsole,
   type MandateAdminPageRow,
 } from "./rpc";
 import { buildAdminRows } from "./rows";
 import {
   ensureMandateAdminReports,
+  ensureMandateSourceFacts,
   getMandateAdminDbEpoch,
   getMandateAdminListState,
   mergeProvisionOffers,
@@ -105,6 +117,55 @@ export function readDbOnce<T>(key: string, read: () => Promise<T>): Promise<T> {
 }
 
 /**
+ * The page answer's own rows → the console shape the ONE ROW BUILDER reads —
+ * the same post-processing `fetchMandateConsoleData` does over its reads.
+ */
+export function consoleDataFromPage(page: MandateAdminPageConsole): MandateConsoleData {
+  const agentsById: Record<string, MandateAgentInfo> = {};
+  const outputSchemas: Record<string, unknown> = {};
+  for (const row of page.agents) {
+    agentsById[row.id] = mandateAgentInfoOf(row);
+    // Present-with-null is the honest "declares none"; an agent this read could
+    // not return stays ABSENT so its verdict stays UNKNOWN.
+    outputSchemas[row.id] = row.output_schema ?? null;
+  }
+  const versionsById: Record<string, MandateVersionInfo> = {};
+  for (const row of page.versions) {
+    versionsById[row.id] = {
+      id: row.id,
+      agentId: row.agent_id,
+      versionNumber: row.version_number,
+      name: row.name,
+    };
+  }
+  const workflowsById: Record<string, MandateWorkflowInfo> = {};
+  for (const row of page.workflows) {
+    workflowsById[row.id] = { id: row.id, name: row.name, isArchived: row.is_archived === true };
+  }
+  const workflowVersionsById: NonNullable<MandateConsoleData["workflowVersionsById"]> = {};
+  for (const row of page.workflow_versions) {
+    workflowVersionsById[row.id] = {
+      id: row.id,
+      workflowId: row.definition_id,
+      versionNumber: row.version_number,
+    };
+  }
+  const bindingsByMandateId: MandateConsoleData["bindingsByMandateId"] = {};
+  for (const binding of page.bindings) {
+    (bindingsByMandateId[binding.mandate_id] ??= []).push(binding);
+  }
+  return {
+    mandates: [...page.mandates].sort((a, b) => a.mandate_key.localeCompare(b.mandate_key)),
+    agentsById,
+    versionsById,
+    bindingsByMandateId,
+    outputSchemas,
+    workflowsById,
+    workflowVersionsById,
+  };
+}
+
+/**
  * Build the rows of one page, in the database's order, from the reports as
  * they stand. A key the page read can no longer see (removed in between) is
  * dropped rather than invented.
@@ -129,10 +190,12 @@ function buildPageRows(
     pending: { codeTruth: !settled.codeTruth, coverage: !settled.coverage },
   });
   const byKey = new Map(built.map((row) => [row.mandateKey, row]));
+  const listState = getMandateAdminListState();
   const rows: MandateAdminRow[] = [];
   for (const answer of pageRows) {
     const row = byKey.get(answer.mandate_key);
     if (!row) continue;
+    const checked = listState.sourceChecked.has(answer.mandate_key);
     rows.push({
       ...row,
       customizedBy: answer.customized_by,
@@ -140,8 +203,14 @@ function buildPageRows(
       servesDetail: answer.serves_detail,
       backsCount: answer.backs_count,
       homeLabel: answer.home_label,
+      contractCheck: answer.contract_check ?? row.contractCheck,
+      sources: listState.sourceFacts.get(answer.mandate_key) ?? null,
+      sourcesPending: !checked,
+      sourcesFailed: checked && Boolean(listState.failures.sources),
     });
   }
+  // The code-scan cells: read for this page's keys, after the paint.
+  ensureMandateSourceFacts(rows.map((row) => row.mandateKey));
 
   // The Inputs cell's offered values — only for this page's provisions.
   const known = getMandateAdminListState().offersByProvision;
@@ -196,18 +265,19 @@ export function createMandateAdminService(
         p_offset: (query.page - 1) * sort.pageSize,
         p_facts: buildFacts(reports, sectionsFor(query, searching ? null : sort.sort)) as Json,
       };
-      // The page and the rows' own definition reads are ONE database half.
+      // ONE database call: the page answer carries its own rows (`console`).
       const { answer, data } = await readDbOnce(JSON.stringify(args), async () => {
         const page = await callMandateAdminList<MandateAdminPageAnswer>(args);
-        const definitions =
-          page.rows.length > 0
-            ? await fetchMandateConsoleData({
-                mandateKeys: page.rows.map((row) => row.mandate_key),
-                // The page already names the ids, so the bindings read runs
-                // beside the definitions read instead of after it.
-                mandateIds: page.rows.map((row) => row.id),
-              })
-            : null;
+        if (page.rows.length === 0) return { answer: page, data: null };
+        if (page.console) return { answer: page, data: consoleDataFromPage(page.console) };
+        // A database older than the 2026-09-25 migration: read them, loudly.
+        console.error(
+          "[mandates] mnd_admin_list answered without the page's own rows — reading them separately. Apply migrations/mnd_admin_list_sources_contract_page_rows_2026_09_25.sql.",
+        );
+        const definitions = await fetchMandateConsoleData({
+          mandateKeys: page.rows.map((row) => row.mandate_key),
+          mandateIds: page.rows.map((row) => row.id),
+        });
         return { answer: page, data: definitions };
       });
       // Built from the reports as they stand NOW — a report that landed while

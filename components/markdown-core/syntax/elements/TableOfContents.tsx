@@ -53,7 +53,7 @@ export function TableOfContents(props: { children?: ReactNode; "data-toc-count"?
   const min = entries && entries.length > 0 ? Math.min(...entries.map((e) => e.depth)) : 1;
 
   return (
-    <nav ref={ref} aria-label="Contents" data-matrx-toc="" className="matrx-toc my-3 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm">
+    <nav ref={ref} aria-label="Contents" data-matrx-toc="" data-content-chrome="" className="matrx-toc my-3 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm">
       <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contents</p>
       {entries && entries.length > staticCount ? (
         <ol className="space-y-0.5">

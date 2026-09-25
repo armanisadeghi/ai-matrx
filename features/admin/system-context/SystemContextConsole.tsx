@@ -4,6 +4,9 @@
 // `context.system_context_item` and belong to one of three fixed classes:
 // ambient, curated, or dataset. A row is a definition + feed + current value.
 
+import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
+import { adminPageCapture } from "@/components/agent-copy/page-capture/pageCapture";
+import { PageCaptureButton } from "@/components/agent-copy/page-capture/PageCaptureButton";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Boxes,
@@ -190,6 +193,7 @@ export function SystemContextConsole() {
   const [clickedRow, setClickedRow] = useState<SystemContextItem | null>(null);
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setFetching(true);
@@ -200,8 +204,10 @@ export function SystemContextConsole() {
           .json()
           .catch(() => ({ error: response.statusText }));
         toast.error(`Failed to load system context: ${error}`);
+        setLoadError(`Failed to load system context: ${error}`);
         return;
       }
+      setLoadError(null);
       setData((await response.json()) as SystemContextPayload);
     } finally {
       setLoading(false);
@@ -368,6 +374,23 @@ export function SystemContextConsole() {
     [],
   );
 
+  // The alchemy capture (lane ALCHEMY-BUTTON): the page, the class filter, the open item, the data.
+  usePageCapture(() =>
+    adminPageCapture({
+      title: "System Context",
+      route: "/administration/scopes-context/system-context",
+      selection: {
+        "Class filter": classFilter,
+        "Open item": clickedRow ? { id: clickedRow.id, name: clickedRow.key } : null,
+        Editing: editing ? { id: editing.id, name: editing.key } : null,
+      },
+      errors: [loadError],
+      sections: [
+        { id: "system-context", title: "System context", role: "data", value: data ?? (loading ? "Loading." : "Nothing loaded.") },
+      ],
+    }),
+  );
+
   return (
     <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden bg-textured">
       <div className="flex min-h-0 flex-1 flex-col gap-4 p-6">
@@ -382,6 +405,7 @@ export function SystemContextConsole() {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <PageCaptureButton />
             <Button
               type="button"
               size="sm"

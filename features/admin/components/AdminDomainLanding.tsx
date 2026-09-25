@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { findAdminNavigationDomainBySlug } from "@/features/admin/constants/admin-navigation";
 import { AdminDomainSection } from "@/features/admin/components/AdminDomainSection";
+import { AdminPageCapture } from "@/components/agent-copy/page-capture/AdminPageCapture";
 
 /**
  * THE standard administration domain landing page.
@@ -43,6 +44,25 @@ export function AdminDomainLanding({
   return (
     <div className="h-full overflow-y-auto bg-textured">
       <div className="flex flex-col gap-4 p-4">
+        {/* The alchemy capture: this landing, its destinations; a custom body adds its own
+            sections (lane ALCHEMY-BUTTON). */}
+        <div className="flex justify-end">
+          <AdminPageCapture
+            title={`${domain.name} administration`}
+            route={`/administration/${domain.slug}`}
+            sections={[
+              {
+                id: "destinations",
+                title: "Destinations",
+                role: "data",
+                value: domain.sections.map((section) => ({
+                  section: section.name,
+                  destinations: section.destinations.map((d) => ({ title: d.title, link: d.link })),
+                })),
+              },
+            ]}
+          />
+        </div>
         {children ? <div className="min-w-0">{children}</div> : null}
 
         {directory === "full" ? (

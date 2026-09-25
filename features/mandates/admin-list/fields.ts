@@ -9,6 +9,9 @@ import { COVERAGE_META } from "@/features/mandates/coverage";
 import { BLOCKER_META, GRADE_META, IMPACT_GRADE_ORDER } from "@/features/mandates/admin/impact";
 import type { MandateAdminRow, MandateCodeState } from "./types";
 
+/** A key the code scan has no reference to — nobody looked, never "unused". */
+export const NONE_FOUND = "None found";
+
 export const CODE_STATE_LABEL: Record<MandateCodeState, string> = {
   declared: "Declared",
   import_failed: "Import failed",
@@ -138,7 +141,31 @@ export const FIELDS: Record<string, FieldReader> = {
     sort: (r) => r.createdAt ?? "",
     date: true,
   },
+  contractCheck: {
+    values: (r) => [r.contractCheck],
+    sort: (r) => ({ Mismatch: 0, "Not checked": 1, Matches: 2 })[r.contractCheck],
+  },
+  // The code-scan columns — the same words the database facets them by
+  // (migrations/mnd_admin_list_sources_contract_page_rows_2026_09_25.sql).
+  declaredRepos: listOf((r) => r.sources?.declaredIn),
+  calledFrom: listOf((r) => r.sources?.calledFrom),
+  callSites: {
+    values: (r) => [String(r.sources?.callSites ?? 0)],
+    sort: (r) => r.sources?.callSites ?? 0,
+  },
+  languages: listOf((r) => r.sources?.languages),
 };
+
+/** A multi-valued scan fact; no value reads "None found", never blank. */
+function listOf(pick: (row: MandateAdminRow) => string[] | undefined): FieldReader {
+  return {
+    values: (row) => {
+      const list = pick(row) ?? [];
+      return list.length > 0 ? list : [NONE_FOUND];
+    },
+    sort: (row) => (pick(row) ?? []).join(", ").toLowerCase(),
+  };
+}
 
 /** Text used by search besides the visible columns. */
 export function searchTextOf(row: MandateAdminRow): string {

@@ -110,7 +110,8 @@ export default function rehypeMatrxSyntax(options: RehypeMatrxSyntaxOptions = {}
           el.children.push({
             type: "element",
             tagName: "a",
-            properties: { href: `#${id}`, className: ANCHOR_CLASS, ariaLabel: "Link to this section", dataHeadingAnchor: true },
+            // data-content-chrome: renderer-added UI, not the source's words (the annotation text mapper skips it).
+            properties: { href: `#${id}`, className: ANCHOR_CLASS, ariaLabel: "Link to this section", dataHeadingAnchor: true, dataContentChrome: true },
             children: [{ type: "text", value: "#" }],
           });
         }
@@ -179,7 +180,7 @@ function numberFootnotes(tree: Root, numbers: Map<string, number>): void {
     if (el.tagName === "li") {
       const id = footnoteId(String(el.properties?.id ?? ""));
       const n = id ? numbers.get(id) : undefined;
-      if (n !== undefined) el.properties = { ...el.properties, value: n };
+      if (n !== undefined) el.properties = { ...el.properties, value: String(n) };
     }
   });
 }

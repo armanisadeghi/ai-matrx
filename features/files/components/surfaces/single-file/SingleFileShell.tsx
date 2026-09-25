@@ -45,6 +45,19 @@ import { FileTabsBody, type FileTab } from "../FileTabsBody";
 import { FileViewerControlsProvider } from "../FileViewerControlsContext";
 import { SidebarModeProvider } from "../desktop/SidebarModeToggle";
 import { SingleFileTopBar } from "./SingleFileTopBar";
+import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
+import { recordPageCapture } from "@/components/agent-copy/page-capture/pageCapture";
+
+/** A file's facts for a capture — never a URL or a storage path (media cluster rule). */
+function fileFacts(file: unknown): Record<string, unknown> | string {
+  if (!file || typeof file !== "object") return "The file is still loading, or you cannot read it.";
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(file as Record<string, unknown>)) {
+    if (/url|path|signed|storage|token|blob/i.test(k)) continue;
+    out[k] = v;
+  }
+  return out;
+}
 import { FileViewerControlRail } from "./FileViewerControlRail";
 
 export interface SingleFileShellProps {
@@ -73,6 +86,23 @@ export function SingleFileShell({ fileId, organizationId, className }: SingleFil
           shownByPage: false,
         }
       : null,
+  );
+  // The alchemy capture (lane ALCHEMY-BUTTON): which file, whose organization, its facts.
+  const file = useAppSelector((s) => selectFileById(s, fileId));
+  usePageCapture(() =>
+    recordPageCapture({
+      title: file?.fileName ? `File: ${file.fileName}` : "File",
+      route: `/files/f/${fileId}`,
+      record: { id: fileId, name: file?.fileName ?? null },
+      table: { id: null, name: "Files" },
+      selection: {
+        Organization: {
+          id: organizationId ?? null,
+          name: organizations.find((o) => o.id === organizationId)?.name ?? null,
+        },
+      },
+      sections: [{ id: "file", title: "File", role: "data", value: fileFacts(file) }],
+    }),
   );
   const isMobile = useIsMobile();
   if (isMobile) {

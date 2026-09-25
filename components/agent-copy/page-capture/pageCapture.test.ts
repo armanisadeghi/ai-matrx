@@ -129,3 +129,34 @@ describe("pageCapture", () => {
     expect(pageCaptureMarkdown(d)).toContain("Subject: Acme (r1)");
   });
 });
+
+describe("loadable sections", () => {
+  it("hold a stub on the page and are read only at copy time; a failed read says so", async () => {
+    const { resolvePageCapture, loadableSections } = await import("./pageCapture");
+    const load = jest.fn(async () => [{ id: "r1", name: "Acme" }]);
+    const c = tablePageCapture({
+      title: "Clients",
+      route: "/data-v2/t1",
+      table: { id: "t1", name: "Clients" },
+      sections: [
+        { id: "records", title: "Records", role: "data", value: "Not in the quick copy.", load },
+        { id: "broken", title: "Broken", role: "data", value: "stub", load: async () => { throw new Error("timeout"); } },
+      ],
+    });
+    expect(loadableSections(c).map((s) => s.id)).toEqual(["records", "broken"]);
+    expect(load).not.toHaveBeenCalled();
+    const r = await resolvePageCapture(c);
+    expect(r.sections[0].value).toEqual([{ id: "r1", name: "Acme" }]);
+    expect(r.sections[1].value).toBe("Broken could not be read: timeout");
+    expect(loadableSections(r)).toHaveLength(0);
+  });
+});
+
+it("a descendant names what the page left unnamed, never overriding a name the page gave", () => {
+  const base = tablePageCapture({ title: "Data table", route: "/data-v2/t1", table: { id: "t1", name: null }, view: "grid", sections: [] });
+  const merged = mergePageCapture(base, [
+    { owner: "mount", sections: [], identity: { Table: { id: "t1", name: "Clients" }, View: "kanban" } },
+  ]);
+  expect(merged.identity.Table).toEqual({ id: "t1", name: "Clients" });
+  expect(merged.identity.View).toBe("grid");
+});

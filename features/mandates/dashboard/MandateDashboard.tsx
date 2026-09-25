@@ -54,9 +54,18 @@ import {
   scanMetrics,
   systemKeys,
 } from "./metrics";
-import { MANDATE_LIST_COLUMN as COL, mandateListHref } from "./list-link";
+import {
+  MANDATE_LIST_COLUMN as COL,
+  mandateListHref,
+  unconvertedCallsHref,
+} from "./list-link";
+import {
+  ADMIN_MANDATES_HEALTH,
+  CLASSIC_ADMIN_MANDATES,
+} from "@/features/mandates/admin-routes";
 
-const REFERENCES_PATH = "/administration/mandates/references";
+/** Scan freshness lives on the owner's References page (repos + patrol). */
+const REFERENCES_PATH = CLASSIC_ADMIN_MANDATES.references;
 const FEATURE_ROWS_COLLAPSED = 12;
 
 type Slot<T> = { data: T | null; error: string | null; loading: boolean };
@@ -258,7 +267,7 @@ export function MandateDashboard() {
             value={mismatchKeys ? mismatchKeys.length : null}
             tone={mismatchKeys && mismatchKeys.length > 0 ? "bad" : "neutral"}
             loading={consoleSlot.loading}
-            href={mandateListHref()}
+            href={mandateListHref({ [COL.contract]: "Mismatch" })}
             title={
               mismatchKeys && mismatchKeys.length > 0
                 ? `A Holder was saved that does not match its job's contract (red in the list's Health column): ${mismatchKeys.join(", ")}`
@@ -477,14 +486,14 @@ export function MandateDashboard() {
             value={n(scan?.openFindings)}
             tone={scan && scan.openFindings > 0 ? "warn" : "neutral"}
             loading={boardLoading}
-            href={REFERENCES_PATH}
+            href={ADMIN_MANDATES_HEALTH}
           />
           <KpiTile
             label="AI outside mandates"
             value={n(scan?.conversion)}
             tone={scan && scan.conversion > 0 ? "warn" : "neutral"}
             loading={boardLoading}
-            href={REFERENCES_PATH}
+            href={unconvertedCallsHref("waiting")}
           />
           <KpiTile
             label="Patrol last run"

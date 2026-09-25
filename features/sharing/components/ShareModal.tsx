@@ -1,5 +1,8 @@
 "use client";
 
+import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
+import { dialogCapture } from "@/components/agent-copy/page-capture/pageCapture";
+import { PageCaptureButton } from "@/components/agent-copy/page-capture/PageCaptureButton";
 import React, { useState } from "react";
 import {
   Dialog,
@@ -198,6 +201,39 @@ export function ShareModal({
   const hasOverride = typeof isOwnerOverride === "boolean";
   const isOwner = hasOverride ? isOwnerOverride : resolvedIsOwner;
   const resolvingOwner = !hasOverride && ownerLoading;
+
+  // The alchemy capture (lane ALCHEMY-BUTTON): while open, the dialog IS what the person sees.
+  usePageCapture(
+    () =>
+      dialogCapture({
+        title: `Share ${resourceName ?? resourceType}`,
+        route: typeof window !== "undefined" ? window.location.pathname : "",
+        dialog: "Share",
+        subject: { id: resourceId, name: resourceName ?? null },
+        selection: {
+          "Resource type": resourceType,
+          Organization: { id: organizationId ?? null, name: null },
+          Tab: activeTab,
+          "Outside sharing offered": outsideShare ? "yes" : "no",
+        },
+        errors: [ownerError ? `Ownership could not be read: ${String(ownerError)}` : null],
+        sections: [
+          {
+            id: "share-state",
+            title: "Share dialog state",
+            role: "data",
+            value: {
+              is_owner: isOwner,
+              resolving_owner: resolvingOwner,
+              outside_pending_invitations: outsidePending,
+              share_link: getResourceSharePath(resourceType, resourceId),
+              outside_share: outsideShare ?? null,
+            },
+          },
+        ],
+      }),
+    { enabled: isOpen },
+  );
   const ownerUnknown = !hasOverride && !ownerLoading && ownerError !== null;
 
   // A resource type missing from the registry can never share — say so loudly
@@ -277,7 +313,10 @@ export function ShareModal({
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-start justify-between gap-2 pr-10">
             <div className="flex-1 min-w-0">
-              <DialogTitle>Share {resourceLabel}</DialogTitle>
+              <DialogTitle className="flex items-center gap-1.5">
+                Share {resourceLabel}
+                <PageCaptureButton size="xs" />
+              </DialogTitle>
               {/* THE DOOR LAW: the most-reused share surface in the app named
                   the record and gave no way to reach it — while already
                   computing its canonical path for the share URL. `ResourceType`

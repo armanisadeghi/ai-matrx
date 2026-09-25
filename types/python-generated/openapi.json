@@ -444,6 +444,28 @@
         }
       }
     },
+    "/health/serving": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Serving Check",
+        "description": "The load balancer's and ECS's probe: may THIS process take traffic?\n\n200 once boot has completed and while the process is not draining; 503\nduring boot and drain. It never touches the database or any other\ndependency every task shares.\n\nWhy it is not ``/ready`` (incident 2026-09-25, 07:30-07:46 PT): the shared\nPostgres hung and was rebooted. ``/ready`` re-pings the database, so every\ntask failed it at the same instant, the ALB marked the whole fleet\nunhealthy and ECS killed both tasks. The server was 502 — even ``/health``\n— until 07:45:50, seven minutes after the database was back, and every\nin-flight stream died with the tasks. A shared dependency can never make\none target better than another, so failing the traffic probe on it can\nonly turn a dependency outage into a total outage (AWS Builders' Library,\n\"Implementing health checks\": dependency checks must fail open). A healthy\nprocess with a sick database answers its own 503s with a sentence and\nrecovers the moment the pool reconnects. ``/ready`` stays the deep check\nfor release verification and humans.",
+        "operationId": "serving_check_health_serving_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__api__routers__health__ReadinessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/schema/manifest": {
       "get": {
         "tags": [
@@ -140567,6 +140589,9 @@
             },
             "type": "array",
             "title": "Excluded"
+          },
+          "system_items": {
+            "$ref": "#/components/schemas/ContextSystemItems"
           }
         },
         "type": "object",
@@ -140792,6 +140817,13 @@
               }
             ],
             "title": "Context Item Id"
+          },
+          "system_item_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "System Item Ids"
           }
         },
         "type": "object",
@@ -140936,6 +140968,151 @@
           "path"
         ],
         "title": "ContextCompareSide"
+      },
+      "ContextDelivered": {
+        "properties": {
+          "today": {
+            "$ref": "#/components/schemas/ContextDeliveredSide"
+          },
+          "record_store": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextDeliveredSide"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "identical": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identical"
+          },
+          "arguments": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Arguments"
+          },
+          "says": {
+            "type": "string",
+            "title": "Says"
+          }
+        },
+        "type": "object",
+        "required": [
+          "today",
+          "says"
+        ],
+        "title": "ContextDelivered",
+        "description": "What the model gets today beside what it would get from the record store (lane INSPECTOR-DIFF)."
+      },
+      "ContextDeliveredSide": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "enum": [
+              "record_store",
+              "today"
+            ],
+            "title": "Path"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "default": true
+          },
+          "unavailable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailable Reason"
+          },
+          "intro": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intro"
+          },
+          "active": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          },
+          "injected_block": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Injected Block"
+          },
+          "block_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Sha256"
+          },
+          "block_byte_length": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Byte Length"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "path"
+        ],
+        "title": "ContextDeliveredSide",
+        "description": "One side's context EXACTLY as the model is fed it — the run path's assembler's bytes."
       },
       "ContextFollowLag": {
         "properties": {
@@ -141517,6 +141694,26 @@
                 "type": "null"
               }
             ]
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "delivered": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextDelivered"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -141653,6 +141850,52 @@
         "type": "object",
         "title": "ContextPreviewVariables"
       },
+      "ContextProvenance": {
+        "properties": {
+          "function": {
+            "type": "string",
+            "title": "Function",
+            "default": "assemble_turn_context"
+          },
+          "module": {
+            "type": "string",
+            "title": "Module",
+            "default": "aidream.services.conversation_context.turn_context"
+          },
+          "git_sha": {
+            "type": "string",
+            "title": "Git Sha"
+          },
+          "run_path_callers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Run Path Callers"
+          },
+          "resolver": {
+            "type": "string",
+            "enum": [
+              "chosen",
+              "record_store"
+            ],
+            "title": "Resolver"
+          },
+          "says": {
+            "type": "string",
+            "title": "Says"
+          }
+        },
+        "type": "object",
+        "required": [
+          "git_sha",
+          "run_path_callers",
+          "resolver",
+          "says"
+        ],
+        "title": "ContextProvenance",
+        "description": "Where a shown block came from — printed on the inspector's tabs."
+      },
       "ContextRenderRequest": {
         "properties": {
           "target": {
@@ -141732,6 +141975,14 @@
             ],
             "title": "Context Item Id",
             "description": "One context item — the page narrows what it shows to it."
+          },
+          "system_item_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "System Item Ids",
+            "description": "System (platform) context items picked explicitly. A System item reaches the agent only when something names it: the agent's bindings, the platform's default list, or this pick."
           }
         },
         "additionalProperties": false,
@@ -141822,6 +142073,78 @@
         ],
         "title": "ContextStateResponse",
         "description": "Same shape as the CONTEXT_STATE stream event payload.\n\nThe FE Model Context tab hydrates from this endpoint on conversation\nopen, then receives live updates from the CONTEXT_STATE stream events\nafter each turn — no polling needed once the stream is connected."
+      },
+      "ContextSystemItem": {
+        "properties": {
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "context_item_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Item Id"
+          },
+          "named_by": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Named By"
+          },
+          "old": {
+            "type": "boolean",
+            "title": "Old",
+            "default": false
+          },
+          "new": {
+            "type": "boolean",
+            "title": "New",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "ContextSystemItem",
+        "description": "One System (platform) item this compare named, who named it, and which side delivered it."
+      },
+      "ContextSystemItems": {
+        "properties": {
+          "named": {
+            "items": {
+              "$ref": "#/components/schemas/ContextSystemItem"
+            },
+            "type": "array",
+            "title": "Named"
+          },
+          "withheld": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Withheld"
+          },
+          "says": {
+            "type": "string",
+            "title": "Says",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "ContextSystemItems",
+        "description": "THE \"System items\" line (lane CONTEXT-VALUES-NAMED): a System item reaches an agent only\nwhen something names it — the agent's bindings, the platform's default list, or an explicit\npick. Both sides received the same naming."
       },
       "ContextTarget": {
         "properties": {
@@ -173131,17 +173454,23 @@
             "description": "Natural-language description of the image to generate."
           },
           "size": {
-            "type": "string",
-            "enum": [
-              "landscape",
-              "portrait",
-              "square",
-              "tall",
-              "wide"
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "landscape",
+                  "portrait",
+                  "square",
+                  "tall",
+                  "wide"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ],
             "title": "Size",
-            "description": "Aspect-ratio intent; mapped per provider.",
-            "default": "square"
+            "description": "Aspect-ratio intent; mapped per provider. Empty uses the Holder's aspect ratio."
           },
           "style": {
             "anyOf": [
@@ -265943,18 +266272,30 @@
             "title": "Voice"
           },
           "format": {
-            "type": "string",
-            "title": "Format",
-            "default": "wav"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Format"
           },
           "quality": {
-            "type": "string",
-            "enum": [
-              "fast",
-              "high_quality"
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "fast",
+                  "high_quality"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Quality",
-            "default": "fast"
+            "title": "Quality"
           }
         },
         "additionalProperties": false,
@@ -267208,7 +267549,7 @@
           "holder_provenance": {
             "type": "string",
             "title": "Holder Provenance",
-            "description": "Which rung of the mandate ladder chose this Holder: system, global, org, user or run. An admin debugging 'why is this agent answering' reads this rather than guessing."
+            "description": "Which rung of the mandate ladder chose this Holder: system, org, user or run. An admin debugging 'why is this agent answering' reads this rather than guessing."
           },
           "is_new": {
             "type": "boolean",

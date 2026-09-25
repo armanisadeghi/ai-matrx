@@ -41,6 +41,17 @@ jest.mock("@/utils/auth/getUserId", () => ({ getUserId: () => "a1e2c3d4-0000-400
 jest.mock("@/components/matrx/buttons/InlineCopyButton", () => ({
   InlineCopyButton: () => null,
 }));
+// THE platform diff viewer, stood in so the test can read exactly what it is asked to diff.
+jest.mock("@ai-matrx/diff/react", () => ({
+  DiffViewer: (props: { original: string; modified: string; originalLabel?: string; modifiedLabel?: string }) => (
+    <div
+      data-diff-stub
+      data-original={props.original}
+      data-modified={props.modified}
+      data-labels={`${props.originalLabel ?? ""}|${props.modifiedLabel ?? ""}`}
+    />
+  ),
+}));
 // THE agent picker, stood in: one option per agent it would list.
 jest.mock("@ai-matrx/agents/catalog/react", () => ({
   AgentListDropdown: (props: { onSelect: (id: string) => void; label: string; consumerId?: string }) => (
@@ -118,6 +129,79 @@ const compare = {
   excluded: [],
 };
 
+/** The server's `delivered` for Castellano → Clients → Meridian (lane INSPECTOR-DIFF). */
+const SHA = "94d2a29af2712e4663e1917ee93021b031f3a680";
+const TODAY_ACTIVE = [
+  "<active_context>",
+  '  <organization id="7cd12da2-2213-4378-8fba-a9e2dc4ea657">Castellano &amp; Reyes, LLP</organization>',
+  "  <active_scopes>",
+  '    <scope type="Client" slug="meridian-risk-services">Meridian Risk Services</scope>',
+  "  </active_scopes>",
+  "</active_context>",
+].join("\n");
+const STORE_ACTIVE = TODAY_ACTIVE.replace(
+  "  </active_scopes>",
+  "  </active_scopes>\n  <not_delivered>\n    <scope id=\"3f0e2d1c\">not found</scope>\n  </not_delivered>",
+);
+const INTRO = "<organizations>\n  <organization>Castellano &amp; Reyes, LLP</organization>\n</organizations>";
+function stamp(resolver: "chosen" | "record_store") {
+  return {
+    function: "assemble_turn_context",
+    module: "aidream.services.conversation_context.turn_context",
+    git_sha: SHA,
+    run_path_callers: ["aidream.services.ai_execution.agent_run.prepare_agent_run"],
+    resolver,
+    says:
+      resolver === "chosen"
+        ? "From aidream.services.conversation_context.turn_context.assemble_turn_context — the same function, with the same arguments, that an agent run calls."
+        : "From aidream.services.conversation_context.turn_context.assemble_turn_context — the run's function and arguments — with the values answered by the record store.",
+  };
+}
+const ARGUMENTS = {
+  user_id: "4cf62e4e-2679-484f-b652-034e697418df",
+  conversation_id: "5b8d9f4e-7a3c-4d2b-9e1f-0a6c8b7d5e4f",
+  agent_id: null,
+  organization_id: CASTELLANO,
+  scope_ids: ["3f0e2d1c-4b5a-4968-8776-5a4b3c2d1e0f"],
+  active_scope_type_ids: [CLIENTS],
+  include_intro: true,
+  entity_is_new: true,
+};
+const delivered = {
+  today: {
+    path: "today",
+    available: true,
+    intro: INTRO,
+    active: TODAY_ACTIVE,
+    injected_block: `${INTRO}\n\n${TODAY_ACTIVE}`,
+    block_sha256: "a1b2c3d4e5f6a7b8c9d0",
+    block_byte_length: 512,
+    provenance: stamp("chosen"),
+  },
+  record_store: {
+    path: "record_store",
+    available: true,
+    intro: INTRO,
+    active: STORE_ACTIVE,
+    injected_block: `${INTRO}\n\n${STORE_ACTIVE}`,
+    block_sha256: "ffeeddccbbaa99887766",
+    block_byte_length: 590,
+    provenance: stamp("record_store"),
+  },
+  identical: false,
+  arguments: ARGUMENTS,
+  says: "The model is fed two blocks from this function.",
+};
+
+async function click(el: Element | null) {
+  expect(el).not.toBeNull();
+  await act(async () => {
+    const target = el as HTMLElement;
+    target.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 }));
+    target.click();
+  });
+}
+
 async function mount(props: React.ComponentProps<typeof ContextCompareView>) {
   const host = document.createElement("div");
   document.body.appendChild(host);
@@ -151,21 +235,24 @@ describe("ContextCompareView", () => {
     await view.unmount();
   });
 
-  it("shows both blocks, the classed difference, and the refusal the new side made", async () => {
+  it("shows the classed difference on Diff, each side's values on its tab, and the refusal the new side made", async () => {
     const view = await mount({});
     const text = view.host.textContent ?? "";
-    expect(view.host.querySelector('[data-compare-side="old"]')).not.toBeNull();
-    expect(view.host.querySelector('[data-compare-side="new"]')).not.toBeNull();
     expect(
       view.host.querySelector('[data-difference-class="old path delivered without a check"]'),
     ).not.toBeNull();
     expect(text).toContain("No defects");
     expect(text).toContain("tech_stack");
-    expect(text).toContain("tagged to this chat");
-    expect(text).toContain("not delivered");
-    // The line only the old block carries is highlighted.
-    const oldSide = view.host.querySelector('[data-compare-side="old"]');
-    expect(oldSide?.querySelector(".bg-amber-400\\/25")?.textContent).toContain("tech_stack");
+    // The values the two resolvers answered are diffed, not highlighted by hand.
+    const values = view.host.querySelector('[data-diff-viewer="values"] [data-diff-stub]');
+    expect(values?.getAttribute("data-original")).toBe(compare.old.block);
+    expect(values?.getAttribute("data-modified")).toBe(compare.new.block);
+    await click(view.host.querySelector('[data-compare-tab="today"]'));
+    expect(view.host.querySelector('[data-compare-side="old"]')).not.toBeNull();
+    await click(view.host.querySelector('[data-compare-tab="store"]'));
+    expect(view.host.querySelector('[data-compare-side="new"]')).not.toBeNull();
+    expect(view.host.textContent).toContain("tagged to this chat");
+    expect(view.host.textContent).toContain("not delivered");
     await view.unmount();
   });
 
@@ -178,6 +265,96 @@ describe("ContextCompareView", () => {
     const withAgent = await mount({ agentId: "agent-1" });
     expect(withAgent.host.querySelector("textarea")).not.toBeNull();
     await withAgent.unmount();
+  });
+});
+
+describe("the four tabs — what the model is fed, exactly (lane INSPECTOR-DIFF)", () => {
+  beforeEach(() => {
+    door.mockReset();
+    door.mockResolvedValue({ data: { compare, delivered, injected_block: delivered.today.injected_block } });
+  });
+
+  it("opens on Diff: the findings over a real diff of the fed bytes, then of the values", async () => {
+    const view = await mount({});
+    try {
+      expect(view.host.querySelector("[data-compare-tabs]")?.getAttribute("data-compare-tabs")).toBe("diff");
+      expect(view.host.querySelector("[data-compare-summary]")).not.toBeNull();
+      const fed = view.host.querySelector('[data-diff-viewer="fed"] [data-diff-stub]');
+      expect(fed?.getAttribute("data-original")).toBe(delivered.today.injected_block);
+      expect(fed?.getAttribute("data-modified")).toBe(delivered.record_store.injected_block);
+      expect(fed?.getAttribute("data-labels")).toBe("What the model gets today|Record store");
+      expect(view.host.querySelector("[data-fed-identical]")?.textContent).toContain(
+        "Different — 512 bytes today, 590 bytes from the record store",
+      );
+      const lines = [...view.host.querySelectorAll("[data-provenance]")].map((p) => p.textContent ?? "");
+      expect(lines.some((l) => l.includes("turn_context.assemble_turn_context @ 94d2a29af2"))).toBe(true);
+    } finally {
+      await view.unmount();
+    }
+  });
+
+  it("says byte-identical when both systems feed the model the same bytes", async () => {
+    door.mockResolvedValue({
+      data: { compare, delivered: { ...delivered, identical: true, record_store: delivered.today }, injected_block: null },
+    });
+    const view = await mount({});
+    try {
+      expect(view.host.querySelector("[data-fed-identical]")?.textContent).toContain(
+        "Byte-identical — both systems feed the model the same 512 bytes",
+      );
+    } finally {
+      await view.unmount();
+    }
+  });
+
+  it("prints what the model gets today, byte for byte, with its provenance", async () => {
+    const view = await mount({});
+    try {
+      await click(view.host.querySelector('[data-compare-tab="today"]'));
+      const side = view.host.querySelector('[data-fed-side="today"]');
+      expect(side?.querySelector('[data-fed-block="intro"] pre')?.textContent).toBe(INTRO);
+      expect(side?.querySelector('[data-fed-block="active"] pre')?.textContent).toBe(TODAY_ACTIVE);
+      expect(side?.querySelector("[data-fed-bytes]")?.textContent).toContain("512 bytes");
+      expect(side?.querySelector('[data-provenance="chosen"]')?.textContent).toContain(
+        "the same function, with the same arguments, that an agent run calls",
+      );
+      await click(view.host.querySelector('[data-compare-tab="store"]'));
+      const store = view.host.querySelector('[data-fed-side="record_store"]');
+      expect(store?.querySelector('[data-fed-block="active"] pre')?.textContent).toBe(STORE_ACTIVE);
+      expect(store?.querySelector('[data-provenance="record_store"]')).not.toBeNull();
+    } finally {
+      await view.unmount();
+    }
+  });
+
+  it("shows the selection sent and the exact arguments both sides received", async () => {
+    const selection = {
+      organization_id: CASTELLANO,
+      scope_type_id: CLIENTS,
+      scope_id: "3f0e2d1c-4b5a-4968-8776-5a4b3c2d1e0f",
+      context_item_id: null,
+    };
+    const view = await mount({ selection, tab: "selection" });
+    try {
+      const sent = view.host.querySelector('[data-selection-block="sent"] pre')?.textContent ?? "";
+      expect(JSON.parse(sent)).toEqual(selection);
+      const args = view.host.querySelector('[data-selection-block="arguments"] pre')?.textContent ?? "";
+      expect(JSON.parse(args)).toEqual(ARGUMENTS);
+      expect(view.host.querySelector('[data-provenance="selection"]')?.textContent).toContain("assemble_turn_context");
+    } finally {
+      await view.unmount();
+    }
+  });
+
+  it("an older server that does not report the fed bytes is said, never blank", async () => {
+    door.mockResolvedValue({ data: { compare, injected_block: null } });
+    const view = await mount({});
+    try {
+      expect(view.host.querySelector("[data-fed-missing]")?.textContent).toContain("older than this page");
+      expect(view.host.querySelector('[data-diff-viewer="fed"]')).toBeNull();
+    } finally {
+      await view.unmount();
+    }
   });
 });
 

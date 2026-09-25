@@ -32,7 +32,7 @@ import {
 } from "./pageCapture";
 
 type Getter = () => PageCapture;
-type SectionsGetter = () => PageCaptureSection[];
+type SectionsGetter = () => PageCaptureSection[] | Omit<PageCaptureContribution, "owner">;
 
 let nextId = 0;
 let version = 0;
@@ -91,10 +91,10 @@ export function hasPageCapture(): boolean {
 export function getActivePageCapture(): PageCapture | null {
   const top = captures[captures.length - 1];
   if (!top) return null;
-  const merged: PageCaptureContribution[] = contributions.map((c) => ({
-    owner: c.owner,
-    sections: c.get(),
-  }));
+  const merged: PageCaptureContribution[] = contributions.map((c) => {
+    const got = c.get();
+    return Array.isArray(got) ? { owner: c.owner, sections: got } : { owner: c.owner, ...got };
+  });
   return mergePageCapture(top.get(), merged);
 }
 
@@ -121,8 +121,9 @@ const REQUEST_LOG_LIMIT = 10;
  */
 export function usePageCapture(
   build: () => PageCaptureInput,
-  opts: { signature?: string } = {},
+  opts: { signature?: string; enabled?: boolean } = {},
 ): void {
+  const enabled = opts.enabled ?? true;
   const pathname = usePathname();
   const store = useAppStore();
   const mountedAt = useRef(Date.now());
@@ -139,9 +140,9 @@ export function usePageCapture(
   });
 
   // Registered once for the mount; the getter reads the LATEST build and path.
-  useEffect(
-    () =>
-      registerPageCapture((): PageCapture => {
+  useEffect(() => {
+    if (!enabled) return;
+    return registerPageCapture((): PageCapture => {
         const input = buildRef.current();
         const since = mountedAt.current;
         const log: PageCaptureRequest[] = selectRecentApiCalls(
@@ -164,9 +165,8 @@ export function usePageCapture(
           url: input.url ?? (typeof window !== "undefined" ? window.location.href : undefined),
           requests: [...(input.requests ?? []), ...log],
         };
-      }),
-    [],
-  );
+      });
+  }, [enabled]);
 
   // ── The admin debug context: the same entries, while debug mode is on. ──
   const current = build();
@@ -182,10 +182,10 @@ export function usePageCapture(
       current.sections.map((s) => s.id),
     ]);
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive || !enabled) return;
     const live = getActivePageCapture();
     if (live) publish(pageCaptureDebugEntries(live));
-  }, [isActive, signature, registryVersion, publish]);
+  }, [isActive, enabled, signature, registryVersion, publish]);
 }
 
 /**

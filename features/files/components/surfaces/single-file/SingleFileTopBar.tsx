@@ -19,6 +19,7 @@
 
 "use client";
 
+import { PageCaptureButton } from "@/components/agent-copy/page-capture/PageCaptureButton";
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -192,6 +193,7 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
       }
       right={
         <div className={cn("flex items-center", className)}>
+          <PageCaptureButton size="icon" className="mr-1" />
           {file?.mimeType === "application/pdf" && (
             <PdfSurfaceSwitcher
               current="file-viewer"

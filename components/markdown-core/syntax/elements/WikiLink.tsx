@@ -75,14 +75,14 @@ export function WikiLink(props: WikiLinkProps) {
 
   if (created) {
     return (
-      <a href={created} className="text-primary underline underline-offset-2" data-wikilink="found">
+      <a href={created} className="text-primary underline underline-offset-2" data-content-chrome="" data-wikilink="found">
         {label}
       </a>
     );
   }
   if (!resolution) {
     return (
-      <span data-wikilink="resolving" aria-busy className="text-primary/80 underline decoration-dotted underline-offset-2">
+      <span data-content-chrome="" data-wikilink="resolving" aria-busy className="text-primary/80 underline decoration-dotted underline-offset-2">
         {label}
       </span>
     );
@@ -90,7 +90,7 @@ export function WikiLink(props: WikiLinkProps) {
   if (resolution.status === "found") {
     if (!resolution.href) {
       return (
-        <span data-wikilink="found-no-page" title={`${resolution.typeLabel} "${resolution.title}" has no page to open`} className="underline decoration-dotted underline-offset-2">
+        <span data-content-chrome="" data-wikilink="found-no-page" title={`${resolution.typeLabel} "${resolution.title}" has no page to open`} className="underline decoration-dotted underline-offset-2">
           {label}
         </span>
       );
@@ -99,7 +99,7 @@ export function WikiLink(props: WikiLinkProps) {
       <a
         href={resolution.href}
         title={`${resolution.typeLabel}: ${resolution.title}`}
-        data-wikilink="found"
+        data-content-chrome="" data-wikilink="found"
         className="text-primary underline underline-offset-2 hover:decoration-2"
       >
         {label}
@@ -111,7 +111,7 @@ export function WikiLink(props: WikiLinkProps) {
     // opened: say so — no link, and never an offer to create it.
     return (
       <span
-        data-wikilink="unavailable"
+        data-content-chrome="" data-wikilink="unavailable"
         title={`Not available: ${resolution.message}`}
         className="inline-flex items-baseline gap-0.5 text-muted-foreground"
       >
@@ -141,7 +141,7 @@ export function WikiLink(props: WikiLinkProps) {
   };
 
   return (
-    <span data-wikilink="missing" className="inline-flex items-baseline gap-1">
+    <span data-content-chrome="" data-wikilink="missing" className="inline-flex items-baseline gap-1">
       <span title={`No page named "${resolution.title}" yet`} className="text-muted-foreground underline decoration-dashed underline-offset-2">
         {label}
       </span>

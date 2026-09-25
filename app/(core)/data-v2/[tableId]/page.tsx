@@ -53,6 +53,10 @@ import {
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { replaceAddressWithoutNavigating, currentPathWithSearch } from "@/lib/url-state/addressWithoutNavigating";
 import { RECORDS_FILES } from "@/features/unified-data/recordsFiles";
+import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
+import { tablePageCapture } from "@/components/agent-copy/page-capture/pageCapture";
+import { PageCaptureButton } from "@/components/agent-copy/page-capture/PageCaptureButton";
+import { useTableCaptureContribution } from "@/features/unified-data/page-capture/useTableCaptureContribution";
 
 /**
  * THE PAGE'S TITLE IS THE TABLE'S OWN NAME (owner, 2026-09-24: a table he knows must look like
@@ -63,13 +67,26 @@ function TableTitle({
   tableId,
   context,
   actions,
+  filter,
+  recordId,
 }: {
   tableId: string;
   context?: ReactNode;
   actions?: HeaderAction[];
+  filter?: RecordFilter | null;
+  recordId?: string | null;
 }) {
   const table = useTable(tableId);
   const name = table.data?.name?.trim();
+  // The alchemy capture's record-store half: the table's name and declaration, and its records
+  // and open record read at copy time through the grid's own door (lane ALCHEMY-BUTTON).
+  useTableCaptureContribution({
+    tableId,
+    table: table.data,
+    tableError: table.error ? String((table.error as { message?: string }).message ?? table.error) : null,
+    filter,
+    recordId,
+  });
   return (
     <PageHeader>
       {/* ONE ROW (lane DATA-V2-FACE-2): the table's whole name, and beside it, quiet, the
@@ -77,7 +94,12 @@ function TableTitle({
           organization sits under the name so the name keeps the width. */}
       <HeaderStructured
         title={name && name !== "" ? name : "Data"}
-        context={context}
+        context={
+          <span className="inline-flex min-w-0 items-center gap-1.5">
+            {context}
+            <PageCaptureButton size="xs" />
+          </span>
+        }
         {...(actions && actions.length > 0 ? { actions } : {})}
       />
     </PageHeader>
@@ -515,6 +537,58 @@ export default function UnifiedDataTableRoute({
             ]
           : [];
 
+  // ── The alchemy capture: this table page, what the address chose (view, rail, record,
+  //    dashboard, filter), whose table it is, and why it did not open when it did not. ──
+  const pageSays: string | null =
+    object.state === "resolving" || (object.state === "not-given" && pendingInvitation === undefined)
+      ? "Opening the table…"
+      : object.state === "not-given" && pendingInvitation
+        ? "A pending invitation to this table is shown."
+        : object.state === "not-given"
+          ? "You have not been given this table."
+          : object.state === "unavailable"
+            ? `We could not find out where this table is. ${object.why}`
+            : object.state === "stand-in" && shared.state === "not-shared"
+              ? `This shared table cannot open right now. ${shared.why}`
+              : campaign.state !== "on"
+                ? `The record store is not on for this organization (${campaign.state}).`
+                : null;
+  usePageCapture(() =>
+    tablePageCapture({
+      title: "Data table",
+      route: `/data-v2/${tableId}`,
+      table: { id: tableId, name: null },
+      view: activeView ?? "the table's default view (none named in the address)",
+      selection: {
+        Organization: { id: readingOrganizationId, name: knownOrganizationName },
+        "Shared with you": shared.state === "shared" ? shared.levelLabel : null,
+        Rail: activeRail,
+        "Rail item": activeItemId,
+        "Open record": activeRecordId,
+        Dashboard: activeDashboardId,
+        "Board grouped by": activeGroupField,
+        "Came from": cameFrom,
+        Filter: filter ? JSON.stringify(filter) : rawFilter ? `ignored (not a JSON object): ${rawFilter}` : null,
+      },
+      errors: [
+        object.state === "not-given" && !pendingInvitation ? pageSays : null,
+        object.state === "unavailable" || (object.state === "stand-in" && shared.state === "not-shared") ? pageSays : null,
+      ],
+      sections: [
+        {
+          id: "page-state",
+          title: "Page state",
+          role: "data",
+          value: {
+            table_opens: object.state,
+            record_store_switch: campaign.state,
+            says: pageSays ?? "The table is open.",
+          },
+        },
+      ],
+    }),
+  );
+
   return (
     <>
       {/* "Data" only until the table is open; the open table's own name replaces it. */}
@@ -634,7 +708,12 @@ export default function UnifiedDataTableRoute({
                 somebody else's table must never be left to work out why their
                 own organization's things are not around it. One row, the
                 organization's name, and what they hold. */}
-            <TableTitle tableId={tableId} context={whereItLives} />
+            <TableTitle
+              tableId={tableId}
+              context={whereItLives}
+              filter={filter}
+              recordId={activeRecordId}
+            />
             {/* A new record lands in the TABLE'S organization. The table always
                 opens; when it lives somewhere other than the selected
                 organization (or none is selected), the one offer names the

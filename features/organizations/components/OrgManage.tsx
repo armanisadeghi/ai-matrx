@@ -68,6 +68,9 @@ import { OrgCompetitorLabelsSettings } from "@/features/marketing/competitors/Or
 import { SpendBudgetCard } from "@/features/entitlements/guardrails/SpendBudgetCard";
 import { ProviderAccountsSection } from "@/features/organizations/provider-accounts/ProviderAccountsSection";
 import { OrgDataSwitches } from "@/features/unified-data/cutover/OrgDataSwitches";
+import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
+import { recordPageCapture } from "@/components/agent-copy/page-capture/pageCapture";
+import { PageCaptureButton } from "@/components/agent-copy/page-capture/PageCaptureButton";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 interface OrgManageProps {
@@ -96,6 +99,19 @@ export function OrgManage({
 
   const { contentRef, navRef, activeSection } = useAnchoredSections(
     organization.id,
+  );
+
+  // The alchemy capture (lane ALCHEMY-BUTTON): this organization's settings page, the section
+  // in view, and the organization; its sections (the data switches) add their own.
+  usePageCapture(() =>
+    recordPageCapture({
+      title: `${displayOrganization.name} settings`,
+      route: `/organizations/${displayOrganization.id}/settings`,
+      record: { id: displayOrganization.id, name: displayOrganization.name },
+      table: { id: null, name: "Organizations" },
+      selection: { "Section in view": activeSection ?? null, "Your role": userRole },
+      sections: [{ id: "organization", title: "Organization", role: "data", value: displayOrganization }],
+    }),
   );
 
   const canManageSettings = isOwner || isAdmin;
@@ -256,6 +272,7 @@ export function OrgManage({
                     <RoleIcon className="h-3 w-3" />
                     {userRole}
                   </Badge>
+                  <PageCaptureButton size="icon" />
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Manage this organization&apos;s identity, members, and

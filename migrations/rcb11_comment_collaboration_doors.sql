@@ -24,12 +24,19 @@
 --      (communication.notification, event `comment.mention`), only people who can view the record
 --      (a notice quotes the comment), each person's own channel switch honoured, deduped per
 --      comment and person; every skipped person is named with the reason.
+--   7. IDEMPOTENT CREATE: platform.comments.client_request_id (unique per author); cmt_add takes
+--      p_client_request_id and answers a repeat with the FIRST row's id — a Retry after a lost
+--      response never writes a second comment (verify-RC-B11 F2). The realtime row carries it, so
+--      a tab recognises its own echo by id, never by a time window (F6).
+--   8. CAS EDIT: cmt_edit(p_id, p_body, p_expected_version) refuses 40001 with the current text
+--      when somebody changed the comment since the editor opened it (F6). cmt_list returns version.
 --   6. association pairs document→note (annotates) and fc_card→note (anchored_to), mirroring the
 --      RC-A3 document pairs, so a reader over a Notes source (the study guide, until its body
 --      moves into content.document) files annotations on the canonical path. Non-conveying.
 --
 -- based-on: public.cmt_add(text, uuid, text, uuid, uuid) 80b8435586172e7a5b92c83432aaf715ce53ede14abc7a521706142e3216ed03
 -- based-on: public.cmt_list(text, uuid) 8bf23bcbb4951e65237c71091da14dd97fb912155caf3ceacc050590d74263e8
+-- based-on: public.cmt_edit(uuid, text) f46ae8a89e46c695970b36cca87a2ed34f3f0272b8a3ccb5345152dc2a95a2b0
 
 set local lock_timeout = '5s';
 
@@ -39,6 +46,12 @@ set local lock_timeout = '5s';
 alter table platform.comments add column if not exists suggested_text text;
 comment on column platform.comments.suggested_text is
   'RC-B11: a SUGGESTION — the proposed replacement for the anchored passage (empty string = delete it). Accepting applies it through the document''s splice save (only that block changes) and resolves the thread; rejecting deletes the comment. Null = an ordinary comment.';
+
+alter table platform.comments add column if not exists client_request_id uuid;
+comment on column platform.comments.client_request_id is
+  'RC-B11: the id the writing client minted for this create. cmt_add answers a repeat of the same (author, id) with the first row — Retry after a lost response never duplicates — and a tab recognises its own realtime echo by it.';
+create unique index if not exists comments_author_client_request_uidx
+  on platform.comments (created_by, client_request_id) where client_request_id is not null;
 
 alter table platform.comments
   add constraint comments_suggestion_needs_a_passage check (
@@ -57,7 +70,8 @@ create function public.cmt_add(
   p_parent_id uuid default null,
   p_org_id uuid default null,
   p_anchor jsonb default null,
-  p_suggested_text text default null)
+  p_suggested_text text default null,
+  p_client_request_id uuid default null)
 returns uuid
 language plpgsql
 security definer
@@ -129,25 +143,39 @@ begin
       using errcode = '22023';
   end if;
 
+  -- RC-B11: a repeat of the same create (a Retry after a lost response) is the first row.
+  if p_client_request_id is not null then
+    select c.id into v_id from platform.comments c
+     where c.created_by = (select auth.uid()) and c.client_request_id = p_client_request_id;
+    if v_id is not null then
+      return v_id;
+    end if;
+  end if;
+
   insert into platform.comments (organization_id, entity_type, entity_id, parent_id, body, anchor,
-                                 suggested_text, created_by, updated_by)
+                                 suggested_text, client_request_id, created_by, updated_by)
   values (v_org, p_entity_type, p_entity_id, p_parent_id, coalesce(p_body, ''), p_anchor,
-          p_suggested_text, (select auth.uid()), (select auth.uid()))
+          p_suggested_text, p_client_request_id, (select auth.uid()), (select auth.uid()))
+  on conflict (created_by, client_request_id) where client_request_id is not null do nothing
   returning id into v_id;
+  if v_id is null then  -- a concurrent twin of this same request won the race
+    select c.id into v_id from platform.comments c
+     where c.created_by = (select auth.uid()) and c.client_request_id = p_client_request_id;
+  end if;
   return v_id;
 end $function$;
 
-comment on function public.cmt_add(text, uuid, text, uuid, uuid, jsonb, text) is
-  'Add a comment to a record: commenter on the record (RC-A2). RC-B11: p_anchor pins a thread to a passage (text_anchor, judged against the record''s version for a document); p_suggested_text makes it a suggestion (needs p_anchor). Replies carry neither.';
+comment on function public.cmt_add(text, uuid, text, uuid, uuid, jsonb, text, uuid) is
+  'Add a comment to a record: commenter on the record (RC-A2). RC-B11: p_anchor pins a thread to a passage (text_anchor, judged against the record''s version for a document); p_suggested_text makes it a suggestion (needs p_anchor). Replies carry neither. p_client_request_id makes the create idempotent per author.';
 -- The door row follows its function's new identity (platform.client_callable_door), BEFORE the grant.
 update platform.client_callable_door d
-   set identity_args = pg_get_function_identity_arguments('public.cmt_add(text, uuid, text, uuid, uuid, jsonb, text)'::regprocedure),
+   set identity_args = pg_get_function_identity_arguments('public.cmt_add(text, uuid, text, uuid, uuid, jsonb, text, uuid)'::regprocedure),
        identity_argtypes = platform.door_argtypes(p.proargtypes)
   from pg_proc p
- where p.oid = 'public.cmt_add(text, uuid, text, uuid, uuid, jsonb, text)'::regprocedure
+ where p.oid = 'public.cmt_add(text, uuid, text, uuid, uuid, jsonb, text, uuid)'::regprocedure
    and d.schema_name = 'public' and d.function_name = 'cmt_add';
-revoke all on function public.cmt_add(text, uuid, text, uuid, uuid, jsonb, text) from public, anon;
-grant execute on function public.cmt_add(text, uuid, text, uuid, uuid, jsonb, text) to authenticated;
+revoke all on function public.cmt_add(text, uuid, text, uuid, uuid, jsonb, text, uuid) from public, anon;
+grant execute on function public.cmt_add(text, uuid, text, uuid, uuid, jsonb, text, uuid) to authenticated;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 3. cmt_list — same predicate, the passage and resolution come back
@@ -158,7 +186,8 @@ create function public.cmt_list(p_entity_type text, p_entity_id uuid)
 returns table(id uuid, organization_id uuid, entity_type text, entity_id uuid, parent_id uuid, body text,
               created_at timestamptz, updated_at timestamptz, created_by uuid, author_email text,
               author_display_name text, author_avatar_url text,
-              anchor jsonb, resolved_at timestamptz, resolved_by uuid, suggested_text text)
+              anchor jsonb, resolved_at timestamptz, resolved_by uuid, suggested_text text,
+              version integer, client_request_id uuid)
 language sql
 stable security definer
 set search_path to 'public'
@@ -169,7 +198,8 @@ as $function$
          u.email,
          coalesce(u.raw_user_meta_data->>'full_name', u.raw_user_meta_data->>'name', u.email),
          u.raw_user_meta_data->>'avatar_url',
-         c.anchor, c.resolved_at, c.resolved_by, c.suggested_text
+         c.anchor, c.resolved_at, c.resolved_by, c.suggested_text,
+         c.version, c.client_request_id
     from platform.comments c
     left join auth.users u on u.id = c.created_by
    where c.entity_type = p_entity_type and c.entity_id = p_entity_id
@@ -189,6 +219,56 @@ update platform.client_callable_door d
    and d.schema_name = 'public' and d.function_name = 'cmt_list';
 revoke all on function public.cmt_list(text, uuid) from public, anon;
 grant execute on function public.cmt_list(text, uuid) to authenticated;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 3b. cmt_edit — same predicate, plus compare-and-swap on the row version
+-- ─────────────────────────────────────────────────────────────────────────────
+drop function public.cmt_edit(uuid, text);
+
+create function public.cmt_edit(p_id uuid, p_body text, p_expected_version integer default null)
+returns integer
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+declare
+  v_version integer;
+  v_current record;
+begin
+  -- RC-A2: authorship alone is not enough -- the author must still hold commenter on the record.
+  update platform.comments c
+     set body = p_body, updated_by = (select auth.uid())
+   where c.id = p_id and c.deleted_at is null and c.created_by = (select auth.uid())
+     and iam.has_access(c.entity_type, c.entity_id, 'commenter'::public.permission_level)
+     and (p_expected_version is null or c.version = p_expected_version)
+  returning c.version into v_version;
+  if v_version is not null then
+    return v_version;
+  end if;
+  -- RC-B11: say WHICH refusal. A version that moved is a conflict the person resolves, not a denial.
+  select c.version, c.body into v_current from platform.comments c
+   where c.id = p_id and c.deleted_at is null and c.created_by = (select auth.uid())
+     and iam.has_access(c.entity_type, c.entity_id, 'commenter'::public.permission_level);
+  if v_current.version is not null and p_expected_version is not null then
+    raise exception 'cmt_edit: this comment changed since you started editing it'
+      using errcode = '40001',
+            detail = json_build_object('version', v_current.version, 'body', v_current.body)::text,
+            hint = 'Show the current text, then save again against its version.';
+  end if;
+  raise exception 'cmt_edit: comment not found, or you may not edit it -- only its author may, while holding commenter on the record it is on'
+    using errcode = '42501';
+end $function$;
+
+comment on function public.cmt_edit(uuid, text, integer) is
+  'Edit your own comment (commenter on the record, RC-A2). RC-B11: p_expected_version is a compare-and-swap; a moved version raises 40001 carrying the current text. Returns the new version.';
+update platform.client_callable_door d
+   set identity_args = pg_get_function_identity_arguments('public.cmt_edit(uuid, text, integer)'::regprocedure),
+       identity_argtypes = platform.door_argtypes(p.proargtypes)
+  from pg_proc p
+ where p.oid = 'public.cmt_edit(uuid, text, integer)'::regprocedure
+   and d.schema_name = 'public' and d.function_name = 'cmt_edit';
+revoke all on function public.cmt_edit(uuid, text, integer) from public, anon;
+grant execute on function public.cmt_edit(uuid, text, integer) to authenticated;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 4. WHO MAY I MENTION HERE — people who can view the record

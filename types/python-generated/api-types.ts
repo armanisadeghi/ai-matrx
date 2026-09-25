@@ -303,6 +303,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/health/serving": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Serving Check
+         * @description The load balancer's and ECS's probe: may THIS process take traffic?
+         *
+         *     200 once boot has completed and while the process is not draining; 503
+         *     during boot and drain. It never touches the database or any other
+         *     dependency every task shares.
+         *
+         *     Why it is not ``/ready`` (incident 2026-09-25, 07:30-07:46 PT): the shared
+         *     Postgres hung and was rebooted. ``/ready`` re-pings the database, so every
+         *     task failed it at the same instant, the ALB marked the whole fleet
+         *     unhealthy and ECS killed both tasks. The server was 502 — even ``/health``
+         *     — until 07:45:50, seven minutes after the database was back, and every
+         *     in-flight stream died with the tasks. A shared dependency can never make
+         *     one target better than another, so failing the traffic probe on it can
+         *     only turn a dependency outage into a total outage (AWS Builders' Library,
+         *     "Implementing health checks": dependency checks must fail open). A healthy
+         *     process with a sick database answers its own 503s with a sentence and
+         *     recovers the moment the pool reconnects. ``/ready`` stays the deep check
+         *     for release verification and humans.
+         */
+        get: operations["serving_check_health_serving_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/schema/manifest": {
         parameters: {
             query?: never;
@@ -61283,6 +61320,7 @@ export interface components {
             follow: components["schemas"]["ContextFollowLag"];
             /** Excluded */
             excluded?: string[];
+            system_items?: components["schemas"]["ContextSystemItems"];
         };
         /**
          * ContextCompareCheck
@@ -61349,6 +61387,8 @@ export interface components {
             scope_ids?: string[];
             /** Context Item Id */
             context_item_id?: string | null;
+            /** System Item Ids */
+            system_item_ids?: string[];
         };
         /** ContextCompareSide */
         ContextCompareSide: {
@@ -61400,6 +61440,51 @@ export interface components {
             }[];
             /** Resolve Ms */
             resolve_ms?: number | null;
+        };
+        /**
+         * ContextDelivered
+         * @description What the model gets today beside what it would get from the record store (lane INSPECTOR-DIFF).
+         */
+        ContextDelivered: {
+            today: components["schemas"]["ContextDeliveredSide"];
+            record_store?: components["schemas"]["ContextDeliveredSide"] | null;
+            /** Identical */
+            identical?: boolean | null;
+            /** Arguments */
+            arguments?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Says */
+            says: string;
+        };
+        /**
+         * ContextDeliveredSide
+         * @description One side's context EXACTLY as the model is fed it — the run path's assembler's bytes.
+         */
+        ContextDeliveredSide: {
+            /**
+             * Path
+             * @enum {string}
+             */
+            path: "record_store" | "today";
+            /**
+             * Available
+             * @default true
+             */
+            available?: boolean;
+            /** Unavailable Reason */
+            unavailable_reason?: string | null;
+            /** Intro */
+            intro?: string | null;
+            /** Active */
+            active?: string | null;
+            /** Injected Block */
+            injected_block?: string | null;
+            /** Block Sha256 */
+            block_sha256?: string | null;
+            /** Block Byte Length */
+            block_byte_length?: number | null;
+            provenance?: components["schemas"]["ContextProvenance"] | null;
         };
         /** ContextFollowLag */
         ContextFollowLag: {
@@ -61650,6 +61735,8 @@ export interface components {
              */
             path?: "both" | "new" | "old";
             compare?: components["schemas"]["ContextCompare"] | null;
+            provenance?: components["schemas"]["ContextProvenance"] | null;
+            delivered?: components["schemas"]["ContextDelivered"] | null;
         };
         /**
          * ContextPreviewSelection
@@ -61698,6 +61785,33 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             };
         };
+        /**
+         * ContextProvenance
+         * @description Where a shown block came from — printed on the inspector's tabs.
+         */
+        ContextProvenance: {
+            /**
+             * Function
+             * @default assemble_turn_context
+             */
+            function?: string;
+            /**
+             * Module
+             * @default aidream.services.conversation_context.turn_context
+             */
+            module?: string;
+            /** Git Sha */
+            git_sha: string;
+            /** Run Path Callers */
+            run_path_callers: string[];
+            /**
+             * Resolver
+             * @enum {string}
+             */
+            resolver: "chosen" | "record_store";
+            /** Says */
+            says: string;
+        };
         /** ContextRenderRequest */
         ContextRenderRequest: {
             target: components["schemas"]["ContextTarget"];
@@ -61737,6 +61851,11 @@ export interface components {
              * @description One context item — the page narrows what it shows to it.
              */
             context_item_id?: string | null;
+            /**
+             * System Item Ids
+             * @description System (platform) context items picked explicitly. A System item reaches the agent only when something names it: the agent's bindings, the platform's default list, or this pick.
+             */
+            system_item_ids?: string[];
         };
         /**
          * ContextStateResponse
@@ -61791,6 +61910,45 @@ export interface components {
             } | null;
             /** Measured At */
             measured_at: string;
+        };
+        /**
+         * ContextSystemItem
+         * @description One System (platform) item this compare named, who named it, and which side delivered it.
+         */
+        ContextSystemItem: {
+            /** Key */
+            key?: string | null;
+            /** Context Item Id */
+            context_item_id?: string | null;
+            /** Named By */
+            named_by?: string[];
+            /**
+             * Old
+             * @default false
+             */
+            old?: boolean;
+            /**
+             * New
+             * @default false
+             */
+            new?: boolean;
+        };
+        /**
+         * ContextSystemItems
+         * @description THE "System items" line (lane CONTEXT-VALUES-NAMED): a System item reaches an agent only
+         *     when something names it — the agent's bindings, the platform's default list, or an explicit
+         *     pick. Both sides received the same naming.
+         */
+        ContextSystemItems: {
+            /** Named */
+            named?: components["schemas"]["ContextSystemItem"][];
+            /** Withheld */
+            withheld?: string[];
+            /**
+             * Says
+             * @default
+             */
+            says?: string;
         };
         /** ContextTarget */
         ContextTarget: {
@@ -75292,11 +75450,9 @@ export interface components {
             prompt: string;
             /**
              * Size
-             * @description Aspect-ratio intent; mapped per provider.
-             * @default square
-             * @enum {string}
+             * @description Aspect-ratio intent; mapped per provider. Empty uses the Holder's aspect ratio.
              */
-            size?: "landscape" | "portrait" | "square" | "tall" | "wide";
+            size?: ("landscape" | "portrait" | "square" | "tall" | "wide") | null;
             /**
              * Style
              * @description Optional style hint (e.g. 'editorial illustration'); folded into the prompt.
@@ -117054,17 +117210,10 @@ export interface components {
             model?: string | null;
             /** Voice */
             voice?: string | null;
-            /**
-             * Format
-             * @default wav
-             */
-            format?: string;
-            /**
-             * Quality
-             * @default fast
-             * @enum {string}
-             */
-            quality?: "fast" | "high_quality";
+            /** Format */
+            format?: string | null;
+            /** Quality */
+            quality?: ("fast" | "high_quality") | null;
         };
         /** SpeechResponse */
         SpeechResponse: {
@@ -117716,7 +117865,7 @@ export interface components {
             agent_name?: string | null;
             /**
              * Holder Provenance
-             * @description Which rung of the mandate ladder chose this Holder: system, global, org, user or run. An admin debugging 'why is this agent answering' reads this rather than guessing.
+             * @description Which rung of the mandate ladder chose this Holder: system, org, user or run. An admin debugging 'why is this agent answering' reads this rather than guessing.
              */
             holder_provenance: string;
             /**
@@ -135840,6 +135989,26 @@ export interface operations {
         };
     };
     readiness_check_health_ready_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__api__routers__health__ReadinessResponse"];
+                };
+            };
+        };
+    };
+    serving_check_health_serving_get: {
         parameters: {
             query?: never;
             header?: never;

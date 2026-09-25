@@ -30,6 +30,12 @@ import { resolveMandateGoal } from "@/features/mandates/goal";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { splitMandateKey } from "@/features/mandates/mandate-key";
 import { holderOfMandate } from "@/lib/supabase/mandateStorage";
+import {
+  bindingContractCheck,
+  defaultHolderContractCheck,
+  unmetContractChecks,
+} from "@/features/mandates/contract-check";
+import type { MandateContractState } from "./rpc";
 import { isMandateKey } from "@ai-matrx/agents/mandates";
 import type {
   MandateAdminRow,
@@ -172,6 +178,22 @@ export function customizedByOf(
   const out = [...[...orgs].sort()];
   if (personal) out.push("Personal");
   return out.length > 0 ? out : ["Default"];
+}
+
+/**
+ * The contract column's word — the database's `contractCheck` classification
+ * (migrations/mnd_admin_list_sources_contract_page_rows_2026_09_25.sql), from
+ * the same persisted verdicts the dashboard tile counts.
+ */
+export function contractStateOf(
+  mandateRow: unknown,
+  bindings: readonly unknown[],
+): MandateContractState {
+  if (unmetContractChecks(mandateRow, bindings).length > 0) return "Mismatch";
+  const recorded =
+    defaultHolderContractCheck(mandateRow) !== null ||
+    bindings.some((binding) => bindingContractCheck(binding) !== null);
+  return recorded ? "Matches" : "Not checked";
 }
 
 export function buildAdminRows(sources: MandateAdminSources): MandateAdminRow[] {
@@ -319,6 +341,10 @@ export function buildAdminRows(sources: MandateAdminSources): MandateAdminRow[] 
       fallbackKey,
       backsCount: backs.get(base.mandateKey) ?? 0,
       factsPending,
+      contractCheck: contractStateOf(mandate, bindings),
+      sources: null,
+      sourcesPending: false,
+      sourcesFailed: false,
     };
   });
 }

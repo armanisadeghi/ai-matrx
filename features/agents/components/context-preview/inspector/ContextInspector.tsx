@@ -15,7 +15,9 @@
  * re-resolves on every choice with the SAME selection on both sides
  * (`selection.ts#previewRequest` — the server's own `ContextSelection`; a
  * scope type reaches both sides as every one of its scopes, no cap). No Run
- * button. "Answer on both paths" carries its own agent picker; the chosen agent
+ * button. The result has four tabs (lane INSPECTOR-DIFF): Diff (the default),
+ * What the model gets today, Record store, Selection — the open one survives a
+ * pick. "Answer on both paths" carries its own agent picker; the chosen agent
  * lives in the address (`?agent=`).
  *
  * Controlled: the page owns the selection (the address), this renders it. The
@@ -41,7 +43,7 @@ import { isScopesRpcErr } from "@/features/scopes/types";
 import type { ContextItemRow, ContextItemValue, ScopesRpcResult } from "@/features/scopes/types";
 import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
 import { adminPageCapture } from "@/components/agent-copy/page-capture/pageCapture";
-import { ContextCompareView } from "../ContextCompareView";
+import { ContextCompareView, type CompareTab } from "../ContextCompareView";
 import { previewRequest, type InspectorSelection } from "./selection";
 
 const toPath = (s: InspectorSelection): DrillPath => ({
@@ -145,6 +147,9 @@ export function ContextInspector({
   /** The page writes the chosen agent to the address. */
   onAgentChange?: (agentId: string | null) => void;
 }) {
+  // ── The result tab survives a pick (the compare remounts on each one). Default: Diff. ──
+  const [tab, setTab] = useState<CompareTab>("diff");
+
   // ── The columns: the person's own scope tree (access is personal). ──
   const universe = useUniverse();
   const treeReady = universe.treeStatus === "ready" || universe.treeStatus === "empty";
@@ -380,6 +385,8 @@ export function ContextInspector({
             agentId={agentId}
             onAgentChange={onAgentChange}
             focus={focus}
+            tab={tab}
+            onTabChange={setTab}
           />
         </div>
       )}
