@@ -63,6 +63,22 @@ export type AiProcessPhase =
   | "cancelled"
   | "timeout";
 
+/**
+ * A failure BEFORE a request exists (mandate unresolvable, no organization
+ * selected, Holder fetch refused) has no request row to carry it — it lives
+ * only in `error`. It must win over "idle", or the click does nothing visible
+ * (felt 2026-09-25: Clean Up with no organization selected was a silent no-op).
+ */
+export function deriveAiProcessPhase(
+  launching: boolean,
+  error: string | null,
+  requestStatus: string | undefined,
+): AiProcessPhase {
+  if (launching) return "launching";
+  if (error) return "error";
+  return (requestStatus as AiProcessPhase | undefined) ?? "idle";
+}
+
 interface ProcessArgs {
   agent: AiPostProcessAgent;
   transcript: string;
@@ -94,9 +110,7 @@ export function useAiPostProcess() {
   // Doctrine: /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md.
   useRetainRequestForViewer(requestId, "useAiPostProcess");
 
-  const phase: AiProcessPhase = launching
-    ? "launching"
-    : ((requestStatus as AiProcessPhase | undefined) ?? "idle");
+  const phase = deriveAiProcessPhase(launching, error, requestStatus);
 
   const isBusy =
     phase === "launching" ||
