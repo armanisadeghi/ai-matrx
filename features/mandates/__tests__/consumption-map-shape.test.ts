@@ -19,6 +19,8 @@
 import {
   MULTI_SOURCE_JOINER,
   consumptionMapProblems,
+  joinedTextOf,
+  textFormOf,
   parseConsumptionMap,
   sourcesFor,
   type ConsumptionMap,
@@ -145,20 +147,43 @@ describe("the frozen shape — validating", () => {
     ).toEqual([]);
   });
 
-  it("refuses a STRUCTURED value among several — it has no text form to join", () => {
-    const problems = consumptionMapProblems(
-      offer,
-      map({
-        topic: [
-          { mapType: "offered_value", target: "task_overview", deliver: "context" },
-          { mapType: "offered_value", target: "roster", deliver: "context" },
-        ],
-      }),
-    );
-    // R5-1: the refusal names the value the way the offered rail does.
-    expect(problems.join(" ")).toContain("Roster");
-    expect(problems.join(" ")).not.toContain("\"roster\"");
-    expect(problems.join(" ")).toContain("input of its own");
+  // Arman, 2026-09-24: everything a model receives is text, and a structured
+  // value's text form is its JSON. The old "it has no text form to join"
+  // refusal was invented — a structured member joins as its JSON text.
+  it("accepts a STRUCTURED value among several, on either channel — it joins as its JSON text", () => {
+    for (const deliver of ["variable", "context"] as const) {
+      expect(
+        consumptionMapProblems(
+          offer,
+          map({
+            topic: [
+              { mapType: "offered_value", target: "task_overview", deliver },
+              { mapType: "offered_value", target: "roster", deliver },
+            ],
+          }),
+        ),
+      ).toEqual([]);
+    }
+  });
+
+  it("accepts a STRUCTURED fixed value on a variable and among several", () => {
+    expect(
+      consumptionMapProblems(
+        offer,
+        map({ topic: [{ mapType: "direct_value", target: { a: 1 }, deliver: "variable" }] }),
+      ),
+    ).toEqual([]);
+    expect(
+      consumptionMapProblems(
+        offer,
+        map({
+          topic: [
+            { mapType: "offered_value", target: "task_overview", deliver: "variable" },
+            { mapType: "direct_value", target: [1, 2], deliver: "variable" },
+          ],
+        }),
+      ),
+    ).toEqual([]);
   });
 
   it("refuses a FILE among several — a media ref is a turn block, not text", () => {
@@ -217,7 +242,23 @@ describe("the separator is the ruling, not a preference", () => {
   });
 });
 
-// ── EVERY OFFERED KIND × EVERY CHANNEL, AND EVERY REFUSAL IS PERFORMABLE ─────
+describe("the text form of a value on a prompt variable (mirror of aidream text_form_of)", () => {
+  it("keeps a string as-is and renders a structured value as 2-space JSON", () => {
+    expect(textFormOf("plain words")).toBe("plain words");
+    expect(textFormOf({ name: "Zoë", tags: ["a"] })).toBe(
+      '{\n  "name": "Zoë",\n  "tags": [\n    "a"\n  ]\n}',
+    );
+    expect(textFormOf(3)).toBe(3);
+  });
+
+  it("joins a structured member as its JSON text, blank-line separated, in order", () => {
+    expect(joinedTextOf(["Overview", { a: 1 }, [1]])).toBe(
+      'Overview\n\n{\n  "a": 1\n}\n\n[\n  1\n]',
+    );
+  });
+});
+
+// ── EVERY OFFERED KIND × EVERY CHANNEL ─────────────────────────────────────
 //
 // 2026-09-20, Arman on `/administration/mandates/feedback.item_triage_decision`:
 // he mapped "Similar Open Items" (kind json, optional, lazy) onto a prompt
@@ -232,9 +273,10 @@ describe("the separator is the ruling, not a preference", () => {
 //     variable or a context slot; there is no control to flip. A refusal whose
 //     remedy cannot be performed is a dead end wearing a helpful sentence.
 //
-// This matrix is the guard: every kind the platform can offer, against both
-// channels, asserting the verdict AND that a refusal names a real exit.
-describe("every offered kind, on both channels, refuses performably", () => {
+// 2026-09-24, Arman: the refusal itself was fake — everything a model receives
+// is text, and a structured value's text form is its JSON. This matrix is now
+// the guard that no kind is refused on either channel.
+describe("every offered kind is accepted on both channels", () => {
   const ALL_KINDS = [
     "text",
     "string",
@@ -248,17 +290,6 @@ describe("every offered kind, on both channels, refuses performably", () => {
     "json",
     "crm_contact", // a registered content_ir kind — structured
   ] as const;
-  const VARIABLE_OK = new Set([
-    "text",
-    "string",
-    "markdown",
-    "number",
-    "integer",
-    "boolean",
-    "file",
-    "file_list",
-  ]);
-
   const offerOf = (kind: string) => ({
     values: [
       { name: "value", kind, guaranteed: true, lazy: false, description: "" },
@@ -272,24 +303,11 @@ describe("every offered kind, on both channels, refuses performably", () => {
     const onContext = consumptionMapProblems(offerOf(kind), {
       slot: [{ mapType: "offered_value", target: "value", deliver: "context" }],
     });
-    // A context slot takes anything the platform can offer — that is the
-    // channel structured values exist for.
+    // A context slot takes anything the platform can offer, and so does a
+    // prompt variable: everything a model receives is text, and a structured
+    // value's text form is its JSON (Arman, 2026-09-24).
     expect(onContext).toEqual([]);
-    if (VARIABLE_OK.has(kind)) {
-      expect(onVariable).toEqual([]);
-      return;
-    }
-    expect(onVariable).toHaveLength(1);
-    const sentence = onVariable[0];
-    // Names the value, the reason, and an exit the reader can actually take.
-    expect(sentence).toContain("“Value”");
-    expect(sentence).toContain("no text form");
-    expect(sentence).toContain("Feed this input a value that is text instead");
-    expect(sentence).toContain("context slot");
-    // 🚨 The dead-end wording is gone and must not come back: nothing on the
-    // binding screen can "deliver it as context" on a prompt variable.
-    expect(sentence).not.toContain("blob variable");
-    expect(sentence).not.toMatch(/deliver it as context/i);
+    expect(onVariable).toEqual([]);
   });
 
   it("an optional value with Skip is NOT a mapping issue, whatever its kind", () => {
@@ -325,9 +343,9 @@ describe("every offered kind, on both channels, refuses performably", () => {
   it("names the workflow, not 'the agent', when the holder is a workflow", () => {
     const [sentence] = consumptionMapProblems(
       offerOf("json"),
-      { slot: [{ mapType: "offered_value", target: "value", deliver: "variable" }] },
+      { slot: [{ mapType: "offered_value", target: "missing", deliver: "variable" }] },
       { holderKind: "workflow" },
     );
-    expect(sentence).toContain("give the workflow a context slot");
+    expect(sentence).toContain("the workflow's own default");
   });
 });

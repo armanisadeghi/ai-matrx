@@ -19,6 +19,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
+import { PublicLinkNotice } from "@/components/public-link/PublicLinkNotice";
 import { PortalCommentThread, type ThreadComment } from "@/features/portals/PortalCommentThread";
 import { PortalFieldEditor } from "@/features/portals/PortalFieldEditor";
 import { PortalAccentBand, PortalFooter, PortalLogo } from "@/features/portals/PortalBrand";
@@ -58,6 +59,12 @@ export default async function PortalRecordPage({
 
   const portal = await portalPublic(slug);
   if (!portal) notFound();
+  // THE STORE IS SWITCHED OFF: the same whole-screen sentence the portal's front page shows, asked
+  // FIRST — every door below would refuse and this page used to fall to the error screen
+  // (measured live 2026-09-25, lane S6's store-off probe).
+  if (portal.state === "unavailable") {
+    return <PublicLinkNotice title={portal.title} message={portal.message} />;
+  }
 
   const viewer = await portalViewer();
   const membership = viewer ? membershipFor(await portalMe(), portal.slug) : null;

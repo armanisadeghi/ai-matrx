@@ -31,10 +31,15 @@ if (!SLUG || !SUPA || !KEY) {
   console.error("S6_SLUG, S6_SUPABASE_URL and S6_SERVICE_KEY are required (the key is never printed).");
   process.exit(2);
 }
-if (/db\.matrxserver\.com|brsgrqvjdzwihsvnfqkf/.test(SUPA)) {
-  console.error("S6_SUPABASE_URL names PRODUCTION. This walk runs on the dev clone only.");
+// The live database only on purpose: S6_LIVE=1 (the chair's order after the production apply),
+// against the ONE shared preview. Anything else that names production is refused.
+if (/db\.matrxserver\.com|brsgrqvjdzwihsvnfqkf/.test(SUPA) && process.env.S6_LIVE !== "1") {
+  console.error("S6_SUPABASE_URL names PRODUCTION. Set S6_LIVE=1 only for the chair-ordered live walk.");
   process.exit(2);
 }
+// S6_ACCEPT_PATH — the invitation the office sent her; the first visit follows it and binds.
+const ACCEPT = process.env.S6_ACCEPT_PATH ?? null;
+let bound = !ACCEPT;
 mkdirSync(OUT, { recursive: true });
 
 async function magicLink() {
@@ -46,7 +51,7 @@ async function magicLink() {
   const j = await r.json();
   const hash = j.hashed_token ?? j.properties?.hashed_token;
   if (!r.ok || !hash) throw new Error(`generate_link refused: ${r.status} ${JSON.stringify(j).slice(0, 200)}`);
-  const dest = `/portal/c/${SLUG}`;
+  const dest = bound ? `/portal/c/${SLUG}` : ACCEPT;
   return `${ORIGIN}/auth/confirm?token_hash=${encodeURIComponent(hash)}&type=magiclink&redirectTo=${encodeURIComponent(dest)}`;
 }
 
@@ -135,7 +140,20 @@ try {
       await page.screenshot({ path: `${OUT}/${TAG}-${label}-signed-out.png`, fullPage: true });
     }
     const link = await magicLink();
-    const resp = await page.goto(link, { waitUntil: "domcontentloaded", timeout: 300000 });
+    let resp = await page.goto(link, { waitUntil: "domcontentloaded", timeout: 300000 });
+    if (!bound) {
+      // Her invitation: the page says what is on offer, she opens it, and the accept completes.
+      await page.waitForLoadState("networkidle", { timeout: 120000 }).catch(() => {});
+      const open = page.getByRole("button", { name: /^Open / }).first();
+      await open.waitFor({ timeout: 120000 });
+      await page.waitForTimeout(1500);
+      await open.click();
+      await page.getByText(/is open to you/).first().waitFor({ timeout: 120000 });
+      clause(`${label}: her invitation link binds her to the portal`, true, page.url());
+      await page.screenshot({ path: `${OUT}/${TAG}-${label}-invitation-accepted.png`, fullPage: true });
+      bound = true;
+      resp = await page.goto(`${ORIGIN}/portal/c/${SLUG}`, { waitUntil: "domcontentloaded", timeout: 300000 });
+    }
     await page.waitForLoadState("networkidle", { timeout: 120000 }).catch(() => {});
     await page.waitForTimeout(3000);
     const url = page.url();

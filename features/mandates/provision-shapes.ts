@@ -38,9 +38,11 @@ import { displayLabelForKey } from "@/features/agents/utils/variable-utils";
 
 // ── Kind vocabulary (mirrors aidream provisions.py — the one law) ────────────
 
-/** Kind slugs whose values are prompt-substitutable scalars. Anything else is
- * STRUCTURED and may only be delivered as `context` — never serialized into a
- * single blob variable. Mirror of aidream `SCALAR_VALUE_KINDS`. */
+/** Kind slugs whose values are prompt-substitutable scalars. Anything else
+ * (media aside) is STRUCTURED — and a structured value MAY ride a prompt
+ * variable or join a many-to-one target: everything a model receives is text,
+ * and its text form is its JSON (`textFormOf`; Arman, 2026-09-24). Mirror of
+ * aidream `SCALAR_VALUE_KINDS`. */
 export const SCALAR_VALUE_KINDS: ReadonlySet<string> = new Set([
   "text",
   "string",
@@ -282,6 +284,35 @@ export type ConsumptionMap = Record<string, ConsumptionEntry[]>;
  * mapping means. Mirror of aidream `provisions.MULTI_SOURCE_JOINER`.
  */
 export const MULTI_SOURCE_JOINER = "\n\n";
+
+/**
+ * THE text form of a value delivered on the prompt-variable channel.
+ *
+ * Everything a model receives is text (Arman, 2026-09-24): a string stays as
+ * it is; a structured value (object / array) is its JSON, indented 2. Other
+ * scalars pass through. Mirror of aidream `provisions.text_form_of` — the
+ * server applies it at run time (after stripping kind markers); this is the
+ * client's word for the same rule, so the two never disagree about what a
+ * structured value on a variable becomes.
+ */
+export function textFormOf(value: unknown): unknown {
+  if (typeof value === "object" && value !== null) {
+    return JSON.stringify(value, null, 2);
+  }
+  return value;
+}
+
+/** A many-to-one target's delivered text: each source through `textFormOf`,
+ * joined by `MULTI_SOURCE_JOINER`, in mapping order. Mirror of aidream
+ * `provisions._joined_text`. */
+export function joinedTextOf(values: readonly unknown[]): string {
+  return values
+    .map((value) => {
+      const text = textFormOf(value);
+      return typeof text === "string" ? text : String(text);
+    })
+    .join(MULTI_SOURCE_JOINER);
+}
 
 /** The ordered sources feeding one target — [] when nothing feeds it. */
 export function sourcesFor(
@@ -610,45 +641,12 @@ export interface PreflightContext {
    */
   channels?: "variable-and-context" | "variable-only";
   /**
-   * What the holder IS, in the person's words — "agent" or "workflow".
-   *
-   * 🚨 THE REMEDY HAS TO BE PERFORMABLE (2026-09-20, Arman on
-   * `feedback.item_triage_decision`). The structured-on-a-variable refusal used
-   * to end "deliver it as context, never as a blob variable" — an instruction
-   * nobody on that screen can follow: the delivery channel is NOT a control,
-   * it is derived from whether the holder input is a prompt variable or a
-   * context slot (`BindingMiddle`'s `isContext`). A person staring at a
-   * variable row was told to flip a switch that does not exist, and the only
-   * real exits — feed the variable a value that has a text form, or give the
-   * holder a context slot for this value — were never named. This is how the
-   * sentence names the right one.
+   * What the holder IS, in the person's words — "agent" or "workflow" — so a
+   * remedy names the thing the reader is actually binding ("…the agent's own
+   * default"). (The structured-on-a-variable refusal this once shaped was
+   * removed 2026-09-24: a structured value rides a variable as its JSON text.)
    */
   holderKind?: "agent" | "workflow";
-}
-
-/**
- * The one refusal for "this value has no text form and this input carries
- * text". Named, reasoned, and ended with an exit the reader can actually take.
- */
-function noTextFormRefusal({
-  input,
-  value,
-  kind,
-  holderKind,
-  twoChannels,
-}: {
-  input: string;
-  value: string;
-  kind: string;
-  holderKind: "agent" | "workflow";
-  twoChannels: boolean;
-}): string {
-  const head = `“${input}” is a prompt variable, which carries text only, and “${value}” is ${kindPhrase(kind)} — it has no text form`;
-  // A surface / shortcut binding has ONE channel, so "give it a context slot"
-  // is not a truth about it and must not be offered as a way out.
-  return twoChannels
-    ? `${head}. Feed this input a value that is text instead, or give the ${holderKind} a context slot for “${value}” and map it there.`
-    : `${head}. Feed this input a value that is text instead.`;
 }
 
 /**
@@ -707,31 +705,10 @@ export function consumptionMapProblems(
     for (const entry of sources) {
       channels.add(sourceChannel(entry));
       // ── The binding's OWN content: a literal, or an answer it will ask for.
-      // Neither is looked up in the offer — they are not offered values — but
-      // both obey the same two rules every source obeys: a thing with no text
-      // form cannot ride a variable, and cannot be joined with other things.
-      if (entry.mapType === "direct_value") {
-        const structured =
-          typeof entry.target === "object" && entry.target !== null;
-        if (structured && multi) {
-          problems.push(
-            `“${inputName(name)}” has a structured fixed value, which has no text form — it can't be joined with other values; give it an input of its own`,
-          );
-        } else if (
-          structured &&
-          twoChannels &&
-          sourceChannel(entry) === "variable"
-        ) {
-          // Still gated on `twoChannels` — a surface map has one channel and
-          // this sentence is not a truth about it (one-preflight-every-writer
-          // "does not invent the mandate's two-channel sentences").
-          problems.push(
-            `“${inputName(name)}” is a prompt variable, which carries text only, and its fixed value is a structured shape — it has no text form. ` +
-              `Write the fixed value as text instead, or give the ${holderKind} a context slot for it and map it there.`,
-          );
-        }
-        continue;
-      }
+      // Neither is looked up in the offer — they are not offered values. A
+      // structured literal is fine on either channel: on a variable, or joined
+      // with other sources, it is delivered as its JSON text (`textFormOf`).
+      if (entry.mapType === "direct_value") continue;
       if (entry.mapType === "prompt_user") {
         if (!entry.prompt.trim()) {
           problems.push(
@@ -762,26 +739,13 @@ export function consumptionMapProblems(
           `“${inputName(name)}” says “use a default” for “${valueName(source)}” but no default is set`,
         );
       }
-      if (
-        (entry.deliver ?? "variable") === "variable" &&
-        !SCALAR_VALUE_KINDS.has(value.kind) &&
-        !MEDIA_VALUE_KINDS.has(value.kind)
-      ) {
-        problems.push(
-          noTextFormRefusal({
-            input: inputName(name),
-            value: valueName(source),
-            kind: value.kind,
-            holderKind,
-            twoChannels,
-          }),
-        );
-      }
+      // A structured value on a prompt variable is delivered as its JSON text
+      // (`textFormOf`) — never a refusal.
       // D18.2 — MANY-TO-ONE IS A TEXT OPERATION. Several values become one
-      // input by being joined with a blank line, so every source in a
-      // multi-source target must have a text form. A media ref has none (it
-      // becomes a turn block) and a structured shape has none either.
-      if (multi && !SCALAR_VALUE_KINDS.has(value.kind)) {
+      // input by being joined with a blank line; a structured member joins as
+      // its JSON text. A media ref has no text form at all (it becomes a turn
+      // block), so it is the one member refused here.
+      if (multi && MEDIA_VALUE_KINDS.has(value.kind)) {
         problems.push(
           `“${inputName(name)}” joins several values into one block of text, and “${valueName(source)}” is ${kindPhrase(value.kind)} — it has no text form to join. ` +
             `Remove it from “${inputName(name)}” and give it an input of its own.`,

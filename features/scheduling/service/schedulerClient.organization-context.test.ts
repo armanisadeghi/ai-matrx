@@ -165,4 +165,26 @@ describe("scheduler client organization admission", () => {
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(new Headers(init.headers).get("X-Organization-Id")).toBe(CHOSEN_ORG);
   });
+
+  // ORG-GATE-AUDIT: the /schedules list, status and duplicates reads are
+  // fetched on mount. With no organization selected they must NOT open the
+  // picker (a dialog with nothing behind it, 4821555e98) — only a write asks.
+  // Fails against the SOURCE-KEY version, which gated every request
+  // interactively.
+  it("a background read with no organization selected never opens the picker, even when one is mounted", async () => {
+    setSelectedOrganization(null);
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    const openPicker = jest.fn();
+    registerOrganizationPicker(() => {
+      openPicker();
+      queueMicrotask(() => settleOrganizationSelection("33333333-3333-4333-8333-333333333333"));
+    });
+
+    await expect(listDuplicateSchedules()).rejects.toMatchObject({
+      code: "organization_context_required",
+    });
+    expect(openPicker).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });

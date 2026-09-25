@@ -135,14 +135,15 @@ describe("layer 1b — the same judge reads the other map shape", () => {
       payload: { mapType: "direct_value", target: { a: 1 } },
     };
     expect(valueMappingsProblems(structuredLiteral)).toEqual([]);
-    // The mandate side, which HAS two channels, still says it.
+    // The mandate side agrees (2026-09-24): a structured literal rides a
+    // variable as its JSON text, so neither host refuses it.
     expect(
       consumptionMapProblems(null, {
         payload: [
           { mapType: "direct_value", target: { a: 1 }, deliver: "variable" },
         ],
       }),
-    ).toHaveLength(1);
+    ).toEqual([]);
   });
 
   it("is quiet about a well-formed mapping and about no mapping at all", () => {

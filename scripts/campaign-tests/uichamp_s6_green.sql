@@ -573,11 +573,35 @@ begin
   if not v_caught or v_msg ~* 'custom\.|role that owns|not taking writes' then
     raise exception '6d: with the store off, her send did not say so in her words: %', v_msg;
   end if;
+  -- The READ doors her portal pages call ask `custom.assert_store_door` too; the class fix
+  -- (uichamp_s6_a_client_hears_the_store_is_off_in_her_own_words.sql) makes every one of them
+  -- tell a non-member the same sentence, and leaves a member's word for word.
+  v_caught := false;
+  begin
+    perform custom.read_records(v_org, v_calls, false, 20, 0);
+  exception when insufficient_privilege then
+    get stacked diagnostics v_msg = message_text;
+    v_caught := true;
+  end;
+  if not v_caught or v_msg is distinct from v_txt then
+    raise exception '6e: with the store off, her read door did not say so in her words: %', v_msg;
+  end if;
+  perform set_config('request.jwt.claims', c_admin_j, true);
+  v_caught := false;
+  begin
+    perform custom.read_records(v_org, v_calls, false, 20, 0);
+  exception when insufficient_privilege then
+    get stacked diagnostics v_msg = message_text;
+    v_caught := true;
+  end;
+  if not v_caught or v_msg !~ 'has turned the record store off' then
+    raise exception '6e: with the store off, the owner''s own refusal changed: %', v_msg;
+  end if;
   perform set_config('role', v_boss, true);
   update platform.knob_override set value = 'true'::jsonb
    where feature = 'custom' and key = 'system_enabled' and organization_id = v_org;
   perform set_config('role', 'authenticated', true);
-  raise notice 'PART 6d PASSED — with the store off, both form doors refuse her with her sign-in page''s sentence, not the owner''s settings speech.';
+  raise notice 'PART 6d PASSED — with the store off, both form doors and her read door refuse her with her sign-in page''s sentence; the owner still gets the owner''s.';
 
   -- ════════════════════════════════════════════════════════════════════════════
   -- PART 7 — A STRANGER, AND THE SIGN-IN PAGE.

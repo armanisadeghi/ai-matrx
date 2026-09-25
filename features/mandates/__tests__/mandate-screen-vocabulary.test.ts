@@ -378,18 +378,19 @@ const HOLDER_TARGETS = [
 
 /**
  * Every branch of the pre-flight, driven at once — one map that trips each of
- * the ten sentences. `as never` nowhere: these are the real stored shapes.
+ * the pre-flight's sentences. `as never` nowhere: these are the real stored shapes.
  */
 function everyRefusal(): string[] {
   const map: ConsumptionMap = {
-    // structured literal, joined with another source → two sentences
+    // a file joined with a structured value (the structured member is fine —
+    // it joins as its JSON text; the file is the refusal)
     task_overview: [
       { mapType: "direct_value", target: { a: 1 }, deliver: "variable" },
-      { mapType: "offered_value", target: "rulebook_document", deliver: "variable" },
+      { mapType: "offered_value", target: "source_files", deliver: "variable" },
     ],
-    // structured literal delivered as a variable
+    // an optional value with no absence answer, on a second named input
     system_prompt: [
-      { mapType: "direct_value", target: { a: 1 }, deliver: "variable" },
+      { mapType: "offered_value", target: "prior_clean_text", deliver: "variable" },
     ],
     // a question with no words
     run_notes: [{ mapType: "prompt_user", prompt: "  ", deliver: "variable" }],

@@ -55,7 +55,7 @@ import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 // it as the active organization, and returns it — so the request this
 // function is building for continues with the answer instead of dying and
 // making the person press Create again. See `lib/organization/organization-gate.ts`.
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 
 // ── Base URL + auth ────────────────────────────────────────────────────────
 
@@ -64,6 +64,7 @@ function baseUrl(): string {
 }
 
 async function authHeaders(
+  method: string,
   explicitOrganizationId?: string,
 ): Promise<HeadersInit> {
   const {
@@ -75,7 +76,13 @@ async function authHeaders(
       "Not authenticated — cannot reach aidream /scheduler endpoints",
     );
   }
-  const organizationId = await ensureOrganizationContext({
+  // ORG-GATE-AUDIT: the method decides whether to ASK. A write the person
+  // pressed (Create schedule) with no organization selected opens the picker
+  // and continues; a GET (the /schedules list, status, duplicates — all
+  // fetched on mount) keeps the fail-closed refusal and never raises a dialog
+  // with nothing behind it (4821555e98).
+  const organizationId = await ensureOrganizationForRequest({
+    method,
     organizationId: explicitOrganizationId,
   });
   return applyOrganizationContextHeader(
@@ -95,7 +102,7 @@ async function request<T>(
   const res = await fetch(`${baseUrl()}${path}`, {
     ...init,
     headers: {
-      ...(await authHeaders(organizationId)),
+      ...(await authHeaders(init.method, organizationId)),
       ...(init.headers ?? {}),
     },
   });
