@@ -45,7 +45,7 @@ describe("the contract column's word", () => {
 describe("every link in the new suite opens the new record page", () => {
   it("the name door and the row menu go to /administration/intelligence/mandates/<key>", () => {
     const row = { mandateKey: "podcast.script" } as never;
-    expect(adminMandateListConfig.door?.hrefFor(row)).toBe(adminMandateRecordHref("podcast.script"));
+    expect(adminMandateListConfig.door?.hrefFor?.(row)).toBe(adminMandateRecordHref("podcast.script"));
     expect(adminMandateRecordHref("podcast.script")).toBe("/administration/intelligence/mandates/podcast.script");
   });
 
