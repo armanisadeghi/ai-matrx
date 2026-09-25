@@ -136,7 +136,11 @@ export default function RichEditorImpl({
   const [view, setView] = useState<RichEditorView>(defaultView);
   const [mountKey, setMountKey] = useState(0);
   const [findMode, setFindMode] = useState<null | "find" | "replace">(null);
-  const [outlineOpen, setOutlineOpen] = useState(!isMobile);
+  // null = the default for the device: open beside the text on desktop, closed on phones.
+  const [outlineChoice, setOutlineChoice] = useState<boolean | null>(null);
+  const outlineOpen = outlineChoice ?? !isMobile;
+  const setOutlineOpen = (next: boolean | ((open: boolean) => boolean)) =>
+    setOutlineChoice(typeof next === "function" ? next(outlineOpen) : next);
   const [focusMode, setFocusMode] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [renderIslands, setRenderIslands] = useState(true);

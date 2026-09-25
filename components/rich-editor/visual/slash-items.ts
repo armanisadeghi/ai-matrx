@@ -59,7 +59,7 @@ export interface SlashItem {
 const callout = (type: CalloutType, icon: LucideIcon, title: string): SlashItem => ({
   id: `callout-${type.toLowerCase()}`,
   title,
-  description: `A ${title.toLowerCase()} callout (> [!${type}])`,
+  description: `${/^[aeiou]/i.test(title) ? "An" : "A"} ${title.toLowerCase()} callout (> [!${type}])`,
   group: "Callouts",
   icon,
   keywords: ["callout", "admonition", "alert", type.toLowerCase()],

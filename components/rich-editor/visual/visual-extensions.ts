@@ -9,20 +9,13 @@
 import { Extension, type Editor, type Extensions } from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import Suggestion from "@tiptap/suggestion";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { NodeSelection, Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
+import { TrailingNode } from "@tiptap/extensions";
 import { createRichEditorExtensions } from "../core/extensions";
-import {
-  fenceFromParagraph,
-  insertCodeBlock,
-  insertInlineIsland,
-  insertInlineMath,
-  insertVariable,
-  moveBlock,
-  TASK_OPEN,
-  toggleTaskList,
-} from "../core/commands";
+import { fenceFromParagraph, insertInlineIsland, insertVariable, TASK_OPEN } from "../core/commands";
 import { RICH_EDITOR_SHORTCUTS, TYPED_TRIGGERS } from "../core/shortcuts";
-import { toVariableName, type DeclaredVariable } from "../core/variables";
+import { SHORTCUT_HANDLERS, type RichShellActions } from "./shortcut-handlers";
+import { toVariableName } from "../core/variables";
 import { IslandBlockView } from "./nodes/IslandBlockView";
 import { SourceLockedView } from "./nodes/SourceLockedView";
 import { InlineIslandView } from "./nodes/InlineIslandView";
@@ -32,64 +25,7 @@ import { markAutoEdit } from "./auto-edit";
 import { filterSlashItems, type SlashHost } from "./slash-items";
 import { suggestionRenderer, type MenuItem } from "./menus/SuggestionMenu";
 
-/** What the keymap and menus reach outside the document for. */
-export interface RichShellActions {
-  save: () => void;
-  find: () => void;
-  replace: () => void;
-  toggleOutline: () => void;
-  toggleFocus: () => void;
-  cycleView: () => void;
-  showHelp: () => void;
-  showWordCount: () => void;
-  editLink: () => void;
-  pickKind: () => Promise<string | null>;
-  pickImage: () => void;
-  uploadImage: (file: File) => Promise<string | null>;
-  variables: () => readonly DeclaredVariable[] | null;
-  declareVariable: (name: string) => void;
-}
-
-type Handler = (editor: Editor, shell: RichShellActions) => boolean;
-
-/** Every shortcut id in the table → what it does. Exported so a test proves none is unbound. */
-export const SHORTCUT_HANDLERS: Record<string, Handler> = {
-  bold: (e) => e.chain().focus().toggleBold().run(),
-  italic: (e) => e.chain().focus().toggleItalic().run(),
-  strike: (e) => e.chain().focus().toggleStrike().run(),
-  code: (e) => e.chain().focus().toggleCode().run(),
-  link: (_e, shell) => (shell.editLink(), true),
-  paragraph: (e) => e.chain().focus().setParagraph().run(),
-  heading1: (e) => e.chain().focus().toggleHeading({ level: 1 }).run(),
-  heading2: (e) => e.chain().focus().toggleHeading({ level: 2 }).run(),
-  heading3: (e) => e.chain().focus().toggleHeading({ level: 3 }).run(),
-  heading4: (e) => e.chain().focus().toggleHeading({ level: 4 }).run(),
-  heading5: (e) => e.chain().focus().toggleHeading({ level: 5 }).run(),
-  heading6: (e) => e.chain().focus().toggleHeading({ level: 6 }).run(),
-  orderedList: (e) => e.chain().focus().toggleOrderedList().run(),
-  bulletList: (e) => e.chain().focus().toggleBulletList().run(),
-  taskList: (e) => toggleTaskList(e),
-  moveUp: (e) => moveBlock(e, "up"),
-  moveDown: (e) => moveBlock(e, "down"),
-  codeBlock: (e) => {
-    markAutoEdit(e, insertCodeBlock(e));
-    return true;
-  },
-  inlineMath: (e) => {
-    const { from, to } = e.state.selection;
-    return insertInlineMath(e, from === to ? "x" : e.state.doc.textBetween(from, to));
-  },
-  undo: (e) => e.commands.undo(),
-  redo: (e) => e.commands.redo(),
-  find: (_e, shell) => (shell.find(), true),
-  replace: (_e, shell) => (shell.replace(), true),
-  save: (_e, shell) => (shell.save(), true),
-  wordCount: (_e, shell) => (shell.showWordCount(), true),
-  outline: (_e, shell) => (shell.toggleOutline(), true),
-  focus: (_e, shell) => (shell.toggleFocus(), true),
-  cycleView: (_e, shell) => (shell.cycleView(), true),
-  help: (_e, shell) => (shell.showHelp(), true),
-};
+export type { RichShellActions } from "./shortcut-handlers";
 
 const slashKey = new PluginKey("richEditorSlash");
 const variableKey = new PluginKey("richEditorVariable");
@@ -261,5 +197,48 @@ export function createVisualExtensions(options: {
     },
   });
 
-  return [...base, keymap, slash, variables, imagePaste, RichDecorations];
+  /**
+   * Typing while a protected block is SELECTED never overwrites it (a locked
+   * atom is not a text target): the typed text starts a new paragraph right
+   * after the block. Deleting a selected block stays a deliberate key press,
+   * and the save gate still names it.
+   */
+  const protectSelectedIslands = Extension.create({
+    name: "richEditorProtectSelectedIslands",
+    addProseMirrorPlugins() {
+      return [
+        new Plugin({
+          key: new PluginKey("richEditorProtectSelectedIslands"),
+          props: {
+            handleTextInput: (view, _from, _to, text) => {
+              const { selection } = view.state;
+              if (!(selection instanceof NodeSelection)) return false;
+              const name = selection.node.type.name;
+              if (name !== "islandBlock" && name !== "sourceLocked") return false;
+              const paragraph = view.state.schema.nodes.paragraph;
+              if (!paragraph) return false;
+              const at = selection.to;
+              const tr = view.state.tr.insert(at, paragraph.create(null, view.state.schema.text(text)));
+              tr.setSelection(TextSelection.create(tr.doc, at + 1 + text.length));
+              view.dispatch(tr.scrollIntoView());
+              return true;
+            },
+          },
+        }),
+      ];
+    },
+  });
+
+  // An empty trailing paragraph gives the cursor somewhere to go after a final
+  // island; an empty paragraph is never written, so the stored bytes are unmoved.
+  return [
+    ...base,
+    keymap,
+    slash,
+    variables,
+    imagePaste,
+    protectSelectedIslands,
+    TrailingNode.configure({ node: "paragraph" }),
+    RichDecorations,
+  ];
 }
