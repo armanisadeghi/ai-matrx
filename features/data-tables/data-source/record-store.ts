@@ -41,7 +41,6 @@ import type {
   TableDecorations as StoreDecorations,
 } from "@ai-matrx/records";
 import { declareTable, personActor, recordsDataSource, type NewFieldSpec } from "@ai-matrx/records-ui";
-import { sheetStyleFromDecorations } from "../sheet-colors";
 
 import { createClient } from "@/utils/supabase/client";
 import type { FieldChoice } from "@/lib/field-formats/types";
@@ -774,9 +773,36 @@ function idOf(fields: readonly Field[], key: string): string | null {
   return fields.find((f) => f.key === key)?.id ?? null;
 }
 
-/** The table's colors, read by the one resolver — see `../sheet-colors.ts` (VERIFIER-18 H3). */
 function olderStyle(doc: StoreDecorations, fields: readonly Field[]): Record<string, unknown> {
-  return sheetStyleFromDecorations(doc, fields) as unknown as Record<string, unknown>;
+  const style: Record<string, unknown> = { version: 1 };
+  if (doc.color_by?.field) {
+    const field = keyOf(fields, doc.color_by.field);
+    if (field) style.colorBy = { field, target: doc.color_by.target };
+  }
+  if (Array.isArray(doc.rules)) {
+    style.rules = doc.rules.flatMap((r) => {
+      const field = keyOf(fields, r.field);
+      if (!field) return [];
+      return [{ ...r, field, ...(r.value === undefined || r.value === null ? {} : { value: String(r.value) }) }];
+    });
+  }
+  if (doc.rows && Object.keys(doc.rows).length) style.rows = { ...doc.rows };
+  const columns: Record<string, string> = {};
+  for (const [id, color] of Object.entries(doc.columns ?? {})) {
+    const key = keyOf(fields, id);
+    if (key) columns[key] = color;
+  }
+  if (Object.keys(columns).length) style.columns = columns;
+  const cells: Record<string, Record<string, string>> = {};
+  for (const [rowId, byField] of Object.entries(doc.cells ?? {})) {
+    for (const [id, color] of Object.entries(byField ?? {})) {
+      const key = keyOf(fields, id);
+      if (!key) continue;
+      (cells[rowId] ??= {})[key] = color;
+    }
+  }
+  if (Object.keys(cells).length) style.cells = cells;
+  return style;
 }
 
 /** The older style path + value → the store's decoration path + value. Null = the path names a column that is gone. */
