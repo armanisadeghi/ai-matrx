@@ -25,7 +25,7 @@
 // 768px (see the `ios-mobile-first` skill), so there is no second layout here
 // and no `useIsMobile` branch to drift.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   Ban,
@@ -553,15 +553,19 @@ export function ConnectorConsentBody({
 
   // D7: never "the first row the inventory returned" — the account this
   // surface is using, else the one holding the most live products.
-  const [accountId, setAccountId] = useState<string>(
-    () =>
-      preferredAccountId({
-        provider,
-        accounts,
-        rollout,
-        preferAccountId: initialAccountId,
-      }) ?? NEW_ACCOUNT,
+  // The dialog may mount while inventory is loading. Preserve a caller's exact
+  // account ID before that inventory exists; otherwise the first render picks
+  // NEW_ACCOUNT and a later consent can silently target a different identity.
+  // Without a caller target, derive the default from the current inventory
+  // until the person explicitly chooses an account.
+  const [chosenAccountId, setChosenAccountId] = useState<string | null>(
+    () => initialAccountId ?? null,
   );
+  const accountId = chosenAccountId ?? preferredAccountId({
+    provider,
+    accounts,
+    rollout,
+  }) ?? NEW_ACCOUNT;
   const account = accounts.find((row) => row.id === accountId) ?? null;
   const health = accountHealth({ provider, account, rollout });
 
@@ -571,6 +575,15 @@ export function ConnectorConsentBody({
       ...(initialProductKeys ?? []),
     ]),
   ]);
+  // Inventory often arrives after this body mounts. Seed the existing grants
+  // exactly once when its initial account first appears, unless the person has
+  // already made a choice. A later refresh must never overwrite their toggles.
+  const selectionReady = useRef(Boolean(account));
+  useEffect(() => {
+    if (selectionReady.current || !account) return;
+    selectionReady.current = true;
+    setSelected([...new Set([...initialSelection(health), ...(initialProductKeys ?? [])])]);
+  }, [account, health, initialProductKeys]);
   const [busy, setBusy] = useState(false);
   /** True once a consent has been attempted — per-row results only exist after. */
   const [attempted, setAttempted] = useState(false);
@@ -626,7 +639,8 @@ export function ConnectorConsentBody({
    * account now being connected instead of carrying the last one's answers.
    */
   const chooseAccount = (nextId: string) => {
-    setAccountId(nextId);
+    selectionReady.current = true;
+    setChosenAccountId(nextId);
     setAttempted(false);
     setExchangeCompleted(false);
     setAttemptPlan(null);
@@ -643,6 +657,7 @@ export function ConnectorConsentBody({
   };
 
   const toggle = (product: ConnectorProduct, next: boolean) => {
+    selectionReady.current = true;
     setAttempted(false);
     setExchangeCompleted(false);
     setAttemptPlan(null);
@@ -657,6 +672,12 @@ export function ConnectorConsentBody({
   };
 
   const connect = async () => {
+    if (initialAccountId && accountId === initialAccountId && !account) {
+      const sentence = "The selected Google account is no longer available. Choose another account or reopen this connection.";
+      setAnswer(sentence);
+      toast.info(sentence);
+      return;
+    }
     if (gmailChangesSelected && account?.ownerKind === "organization") {
       const sentence = "Gmail changes can connect only to a personal Google account. Choose your own account or connect a different one.";
       setAnswer(sentence);
@@ -689,7 +710,7 @@ export function ConnectorConsentBody({
       });
       setAttemptPlan(plan);
       setAttemptAccountId(result.connectionId);
-      setAccountId(result.connectionId);
+      setChosenAccountId(result.connectionId);
       setExchangeCompleted(true);
       setAttempted(true);
       await refetch();

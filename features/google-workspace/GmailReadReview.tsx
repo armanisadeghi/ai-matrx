@@ -321,6 +321,18 @@ export function GmailReadReview() {
               </option>
             ))}
           </select>
+          {!canModify && gmailChanges?.eligible ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => openConsent({
+                initialConnectionId: connectionId,
+                initialProductKeys: ["gmail_modify"],
+              })}
+            >
+              Enable Gmail changes
+            </Button>
+          ) : null}
           <label className="text-sm font-medium" htmlFor="gmail-read-query">
             Search Gmail
           </label>
@@ -486,7 +498,7 @@ export function GmailReadReview() {
             <div className="mt-4 border-t pt-4 text-sm text-muted-foreground">
               <p>This account has Gmail reading access. Message changes require a separate Gmail change grant.</p>
               {gmailChanges?.eligible ? (
-                <Button type="button" variant="outline" className="mt-2" onClick={() => openConsent({ initialProductKeys: ["gmail_modify"] })}>
+                <Button type="button" variant="outline" className="mt-2" onClick={() => openConsent({ initialConnectionId: connectionId, initialProductKeys: ["gmail_modify"] })}>
                   Enable Gmail changes
                 </Button>
               ) : null}

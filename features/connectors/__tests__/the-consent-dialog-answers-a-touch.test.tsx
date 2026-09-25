@@ -60,6 +60,11 @@ jest.mock("@/providers/google-provider/GoogleApiProvider", () => ({
   useGoogleAPI: () => ({ isGoogleLoaded: true }),
 }));
 
+jest.mock("../gmail-read-disclosure", () => ({
+  confirmGmailReadDisclosure: async () => true,
+  confirmGmailChangesDisclosure: async () => true,
+}));
+
 const run = jest.fn();
 
 jest.mock("../google-adapter", () => ({
@@ -242,6 +247,52 @@ describe("D5 — each group is a real disclosure, open by default", () => {
 });
 
 describe("D4 + D7 — the account is named, changeable, and can be a new one", () => {
+  it("keeps a caller-selected mailbox through delayed inventory before consent", async () => {
+    const review = {
+      ...INFO,
+      id: "review-mailbox",
+      label: "reviewer@example.test",
+      grantedScopes: [...INFO.grantedScopes, "https://www.googleapis.com/auth/gmail.readonly"],
+    };
+    mount({ accounts: [], isLoading: true, initialAccountId: review.id, initialProductKeys: ["gmail_modify"] });
+    await act(async () => root.render(
+      <ConnectorConsentBody
+        provider={provider}
+        accounts={[INFO, review]}
+        rollout={LIVE}
+        isLoading={false}
+        rolloutUnavailable={false}
+        errorMessage={null}
+        refetch={async () => {}}
+        initialAccountId={review.id}
+        initialProductKeys={["gmail_modify"]}
+      />,
+    ));
+    expect(container.textContent).toContain("Connecting as");
+    expect(container.textContent).toContain(review.label);
+    const readingSwitch = container.querySelector('[role="switch"][title*="Gmail reading is connected"]');
+    expect(readingSwitch?.getAttribute("data-state")).toBe("checked");
+    run.mockResolvedValue({ connectionId: review.id });
+    await act(async () => {
+      buttonsByText(provider.dialog.cta)[0]!.click();
+      await Promise.resolve();
+    });
+    expect(run).toHaveBeenCalledWith(
+      expect.objectContaining({ targetAccountId: review.id }),
+      expect.anything(),
+    );
+  });
+
+  it("refuses a missing caller-selected mailbox instead of creating another connection", async () => {
+    mount({ accounts: [INFO], initialAccountId: "missing-mailbox", initialProductKeys: ["gmail_modify"] });
+    await act(async () => {
+      buttonsByText(provider.dialog.cta)[0]!.click();
+      await Promise.resolve();
+    });
+    expect(run).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("The selected Google account is no longer available");
+  });
+
   it("offers a labelled control for changing which account this connects", () => {
     mount({ accounts: [INFO] });
     const trigger = container.querySelector(

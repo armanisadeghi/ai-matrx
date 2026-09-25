@@ -164,8 +164,36 @@ it("offers a separate Gmail changes consent for a personal read-only account", a
   const enable = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find((button) => button.textContent?.trim() === "Enable Gmail changes");
   expect(enable).toBeDefined();
   await act(async () => enable!.click());
-  expect(mockOpenConsent).toHaveBeenCalledWith({ initialProductKeys: ["gmail_modify"] });
+  expect(mockOpenConsent).toHaveBeenCalledWith({
+    initialConnectionId: owned.id,
+    initialProductKeys: ["gmail_modify"],
+  });
   expect(mockModify).not.toHaveBeenCalled();
+});
+
+it("offers Gmail changes before search for the exact selected account", async () => {
+  const second = { ...owned, id: "second-connection", account_email: "second@example.com" };
+  mockInventory.mockReturnValue({
+    data: { connections: [owned, second], resources: [] },
+    isLoading: false,
+    isError: false,
+  });
+  await act(async () => root.render(<GmailReadReview />));
+  const account = container.querySelector<HTMLSelectElement>("#gmail-read-account")!;
+  await act(async () => {
+    account.value = second.id;
+    account.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  const enable = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find(
+    (button) => button.textContent?.trim() === "Enable Gmail changes",
+  );
+  expect(enable).toBeDefined();
+  await act(async () => enable!.click());
+  expect(mockOpenConsent).toHaveBeenCalledWith({
+    initialConnectionId: second.id,
+    initialProductKeys: ["gmail_modify"],
+  });
+  expect(mockSearch).not.toHaveBeenCalled();
 });
 
 it("lists a first-time personal modify-only connection without requiring a second read scope", async () => {
