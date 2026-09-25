@@ -134,3 +134,101 @@ describe("tryWriteOne", () => {
     );
   });
 });
+
+/** A client whose answers are consumed in order: the write, then the re-read. */
+function clientAnsweringInOrder(answers: FetchAnswer[]) {
+  const queue = [...answers];
+  const methods: string[] = [];
+  const fakeFetch = async (_input: RequestInfo | URL, init?: RequestInit) => {
+    methods.push(init?.method ?? "GET");
+    const answer = queue.shift() ?? { status: 200, body: [] };
+    return new Response(JSON.stringify(answer.body), {
+      status: answer.status,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+  const client = createClient("https://db.example.test", "anon-key", {
+    global: { fetch: fakeFetch as typeof fetch },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  return { client, methods };
+}
+
+describe("writeOne — idempotent mode (alreadyDone)", () => {
+  type Row = { id: string; deleted_at: string | null };
+  const archive = (client: ReturnType<typeof clientAnsweringInOrder>["client"]) =>
+    writeOne<Row>(
+      client
+        .from("canvas_item")
+        .update({ deleted_at: "now" })
+        .eq("id", "c1")
+        .is("deleted_at", null)
+        .select("id, deleted_at"),
+      {
+        action: "archive",
+        noun: "canvas item",
+        alreadyDone: {
+          reread: () => client.from("canvas_item").select("id, deleted_at").eq("id", "c1").maybeSingle(),
+          isDone: (row) => row.deleted_at != null,
+        },
+      },
+    );
+
+  it("zero rows on a record that is already archived is success — returns the record as it stands", async () => {
+    const { client, methods } = clientAnsweringInOrder([
+      { status: 200, body: [] },
+      { status: 200, body: { id: "c1", deleted_at: "2026-09-24T00:00:00Z" } },
+    ]);
+    await expect(archive(client)).resolves.toEqual({ id: "c1", deleted_at: "2026-09-24T00:00:00Z" });
+    expect(methods).toEqual(["PATCH", "GET"]);
+  });
+
+  it("zero rows on a record that is still live is a refusal", async () => {
+    const { client } = clientAnsweringInOrder([
+      { status: 200, body: [] },
+      { status: 200, body: { id: "c1", deleted_at: null } },
+    ]);
+    await expect(archive(client)).rejects.toThrow(
+      "Nothing was archived: this canvas item no longer exists, or your access does not allow archiving it.",
+    );
+  });
+
+  it("zero rows on a record the person cannot see is a refusal", async () => {
+    const { client: c2 } = clientAnsweringInOrder([
+      { status: 200, body: [] },
+      { status: 200, body: [] },
+    ]);
+    await expect(archive(c2)).rejects.toBeInstanceOf(WriteDidNotLandError);
+  });
+
+  it("a write that landed never re-reads", async () => {
+    const { client, methods } = clientAnsweringInOrder([{ status: 200, body: [{ id: "c1", deleted_at: "now" }] }]);
+    await expect(archive(client)).resolves.toEqual({ id: "c1", deleted_at: "now" });
+    expect(methods).toEqual(["PATCH"]);
+  });
+});
+
+describe("writeOne — compare-and-set mode", () => {
+  it("zero rows means someone else got there first, and says so", async () => {
+    const { client } = clientAnswering({ status: 200, body: [] });
+    const attempt = writeOne(
+      client.from("question").update({ answered_at: "now" }).eq("id", "q1").is("answered_at", null).select("id"),
+      { action: "save", noun: "answer", compareAndSet: true },
+    );
+    await expect(attempt).rejects.toBeInstanceOf(WriteDidNotLandError);
+    await expect(attempt).rejects.toThrow("This answer was already handled — refresh to see the latest.");
+  });
+
+  it("the sentence survives describeWriteFailure for a toast", async () => {
+    const { client } = clientAnswering({ status: 200, body: [] });
+    const result = await tryWriteOne(
+      client.from("task").update({ state: "done" }).eq("id", "t1").eq("state", "assigned").select("id"),
+      { action: "update", noun: "task", compareAndSet: true },
+    );
+    expect(result.error).toBeInstanceOf(WriteDidNotLandError);
+    expect((result.error as WriteDidNotLandError).reason).toBe("taken");
+    expect(describeWriteFailure(result.error, { action: "finish this task" }).description).toContain(
+      "This task was already handled — refresh to see the latest.",
+    );
+  });
+});
