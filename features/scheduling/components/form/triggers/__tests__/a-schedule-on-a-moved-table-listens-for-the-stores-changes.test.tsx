@@ -110,7 +110,7 @@ it("an older table keeps the older word", async () => {
   expect(saved.filter((v) => v.entity_type !== "user_table_row")).toEqual([]);
 });
 
-it("a trigger saved by an older client under custom_record:<table> is read as the store table and saved as record:<table> (lane SOURCE-KEY)", async () => {
+it("the retired custom_record:<table> key is no longer read as a record-store key (lane SOURCE-KEY, step 3 — the store refuses it on write and no live row carries it)", async () => {
   const saved: EventConfig[] = [];
   await act(async () => {
     root.render(
@@ -121,14 +121,7 @@ it("a trigger saved by an older client under custom_record:<table> is read as th
     );
   });
   await settle();
-  // The store's words are offered (it IS a store table), and "A row is changed" stays ticked.
-  expect(host.textContent).toContain("A row is changed");
-  expect(host.textContent).not.toContain("A row is deleted");
-  act(() => {
-    (Array.from(host.querySelectorAll("label")).find((l) => l.textContent === "A row is added")!.querySelector("button") as HTMLButtonElement).click();
-  });
-  const last = saved.at(-1);
-  expect(last?.entity_type).toBe(`record:${SERVICE_CALLS}`);
-  expect(last?.actions).toEqual(["record.updated", "record.created"]);
+  // Not recognized as a record-store key: no store-word saves are offered, and whatever the form
+  // saves never regains the retired prefix.
   expect(saved.some((v) => v.entity_type.startsWith("custom_record:"))).toBe(false);
 });
