@@ -7636,40 +7636,35 @@ export default function OverlayController() {
         const writeKey =
           typeof data?.writeKey === "string" ? data.writeKey : null;
         const readOnly = data?.readOnly === true;
-        if (!rowId || !columnKey || (!readOnly && !writeKey)) return null;
-        const currentPayload =
-          data?.currentPayload &&
-          typeof data.currentPayload === "object" &&
-          !Array.isArray(data.currentPayload)
-            ? (data.currentPayload as Record<string, unknown>)
-            : {};
-        const target: ExtractionCellEditorTargetInput = readOnly
-          ? {
-              rowId,
-              columnKey,
-              columnLabel:
-                typeof data?.columnLabel === "string"
-                  ? data.columnLabel
-                  : columnKey,
-              pageLabel:
-                typeof data?.pageLabel === "string" ? data.pageLabel : "—",
-              value: typeof data?.value === "string" ? data.value : "",
-              readOnly: true,
-            }
-          : {
-              rowId,
-              columnKey,
-              columnLabel:
-                typeof data?.columnLabel === "string"
-                  ? data.columnLabel
-                  : columnKey,
-              pageLabel:
-                typeof data?.pageLabel === "string" ? data.pageLabel : "—",
-              value: typeof data?.value === "string" ? data.value : "",
-              readOnly: false,
-              writeKey,
-              currentPayload,
-            };
+        if (!rowId || !columnKey) return null;
+        const currentPayload = data?.currentPayload;
+        if (
+          !readOnly &&
+          (!writeKey ||
+            !currentPayload ||
+            typeof currentPayload !== "object" ||
+            Array.isArray(currentPayload))
+        ) return null;
+        const commonTarget = {
+          rowId,
+          columnKey,
+          columnLabel:
+            typeof data?.columnLabel === "string" ? data.columnLabel : columnKey,
+          pageLabel: typeof data?.pageLabel === "string" ? data.pageLabel : "—",
+          value: typeof data?.value === "string" ? data.value : "",
+        };
+        let target: ExtractionCellEditorTargetInput;
+        if (readOnly) {
+          target = { ...commonTarget, readOnly: true };
+        } else {
+          if (!writeKey || !currentPayload || typeof currentPayload !== "object" || Array.isArray(currentPayload)) return null;
+          target = {
+            ...commonTarget,
+            readOnly: false,
+            writeKey,
+            currentPayload: currentPayload as Record<string, unknown>,
+          };
+        }
         return (
           <ExtractionCellEditorWindow
             key={inst.instanceId}
