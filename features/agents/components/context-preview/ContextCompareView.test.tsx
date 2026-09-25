@@ -183,22 +183,20 @@ describe("ContextCompareView", () => {
 
 describe("the two answers (lane INSPECTOR-TAILS)", () => {
   it("renders each answer through the platform's markdown renderer, never as raw text", async () => {
+    const answers = {
+      data: {
+        says: "Both systems answered the same question.",
+        answers: [
+          { path: "old", answer: "**Primary Contact:** Priya Nair, Claims Supervisor — (619) 555-0177", duration_ms: 1800 },
+          { path: "new", answer: "**Primary Contact:** Priya Nair — (619) 555-0177", duration_ms: 2000 },
+        ],
+      },
+    };
+    const preview = { data: { compare, injected_block: null } };
     door.mockReset();
-    door.mockImplementation(async (req: unknown) => {
-      const path = (req as { path?: string }).path;
-      if (path === "/ai/context/preview/answer-both") {
-        return {
-          data: {
-            says: "Both systems answered the same question.",
-            answers: [
-              { path: "old", answer: "**Primary Contact:** Priya Nair, Claims Supervisor — (619) 555-0177", duration_ms: 1800 },
-              { path: "new", answer: "**Primary Contact:** Priya Nair — (619) 555-0177", duration_ms: 2000 },
-            ],
-          },
-        };
-      }
-      return { data: { compare, injected_block: null } };
-    });
+    door.mockImplementation(async (req: unknown) =>
+      (req as { path?: string }).path === "/ai/context/preview/answer-both" ? answers : preview,
+    );
     const view = await mount({ agentId: INTAKE_AGENT });
     try {
     const box = view.host.querySelector("textarea") as HTMLTextAreaElement;
