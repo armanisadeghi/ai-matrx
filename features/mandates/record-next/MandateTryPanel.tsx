@@ -34,8 +34,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { WorkflowListDropdown } from "@/features/workflow-runtime/listings/WorkflowListDropdown";
+import { HolderAssignment } from "@/features/bindings/HolderAssignment";
+import type { HolderDraft } from "@/features/bindings/ScopeHolderBar";
 import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -63,12 +63,20 @@ import {
 import { runMandateTry, type MandateTryCandidate } from "./owner-service";
 import { MandateTryResultView } from "./MandateTryResultView";
 
-type CandidateMode = "current" | "agent" | "workflow";
+type CandidateMode = "current" | "candidate";
 
 const MODE_WORDS: Record<CandidateMode, string> = {
   current: "What runs for you now",
-  agent: "An agent",
-  workflow: "A workflow",
+  candidate: "An agent or workflow you pick",
+};
+
+const EMPTY_CANDIDATE: HolderDraft = {
+  kind: "agent",
+  agentId: null,
+  agentVersionId: null,
+  useLatest: true,
+  workflowId: null,
+  workflowVersionId: null,
 };
 
 function isBlank(value: unknown): boolean {
@@ -132,16 +140,21 @@ export function buildTryVariables(
 /** The candidate body for a mode. Pure — exported for tests. */
 export function tryCandidateFor(
   mode: CandidateMode,
-  ids: { agentId: string | null; workflowId: string | null },
+  draft: HolderDraft,
 ): MandateTryCandidate | null {
   if (mode === "current") return { selection: "current", label: MODE_WORDS.current };
-  if (mode === "agent") {
-    return ids.agentId
-      ? { selection: "agent", agent_id: ids.agentId, label: "Candidate agent" }
+  if (draft.kind === "agent") {
+    return draft.agentId
+      ? { selection: "agent", agent_id: draft.agentId, label: "Candidate agent" }
       : null;
   }
-  return ids.workflowId
-    ? { selection: "workflow", workflow_id: ids.workflowId, label: "Candidate workflow" }
+  return draft.workflowId
+    ? {
+        selection: "workflow",
+        workflow_id: draft.workflowId,
+        workflow_version_id: draft.workflowVersionId ?? null,
+        label: "Candidate workflow",
+      }
     : null;
 }
 
@@ -161,15 +174,15 @@ export function MandateTryPanel({
   const surface = surfaceState.status === "ready" ? surfaceState.surface : null;
   const fields = surface?.inputs ?? [];
   const [mode, setMode] = useState<CandidateMode>("current");
-  const [agentId, setAgentId] = useState<string | null>(null);
-  const [workflowId, setWorkflowId] = useState<string | null>(null);
+  // The one canonical chooser's three values — here a candidate to run once.
+  const [draft, setDraft] = useState<HolderDraft>(EMPTY_CANDIDATE);
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [userInput, setUserInput] = useState("");
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<MandateTestResponse | null>(null);
   const [failure, setFailure] = useState<MandateRunFailure | null>(null);
 
-  const candidate = tryCandidateFor(mode, { agentId, workflowId });
+  const candidate = tryCandidateFor(mode, draft);
 
   const run = async () => {
     if (!candidate) return;
@@ -224,26 +237,18 @@ export function MandateTryPanel({
               ))}
             </SelectContent>
           </Select>
-          {mode === "agent" ? (
-            <AgentListDropdown
-              consumerId={`mandate-try-candidate-${mandateKey}`}
-              activeAgentId={agentId}
-              onSelect={setAgentId}
-              label={agentId ? undefined : "Choose an agent"}
-              systemTabLabel="System"
-              className={cn(CONFIGURATION_CHOICE_SIZE, "w-full max-w-[22rem]")}
-            />
-          ) : null}
-          {mode === "workflow" ? (
-            <WorkflowListDropdown
-              activeWorkflowId={workflowId}
-              onSelect={setWorkflowId}
-              placeholder="Choose a workflow"
-              wantedOutputKind={outputKind}
-              className={cn(CONFIGURATION_CHOICE_SIZE, "w-full max-w-[22rem]")}
-            />
-          ) : null}
         </div>
+        {mode === "candidate" ? (
+          <HolderAssignment
+            purpose="try"
+            holder={draft}
+            onHolderChange={setDraft}
+            mandateKey={mandateKey}
+            consumerId={`mandate-try-candidate-${mandateKey}`}
+            outputKind={outputKind}
+            disabled={running}
+          />
+        ) : null}
         <p className="text-xs text-muted-foreground">
           {mode === "current"
             ? "Runs whatever fulfils this job for you right now — your own binding first, then your organization's, then the platform's."
@@ -354,7 +359,7 @@ export function MandateTryPanel({
           </Button>
           <p className="text-xs text-muted-foreground">
             {!candidate
-              ? mode === "agent"
+              ? draft.kind === "agent"
                 ? "Choose an agent to try."
                 : "Choose a workflow to try."
               : "Each run uses real AI and is charged to your account. Nothing about the job changes."}

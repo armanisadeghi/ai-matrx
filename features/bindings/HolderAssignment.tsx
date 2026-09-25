@@ -133,6 +133,16 @@ export interface HolderAssignmentProps {
    */
   onCreateAgent?: (() => void) | null;
   disabled?: boolean;
+  /**
+   * What the three values are FOR. `"assign"` (default) names who holds the
+   * job. `"try"` is the Test tab choosing a candidate to run once — nothing is
+   * bound, so the labels drop "Mandate Holder" / "Assigned", and the agent
+   * version control is absent because a try always runs the agent's latest
+   * version (the try door takes no agent version).
+   */
+  purpose?: "assign" | "try";
+  /** Dropdown consumer slot, when a page mounts this more than once. */
+  consumerId?: string;
 }
 
 function Row({
@@ -174,18 +184,22 @@ export function HolderAssignment({
   coverageLine = null,
   onCreateAgent = null,
   disabled = false,
+  purpose = "assign",
+  consumerId,
 }: HolderAssignmentProps) {
   const isWorkflow = holder.kind === "workflow";
+  const isTry = purpose === "try";
+  const typeLabel = isTry ? "Run with" : "Mandate Holder Type";
 
   return (
     <div className="space-y-2.5">
       {/* 1 — HOLDER TYPE. A switch between the only two things that can hold
           a job. Changing it clears the other kind's value rather than carrying
           a stale id under a label that no longer names it. */}
-      <Row label="Mandate Holder Type" control="type" help={holderTypeHelp}>
+      <Row label={typeLabel} control="type" help={holderTypeHelp}>
         <div
           role="radiogroup"
-          aria-label="Mandate Holder Type"
+          aria-label={typeLabel}
           className="flex flex-wrap gap-1.5"
         >
           {(
@@ -237,7 +251,15 @@ export function HolderAssignment({
           THAT record's id — never a version id, which is a different record and
           was the id this screen used to print. */}
       <Row
-        label={isWorkflow ? "Assigned Workflow" : "Assigned Agent"}
+        label={
+          isTry
+            ? isWorkflow
+              ? "Workflow"
+              : "Agent"
+            : isWorkflow
+              ? "Assigned Workflow"
+              : "Assigned Agent"
+        }
         control="assignment"
       >
         {isWorkflow ? (
@@ -256,7 +278,7 @@ export function HolderAssignment({
           />
         ) : (
           <AgentListDropdown
-            consumerId={`one-binding-holder-${mandateKey}`}
+            consumerId={consumerId ?? `one-binding-holder-${mandateKey}`}
             activeAgentId={holder.agentId}
             visibleTabs={agentTabs?.visibleTabs}
             initialTab={agentTabs?.initialTab}
@@ -314,7 +336,7 @@ export function HolderAssignment({
               }
             />
           </div>
-        ) : !isWorkflow && holder.agentId ? (
+        ) : !isWorkflow && isTry ? null : !isWorkflow && holder.agentId ? (
           <div
             data-holder-control="version"
             className="flex items-center gap-2"
