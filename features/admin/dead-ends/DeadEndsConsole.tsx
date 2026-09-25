@@ -23,7 +23,7 @@
  * and commit — the page says so, loudly, with the scan's age.
  */
 
-import React, { useState, useSyncExternalStore } from "react";
+import React, { useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import {
   AlertTriangle,
@@ -66,6 +66,7 @@ import {
   sourceHref,
 } from "@/features/admin/reporting/source-links";
 import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
+import { useNow } from "@/hooks/useNow";
 
 const DOCTRINE_HREF =
   "https://github.com/armanisadeghi/ai-matrx/blob/main/.claude/skills/no-dead-ends/SKILL.md";
@@ -104,9 +105,6 @@ function deadEndContent(f: DeadEndFinding): string {
     .join("\n");
 }
 
-/** The clock never notifies us; the age only needs to be right on mount. */
-const subscribeToNothing = () => () => {};
-
 /**
  * How long ago the scan ran, in MILLISECONDS — a number the staleness threshold
  * COMPARES and nothing renders. Every rendered form of this age goes through
@@ -115,8 +113,8 @@ const subscribeToNothing = () => () => {};
  * for a stamp ahead of the clock, and the relative-time shape lane of
  * `check:package-twins` is what found it.
  */
-function ageMs(iso: string): number {
-  const ms = Date.now() - new Date(iso).getTime();
+function ageMs(iso: string, now: number): number {
+  const ms = now - new Date(iso).getTime();
   return Number.isFinite(ms) ? Math.max(0, ms) : 0;
 }
 
@@ -149,16 +147,11 @@ export function DeadEndsConsole({
   const [clickedFinding, setClickedFinding] = useState<DeadEndFinding | null>(null);
   /**
    * Snapshot age in milliseconds. The wall clock is an external system, so it is read
-   * through `useSyncExternalStore` rather than during render — `Date.now()` in
-   * a render body is impure and a setState-in-effect would cascade. The
-   * snapshot is a whole number of days, so it is stable across re-renders and
-   * React's Object.is check never loops. `null` on the server.
+   * from the shared clock. The clock snapshot stays stable between ticks;
+   * `Date.now()` inside a snapshot reader causes an infinite React update loop.
    */
-  const scanAgeMs = useSyncExternalStore(
-    subscribeToNothing,
-    () => ageMs(report.generatedAt),
-    () => null,
-  );
+  const now = useNow();
+  const scanAgeMs = now === 0 ? null : ageMs(report.generatedAt, now);
 
   // No useMemo anywhere in this file — the React Compiler is on
   // (next.config.js `reactCompiler: true`) and CLAUDE.md bans manual memoization.
@@ -416,6 +409,7 @@ export function DeadEndsConsole({
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       <Header
         report={report}
+        now={now}
         scanAgeMs={scanAgeMs}
         delta={delta}
         problems={problems}
@@ -668,6 +662,7 @@ function filterFindings(
 
 function Header({
   report,
+  now,
   scanAgeMs,
   delta,
   problems,
@@ -676,6 +671,7 @@ function Header({
   onCopyRefresh,
 }: {
   report: DeadEndReport;
+  now: number;
   /** `null` until the client has read the clock (see the console above). */
   scanAgeMs: number | null;
   delta: number | null;
@@ -721,8 +717,9 @@ function Header({
         ) : null}
         {scanAgeMs === null
           ? null
-          : ` · scanned ${formatRelativeTime(Date.now() - scanAgeMs, {
+          : ` · scanned ${formatRelativeTime(report.generatedAt, {
               style: "short",
+              now,
             })}`}
       </span>
 
@@ -730,9 +727,10 @@ function Header({
         <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-700 dark:text-amber-400">
           <AlertTriangle className="h-3.5 w-3.5" />
           Snapshot is{" "}
-          {formatRelativeTime(Date.now() - (scanAgeMs ?? 0), {
+          {formatRelativeTime(report.generatedAt, {
             style: "long",
             suffix: false,
+            now,
           })}{" "}
           old — run{" "}
           <code className="font-mono">pnpm check:dead-ends:write</code> and

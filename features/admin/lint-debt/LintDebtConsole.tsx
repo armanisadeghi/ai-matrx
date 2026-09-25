@@ -27,7 +27,7 @@
  * `pnpm check:lint-debt:write` and commit — the page says so, with the age.
  */
 
-import React, { useState, useSyncExternalStore } from "react";
+import React, { useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import {
   AlertTriangle,
@@ -67,6 +67,7 @@ import {
 } from "@/scripts/lint-debt/types";
 import { fixPromptForBucket, fixPromptForFinding } from "./fix-prompt";
 import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
+import { useNow } from "@/hooks/useNow";
 
 /** A scan older than this is stale enough that the page must say so. */
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -104,9 +105,6 @@ function lintFindingContent(f: LintDebtFinding): string {
     .join("\n");
 }
 
-/** The clock never notifies us; the age only needs to be right on mount. */
-const subscribeToNothing = () => () => {};
-
 /**
  * How long ago the scan ran, in MILLISECONDS — a number the staleness threshold
  * COMPARES and nothing renders. Every rendered form of this age goes through
@@ -115,8 +113,8 @@ const subscribeToNothing = () => () => {};
  * for a stamp ahead of the clock, and the relative-time shape lane of
  * `check:package-twins` is what found it.
  */
-function ageMs(iso: string): number {
-  const ms = Date.now() - new Date(iso).getTime();
+function ageMs(iso: string, now: number): number {
+  const ms = now - new Date(iso).getTime();
   return Number.isFinite(ms) ? Math.max(0, ms) : 0;
 }
 
@@ -162,15 +160,11 @@ export function LintDebtConsole({
 
   /**
    * Snapshot age in milliseconds. The wall clock is an external system, so it is read
-   * through `useSyncExternalStore` rather than during render — `Date.now()` in
-   * a render body is impure (react-hooks/purity, one of the very rules this
-   * page reports) and a setState-in-effect would cascade.
+   * from the shared clock. The clock snapshot stays stable between ticks;
+   * `Date.now()` inside a snapshot reader causes an infinite React update loop.
    */
-  const scanAgeMs = useSyncExternalStore(
-    subscribeToNothing,
-    () => ageMs(report.generatedAt),
-    () => null,
-  );
+  const now = useNow();
+  const scanAgeMs = now === 0 ? null : ageMs(report.generatedAt, now);
 
   // No useMemo anywhere in this file — the React Compiler is on and CLAUDE.md
   // bans manual memoization.
@@ -394,6 +388,7 @@ export function LintDebtConsole({
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       <Header
         report={report}
+        now={now}
         scanAgeMs={scanAgeMs}
         delta={delta}
         problems={problems}
@@ -649,6 +644,7 @@ function filterFindings(
 
 function Header({
   report,
+  now,
   scanAgeMs,
   delta,
   problems,
@@ -656,6 +652,7 @@ function Header({
   onCopyRefresh,
 }: {
   report: LintDebtReport;
+  now: number;
   /** `null` until the client has read the clock. */
   scanAgeMs: number | null;
   delta: number | null;
@@ -680,8 +677,9 @@ function Header({
           Scanned {formatCount(report.totals.filesScanned)} files
           {scanAgeMs === null
             ? ""
-            : ` · ${formatRelativeTime(Date.now() - scanAgeMs, {
+            : ` · ${formatRelativeTime(report.generatedAt, {
                 style: "long",
+                now,
               })}`}
         </span>
         {report.commit && (
@@ -730,9 +728,10 @@ function Header({
       {stale && (
         <Alert
           tone="warn"
-          text={`This snapshot is ${formatRelativeTime(Date.now() - (scanAgeMs ?? 0), {
+          text={`This snapshot is ${formatRelativeTime(report.generatedAt, {
             style: "long",
             suffix: false,
+            now,
           })} old — the line numbers below have almost certainly drifted.`}
           action={{
             label: `Copy \`${REFRESH_COMMAND}\``,
