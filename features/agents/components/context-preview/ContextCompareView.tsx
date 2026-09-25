@@ -103,16 +103,51 @@ function lineDiff(a: string, b: string): { onlyA: Set<string>; onlyB: Set<string
   };
 }
 
+/** The one context item a compare is narrowed to (the inspector's last step). */
+export interface CompareFocus {
+  itemId: string;
+  key: string;
+  label: string;
+}
+
+/**
+ * The lines of an `<agent_context>` block that carry one item key — its
+ * `key: value  [source]` line, or one `key [scope]: value` line per scope.
+ */
+export function focusLines(block: string, key: string): string[] {
+  return block
+    .split("\n")
+    .filter((line) => {
+      const t = line.trim();
+      return t.startsWith(`${key}:`) || t.startsWith(`${key} [`);
+    });
+}
+
+/** Why a focused item is not in a side's block, in words — from the side's own tiers. */
+function notInBlockSentence(side: CompareSide, focus: CompareFocus): string {
+  if (focus.key in (side.tool_accessible ?? {})) {
+    return `${focus.label} is not written into the block: it is tool-accessible, so the agent reads it with get_context_variable("${focus.key}") when it needs it.`;
+  }
+  if (focus.key in (side.searchable ?? {})) {
+    return `${focus.label} is not written into the block: it is searchable, so the agent finds it by searching the context.`;
+  }
+  return `This side does not hand the agent ${focus.label} for this scope.`;
+}
+
 function Block({
   side,
   title,
   differs,
+  focus,
 }: {
   side: CompareSide;
   title: string;
   differs: Set<string>;
+  focus?: CompareFocus;
 }) {
-  const block = side.block ?? "";
+  const fullBlock = side.block ?? "";
+  const focused = focus ? focusLines(fullBlock, focus.key) : null;
+  const block = focused ? focused.join("\n") : fullBlock;
   return (
     <div className="min-w-0 flex-1" data-compare-side={side.path}>
       <div className="flex items-baseline gap-2">
@@ -125,6 +160,13 @@ function Block({
       {!side.available ? (
         <div className="mt-1.5 rounded-md border border-border bg-muted/30 px-2.5 py-2 text-xs text-foreground">
           {side.unavailable_reason ?? "This side did not answer."}
+        </div>
+      ) : focus && focused && focused.length === 0 ? (
+        <div
+          className="mt-1.5 rounded-md border border-border bg-muted/30 px-2.5 py-2 text-xs text-foreground"
+          data-focus-absent
+        >
+          {notInBlockSentence(side, focus)}
         </div>
       ) : block ? (
         <div className="group/block relative mt-1.5">
@@ -436,6 +478,7 @@ export function ContextCompareView({
   agentId,
   scopeIds,
   organizationId,
+  focus,
 }: {
   conversationId?: string;
   agentId?: string;
@@ -443,6 +486,13 @@ export function ContextCompareView({
   scopeIds?: string[];
   /** The organization the compared scope names — sent as the request's organization. */
   organizationId?: string | null;
+  /**
+   * Narrow what is SHOWN to one context item (the inspector's last step): each
+   * side's block shows only that item's lines and the differences only that
+   * item's. The request is unchanged — both sides still resolve the whole scope,
+   * exactly as an agent run would.
+   */
+  focus?: CompareFocus;
 }) {
   const { status, data, error, refresh } = useContextPreview({
     conversationId,
@@ -505,11 +555,22 @@ export function ContextCompareView({
         {compare && (
           <>
             <Summary compare={compare} />
+            {focus && (
+              <p className="px-4 pt-3 text-xs text-muted-foreground" data-compare-focus={focus.key}>
+                Showing {focus.label} only. The summary above counts the whole scope.
+              </p>
+            )}
             <section className="flex flex-col gap-3 px-4 pt-4 md:flex-row">
-              <Block side={compare.old} title="Current system" differs={diff.onlyA} />
-              <Block side={compare.new} title="Record store" differs={diff.onlyB} />
+              <Block side={compare.old} title="Current system" differs={diff.onlyA} focus={focus} />
+              <Block side={compare.new} title="Record store" differs={diff.onlyB} focus={focus} />
             </section>
-            <Differences differences={compare.differences ?? []} />
+            <Differences
+              differences={
+                focus
+                  ? (compare.differences ?? []).filter((d) => d.item_id === focus.itemId)
+                  : (compare.differences ?? [])
+              }
+            />
             <Checks side={compare.new} />
             <AnswerBoth agentId={agentId} conversationId={conversationId} scopeIds={scopeIds} />
           </>

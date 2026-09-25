@@ -643,6 +643,82 @@ export const scopesService = {
     }
   },
 
+  // ─── The context inspector's drill-down (lane CONTEXT-INSPECTOR-GUIDED) ───
+  // Organization → scope type → scope → context item: each read takes only the
+  // previous choice. RLS decides what the signed-in person may see.
+
+  /** Every live scope type of one organization, in the organization's order. */
+  async listScopeTypesForOrganization(
+    organizationId: string,
+  ): Promise<
+    ScopesRpcResult<{
+      types: Pick<ScopeTypeRow, "id" | "label_singular" | "label_plural" | "slug" | "parent_type_id" | "sort_order">[];
+    }>
+  > {
+    try {
+      requireUserId();
+      const { data, error } = await contextDb(supabase)
+        .from("scope_types")
+        .select("id, label_singular, label_plural, slug, parent_type_id, sort_order")
+        .eq("organization_id", organizationId)
+        .is("deleted_at", null)
+        .order("sort_order")
+        .order("label_plural");
+      if (error) return err(...mapPgErrorPair(error));
+      return ok({ types: data ?? [] });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /** Every live scope of one type in one organization — at any depth, by name. */
+  async listScopesOfType(
+    organizationId: string,
+    scopeTypeId: string,
+  ): Promise<
+    ScopesRpcResult<{
+      scopes: Pick<ScopeRow, "id" | "name" | "parent_scope_id" | "scope_type_id">[];
+    }>
+  > {
+    try {
+      requireUserId();
+      const { data, error } = await contextDb(supabase)
+        .from("scopes")
+        .select("id, name, parent_scope_id, scope_type_id")
+        .eq("organization_id", organizationId)
+        .eq("scope_type_id", scopeTypeId)
+        .is("deleted_at", null)
+        .order("name");
+      if (error) return err(...mapPgErrorPair(error));
+      return ok({ scopes: data ?? [] });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /** Where one scope lives — its organization and type — read from the scope itself. */
+  async getScopeHome(
+    scopeId: string,
+  ): Promise<
+    ScopesRpcResult<{
+      scope: Pick<ScopeRow, "id" | "name" | "organization_id" | "scope_type_id"> | null;
+    }>
+  > {
+    try {
+      requireUserId();
+      const { data, error } = await contextDb(supabase)
+        .from("scopes")
+        .select("id, name, organization_id, scope_type_id")
+        .eq("id", scopeId)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (error) return err(...mapPgErrorPair(error));
+      return ok({ scope: data ?? null });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
   /**
    * ONE cell (scope x context item) plus the two names that head it.
    *

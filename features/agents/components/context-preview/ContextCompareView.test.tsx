@@ -31,7 +31,7 @@ jest.mock("@/components/matrx/buttons/InlineCopyButton", () => ({
 }));
 
 import { callApi } from "@/lib/api/call-api";
-import { ContextCompareView } from "./ContextCompareView";
+import { ContextCompareView, focusLines } from "./ContextCompareView";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -149,5 +149,26 @@ describe("ContextCompareView", () => {
     const withAgent = await mount({ agentId: "agent-1" });
     expect(withAgent.host.querySelector("textarea")).not.toBeNull();
     await withAgent.unmount();
+  });
+});
+
+describe("focusLines — the inspector's context-item step", () => {
+  const block = [
+    "<agent_context>",
+    "  <variables>",
+    "    contact_phone: (619) 555-0177  [Meridian Risk Services]",
+    "    contact_phone_extension: 204  [Meridian Risk Services]",
+    "    industry [Meridian Risk Services]: Insurance services",
+    "    industry [Golden State Indemnity Co.]: Workers' compensation insurance",
+    "  </variables>",
+    "</agent_context>",
+  ].join("\n");
+
+  it("keeps only the chosen item's lines, never a key that merely starts the same", () => {
+    expect(focusLines(block, "contact_phone")).toEqual([
+      "    contact_phone: (619) 555-0177  [Meridian Risk Services]",
+    ]);
+    expect(focusLines(block, "industry")).toHaveLength(2);
+    expect(focusLines(block, "billing_contact")).toEqual([]);
   });
 });

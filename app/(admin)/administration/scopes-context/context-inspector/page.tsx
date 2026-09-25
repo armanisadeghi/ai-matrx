@@ -1,575 +1,74 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Braces, Check, ChevronsUpDown, Copy, Loader2, Play, ShieldCheck } from "lucide-react";
-import { toast } from "@/lib/toast";
+/**
+ * Context inspector — what an agent is handed, drilled down in order:
+ * Organization → Scope type → Scope → Context item (lane
+ * CONTEXT-INSPECTOR-GUIDED, 2026-09-25). The old page was four free-text slug
+ * boxes, a tier and a serializer-variation picker and a Render button, with a
+ * separate "paste a scope id" compare under it — every field independent of the
+ * others, so nothing told you which one to fill. Now each choice narrows the
+ * next and the old-vs-new compare follows it live.
+ *
+ * The address IS the selection (`?org=&scopeType=&scope=&item=`), written
+ * through the URL-state door (never a navigation). Old links that carry only
+ * `?scope=<id>` still open: the scope names its organization and type.
+ */
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Suspense, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
+import { Braces } from "lucide-react";
+
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Input } from "@ai-matrx/design-system";
-import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+  currentPathWithSearch,
+  pushAddressWithoutNavigating,
+  replaceAddressWithoutNavigating,
+} from "@/lib/url-state/addressWithoutNavigating";
+import { ContextInspector } from "@/features/agents/components/context-preview/inspector/ContextInspector";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
-import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
-import { ContextCompareView } from "@/features/agents/components/context-preview/ContextCompareView";
-import { createClient } from "@/utils/supabase/client";
-import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
-import type { RecordsDataSource } from "@ai-matrx/records";
-
-type ScopeSystemTier = "overview" | "scope" | "scope_type" | "context_item";
-type ScopeSystemVariation = "a1" | "a2" | "fk_a" | "fk_b" | "d_elements" | "d_attributes";
-
-interface RenderResponse {
-  raw: string;
-  byteLength: number;
-  status: number;
-  contentType: string | null;
-  metadata: Record<string, unknown> | null;
-}
-
-interface OrganizationOption {
-  id: string;
-  name: string;
-  slug: string;
-  // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
-  is_personal: boolean;
-}
-
-const TIER_OPTIONS: Array<{ value: ScopeSystemTier; label: string; help: string }> = [
-  { value: "overview", label: "Tier A — overview", help: "Organization-wide always-on context." },
-  { value: "scope", label: "Tier B — scope", help: "One scope's current values." },
-  { value: "scope_type", label: "Tier C — scope type", help: "Type definition, items, and scope roster." },
-  { value: "context_item", label: "Tier D — context item", help: "One context-item definition." },
-];
-
-const VARIATION_OPTIONS: Array<{ value: ScopeSystemVariation; label: string; tiers: ScopeSystemTier[] }> = [
-  { value: "a1", label: "A-1 compact identifiers", tiers: ["overview"] },
-  { value: "a2", label: "A-2 labels and names", tiers: ["overview"] },
-  { value: "fk_a", label: "FK-A write-tool parameter names", tiers: ["scope", "scope_type", "context_item"] },
-  { value: "fk_b", label: "FK-B database column names", tiers: ["scope", "scope_type", "context_item"] },
-  { value: "d_elements", label: "D child elements", tiers: ["context_item"] },
-  { value: "d_attributes", label: "D flat attributes", tiers: ["context_item"] },
-];
-
-function defaultVariation(tier: ScopeSystemTier): ScopeSystemVariation {
-  return tier === "overview" ? "a1" : tier === "context_item" ? "d_elements" : "fk_a";
-}
-
-function parseMetadata(raw: string): Record<string, unknown> | null {
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
-    const record = parsed as Record<string, unknown>;
-    return record.metadata && typeof record.metadata === "object" && !Array.isArray(record.metadata)
-      ? (record.metadata as Record<string, unknown>)
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function extractRendered(raw: string): string | null {
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
-    const rendered = (parsed as Record<string, unknown>).rendered;
-    return typeof rendered === "string" ? rendered : null;
-  } catch {
-    return null;
-  }
-}
-
-function metadataValue(value: unknown): string {
-  if (value === null) return "null";
-  if (value === undefined) return "—";
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-    return String(value);
-  }
-  if (Array.isArray(value)) return `${value.length} item${value.length === 1 ? "" : "s"}`;
-  return "object";
-}
-
-export default function ContextInspectorPage() {
-  const [tier, setTier] = useState<ScopeSystemTier>("overview");
-  const [variation, setVariation] = useState<ScopeSystemVariation>("a1");
-  const [organizationId, setOrganizationId] = useState("");
-  const [organizations, setOrganizations] = useState<OrganizationOption[]>([]);
-  const [organizationsLoading, setOrganizationsLoading] = useState(true);
-  const [organizationsError, setOrganizationsError] = useState<string | null>(null);
-  const [organizationPickerOpen, setOrganizationPickerOpen] = useState(false);
-  const [scopeTypeSlug, setScopeTypeSlug] = useState("");
-  const [scopeSlug, setScopeSlug] = useState("");
-  const [itemKey, setItemKey] = useState("");
-  const [clearance, setClearance] = useState("internal");
-  const [response, setResponse] = useState<RenderResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [running, setRunning] = useState(false);
-
-  const currentTier =
-    TIER_OPTIONS.find((option) => option.value === tier) ?? TIER_OPTIONS[0];
-  const variationOptions = useMemo(
-    () => VARIATION_OPTIONS.filter((option) => option.tiers.includes(tier)),
-    [tier],
-  );
-  const selectedOrganization = organizations.find((organization) => organization.id === organizationId);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadOrganizations = async () => {
-      try {
-        // The proxy forwards this to aidream, whose AuthMiddleware refuses a
-        // JWT request that names no organization (400 organization_required).
-        const activeOrganizationId = peekSelectedOrganizationId();
-        const result = await fetch("/api/admin/agent-context/organizations", {
-          cache: "no-store",
-          headers: activeOrganizationId
-            ? { "X-Organization-Id": activeOrganizationId }
-            : undefined,
-        });
-        const payload = await result.json() as {
-          organizations?: OrganizationOption[];
-          error?: unknown;
-          detail?: unknown;
-        };
-        if (!result.ok) {
-          throw new Error(
-            typeof payload.error === "string"
-              ? payload.error
-              : typeof payload.detail === "string"
-                ? payload.detail
-                : "Unable to load organizations.",
-          );
-        }
-        if (!cancelled) setOrganizations(payload.organizations ?? []);
-      } catch (caught) {
-        if (!cancelled) {
-          setOrganizationsError(caught instanceof Error ? caught.message : String(caught));
-        }
-      } finally {
-        if (!cancelled) setOrganizationsLoading(false);
-      }
-    };
-
-    void loadOrganizations();
-    return () => { cancelled = true; };
-  }, []);
-
-  const runRender = useCallback(async () => {
-    if (!organizationId.trim()) {
-      setError("Select an organization before rendering context.");
-      return;
-    }
-    if (tier === "scope" && (!scopeTypeSlug.trim() || !scopeSlug.trim())) {
-      setError("Scope type slug and scope slug are required for Tier B.");
-      return;
-    }
-    if (tier === "scope_type" && !scopeTypeSlug.trim()) {
-      setError("Scope type slug is required for Tier C.");
-      return;
-    }
-    if (tier === "context_item" && (!scopeTypeSlug.trim() || !itemKey.trim())) {
-      setError("Scope type slug and context-item key are required for Tier D.");
-      return;
-    }
-
-    setError(null);
-    setResponse(null);
-    setRunning(true);
-
-    const body = {
-      target: {
-        kind: "scope_system",
-        tier,
-        variation,
-        ...(scopeTypeSlug.trim() ? { scope_type_slug: scopeTypeSlug.trim() } : {}),
-        ...(scopeSlug.trim() ? { scope_slug: scopeSlug.trim() } : {}),
-        ...(itemKey.trim() ? { item_key: itemKey.trim() } : {}),
-      },
-      invocation: {
-        organization_id: organizationId.trim(),
-        clearance,
-      },
-    };
-
-    try {
-      // The invocation organization is explicitly chosen on this page — it is
-      // the organization admission for the proxied aidream call.
-      const result = await fetch("/api/admin/agent-context/render", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Organization-Id": organizationId.trim(),
-        },
-        body: JSON.stringify(body),
-      });
-      const bytes = await result.arrayBuffer();
-      const raw = new TextDecoder("utf-8").decode(bytes);
-      const renderedResponse = {
-        raw: result.ok ? (extractRendered(raw) ?? raw) : raw,
-        byteLength: bytes.byteLength,
-        status: result.status,
-        contentType: result.headers.get("content-type"),
-        metadata: parseMetadata(raw),
-      };
-
-      if (!result.ok) {
-        let message = raw || result.statusText;
-        try {
-          const parsed = JSON.parse(raw) as { error?: unknown; detail?: unknown };
-          if (typeof parsed.error === "string") message = parsed.error;
-          else if (typeof parsed.detail === "string") message = parsed.detail;
-        } catch {
-          // Preserve a non-JSON upstream error exactly in the raw error panel.
-        }
-        setResponse(renderedResponse);
-        setError(message);
-        return;
-      }
-
-      setResponse(renderedResponse);
-      toast.success("Context rendered from the live serializer.");
-    } catch (caught) {
-      const message = caught instanceof Error ? caught.message : String(caught);
-      setError(message);
-      toast.error(message);
-    } finally {
-      setRunning(false);
-    }
-  }, [clearance, itemKey, organizationId, scopeSlug, scopeTypeSlug, tier, variation]);
-
-  const copyRaw = useCallback(async () => {
-    if (!response) return;
-    await navigator.clipboard.writeText(response.raw);
-    toast.success("Exact rendered response copied.");
-  }, [response]);
-
-  return (
-    <div className="mx-auto w-full max-w-7xl space-y-3 p-3 sm:p-5">
-      <div className="flex flex-col gap-2 border-b border-border pb-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-center gap-2">
-          <Braces className="h-5 w-5 text-primary" />
-          <Badge variant="outline" className="gap-1 text-[10px]">
-            <ShieldCheck className="h-3 w-3" /> Super admin
-          </Badge>
-        </div>
-        <Button onClick={runRender} disabled={running} className="gap-2 sm:mt-0">
-          {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-          Render context
-        </Button>
-      </div>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Scope system target</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <div className="space-y-1.5">
-            <Label>Organization</Label>
-            <Popover open={organizationPickerOpen} onOpenChange={setOrganizationPickerOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={organizationPickerOpen}
-                  className="w-full justify-between font-normal"
-                  disabled={organizationsLoading || Boolean(organizationsError)}
-                >
-                  {organizationsLoading ? (
-                    <span className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading organizations…</span>
-                  ) : selectedOrganization ? (
-                    <span className="truncate">{selectedOrganization.name} <span className="text-muted-foreground">· {selectedOrganization.slug}</span></span>
-                  ) : (
-                    <span className="text-muted-foreground">Select an organization…</span>
-                  )}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent sizing="content" className="p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Search organizations…" />
-                  <CommandList className="max-h-72">
-                    <CommandEmpty>No accessible organizations found.</CommandEmpty>
-                    <CommandGroup>
-                      {organizations.map((organization) => (
-                        <CommandItem
-                          key={organization.id}
-                          value={`${organization.name} ${organization.slug}`}
-                          onSelect={() => {
-                            setOrganizationId(organization.id);
-                            setOrganizationPickerOpen(false);
-                          }}
-                        >
-                          <Check className={cn("h-4 w-4", organization.id === organizationId ? "opacity-100" : "opacity-0")} />
-                          <span className="min-w-0 truncate">{organization.name}</span>
-                          <span className="ml-auto shrink-0 text-xs text-muted-foreground">{organization.slug}</span>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-            {organizationsError && <p className="text-xs text-destructive">{organizationsError}</p>}
-          </div>
-          <div className="space-y-1.5">
-            <Label>Tier</Label>
-            <Select value={tier} onValueChange={(next: ScopeSystemTier) => {
-              setTier(next);
-              setVariation(defaultVariation(next));
-            }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{TIER_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
-            </Select>
-            <p className="text-[11px] text-muted-foreground">{currentTier.help}</p>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Serializer variation</Label>
-            <Select value={variation} onValueChange={(next: ScopeSystemVariation) => setVariation(next)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{variationOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="scope-type-slug">Scope type slug</Label>
-            <Input id="scope-type-slug" value={scopeTypeSlug} onChange={(event) => setScopeTypeSlug(event.target.value)} placeholder="clients" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="scope-slug">Scope slug</Label>
-            <Input id="scope-slug" value={scopeSlug} onChange={(event) => setScopeSlug(event.target.value)} placeholder="ai-matrx" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="item-key">Context-item key</Label>
-            <Input id="item-key" value={itemKey} onChange={(event) => setItemKey(event.target.value)} placeholder="brand_voice" />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Clearance</Label>
-            <Select value={clearance} onValueChange={setClearance}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="public">Public</SelectItem>
-                <SelectItem value="internal">Internal</SelectItem>
-                <SelectItem value="restricted">Restricted</SelectItem>
-                <SelectItem value="privileged">Privileged</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription className="whitespace-pre-wrap break-words font-mono text-xs">{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {response && (
-        <Card>
-          <CardHeader className="flex-row items-center justify-between gap-2 pb-2">
-            <div>
-              <CardTitle className="text-sm">Renderer response</CardTitle>
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                HTTP {response.status} · {response.byteLength.toLocaleString()} transport bytes · {response.contentType ?? "unknown content type"}
-              </p>
-            </div>
-            <Button variant="outline" size="sm" onClick={copyRaw} className="gap-1.5">
-              <Copy className="h-3.5 w-3.5" /> Copy exact text
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {response.metadata && Object.keys(response.metadata).length > 0 && (
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs sm:grid-cols-3 lg:grid-cols-4">
-                {Object.entries(response.metadata).map(([key, value]) => (
-                  <div key={key} className="min-w-0"><span className="text-muted-foreground">{key}: </span><span className="font-mono break-words">{metadataValue(value)}</span></div>
-                ))}
-              </div>
-            )}
-            <Textarea
-              aria-label="Raw renderer response"
-              readOnly
-              value={response.raw}
-              className="min-h-[28rem] resize-y whitespace-pre-wrap break-words bg-background font-mono text-xs leading-5"
-            />
-          </CardContent>
-        </Card>
-      )}
-      <CompareOneScope
-        pageOrganizationId={organizationId.trim() || null}
-        pageOrganizationName={selectedOrganization?.name ?? null}
-        organizationName={(id) => organizations.find((o) => o.id === id)?.name ?? null}
-      />
-    </div>
-  );
-}
+  parseSelection,
+  selectionSearch,
+  type InspectorSelection,
+} from "@/features/agents/components/context-preview/inspector/selection";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/**
- * The current system beside the record store for ONE scope (lane SC-3'): the
- * same compare the preview panel's "Old vs new" tab shows, for a scope id typed
- * here. The server resolves the scope under its own organization and computes
- * the answer for you, the signed-in person.
- */
-function CompareOneScope({
-  pageOrganizationId,
-  pageOrganizationName,
-  organizationName,
-}: {
-  /** This page's own Organization field — used only when the scope cannot name its own. */
-  pageOrganizationId: string | null;
-  pageOrganizationName: string | null;
-  organizationName: (id: string) => string | null;
-}) {
-  const [draft, setDraft] = useState("");
-  const [agentDraft, setAgentDraft] = useState("");
-  const [target, setTarget] = useState<{ scopeId: string; agentId?: string } | null>(null);
-  // A LINK OPENS THE COMPARE ALREADY RUNNING (lane SC-2'): `?scope=<id>` fills the box and
-  // compares at once, so the owner's link is one click, never "paste an id".
-  useEffect(() => {
-    const fromLink = new URLSearchParams(window.location.search).get("scope")?.trim() ?? "";
-    if (UUID_RE.test(fromLink)) {
-      setDraft(fromLink);
-      setTarget({ scopeId: fromLink });
-    }
-  }, []);
-  // 🚨 THE SCOPE NAMES ITS OWN ORGANIZATION (ORG-GATE-AUDIT, VERIFIER-20 #2). The compare used
-  // to ride the SHELL's active organization, so the owner's link opened on "Select an
-  // organization before sending this request" and this page's own Organization field did
-  // nothing. Access is personal: the scope id is asked where it lives (`custom.where_id_opens`,
-  // the one door every object page uses), and THAT organization is the request's. Only when
-  // this database cannot answer does the page's own Organization field stand in — never the
-  // shell picker.
-  const dataSource = useMemo<Pick<RecordsDataSource, "rpc">>(() => {
-    const client = createClient();
-    return {
-      rpc: (fn, args, opts) =>
-        client.schema((opts?.schema ?? "custom") as never).rpc(fn as never, args as never) as never,
-    };
-  }, []);
-  const scopeHome = useObjectOrganization(dataSource, target?.scopeId ?? null);
-  const compareOrganizationId =
-    scopeHome.state === "found"
-      ? scopeHome.organizationId
-      : scopeHome.state === "stand-in" || scopeHome.state === "unavailable"
-        ? pageOrganizationId
-        : null;
-  const compareOrganizationName = compareOrganizationId
-    ? (organizationName(compareOrganizationId) ??
-      (compareOrganizationId === pageOrganizationId ? pageOrganizationName : null))
-    : null;
-  const agentOk = !agentDraft.trim() || UUID_RE.test(agentDraft.trim());
-  const valid = UUID_RE.test(draft.trim()) && agentOk;
+function InspectorFromAddress() {
+  const params = useSearchParams();
+  const search = params.toString();
+  const selection = parseSelection(search);
+  const agent = params.get("agent")?.trim() ?? "";
+
+  const onChange = useCallback(
+    (next: InspectorSelection, opts?: { replace?: boolean }) => {
+      const href = currentPathWithSearch(selectionSearch(next, window.location.search));
+      if (opts?.replace) replaceAddressWithoutNavigating(href);
+      else pushAddressWithoutNavigating(href);
+    },
+    [],
+  );
+
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm">Compare one scope — current system and record store</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <form
-          className="flex flex-col gap-2 sm:flex-row sm:items-end"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (valid)
-              setTarget({ scopeId: draft.trim(), agentId: agentDraft.trim() || undefined });
-          }}
-        >
-          <div className="min-w-0 flex-1 space-y-1.5">
-            <Label htmlFor="compare-scope-id">Scope id</Label>
-            <Input
-              id="compare-scope-id"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder="The scope's id, from its page address"
-              className="font-mono text-base md:text-sm"
-            />
-          </div>
-          <div className="min-w-0 flex-1 space-y-1.5">
-            <Label htmlFor="compare-agent-id">Agent id (to answer on both paths)</Label>
-            <Input
-              id="compare-agent-id"
-              value={agentDraft}
-              onChange={(e) => setAgentDraft(e.target.value)}
-              placeholder="Optional — the agent whose answer you compare"
-              className="font-mono text-base md:text-sm"
-            />
-          </div>
-          <Button type="submit" size="sm" disabled={!valid}>
-            Compare
-          </Button>
-        </form>
-        {target && (
-          <p className="text-xs text-muted-foreground">
-            The same scope on its own pages:{" "}
-            <a className="underline underline-offset-2" href={`/scopes/s/${target.scopeId}`} target="_blank" rel="noreferrer">
-              the current system
-            </a>{" "}
-            and{" "}
-            <a className="underline underline-offset-2" href={`/o/${target.scopeId}`} target="_blank" rel="noreferrer">
-              the record store&apos;s copy
-            </a>
-            .
-          </p>
-        )}
-        {target && scopeHome.state === "resolving" && (
-          <p className="text-xs text-muted-foreground" data-compare-organization="resolving">
-            Finding which organization this scope lives in…
-          </p>
-        )}
-        {target && scopeHome.state === "not-given" && (
-          <Alert>
-            <AlertDescription>
-              This scope was not found, or it has not been shared with you. Check the id from the
-              scope&apos;s page address.
-            </AlertDescription>
-          </Alert>
-        )}
-        {target && scopeHome.state !== "resolving" && scopeHome.state !== "not-given" && !compareOrganizationId && (
-          <Alert>
-            <AlertDescription>
-              {scopeHome.state === "unavailable" ? `${scopeHome.why} ` : ""}
-              Choose the organization in this page&apos;s Organization field above and the compare
-              runs in it.
-            </AlertDescription>
-          </Alert>
-        )}
-        {target && compareOrganizationId && (
-          <>
-            <p className="text-xs text-muted-foreground" data-compare-organization={compareOrganizationId}>
-              Compared in {compareOrganizationName ?? "the scope's organization"}
-              {scopeHome.state === "found"
-                ? " — the organization this scope lives in."
-                : " — this page's Organization field, because the scope could not name its own."}
-            </p>
-            <div className="flex min-h-[24rem] flex-col rounded-md border border-border">
-              <ContextCompareView
-                key={`${target.scopeId}:${target.agentId ?? ""}:${compareOrganizationId}`}
-                scopeIds={[target.scopeId]}
-                agentId={target.agentId}
-                organizationId={compareOrganizationId}
-              />
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+    <ContextInspector
+      selection={selection}
+      onChange={onChange}
+      agentId={UUID_RE.test(agent) ? agent : undefined}
+    />
+  );
+}
+
+export default function ContextInspectorPage() {
+  return (
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col gap-2 p-3 sm:p-4">
+      <div className="flex items-center gap-2">
+        <Braces className="h-4 w-4 text-primary" />
+        <h1 className="text-sm font-semibold">Context inspector</h1>
+        <span className="text-xs text-muted-foreground">
+          Current system beside the record store, for what you choose
+        </span>
+      </div>
+      <Suspense fallback={null}>
+        <InspectorFromAddress />
+      </Suspense>
+    </div>
   );
 }
