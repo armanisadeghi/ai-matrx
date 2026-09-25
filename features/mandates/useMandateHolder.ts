@@ -14,6 +14,8 @@
  */
 
 import { useEffect, useState } from "react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   MandateOrganizationUnresolvedError,
   onMandateCacheInvalidated,
@@ -34,19 +36,27 @@ export function useMandateHolder(
   mandateKey: AnyMandateKey | "",
 ): MandateHolderState {
   const enabled = mandateKey.trim().length > 0;
+  // THE ORGANIZATION IS PART OF THE QUESTION. A verdict asked before the
+  // workspace was selected (or in another one) is a different answer, so the
+  // hook re-asks whenever the selected organization changes — without this, a
+  // person whose workspace resolved a moment after mount was left looking at
+  // "Mandate Holder: Not available" on a job that resolves (UI-REGISTER).
+  const selectedOrganizationId = useAppSelector(selectOrganizationId) ?? null;
+  const question = `${mandateKey}|${selectedOrganizationId ?? ""}`;
   const [epoch, setEpoch] = useState(0);
   const [retried, setRetried] = useState(false);
   const [state, setState] = useState<MandateHolderState & { key: string }>({
-    key: mandateKey,
+    key: question,
     holder: null,
     loading: enabled,
     error: null,
     organizationPending: false,
   });
 
-  if (state.key !== mandateKey) {
+  if (state.key !== question) {
+    if (retried) setRetried(false);
     setState({
-      key: mandateKey,
+      key: question,
       holder: null,
       loading: enabled,
       error: null,
@@ -69,7 +79,7 @@ export function useMandateHolder(
       .then((holder) => {
         if (cancelled) return;
         setState({
-          key: mandateKey,
+          key: question,
           holder,
           loading: false,
           error: null,
@@ -86,7 +96,7 @@ export function useMandateHolder(
           return;
         }
         setState({
-          key: mandateKey,
+          key: question,
           holder: null,
           loading: false,
           error: extractErrorMessage(error),
@@ -96,7 +106,7 @@ export function useMandateHolder(
     return () => {
       cancelled = true;
     };
-  }, [mandateKey, enabled, epoch, retried]);
+  }, [mandateKey, question, enabled, epoch, retried]);
 
   return {
     holder: state.holder,
