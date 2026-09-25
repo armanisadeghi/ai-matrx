@@ -1,0 +1,33 @@
+"use client";
+
+import Link from "next/link";
+import { AlertTriangle, ArrowLeft } from "lucide-react";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
+import { KIT_ROUTES, KIT_WORD } from "../constants";
+
+/** A kit address that names no published kit — said plainly, with the way back. */
+export function KitMissing({ kitKey, error }: { kitKey: string; error: string | null }) {
+  return (
+    <>
+      <PageHeader>
+        <HeaderStructured back title={KIT_WORD.many} />
+      </PageHeader>
+      <div className="h-full overflow-y-auto bg-textured">
+        <div className="mx-auto max-w-xl px-4 pt-[calc(var(--shell-header-h)+2rem)]">
+          <div className="rounded-xl border border-border bg-card p-5">
+            <AlertTriangle className="h-5 w-5 text-warning" />
+            <p className="mt-2 text-sm font-medium text-foreground">
+              {error ? `This ${KIT_WORD.oneLower} could not be loaded.` : `There is no published ${KIT_WORD.oneLower} called “${kitKey}”.`}
+            </p>
+            {error && <p className="mt-1 break-words text-xs text-muted-foreground">{error}</p>}
+            <Link href={KIT_ROUTES.gallery} className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+              <ArrowLeft className="h-3.5 w-3.5" />
+              All {KIT_WORD.manyLower}
+            </Link>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

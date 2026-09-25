@@ -21,6 +21,7 @@ export type AdminNavSurface = "sidebar" | "headerMenu";
  * opt in. Add the next action's id to this union and register its handler.
  */
 import { MARKETING_PILLARS } from "@/features/marketing/lib/marketing-nav";
+import { KIT_ROUTES, KIT_WORD } from "@/features/kits/constants";
 import {
   EDU_TOOL_NAV,
   eduToolHref,
@@ -722,6 +723,16 @@ export const primaryNavItems: ShellNavItem[] = [
         href: "/data-v2",
         iconName: "Table",
         description: "Tables, fields and records on the unified store",
+        color: "cyan",
+        gate: "unified-data-campaign",
+      },
+      {
+        // Installable bundles — tables + an agent bound to them + a workflow. They
+        // install into the record store, so they carry the same gate as Records.
+        label: KIT_WORD.many,
+        href: KIT_ROUTES.gallery,
+        iconName: "PackagePlus",
+        description: "Install a working example: tables, an agent that reads them, and a workflow",
         color: "cyan",
         gate: "unified-data-campaign",
       },

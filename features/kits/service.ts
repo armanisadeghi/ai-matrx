@@ -132,3 +132,39 @@ export async function fetchSourceAgents(
   for (const row of data ?? []) out[row.id] = row;
   return out;
 }
+
+/** Every `{token, id}` entity reference in a kit's example rows. */
+export function entityRefsIn(manifest: KitManifest): { token: string; id: string }[] {
+  const out = new Map<string, { token: string; id: string }>();
+  const visit = (v: unknown) => {
+    if (Array.isArray(v)) return v.forEach(visit);
+    if (isRecord(v) && typeof v.token === "string" && typeof v.id === "string") {
+      out.set(`${v.token}:${v.id}`, { token: v.token, id: v.id });
+    }
+  };
+  for (const t of manifest.tables) for (const r of t.records) Object.values(r).forEach(visit);
+  return [...out.values()];
+}
+
+/**
+ * Names for the entity references a kit's example rows point at, keyed `token:id`,
+ * so a preview says "Gemini 3.8 Flash" rather than an id. Only tokens with a known
+ * name source are resolved; any other reference is shown by its registry icon + id.
+ */
+export async function fetchRefNames(
+  client: Client,
+  refs: { token: string; id: string }[],
+): Promise<Record<string, string>> {
+  const names: Record<string, string> = {};
+  const modelIds = refs.filter((r) => r.token === "ai_model").map((r) => r.id);
+  if (modelIds.length > 0) {
+    const { data, error } = await client
+      .schema("ai")
+      .from("model_definition")
+      .select("id, name, common_name")
+      .in("id", modelIds);
+    if (error) console.error("[kits] could not read AI model names for the preview", error.message);
+    for (const m of data ?? []) names[`ai_model:${m.id}`] = m.common_name || m.name;
+  }
+  return names;
+}

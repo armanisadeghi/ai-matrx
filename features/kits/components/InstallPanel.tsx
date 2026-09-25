@@ -1,0 +1,272 @@
+"use client";
+
+// InstallPanel — the detail page's right rail: WHERE it installs (the organization
+// the person set), WHAT it will create (said before the click), the live stepper,
+// and — after — the doors to what was made, or the honest failure with "Finish
+// install" / "Remove what was created".
+
+import Link from "next/link";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Building2,
+  Check,
+  CircleDashed,
+  ExternalLink,
+  Loader2,
+  PackageCheck,
+  RotateCw,
+  Trash2,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { useUserOrganizations } from "@/features/organizations/hooks";
+import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
+import { toast } from "@/lib/toast";
+import { cn } from "@/utils/cn";
+import { KIT_INSTALLS_TABLE, KIT_ROUTES, KIT_WORD } from "../constants";
+import { removalSummary } from "../installer";
+import type { useKitInstall } from "../hooks/useKitInstall";
+import type { InstallStepView, KitManifest } from "../types";
+
+type KitInstallApi = ReturnType<typeof useKitInstall>;
+
+function StepIcon({ state }: { state: InstallStepView["state"] }) {
+  switch (state) {
+    case "done":
+      return (
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-success text-success-foreground">
+          <Check className="h-3 w-3" strokeWidth={3} />
+        </span>
+      );
+    case "running":
+      return (
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-primary">
+          <Loader2 className="h-3 w-3 animate-spin" />
+        </span>
+      );
+    case "failed":
+      return (
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground">
+          <X className="h-3 w-3" strokeWidth={3} />
+        </span>
+      );
+    default:
+      return (
+        <span className="flex h-5 w-5 items-center justify-center text-muted-foreground/50">
+          <CircleDashed className="h-4 w-4" />
+        </span>
+      );
+  }
+}
+
+export function InstallStepper({ steps }: { steps: InstallStepView[] }) {
+  return (
+    <ol className="relative space-y-0">
+      {steps.map((s, i) => (
+        <li key={s.id} className="relative flex gap-2.5 pb-3 last:pb-0">
+          {i < steps.length - 1 && (
+            <span
+              className={cn(
+                "absolute left-[9.5px] top-5 h-[calc(100%-1.25rem)] w-px",
+                s.state === "done" ? "bg-success/40" : "bg-border",
+              )}
+              aria-hidden
+            />
+          )}
+          <StepIcon state={s.state} />
+          <div className="min-w-0 flex-1 pt-px">
+            <p
+              className={cn(
+                "text-[13px] leading-snug",
+                s.state === "pending" ? "text-muted-foreground" : "text-foreground",
+                s.state === "running" && "font-medium",
+              )}
+            >
+              {s.label}
+            </p>
+            {s.detail && (
+              <p className={cn("mt-0.5 break-words text-xs", s.state === "failed" ? "text-destructive" : "text-muted-foreground")}>
+                {s.detail}
+              </p>
+            )}
+            {s.links && s.links.length > 0 && (
+              <div className="mt-0.5 flex flex-wrap gap-x-3">
+                {s.links.map((l) => (
+                  <Link key={l.href} href={l.href} className="inline-flex items-center gap-0.5 text-xs font-medium text-primary hover:underline">
+                    {l.label}
+                    <ArrowRight className="h-3 w-3" />
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function consequence(manifest: KitManifest, orgName: string): string {
+  const parts: string[] = [];
+  const rows = manifest.tables.reduce((n, t) => n + t.records.length, 0);
+  if (manifest.tables.length > 0) {
+    parts.push(
+      `${manifest.tables.length === 1 ? "1 table" : `${manifest.tables.length} tables`}${rows > 0 ? ` with ${rows} example rows` : ""}`,
+    );
+  }
+  if (manifest.agents.length > 0) parts.push(manifest.agents.length === 1 ? "a copy of 1 agent" : `copies of ${manifest.agents.length} agents`);
+  if (manifest.workflows.length > 0) parts.push(manifest.workflows.length === 1 ? "1 workflow" : `${manifest.workflows.length} workflows`);
+  const list = parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}` : parts[0] ?? "nothing";
+  return `Creates ${list} in ${orgName}. Nothing you already have is changed.`;
+}
+
+export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: KitInstallApi }) {
+  const { organizations } = useUserOrganizations();
+  const orgName = organizations.find((o) => o.id === api.organizationId)?.name ?? "your organization";
+  const { install, phase, steps, runError, readError } = api;
+  const busy = phase === "installing" || phase === "removing";
+  const installed = install?.status === "installed";
+  const partial = !!install && install.status !== "installed";
+
+  const onInstall = async () => {
+    const done = await api.runInstall();
+    if (done) toast.success(`"${manifest.name}" is installed in ${orgName}.`);
+  };
+
+  const onRemove = async () => {
+    if (!install) return;
+    const s = removalSummary(install);
+    const what = [
+      s.tables && `${s.tables} ${s.tables === 1 ? "table" : "tables"} and every row in ${s.tables === 1 ? "it" : "them"}`,
+      s.agents && `${s.agents} agent ${s.agents === 1 ? "copy" : "copies"}`,
+      s.workflows && `${s.workflows} ${s.workflows === 1 ? "workflow" : "workflows"}`,
+    ].filter(Boolean);
+    const ok = await confirm({
+      title: `Remove what "${manifest.name}" created?`,
+      description: `This archives ${what.length ? what.join(", ") : "nothing yet"} — exactly what this install made in ${orgName}, including any rows you added to those tables since. Anything else you have is untouched. Archived items can be restored from their own archive for a while.`,
+      confirmLabel: "Remove",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    if (await api.remove()) toast.success(`Removed what "${manifest.name}" created.`);
+  };
+
+  return (
+    <div className="rounded-xl border border-border bg-card shadow-sm">
+      <div className="border-b border-border p-4">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Install</p>
+        {api.organizationState === "ready" && api.organizationId ? (
+          <div className="mt-1.5 flex items-center gap-1.5 text-sm text-foreground">
+            <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="truncate font-medium">{orgName}</span>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="space-y-4 p-4">
+        {api.organizationState !== "ready" ? (
+          <OrganizationContextNotice state={api.organizationState} what={`Installing a ${KIT_WORD.oneLower}`} compact />
+        ) : api.store.state !== "on" ? (
+          <UnifiedDataSwitchNotice gate={api.store} what="Data records" />
+        ) : phase === "loading" ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground" aria-busy="true">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Checking whether this {KIT_WORD.oneLower} is already installed here…
+          </div>
+        ) : readError ? (
+          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+            <p className="flex items-start gap-2 text-sm text-foreground">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+              We could not check whether it is installed here.
+            </p>
+            <p className="mt-1 break-words pl-6 text-xs text-muted-foreground">{readError}</p>
+            <Button size="sm" variant="outline" className="ml-6 mt-2" onClick={api.retryRead}>
+              <RotateCw className="mr-1.5 h-3.5 w-3.5" />
+              Check again
+            </Button>
+          </div>
+        ) : (
+          <>
+            {installed && !busy ? (
+              <div className="flex items-start gap-2 rounded-lg bg-success/10 p-3">
+                <PackageCheck className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+                <p className="text-sm text-foreground">Installed in {orgName}.</p>
+              </div>
+            ) : !install && !busy ? (
+              <p className="text-sm leading-relaxed text-muted-foreground">{consequence(manifest, orgName)}</p>
+            ) : null}
+
+            {runError && !busy && (
+              <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+                <p className="flex items-start gap-2 text-sm font-medium text-foreground">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                  The install stopped.
+                </p>
+                <p className="mt-1 break-words pl-6 text-xs text-muted-foreground">{runError}</p>
+                <p className="mt-1 pl-6 text-xs text-muted-foreground">
+                  Everything already created is listed below and kept. Finishing picks up where it stopped.
+                </p>
+              </div>
+            )}
+
+            {(install || busy) && <InstallStepper steps={steps} />}
+
+            <div className="flex flex-col gap-2">
+              {installed && !busy ? (
+                <Button asChild className="w-full">
+                  <Link href={KIT_ROUTES.installed(manifest.key)}>
+                    Open your installed {KIT_WORD.oneLower}
+                    <ArrowRight className="ml-1.5 h-4 w-4" />
+                  </Link>
+                </Button>
+              ) : (
+                <Button className="w-full" onClick={onInstall} disabled={busy}>
+                  {phase === "installing" ? (
+                    <>
+                      <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                      Installing…
+                    </>
+                  ) : partial ? (
+                    <>
+                      <RotateCw className="mr-1.5 h-4 w-4" />
+                      Finish install
+                    </>
+                  ) : (
+                    <>Install in {orgName}</>
+                  )}
+                </Button>
+              )}
+              {install && !busy && (
+                <Button variant="ghost" size="sm" className="w-full text-muted-foreground hover:text-destructive" onClick={onRemove}>
+                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                  {partial ? "Remove what was created" : `Remove this ${KIT_WORD.oneLower}`}
+                </Button>
+              )}
+              {phase === "removing" && (
+                <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Archiving what this install created…
+                </p>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {install && (
+        <div className="border-t border-border px-4 py-2.5">
+          <Link
+            href={KIT_ROUTES.table(install.ledger_table_id)}
+            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            The install record lives in your “{KIT_INSTALLS_TABLE.name}” table
+            <ExternalLink className="h-3 w-3" />
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
