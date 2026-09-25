@@ -28,6 +28,15 @@ export type VariableBindingPreview =
       text: string;
       /** False when `text` is a named absence rather than data. */
       present: boolean;
+      /**
+       * What a run would do: `delivered` (the agent gets `text`), `absent` (the
+       * agent is told `text`, a named absence), `blocks_run` (the run is stopped
+       * and the agent is told nothing). Older servers send none — derived from
+       * `present` then.
+       */
+      outcome: "delivered" | "absent" | "blocks_run";
+      /** "This value comes from Model Picks and can't be typed in." */
+      sourceNote: string | null;
       rowCount: number | null;
       totalRows: number | null;
       truncated: boolean;
@@ -79,6 +88,16 @@ export async function previewVariableBinding(
       state: "ready",
       text: data.text,
       present: data.present !== false,
+      outcome:
+        data.outcome === "delivered" ||
+        data.outcome === "absent" ||
+        data.outcome === "blocks_run"
+          ? data.outcome
+          : data.present === false
+            ? "absent"
+            : "delivered",
+      sourceNote:
+        typeof data.source_note === "string" ? data.source_note : null,
       rowCount: typeof data.row_count === "number" ? data.row_count : null,
       totalRows: typeof data.total_rows === "number" ? data.total_rows : null,
       truncated: data.truncated === true,

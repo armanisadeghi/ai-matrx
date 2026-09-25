@@ -61,14 +61,17 @@ export function looksLikeDeveloperTalk(message: string): boolean {
   // is_new=false, conversation_id, status_code — a snake_case identifier.
   if (/\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/.test(text)) return true;
   // A bare UUID, with or without quotes.
-  if (/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(text))
+  if (
+    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(text)
+  )
     return true;
   // id='…' / key="…" — an assignment, not a sentence.
   if (/\w+\s*=\s*['"]/.test(text)) return true;
   // A stack frame or a module path.
   if (/\bTraceback\b|\.py[:"]|\bat [A-Za-z0-9_$.]+ \(/.test(text)) return true;
   // JSON or a structural fragment.
-  if (/^[[{]/.test(text) || /"[A-Za-z_][A-Za-z0-9_]*"\s*:/.test(text)) return true;
+  if (/^[[{]/.test(text) || /"[A-Za-z_][A-Za-z0-9_]*"\s*:/.test(text))
+    return true;
   return false;
 }
 
@@ -92,7 +95,8 @@ export function friendlyStreamError(input: {
 }): { message: string; detail: string | null } {
   const raw = (input.message ?? "").trim() || null;
   const declared = (input.userMessage ?? "").trim();
-  if (declared) return { message: declared, detail: raw && raw !== declared ? raw : null };
+  if (declared)
+    return { message: declared, detail: raw && raw !== declared ? raw : null };
 
   const keys = [input.errorType, input.code].filter(
     (value): value is string => typeof value === "string" && value.length > 0,
@@ -134,20 +138,32 @@ export function bindingUnresolvedFailure(input: {
   errorType?: string | null;
   code?: string | number | null;
   userMessage?: string | null;
+  message?: string | null;
   details?: unknown;
 }): BindingUnresolvedFailure | null {
   const details =
     input.details && typeof input.details === "object"
       ? (input.details as Record<string, unknown>)
       : {};
+  // Older servers classified nothing and wrapped it as "<Route> failed
+  // unexpectedly (ScopeBindingUnresolved). Please try again…" — recognise that
+  // too, and never repeat its "try again".
+  const wrapped = /\bScopeBindingUnresolved\b/;
   const isIt =
     input.errorType === "binding_unresolved" ||
-    input.code === "binding_unresolved";
+    input.code === "binding_unresolved" ||
+    wrapped.test(input.userMessage ?? "") ||
+    wrapped.test(input.message ?? "");
   if (!isIt) return null;
-  const variable = typeof details.variable === "string" ? details.variable : null;
+  const variable =
+    typeof details.variable === "string" ? details.variable : null;
   const tableName =
     typeof details.table_name === "string" ? details.table_name : null;
-  const declared = (input.userMessage ?? "").trim();
+  const offered = (input.userMessage ?? "").trim();
+  const declared =
+    offered && !wrapped.test(offered) && !/try again/i.test(offered)
+      ? offered
+      : "";
   const message =
     declared ||
     `This agent needs ${variable ? `“${variable}”` : "a value"}${

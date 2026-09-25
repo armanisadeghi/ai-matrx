@@ -44,6 +44,7 @@ export function InlineAssistantError({ requestId }: { requestId: string }) {
       detail={detail}
       errorType={streamError.error_type}
       code={code}
+      details={streamError.details}
     />
   );
 }

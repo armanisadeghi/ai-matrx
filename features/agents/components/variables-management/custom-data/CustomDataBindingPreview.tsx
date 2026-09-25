@@ -129,23 +129,36 @@ export function CustomDataBindingPreview({
         <p className="text-[11px] text-destructive">{state.message}</p>
       ) : (
         <>
-          {!state.present && (
+          {state.outcome === "absent" && (
             <p className="text-[11px] text-warning">
               No data right now
               {state.absentReason ? ` — ${state.absentReason}` : ""}. This is
               what the agent is told instead:
             </p>
           )}
+          {state.outcome === "blocks_run" && (
+            <p className="text-[11px] text-warning">
+              No data right now, and this variable is set to stop the run — the
+              agent would not start:
+            </p>
+          )}
           <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/50 p-2 font-mono text-[11px] text-foreground">
             {state.text}
           </pre>
-          {state.present && state.rowCount !== null && (
+          {state.outcome === "delivered" &&
+            state.rowCount !== null &&
+            state.notes.length === 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                {state.rowCount} {state.rowCount === 1 ? "row" : "rows"}
+                {state.totalRows !== null && state.totalRows > state.rowCount
+                  ? ` of ${state.totalRows}`
+                  : ""}
+                {state.truncated && " · cut short at your row limit"}
+              </p>
+            )}
+          {state.sourceNote && (
             <p className="text-[11px] text-muted-foreground">
-              {state.rowCount} {state.rowCount === 1 ? "row" : "rows"}
-              {state.totalRows !== null && state.totalRows > state.rowCount
-                ? ` of ${state.totalRows}`
-                : ""}
-              {state.truncated && " · cut short at your row limit"}
+              {state.sourceNote}
             </p>
           )}
           {state.withheld.length > 0 && (

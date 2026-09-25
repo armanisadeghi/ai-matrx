@@ -17,6 +17,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { AlertCircle, RotateCw, Loader2, ArrowRight } from "lucide-react";
+import { bindingUnresolvedFailure } from "./friendlyStreamError";
 
 /**
  * Structured backend refusals that have a ONE-CLICK way forward. A failure the
@@ -57,6 +58,14 @@ interface AssistantErrorProps {
    * first-response timeout, when the server may still finish the run).
    */
   door?: { label: string; href: string } | null;
+  /**
+   * The error event's `details`. `retryable: false` removes Retry (re-running
+   * cannot help); a `binding_unresolved` refusal also gets its own sentence and
+   * doors to the variable and the table — on EVERY surface that renders this.
+   */
+  details?: unknown;
+  /** The agent that ran, so a refusal about one of its variables can open it. */
+  agentId?: string | null;
 }
 
 export function AssistantError({
@@ -67,12 +76,59 @@ export function AssistantError({
   onRetry,
   retrying = false,
   door = null,
+  details,
+  agentId,
 }: AssistantErrorProps) {
   const [showDetails, setShowDetails] = useState(false);
 
+  const detailRecord =
+    details && typeof details === "object"
+      ? (details as Record<string, unknown>)
+      : {};
+  const retryable = detailRecord.retryable !== false;
+  const unresolved = bindingUnresolvedFailure({
+    errorType,
+    code,
+    userMessage: message,
+    message: detail,
+    details,
+  });
+  const shownMessage = unresolved ? unresolved.message : message;
+  const retry = !retryable || unresolved ? undefined : onRetry;
+  const tableId =
+    typeof detailRecord.table_id === "string" ? detailRecord.table_id : null;
+  const extraDoors: { label: string; href: string }[] = unresolved
+    ? [
+        ...(agentId
+          ? [
+              unresolved.variable
+                ? {
+                    label: `Open “${unresolved.variable}”`,
+                    href: `/agents/${agentId}/build?panels=agent_variable:${encodeURIComponent(
+                      `${agentId}|${unresolved.variable}`,
+                    )}`,
+                  }
+                : { label: "Open the agent", href: `/agents/${agentId}/build` },
+            ]
+          : []),
+        ...(tableId
+          ? [
+              {
+                label: unresolved.tableName
+                  ? `Open ${unresolved.tableName}`
+                  : "Open the table",
+                href: `/data-v2/${tableId}`,
+              },
+            ]
+          : []),
+      ]
+    : [];
+
   // Only offer "Details" when there is something beyond the friendly line.
   const hasDetails =
-    (typeof detail === "string" && detail.length > 0 && detail !== message) ||
+    (typeof detail === "string" &&
+      detail.length > 0 &&
+      detail !== shownMessage) ||
     (typeof errorType === "string" && errorType.length > 0) ||
     code != null;
 
@@ -81,7 +137,7 @@ export function AssistantError({
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
         <span className="inline-flex items-center gap-1.5 text-destructive/90">
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-          {message}
+          {shownMessage}
         </span>
 
         {errorType && RECOVERY_DOORS[errorType] && (
@@ -94,6 +150,17 @@ export function AssistantError({
           </Link>
         )}
 
+        {extraDoors.map((d) => (
+          <Link
+            key={d.href}
+            href={d.href}
+            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-primary hover:bg-primary/10"
+          >
+            {d.label}
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+        ))}
+
         {door && (
           <Link
             href={door.href}
@@ -104,11 +171,11 @@ export function AssistantError({
           </Link>
         )}
 
-        {onRetry && (
+        {retry && (
           <button
             type="button"
             disabled={retrying}
-            onClick={onRetry}
+            onClick={retry}
             className="inline-flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-60"
           >
             {retrying ? (
@@ -151,7 +218,7 @@ export function AssistantError({
           )}
           {typeof detail === "string" &&
             detail.length > 0 &&
-            detail !== message && (
+            detail !== shownMessage && (
               <span className="whitespace-pre-wrap break-words">{detail}</span>
             )}
         </div>
