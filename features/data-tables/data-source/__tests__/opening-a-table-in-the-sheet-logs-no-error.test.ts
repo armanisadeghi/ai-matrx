@@ -14,6 +14,9 @@
  * is 23503/409) — and fails on ANY error answer the browser would log, or any console.error.
  */
 
+// A module, so its constants never collide with another test file's under tsc.
+export {};
+
 const TABLE = "dbc7cd48-7b46-4402-ac9d-e459a95f4598";
 const ORG = "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f";
 const STATUS = "7d2e0b3c-2222-4b00-8000-000000000001";

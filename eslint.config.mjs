@@ -1704,6 +1704,13 @@ export default [
               message:
                 "The json-block-detector demo is a consumer of @/features/content-ir, not a source. Import the library, not the demo.",
             },
+            // LANE FE-TAILS (2026-09-24): the app's local copy of WhereItLives was deleted; the ONE
+            // "which organization does this table live in, and move it" chip is records-ui's.
+            {
+              group: ["**/where-it-lives/*", "**/where-it-lives"],
+              message:
+                'The local where-it-lives copy is gone. Import { WhereItLives } from "@ai-matrx/records-ui" (render it inside a RecordsMount).',
+            },
           ],
           paths: [
             ...deletedFileHooksRestriction.paths,
@@ -1789,6 +1796,13 @@ export default [
           selector: "ImportExpression[source.value='sonner']",
           message:
             'Dynamic import("sonner") bypasses Error Inspector capture — use import("@/lib/toast") instead. See lib/toast.ts.',
+        },
+        // Twin of the where-it-lives `patterns` ban above, for the blocks that turn
+        // `no-restricted-imports` off (lane FE-TAILS, 2026-09-24).
+        {
+          selector: "ImportDeclaration[source.value=/(^|\\/)where-it-lives(\\/|$)/], ImportExpression[source.value=/(^|\\/)where-it-lives(\\/|$)/]",
+          message:
+            'The local where-it-lives copy is gone. Import { WhereItLives } from "@ai-matrx/records-ui" (render it inside a RecordsMount).',
         },
         // Legacy Supabase API key env vars are hard-banned — no exceptions.
         ...legacySupabaseKeyBan,

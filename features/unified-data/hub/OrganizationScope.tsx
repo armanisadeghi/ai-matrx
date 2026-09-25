@@ -21,10 +21,10 @@ import Link from "next/link";
 import { Building2, Layers } from "lucide-react";
 import { Button, Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import type { RecordsDataSource } from "@ai-matrx/records";
+import { WhereItLives } from "@ai-matrx/records-ui";
 
 import { OrganizationPickerPanel } from "@/features/organizations/components/OrganizationPickerPanel";
 import * as doors from "./doors";
-import { WhereItLives } from "../where-it-lives/WhereItLives";
 
 export function OrganizationScopeStrip({
   organizationName,
@@ -166,9 +166,9 @@ export function AllOrganizationsTables({ dataSource }: { dataSource: RecordsData
                   {table.table_name}
                 </Link>
                 {/* WHERE IT LIVES, ON THE ROW, and — for its owner — where else it can go. */}
+                {/* records-ui's own chip; the hub renders inside the page's RecordsMount. */}
                 <WhereItLives
                   variant="row"
-                  dataSource={dataSource}
                   tableId={table.table_id}
                   knownOrganizationName={group.organizationName}
                   onMoved={() => setReread((n) => n + 1)}

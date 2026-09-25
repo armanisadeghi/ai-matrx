@@ -8,8 +8,9 @@ import { OrgResourceList } from "@/features/organizations/components/OrgResource
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase/client";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
-import { recordsDataSource } from "@ai-matrx/records-ui";
-import { WhereItLives } from "@/features/unified-data/where-it-lives/WhereItLives";
+import { RecordsMount, WhereItLives, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 const SELECT_COLS = "id, table_name, description, version, updated_at";
 
@@ -66,6 +67,7 @@ export default function OrgTablesPage() {
   const [resolvedOrgId, setResolvedOrgId] = React.useState<string | null>(null);
   const [orgName, setOrgName] = React.useState<string | null>(null);
   const [dataSource] = React.useState(() => recordsDataSource(supabase as unknown as SupabaseClient));
+  const userId = useAppSelector(selectUserId);
   // A table moved from a card re-reads the list (the moved card leaves this organization's page).
   const [reread, setReread] = React.useState(0);
 
@@ -92,31 +94,38 @@ export default function OrgTablesPage() {
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <OrgResourceList
-          key={reread}
-          orgId={resolvedOrgId}
-          resourceType="dataset"
-          tableName="udt_datasets"
-          selectColumns={SELECT_COLS}
-          ownedQuery={fetchOwned}
-          mapRow={mapRow}
-          emptyTitle="No shared tables yet"
-          emptyDescription="Data tables owned by this organization will appear here, along with tables other members share."
-          emptyIcon={
-            <Table className="h-8 w-8 text-cyan-600 dark:text-cyan-400" />
-          }
-          renderCardAside={(item) =>
-            storeTableIds.has(item.id) ? (
-              <WhereItLives
-                variant="row"
-                dataSource={dataSource}
-                tableId={item.id}
-                knownOrganizationName={orgName}
-                onMoved={() => setReread((n) => n + 1)}
-              />
-            ) : null
-          }
-        />
+        /* records-ui's WhereItLives reads the store through the mount's client: one mount for
+           the page, keyed to the organization the page lists (each chip still asks the store
+           where ITS table lives — never this organization). */
+        <RecordsMount
+          letTheStoreDecideRights
+          config={{ dataSource, actor: personActor(userId), organizationId: resolvedOrgId }}
+        >
+          <OrgResourceList
+            key={reread}
+            orgId={resolvedOrgId}
+            resourceType="dataset"
+            tableName="udt_datasets"
+            selectColumns={SELECT_COLS}
+            ownedQuery={fetchOwned}
+            mapRow={mapRow}
+            emptyTitle="No shared tables yet"
+            emptyDescription="Data tables owned by this organization will appear here, along with tables other members share."
+            emptyIcon={
+              <Table className="h-8 w-8 text-cyan-600 dark:text-cyan-400" />
+            }
+            renderCardAside={(item) =>
+              storeTableIds.has(item.id) ? (
+                <WhereItLives
+                  variant="row"
+                  tableId={item.id}
+                  knownOrganizationName={orgName}
+                  onMoved={() => setReread((n) => n + 1)}
+                />
+              ) : null
+            }
+          />
+        </RecordsMount>
       )}
     </OrgResourceLayout>
   );
