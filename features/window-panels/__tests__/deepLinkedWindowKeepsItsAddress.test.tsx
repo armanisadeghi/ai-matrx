@@ -15,8 +15,8 @@
  *     person is TOLD (law 4), with a diagnostic captured;
  *  3. a token with no hydrator at all is likewise kept and announced.
  *
- * RED on the previous bytes: (1) and (2) both fail — `router.replace` is
- * called with the token stripped as soon as the grace timer fires.
+ * RED on the previous bytes: (1) and (2) both fail — the address is rewritten
+ * with the token stripped as soon as the grace timer fires.
  */
 import React from "react";
 import { act } from "react";
@@ -32,15 +32,16 @@ import urlSyncReducer, {
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-let mockUrl = "/tasks";
-const mockReplace = jest.fn((url: string) => {
-  mockUrl = url;
-});
+// The manager writes the address through the (Next-patched) history API and
+// never through the router (lane PANEL-REMOUNT) — so the address bar is the
+// one truth these mocks read, and a router call is a defect.
+const mockReplace = jest.fn();
+const setUrl = (url: string) => window.history.replaceState(null, "", url);
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mockReplace }),
-  usePathname: () => mockUrl.split("?")[0],
-  useSearchParams: () => new URLSearchParams(mockUrl.split("?")[1] ?? ""),
+  usePathname: () => window.location.pathname,
+  useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 
 // The real module pulls half the app in and registers ~40 hydrators; this
@@ -68,7 +69,7 @@ import { registerPanelHydrator } from "@/features/window-panels/url-sync/UrlPane
 const OLD_GRACE_MS = 5000;
 
 function panelsParam(): string | null {
-  return new URLSearchParams(mockUrl.split("?")[1] ?? "").get("panels");
+  return new URLSearchParams(window.location.search).get("panels");
 }
 
 describe("a deep-linked window keeps its address", () => {
@@ -93,6 +94,7 @@ describe("a deep-linked window keeps its address", () => {
   });
 
   afterEach(() => {
+    expect(mockReplace).not.toHaveBeenCalled();
     act(() => root.unmount());
     container.remove();
     jest.useRealTimers();
@@ -110,7 +112,7 @@ describe("a deep-linked window keeps its address", () => {
 
   it("waits for a late registration instead of a clock, and the token survives the wait", () => {
     registerPanelHydrator("brand_channel", () => undefined);
-    mockUrl = "/tasks?panels=brand_channel:brand-1";
+    setUrl("/tasks?panels=brand_channel:brand-1");
 
     render();
 
@@ -136,7 +138,7 @@ describe("a deep-linked window keeps its address", () => {
 
   it("keeps the address and says so when the window never registers", () => {
     registerPanelHydrator("site_tracking", () => undefined);
-    mockUrl = "/tasks?panels=site_tracking:site-9";
+    setUrl("/tasks?panels=site_tracking:site-9");
 
     render();
 
@@ -161,7 +163,7 @@ describe("a deep-linked window keeps its address", () => {
   });
 
   it("keeps the address and says so when no hydrator owns the token", () => {
-    mockUrl = "/tasks?panels=not_a_window:xyz";
+    setUrl("/tasks?panels=not_a_window:xyz");
 
     render();
 
@@ -197,7 +199,7 @@ describe("a deep-linked window keeps its address", () => {
    */
   it("settles an aliased deep link with the window its alias opens, once, and says nothing", () => {
     registerPanelHydrator("files", () => undefined);
-    mockUrl = "/tasks?panels=files:root";
+    setUrl("/tasks?panels=files:root");
 
     render();
 
@@ -228,7 +230,7 @@ describe("a deep-linked window keeps its address", () => {
 
   it("still keeps and announces an aliased token whose window never registers, naming what was pasted", () => {
     registerPanelHydrator("files", () => undefined);
-    mockUrl = "/tasks?panels=files:root";
+    setUrl("/tasks?panels=files:root");
 
     render();
 
@@ -257,7 +259,7 @@ describe("a deep-linked window keeps its address", () => {
   it("canonicalises an aliased token's KEY and keeps the pasted instance id", () => {
     registerPanelHydrator("files", () => undefined);
     registerPanelHydrator("cloud_files", () => undefined);
-    mockUrl = "/tasks?panels=files:root";
+    setUrl("/tasks?panels=files:root");
 
     render();
 
@@ -274,7 +276,7 @@ describe("a deep-linked window keeps its address", () => {
   it("lets the window that publishes a different instance id win", () => {
     registerPanelHydrator("files", () => undefined);
     registerPanelHydrator("cloud_files", () => undefined);
-    mockUrl = "/tasks?panels=files:root";
+    setUrl("/tasks?panels=files:root");
 
     render();
 
@@ -305,7 +307,7 @@ describe("a deep-linked window keeps its address", () => {
   it("keeps BOTH tokens when two of them canonicalise to the same key", () => {
     registerPanelHydrator("files", () => undefined);
     registerPanelHydrator("cloud_files", () => undefined);
-    mockUrl = "/tasks?panels=files:a,cloud_files:b";
+    setUrl("/tasks?panels=files:a,cloud_files:b");
 
     render();
 
@@ -321,7 +323,7 @@ describe("a deep-linked window keeps its address", () => {
 
   it("still removes a token when its window actually closes", () => {
     registerPanelHydrator("notes", () => undefined);
-    mockUrl = "/tasks?panels=notes:default";
+    setUrl("/tasks?panels=notes:default");
 
     render();
 

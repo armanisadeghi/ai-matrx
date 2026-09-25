@@ -94,6 +94,27 @@ interface StoreNotice {
  * nobody is broadcasting to.
  */
 export function createRecordsRealtimePort(organizationId: string): RecordsRealtimePort {
+  const existing = portsByOrganization.get(organizationId);
+  if (existing) return existing;
+  const port = buildRecordsRealtimePort(organizationId);
+  portsByOrganization.set(organizationId, port);
+  return port;
+}
+
+/**
+ * 🚨 ONE PORT PER ORGANIZATION, SO THE SAME ARGUMENT IS THE SAME PORT (lane PANEL-REMOUNT,
+ * 2026-09-24). `<RecordsProvider>` rebuilds its whole records client when `config.realtime`
+ * changes identity — correctly: a different port is a different client — and every grid hook
+ * re-reads on a new client. The /data-v2 pages build this port inline in `config`, so ANY
+ * re-render of the page (a `?panels=` write when a window opened, `?view=`, anything that
+ * moves `useSearchParams`) handed the provider a fresh object and the whole grid re-read
+ * `table_kernel_id`, `applicable_fields`, `my_levels`… and redrew its rows. The port holds no
+ * state of its own (every subscription's state lives in its own closure), so one per
+ * organization is exactly as correct and makes every caller stable without a `useMemo`.
+ */
+const portsByOrganization = new Map<string, RecordsRealtimePort>();
+
+function buildRecordsRealtimePort(organizationId: string): RecordsRealtimePort {
   return {
     subscribeRecords({ table_id }, sink) {
       let timer: ReturnType<typeof setTimeout> | null = null;

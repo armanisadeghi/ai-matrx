@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectUrlSyncEntries,
@@ -11,6 +11,7 @@ import {
 import { getHydrator } from "./UrlPanelRegistry";
 import { canonicalizeTokenKey, resolveCanonicalTypeKey } from "./panelKeyAliases";
 import { initUrlHydration } from "./initUrlHydration";
+import { replaceAddressWithoutNavigating } from "./replaceAddressWithoutNavigating";
 import { LAZY_WINDOW_MOUNT_DEADLINE_MS } from "../constants/lazyWindowMount";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toastErrorAlreadyCaptured } from "@/lib/toast";
@@ -216,8 +217,9 @@ export function parseParams(paramString: string | null) {
  * Mount inside a <Suspense> boundary if you need URL-based panel restoration.
  */
 export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
-  const router = useRouter();
-  const pathname = usePathname();
+  // Read for two things only: the one-shot hydration below, and as the signal
+  // that re-runs the sync effect after ANY address change (Next navigation or
+  // patched history write). The sync effect itself reads the live address.
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
 
@@ -384,7 +386,11 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
       );
     }
 
-    const currentParam = searchParams.get("panels") || "";
+    // 🚨 THE LIVE ADDRESS, NOT THE HOOK'S SNAPSHOT (lane PANEL-REMOUNT). The
+    // hook value can trail a write the page itself just made (`?view=`), and
+    // building the next query from a stale snapshot would silently drop it.
+    const liveParams = new URLSearchParams(window.location.search);
+    const currentParam = liveParams.get("panels") || "";
     // Windows that exist speak for themselves; windows that have not
     // registered keep their verbatim token. Nothing is ever dropped because a
     // timer ran out.
@@ -402,27 +408,25 @@ export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
 
     // Only update if actually changed, to avoid infinite replace loops
     if (currentParam !== nextParam) {
-      const params = new URLSearchParams(searchParams.toString());
-
       if (nextParam) {
-        params.set("panels", nextParam);
+        liveParams.set("panels", nextParam);
       } else {
-        params.delete("panels");
+        liveParams.delete("panels");
       }
 
-      const qs = params.toString();
-      // scroll: false keeps position stable
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      const qs = liveParams.toString();
+      // 🚨 NEVER `router.replace` HERE (lane PANEL-REMOUNT, 2026-09-24). A
+      // panel's address is bookkeeping about the window layer, not a new page:
+      // `router.replace` is an App Router NAVIGATION — it fetched a fresh RSC
+      // payload for the route and, on commit, remounted the page that opened
+      // the panel (on /data-v2 the whole grid re-read table_kernel_id,
+      // applicable_fields, my_levels…). The history write updates the address
+      // and `useSearchParams` with zero page work.
+      replaceAddressWithoutNavigating(
+        `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`,
+      );
     }
-  }, [
-    entries,
-    isHydrated,
-    managedTypeKeys,
-    pathname,
-    router,
-    searchParams,
-    noticeDue,
-  ]);
+  }, [entries, isHydrated, managedTypeKeys, searchParams, noticeDue]);
 
   return null;
 }
