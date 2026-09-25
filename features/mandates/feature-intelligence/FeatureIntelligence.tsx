@@ -235,7 +235,10 @@ export function FeatureIntelligence({
               runOverride={topicChoice}
               onHover={setHoverKey}
               onDuplicate={() => void actions.duplicateAndModify(row, {
-                effectiveTopicAgentId: topicChoice?.health === "available" ? topicChoice.holderId : undefined,
+                // An unverified topic choice remains the exact source. If it
+                // cannot be copied, leave the topic choice untouched instead
+                // of replacing it with a copy of a different mandate holder.
+                effectiveTopicAgentId: topicChoice?.health === "unavailable" ? undefined : topicChoice?.holderId,
                 afterBind: topicChoice && clearRunOverride
                   ? () => clearRunOverride(row.mandateKey)
                   : undefined,

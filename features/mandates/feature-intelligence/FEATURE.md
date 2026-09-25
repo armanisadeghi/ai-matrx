@@ -27,7 +27,7 @@ Write `<feature>/…/intelligence-places.ts` (a `FeaturePlaces`) beside the code
 - The member list names `holderId` for workflows as the workflow definition id; agent pins come from the ladder (`fetchMandateLadder`) at duplicate time.
 - A pinned workflow copy duplicates the selected workflow version; an unpinned workflow copy duplicates the live definition.
 - An organization-level copy is created by the admin; members can use it only if they can open it (the server's answer is shown).
-- The research topic's own per-role choice (`rs_topic.agent_config`) runs ahead of every ladder rung for that topic. The page shows it as a separate layer. A successful replacement is bound and verified before the topic choice is removed with a guarded JSON merge; a rejected replacement leaves that topic choice in place. A missing, inactive, archived, or unreadable topic agent is shown as needing attention and Duplicate & modify copies the inherited mandate holder instead.
+- The research topic's own per-role choice (`rs_topic.agent_config`) runs ahead of every ladder rung for that topic. The page shows it as a separate layer. A successful replacement is bound and verified before the topic choice is removed with a guarded JSON merge; a rejected replacement leaves that topic choice in place. A confirmed missing, inactive, or archived topic agent is shown as needing attention and duplication copies the inherited mandate holder. A pending or failed lookup still copies the recorded topic agent ID; failure leaves the topic choice intact.
 - The Intelligence icon is an owner-approved exception to "disclosure adds no visible content" (Arman 2026-09-25); it is a management door, not a disclosure roster.
 
 ## Change Log

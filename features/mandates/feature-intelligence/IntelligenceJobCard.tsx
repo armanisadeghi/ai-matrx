@@ -184,7 +184,7 @@ export function IntelligenceJobCard({
               ) : (
                 <Copy className="mr-1.5 h-3.5 w-3.5" />
               )}
-              {runOverride && runOverride.health !== "available" ? "Duplicate mandate choice" : "Duplicate & modify"}
+              {runOverride?.health === "unavailable" ? "Duplicate mandate choice" : "Duplicate & modify"}
             </Button>
           ) : null}
           <Button size="sm" variant="outline" onClick={onUseOwn} disabled={busy}>
