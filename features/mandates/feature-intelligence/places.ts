@@ -8,20 +8,10 @@
 // A job neither source names is shown as "not recorded yet", never guessed.
 
 import { supabase } from "@/utils/supabase/client";
-import { FLASHCARDS_PLACES } from "@/features/flashcards/data/intelligence-places";
-import { RESEARCH_PLACES } from "@/features/research/components/intelligence/places";
-import type {
-  FeaturePlaces,
-  IntelligenceContext,
-  ResolvedPlace,
-} from "./types";
+import { declaredPlacesFor } from "./registry";
+import type { IntelligenceContext, ResolvedPlace } from "./types";
 
-/** Every feature that declares its places. Add a feature here, beside its test. */
-const DECLARED: readonly FeaturePlaces[] = [FLASHCARDS_PLACES, RESEARCH_PLACES];
-
-export function declaredPlacesFor(feature: string): FeaturePlaces | null {
-  return DECLARED.find((entry) => entry.feature === feature) ?? null;
-}
+export { declaredPlacesFor };
 
 /**
  * Fill `[param]` segments from the context. Returns null when any segment has

@@ -170,6 +170,8 @@ import { ModeToggle, type BindingMode } from "./batch/ModeToggle";
 import { offeredValuesToSurfaceValues } from "./offered-adapter";
 import { useHolderInputs } from "./useHolderInputs";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
+import { RequestAccess } from "@/features/access-gate/components/RequestAccess";
+import { bindingAccessTarget } from "./access-target";
 
 /**
  * THE MAPPER'S NOUNS ON A MANDATE SCREEN. The mechanic is the surface bind
@@ -1094,6 +1096,24 @@ function BindingDraft({
   const systemHost = perspective === "system";
   /** Writing the job's own default — holder, map, settings and auto-run. */
   const writingDefinitionDefault = systemHost || onDefaultHolderRung;
+  /**
+   * 🚨 NOT THIS VIEWER'S TO WRITE (owner ruling 2026-09-25): Save and Remove
+   * are ABSENT and "Ask for access" stands in their place. `null` whenever the
+   * block is something the viewer can fix themselves.
+   */
+  const accessTarget = bindingAccessTarget({
+    rung,
+    writingDefinitionDefault,
+    organizationId,
+    organizationName:
+      organizations.find((o) => o.id === organizationId)?.name ?? null,
+    canBindThisOrg,
+    defaultHolderOffer,
+    homeOrganizationId,
+    homeOrganizationName:
+      organizations.find((o) => o.id === homeOrganizationId)?.name ?? null,
+    mandate: data.mandate,
+  });
   /** The rung the SAVE actually wrote — what the receipt must name. */
   const savedRung: WorkspaceRung = writingDefinitionDefault
     ? DEFAULT_HOLDER_RUNG
@@ -1899,6 +1919,7 @@ function BindingDraft({
             holder={holder}
             owner={draftOwner}
             refusal={createAgentRefusal}
+            requestAccess={accessTarget}
             onCreated={(agentId) => {
               setHolder({
                 kind: "agent",
@@ -1944,6 +1965,19 @@ function BindingDraft({
           // The bottom rung's CURRENT answer, stated wherever that rung is
           // described — including from the rungs above it (FIX-R6/F3).
           defaultHolderNow={defaultHolderNow}
+          defaultHolderAccess={bindingAccessTarget({
+            rung: DEFAULT_HOLDER_RUNG,
+            writingDefinitionDefault: true,
+            organizationId: null,
+            organizationName: null,
+            canBindThisOrg: false,
+            defaultHolderOffer,
+            homeOrganizationId,
+            homeOrganizationName:
+              organizations.find((o) => o.id === homeOrganizationId)?.name ??
+              null,
+            mandate: data.mandate,
+          })}
           onRungChange={(nextRung, nextOrgId) =>
             void requestRungChange(nextRung, nextOrgId)
           }
@@ -2569,7 +2603,14 @@ function BindingDraft({
           ) : null}
 
           <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/40 pt-3">
-            {saveRefusal ? (
+            {accessTarget ? (
+              /* Not this viewer's to write: no Save, no Remove — one way to ask. */
+              <RequestAccess
+                target={accessTarget}
+                reason={saveRefusal ?? undefined}
+                className="mr-auto max-w-[46rem]"
+              />
+            ) : saveRefusal ? (
               /* 🚨 SAVE-BLOCKING REFUSALS ARE PRINTED (2026-09-20). The reason
                  Save is disabled used to live in a hover popover behind a "?",
                  so the screen said "Save unavailable" and stopped. A person
@@ -2582,7 +2623,7 @@ function BindingDraft({
                 </span>
               </p>
             ) : null}
-            {binding ? (
+            {binding && !accessTarget ? (
               <Button
                 variant="ghost"
                 size="sm"
@@ -2594,13 +2635,15 @@ function BindingDraft({
                 Remove {rungWords(rung).noun}
               </Button>
             ) : null}
-            <Button
-              size="sm"
-              disabled={disabled || Boolean(saveRefusal)}
-              onClick={() => void save()}
-            >
-              {busy ? "Saving…" : "Save"}
-            </Button>
+            {accessTarget ? null : (
+              <Button
+                size="sm"
+                disabled={disabled || Boolean(saveRefusal)}
+                onClick={() => void save()}
+              >
+                {busy ? "Saving…" : "Save"}
+              </Button>
+            )}
           </div>
         </div>
       </>

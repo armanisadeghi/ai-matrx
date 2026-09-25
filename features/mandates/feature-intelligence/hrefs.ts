@@ -4,6 +4,7 @@
 // page (research topics) keeps it there; every other feature uses the generic
 // `/intelligence/<feature>`. `?mandate=<key>` focuses one job.
 
+import { featureForKey } from "./registry";
 import type { IntelligenceContext } from "./types";
 
 export function featureIntelligenceHref(
@@ -26,7 +27,8 @@ export function featureIntelligenceHref(
   return query ? `${base}?${query}` : base;
 }
 
-/** The feature a mandate key belongs to — its first segment. */
+/** The feature whose page shows a mandate key — its first segment, or the
+ * feature that declares that segment as one of its prefixes. */
 export function featureOfMandateKey(mandateKey: string): string {
-  return mandateKey.split(".")[0] ?? mandateKey;
+  return featureForKey(mandateKey);
 }

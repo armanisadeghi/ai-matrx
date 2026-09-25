@@ -38,9 +38,24 @@ export interface MandatePlace {
 }
 
 export interface FeaturePlaces {
-  /** The mandate-key prefix this feature owns (`flashcards`). */
+  /** The mandate-key prefix this feature owns (`flashcards`) — also its URL slug. */
   feature: string;
   label: string;
+  /**
+   * More key prefixes the same feature owns (`podcast_client` for `podcast`).
+   * Their jobs appear on this feature's page.
+   */
+  extraPrefixes?: readonly string[];
+  /**
+   * Named key maps the feature's code reads jobs through (`{ FC_MANDATES }`) —
+   * the places guard resolves `FC_MANDATES.generateCards` to its key.
+   */
+  aliases?: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  /**
+   * Folders the places guard scans: every component (`.tsx`) inside that runs
+   * one of this feature's jobs must be named by a place.
+   */
+  roots?: readonly string[];
   places: readonly MandatePlace[];
 }
 
