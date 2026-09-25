@@ -24,6 +24,7 @@
  */
 
 import * as React from "react";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { toast } from "@/lib/toast";
 import {
@@ -518,11 +519,15 @@ export function StructuredListManagerV1({
       prev.map((l) => (l.id === id ? { ...l, [field]: value } : l)),
     );
     setSaveStatus("saving");
-    const { error } = await supabase
-      .schema("workbench")
-      .from("udt_structured_lists")
-      .update({ [field]: value })
-      .eq("id", id);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("workbench")
+        .from("udt_structured_lists")
+        .update({ [field]: value })
+        .eq("id", id)
+        .select("id"),
+      { action: "save", noun: "list" },
+    );
     if (error) {
       setSaveStatus("error");
       toast.error("Save failed");
@@ -549,11 +554,15 @@ export function StructuredListManagerV1({
     let undone = false;
     const timer = setTimeout(async () => {
       if (undone) return;
-      const { error } = await supabase
-        .schema("workbench")
-        .from("udt_structured_lists")
-        .update({ deleted_at: new Date().toISOString() })
-        .eq("id", id);
+      const { error } = await tryWriteOne(
+        supabase
+          .schema("workbench")
+          .from("udt_structured_lists")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("id", id)
+          .select("id"),
+        { action: "delete", noun: "list" },
+      );
       if (error) {
         setLists((prev) => [snapshotList, ...prev]);
         toast.error("Delete failed");
@@ -649,11 +658,15 @@ export function StructuredListManagerV1({
       }),
     );
     setSaveStatus("saving");
-    const { error } = await supabase
-      .schema("workbench")
-      .from("udt_structured_list_items")
-      .update({ [field]: value })
-      .eq("id", id);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("workbench")
+        .from("udt_structured_list_items")
+        .update({ [field]: value })
+        .eq("id", id)
+        .select("id"),
+      { action: "save", noun: "item" },
+    );
     if (error && snapshot) {
       setItems((prev) => prev.map((i) => (i.id === id ? snapshot! : i)));
       setSaveStatus("error");
@@ -673,11 +686,15 @@ export function StructuredListManagerV1({
     let undone = false;
     const timer = setTimeout(async () => {
       if (undone) return;
-      const { error } = await supabase
-        .schema("workbench")
-        .from("udt_structured_list_items")
-        .update({ deleted_at: new Date().toISOString() })
-        .eq("id", id);
+      const { error } = await tryWriteOne(
+        supabase
+          .schema("workbench")
+          .from("udt_structured_list_items")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("id", id)
+          .select("id"),
+        { action: "delete", noun: "item" },
+      );
       if (error) {
         setItems((prev) => [...prev, snapshot]);
         toast.error("Delete failed");

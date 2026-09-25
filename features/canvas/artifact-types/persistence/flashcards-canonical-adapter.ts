@@ -237,6 +237,7 @@ export const FLASHCARDS_CANONICAL_ADAPTER: ArtifactPersistenceAdapter<Flashcards
       // not here. Touch the set so "recently studied" ordering stays fresh.
       const setId = link?.externalId;
       if (!setId) return false;
+      // write-lands-exempt: best-effort updated_at recency touch; progress itself is written by study_record_attempt
       const { error } = await supabase
         .schema("education")
         .from("fc_set")

@@ -329,6 +329,7 @@ export const canvasItemsService = {
 
       // Update last_accessed_at
       if (data) {
+        // write-lands-exempt: best-effort last_accessed_at recency stamp; a missed stamp must not fail the read
         await supabase
           .schema("canvas").from("canvas_items")
           .update({ last_accessed_at: new Date().toISOString() })

@@ -30,6 +30,7 @@
  */
 
 import * as React from "react";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { type SupabaseClient } from "@supabase/supabase-js";
 import { toast } from "@/lib/toast";
 import {
@@ -486,11 +487,15 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
       prev.map((l) => (l.id === id ? { ...l, [field]: value } : l)),
     );
     setSaveStatus("saving");
-    const { error } = await supabase
-      .schema("workbench")
-      .from("udt_structured_lists")
-      .update({ [field]: value })
-      .eq("id", id);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("workbench")
+        .from("udt_structured_lists")
+        .update({ [field]: value })
+        .eq("id", id)
+        .select("id"),
+      { action: "save", noun: "list" },
+    );
     if (error) {
       setSaveStatus("error");
       toast.error("Save failed");
@@ -515,11 +520,15 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
     // read path (get_user_lists_summary / get_user_list_with_items /
     // get_structured_list_for_selection, and getAccessibleLists) filters
     // `deleted_at is null`, so it disappears everywhere immediately.
-    const { error } = await supabase
-      .schema("workbench")
-      .from("udt_structured_lists")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("workbench")
+        .from("udt_structured_lists")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .select("id"),
+      { action: "delete", noun: "list" },
+    );
 
     if (error) {
       setLists((prev) => [snapshotList, ...prev]);
@@ -532,11 +541,15 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
       action: {
         label: "Undo",
         onClick: async () => {
-          const { error: undoError } = await supabase
-            .schema("workbench")
-            .from("udt_structured_lists")
-            .update({ deleted_at: null })
-            .eq("id", id);
+          const { error: undoError } = await tryWriteOne(
+            supabase
+              .schema("workbench")
+              .from("udt_structured_lists")
+              .update({ deleted_at: null })
+              .eq("id", id)
+              .select("id"),
+            { action: "restore", noun: "list" },
+          );
           if (undoError) {
             toast.error("Undo failed");
             return;
@@ -622,11 +635,15 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
       }),
     );
     setSaveStatus("saving");
-    const { error } = await supabase
-      .schema("workbench")
-      .from("udt_structured_list_items")
-      .update({ [field]: value })
-      .eq("id", id);
+    const { error } = await tryWriteOne(
+      supabase
+        .schema("workbench")
+        .from("udt_structured_list_items")
+        .update({ [field]: value })
+        .eq("id", id)
+        .select("id"),
+      { action: "save", noun: "item" },
+    );
     if (error && snapshot) {
       setItems((prev) => prev.map((i) => (i.id === id ? snapshot! : i)));
       setSaveStatus("error");
@@ -649,11 +666,15 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
     });
 
     void (async () => {
-      const { error } = await supabase
-        .schema("workbench")
-        .from("udt_structured_list_items")
-        .update({ deleted_at: new Date().toISOString() })
-        .eq("id", id);
+      const { error } = await tryWriteOne(
+        supabase
+          .schema("workbench")
+          .from("udt_structured_list_items")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("id", id)
+          .select("id"),
+        { action: "delete", noun: "item" },
+      );
 
       if (error) {
         setItems((prev) => [...prev, snapshot]);
@@ -665,11 +686,15 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
         action: {
           label: "Undo",
           onClick: async () => {
-            const { error: undoError } = await supabase
-              .schema("workbench")
-              .from("udt_structured_list_items")
-              .update({ deleted_at: null })
-              .eq("id", id);
+            const { error: undoError } = await tryWriteOne(
+              supabase
+                .schema("workbench")
+                .from("udt_structured_list_items")
+                .update({ deleted_at: null })
+                .eq("id", id)
+                .select("id"),
+              { action: "restore", noun: "item" },
+            );
             if (undoError) {
               toast.error("Undo failed");
               return;

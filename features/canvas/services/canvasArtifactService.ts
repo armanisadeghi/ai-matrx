@@ -10,6 +10,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
@@ -412,14 +413,18 @@ export const canvasArtifactService = {
     link: { externalSystem?: string; externalId?: string },
   ): Promise<void> {
     try {
-      const { error } = await supabase
-        .schema("canvas")
-        .from("canvas_items")
-        .update({
-          external_system: link.externalSystem ?? null,
-          external_id: link.externalId ?? null,
-        })
-        .eq("id", canvasId);
+      const { error } = await tryWriteOne(
+        supabase
+          .schema("canvas")
+          .from("canvas_items")
+          .update({
+            external_system: link.externalSystem ?? null,
+            external_id: link.externalId ?? null,
+          })
+          .eq("id", canvasId)
+          .select("id"),
+        { action: "save", noun: "canvas item" },
+      );
       if (error) {
         console.error("[canvasArtifactService.setExternalLink] error:", error);
       }
@@ -752,11 +757,15 @@ export const canvasArtifactService = {
       // Backfill canvas_item_id when the row predates materialization or a
       // prior race left the link null. Never repoint an existing link.
       if (!keyed.canvas_item_id) {
-        const { error: linkErr } = await supabase
-          .schema("chat")
-          .from("artifact")
-          .update({ canvas_item_id: input.canvasId })
-          .eq("id", keyed.id);
+        const { error: linkErr } = await tryWriteOne(
+          supabase
+            .schema("chat")
+            .from("artifact")
+            .update({ canvas_item_id: input.canvasId })
+            .eq("id", keyed.id)
+            .select("id"),
+          { action: "save", noun: "artifact" },
+        );
         if (linkErr) {
           console.error(
             "[canvasArtifactService.upsertDiscoveryIndex] canvas link error:",
