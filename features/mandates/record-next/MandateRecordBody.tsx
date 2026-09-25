@@ -354,7 +354,8 @@ function OneMandateRecordBody({
       <MandateCoverageAlert
         className="mb-3"
         mandateKey={data.mandate.mandate_key}
-        onAssignHolder={() => onTabChange("holder")}
+        // A read-only seat gets the verdict without a button it cannot use.
+        onAssignHolder={readOnly ? undefined : () => onTabChange("holder")}
         resolvedHolder={resolvedHolderForBannerOf(
           perspective,
           data,
