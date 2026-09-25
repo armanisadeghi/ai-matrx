@@ -283,6 +283,7 @@ names on one page.
 | `selection.ts`                                                                                                  | Bulk-selection vocabulary — `EntityBulkAction`, `EntityBulkSelection`, `EntityBulkFilter`, and the pure `bulkSelectionMode` that decides which meaning of "all" is currently true                                                                                                   |
 | `useEntityListSelection.ts`                                                                                     | The selection state — local beside the query, never Redux; resolves "everything matching" by paging the surface's own service, cancellably                                                                                                                                          |
 | `components/EntityBulkBar.tsx`                                                                                  | The declared buttons (rendered inside the table's own bulk bar) and the one banner that says which meaning of "all" is true                                                                                                                                                         |
+| `memoryService.ts` | `createMemoryListService` — the service triple over a small, bounded, read-only corpus loaded ONCE in full (scanner findings, drift reports). Search, filter, sort (`sortValue` for a rank behind a word), paging and facet counts run over the WHOLE loaded set; a failed load is retried, never cached empty. Never for user-owned lists that grow without bound — those need a `<feature>_list_scoped` RPC. Guard: `__tests__/memory-service.test.ts` |
 
 ## Rules
 
@@ -428,6 +429,7 @@ how that savior page gets built.
 
 ## Change log
 
+- `2026-09-25` — Claude (Opus): **`memoryService.ts`** — an `EntityListService` over a fully loaded small corpus, for report-shaped sources that cannot page or facet themselves. First consumers: `/administration/mandates/unconverted-preview` and `/administration/mandates/health-preview` (`features/mandates/code-references/`).
 - `2026-09-24` — Claude (Opus): **`config.tableToolbar` (opt-in)** — the table's own title row carries search, saved views (`tableId`), working view tabs and the column picker (controlled `columnState` over the same `useListViewPrefs.hiddenColumns`); the shell toolbar row is not rendered. Absent = unchanged. First consumer: `/administration/mandates/list-preview` (`features/mandates/admin-list/`).
 - `2026-09-22` — Claude (Opus): **No two rows in a list are indistinguishable**
   (jobs-bar cold-walk-21, defect D). New `lookalikes.ts`: given the rows a view

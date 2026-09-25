@@ -273,12 +273,20 @@ export const FLAG_WORDS: Record<
     fix: "Restore the code, or record the rename",
     severity: "low",
   },
+  conversion_pending: {
+    problem: "Calls AI directly, outside any mandate",
+    fix: "Convert it to a mandate",
+    severity: "low",
+  },
 };
 
 export interface ReferenceFinding {
   id: string;
   mandateKey: string;
+  /** Scanner flag, or "absent" for a reference the latest scan no longer finds. */
   flag: string;
+  /** True for AI calls running outside any mandate (the scan's bypass sites). */
+  outsideMandate: boolean;
   repo: string;
   file: string;
   line: number | null;
@@ -288,19 +296,22 @@ export interface ReferenceFinding {
 }
 
 /**
- * Every open scan finding on a MANDATE reference. Bypass sites (AI running
- * outside any mandate) are excluded on purpose — they are the Unconverted AI
- * calls page, not a mandate's health.
+ * Every open scan finding — the same set the old references board counted
+ * (its "open findings" number), so the dashboard tile and this list agree.
+ * Bypass sites are flagged `outsideMandate`; they also have their own page.
  */
 export async function fetchReferenceFindings(): Promise<ReferenceFinding[]> {
-  const [rows, repos] = await Promise.all([
-    readLatestReferences({ excludeTypes: ["bypass"], problemsOnly: true }),
+  const [rows, repos, ids] = await Promise.all([
+    readLatestReferences({ problemsOnly: true }),
     repoGithubNames(),
+    referenceTypeIds(),
   ]);
+  const bypassId = ids.get("bypass");
   return rows.map((row) => ({
     id: row.identity_hash,
     mandateKey: row.mandate_key ?? "",
     flag: row.flag && row.flag !== "ok" ? row.flag : "absent",
+    outsideMandate: row.reference_type_id === bypassId,
     repo: row.repo_slug ?? "",
     file: row.file_path ?? "",
     line: row.line,

@@ -29,12 +29,18 @@ import {
   SEVERITY_LABEL,
   SEVERITY_RANK,
   SOURCE_LABEL,
+  UNCONVERTED_PATH,
   fetchMandateHealth,
   type HealthFinding,
   type HealthLoad,
 } from "./health";
 
 type Spec = EntityColumnSpec<HealthFinding>;
+
+/** A finding with no mandate: an AI call outside every mandate, or a call whose mandate the scan cannot read. */
+function noMandateWord(row: HealthFinding): string {
+  return row.fixHref === UNCONVERTED_PATH ? "No mandate" : "Unreadable";
+}
 
 function copy(text: string, what: string) {
   void navigator.clipboard.writeText(text).then(() => toast.success(`Copied ${what}`));
@@ -69,7 +75,7 @@ const COLUMNS: Spec[] = [
     id: "mandate",
     label: "Mandate",
     facet: "mandate",
-    formatFacetValue: (v) => (v === "__none__" ? "Unreadable" : v),
+    
     column: {
       id: "mandate",
       header: "Mandate",
@@ -92,7 +98,7 @@ const COLUMNS: Spec[] = [
             </span>
           )
         ) : (
-          <Muted>Unreadable</Muted>
+          <Muted>{noMandateWord(row)}</Muted>
         ),
     },
   },
@@ -153,7 +159,7 @@ const COLUMNS: Spec[] = [
           <Link
             href={row.fixHref}
             className="block truncate text-primary hover:underline"
-            title={`${row.fix} — open the mandate`}
+            title={row.fixHref === UNCONVERTED_PATH ? row.fix : `${row.fix} — open the mandate`}
             onClick={(event) => event.stopPropagation()}
           >
             {row.fix}
@@ -204,7 +210,7 @@ function useRowActions(): EntityRowActionsResult<HealthFinding> {
   const router = useRouter();
   const menuFor = (row: HealthFinding) => (): ItemMenuConfig => {
     const open: ItemMenuEntry[] = [];
-    if (row.fixHref) open.push({ id: "open-mandate", label: "Open mandate", icon: ExternalLink, kind: "link", href: row.fixHref });
+    if (row.fixHref) open.push({ id: "open-fix", label: row.fixHref === UNCONVERTED_PATH ? "Open unconverted AI calls" : "Open mandate", icon: ExternalLink, kind: "link", href: row.fixHref });
     if (row.codeUrl) {
       open.push({ id: "open-code", label: "Open code on GitHub", icon: ExternalLink, kind: "link", href: row.codeUrl, target: "_blank" });
     }
@@ -243,7 +249,7 @@ function buildConfig(dispatch: AppDispatch, onLoad: (load: HealthLoad) => void):
       defaultSort: "severity",
       fields: {
         severity: { value: (r) => r.severity, sortValue: (r) => SEVERITY_RANK[r.severity], facet: true },
-        mandate: { value: (r) => r.mandateName, search: true, facet: true },
+        mandate: { value: (r) => r.mandateName || noMandateWord(r), search: true, facet: true },
         problem: { value: (r) => `${r.problem} ${r.detail}`, search: true },
         where: { value: (r) => r.location, search: true },
         fix: { value: (r) => r.fix },
@@ -257,7 +263,7 @@ function buildConfig(dispatch: AppDispatch, onLoad: (load: HealthLoad) => void):
     prefsVersion: 1,
     prefsDefaults: { sort: "severity", direction: "desc", pageSize: 50 },
     getRowId: (row) => row.id,
-    getRowName: (row) => `${row.mandateName || "Unreadable mandate"}: ${row.problem}`,
+    getRowName: (row) => `${row.mandateName || noMandateWord(row)}: ${row.problem}`,
     urlState: true,
     supportsArchived: false,
     tableToolbar: { tableId: "admin-mandates-health-preview" },
@@ -271,7 +277,7 @@ function buildConfig(dispatch: AppDispatch, onLoad: (load: HealthLoad) => void):
       rowKind: "mandate-health-finding",
       listKind: "mandate-health-list",
       humanRow: (row) =>
-        `[${SEVERITY_LABEL[row.severity]}] ${row.mandateName || "Unreadable mandate"} — ${row.problem}${row.detail ? ` (${row.detail})` : ""}; ${row.location || "no code location"}; fix: ${row.fix}`,
+        `[${SEVERITY_LABEL[row.severity]}] ${row.mandateName || noMandateWord(row)} — ${row.problem}${row.detail ? ` (${row.detail})` : ""}; ${row.location || "no code location"}; fix: ${row.fix}`,
       showRow: false,
       showToolbar: false,
     },

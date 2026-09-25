@@ -29,6 +29,9 @@ import {
   repoGithubNames,
 } from "./data";
 
+export const UNCONVERTED_PATH = "/administration/mandates/unconverted-preview";
+export const HEALTH_PATH = "/administration/mandates/health-preview";
+
 export type HealthSeverity = "high" | "medium" | "low";
 
 export const SEVERITY_LABEL: Record<HealthSeverity, string> = {
@@ -43,6 +46,7 @@ export type HealthKind =
   | "unresolved"
   | "orphaned"
   | "absent"
+  | "outside_mandate"
   | "import_failed"
   | "undelivered"
   | "inputs_differ"
@@ -54,6 +58,7 @@ export const KIND_LABEL: Record<HealthKind, string> = {
   unresolved: "Unreadable call",
   orphaned: "Orphaned reference",
   absent: "Missing reference",
+  outside_mandate: "AI outside a mandate",
   import_failed: "Code fails to load",
   undelivered: "Inputs never delivered",
   inputs_differ: "Inputs differ",
@@ -126,7 +131,7 @@ async function readDefinitions(): Promise<Map<string, DefinitionFacts>> {
 
 /** aidream's code-truth source paths are container paths; keep from the package root. */
 function aidreamRelativePath(sourceFile: string): string {
-  const marker = sourceFile.indexOf("/aidream/");
+  const marker = sourceFile.lastIndexOf("/aidream/");
   return marker >= 0 ? sourceFile.slice(marker + 1) : sourceFile.replace(/^\/+/, "");
 }
 
@@ -143,7 +148,7 @@ function driftFindings(
   const name = mandateDisplayName(key, definition?.label);
   const src = truth.source;
   const file = src ? aidreamRelativePath(src.source_file) : "";
-  const location = src ? `aidream/${file.replace(/^aidream\//, "")}:${src.line}` : "";
+  const location = src ? `aidream/${file}:${src.line}` : "";
   const base = {
     source: "drift" as const,
     mandateKey: key,
@@ -241,7 +246,10 @@ export async function fetchMandateHealth(dispatch: AppDispatch): Promise<HealthL
   if (scan.status === "fulfilled") {
     for (const row of scan.value) {
       const words = FLAG_WORDS[row.flag] ?? FLAG_WORDS.broken;
-      const kind = (row.flag in FLAG_WORDS ? row.flag : "broken") as HealthKind;
+      const kind: HealthKind = row.flag === "conversion_pending"
+        ? "outside_mandate"
+        : ((row.flag in FLAG_WORDS ? row.flag : "broken") as HealthKind);
+      const mandateFix = row.mandateKey && defs.has(row.mandateKey) ? adminMandateHref(row.mandateKey) : null;
       findings.push({
         id: `scan:${row.id}`,
         severity: words.severity,
@@ -249,13 +257,13 @@ export async function fetchMandateHealth(dispatch: AppDispatch): Promise<HealthL
         source: "scan",
         mandateKey: row.mandateKey,
         mandateName: row.mandateKey ? mandateDisplayName(row.mandateKey, defs.get(row.mandateKey)?.label) : "",
-        problem: words.problem,
+        problem: row.outsideMandate && row.flag === "broken" ? "Broken AI call outside any mandate" : words.problem,
         detail: "",
         repo: row.repo,
         location: row.location,
         codeUrl: row.codeUrl,
-        fix: words.fix,
-        fixHref: row.mandateKey && defs.has(row.mandateKey) ? adminMandateHref(row.mandateKey) : null,
+        fix: row.outsideMandate && row.flag === "broken" ? "Repair it, then convert to a mandate" : words.fix,
+        fixHref: row.outsideMandate ? UNCONVERTED_PATH : mandateFix,
       });
     }
   } else {
