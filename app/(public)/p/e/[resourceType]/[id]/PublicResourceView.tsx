@@ -6,7 +6,7 @@ import Link from "next/link";
 // is in the server-rendered HTML (MarkdownCore itself is ssr:false).
 import {
   RichContentStaticInline,
-  RichContentStaticProse,
+  RichContentStaticStandard,
 } from "@/components/rich-content/RichContentStaticProse";
 import { ArrowUpRight, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ function Markdown({
   reading?: boolean;
 }) {
   return (
-    <RichContentStaticProse
+    <RichContentStaticStandard
       source={content}
       variant={reading ? "reading" : "default"}
     />

@@ -31,20 +31,19 @@ import {
 } from "./prose/prose-block-elements";
 import { DelimiterViolationReport } from "./server/DelimiterViolationReport";
 import { RichContentVariantRoot } from "./prose/variant-root";
-import type { RichContentVariant } from "./rich-content-types";
+import {
+  DEFAULT_RICH_CONTENT_DEPTH_CAP,
+  type RichContentVariant,
+} from "./rich-content-types";
+import { StaticStandard } from "./standard/static-standard";
 
-export function RichContentStaticProse({
-  source,
-  variant,
-}: {
-  source: string;
-  variant?: RichContentVariant;
-}) {
-  if (!source.trim()) return null;
-  const direction = detectTextDirection(source);
-  const { text, violations } = guardMarkdownDelimiters(preprocessProse(source));
+/** The prose leaf alone (frame + one prose map), statically. */
+export function StaticProseLeaf({ content }: { content: string }) {
+  if (!content.trim()) return null;
+  const direction = detectTextDirection(content);
+  const { text, violations } = guardMarkdownDelimiters(preprocessProse(content));
   return (
-    <RichContentVariantRoot variant={variant}>
+    <>
       <div className={proseFrameClass(direction)} dir={direction}>
         <style dangerouslySetInnerHTML={{ __html: PROSE_FRAME_CSS }} />
         <MarkdownCoreImpl preset="chat" components={PROSE_BLOCK_ELEMENTS}>
@@ -57,6 +56,58 @@ export function RichContentStaticProse({
           renderPath="RichContentStaticProse"
         />
       ) : null}
+    </>
+  );
+}
+
+/**
+ * Prose ONLY — one prose leaf, no block splitting. For text that is known to
+ * be a single prose block. A document (a note, a shared body, anything that
+ * may hold fences or XML sections) uses RichContentStaticStandard.
+ */
+export function RichContentStaticProse({
+  source,
+  variant,
+}: {
+  source: string;
+  variant?: RichContentVariant;
+}) {
+  if (!source.trim()) return null;
+  return (
+    <RichContentVariantRoot variant={variant}>
+      <StaticProseLeaf content={source} />
+    </RichContentVariantRoot>
+  );
+}
+
+/**
+ * The `standard` level, statically (SSR'd client) — the SAME block routing as
+ * the server level (standard/static-standard.tsx): the one splitter and
+ * nested-fence rule, sections to the depth cap, engine blocks through the
+ * client StandardBlock. Markup identical to RichContentServer
+ * level="standard" (parity guard, incl. a ```markdown fence with an inner
+ * fence). For share pages, public resources and signed documents.
+ */
+export function RichContentStaticStandard({
+  source,
+  variant,
+  depthCap = DEFAULT_RICH_CONTENT_DEPTH_CAP,
+  className,
+}: {
+  source: string;
+  variant?: RichContentVariant;
+  depthCap?: number;
+  className?: string;
+}) {
+  return (
+    <RichContentVariantRoot variant={variant}>
+      <StaticStandard
+        source={source}
+        depth={0}
+        cap={depthCap}
+        className={className}
+        Prose={StaticProseLeaf}
+      />
     </RichContentVariantRoot>
   );
 }

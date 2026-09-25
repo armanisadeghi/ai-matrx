@@ -1,0 +1,138 @@
+// ─────────────────────────────────────────────────────────────────────────
+// The `standard` level's block routing for STATICALLY rendered roots — the
+// server level (RichContentServer) and the SSR'd client leaf
+// (RichContentStaticStandard, share pages / public resources). ONE routing
+// for both, so a ```markdown fence with its own inner fences, an <info>
+// section or a divider splits exactly as it does in the app: the same
+// splitter core (content-splitter-core, THE nested-fence rule from
+// @ai-matrx/content-ir/source) and the same client StandardBlock for
+// engine-backed blocks. Only the prose leaf differs by environment, and it is
+// injected (`Prose`): ProseServer on the server, StaticProseLeaf on the
+// client — both render the one prose map and frame.
+//
+// Environment-neutral: no "use client", no hooks.
+// Guard: __tests__/server-level-parity.test.tsx (nested-fence share case).
+// ─────────────────────────────────────────────────────────────────────────
+
+import type { ComponentType } from "react";
+import {
+  NO_SPLITTER_ENVELOPES,
+  splitContentIntoBlocksWith,
+  type SplitterBlock,
+} from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-core";
+import { RichContentDepthProvider } from "../depth";
+import { StandardBlock } from "./StandardBlocks";
+
+export type StaticProse = ComponentType<{ content: string }>;
+
+/** XML control sections whose body is prose — the same set StandardBlock nests. */
+const SECTION_TYPES = new Set([
+  "info",
+  "task",
+  "plan",
+  "database",
+  "private",
+  "event",
+  "tool",
+  "thinking",
+  "reasoning",
+  "consolidated_reasoning",
+]);
+
+const MUTED_SECTIONS = new Set([
+  "thinking",
+  "reasoning",
+  "consolidated_reasoning",
+]);
+
+function StaticBlock({
+  block,
+  depth,
+  cap,
+  Prose,
+}: {
+  block: SplitterBlock;
+  depth: number;
+  cap: number;
+  Prose: StaticProse;
+}) {
+  const { type, content } = block;
+
+  if (type === "text" || type === "table") {
+    if (!content.trim()) return null;
+    return <Prose content={content} />;
+  }
+
+  if (SECTION_TYPES.has(type) && depth + 1 <= cap) {
+    if (!content.trim()) return null;
+    return (
+      <div
+        data-rich-content-section={type}
+        className={
+          MUTED_SECTIONS.has(type)
+            ? "my-2 border-l-2 border-border pl-3 text-muted-foreground"
+            : "my-2"
+        }
+      >
+        <StaticStandard source={content} depth={depth + 1} cap={cap} Prose={Prose} />
+      </div>
+    );
+  }
+
+  if (type === "image" && block.src) {
+    return (
+      <img
+        src={block.src}
+        alt={block.alt || ""}
+        className="my-2 h-auto max-w-full rounded-md object-contain"
+      />
+    );
+  }
+
+  if (type === "accent-divider" || type === "heavy-divider") {
+    return <hr className="my-4 border-border" />;
+  }
+
+  // Interactive or engine-backed blocks: the client StandardBlock, told how
+  // deep it sits so its own nesting (and the capped "Render it" view past
+  // the cap) behaves exactly as it does on the client. Only the fields it
+  // reads cross the wire.
+  return (
+    <RichContentDepthProvider depth={depth} cap={cap}>
+      <StandardBlock
+        block={{
+          type,
+          content,
+          language: block.language,
+          src: block.src,
+          alt: block.alt,
+        }}
+      />
+    </RichContentDepthProvider>
+  );
+}
+
+export function StaticStandard({
+  source,
+  depth,
+  cap,
+  className,
+  Prose,
+}: {
+  source: string;
+  depth: number;
+  cap: number;
+  className?: string;
+  Prose: StaticProse;
+}) {
+  // The same splitter as the client levels, minus the kind-envelope hooks
+  // (metadata only — block types and boundaries are identical).
+  const blocks = splitContentIntoBlocksWith(source, NO_SPLITTER_ENVELOPES);
+  return (
+    <div data-rich-content="standard" className={className ?? "min-w-0"}>
+      {blocks.map((block, index) => (
+        <StaticBlock key={index} block={block} depth={depth} cap={cap} Prose={Prose} />
+      ))}
+    </div>
+  );
+}

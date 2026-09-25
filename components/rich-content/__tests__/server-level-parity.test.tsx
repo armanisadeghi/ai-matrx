@@ -52,6 +52,7 @@ import { RichContentDepthProvider } from "@/components/rich-content/depth";
 import {
   RichContentStaticInline,
   RichContentStaticProse,
+  RichContentStaticStandard,
 } from "@/components/rich-content/RichContentStaticProse";
 import RichContentStandardImpl from "@/components/rich-content/RichContentStandardImpl";
 import { ProseServer } from "@/components/rich-content/server/RichContentServer";
@@ -239,6 +240,43 @@ describe("server level renders the same HTML as the client levels", () => {
     expect(asText).toContain("the full guide");
     expect(clientText).toBe(asText);
     expect(staticText).toBe(asText);
+  });
+
+  it("share page: a ```markdown fence with its own ```bash block splits like the app (static == server == client)", () => {
+    // Verifier F1, 2026-09-25: the share lens rendered through the prose leaf
+    // alone, so CommonMark closed the markdown fence on the inner ``` and the
+    // outer closer turned the tail sentence into a code block.
+    const F = "```";
+    const note = [
+      "Setup notes for the pickup scheduler:",
+      "",
+      `${F}markdown`,
+      "# README",
+      "",
+      `${F}bash`,
+      "pip install foo",
+      F,
+      "",
+      "End of readme",
+      F,
+      "",
+      "Tail paragraph with **bold**.",
+    ].join("\n");
+    const staticSsr = serverHtml(<RichContentStaticStandard source={note} />);
+    const server = serverHtml(<RichContentServer level="standard" source={note} />);
+    const client = clientHtml(
+      <RichContentDepthProvider depth={0}>
+        <StandardBlocks source={note} />
+      </RichContentDepthProvider>,
+    );
+    // The tail is prose with real bold, never code.
+    expect(staticSsr).toContain("bold</strong>");
+    const probe = document.createElement("div");
+    probe.innerHTML = staticSsr;
+    const codeText = [...probe.querySelectorAll("pre, code")].map((n) => n.textContent ?? "").join("\n");
+    expect(codeText).not.toContain("Tail paragraph");
+    expect(staticSsr).toBe(server);
+    expect(staticSsr).toBe(client);
   });
 });
 

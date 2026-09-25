@@ -30,14 +30,8 @@ import "server-only";
 
 import { guardMarkdownDelimiters } from "@ai-matrx/kit/delimiter-guard";
 import MarkdownCoreServer from "@/components/markdown-core/MarkdownCoreServer";
-import {
-  NO_SPLITTER_ENVELOPES,
-  splitContentIntoBlocksWith,
-  type SplitterBlock,
-} from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-core";
 import { cn } from "@/lib/utils";
-import { RichContentDepthProvider } from "../depth";
-import { StandardBlock } from "../standard/StandardBlocks";
+import { StaticStandard } from "../standard/static-standard";
 import {
   DEFAULT_RICH_CONTENT_DEPTH_CAP,
   type RichContentVariant,
@@ -69,26 +63,6 @@ export interface RichContentServerProps {
   /** Inline only: `text` when the content sits inside a link (card previews). */
   links?: InlineLinks;
 }
-
-/** XML control sections whose body is prose — the same set StandardBlock nests. */
-const SECTION_TYPES = new Set([
-  "info",
-  "task",
-  "plan",
-  "database",
-  "private",
-  "event",
-  "tool",
-  "thinking",
-  "reasoning",
-  "consolidated_reasoning",
-]);
-
-const MUTED_SECTIONS = new Set([
-  "thinking",
-  "reasoning",
-  "consolidated_reasoning",
-]);
 
 function guarded(source: string, renderPath: string) {
   const { text, violations } = guardMarkdownDelimiters(preprocessProse(source));
@@ -142,94 +116,6 @@ function InlineServer({
   );
 }
 
-function ServerBlock({
-  block,
-  depth,
-  cap,
-}: {
-  block: SplitterBlock;
-  depth: number;
-  cap: number;
-}) {
-  const { type, content } = block;
-
-  if (type === "text" || type === "table") {
-    if (!content.trim()) return null;
-    return <ProseServer content={content} />;
-  }
-
-  if (SECTION_TYPES.has(type) && depth + 1 <= cap) {
-    if (!content.trim()) return null;
-    return (
-      <div
-        data-rich-content-section={type}
-        className={
-          MUTED_SECTIONS.has(type)
-            ? "my-2 border-l-2 border-border pl-3 text-muted-foreground"
-            : "my-2"
-        }
-      >
-        <StandardServer source={content} depth={depth + 1} cap={cap} />
-      </div>
-    );
-  }
-
-  if (type === "image" && block.src) {
-    return (
-      <img
-        src={block.src}
-        alt={block.alt || ""}
-        className="my-2 h-auto max-w-full rounded-md object-contain"
-      />
-    );
-  }
-
-  if (type === "accent-divider" || type === "heavy-divider") {
-    return <hr className="my-4 border-border" />;
-  }
-
-  // Interactive or engine-backed blocks: the client StandardBlock, told how
-  // deep it sits so its own nesting (and the capped "Render it" view past
-  // the cap) behaves exactly as it does on the client. Only the fields it
-  // reads cross the wire.
-  return (
-    <RichContentDepthProvider depth={depth} cap={cap}>
-      <StandardBlock
-        block={{
-          type,
-          content,
-          language: block.language,
-          src: block.src,
-          alt: block.alt,
-        }}
-      />
-    </RichContentDepthProvider>
-  );
-}
-
-function StandardServer({
-  source,
-  depth,
-  cap,
-  className,
-}: {
-  source: string;
-  depth: number;
-  cap: number;
-  className?: string;
-}) {
-  // The same splitter as the client levels, minus the kind-envelope hooks
-  // (metadata only — block types and boundaries are identical).
-  const blocks = splitContentIntoBlocksWith(source, NO_SPLITTER_ENVELOPES);
-  return (
-    <div data-rich-content="standard" className={className ?? "min-w-0"}>
-      {blocks.map((block, index) => (
-        <ServerBlock key={index} block={block} depth={depth} cap={cap} />
-      ))}
-    </div>
-  );
-}
-
 export function RichContentServer({
   source,
   level,
@@ -243,11 +129,12 @@ export function RichContentServer({
   }
   return (
     <RichContentVariantRoot variant={variant}>
-      <StandardServer
+      <StaticStandard
         source={source}
         depth={0}
         cap={depthCap}
         className={className}
+        Prose={ProseServer}
       />
     </RichContentVariantRoot>
   );

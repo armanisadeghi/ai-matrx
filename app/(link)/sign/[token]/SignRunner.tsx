@@ -24,7 +24,7 @@
 //   · declining is a real, visible, equal choice — not a hidden link — because a
 //     signer who cannot say no has not been asked anything.
 
-import { RichContentStaticProse } from "@/components/rich-content/RichContentStaticProse";
+import { RichContentStaticStandard } from "@/components/rich-content/RichContentStaticProse";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, PenLine, Type as TypeIcon, X } from "lucide-react";
 
@@ -139,7 +139,7 @@ export function SignRunner({
         {/* The frozen text, rendered through the one rich-content core and in
             the server HTML; the bytes signed are still `request.body`. */}
         <article className="max-h-[46vh] overflow-y-auto rounded-md border border-border bg-card p-4">
-          <RichContentStaticProse source={request.body ?? ""} />
+          <RichContentStaticStandard source={request.body ?? ""} />
         </article>
       </div>
 
