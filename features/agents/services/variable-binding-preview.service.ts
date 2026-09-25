@@ -64,7 +64,9 @@ export async function previewVariableBinding(
         binding,
         ...(variableName ? { variable_name: variableName } : {}),
       },
-      { signal, captureErrors: false },
+      // The X-Organization-Id header must name the SAME organization as the
+      // body — pass it explicitly rather than letting the transport resolve one.
+      { signal, captureErrors: false, organizationId },
     );
     if (!isRecord(data) || typeof data.text !== "string") {
       return {
