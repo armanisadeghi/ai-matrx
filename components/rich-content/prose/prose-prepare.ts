@@ -168,8 +168,12 @@ export function preprocessProse(rawContent: string): string {
   // leading spaces to detect nesting; converting them to nbsp flattens
   // nested bullets/numbers into literal "- " / "1." text. So skip any line
   // whose indented content begins with a list marker (*, -, + or "1." / "1)").
+  // The `(?! )` makes the run POSSESSIVE: without it `( +)` backtracks one
+  // space short, the lookahead then sees " -" (a space, not a marker) and the
+  // nested bullet is flattened to text (verifier F2, 2026-09-25; guard
+  // __tests__/prose-prepare-nested-lists.test.ts).
   processed = processed.replace(
-    /^( +)(?![*+-][ \t]|\d+[.)][ \t])/gm,
+    /^( +)(?! |[*+-][ \t]|\d+[.)][ \t])/gm,
     (spaces) => "\u00A0\u00A0".repeat(spaces.length),
   );
 
