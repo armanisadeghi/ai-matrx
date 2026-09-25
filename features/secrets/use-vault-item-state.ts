@@ -48,6 +48,7 @@ export function useVaultItemState({ actorId, organizationId, scopeKey, itemIds }
   }
   const pending = useRef(new Map<string, Intent>());
   const queuedTouches = useRef(new Map<string, Intent>());
+  const completedRoutedTouch = useRef<{ contextKey: string; itemId: string; intent: string } | null>(null);
   const [snapshot, setSnapshot] = useState<Snapshot>({
     key: "", status: "loading", items: EMPTY_ITEMS, error: null,
   });
@@ -56,7 +57,10 @@ export function useVaultItemState({ actorId, organizationId, scopeKey, itemIds }
     if (live.current.key !== key) {
       pending.current.clear();
     }
-    if (live.current.contextKey !== contextKey) queuedTouches.current.clear();
+    if (live.current.contextKey !== contextKey) {
+      queuedTouches.current.clear();
+      completedRoutedTouch.current = null;
+    }
     live.current = { key, contextKey, ids: new Set(ids) };
     snapshotRef.current = snapshot;
   }, [key, contextKey, idsKey, snapshot]);
@@ -134,6 +138,9 @@ export function useVaultItemState({ actorId, organizationId, scopeKey, itemIds }
       }
       // Keep the per-item lock until the server readback finishes.
       const reconciled = await reconcile(itemId, requestKey, intent);
+      if (reconciled && operation === "touch" && touchIntent && contextKey) {
+        completedRoutedTouch.current = { contextKey, itemId, intent: touchIntent };
+      }
       if (!reconciled && operation === "touch" && isCurrent(requestKey, itemId) && pending.current.get(itemId) === intent && contextKey) {
         queuedTouches.current.set(itemId, { key: contextKey, token: ++nextToken.current, operation: "touch", touchIntent });
       }
@@ -160,6 +167,8 @@ export function useVaultItemState({ actorId, organizationId, scopeKey, itemIds }
 
   const touch = async (itemId: string, touchIntent?: string) => {
     if (!key || !contextKey || !isCurrent(key, itemId)) return false;
+    const completed = completedRoutedTouch.current;
+    if (touchIntent && completed?.contextKey === contextKey && completed.itemId === itemId && completed.intent === touchIntent) return true;
     const active = pending.current.get(itemId);
     if (!ready(key) || active) {
       // A retry drain and the routed-item effect can both express the same
