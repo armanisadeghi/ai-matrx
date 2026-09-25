@@ -158,7 +158,10 @@ import { motion } from "motion/react";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { useMicField } from "@/features/audio/hooks/useMicField";
 import { cn } from "@/lib/utils";
-import { hasPendingOrganizationRequest } from "@/lib/organization/organization-gate";
+import {
+  hasPendingOrganizationRequest,
+  isOrganizationGateInteraction,
+} from "@/lib/organization/organization-gate";
 import { Label } from "@/components/ui/label";
 import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { CheckTapButton } from "@ai-matrx/tap-target/buttons";
@@ -1295,6 +1298,12 @@ export const ProTextarea = React.forwardRef<
                   </PopoverTrigger>
                   <PopoverContent
                     /* sizing: fixed — fixed multi-mode menu (menu/stats/agent-action panels), not a single content-sized value */
+                    onInteractOutside={(event) => {
+                      if (isOrganizationGateInteraction(event)) event.preventDefault();
+                    }}
+                    onFocusOutside={(event) => {
+                      if (isOrganizationGateInteraction(event)) event.preventDefault();
+                    }}
                     align="end"
                     side="bottom"
                     sideOffset={6}

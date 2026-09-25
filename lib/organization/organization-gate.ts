@@ -109,6 +109,27 @@ export function hasPendingOrganizationRequest(): boolean {
   return pending !== null;
 }
 
+/** The marker the workspace picker carries, so a layer beneath it can tell. */
+export const ORGANIZATION_GATE_ATTRIBUTE = "data-organization-gate";
+
+/**
+ * HELD AND SET, for whatever is open beneath the picker. The picker opens on
+ * top of the popover / dialog whose action asked for it; clicking or focusing
+ * the picker is "outside" that layer, and closing it would abandon the very
+ * action the choice is for. A layer's `onInteractOutside` / `onFocusOutside`
+ * calls this and keeps itself open (`event.preventDefault()`) when it is true:
+ * a choice is being awaited, or the event came from inside the picker.
+ */
+export function isOrganizationGateInteraction(event: { target: EventTarget | null }): boolean {
+  if (pending !== null) return true;
+  const target = event.target;
+  return (
+    typeof Element !== "undefined" &&
+    target instanceof Element &&
+    target.closest(`[${ORGANIZATION_GATE_ATTRIBUTE}]`) !== null
+  );
+}
+
 /**
  * The pending request's prefetched choices, if its caller's refusal carried
  * any — the dialog reads this to render immediately instead of waiting on its

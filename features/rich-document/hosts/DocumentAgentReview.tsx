@@ -20,7 +20,10 @@
 import * as React from "react";
 import { DiffViewer } from "@ai-matrx/diff/react";
 import { toast } from "@/lib/toast";
-import { hasPendingOrganizationRequest } from "@/lib/organization/organization-gate";
+import {
+  hasPendingOrganizationRequest,
+  isOrganizationGateInteraction,
+} from "@/lib/organization/organization-gate";
 import {
   Dialog,
   DialogContent,
@@ -236,7 +239,15 @@ export function DocumentAgentReview({
         !open && !saving && !hasPendingOrganizationRequest() && onClose()
       }
     >
-      <DialogContent className="flex max-h-[85dvh] w-[min(56rem,95vw)] max-w-none flex-col">
+      <DialogContent
+        className="flex max-h-[85dvh] w-[min(56rem,95vw)] max-w-none flex-col"
+        onInteractOutside={(event) => {
+          if (isOrganizationGateInteraction(event)) event.preventDefault();
+        }}
+        onFocusOutside={(event) => {
+          if (isOrganizationGateInteraction(event)) event.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{definition.popoverTitle}</DialogTitle>
           <DialogDescription>

@@ -157,7 +157,7 @@ export function OrganizationGateDialog() {
         if (!next) cancel();
       }}
     >
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" data-organization-gate="">
         <DialogHeader>
           <DialogTitle>Which workspace is this for?</DialogTitle>
           <DialogDescription>
