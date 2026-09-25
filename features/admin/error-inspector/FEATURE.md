@@ -29,6 +29,12 @@ second symptom instead of deduping the incident.
 
 **Capture adapters (all → `captureError`):**
 
+- **Mandate fast paths** — `features/mandates/fast-path-guard.ts`
+  (`verifyFastPathAgainstMandate`, and `<FastPathMandateGuard>` for Server
+  Components). A hard-coded agent fast path (SSR seed fallback, manifest role
+  default) is re-checked against its Mandate's resolved Holder; a mismatch or an
+  unresolvable Mandate captures source `mandate-fast-path` (red, so it persists
+  to `system_error`), `relation: mandate:<key>`, `callSite` = the fast path.
 - **Sonner toasts** — `lib/toast.ts`, the captured wrapper around sonner's
   `toast`. `toast.error`/`toast.warning` feed `captureError` (source
   `user-toast`, red unless a specific rule downgrades it). A bare `import { toast } from "sonner"` is INVISIBLE
@@ -430,6 +436,11 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-09-25 — **New `mandate-fast-path` source.** The one compliant exception to
+  "nothing works around the mandate system" is a hard-coded fast path verified at
+  runtime; `features/mandates/fast-path-guard.ts` is that verification and files
+  here (red) on a mismatch. Wired at the `/demos/chat` SSR seed fallbacks and the
+  Transcript Studio assistant role's manifest default.
 - 2026-09-20 — **New `url-panel-unopened` source: a deep-linked window that never
   opened is now a row, not a silently deleted URL.** `?panels=` tokens used to be
   stripped from the address bar when a 5 s timer expired, with nothing anywhere

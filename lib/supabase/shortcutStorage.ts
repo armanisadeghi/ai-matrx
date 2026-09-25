@@ -175,3 +175,36 @@ export function mandateKeyOfShortcutRow(row: ShortcutRowLike): string | null {
   if (!SHORTCUT_STORAGE_CUTOVER) return null;
   return ((row as Record<string, unknown>).mandate_key as string | null) ?? null;
 }
+
+/**
+ * THE MANDATE KEY BEHIND A SHORTCUT ID — read from the compat view when the
+ * record in hand did not carry it (menus served by table-returning RPCs).
+ *
+ * Every shortcut RUNS BY THIS KEY (`/ai/mandates/{key}`, aidream 1042): the
+ * server resolves user → org → system default, so a change in the mandate
+ * system reaches every shortcut. There is no agent-id fallback — a shortcut
+ * without a mandate is a data defect, and the launch refuses it in words.
+ */
+export async function fetchShortcutMandateKey(
+  supabase: Client,
+  shortcutId: string,
+): Promise<string> {
+  const { data, error } = await supabase
+    .schema("mandate")
+    .from("vw_shortcut")
+    .select("mandate_key")
+    .eq("id", shortcutId)
+    .maybeSingle();
+  if (error) {
+    throw new Error(
+      `Could not read the mandate behind shortcut ${shortcutId}: ${error.message}`,
+    );
+  }
+  const key = (data as { mandate_key?: string | null } | null)?.mandate_key;
+  if (!key) {
+    throw new Error(
+      `Shortcut ${shortcutId} has no mandate behind it, so it cannot run. Every shortcut runs through its mandate; open it in the shortcut editor and save it to repair the record.`,
+    );
+  }
+  return key;
+}

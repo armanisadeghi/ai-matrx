@@ -17,7 +17,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import { hydrateMessages, type MessageRecord } from "../../messages/messages.slice";
 import { extractFlatText } from "../../messages/messages.selectors";
-import { saveAnswerEdit } from "../save-answer-edit.thunk";
+import { saveAnswerEdit, saveMessageDisplayEdit } from "../save-answer-edit.thunk";
 import { projectAnswerText, spliceAnswerText, spliceDisplayEdit } from "../answer-text-splice";
 import { commitInlineContentEdit, flushPendingInlineEdit } from "../commit-inline-edit.thunk";
 import { removeThinkingContent } from "@ai-matrx/print/markdown";
@@ -367,5 +367,21 @@ describe("in-body edits (code block, table, decision) splice against the STORED 
   test("a display that no longer matches the stored text refuses instead of guessing", () => {
     const result = spliceDisplayEdit(storedText, "Something else entirely.", "Something else, edited.");
     expect("error" in result).toBe(true);
+  });
+});
+
+describe("every display-text editor saves through the one door (old full-screen editor, HTML preview, adapters)", () => {
+  test("an assistant row keeps every stored byte outside the edited span", async () => {
+    const storedText = "Intro line.  \n\n\n\nKeep 7.5% APR.\n";
+    const s = store([{ type: "text", text: storedText }]);
+    const display = extractFlatText(record([{ type: "text", text: storedText }]));
+    await saveMessageDisplayEdit(s.dispatch, s.getState, {
+      conversationId: CONVERSATION_ID,
+      messageId: MESSAGE_ID,
+      previous: display,
+      next: display.replace("7.5%", "7.25%"),
+    });
+    const [, args] = rpc.mock.calls[0] as [string, { p_new_content: unknown }];
+    expect(args.p_new_content).toEqual([{ type: "text", text: "Intro line.  \n\n\n\nKeep 7.25% APR.\n" }]);
   });
 });

@@ -116,13 +116,15 @@ export async function savePreparedContentEdit(args: {
   ctx: RichDocumentActionContext;
   source: ContentSource;
   newContent: string;
+  /** The text the editor opened on (chat: a display projection). */
+  previousContent?: string;
 }): Promise<ContentSource> {
-  const { ctx, newContent } = args;
+  const { ctx, newContent, previousContent } = args;
   const edit = ctx.sourceAdapter.edit;
   if (!edit) throw new Error("This content no longer has a save target.");
   let source = args.source;
   try {
-    const result = await edit({ newContent, source, dispatch: ctx.dispatch });
+    const result = await edit({ newContent, previousContent, source, dispatch: ctx.dispatch });
     if (source.type === "note") {
       if (!isPreparedEditableNoteSource(source)) throw new Error("The note save source was not prepared.");
       const receipt = validateNoteReceipt(source, result, newContent);

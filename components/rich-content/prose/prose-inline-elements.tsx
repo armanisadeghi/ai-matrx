@@ -66,7 +66,7 @@ export function splitWithVariables(text: string): React.ReactNode[] {
 // An in-document link (`#id` — footnotes, heading anchors, contents,
 // cross-references) scrolls within the document; every other link gets the
 // link card.
-function LinkElement({ node, href, children, ...rest }: Parameters<NonNullable<Components["a"]>>[0]) {
+function LinkElement({ node, href, children, ...rest }: React.AnchorHTMLAttributes<HTMLAnchorElement> & ExtraProps) {
   // A heading's hover anchor is dropped where its section is not on screen
   // (preview contexts — heading-anchors-context.ts).
   const anchorsOn = useHeadingAnchors();

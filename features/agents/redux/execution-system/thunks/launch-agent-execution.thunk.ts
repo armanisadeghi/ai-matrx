@@ -214,7 +214,18 @@ export const launchAgentExecution = createAsyncThunk<
     if (!agentId) {
       // The run's own organization (the org of the row it is FOR) is the question's
       // organization too — never the ambient workspace when the caller named one.
-      const resolved = await resolveMandate(mandateKey, organizationId ? { organizationId } : undefined);
+      // HELD AND SET (lib/organization/organization-gate.ts): a mandate run is
+      // a question asked IN an organization. With none named and none selected
+      // the launch waits on the one gate (join the boot, then ask the person),
+      // and proceeds with the answer — never a raw MandateOrganizationUnresolved
+      // refusal. A declined picker rejects with OrganizationSelectionCancelled,
+      // which every toast boundary treats as "nothing happened".
+      const selectedOrganizationId = getState().appContext?.organization_id ?? null;
+      const questionOrganizationId =
+        organizationId ??
+        selectedOrganizationId ??
+        (await (await import("@/lib/organizations/personalOrg")).ensureOrgId(null));
+      const resolved = await resolveMandate(mandateKey, { organizationId: questionOrganizationId });
       resolvedMandate = resolved;
       agentId = resolved.agentId;
     }

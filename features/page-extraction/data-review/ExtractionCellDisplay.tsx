@@ -7,6 +7,7 @@
 
 import dynamic from "next/dynamic";
 import { Maximize2 } from "lucide-react";
+import { parseStructuredCellValue, structuredCellSummary } from "./structuredCellValue";
 
 const BasicMarkdownContent = dynamic(
   () =>
@@ -35,6 +36,32 @@ export function ExtractionCellDisplay({
 
   if (!value) {
     return <span className="text-muted-foreground/40">—</span>;
+  }
+
+  const structured = parseStructuredCellValue(value);
+  if (structured) {
+    return (
+      <div className="relative min-w-0 pr-5">
+        <div className="line-clamp-2 break-words text-xs leading-relaxed">
+          <span aria-hidden="true">{Array.isArray(structured) ? "[ ]" : "{ }"} </span>
+          {structuredCellSummary(structured)}
+        </div>
+        {onView ? (
+          <button
+            type="button"
+            className="absolute right-0 top-0 inline-flex size-4 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+            onClick={(event) => {
+              event.stopPropagation();
+              onView();
+            }}
+            title="Open JSON value"
+            aria-label="Open JSON value"
+          >
+            <Maximize2 className="size-3" aria-hidden />
+          </button>
+        ) : null}
+      </div>
+    );
   }
 
   const useMarkdown = looksLikeMarkdown(value);

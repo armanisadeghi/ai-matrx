@@ -28,6 +28,8 @@ import type {
   ContextAnchor,
 } from "@/features/agents/types/instance.types";
 import { getShortcutRecordFromState } from "@/features/agents/redux/agent-shortcuts/selectors";
+import { fetchShortcutMandateKey } from "@/lib/supabase/shortcutStorage";
+import { supabase } from "@/utils/supabase/client";
 import { hasField } from "@/features/agents/redux/shared/field-flags";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
 import { executeInstance } from "./execute-instance.thunk";
@@ -419,6 +421,15 @@ export const createInstanceFromShortcut = createAsyncThunk<
     );
   }
 
+  // 🚨 EVERY SHORTCUT RUNS BY ITS MANDATE KEY (aidream 1042; Arman, 2026-09-25:
+  // "making a change in the mandates system guarantees it works"). Turn 1 POSTs
+  // `/ai/mandates/{key}` and the SERVER resolves user → org → system default,
+  // so the record's agent id and version below are DISPLAY identity only (name,
+  // variables, capabilities painted before the stream) — never the run target.
+  // No version pin is set: `resolveStartPath` lets a pin outrank the mandate.
+  const mandateKey =
+    shortcut.mandateKey ?? (await fetchShortcutMandateKey(supabase, shortcutId));
+
   const shortcutInputCapabilities = await fetchInputCapabilitiesSnapshot({
     agentId,
     agentVersionId:
@@ -431,14 +442,10 @@ export const createInstanceFromShortcut = createAsyncThunk<
     createInstance({
       conversationId,
       agentId,
-      // Pass the frozen version id when the shortcut is version-pinned so
-      // downstream URL/body construction targets agx_version instead of
-      // agx_agent. Leaves `agentId` as the live agent id for display +
-      // linking.
-      initialAgentVersionId:
-        !shortcut.useLatest && shortcut.agentVersionId
-          ? shortcut.agentVersionId
-          : null,
+      // THE MANDATE DOOR — the server picks the Holder and version for this
+      // person. Never `initialAgentVersionId` here: a pin would win the door
+      // choice and run whatever this browser read instead of the mandate.
+      mandateKey,
       // Shortcuts never carry an agentType; "user" is the generic fallback
       // used by everything but the internal system agents. Not load-bearing —
       // it's a classification hint downstream, not a routing decision.

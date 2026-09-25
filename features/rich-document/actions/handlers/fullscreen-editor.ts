@@ -31,6 +31,9 @@ registerAction({
       !ctx.source.readOnly;
     const prepared = canSave ? await prepareContentEdit(ctx) : { source: ctx.source, content: ctx.content };
     let preparedSource = prepared.source;
+    // What the editor opened on — a display projection for chat — so the
+    // adapter splices only the changed span into the stored text.
+    let openedOn = prepared.content;
 
     // Source-agnostic save → route through the callback registry, never an
     // onSave function in Redux data (the controller drops it). Only register a
@@ -44,7 +47,9 @@ registerAction({
                 ctx,
                 source: preparedSource,
                 newContent,
+                previousContent: openedOn,
               });
+              openedOn = newContent;
               toast.success("Saved");
             } catch (err) {
               preparedSource = acknowledgedPreparedSource(preparedSource, err, newContent) ?? preparedSource;

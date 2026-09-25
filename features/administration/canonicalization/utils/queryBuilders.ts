@@ -70,11 +70,41 @@ function variantLiteral(variant?: string | null): string {
     : "null";
 }
 
-export function buildTableImpactQuery(schema: string, table: string): string {
+const TABLE_IMPACT_PAGE_SIZE = 500;
+
+export function buildTableImpactPageQuery(
+  schema: string,
+  table: string,
+  offset: number,
+): string {
   const s = assertSafeIdentifier(schema, "schema");
   const t = assertSafeIdentifier(table, "table");
-  return `select function_sig, dependency, currently_broken, referenced_columns
-    from audit.table_impact(${sqlLiteral(s)}, ${sqlLiteral(t)});`;
+  if (!Number.isSafeInteger(offset) || offset < 0) {
+    throw new Error("offset must be a non-negative integer");
+  }
+
+  // `execute_admin_query` returns one JSON value, so a bare array has no
+  // receipt that it was complete. Keep the count and the page in one statement:
+  // `impact` is materialized once, then both the count and ordered page observe
+  // the same set. The explicit order makes offsets repeatable while the audit
+  // result is unchanged.
+  return `with impact as materialized (
+      select function_sig, dependency, currently_broken, referenced_columns
+      from audit.table_impact(${sqlLiteral(s)}, ${sqlLiteral(t)})
+    ), page as (
+      select function_sig, dependency, currently_broken, referenced_columns
+      from impact
+      order by function_sig asc nulls last, dependency asc nulls last,
+        currently_broken desc nulls last, referenced_columns asc nulls last
+      limit ${TABLE_IMPACT_PAGE_SIZE} offset ${offset}
+    )
+    select (select count(*) from impact)::integer as total,
+      coalesce(
+        (select jsonb_agg(to_jsonb(page) order by function_sig asc nulls last,
+          dependency asc nulls last, currently_broken desc nulls last,
+          referenced_columns asc nulls last) from page),
+        '[]'::jsonb
+      ) as rows;`;
 }
 
 export function buildEntityTokenLookupQuery(schema: string, table: string): string {

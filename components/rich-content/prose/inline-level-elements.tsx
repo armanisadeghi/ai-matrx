@@ -8,6 +8,7 @@
 // citation chips) carry their own "use client" boundaries.
 // ─────────────────────────────────────────────────────────────────────────
 
+import type React from "react";
 import type { MarkdownComponents as Components } from "@/components/markdown-core/markdown-core-types";
 import { cn } from "@/lib/utils";
 import { isHeadingAnchorProps } from "@/components/markdown-core/heading-anchors-props";
@@ -23,7 +24,7 @@ export const INLINE_P_CLASS = "rc-inline-p";
  * `data-rc-block` so the wrapper can put consecutive ones on their own lines
  * while a single paragraph flows inline (titles, clamped rows, `truncate`).
  */
-const InlineLink = PROSE_INLINE_ELEMENTS.a as NonNullable<Components["a"]>;
+const InlineLink = PROSE_INLINE_ELEMENTS.a as React.ComponentType<React.AnchorHTMLAttributes<HTMLAnchorElement> & { node?: unknown }>;
 
 export const INLINE_LEVEL_ELEMENTS = {
   ...PROSE_INLINE_ELEMENTS,

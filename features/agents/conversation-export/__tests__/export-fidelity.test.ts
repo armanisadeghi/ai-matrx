@@ -1,76 +1,66 @@
 /**
- * RC-B9 verifier F1/F2 (evidence/verify-RC-B9.md): an exported conversation
- * must carry REAL tables and RENDERED math through the one package exporter —
- * never an `<artifact>` envelope, a paragraph of pipes, or raw `$$…$$` — and
- * "whole conversation" must mean every message, not the loaded window.
+ * An exported conversation carries REAL tables and TYPESET math through the
+ * one package exporter — never an `<artifact>` envelope, a paragraph of pipes
+ * or raw `$$…$$` (verify-RC-B9 F1/F2) — and a stray `$$` in the user's prose
+ * never swallows the answer's formula (verify-RC-B10 F2: the old app-side
+ * math pre-pass paired them and printed "Energy FormulaE = \\int…").
  */
 
 import JSZip from "jszip";
 import { exportDocument } from "@ai-matrx/print/document";
-import { prepareDocumentMarkdown } from "../document-markdown";
+import { documentMarkdown } from "../document-markdown";
 import { loadFullConversationHistory } from "../load-full-history";
 
-// 1×1 transparent PNG — stands in for the browser KaTeX rasterizer.
-const PNG =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-
 const ANSWER = [
-  "Here is the breakdown:",
+  "## You",
+  "",
+  "Give me the kiln energy formula in $$ form, and the firing segments.",
+  "",
+  "## Assistant",
   "",
   '<artifact type="table" id="t1" version="1" title="Table 1">',
-  "| Region | Q1 |",
+  "| Segment | Rate |",
   "|---|---|",
-  "| West | 12 |",
-  "| Southwest | -8.2 |",
+  "| Candle | 80 C/h |",
   "</artifact>",
   "",
-  "Growth follows \\(a^2 + b^2\\) and:",
+  "### Energy Formula",
   "",
-  "$$",
-  "\\int_0^1 x\\,dx = \\frac{1}{2}",
-  "$$",
+  "$$E = \\int_0^t P \\, dt$$",
+  "",
+  "Growth follows \\(a^2 + b^2\\).",
   "",
   "```python",
   'print("$$not math$$")',
   "```",
 ].join("\n");
 
-describe("prepareDocumentMarkdown", () => {
-  it("unwraps kind envelopes, draws display math, reads inline math, leaves code alone", async () => {
-    const out = await prepareDocumentMarkdown(ANSWER, { renderDisplayMath: async () => PNG });
+describe("documentMarkdown", () => {
+  it("unwraps kind envelopes and leaves math and code to the package", () => {
+    const out = documentMarkdown(ANSWER);
     expect(out).not.toContain("<artifact");
-    expect(out).toContain("| Southwest | -8.2 |");
-    expect(out).toContain(`](${PNG})`);
-    expect(out).toContain("a^2 + b^2");
-    expect(out).toContain('print("$$not math$$")');
-    const outsideCode = out.replace(/```[\s\S]*?```/g, "");
-    expect(outsideCode).not.toContain("$$");
-  });
-
-  it("falls back to readable math when a formula cannot be drawn — never raw TeX delimiters", async () => {
-    const out = await prepareDocumentMarkdown(ANSWER, { renderDisplayMath: async () => null });
-    expect(out.replace(/```[\s\S]*?```/g, "")).not.toContain("$$");
-    expect(out).toContain("∫\\_0^1 x dx = 1/2");
+    expect(out).toContain("| Candle | 80 C/h |");
+    expect(out).toContain("$$E = \\int_0^t P \\, dt$$");
   });
 });
 
-describe("the package receives real structure", () => {
-  it("HTML has a <table> and the formula image, and no raw $$", async () => {
-    const md = await prepareDocumentMarkdown(ANSWER, { renderDisplayMath: async () => PNG });
-    const exp = await exportDocument(md, "html", { fileName: "x" });
+describe("the package receives real structure and typesets the math", () => {
+  it("HTML: a <table>, MathML for the formula, the prose $$ kept, the heading its own", async () => {
+    const exp = await exportDocument(documentMarkdown(ANSWER), "html", { fileName: "x" });
     const html = Buffer.from(exp.bytes as Uint8Array).toString("utf8");
     expect(html).toContain("<table");
-    expect(html).toContain("data:image/png");
-    expect(html.replace(/<pre[\s\S]*?<\/pre>/g, "")).not.toContain("$$");
+    expect(html).toContain('<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">');
+    expect(html).toContain("in $$ form");
+    expect(html).toMatch(/<h3[^>]*>Energy Formula<\/h3>/);
+    expect(html.replace(/<pre[\s\S]*?<\/pre>/g, "")).not.toContain("\\int");
   });
 
-  it("Word has a real table (w:tbl) and the formula as a picture (w:drawing)", async () => {
-    const md = await prepareDocumentMarkdown(ANSWER, { renderDisplayMath: async () => PNG });
-    const exp = await exportDocument(md, "docx", { fileName: "x" });
+  it("Word: a real table (w:tbl) and a native equation (m:oMath)", async () => {
+    const exp = await exportDocument(documentMarkdown(ANSWER), "docx", { fileName: "x" });
     const zip = await JSZip.loadAsync(exp.bytes as Uint8Array);
     const doc = await zip.file("word/document.xml")!.async("string");
     expect(doc).toMatch(/<w:tbl[ >]/);
-    expect(doc).toContain("<w:drawing");
+    expect(doc).toContain("<m:oMath>");
     expect(doc).not.toContain("&lt;artifact");
   });
 });

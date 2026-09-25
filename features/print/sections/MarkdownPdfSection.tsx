@@ -22,7 +22,9 @@ import { toast } from "@/lib/toast";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
-import { SectionShell, StatusChip } from "@/features/print/components/shared";
+import { SectionShell } from "@/features/print/components/shared";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { resolvePlatformReferences } from "@/features/print/document/platformReferences";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createMarkdownPdfScope,
@@ -48,7 +50,9 @@ export function MarkdownPdfSection() {
   const noteId = params?.get("note") ?? null;
   const [markdown, setMarkdown] = useState(noteId ? "" : SAMPLE_MARKDOWN);
   const [title, setTitle] = useState("Document");
-  const [loadError, setLoadError] = useState<string | null>(null);
+  /** The note read settled with no row, or failed: the canonical gate says which. */
+  const [missing, setMissing] = useState<{ error?: unknown } | null>(null);
+  const [retry, setRetry] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [busy, setBusy] = useState(false);
 
@@ -69,24 +73,27 @@ export function MarkdownPdfSection() {
   useEffect(() => {
     if (!noteId) return;
     let cancelled = false;
+    setMissing(null);
     NotesAPI.getById(noteId, { failureMode: "throw" })
       .then((note) => {
-        if (cancelled || !note) return;
+        if (cancelled) return;
+        // A deleted, archived or unreadable note comes back as no row — the
+        // screen says so instead of "Opening your note…" forever.
+        if (!note) {
+          setMissing({});
+          return;
+        }
         const label = note.label?.trim() || "Untitled note";
         setTitle(label);
         setMarkdown(withDocumentDefaults(note.content ?? "", label));
-        setLoadError(null);
       })
-      .catch((err: unknown) => {
-        if (!cancelled)
-          setLoadError(
-            `This note could not be opened (${err instanceof Error ? err.message : "unknown error"}). Check that it still exists and that you can see it in Notes.`,
-          );
+      .catch((error: unknown) => {
+        if (!cancelled) setMissing({ error });
       });
     return () => {
       cancelled = true;
     };
-  }, [noteId]);
+  }, [noteId, retry]);
 
   const getApplicationScope = () =>
     createMarkdownPdfScope({ content: markdown, pdf_status: busy ? "generating" : "idle" });
@@ -109,6 +116,21 @@ export function MarkdownPdfSection() {
     },
   ];
 
+  if (noteId && missing) {
+    return (
+      <div className="h-full overflow-hidden">
+        <AccessGate
+          token="note"
+          id={noteId}
+          error={missing.error}
+          onRetry={() => setRetry((n) => n + 1)}
+          fallbackHref="/print/documents"
+          fallbackLabel="Start a new document"
+        />
+      </div>
+    );
+  }
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={MARKDOWN_PDF_SURFACE_NAME}
@@ -120,11 +142,6 @@ export function MarkdownPdfSection() {
         entry="@ai-matrx/print/document"
         blurb="Write markdown; the settings block at the top sets page size, margins, cover, contents, header and footer, columns and citations. Print it, or download PDF, Word, EPUB, HTML or Markdown."
       >
-        {loadError && (
-          <StatusChip tone="warn" className="mb-3">
-            {loadError}
-          </StatusChip>
-        )}
         <div className="grid min-h-[70vh] gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
           <EditableContextMenu
             sourceFeature="print"
@@ -154,10 +171,10 @@ export function MarkdownPdfSection() {
             className="flex min-h-[70vh] flex-col overflow-hidden rounded-md border border-border"
           >
             {markdown.trim() ? (
-              <DocumentPrintPreview markdown={markdown} title={title} />
+              <DocumentPrintPreview markdown={markdown} title={title} resolveReferences={resolvePlatformReferences} />
             ) : (
               <p className="p-8 text-center text-xs text-muted-foreground">
-                {noteId && !loadError ? "Opening your note…" : "Nothing to print yet — write something on the left."}
+                {noteId ? "Opening your note…" : "Nothing to print yet — write something on the left."}
               </p>
             )}
           </div>

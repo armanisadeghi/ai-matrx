@@ -124,6 +124,34 @@ async function startItem(id: string): Promise<void> {
 
   const stale = () => token !== runToken;
 
+  // HELD AND SET (lib/organization/organization-gate.ts). Speaking mints a
+  // provider credential and reads the organization's listening knobs, so it
+  // happens IN an organization. Every enqueue is a person's tap; with none
+  // selected the item waits, the person picks one, and playback proceeds —
+  // never a raw "Select an organization" error on the item. Declining the
+  // picker is an answer, not a failure: the item is dropped quietly.
+  try {
+    const { ensureOrgId } = await import("@/lib/organizations/personalOrg");
+    await ensureOrgId(null);
+  } catch (err) {
+    if (stale()) return;
+    const { isOrganizationSelectionCancelled } = await import(
+      "@/lib/organization/selection-cancelled"
+    );
+    if (isOrganizationSelectionCancelled(err)) {
+      items = items.filter((i) => i.id !== id);
+    } else {
+      patch(id, {
+        status: "error",
+        error: err instanceof Error ? err.message : "Playback failed",
+      });
+    }
+    active = null;
+    void advance();
+    return;
+  }
+  if (stale()) return;
+
   try {
     const adapter = await getAdapter(item.provider);
     if (stale()) return;

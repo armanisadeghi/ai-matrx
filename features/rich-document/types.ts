@@ -265,6 +265,12 @@ export interface ContentSourceAdapter {
    */
   edit?: (args: {
     newContent: string;
+    /**
+     * The text the editor opened on, when that was a DISPLAY projection rather
+     * than the stored bytes (chat: whitespace-normalized) — the adapter then
+     * splices only the changed span into what is stored.
+     */
+    previousContent?: string;
     source: ContentSource;
     dispatch: AppDispatch;
   }) => Promise<void | NoteSaveReceipt>;

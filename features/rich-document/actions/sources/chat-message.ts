@@ -26,7 +26,7 @@ export const chatMessageAdapter: ContentSourceAdapter = {
     return `msg-${source.messageId}`;
   },
 
-  edit: async ({ newContent, source, dispatch }) => {
+  edit: async ({ newContent, previousContent, source, dispatch }) => {
     if (source.type !== "chat-message") {
       throw new Error(
         `chatMessageAdapter.edit received non-chat source: ${source.type}`,
@@ -41,8 +41,15 @@ export const chatMessageAdapter: ContentSourceAdapter = {
     const { saveAnswerEdit } = await import(
       "@/features/agents/redux/execution-system/message-crud/save-answer-edit.thunk"
     );
+    // An editor opened on the DISPLAY text (every non-in-place editor) hands
+    // the text it opened on: only the changed span is spliced into the
+    // stored text. Without it, the text is taken as stored bytes.
     await dispatch(
-      saveAnswerEdit({ conversationId, messageId, newText: newContent }),
+      saveAnswerEdit(
+        previousContent !== undefined
+          ? { conversationId, messageId, displayEdit: { previous: previousContent, next: newContent } }
+          : { conversationId, messageId, newText: newContent },
+      ),
     ).unwrap();
   },
 };

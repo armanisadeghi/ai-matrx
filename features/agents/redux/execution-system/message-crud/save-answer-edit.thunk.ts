@@ -126,3 +126,36 @@ export const saveAnswerEdit = createAsyncThunk<SaveAnswerEditResult, SaveAnswerE
     return { written: true, storedText: projectAnswerText(after?.content).text };
   },
 );
+
+/**
+ * THE door for any surface that edited a message's DISPLAY text (the old
+ * full-screen editor, the HTML preview, a source adapter): an assistant row is
+ * saved by splicing only the changed span into its STORED text (`displayEdit`);
+ * a user row keeps its text-merge contract (`editMessageText` — user rows are
+ * written by the client and carry no normalized view). Throws with the reason
+ * when nothing was written.
+ */
+export async function saveMessageDisplayEdit(
+  dispatch: AppDispatch,
+  getState: () => RootState,
+  args: { conversationId: string; messageId: string; previous: string; next: string },
+): Promise<void> {
+  const record = getState().messages.byConversationId[args.conversationId]?.byId?.[args.messageId];
+  if (record && record.role !== "assistant") {
+    const { editMessageText } = await import("./edit-message-text.thunk");
+    await dispatch(
+      editMessageText({ conversationId: args.conversationId, messageId: args.messageId, newContent: args.next }),
+    ).unwrap();
+    return;
+  }
+  const result = await dispatch(
+    saveAnswerEdit({
+      conversationId: args.conversationId,
+      messageId: args.messageId,
+      displayEdit: { previous: args.previous, next: args.next },
+    }),
+  );
+  if (saveAnswerEdit.rejected.match(result)) {
+    throw new Error(result.payload?.message ?? result.error.message ?? "The answer was not saved.");
+  }
+}

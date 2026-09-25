@@ -9,8 +9,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import {
   listKnownTables,
-  runTableImpact,
+  runTableImpactPage,
 } from "@/features/administration/canonicalization/service/canonicalizationService";
+import { isJsonObject } from "@/types/json";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
     return errorResponse(e);
   }
 
-  let body: { schema?: string; table?: string } = {};
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
@@ -57,16 +58,32 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!body.schema || !body.table) {
+  if (
+    !isJsonObject(body) ||
+    typeof body.schema !== "string" ||
+    typeof body.table !== "string"
+  ) {
     return NextResponse.json(
       { error: "schema and table are required" },
       { status: 400 },
     );
   }
 
+  const offset = body.offset === undefined ? 0 : body.offset;
+  if (
+    typeof offset !== "number" ||
+    !Number.isSafeInteger(offset) ||
+    offset < 0
+  ) {
+    return NextResponse.json(
+      { error: "offset must be a non-negative integer" },
+      { status: 400 },
+    );
+  }
+
   try {
-    const rows = await runTableImpact(body.schema, body.table);
-    return NextResponse.json({ rows });
+    const page = await runTableImpactPage(body.schema, body.table, offset);
+    return NextResponse.json(page);
   } catch (e) {
     return errorResponse(e);
   }

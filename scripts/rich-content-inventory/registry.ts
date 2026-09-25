@@ -149,6 +149,17 @@ export const LEGACY_PIECES: LegacyPiece[] = [
     replacement: ONE_DOCUMENT_EXPORTER,
   },
 
+  {
+    id: "hand-rolled:document-math",
+    label: "app-side math conversion before the document exporter",
+    category: "document-generator",
+    status: "banned",
+    matcher: { kind: "symbol", names: ["drawDisplayMath", "prepareDocumentMarkdown", "renderDisplayMath"] },
+    replacement:
+      "Hand the markdown to `@ai-matrx/print/document` as-is: it lifts math with the core's one dialect " +
+      "(`@ai-matrx/content-ir/source`) and typesets it in every format (verify-RC-B10 F2).",
+  },
+
   // ── Legacy editors ──────────────────────────────────────────────────────────
   {
     id: "pkg:toast-ui",

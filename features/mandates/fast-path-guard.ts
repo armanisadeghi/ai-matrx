@@ -106,7 +106,7 @@ export function verifyFastPathAgainstMandate(
     try {
       const resolved = await resolve(check.mandateKey);
       verdict =
-        true
+        resolved.agentId === check.hardcodedAgentId
           ? { status: "match", resolvedAgentId: resolved.agentId }
           : { status: "mismatch", resolvedAgentId: resolved.agentId };
     } catch (error) {

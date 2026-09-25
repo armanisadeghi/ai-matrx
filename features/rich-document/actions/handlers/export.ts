@@ -32,6 +32,9 @@ registerAction({
       !(ctx.extensions?.type === "chat-message" && ctx.extensions.contentIsStructuredRaw);
     const prepared = canSave ? await prepareContentEdit(ctx) : { source: ctx.source, content: ctx.content };
     let preparedSource = prepared.source;
+    // What the editor opened on — a display projection for chat — so the
+    // adapter splices only the changed span into the stored text.
+    let openedOn = prepared.content;
 
     // Save is source-agnostic via the source adapter (chat → editMessage,
     // note → NotesAPI.update, …). Route it through the callback registry so
@@ -46,7 +49,9 @@ registerAction({
                 ctx,
                 source: preparedSource,
                 newContent,
+                previousContent: openedOn,
               });
+              openedOn = newContent;
             } catch (err) {
               preparedSource = acknowledgedPreparedSource(preparedSource, err, newContent) ?? preparedSource;
               console.error(

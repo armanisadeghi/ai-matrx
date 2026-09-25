@@ -5,11 +5,12 @@
  * edit / split / preview modes as basic notes (BasicContentEditor).
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { BasicContentEditor } from "@/components/content-refine/BasicContentEditor";
+import { JsonViewer } from "@/components/ui/JsonComponents/JsonViewerComponent";
 import { MarkdownCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 import { Button } from "@/components/ui/button";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -19,6 +20,7 @@ import {
   emitExtractionCellEditorEvent,
   type ExtractionCellEditorTargetInput,
 } from "@/features/page-extraction/data-review/extractionCellEditorCallbacks";
+import { parseStructuredCellValue } from "@/features/page-extraction/data-review/structuredCellValue";
 
 const OVERLAY_ID = "extractionCellEditorWindow";
 
@@ -36,12 +38,17 @@ export default function ExtractionCellEditorWindow({
   callbackGroupId,
 }: ExtractionCellEditorWindowProps) {
   const [draft, setDraft] = useState(target.value);
+  const [draftSource, setDraftSource] = useState(target.value);
   const [busy, setBusy] = useState(false);
   const readOnly = target.readOnly === true;
+  const structuredValue = readOnly ? parseStructuredCellValue(target.value) : null;
 
-  useEffect(() => {
+  // Reset only when the source value changes; a parent rerender must not erase
+  // an in-progress edit of the same cell.
+  if (draftSource !== target.value) {
+    setDraftSource(target.value);
     setDraft(target.value);
-  }, [target]);
+  }
 
   const handleClose = useCallback(() => {
     if (busy) return;
@@ -115,13 +122,13 @@ export default function ExtractionCellEditorWindow({
           >
             {readOnly ? "Close" : "Cancel"}
           </Button>
-          {readOnly ? (
+          {readOnly && !structuredValue ? (
             <MarkdownCopyButton
               markdownContent={draft}
               title={`Copy ${target.columnLabel}`}
               hideHTMLPreview
             />
-          ) : (
+          ) : !readOnly ? (
             <Button
               type="button"
               size="sm"
@@ -137,7 +144,7 @@ export default function ExtractionCellEditorWindow({
                 "Save"
               )}
             </Button>
-          )}
+          ) : null}
         </div>
       }
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-3"
@@ -155,16 +162,20 @@ export default function ExtractionCellEditorWindow({
         contextData={{ content: "" }}
         resolveContextOnOpen={() => ({ content: draft })}
       >
-        <BasicContentEditor
-          content={draft}
-          onChange={setDraft}
-          onChangeFlush={setDraft}
-          initialEditorMode="split"
-          readOnly={readOnly}
-          placeholder="Enter cell value…"
-          className="min-h-0 flex-1"
-          resetKey={`${target.rowId}:${target.columnKey}:${target.value.length}`}
-        />
+        {structuredValue ? (
+          <JsonViewer data={structuredValue} className="min-h-0 flex-1" maxHeight="100%" />
+        ) : (
+          <BasicContentEditor
+            content={draft}
+            onChange={setDraft}
+            onChangeFlush={setDraft}
+            initialEditorMode="split"
+            readOnly={readOnly}
+            placeholder="Enter cell value…"
+            className="min-h-0 flex-1"
+            resetKey={`${target.rowId}:${target.columnKey}:${target.value.length}`}
+          />
+        )}
       </NonEditableContextMenu>
     </WindowPanel>
   );

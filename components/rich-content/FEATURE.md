@@ -59,6 +59,11 @@ Typography only, never a second renderer (`prose/variant-root.tsx`): the same ma
 
 Why unlayered CSS and not descendant utilities (`[&_p]:text-base`): the prose elements carry their own size classes, so a parent utility wins only by specificity inside Tailwind's utilities layer; unlayered CSS outranks every layered utility regardless. Diagnosis of the 2026-09-24 "size change didn't apply": the utility never reached the stylesheet — the dev build was failing on a syntax error in `content-splitter-core.ts` (the console listed it), so Turbopack kept serving the previous CSS; with a healthy build the same class applied (probe re-run 2026-09-25: 14px → 16px). Rule for UI checks: read the console for compile errors before trusting a computed style — a failing build serves stale CSS silently.
 
+## Previews and titles
+
+- **Heading anchors** (the hover "#" after each heading) link to a section, so they exist only where the section is on screen: the inline level never renders them; a standard/full preview context passes `headingAnchors={false}` (or wraps in `HeadingAnchorsProvider value={false}`, `components/markdown-core/heading-anchors-context.ts`). Guard: `__tests__/heading-anchors-in-previews.test.tsx`.
+- **Titles derived from content** go through ONE plain-text projection, `components/markdown-core/plain-title.ts` (`plainTitleFromMarkdown`); stored titles that still carry syntax display clean via `displayTitle` / `withDisplayTitle` at the service read boundary (flashcard sets, assessments, study media) — storage is not rewritten. Guard: `components/markdown-core/__tests__/plain-title.test.ts`.
+
 ## Build-graph rule
 
 Inside the chat engine (`components/mardown-display/**`), import `RichContentInline` or `NestedRichContent` directly — never the `RichContent` router, whose standard/full edges would stack a boundary under `MarkdownStream` (code-splitting skill, rules 2–3).
@@ -72,6 +77,7 @@ Inside the chat engine (`components/mardown-display/**`), import `RichContentInl
 
 ## Change log
 
+- 2026-09-25 — RC-B2 fixes: nested-render identity guard + tag-fragment text, same-name section balance, nested stream holdback; heading anchors off in previews; one plain-text title projection (paste titles, note auto-labels, task seeds, observation labels, podcast/document names) + display projection of stored titles.
 - 2026-09-25 — `variant="reading"`; static inline leaf; remaining public text converted (sign document, booking intro, education hero/section strings, class descriptions, resource descriptions).
 - 2026-09-25 — server level (RC-B2b): `RichContentServer`, shared presets / element maps / splitter core, parity guard, learn + creator pages converted; shared nested-fence vectors with aidream.
 - 2026-09-24 — created (RC-B2): levels, nested rendering, nested-fence rule, first surfaces (CardFaceContent, QuestionView, StudyGuideReader key terms, AnalysisCard preview, MemoryAidBlock).

@@ -16,7 +16,7 @@ import {
   buildCanonicalCertifyOkQuery,
   buildCanonicalCertifyQuery,
   buildEntityTokenLookupQuery,
-  buildTableImpactQuery,
+  buildTableImpactPageQuery,
   buildVerifyCanonicalOkQuery,
   buildVerifyCanonicalQuery,
 } from "../utils/queryBuilders";
@@ -34,11 +34,13 @@ import type {
   M2mCandidateRow,
   RefreshLogRow,
   StaleRegistryRow,
+  TableImpactPage,
   TableImpactRow,
   UnregisteredCandidateRow,
   VerifyCanonicalResult,
   VerifyCanonicalRow,
 } from "../types";
+import { isJsonObject } from "@/types/json";
 
 async function runQuery<T>(query: string): Promise<T[]> {
   const admin = await requireSuperAdminDatabaseClient();
@@ -139,11 +141,59 @@ export async function runAuditRefresh(): Promise<{ note: string }> {
   return { note: rows[0]?.note ?? "" };
 }
 
-export async function runTableImpact(
+function isTableImpactRow(value: unknown): value is TableImpactRow {
+  if (!isJsonObject(value)) return false;
+  const columns = value.referenced_columns;
+  return (
+    (typeof value.function_sig === "string" || value.function_sig === null) &&
+    (typeof value.dependency === "string" || value.dependency === null) &&
+    (typeof value.currently_broken === "boolean" || value.currently_broken === null) &&
+    (columns === null ||
+      (Array.isArray(columns) &&
+        columns.every((column) => typeof column === "string")))
+  );
+}
+
+function parseTableImpactPage(value: unknown, offset: number): TableImpactPage {
+  if (!isJsonObject(value) || !Array.isArray(value.rows)) {
+    throw new Error("Table impact preflight returned an invalid page");
+  }
+  if (
+    typeof value.total !== "number" ||
+    !Number.isSafeInteger(value.total) ||
+    value.total < 0
+  ) {
+    throw new Error("Table impact preflight returned an invalid total");
+  }
+  const rows = value.rows.map((row) => {
+    if (!isTableImpactRow(row)) {
+      throw new Error("Table impact preflight returned an invalid dependency row");
+    }
+    return row;
+  });
+  const nextOffset = offset + rows.length;
+  if (nextOffset < value.total && rows.length === 0) {
+    throw new Error("Table impact preflight stopped before its counted result");
+  }
+  return {
+    rows,
+    total: value.total,
+    nextOffset: nextOffset < value.total ? nextOffset : null,
+  };
+}
+
+export async function runTableImpactPage(
   schema: string,
   table: string,
-): Promise<TableImpactRow[]> {
-  return runQuery<TableImpactRow>(buildTableImpactQuery(schema, table));
+  offset: number,
+): Promise<TableImpactPage> {
+  const rows = await runQuery<unknown>(
+    buildTableImpactPageQuery(schema, table, offset),
+  );
+  if (rows.length !== 1) {
+    throw new Error("Table impact preflight returned an invalid page envelope");
+  }
+  return parseTableImpactPage(rows[0], offset);
 }
 
 export async function lookupEntityToken(

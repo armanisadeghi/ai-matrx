@@ -141,6 +141,15 @@ export interface TableImpactRow {
   referenced_columns: string[] | null;
 }
 
+/** A counted, ordered page from `audit.table_impact(schema, table)`. */
+export interface TableImpactPage {
+  rows: TableImpactRow[];
+  /** Exact count from the same SQL statement as this page. */
+  total: number;
+  /** Offset for the next ordered page, or null when this page finishes the set. */
+  nextOffset: number | null;
+}
+
 /** Row from `iam.verify_canonical(...)` — one check per row. */
 export interface VerifyCanonicalRow {
   check_name: string;

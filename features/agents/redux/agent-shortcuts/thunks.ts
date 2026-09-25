@@ -323,6 +323,11 @@ export const buildAgentShortcutMenu = createAsyncThunk<
           resolvedId: item.resolved_id,
           isVersion,
 
+          // The mandate this shortcut IS — every run goes through its key
+          // (aidream 1042 serves it on every menu item).
+          mandateKey:
+            (item as { mandate_key?: string | null }).mandate_key ?? null,
+
           agentName: item.agent?.name ?? null,
           variableDefinitions: parsedVariableDefinitions,
           contextPolicies: parsedContextPolicies,

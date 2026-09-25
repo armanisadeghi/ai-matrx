@@ -49,4 +49,15 @@ describe("ExtractionCellDisplay", () => {
 
     act(() => root.unmount());
   });
+
+  it("summarizes a structured value and opens the JSON viewer instead of printing raw JSON", () => {
+    const value = '[{"kind":"depends_on","rule_id":"first"}]';
+    const { container, onView, root } = renderCell(value);
+    expect(container.textContent).toContain("1 item");
+    expect(container.textContent).not.toContain("depends_on");
+    const open = container.querySelector('[aria-label="Open JSON value"]') as HTMLButtonElement;
+    act(() => open.click());
+    expect(onView).toHaveBeenCalledTimes(1);
+    act(() => root.unmount());
+  });
 });

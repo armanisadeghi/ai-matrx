@@ -61,6 +61,8 @@ export function HtmlPreviewBridge({
 
   // Ref to track the artifact ID across renders without stale closures
   const artifactIdRef = useRef<string | undefined>(existingArtifact?.id);
+  // The markdown the preview opened on (then: last saved) — the splice base.
+  const openedOn = useRef(content);
   useEffect(() => {
     artifactIdRef.current = existingArtifact?.id;
   }, [existingArtifact?.id]);
@@ -220,23 +222,18 @@ export function HtmlPreviewBridge({
         );
         throw new Error("Save is not wired for this content — nothing was saved.");
       }
-      const { editMessage } = await import(
-          "@/features/agents/redux/execution-system/message-crud/edit-message.thunk"
-        );
-        const { mergeEditedText } = await import(
-          "@/features/agents/redux/execution-system/message-crud/content-blocks.util"
-        );
-        const existing =
-          store.getState().messages.byConversationId[conversationId]?.byId?.[
-            messageId
-          ]?.content;
-        await dispatch(
-          editMessage({
-            conversationId,
-            messageId,
-            newContent: mergeEditedText(existing, markdownContent),
-          }),
-        ).unwrap();
+      // The preview opened on the message's DISPLAY text: splice only the
+      // changed span into the stored row (RC-B5), never the display text.
+      const { saveMessageDisplayEdit } = await import(
+        "@/features/agents/redux/execution-system/message-crud/save-answer-edit.thunk"
+      );
+      await saveMessageDisplayEdit(dispatch, store.getState, {
+        conversationId,
+        messageId,
+        previous: openedOn.current,
+        next: markdownContent,
+      });
+      openedOn.current = markdownContent;
       toast.success("Saved");
     },
     [callbackGroupId, conversationId, messageId, dispatch, store],

@@ -110,14 +110,12 @@ export async function exportConversation(
     if (format === "md") {
       download(new Blob([markdown], { type: "text/markdown;charset=utf-8" }), `${base}.md`);
     } else {
-      const [{ exportDocument }, { prepareDocumentMarkdown }, { drawDisplayMath }] = await Promise.all([
+      const [{ exportDocument }, { documentMarkdown }] = await Promise.all([
         import("@ai-matrx/print/document"),
         import("./document-markdown"),
-        import("./draw-math"),
       ]);
-      // Real tables, drawn formulas — never envelopes or raw `$$` (verify-RC-B9 F1).
-      const prepared = await prepareDocumentMarkdown(markdown, { renderDisplayMath: drawDisplayMath });
-      const exp = await exportDocument(conversationDocumentSource(prepared, title), format, {
+      // Real tables (envelopes unwrapped); math is typeset by the package.
+      const exp = await exportDocument(conversationDocumentSource(documentMarkdown(markdown), title), format, {
         fileName: base,
       });
       download(new Blob([exp.bytes as BlobPart], { type: exp.mime }), exp.fileName);

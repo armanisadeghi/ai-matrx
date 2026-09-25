@@ -78,6 +78,13 @@ jest.mock("@/features/mandates/service", () => ({
 }));
 
 import { defaultPresentation } from "@/features/bindings/treatment-shape";
+// HELD AND SET: with no organization selected, the launch asks through the one
+// gate (ensureOrgId) — mocked here so the answer is a fact of the test.
+const mockEnsureOrgId = jest.fn(async () => "org-picked-by-the-person");
+jest.mock("@/lib/organizations/personalOrg", () => ({
+  ensureOrgId: () => mockEnsureOrgId(),
+}));
+
 import { configureStore, type UnknownAction } from "@reduxjs/toolkit";
 import { launchAgentExecution } from "../launch-agent-execution.thunk";
 import { assembleRequest } from "../execute-instance.thunk";
@@ -136,7 +143,8 @@ function selectedAppContextReducer(
   return appContextReducer(state, action);
 }
 
-function makeStore() {
+function makeStore(organizationId: string | null = "org-selected-for-test") {
+  const initialAppContext = { ...selectedAppContext, organization_id: organizationId };
   return configureStore({
     reducer: {
       // Read-only in this flow — a frozen stub slice holding the agent.
@@ -156,7 +164,8 @@ function makeStore() {
       adminPreferences: adminPreferencesReducer,
       userPreferences: userPreferencesReducer,
       editorState: editorStateReducer,
-      appContext: selectedAppContextReducer,
+      appContext: (state = initialAppContext, action: UnknownAction) =>
+        selectedAppContextReducer(state, action),
       overlay: overlayReducer,
     },
   });
@@ -187,6 +196,30 @@ async function launch(
     } as Parameters<typeof launchAgentExecution>[0]),
   ).unwrap();
 }
+
+describe("launchAgentExecution mandateKey — no organization selected is HELD AND SET", () => {
+  test("the launch asks the person, then resolves in the organization they chose", async () => {
+    const store = makeStore(null);
+    (resolveMandate as jest.Mock).mockClear();
+    mockEnsureOrgId.mockClear();
+    await launch(store);
+    expect(mockEnsureOrgId).toHaveBeenCalledTimes(1);
+    expect(resolveMandate).toHaveBeenCalledWith("plan_client.shape_planner", {
+      organizationId: "org-picked-by-the-person",
+    });
+  });
+
+  test("a selected organization is used without asking", async () => {
+    const store = makeStore();
+    (resolveMandate as jest.Mock).mockClear();
+    mockEnsureOrgId.mockClear();
+    await launch(store);
+    expect(mockEnsureOrgId).not.toHaveBeenCalled();
+    expect(resolveMandate).toHaveBeenCalledWith("plan_client.shape_planner", {
+      organizationId: "org-selected-for-test",
+    });
+  });
+});
 
 describe("launchAgentExecution mandateKey — THE DOOR is the run target", () => {
   test("the mandate key is stamped on the conversation, so turn 1 POSTs /ai/mandates/{key}", async () => {

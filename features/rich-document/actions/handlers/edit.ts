@@ -112,6 +112,9 @@ registerAction({
     // silently broke note/prompt saves). The group auto-disposes on save.
     const prepared = await prepareContentEdit(ctx);
     let preparedSource = prepared.source;
+    // What the editor opened on — a display projection for chat — so the
+    // adapter splices only the changed span into the stored text.
+    let openedOn = prepared.content;
     const { callbackGroupId } = createFullScreenEditorCallbackGroup({
       onSave: async (newContent: string) => {
         try {
@@ -119,7 +122,9 @@ registerAction({
             ctx,
             source: preparedSource,
             newContent,
+            previousContent: openedOn,
           });
+          openedOn = newContent;
           toast.success("Changes saved");
         } catch (err) {
           preparedSource = acknowledgedPreparedSource(preparedSource, err, newContent) ?? preparedSource;

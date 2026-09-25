@@ -18,8 +18,21 @@ jest.mock("@ai-matrx/print/document", () => ({
   downloadDocumentExport: (...args: unknown[]) => mockDownload(...args),
 }));
 
+let mockSearch = "";
 jest.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(""),
+  useSearchParams: () => new URLSearchParams(mockSearch),
+}));
+
+jest.mock("@/features/access-gate/components/AccessGate", () => ({
+  AccessGate: ({ token, id }: { token: string; id: string }) => (
+    <div data-testid="access-gate">
+      {token}:{id}
+    </div>
+  ),
+}));
+
+jest.mock("@/features/print/document/platformReferences", () => ({
+  resolvePlatformReferences: async () => [],
 }));
 
 jest.mock("next/dynamic", () => () => {
@@ -29,8 +42,9 @@ jest.mock("next/dynamic", () => () => {
   return Preview;
 });
 
+const mockGetById = jest.fn();
 jest.mock("@/features/notes/service/notesApi", () => ({
-  NotesAPI: { getById: jest.fn() },
+  NotesAPI: { getById: (...a: unknown[]) => mockGetById(...a) },
 }));
 
 const capturedMenuProps: {
@@ -126,6 +140,23 @@ describe("MarkdownPdfSection (Documents)", () => {
     expect(mockDownload).toHaveBeenCalledTimes(1);
     expect(toastSuccess).toHaveBeenCalledWith("PDF downloaded");
     expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["the note is gone (no row)", async () => null],
+    ["the read failed", async () => Promise.reject(new Error("permission denied"))],
+  ])("a missing note shows the honest absent-record gate, never an endless 'Opening…' (%s) — verify-RC-B10 F6", async (_label, read) => {
+    mockSearch = "note=16cccf50-ee6e-4ae7-891e-fcb6b8cf4bbb";
+    mockGetById.mockImplementation(read);
+    await act(async () => {
+      root.render(<MarkdownPdfSection />);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(container.querySelector('[data-testid="access-gate"]')?.textContent).toBe("note:16cccf50-ee6e-4ae7-891e-fcb6b8cf4bbb");
+    expect(container.textContent).not.toContain("Opening your note");
+    mockSearch = "";
   });
 
   it("gives a plain note document settings, and leaves a note that has its own alone", () => {

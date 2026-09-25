@@ -31,7 +31,6 @@ jest.mock("@/features/agents/redux/execution-system/conversations/conversations.
 jest.mock("../load-full-history", () => ({
   loadFullConversationHistory: async () => ({ complete: true, loaded: 2 }),
 }));
-jest.mock("../draw-math", () => ({ drawDisplayMath: async () => null }));
 jest.mock("@/features/agents/message-pins/pinned-messages-store", () => ({
   isMessagePinned: () => false,
 }));

@@ -29,7 +29,7 @@
  * `FullScreenMarkdownEditor` directly from `windowRegistry.ts`.
  */
 
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import {
@@ -41,7 +41,6 @@ import {
   disposeFullScreenEditorCallbackGroup,
   emitFullScreenEditorSave,
 } from "@/features/overlays/callbacks/fullScreenEditor";
-import { mergeEditedText } from "@/features/agents/redux/execution-system/message-crud/content-blocks.util";
 import type { EditorPrimaryAction } from "@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor";
 
 const FullScreenMarkdownEditor = dynamic(
@@ -112,6 +111,9 @@ export function FullScreenMarkdownEditorBridge({
 }: FullScreenMarkdownEditorBridgeProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
+  // The text the editor opened on (then: last saved). `content` itself follows
+  // every keystroke, so it cannot be the base of a splice.
+  const openedOn = useRef(content);
 
   const handleChange = useCallback(
     (newContent: string) => {
@@ -146,19 +148,17 @@ export function FullScreenMarkdownEditorBridge({
           //    message (user or assistant) — `mode` is no longer the gate.
           //    Preserve the message's non-text blocks (attachments/chips);
           //    the editor only edits text.
-          const { editMessage } =
-            await import("@/features/agents/redux/execution-system/message-crud/edit-message.thunk");
-          const existing =
-            store.getState().messages.byConversationId[conversationId]?.byId?.[
-              messageId
-            ]?.content;
-          await dispatch(
-            editMessage({
-              conversationId,
-              messageId,
-              newContent: mergeEditedText(existing, newContent),
-            }),
-          ).unwrap();
+          // The editor opened on the message's DISPLAY text: splice only the
+          // changed span into the stored row (RC-B5), never the display text.
+          const { saveMessageDisplayEdit } =
+            await import("@/features/agents/redux/execution-system/message-crud/save-answer-edit.thunk");
+          await saveMessageDisplayEdit(dispatch, store.getState, {
+            conversationId,
+            messageId,
+            previous: openedOn.current,
+            next: newContent,
+          });
+          openedOn.current = newContent;
           const { toast } = await import("@/lib/toast");
           toast.success("Message saved");
         } else if (typeof onSave === "function") {

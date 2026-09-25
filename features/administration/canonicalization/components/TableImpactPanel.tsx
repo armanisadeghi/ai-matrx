@@ -23,8 +23,8 @@ import { Button } from "@/components/ui/button";
 import { BoolBadge } from "./StatusBadge";
 import { SchemaTableFields } from "./SchemaTableFields";
 import type { TableImpactRow } from "../types";
-import { errorMessageFrom, readJsonObject } from "../utils/apiClient";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { fetchAllTableImpactRows } from "../utils/tableImpactPagination";
 import {
   tableImpactRunToAgentInput,
   tableImpactRunToHuman,
@@ -35,16 +35,6 @@ import {
   useUrlState,
 } from "@ai-matrx/kit/url-state";
 
-function isTableImpactRow(v: unknown): v is TableImpactRow {
-  if (typeof v !== "object" || v === null) return false;
-  const r = v as Record<string, unknown>;
-  return (
-    (typeof r.function_sig === "string" || r.function_sig === null) &&
-    (typeof r.dependency === "string" || r.dependency === null) &&
-    (typeof r.currently_broken === "boolean" || r.currently_broken === null)
-  );
-}
-
 export function TableImpactPanel() {
   const searchParams = useSearchParams();
   const initialDeepLink = useRef(
@@ -54,7 +44,11 @@ export function TableImpactPanel() {
   const [table, setTable] = useUrlState("table", stringUrlCodec());
   const [hasRun, setHasRun] = useUrlState("run", booleanUrlCodec(false));
   const targetKey = JSON.stringify([schema.trim(), table.trim()]);
-  const [snapshot, setSnapshot] = useState<{ key: string; rows: TableImpactRow[] } | null>(null);
+  const [snapshot, setSnapshot] = useState<{
+    key: string;
+    rows: TableImpactRow[];
+    total: number;
+  } | null>(null);
   const rows = snapshot?.key === targetKey ? snapshot.rows : [];
   const [pendingRequest, setPendingRequest] = useState<{ key: string; id: number } | null>(null);
   const [errorState, setErrorState] = useState<{ key: string; message: string } | null>(null);
@@ -73,18 +67,8 @@ export function TableImpactPanel() {
     setPendingRequest({ key, id: requestId });
     setErrorState(null);
     try {
-      const res = await fetch("/api/admin/canonicalization/table-impact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(target),
-      });
-      const data = await readJsonObject(res);
-      if (!res.ok) throw new Error(errorMessageFrom(data, res));
-      const nextRows: unknown = data.rows;
-      if (!Array.isArray(nextRows) || !nextRows.every(isTableImpactRow)) {
-        throw new Error("Preflight returned an invalid dependency list");
-      }
-      if (requestId === requestVersion.current) setSnapshot({ key, rows: nextRows.filter(isTableImpactRow) });
+      const result = await fetchAllTableImpactRows(target);
+      if (requestId === requestVersion.current) setSnapshot({ key, ...result });
     } catch (err) {
       if (requestId !== requestVersion.current) return;
       const message = err instanceof Error ? err.message : String(err);
@@ -251,7 +235,12 @@ export function TableImpactPanel() {
             id: "canonicalization-table-impact",
             defaultSort: { id: "currently_broken", direction: "desc" },
           }}
-          coverage={{ loaded: rows.length, noun: "dependent function" }}
+          coverage={{
+            loaded: rows.length,
+            total: snapshot?.key === targetKey ? snapshot.total : undefined,
+            answeredBy: "source",
+            noun: "dependent function",
+          }}
           toolbar={{ search: true, searchPlaceholder: "Search dependent functions…" }}
           emptyState={{
             title: readError
