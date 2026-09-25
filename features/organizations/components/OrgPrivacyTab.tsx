@@ -35,7 +35,8 @@ import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@ai-matrx/design-system";
-import { useOrgAutoRagPreference } from "../hooks/useOrgAutoRagPreference";
+import { FIELD_ACTION, useOrgAutoRagPreference } from "../hooks/useOrgAutoRagPreference";
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { formatDurationMs, formatPercent, formatUsd } from "@ai-matrx/kit/format";
 
 interface OrgPrivacyTabProps {
@@ -99,7 +100,7 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
             : "Auto knowledge-graph disabled for this org",
         ),
       )
-      .catch(() => toast.error("Couldn't update auto knowledge-graph"));
+      .catch((err) => toastWriteFailure(err, { action: FIELD_ACTION.enabled }));
   };
 
   const handleToggleNonPdf = (next: boolean) => {
@@ -112,7 +113,7 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
             : "Non-PDF auto-indexing disabled for this org",
         ),
       )
-      .catch(() => toast.error("Couldn't update non-PDF auto-indexing"));
+      .catch((err) => toastWriteFailure(err, { action: FIELD_ACTION.indexNonPdf }));
   };
 
   const handleToggleSuggestionSweeps = (next: boolean) => {
@@ -125,7 +126,7 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
             : "Scope-value suggestions disabled for this org",
         ),
       )
-      .catch(() => toast.error("Couldn't update scope-value suggestions"));
+      .catch((err) => toastWriteFailure(err, { action: FIELD_ACTION.suggestionSweeps }));
   };
 
   const handleStartEditingBudget = () => {
@@ -148,8 +149,8 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
       await pref.setBudgetUsd(parsed);
       setEditingBudget(false);
       toast.success(`Daily budget set to ${formatUsd(parsed)}`);
-    } catch {
-      toast.error("Couldn't update budget");
+    } catch (err) {
+      toastWriteFailure(err, { action: FIELD_ACTION.budget });
     }
   };
 
@@ -197,6 +198,7 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
               <Switch
                 id="org-auto-rag-switch"
                 checked={pref.enabled}
+                aria-busy={pref.pendingField === "enabled" || undefined}
                 onCheckedChange={handleToggle}
                 disabled={!canEdit || pref.saving}
               />
@@ -224,6 +226,7 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
               <Switch
                 id="org-non-pdf-switch"
                 checked={pref.indexNonPdf}
+                aria-busy={pref.pendingField === "indexNonPdf" || undefined}
                 onCheckedChange={handleToggleNonPdf}
                 disabled={!canEdit || !pref.enabled || pref.saving}
               />
@@ -254,6 +257,7 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
               <Switch
                 id="org-suggestion-sweeps-switch"
                 checked={pref.suggestionSweeps}
+                aria-busy={pref.pendingField === "suggestionSweeps" || undefined}
                 onCheckedChange={handleToggleSuggestionSweeps}
                 disabled={!canEdit || !pref.enabled || pref.saving}
               />

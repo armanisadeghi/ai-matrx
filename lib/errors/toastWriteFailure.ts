@@ -9,5 +9,6 @@ export function toastWriteFailure(
 ): void {
   const { title, description } = describeWriteFailure(err, words);
   if (err instanceof WriteRefusedError) console.warn(`[write refused] ${err.technical}`);
+  else console.warn(`[write refused] ${words.action}`, err);
   toast.error(title, { description });
 }

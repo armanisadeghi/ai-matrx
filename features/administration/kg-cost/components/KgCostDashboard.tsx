@@ -51,7 +51,8 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useOrgAutoRagPreference } from "@/features/organizations/hooks/useOrgAutoRagPreference";
+import { FIELD_ACTION, useOrgAutoRagPreference } from "@/features/organizations/hooks/useOrgAutoRagPreference";
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import {
   Dialog,
   DialogContent,
@@ -562,7 +563,7 @@ function OrgAutoIngestControls({ orgId }: { orgId: string }) {
       .then(() =>
         toast.success(next ? "Auto-Knowledge enabled" : "Auto-Knowledge disabled"),
       )
-      .catch(() => toast.error("Couldn't update auto-Knowledge"));
+      .catch((err) => toastWriteFailure(err, { action: FIELD_ACTION.enabled }));
   };
 
   const handleToggleNonPdf = (next: boolean) => {
@@ -575,7 +576,7 @@ function OrgAutoIngestControls({ orgId }: { orgId: string }) {
             : "Non-PDF auto-indexing disabled",
         ),
       )
-      .catch(() => toast.error("Couldn't update non-PDF auto-indexing"));
+      .catch((err) => toastWriteFailure(err, { action: FIELD_ACTION.indexNonPdf }));
   };
 
   const handleToggleSuggestionSweeps = (next: boolean) => {
@@ -588,7 +589,7 @@ function OrgAutoIngestControls({ orgId }: { orgId: string }) {
             : "Scope-value suggestions disabled",
         ),
       )
-      .catch(() => toast.error("Couldn't update scope-value suggestions"));
+      .catch((err) => toastWriteFailure(err, { action: FIELD_ACTION.suggestionSweeps }));
   };
 
   return (
@@ -613,6 +614,7 @@ function OrgAutoIngestControls({ orgId }: { orgId: string }) {
             <Switch
               id="admin-org-auto-rag"
               checked={pref.enabled}
+                aria-busy={pref.pendingField === "enabled" || undefined}
               onCheckedChange={handleToggleEnabled}
               disabled={pref.saving}
             />
@@ -638,6 +640,7 @@ function OrgAutoIngestControls({ orgId }: { orgId: string }) {
             <Switch
               id="admin-org-non-pdf"
               checked={pref.indexNonPdf}
+                aria-busy={pref.pendingField === "indexNonPdf" || undefined}
               onCheckedChange={handleToggleNonPdf}
               disabled={!pref.enabled || pref.saving}
             />
@@ -664,6 +667,7 @@ function OrgAutoIngestControls({ orgId }: { orgId: string }) {
             <Switch
               id="admin-org-suggestion-sweeps"
               checked={pref.suggestionSweeps}
+                aria-busy={pref.pendingField === "suggestionSweeps" || undefined}
               onCheckedChange={handleToggleSuggestionSweeps}
               disabled={!pref.enabled || pref.saving}
             />

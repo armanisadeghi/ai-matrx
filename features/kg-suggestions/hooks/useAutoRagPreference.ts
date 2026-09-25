@@ -23,7 +23,7 @@ import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { extractErrorMessage } from "@/utils/errors";
+import { describeWriteFailure } from "@/lib/errors/writeFailure";
 
 export interface UseAutoRagPreferenceResult {
   enabled: boolean;
@@ -60,7 +60,13 @@ export function useAutoRagPreference(): UseAutoRagPreferenceResult {
         setEnabledState(data?.auto_rag_enabled ?? true);
         setError(null);
       } catch (err) {
-        if (!cancelled) setError(extractErrorMessage(err));
+        if (!cancelled) {
+          const w = describeWriteFailure(err, {
+            action: "read your knowledge-graph setting",
+            remedy: "Reload the page to try again.",
+          });
+          setError(`${w.title} ${w.description}`);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -73,9 +79,9 @@ export function useAutoRagPreference(): UseAutoRagPreferenceResult {
   const setEnabled = useCallback(
     async (next: boolean) => {
       if (!userId) return;
+      // PENDING, NEVER OPTIMISTIC (GATES-TAIL-2): the switch keeps its value (and shows busy via
+      // `saving`) until the row is written; a refusal leaves it as it was, said in words.
       setSaving(true);
-      const prev = enabled;
-      setEnabledState(next); // optimistic
       try {
         // 1) Try UPDATE first — the common path for users who already have
         //    a preferences row. Leaves `preferences` jsonb untouched.
@@ -99,16 +105,20 @@ export function useAutoRagPreference(): UseAutoRagPreferenceResult {
             });
           if (insertErr) throw insertErr;
         }
+        setEnabledState(next);
         setError(null);
       } catch (err) {
-        setEnabledState(prev); // rollback
-        setError(extractErrorMessage(err));
+        const w = describeWriteFailure(err, {
+          action: next ? "turn on auto knowledge-graph" : "turn off auto knowledge-graph",
+          remedy: "Try again.",
+        });
+        setError(`${w.title} ${w.description}`);
         throw err;
       } finally {
         setSaving(false);
       }
     },
-    [userId, enabled],
+    [userId],
   );
 
   return { enabled, loading, saving, error, setEnabled };

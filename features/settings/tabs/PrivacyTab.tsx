@@ -9,6 +9,7 @@ import { SettingsCallout } from "@/components/official/settings/layout/SettingsC
 import { SettingsLink } from "@/components/official/settings/primitives/SettingsLink";
 import { useSetting } from "../hooks/useSetting";
 import { useAutoRagPreference } from "@/features/kg-suggestions/hooks/useAutoRagPreference";
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 
 /**
  * Privacy-adjacent toggles. Not a dedicated slice — surfaces fields from
@@ -33,7 +34,11 @@ export default function PrivacyTab() {
             : "Auto knowledge-graph disabled",
         ),
       )
-      .catch(() => toast.error("Couldn't update knowledge-graph setting"));
+      .catch((err) =>
+        toastWriteFailure(err, {
+          action: next ? "turn on auto knowledge-graph" : "turn off auto knowledge-graph",
+        }),
+      );
   };
 
   return (

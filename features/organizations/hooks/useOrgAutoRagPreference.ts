@@ -18,7 +18,17 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
-import { extractErrorMessage } from "@/utils/errors";
+import { describeWriteFailure } from "@/lib/errors/writeFailure";
+
+export type OrgAutoRagField = "enabled" | "indexNonPdf" | "suggestionSweeps" | "budget";
+
+/** Completes "Could not …" for a refused write of each field. */
+export const FIELD_ACTION: Record<OrgAutoRagField, string> = {
+  enabled: "change auto knowledge-graph for this organization",
+  indexNonPdf: "change non-PDF auto-indexing for this organization",
+  suggestionSweeps: "change scope-value suggestions for this organization",
+  budget: "change the daily auto-ingest budget",
+};
 
 export interface UseOrgAutoRagPreferenceResult {
   enabled: boolean;
@@ -41,6 +51,8 @@ export interface UseOrgAutoRagPreferenceResult {
   windowStart: string | null;
   loading: boolean;
   saving: boolean;
+  /** Which field's write is in flight (its control shows busy and keeps its value until it lands). */
+  pendingField: OrgAutoRagField | null;
   error: string | null;
   setEnabled: (next: boolean) => Promise<void>;
   setIndexNonPdf: (next: boolean) => Promise<void>;
@@ -95,7 +107,13 @@ export function useOrgAutoRagPreference(
         setWindowStart(data?.daily_auto_rag_window_start ?? null);
         setError(null);
       } catch (err) {
-        if (!cancelled) setError(extractErrorMessage(err));
+        if (!cancelled) {
+          const w = describeWriteFailure(err, {
+            action: "read this organization's knowledge-graph settings",
+            remedy: "Reload the page to try again.",
+          });
+          setError(`${w.title} ${w.description}`);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -105,123 +123,62 @@ export function useOrgAutoRagPreference(
     };
   }, [organizationId]);
 
+  // PENDING, NEVER OPTIMISTIC (GATES-TAIL-2): the value changes only once the door agreed; while
+  // the write is in flight `saving` / `pendingField` say so, and a refusal leaves the value as it
+  // was with `error` in words (describeWriteFailure), never the database's own line.
+  const [pendingField, setPendingField] = useState<OrgAutoRagField | null>(null);
+
+  const writePatch = useCallback(
+    async (field: OrgAutoRagField, patch: Record<string, unknown>, apply: () => void) => {
+      if (!organizationId) return;
+      setSaving(true);
+      setPendingField(field);
+      try {
+        // THROUGH THE DOOR. `iam` is not a client-writable schema (DOORS-ONLY-3).
+        // `public.org_preferences_set` writes the preference flags and the budget
+        // CEILING and cannot touch `daily_auto_rag_cost_used_usd` or
+        // `daily_auto_rag_window_start` — the live spend meter aidream writes, which
+        // the base-table UPDATE grant let a browser reset for itself.
+        const { error: uErr } = await supabase.rpc("org_preferences_set", {
+          p_organization_id: organizationId,
+          p_patch: patch as never,
+        });
+        if (uErr) throw uErr;
+        apply();
+        setError(null);
+      } catch (err) {
+        const words = describeWriteFailure(err, { action: FIELD_ACTION[field], remedy: "Try again." });
+        setError(`${words.title} ${words.description}`);
+        throw err;
+      } finally {
+        setSaving(false);
+        setPendingField(null);
+      }
+    },
+    [organizationId],
+  );
+
   const setEnabled = useCallback(
-    async (next: boolean) => {
-      if (!organizationId) return;
-      setSaving(true);
-      const prev = enabled;
-      setEnabledState(next); // optimistic
-      try {
-        // THROUGH THE DOOR. `iam` is not a client-writable schema (DOORS-ONLY-3).
-        // `public.org_preferences_set` writes the preference flags and the budget
-        // CEILING and cannot touch `daily_auto_rag_cost_used_usd` or
-        // `daily_auto_rag_window_start` — the live spend meter aidream writes, which
-        // the base-table UPDATE grant let a browser reset for itself.
-        const { error: uErr } = await supabase.rpc("org_preferences_set", {
-          p_organization_id: organizationId,
-          p_patch: { auto_rag_enabled: next } as never,
-        });
-        if (uErr) throw uErr;
-        setError(null);
-      } catch (err) {
-        setEnabledState(prev); // rollback
-        setError(extractErrorMessage(err));
-        throw err;
-      } finally {
-        setSaving(false);
-      }
-    },
-    [organizationId, enabled],
+    (next: boolean) => writePatch("enabled", { auto_rag_enabled: next }, () => setEnabledState(next)),
+    [writePatch],
   );
-
   const setIndexNonPdf = useCallback(
-    async (next: boolean) => {
-      if (!organizationId) return;
-      setSaving(true);
-      const prev = indexNonPdf;
-      setIndexNonPdfState(next); // optimistic
-      try {
-        // THROUGH THE DOOR. `iam` is not a client-writable schema (DOORS-ONLY-3).
-        // `public.org_preferences_set` writes the preference flags and the budget
-        // CEILING and cannot touch `daily_auto_rag_cost_used_usd` or
-        // `daily_auto_rag_window_start` — the live spend meter aidream writes, which
-        // the base-table UPDATE grant let a browser reset for itself.
-        const { error: uErr } = await supabase.rpc("org_preferences_set", {
-          p_organization_id: organizationId,
-          p_patch: { auto_index_non_pdf: next } as never,
-        });
-        if (uErr) throw uErr;
-        setError(null);
-      } catch (err) {
-        setIndexNonPdfState(prev); // rollback
-        setError(extractErrorMessage(err));
-        throw err;
-      } finally {
-        setSaving(false);
-      }
-    },
-    [organizationId, indexNonPdf],
+    (next: boolean) => writePatch("indexNonPdf", { auto_index_non_pdf: next }, () => setIndexNonPdfState(next)),
+    [writePatch],
   );
-
   const setSuggestionSweeps = useCallback(
-    async (next: boolean) => {
-      if (!organizationId) return;
-      setSaving(true);
-      const prev = suggestionSweeps;
-      setSuggestionSweepsState(next); // optimistic
-      try {
-        // THROUGH THE DOOR. `iam` is not a client-writable schema (DOORS-ONLY-3).
-        // `public.org_preferences_set` writes the preference flags and the budget
-        // CEILING and cannot touch `daily_auto_rag_cost_used_usd` or
-        // `daily_auto_rag_window_start` — the live spend meter aidream writes, which
-        // the base-table UPDATE grant let a browser reset for itself.
-        const { error: uErr } = await supabase.rpc("org_preferences_set", {
-          p_organization_id: organizationId,
-          p_patch: { suggestion_sweeps_enabled: next } as never,
-        });
-        if (uErr) throw uErr;
-        setError(null);
-      } catch (err) {
-        setSuggestionSweepsState(prev); // rollback
-        setError(extractErrorMessage(err));
-        throw err;
-      } finally {
-        setSaving(false);
-      }
-    },
-    [organizationId, suggestionSweeps],
+    (next: boolean) =>
+      writePatch("suggestionSweeps", { suggestion_sweeps_enabled: next }, () => setSuggestionSweepsState(next)),
+    [writePatch],
   );
-
   const setBudgetUsd = useCallback(
     async (next: number) => {
-      if (!organizationId) return;
       if (!Number.isFinite(next) || next < 0) {
         throw new Error("Budget must be a non-negative number");
       }
-      setSaving(true);
-      const prev = budgetUsd;
-      setBudgetState(next); // optimistic
-      try {
-        // THROUGH THE DOOR. `iam` is not a client-writable schema (DOORS-ONLY-3).
-        // `public.org_preferences_set` writes the preference flags and the budget
-        // CEILING and cannot touch `daily_auto_rag_cost_used_usd` or
-        // `daily_auto_rag_window_start` — the live spend meter aidream writes, which
-        // the base-table UPDATE grant let a browser reset for itself.
-        const { error: uErr } = await supabase.rpc("org_preferences_set", {
-          p_organization_id: organizationId,
-          p_patch: { daily_auto_rag_budget_usd: next } as never,
-        });
-        if (uErr) throw uErr;
-        setError(null);
-      } catch (err) {
-        setBudgetState(prev); // rollback
-        setError(extractErrorMessage(err));
-        throw err;
-      } finally {
-        setSaving(false);
-      }
+      return writePatch("budget", { daily_auto_rag_budget_usd: next }, () => setBudgetState(next));
     },
-    [organizationId, budgetUsd],
+    [writePatch],
   );
 
   const percentUsed =
@@ -237,6 +194,7 @@ export function useOrgAutoRagPreference(
     windowStart,
     loading,
     saving,
+    pendingField,
     error,
     setEnabled,
     setIndexNonPdf,
