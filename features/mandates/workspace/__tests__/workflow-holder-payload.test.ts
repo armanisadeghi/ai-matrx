@@ -17,6 +17,7 @@ import { buildBindingSavePayload } from "../save-payload";
 const base = {
   hasOffer: true,
   consumptionMap: {},
+  settingsOpened: false,
   capturedOverrides: undefined,
   storedOverrides: null,
 } as const;

@@ -1252,12 +1252,13 @@ function BindingDraft({
       // the fact live, the server re-checks it, and `null` means this binding
       // has no opinion (which is not the same as "no").
       autoRun,
-      capturedOverrides:
-        captured === undefined
-          ? undefined
-          : isJsonObject(captured)
-            ? (captured as JsonObject)
-            : undefined,
+      // Opened-and-emptied is "cleared" (null on the wire), never "untouched":
+      // the selector returns undefined for both, so the builder decides from
+      // `settingsOpened`, not from the capture's shape.
+      settingsOpened: overridesReady,
+      capturedOverrides: isJsonObject(captured)
+        ? (captured as JsonObject)
+        : undefined,
       storedOverrides,
     });
     // The write REPORTS ON ITSELF (`BindingResult.notes` / `.applies_in`), and

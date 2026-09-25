@@ -549,6 +549,7 @@ export function BatchMode({
             // about ONE map, re-checked at three points. Open a place in
             // "Map one place" to make it. Stated in the footer, not hidden.
             autoRun: parseBindingWave1(existing).autoRun,
+            settingsOpened: false,
             capturedOverrides: undefined,
             storedOverrides,
           }),

@@ -481,7 +481,8 @@ function OverridesBody({
         hasOffer,
         consumptionMap,
         autoRun: stored.autoRun,
-        capturedOverrides: isJsonObject(captured) ? captured : {},
+        settingsOpened: true,
+        capturedOverrides: isJsonObject(captured) ? captured : undefined,
         storedOverrides,
       });
       const report = await putMandateBinding(

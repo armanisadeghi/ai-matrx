@@ -11,7 +11,9 @@
 //   · config_overrides is ALSO replaced wholesale — when the settings step
 //     was never opened (its Redux slice never initialized), the save FALLS
 //     BACK to the binding's stored overrides. Lazy seeding must never wipe
-//     what a user set last month.
+//     what a user set last month. When it WAS opened and holds nothing, the
+//     save sends null — the person cleared them. `settingsOpened` is the only
+//     signal for which case applies.
 //
 // Version triple (Arman's rule 6): latest = {agentId, useLatest: true};
 // pinned = {agentVersionId, useLatest: false}. Exactly one id — the server
@@ -54,8 +56,17 @@ export interface SavePayloadArgs {
   /** The full current consumption map from the mapping step. */
   consumptionMap: ConsumptionMap;
   /**
-   * The captured settings deltas (selectSettingsOverridesForApi) — undefined
-   * when the settings step was NEVER OPENED this session.
+   * Whether the settings step was OPENED this session (its instance-overrides
+   * slice exists). This — never the shape of `capturedOverrides` — decides
+   * between "no change" (fall back to the stored overrides) and "cleared"
+   * (send null). `selectSettingsOverridesForApi` returns `undefined` for an
+   * opened step with every override reset, so reading `undefined` as "never
+   * opened" made the last override impossible to remove.
+   */
+  settingsOpened: boolean;
+  /**
+   * The captured settings deltas (selectSettingsOverridesForApi) — read only
+   * when `settingsOpened`; `undefined` or `{}` there means "cleared".
    */
   capturedOverrides: JsonObject | undefined;
   /** The binding's STORED config_overrides as loaded (the wipe-guard fallback). */
@@ -74,14 +85,15 @@ export function buildBindingSavePayload(args: SavePayloadArgs): MandateBindingIn
     holder,
     hasOffer,
     consumptionMap,
+    settingsOpened,
     capturedOverrides,
     storedOverrides,
     autoRun = null,
   } = args;
 
   const configOverridesFor = () =>
-    capturedOverrides !== undefined
-      ? Object.keys(capturedOverrides).length > 0
+    settingsOpened
+      ? capturedOverrides && Object.keys(capturedOverrides).length > 0
         ? capturedOverrides
         : null
       : storedOverrides;

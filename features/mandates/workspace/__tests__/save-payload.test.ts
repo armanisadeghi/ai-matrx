@@ -8,7 +8,9 @@ describe("buildBindingSavePayload", () => {
       holder,
       hasOffer: false,
       consumptionMap: {},
-      capturedOverrides: undefined,
+      settingsOpened: false,
+      settingsOpened: false,
+    capturedOverrides: undefined,
       storedOverrides: null,
     });
     expect(payload.consumptionMap).toBeUndefined();
@@ -25,7 +27,9 @@ describe("buildBindingSavePayload", () => {
       holder,
       hasOffer: true,
       consumptionMap: map,
-      capturedOverrides: undefined,
+      settingsOpened: false,
+      settingsOpened: false,
+    capturedOverrides: undefined,
       storedOverrides: null,
     });
     expect(payload.consumptionMap).toEqual(map);
@@ -37,7 +41,9 @@ describe("buildBindingSavePayload", () => {
       holder,
       hasOffer: true,
       consumptionMap: {},
-      capturedOverrides: undefined,
+      settingsOpened: false,
+      settingsOpened: false,
+    capturedOverrides: undefined,
       storedOverrides: stored,
     });
     expect(payload.configOverrides).toEqual(stored);
@@ -48,6 +54,7 @@ describe("buildBindingSavePayload", () => {
       holder,
       hasOffer: true,
       consumptionMap: {},
+      settingsOpened: true,
       capturedOverrides: { thinking_level: "high" },
       storedOverrides: { model: "old" },
     });
@@ -59,7 +66,24 @@ describe("buildBindingSavePayload", () => {
       holder,
       hasOffer: true,
       consumptionMap: {},
+      settingsOpened: true,
       capturedOverrides: {},
+      storedOverrides: { model: "old" },
+    });
+    expect(payload.configOverrides).toBeNull();
+  });
+
+  it("settings step opened, last override reset -> null even though the selector says undefined", () => {
+    // The Overrides-tab bug: `selectSettingsOverridesForApi` returns undefined
+    // for an opened step whose every override was reset. Read as "never
+    // opened", the save re-sent the stored overrides and the last one could
+    // never be removed.
+    const payload = buildBindingSavePayload({
+      holder,
+      hasOffer: true,
+      consumptionMap: {},
+      settingsOpened: true,
+      capturedOverrides: undefined,
       storedOverrides: { model: "old" },
     });
     expect(payload.configOverrides).toBeNull();
@@ -70,7 +94,9 @@ describe("buildBindingSavePayload", () => {
       holder: { agentId: null, agentVersionId: "ver-9", useLatest: false },
       hasOffer: true,
       consumptionMap: {},
-      capturedOverrides: undefined,
+      settingsOpened: false,
+      settingsOpened: false,
+    capturedOverrides: undefined,
       storedOverrides: null,
     });
     expect(payload.agentId).toBeNull();
@@ -84,7 +110,9 @@ describe("buildBindingSavePayload", () => {
         holder: { agentId: "a", agentVersionId: "v", useLatest: false },
         hasOffer: true,
         consumptionMap: {},
-        capturedOverrides: undefined,
+        settingsOpened: false,
+      settingsOpened: false,
+    capturedOverrides: undefined,
         storedOverrides: null,
       }),
     ).toThrow(/never both/);
@@ -98,6 +126,7 @@ describe("the auto-run promise on the wire", () => {
     holder: { agentId: "a1", agentVersionId: null, useLatest: true } as const,
     hasOffer: true,
     consumptionMap: {},
+    settingsOpened: false,
     capturedOverrides: undefined,
     storedOverrides: null,
   };
