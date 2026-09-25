@@ -18,6 +18,7 @@ import type {
 import type { GscDigRuleContent } from "@/features/marketing/search-console/lib/dig-rules";
 import { serializeDigConditions } from "@/features/marketing/search-console/lib/dig-rules";
 import { makeAssertData } from "@/utils/errors";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { fetchFeatureKnobValues } from "@/features/admin/limits/service";
 import { isJsonObject } from "@/types/json";
@@ -133,13 +134,14 @@ export async function updateDigRule(
 
 /** Soft delete (RLS: owner only; templates are not deletable). */
 export async function deleteDigRule(ruleId: string): Promise<void> {
-  const response = await (
-    await seoDb()
-  )
-    .from("gsc_dig_rule")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", ruleId);
-  if (response.error) throw new Error(response.error.message);
+  await writeOne(
+    (await seoDb())
+      .from("gsc_dig_rule")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", ruleId)
+      .select("id"),
+    { action: "delete", noun: "dig rule" },
+  );
 }
 
 /** Adoption = copy a template's content into a new user-owned rule. */

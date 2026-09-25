@@ -1,6 +1,7 @@
 import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { callApi } from "@/lib/api/call-api";
 import { readAllRows } from "@ai-matrx/data/db";
 import type { AppDispatch } from "@/lib/redux/store";
@@ -180,7 +181,7 @@ export async function saveCompetitorClassification(
   }
   if (!auth.user) throw new Error("Sign in to classify a competitor.");
   const now = new Date().toISOString();
-  const { error } = await supabase.schema("seo").from("competitor").update({
+  await writeOne(supabase.schema("seo").from("competitor").update({
     ...patch,
     classification_status: confirm ? "confirmed" : "proposed",
     classification_confirmed_at: confirm ? now : null,
@@ -190,8 +191,7 @@ export async function saveCompetitorClassification(
       : { source: "competitor_workspace", confirmed: confirm, decided_at: now },
     human_reviewed_at: now,
     updated_at: now,
-  }).eq("id", competitorId);
-  if (error) throw error;
+  }).eq("id", competitorId).select("id"), { action: "save", noun: "competitor" });
 }
 
 export async function loadCompetitorWorkspace(siteId: string): Promise<{

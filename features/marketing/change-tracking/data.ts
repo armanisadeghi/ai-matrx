@@ -4,6 +4,7 @@ import { getGscSummary } from "@/features/marketing/search-console/data";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { makeAssertData, operationFailed } from "@/utils/errors";
+import { writeOne } from "@/utils/supabase/writeOne";
 
 type SeoTables = Database["seo"]["Tables"];
 type SeoViews = Database["seo"]["Views"];
@@ -344,6 +345,7 @@ export async function createSeoChange(
     if (itemResult.error) throw itemResult.error;
     return changeId;
   } catch (error) {
+    // write-lands-exempt: rollback cleanup inside catch; the original error is what reaches the person
     const cleanup = await db.from("change_set").delete().eq("id", changeId);
     if (cleanup.error) {
       // Two raw PostgREST messages concatenated used to reach a toast. The
@@ -631,12 +633,15 @@ export async function recordMetricAssessment(
     metadata: { data_days: evidence.dataDays },
   });
   if (result.error) throw result.error;
-  const theoryResult = await db
-    .from("change_theory")
-    .update({
-      status: evidence.verdict === "too_early" ? "watching" : evidence.verdict,
-      updated_by: session.user.id,
-    })
-    .eq("id", theory.id);
-  if (theoryResult.error) throw theoryResult.error;
+  await writeOne(
+    db
+      .from("change_theory")
+      .update({
+        status: evidence.verdict === "too_early" ? "watching" : evidence.verdict,
+        updated_by: session.user.id,
+      })
+      .eq("id", theory.id)
+      .select("id"),
+    { action: "update", noun: "change theory" },
+  );
 }

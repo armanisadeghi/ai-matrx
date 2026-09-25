@@ -23,6 +23,7 @@ import type {
   KeywordClassRuleRow,
 } from "@/features/marketing/search-console/lib/class-rules";
 import { makeAssertData } from "@/utils/errors";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 async function seoDb() {
@@ -111,11 +112,14 @@ export async function updateClassRule(
 }
 
 export async function deleteClassRule(ruleId: string): Promise<void> {
-  const response = await (await seoDb())
-    .from("keyword_class_rule")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", ruleId);
-  if (response.error) throw new Error(response.error.message);
+  await writeOne(
+    (await seoDb())
+      .from("keyword_class_rule")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", ruleId)
+      .select("id"),
+    { action: "delete", noun: "classification rule" },
+  );
 }
 
 /** Copy-insert a system template as an owned, site-pinned rule. */

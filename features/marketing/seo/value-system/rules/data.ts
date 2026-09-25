@@ -27,6 +27,7 @@ import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { extractErrorMessage, makeAssertData } from "@/utils/errors";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 import type {
@@ -394,11 +395,14 @@ export async function reconnectValueRules(siteId: string): Promise<ValueRuleReco
 
 /** Archive = soft delete. The resolver stops seeing it the moment it lands. */
 export async function archiveGeoArea(areaId: string): Promise<void> {
-  const response = await (await seoDb())
-    .from("site_geo_area")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", areaId);
-  if (response.error) throw new Error(response.error.message);
+  await writeOne(
+    (await seoDb())
+      .from("site_geo_area")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", areaId)
+      .select("id"),
+    { action: "archive", noun: "geo area" },
+  );
 }
 
 // ── The gazetteer (I3) — places instead of typed words ──────────────────────
