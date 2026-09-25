@@ -17,6 +17,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminUserRef } from "./AdminUserRef";
 import { Eye, Megaphone, Plus, Power, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
+import { usePendingWrites } from "@/lib/errors/usePendingWrites";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -72,19 +74,31 @@ export function AnnouncementsTableClient() {
     };
   }, []);
 
-  const toggleActive = useCallback(async (row: SystemAnnouncement) => {
-    const res = await updateAnnouncement(row.id, { is_active: !row.is_active });
-    if (res.success) {
-      setRows((prev) =>
-        prev.map((r) =>
-          r.id === row.id ? { ...r, is_active: !r.is_active } : r,
-        ),
+  // PENDING, NEVER OPTIMISTIC (GATES-TAIL-2): the control is busy until the write answers (a
+  // second click is not a second write); a refusal is said in words with a remedy.
+  const pendingWrites = usePendingWrites();
+  const { run: runWrite } = pendingWrites;
+  const toggleActive = useCallback(
+    async (row: SystemAnnouncement) => {
+      const next = !row.is_active;
+      const result = await runWrite(
+        row.id,
+        async () => {
+          const res = await updateAnnouncement(row.id, { is_active: next });
+          if (!res.success) throw res.error ?? new Error("");
+          return res;
+        },
+        {
+          action: `${next ? "activate" : "deactivate"} "${row.title}"`,
+          remedy: "Try again, or reload the announcements.",
+        },
       );
-      toast.success(row.is_active ? "Deactivated" : "Activated");
-    } else {
-      toast.error(res.error ?? "Failed");
-    }
-  }, []);
+      if (!result.ok) return;
+      setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, is_active: next } : r)));
+      toast.success(next ? "Activated" : "Deactivated");
+    },
+    [runWrite],
+  );
 
   const remove = useCallback(async (row: SystemAnnouncement) => {
     const ok = await confirm({
@@ -99,7 +113,10 @@ export function AnnouncementsTableClient() {
       setRows((prev) => prev.filter((r) => r.id !== row.id));
       toast.success("Deleted");
     } else {
-      toast.error(res.error ?? "Failed");
+      toastWriteFailure(res.error ?? null, {
+        action: `delete "${row.title}"`,
+        remedy: "Try again, or reload the announcements.",
+      });
     }
   }, []);
 
@@ -279,7 +296,17 @@ export function AnnouncementsTableClient() {
                 size="icon"
                 variant="ghost"
                 className="h-7 w-7"
-                title={row.is_active ? "Deactivate" : "Activate"}
+                title={
+                  pendingWrites.isPending(row.id)
+                    ? row.is_active
+                      ? "Deactivating…"
+                      : "Activating…"
+                    : row.is_active
+                      ? "Deactivate"
+                      : "Activate"
+                }
+                disabled={pendingWrites.isPending(row.id)}
+                aria-busy={pendingWrites.isPending(row.id) || undefined}
                 onClick={() => void toggleActive(row)}
               >
                 <Power

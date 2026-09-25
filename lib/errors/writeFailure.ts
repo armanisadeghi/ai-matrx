@@ -46,7 +46,7 @@ export function serverMessageFromBody(body: unknown): string | null {
 }
 
 const LOOKS_TECHNICAL =
-  /(^|\s)(GET|POST|PUT|PATCH|DELETE)\s+\/|https?:\/\/|\bHTTP \d{3}\b|Traceback|Exception\b|permission denied for|violates|row-level security|\brelation "|\bcolumn "|\bfunction .* does not exist|\bPGRST\d+|\bJWT\b|duplicate key|syntax error|invalid input syntax/i;
+  /(^|\s)(GET|POST|PUT|PATCH|DELETE)\s+\/|https?:\/\/|\bHTTP \d{3}\b|Traceback|Exception\b|permission denied for|violates|row-level security|\brelation "|\bcolumn "|\bfunction .* does not exist|\bPGRST\d+|\bJWT\b|duplicate key|syntax error|invalid input syntax|JSON object requested|rows returned|\bnull value in column|\bundefined\b|\bat [\w.]+ \(/i;
 
 /**
  * A PostgREST / Postgres refusal (a supabase-js `PostgrestError`, or a server action that passed one
