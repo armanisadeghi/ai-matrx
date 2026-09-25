@@ -60,6 +60,20 @@ describe("tableToChartSpec", () => {
     expect(spec?.data[2]).toMatchObject({ Year: "2023", Revenue: 2400, Profit: 500 });
   });
 
+  it("keeps a fiscal-year COLUMN of dollars as a series, not a time axis", () => {
+    const spec = tableToChartSpec({
+      headers: ["Series", "FY 2025/26", "FY 2024/25"],
+      rows: [
+        ["Series A", "$52,775", "$64,150"],
+        ["**Small Quantity Series C**", "**$10,387**", "$12,626"],
+      ],
+    });
+    expect(spec?.type).toBe("bar");
+    expect(spec?.xKey).toBe("Series");
+    expect(spec?.series.map((s) => s.key)).toEqual(["FY 2025/26", "FY 2024/25"]);
+    expect(spec?.data[1]).toMatchObject({ Series: "Small Quantity Series C", "FY 2025/26": 10387 });
+  });
+
   it("auto-picks a pie for a small single-series share breakdown", () => {
     const spec = tableToChartSpec({
       headers: ["Channel", "Share"],

@@ -91,8 +91,10 @@ function shapeOf(table: PlainTable): Shape | null {
   let numeric = numericColumns(table);
   // A numeric column that is really TIME (Year, 2021/2022/…) is the category
   // axis, not a series — "Year" plotted as a value is the classic bad chart.
+  // Judged by VALUES only: a header like "FY 2025/26" over dollar amounts is
+  // a series, not a time axis.
   const timeCol = numeric.find((i) =>
-    looksTemporal(table.headers[i] ?? "", table.rows.map((r) => r[i])),
+    looksTemporal("", table.rows.map((r) => r[i])),
   );
   if (timeCol !== undefined && numeric.length > 1) {
     numeric = numeric.filter((i) => i !== timeCol);

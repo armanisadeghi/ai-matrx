@@ -109,30 +109,46 @@ export function useMessageListInteractions(
       if (!start) return;
       if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > MOVE_TOLERANCE) cancel();
     };
-    // A fired long-press swallows the click / native menu that follows it.
+    // A fired long-press swallows the click / native menu that follows the
+    // finger lifting. That click lands on whatever is under the finger NOW —
+    // usually the just-opened menu's backdrop, outside this transcript — so
+    // it is swallowed at the DOCUMENT, once, within a short window.
     const swallow = (e: Event) => {
       if (fired) {
         e.preventDefault();
         e.stopPropagation();
-        fired = false;
       }
+    };
+    const onPointerUp = () => {
+      cancel();
+      if (!fired) return;
+      const doc = root.ownerDocument;
+      const once = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        release();
+      };
+      const release = () => {
+        fired = false;
+        doc.removeEventListener("click", once, true);
+      };
+      doc.addEventListener("click", once, true);
+      setTimeout(release, 700);
     };
 
     root.addEventListener("keydown", onKeyDown);
     root.addEventListener("pointerdown", onPointerDown);
     root.addEventListener("pointermove", onPointerMove);
-    root.addEventListener("pointerup", cancel);
+    root.addEventListener("pointerup", onPointerUp);
     root.addEventListener("pointercancel", cancel);
-    root.addEventListener("click", swallow, true);
     root.addEventListener("contextmenu", swallow, true);
     return () => {
       cancel();
       root.removeEventListener("keydown", onKeyDown);
       root.removeEventListener("pointerdown", onPointerDown);
       root.removeEventListener("pointermove", onPointerMove);
-      root.removeEventListener("pointerup", cancel);
+      root.removeEventListener("pointerup", onPointerUp);
       root.removeEventListener("pointercancel", cancel);
-      root.removeEventListener("click", swallow, true);
       root.removeEventListener("contextmenu", swallow, true);
     };
   }, [rootRef, onOpenFind, mounted]);

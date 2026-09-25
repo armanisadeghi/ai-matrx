@@ -44,6 +44,7 @@ import { THEMES, type DisplayTheme } from "../../themes";
 import SaveTableModal from "../../tables/SaveTableModal";
 import { SendToWorkbookButton } from "../../tables/SendToWorkbookButton";
 import { SendToGoogleSheetButton } from "../../tables/SendToGoogleSheetButton";
+import { ChartThisButton, TableChartPanel } from "../chart/TableChart";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { TableEditToolbar } from "../../tables/editing/TableEditToolbar";
@@ -334,6 +335,8 @@ const StreamingTableRendererCore: React.FC<
   const dispatch = useAppDispatch();
   const [editMode, setEditMode] = useState<"none" | "header" | number>("none");
   const [showNormalized, setShowNormalized] = useState(false);
+  // "Chart this" — draws this table through the one chart primitive.
+  const [showChart, setShowChart] = useState(false);
   const [savedTableInfo, setSavedTableInfo] = useState<SavedTableInfo | null>(
     null,
   );
@@ -1118,6 +1121,11 @@ const StreamingTableRendererCore: React.FC<
                   {showNormalized ? "Table" : "Data"}
                 </Button>
               )}
+              <ChartThisButton
+                table={{ headers, rows }}
+                active={showChart}
+                onToggle={() => setShowChart((v) => !v)}
+              />
               {renderTableActionButton()}
               {tableData.normalizedData && (
                 <>
@@ -1170,6 +1178,13 @@ const StreamingTableRendererCore: React.FC<
             </div>
           )}
         </>
+      )}
+
+      {showChart && !isStreamActive && (
+        <TableChartPanel
+          table={{ headers, rows }}
+          onClose={() => setShowChart(false)}
+        />
       )}
 
       {/* Modals */}
