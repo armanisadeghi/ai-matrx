@@ -5,6 +5,8 @@ description: "Entry point and shared rules for structural changes to the live Ma
 
 # DB Change — the transition SOP (read first)
 
+> 🚨 **Never remove, narrow, supersede or suppress `platform_admin_read`** — it is our own admin database access (the admin dashboard reads every row through it). Check before and after any policy change: `../common-docs/policies/our-own-admin-database-access.md` (the query must return 0).
+
 ## ⚠️ FIRST: is anyone USING the system right now?
 
 **This SOP is written for a scheduled outage** ("the app is ALREADY DOWN"). That assumption is

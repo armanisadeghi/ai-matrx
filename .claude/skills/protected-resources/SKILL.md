@@ -5,6 +5,8 @@ description: "Super-Admin-only lock-down pattern. Use before touching admin.admi
 
 # Protected Resources — Single Path of Resistance
 
+> 🚨 **Never remove, narrow, supersede or suppress `platform_admin_read`** — it is our own admin database access (the admin dashboard reads every row through it). Check before and after any policy change: `../common-docs/policies/our-own-admin-database-access.md` (the query must return 0).
+
 This skill is the canonical pattern for protecting tables/operations from contributors who have the codebase but should NOT be able to modify the data. It assumes the threat model: **regular admins have commit access, can read .env files, can deploy from branches, and can call the API with their own session token**.
 
 **Rule of thumb:** if the wrong person controlling the codebase could cause real damage, the protection has to be in the **database**, not in TypeScript.

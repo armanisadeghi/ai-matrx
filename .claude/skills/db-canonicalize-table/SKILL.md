@@ -5,6 +5,8 @@ description: "Bringing an existing table onto the platform base standard. Use wh
 
 # Canonicalize a table
 
+> 🚨 **Never remove, narrow, supersede or suppress `platform_admin_read`** — it is our own admin database access (the admin dashboard reads every row through it). Check before and after any policy change: `../common-docs/policies/our-own-admin-database-access.md` (the query must return 0).
+
 Make `<schema>.<table>` (token `<token>`) fully conform to the platform standard. Read [`../db-change/TOOLKIT.md`](../db-change/TOOLKIT.md) (live signatures, gotchas) + [`../db-change/SKILL.md`](../db-change/SKILL.md) first. Project: `brsgrqvjdzwihsvnfqkf`. Order matters — do the steps in sequence.
 
 This is the ONE recipe for getting any table onto the base standard ("retrofit", "base retrofit", "Wave 3", "bring <X> onto the platform base entity"), preserving existing behavior exactly: take it all the way to certified, or stop at the transition-state floor (zero FAIL + only the legacy WARNs — see the certify bar below). Relocating a table → `db-move-table-schema`; retiring one → `db-graveyard-table`.
