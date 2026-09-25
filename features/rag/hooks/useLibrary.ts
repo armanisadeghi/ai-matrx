@@ -402,6 +402,15 @@ export function useLibraryDoc(processedDocumentId: string | null) {
   /** The raw read failure, for `<AccessGate error={…}/>`. */
   const [readError, setReadError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  /**
+   * The id whose read has SETTLED (row, empty, or error). Until it equals the
+   * requested id nothing is known, so the hook reports `loading` — on its very
+   * first render too, before the effect has started the read. Reporting
+   * `loading: false, doc: null` there read as "empty" and mounted the access
+   * gate, which answered "You don't have access to this processed document"
+   * for a document the viewer owns (2026-09-25).
+   */
+  const [settledId, setSettledId] = useState<string | null>(null);
   const prevIdRef = useRef<string | null>(null);
   const requestSeqRef = useRef(0);
 
@@ -466,6 +475,7 @@ export function useLibraryDoc(processedDocumentId: string | null) {
       } finally {
         if (!cancelled && requestSeq === requestSeqRef.current) {
           setLoading(false);
+          setSettledId(processedDocumentId);
         }
       }
     })();
@@ -477,5 +487,12 @@ export function useLibraryDoc(processedDocumentId: string | null) {
   }, [processedDocumentId, reloadKey]);
 
   const reload = useCallback(() => setReloadKey((n) => n + 1), []);
-  return { doc, loading, error, readError, reload };
+  const settled = processedDocumentId == null || settledId === processedDocumentId;
+  return {
+    doc: settled ? doc : null,
+    loading: loading || !settled,
+    error: settled ? error : null,
+    readError: settled ? readError : null,
+    reload,
+  };
 }

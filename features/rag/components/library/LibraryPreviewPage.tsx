@@ -116,18 +116,9 @@ export function LibraryPreviewPage({
     readError: docReadError,
     reload: reloadDoc,
   } = useLibraryDoc(documentId);
-  // The read settles with `doc === null` and no error when the document is
-  // missing, deleted, or not readable by this viewer. Only treat "no doc" as
-  // unavailable once a load for THIS id has actually run (the hook's first
-  // render reports loading=false before its effect starts).
-  const [loadStartedFor, setLoadStartedFor] = useState<string | null>(null);
-  if (docLoading && loadStartedFor !== documentId) {
-    setLoadStartedFor(documentId);
-  }
-  const docUnavailable =
-    !docLoading &&
-    !doc &&
-    (docError !== null || loadStartedFor === documentId);
+  // The hook reports `loading` until the read for THIS id has settled, so
+  // "not loading and no doc" really means missing / deleted / not readable.
+  const docUnavailable = !docLoading && !doc;
   const [activePageIndex, setActivePageIndex] = useState(
     initialPageNumber && initialPageNumber > 0 ? initialPageNumber - 1 : 0,
   );

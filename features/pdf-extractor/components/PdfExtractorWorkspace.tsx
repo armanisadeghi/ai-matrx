@@ -116,7 +116,9 @@ export function PdfExtractorFloatingWorkspace({
   // Open `initialDocumentId` once on mount. Goes through the lazy-fetch
   // path so the per-tab loading spinner shows correctly.
   React.useEffect(() => {
-    if (!initialDocumentId) return undefined;
+    // Wait for a signed-in user: asking earlier returns nothing and the
+    // requested document silently never opened.
+    if (!initialDocumentId || !extractor.authReady) return undefined;
     let cancelled = false;
     (async () => {
       const full = await extractor.fetchDocument(initialDocumentId);
@@ -126,9 +128,10 @@ export function PdfExtractorFloatingWorkspace({
     return () => {
       cancelled = true;
     };
-    // Intentionally only on mount + when the requested id changes.
+    // Intentionally only on mount + when the requested id changes or the
+    // session lands.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialDocumentId]);
+  }, [initialDocumentId, extractor.authReady]);
 
   const activeTab = extractor.activeTab;
   const activeSourceId =

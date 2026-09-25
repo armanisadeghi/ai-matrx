@@ -111,23 +111,30 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
 
   const selectDocById = useCallback(
     async (id: string) => {
-      const full = await extractor.fetchDocument(id);
-      if (full) {
-        setActiveDoc(full);
+      const read = await extractor.readDocument(id);
+      // Session not known yet — nothing was asked; the initial-load effect
+      // re-asks when it lands. Never a failure toast for a question not asked.
+      if (read.kind === "not-ready") return;
+      if (read.kind === "ok") {
+        setActiveDoc(read.doc);
         setActivePage(null);
         setDrawer("none");
+      } else if (read.kind === "fault") {
+        toast.error("We couldn't load that document. Try again.");
       } else {
-        toast.error("Could not load that document");
+        toast.error("That document is missing, deleted, or not shared with you.");
       }
     },
     [extractor, toast],
   );
 
-  // Initial doc id
+  // Initial doc id — once a signed-in user is known.
   useEffect(() => {
-    if (initialDocumentId) void selectDocById(initialDocumentId);
+    if (initialDocumentId && extractor.authReady) {
+      void selectDocById(initialDocumentId);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialDocumentId]);
+  }, [initialDocumentId, extractor.authReady]);
 
   const onSelectDoc = useCallback(
     (s: { id: string }) => {

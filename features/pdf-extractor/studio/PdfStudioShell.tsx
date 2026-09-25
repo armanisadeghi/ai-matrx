@@ -224,6 +224,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   const [docLoading, setDocLoading] = useState(!!initialDocumentId);
   /** The requested document id that could not be loaded, if any. */
   const [unavailableDocId, setUnavailableDocId] = useState<string | null>(null);
+  /** Why it could not: the failed read, or null when it came back empty. */
+  const [unavailableError, setUnavailableError] = useState<unknown>(null);
 
   // Per-page rows for the active doc.
   const {
@@ -314,27 +316,35 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       // Tell the slice immediately so persistence middleware can hydrate
       // the per-doc pane visibility before the reader mounts.
       dispatch(setActiveDocId(id));
-      const full = await extractor.fetchDocument(id);
-      if (full) {
-        setActiveDoc(full);
+      const read = await extractor.readDocument(id);
+      // No signed-in user is known yet: nothing was asked, so nothing is
+      // known — keep the skeleton; the initial-load effect asks again the
+      // moment the session lands. Gating here told admin@admin.com "You
+      // don't have access" to their own document (2026-09-25).
+      if (read.kind === "not-ready") return;
+      if (read.kind === "ok") {
+        setActiveDoc(read.doc);
         setUnavailableDocId(null);
+        setUnavailableError(null);
       } else {
-        // Missing, deleted, or not readable by this viewer — the reader area
-        // renders AccessGate for this id instead of a toast over an empty shell.
+        // Empty (missing / deleted / not readable) or a failed read. The gate
+        // is told which: a fault is "we couldn't load it, retry", never a
+        // denial.
         setUnavailableDocId(id);
+        setUnavailableError(read.kind === "fault" ? read.error : null);
       }
       setDocLoading(false);
     },
     [extractor, dispatch],
   );
 
-  // Initial load if a doc id is in the URL.
+  // Initial load if a doc id is in the URL — once a signed-in user is known.
   const didInitRef = useRef(false);
   useEffect(() => {
-    if (didInitRef.current || !initialDocumentId) return;
+    if (didInitRef.current || !initialDocumentId || !extractor.authReady) return;
     didInitRef.current = true;
     void selectDocById(initialDocumentId);
-  }, [initialDocumentId, selectDocById]);
+  }, [initialDocumentId, selectDocById, extractor.authReady]);
 
   const handleDeleteDoc = useCallback(
     async (id: string) => {
@@ -1033,6 +1043,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
             <AccessGate
               token="processed_document"
               id={unavailableDocId}
+              error={unavailableError}
               onRetry={() => void selectDocById(unavailableDocId)}
               fallbackHref="/tools/pdf-extractor"
               fallbackLabel="Your documents"

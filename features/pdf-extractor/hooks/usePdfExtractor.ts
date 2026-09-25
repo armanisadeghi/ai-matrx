@@ -174,60 +174,86 @@ function docFromApi(raw: Record<string, unknown>): PdfDocument {
 // user's row.
 
 const FETCH_DOC_CACHE_TTL_MS = 30_000;
-const fetchDocInflight = new Map<string, Promise<PdfDocument | null>>();
-const fetchDocCache = new Map<
-  string,
-  { resolvedAt: number; doc: PdfDocument | null }
->();
 
-function fetchDocCacheKey(docId: string, userId: string | null): string {
-  return `${userId ?? "<none>"}:${docId}`;
+/**
+ * What ONE read of a processed document found. Four answers, never folded into
+ * a bare `null`: a screen that only learned "null" could not tell "the session
+ * is not ready yet" or "the request failed" from "this row is not yours", and
+ * rendered all three as "You don't have access to this processed document" —
+ * to admin@admin.com, on its own document, until a second click (2026-09-25).
+ */
+export type ProcessedDocumentRead =
+  /** The row, readable by this viewer. */
+  | { kind: "ok"; doc: PdfDocument }
+  /** Zero rows: missing, deleted, or not readable — an access question. */
+  | { kind: "absent" }
+  /** The read itself failed (network, expired session, bad query). */
+  | { kind: "fault"; error: unknown }
+  /** No signed-in user is known yet — nothing was asked. Wait, never gate. */
+  | { kind: "not-ready" };
+
+const fetchDocInflight = new Map<string, Promise<ProcessedDocumentRead>>();
+const fetchDocCache = new Map<string, { resolvedAt: number; doc: PdfDocument }>();
+
+function fetchDocCacheKey(docId: string, userId: string): string {
+  return `${userId}:${docId}`;
 }
 
-async function fetchProcessedDocument(
+async function queryProcessedDocument(
+  docId: string,
+): Promise<ProcessedDocumentRead> {
+  const { data, error } = await docprocDb(supabase)
+    .from("processed_documents")
+    // NEVER select("*") here — storage_uri is server-only (column-grant
+    // scheme), so `*` fails with 42501. See docprocDb.ts.
+    .select(PROCESSED_DOCUMENTS_COLUMNS)
+    .is("deleted_at", null)
+    .eq("id", docId)
+    // No `owner_id` predicate: RLS is the authority. Filtering to the owner
+    // turned every document shared through an organization into zero rows,
+    // which the access gate can only read as "denied".
+    .maybeSingle();
+  if (error) return { kind: "fault", error };
+  if (!data) return { kind: "absent" };
+  return { kind: "ok", doc: docFromApi(data as unknown as Record<string, unknown>) };
+}
+
+export async function readProcessedDocument(
   docId: string,
   userId: string | null,
-): Promise<PdfDocument | null> {
-  if (!userId) return null;
+): Promise<ProcessedDocumentRead> {
+  if (!userId) return { kind: "not-ready" };
   const key = fetchDocCacheKey(docId, userId);
 
   const cached = fetchDocCache.get(key);
   if (cached && Date.now() - cached.resolvedAt < FETCH_DOC_CACHE_TTL_MS) {
-    return cached.doc;
+    return { kind: "ok", doc: cached.doc };
   }
 
   const existing = fetchDocInflight.get(key);
   if (existing) return existing;
 
-  const promise = (async () => {
+  const promise = (async (): Promise<ProcessedDocumentRead> => {
     try {
-      const { data, error } = await docprocDb(supabase)
-        .from("processed_documents")
-        // NEVER select("*") here — storage_uri is server-only (column-grant
-        // scheme), so `*` fails with 42501. See docprocDb.ts.
-        .select(PROCESSED_DOCUMENTS_COLUMNS)
-        .is("deleted_at", null)
-        .eq("id", docId)
-        // RLS already restricts to the owner, but include the predicate
-        // so the planner can use the (owner_id, source_kind, source_id, …)
-        // unique index when present.
-        .eq("owner_id", userId)
-        .maybeSingle();
-      if (error || !data) return null;
-      return docFromApi(data as unknown as Record<string, unknown>);
-    } catch (err) {
-      console.error("Failed to fetch PDF document:", err);
-      return null;
+      const first = await queryProcessedDocument(docId);
+      if (first.kind !== "fault") return first;
+      // A failed read is most often a session mid-refresh (an expired JWT on a
+      // tab that just woke). getSession() completes the refresh; ask once more
+      // before reporting a fault.
+      await supabase.auth.getSession();
+      return await queryProcessedDocument(docId);
+    } catch (error) {
+      return { kind: "fault", error };
     }
   })()
-    .then((doc) => {
-      // Only cache a HIT. Caching a `null` (row not yet visible right after
-      // the server created it, a transient RLS/replication race, or userId
-      // not hydrated) would pin that miss for the full TTL — so the studio's
-      // just-uploaded doc would 404 in the reader for 30s even though the
-      // row exists. A miss must be allowed to self-heal on the next read.
-      if (doc) fetchDocCache.set(key, { resolvedAt: Date.now(), doc });
-      return doc;
+    .then((read) => {
+      // Only cache a HIT. A miss (row not yet visible right after the server
+      // created it, a transient RLS/replication race) must self-heal on the
+      // next read instead of being pinned for the full TTL.
+      if (read.kind === "ok") {
+        fetchDocCache.set(key, { resolvedAt: Date.now(), doc: read.doc });
+      }
+      return read;
     })
     .finally(() => {
       fetchDocInflight.delete(key);
@@ -235,6 +261,17 @@ async function fetchProcessedDocument(
 
   fetchDocInflight.set(key, promise);
   return promise;
+}
+
+async function fetchProcessedDocument(
+  docId: string,
+  userId: string | null,
+): Promise<PdfDocument | null> {
+  const read = await readProcessedDocument(docId, userId);
+  if (read.kind === "fault") {
+    console.error("Failed to fetch PDF document:", read.error);
+  }
+  return read.kind === "ok" ? read.doc : null;
 }
 
 /**
@@ -382,6 +419,13 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
   const fetchDocument = useCallback(
     (docId: string): Promise<PdfDocument | null> =>
       fetchProcessedDocument(docId, userId),
+    [userId],
+  );
+
+  /** The full answer for a surface that must say WHY a document did not open. */
+  const readDocument = useCallback(
+    (docId: string): Promise<ProcessedDocumentRead> =>
+      readProcessedDocument(docId, userId),
     [userId],
   );
 
@@ -1410,6 +1454,9 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
     cleanContent,
     copyText,
     fetchDocument,
+    readDocument,
+    /** A signed-in user is known, so a document read can be asked at all. */
+    authReady: userId != null,
     refreshDocument,
     runFullPipeline,
   };
