@@ -16,7 +16,7 @@
  * the graph fills, before committing to the full cytoscape view (Phase G).
  * Pure reads through the typed kgInspectorService → Python backend.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
 import AppLink from "@/components/navigation/AppLink";
@@ -225,6 +225,7 @@ function EntitiesTab({
   const [orgNamesLoading, setOrgNamesLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadNonce, setReloadNonce] = useState(0);
   const tableQuery = useTableUrlState({
     tableId: "kg-inspector-entities",
     defaultSort: { id: "mention_count", direction: "desc" },
@@ -232,6 +233,12 @@ function EntitiesTab({
   });
   const kind = selectedFilterValue(tableQuery.queryState.columnFilters.kind);
   const q = tableQuery.queryState.search.trim();
+  const sourceQueryKey = `${kind ?? "all"}\u0000${q}`;
+  const sourceQueryKeyRef = useRef(sourceQueryKey);
+
+  useEffect(() => {
+    sourceQueryKeyRef.current = sourceQueryKey;
+  }, [sourceQueryKey]);
 
   const organizationIds = useMemo(
     () => [
@@ -269,7 +276,31 @@ function EntitiesTab({
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [kind, q]);
+  }, [kind, q, reloadNonce]);
+
+  const loadNextPage = useCallback(async () => {
+    if (loading || (serverTotal > 0 && rawRows.length >= serverTotal)) return;
+
+    setLoading(true);
+    setError(null);
+    const requestQueryKey = sourceQueryKey;
+    try {
+      const pageResult = await listKgEntities({
+        kind,
+        q: q || null,
+        limit: FETCH_MAX,
+        offset: rawRows.length,
+      });
+      if (sourceQueryKeyRef.current !== requestQueryKey) return;
+      setRawRows((current) => [...current, ...pageResult.items]);
+      setServerTotal(pageResult.total);
+    } catch (e: unknown) {
+      if (sourceQueryKeyRef.current !== requestQueryKey) return;
+      setError(e instanceof Error ? e.message : "Failed to load more entities");
+    } finally {
+      if (sourceQueryKeyRef.current === requestQueryKey) setLoading(false);
+    }
+  }, [kind, loading, q, rawRows.length, serverTotal, sourceQueryKey]);
 
   useEffect(() => {
     if (organizationIds.length === 0) {
@@ -426,26 +457,35 @@ function EntitiesTab({
         isLoading={loading && rawRows.length === 0}
         isFetching={loading && rawRows.length > 0}
         query={{
-          mode: "controlled-local",
+          mode: "controlled-append",
           state: tableQuery.state,
           onStateChange: tableQuery.onStateChange,
-          // Only Name and Kind narrow the source. Organization, counts,
-          // confidence, created date, and sort operate on the loaded window.
-          sourceProcessing: { search: "source", sourceTotal: serverTotal },
-        }}
-        coverage={{
-          loaded: rawRows.length,
-          matched: serverTotal,
-          cap: FETCH_MAX,
-          answeredBy: "client",
-          noun: "entity",
+          // Name and Kind reload the source. All remaining filters and sorting
+          // apply to rows explicitly loaded through the canonical footer.
+          sourceProcessing: {
+            search: "source",
+            columnFilters: "local",
+            sort: "local",
+            sourceTotal: serverTotal,
+          },
+          pagination: {
+            queryKey: sourceQueryKey,
+            rows: rawRows,
+            loading: loading && rawRows.length === 0,
+            isFetchingNextPage: loading && rawRows.length > 0,
+            error: error ? new Error(error) : null,
+            hasNextPage: rawRows.length < serverTotal,
+            loadNextPage,
+            refresh: () => setReloadNonce((current) => current + 1),
+            totalItems: serverTotal,
+          },
+          scroll: {
+            mode: "manual",
+            reason: "KG source pages are loaded only when requested so the inspector never silently fetches the full graph.",
+            approvedBy: "KG inspector canonical-table request",
+          },
         }}
         pageSize={PAGE_SIZE}
-        localPagination={{
-          mode: "numbered",
-          reason: "Preserves the existing 50-entity forensic scan pages.",
-          approvedBy: "KG inspector canonical-table request",
-        }}
         stickyHeader
         detail={{ enabled: false }}
         copy={false}
@@ -488,7 +528,22 @@ function EntitiesTab({
               </AppLink>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
-              <div><span className="text-muted-foreground">Organization</span><div>{!row.organization_id ? "—" : organizationDisplayName(row.organization_id, orgNames) ?? row.organization_id}</div></div>
+              <div>
+                <span className="text-muted-foreground">Organization</span>
+                <div>
+                  {!row.organization_id ? (
+                    "—"
+                  ) : orgNamesLoading && !(row.organization_id in orgNames) ? (
+                    <Skeleton className="h-4 w-28" />
+                  ) : (
+                    <EntityRef
+                      token="organization"
+                      id={row.organization_id}
+                      name={organizationDisplayName(row.organization_id, orgNames) ?? null}
+                    />
+                  )}
+                </div>
+              </div>
               <div><span className="text-muted-foreground">Mentions</span><div className="tabular-nums">{row.mention_count}</div></div>
               <div><span className="text-muted-foreground">Sources</span><div className="tabular-nums">{row.source_count}</div></div>
               <div><span className="text-muted-foreground">Confidence</span><div>{row.confidence_avg === null ? "—" : row.confidence_avg.toFixed(2)}</div></div>
