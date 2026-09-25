@@ -1,6 +1,7 @@
 /** Live Cloud Browser data and control-plane client. */
 import { getJson, postJson, requestRaw } from "@/lib/python-client";
 import { supabase } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { waitForOrganizationAdmission } from "@/lib/api/organization-admission";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { guardedUpdate } from "@ai-matrx/data/db";
@@ -1473,12 +1474,15 @@ export async function acknowledgeNotificationPrompt(
   return acknowledgedAt;
 }
 export async function startDeletion(profileId: string): Promise<{ ok: true }> {
-  const { error } = await supabase
-    .schema("browser")
-    .from("profile")
-    .update({ status: "deletion_pending" })
-    .eq("id", profileId);
-  if (error) throw error;
+  await writeOne(
+    supabase
+      .schema("browser")
+      .from("profile")
+      .update({ status: "deletion_pending" })
+      .eq("id", profileId)
+      .select("id"),
+    { action: "delete", noun: "browser profile" },
+  );
   return { ok: true };
 }
 

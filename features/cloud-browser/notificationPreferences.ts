@@ -25,6 +25,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 
@@ -103,12 +104,15 @@ export async function setHandoffEmailPreference(enabled: boolean): Promise<void>
   if (existing.error) throw existing.error;
 
   if (existing.data) {
-    const { error } = await supabase
-      .schema("users")
-      .from("user_email_preferences")
-      .update({ browser_handoff_notifications: enabled })
-      .eq("id", existing.data.id);
-    if (error) throw error;
+    await writeOne(
+      supabase
+        .schema("users")
+        .from("user_email_preferences")
+        .update({ browser_handoff_notifications: enabled })
+        .eq("id", existing.data.id)
+        .select("id"),
+      { action: "save", noun: "email notification preference" },
+    );
     return;
   }
 
@@ -159,10 +163,13 @@ export async function setHandoffSmsPreference(enabled: boolean): Promise<void> {
     );
   }
 
-  const { error } = await supabase
-    .schema("communication")
-    .from("sms_notification_preferences")
-    .update({ system_alerts: enabled })
-    .eq("id", existing.data.id);
-  if (error) throw error;
+  await writeOne(
+    supabase
+      .schema("communication")
+      .from("sms_notification_preferences")
+      .update({ system_alerts: enabled })
+      .eq("id", existing.data.id)
+      .select("id"),
+    { action: "save", noun: "text notification preference" },
+  );
 }
