@@ -10,7 +10,7 @@ import { JobBoardPreview } from "@/features/admin/unified-preview/jobs/JobBoardP
 export const metadata = {
   title: "The Job Board — preview",
   description:
-    "One board, four altitudes: every job with its goal, its holder and its coverage.",
+    "One board, four altitudes: every job with its goal, its Mandate Holder and its coverage.",
 };
 
 export default function JobBoardPreviewPage() {

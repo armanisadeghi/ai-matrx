@@ -22,7 +22,7 @@ const PREVIEWS = [
     icon: LayoutGrid,
     title: "The Job Board",
     blurb:
-      "One board, four altitudes. Every job — server mandate, surface binding and shortcut alike — with its goal, its holder, and a coverage scoreboard that names every red and orange row inline.",
+      "One board, four altitudes. Every job — server mandate, surface binding and shortcut alike — with its goal, its Mandate Holder, and a coverage scoreboard that names every red and orange row inline.",
     ready: true,
   },
   {

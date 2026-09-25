@@ -281,7 +281,7 @@ export function BindingsPanel({ readOnly }: { readOnly: boolean }) {
         !readOnly ? (
           <Inert what="open the surface-first bind composer">
             <Button variant="outline" size="sm" className="h-7 text-[11px]">
-              Bind a holder
+              Bind a Mandate Holder
             </Button>
           </Inert>
         ) : undefined

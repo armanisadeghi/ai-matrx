@@ -53,7 +53,7 @@ import {
 } from "./mock";
 
 const MODES: { id: SourceMode; label: string; icon: typeof Rocket }[] = [
-  { id: "holder_default", label: "Holder Default", icon: Rocket },
+  { id: "holder_default", label: "Mandate Holder Default", icon: Rocket },
   { id: "offered_value", label: "Offered Value", icon: Zap },
   { id: "direct_value", label: "Direct Value", icon: Type },
   { id: "prompt_user", label: "Prompt User", icon: MessageCircleQuestion },
@@ -130,7 +130,7 @@ function ScopeAndHolderBar() {
   return (
     <Panel
       title="Who this is for, and what runs"
-      eyebrow="Scope + holder"
+      eyebrow="Scope + Mandate Holder"
       className="shrink-0"
     >
       <RuleNote>
@@ -174,9 +174,9 @@ function ScopeAndHolderBar() {
 
         <div className="space-y-1.5">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Holder
+            Mandate Holder
           </p>
-          <Inert what="open the holder picker (agent or workflow)">
+          <Inert what="open the Mandate Holder picker (agent or workflow)">
             <span className="block w-full rounded-md border border-border px-2 py-1.5 text-[11px]">
               <span className="font-medium text-foreground">{HOLDER.name}</span>
               <span className="ml-1.5 rounded bg-muted px-1 text-[10px] text-muted-foreground">
@@ -185,7 +185,7 @@ function ScopeAndHolderBar() {
             </span>
           </Inert>
           <p className="text-[11px] leading-snug text-muted-foreground">
-            Latest: your edits to this holder apply here automatically — an edit
+            Latest: your edits to this Mandate Holder apply here automatically — an edit
             that changes its inputs can break this job. Currently{" "}
             <span className="font-medium text-foreground">{HOLDER.version}</span>
             .
@@ -260,7 +260,7 @@ function MapOnePlace() {
         }
       >
         <RuleNote>
-          Principle 1 — the place&apos;s offered inventory and the holder&apos;s
+          Principle 1 — the place&apos;s offered inventory and the Mandate Holder&apos;s
           input inventory both stand open on either side; the match is made
           here. Principle 3 — four sources, named in words, never the storage
           DSL.
@@ -338,7 +338,7 @@ function HolderSide() {
   const vars = INPUTS.filter((i) => i.kind !== "object");
   const policies = INPUTS.filter((i) => i.kind === "object");
   return (
-    <Panel title="This holder needs" eyebrow="Holder" className="self-start">
+    <Panel title="This Mandate Holder needs" eyebrow="Mandate Holder" className="self-start">
       <RuleNote>
         The consuming side, standing open. Required inputs are marked here and
         again on their row.
@@ -482,7 +482,7 @@ function MappingRow({ input }: { input: HolderInput }) {
               <p className="flex items-start gap-1 text-[10px] leading-snug text-muted-foreground">
                 <Zap className="mt-0.5 h-2.5 w-2.5 shrink-0" />
                 Chosen automatically — this place declares a value named like
-                this input, so it is what would happen anyway. Pick Holder
+                this input, so it is what would happen anyway. Pick Mandate Holder
                 Default to ignore it on purpose.
               </p>
             )}
@@ -505,12 +505,12 @@ function MappingRow({ input }: { input: HolderInput }) {
         {mode === "holder_default" && (
           <div className="space-y-2 text-[11px] leading-relaxed text-muted-foreground">
             <p>
-              The holder will use its own built-in value for this input at run
+              The Mandate Holder will use its own built-in value for this input at run
               time.
             </p>
             <div className="rounded-lg border border-border bg-muted/40 px-2.5 py-2">
               <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                Current holder default
+                Current Mandate Holder default
               </p>
               {input.defaultValue ? (
                 <pre className="mt-1 whitespace-pre-wrap break-words font-mono text-[12px] leading-snug text-foreground">
@@ -518,7 +518,7 @@ function MappingRow({ input }: { input: HolderInput }) {
                 </pre>
               ) : (
                 <p className="mt-1 text-[12px] italic text-muted-foreground/80">
-                  Not set on the holder
+                  Not set on the Mandate Holder
                 </p>
               )}
             </div>
@@ -529,7 +529,7 @@ function MappingRow({ input }: { input: HolderInput }) {
                   {OFFERED.find((v) => v.name === input.boundTo)?.label}
                 </span>
                 . Picking <strong>Offered Value</strong> would bind to it;{" "}
-                <strong>Holder Default</strong> explicitly ignores it.
+                <strong>Mandate Holder Default</strong> explicitly ignores it.
               </p>
             )}
           </div>
@@ -542,7 +542,7 @@ function MappingRow({ input }: { input: HolderInput }) {
             </p>
             <Inert what="edit the literal sent every run">
               <span className="block w-full rounded-md border border-border px-2 py-1.5 font-mono text-[11px]">
-                {input.literal || `Holder default: ${input.defaultValue ?? "—"}`}
+                {input.literal || `Mandate Holder default: ${input.defaultValue ?? "—"}`}
               </span>
             </Inert>
             <p className="text-[10px] text-muted-foreground">
@@ -602,7 +602,7 @@ const AI_ROWS = [
     value: "raw_word_count",
     confidence: "low",
     reason:
-      "The holder may mean cleaned words rather than raw — worth a look before you accept.",
+      "The Mandate Holder may mean cleaned words rather than raw — worth a look before you accept.",
   },
 ];
 
@@ -618,7 +618,7 @@ function AiMapTab({ onAccept }: { onAccept: () => void }) {
       <p className="flex items-start gap-1.5 text-[11px] leading-relaxed text-muted-foreground">
         <BrainCircuit className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
         A mandate read this place&apos;s {PLACE.declaredCount} offered values and
-        the holder&apos;s {INPUTS.length} inputs and proposed a map. Nothing is
+        the Mandate Holder&apos;s {INPUTS.length} inputs and proposed a map. Nothing is
         applied until you accept it.
       </p>
       <div className="space-y-1.5">
@@ -645,7 +645,7 @@ function AiMapTab({ onAccept }: { onAccept: () => void }) {
       </div>
       <p className="flex items-start gap-1.5 text-[10px] leading-snug text-amber-600 dark:text-amber-500">
         <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
-        Skipped 2 suggestions that named things this place or holder does not
+        Skipped 2 suggestions that named things this place or Mandate Holder does not
         have: transcript_summary; speaker_notes.
       </p>
       <div className="flex items-center gap-2">
@@ -690,7 +690,7 @@ function MapManyPlaces() {
     >
       <RuleNote>
         Principle 17 — the same middle, transposed. Places are rows, the
-        holder&apos;s inputs are columns, and every cell is the same four-source
+        Mandate Holder&apos;s inputs are columns, and every cell is the same four-source
         picker. A mapping copied from one place self-heals against the next
         place&apos;s values, or goes red and asks you.
       </RuleNote>

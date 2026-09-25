@@ -45,7 +45,7 @@ const ALTITUDE_NOTE: Record<Altitude, { title: string; body: string }> = {
   user: {
     title: "User hub altitude — the same place, seen as me",
     body:
-      "The code-owned half collapses to what it gives you. What stays is what is genuinely yours: which holder fills each job, whether it runs on its own, and which discovered jobs you want quiet here. Writes land on your row — never the org's, never the system's.",
+      "The code-owned half collapses to what it gives you. What stays is what is genuinely yours: which Mandate Holder fills each job, whether it runs on its own, and which discovered jobs you want quiet here. Writes land on your row — never the org's, never the system's.",
   },
 };
 
