@@ -57,3 +57,8 @@ export function featureForKey(mandateKey: string): string {
   const owner = DECLARED_FEATURES.find((entry) => entry.extraPrefixes?.includes(prefix));
   return owner?.feature ?? prefix;
 }
+
+/** The page a feature slug lands on — an extra prefix (`seo`) opens its owner (`marketing`). */
+export function canonicalFeature(feature: string): string {
+  return featureForKey(`${feature}.`);
+}

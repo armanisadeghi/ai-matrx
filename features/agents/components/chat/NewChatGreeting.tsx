@@ -5,6 +5,7 @@ import { ArrowUp, ArrowUpRight, Mic, Plus } from "lucide-react";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectActiveUserName } from "@/lib/redux/selectors/userSelectors";
 import {
+  DEFAULT_NEW_CHAT_MANDATE_KEY,
   PRIMARY_QUICK_ACTIONS,
   SECONDARY_QUICK_ACTIONS,
   type ChatQuickAction,
@@ -16,6 +17,7 @@ import { NewChatLandingInput } from "./NewChatLandingInput";
 import { ChatConnectorStrip } from "@/features/connectors/ChatConnectorStrip";
 import { ConnectorPromptHost } from "@/features/connectors/ConnectorPromptHost";
 import { cn } from "@/lib/utils";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 interface NewChatGreetingProps {
   /** Default-agent conversation bound to the landing input — same Redux state
@@ -137,6 +139,15 @@ export function NewChatGreeting({
               </button>
             );
           })}
+          <IntelligenceIndicator
+            feature="chat"
+            mandateKeys={[
+              DEFAULT_NEW_CHAT_MANDATE_KEY,
+              ...PRIMARY_QUICK_ACTIONS.map((action) => action.mandateKey),
+              ...SECONDARY_QUICK_ACTIONS.map((action) => action.mandateKey),
+            ]}
+            label="The chat assistant and these quick starts"
+          />
         </section>
 
         {/* The first Google moment (PLAN §2): a dismissible card ABOVE the

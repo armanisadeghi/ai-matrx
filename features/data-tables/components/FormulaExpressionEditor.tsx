@@ -21,6 +21,7 @@ import { AlertCircle, CheckCircle2, FunctionSquare } from "lucide-react";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -183,9 +184,16 @@ export function FormulaExpressionEditor({
       </PopoverTrigger>
       <PopoverContent /* sizing: fixed — fixed-shape panel wider than the content-sizing 28rem ceiling */ align="start" className="w-[min(36rem,calc(100vw-2rem))] space-y-3">
         <div className="space-y-1.5">
-          <Label htmlFor="formula-expression" className="text-xs">
-            Formula
-          </Label>
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor="formula-expression" className="text-xs">
+              Formula
+            </Label>
+            <IntelligenceIndicator
+              feature="data"
+              mandateKeys={[MANDATE_KEYS.data__formula_writing]}
+              label="Help writing this formula"
+            />
+          </div>
           {/* The PLATFORM text box (ARE-020): microphone, and the … menu with
               "Help with this…" running THIS box's job, `data.formula_writing`
               (declared in aidream client_mandates.py, Provision

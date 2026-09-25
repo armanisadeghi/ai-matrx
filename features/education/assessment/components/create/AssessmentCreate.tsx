@@ -71,6 +71,7 @@ import type {
 } from "../../data/types";
 import { KIND_CONFIG, type KindConfig } from "../kindConfig";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 const FIELD = "text-base"; // 16px+ prevents iOS zoom-on-focus
 
@@ -468,8 +469,12 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
             <Icon className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+            <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground">
               New {config.label.toLowerCase()}
+              <IntelligenceIndicator
+                feature="education"
+                mandateKeys={[ASSESSMENT_MANDATES.generateQuiz, ASSESSMENT_MANDATES.generateQuizFromSource]}
+              />
             </h1>
             <p className="text-sm text-muted-foreground">
               Generate graded questions from a topic, a deck, or a document.

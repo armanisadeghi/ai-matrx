@@ -4,13 +4,14 @@
 // page (research topics) keeps it there; every other feature uses the generic
 // `/intelligence/<feature>`. `?mandate=<key>` focuses one job.
 
-import { featureForKey } from "./registry";
+import { canonicalFeature, featureForKey } from "./registry";
 import type { IntelligenceContext } from "./types";
 
 export function featureIntelligenceHref(
-  feature: string,
+  featureSlug: string,
   options: { mandateKey?: string | null; context?: IntelligenceContext } = {},
 ): string {
+  const feature = canonicalFeature(featureSlug);
   const topicId = options.context?.topicId;
   const base =
     feature === "research" && topicId

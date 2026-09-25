@@ -16,6 +16,7 @@
 import { useState } from "react";
 import { Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { KindRequestDialog } from "@/features/content-ir/react/actions/KindRequestDialog";
 import { useMandate } from "@/features/mandates/useMandate";
 import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
@@ -74,6 +75,11 @@ export function TopicIdeaHelper({
           <Lightbulb className="h-3.5 w-3.5" />
           {error ? "Idea helper unavailable" : "Need an idea? Get help"}
         </Button>
+        <IntelligenceIndicator
+          feature="podcast"
+          mandateKeys={[TOPIC_IDEAS_MANDATE_KEY]}
+          label="The idea helper"
+        />
       </div>
 
       {/* The mandate resolves INSIDE the canonical launcher — passing the key

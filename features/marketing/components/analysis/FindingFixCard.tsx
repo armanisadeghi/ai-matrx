@@ -34,7 +34,9 @@ import {
   Zap,
 } from "lucide-react";
 
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { Badge } from "@/components/ui/badge";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { usePageWorkspace } from "@/features/marketing/data/hooks";
@@ -217,6 +219,11 @@ export function FindingFixCard({
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
         <Zap className="h-3.5 w-3.5 shrink-0 text-primary" />
         <h2 className="text-xs font-semibold text-foreground">Fix this page</h2>
+        <IntelligenceIndicator
+          feature="marketing"
+          mandateKeys={[MANDATE_KEYS.seo__finding_fixer]}
+          label="The fixer that writes the replacement text"
+        />
         {reviewable ? (
           <Badge variant="outline" className="h-5 text-[10px]">
             {reviewable.pipe === "code"

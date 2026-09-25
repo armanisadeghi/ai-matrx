@@ -989,6 +989,17 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "teal",
     children: [
       {
+        // The per-feature intelligence pages (features/mandates/
+        // feature-intelligence): every part of the app that uses AI, with its
+        // job count; each opens /intelligence/<feature>.
+        label: "By feature",
+        href: "/intelligence",
+        iconName: "LayoutGrid",
+        description: "Every part of the app that uses AI, and what runs each job for you",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
         label: "Mandates",
         href: "/mandates/list-preview",
         iconName: "Plug",

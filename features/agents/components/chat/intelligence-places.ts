@@ -38,6 +38,7 @@ export const CHAT_PLACES: FeaturePlaces = {
         "app/(core)/chat/new/page.tsx",
         "features/agents/components/chat/ChatNewClient.tsx",
         "features/agents/components/chat/ChatNewHeader.tsx",
+        "features/agents/components/chat/NewChatGreeting.tsx",
       ],
     },
     {

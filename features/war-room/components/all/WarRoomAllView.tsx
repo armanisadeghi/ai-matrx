@@ -68,6 +68,7 @@ const MasterAgentWindow = dynamic(
 // — but it must always be MOUNTED so a tool/toast `openWatch` can pop a window
 // even when the Master panel is closed.
 import { MasterWatchLayerDoor as MasterWatchLayer } from "@/features/war-room/components/master/MasterWatchLayerDoor";
+import { featureIntelligenceHref } from "@/features/mandates/feature-intelligence/hrefs";
 
 type WarRoomAllViewMode = "rooms" | "threads";
 
@@ -145,8 +146,8 @@ export function WarRoomAllView() {
       // Mandates the user may re-point at their own agent, with no deploy.
       // Deep-linked to the `war_room` domain (the bare list is 331 mandates).
       icon: "BrainCircuit",
-      label: "War Room agents",
-      onPress: () => router.push("/mandates?feature=war_room"),
+      label: "War Room intelligence",
+      onPress: () => router.push(featureIntelligenceHref("war_room")),
     },
   ];
 

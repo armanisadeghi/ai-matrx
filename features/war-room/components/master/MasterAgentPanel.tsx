@@ -21,6 +21,7 @@ import { useMasterAgent } from "@/features/war-room/hooks/useMasterAgent";
 import { WarRoomAgentSelector } from "@/features/war-room/components/shared/WarRoomAgentSelector";
 import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
 import { WAR_ROOM_MASTER_AGENT_MANDATE } from "@/features/war-room/constants";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 
 export default function MasterAgentPanel() {
   const { conversationId, agentId, ready, switchAgent } = useMasterAgent();
@@ -48,6 +49,11 @@ export default function MasterAgentPanel() {
         <MandateAgentPicker
           mandateKey={WAR_ROOM_MASTER_AGENT_MANDATE}
           className="ml-auto"
+        />
+        <IntelligenceIndicator
+          feature="war_room"
+          mandateKeys={[WAR_ROOM_MASTER_AGENT_MANDATE]}
+          label="The master agent"
         />
       </header>
 

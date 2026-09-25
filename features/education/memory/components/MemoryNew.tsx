@@ -42,6 +42,8 @@ import {
 import { useGenerateMemoryAid } from "../useGenerateMemoryAid";
 import { memoryAidCounts } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
+import { EDU_MEMORY_MANDATES } from "../mandates";
 
 // The generator source vocabulary lives ONCE in media/types.ts — the picker
 // below renders from it, the manifest interpolates it into the write-target
@@ -306,8 +308,9 @@ export function MemoryNew() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-lg font-semibold text-foreground">
+          <h1 className="flex items-center gap-2 text-lg font-semibold text-foreground">
             Generate memory aids
+            <IntelligenceIndicator feature="education" mandateKeys={[EDU_MEMORY_MANDATES.memoryAid]} />
           </h1>
           <p className="text-xs text-muted-foreground">
             Turn a deck or topic into mnemonics, analogies, and a memory-palace

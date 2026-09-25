@@ -30,6 +30,7 @@ import { useLiveSurfaceMandates } from "@/features/surfaces/runtime/surface-mand
 import { fetchMandateIdentities, type MandateIdentity } from "../service";
 import { mandateDisplayName } from "../mandate-words";
 import { featureIntelligenceHref, featureOfMandateKey } from "./hrefs";
+import { canonicalFeature, declaredPlacesFor } from "./registry";
 import { keyInFeature, shortMandateName } from "./service";
 import type { IntelligenceContext } from "./types";
 
@@ -55,8 +56,9 @@ export function IntelligenceIndicator({
   className,
 }: IntelligenceIndicatorProps) {
   const live = useLiveSurfaceMandates();
-  const resolvedFeature =
-    feature ?? (mandateKeys?.[0] ? featureOfMandateKey(mandateKeys[0]) : null);
+  const resolvedFeature = feature
+    ? canonicalFeature(feature)
+    : mandateKeys?.[0] ? featureOfMandateKey(mandateKeys[0]) : null;
   const keys = mandateKeys
     ? [...mandateKeys]
     : live
@@ -84,6 +86,7 @@ export function IntelligenceIndicator({
 
   if (!resolvedFeature) return null;
   const featureName =
+    declaredPlacesFor(resolvedFeature)?.label ??
     resolvedFeature.charAt(0).toUpperCase() + resolvedFeature.slice(1).replace(/[_-]/g, " ");
   const pageHref = featureIntelligenceHref(resolvedFeature, { context });
 

@@ -104,3 +104,24 @@ describe("feature intelligence — hrefs", () => {
     );
   });
 });
+
+describe("feature intelligence — features that own more than one prefix", () => {
+  it("routes an extra prefix to its owner's page", () => {
+    // Imported lazily so the module graph stays the one the page uses.
+    const { canonicalFeature, featureForKey, featurePrefixes } = jest.requireActual("../registry");
+    const { featureIntelligenceHref } = jest.requireActual("../hrefs");
+    expect(featurePrefixes("marketing")).toEqual(["marketing", "seo"]);
+    expect(canonicalFeature("seo")).toBe("marketing");
+    expect(featureForKey("podcast_client.topic_ideas")).toBe("podcast");
+    expect(featureForKey("notes.organizer")).toBe("notes");
+    expect(featureIntelligenceHref("seo")).toBe("/intelligence/marketing");
+    expect(keyInFeature("seo.map_author", "marketing")).toBe(true);
+  });
+
+  it("the index counts jobs under the owning feature and keeps undeclared features", () => {
+    const { buildIndexRows } = jest.requireActual("../IntelligenceIndex");
+    const rows = buildIndexRows(["seo.map_author", "marketing.page_image", "zzz_new.job"]);
+    expect(rows.find((row: { feature: string }) => row.feature === "marketing")).toMatchObject({ jobs: 2, declared: true });
+    expect(rows.find((row: { feature: string }) => row.feature === "zzz_new")).toMatchObject({ jobs: 1, declared: false });
+  });
+});

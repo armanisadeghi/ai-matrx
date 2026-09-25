@@ -37,6 +37,7 @@ import {
   podcastShowEntry,
 } from "@/features/surfaces/manifests/podcast.manifest";
 import type { PcShow } from "@/features/podcasts/types";
+import { featureIntelligenceHref } from "@/features/mandates/feature-intelligence/hrefs";
 
 function ShowChip({ show }: { show: PcShow }) {
   return (
@@ -176,9 +177,9 @@ export function StudioDashboard() {
                 (common-docs/systems/intelligence/mandates/STATE.md). Until this link, the
                 surface named none of that and there was no way in from here. */}
               <Button asChild variant="outline" className="gap-2">
-                <Link href="/mandates?feature=podcast">
+                <Link href={featureIntelligenceHref("podcast")}>
                   <BrainCircuit className="h-4 w-4" />
-                  Podcast agents
+                  Podcast intelligence
                 </Link>
               </Button>
               <Button asChild size="lg" className="gap-2 shadow-md">

@@ -7,12 +7,16 @@
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import type { FeaturePlaces } from "@/features/mandates/feature-intelligence/types";
 import { VOICE_INTRO_MANDATE_KEY } from "./constants";
-import { VOICE_COMMUNICATOR_MANDATE_KEY } from "./relay/useVoiceRelaySession";
 
 export const VOICE_PLACES: FeaturePlaces = {
   feature: "voice",
   label: "Voice",
-  aliases: { VOICE_INTRO_MANDATE_KEY, VOICE_COMMUNICATOR_MANDATE_KEY },
+  aliases: {
+    VOICE_INTRO_MANDATE_KEY,
+    // Named here, not imported: its home is a heavy hook module this map must
+    // not pull into every page that shows the Intelligence icon.
+    VOICE_COMMUNICATOR_MANDATE_KEY: MANDATE_KEYS.voice__communicator,
+  },
   roots: ["features/voice-agent", "app/(core)/voice", "app/(core)/chat/voice"],
   places: [
     {

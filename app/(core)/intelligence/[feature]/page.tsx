@@ -4,6 +4,7 @@ import { FeatureIntelligence } from "@/features/mandates/feature-intelligence/Fe
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 import { loginHref } from "@/utils/auth/auth-destination";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
+import { canonicalFeature, declaredPlacesFor } from "@/features/mandates/feature-intelligence/registry";
 
 /**
  * /intelligence/[feature] — the AI jobs of one feature, from the viewer's seat
@@ -14,6 +15,8 @@ import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 const FEATURE_RE = /^[a-z][a-z0-9_]*$/;
 
 function titleOf(feature: string): string {
+  const declared = declaredPlacesFor(feature)?.label;
+  if (declared) return declared;
   return feature
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
@@ -53,6 +56,14 @@ export default async function FeatureIntelligenceRoute({
     else context[name] = value;
   }
 
+  // A key prefix another feature owns (`seo` → `marketing`) opens that page.
+  const owner = FEATURE_RE.test(feature) ? canonicalFeature(feature) : feature;
+  if (owner !== feature) {
+    const query = new URLSearchParams(
+      Object.entries(context).concat(focus ? [["mandate", focus]] : []),
+    ).toString();
+    redirect(`/intelligence/${owner}${query ? `?${query}` : ""}`);
+  }
   const safeFeature = FEATURE_RE.test(feature) ? feature : "";
   return (
     <>

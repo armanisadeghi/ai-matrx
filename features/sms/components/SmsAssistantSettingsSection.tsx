@@ -27,6 +27,7 @@ import {
 } from "@/features/sms/assistant-program";
 import { useSmsAssistantProgram } from "@/features/sms/hooks/useSmsAssistantProgram";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { featureIntelligenceHref } from "@/features/mandates/feature-intelligence/hrefs";
 
 /** Closed owner-beta control on the production Messaging settings surface. */
 export function SmsAssistantSettingsSection() {
@@ -118,10 +119,10 @@ export function SmsAssistantSettingsSection() {
             bare /mandates lands on 264 mandates across 45 domains,
             which is a scroll, not a door. */}
         <SettingsLink
-          label="Mandate controls"
-          description="Open the full Mandate editor to inspect provenance, version policy, and reset your Binding."
-          href="/mandates?feature=sms"
-          actionLabel="Open Mandates"
+          label="Intelligence"
+          description="See what runs your text assistant, duplicate it to change it, or use your own agent."
+          href={featureIntelligenceHref("sms")}
+          actionLabel="Open intelligence"
         />
         {state?.chatConversationId ? (
           <SettingsLink

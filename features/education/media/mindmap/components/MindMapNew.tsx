@@ -37,6 +37,8 @@ import {
 import { useGenerateMindMap } from "../useGenerateMindMap";
 import { linkDiagramToCards, type LinkableCard } from "../linkCards";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
+import { EDU_MEDIA_MANDATES } from "../mandates";
 
 // Presentation only — the VALUE vocabulary lives in features/education/media/
 // types.ts and is imported above, so this picker cannot drift from what the
@@ -311,7 +313,10 @@ export function MindMapNew() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-lg font-semibold text-foreground">Generate a mind map</h1>
+          <h1 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+            Generate a mind map
+            <IntelligenceIndicator feature="education" mandateKeys={[EDU_MEDIA_MANDATES.mindMap]} />
+          </h1>
           <p className="text-xs text-muted-foreground">
             Turn a deck or topic into a visual concept map — nodes for the key ideas, edges for how
             they connect.
