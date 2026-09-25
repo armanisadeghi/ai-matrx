@@ -1288,6 +1288,9 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   let cloneRef: CloneRef | null = null;
   let cloneRefWhyNot: string | null = null;
   let guard: { feature: string; key: string } | null = null;
+  /** Set when `--reapply --target branch` passed the header rule only on the branch-ledger
+   *  amnesty; the ledger read must then prove the branch holds these exact bytes. */
+  let branchLedgeredReapply: string | null = null;
   let revokeExemption: { schema: string; statements: Array<{ text: string }> } | null = null;
   let chairStep: { why: string; reasons: string[] } | null = null;
   let customDataInserts: string[] = [];
@@ -1307,13 +1310,43 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       cloneRef = null;
       cloneRefWhyNot = err instanceof Error ? err.message.split("\n")[0]! : String(err);
     }
-    ({ guard, revokeExemption, chairStep, customDataInserts } = assertHeaderAgreesWithFlag({
-      basedOnNames: basedOnFunctionNames(sql),
-      filename,
-      flagTarget: target,
-      header,
-      strippedSql: stripped,
-    }));
+    try {
+      ({ guard, revokeExemption, chairStep, customDataInserts } = assertHeaderAgreesWithFlag({
+        basedOnNames: basedOnFunctionNames(sql),
+        filename,
+        flagTarget: target,
+        header,
+        strippedSql: stripped,
+      }));
+    } catch (headerErr) {
+      // 🚨 BODY DRIFT ON THE BRANCH (lane BRANCH-REFRESH-4, 2026-09-24). The branch carries
+      // production's LEDGER (the refresh copies it), so a production-only file can sit in the
+      // branch's ledger as applied while the branch holds an OLDER body: `platform.knob_archive`
+      // kept its pre-knobguard2 body there while the ledger listed knobguard2. The header rule
+      // above then refused the one repair that re-runs the ledgered bytes. So `--reapply` at
+      // `--target branch` admits a header-less or non-branch file ONLY when the branch's own
+      // ledger already holds THIS filename with THIS checksum — re-executing bytes the branch
+      // says it ran, never a new file. Proven after the ledger read below; nothing else in the
+      // verdict is skipped, and no other target is touched.
+      if (
+        target === "branch" &&
+        reapply &&
+        headerErr instanceof TargetRefusal &&
+        (headerErr.code === "branch-needs-target-header" || headerErr.code === "header-flag-disagree")
+      ) {
+        branchLedgeredReapply = headerErr.message;
+        ({ guard, revokeExemption, chairStep, customDataInserts } = assertHeaderAgreesWithFlag({
+          basedOnNames: basedOnFunctionNames(sql),
+          filename,
+          flagTarget: target,
+          header,
+          strippedSql: stripped,
+          branchLedgeredReapply: true,
+        }));
+      } else {
+        throw headerErr;
+      }
+    }
   } catch (err) {
     if (err instanceof TargetRefusal) {
       console.error(`${TAG.fail}${err.message}`);
@@ -1556,6 +1589,23 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       return undefined;
     });
     if (existing === undefined) return 2;
+
+    if (branchLedgeredReapply !== null) {
+      if (!existing || existing.checksum !== checksum) {
+        console.error(
+          `${TAG.fail}${branchLedgeredReapply}\n` +
+            `  --reapply at --target branch admits this file only when the BRANCH's own ledger already\n` +
+            `  holds ${filename} with checksum ${checksum.slice(0, 12)} — levelling a body the branch says\n` +
+            `  it ran. The branch ledger holds ${existing ? existing.checksum.slice(0, 12) : "no row for it"}. Refusing.`,
+        );
+        return 1;
+      }
+      console.log(
+        `${TAG.warn}--reapply on the branch: ${filename} carries no branch header, and the branch's ledger ` +
+          `already holds these exact bytes (applied ${existing.applied_at}) — re-executing them to level a ` +
+          `body that drifted under a standing ledger row (scripts/night/body-drift.sh).`,
+      );
+    }
 
     if (existing) {
       if (existing.checksum === checksum && !reapply) {

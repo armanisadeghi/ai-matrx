@@ -134,6 +134,10 @@ APPLY_OUT="$WORK/apply.out"
 apply_one() {  # apply_one <source> <filename> <repo> <relpath> <runner> <selector> <reapply>
   local source="$1" filename="$2" repo="$3" relpath="$4" runner="$5" selector="$6" reapply="$7"
   local -a cmd
+  if [ "$runner" = "direct" ] || [ "$runner" = "record" ]; then
+    direct_one "$source" "$filename" "$repo" "$relpath" "$runner" 2>&1 | tee "$APPLY_OUT"
+    return ${pipestatus[1]}
+  fi
   if [ "$runner" = "frontend" ]; then
     cmd=(node node_modules/tsx/dist/cli.mjs scripts/apply-migration.ts "$relpath" --target clone)
     [ "$selector" = "campaign" ] && cmd+=(--source campaign --lane "$LANE")
@@ -149,6 +153,32 @@ apply_one() {  # apply_one <source> <filename> <repo> <relpath> <runner> <select
   say "applying ($runner): $relpath$([ "$reapply" = yes ] && print -n ' (reapply)')"
   ( cd "$repo" && "${cmd[@]}" ) 2>&1 | tee "$APPLY_OUT"
   return ${pipestatus[1]}
+}
+
+# ── a DIRECT APPLY is carried the way production took it ─────────────────────
+# 🚨 lane BRANCH-REFRESH-4, 2026-09-24. Since the owner's 2026-09-24 ~17:30 PT ruling lanes apply
+# campaign files to production directly (Supabase MCP / psql, one transaction, lock_timeout 30s)
+# and ledger them by hand under source `campaign`. No runner wrote that row, so no runner can
+# replay it (the plan refused all seven on the first run: "ledger source 'campaign' is not a
+# source this step knows"). `direct` runs the SAME committed bytes the SAME way, then writes the
+# SAME row; `record` writes only the row, because the clone already ran these exact bytes under
+# the runner's label (the lane rehearsed here). Production's own chair_step text is copied, so the
+# clone's row says what production's says.
+direct_one() {  # direct_one <source> <filename> <repo> <relpath> direct|record
+  local source="$1" filename="$2" repo="$3" relpath="$4" mode="$5" ck note
+  ck="$(shasum -a 256 "$repo/$relpath" | cut -d' ' -f1)"
+  note="$(night_readonly_psql "${PROD_ARGS[@]}" --sql "select coalesce(chair_step, '') from public._schema_migrations where source = '$source' and filename = '$filename'" 2>/dev/null | head -1)"
+  note="${note//\$cnote\$/}"   # dollar-quoted below; the one sequence that could end it is removed
+  local ledger="insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms, chair_step, applied_by_lane)
+                 values ('$source', '$filename', '$ck', now(), 0, 'catchup — ${mode} — ' || \$cnote\$${note}\$cnote\$, '$LANE') on conflict do nothing;"
+  if [ "$mode" = "record" ]; then
+    say "recording (direct apply, bytes already on the clone): $relpath"
+    "$PSQL" "${CLONE_ARGS[@]}" -qAt -v ON_ERROR_STOP=1 -c "$ledger"
+    return $?
+  fi
+  say "applying (direct, as production did): $relpath"
+  { print -r -- "set local lock_timeout = '30s';"; cat "$repo/$relpath"; print; print -r -- "$ledger"; } > "$WORK/direct.sql"
+  "$PSQL" "${CLONE_ARGS[@]}" -q -1 -v ON_ERROR_STOP=1 -f "$WORK/direct.sql"
 }
 
 # ── the body hash the clone actually holds, for one `schema.name(argtypes)` ──
@@ -411,10 +441,28 @@ else
   say "  release gate are judging against yesterday's snapshot."
 fi
 
+# ── THE BODIES, NOT THE LEDGERS ──────────────────────────────────────────────
+# 🚨 lane BRANCH-REFRESH-4, 2026-09-24. Everything above compares LEDGERS. A ledger row says a
+# file ran, never what stands: `platform.knob_archive` held its pre-knobguard2 body on the clone
+# under a ledger row saying knobguard2 was applied, and nothing above could see it. So the
+# catch-up ends by hashing every function and view in the campaign schemas against production
+# and levelling each mismatch from production's own body (scripts/night/body-drift.sh). A body
+# that will not level is named, and the run exits nonzero.
+BODY_RC=0
+say "─── body drift: the clone's function and view bodies against production's ───"
+if [ "$DRY_RUN" = "1" ]; then
+  zsh "$FRONTEND/scripts/night/body-drift.sh" --target clone 2>&1 | grep -v 'target ok:\|psql:\|read-only proven' | while read -r l; do say "  ${l#\[*\] }"; done
+else
+  zsh "$FRONTEND/scripts/night/body-drift.sh" --target clone --repair > "$WORK/body-drift.out" 2>&1; BODY_RC=$?
+  grep -E 'MISMATCHES|NOT REPAIRED|levelled|RESULT|REFUSED|READ FAILED' "$WORK/body-drift.out" | while read -r l; do say "  ${l#\[*\] }"; done
+fi
+
 say "parity repairs made: $REPAIRED; superseded on production: $SUPERSEDED"
 for n in "${SUPERSEDED_NAMES[@]:-}"; do [ -n "$n" ] && say "  superseded, not carried: $n"; done
 for n in "${FAILED_NAMES[@]:-}"; do [ -n "$n" ] && say "  did not land: $n"; done
 say "clone-catchup done: $APPLIED applied, $REPAIRED parity repair(s), $SUPERSEDED superseded, $FAILED failed, $REFUSE_N refused."
+[ "$BODY_RC" -ne 0 ] && say "body drift: bodies remain unlevelled (exit $BODY_RC) — named above."
 [ "$FAILED" -gt 0 ] && exit 70
 [ "$REFUSE_N" -gt 0 ] && exit 71
+[ "$BODY_RC" -ne 0 ] && exit 72
 exit 0

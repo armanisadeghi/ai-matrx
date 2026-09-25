@@ -70,6 +70,17 @@ SOURCE_DIRS: dict[str, list[tuple[Path, Path, str, str]]] = {
         (AIDREAM, AIDREAM / "db" / "migrations" / "inverse", "aidream", "inverse"),
         (AIDREAM, AIDREAM / "db" / "migrations" / "rehearsal", "aidream", "rehearsal"),
     ],
+    # 🚨 DIRECT APPLIES (lane BRANCH-REFRESH-4, 2026-09-24). Since the owner's ruling of
+    # 2026-09-24 ~17:30 PT ("all db stuff applied directly") lanes apply a campaign file to
+    # production through the Supabase MCP / psql and ledger it by hand under source `campaign`.
+    # No runner wrote that row, so no runner can replay it: the catch-up carries it the same way
+    # (runner `direct` — the file in ONE transaction, lock_timeout 30s, then the same ledger row),
+    # or only RECORDS the row when the clone's ledger already holds these exact bytes under the
+    # runner's label (the lane rehearsed it here through `pnpm db:apply --target clone`).
+    "campaign": [
+        (FRONTEND, FRONTEND / "migrations" / "campaign", "direct", "campaign"),
+        (AIDREAM, AIDREAM / "db" / "migrations" / "campaign", "direct", "campaign"),
+    ],
     "matrx-graph": [
         (AIDREAM, AIDREAM / "packages" / "matrx-graph" / "matrx_graph" / "db" / "migrations",
          "aidream", ""),
@@ -217,6 +228,23 @@ def self_test() -> int:
     if not ok:
         fails += 1
         print(f"        expected only the up, got {names}")
+    # DIRECT-APPLY rows: source `campaign` resolves to migrations/campaign; a file the clone already
+    # ran under the runner's label is RECORDED, never executed again.
+    import subprocess as _sp
+    camp = sorted((FRONTEND / "migrations" / "campaign").glob("*.sql"))
+    tracked = [p for p in camp if git_bytes(FRONTEND, os.path.relpath(p, FRONTEND)) == p.read_bytes()]
+    if tracked:
+        f = tracked[0]
+        ck = hashlib.sha256(f.read_bytes()).hexdigest()
+        prow = ("campaign", f.name, ck, "2026-09-24 10:00:00+00")
+        got = run([prow], [])
+        ok = len(got) == 1 and got[0][0] == "APPLY" and got[0][6] == "direct"
+        print(("  ok   " if ok else "  FAIL ") + "RED-4 a `campaign` direct-apply row absent from the clone -> APPLY via runner direct")
+        fails += 0 if ok else 1
+        got = run([prow], [("matrx-frontend", f.name, ck, "2026-09-24 09:00:00+00")])
+        ok = len(got) == 1 and got[0][6] == "record"
+        print(("  ok   " if ok else "  FAIL ") + "GREEN-4 the clone already ran those bytes under matrx-frontend -> RECORD only")
+        fails += 0 if ok else 1
     for label, prod_rows, clone_rows, want in cases:
         got = [r for r in run(list(prod_rows), list(clone_rows)) if r[2] == "zzselftest_up.sql"]
         ok = len(got) == want
@@ -332,6 +360,17 @@ def main() -> int:
             continue
 
         repo, cand, relpath, runner, selector, committed = hit
+        if runner == "direct" and here is None:
+            rehearsed = [
+                c for c in clone
+                if c["filename"] == r["filename"] and c["checksum"] == r["checksum"]
+            ]
+            if rehearsed:
+                runner = "record"
+                reason = (
+                    f"direct apply on production; the clone already ran these exact bytes as "
+                    f"{rehearsed[0]['source']}/{r['filename']} — the `campaign` row is recorded, nothing executes"
+                )
         if r["checksum"] not in hashes(committed):
             lines.append(
                 SEP.join(

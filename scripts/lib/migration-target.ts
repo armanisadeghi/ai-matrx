@@ -2678,6 +2678,13 @@ export interface AgreementInput {
    * Compute with `basedOnFunctionNames(sql)`. Absent means "declared none".
    */
   readonly basedOnNames?: ReadonlySet<string>;
+  /**
+   * `--reapply --target branch` of a file the BRANCH's ledger already holds byte-identical
+   * (the runner proves that after its ledger read, and refuses otherwise). Skips ONLY the two
+   * branch header refusals; every other judgement below still runs. Ignored at every other
+   * target. Lane BRANCH-REFRESH-4, 2026-09-24: a ledger row whose body is not live.
+   */
+  readonly branchLedgeredReapply?: boolean;
 }
 
 /**
@@ -2712,7 +2719,7 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
   const named = header.targets;
   const alreadyLedgered = input.alreadyLedgered !== false;
 
-  if (flagTarget === "branch") {
+  if (flagTarget === "branch" && input.branchLedgeredReapply !== true) {
     // 🚨 ATTACK-7 finding 2 / finding 12. A header-less file is production-only BY
     // AMNESTY — that is the ~3,567 migrations written before `--target` existed — and
     // amnesty is not a reason to keep the rehearsal branch out of reach of the ONE

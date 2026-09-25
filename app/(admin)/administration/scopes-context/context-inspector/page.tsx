@@ -426,6 +426,15 @@ function CompareOneScope() {
   const [draft, setDraft] = useState("");
   const [agentDraft, setAgentDraft] = useState("");
   const [target, setTarget] = useState<{ scopeId: string; agentId?: string } | null>(null);
+  // A LINK OPENS THE COMPARE ALREADY RUNNING (lane SC-2'): `?scope=<id>` fills the box and
+  // compares at once, so the owner's link is one click, never "paste an id".
+  useEffect(() => {
+    const fromLink = new URLSearchParams(window.location.search).get("scope")?.trim() ?? "";
+    if (UUID_RE.test(fromLink)) {
+      setDraft(fromLink);
+      setTarget({ scopeId: fromLink });
+    }
+  }, []);
   const agentOk = !agentDraft.trim() || UUID_RE.test(agentDraft.trim());
   const valid = UUID_RE.test(draft.trim()) && agentOk;
   return (
@@ -466,6 +475,19 @@ function CompareOneScope() {
             Compare
           </Button>
         </form>
+        {target && (
+          <p className="text-xs text-muted-foreground">
+            The same scope on its own pages:{" "}
+            <a className="underline underline-offset-2" href={`/scopes/s/${target.scopeId}`} target="_blank" rel="noreferrer">
+              the current system
+            </a>{" "}
+            and{" "}
+            <a className="underline underline-offset-2" href={`/o/${target.scopeId}`} target="_blank" rel="noreferrer">
+              the record store&apos;s copy
+            </a>
+            .
+          </p>
+        )}
         {target && (
           <div className="flex min-h-[24rem] flex-col rounded-md border border-border">
             <ContextCompareView

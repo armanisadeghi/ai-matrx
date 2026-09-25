@@ -88,6 +88,13 @@ begin
                 consumer    = null,
                 operation   = excluded.operation,
                 actor       = excluded.actor;
+  -- A RE-ARMED ROW IS NEWS TOO. custom.io_outbox_announce fires on INSERT only, so the second
+  -- edit of the same old row (an update of the outbox row) would wake nobody; say it here, in the
+  -- announce's own shape (a pointer, never the row). The follow debounces, so a duplicate on the
+  -- first insert costs nothing.
+  perform pg_notify('records_changed',
+                    jsonb_build_object('organization_id', v_org, 'record_id', v_id, 'table_id', v_type,
+                                       'operation', 'updated', 'event_key', 'context.follow')::text);
   return null;
 exception when others then
   -- NEVER FAIL THE OLD SIDE'S EDIT, NEVER FAIL IN SILENCE. The current screens are the writer;
