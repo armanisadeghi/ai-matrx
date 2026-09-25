@@ -150,7 +150,6 @@ export function resolveAnchor({ anchor, body, contentVersion, capturedBody }: Re
   const hit = bestContextMatch(anchor, body);
   if (hit.kind === "unique") return located(body, hit.startCp, hit.startCp + (anchor.end - anchor.start), "context");
 
-  if (anchor.end <= [...body].length) return located(body, anchor.start, anchor.end, "context");
   return {
     status: "orphaned",
     reason:

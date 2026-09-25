@@ -35,7 +35,7 @@ function render(): HTMLElement {
   const root = document.createElement("div");
   // What the ONE renderer produces for SOURCE, plus chrome it invents.
   root.innerHTML =
-    '<h2>Step 1<button>Copy</button></h2>' +
+    '<h2>Step 1<button>every</button></h2>' + // a control label that ALSO occurs later in the source
     '<p>Open the <strong>main valve</strong> slowly, see <a href="https://example.com">the manual</a> and ' +
     '<span class="katex"><span class="katex-mathml">x^2</span><span aria-hidden="true">x2</span></span> rule.</p>' +
     "<p>Walk every zone.</p>";
@@ -68,7 +68,7 @@ describe("projection — rendered text ⇄ source offsets", () => {
     const root = render();
     const p = projectSource(root, SOURCE);
     const texts = p.nodes.map((n) => n.node.data);
-    expect(texts).not.toContain("Copy"); // a button is skipped outright
+    expect(texts).not.toContain("every"); // a button is skipped outright
     expect(texts).not.toContain("x2"); // aria-hidden KaTeX output is skipped
     expect(texts).toContain("Walk every zone."); // still mapped after the formula
     const walk = p.nodes.find((n) => n.node.data === "Walk every zone.")!;
