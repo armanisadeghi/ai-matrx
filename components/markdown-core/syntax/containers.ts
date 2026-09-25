@@ -272,9 +272,30 @@ export function tocNode(): MNode {
   return el("matrx-toc", {}, [], "matrxToc");
 }
 
+function hasFence(nodes: MNode[]): boolean {
+  return nodes.some((n) => n.type === "code" || (n.type !== "matrxNested" && !!n.children && hasFence(n.children)));
+}
+
+/**
+ * A container body that holds a code fence renders through the nested
+ * rich-content renderer (NestedRichContent, one level deeper): the fence gets
+ * the real code block / diagram / CSV table it would get outside the
+ * container. The body's own source is handed over as written.
+ */
+function nestBlockyBody(body: MNode[], file: SyntaxFile | undefined): MNode[] {
+  if (body.length === 0 || !hasFence(body)) return body;
+  const source = typeof file?.value === "string" ? file.value : null;
+  const start = body[0]?.position?.start.offset;
+  const end = body[body.length - 1]?.position?.end.offset;
+  if (source === null || start === undefined || end === undefined) return body;
+  return [el("matrx-nested", { dataSource: source.slice(start, end) }, [], "matrxNested")];
+}
+
 function containerDirective(node: MNode, file: SyntaxFile | undefined): MNode {
   const name = (node.name ?? "").toLowerCase();
-  const { label, body } = splitLabel(node);
+  const split = splitLabel(node);
+  const label = split.label;
+  const body = nestBlockyBody(split.body, file);
   const callout = resolveCalloutType(name);
   if (callout && !CONTAINER_DIRECTIVES.has(name)) {
     return calloutNode(callout, label, body, foldOf(node));
@@ -373,7 +394,8 @@ export function transformContainers(node: MNode, file: SyntaxFile | undefined): 
         changed = true;
         continue;
       case "containerDirective":
-        next.push(containerDirective(child, file));
+        // Keep the source position: an outer container nests its body by it.
+        next.push({ ...containerDirective(child, file), position: child.position });
         changed = true;
         continue;
       case "blockquote": {

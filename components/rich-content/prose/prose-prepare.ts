@@ -109,6 +109,49 @@ export const getDirectionFontSize = (direction: "rtl" | "ltr") => {
     : "text-sm"; // Smaller for LTR (English)
 };
 
+const FENCE_LINE = /^[ \t]{0,3}(`{3,}|~{3,})/;
+const FENCE_TOKEN = /\uE001F(\d+)\uE001/g;
+
+/**
+ * Swap every fenced code region for a one-line private-use token, and give
+ * back a function that puts the original bytes back. Null when there is no
+ * fence (the common case costs one scan). An unclosed fence (a stream still
+ * arriving) is protected to the end.
+ */
+export function protectFencedCode(source: string): { text: string; restore: (s: string) => string } | null {
+  if (!source.includes("```") && !source.includes("~~~")) return null;
+  const lines = source.split("\n");
+  const out: string[] = [];
+  const fences: string[] = [];
+  let open: { marker: string; lines: string[] } | null = null;
+  for (const line of lines) {
+    const f = FENCE_LINE.exec(line);
+    if (open) {
+      open.lines.push(line);
+      if (f && (f[1] as string)[0] === open.marker[0] && (f[1] as string).length >= open.marker.length && /^[ \t]*[`~]+[ \t]*$/.test(line)) {
+        out.push(`\uE001F${fences.length}\uE001`);
+        fences.push(open.lines.join("\n"));
+        open = null;
+      }
+      continue;
+    }
+    if (f) {
+      open = { marker: f[1] as string, lines: [line] };
+      continue;
+    }
+    out.push(line);
+  }
+  if (open) {
+    out.push(`\uE001F${fences.length}\uE001`);
+    fences.push(open.lines.join("\n"));
+  }
+  if (fences.length === 0) return null;
+  return {
+    text: out.join("\n"),
+    restore: (s: string) => s.replace(FENCE_TOKEN, (_m, n: string) => fences[Number(n)] ?? ""),
+  };
+}
+
 /**
  * Massage raw model prose into the markdown the core parses: escape non-HTML
  * angle-bracket tokens, keep indentation, normalize list/bold spacing, turn
@@ -121,6 +164,13 @@ export function preprocessProse(rawContent: string): string {
   // document properties) — indentation and `---` rules must not be massaged.
   const frontmatter = splitFrontmatter(rawContent);
   if (frontmatter) return frontmatter.raw + preprocessProse(frontmatter.body);
+
+  // Fenced code is code, not prose: it passes through byte for byte (spaces
+  // stay spaces, `<tags>` stay tags). A directive container keeps its fences
+  // inside the text block (markdown-core directive-container.ts), so they
+  // reach this pass.
+  const guarded = protectFencedCode(rawContent);
+  if (guarded) return guarded.restore(preprocessProse(guarded.text));
 
   let processed = rawContent;
 

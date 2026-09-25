@@ -79,6 +79,7 @@ import MarkdownCoreImpl from "@/components/markdown-core/MarkdownCoreImpl";
 import { healStreamingMarkdown } from "@/components/markdown-core/stream-heal";
 import { extractFrontmatter } from "@/components/markdown-core/syntax/frontmatter";
 import { MarkdownSourceEditProvider } from "@/components/markdown-core/syntax/elements/MarkdownSourceEdit";
+import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 
 let container: HTMLDivElement;
 let root: Root;
@@ -391,4 +392,67 @@ describe("streaming — no half-arrived marker ever shows", () => {
       }
     }
   }, 60000);
+});
+
+
+describe("numbering is document-wide, not per rendered block", () => {
+  // Two code fences cut this manual into five rendered blocks.
+  const DOC = [
+    ":::figure[Bisque shelf]{#fig:bisque}",
+    "Three shelves.",
+    ":::",
+    "",
+    "\\[ Q = m c \\Delta T \\label{eq:heat} \\]",
+    "",
+    "```bash",
+    "kiln fire --cone 06",
+    "```",
+    "",
+    ":::figure[Glaze shelf]{#fig:glaze}",
+    "Posts on every shelf.",
+    ":::",
+    "",
+    "\\[ P = V I \\label{eq:power} \\]",
+    "",
+    "```bash",
+    "kiln fire --cone 6",
+    "```",
+    "",
+    "Compare @fig:bisque with @fig:glaze; energy \\eqref{eq:heat}, power \\eqref{eq:power}.",
+  ].join("\n");
+
+  it("numbers figures and equations across blocks, and references resolve across blocks", async () => {
+    const scope = await render(standard(DOC));
+    expect([...scope.querySelectorAll("figcaption")].map(text)).toEqual(["Figure 1. Bisque shelf", "Figure 2. Glaze shelf"]);
+    expect([...scope.querySelectorAll(".katex-display")].map((d) => text(d).slice(-3))).toEqual(["(1)", "(2)"]);
+    expect([...scope.querySelectorAll("a[data-xref]")].map(text)).toEqual(["Figure 1", "Figure 2", "(1)", "(2)"]);
+  });
+
+  it("keeps the same numbers while the document is still streaming", async () => {
+    const prefix = DOC.slice(0, DOC.indexOf("Posts on every shelf.") + 5);
+    const scope = await render(<StandardBlocks source={prefix} isStreaming />);
+    expect([...scope.querySelectorAll("figcaption")].map(text)).toEqual(["Figure 1. Bisque shelf", "Figure 2. Glaze shelf"]);
+    expect(text(scope.querySelectorAll(".katex-display")[0]!).slice(-3)).toBe("(1)");
+  });
+});
+
+describe("a directive container keeps its children at every level", () => {
+  const TABS = "Pick a range.\n\n::::tabs\n:::tab[Cone 6]\n```bash\nkiln fire --cone 6\n```\n:::\n:::tab[Cone 10]\nHigh fire.\n:::\n::::\n\nThen load.";
+
+  it("the block splitter keeps the container (fence included) in one text block", () => {
+    const blocks = splitContentIntoBlocksV2(TABS);
+    expect(blocks.map((b) => b.type)).toEqual(["text"]);
+  });
+
+  it.each([
+    ["standard", standard],
+    ["core", core],
+  ])("%s: the fence renders INSIDE its tab, never below it", async (_level, renderAt) => {
+    const scope = await render(renderAt(TABS));
+    const panels = scope.querySelectorAll('[role="tabpanel"]');
+    expect(panels).toHaveLength(2);
+    expect(text(panels[0]!)).toContain("kiln fire --cone 6");
+    expect(text(scope)).not.toContain(":::");
+    expect(text(scope)).not.toContain("```");
+  });
 });

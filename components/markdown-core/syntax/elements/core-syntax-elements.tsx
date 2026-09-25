@@ -18,6 +18,7 @@ import { CsvFence } from "./CsvFence";
 import { DetailsElement, KbdElement, SummaryElement } from "./DetailsElements";
 import { InDocAnchor } from "./InDocAnchor";
 import { MatrxTab, MatrxTabs } from "./MatrxTabs";
+import { NestedBody } from "./NestedBody";
 import { TableOfContents } from "./TableOfContents";
 import { TaskCheckbox } from "./TaskCheckbox";
 import { WikiEmbed } from "./WikiEmbed";
@@ -59,6 +60,7 @@ export const CORE_SYNTAX_ELEMENTS = {
   "matrx-toc": TableOfContents,
   "matrx-csv": CsvFence,
   "matrx-xref": CrossRef,
+  "matrx-nested": NestedBody,
 } as unknown as MarkdownComponents;
 
 /** Merge a caller's map over the core defaults (the caller wins per tag). */
@@ -97,4 +99,9 @@ export const INLINE_SYNTAX_ELEMENTS = {
     </span>
   ),
   "matrx-embed": inlineSpan,
+  "matrx-nested": ({ ...props }: AnyProps) => (
+    <span data-rc-block className="block whitespace-pre-wrap">
+      {String(props["data-source"] ?? "")}
+    </span>
+  ),
 } as unknown as MarkdownComponents;
