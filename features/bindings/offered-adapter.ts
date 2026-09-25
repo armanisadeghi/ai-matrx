@@ -17,6 +17,7 @@ import {
   GENERIC_VALUE_KINDS,
   MEDIA_VALUE_KINDS,
   SCALAR_VALUE_KINDS,
+  kindPhrase,
   type OfferedValue,
 } from "@/features/mandates/provision-shapes";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
@@ -24,8 +25,9 @@ import { formatVariableDisplayName } from "@/features/agents/utils/variable-util
 /**
  * Kind slug → the row picker's logical type. Anything that is not a known
  * generic scalar/media slug is a REGISTERED CONTENT KIND, which is structured
- * by definition — `object` is the honest answer, and it is what drives the
- * "structured shapes ride context" refusal downstream.
+ * by definition — `object` is the honest answer. (It once drove a "structured
+ * shapes ride context" refusal downstream; that refusal was fake and is gone —
+ * a structured value rides a variable as its JSON text, Arman 2026-09-24.)
  */
 export function offeredKindToValueType(kind: string): SurfaceValueType {
   switch (kind) {
@@ -57,6 +59,23 @@ export function offeredKindIsScalar(kind: string): boolean {
 /** True when this kind rides the media channel (a turn block, never text). */
 export function offeredKindIsMedia(kind: string): boolean {
   return MEDIA_VALUE_KINDS.has(kind);
+}
+
+/**
+ * What the person is told when a STRUCTURED offered value is delivered on a
+ * prompt variable: it arrives as its JSON text (`textFormOf`, mirror of aidream
+ * `provisions.text_form_of`). Never a refusal — everything a model receives is
+ * text (Arman, 2026-09-24). `null` when there is nothing to say: a scalar
+ * (already text), a media ref (its own channel), or the context channel.
+ */
+export function structuredVariableNote(
+  kind: string,
+  deliver: "variable" | "context" | undefined,
+): string | null {
+  if (deliver === "context") return null;
+  if (offeredKindIsScalar(kind) || offeredKindIsMedia(kind)) return null;
+  const phrase = kindPhrase(kind);
+  return `This is ${phrase} — it arrives in the prompt as its JSON text.`;
 }
 
 /** True when the kind slug is a registered content_ir kind rather than one of

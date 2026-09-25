@@ -263,7 +263,7 @@ export interface MandateBindingInput {
    * sent (omitted/undefined → wiped), so an editor that owns other fields must
    * always re-send the current full map. Validated server-side at write time
    * (422 verbatim): everything consumed must be offered; optional values need
-   * `when_absent`; structured kinds may only ride context.
+   * `when_absent`; a structured kind on a variable rides as its JSON text.
    */
   consumptionMap?: ConsumptionMap | null;
   /**

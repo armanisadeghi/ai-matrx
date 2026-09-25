@@ -28,11 +28,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  MEDIA_VALUE_KINDS,
-  SCALAR_VALUE_KINDS,
-  type OfferedValue,
-} from "@/features/mandates/provision-shapes";
+import type { OfferedValue } from "@/features/mandates/provision-shapes";
+import { structuredVariableNote } from "@/features/bindings/offered-adapter";
 import type {
   SurfaceValue,
   ValueMapping,
@@ -582,11 +579,12 @@ function OfferedValueInput({
   onChange: (next: ValueMapping) => void;
 }) {
   const offered = availableOfferedValues.find((v) => v.name === mapping.target);
-  const structuredAsVariable =
-    mapping.deliver !== "context" &&
-    offered !== undefined &&
-    !SCALAR_VALUE_KINDS.has(offered.kind) &&
-    !MEDIA_VALUE_KINDS.has(offered.kind);
+  // A structured value on a variable arrives as its JSON text — said, never
+  // refused (Arman, 2026-09-24: everything a model receives is text).
+  const structuredNote =
+    offered !== undefined
+      ? structuredVariableNote(offered.kind, mapping.deliver)
+      : null;
 
   return (
     <div className="space-y-1.5">
@@ -688,12 +686,8 @@ function OfferedValueInput({
           )}
         </div>
       )}
-      {structuredAsVariable && (
-        <p className="text-[10px] text-destructive flex items-start gap-1">
-          <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
-          {offered?.kind} is a structured shape — it can only feed a context
-          policy, never a prompt variable. Deliver it as context.
-        </p>
+      {structuredNote && (
+        <p className="text-[10px] text-muted-foreground">{structuredNote}</p>
       )}
     </div>
   );
