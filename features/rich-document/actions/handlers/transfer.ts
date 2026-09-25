@@ -21,6 +21,7 @@ import {
 import { toast } from "@/lib/toast";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { cleanMarkdown } from "@/utils/markdown-processors/clean-markdown-to-text";
+import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
 import { registerAction } from "../registry";
 import { contentFileName, getErrorMessage } from "../utils";
 import { parseFirstMarkdownTable, tableToDelimited } from "../markdownTable";
@@ -51,6 +52,32 @@ function fileBase(ctx: RichDocumentActionContext): string {
   );
 }
 
+/**
+ * Plain text a person would type: envelopes unwrapped, markdown chrome gone,
+ * and a pipe table read as tab-separated cells (its `|---|` rule dropped) —
+ * never raw table syntax.
+ */
+function toPlainText(content: string): string {
+  const lines = unwrapKindEnvelopes(content).split("\n");
+  const out: string[] = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (/^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?$/.test(trimmed)) continue;
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+      out.push(
+        trimmed
+          .slice(1, -1)
+          .split("|")
+          .map((cell) => cell.trim())
+          .join("\t"),
+      );
+      continue;
+    }
+    out.push(line);
+  }
+  return cleanMarkdown(out.join("\n"));
+}
+
 const hasTable = (ctx: RichDocumentActionContext) =>
   parseFirstMarkdownTable(ctx.content) !== null;
 
@@ -75,7 +102,7 @@ registerAction({
   supportedSources: "*",
   renderSlot: "overflow",
   order: 5,
-  run: (ctx) => copyText(cleanMarkdown(ctx.content), "Plain text copied"),
+  run: (ctx) => copyText(toPlainText(ctx.content), "Plain text copied"),
 });
 
 registerAction({

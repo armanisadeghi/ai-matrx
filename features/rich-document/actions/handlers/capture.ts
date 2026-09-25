@@ -31,6 +31,7 @@ import {
   isOrganizationSelectionCancelled,
 } from "@/lib/organization/organization-gate";
 import { registerAction } from "../registry";
+import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
 import {
   chatIds,
   contentFileName,
@@ -421,6 +422,7 @@ registerAction({
     Boolean(ctx.callbacks?.onRequestFlashcard) && ctx.content.trim().length > 0,
   run: (ctx) => {
     ctx.onClose();
-    ctx.callbacks?.onRequestFlashcard?.(ctx.content.trim());
+    // The answer is what the reader SEES — never the storage envelope.
+    ctx.callbacks?.onRequestFlashcard?.(unwrapKindEnvelopes(ctx.content).trim());
   },
 });

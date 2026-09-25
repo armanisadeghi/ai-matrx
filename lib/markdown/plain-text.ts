@@ -16,6 +16,8 @@
  * problem this solves.
  */
 
+import { tokenizeSource } from "@ai-matrx/content-ir/source";
+
 /** Ordered so the greedy double-marker forms resolve before the single ones. */
 const INLINE_PATTERNS: ReadonlyArray<readonly [RegExp, string]> = [
   // [label](href) → label. Runs first so emphasis inside a label still unwraps.
@@ -165,4 +167,30 @@ export function markdownToPlainText(value: string | null | undefined): string {
   );
 
   return text.replace(/[ \t]{2,}/g, " ").trim();
+}
+
+/**
+ * Stored content → the READABLE markdown a person meant, for places that take
+ * the text OUT of its home (a flashcard back, a task description, a clipboard
+ * "plain text" copy). Kind envelopes are storage plumbing, not words: an
+ * `<artifact …>body</artifact>` wrapper (a materialized table, a canvas) is
+ * replaced by its body, so a reader never sees the raw tag. Everything else is
+ * kept byte for byte — the offset-preserving source tokenizer draws the
+ * boundaries, so a code fence that merely MENTIONS `<artifact>` is untouched.
+ */
+export function unwrapKindEnvelopes(value: string | null | undefined): string {
+  if (!value) return "";
+  if (!value.includes("<artifact")) return value;
+  return tokenizeSource(value)
+    .map((block) => {
+      if (
+        block.kind !== "island" ||
+        (block.islandType !== "xml_attr" && block.islandType !== "xml_container")
+      ) {
+        return block.raw;
+      }
+      const match = /^\s*<artifact\b[^>]*>([\s\S]*?)<\/artifact>\s*$/.exec(block.raw);
+      return match ? match[1].replace(/^\n/, "").replace(/\n$/, "") : block.raw;
+    })
+    .join("");
 }

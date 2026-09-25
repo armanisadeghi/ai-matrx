@@ -31,6 +31,7 @@ import {
   contentFileName,
   deriveContentTitle,
 } from "../utils";
+import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
 import { CHAT_SAVES_FOLDER } from "@/features/notes/constants/defaultFolders";
 import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectMessagePosition } from "@/features/agents/redux/execution-system/messages/messages.selectors";
@@ -367,7 +368,7 @@ registerAction({
       ctx.dispatch(
         setPendingSource(
           buildTaskSeedFromMessage({
-            content: ctx.content,
+            content: unwrapKindEnvelopes(ctx.content),
             messageId: messageId || null,
             conversationId: conversationId || null,
             conversationTitle: conversationId
@@ -384,8 +385,9 @@ registerAction({
       ctx.onClose();
       return;
     }
-    const preview = ctx.content.slice(0, 400);
-    const seedTitle = buildTaskTitle(ctx.content);
+    const readable = unwrapKindEnvelopes(ctx.content);
+    const preview = readable.slice(0, 400);
+    const seedTitle = buildTaskTitle(readable);
     const entityLink = sourceToEntityType(ctx.source);
 
     ctx.dispatch(
@@ -402,7 +404,7 @@ registerAction({
         },
         prePopulate: {
           title: seedTitle,
-          description: ctx.content,
+          description: readable,
         },
       }),
     );

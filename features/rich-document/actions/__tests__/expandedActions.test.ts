@@ -144,4 +144,32 @@ describe("the expanded action set", () => {
     void getAction("text-cleanup")!.run(ctx);
     expect(onRequestTextAgentAction).toHaveBeenCalledWith("cleanup", ctx);
   });
+
+  it("text taken OUT of its home never carries the storage envelope", async () => {
+    const stored =
+      'Here:\n\n<artifact type="table" id="a1" version="1" title="Table 1">\n| Day | Dinner |\n|---|---|\n| Mon | Chili |\n</artifact>\n';
+    const onRequestFlashcard = jest.fn();
+    const dispatch = jest.fn();
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    const base = chatContext("assistant");
+    const ctx = chatContext("assistant", {
+      content: stored,
+      dispatch,
+      callbacks: { ...base.callbacks, onRequestFlashcard },
+    });
+    void getAction("save-as-flashcard")!.run(ctx);
+    expect(onRequestFlashcard.mock.calls[0][0]).not.toContain("<artifact");
+    expect(onRequestFlashcard.mock.calls[0][0]).toContain("| Mon | Chili |");
+
+    void getAction("save-to-task")!.run(ctx);
+    const seed = dispatch.mock.calls.at(-1)?.[0]?.payload;
+    expect(seed.prePopulate.description).not.toContain("<artifact");
+
+    await getAction("copy-plain-text")!.run(ctx);
+    const plain = writeText.mock.calls.at(-1)?.[0] as string;
+    expect(plain).not.toContain("<artifact");
+    expect(plain).not.toContain("|");
+    expect(plain).toContain("Mon\tChili");
+  });
 });
