@@ -98,6 +98,13 @@ function MandateWindowNextInner({
   const [scope, setScope] = useState<Scope>("all");
   const [search, setSearch] = useState("");
   const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
+  const [activeRowEl, setActiveRowEl] = useState<HTMLButtonElement | null>(null);
+
+  // The selected mandate is always in view in the sidebar (opened on one far
+  // down the list, or restored after a reload).
+  useEffect(() => {
+    activeRowEl?.scrollIntoView({ block: "center" });
+  }, [activeRowEl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -209,7 +216,7 @@ function MandateWindowNextInner({
           />
         </div>
       </div>
-      <div className="flex-1 min-h-0 space-y-px p-1">
+      <div className="flex-1 min-h-0 space-y-px overflow-y-auto p-1">
         {visible.map((row) => {
           const feature = formatVariableDisplayName(
             splitMandateKey(row.mandate_key).feature,
@@ -222,6 +229,7 @@ function MandateWindowNextInner({
               type="button"
               onClick={() => setSelectedKey(row.mandate_key)}
               aria-current={active ? "true" : undefined}
+              ref={active ? setActiveRowEl : undefined}
               className={cn(
                 "block w-full min-w-0 rounded px-2 py-1 text-left transition-colors",
                 active
