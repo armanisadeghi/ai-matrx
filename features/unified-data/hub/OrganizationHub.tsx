@@ -50,10 +50,12 @@ import {
   attachChangedBy,
   type HubItem,
   type HubReadContext,
+  withHubTableFacts,
 } from "./capabilities";
 import { HubListing, type HubListingState } from "./HubListing";
 import { AllOrganizationsTables, OrganizationScopeStrip } from "./OrganizationScope";
 import * as doors from "./doors";
+import type { TableFactRow } from "./doors";
 
 /** An archived Table, with the one thing a person wants to do to it. */
 interface ArchivedTable {
@@ -136,7 +138,7 @@ export function OrganizationHub({
    */
   const [facts, setFacts] = useState<
     | { phase: "reading" }
-    | { phase: "read"; rows: Map<string, { visibility: string; mine: boolean }> }
+    | { phase: "read"; rows: Map<string, TableFactRow> }
     | { phase: "failed"; why: string }
   >({ phase: "reading" });
   useEffect(() => {
@@ -148,7 +150,7 @@ export function OrganizationHub({
         answered.ok
           ? {
               phase: "read",
-              rows: new Map(answered.data.map((r) => [r.table_id, { visibility: r.visibility, mine: r.mine }])),
+              rows: new Map(answered.data.map((r) => [r.table_id, r])),
             }
           : { phase: "failed", why: answered.error.message },
       );
@@ -160,14 +162,7 @@ export function OrganizationHub({
   const tables = useMemo<readonly Table[]>(() => {
     const listed = tablesRead.data ?? [];
     if (facts.phase !== "read") return listed;
-    // The two columns folded onto the Table the package's own lane decision
-    // reads (`visibilityLaneFor`), so the lane is decided in ONE place.
-    return listed.map((t) => {
-      const f = facts.rows.get(t.id);
-      return f
-        ? ({ ...t, visibility: f.visibility, created_by: f.mine ? (userIdForFacts ?? t.created_by) : t.created_by } as Table)
-        : t;
-    });
+    return withHubTableFacts(listed, facts.rows, userIdForFacts ?? null);
   }, [tablesRead.data, facts, userIdForFacts]);
   const lanesKnown = facts.phase === "read";
 

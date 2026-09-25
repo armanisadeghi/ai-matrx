@@ -26,7 +26,7 @@ import type { RecordsDataSource, Table } from "@ai-matrx/records";
 import { VISIBILITY_LANE_TITLE, visibilityLaneFor, type VisibilityLane } from "@ai-matrx/records-ui";
 
 import * as doors from "./doors";
-import type { ChangedByKind, DoorFailure } from "./doors";
+import type { ChangedByKind, DoorFailure, TableFactRow } from "./doors";
 import { openPath } from "@/lib/deep-link/openPath";
 
 /** One thing a person can open, whatever capability it came from. */
@@ -121,6 +121,32 @@ function byId(tables: readonly Table[]): Map<string, Table> {
  */
 function laneOfTable(table: Table): VisibilityLane | null {
   return visibilityLaneFor(table);
+}
+
+/**
+ * THE STORE'S TABLE FACTS, FOLDED ONTO THE TABLE LIST — `custom.table_facts`' columns the lane
+ * decision reads (`visibilityLaneFor`): `visibility`, whether the caller made it, and whether
+ * the store keeps it for itself (`kept_by_the_app`). The list is built from each Table's
+ * DOCUMENT, which carries none of the three, so without the last one a column's pick list
+ * ("Status choices") was listed under Tables beside the organization's own tables instead of
+ * under "Kept by the app", behind Show everything (lane POST-PUBLISH-FE).
+ */
+export function withHubTableFacts(
+  listed: readonly Table[],
+  facts: ReadonlyMap<string, TableFactRow>,
+  userId: string | null,
+): Table[] {
+  return listed.map((t) => {
+    const f = facts.get(t.id);
+    if (!f) return t;
+    return {
+      ...t,
+      visibility: f.visibility,
+      created_by: f.mine ? (userId ?? t.created_by) : t.created_by,
+      ...(false ? { kept_by_the_app: true } : {}),
+      ...(typeof f.keeper_says === "string" && f.keeper_says.trim() ? { keeper_says: f.keeper_says } : {}),
+    } as Table;
+  });
 }
 
 /** Another organization's table: in none of this organization's lanes. */

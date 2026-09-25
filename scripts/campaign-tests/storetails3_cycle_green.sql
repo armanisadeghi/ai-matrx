@@ -74,24 +74,26 @@ begin
   end;
   raise notice 'C2a PASS — refused: "%"', v_msg;
 
-  -- (b) across tables: each quote shows its room's running total; the room then tries to add THAT up
-  perform custom.field_declare(v_org, v_quotes, jsonb_build_object('key', 'room_total_seen', 'label', 'Room''s quoted total',
-    'type', 'lookup', 'via', 'room', 'pick', 'quoted_total', 'sort', 50));
-  perform set_config('role', 'postgres', true);
-  select f.id into v_qt from custom.record f
-   where f.organization_id = v_org and f.table_id = custom.field_kernel_id() and f.deleted_at is null
-     and f.data ->> 'entity_definition_id' = v_rooms::text and f.data ->> 'key' = 'quoted_total';
-  perform set_config('role', 'authenticated', true);
+  -- (b) across tables: each room keeps a "working budget" formula; each quote looks it up; the
+  --     room adds up what its quotes looked up; then the working budget is edited to read that sum.
+  v_a := custom.field_declare(v_org, v_rooms, jsonb_build_object('key', 'working_budget', 'label', 'Working budget',
+    'type', 'formula', 'formula_text', '{Budget} * 1', 'sort', 82));
+  perform custom.field_declare(v_org, v_quotes, jsonb_build_object('key', 'room_budget_seen', 'label', 'Room''s working budget',
+    'type', 'lookup', 'via', 'room', 'pick', 'working_budget', 'sort', 50));
+  perform custom.field_declare(v_org, v_rooms, jsonb_build_object('key', 'budget_seen_total', 'label', 'Working budget, as the quotes see it',
+    'type', 'rollup', 'via', 'quotes_here', 'agg', 'sum', 'of', 'room_budget_seen', 'sort', 83));
+  select (d.document ->> 'budget_seen_total')::numeric into v_ms from custom.read_records(v_org, v_rooms, false, 50, 0) d
+   where d.document ->> 'room_name' = 'Kitchen';
+  if v_ms is distinct from 36000 then
+    raise exception 'C2b: Kitchen''s two quotes should each see its working budget 18,000 (sum 36,000); got %', v_ms;
+  end if;
   v_msg := null;
   begin
-    perform custom.field_declare(v_org, v_rooms, jsonb_build_object('key', 'quoted_total_seen', 'label', 'Quoted total, as the quotes see it',
-      'type', 'rollup', 'via', 'quotes_here', 'agg', 'sum', 'of', 'room_total_seen', 'sort', 71));
-    -- That one reads Quotes › Room's quoted total › Rooms › Quoted so far › Quotes › Amount: no circle.
-    perform custom.field_update(v_org, v_qt, jsonb_build_object('config', jsonb_build_object('via', 'quotes_here', 'agg', 'sum', 'of', 'room_total_seen')));
-    raise exception 'C2b: Quoted so far was saved adding up Room''s quoted total, which looks up Quoted so far';
+    perform custom.field_update(v_org, v_a, jsonb_build_object('formula_text', '{Working budget, as the quotes see it} / 2'));
+    raise exception 'C2b: Working budget was saved reading the sum of what the quotes look up of Working budget';
   exception when sqlstate '42P17' then
     get stacked diagnostics v_msg = message_text;
-    if v_msg not like '%Quoted so far%' or v_msg not like '%Room''s quoted total%' then
+    if v_msg not like '%Rooms › Working budget%' or v_msg not like '%Quotes › Room''s working budget%' then
       raise exception 'C2b: refused without naming the circle across the two tables: %', v_msg;
     end if;
   end;
@@ -112,9 +114,16 @@ begin
   select v into v_kitchen from st3 where k = 'Kitchen';
   perform set_config('request.jwt.claims', c_admin_j, true);
   perform set_config('role', 'postgres', true);
+  -- each quote shows its room's running total (a lookup of Quoted so far: no circle yet) …
+  perform set_config('role', 'authenticated', true);
+  perform custom.field_declare(v_org, (select v from st3 where k = 'quotes'), jsonb_build_object('key', 'room_total_seen', 'label', 'Room''s quoted total',
+    'type', 'lookup', 'via', 'room', 'pick', 'quoted_total', 'sort', 60));
+  perform set_config('role', 'postgres', true);
   select f.* into v_qt from custom.record f
    where f.organization_id = v_org and f.table_id = custom.field_kernel_id() and f.deleted_at is null
      and f.data ->> 'entity_definition_id' = v_rooms::text and f.data ->> 'key' = 'quoted_total';
+  -- … and Quoted so far is made to add up THAT, stored as a row written before the rule would be:
+  -- a room adding up what its quotes look up of the room's own total.
   set local session_replication_role = replica;
   update custom.record f
      set data = jsonb_set(f.data, '{config,of}', '"room_total_seen"')
@@ -137,11 +146,11 @@ begin
   end;
   perform set_config('role', 'authenticated', true);
   select d.document into v_doc from custom.read_records(v_org, v_rooms, false, 50, 0) d where d.document ->> 'room_name' = 'Kitchen';
-  if v_doc ->> 'room_name' is distinct from 'Kitchen' or v_doc ? 'quoted_total' and v_doc ->> 'quoted_total' is not null then
-    raise exception 'C3: the grid read of Kitchen did not come back whole with Quoted so far empty: %', v_doc;
+  if v_doc ->> 'room_name' is distinct from 'Kitchen' or (v_doc ->> 'budget_with_contingency')::numeric is distinct from 19800 then
+    raise exception 'C3: the grid read of Kitchen did not come back whole: %', v_doc;
   end if;
-  raise notice 'C3 PASS — a stored circle is refused on read in % ms with "%"; the grid still reads Kitchen, Quoted so far empty',
-    round(extract(epoch from clock_timestamp() - v_t0) * 1000), v_msg;
+  raise notice 'C3 PASS — a stored circle is refused on read in % ms with "%"; the grid still reads Kitchen (19,800), Quoted so far % (empty)',
+    round(extract(epoch from clock_timestamp() - v_t0) * 1000), v_msg, coalesce(v_doc ->> 'quoted_total', 'null');
   raise notice 'storetails3_cycle_green.sql: ALL PASS (C1-C3)';
 end
 $t$;

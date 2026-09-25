@@ -81,12 +81,12 @@ begin
                     and tgname = 'zz_w4_approvals_withdraw_on_archive') then
       raise exception '0b: archiving a record withdraws nothing — the trigger is absent';
     end if;
-    if not exists (select 1 from pg_proc p where p.oid = 'custom.work_inbox(uuid, integer, integer, boolean)'::regprocedure
+    if not exists (select 1 from pg_proc p where p.oid = 'custom.work_inbox(uuid, integer, integer, boolean, text)'::regprocedure
                     and 'decided_at' = any(p.proargnames) and 'table_name' = any(p.proargnames)) then
       raise exception '0c: custom.work_inbox answers no table and no decided_at — a closed item cannot say who and when';
     end if;
-    if not has_function_privilege('authenticated', 'custom.work_inbox(uuid, integer, integer, boolean)', 'execute')
-       or has_function_privilege('anon', 'custom.work_inbox(uuid, integer, integer, boolean)', 'execute') then
+    if not has_function_privilege('authenticated', 'custom.work_inbox(uuid, integer, integer, boolean, text)', 'execute')
+       or has_function_privilege('anon', 'custom.work_inbox(uuid, integer, integer, boolean, text)', 'execute') then
       raise exception '0d: the recreated inbox door lost its signed-in grant or gained an anonymous one';
     end if;
     if has_function_privilege('authenticated', 'custom.work_approval_withdrawal(uuid, jsonb)', 'execute') then

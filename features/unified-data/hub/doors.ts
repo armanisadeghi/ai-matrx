@@ -204,6 +204,15 @@ export interface TableFactRow {
   visibility: string;
   /** Whether the person signed in MADE this Table. Never who did. */
   mine: boolean;
+  /**
+   * The store keeps this Table for itself (SC-1: a column's pick list, its own saved views,
+   * bookkeeping). The Table list is built from the DOCUMENT, which need not carry it, so the hub
+   * folds it on from here — otherwise a pick list is listed as one of the organization's tables.
+   * Absent on a store whose door answers only the first three columns.
+   */
+  kept_by_the_app?: boolean | null;
+  /** The store's sentence for who keeps a kept Table. */
+  keeper_says?: string | null;
 }
 
 /**
