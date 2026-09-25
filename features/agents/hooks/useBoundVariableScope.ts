@@ -33,7 +33,8 @@ import { makeSelectScopeTypeLabelMapForOrg } from "@/features/scopes/redux/selec
 import {
   listScopeTypeItems,
   selectAllContextItems,
-} from "@/features/scope-system/redux/contextItemsSlice";
+  selectLoadedCatalogTypeIds,
+} from "@/features/scopes/redux/contextItemCatalog";
 import type {
   ContextItemBinding,
   VariableCustomComponent,
@@ -91,7 +92,7 @@ export function useBoundVariableScope(conversationId: string): BoundVarInfo[] {
   );
   const labelMap = useAppSelector((s) => selectScopeTypeLabelMap(s, orgId));
   const allItems = useAppSelector(selectAllContextItems);
-  const loadedTypes = useAppSelector((s) => s.contextItems.loadedTypes);
+  const loadedTypes = useAppSelector(selectLoadedCatalogTypeIds);
 
   const resolvedSelector = useMemo(makeSelectResolvedContext, []);
   const resolved = useAppSelector((s) => resolvedSelector(s, RESOLVE_ARGS));

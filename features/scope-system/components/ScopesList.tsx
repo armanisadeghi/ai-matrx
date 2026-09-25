@@ -55,12 +55,12 @@ import {
   selectItemsByType,
   selectItemsLoadedForType,
   type ContextItem,
-} from "@/features/scope-system/redux/contextItemsSlice";
+} from "@/features/scopes/redux/contextItemCatalog";
 import {
   getScopeContext,
   selectValuesByScope,
   type ScopeContextRow,
-} from "@/features/scope-system/redux/scopeValuesSlice";
+} from "@/features/scopes/redux/scopeContextView";
 import {
   resolveColor,
   SCOPE_ICON_SURFACE,

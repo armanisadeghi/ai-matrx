@@ -18,11 +18,11 @@ import {
   selectItemsByType,
   selectItemBySlugOrId,
   selectItemsLoadedForType,
-} from "@/features/scope-system/redux/contextItemsSlice";
+} from "@/features/scopes/redux/contextItemCatalog";
 import {
   getScopeContext,
   selectValuesByScope,
-} from "@/features/scope-system/redux/scopeValuesSlice";
+} from "@/features/scopes/redux/scopeContextView";
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { ScopeItemSuggestionsPanel } from "@/features/kg-suggestions/components/ScopeItemSuggestionsPanel";
 import { EditContextItemSheet } from "./EditContextItemSheet";

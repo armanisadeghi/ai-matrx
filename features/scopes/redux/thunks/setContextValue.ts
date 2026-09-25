@@ -41,7 +41,10 @@ export function setContextValue(
         value_text: res.data.value_text,
         value_number: payload.value_number ?? null,
         value_boolean: payload.value_boolean ?? null,
-        value_date: payload.value_date ?? null,
+        value_date: res.data.value_date ?? payload.value_date ?? null,
+        value_timestamp:
+          res.data.value_timestamp ?? payload.value_timestamp ?? null,
+        value_time: res.data.value_time ?? payload.value_time ?? null,
         value_json: payload.value_json ?? null,
         value_document_url: payload.value_document_url ?? null,
         value_document_size_bytes: null,

@@ -43,7 +43,7 @@ import {
   selectItemsLoadedForType,
   updateContextItem,
   type ContextItem,
-} from "@/features/scope-system/redux/contextItemsSlice";
+} from "@/features/scopes/redux/contextItemCatalog";
 import { VALUE_TYPE_CONFIG } from "@/features/agent-context/constants";
 import { ContextItemSettingsForm } from "@/features/scope-system/components/forms/ContextItemSettingsForm";
 import { ContextItemAddForm } from "@/features/scope-system/components/ContextItemAddForm";

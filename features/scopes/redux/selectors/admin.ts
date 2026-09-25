@@ -25,6 +25,10 @@ const EMPTY_SCOPES: ScopeNode[] = [];
 
 const selectOrgs = (state: RootState) => state.scopesTree.organizations;
 const selectOrgIds = (state: RootState) => state.scopesTree.organizationIds;
+const EMPTY_IDS: string[] = [];
+/** Admin-lane organizations (loaded only by the /administration console). */
+const selectAdminLaneOrgIds = (state: RootState) =>
+  state.scopesTree.adminLaneOrganizationIds ?? EMPTY_IDS;
 const selectStatus = (state: RootState) => state.scopesTree.treeStatus;
 
 const byTypeOrder = (a: ScopeTypeNode, b: ScopeTypeNode) =>
@@ -44,11 +48,17 @@ export const selectScopeTreeSettled = (state: RootState): boolean => {
   return s === "ready" || s === "error";
 };
 
-/** Every live scope type across every organization in the tree, in order. */
+/**
+ * Every live scope type across every organization in the tree, in order —
+ * including an organization the admin-lane console loaded (it is only in the
+ * tree while `/administration/**` holds it open).
+ */
 export const selectAllScopeTypes = createSelector(
-  [selectOrgs, selectOrgIds],
-  (orgs, ids): ScopeTypeNode[] => {
-    const out = ids.flatMap((id) => orgs[id]?.scope_types ?? []);
+  [selectOrgs, selectOrgIds, selectAdminLaneOrgIds],
+  (orgs, ids, adminIds): ScopeTypeNode[] => {
+    const out = [...ids, ...adminIds].flatMap(
+      (id) => orgs[id]?.scope_types ?? [],
+    );
     return out.length === 0 ? EMPTY_TYPES : out;
   },
 );

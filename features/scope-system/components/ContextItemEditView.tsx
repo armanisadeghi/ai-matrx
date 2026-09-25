@@ -10,7 +10,7 @@ import {
   listScopeTypeItems,
   selectItemBySlugOrId,
   selectItemsLoadedForType,
-} from "@/features/scope-system/redux/contextItemsSlice";
+} from "@/features/scopes/redux/contextItemCatalog";
 import { ContextItemSettingsForm } from "./forms/ContextItemSettingsForm";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ScopeGlyph } from "@/features/scopes/components/ScopeGlyph";

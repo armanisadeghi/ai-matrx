@@ -7,10 +7,6 @@ import { writeOne } from "@/utils/supabase/writeOne";
 import { requireUserId, getUserEmail } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
-import type {
-  NavTreeResponse,
-  FullContextResponse,
-} from "@/features/agent-context/redux/hierarchySlice";
 import { createProject as createProjectCanonical } from "@/features/projects/service";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
@@ -589,19 +585,11 @@ export const hierarchyService = {
     return outcome.sentence;
   },
 
-  // ─── RPC-based tree fetchers ────────────────────────────────────────
-
-  async fetchNavTree(): Promise<NavTreeResponse> {
-    const { data, error } = await supabase.rpc("get_user_nav_tree");
-    if (error) throw error;
-    return (data as unknown as NavTreeResponse) ?? { organizations: [] };
-  },
-
-  async fetchFullContext(): Promise<FullContextResponse> {
-    const { data, error } = await supabase.rpc("get_user_full_context");
-    if (error) throw error;
-    return (data as unknown as FullContextResponse) ?? { organizations: [] };
-  },
+  // The full-context read (`get_user_full_context`) reaches `context.*`, so it
+  // lives behind the scopes chokepoint: `scopesService.fetchUserFullContext`,
+  // called by `agent-context/redux/hierarchyThunks`. (Its twin here and the
+  // consumerless `get_user_nav_tree` reader were deleted 2026-09-25, lane
+  // SCOPE-ADMIN-2.)
 
   // ─── Move / reparent ──────────────────────────────────────────────
   async moveProject(

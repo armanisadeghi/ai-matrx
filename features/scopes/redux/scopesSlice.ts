@@ -37,6 +37,16 @@ import type {
 export interface ScopesState {
   organizations: Record<string, OrgNode>;
   organizationIds: string[];
+  /**
+   * THE ADMIN LANE: organizations loaded for the platform-admin scope console
+   * (`ensureScopeTree({ adminOrganizationId })`, `/administration/**` only)
+   * that are NOT the person's own. Their nodes sit in `organizations` (so the
+   * console's writes patch them like any other) but never in
+   * `organizationIds`, so no picker, switcher or user page lists them; they
+   * are never persisted, survive a membership-tree refresh, and leave with
+   * `adminLaneOrganizationReleased` when the console closes.
+   */
+  adminLaneOrganizationIds: string[];
 
   treeStatus: "idle" | "loading" | "ready" | "error";
   treeError: string | null;
@@ -71,6 +81,7 @@ export interface ScopesState {
 const initialState: ScopesState = {
   organizations: {},
   organizationIds: [],
+  adminLaneOrganizationIds: [],
   treeStatus: "idle",
   treeError: null,
   treeFetchedAt: null,
@@ -94,6 +105,12 @@ const scopesSlice = createSlice({
     },
     treeFetchFulfilled(state, action: PayloadAction<ScopeTreeResponse>) {
       const { organizations, fetched_at } = action.payload;
+      // Admin-lane organizations are the open console's, not the membership
+      // tree's: a refresh keeps them (unless the admin has since joined one,
+      // in which case the membership node replaces it below).
+      const adminLane = (state.adminLaneOrganizationIds ?? [])
+        .map((id) => state.organizations[id])
+        .filter((o): o is OrgNode => !!o);
       state.organizations = {};
       state.organizationIds = [];
       const seen = new Set<string>();
@@ -106,6 +123,12 @@ const scopesSlice = createSlice({
         state.organizations[org.id] = org;
         state.organizationIds.push(org.id);
       }
+      state.adminLaneOrganizationIds = [];
+      for (const org of adminLane) {
+        if (seen.has(org.id)) continue;
+        state.organizations[org.id] = org;
+        state.adminLaneOrganizationIds.push(org.id);
+      }
       state.treeStatus = "ready";
       state.treeError = null;
       state.treeFetchedAt = new Date(fetched_at).getTime();
@@ -113,6 +136,26 @@ const scopesSlice = createSlice({
     treeFetchRejected(state, action: PayloadAction<string>) {
       state.treeStatus = "error";
       state.treeError = action.payload;
+    },
+
+    // ─── Admin lane (platform-admin scope console only) ───────────
+    adminLaneOrganizationLoaded(state, action: PayloadAction<OrgNode>) {
+      const org = action.payload;
+      // A membership org is already in the tree; the person's own node wins.
+      if (state.organizationIds.includes(org.id)) return;
+      state.organizations[org.id] = { ...org, admin_lane: true };
+      state.adminLaneOrganizationIds ??= [];
+      if (!state.adminLaneOrganizationIds.includes(org.id)) {
+        state.adminLaneOrganizationIds.push(org.id);
+      }
+    },
+    adminLaneOrganizationReleased(state, action: PayloadAction<string>) {
+      const id = action.payload;
+      if (!(state.adminLaneOrganizationIds ?? []).includes(id)) return;
+      delete state.organizations[id];
+      state.adminLaneOrganizationIds = state.adminLaneOrganizationIds.filter(
+        (x) => x !== id,
+      );
     },
 
     // ─── Per-row patches (mutation results plumb through here) ────
@@ -449,8 +492,15 @@ export const scopesTreePolicy = definePolicy<ScopesState>({
   partialize: ["organizations", "organizationIds", "treeFetchedAt"],
   serialize: (state) => {
     if (state.organizationIds.length === 0) return {};
+    // Only the person's own organizations persist — an admin-lane node is the
+    // open console's and must never outlive it.
+    const own: ScopesState["organizations"] = {};
+    for (const id of state.organizationIds) {
+      const org = state.organizations[id];
+      if (org) own[id] = org;
+    }
     return {
-      organizations: state.organizations,
+      organizations: own,
       organizationIds: state.organizationIds,
       treeFetchedAt: state.treeFetchedAt,
     };

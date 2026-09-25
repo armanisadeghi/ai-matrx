@@ -21921,6 +21921,10 @@ export type Database = {
         Returns: string
       }
       slugify: { Args: { p: string }; Returns: string }
+      system_item_refs_or_defaults: {
+        Args: { p_refs: string[] }
+        Returns: string[]
+      }
       validate_dataset_template_source: {
         Args: { p_org_id: string; p_source: Json }
         Returns: string
@@ -61280,6 +61284,96 @@ export type Database = {
         }
         Relationships: []
       }
+      db_host_sample: {
+        Row: {
+          commit_limit_bytes: number | null
+          committed_as_bytes: number | null
+          connections: Json
+          cpu_iowait_pct: number | null
+          cpu_iowait_seconds: number | null
+          cpu_total_seconds: number | null
+          disk_data_avail_bytes: number | null
+          disk_data_size_bytes: number | null
+          disk_root_avail_bytes: number | null
+          id: number
+          load1: number | null
+          load15: number | null
+          load5: number | null
+          mem_available_bytes: number | null
+          mem_free_bytes: number | null
+          mem_total_bytes: number | null
+          memory_breach: boolean
+          memory_breach_streak: number
+          project_ref: string
+          sampled_at: string
+          scrape_error: string | null
+          scrape_fail_streak: number
+          scrape_ms: number | null
+          scrape_ok: boolean
+          swap_free_bytes: number | null
+          swap_total_bytes: number | null
+          top_backends: Json
+        }
+        Insert: {
+          commit_limit_bytes?: number | null
+          committed_as_bytes?: number | null
+          connections?: Json
+          cpu_iowait_pct?: number | null
+          cpu_iowait_seconds?: number | null
+          cpu_total_seconds?: number | null
+          disk_data_avail_bytes?: number | null
+          disk_data_size_bytes?: number | null
+          disk_root_avail_bytes?: number | null
+          id?: never
+          load1?: number | null
+          load15?: number | null
+          load5?: number | null
+          mem_available_bytes?: number | null
+          mem_free_bytes?: number | null
+          mem_total_bytes?: number | null
+          memory_breach?: boolean
+          memory_breach_streak?: number
+          project_ref: string
+          sampled_at?: string
+          scrape_error?: string | null
+          scrape_fail_streak?: number
+          scrape_ms?: number | null
+          scrape_ok: boolean
+          swap_free_bytes?: number | null
+          swap_total_bytes?: number | null
+          top_backends?: Json
+        }
+        Update: {
+          commit_limit_bytes?: number | null
+          committed_as_bytes?: number | null
+          connections?: Json
+          cpu_iowait_pct?: number | null
+          cpu_iowait_seconds?: number | null
+          cpu_total_seconds?: number | null
+          disk_data_avail_bytes?: number | null
+          disk_data_size_bytes?: number | null
+          disk_root_avail_bytes?: number | null
+          id?: never
+          load1?: number | null
+          load15?: number | null
+          load5?: number | null
+          mem_available_bytes?: number | null
+          mem_free_bytes?: number | null
+          mem_total_bytes?: number | null
+          memory_breach?: boolean
+          memory_breach_streak?: number
+          project_ref?: string
+          sampled_at?: string
+          scrape_error?: string | null
+          scrape_fail_streak?: number
+          scrape_ms?: number | null
+          scrape_ok?: boolean
+          swap_free_bytes?: number | null
+          swap_total_bytes?: number | null
+          top_backends?: Json
+        }
+        Relationships: []
+      }
       ops_issue_class: {
         Row: {
           alert_threshold: number | null
@@ -61865,7 +61959,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      db_host_activity: { Args: never; Returns: Json }
     }
     Enums: {
       [_ in never]: never
@@ -75393,6 +75487,7 @@ export type Database = {
         Args: { p_audience: string; p_entity_id: string; p_entity_type: string }
         Returns: undefined
       }
+      _org_trash_gate: { Args: { p_organization_id: string }; Returns: string }
       _rulebook_client_metadata_keys: { Args: never; Returns: string[] }
       _rulebook_json: {
         Args: { p_row: Database["platform"]["Tables"]["rulebook"]["Row"] }
@@ -75418,6 +75513,35 @@ export type Database = {
           schema_name: string
           table_name: string
           ts_column: string
+        }[]
+      }
+      _trash_kind_counts: {
+        Args: { p_member: string; p_org: string; p_uid: string }
+        Returns: {
+          artifact_kind: string
+          label: string
+          n: number
+        }[]
+      }
+      _trash_kind_rows: {
+        Args: {
+          p_kinds: string[]
+          p_limit: number
+          p_member: string
+          p_offset: number
+          p_org: string
+          p_uid: string
+        }
+        Returns: {
+          artifact_kind: string
+          deleted_at: string
+          entity_token: string
+          id: string
+          is_mine: boolean
+          label: string
+          organization_id: string
+          owner_id: string
+          title: string
         }[]
       }
       _version_diff_json: { Args: { a: Json; b: Json }; Returns: Json }
@@ -82570,6 +82694,39 @@ export type Database = {
       org_null_ratchet_snapshot: { Args: never; Returns: Json }
       org_preferences_set: {
         Args: { p_organization_id: string; p_patch: Json }
+        Returns: Json
+      }
+      org_trash_counts: {
+        Args: { p_member?: string; p_organization_id: string }
+        Returns: {
+          artifact_kind: string
+          label: string
+          n: number
+        }[]
+      }
+      org_trash_list: {
+        Args: {
+          p_kinds?: string[]
+          p_limit?: number
+          p_member?: string
+          p_offset?: number
+          p_organization_id: string
+        }
+        Returns: {
+          artifact_kind: string
+          deleted_at: string
+          entity_token: string
+          id: string
+          is_mine: boolean
+          label: string
+          organization_id: string
+          owner_id: string
+          owner_label: string
+          title: string
+        }[]
+      }
+      org_trash_restore: {
+        Args: { p_id: string; p_organization_id: string; p_token: string }
         Returns: Json
       }
       org_update: { Args: { p_org_id: string; p_patch: Json }; Returns: Json }
@@ -111499,6 +111656,10 @@ export type Database = {
           p_row_id: string
         }
         Returns: string
+      }
+      dataset_readable_by: {
+        Args: { p_dataset_id: string; p_user: string }
+        Returns: boolean
       }
       note_folder_get_or_create: {
         Args: { p_name: string; p_organization_id: string }

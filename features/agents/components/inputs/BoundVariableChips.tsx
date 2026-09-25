@@ -61,11 +61,11 @@ import {
 } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import { variableValueToDisplay } from "@/features/agents/utils/variable-utils";
-import { setScopeContextValue } from "@/features/scope-system/redux/scopeValuesSlice";
+import { setScopeContextValue } from "@/features/scopes/redux/scopeContextView";
 import { ensureContextValues } from "@/features/scopes/redux/thunks/ensureContextValues";
 import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
 import { formatText } from "@ai-matrx/kit/text-case";
-import type { ContextValueType } from "@/features/scope-system/redux/contextItemsSlice";
+import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalog";
 import {
   selectScopeById,
   selectScopesByType,

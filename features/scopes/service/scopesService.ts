@@ -42,6 +42,8 @@ import { contextDb } from "@/utils/supabase/contextDb";
 import { whereANewTableIsBorn } from "@/features/data-tables/data-source/where-a-table-is-born";
 import { placeTableInRecordStore } from "@/features/data-tables/data-source/table-home";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { browserAdminLaneOpen } from "@/utils/supabase/adminLane";
+import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
@@ -444,6 +446,159 @@ export const scopesService = {
     }
   },
 
+  /**
+   * THE ADMIN LANE arm of the tree loader (`ensureScopeTree({
+   * adminOrganizationId })`). One organization's tree — its live scope types,
+   * scopes and projects — for the platform-admin scope console under
+   * `/administration/**`, where the admin is usually NOT a member. The reads
+   * are the same direct RLS reads as `getScopeTree`, filtered by the ONE
+   * requested organization instead of the person's memberships; the database's
+   * platform-admin arm (`is_platform_admin()`, true only on a request carrying
+   * the admin-lane header the browser client stamps on `/administration/**`)
+   * is what lets them see a non-member organization. Refused outright off the
+   * admin section: a user page never loads another organization's tree.
+   */
+  async getOrganizationTreeForAdmin(
+    organizationId: string,
+  ): Promise<ScopesRpcResult<{ organization: OrgNode | null }>> {
+    try {
+      requireUserId();
+      if (!browserAdminLaneOpen()) {
+        return err(
+          "forbidden_org",
+          "This organization's scopes open from Administration only.",
+        );
+      }
+      const orgP = supabase
+        .schema("iam")
+        .from("organizations")
+        // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
+        .select("id, name, abbreviation, slug, is_personal, settings, created_by, archived_at")
+        .eq("id", organizationId)
+        .maybeSingle();
+      // VIEW LAW: org-scoped — the ONE organization the admin console names;
+      // RLS's platform-admin arm decides (admin lane only).
+      const scopeTypesP = contextDb(supabase)
+        .from("scope_types")
+        .select(
+          `id, organization_id, label_singular, label_plural, icon, color,
+           max_assignments_per_entity, sort_order, parent_type_id,
+           default_variable_keys, slug, description, created_at, updated_at`,
+        )
+        .eq("organization_id", organizationId)
+        .is("deleted_at", null)
+        .order("sort_order", { ascending: true });
+      // VIEW LAW: org-scoped — see scopeTypesP above.
+      const scopesP = contextDb(supabase)
+        .from("scopes")
+        .select(
+          `id, scope_type_id, organization_id, name, description,
+           parent_scope_id, settings, slug, sort_order, created_by,
+           created_at, updated_at`,
+        )
+        .eq("organization_id", organizationId)
+        .is("deleted_at", null)
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true });
+      const [orgRes, typesRes, scopesRes] = await Promise.all([
+        orgP,
+        scopeTypesP,
+        scopesP,
+      ]);
+      if (orgRes.error) return err(...mapPgErrorPair(orgRes.error));
+      if (typesRes.error) return err(...mapPgErrorPair(typesRes.error));
+      if (scopesRes.error) return err(...mapPgErrorPair(scopesRes.error));
+      const row = orgRes.data;
+      if (!row) return ok({ organization: null });
+
+      const scopesByType = new Map<string, ScopeNode[]>();
+      for (const sc of scopesRes.data ?? []) {
+        const list = scopesByType.get(sc.scope_type_id) ?? [];
+        list.push(toScopeNode(sc));
+        scopesByType.set(sc.scope_type_id, list);
+      }
+      const viewerId = requireUserId();
+      const organization: OrgNode = {
+        id: row.id,
+        name: row.name,
+        abbreviation: row.abbreviation,
+        slug: row.slug,
+        is_personal: !!row.is_personal,
+        is_test_fixture:
+          !!row.settings &&
+          typeof row.settings === "object" &&
+          "test_fixture" in (row.settings as Record<string, unknown>),
+        created_by: row.created_by ?? null,
+        is_own: !!row.created_by && row.created_by === viewerId,
+        // The console acts with the platform-admin arm, not a membership role.
+        role: "admin",
+        admin_lane: true,
+        scope_types: (typesRes.data ?? []).map((t) => ({
+          ...t,
+          description: t.description ?? "",
+          scopes: scopesByType.get(t.id) ?? [],
+        })),
+        // The scope console does not show projects; an admin-lane org carries none.
+        projects: [],
+      };
+      return ok({ organization });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /**
+   * The full workspace hierarchy (`get_user_full_context`: organizations,
+   * projects, tasks, scope tags) for `agent-context/redux/hierarchyThunks`.
+   * It reads `context.*` inside its body, so it is reached only through this
+   * door. Returns the raw PostgREST answer because the caller owns an
+   * abort-on-timeout and an empty-state reading of specific error codes.
+   */
+  async fetchUserFullContext(signal: AbortSignal) {
+    return supabase.rpc("get_user_full_context").abortSignal(signal);
+  },
+
+  /**
+   * Every ACTIVE System Context Item (`context.system_context_item`) — the
+   * platform's global public facts, readable by any signed-in user. Cached on
+   * the tree's catalogs under `SYSTEM_ITEMS_KEY`
+   * (`features/scopes/redux/contextItemCatalog.ts`).
+   */
+  async listSystemContextItems(): Promise<
+    ScopesRpcResult<{
+      items: {
+        id: string;
+        key: string;
+        display_name: string;
+        description: string | null;
+        item_class: string;
+        value_type: string;
+        sensitivity: string;
+        sort_order: number | null;
+      }[];
+    }>
+  > {
+    try {
+      requireUserId();
+      // VIEW LAW: system context items are intentionally global public facts with no owner or scope dimension.
+      const { data, error } = await runWithSessionRetry(() =>
+        contextDb(supabase)
+          .from("system_context_item")
+          .select(
+            "id, key, display_name, description, item_class, value_type, sensitivity, sort_order",
+          )
+          .eq("is_active", true)
+          .is("deleted_at", null)
+          .order("sort_order", { ascending: true })
+          .order("key", { ascending: true }),
+      );
+      if (error) return err(...mapPgErrorPair(error));
+      return ok({ items: data ?? [] });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
   // ──────────────────────────────────────────────────────────────────
   //  READ — TASKS PER LEVEL
   // ──────────────────────────────────────────────────────────────────
@@ -610,6 +765,7 @@ export const scopesService = {
           `scope_id, context_item_id, id, version, is_current,
            value_text, value_number, value_boolean, value_date, value_json,
            value_document_url, value_document_size_bytes,
+           value_timestamp, value_time,
            value_reference_id, value_reference_type,
            source_type, authored_by, created_at`,
         )
@@ -635,6 +791,7 @@ export const scopesService = {
           `context_item_id, id, version, is_current,
            value_text, value_number, value_boolean, value_date, value_json,
            value_document_url, value_document_size_bytes,
+           value_timestamp, value_time,
            value_reference_id, value_reference_type,
            source_type, authored_by, created_at`,
         )

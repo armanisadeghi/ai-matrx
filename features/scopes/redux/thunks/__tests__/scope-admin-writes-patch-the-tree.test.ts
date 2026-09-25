@@ -42,7 +42,7 @@ import {
   listScopeTypeItems,
   selectItemsByType,
   updateContextItem,
-} from "@/features/scope-system/redux/contextItemsSlice";
+} from "@/features/scopes/redux/contextItemCatalog";
 import type {
   ContextItemRow,
   OrgNode,

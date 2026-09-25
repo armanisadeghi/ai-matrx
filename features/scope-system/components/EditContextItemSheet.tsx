@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectContextItemById } from "@/features/scope-system/redux/contextItemsSlice";
+import { selectContextItemById } from "@/features/scopes/redux/contextItemCatalog";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { ContextItemSettingsForm } from "./forms/ContextItemSettingsForm";
 

@@ -2101,27 +2101,12 @@ export default [
       // buyer has any grant on it, so it cannot run under the buyer's RLS.
       "app/api/stripe/class-checkout/route.ts",
 
-      // ── Retirement queue: live duplicate paths, named and finite ──
-      // Each of these reaches context.* beside the service. They are on the
-      // convergence list (features/scopes/FEATURE.md §"What is enforced"), not
-      // a standing exemption — delete the entry with the duplicate path.
-      // The context-item console cache: reads context.system_context_item (the
-      // ONLY reader of that table) and list_scope_type_items. Its writes go
-      // through scopesService since 2026-09-25 (lane SCOPE-ADMIN-CANONICAL).
-      "features/scope-system/redux/contextItemsSlice.ts",
-      // Second apply-template path (list_templates / apply_template /
-      // apply_template_by_key) beside scopesService.applyTemplate.
-      "features/scope-system/redux/templatesSlice.ts",
-      // Second write path to the same cell (set_scope_context_value) beside
-      // scopesService.setContextValue (set_context_value).
-      "features/scope-system/redux/scopeValuesSlice.ts",
-      // Added 2026-09-11 by the schema-derived ban list (DD-109 fix 1): both
-      // call `get_user_full_context`, which the hand-enumerated RPC list never
-      // held. It is a genuine context door — `pg_get_functiondef` on the live
-      // DB shows `context.` inside its 9.4kB body — so these are real bypasses
-      // the old list could not see, not derivation noise.
-      "features/agent-context/service/hierarchyService.ts",
-      "features/agent-context/redux/hierarchyThunks.ts",
+      // ── Retirement queue: EMPTY since 2026-09-25 (lane SCOPE-ADMIN-2) ──
+      // The last five duplicate paths (the context-item, template and
+      // scope-value slices, and the two full-context readers) now read and
+      // write through scopesService. A new entry here is a new duplicate path:
+      // name it, give it a reason, and put it on features/scopes/FEATURE.md's
+      // retirement queue — never a standing exemption.
     ],
     rules: {
       "no-restricted-syntax": [

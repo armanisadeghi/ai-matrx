@@ -106,6 +106,77 @@ export async function restoreFromTrash(
   }
 }
 
+// ── ORGANIZATION TRASH (lane TRASH-2) ─────────────────────────────────────────────────────────
+// Personal Trash (above) is what YOU archived plus what was shared with you by name. An
+// organization's owners and admins see members' archived items in THAT organization here —
+// the Google Workspace admin-console restore — never mixed into anyone's personal Trash.
+
+export type OrgTrashItem =
+  Database["public"]["Functions"]["org_trash_list"]["Returns"][number];
+
+/**
+ * One merged page, newest first. Unlike `listTrash`, `limit`/`offset` apply to the MERGED list
+ * across the chosen kinds, so a page is exactly `limit` rows.
+ */
+export async function listOrgTrash(opts: {
+  organizationId: string;
+  kinds?: string[];
+  memberId?: string | null;
+  limit?: number;
+  offset?: number;
+}): Promise<OrgTrashItem[]> {
+  const { data, error } = await supabase.rpc("org_trash_list", {
+    p_organization_id: opts.organizationId,
+    p_kinds: opts.kinds,
+    p_member: opts.memberId ?? undefined,
+    p_limit: opts.limit ?? 50,
+    p_offset: opts.offset ?? 0,
+  });
+  if (error) throw new Error(`Failed to load the organization's trash: ${error.message}`);
+  return data ?? [];
+}
+
+export async function getOrgTrashCounts(
+  organizationId: string,
+  memberId?: string | null,
+): Promise<TrashCount[]> {
+  const { data, error } = await supabase.rpc("org_trash_counts", {
+    p_organization_id: organizationId,
+    p_member: memberId ?? undefined,
+  });
+  if (error) throw new Error(`Failed to load the organization's trash counts: ${error.message}`);
+  return data ?? [];
+}
+
+export interface OrgTrashRestoreResult {
+  restored: boolean;
+  message: string;
+}
+
+/** Audited on the server (organization audit log) and the item's owner is told in-app. */
+export async function restoreFromOrgTrash(
+  organizationId: string,
+  entityToken: string,
+  id: string,
+): Promise<OrgTrashRestoreResult> {
+  const { data, error } = await supabase.rpc("org_trash_restore", {
+    p_organization_id: organizationId,
+    p_token: entityToken,
+    p_id: id,
+  });
+  if (error) throw new Error(`Failed to restore: ${error.message}`);
+  const raw = (data ?? {}) as { restored?: unknown; message?: unknown };
+  return {
+    restored: raw.restored === true,
+    message:
+      typeof raw.message === "string" && raw.message.trim()
+        ? raw.message
+        : raw.restored === true
+          ? "Restored."
+          : "It is no longer in this organization's Trash.",
+  };
+}
+
 /** Metadata only. The RPC never returns lifecycle JSON or credential values. */
 export async function previewVaultRecovery(
   itemId: string,

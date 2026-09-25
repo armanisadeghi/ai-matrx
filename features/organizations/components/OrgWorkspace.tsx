@@ -65,7 +65,7 @@ import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree"
 import { OrgHomeScopeSection } from "@/features/scope-system/components/OrgHomeScopeSection";
 import { ScopeOnboarding } from "@/features/scope-system/components/ScopeOnboarding";
 import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
-import { TemplateGalleryDrawer } from "@/features/scope-system/components/TemplateGalleryDrawer";
+import { TemplateGalleryDrawer } from "@/features/scopes/components/management/TemplateGalleryDrawer";
 import {
   CONTENT_ROLES,
   entriesByRole,

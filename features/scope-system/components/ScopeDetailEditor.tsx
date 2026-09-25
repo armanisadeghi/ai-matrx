@@ -13,7 +13,7 @@ import {
   getScopeContext,
   selectValuesByScope,
   selectScopeValuesLoading,
-} from "@/features/scope-system/redux/scopeValuesSlice";
+} from "@/features/scopes/redux/scopeContextView";
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { AddContextItemInline } from "./AddContextItemInline";
 import { ScopeAdvancedSection } from "./ScopeAdvancedSection";

@@ -27,7 +27,7 @@ import {
   updateContextItem,
   deleteContextItem,
   selectItemsByType,
-} from "@/features/scope-system/redux/contextItemsSlice";
+} from "@/features/scopes/redux/contextItemCatalog";
 import { slugifyKey, toSlug } from "@/features/scopes/utils/slugify";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { EditContextItemSheet } from "./EditContextItemSheet";

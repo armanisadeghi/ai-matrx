@@ -7,7 +7,7 @@ import {
   getScopeContext,
   selectValuesByScope,
   type ScopeContextRow,
-} from "@/features/scope-system/redux/scopeValuesSlice";
+} from "@/features/scopes/redux/scopeContextView";
 import { ContextValueDisplay } from "@/features/scopes/components/reference/ContextValueDisplay";
 import type { Json } from "@/types/database.types";
 import {
@@ -51,20 +51,12 @@ export function ContextItemCurrentValues({
     dispatch(ensureScopeTree());
   }, [dispatch, orgId, scopeTypeId]);
 
-  // Warm each scope's context once. getScopeContext replaces the cached rows in
-  // place, so scopes already on screen stay correct; we skip ones already
-  // cached to avoid a burst of redundant RPCs when the drawer opens.
-  const cachedScopeIds = useAppSelector(
-    (s) => s.scopeValues.byScope,
-  );
+  // Warm each scope's view once. Both loaders cache (a scope already loaded
+  // costs nothing), so opening the drawer never bursts redundant reads.
   useEffect(() => {
     for (const scope of scopes) {
-      if (!cachedScopeIds[scope.id]) {
-        dispatch(getScopeContext({ scope_id: scope.id, include_empty: true }));
-      }
+      dispatch(getScopeContext({ scope_id: scope.id, include_empty: true }));
     }
-    // cachedScopeIds intentionally omitted: we only want this to fire as the
-    // scope list resolves, not every time any scope's values change.
   }, [dispatch, scopes]);
 
   const label = (labelPlural ?? "scopes").toLowerCase();

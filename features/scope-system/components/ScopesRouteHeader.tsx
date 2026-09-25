@@ -13,7 +13,7 @@ import {
   listScopeTypeItems,
   selectItemBySlugOrId,
   selectItemsByType,
-} from "@/features/scope-system/redux/contextItemsSlice";
+} from "@/features/scopes/redux/contextItemCatalog";
 import {
   ScopeBreadcrumb,
   type ScopeBreadcrumbTrailNode,

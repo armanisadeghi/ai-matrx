@@ -37,6 +37,7 @@ import {
   PlugZap,
   Plug,
   Database,
+  Trash2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,7 @@ import { GeneralSettings } from "./GeneralSettings";
 import { OrgBatchSavings } from "@/features/batch-savings/OrgBatchSavings";
 import { OrgIndustriesSection } from "@/features/industries/components/OrgIndustriesSection";
 import { MemberManagement } from "./MemberManagement";
+import { OrgTrashSection } from "@/features/trash/components/OrgTrashSection";
 import { InvitationManager } from "./InvitationManager";
 import { DangerZone } from "./DangerZone";
 import { ArchivedOrganizationBanner } from "./ArchivedOrganizationBanner";
@@ -121,6 +123,8 @@ export function OrgManage({
     displayOrganization.isPersonal,
   );
   const canDelete = isOwner && !displayOrganization.isPersonal;
+  // A personal workspace has one member, whose archived items are already in their own Trash.
+  const showOrgTrash = canManageMembers && !displayOrganization.isPersonal;
 
   const slug = displayOrganization.slug ?? displayOrganization.id;
   const RoleIcon =
@@ -132,6 +136,8 @@ export function OrgManage({
     // only an owner/admin may set it — the card itself hides the editor.
     { id: "ai-budget", label: "AI budget", icon: Gauge, show: true },
     { id: "members", label: "Members", icon: Users, show: canManageMembers },
+    // Lane TRASH-2: members' archived items in this organization, for owners and admins only.
+    { id: "trash", label: "Trash", icon: Trash2, show: showOrgTrash },
     {
       id: "invitations",
       label: "Invitations",
@@ -406,6 +412,18 @@ export function OrgManage({
                 isOwner={isOwner}
                 isPersonal={displayOrganization.isPersonal}
               />
+            </SectionCard>
+          )}
+
+          {/* Trash — members' archived items in this organization (owners and admins). */}
+          {showOrgTrash && (
+            <SectionCard
+              id="trash"
+              icon={Trash2}
+              title="Trash"
+              description="Items members archived in this organization. Restore puts them back and tells the owner."
+            >
+              <OrgTrashSection organizationId={displayOrganization.id} />
             </SectionCard>
           )}
 

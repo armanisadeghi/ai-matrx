@@ -31,7 +31,7 @@ import {
   listScopeTypeItems,
   type ContextFetchHint,
   type ContextSensitivity,
-} from "@/features/scope-system/redux/contextItemsSlice";
+} from "@/features/scopes/redux/contextItemCatalog";
 import {
   FETCH_HINT_CONFIG,
   SENSITIVITY_CONFIG,

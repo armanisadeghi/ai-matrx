@@ -19,7 +19,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { VariantResolvableKind } from "@/features/content-ir/variants/kind-variants";
-import type { ContextValueType } from "@/features/scope-system/redux/contextItemsSlice";
+import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalog";
 
 /** JSON Schema `type` → the storage value type the resolver's last rung reads. */
 export function valueTypeFromJsonSchema(

@@ -8,7 +8,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   listScopeTypeItems,
   selectAllContextItems,
-} from "@/features/scope-system/redux/contextItemsSlice";
+} from "@/features/scopes/redux/contextItemCatalog";
 import { ScopeTypeCard } from "./ScopeTypeCard";
 import { AddScopeTypeCard } from "./AddScopeTypeCard";
 import { AddScopeModal } from "./AddScopeModal";

@@ -43,7 +43,7 @@ import {
   selectItemsByType,
   selectItemsLoadedForType,
   SYSTEM_ITEMS_KEY,
-} from "@/features/scope-system/redux/contextItemsSlice";
+} from "@/features/scopes/redux/contextItemCatalog";
 import {
   selectAgentContextPolicies,
   selectAgentVariableDefinitions,

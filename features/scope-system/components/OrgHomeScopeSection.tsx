@@ -25,11 +25,11 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   listScopeTypeItems,
   selectItemsByType,
-} from "@/features/scope-system/redux/contextItemsSlice";
+} from "@/features/scopes/redux/contextItemCatalog";
 import {
   getScopeContext,
   selectValuesByScope,
-} from "@/features/scope-system/redux/scopeValuesSlice";
+} from "@/features/scopes/redux/scopeContextView";
 import { NewScopeInline } from "./NewScopeInline";
 import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
 import { resolveColor } from "@/features/scopes/constants/scope-colors";
@@ -37,8 +37,8 @@ import {
   contextItemsHref,
   scopeSeg,
 } from "@/features/scopes/lib/scopeRoutes";
-import type { ContextItem } from "@/features/scope-system/redux/contextItemsSlice";
-import type { ScopeContextRow } from "@/features/scope-system/redux/scopeValuesSlice";
+import type { ContextItem } from "@/features/scopes/redux/contextItemCatalog";
+import type { ScopeContextRow } from "@/features/scopes/redux/scopeContextView";
 import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";

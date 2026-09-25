@@ -34,7 +34,7 @@
  *    person.
  */
 
-import type { ContextValueType } from "@/features/scope-system/redux/contextItemsSlice";
+import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalog";
 import { valueTypeFromJsonSchema } from "../served-form/kind-source";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 

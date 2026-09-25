@@ -19,11 +19,20 @@ import type {
 
 export interface ContextValuesState {
   byScope: Record<string, ScopeValuesEntry>;
+  /** Cells with a write in flight, keyed `<scopeId>:<contextItemId>`. */
+  savingPairs: Record<string, true>;
+  /** When each cell last saved in this session, keyed `<scopeId>:<contextItemId>`. */
+  lastSavedAt: Record<string, number>;
 }
 
 const initialState: ContextValuesState = {
   byScope: {},
+  savingPairs: {},
+  lastSavedAt: {},
 };
+
+export const cellKey = (scopeId: string, contextItemId: string) =>
+  `${scopeId}:${contextItemId}`;
 
 function ensureEntry(
   state: ContextValuesState,
@@ -96,6 +105,40 @@ const contextValuesSlice = createSlice({
       if (!entry) return;
       delete entry.values[action.payload.contextItemId];
       delete entry.drafts[action.payload.contextItemId];
+    },
+
+    // ─── Cell write lifecycle (the scope-context view's save state) ─
+    valueSavePending(
+      state,
+      action: PayloadAction<{ scopeId: string; contextItemId: string }>,
+    ) {
+      state.savingPairs ??= {};
+      state.savingPairs[
+        cellKey(action.payload.scopeId, action.payload.contextItemId)
+      ] = true;
+    },
+    valueSaveSettled(
+      state,
+      action: PayloadAction<{
+        scopeId: string;
+        contextItemId: string;
+        saved: boolean;
+      }>,
+    ) {
+      const key = cellKey(action.payload.scopeId, action.payload.contextItemId);
+      if (state.savingPairs) delete state.savingPairs[key];
+      if (action.payload.saved) {
+        state.lastSavedAt ??= {};
+        state.lastSavedAt[key] = Date.now();
+      }
+    },
+    /** Records a scope's type when the scope is not in the tree (see ScopeValuesEntry). */
+    scopeTypeResolved(
+      state,
+      action: PayloadAction<{ scopeId: string; scopeTypeId: string }>,
+    ) {
+      ensureEntry(state, action.payload.scopeId).scopeTypeId =
+        action.payload.scopeTypeId;
     },
 
     // ─── Drafts (unsaved edits) ─────────────────────────────────

@@ -25,7 +25,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   createContextItem,
   listScopeTypeItems,
-} from "@/features/scope-system/redux/contextItemsSlice";
+} from "@/features/scopes/redux/contextItemCatalog";
 import { slugifyKey } from "@/features/scopes/utils/slugify";
 import { pluralize } from "@/features/scopes/utils/pluralize";
 import {

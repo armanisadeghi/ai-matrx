@@ -11,22 +11,49 @@ import {
   selectScopeTypesByOrg,
   selectScopeTypesLoading,
 } from "@/features/scopes/redux/selectors/admin";
-import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import {
+  ensureAdminOrganizationTree,
+  ensureScopeTree,
+  type AdminOrganizationTreeResult,
+} from "@/features/scopes/redux/thunks/ensureScopeTree";
+import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 
 interface ScopeManagerPageProps {
   organizationId: string;
   organizationName: string;
   isPersonal?: boolean;
+  /**
+   * THE ADMIN LANE — set ONLY by the `/administration/**` console route. Loads
+   * this organization's tree through the platform-admin read arm (the admin is
+   * usually not a member) and releases it when the console closes. A user-page
+   * route never sets it: there the admin is an ordinary member.
+   */
+  adminLane?: boolean;
 }
 
 export function ScopeManagerPage({
   organizationId,
   organizationName,
   isPersonal,
+  adminLane = false,
 }: ScopeManagerPageProps) {
   const dispatch = useAppDispatch();
   const hasFetched = useRef(false);
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
+  const [adminResult, setAdminResult] =
+    useState<AdminOrganizationTreeResult | null>(null);
+
+  // The one loader: the membership tree, or — admin lane — this organization's
+  // tree through the platform-admin arm, released when the console closes.
+  const load = (refresh = false) => {
+    if (adminLane) {
+      void dispatch(
+        ensureAdminOrganizationTree(organizationId, { refresh }),
+      ).then(setAdminResult);
+    } else {
+      void dispatch(ensureScopeTree({ refresh }));
+    }
+  };
 
   const scopeTypes = useAppSelector((state) =>
     selectScopeTypesByOrg(state, organizationId),
@@ -36,8 +63,15 @@ export function ScopeManagerPage({
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
-    dispatch(ensureScopeTree());
-  }, [dispatch, organizationId]);
+    load();
+  }, [dispatch, organizationId, adminLane]);
+
+  useEffect(() => {
+    if (!adminLane) return;
+    return () => {
+      dispatch(scopesActions.adminLaneOrganizationReleased(organizationId));
+    };
+  }, [adminLane, dispatch, organizationId]);
 
   useEffect(() => {
     if (!selectedTypeId && scopeTypes.length > 0) {
@@ -53,7 +87,27 @@ export function ScopeManagerPage({
   }, [scopeTypes, selectedTypeId]);
 
   const selectedType = scopeTypes.find((t) => t.id === selectedTypeId) ?? null;
-  const isEmpty = !loading && scopeTypes.length === 0;
+  const adminPending = adminLane && adminResult === null;
+  const isEmpty = !loading && !adminPending && scopeTypes.length === 0;
+
+  if (adminLane && adminResult && (adminResult.status === "not_found" || adminResult.status === "error")) {
+    return (
+      <div className="p-4 md:p-6 max-w-2xl mx-auto">
+        <div className="rounded-lg border border-border bg-card p-6 text-sm">
+          <p className="font-medium text-foreground">
+            {adminResult.status === "not_found"
+              ? "This organization was not found."
+              : "This organization's scopes could not be loaded."}
+          </p>
+          <p className="mt-1 text-muted-foreground">
+            {adminResult.status === "error"
+              ? adminResult.message
+              : "It may have been archived, or the link is wrong."}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (isEmpty) {
     return (
@@ -61,10 +115,7 @@ export function ScopeManagerPage({
         <ScopeOnboarding
           orgId={organizationId}
           isPersonal={isPersonal}
-          onChanged={() => {
-            hasFetched.current = false;
-            dispatch(ensureScopeTree());
-          }}
+          onChanged={() => load(adminLane)}
         />
       </div>
     );
@@ -84,10 +135,7 @@ export function ScopeManagerPage({
           <ScopeTemplateStarter
             organizationId={organizationId}
             compact
-            onTypesCreated={() => {
-              hasFetched.current = false;
-              dispatch(ensureScopeTree());
-            }}
+            onTypesCreated={() => load(adminLane)}
           />
         </div>
       </aside>

@@ -26,8 +26,8 @@ import {
   type ContextValueType,
   type ContextFetchHint,
   type ContextSensitivity,
-} from "@/features/scope-system/redux/contextItemsSlice";
-import { setScopeContextValue } from "@/features/scope-system/redux/scopeValuesSlice";
+} from "@/features/scopes/redux/contextItemCatalog";
+import { setScopeContextValue } from "@/features/scopes/redux/scopeContextView";
 import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
 import { slugifyKey } from "@/features/scopes/utils/slugify";
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";

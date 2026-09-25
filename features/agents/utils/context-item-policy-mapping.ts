@@ -13,7 +13,7 @@ import {
 import {
   SYSTEM_ITEMS_KEY,
   type ContextItem,
-} from "@/features/scope-system/redux/contextItemsSlice";
+} from "@/features/scopes/redux/contextItemCatalog";
 import type {
   ContextObjectType,
   ContextPolicy,

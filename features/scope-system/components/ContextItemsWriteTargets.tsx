@@ -43,7 +43,7 @@ import {
   updateContextItem,
   type ContextItem,
   type ContextValueType,
-} from "@/features/scope-system/redux/contextItemsSlice";
+} from "@/features/scopes/redux/contextItemCatalog";
 import { selectFullContextOrganizations } from "@/features/agent-context/redux/hierarchySlice";
 import { canManageSettings, type OrgRole } from "@/features/organizations/types";
 import { slugifyKey } from "@/features/scopes/utils/slugify";

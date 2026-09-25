@@ -13,7 +13,7 @@ import {
   setScopeContextValue,
   selectValuesByScope,
   type ScopeContextRow,
-} from "@/features/scope-system/redux/scopeValuesSlice";
+} from "@/features/scopes/redux/scopeContextView";
 import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import { referenceConfigFromItem } from "@/features/scopes/utils/referenceCell";

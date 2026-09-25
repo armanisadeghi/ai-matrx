@@ -14,7 +14,7 @@ import {
 } from "@/features/agents/utils/agent-edit-access";
 import { buildContextPolicyFromItem } from "@/features/agents/utils/context-item-policy-mapping";
 import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
-import type { ContextItem } from "@/features/scope-system/redux/contextItemsSlice";
+import type { ContextItem } from "@/features/scopes/redux/contextItemCatalog";
 
 const ITEM = {
   id: "11111111-2222-3333-4444-555555555555",

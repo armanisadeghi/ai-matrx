@@ -32,7 +32,7 @@ import {
   setKgSuggestionStarred,
   type KgSuggestionStat,
 } from "@/features/kg-suggestions/service/kgSuggestionsService";
-import { getScopeContext } from "@/features/scope-system/redux/scopeValuesSlice";
+import { getScopeContext } from "@/features/scopes/redux/scopeContextView";
 import {
   resolveSourceTitles,
   sourceRefKey,
@@ -361,6 +361,8 @@ export function useSuggestionsQuery(
               getScopeContext({
                 scope_id: row.target.scope_id,
                 include_empty: true,
+                // The write went around the value door; re-read the cells.
+                refresh: true,
               }),
             );
           }

@@ -101,9 +101,6 @@ import { agentConnectionsUiReducer } from "@/features/agent-connections/redux/ui
 import { agentAppReducer } from "@/features/agents/redux/agent-apps/slice";
 import agentAppConsumersReducer from "@/features/agent-apps/redux/agent-app-consumers/slice";
 import toolsReducer from "@/features/agents/redux/tools/tools.slice";
-import contextItemsReducer from "@/features/scope-system/redux/contextItemsSlice";
-import scopeValuesReducer from "@/features/scope-system/redux/scopeValuesSlice";
-import templatesReducer from "@/features/scope-system/redux/templatesSlice";
 import modelRegistryReducer from "../../features/ai-models/redux/modelRegistrySlice";
 import agentSettingsReducer from "./slices/agent-settings/agentSettingsSlice";
 
@@ -116,9 +113,11 @@ import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import wizardDraftReducer from "@/lib/redux/slices/wizardDraftSlice";
 
 // ─── New scopes module (features/scopes) ────────────────────────────
-// New code reads from these three keys exclusively. The legacy `scopes` /
-// `scopeTypes` keys were deleted 2026-09-25 (lane SCOPE-ADMIN-CANONICAL);
-// `contextItems`, `scopeValues`, `templates` remain on the retirement queue.
+// These three keys are the only scope state. The legacy `scopes` /
+// `scopeTypes` keys were deleted 2026-09-25 (lane SCOPE-ADMIN-CANONICAL), and
+// `contextItems`, `scopeValues`, `templates` the same day (lane SCOPE-ADMIN-2):
+// catalogs live on `scopesTree.contextItemsByTypeId`, values on `contextValues`,
+// templates on `scopeTemplates`.
 import scopesTreeReducer from "@/features/scopes/redux/scopesSlice";
 import contextValuesReducer from "@/features/scopes/redux/contextValuesSlice";
 import scopeTemplatesReducer from "@/features/scopes/redux/templatesSlice";
@@ -301,9 +300,7 @@ export const slimReducerMap = {
   // feature-specific.
   wizardDraft: wizardDraftReducer,
 
-  // ─── features/scopes (new module) ──────────────────────────────────
-  // The legacy `contextItems`, `scopeValues`, and `templates` keys below are
-  // still on the retirement queue (features/scopes/FEATURE.md).
+  // ─── features/scopes — the only scope state ─────────────────────────
   scopesTree: scopesTreeReducer,
   contextValues: contextValuesReducer,
   scopeTemplates: scopeTemplatesReducer,
@@ -313,10 +310,6 @@ export const slimReducerMap = {
   organizations: organizationsReducer,
   projects: projectsReducer,
   tasks: tasksReducer,
-
-  contextItems: contextItemsReducer,
-  scopeValues: scopeValuesReducer,
-  templates: templatesReducer,
 
   tasksUi: taskUiReducer,
   quickTasksWindow: quickTasksWindowReducer,

@@ -1,6 +1,6 @@
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 import { readStructuredList } from "@/features/agents/utils/variable-customcomponent";
-import type { ContextValueType } from "@/features/scope-system/redux/contextItemsSlice";
+import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalog";
 
 /**
  * Storage `value_type` (which `value_*` column a context-item cell uses) derived

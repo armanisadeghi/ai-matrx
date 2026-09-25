@@ -43,10 +43,10 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   createContextItem,
   listScopeTypeItems,
-} from "@/features/scope-system/redux/contextItemsSlice";
+} from "@/features/scopes/redux/contextItemCatalog";
 import { slugifyKey } from "@/features/scopes/utils/slugify";
 import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
-import { TemplateGalleryDrawer } from "@/features/scope-system/components/TemplateGalleryDrawer";
+import { TemplateGalleryDrawer } from "@/features/scopes/components/management/TemplateGalleryDrawer";
 import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE,

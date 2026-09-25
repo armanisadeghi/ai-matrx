@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { setScopeContextValue } from "@/features/scope-system/redux/scopeValuesSlice";
+import { setScopeContextValue } from "@/features/scopes/redux/scopeContextView";
 import { toast } from "@/lib/toast";
-import type { ContextValueType } from "@/features/scope-system/redux/contextItemsSlice";
+import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalog";
 import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
 
 type Status = "idle" | "saving" | "saved" | "error";

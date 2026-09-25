@@ -10,8 +10,8 @@ import {
   getScopeContext,
   selectValuesByScope,
   selectScopeValuesLoading,
-} from "@/features/scope-system/redux/scopeValuesSlice";
-import { listScopeTypeItems } from "@/features/scope-system/redux/contextItemsSlice";
+} from "@/features/scopes/redux/scopeContextView";
+import { listScopeTypeItems } from "@/features/scopes/redux/contextItemCatalog";
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { AddContextItemInline } from "./AddContextItemInline";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";

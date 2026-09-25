@@ -23,11 +23,82 @@ type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
 
 let inFlight: Promise<void> | null = null;
 
-export function ensureScopeTree(
+export interface EnsureScopeTreeOptions {
+  refresh?: boolean;
+  /**
+   * THE ADMIN LANE. Set ONLY by `/administration/**` routes (the
+   * platform-admin scope console): additionally load THIS organization's tree
+   * through the platform-admin read arm (`scopesService.getOrganizationTreeForAdmin`),
+   * even when the admin is not a member. User-page routes never pass it — on a
+   * user page the admin is an ordinary person, and the service refuses the
+   * read off the admin section anyway. Release it with
+   * `scopesActions.adminLaneOrganizationReleased(id)` when the console closes.
+   */
+  adminOrganizationId?: string | null;
+}
+
+export type AdminOrganizationTreeResult =
+  | { status: "member" | "loaded" }
+  | { status: "not_found" }
+  | { status: "error"; message: string };
+
+const adminInFlightResult = new Map<string, Promise<AdminOrganizationTreeResult>>();
+
+/**
+ * The admin-lane mode of the one tree loader (see EnsureScopeTreeOptions):
+ * loads the membership tree, then — for an organization the admin is not a
+ * member of — that organization's tree through the platform-admin read arm.
+ * Answers what it found so the console can say "not found" / "could not
+ * load" honestly instead of rendering an empty list.
+ */
+export function ensureAdminOrganizationTree(
+  organizationId: string,
   opts: { refresh?: boolean } = {},
+): AppThunk<Promise<AdminOrganizationTreeResult>> {
+  return async (dispatch, getState) => {
+    const refresh = opts.refresh ?? false;
+    await dispatch(ensureScopeTree({ refresh }));
+    const state = getState().scopesTree;
+    if (state.organizationIds.includes(organizationId)) {
+      return { status: "member" };
+    }
+    if (!refresh && state.organizations[organizationId]?.admin_lane) {
+      return { status: "loaded" };
+    }
+    const pending = adminInFlightResult.get(organizationId);
+    if (pending) return pending;
+    const promise = (async (): Promise<AdminOrganizationTreeResult> => {
+      try {
+        const res =
+          await scopesService.getOrganizationTreeForAdmin(organizationId);
+        if (isScopesRpcErr(res)) {
+          return { status: "error", message: res.error.message };
+        }
+        if (!res.data.organization) return { status: "not_found" };
+        dispatch(
+          scopesActions.adminLaneOrganizationLoaded(res.data.organization),
+        );
+        return { status: "loaded" };
+      } finally {
+        adminInFlightResult.delete(organizationId);
+      }
+    })();
+    adminInFlightResult.set(organizationId, promise);
+    return promise;
+  };
+}
+
+export function ensureScopeTree(
+  opts: EnsureScopeTreeOptions = {},
 ): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
-    const { refresh = false } = opts;
+    const { refresh = false, adminOrganizationId } = opts;
+    if (adminOrganizationId && getUserId()) {
+      // The membership tree first (it decides whether this org is the
+      // admin's own), then the admin-lane arm for a non-member org.
+      await dispatch(ensureAdminOrganizationTree(adminOrganizationId, { refresh }));
+      return;
+    }
     const state = getState().scopesTree;
 
     // No user yet = expected state, NOT an error. Every product surface fires

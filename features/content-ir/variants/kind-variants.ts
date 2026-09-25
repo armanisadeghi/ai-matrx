@@ -29,7 +29,7 @@ import {
   type VariableCustomComponent,
 } from "@/features/agents/types/agent-definition.types";
 import { getComponentTypeMeta } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
-import type { ContextValueType } from "@/features/scope-system/redux/contextItemsSlice";
+import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalog";
 
 // ---------------------------------------------------------------------------
 // The stored shape

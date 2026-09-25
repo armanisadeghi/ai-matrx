@@ -17,8 +17,8 @@
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import { selectAllContextItems } from "@/features/scope-system/redux/contextItemsSlice";
-import type { ContextItem } from "@/features/scope-system/redux/contextItemsSlice";
+import { selectAllContextItems } from "@/features/scopes/redux/contextItemCatalog";
+import type { ContextItem } from "@/features/scopes/redux/contextItemCatalog";
 import { orderVariablesForForm } from "@/features/agents/utils/control-variables";
 import {
   contextItemBindingOf,

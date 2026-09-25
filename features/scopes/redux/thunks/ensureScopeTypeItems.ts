@@ -10,6 +10,8 @@ import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 import { isScopesRpcErr } from "@/features/scopes/types";
+import type { ContextItemRow, ScopesRpcResult } from "@/features/scopes/types";
+import { SYSTEM_ITEMS_KEY } from "@/features/scopes/constants/contextItems";
 import type { RootState } from "@/lib/redux/rootReducer";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
@@ -36,7 +38,10 @@ export function ensureScopeTypeItems(
 
     const promise = (async () => {
       try {
-        const res = await scopesService.listContextItems(scopeTypeId);
+        const res =
+          scopeTypeId === SYSTEM_ITEMS_KEY
+            ? await listSystemItemsAsCatalog()
+            : await scopesService.listContextItems(scopeTypeId);
         if (isScopesRpcErr(res)) {
           dispatch(
             scopesActions.contextItemsFetchRejected({
@@ -62,4 +67,35 @@ export function ensureScopeTypeItems(
     inFlight.set(scopeTypeId, promise);
     return promise;
   };
+}
+
+/**
+ * The System Context catalog (`SYSTEM_ITEMS_KEY`) in the catalog row shape:
+ * global public facts with no scope type, each stamped with the sentinel and
+ * its `system_item_class`. Same loader, same cache, same selectors.
+ */
+async function listSystemItemsAsCatalog(): Promise<
+  ScopesRpcResult<{ items: ContextItemRow[] }>
+> {
+  const res = await scopesService.listSystemContextItems();
+  if (isScopesRpcErr(res)) return res;
+  const items = res.data.items.map(
+    (r) =>
+      ({
+        id: r.id,
+        scope_type_id: SYSTEM_ITEMS_KEY,
+        key: r.key,
+        display_name: r.display_name,
+        description: r.description ?? "",
+        category: null,
+        value_type: r.value_type,
+        fetch_hint: "always",
+        sensitivity: r.sensitivity,
+        status: "active",
+        tags: [],
+        sort_order: r.sort_order ?? 0,
+        system_item_class: r.item_class,
+      }) as unknown as ContextItemRow,
+  );
+  return { ok: true, data: { items } };
 }

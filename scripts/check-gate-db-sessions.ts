@@ -81,7 +81,7 @@ export function rawSessionsIn(src: string): string[] {
 /** A shell gate that runs psql against the live variables without the limits. */
 export function rawShellSession(src: string): string | null {
   const code = src.replace(/^\s*#.*$/gm, "");
-  const runsPsql = /(\$PSQL|\$\{PSQL\}|\bpsql\b)\s/.test(code);
+  const runsPsql = /(\$\{?PSQL\}?|\bpsql\b)["\s]/.test(code);
   const readsLive = /SUPABASE_MATRIX_/.test(code);
   if (!runsPsql || !readsLive) return null;
   if (/gate-db-limits\.ts/.test(code)) return null;
@@ -122,14 +122,30 @@ function resolveImport(from: string, spec: string): string | null {
   return null;
 }
 
+/** Each file's local imports, read once for the whole run (a gate graph reaches thousands). */
+const EDGES = new Map<string, string[]>();
+function importsOf(file: string): string[] {
+  let hit = EDGES.get(file);
+  if (!hit) {
+    const src = readFileSync(join(ROOT, file), "utf8");
+    hit = [];
+    for (const m of src.matchAll(IMPORT_RE)) {
+      const r = resolveImport(file, m[1]!);
+      if (r) hit.push(r);
+    }
+    EDGES.set(file, hit);
+  }
+  return hit;
+}
+
 function reach(entry: string, seen: Set<string>): void {
-  if (seen.has(entry) || !existsSync(join(ROOT, entry))) return;
-  seen.add(entry);
-  if (PRIMITIVES.has(entry) || entry.endsWith(".sh")) return;
-  const src = readFileSync(join(ROOT, entry), "utf8");
-  for (const m of src.matchAll(IMPORT_RE)) {
-    const hit = resolveImport(entry, m[1]!);
-    if (hit) reach(hit, seen);
+  const stack = [entry];
+  while (stack.length) {
+    const f = stack.pop()!;
+    if (seen.has(f) || !existsSync(join(ROOT, f))) continue;
+    seen.add(f);
+    if (PRIMITIVES.has(f) || f.endsWith(".sh")) continue;
+    stack.push(...importsOf(f));
   }
 }
 
@@ -158,12 +174,18 @@ export function census(gates: Array<{ label: string; cmd: string }>, read: (f: s
   const findings: Finding[] = [];
   const dbGates: Array<{ gate: string; files: string[] }> = [];
   const usedExemptions = new Set<string>();
+  const cache = new Map<string, string>();
+  const readOnce = (f: string): string => {
+    let v = cache.get(f);
+    if (v === undefined) cache.set(f, (v = read(f)));
+    return v;
+  };
   for (const g of gates) {
     const seen = new Set<string>();
     for (const e of entryFiles(g.cmd)) reach(e, seen);
     const governed: string[] = [];
     for (const f of seen) {
-      const src = read(f);
+      const src = readOnce(f);
       if (PRIMITIVES.has(f)) continue;
       if (f.endsWith(".sh")) {
         const what = rawShellSession(src);
@@ -238,10 +260,23 @@ function main(): number {
   if (SELF_TEST) return selfTest();
   console.log("GATE DATABASE SESSIONS — every release gate opens its database through scripts/lib/gate-db.ts");
   const gates = listGates();
+  // Only files that differ from the ref are read through git; the rest are the same bytes.
+  const changed = REF
+    ? new Set(
+        execFileSync("git", ["diff", "--name-only", REF, "--", "."], { cwd: ROOT, encoding: "utf8" })
+          .split("\n")
+          .filter(Boolean),
+      )
+    : new Set<string>();
   const read = (f: string): string => {
-    if (!REF) return readFileSync(join(ROOT, f), "utf8");
+    if (!REF || !changed.has(f)) return existsSync(join(ROOT, f)) ? readFileSync(join(ROOT, f), "utf8") : "";
     try {
-      return execFileSync("git", ["show", `${REF}:${f}`], { cwd: ROOT, encoding: "utf8", maxBuffer: 64 << 20 });
+      return execFileSync("git", ["show", `${REF}:${f}`], {
+        cwd: ROOT,
+        encoding: "utf8",
+        maxBuffer: 64 << 20,
+        stdio: ["ignore", "pipe", "ignore"],
+      });
     } catch {
       return "";
     }

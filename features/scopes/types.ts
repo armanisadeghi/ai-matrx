@@ -246,6 +246,15 @@ export interface OrgNode {
   role: OrgRole;
   scope_types: ScopeTypeNode[];
   projects: ProjectNode[];
+  /**
+   * Loaded by the ADMIN LANE (`ensureScopeTree({ adminOrganizationId })`,
+   * only from `/administration/**`): an organization the platform admin is
+   * not a member of, read through the platform-admin RLS arm. Held outside
+   * `organizationIds` (no picker lists it), never persisted, and released when
+   * the admin console closes. Absent on every tree the person's own
+   * memberships built.
+   */
+  admin_lane?: boolean;
 }
 
 export interface ScopeTreeResponse {
@@ -321,6 +330,10 @@ export interface ContextItemValue {
   value_json: Json | null;
   value_document_url: string | null;
   value_document_size_bytes: number | null;
+  /** `datetime` items (timestamptz). Optional: older echoes lack it. */
+  value_timestamp?: string | null;
+  /** `time` items. Optional: older echoes lack it. */
+  value_time?: string | null;
   value_reference_id: string | null;
   value_reference_type: string | null;
   source_type: string;
@@ -355,6 +368,11 @@ export interface ScopeValuesEntry {
   /** Unsaved drafts keyed by context_item_id. */
   drafts: Record<string, Partial<ContextItemValue>>;
   error: string | null;
+  /**
+   * The scope's type, recorded by `getScopeContext` when the scope is not in
+   * the tree (so the joined scope-context view can find the type's catalog).
+   */
+  scopeTypeId?: string;
 }
 
 /**
@@ -655,6 +673,10 @@ export interface SetContextValueResult {
   scope_id: string;
   version: number;
   value_text: string | null;
+  /** Echoed by the RPC (it returns what it stored for the typed columns). */
+  value_date?: string | null;
+  value_timestamp?: string | null;
+  value_time?: string | null;
   source_type: string;
 }
 

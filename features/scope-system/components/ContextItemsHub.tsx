@@ -45,12 +45,13 @@ import type {
 import { currentSelection } from "@/features/scopes/lib/scopes-surface-scope";
 import {
   selectAllContextItems,
+  selectLoadedCatalogTypeIds,
   listScopeTypeItems,
   updateContextItem,
   selectItemsByType,
   selectItemsLoadedForType,
   type ContextItem,
-} from "@/features/scope-system/redux/contextItemsSlice";
+} from "@/features/scopes/redux/contextItemCatalog";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ContextItemAddForm } from "./ContextItemAddForm";
 import { EditContextItemSheet } from "./EditContextItemSheet";
@@ -165,7 +166,7 @@ export function AllContextItemsHub() {
   const store = useAppStore();
   const getScope = () => {
     const state = store.getState();
-    const loadedTypeIds: string[] = state.contextItems.loadedTypes;
+    const loadedTypeIds: string[] = selectLoadedCatalogTypeIds(state);
     const scopeTypes: ScopesScopeTypeEntry[] = [];
     const organizations: ScopesOrganizationEntry[] = [];
     const manageableOrgIds: string[] = [];

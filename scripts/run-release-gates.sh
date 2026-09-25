@@ -344,6 +344,15 @@ if $STRICT; then
         # the harness, not a defect in the door — and silently passing it would
         # be the exact failure this gate exists to end. Proven failing then
         # passing on DD-191's own shape: `pnpm check:door-rows:self-test`.
+        # GATE DATABASE SESSIONS (2026-09-25). The live database machine froze and was
+        # force-rebooted; the heaviest recurring load on it was these gates. Every gate that opens
+        # a database session does it through scripts/lib/gate-db.ts (two sessions per gate, 60 s
+        # statements unless a reason is named, 3 s locks, 60 s idle, all transaction-local because
+        # Supavisor drops startup options and inherits a session SET). Static, no database.
+        # Advisory: prints [WARN] and exits 0. `pnpm check:gate-db-sessions:self-test` proves it
+        # can still fail; `--ref=<commit>` re-reads the gates as they stood then.
+        "Gate database sessions go through the gate helper|pnpm check:gate-db-sessions"
+        "…and that guard can still fail|pnpm check:gate-db-sessions:self-test"
         "Door rows: a door returns only what its caller may read (DD-192)|pnpm check:door-rows:strict"
         # DD-208 — the WIDE lane (all 892 declared signed-in doors, not just the
         # 477 of b75). It could not block until two things were true, and on
@@ -953,6 +962,15 @@ else
         # would print a silent green [OK]. With `:strict` it exits 1, run_gate
         # prints a red [FAIL] naming the leaking door, and advisory mode still
         # exits 0 — scream, never block. The lane that blocks is the strict list.
+        # GATE DATABASE SESSIONS (2026-09-25). The live database machine froze and was
+        # force-rebooted; the heaviest recurring load on it was these gates. Every gate that opens
+        # a database session does it through scripts/lib/gate-db.ts (two sessions per gate, 60 s
+        # statements unless a reason is named, 3 s locks, 60 s idle, all transaction-local because
+        # Supavisor drops startup options and inherits a session SET). Static, no database.
+        # Advisory: prints [WARN] and exits 0. `pnpm check:gate-db-sessions:self-test` proves it
+        # can still fail; `--ref=<commit>` re-reads the gates as they stood then.
+        "Gate database sessions go through the gate helper|pnpm check:gate-db-sessions"
+        "…and that guard can still fail|pnpm check:gate-db-sessions:self-test"
         "Door rows: a door returns only what its caller may read (DD-192)|pnpm check:door-rows:strict"
         "RLS policies that read their own table (42P17)|pnpm check:rls-self-reference"
         # MANDATE OWNER WRITES (2026-09-25): a plain org member could rewrite or soft-delete an

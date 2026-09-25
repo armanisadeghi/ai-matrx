@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useScopeAutoSave } from "@/features/scope-system/hooks/useScopeAutoSave";
-import type { ScopeContextRow } from "@/features/scope-system/redux/scopeValuesSlice";
+import type { ScopeContextRow } from "@/features/scopes/redux/scopeContextView";
 import {
   ContextValueInput,
   placeholderForType,

@@ -46,7 +46,7 @@ import {
   listScopeTypeItems,
   selectItemsByType,
   selectItemsLoadedForType,
-} from "@/features/scope-system/redux/contextItemsSlice";
+} from "@/features/scopes/redux/contextItemCatalog";
 import { toast } from "@/lib/toast";
 import { contextItemsHref } from "@/features/scopes/lib/scopeRoutes";
 import {

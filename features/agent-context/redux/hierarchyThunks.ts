@@ -14,7 +14,7 @@
 //   dispatch(fetchFullContext())              — app boot / sidebar mount
 //   dispatch(invalidateAndRefetchFullContext()) — after any CRUD mutation
 
-import { supabase } from "@/utils/supabase/client";
+import { scopesService } from "@/features/scopes/service/scopesService";
 import {
   fullContextFetchStarted,
   fullContextFetchSucceeded,
@@ -47,9 +47,10 @@ async function doFetchFullContext(dispatch: AppDispatch) {
   }, FULL_CONTEXT_REQUEST_TIMEOUT_MS);
 
   try {
-    const { data, error } = await supabase
-      .rpc("get_user_full_context")
-      .abortSignal(controller.signal);
+    // `get_user_full_context` reaches context.*: through the scopes chokepoint.
+    const { data, error } = await scopesService.fetchUserFullContext(
+      controller.signal,
+    );
 
     if (error) {
       if (didTimeout) {

@@ -30,7 +30,7 @@ import { useParams, usePathname, useRouter } from "next/navigation";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { selectOrgBySlugOrId } from "@/features/agent-context/redux/organizationsSlice";
-import { selectItemBySlugOrId } from "@/features/scope-system/redux/contextItemsSlice";
+import { selectItemBySlugOrId } from "@/features/scopes/redux/contextItemCatalog";
 import {
   canonicalizeScopePath,
   scopeSeg,
