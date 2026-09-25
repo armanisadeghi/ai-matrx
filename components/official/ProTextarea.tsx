@@ -49,12 +49,12 @@
  *   - **Bound agents** — when `surfaceName` is set, lists agents from
  *     `agent.definition_surface` (My agents / System / Shared / org), same as the
  *     context menu. Pass `getApplicationScope` for full surface scope at run.
- *   - **Help with this…** — OFF by default (`enableHelpWithThis`). Runs a
+ *   - **Help with this…** — ON by default (`enableHelpWithThis={false}` opts out). Runs a
  *     MANDATE through the server's mandate door — the platform's general job
  *     (`chat.default_new_chat`) unless the host passes its own
  *     `helpMandateKey`. `helpContextItems` travel as that job's offered
  *     values and as context entries, never inside the person's message.
- *   - **Custom Agent** — OFF by default (`enableCustomAgent`). Same flow; the
+ *   - **Custom Agent** — ON by default (`enableCustomAgent={false}` opts out). Same flow; the
  *     person picks an agent unless the host preselects a job with
  *     `customAgentMandateKey`.
  * - **Text stats** — character/word/line counts via a pinned stats bar and a
@@ -334,7 +334,7 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
    * rest ride as ad-hoc context entries (same handling as the cleanup page).
    */
   cleanupContextItems?: SessionContextItem[];
-  /** "Help with this…" agent action in the "…" menu. OFF by default. */
+  /** "Help with this…" agent action in the "…" menu. ON by default. */
   enableHelpWithThis?: boolean;
   /**
    * The JOB "Help with this…" runs — a mandate key, never an agent id.
@@ -346,7 +346,7 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
    * names. Delivered as offered values + context entries, never as user text.
    */
   helpContextItems?: SessionContextItem[];
-  /** "Custom Agent" action — same flow, separate entry for a future agent filter. */
+  /** "Custom Agent" action — pick any agent over the text. ON by default. */
   enableCustomAgent?: boolean;
   /** Optional job to preselect for "Custom Agent" (otherwise the person picks). */
   customAgentMandateKey?: AnyMandateKey;
@@ -451,10 +451,10 @@ export const ProTextarea = React.forwardRef<
       enableCleanup = true,
       cleanupAgentId,
       cleanupContextItems,
-      enableHelpWithThis = false,
+      enableHelpWithThis = true,
       helpMandateKey,
       helpContextItems,
-      enableCustomAgent = false,
+      enableCustomAgent = true,
       customAgentMandateKey,
       customAgentContextItems,
       surfaceName,
@@ -487,9 +487,18 @@ export const ProTextarea = React.forwardRef<
     const [isFocused, setIsFocused] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const [isAudioAvailable, setIsAudioAvailable] = useState(true);
-    const internalRef = useRef<HTMLTextAreaElement>(null);
-    const textareaRef =
-      (ref as React.RefObject<HTMLTextAreaElement>) || internalRef;
+    // The element ref is ALWAYS our own, merged into the host's forwarded ref.
+    // Reading `ref.current` directly broke every internal feature (apply an
+    // agent result, dictation expandos, auto-grow) whenever a host forwarded a
+    // CALLBACK ref — `.current` was undefined and each one returned silently
+    // (RC-B6 verify: "Cleaned text applied" while the field never changed).
+    const internalRef = useRef<HTMLTextAreaElement | null>(null);
+    const textareaRef = internalRef;
+    const setTextareaRef = (node: HTMLTextAreaElement | null) => {
+      internalRef.current = node;
+      if (typeof ref === "function") ref(node);
+      else if (ref) (ref as React.MutableRefObject<HTMLTextAreaElement | null>).current = node;
+    };
 
     // ── "…" menu popover ───────────────────────────────────────────────────
     // ONE Popover anchored at the "…" button. Its content swaps between the
@@ -627,17 +636,23 @@ export const ProTextarea = React.forwardRef<
       textarea.style.height = `${newHeight}px`;
     }, [value, autoGrow, minHeight, maxHeight]);
 
-    const pushToTextarea = useCallback((newValue: string) => {
-      if (!textareaRef.current) return;
+    /**
+     * Write `newValue` into the field through React's own change path (the
+     * host's onChange fires, so its state and its save run exactly as if the
+     * person typed). Returns whether the field now holds `newValue` — callers
+     * announce success only on true.
+     */
+    const pushToTextarea = useCallback((newValue: string): boolean => {
+      const el = textareaRef.current;
+      if (!el) return false;
       const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
         window.HTMLTextAreaElement.prototype,
         "value",
       )?.set;
-      if (nativeInputValueSetter) {
-        nativeInputValueSetter.call(textareaRef.current, newValue);
-        const event = new Event("input", { bubbles: true });
-        textareaRef.current.dispatchEvent(event);
-      }
+      if (!nativeInputValueSetter) return false;
+      nativeInputValueSetter.call(el, newValue);
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      return el.value === newValue;
     }, []);
 
     // Voice-to-text now rides the ONE shared recorder (start-always-wins,
@@ -879,7 +894,11 @@ export const ProTextarea = React.forwardRef<
 
     const applyEmbeddedSourceText = useCallback(
       (text: string) => {
-        pushToTextarea(text);
+        if (!pushToTextarea(text)) {
+          toast.error("The result could not be put into this field", {
+            description: "Copy it from the result and paste it in.",
+          });
+        }
       },
       [pushToTextarea],
     );
@@ -976,7 +995,14 @@ export const ProTextarea = React.forwardRef<
       }
       const result = agentAction.result.trim();
       if (!result) return;
-      pushToTextarea(agentAction.result);
+      if (!pushToTextarea(agentAction.result)) {
+        // Never claim an apply that did not land — keep the result open so
+        // nothing is lost, and say what to do.
+        toast.error("The result could not be put into this field", {
+          description: "Copy it from the result and paste it in.",
+        });
+        return;
+      }
       setMenuOpen(false);
       setMenuMode("menu");
       setSelectedAgent(null);
@@ -1135,7 +1161,7 @@ export const ProTextarea = React.forwardRef<
             )}
           >
             <textarea
-              ref={textareaRef}
+              ref={setTextareaRef}
               id={inputId}
               placeholder={floatingLabel ? undefined : placeholder}
               className={cn(

@@ -6,9 +6,8 @@
 // ⋯ overflow menu. Used by the "bar" variant and by RichDocumentActionSurface
 // when its `variant` prop is "bar".
 //
-// Mirrors AssistantActionBar's layout (`features/agents/components/
-// messages-display/assistant/AssistantActionBar.tsx`) but is fully data-
-// driven from the action registry.
+// The ONE inline bar — /chat's assistant footer, notes, the proving route —
+// fully data-driven from the action registry.
 
 import * as React from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,10 +22,12 @@ export interface ActionBarProps {
   getCtx: () => RichDocumentActionContext;
   sourceId: string;
   className?: string;
+  /** Hide the ⋯ overflow (a host setting turned the options off). */
+  hideOverflow?: boolean;
 }
 
 export function ActionBar(props: ActionBarProps): React.ReactElement {
-  const { actions, getCtx, sourceId, className } = props;
+  const { actions, getCtx, sourceId, className, hideOverflow = false } = props;
   const nonTransferActions = actions.filter(
     // The Alchemy menu is the one-tap copy; every OTHER copy format in the
     // registry (Markdown, plain, rich, table CSV/TSV, thinking…) stays in the
@@ -52,7 +53,9 @@ export function ActionBar(props: ActionBarProps): React.ReactElement {
           getCtx={getCtx}
           size="sm"
         />
-        <OverflowMenu actions={nonTransferActions} getCtx={getCtx} />
+        {hideOverflow ? null : (
+          <OverflowMenu actions={nonTransferActions} getCtx={getCtx} />
+        )}
       </div>
     </TooltipProvider>
   );

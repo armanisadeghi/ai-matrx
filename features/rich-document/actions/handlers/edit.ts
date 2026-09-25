@@ -40,7 +40,8 @@ registerAction({
   iconColor: "text-emerald-500 dark:text-emerald-400",
   category: "edit",
   supportedSources: "*",
-  renderSlot: "overflow",
+  // The pencil sits in every bar AND in the Edit submenu.
+  renderSlot: "both",
   order: 0,
   visible: (ctx) => {
     if (!ctx.sourceAdapter.edit) return false;

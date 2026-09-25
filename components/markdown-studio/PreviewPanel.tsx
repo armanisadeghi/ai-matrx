@@ -38,7 +38,6 @@ import type {
   ContentSource,
   RichDocumentActionsProp,
 } from "@/features/rich-document/types";
-import { StreamingSpeakerButton } from "@/features/tts/components/StreamingSpeakerButton";
 import { getBlockTypeStyle } from "./block-type-colors";
 import { StreamSimControls } from "./lab/StreamSimControls";
 import {
@@ -57,6 +56,26 @@ import {
 import { JsonExtractionPanel } from "./lab/JsonExtractionPanel";
 import { LevelCompareView } from "./lab/LevelCompareView";
 import { PrintPreviewView } from "./lab/PrintPreviewView";
+import { DocumentPropertiesPanel } from "@/components/markdown-core/syntax/elements/DocumentPropertiesPanel";
+import { MarkdownSourceEditProvider } from "@/components/markdown-core/syntax/elements/MarkdownSourceEdit";
+
+/** Task checkboxes toggle in the preview only when the buffer can be saved to. */
+function MaybeSourceEdit({
+  source,
+  save,
+  children,
+}: {
+  source: string;
+  save?: (next: string) => void;
+  children: React.ReactNode;
+}) {
+  if (!save) return <>{children}</>;
+  return (
+    <MarkdownSourceEditProvider source={source} save={save}>
+      {children}
+    </MarkdownSourceEditProvider>
+  );
+}
 
 export const PREVIEW_MODES = [
   "rendered",
@@ -95,11 +114,16 @@ interface PreviewPanelProps {
   onModeChange: (mode: PreviewMode) => void;
   /** Document title for the print preview / print window. */
   title?: string;
+  /**
+   * The editable source's save path. When given, interactive constructs in
+   * the preview (task checkboxes) write back through the splice API.
+   */
+  onContentChange?: (next: string) => void;
 }
 
 export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
   function PreviewPanel(
-    { content, contentSource, sourceActions, mode, onModeChange, title },
+    { content, contentSource, sourceActions, mode, onModeChange, title, onContentChange },
     ref,
   ) {
     const [serverMode, setServerMode] = useState<BlockProcessingMode>("stream");
@@ -188,12 +212,6 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
                 <Waves className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Stream</span>
               </button>
-              <StreamingSpeakerButton
-                text={content}
-                label="Markdown Studio"
-                variant="transparent"
-                disabled={!hasContent}
-              />
               <RichDocumentActionSurface
                 surfaceId={STUDIO_ACTION_SURFACE_ID}
                 variant="bar"
@@ -249,18 +267,21 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
 
         {mode === "rendered" &&
           (hasContent ? (
-            <div ref={ref} className="flex-1 overflow-auto p-4">
-              <RichDocument
-                content={renderedText}
-                isStreamActive={isReplaying}
-                source={contentSource}
-                actionsVariant="remote"
-                actionsSurfaceId={STUDIO_ACTION_SURFACE_ID}
-                actions={sourceActions}
-                enableContextMenu
-                hideCopyButton
-                allowFullScreenEditor={false}
-              />
+            <div ref={ref} className="flex-1 overflow-auto p-4" data-matrx-doc-root="">
+              <DocumentPropertiesPanel source={renderedText} className="mb-3" />
+              <MaybeSourceEdit source={content} save={isReplaying ? undefined : onContentChange}>
+                <RichDocument
+                  content={renderedText}
+                  isStreamActive={isReplaying}
+                  source={contentSource}
+                  actionsVariant="remote"
+                  actionsSurfaceId={STUDIO_ACTION_SURFACE_ID}
+                  actions={sourceActions}
+                  enableContextMenu
+                  hideCopyButton
+                  allowFullScreenEditor={false}
+                />
+              </MaybeSourceEdit>
             </div>
           ) : (
             <PreviewEmptyState />

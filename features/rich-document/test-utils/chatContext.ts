@@ -56,6 +56,8 @@ export function chatContext(
     getState: (() => ({
       messages: { byConversationId: {} },
       conversations: { byConversationId: {} },
+      activeRequests: { byRequestId: {} },
+      instanceContext: { byConversationId: {} },
     })) as never,
     organizationId: "org-1",
     isAuthenticated: true,

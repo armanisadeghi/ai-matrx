@@ -60,6 +60,7 @@ describe("the expanded action set", () => {
     "copy-html-source",
     "download-html",
     "download-pdf",
+    "download-docx",
     "save-as-file",
   ];
 
@@ -120,6 +121,7 @@ describe("the expanded action set", () => {
         instanceContext: { byConversationId: {} },
         conversations: { byConversationId: {} },
         messages: { byConversationId: {} },
+        activeRequests: { byRequestId: {} },
       })) as never,
     });
     expect(ids(ctx)).toEqual(expect.arrayContaining(["ask-followup", "quote-into-chat"]));

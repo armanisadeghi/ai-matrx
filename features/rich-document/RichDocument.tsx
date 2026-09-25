@@ -214,6 +214,14 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
         (actionsProp.extensions.contentIsStructuredRaw ||
           actionsProp.extensions.role === "user")
       ),
+    chatMessage:
+      source.type === "chat-message"
+        ? {
+            conversationId: source.conversationId,
+            messageId: source.messageId,
+            surfaceKey: actionsProp?.surfaceKey ?? null,
+          }
+        : null,
   });
   const hostedActions: RichDocumentActionsProp = {
     ...actionsProp,

@@ -1,8 +1,6 @@
 {
   "note": "Shrink-only baseline for `pnpm check:rich-content-legacy`: every existing banned legacy site, keyed `<piece id> :: <file>`. A NEW key fails; a key that no longer exists fails until removed with `npx tsx scripts/rich-content-inventory/inventory.ts --prune-baseline`. Never add entries by hand.",
   "entries": [
-    "AssistantActionBar :: features/agents/components/messages-display/assistant/AgentAssistantMessage.tsx",
-    "AssistantActionBar :: features/agents/components/messages-display/assistant/AssistantTurnGroup.tsx",
     "BasicContentEditor :: features/marketing/components/pages/cards/PageDraftContentCard.tsx",
     "BasicContentEditor :: features/scopes/components/reference/ContextValueInput.tsx",
     "BasicContentEditor :: features/window-panels/windows/page-extraction/ExtractionCellEditorWindow.tsx",

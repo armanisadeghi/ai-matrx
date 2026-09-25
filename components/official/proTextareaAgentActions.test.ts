@@ -76,3 +76,20 @@ describe("proTextareaRunValues", () => {
     expect("userInput" in proTextareaRunValues(items, true)).toBe(false);
   });
 });
+
+describe("every text field gets the AI powers by default (RC-B6)", () => {
+  it("turns Clean up, Help with this and Custom agent ON unless a host opts out", () => {
+    const { isProTextareaAgentActionEnabled } = jest.requireActual(
+      "./proTextareaAgentActions",
+    ) as typeof import("./proTextareaAgentActions");
+    for (const id of ["cleanup", "help", "customAgent"] as const) {
+      expect(isProTextareaAgentActionEnabled(id, {})).toBe(true);
+    }
+    expect(
+      isProTextareaAgentActionEnabled("help", { enableHelpWithThis: false }),
+    ).toBe(false);
+    expect(
+      isProTextareaAgentActionEnabled("customAgent", { enableCustomAgent: false }),
+    ).toBe(false);
+  });
+});

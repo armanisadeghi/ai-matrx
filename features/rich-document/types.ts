@@ -4,7 +4,7 @@
 //
 // RichDocument is the wrapper that pairs the content engine (MarkdownStream /
 // BasicMarkdownContent / ConfigurableMarkdownContent) with a generalized
-// action surface — replacing the previously chat-only AssistantActionBar.
+// action surface — which replaced the chat-only AssistantActionBar (deleted in RC-B6).
 //
 // See `features/rich-document/FEATURE.md` for the full architecture and the
 // per-source action compatibility matrix.
@@ -396,6 +396,25 @@ export interface RichDocumentAction {
   order?: number;
   /** Action requires authentication. Hidden when isAuthenticated is false. */
   requiresAuth?: boolean;
+  /**
+   * A toggle's live state (a thumb's verdict, read-aloud playing). Renderers
+   * paint the action "on" (its iconColor, aria-pressed) only while true; an
+   * action with `active` defined reads as muted otherwise.
+   */
+  active?: (ctx: RichDocumentActionContext) => boolean;
+  /**
+   * Subscribe to whatever `active`/`label` read (a module store). Called by
+   * the renderer; returns the unsubscribe. May also start a hydration read.
+   */
+  subscribe?: (
+    onChange: () => void,
+    ctx: RichDocumentActionContext,
+  ) => () => void;
+  /**
+   * Keep the reader's text selection alive through the click (mousedown would
+   * clear it) — read-aloud reads the selection when there is one.
+   */
+  preserveSelection?: boolean;
 }
 
 // ============================================================================

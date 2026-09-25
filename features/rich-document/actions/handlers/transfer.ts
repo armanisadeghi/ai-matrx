@@ -14,6 +14,7 @@ import {
   FileCode2,
   FileDown,
   FileText,
+  FileType,
   Table2,
   Type,
 } from "lucide-react";
@@ -234,6 +235,47 @@ registerAction({
       toast.success("PDF downloaded", { id: toastId });
     } catch (error) {
       toast.error("Failed to create PDF", {
+        id: toastId,
+        description: getErrorMessage(error, "Unknown error"),
+      });
+    }
+  },
+});
+
+registerAction({
+  // A real .docx (Word) from the ONE print-grade document tree
+  // (@ai-matrx/print/document, RC-B10) — the same tree the PDF/EPUB/HTML
+  // exports render from, so headings, tables, captions and frontmatter page
+  // setup carry over.
+  id: "download-docx",
+  label: "Download as Word",
+  icon: FileType,
+  iconColor: "text-blue-600 dark:text-blue-400",
+  category: "export",
+  supportedSources: "*",
+  renderSlot: "overflow",
+  order: 14,
+  run: async (ctx) => {
+    const toastId = toast.loading("Building the Word document…");
+    try {
+      const { exportDocument, downloadDocumentExport } = await import(
+        "@ai-matrx/print/document"
+      );
+      const exp = await exportDocument(ctx.content, "docx", {
+        fileName: fileBase(ctx),
+      });
+      downloadDocumentExport(exp);
+      const notice = exp.notices[0];
+      toast.success("Word document downloaded", {
+        id: toastId,
+        // An image that could not be embedded, a missing citation… — said,
+        // never silently dropped.
+        description: notice
+          ? `${notice.message} ${notice.remedy}${exp.notices.length > 1 ? ` (+${exp.notices.length - 1} more)` : ""}`
+          : undefined,
+      });
+    } catch (error) {
+      toast.error("Failed to build the Word document", {
         id: toastId,
         description: getErrorMessage(error, "Unknown error"),
       });

@@ -16,6 +16,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useActionStates } from "./useActionStates";
 import { resolveActionLabel } from "../../actions/utils";
 import type {
   RichDocumentAction,
@@ -38,9 +39,9 @@ export function PrimaryButtons(props: PrimaryButtonsProps): React.ReactElement {
     return slot === "primary" || slot === "both";
   });
 
-  if (primary.length === 0) return <></>;
-
   const ctxForLabels = getCtx();
+  const isActive = useActionStates(primary, ctxForLabels);
+  if (primary.length === 0) return <></>;
   const buttonHeight = size === "xs" ? "h-7 w-7" : "h-8 w-8";
   const iconSize = size === "xs" ? "h-3.5 w-3.5" : "h-4 w-4";
 
@@ -58,6 +59,7 @@ export function PrimaryButtons(props: PrimaryButtonsProps): React.ReactElement {
             ? disabledResult.reason
             : undefined;
         const tooltipText = disabledReason ?? labelText;
+        const active = isActive(action);
 
         return (
           <Tooltip key={action.id}>
@@ -67,7 +69,13 @@ export function PrimaryButtons(props: PrimaryButtonsProps): React.ReactElement {
                 size="icon"
                 disabled={isDisabled}
                 aria-label={labelText}
+                aria-pressed={active}
                 className={cn(buttonHeight, "p-0")}
+                onMouseDown={
+                  action.preserveSelection
+                    ? (event) => event.preventDefault()
+                    : undefined
+                }
                 onClick={() => {
                   const ctx = getCtx();
                   void Promise.resolve(action.run(ctx)).catch(
@@ -81,7 +89,13 @@ export function PrimaryButtons(props: PrimaryButtonsProps): React.ReactElement {
                   );
                 }}
               >
-                <Icon className={cn(iconSize, action.iconColor)} />
+                <Icon
+                  className={cn(
+                    iconSize,
+                    // A toggle is colored only while ON; muted otherwise.
+                    active === false ? "text-muted-foreground" : action.iconColor,
+                  )}
+                />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top">{tooltipText}</TooltipContent>

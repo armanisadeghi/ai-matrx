@@ -11,7 +11,7 @@
  * routes back through `editMessage`, archiving the current text as a new
  * history entry in the process (so restoring is itself reversible).
  *
- * Mounted as a controlled child of `AssistantActionBar` (so the dialog
+ * Mounted by the rich-document dialogs host (`hosts/ChatMessageDialogs.tsx`) (so the dialog
  * survives after the ⋯ menu closes), opened via the
  * `onRequestEditHistory` callback on the menu action context.
  */

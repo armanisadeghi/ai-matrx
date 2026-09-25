@@ -11,7 +11,7 @@
  * Why this exists: the server reserves a new `cx_message` per iteration,
  * so a heavily agentic turn (dozens of tool calls) becomes dozens of
  * adjacent assistant messages in the slice. Without grouping, each
- * iteration gets its own `space-y-6` gap and its own AssistantActionBar,
+ * iteration gets its own `space-y-6` gap and its own AssistantMessageFooter,
  * which fragments the visual answer and scatters controls across the
  * transcript. The grouping layer collapses those sub-messages into a
  * single seamless block with one trailing action bar.
@@ -37,7 +37,7 @@
 import { useCallback, useEffect } from "react";
 import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
 import { AgentAssistantMessage } from "./AgentAssistantMessage";
-import { AssistantActionBar } from "./AssistantActionBar";
+import { AssistantMessageFooter } from "./AssistantMessageFooter";
 import { collapseByRequestId } from "./collapse-by-request-id";
 import {
   AgentWorkTurnProvider,
@@ -139,7 +139,7 @@ export function AssistantTurnGroup({
     <div
       ref={captureRef}
       data-turn-group-anchor={anchorMessageId ?? undefined}
-      // Hover anchor for the trailing AssistantActionBar. Because the bar
+      // Hover anchor for the trailing AssistantMessageFooter. Because the bar
       // is a SIBLING of the sub-messages (not nested inside any one
       // `AgentAssistantMessage`), it can't rely on a member's own
       // `group/assistant-msg`. The group wrapper must carry the anchor so
@@ -202,7 +202,7 @@ export function AssistantTurnGroup({
         ))}
 
       {showBar && anchorMessageId && (
-        <AssistantActionBar
+        <AssistantMessageFooter
           messageId={anchorMessageId}
           conversationId={conversationId}
           onFullPrint={handleFullPrint}

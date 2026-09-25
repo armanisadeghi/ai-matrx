@@ -12,11 +12,11 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
-  clearOutputFeedback,
   saveOutputFeedback,
   type SaveOutputFeedbackArgs,
 } from "./service";
 import { loadOutputFeedback, loadOutputFeedbackMany } from "./batchLoader";
+import { toggleOutputFeedbackVerdict } from "./verdict";
 import {
   peekOutputFeedback,
   setOutputFeedbackRecord,
@@ -143,33 +143,21 @@ export function useOutputFeedback(
     [subjectType, subjectId, requestId, surfaceName],
   );
 
+  // THE one toggle (./verdict.ts) — the rich-document thumbs call it too.
   const setVerdict = useCallback(
     async (verdict: OutputFeedbackVerdict) => {
-      const current = peekOutputFeedback({ subjectType, subjectId }) ?? null;
-      if (current?.verdict === verdict) {
-        // Toggle off — retract.
-        setOutputFeedbackRecord({ subjectType, subjectId }, null);
-        setIsSaving(true);
-        try {
-          await clearOutputFeedback({ subjectType, subjectId });
-        } catch (error) {
-          setOutputFeedbackRecord({ subjectType, subjectId }, current);
-          throw error;
-        } finally {
-          setIsSaving(false);
-        }
-        return;
-      }
-      // Optimistic: paint the new verdict before the round trip.
-      if (current) {
-        setOutputFeedbackRecord({ subjectType, subjectId }, {
-          ...current,
-          verdict,
+      setIsSaving(true);
+      try {
+        await toggleOutputFeedbackVerdict({ subjectType, subjectId }, verdict, {
+          requestId,
+          surfaceName,
+          originalContent: originalRef.current,
         });
+      } finally {
+        setIsSaving(false);
       }
-      await write({ verdict });
     },
-    [subjectType, subjectId, write],
+    [subjectType, subjectId, requestId, surfaceName],
   );
 
   const captureCorrection = useCallback(

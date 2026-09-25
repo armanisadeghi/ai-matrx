@@ -15,18 +15,25 @@ import { toast } from "@/lib/toast";
 import { outputFeedbackSubjectForSource } from "../../outputFeedbackSubject";
 import type { RichDocumentActionContext } from "../../types";
 import type { OutputFeedbackVerdict } from "@/lib/output-feedback/types";
+import {
+  peekOutputFeedback,
+  subscribeOutputFeedback,
+} from "@/lib/output-feedback/store";
+import { loadOutputFeedback } from "@/lib/output-feedback/batchLoader";
 
-async function recordVerdict(
+async function toggleVerdict(
   ctx: RichDocumentActionContext,
   verdict: OutputFeedbackVerdict,
 ): Promise<void> {
   const subject = outputFeedbackSubjectForSource(ctx.source);
   if (!subject) return;
   try {
-    const { saveOutputFeedback } = await import("@/lib/output-feedback/service");
-    await saveOutputFeedback({
-      ...subject,
-      verdict,
+    const { toggleOutputFeedbackVerdict } = await import(
+      "@/lib/output-feedback/verdict"
+    );
+    // THE one toggle: clicking the active verdict retracts it, optimistic
+    // with rollback — identical to every other thumb in the app.
+    await toggleOutputFeedbackVerdict(subject, verdict, {
       surfaceName: ctx.surfaceKey,
       originalContent: ctx.content || null,
       requestId:
@@ -34,19 +41,31 @@ async function recordVerdict(
           ? (ctx.source.streamRequestId ?? null)
           : null,
     });
-    toast.success(
-      verdict === "positive" ? "Marked as helpful" : "Marked as not helpful",
-    );
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error("[rich-document] feedback write failed", error);
     toast.error("Failed to save feedback");
   }
 }
 
+/** The verdict in force for this content (the ONE output-feedback store). */
+function currentVerdict(ctx: RichDocumentActionContext): OutputFeedbackVerdict | null {
+  const subject = outputFeedbackSubjectForSource(ctx.source);
+  return subject ? (peekOutputFeedback(subject)?.verdict ?? null) : null;
+}
+
+/** Re-render on store changes, and hydrate this subject's verdict once. */
+function subscribeVerdict(
+  onChange: () => void,
+  ctx: RichDocumentActionContext,
+): () => void {
+  const subject = outputFeedbackSubjectForSource(ctx.source);
+  if (subject) loadOutputFeedback(subject.subjectType, subject.subjectId);
+  return subscribeOutputFeedback(onChange);
+}
+
 registerAction({
   id: "thumbs-up",
-  label: "Helpful",
+  label: (ctx) => (currentVerdict(ctx) === "positive" ? "Helpful (undo)" : "Helpful"),
   icon: ThumbsUp,
   iconColor: "text-green-600 dark:text-green-400",
   category: "feedback",
@@ -54,12 +73,15 @@ registerAction({
   renderSlot: "primary",
   order: 0,
   visible: (ctx) => Boolean(outputFeedbackSubjectForSource(ctx.source)),
-  run: (ctx) => recordVerdict(ctx, "positive"),
+  active: (ctx) => currentVerdict(ctx) === "positive",
+  subscribe: subscribeVerdict,
+  run: (ctx) => toggleVerdict(ctx, "positive"),
 });
 
 registerAction({
   id: "thumbs-down",
-  label: "Not helpful",
+  label: (ctx) =>
+    currentVerdict(ctx) === "negative" ? "Not helpful (undo)" : "Not helpful",
   icon: ThumbsDown,
   iconColor: "text-red-500 dark:text-red-400",
   category: "feedback",
@@ -67,5 +89,7 @@ registerAction({
   renderSlot: "primary",
   order: 1,
   visible: (ctx) => Boolean(outputFeedbackSubjectForSource(ctx.source)),
-  run: (ctx) => recordVerdict(ctx, "negative"),
+  active: (ctx) => currentVerdict(ctx) === "negative",
+  subscribe: subscribeVerdict,
+  run: (ctx) => toggleVerdict(ctx, "negative"),
 });

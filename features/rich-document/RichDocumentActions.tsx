@@ -17,12 +17,14 @@ export interface RichDocumentActionsProps {
   source: ContentSource;
   actions?: RichDocumentActionsProp;
   className?: string;
+  /** Hide the ⋯ overflow menu (the primary row still renders). */
+  hideOverflow?: boolean;
 }
 
 export function RichDocumentActions(
   props: RichDocumentActionsProps,
 ): React.ReactElement {
-  const { content, source, actions, className } = props;
+  const { content, source, actions, className, hideOverflow } = props;
   const { ctx, getCtx, resolvedActions } = useActionSurfaceProvider({
     content,
     source,
@@ -35,6 +37,7 @@ export function RichDocumentActions(
       getCtx={getCtx}
       sourceId={ctx.instanceKey("alchemy")}
       className={className}
+      hideOverflow={hideOverflow}
     />
   );
 }

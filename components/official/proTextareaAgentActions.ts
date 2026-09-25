@@ -67,7 +67,7 @@ export interface ProTextareaAgentActionProps {
   enableCleanup?: boolean;
   cleanupAgentId?: string | null;
   cleanupContextItems?: SessionContextItem[];
-  /** "Help with this…" — general-purpose agent assist. OFF by default. */
+  /** "Help with this…" — general-purpose agent assist. ON by default. */
   enableHelpWithThis?: boolean;
   /**
    * The JOB "Help with this…" runs. Defaults to the platform's general
@@ -80,7 +80,7 @@ export interface ProTextareaAgentActionProps {
    * named context entry — never folded into the person's message.
    */
   helpContextItems?: SessionContextItem[];
-  /** "Custom Agent" — same flow, separate menu entry for a future agent filter. */
+  /** "Custom Agent" — pick any agent to run over the text. ON by default. */
   enableCustomAgent?: boolean;
   /** Optional JOB to preselect for "Custom Agent"; without it the person picks an agent. */
   customAgentMandateKey?: AnyMandateKey;
@@ -165,10 +165,13 @@ export function isProTextareaAgentActionEnabled(
   switch (id) {
     case "cleanup":
       return props.enableCleanup !== false;
+    // ON by default in every field (Arman, 2026-09-23: "it's not used
+    // everywhere … but it should be"); a field that truly cannot take AI
+    // opts out explicitly with `={false}`.
     case "help":
-      return props.enableHelpWithThis === true;
+      return props.enableHelpWithThis !== false;
     case "customAgent":
-      return props.enableCustomAgent === true;
+      return props.enableCustomAgent !== false;
     default:
       return false;
   }

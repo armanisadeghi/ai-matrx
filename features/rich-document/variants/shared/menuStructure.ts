@@ -106,6 +106,7 @@ export const MENU_STRUCTURE: MenuSection[] = [
       "send-google-doc",
       "email-to-me",
       "download-pdf",
+      "download-docx",
       "download-html",
       "print",
       "full-print",

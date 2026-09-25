@@ -17,6 +17,7 @@ import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog
 import { fcService } from "@/features/flashcards/data/fcService";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { DocumentAgentReview } from "./DocumentAgentReview";
+import { ChatMessageDialogs } from "./ChatMessageDialogs";
 import type { RichDocumentActionContext } from "../types";
 
 /** The deck every "Save as flashcard" lands in — one per person. */
@@ -74,6 +75,13 @@ export interface DocumentDialogsImplProps {
     ctx: RichDocumentActionContext;
   } | null;
   onAgentReviewClose: () => void;
+  chatDialog: {
+    dialog: "delete" | "history";
+    conversationId: string;
+    messageId: string;
+    surfaceKey: string | null;
+  } | null;
+  onChatDialogClose: () => void;
 }
 
 export default function DocumentDialogsImpl(
@@ -87,6 +95,8 @@ export default function DocumentDialogsImpl(
     onCardClose,
     agentReview,
     onAgentReviewClose,
+    chatDialog,
+    onChatDialogClose,
   } = props;
   const [savingCard, setSavingCard] = React.useState(false);
   return (
@@ -107,6 +117,9 @@ export default function DocumentDialogsImpl(
             Object.fromEntries(table.headers.map((h, i) => [h, row[i] ?? ""])),
           )}
         />
+      ) : null}
+      {chatDialog ? (
+        <ChatMessageDialogs {...chatDialog} onClose={onChatDialogClose} />
       ) : null}
       {agentReview ? (
         <DocumentAgentReview

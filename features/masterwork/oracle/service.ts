@@ -14,7 +14,7 @@ import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
  * other draft. Two entry points share this ONE implementation:
  *
  *   - "Add to Rulebook" in the ONE action registry (rich-document)
- *   - the thumbs follow-up nudge (RulebookNudge in AssistantActionBar)
+ *   - the thumbs follow-up nudge (RulebookNudge in AssistantMessageFooter)
  *
  * Both open the `addToRulebookDialog` overlay, which calls
  * `appendDraftRuleFromMessage`. The write is the canonical `saveRules`

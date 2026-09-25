@@ -78,7 +78,7 @@ import { AssistantError } from "../../run/AssistantError";
 import { friendlyStreamError } from "../../run/friendlyStreamError";
 import { AssistantWarning } from "../../run/AssistantWarning";
 import { BreathingOrb } from "./BreathingOrb";
-import { AssistantActionBar } from "./AssistantActionBar";
+import { AssistantMessageFooter } from "./AssistantMessageFooter";
 import { AssistantNoAnswer } from "./AssistantNoAnswer";
 import { countPersonVisibleParts, isAnswerlessTurn } from "./answerless-turn";
 import { retryConversationTurn } from "@/features/agents/redux/execution-system/message-crud/retry-turn.thunk";
@@ -109,12 +109,12 @@ interface AgentAssistantMessageProps {
   streamSlotEnd?: number;
   /**
    * Optional surface key for routing fork / retry outcomes via the
-   * surfaces registry. Threaded down to AssistantActionBar.
+   * surfaces registry. Threaded down to AssistantMessageFooter.
    */
   surfaceKey?: string;
   compact?: boolean;
   /**
-   * Suppress the per-message AssistantActionBar. Used by AssistantTurnGroup
+   * Suppress the per-message AssistantMessageFooter. Used by AssistantTurnGroup
    * to consolidate N sibling assistant messages (multi-iteration agentic
    * turns) into one trailing action bar at the end of the group. When set,
    * the print/full-DOM capture target also lifts to the group container.
@@ -562,7 +562,7 @@ export function AgentAssistantMessage({
     <div
       ref={containerRef}
       data-message-id={messageId ?? undefined}
-      // `group/assistant-msg` is the hover anchor for AssistantActionBar's
+      // `group/assistant-msg` is the hover anchor for AssistantMessageFooter's
       // compact-density "show on hover" behaviour. Hovering anywhere on the
       // assistant turn reveals the bar; non-compact mode keeps it visible.
       className="group/assistant-msg rounded transition-shadow"
@@ -667,7 +667,7 @@ export function AgentAssistantMessage({
         />
       )}
       {!hideActionBar && !isStreamActive && !failed && messageId && (
-        <AssistantActionBar
+        <AssistantMessageFooter
           messageId={messageId}
           conversationId={conversationId}
           onFullPrint={handleFullPrint}

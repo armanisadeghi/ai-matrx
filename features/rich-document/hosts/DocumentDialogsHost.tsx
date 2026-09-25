@@ -58,6 +58,8 @@ export interface DocumentDialogsHost {
     | "onRequestSaveTable"
     | "onRequestFlashcard"
     | "onRequestTextAgentAction"
+    | "onRequestDelete"
+    | "onRequestEditHistory"
   >;
   /** Render once, anywhere in the host's tree. */
   dialogs: React.ReactNode;
@@ -73,6 +75,15 @@ export function useDocumentDialogsHost(args: {
    * this and Custom agent appear — their result is reviewed and applied.
    */
   writable?: boolean;
+  /**
+   * The chat turn whose delete-vs-fork and edit-history dialogs this host
+   * owns (chat sources only). Omit elsewhere — those actions stay absent.
+   */
+  chatMessage?: {
+    conversationId: string;
+    messageId: string;
+    surfaceKey: string | null;
+  } | null;
 }): DocumentDialogsHost {
   const [convertOpen, setConvertOpen] = React.useState(false);
   const [convertMounted, setConvertMounted] = React.useState(false);
@@ -85,6 +96,10 @@ export function useDocumentDialogsHost(args: {
     ctx: RichDocumentActionContext;
   } | null>(null);
 
+  const [chatDialog, setChatDialog] = React.useState<"delete" | "history" | null>(
+    null,
+  );
+  const chat = args.chatMessage ?? null;
   const origin = args.convertOrigin;
   return {
     callbacks: {
@@ -99,9 +114,11 @@ export function useDocumentDialogsHost(args: {
       onRequestTextAgentAction: args.writable
         ? (actionId, ctx) => setAgentReview({ actionId, ctx })
         : undefined,
+      onRequestDelete: chat ? () => setChatDialog("delete") : undefined,
+      onRequestEditHistory: chat ? () => setChatDialog("history") : undefined,
     },
     dialogs:
-      (origin && convertMounted) || table || cardAnswer !== null || agentReview ? (
+      (origin && convertMounted) || table || cardAnswer !== null || agentReview || (chat && chatDialog) ? (
         <DocumentDialogsImpl
           convert={
             origin && convertMounted
@@ -114,6 +131,8 @@ export function useDocumentDialogsHost(args: {
           onCardClose={() => setCardAnswer(null)}
           agentReview={agentReview}
           onAgentReviewClose={() => setAgentReview(null)}
+          chatDialog={chat && chatDialog ? { dialog: chatDialog, ...chat } : null}
+          onChatDialogClose={() => setChatDialog(null)}
         />
       ) : null,
   };

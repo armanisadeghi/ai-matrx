@@ -245,4 +245,35 @@ describe("ProTextarea imperative dictation handle", () => {
     expect(el?.isDictating?.()).toBe(false);
     await box.unmount();
   });
+
+  it("keeps every internal feature working when the host forwards a CALLBACK ref (RC-B6)", async () => {
+    // A callback ref has no `.current`; ProTextarea used to read ref.current
+    // directly, so apply / dictation / auto-grow returned silently for every
+    // such host while the UI said "applied".
+    let node: ProTextareaElement | null = null;
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <TooltipProvider>
+          <ProTextarea
+            ref={(el) => {
+              node = el as ProTextareaElement | null;
+            }}
+            value=""
+            onChange={() => {}}
+          />
+        </TooltipProvider>,
+      );
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(node).toBeInstanceOf(HTMLTextAreaElement);
+    expect(typeof node!.startDictation).toBe("function");
+    expect(typeof node!.requestClose).toBe("function");
+    await act(async () => root.unmount());
+    container.remove();
+  });
 });
