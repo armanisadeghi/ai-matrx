@@ -238,7 +238,10 @@ begin
   if v_res ->> 'sentence' ~* '(foreign key|constraint|_fkey)' then
     raise exception '2b: the clear answered with the database talking: %', v_res ->> 'sentence';
   end if;
-  if v_res ->> 'sentence' !~ 'put back' or v_res ->> 'sentence' !~ 'Nothing is lost' then
+  -- Wording from custom.organization_clear as re-bodied by
+  -- migrations/campaign/storetails2_the_purge_archives_first_and_the_hard_delete_is_a_compliance_door.sql
+  -- ("can still be brought back … Nothing was destroyed"); same promise, the later ledgered words.
+  if v_res ->> 'sentence' !~ 'brought back' or v_res ->> 'sentence' !~ 'Nothing was destroyed' then
     raise exception '2b: the sentence does not tell the person their data is safe: %', v_res ->> 'sentence';
   end if;
   raise notice '2b PASSED — "%"', v_res ->> 'sentence';
@@ -257,9 +260,32 @@ begin
   set local session_replication_role = 'origin';
   perform set_config('role', 'authenticated', true);
 
+  -- THE RULE MOVED (migrations/campaign/storetails2_the_purge_archives_first_and_the_hard_delete_is_a_compliance_door.sql,
+  -- the owner's law of 2026-09-20 "archive, never delete; 30 days is compliance only"): the
+  -- door a person presses — custom.organization_clear — destroys NOTHING even after the window
+  -- runs out. Destroying is custom.migrate_purge_hard, a chair-only compliance door that needs a
+  -- written reason. So 2c now asserts both halves: the person's door still keeps the rows, and
+  -- the compliance door (run as the table owner, as a person at a terminal would) empties it.
+  v_res := custom.organization_clear(v_orgB, v_nameB, true);
+  if (v_res ->> 'destroyed')::boolean or (v_res ->> 'is_empty')::boolean then
+    raise exception '2c: the person''s door destroyed rows once the window ran out — only the compliance door may: %', v_res;
+  end if;
+  if v_res ->> 'sentence' !~ 'compliance' then
+    raise exception '2c: the clear kept the rows but did not say destroying them is a compliance step: %', v_res ->> 'sentence';
+  end if;
+  raise notice '2c PASSED (person''s door) — "%"', v_res ->> 'sentence';
+
+  perform set_config('role', v_boss, true);
+  loop
+    v_res := custom.migrate_purge_hard(v_orgB, null,
+      'Compliance erasure requested by the Brackenfield Yard owner on closing the yard; all records archived past the window.',
+      1000, false);
+    exit when coalesce((v_res ->> 'done')::boolean, true);
+  end loop;
+  perform set_config('role', 'authenticated', true);
   v_res := custom.organization_clear(v_orgB, v_nameB, true);
   if not (v_res ->> 'is_empty')::boolean then
-    raise exception '2c: the retention window has run out and the store still will not let go: %', v_res;
+    raise exception '2c: the compliance door ran and the store still will not let go: %', v_res;
   end if;
   if v_res ->> 'sentence' !~ 'can now be deleted' then
     raise exception '2c: the organization is empty and the door did not say it can be removed: %', v_res ->> 'sentence';
@@ -268,7 +294,7 @@ begin
   if not (v_held ->> 'is_empty')::boolean then
     raise exception '2c: the clear reported success and the organization still holds rows: %', v_held;
   end if;
-  raise notice '2c PASSED — "%"', v_res ->> 'sentence';
+  raise notice '2c PASSED (compliance door) — "%"', v_res ->> 'sentence';
 
   -- 2d THE SAME DELETE THAT WAS REFUSED IN 2a. (The role is re-asserted here because the
   -- doors called in 2b/2c are SECURITY DEFINER and leave the session role where they found it
@@ -416,27 +442,32 @@ begin
   set local session_replication_role = 'origin';
   perform set_config('role', 'authenticated', true);
 
+  -- THE RULE MOVED (migrations/campaign/storetails2_the_purge_archives_first_and_the_hard_delete_is_a_compliance_door.sql):
+  -- custom.migrate_purge is still granted to the seat and still usable from it — it now
+  -- ARCHIVES and destroys nothing, even past the window, and answers rows_purged = 0 honestly.
+  -- Destroying is custom.migrate_purge_hard, which the seat cannot reach at all.
   v_res := custom.migrate_purge(v_orgA, v_tblA, false);
-  if coalesce((v_res ->> 'rows_purged')::bigint, 0) < 1 then
-    raise exception '6a: the retention purge destroyed nothing from the seat a person has: %', v_res;
+  if v_res ->> 'rows_purged' is null or (v_res ->> 'rows_purged')::bigint <> 0 then
+    raise exception '6a: the purge a person can reach destroyed rows (or stopped saying how many): %', v_res;
   end if;
-  raise notice '6a PASSED — the retention purge finally works from the seat: % row(s) past their window destroyed.',
-    v_res ->> 'rows_purged';
+  if (custom.record_resolve(v_orgA, v_rA) ->> 'resolves_to') is null then
+    raise exception '6a: a record past its window is gone from the store after the seat''s purge';
+  end if;
+  raise notice '6a PASSED — the seat''s purge works and destroys nothing: "%"', v_res ->> 'policy';
 
-  -- AND IT STILL REFUSES A ROW INSIDE ITS WINDOW — the pair, so 6a is not passing because
-  -- the rule was removed rather than moved onto the retention it names.
-  v_rB := custom.record_write(v_orgA, v_tblA, jsonb_build_object('jname','Fresh'));
-  perform custom.record_delete(v_orgA, v_rB);
-  v_res := custom.migrate_purge(v_orgA, v_tblA, false);
-  if coalesce((v_res ->> 'rows_purged')::bigint, 0) <> 0 then
-    raise exception '6b: a record retired seconds ago was destroyed — REC-23 is gone: %', v_res;
+  -- AND THE HARD DOOR IS SHUT TO THE SEAT, even for a record long past its window.
+  begin
+    perform custom.migrate_purge_hard(v_orgA, v_tblA,
+      'Compliance erasure asked for by the Ironclad Yard owner for records past their window.', 200, false);
+    raise exception '6b: a signed-in caller destroyed records through the compliance door';
+  exception when insufficient_privilege then null;
+  end;
+  if (custom.record_resolve(v_orgA, v_rA) ->> 'resolves_to') is null then
+    raise exception '6b: the record is no longer in the store at all';
   end if;
-  if (custom.record_resolve(v_orgA, v_rB) ->> 'resolves_to') is null then
-    raise exception '6b: the record retired seconds ago is no longer in the store at all';
-  end if;
-  raise notice '6b PASSED — a record retired seconds ago is left exactly where it is.';
+  raise notice '6b PASSED — the compliance door refuses the seat; the record is left exactly where it is.';
 
-  raise notice 'ALL PARTS PASSED (1a what it holds, 1b an empty one, 2a the raw refusal, 2b the date, 2c the window runs out, 2d the delete, 3a-3c retire and undo, 4a-4c who may, 5 the census, 6a-6b the purge) — every clause from the seat `authenticated` except 2a-2d, which are about the TABLE''s foreign key and say so at 2.0.';
+  raise notice 'ALL PARTS PASSED (1a what it holds, 1b an empty one, 2a the raw refusal, 2b the date, 2c the window runs out, 2d the delete, 3a-3c retire and undo, 4a-4c who may, 5 the census, 6a-6b the purge archives and the hard door is shut) — every clause from the seat `authenticated` except 2a-2d, which are about the TABLE''s foreign key and say so at 2.0.';
 end;
 $t$;
 
