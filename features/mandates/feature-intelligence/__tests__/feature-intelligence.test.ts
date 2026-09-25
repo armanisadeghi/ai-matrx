@@ -47,10 +47,13 @@ describe("feature intelligence — places", () => {
 });
 
 describe("feature intelligence — rows", () => {
-  it("does not treat a topic pin to the resolved agent as a second active choice", () => {
+  it("shows a topic pin to the resolved agent as recorded, not as a second active choice", () => {
     const row = { holderType: "agent", holderId: "agent-1" } as FeatureIntelligenceRow;
     const choice = { holderId: "agent-1", holderName: "Agent", manageHref: "/topics/1/agents", contextLabel: "This topic" };
-    expect(effectiveRunOverride(row, choice)).toBeNull();
+    // Dormant today, but it takes over the moment the mandate choice changes —
+    // so it must stay visible (Factory Playground's auto-tagger, 2026-09-25).
+    expect(effectiveRunOverride(row, choice)).toEqual({ ...choice, matchesMandate: true });
+    expect(effectiveRunOverride(row, undefined)).toBeNull();
     expect(effectiveRunOverride(row, { ...choice, holderId: "agent-2" })).toEqual({ ...choice, holderId: "agent-2" });
   });
 
