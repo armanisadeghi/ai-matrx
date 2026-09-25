@@ -23,6 +23,7 @@ import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandat
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { writeOne } from "@/utils/supabase/writeOne";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { isJsonObject } from "@/types/json";
 import type { Database } from "@/types/database.types";
@@ -714,11 +715,14 @@ export async function setRoleSelection(args: {
   if (findErr) throw findErr;
 
   if (existing) {
-    const { error } = await client
-      .schema("ui").from("ui_surface_agent_pref")
-      .update({ agent_id: agentId, ...(settings ? { settings } : {}) })
-      .eq("id", existing.id);
-    if (error) throw error;
+    await writeOne(
+      client
+        .schema("ui").from("ui_surface_agent_pref")
+        .update({ agent_id: agentId, ...(settings ? { settings } : {}) })
+        .eq("id", existing.id)
+        .select("id"),
+      { action: "save", noun: "agent choice" },
+    );
     return;
   }
   const { error } = await client.schema("ui").from("ui_surface_agent_pref").insert({
@@ -734,11 +738,14 @@ export async function setRoleSelection(args: {
 }
 
 export async function deleteRolePref(prefId: string): Promise<void> {
-  const { error } = await sb()
-    .schema("ui").from("ui_surface_agent_pref")
-    .delete()
-    .eq("id", prefId);
-  if (error) throw error;
+  await writeOne(
+    sb()
+      .schema("ui").from("ui_surface_agent_pref")
+      .delete()
+      .eq("id", prefId)
+      .select("id"),
+    { action: "delete", noun: "agent choice" },
+  );
 }
 
 export async function addRosterItem(args: {
@@ -795,11 +802,14 @@ export async function setNamespaceConfig(args: {
   if (findErr) throw findErr;
 
   if (existing) {
-    const { error } = await client
-      .schema("ui").from("ui_surface_config")
-      .update({ config })
-      .eq("id", existing.id);
-    if (error) throw error;
+    await writeOne(
+      client
+        .schema("ui").from("ui_surface_config")
+        .update({ config })
+        .eq("id", existing.id)
+        .select("id"),
+      { action: "save", noun: "surface setting" },
+    );
     return;
   }
   const { error } = await client.schema("ui").from("ui_surface_config").insert({

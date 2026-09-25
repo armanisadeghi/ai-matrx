@@ -6,6 +6,7 @@
  * via the server client factory.
  */
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import type {
   UserList,
   UserListSummaryRaw,
@@ -118,20 +119,28 @@ export async function updateList(input: UpdateListInput) {
  * migration 0454). Pair with restoreList for undo.
  */
 export async function deleteList(listId: string): Promise<void> {
-  const { error } = await supabase
-    .schema("workbench")
-    .from("udt_structured_lists")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", listId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("workbench")
+      .from("udt_structured_lists")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", listId)
+      .select("id"),
+    { action: "delete", noun: "list" },
+  );
   if (error) throw new Error(`Failed to delete list: ${error.message}`);
 }
 
 export async function restoreList(listId: string): Promise<void> {
-  const { error } = await supabase
-    .schema("workbench")
-    .from("udt_structured_lists")
-    .update({ deleted_at: null })
-    .eq("id", listId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("workbench")
+      .from("udt_structured_lists")
+      .update({ deleted_at: null })
+      .eq("id", listId)
+      .select("id"),
+    { action: "restore", noun: "list" },
+  );
   if (error) throw new Error(`Failed to restore list: ${error.message}`);
 }
 
@@ -208,19 +217,27 @@ export async function updateItem(
 
 /** Soft delete — see deleteList. */
 export async function deleteItem(itemId: string): Promise<void> {
-  const { error } = await supabase
-    .schema("workbench")
-    .from("udt_structured_list_items")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", itemId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("workbench")
+      .from("udt_structured_list_items")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", itemId)
+      .select("id"),
+    { action: "delete", noun: "list item" },
+  );
   if (error) throw new Error(`Failed to delete item: ${error.message}`);
 }
 
 export async function restoreItem(itemId: string): Promise<void> {
-  const { error } = await supabase
-    .schema("workbench")
-    .from("udt_structured_list_items")
-    .update({ deleted_at: null })
-    .eq("id", itemId);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("workbench")
+      .from("udt_structured_list_items")
+      .update({ deleted_at: null })
+      .eq("id", itemId)
+      .select("id"),
+    { action: "restore", noun: "list item" },
+  );
   if (error) throw new Error(`Failed to restore item: ${error.message}`);
 }
