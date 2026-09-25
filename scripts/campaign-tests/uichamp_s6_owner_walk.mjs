@@ -37,6 +37,8 @@ try {
     const page = await ctx.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(String(e)));
+    const consoleErrors = [];
+    page.on("console", (m) => { if (m.type() === "error") consoleErrors.push(m.text().slice(0, 300)); });
     const who = await signIn(page, ORIGIN, process.env.AI_ADMIN_USERNAME, process.env.AI_ADMIN_PASSWORD, "owner");
     clause(`${label}: signed in as admin@admin.com`, who === "admin@admin.com", who);
     await page.goto(`${ORIGIN}/data-v2/${TABLE}?rail=portals&item=${PORTAL}`, { waitUntil: "domcontentloaded", timeout: 300000 });
@@ -51,6 +53,21 @@ try {
     clause(`${label}: the crew form (a table the portal does not show) is not offered`, !t.includes("Log crew hours"), t.slice(0, 300));
     const welcome = editor.getByLabel("Welcome line");
     clause(`${label}: the welcome line reads what the portal stored`, /service calls, gate codes and invoices/.test(await welcome.inputValue()), await welcome.inputValue());
+    // LAYOUT AT THIS WIDTH: every form's whole name is shown (nothing clipped by an ellipsis or
+    // overflow), and every footer link's "Remove" sits inside the viewport.
+    const layout = await editor.evaluate((root) => {
+      const vw = window.innerWidth;
+      const names = [...root.querySelectorAll("li span.font-medium")].map((el) => ({
+        name: el.textContent,
+        clipped: el.scrollWidth > el.clientWidth + 1 || el.closest("span")?.scrollWidth > el.closest("span")?.clientWidth + 1,
+        right: el.getBoundingClientRect().right,
+      }));
+      const removes = [...root.querySelectorAll("button")].filter((b) => b.textContent?.trim() === "Remove")
+        .map((b) => { const r = b.getBoundingClientRect(); return { left: r.left, right: r.right }; });
+      return { vw, names, removes };
+    });
+    clause(`${label}: every form name is shown whole`, layout.names.length === 3 && layout.names.every((n) => !n.clipped && n.right <= layout.vw), layout.names);
+    clause(`${label}: every footer link's Remove is inside the screen`, layout.removes.length >= 1 && layout.removes.every((r) => r.left >= 0 && r.right <= layout.vw), layout.removes);
     const noHScroll = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
     clause(`${label}: no horizontal scroll`, noHScroll, null);
     await editor.screenshot({ path: `${OUT}/owner-${label}-look-editor.png` });
@@ -75,6 +92,7 @@ try {
       }
     }
     clause(`${label}: no uncaught page error`, errors.length === 0, errors);
+    clause(`${label}: zero console errors`, consoleErrors.length === 0, consoleErrors);
     await ctx.close();
   }
 } finally {
