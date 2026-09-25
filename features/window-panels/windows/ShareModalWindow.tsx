@@ -128,6 +128,7 @@ export default function ShareModalWindow({
   const {
     permissions,
     isPublic: resourceIsPublic,
+    organizationDefault,
     loading,
     error,
     shareWithUser,
@@ -275,7 +276,10 @@ export default function ShareModalWindow({
                   onRevoke={revokeAccess}
                   loading={loading}
                 />
-                <OrgAvailabilityNote permissions={orgPermissions} />
+                <OrgAvailabilityNote
+                  permissions={orgPermissions}
+                  organizationDefault={organizationDefault}
+                />
               </div>
 
               {isOwner && !ownerLoading && (

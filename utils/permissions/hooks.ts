@@ -505,6 +505,8 @@ export function useSharing(
     isPublic: visibility.isPublic,
     /** The canonical enum value, or null for legacy boolean-backed types. */
     visibility: visibility.visibility,
+    /** Membership alone reaches it (record store only) — said under Current Access. */
+    organizationDefault: visibility.organizationDefault ?? null,
     loading,
     error,
     shareWithUser: handleShareWithUser,

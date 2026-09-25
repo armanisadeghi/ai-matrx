@@ -117,6 +117,25 @@ reset role;
 -- admin: "Only people I share it with".
 select set_config('request.jwt.claims', '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
 set local role authenticated;
+-- C1 (chair ruling 2026-09-25): a Table with NO lane row is the organization default, never "mine":
+-- the lane door says organization and names the default, and the dialog lists the default row.
+do $t$
+declare d jsonb;
+begin
+  d := public.store_door_lane('record', (select v from st_probe where k = 'tbl'));
+  if d ->> 'lane' is distinct from 'organization' or d ->> 'choice' is distinct from 'organization' then
+    raise exception 'C1 FAILED — a Table with no lane row reads as %, not organization.', d ->> 'lane';
+  end if;
+  if d -> 'organization_default' ->> 'level' is distinct from 'viewer'
+     or d -> 'organization_default' ->> 'organization_name' is distinct from 'Harbor Landscaping Crew' then
+    raise exception 'C1 FAILED — the lane door does not name the organization default: %', d;
+  end if;
+  if not exists (select 1 from custom.share_access('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl')) a
+                  where a.reason = 'organization default' and a.level = 'viewer') then
+    raise exception 'C1 FAILED — the dialog does not list the organization-default row on a no-lane Table.';
+  end if;
+  raise notice 'C1 PASSED — no lane row reads as the organization default, and the dialog says so.';
+end $t$;
 select custom.share_lane_set('5ba5aa1e-0000-4a00-8a00-000000000a01', (select v from st_probe where k = 'tbl'), 'mine') ->> 'message' as said;
 reset role;
 
@@ -160,6 +179,15 @@ end $t$;
 -- B4: the owner still reads it all.
 select set_config('request.jwt.claims', '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}', true);
 set local role authenticated;
+-- C2: after "mine" the lane door says mine and names no default.
+do $t$
+declare d jsonb;
+begin
+  d := public.store_door_lane('record', (select v from st_probe where k = 'tbl'));
+  if d ->> 'lane' is distinct from 'mine' or d -> 'organization_default' <> 'null'::jsonb then
+    raise exception 'C2 FAILED — after mine the lane door says %', d;
+  end if;
+end $t$;
 -- B3: the Share dialog no longer says every member reaches it.
 do $t$
 begin
@@ -215,5 +243,18 @@ begin
   raise notice 'PART B PASSED — mine is the owner and the people named; the organization lane is every member.';
 end $t$;
 reset role;
+-- C3: the organization lane (a mine row plus an availability row) reads as organization; a record
+-- with no lane row that its owner marked personal reads as mine.
+do $t$
+begin
+  if iam.lane_of('record', (select v from st_probe where k = 'tbl')) is distinct from 'organization' then
+    raise exception 'C3 FAILED — the organization lane reads as %', iam.lane_of('record', (select v from st_probe where k = 'tbl'));
+  end if;
+  update custom.record set visibility = 'personal' where id = (select v from st_probe where k = 'bid');
+  if iam.lane_of('record', (select v from st_probe where k = 'bid')) is distinct from 'mine' then
+    raise exception 'C3 FAILED — a personal record with no lane row reads as %', iam.lane_of('record', (select v from st_probe where k = 'bid'));
+  end if;
+  raise notice 'PART C PASSED — no lane row is the organization default; the lanes read as chosen.';
+end $t$;
 
 rollback;

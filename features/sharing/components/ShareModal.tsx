@@ -215,6 +215,7 @@ export function ShareModal({
     permissions,
     isPublic: resourceIsPublic,
     visibility: resourceVisibility,
+    organizationDefault,
     setVisibility,
     loading,
     error,
@@ -403,6 +404,7 @@ export function ShareModal({
                     permissions={permissions.filter(
                       (p) => p.grantedToOrganizationId,
                     )}
+                    organizationDefault={organizationDefault}
                   />
                 </div>
 

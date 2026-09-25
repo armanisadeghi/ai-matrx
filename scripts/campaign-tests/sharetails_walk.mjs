@@ -91,6 +91,18 @@ try {
   await openShare(t);
   const before = await currentAccess(t);
   pass("before: admin is not in Current Access", !before.includes(ADMIN_EMAIL), before.slice(0, 200));
+  // A table nobody set to "Only people I share it with" is the organization default (chair ruling
+  // 2026-09-25): the dialog says every member reaches it, instead of "Not shared with anyone" alone.
+  const orgDefault = await until(
+    "the organization-default line",
+    () => t.evaluate(() => document.querySelector('[role="dialog"] [data-organization-default]')?.textContent ?? ""),
+    30000,
+  );
+  pass(
+    "before: the dialog says everyone in Oak & River can view it by default",
+    /Everyone in Oak & River can view this through the organization's default\./.test(orgDefault.v ?? ""),
+    orgDefault.v ?? "(no line)",
+  );
   await shot(t, "1-before");
 
   await t.locator('[role="dialog"] button:has-text("Add everyone in an organization")').click({ timeout: 20000 });

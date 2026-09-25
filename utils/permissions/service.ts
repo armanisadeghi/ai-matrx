@@ -157,6 +157,14 @@ export interface ResourceVisibility {
    * only have two states — a caller must not invent a third for them.
    */
   visibility: VisibilityValue | null;
+  /**
+   * WHEN MEMBERSHIP ALONE REACHES IT (SHARE-TAILS, chair ruling 2026-09-25). A record-store thing
+   * with no sharing choice is the organization's default — every member reaches it at the member
+   * default level — and the lane door says so. Absent/null when membership reaches nothing (the
+   * owner chose "Only people I share it with", or the organization shows members nothing by
+   * default), and for every type outside the record store.
+   */
+  organizationDefault?: { level: string; organizationName: string } | null;
 }
 
 /**
@@ -245,9 +253,23 @@ export async function getResourceVisibility(
         new Error("That record is not here any more."),
       );
     }
+    const orgDefault = row.organization_default as
+      | { level?: unknown; organization_name?: unknown }
+      | null
+      | undefined;
     return {
       isPublic: row.is_public === true,
       visibility: row.is_public === true ? "public" : null,
+      organizationDefault:
+        orgDefault && typeof orgDefault.level === "string"
+          ? {
+              level: orgDefault.level,
+              organizationName:
+                typeof orgDefault.organization_name === "string"
+                  ? orgDefault.organization_name
+                  : "this organization",
+            }
+          : null,
     };
   }
 

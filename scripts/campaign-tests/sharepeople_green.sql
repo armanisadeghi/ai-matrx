@@ -118,7 +118,12 @@ begin
    where granted_to_organization_id is not null and status <> 'archived'
      and granted_via is distinct from 'availability';
   if v_n <> 0 then raise exception '5: % organization grant(s) are neither availability nor archived', v_n; end if;
-  -- 5b. every archived share's current members read it by name at the same level or higher
+  -- 5b. every archived share's current members read it by name at the same level or higher —
+  -- UNLESS that seat was taken away on purpose after the conversion. The conversion's promise is
+  -- that it dropped nobody; a person grant it wrote and somebody later revoked (history records the
+  -- DELETE, with who and when) is a later decision, not a conversion loss. Measured 2026-09-25: the
+  -- probe mandate c90e2cae's two seats were revoked by its own creator after 13:27Z, which this
+  -- check used to report as "lost in the conversion" (SHARE-TAILS).
   select count(*) into v_n
     from iam._share_people_conversion c
     join iam.permissions o on o.id = c.org_permission_id
@@ -129,7 +134,14 @@ begin
                       where p.resource_type = o.resource_type and p.resource_id = o.resource_id
                         and p.granted_to_user_id = m.user_id
                         and p.permission_level >= c.level_before
-                        and p.status = c.status_before);
+                        and p.status = c.status_before)
+     and not exists (select 1 from history.row_versions h
+                      where h.entity_type = 'iam.permissions'
+                        and h.operation = 'DELETE'
+                        and h.occurred_at > c.converted_at
+                        and h.row_data ->> 'resource_type' = o.resource_type
+                        and (h.row_data ->> 'resource_id')::uuid = o.resource_id
+                        and (h.row_data ->> 'granted_to_user_id')::uuid = m.user_id);
   if v_n <> 0 then raise exception '5b: % member(s) lost a reader seat in the conversion', v_n; end if;
   -- 5c. an archived organization share cannot be brought back
   select c.org_permission_id into v_id from iam._share_people_conversion c where c.classified = 'share:archived' limit 1;
