@@ -607,6 +607,41 @@ function resolveAgentsSurface(stripped: string): string | null {
  * a mandate (`new`, `advanced`, `references`) stay on the console surface. Prefix matching
  * cannot express "children but not the parent", hence a resolver.
  */
+/**
+ * The mandate pages outside `/administration/mandates/**` (2026-09-25).
+ *
+ * THE RECORD PAGE (`features/mandates/record-next/MandateRecordPage.tsx`)
+ * mounts `matrx-admin/mandate-workspace` at every seat, so every address it
+ * serves resolves to that surface — a different name here and the header
+ * rejects the mounted runtime as a mismatch:
+ *   /administration/intelligence/mandates/<key>[/overrides]   (system seat)
+ *   /mandates/record-preview/<key>                            (person seat)
+ *   /organizations/<org>/mandates/<key>                       (organization seat)
+ * The new admin suite's other pages (list, dashboard, health, unconverted,
+ * window) are the console's siblings → `matrx-admin/mandates`.
+ *
+ * The MEMBER lists (/mandates/list-preview, /organizations/<org>/mandates) and
+ * /intelligence/** deliberately resolve to NO mandate surface: both mandate
+ * surfaces are admin vocabularies, and a member page must never be handed
+ * admin tools. The org list stays on the organizations hub below.
+ */
+const ADMIN_SUITE_PAGES = new Set(["dashboard", "health", "unconverted", "window"]);
+
+function resolveMandateSuiteSurface(stripped: string): string | null {
+  const suite = stripped.match(/^\/administration\/intelligence\/mandates(?:\/([^/]+))?(?:\/|$)/);
+  if (suite) {
+    const segment = suite[1];
+    if (!segment || ADMIN_SUITE_PAGES.has(segment)) return "matrx-admin/mandates";
+    return "matrx-admin/mandate-workspace";
+  }
+  if (/^\/mandates\/record-preview\/[^/]+\/?$/.test(stripped)) {
+    return "matrx-admin/mandate-workspace";
+  }
+  const org = stripped.match(/^\/organizations\/[^/]+\/mandates\/([^/]+)\/?$/);
+  if (org && org[1] !== "new") return "matrx-admin/mandate-workspace";
+  return null;
+}
+
 function resolveAdminMandateSurface(stripped: string): string | null {
   const PREFIX = "/administration/mandates/";
   if (!stripped.startsWith(PREFIX)) return null;
@@ -758,6 +793,9 @@ export function surfaceFromPathname(
 
   const agents = resolveAgentsSurface(stripped);
   if (agents) return agents;
+
+  const mandateSuite = resolveMandateSuiteSurface(stripped);
+  if (mandateSuite) return mandateSuite;
 
   const adminMandate = resolveAdminMandateSurface(stripped);
   if (adminMandate) return adminMandate;
