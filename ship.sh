@@ -43,8 +43,20 @@ else
 fi
 
 # ── 2. release ───────────────────────────────────────────────────────────────
+# ONE REPO, THREE SITES. scripts/vercel-ignore-build.sh builds manage.aimatrx.com
+# and demos.aimatrx.com only for a "release-all:" (or release-admin:/release-demos:)
+# commit; a plain "release:" builds www alone. From v0.4.2277 to v0.4.2298 on
+# 2026-09-24 every ship went out as "release:" and the two other sites sat on a
+# morning build for ten hours with every deploy cancelled by the ignored build
+# step. A ship is a ship of the whole app: default to --target all unless the
+# caller named a target.
+TARGET_FLAG=()
+case " $* " in
+    *" --target "*) ;;
+    *) TARGET_FLAG=(--target all) ;;
+esac
 echo ""
-"$ROOT/scripts/release.sh" --message "$NOTE" "$@"
+"$ROOT/scripts/release.sh" --message "$NOTE" "${TARGET_FLAG[@]}" "$@"
 RELEASE_RC=$?
 
 # ── 3. open items ────────────────────────────────────────────────────────────
