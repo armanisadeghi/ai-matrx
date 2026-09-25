@@ -1,4 +1,0 @@
-{
-  "extends": "./tsconfig.typecheck.json",
-  "include": ["next-env.d.ts", "types/**/*.d.ts", "features/mandates/fast-path-guard.ts", "features/mandates/FastPathMandateGuard.tsx", "features/mandates/__tests__/fast-path-guard.test.ts", "features/transcript-studio/redux/assistantRoster.ts", "app/(dev)/demos/chat/page.dev.tsx", "app/(dev)/demos/chat/c/[conversationId]/page.dev.tsx", "lib/diagnostics/errorCaptureStore.ts", "lib/diagnostics/buildCapturedErrorPayload.ts"]
-}
