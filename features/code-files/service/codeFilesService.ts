@@ -6,6 +6,7 @@
 // facade in codeFilesApi.ts is what app code should call.
 
 import { supabase } from "@/utils/supabase/client";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database, Json } from "@/types/database.types";
 import type { CodeFile, CodeFolder } from "../redux/code-files.types";
@@ -184,11 +185,15 @@ export async function updateCodeFile(
 }
 
 export async function deleteCodeFile(id: string): Promise<void> {
-  const { error } = await supabase
-    .schema("code")
-    .from("code_files")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("code")
+      .from("code_files")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "file" },
+  );
   if (error) {
     console.error("[codeFilesService] deleteCodeFile failed", error);
     throw error;
@@ -266,11 +271,15 @@ export async function updateCodeFolder(
 }
 
 export async function deleteCodeFolder(id: string): Promise<void> {
-  const { error } = await supabase
-    .schema("code")
-    .from("code_file_folders")
-    .update({ is_active: false })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    supabase
+      .schema("code")
+      .from("code_file_folders")
+      .update({ is_active: false })
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "folder" },
+  );
   if (error) {
     console.error("[codeFilesService] deleteCodeFolder failed", error);
     throw error;

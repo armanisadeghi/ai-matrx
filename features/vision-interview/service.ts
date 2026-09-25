@@ -13,6 +13,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { interviewDb } from "@/utils/supabase/interviewDb";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { readAllRows } from "@ai-matrx/data/db";
 import {
@@ -92,10 +93,14 @@ export async function getSession(
 }
 
 export async function renameSession(id: string, title: string): Promise<void> {
-  const { error } = await interviewDb(supabase)
-    .from("session")
-    .update({ title: title.trim() || "Untitled interview" })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    interviewDb(supabase)
+      .from("session")
+      .update({ title: title.trim() || "Untitled interview" })
+      .eq("id", id)
+      .select("id"),
+    { action: "rename", noun: "interview" },
+  );
   if (error) throw pgError(error);
 }
 
@@ -132,10 +137,14 @@ export async function appendVisionStatement(
 
 /** Soft delete — lifecycle marker only, never a hard DELETE from the client. */
 export async function deleteSession(id: string): Promise<void> {
-  const { error } = await interviewDb(supabase)
-    .from("session")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    interviewDb(supabase)
+      .from("session")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "interview" },
+  );
   if (error) throw pgError(error);
 }
 

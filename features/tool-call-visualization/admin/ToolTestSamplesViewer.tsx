@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { useToast } from "@/components/ui/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -643,10 +644,14 @@ export function ToolTestSamplesViewer({ toolName, toolId }: ToolTestSamplesViewe
     }, [load]);
 
     const handleUpdate = useCallback(async (id: string, patch: ToolTestSamplePatch) => {
-        const { error } = await supabase
-            .schema("tool").from("test_sample")
-            .update(patch)
-            .eq("id", id);
+        const { error } = await tryWriteOne(
+            supabase
+                .schema("tool").from("test_sample")
+                .update(patch)
+                .eq("id", id)
+                .select("id"),
+            { action: "update", noun: "sample" },
+        );
 
         if (error) {
             const failure = operationFailed("update that sample", error);

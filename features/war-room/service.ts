@@ -4,6 +4,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
@@ -168,6 +169,7 @@ export async function updateSession(
 }
 
 export async function touchSessionOpened(id: string): Promise<void> {
+  // write-lands-exempt: best-effort last_opened_at recency stamp; failure is logged, never shown
   const { error } = await wsDb
     .from(SESSIONS)
     .update({ last_opened_at: new Date().toISOString() })
@@ -180,10 +182,14 @@ export async function touchSessionOpened(id: string): Promise<void> {
 }
 
 export async function softDeleteSession(id: string): Promise<void> {
-  const { error } = await wsDb
-    .from(SESSIONS)
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    wsDb
+      .from(SESSIONS)
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "session" },
+  );
   if (error) {
     console.error(
       "[war-room] softDeleteSession failed:",
@@ -319,10 +325,14 @@ export async function updateThread(
 }
 
 export async function softDeleteThread(id: string): Promise<void> {
-  const { error } = await wsDb
-    .from(THREADS)
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+  const { error } = await tryWriteOne(
+    wsDb
+      .from(THREADS)
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id"),
+    { action: "delete", noun: "thread" },
+  );
   if (error) {
     console.error(
       "[war-room] softDeleteThread failed:",
