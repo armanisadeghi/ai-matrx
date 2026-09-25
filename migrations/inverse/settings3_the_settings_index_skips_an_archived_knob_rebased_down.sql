@@ -1,14 +1,12 @@
--- chair-step: the CORRECTED inverse of settings3_the_settings_index_skips_an_archived_knob.sql — byte for byte settings3_the_settings_index_skips_an_archived_knob_down.sql below this header, with
---   ONLY its stale `-- based-on:` hashes changed: platform.knob_index(uuid, text, uuid, boolean, jsonb, uuid) 1dbd1dd8… -> fa143dd1….
---   The ledgered inverse declared bodies that never stood live: the up-file's own bytes produce the
---   hashes above (measured 2026-09-25 on the dev clone, each function's block from the up-file alone in
---   a rolled-back transaction) and production holds exactly them, so DD-220 would refuse the old
---   inverse the one time it is needed. The old file is never edited; THIS is the inverse to run.
---   Its up-file is not found by name — pass `--up` with settings3_the_settings_index_skips_an_archived_knob.sql.
---   Lane BRANCH-REFRESH-4 (scripts/night/body-drift-inverses.py: an inverse whose based-on names a
---   body that never stood live).
--- supersedes-inverse: settings3_the_settings_index_skips_an_archived_knob_down.sql
 -- additive: no
+--   CORRECTED INVERSE (lane BRANCH-REFRESH-4, 2026-09-25): byte for byte settings3_the_settings_index_skips_an_archived_knob_down.sql, whose header
+--   this is, except ONLY its stale `-- based-on:` hashes: platform.knob_index(uuid, text, uuid, boolean, jsonb, uuid) 1dbd1dd8… -> fa143dd1…. The ledgered
+--   inverse declared bodies that never stood live: the up-file's own bytes produce the new hashes
+--   (measured on the dev clone, each function's block from settings3_the_settings_index_skips_an_archived_knob.sql alone in a rolled-back
+--   transaction) and production holds exactly them, so DD-220 would refuse the old inverse the one
+--   time it is needed. The old file is never edited; THIS is the inverse to run. Its up-file is not
+--   found by name — pass `--up` with settings3_the_settings_index_skips_an_archived_knob.sql. Found by scripts/night/body-drift-inverses.py.
+-- supersedes-inverse: settings3_the_settings_index_skips_an_archived_knob_down.sql
 -- based-on: platform.knob_index(uuid, text, uuid, boolean, jsonb, uuid) fa143dd1a47d822e25aaa397315f6c01ed54681efa414e03084c1687ca7a7ce9
 -- THE INVERSE of migrations/campaign/settings3_the_settings_index_skips_an_archived_knob.sql.
 -- It puts back the body of platform.knob_index that file replaced, byte for byte, as read

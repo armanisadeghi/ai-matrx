@@ -1,14 +1,12 @@
--- chair-step: the CORRECTED inverse of rca2_comments_follow_the_parent.sql — byte for byte rca2_comments_follow_the_parent_down.sql below this header, with
---   ONLY its stale `-- based-on:` hashes changed: iam._apply_rls_unchecked(text, text, text, text) d13e060d… -> 0dc25738…; iam.verify_canonical(text, text, text, text) 368dcc7f… -> c8b153ed…; public.cmt_add(text, uuid, text, uuid, uuid) 7b571f58… -> 80b84355….
---   The ledgered inverse declared bodies that never stood live: the up-file's own bytes produce the
---   hashes above (measured 2026-09-25 on the dev clone, each function's block from the up-file alone in
---   a rolled-back transaction) and production holds exactly them, so DD-220 would refuse the old
---   inverse the one time it is needed. The old file is never edited; THIS is the inverse to run.
---   Its up-file is not found by name — pass `--up` with rca2_comments_follow_the_parent.sql.
---   Lane BRANCH-REFRESH-4 (scripts/night/body-drift-inverses.py: an inverse whose based-on names a
---   body that never stood live).
--- supersedes-inverse: rca2_comments_follow_the_parent_down.sql
 -- chair-step: inverse of rca2_comments_follow_the_parent.sql — restores the entity-variant comment lane (organization members read comments on any record), the org-only cmt_* doors, drops cmt_resolve and the anchor/resolved columns. It re-opens the RC-A2 leak; run it only to abort.
+--   CORRECTED INVERSE (lane BRANCH-REFRESH-4, 2026-09-25): byte for byte rca2_comments_follow_the_parent_down.sql, whose header
+--   this is, except ONLY its stale `-- based-on:` hashes: iam._apply_rls_unchecked(text, text, text, text) d13e060d… -> 0dc25738…; iam.verify_canonical(text, text, text, text) 368dcc7f… -> c8b153ed…; public.cmt_add(text, uuid, text, uuid, uuid) 7b571f58… -> 80b84355…. The ledgered
+--   inverse declared bodies that never stood live: the up-file's own bytes produce the new hashes
+--   (measured on the dev clone, each function's block from rca2_comments_follow_the_parent.sql alone in a rolled-back
+--   transaction) and production holds exactly them, so DD-220 would refuse the old inverse the one
+--   time it is needed. The old file is never edited; THIS is the inverse to run. Its up-file is not
+--   found by name — pass `--up` with rca2_comments_follow_the_parent.sql. Found by scripts/night/body-drift-inverses.py.
+-- supersedes-inverse: rca2_comments_follow_the_parent_down.sql
 -- retired: unsafe after D347 and RC-A2; restoring org-only comment access would reopen the personal-record leak and replace D347 IAM bodies. Use rca2_comments_follow_the_parent_contain.sql for emergency containment.
 --
 -- Order: the table goes back to `entity` and is regenerated FIRST (the new generator emits the

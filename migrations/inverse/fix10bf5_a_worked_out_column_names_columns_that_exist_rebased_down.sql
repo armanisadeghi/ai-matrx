@@ -1,14 +1,12 @@
--- chair-step: the CORRECTED inverse of fix10bf5_a_worked_out_column_names_columns_that_exist.sql — byte for byte fix10bf5_a_worked_out_column_names_columns_that_exist_down.sql below this header, with
---   ONLY its stale `-- based-on:` hashes changed: custom._field_type_parity_guard() c1f134ab… -> 79c4f160….
---   The ledgered inverse declared bodies that never stood live: the up-file's own bytes produce the
---   hashes above (measured 2026-09-25 on the dev clone, each function's block from the up-file alone in
---   a rolled-back transaction) and production holds exactly them, so DD-220 would refuse the old
---   inverse the one time it is needed. The old file is never edited; THIS is the inverse to run.
---   Its up-file is not found by name — pass `--up` with fix10bf5_a_worked_out_column_names_columns_that_exist.sql.
---   Lane BRANCH-REFRESH-4 (scripts/night/body-drift-inverses.py: an inverse whose based-on names a
---   body that never stood live).
--- supersedes-inverse: fix10bf5_a_worked_out_column_names_columns_that_exist_down.sql
 -- target: branch,production
+--   CORRECTED INVERSE (lane BRANCH-REFRESH-4, 2026-09-25): byte for byte fix10bf5_a_worked_out_column_names_columns_that_exist_down.sql, whose header
+--   this is, except ONLY its stale `-- based-on:` hashes: custom._field_type_parity_guard() c1f134ab… -> 79c4f160…. The ledgered
+--   inverse declared bodies that never stood live: the up-file's own bytes produce the new hashes
+--   (measured on the dev clone, each function's block from fix10bf5_a_worked_out_column_names_columns_that_exist.sql alone in a rolled-back
+--   transaction) and production holds exactly them, so DD-220 would refuse the old inverse the one
+--   time it is needed. The old file is never edited; THIS is the inverse to run. Its up-file is not
+--   found by name — pass `--up` with fix10bf5_a_worked_out_column_names_columns_that_exist.sql. Found by scripts/night/body-drift-inverses.py.
+-- supersedes-inverse: fix10bf5_a_worked_out_column_names_columns_that_exist_down.sql
 -- additive: yes
 -- guard: custom/system_enabled
 -- based-on: custom._field_type_parity_guard() 79c4f160334052bfeb5995d1cc65c7b9bc7d3bd5907daf323271d514707a5d4f

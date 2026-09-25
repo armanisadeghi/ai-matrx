@@ -1,14 +1,12 @@
--- chair-step: the CORRECTED inverse of tails5_a_revive_is_an_update_of_the_tombstone.sql — byte for byte tails5_a_revive_is_an_update_of_the_tombstone_down.sql below this header, with
---   ONLY its stale `-- based-on:` hashes changed: platform.revive_tombstoned_association() a1d24b9a… -> c60df9ab….
---   The ledgered inverse declared bodies that never stood live: the up-file's own bytes produce the
---   hashes above (measured 2026-09-25 on the dev clone, each function's block from the up-file alone in
---   a rolled-back transaction) and production holds exactly them, so DD-220 would refuse the old
---   inverse the one time it is needed. The old file is never edited; THIS is the inverse to run.
---   Its up-file is not found by name — pass `--up` with tails5_a_revive_is_an_update_of_the_tombstone.sql.
---   Lane BRANCH-REFRESH-4 (scripts/night/body-drift-inverses.py: an inverse whose based-on names a
---   body that never stood live).
--- supersedes-inverse: tails5_a_revive_is_an_update_of_the_tombstone_down.sql
 -- INVERSE of migrations/campaign/tails5_a_revive_is_an_update_of_the_tombstone.sql.
+--   CORRECTED INVERSE (lane BRANCH-REFRESH-4, 2026-09-25): byte for byte tails5_a_revive_is_an_update_of_the_tombstone_down.sql, whose header
+--   this is, except ONLY its stale `-- based-on:` hashes: platform.revive_tombstoned_association() a1d24b9a… -> c60df9ab…. The ledgered
+--   inverse declared bodies that never stood live: the up-file's own bytes produce the new hashes
+--   (measured on the dev clone, each function's block from tails5_a_revive_is_an_update_of_the_tombstone.sql alone in a rolled-back
+--   transaction) and production holds exactly them, so DD-220 would refuse the old inverse the one
+--   time it is needed. The old file is never edited; THIS is the inverse to run. Its up-file is not
+--   found by name — pass `--up` with tails5_a_revive_is_an_update_of_the_tombstone.sql. Found by scripts/night/body-drift-inverses.py.
+-- supersedes-inverse: tails5_a_revive_is_an_update_of_the_tombstone_down.sql
 --
 -- It restores the four bodies exactly as they stood before that file:
 --

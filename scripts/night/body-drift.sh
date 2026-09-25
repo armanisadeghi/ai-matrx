@@ -66,6 +66,7 @@ if [ "$SELFTEST" = "1" ]; then
   night_resolve_psql >/dev/null || { say "FAIL psql does not resolve"; rc=1; }
   [ -x "${PSQL:-}" ] && say "PASS psql resolves: $PSQL"
   /usr/bin/env python3 "$FRONTEND/scripts/night/body-drift.py" --self-test || rc=1
+  /usr/bin/env python3 "$FRONTEND/scripts/night/body-drift-inverses.py" --self-test || rc=1
   # The catalogue query must name the four campaign schemas by default and be ONE statement.
   case "$SCHEMAS" in *platform*iam*history*custom*) say "PASS default schemas: $SCHEMAS" ;; *) say "FAIL default schemas: $SCHEMAS"; rc=1 ;; esac
   say "body-drift self-test: $([ $rc -eq 0 ] && print GREEN || print RED)"
@@ -147,6 +148,26 @@ measure before || exit 2
 report before
 BEFORE=$MISMATCHES
 
+# ── INVERSES WHOSE based-on NAMES A BODY THAT NEVER STANDS LIVE ──────────────
+# The chair's finding, 2026-09-25: uichamp_s1's inverse declares custom.view_declare at b6665956…
+# while its up-file's own bytes produce e3cbe21f…, which is what production holds, so DD-220 would
+# refuse that inverse the one time it is needed. Judged against PRODUCTION only (the ledger that
+# says which up-files stand); scripts/night/body-drift-inverses.py holds the rules.
+STALE_INVERSES=0
+if [ "$SOURCE" = "production" ]; then
+  night_readonly_psql "${SRC_ARGS[@]}" -F $'\t' --sql "select source, filename, checksum, applied_at::text from public._schema_migrations" > "$WORK/ledger.tsv" 2>/dev/null
+  /usr/bin/env python3 "$FRONTEND/scripts/night/body-drift-inverses.py" sigs "$WORK/ledger.tsv" > "$WORK/inv-sigs.txt"
+  if [ -s "$WORK/inv-sigs.txt" ]; then
+    INV_ARR="$(/usr/bin/env python3 -c "import sys; print(','.join(\"'\" + l.strip().replace(\"'\", \"''\") + \"'\" for l in open(sys.argv[1]) if l.strip()))" "$WORK/inv-sigs.txt")"
+    night_readonly_psql "${SRC_ARGS[@]}" -F $'\t' --sql "select s, coalesce(encode(sha256(convert_to(pg_get_functiondef(to_regprocedure(s)), 'utf8')), 'hex'), '') from unnest(array[$INV_ARR]::text[]) s" > "$WORK/inv-live.tsv" 2>/dev/null
+    /usr/bin/env python3 "$FRONTEND/scripts/night/body-drift-inverses.py" judge "$WORK/ledger.tsv" "$WORK/inv-live.tsv" > "$WORK/inv.out"
+    STALE_INVERSES=$(grep -c '^STALE' "$WORK/inv.out" || true); STALE_INVERSES=${STALE_INVERSES:-0}
+    say "inverses judged against production: $(sed -nE 's/^JUDGED\t//p' "$WORK/inv.out") based-on line(s) — STALE $STALE_INVERSES (a body that never stood live; the inverse would be refused), superseded $(grep -c '^SUPERSEDED' "$WORK/inv.out" || true) (production moved on; informational)"
+    grep '^STALE' "$WORK/inv.out" | while IFS=$'\t' read -r _ f sig why; do say "  STALE inverse $f — $sig: $why"; done
+    [ -n "$LIST_FILE" ] && cp "$WORK/inv.out" "$LIST_FILE.inverses"
+  fi
+fi
+
 if [ "$REPAIR" = "1" ] && [ "$BEFORE" -gt 0 ]; then
   say "─── repair: levelling each mismatch from the $SOURCE's own body ───"
   REPAIRED=0 NOT_REPAIRED=0
@@ -212,5 +233,6 @@ if [ "$REPAIR" = "1" ] && [ "$BEFORE" -gt 0 ]; then
   report after
 fi
 say "body-drift RESULT: $TARGET vs $SOURCE — mismatches before $BEFORE, after $MISMATCHES$([ "$REPAIR" = 1 ] || print ' (report only, nothing written)')"
-[ "$MISMATCHES" -eq 0 ] && exit 0
+[ "$SOURCE" = "production" ] && say "body-drift RESULT: stale inverses $STALE_INVERSES"
+[ "$MISMATCHES" -eq 0 ] && [ "$STALE_INVERSES" -eq 0 ] && exit 0
 exit 1
