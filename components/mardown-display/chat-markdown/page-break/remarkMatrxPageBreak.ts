@@ -144,10 +144,16 @@ function rawSource(node: MdastNode, file: SourceFile | undefined): string | null
   return source.slice(start, end);
 }
 
+function decodeTagEntities(text: string): string {
+  return text.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
+}
+
 function isDirectiveNode(node: MdastNode, file: SourceFile | undefined): boolean {
   if (node.type !== "html" && node.type !== "paragraph") return false;
   const raw = rawSource(node, file);
-  if (raw !== null) return isPageBreakLine(raw);
+  // The chat's prose preparation escapes non-allow-listed tags to entities
+  // (`<div …>` → `&lt;div …&gt;`); undo exactly that before judging the line.
+  if (raw !== null) return isPageBreakLine(decodeTagEntities(raw));
   // No positions (a caller built the tree by hand): judge the parsed text.
   if (node.type === "html") return isPageBreakLine(node.value ?? "");
   if (!node.children?.length || !node.children.every((c) => c.type === "text")) return false;
