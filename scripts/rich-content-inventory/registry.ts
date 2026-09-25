@@ -32,7 +32,8 @@ export type PieceCategory =
   | "hand-rolled-textarea"
   | "renderer-entry-point"
   | "raw-html"
-  | "raw-content-render";
+  | "raw-content-render"
+  | "document-generator";
 
 export type HeuristicRule = "raw-field-render" | "split-newline-paragraphs" | "pre-wrap-field";
 
@@ -85,6 +86,20 @@ const PROMPT_EDITOR =
   "The one editor's CodeMirror 6 source mode with {{variable}} highlighting (rich-content-unification PLAN §3.5). " +
   "Do not extend the hand-rolled contentEditable prompt pieces.";
 
+const ONE_DOCUMENT_EXPORTER =
+  "THE ONE DOCUMENT EXPORTER is `@ai-matrx/print/document` (RC-B10): `exportDocument(markdown, \"docx\" | \"pdf\" | " +
+  "\"epub\" | \"html\" | \"markdown\")` — one parsed tree, native Word with sections/TOC/captions/page numbers. " +
+  "Build markdown (settings in its frontmatter) and call it; a missing capability is added IN the package, never here.";
+
+const docGen = (id: string, label: string, pattern: string): LegacyPiece => ({
+  id,
+  label,
+  category: "document-generator",
+  status: "banned",
+  matcher: { kind: "package", pattern },
+  replacement: ONE_DOCUMENT_EXPORTER,
+});
+
 const md = (id: string, label: string, pattern: string): LegacyPiece => ({
   id,
   label,
@@ -119,6 +134,20 @@ export const LEGACY_PIECES: LegacyPiece[] = [
     allowedFiles: [...CORE_FILES, "components/rich-editor/core/markdown-parse.ts"],
   },
   md("pkg:markdown-it", "markdown-it", "^markdown-it(-|/|$)"),
+
+  // ── A second Word / EPUB generator in the app (RC-B10 one-canonical) ──────
+  docGen("pkg:docx", "docx (direct Word generator)", "^docx(/|$)"),
+  docGen("pkg:html-docx", "html-docx-js / html-to-docx (HTML→Word)", "^(html-docx-js|html-to-docx)(/|$)"),
+  docGen("pkg:docxtemplater", "docxtemplater / pizzip", "^(docxtemplater|pizzip)(/|$)"),
+  docGen("pkg:epub-gen", "epub-gen / epub generators", "^(epub-gen|epub-gen-memory|@lesjoursfr/html-to-epub)(/|$)"),
+  {
+    id: "hand-rolled:docx",
+    label: "hand-rolled DOCX builder (buildDocxFromHtml / altChunk)",
+    category: "document-generator",
+    status: "banned",
+    matcher: { kind: "symbol", names: ["buildDocxFromHtml", "buildDocx", "htmlToDocx", "markdownToDocx"] },
+    replacement: ONE_DOCUMENT_EXPORTER,
+  },
 
   // ── Legacy editors ──────────────────────────────────────────────────────────
   {

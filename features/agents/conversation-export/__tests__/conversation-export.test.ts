@@ -1,13 +1,36 @@
 /**
  * Whole-conversation export. The Markdown is the one source every format is
- * built from (HTML/PDF through @ai-matrx/print, DOCX through the same HTML), so
- * the Markdown contract is pinned here, and the DOCX must be a real Office Open
- * XML package Word opens — not an HTML file with a .docx name.
+ * built from; PDF, Word and HTML go through `@ai-matrx/print/document` — the
+ * ONE document exporter (its golden tests prove the Word file is native
+ * WordprocessingML with sections, fields and bookmarks). The app never builds
+ * a DOCX itself.
  */
 
-import JSZip from "jszip";
 import { buildConversationMarkdown } from "../conversation-markdown";
-import { buildDocxFromHtml } from "../docx";
+import { conversationDocumentSource, exportConversation } from "../export-conversation";
+
+const mockExportDocument = jest.fn(async (_src: string, format: string, _opts: unknown) => ({
+  format,
+  bytes: new Uint8Array([0x50, 0x4b, 3, 4]),
+  mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  fileName: "Quarterly-plan.docx",
+  notices: [],
+}));
+jest.mock("@ai-matrx/print/document", () => ({
+  exportDocument: (...a: [string, string, unknown]) => mockExportDocument(...a),
+}));
+jest.mock("@/lib/toast", () => ({
+  toast: { loading: jest.fn(() => "t"), success: jest.fn(), error: jest.fn() },
+}));
+jest.mock("@/features/agents/redux/execution-system/messages/messages.selectors", () => ({
+  extractFlatText: (r: { text: string }) => r.text,
+}));
+jest.mock("@/features/agents/redux/execution-system/conversations/conversations.selectors", () => ({
+  selectConversationTitle: () => () => "Quarterly plan",
+}));
+jest.mock("@/features/agents/message-pins/pinned-messages-store", () => ({
+  isMessagePinned: () => false,
+}));
 
 describe("buildConversationMarkdown", () => {
   it("writes a titled transcript with one section per turn", () => {
@@ -41,27 +64,40 @@ describe("buildConversationMarkdown", () => {
   });
 });
 
-describe("buildDocxFromHtml", () => {
-  it("builds a real .docx package that carries the HTML as its body", async () => {
-    const blob = await buildDocxFromHtml("<h1>Hi</h1><p>Body</p>", "My chat");
-    const zip = await JSZip.loadAsync(blob);
-    const names = Object.keys(zip.files).sort();
-    expect(names).toEqual(
-      expect.arrayContaining([
-        "[Content_Types].xml",
-        "_rels/.rels",
-        "word/document.xml",
-        "word/_rels/document.xml.rels",
-        "word/afchunk.htm",
-      ]),
-    );
-    const doc = await zip.file("word/document.xml")!.async("string");
-    expect(doc).toContain('<w:altChunk r:id="htmlChunk"/>');
-    const chunk = await zip.file("word/afchunk.htm")!.async("string");
-    expect(chunk).toContain("<p>Body</p>");
-    expect(chunk).toContain("<title>My chat</title>");
-    expect(blob.type).toBe(
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    );
+describe("exportConversation — Word/PDF/HTML come from the one package exporter", () => {
+  it.each(["docx", "pdf", "html"] as const)("%s goes through @ai-matrx/print/document with the transcript", async (format) => {
+    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: jest.fn(() => "blob:x") });
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: jest.fn() });
+    const click = jest.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    const state = {
+      messages: {
+        byConversationId: {
+          c1: {
+            orderedIds: ["m1", "m2"],
+            byId: {
+              m1: { id: "m1", role: "user", text: "What changed in Q3?", createdAt: null },
+              m2: { id: "m2", role: "assistant", text: "Revenue rose 14%.", createdAt: null },
+            },
+          },
+        },
+      },
+    } as never;
+    mockExportDocument.mockClear();
+    await exportConversation(() => state, "c1", format);
+    expect(mockExportDocument).toHaveBeenCalledTimes(1);
+    const [src, fmt] = mockExportDocument.mock.calls[0]!;
+    expect(fmt).toBe(format);
+    expect(src).toMatch(/^---\ntitle: "Quarterly plan"/);
+    expect(src).toContain("## You");
+    expect(src).toContain("Revenue rose 14%.");
+    expect(click).toHaveBeenCalledTimes(1);
+    click.mockRestore();
+  });
+
+  it("gives the transcript page chrome without touching the markdown", () => {
+    const src = conversationDocumentSource("# T\n\nbody\n", 'Plan "A"');
+    expect(src).toContain('title: "Plan \'A\'"');
+    expect(src).toContain('footer: "Page {page} of {pages}"');
+    expect(src.endsWith("# T\n\nbody\n")).toBe(true);
   });
 });

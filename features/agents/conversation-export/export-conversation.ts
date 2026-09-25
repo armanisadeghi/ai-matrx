@@ -1,8 +1,9 @@
 // export-conversation — download the WHOLE conversation as Markdown, HTML,
-// PDF or Word. One Markdown source (`buildConversationMarkdown`); HTML and PDF
-// through @ai-matrx/print (the one markdown → document composition, the same
-// path the per-message "Download as HTML/PDF" actions use); DOCX from the same
-// rendered HTML. Heavy modules load at click time.
+// PDF or Word. One Markdown source (`buildConversationMarkdown`); PDF, Word
+// and HTML through `@ai-matrx/print/document` — the platform's ONE document
+// exporter (a native Word file with real headings, tables and page numbers,
+// not an HTML chunk; never a second DOCX generator in the app). Heavy modules
+// load at click time.
 
 import type { RootState } from "@/lib/redux/store";
 import { toast } from "@/lib/toast";
@@ -67,6 +68,12 @@ function download(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
+/** Page chrome a conversation prints with: its title on top, page numbers below. */
+export function conversationDocumentSource(markdown: string, title: string): string {
+  const safe = title.replace(/"/g, "'");
+  return `---\ntitle: "${safe}"\nheader: "{title} | | {date}"\nfooter: "Page {page} of {pages}"\ndate: today\n---\n\n${markdown}`;
+}
+
 export async function exportConversation(
   getState: () => RootState,
   conversationId: string,
@@ -82,27 +89,12 @@ export async function exportConversation(
   try {
     if (format === "md") {
       download(new Blob([markdown], { type: "text/markdown;charset=utf-8" }), `${base}.md`);
-    } else if (format === "html") {
-      const { renderMarkdownDocument } = await import("@ai-matrx/print/markdown");
-      download(
-        new Blob([renderMarkdownDocument(markdown, { title })], { type: "text/html;charset=utf-8" }),
-        `${base}.html`,
-      );
-    } else if (format === "pdf") {
-      const [{ markdownToPdfBlob }, { markdownToHtml, getMarkdownStylesheet }] = await Promise.all([
-        import("@ai-matrx/print/pdf"),
-        import("@ai-matrx/print/markdown"),
-      ]);
-      download(
-        await markdownToPdfBlob(markdown, { convertToHtml: markdownToHtml, loadCss: getMarkdownStylesheet }),
-        `${base}.pdf`,
-      );
     } else {
-      const [{ renderMarkdownDocument }, { buildDocxFromHtml }] = await Promise.all([
-        import("@ai-matrx/print/markdown"),
-        import("./docx"),
-      ]);
-      download(await buildDocxFromHtml(renderMarkdownDocument(markdown, { title }), title), `${base}.docx`);
+      const { exportDocument } = await import("@ai-matrx/print/document");
+      const exp = await exportDocument(conversationDocumentSource(markdown, title), format, {
+        fileName: base,
+      });
+      download(new Blob([exp.bytes as BlobPart], { type: exp.mime }), exp.fileName);
     }
     toast.success(`Conversation exported (${messageCount} messages)`, { id: toastId });
   } catch (error) {
