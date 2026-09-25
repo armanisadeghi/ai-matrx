@@ -121,7 +121,8 @@ begin
     else
       perform set_config('role', 'authenticated', true);
       if v_new_rc then
-        v_out := custom.resolve_context('conversation', c_nothing, null, null, null);
+        -- explicit empty array = none (a NULL list is the default list since cvn3, chair ruling)
+        v_out := custom.resolve_context('conversation', c_nothing, null, null, '{}'::text[]);
       else
         v_out := custom.resolve_context('conversation', c_nothing, null, null);
       end if;
