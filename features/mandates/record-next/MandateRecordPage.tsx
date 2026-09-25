@@ -17,7 +17,7 @@
 
 import { Suspense, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { Trash2, Workflow } from "lucide-react";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
@@ -28,6 +28,7 @@ import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { softDeleteMandate } from "@/features/mandates/admin/service";
 import { PromoteToSystemMandateButton } from "@/features/mandates/admin/mandate-actions";
+import { useStartMandateWorkflow } from "@/features/mandates/useStartMandateWorkflow";
 import {
   SurfaceRuntimeProvider,
   getRegisteredSurfaceScopeContributions,
@@ -157,6 +158,8 @@ function MandateRecordPageInner({
                   orgId={orgId}
                   canManageOrg={canManageOrg}
                   listHref={listHref}
+                  readOnly={readOnly}
+                  onTabChange={onTabChange}
                 />
                 {/* The admin route is super-admin gated by its layout, so
                     every tab shows there; a member page shows only the tabs
@@ -204,6 +207,8 @@ function RecordHeader({
   orgId,
   canManageOrg,
   listHref,
+  readOnly,
+  onTabChange,
 }: {
   name: string;
   data: MandateWorkspaceData;
@@ -214,8 +219,11 @@ function RecordHeader({
   orgId: string | null;
   canManageOrg: boolean;
   listHref: string;
+  readOnly: boolean;
+  onTabChange: (tab: RecordTabId) => void;
 }) {
   const router = useRouter();
+  const { starting, startWorkflow } = useStartMandateWorkflow();
   const userId = useAppSelector(selectUserId);
   const [removing, setRemoving] = useState(false);
   const canRemove = recordCanRemove(data.mandate, { level, userId, orgId, canManageOrg });
@@ -273,8 +281,25 @@ function RecordHeader({
           ) : null}
         </div>
       }
-      actions={
-        canRemove
+      actions={[
+        // Workflow parity: a job is filled by an agent OR a workflow. "New
+        // agent" is its own tab; a workflow starts here — pre-wired with this
+        // job's inputs and output kind, opened in the studio — and is then
+        // picked on the Binding tab once it has steps.
+        ...(readOnly
+          ? []
+          : [
+              {
+                label: starting ? "Starting workflow…" : "New workflow",
+                icon: Workflow,
+                disabled: starting,
+                onPress: () =>
+                  void startWorkflow(data.mandate.mandate_key).then((created) => {
+                    if (created) onTabChange("holder");
+                  }),
+              },
+            ]),
+        ...(canRemove
           ? [
               {
                 label: removing ? "Removing…" : "Remove",
@@ -284,8 +309,8 @@ function RecordHeader({
                 onPress: () => void remove(),
               },
             ]
-          : []
-      }
+          : []),
+      ]}
     />
   );
 }
