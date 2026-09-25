@@ -231,8 +231,9 @@ describe("server level renders the same HTML as the client levels", () => {
     );
     const clientText = clientHtml(<RichContentInline links="text" source={summary} />);
     const staticText = serverHtml(<RichContentStaticInline links="text" source={summary} />);
-    expect(asLink).toContain("<a");
-    expect(asText).not.toContain("<a");
+    // `<a ` / `<a>` — never `<annotation>` (KaTeX's MathML).
+    expect(asLink).toMatch(/<a[\s>]/);
+    expect(asText).not.toMatch(/<a[\s>]/);
     expect(asText).toContain("Newton's laws</strong>");
     expect(asText).toContain('class="katex"');
     expect(asText).toContain("the full guide");
