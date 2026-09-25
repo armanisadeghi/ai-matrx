@@ -340,6 +340,8 @@ export function MillerColumnsCore({
   const [itemQuery, setItemQuery] = useColumnQuery(
     activeScopeEntries.map(({ scope }) => scope.id).join(","),
   );
+  const [projectQuery, setProjectQuery] = useColumnQuery("projects");
+  const [taskQuery, setTaskQuery] = useColumnQuery("tasks");
   const shownOrgs = filterColumnRows(u.orgs, orgQuery, (org) => org.name);
   const shownTypeEntries = filterColumnRows(
     typeEntries,
@@ -648,6 +650,11 @@ export function MillerColumnsCore({
               title="Projects"
               count={u.projects.length}
               condensed={false}
+              search={{
+                value: projectQuery,
+                onChange: setProjectQuery,
+                total: u.projects.length,
+              }}
               createLabel="New project"
               onCreate={
                 onCreate
@@ -671,7 +678,7 @@ export function MillerColumnsCore({
                 <EmptyPane text="No projects yet." />
               )}
               {u.engagementStatus === "ready" &&
-                projectNodes.map((node) => (
+                filterColumnRows(projectNodes, projectQuery, (n) => n.label).map((node) => (
                   <ColRow
                     key={node.id}
                     node={node}
@@ -684,6 +691,11 @@ export function MillerColumnsCore({
               title="Tasks"
               count={u.tasks.length}
               condensed={false}
+              search={{
+                value: taskQuery,
+                onChange: setTaskQuery,
+                total: u.tasks.length,
+              }}
               createLabel="New task"
               onCreate={
                 onCreate
@@ -696,7 +708,7 @@ export function MillerColumnsCore({
                 <EmptyPane text="No tasks yet." />
               )}
               {u.engagementStatus === "ready" &&
-                taskNodes.map((node) => (
+                filterColumnRows(taskNodes, taskQuery, (n) => n.label).map((node) => (
                   <ColRow
                     key={node.id}
                     node={node}

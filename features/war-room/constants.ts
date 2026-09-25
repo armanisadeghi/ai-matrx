@@ -16,7 +16,7 @@ export const UNASSIGNED_SECTION_LABEL = "Unassigned threads";
 // ── War Room agent personas (the 3-tier "brain") — AGENT MANDATES ───────
 //
 // Each tier's default persona is an AGENT MANDATE, not a hardcoded id (SoR
-// /Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md; client
+// /Users/armanisadeghi/code/common-docs/systems/intelligence/mandates/STATE.md; client
 // half `features/mandates/`). The mandate's system default is the builtin
 // War Room persona — an agent that knows its tier role, the read-only board
 // context it receives, and that it can list/read the user's notes, tasks,

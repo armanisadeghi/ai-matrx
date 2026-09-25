@@ -173,7 +173,7 @@ export function StudioDashboard() {
               {/* THE DOOR to the intelligence behind podcasts. Every stage of a
                 podcast — research, scripting, voices, cover art, show notes —
                 is a Mandate whose agent the user may replace with their own
-                (common-docs/systems/mandates/FEATURE.md). Until this link, the
+                (common-docs/systems/intelligence/mandates/STATE.md). Until this link, the
                 surface named none of that and there was no way in from here. */}
               <Button asChild variant="outline" className="gap-2">
                 <Link href="/mandates?feature=podcast">

@@ -49,6 +49,9 @@ import { RichContentServer } from "@/components/rich-content/server/RichContentS
 import { RichContentInline } from "@/components/rich-content/RichContentInline";
 import { StandardBlocks } from "@/components/rich-content/standard/StandardBlocks";
 import { RichContentDepthProvider } from "@/components/rich-content/depth";
+import { RichContentStaticProse } from "@/components/rich-content/RichContentStaticProse";
+import { ProseServer } from "@/components/rich-content/server/RichContentServer";
+import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 
 const STUDY_GUIDE = [
   "## Molar mass, step by step",
@@ -178,5 +181,15 @@ describe("server level renders the same HTML as the client levels", () => {
     );
     expect(server).toContain("data-rich-content-capped");
     expect(server).toBe(client);
+  });
+
+  it("share pages: the static prose leaf (SSR'd client) equals the server and client prose", () => {
+    const note = STUDY_GUIDE.split("| Element")[0];
+    const server = serverHtml(<ProseServer content={note} />);
+    const staticSsr = serverHtml(<RichContentStaticProse source={note} />);
+    const client = clientHtml(<BasicMarkdownContent content={note} showCopyButton={false} />);
+    expect(server).toContain('class="katex"');
+    expect(staticSsr).toBe(server);
+    expect(client).toBe(server);
   });
 });

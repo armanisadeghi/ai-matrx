@@ -80,4 +80,10 @@ export interface MandateAdminRow extends MandateRow {
   fallbackKey: string | null;
   /** Other mandates whose fallback is this one. */
   backsCount: number;
+  /**
+   * The server reports this row's cells are still waiting on. The list paints
+   * from the database first; until code truth lands Health is not a verdict,
+   * and until coverage lands Coverage is not one either.
+   */
+  factsPending: { codeTruth: boolean; coverage: boolean };
 }

@@ -4,7 +4,7 @@
  * THE MANDATE REFERENCE FLEET BOARD — `/administration/mandates/references`.
  *
  * Cross-repo system-of-record:
- * /Users/armanisadeghi/code/common-docs/projects/mandate-declaration-reporting/DESIGN.md §4.6.
+ * /Users/armanisadeghi/code/common-docs/systems/intelligence/mandates/STATE.md §4.6.
  *
  * What it shows, and why each part is not optional:
  *

@@ -67,16 +67,17 @@ async function buildPageRows(
   const data = await fetchMandateConsoleData({
     mandateKeys: pageRows.map((row) => row.mandate_key),
   });
-  const { failures, impactSettled } = getMandateAdminListState();
+  const { failures, settled } = getMandateAdminListState();
   const built = buildAdminRows({
     console: data,
     codeTruth: reports.codeTruth,
     coverage: reports.coverage,
     catalogue: null,
     impact: reports.impact,
-    impactFailed: Boolean(failures.impact) || (impactSettled && !reports.impact),
+    impactFailed: Boolean(failures.impact) || (settled.impact && !reports.impact),
     serveLinks: [],
     organizationNames: {},
+    pending: { codeTruth: !settled.codeTruth, coverage: !settled.coverage },
   });
   const byKey = new Map(built.map((row) => [row.mandateKey, row]));
   const rows: MandateAdminRow[] = [];

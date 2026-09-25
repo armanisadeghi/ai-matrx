@@ -15,7 +15,7 @@
  * Every shortcut `.schema(...).from(...)` and every shortcut RPC name goes
  * through the helpers here, so the flip is ONE constant instead of a sweep
  * across 10 files. Cross-repo design:
- * `/common-docs/projects/workflow-mandate-program/DESIGN-unification.md` §4/§5;
+ * `/common-docs/systems/intelligence/mandates/STATE.md` §4/§5;
  * migration + parity: `aidream/scripts/migrate_shortcuts_to_mandates.py`.
  *
  * ┌─ THE SWITCH ──────────────────────────────────────────────────────────────┐
@@ -26,7 +26,7 @@
  * WHY A CONSTANT AND NOT AN ENV VAR: the same scar `mandateStorage.ts`
  * documents (`/common-docs/policies/env-vars-are-values-not-toggles.md`).
  * The flip is a one-line release after Arman's nod — see the FLIP-NOTE in
- * `/common-docs/projects/workflow-mandate-program/PLAN.md`.
+ * `/common-docs/systems/intelligence/mandates/STATE.md`.
  *
  * WHY BOTH BRANCHES TYPE-CHECK: `SHORTCUT_STORAGE_CUTOVER` is a literal, so
  * TypeScript narrows every export below to the ACTIVE branch — with the

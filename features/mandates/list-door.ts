@@ -4,7 +4,7 @@
 //
 // `public.mnd_list_scoped(p_home, p_resolution_for, …)` is the single place a
 // browser may ask which mandates exist and who fulfils them
-// (common-docs/projects/workflow-mandate-program/DESIGN-one-resolution.md v2 §
+// (common-docs/systems/intelligence/mandates/STATE.md v2 §
 // "Lists — the one door, two parameters"). It takes TWO independent
 // parameters, and conflating them is what produced the leak this campaign
 // closes:

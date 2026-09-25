@@ -133,6 +133,9 @@ it("the chat bar and the studio bar carry the same actions for one assistant mes
       onRequestDelete: noop,
       onRequestEditHistory: noop,
       onRequestConvert: noop,
+      // The chat bar hosts the same document dialogs RichDocument does.
+      onRequestSaveTable: noop,
+      onRequestFlashcard: noop,
     },
   });
 

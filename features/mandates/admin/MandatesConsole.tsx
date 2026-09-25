@@ -13,7 +13,7 @@
  * same `MandateWorkspace` as `/mandates/[key]`). The old side-panel
  * drawer is no longer on any path from here.
  *
- * System-of-record: common-docs/systems/mandates/FEATURE.md.
+ * System-of-record: common-docs/systems/intelligence/mandates/STATE.md.
  */
 
 import React, {

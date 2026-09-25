@@ -1,7 +1,7 @@
 // features/mandates/record-next/record-tabs.ts
 //
 // THE TEN MANDATE TABS, SHORT LABELS — the copy built beside the protected
-// workspace (common-docs/systems/mandates/UI-REGISTER.md, "Protected tabs" and
+// workspace (common-docs/systems/intelligence/mandates/UI-REGISTER.md, "Protected tabs" and
 // item 6b: "Tabs must fit on one row with shorter names").
 //
 // The tab IDS are the workspace's own (`MandateWorkspaceTab`) so every tab body
@@ -12,7 +12,9 @@
 //   create-agent  "Create Agent"     → "New agent"
 //   overrides     "Overrides"        → "Overrides"
 //   display       "Display Options"  → "Display"
-//   test          "Test"             → "Test"        (admin)
+//   test          "Test"             → "Test"        (admin bench; member
+//                                                     seats get their own
+//                                                     try panel)
 //   permissions   "Permissions"      → "Access"
 //   source        "Source & Usage"   → "Usage"       (admin)
 //   diagnostics   "Diagnostics"      → "Health"      (admin)
@@ -96,10 +98,17 @@ export function parseRecordTabFrom(
  */
 export type RecordLevel = "system" | "person" | "organization";
 
-/** Tabs a read-only seat (an organization member who does not manage it) sees. */
-const READ_ONLY_TAB_IDS: readonly RecordTabId[] = ["definition", "holder", "notes"];
+/** Tabs a read-only seat (an organization member who does not manage it)
+ * sees. Test is among them: trying a job runs it as the viewer, charged to
+ * the viewer, and changes nothing. */
+const READ_ONLY_TAB_IDS: readonly RecordTabId[] = ["definition", "holder", "test", "notes"];
 
-/** The tabs for a seat. Pure. */
+/**
+ * The tabs for a seat. Pure. A member seat gets its OWN Test tab (the
+ * level-aware try panel, `MandateTryPanel`) — testing the current or a new
+ * configuration belongs to every level (MANDATE-SYSTEM.md §2); the other
+ * admin tabs (Usage, Health) stay absent there.
+ */
 export function recordTabsForLevel(
   level: RecordLevel,
   options: { readOnly?: boolean } = {},
@@ -108,7 +117,7 @@ export function recordTabsForLevel(
   if (options.readOnly) {
     return RECORD_TABS.filter((tab) => READ_ONLY_TAB_IDS.includes(tab.id));
   }
-  return visibleRecordTabs(false);
+  return RECORD_TABS.filter((tab) => !tab.admin || tab.id === "test");
 }
 
 /** Where the record's Back goes when this tab did not come from a mandate list. */

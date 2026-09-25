@@ -158,8 +158,11 @@ export function ColumnSearch({
   return (
     <div className="flex h-7 shrink-0 items-center gap-1.5 border-b border-border px-2">
       <Search className="h-3 w-3 shrink-0 text-muted-foreground" />
+      {/* type="text", not "search": the native search cancel glyph would sit beside our own clear. */}
       <input
-        type="search"
+        type="text"
+        role="searchbox"
+        data-column-search
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {

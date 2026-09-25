@@ -46,7 +46,7 @@ import {
  * `services/mandates/client_mandates.py`, resolve it here (`useMandate` /
  * `launchAgentExecution({mandateKey})`) and gate the AI tab on resolution, then
  * delete this constant. Recipe: `features/mandates/FEATURE.md`; law:
- * /Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md.
+ * /Users/armanisadeghi/code/common-docs/systems/intelligence/mandates/STATE.md.
  *
  * Until then the AI tab is hidden (the panel renders just the manual form).
  */

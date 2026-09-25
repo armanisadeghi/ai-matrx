@@ -92,14 +92,17 @@ import {
   useMandateWorkspaceData,
   type MandateWorkspaceData,
   type WorkspaceAgentInfo,
+  type WorkspaceWorkflowInfo,
+  type WorkspaceWorkflowVersionInfo,
 } from "./useMandateWorkspaceData";
 import { loadFailedFailure, readMandateAddress } from "../mandate-address";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { useMandate } from "../useMandate";
+import { useMandateHolder } from "../useMandateHolder";
+import { useCopyMandateWorkflow } from "../useCopyMandateWorkflow";
 import { MANDATE_WORKSPACE_SURFACE_NAME } from "@/features/surfaces/manifests/mandate-workspace.manifest";
 import { normalizeTransferJson } from "@ai-matrx/alchemy/core";
 import { useMandateAlchemyTabCapture, MandateAlchemy, MandateAlchemyCaptureProvider, buildMandateDefinitionCore, type MandateAlchemyCapture } from "./MandateAlchemy";
-import type { ResolvedMandate } from "../service";
+import type { ResolvedMandateHolder } from "../service";
 import {
   ladderRowChangesHolder,
   ladderRowIsBroken,
@@ -224,8 +227,12 @@ interface FulfillmentView {
   rung: "system" | "global" | "org" | "user" | "run" | null;
   /** One sentence naming WHO decides — the active org by name, never by id. */
   sentence: string;
+  /** Who holds the job — an agent OR a workflow, painted equally. */
+  holderType: "agent" | "workflow";
   agent: WorkspaceAgentInfo | null;
   agentId: string | null;
+  workflow: WorkspaceWorkflowInfo | null;
+  workflowId: string | null;
   useLatest: boolean;
   pinned: number | null;
   drift: string | null;
@@ -272,14 +279,17 @@ function verdictSentence(
 /** THE PERSONAL ANSWER — read off the server verdict, never recomputed. */
 function viewFromVerdict(
   data: MandateWorkspaceData,
-  verdict: ResolvedMandate | null,
+  verdict: ResolvedMandateHolder | null,
   loading: boolean,
   error: string | null,
   nameOfOrg: (id: string) => string | null,
 ): FulfillmentView {
   const empty = {
+    holderType: "agent" as const,
     agent: null,
     agentId: null,
+    workflow: null,
+    workflowId: null,
     useLatest: true,
     pinned: null,
     drift: null,
@@ -318,14 +328,21 @@ function viewFromVerdict(
       // not an answer for a workspace — and it must never be printed as one.
       "no organization (a platform default, not a workspace answer)";
 
-  const agent = data.agentsById[verdict.agentId] ?? null;
+  const isWorkflow = verdict.holderType === "workflow";
+  const agent = isWorkflow ? null : (data.agentsById[verdict.holderId] ?? null);
+  const workflow = isWorkflow
+    ? (data.workflowsById?.[verdict.holderId] ?? null)
+    : null;
   return {
     rung: verdict.provenance,
     sentence: verdictSentence(verdict.provenance, activeOrgLabel),
+    holderType: verdict.holderType,
     agent,
-    agentId: verdict.agentId,
+    agentId: isWorkflow ? null : verdict.holderId,
+    workflow,
+    workflowId: isWorkflow ? verdict.holderId : null,
     useLatest: !verdict.isVersion,
-    pinned: null,
+    pinned: verdict.isVersion ? verdict.versionNumber : null,
     drift: null,
     loading: false,
     refusal: null,
@@ -411,7 +428,14 @@ function OneMandateWorkspace({
     perspective === "person" && data
       ? storedMandateKey(data.mandate.mandate_key)
       : "";
-  const verdict = useMandate(personalKey);
+  // Holder-neutral on purpose: this screen SAYS what runs, it never launches
+  // it, so a workflow winner is an answer here, not a refusal.
+  const holderVerdict = useMandateHolder(personalKey);
+  const verdict = {
+    mandate: holderVerdict.holder,
+    loading: holderVerdict.loading,
+    error: holderVerdict.error,
+  };
   /**
    * 🚨 ONE DOOR, TWO QUESTIONS — and the SYSTEM host asks only one of them.
    *
@@ -717,6 +741,8 @@ function OneMandateWorkspace({
                       : ladder
                   }
                   agentsById={data.agentsById}
+                  workflowsById={data.workflowsById ?? {}}
+                  workflowVersionsById={data.workflowVersionsById ?? {}}
                   allowCopy={perspective === "organization"}
                   nameOfOrg={nameOfOrg}
                   activeOrganizationId={
@@ -868,7 +894,18 @@ export function systemRungFactsOf(
         : "read",
     droppedCode: row?.dropped_code ?? null,
     droppedReason: row?.dropped_reason ?? null,
-    holderName: holderId ? (data.agentsById[holderId]?.name ?? null) : null,
+    holderName: holderIsWorkflow
+      ? (() => {
+          const workflowId = globalBinding
+            ? ((globalBinding as { holder_id?: string | null }).holder_id ?? null)
+            : holder.holderId;
+          return workflowId
+            ? (data.workflowsById?.[workflowId]?.name ?? null)
+            : null;
+        })()
+      : holderId
+        ? (data.agentsById[holderId]?.name ?? null)
+        : null,
     holderIsWorkflow,
     holderSet: holderId !== null || holderIsWorkflow,
     home: scope,
@@ -894,7 +931,12 @@ export function resolvedHolderForBannerOf(
   data: MandateWorkspaceData,
   ladder: ReturnType<typeof useMandateLadder>,
   nameOfOrg: (id: string) => string | null,
-  resolution: FulfillmentView | null,
+  // Structural on purpose: the record page's own view (record-next) predates
+  // workflow parity and carries only the agent half — both must satisfy this.
+  resolution:
+    | (Pick<FulfillmentView, "loading" | "refusal" | "agentId" | "agent" | "rung"> &
+        Partial<Pick<FulfillmentView, "holderType" | "workflow" | "workflowId">>)
+    | null,
 ): { holderName: string; scopePhrase: string } | null {
   if (perspective === "system") {
     const facts = systemRungFactsOf(data, ladder, nameOfOrg);
@@ -903,7 +945,7 @@ export function resolvedHolderForBannerOf(
     if (!facts.holderSet) return null;
     return {
       holderName: facts.holderIsWorkflow
-        ? "A workflow"
+        ? (facts.holderName ?? "The assigned workflow")
         : (facts.holderName ?? "The assigned agent"),
       scopePhrase: homeScopePhrase(facts.home),
     };
@@ -912,10 +954,13 @@ export function resolvedHolderForBannerOf(
     resolution &&
     !resolution.loading &&
     !resolution.refusal &&
-    resolution.agentId
+    (resolution.agentId || resolution.workflowId)
   ) {
     return {
-      holderName: resolution.agent?.name ?? "The assigned agent",
+      holderName:
+        resolution.holderType === "workflow"
+          ? (resolution.workflow?.name ?? "The assigned workflow")
+          : (resolution.agent?.name ?? "The assigned agent"),
       scopePhrase:
         resolution.rung === "org" ? "this organization" : "this account",
     };
@@ -1036,7 +1081,7 @@ function FulfillmentSection({ resolution }: { resolution: FulfillmentView }) {
   useMandateAlchemyTabCapture("holder", resolution.loading
     ? { status: "loading" }
     : { status: "ready", data: normalizeTransferJson({
-        holder: resolution.agent ? { id: resolution.agentId, name: resolution.agent.name, archived: resolution.agent.isArchived } : null,
+        holder: resolution.agent ? { kind: "agent", id: resolution.agentId, name: resolution.agent.name, archived: resolution.agent.isArchived } : resolution.workflowId ? { kind: "workflow", id: resolution.workflowId, name: resolution.workflow?.name ?? null, archived: resolution.workflow?.isArchived ?? null } : null,
         source: resolution.rung,
         explanation: resolution.sentence,
         version: resolution.useLatest ? "Latest" : resolution.pinned,
@@ -1046,9 +1091,12 @@ function FulfillmentSection({ resolution }: { resolution: FulfillmentView }) {
         dropped_rungs: resolution.droppedRungs,
       }) }, "effective_holder");
   const { copying, copyAndOpen } = useCopyMandateAgent();
+  const { copyingWorkflow, copyWorkflowAndOpen } = useCopyMandateWorkflow();
   const {
     agent,
     agentId,
+    workflow,
+    workflowId,
     rung,
     sentence,
     useLatest,
@@ -1072,6 +1120,12 @@ function FulfillmentSection({ resolution }: { resolution: FulfillmentView }) {
                 token="agent"
                 id={agentId}
                 name={agent?.name ?? "Display name unavailable"}
+              />
+            ) : workflowId ? (
+              <EntityRef
+                token="workflow"
+                id={workflowId}
+                name={workflow?.name ?? "Workflow name unavailable"}
               />
             ) : (
               "Not available"
@@ -1123,7 +1177,17 @@ function FulfillmentSection({ resolution }: { resolution: FulfillmentView }) {
         />
         <PropertyRow
           label="Archived"
-          value={agent ? (agent.isArchived ? "Yes" : "No") : "Unknown"}
+          value={
+            agent
+              ? agent.isArchived
+                ? "Yes"
+                : "No"
+              : workflow
+                ? workflow.isArchived
+                  ? "Yes"
+                  : "No"
+                : "Unknown"
+          }
         />
         {drift ? <PropertyRow label="Newer version" value={drift} /> : null}
         {droppedRungs.map((dropped) => (
@@ -1156,6 +1220,24 @@ function FulfillmentSection({ resolution }: { resolution: FulfillmentView }) {
               builder. Assign the copy in the Mandate Holder tab to use it for this mandate.
             </FieldHelp>
           </div>
+        ) : workflowId ? (
+          <div className="flex items-center gap-2 py-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={copyingWorkflow}
+              className="gap-1.5"
+              onClick={() => void copyWorkflowAndOpen(workflowId)}
+            >
+              <Copy className="h-3.5 w-3.5" />
+              {copyingWorkflow ? "Duplicating…" : "Duplicate & customize"}
+            </Button>
+            <FieldHelp label="Duplicate & customize">
+              Copies this workflow into your account and opens it in the
+              workflow editor. Assign the copy in the Mandate Holder tab to use
+              it for this mandate.
+            </FieldHelp>
+          </div>
         ) : null}
       </div>
     </Section>
@@ -1178,6 +1260,8 @@ function FulfillmentSection({ resolution }: { resolution: FulfillmentView }) {
 function LadderSection({
   ladder,
   agentsById,
+  workflowsById = {},
+  workflowVersionsById = {},
   nameOfOrg,
   activeOrganizationId,
   allowCopy = false,
@@ -1185,6 +1269,8 @@ function LadderSection({
   allowCopy?: boolean;
   ladder: ReturnType<typeof useMandateLadder>;
   agentsById: Record<string, WorkspaceAgentInfo>;
+  workflowsById?: Record<string, WorkspaceWorkflowInfo>;
+  workflowVersionsById?: Record<string, WorkspaceWorkflowVersionInfo>;
   nameOfOrg: (id: string) => string | null;
   activeOrganizationId: string | null;
 }) {
@@ -1196,7 +1282,11 @@ function LadderSection({
         rows: ladder.error ? null : ladder.rows.map((row) => ({
           ...ladderRowWords(row, row.rung === "org" && row.organization_id ? nameOfOrg(row.organization_id) : null),
           holder_id: row.holder_id,
-          holder_name: row.holder_id ? agentsById[row.holder_id]?.name ?? null : null,
+          holder_name: row.holder_id
+            ? (row.holder_type === "workflow"
+                ? workflowsById[row.holder_id]?.name
+                : agentsById[row.holder_id]?.name) ?? null
+            : null,
           holder_type: row.holder_type,
           version: row.holder_version_id,
           enabled: row.is_enabled,
@@ -1231,6 +1321,8 @@ function LadderSection({
             row={row}
             allowCopy={allowCopy}
             agentsById={agentsById}
+            workflowsById={workflowsById}
+            workflowVersionsById={workflowVersionsById}
             nameOfOrg={nameOfOrg}
           />
         ))}
@@ -1249,12 +1341,16 @@ const HOLDER_LADDER_COLUMNS = [
 function LadderRow({
   row,
   agentsById,
+  workflowsById = {},
+  workflowVersionsById = {},
   nameOfOrg,
   allowCopy = false,
 }: {
   allowCopy?: boolean;
   row: MandateLadderRow;
   agentsById: Record<string, WorkspaceAgentInfo>;
+  workflowsById?: Record<string, WorkspaceWorkflowInfo>;
+  workflowVersionsById?: Record<string, WorkspaceWorkflowVersionInfo>;
   nameOfOrg: (id: string) => string | null;
 }) {
   const words = ladderRowWords(
@@ -1264,9 +1360,18 @@ function LadderRow({
       : null,
   );
   const { copying, copyAndOpen } = useCopyMandateAgent();
+  const { copyingWorkflow, copyWorkflowAndOpen } = useCopyMandateWorkflow();
   const changesHolder = ladderRowChangesHolder(row);
   const broken = ladderRowIsBroken(row);
-  const agent = row.holder_id ? (agentsById[row.holder_id] ?? null) : null;
+  const isWorkflowRow = row.holder_type === "workflow";
+  const agent =
+    !isWorkflowRow && row.holder_id ? (agentsById[row.holder_id] ?? null) : null;
+  const workflow =
+    isWorkflowRow && row.holder_id ? (workflowsById[row.holder_id] ?? null) : null;
+  const workflowPin =
+    isWorkflowRow && row.holder_version_id
+      ? (workflowVersionsById[row.holder_version_id] ?? null)
+      : null;
 
   return (
     <ConfigurationTableRow
@@ -1281,8 +1386,15 @@ function LadderRow({
               name={agent.name}
               showIcon={false}
             />
-          ) : row.holder_type === "workflow" ? (
-            "Workflow"
+          ) : !broken && workflow ? (
+            <EntityRef
+              token="workflow"
+              id={workflow.id}
+              name={workflow.name}
+              showIcon={false}
+            />
+          ) : isWorkflowRow ? (
+            "Workflow name unavailable"
           ) : changesHolder ? (
             row.holder_version_id ? (
               "Pinned Mandate Holder"
@@ -1293,7 +1405,9 @@ function LadderRow({
             "Inherited"
           ),
         version: row.holder_version_id
-          ? "Pinned"
+          ? workflowPin?.versionNumber != null
+            ? `v${workflowPin.versionNumber}`
+            : "Pinned"
           : changesHolder
             ? "Latest"
             : "Inherited",
@@ -1325,6 +1439,16 @@ function LadderRow({
                     defaultAgentVersionId: row.holder_version_id,
                   })
                 }
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+            ) : allowCopy && !broken && isWorkflowRow && row.holder_id ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={`Duplicate ${words.title} workflow`}
+                disabled={copyingWorkflow}
+                onClick={() => void copyWorkflowAndOpen(row.holder_id as string)}
               >
                 <Copy className="h-3.5 w-3.5" />
               </Button>

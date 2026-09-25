@@ -12,8 +12,8 @@
  * Every `.schema(...).from(...)` for those tables goes through the helpers here,
  * so the window flips ONE constant instead of sweeping 26 call sites across 8
  * files. Cross-repo design:
- * `/common-docs/projects/workflow-mandate-program/DESIGN-mandate-detach-revamp.md`;
- * the window itself: `RUNBOOK-1W.md` in the same directory.
+ * `/common-docs/systems/intelligence/mandates/STATE.md`;
+ * the window itself: `/common-docs/systems/intelligence/mandates/REGISTER.md`.
  *
  * ┌─ THE SWITCH ──────────────────────────────────────────────────────────────┐
  * │  MANDATE_SCHEMA_CUTOVER = false   the live tables (agent.*)               │
@@ -284,7 +284,7 @@ export function contractOfMandate(row: MandateRowLike): Json {
 /**
  * The mandate a mandate falls back to. `metadata.fallback` pre-cutover, the
  * promoted `fallback_mandate_key` column after.
- * Authority: `/common-docs/systems/mandates/FALLBACK-MANDATES.md`.
+ * Authority: `/common-docs/systems/intelligence/mandates/STATE.md`.
  */
 export function fallbackKeyOfMandate(row: MandateRowLike): string | null {
   const anyRow = row as Record<string, unknown>;

@@ -44,7 +44,12 @@ export interface MandateMemberPageAnswer {
 
 export interface MandateMemberCountsAnswer {
   mine: number;
+  /** Granted to me personally (share ≠ move; 2026-09-25). */
+  shared: number;
+  /** Homed in OR shared with one of my organizations. */
   orgs: number;
+  /** Published by somebody else outside my organizations (the community lane). */
+  public: number;
   system: number;
   orgs_narrow: { id: string; label: string; count: number }[];
 }

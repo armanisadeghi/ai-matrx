@@ -9,11 +9,9 @@
 
 import React from "react";
 import Link from "next/link";
-// DELIBERATE static react-markdown (not the MarkdownCore front door): this is
-// an anonymous share/SEO surface — the markdown body must be in the
-// server-rendered HTML, and MarkdownCore is ssr:false.
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+// Public text renders through the one rich-content core, statically, so it
+// is in the server-rendered HTML (MarkdownCore itself is ssr:false).
+import { RichContentStaticProse } from "@/components/rich-content/RichContentStaticProse";
 import {
   ExternalLink,
   FolderClosed,
@@ -47,11 +45,7 @@ export function resourceTitle(result: ResolvedShareToken): string {
 }
 
 function Markdown({ content }: { content: string }) {
-  return (
-    <div className="prose prose-neutral dark:prose-invert max-w-none">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-    </div>
-  );
+  return <RichContentStaticProse source={content} />;
 }
 
 /** Text/markdown types (note, message_template): title + markdown body. */

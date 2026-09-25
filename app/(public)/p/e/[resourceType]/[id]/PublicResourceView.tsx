@@ -2,11 +2,9 @@
 
 import React from "react";
 import Link from "next/link";
-// DELIBERATE static react-markdown (not the MarkdownCore front door): this is
-// an anonymous SEO surface — the markdown body must be in the server-rendered
-// HTML, and MarkdownCore is ssr:false.
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+// Public text renders through the one rich-content core, statically, so it
+// is in the server-rendered HTML (MarkdownCore itself is ssr:false).
+import { RichContentStaticProse } from "@/components/rich-content/RichContentStaticProse";
 import { ArrowUpRight, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { resolveShareSourceSurface } from "@/features/sharing/lenses/source-surface";
@@ -15,11 +13,7 @@ import { isForkable } from "@/utils/permissions/shareLinks";
 import type { PublicResource } from "../../loadPublicResource";
 
 function Markdown({ content }: { content: string }) {
-  return (
-    <div className="prose prose-neutral dark:prose-invert max-w-none">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-    </div>
-  );
+  return <RichContentStaticProse source={content} />;
 }
 
 function str(row: Record<string, unknown>, key: string): string {

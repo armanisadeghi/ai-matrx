@@ -50,6 +50,11 @@ export interface MandateAdminSources {
   impactFailed: boolean;
   serveLinks: MandateServeLink[] | null;
   organizationNames: Record<string, string>;
+  /**
+   * Reports still being read (the list paints before they land). Their cells
+   * say "Checking" instead of a verdict. Absent = everything settled.
+   */
+  pending?: { codeTruth?: boolean; coverage?: boolean };
 }
 
 const ACRONYMS = new Set([
@@ -175,7 +180,12 @@ export function buildAdminRows(sources: MandateAdminSources): MandateAdminRow[] 
     impactFailed,
     serveLinks,
     organizationNames,
+    pending,
   } = sources;
+  const factsPending = {
+    codeTruth: Boolean(pending?.codeTruth) && !codeTruth,
+    coverage: Boolean(pending?.coverage) && !coverage,
+  };
 
   const coverageIndex = coverage ? buildCoverageIndex(coverage) : null;
   const impactByMandate = impact ? groupImpactByMandate(impact.verdicts) : null;
@@ -290,6 +300,7 @@ export function buildAdminRows(sources: MandateAdminSources): MandateAdminRow[] 
       defaultState,
       fallbackKey,
       backsCount: backs.get(base.mandateKey) ?? 0,
+      factsPending,
     };
   });
 }

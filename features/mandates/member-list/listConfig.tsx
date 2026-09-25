@@ -138,7 +138,12 @@ export function memberMandateListConfig(
   }
 
   const scopes: ListScopeKind[] =
-    options.level === "organization" ? ["orgs", "system"] : ["mine", "orgs", "system"];
+    // The four lanes (mine · organization · community · world) in the platform scope
+    // vocabulary, plus what I was handed and the platform's own. `public` is the published
+    // lane — a mandate someone outside my organizations shared with everyone.
+    options.level === "organization"
+      ? ["orgs", "public", "system"]
+      : ["mine", "shared", "orgs", "public", "system"];
   const surfaceKey =
     options.level === "organization" ? "org-mandates-list-preview" : "user-mandates-list-preview";
 

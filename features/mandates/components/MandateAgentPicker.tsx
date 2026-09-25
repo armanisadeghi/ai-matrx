@@ -7,7 +7,7 @@
  * override), and lets the user swap in one of THEIR agents or reset to the
  * system default.
  *
- * THE TWO SELECTION LAWS (SoR common-docs/systems/mandates/FEATURE.md):
+ * THE TWO SELECTION LAWS (SoR common-docs/systems/intelligence/mandates/STATE.md):
  * options feed from the canonical Redux agent-definition slice
  * (selectOwnedAgents + selectSharedWithMeAgents — never a raw table dump),
  * rendered through the ONE canonical picker (AgentListInlinePicker).

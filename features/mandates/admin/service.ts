@@ -5,7 +5,7 @@
  * agent.mandate / agent.mandate_binding.
  *
  * Cross-repo system-of-record:
- * /Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md
+ * /Users/armanisadeghi/code/common-docs/systems/intelligence/mandates/STATE.md
  *
  * Writes ride RLS: super admins hold editor on system-org rows via
  * iam.has_access (verified live 2026-08-07) — no bespoke RPC layer.

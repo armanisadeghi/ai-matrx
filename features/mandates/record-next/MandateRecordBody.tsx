@@ -4,7 +4,7 @@
 //
 // THE NEW MANDATE RECORD BODY — a copy of `OneMandateWorkspace`
 // (features/mandates/workspace/MandateWorkspace.tsx, untouched) built beside it
-// per common-docs/systems/mandates/UI-REGISTER.md ("Duplicate before changing").
+// per common-docs/systems/intelligence/mandates/UI-REGISTER.md ("Duplicate before changing").
 //
 // What is the SAME: every tab body is the same imported component the old
 // workspace mounts (TriadSections, OneBindingWorkspace, EffectiveConfigLayers,
@@ -110,6 +110,11 @@ import {
 } from "@/features/mandates/overrides-simple/MandateOverridesSimple";
 import type { MandateWorkspaceTab } from "@/features/mandates/workspace/MandateWorkspace";
 import { RecordAdminPanels } from "./RecordAdminPanels";
+import { MandateTryPanel } from "./MandateTryPanel";
+import {
+  OwnerDefinitionEditor,
+  useDefinitionRights,
+} from "./OwnerDefinitionEditor";
 import { RequestAccess } from "@/features/access-gate/components/RequestAccess";
 import {
   visibleRecordTabs,
@@ -227,6 +232,15 @@ function OneMandateRecordBody({
       ? storedMandateKey(data.mandate.mandate_key)
       : "";
   const verdict = useMandate(personalKey);
+  // THE OWNER'S RIGHTS (member seats only; the admin route already authors).
+  // The server's answer decides every definition pencil on this page — a
+  // soft mandate its creator / its organization's managers own is editable,
+  // a code-backed or platform one is not, and a pencil that would 403 is
+  // never shown.
+  const rights = useDefinitionRights(
+    !authoring && data && !readOnly ? data.mandate.mandate_key : null,
+  );
+  const ownerCanEdit = Boolean(rights?.can_edit);
   const ladderKey = data ? data.mandate.mandate_key : "";
   const ladder = useMandateLadder(
     ladderKey,
@@ -380,14 +394,17 @@ function OneMandateRecordBody({
         <TriadGoalSection
           data={data}
           onChanged={refresh}
-          authoring={authoring}
+          authoring={authoring || ownerCanEdit}
         />
         <TriadInputSection
           data={data}
           onChanged={refresh}
-          authoring={authoring}
+          authoring={authoring || ownerCanEdit}
         />
         <TriadOutputSection data={data} authoring={authoring} />
+        {ownerCanEdit ? (
+          <OwnerDefinitionEditor data={data} onChanged={refresh} />
+        ) : null}
         <div>
           <EffectiveConfigLayers
             pinsOnly
@@ -485,6 +502,24 @@ function OneMandateRecordBody({
         />
         )}
       </div>
+      {/* THE TEST TAB AT YOUR OWN LEVEL — a member seat tries the job as
+          itself (the admin route keeps the admin bench below). */}
+      {!showAdmin && perspective !== "system" ? (
+        <div
+          role="tabpanel"
+          id="mandate-panel-test"
+          hidden={activeTab !== "test"}
+          className={activeTab === "test" ? "space-y-3" : "hidden"}
+        >
+          {activeTab === "test" ? (
+            <MandateTryPanel
+              mandateKey={data.mandate.mandate_key}
+              outputKind={data.mandate.output_kind ?? null}
+              organizationId={principal.kind === "org" ? principal.orgId : null}
+            />
+          ) : null}
+        </div>
+      ) : null}
       {showAdmin ? (
         <RecordAdminPanels
           mandateKey={data.mandate.mandate_key}

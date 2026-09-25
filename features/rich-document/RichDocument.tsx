@@ -36,8 +36,8 @@ import "./actions/handlers";
 import { useActionSurfaceProvider } from "./runtime/useActionSurfaceProvider";
 import {
   convertOriginForSource,
-  useConvertContentHost,
-} from "./hosts/ConvertContentHost";
+  useDocumentDialogsHost,
+} from "./hosts/DocumentDialogsHost";
 import { ActionBar } from "./variants/ActionBar";
 import { MiniActionBar } from "./variants/MiniActionBar";
 import { MenuVariant } from "./variants/MenuVariant";
@@ -195,25 +195,24 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
   // Convert-to-study needs a host that outlives the menu that asked. A
   // surface that brings its own (the chat bar) keeps it; every other
   // document gets this one — the action then works wherever content renders.
-  const convertHost = useConvertContentHost({
-    origin: actionsProp?.callbacks?.onRequestConvert
-      ? null
-      : convertOriginForSource(
-          source,
-          source.type === "note" ? "Note" : "Chat response",
-        ),
+  // Actions whose dialog must outlive the menu (convert, save table as data,
+  // save as flashcard) need a host. A surface that brings its own callback
+  // keeps it; every document gets this one for the rest — so the actions
+  // work wherever content renders.
+  const dialogsHost = useDocumentDialogsHost({
+    convertOrigin: convertOriginForSource(
+      source,
+      source.type === "note" ? "Note" : "Chat response",
+    ),
     text: content ?? "",
   });
-  const hostedActions: RichDocumentActionsProp | undefined =
-    convertHost.onRequestConvert
-      ? {
-          ...actionsProp,
-          callbacks: {
-            ...actionsProp?.callbacks,
-            onRequestConvert: convertHost.onRequestConvert,
-          },
-        }
-      : actionsProp;
+  const hostedActions: RichDocumentActionsProp = {
+    ...actionsProp,
+    callbacks: {
+      ...dialogsHost.callbacks,
+      ...actionsProp?.callbacks,
+    },
+  };
 
   const { ctx, getCtx, resolvedActions } = useActionSurfaceProvider({
     content,
@@ -450,7 +449,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
       {!isAbsolute && actionsPosition === "above" ? actionsNode : null}
       {engine}
       {!isAbsolute && actionsPosition !== "above" ? actionsNode : null}
-      {convertHost.dialog}
+      {dialogsHost.dialogs}
     </div>
   );
 }

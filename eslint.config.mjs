@@ -482,12 +482,12 @@ const matrxLintPlugin = {
         type: "problem",
         docs: {
           description:
-            'Disallow raw multi-row agent.definition queries outside the canonical agent listing services. A raw list query blends mine/shared/org/public/system into one meaningless alphabetical dump and ignores the scope model — the recurring disease Arman banned on 2026-08-08 (THE CANONICAL-SELECTION LAW, common-docs/systems/mandates/FEATURE.md). By-id fetches (.eq/.in on "id", .single(), .maybeSingle()) and writes are allowed.',
+            'Disallow raw multi-row agent.definition queries outside the canonical agent listing services. A raw list query blends mine/shared/org/public/system into one meaningless alphabetical dump and ignores the scope model — the recurring disease Arman banned on 2026-08-08 (THE CANONICAL-SELECTION LAW, common-docs/systems/intelligence/mandates/STATE.md). By-id fetches (.eq/.in on "id", .single(), .maybeSingle()) and writes are allowed.',
         },
         schema: [],
         messages: {
           banned:
-            'Raw agent.definition LIST query. Any UI listing agents for selection must use the canonical agent listing system: the Redux agent-definition slice (fetchAgentsListFull / fetchAgentsList + purpose-fit selectors — selectBuiltinAgents for admin/system surfaces, selectActiveAgents for user pickers) or the scoped agx_list_scoped RPC family (features/agents/browse/service.ts). By-id lookups are fine — filter with .eq("id", …) / .in("id", […]) or end with .single()/.maybeSingle(). See common-docs/systems/mandates/FEATURE.md § The two selection laws.',
+            'Raw agent.definition LIST query. Any UI listing agents for selection must use the canonical agent listing system: the Redux agent-definition slice (fetchAgentsListFull / fetchAgentsList + purpose-fit selectors — selectBuiltinAgents for admin/system surfaces, selectActiveAgents for user pickers) or the scoped agx_list_scoped RPC family (features/agents/browse/service.ts). By-id lookups are fine — filter with .eq("id", …) / .in("id", […]) or end with .single()/.maybeSingle(). See common-docs/systems/intelligence/mandates/STATE.md § The two selection laws.',
         },
       },
       create(context) {
@@ -551,12 +551,12 @@ const matrxLintPlugin = {
         type: "problem",
         docs: {
           description:
-            'Disallow reading mandate.binding by principal_type outside the one storage seam and the admin door. THE CLIENT NEVER RESOLVES (D-R1/D-R2, Arman 2026-09-01): the resolution ladder — user -> the ACTIVE org -> system — is walked in exactly ONE place, and a hand-written rung query in the browser is how a UI comes to tell a lie. The deleted copies filtered only on principal_type and named no organization at all, so every user inherited every RLS-visible org binding (measured live 2026-09-07: a non-admin who belongs to no such org reads all 27 system-org rows). Design: common-docs/projects/workflow-mandate-program/DESIGN-one-resolution.md.',
+            'Disallow reading mandate.binding by principal_type outside the one storage seam and the admin door. THE CLIENT NEVER RESOLVES (D-R1/D-R2, Arman 2026-09-01): the resolution ladder — user -> the ACTIVE org -> system — is walked in exactly ONE place, and a hand-written rung query in the browser is how a UI comes to tell a lie. The deleted copies filtered only on principal_type and named no organization at all, so every user inherited every RLS-visible org binding (measured live 2026-09-07: a non-admin who belongs to no such org reads all 27 system-org rows). Design: common-docs/systems/intelligence/mandates/STATE.md.',
         },
         schema: [],
         messages: {
           banned:
-            'Hand-written mandate ladder. A `mandate.binding` read filtered by `principal_type` is a resolution rung, and rungs are walked in ONE place: ask `GET /mandates/{key}/resolution` through `resolveMandate` (features/mandates/service.ts), which goes over the org-bound transport and returns the same verdict the server runs on. To LIST bindings, use the scoped list door (`mnd_list_scoped`) via features/mandates/browse or the admin door in features/mandates/admin/service.ts. To WRITE one, use features/mandates/overrides.ts. See common-docs/projects/workflow-mandate-program/DESIGN-one-resolution.md.',
+            'Hand-written mandate ladder. A `mandate.binding` read filtered by `principal_type` is a resolution rung, and rungs are walked in ONE place: ask `GET /mandates/{key}/resolution` through `resolveMandate` (features/mandates/service.ts), which goes over the org-bound transport and returns the same verdict the server runs on. To LIST bindings, use the scoped list door (`mnd_list_scoped`) via features/mandates/browse or the admin door in features/mandates/admin/service.ts. To WRITE one, use features/mandates/overrides.ts. See common-docs/systems/intelligence/mandates/STATE.md.',
         },
       },
       create(context) {

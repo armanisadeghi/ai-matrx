@@ -12,7 +12,7 @@
  * mandate has neither, so the answer was always "nothing". Meanwhile the
  * mandate's own `draft_inputs` and the bound Holder's declared variables sat
  * unread. That is the intelligence-first half of THE MODEL
- * (`common-docs/systems/mandates/THE-MODEL.md`) unwired at run time.
+ * (`common-docs/systems/intelligence/mandates/STATE.md`) unwired at run time.
  *
  * The bridge is SERVER-SIDE, per INPUT-SURFACE.md
  * (`common-docs/systems/workflows/INPUT-SURFACE.md`): one declared surface,

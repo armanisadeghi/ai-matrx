@@ -21,8 +21,8 @@
  * rung, so does this.
  *
  * Shape absorbed from research's per-topic agents page; content is the ONE
- * platform precedence chain (SoR common-docs/systems/mandates/FEATURE.md,
- * ruling common-docs/projects/workflow-mandate-program/DESIGN-one-resolution.md)
+ * platform precedence chain (SoR common-docs/systems/intelligence/mandates/STATE.md,
+ * ruling common-docs/systems/intelligence/mandates/STATE.md)
  * — never restate the chain in prose beside this component.
  */
 

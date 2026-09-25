@@ -1208,7 +1208,7 @@ function FactsPanel({
     const declarationFound = truth?.resolution === "code_declaration_found";
     if (sourceOnly) {
       // 🚨 THE ROWS COME FROM `mandate.reference` NOW (campaign L7,
-      // common-docs/projects/mandate-declaration-reporting DESIGN §4.6). The
+      // common-docs/systems/intelligence/mandates/STATE.md §8). The
       // SHAPE is unchanged — Defined in / Used by, one copyable location per
       // row — but code-truth's `call_sites` were import-time discovery inside
       // ONE process, so a call in matrx-frontend, matrx-extend or matrx-local

@@ -83,12 +83,34 @@ describe("member list scope args", () => {
     expect(args.p_scope).toBe("orgs");
   });
 
-  it("organization counts carry no Mine tab", () => {
+  it("organization counts carry no Mine or Shared tab", () => {
     const counts = memberCountsFromAnswer(
-      { mine: 4, orgs: 2, system: 469, orgs_narrow: [] },
+      { mine: 4, shared: 1, orgs: 2, public: 7, system: 469, orgs_narrow: [] },
       "organization",
     );
-    expect(counts.byKind).toEqual({ orgs: 2, system: 469 });
+    expect(counts.byKind).toEqual({ orgs: 2, public: 7, system: 469 });
+  });
+
+  it("person counts carry every lane: mine, shared, organizations, public, system", () => {
+    const counts = memberCountsFromAnswer(
+      { mine: 4, shared: 1, orgs: 2, public: 7, system: 469, orgs_narrow: [] },
+      "person",
+    );
+    expect(counts.byKind).toEqual({ mine: 4, shared: 1, orgs: 2, public: 7, system: 469 });
+  });
+
+  it("the published (community) lane reaches the organization seat's door by name", () => {
+    const args = memberScopeArgs(query({ scope: { kind: "public" } }), {
+      level: "organization",
+      organizationId: ORG,
+    });
+    expect(args.p_scope).toBe("public");
+  });
+
+  it("the person seat asks for Shared by name", () => {
+    const args = memberScopeArgs(query({ scope: { kind: "shared" } }), { level: "person" });
+    expect(args.p_scope).toBe("shared");
+    expect(args.p_org_id).toBeUndefined();
   });
 });
 
@@ -122,14 +144,20 @@ describe("record tabs per seat", () => {
   const ids = (level: "system" | "person" | "organization", readOnly = false) =>
     recordTabsForLevel(level, { readOnly }).map((t) => t.id);
   it("admin-only tabs are absent on member seats", () => {
-    for (const id of ["test", "source", "diagnostics"]) {
+    for (const id of ["source", "diagnostics"]) {
       expect(ids("system")).toContain(id);
       expect(ids("person")).not.toContain(id);
       expect(ids("organization")).not.toContain(id);
     }
   });
-  it("a read-only org member sees definition, binding and notes only", () => {
-    expect(ids("organization", true)).toEqual(["definition", "holder", "notes"]);
+  it("every seat can test at its own level (MANDATE-SYSTEM.md §2)", () => {
+    expect(ids("system")).toContain("test");
+    expect(ids("person")).toContain("test");
+    expect(ids("organization")).toContain("test");
+    expect(ids("organization", true)).toContain("test");
+  });
+  it("a read-only org member sees definition, binding, test and notes only", () => {
+    expect(ids("organization", true)).toEqual(["definition", "holder", "test", "notes"]);
   });
 });
 

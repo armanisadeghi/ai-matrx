@@ -65,6 +65,8 @@ export type CodeBlockMenuItem = MenuItem;
 
 interface CodeBlockHeaderProps {
   language: string;
+  /** Filename or caption from the fence (`title="app.tsx"`, ```ts:app.tsx). */
+  title?: string;
   linesCount: number;
   isEditing: boolean;
   isFullScreen: boolean;
@@ -106,6 +108,7 @@ interface CodeBlockHeaderProps {
 
 export const CodeBlockHeader: React.FC<CodeBlockHeaderProps> = ({
   language,
+  title,
   linesCount,
   isEditing,
   isFullScreen,
@@ -161,6 +164,14 @@ export const CodeBlockHeader: React.FC<CodeBlockHeaderProps> = ({
         {!hideLanguageDisplay && (
           <div className="flex items-center space-x-2">
             <LanguageDisplay language={language} isMobile={isMobile} />
+            {title && (
+              <span
+                className="max-w-[40ch] truncate font-mono text-xs text-neutral-800 dark:text-neutral-100"
+                title={title}
+              >
+                {title}
+              </span>
+            )}
             {!isMobile && (
               <span className="text-xs text-neutral-600 dark:text-neutral-400">
                 {linesCount} {linesCount === 1 ? "line" : "lines"}

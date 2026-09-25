@@ -2917,7 +2917,7 @@ BEGIN
       errcode = '22023',
       message = format('UNSUPPORTED_CONTRACT_VERSION: this door accepts contract_version 1, the report says %s.',
                        coalesce(p_report->>'contract_version', '<missing>')),
-      detail  = 'The report contract is frozen in common-docs/projects/mandate-declaration-reporting/REGISTER.md. Changing it is a recorded amendment, never a silent edit.',
+      detail  = 'The report contract is frozen in common-docs/systems/intelligence/mandates/REGISTER.md. Changing it is a recorded amendment, never a silent edit.',
       hint    = 'Upgrade the scanner (matrx-mandate-scan) to a version that emits contract v1, or amend the contract in the register first.';
   END IF;
 

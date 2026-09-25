@@ -131,7 +131,7 @@ export class MandateRunRefusal extends Error {
 
 /** The machine code a refusal body names. aidream's mandate mapper writes
  * `code`; the global envelope writes `error` — read both rather than guess. */
-function refusalCode(serverDetail: unknown): string | null {
+export function refusalCode(serverDetail: unknown): string | null {
   if (!isJsonObject(serverDetail)) return null;
   for (const key of ["code", "error"] as const) {
     const value = serverDetail[key];
@@ -148,7 +148,7 @@ function refusalCode(serverDetail: unknown): string | null {
 }
 
 /** Sentences a refusal body carried alongside its message. */
-function refusalNotes(serverDetail: unknown): unknown[] {
+export function refusalNotes(serverDetail: unknown): unknown[] {
   if (!isJsonObject(serverDetail)) return [];
   if (Array.isArray(serverDetail.notes)) return serverDetail.notes;
   const nested = serverDetail.detail;

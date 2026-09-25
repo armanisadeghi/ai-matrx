@@ -6,7 +6,7 @@
  * current pin (vs latest), health, enable/disable, rebind, per-principal
  * overrides, and the exemplar test bench. Backed by
  * `features/mandates/admin/MandatesConsole.tsx`; cross-repo
- * system-of-record: common-docs/systems/mandates/FEATURE.md.
+ * system-of-record: common-docs/systems/intelligence/mandates/STATE.md.
  *
  * What an agent bound here may safely do: read the mandate list, the health
  * roll-up, and the selected mandate's pin state, then help the admin reason

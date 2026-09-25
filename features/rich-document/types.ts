@@ -161,6 +161,24 @@ export type RichDocumentActionId =
   // Listen
   | "summarize-for-listening"
   | "summarize-and-listen"
+  // Transfer — copy / download every format the best AI apps offer
+  | "copy-markdown"
+  | "copy-plain-text"
+  | "copy-rich-text"
+  | "copy-html-source"
+  | "copy-table-csv"
+  | "copy-table-tsv"
+  | "save-table-as-data"
+  | "download-html"
+  | "download-pdf"
+  | "save-as-flashcard"
+  // Ask in chat — the content rides as a context entry, never as user text
+  | "quote-into-chat"
+  | "ask-followup"
+  // Text-field AI powers (ProTextarea hosts them)
+  | "text-cleanup"
+  | "text-help"
+  | "text-custom-agent"
   // Chat user-message edit paths
   | "edit-and-resubmit"
   | "fork-and-regenerate"
@@ -178,6 +196,8 @@ export type ActionCategory =
   | "app"
   | "listen"
   | "study"
+  | "ask"
+  | "ai"
   | "admin";
 
 // ============================================================================
@@ -299,6 +319,16 @@ export interface RichDocumentActionContextCallbacks {
   onRequestEditHistory?: () => void;
   /** Open the host-owned ConvertContentDialog (the ONE convert-source dialog). */
   onRequestConvert?: () => void;
+  /** Open the host-owned "save table as data" dialog for a parsed table. */
+  onRequestSaveTable?: (table: { headers: string[]; rows: string[][] }) => void;
+  /** Open the host-owned "save as flashcard" prompt (the text is the answer). */
+  onRequestFlashcard?: (answer: string) => void;
+  /**
+   * Run one of a text field's own AI powers (clean up, help with this, custom
+   * agent). Only a host that can APPLY a result back into the text supplies
+   * it — ProTextarea today — so elsewhere those actions are absent.
+   */
+  onRequestTextAgentAction?: (actionId: "cleanup" | "help" | "customAgent") => void;
 }
 
 export interface RichDocumentActionContext {

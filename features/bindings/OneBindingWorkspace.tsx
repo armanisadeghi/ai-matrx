@@ -79,11 +79,7 @@ import { fetchMandateLadder } from "@/features/mandates/workspace/useMandateLadd
 import { inheritedModelOverrides, MODEL_OVERRIDE_SOURCE } from "./inherited-model-overrides";
 import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
 import { isJsonObject, type JsonObject } from "@/types/json";
-import {
-  agentHolderOfBinding,
-  holderOfMandate,
-  isFloatingBinding,
-} from "@/lib/supabase/mandateStorage";
+import { agentHolderOfBinding } from "@/lib/supabase/mandateStorage";
 import { compareStoredContract } from "@/features/mandates/contract-compare";
 import {
   hasLiveGlobalBinding,
@@ -120,6 +116,7 @@ import {
 import { toastFailure } from "@/lib/failure/toastFailure";
 import { describeFailure } from "@/lib/failure/transport";
 import { buildBindingSavePayload } from "@/features/mandates/workspace/save-payload";
+import { defaultHolderDraftOf, holderDraftOf } from "./holder-draft-seed";
 import { EffectiveConfigLayers } from "@/features/mandates/components/EffectiveConfigLayers";
 import { useGuardedRebind } from "@/features/mandates/admin/useGuardedRebind";
 import type {
@@ -1202,9 +1199,9 @@ function BindingDraft({
               holderType: "workflow",
               agentId: null,
               agentVersionId: null,
-              useLatest: true,
+              useLatest: !holder.workflowVersionId,
               holderId: holder.workflowId,
-              holderVersionId: null,
+              holderVersionId: holder.workflowVersionId ?? null,
             }
           : {
               holderType: "agent",
@@ -1232,7 +1229,11 @@ function BindingDraft({
     const payload = buildBindingSavePayload({
       holder:
         holder.kind === "workflow"
-          ? { kind: "workflow", workflowId: holder.workflowId as string }
+          ? {
+              kind: "workflow",
+              workflowId: holder.workflowId as string,
+              workflowVersionId: holder.workflowVersionId ?? null,
+            }
           : overriding
             ? {
                 agentId: bindAgentId,
@@ -1567,6 +1568,8 @@ function BindingDraft({
       agent_id: holder.kind === "agent" ? holder.agentId : null,
       agent_version_id: holder.kind === "agent" ? holder.agentVersionId : null,
       workflow_id: holder.kind === "workflow" ? holder.workflowId : null,
+      workflow_version_id:
+        holder.kind === "workflow" ? (holder.workflowVersionId ?? null) : null,
     },
     saved_mapping: storedDraft.consumptionMap,
     draft_mapping: withoutUnpicked(draftMap),
@@ -2775,39 +2778,6 @@ function findBinding(
   );
 }
 
-function holderDraftOf(binding: MandateBindingRowDb | null): HolderDraft {
-  const wave1 = parseBindingWave1(binding);
-  const agent = agentHolderOfBinding(binding ?? {});
-  return {
-    kind: wave1.holderType === "workflow" ? "workflow" : "agent",
-    agentId: agent.holderId,
-    agentVersionId: agent.versionId,
-    useLatest: binding ? isFloatingBinding(binding) : true,
-    workflowId: wave1.holderType === "workflow" ? wave1.holderId : null,
-  };
-}
-
-/**
- * THE BOTTOM RUNG'S CURRENT ANSWER — the mandate definition's own default
- * holder, read through the one accessor (`holderOfMandate`) so no screen names
- * `default_holder_*` a second time.
- *
- * 🚨 A pinned default stores BOTH the agent's definition id and the version:
- * `mandate._rungs` reads `chose_holder = (default_holder_id IS NOT NULL)`, so a
- * version-only default would return a bottom rung that names nobody. `useLatest`
- * is therefore derived from the VERSION being absent, never from a stored flag.
- */
-function defaultHolderDraftOf(mandate: MandateRowDb): HolderDraft {
-  const held = holderOfMandate(mandate);
-  const isWorkflow = held.holderType === "workflow";
-  return {
-    kind: isWorkflow ? "workflow" : "agent",
-    agentId: isWorkflow ? null : held.holderId,
-    agentVersionId: isWorkflow ? null : held.versionId,
-    useLatest: held.versionId === null,
-    workflowId: isWorkflow ? held.holderId : null,
-  };
-}
 
 /** A pinned version resolves to its master for everything the UI reasons about. */
 function effectiveAgentId(

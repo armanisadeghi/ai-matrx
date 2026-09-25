@@ -2554,6 +2554,23 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "",
     rlsUsesHasPermission: true,
   },
+  /**
+   * A user/org-created mandate (`mandate.definition`). Sharing NEVER moves it: a person or
+   * organization share is an iam.permissions grant, "Anyone" is visibility public, and the
+   * creator keeps ownership (mandate_share_without_move.sql, 2026-09-25). No id route —
+   * mandate pages are addressed by key — so `urlPathTemplate` stays honestly empty.
+   */
+  mandate: {
+    resourceType: "mandate",
+    tableName: "definition",
+    schemaName: "mandate",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Mandate",
+    urlPathTemplate: "",
+    rlsUsesHasPermission: true,
+  },
   mandate_binding: {
     resourceType: "mandate_binding",
     tableName: "binding",

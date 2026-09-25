@@ -33305,8 +33305,9 @@ export interface paths {
         head?: never;
         /**
          * Patch Mandate Goal
-         * @description Set the goal (grounding becomes 'H'). Works on ANY mandate — the boot
-         *     sync refreshes goals only over grounding 'A', so an 'H' edit is permanent.
+         * @description Set the goal (grounding becomes 'H'). A super admin on ANY mandate (the
+         *     boot sync refreshes goals only over grounding 'A', so an 'H' edit is
+         *     permanent); the owner of a soft, non-system mandate on their own.
          */
         patch: operations["patch_mandate_goal_mandates__mandate_key__goal_patch"];
         trace?: never;
@@ -33327,8 +33328,74 @@ export interface paths {
         /**
          * Patch Mandate Draft Inputs
          * @description Replace the mandate's descriptive input list (pre-Provision inputs).
+         *     Same gate as the goal: super admin, or the owner of a soft mandate.
          */
         patch: operations["patch_mandate_draft_inputs_mandates__mandate_key__draft_inputs_patch"];
+        trace?: never;
+    };
+    "/mandates/{mandate_key}/definition-rights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Mandate Definition Rights
+         * @description What THIS caller may do to the mandate's definition (edit / remove), with
+         *     the reason when not — the one answer the UI's edit affordances read.
+         */
+        get: operations["get_mandate_definition_rights_mandates__mandate_key__definition_rights_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandates/{mandate_key}/definition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Patch Mandate Definition Fields
+         * @description Change the owner-editable definition fields — name, description, output
+         *     format, output constraints. Same gate as the goal.
+         */
+        patch: operations["patch_mandate_definition_fields_mandates__mandate_key__definition_patch"];
+        trace?: never;
+    };
+    "/mandates/{mandate_key}/try": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Try Mandate
+         * @description Run the mandate once, as the caller, with the binding that runs for them
+         *     now or a named agent/workflow they can see. Paid work charged to the
+         *     caller; nothing is written onto the mandate. Answers the bench's
+         *     ``MandateTestResult`` so one renderer shows both.
+         */
+        post: operations["try_mandate_mandates__mandate_key__try_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/agent-usage/sync": {
@@ -65030,6 +65097,21 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * DefinitionRights
+         * @description What this viewer may do to the mandate's definition. The UI reads this
+         *     instead of re-deriving the rule, so the pencil and the server never differ.
+         */
+        DefinitionRights: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Can Edit */
+            can_edit: boolean;
+            /** Can Remove */
+            can_remove: boolean;
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
          * DefinitionSlotsResponse
          * @description Per-node slot map for a whole definition — the studio's bulk fetch
          *     for design-time edge-Satisfied derivation.
@@ -86703,6 +86785,16 @@ export interface components {
             holder_id?: string | null;
             /** Holder Version Id */
             holder_version_id?: string | null;
+            /** Consumption Map */
+            consumption_map?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Config Overrides */
+            config_overrides?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Auto Run */
+            auto_run?: boolean | null;
             /** Organization Id */
             organization_id?: string | null;
         };
@@ -86738,6 +86830,42 @@ export interface components {
              * @default
              */
             applies_in?: string;
+            /** Consumption Map */
+            consumption_map?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Config Overrides */
+            config_overrides?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Auto Run */
+            auto_run?: boolean | null;
+            /**
+             * Notes
+             * @default []
+             */
+            notes?: string[];
+        };
+        /**
+         * MandateDefinitionPatch
+         * @description The owner-editable definition fields. Absent = unchanged.
+         */
+        MandateDefinitionPatch: {
+            /** Label */
+            label?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Output Kind */
+            output_kind?: string | null;
+            /** Output Constraints */
+            output_constraints?: string | null;
+        };
+        /** MandateDefinitionPatchResponse */
+        MandateDefinitionPatchResponse: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Changed */
+            changed: string[];
         };
         /** MandateDraftInputsPatchRequest */
         MandateDraftInputsPatchRequest: {
@@ -87493,6 +87621,31 @@ export interface components {
             verdict_note?: string | null;
             /** Promoted To Reference At */
             promoted_to_reference_at?: string | null;
+        };
+        /**
+         * MandateTryRequest
+         * @description One try of a mandate at the caller's own level. There is deliberately NO
+         *     user field: the run is always AS the caller.
+         */
+        MandateTryRequest: {
+            /**
+             * Variables
+             * @default {}
+             */
+            variables?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** User Input */
+            user_input?: string | null;
+            /**
+             * @default {
+             *       "selection": "current",
+             *       "label": "Try it"
+             *     }
+             */
+            candidate?: components["schemas"]["MemberTryCandidate"];
+            /** Organization Id */
+            organization_id?: string | null;
         };
         /** MandateUsageFacts */
         MandateUsageFacts: {
@@ -89321,6 +89474,29 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.memberspace.com/";
+        };
+        /**
+         * MemberTryCandidate
+         * @description What to run: the binding that runs for you now, or a named agent/workflow.
+         */
+        MemberTryCandidate: {
+            /**
+             * Selection
+             * @default current
+             * @enum {string}
+             */
+            selection?: "agent" | "current" | "workflow";
+            /** Agent Id */
+            agent_id?: string | null;
+            /** Workflow Id */
+            workflow_id?: string | null;
+            /** Workflow Version Id */
+            workflow_version_id?: string | null;
+            /**
+             * Label
+             * @default Try it
+             */
+            label?: string;
         };
         /** MemberfulServiceStatus */
         MemberfulServiceStatus: {
@@ -186474,6 +186650,107 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MandateDraftInputsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_mandate_definition_rights_mandates__mandate_key__definition_rights_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mandate_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefinitionRights"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_mandate_definition_fields_mandates__mandate_key__definition_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mandate_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MandateDefinitionPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MandateDefinitionPatchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    try_mandate_mandates__mandate_key__try_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mandate_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MandateTryRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MandateTestResult"];
                 };
             };
             /** @description Validation Error */

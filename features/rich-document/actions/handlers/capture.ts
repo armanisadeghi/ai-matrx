@@ -403,3 +403,24 @@ registerAction({
     ctx.callbacks?.onRequestConvert?.();
   },
 });
+
+registerAction({
+  // The passage becomes the ANSWER side of one card; the host asks for the
+  // question (the front is the reader's to write, never guessed) and files it
+  // in their "Saved cards" deck.
+  id: "save-as-flashcard",
+  label: "Save as flashcard",
+  icon: GraduationCap,
+  iconColor: "text-primary",
+  category: "study",
+  supportedSources: "*",
+  renderSlot: "overflow",
+  order: 1,
+  requiresAuth: true,
+  visible: (ctx) =>
+    Boolean(ctx.callbacks?.onRequestFlashcard) && ctx.content.trim().length > 0,
+  run: (ctx) => {
+    ctx.onClose();
+    ctx.callbacks?.onRequestFlashcard?.(ctx.content.trim());
+  },
+});

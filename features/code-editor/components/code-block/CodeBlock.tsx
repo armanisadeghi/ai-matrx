@@ -17,9 +17,9 @@ import { isCompleteHtmlDocument } from "@/features/html-pages/utils/html-preview
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { Globe, Loader2 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
-import { Prism as SyntaxHighlighterBase } from "react-syntax-highlighter";
 import { toast } from "@/lib/toast";
-import { resolvePrismSyntaxStyle } from "@/features/code-editor/config/syntax-themes";
+import { ShikiCodeView } from "./highlight/ShikiCodeView";
+import { parseFenceMeta } from "@/components/markdown-core/fence-meta";
 import { codeLanguageToExtension } from "@/utils/file-operations/utils";
 import { agentForPromptKey } from "@/features/code-editor/agent-code-editor/agents";
 import { useOpenSmartCodeEditorWindow } from "@/features/overlays/openers/smartCodeEditorWindow";
@@ -28,9 +28,6 @@ import {
   mapLanguageForMonaco,
   getMonacoFileExtension,
 } from "@/features/code-editor/config/languages";
-
-// Type assertion to resolve React 19 type incompatibility
-const SyntaxHighlighter = SyntaxHighlighterBase as any;
 
 type AIModalConfig = {
   /** The editing job (mandate key) — the DB decides which agent runs it. */
@@ -62,6 +59,12 @@ interface CodeBlockProps {
    * introduce a new one (e.g. "Data" for tabular JSON actions).
    */
   extraMenuItems?: CodeBlockMenuItem[];
+  /**
+   * The code fence's info string after the language (`title="app.tsx" {1,3-5}
+   * showLineNumbers`) — see components/markdown-core/fence-meta.ts. Sets the
+   * header title, highlighted lines and line numbering.
+   */
+  meta?: string;
 }
 
 export type { CodeBlockProps };
@@ -80,9 +83,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   customBuiltinKeys = [],
   headerLeftSlot,
   extraMenuItems,
+  meta,
 }) => {
+  const fence = parseFenceMeta(meta);
   // Map language for respective editors (with additional safety checks)
-  const prismLanguage = mapLanguageForPrism(rawLanguage);
+  const viewLanguage = mapLanguageForPrism(rawLanguage);
   const monacoLanguage = mapLanguageForMonaco(rawLanguage);
   const monacoFileExtension = getMonacoFileExtension(rawLanguage);
 
@@ -97,7 +102,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  const [lineNumbers, setLineNumbers] = useState(showLineNumbers);
+  const [lineNumbers, setLineNumbers] = useState(
+    showLineNumbers || fence.showLineNumbers === true,
+  );
   const [showWrapLines, setShowWrapLines] = useState(wrapLines);
   const [minimapEnabled, setMinimapEnabled] = useState(false);
   const [isTopInView, setIsTopInView] = useState(false);
@@ -122,7 +129,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   // logic is shared with the inline auto-preview renderer — see
   // isCompleteHtmlDocument in features/html-pages/utils/html-preview-utils.
   const isCompleteHTMLDocument = (htmlCode: string): boolean =>
-    prismLanguage === "html" && isCompleteHtmlDocument(htmlCode);
+    viewLanguage === "html" && isCompleteHtmlDocument(htmlCode);
 
   // Function to handle HTML document viewing in canvas
   const handleViewHTML = async () => {
@@ -203,11 +210,12 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
     if (withLineNumbers) {
       // Add line numbers to each line
+      // Numbers match what the block shows (fence `showLineNumbers{N}`).
       const lines = code.split("\n");
+      const firstLine = fence.startLine ?? 1;
+      const width = String(firstLine + lines.length - 1).length;
       const paddedLines = lines.map((line, index) => {
-        const lineNumber = (index + 1)
-          .toString()
-          .padStart(lines.length.toString().length, " ");
+        const lineNumber = (firstLine + index).toString().padStart(width, " ");
         return `${lineNumber} | ${line}`;
       });
       textToCopy = paddedLines.join("\n");
@@ -224,8 +232,13 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
+    // A fence title that looks like a filename names the download.
+    const titleFile =
+      fence.title && /^[\w./-]+\.\w+$/.test(fence.title)
+        ? fence.title.split("/").pop()
+        : undefined;
     const ext = codeLanguageToExtension(rawLanguage || "txt");
-    a.download = `code${ext}`;
+    a.download = titleFile ?? `code${ext}`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -360,6 +373,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
       >
         <CodeBlockHeader
           language={rawLanguage}
+          title={fence.title}
           linesCount={code.split("\n").length}
           isEditing={isEditing}
           isFullScreen={isFullScreen}
@@ -437,57 +451,16 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                   showWrapLines && "overflow-x-hidden",
                 )}
               >
-                <SyntaxHighlighter
-                  language={prismLanguage}
-                  style={resolvePrismSyntaxStyle(
-                    rawLanguage,
-                    mode === "dark" ? "dark" : "light",
-                  )}
+                <ShikiCodeView
+                  code={code}
+                  language={rawLanguage}
+                  mode={mode === "dark" ? "dark" : "light"}
                   showLineNumbers={lineNumbers}
+                  startLine={fence.startLine}
                   wrapLines={showWrapLines}
-                  wrapLongLines={showWrapLines}
-                  codeTagProps={{
-                    className: `language-${prismLanguage}`,
-                    style: showWrapLines
-                      ? {
-                          whiteSpace: "pre-wrap",
-                          overflowWrap: "anywhere",
-                          wordBreak: "break-word",
-                        }
-                      : {
-                          whiteSpace: "pre",
-                          overflowWrap: "normal",
-                          wordBreak: "normal",
-                        },
-                  }}
-                  lineProps={{
-                    style: showWrapLines
-                      ? {
-                          whiteSpace: "pre-wrap",
-                          overflowWrap: "anywhere",
-                          wordBreak: "break-word",
-                        }
-                      : {
-                          whiteSpace: "pre",
-                          overflowWrap: "normal",
-                          wordBreak: "normal",
-                        },
-                  }}
-                  customStyle={{
-                    paddingTop: "1rem",
-                    paddingRight: "1rem",
-                    paddingBottom: "1rem",
-                    paddingLeft: "1rem",
-                    fontSize: `${fontSize}px`,
-                    height: "auto",
-                    minHeight: "auto",
-                    maxWidth: "100%",
-                    overflowX: showWrapLines ? "hidden" : "auto",
-                    margin: 0,
-                  }}
-                >
-                  {code}
-                </SyntaxHighlighter>
+                  fontSize={fontSize}
+                  highlightLines={fence.highlightLines}
+                />
 
                 {/* Floating View Button for HTML Documents - Opens in Canvas */}
                 {isCompleteHTMLDocument(code) && !isCollapsed && (

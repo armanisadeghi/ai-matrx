@@ -82,6 +82,7 @@ import { CodeBlockWithContextAttach } from "@/features/canvas/materialization/Co
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import { FENCE_META_KEY } from "@/components/markdown-core/fence-meta";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import {
   isRenderableStructuredAgentAnswer,
@@ -842,6 +843,14 @@ const renderNestedSection: BlockRenderFn = ({ block, index, isStreamActive }) =>
     />
   ) : null;
 
+/** The raw fence meta string a code block carries, if any (fence-meta.ts). */
+function readFenceMeta(
+  source: Record<string, unknown> | undefined,
+): string | undefined {
+  const value = source?.[FENCE_META_KEY];
+  return typeof value === "string" && value ? value : undefined;
+}
+
 /** Canonical readable fallback for structured handlers missing serverData. */
 function renderJsonFallback(block: RenderBlock, index: number) {
   return (
@@ -1482,12 +1491,17 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
       );
     }
 
-    // Regular code block — attach-to-context when we have a real message id
+    // Regular code block — attach-to-context when we have a real message id.
+    // The fence meta (title, highlighted lines) rides on the static splitter's
+    // metadata or the stream accumulator's block data.
+    const fenceMeta =
+      readFenceMeta(block.metadata) ?? readFenceMeta(block.serverData);
     return (
       <CodeBlockWithContextAttach
         key={index}
         code={block.content}
         language={block.language || DEFAULT_UNLABELED_FENCE_LANGUAGE}
+        meta={fenceMeta}
         fontSize={16}
         className="my-3"
         onCodeChange={

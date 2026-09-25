@@ -15,7 +15,7 @@
 // `user`), each row carrying `holder_live` / `version_live` so a rung pointing
 // at something that cannot be read is shown as BROKEN instead of rendering as a
 // working override. Design:
-// /common-docs/projects/workflow-mandate-program/DESIGN-one-resolution.md
+// /common-docs/systems/intelligence/mandates/STATE.md
 // (return shape frozen, v2).
 //
 // 🚨 THIS IS A VIEW, NOT AN ANSWER. Nothing here decides which rung wins — that

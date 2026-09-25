@@ -200,6 +200,11 @@ export type AccessLevel =
  * Smart-Input behavior. Bind by stable identity, never by name coincidence.
  */
 export interface ContextItemBinding {
+  /**
+   * Discriminant. Stored scope bindings predate the union and carry no `kind` —
+   * a missing kind IS a context-item binding. Never written by the editor.
+   */
+  kind?: "context_item";
   /** ctx_context_items.id — the exact item (within the org). */
   contextItemId: string;
   /** The scope type the item lives on (ctx_scope_types.id) — picks which active scope supplies the value. */
@@ -209,6 +214,35 @@ export interface ContextItemBinding {
   /** What to do when no active scope supplies the value. Default "empty". */
   onMissing?: "empty" | "skip" | "error";
 }
+
+/**
+ * Binds a variable to the author's OWN CUSTOM DATA (a record-store table).
+ * `tableId` alone = the whole table (Collection); `recordId` = one record through
+ * the template (Reference); `recordId + fieldKey` = one value (Value). Resolved
+ * server-side, once per turn, under the operating person's own principal
+ * (`server_fixed` — there is no client write-back). Contract:
+ * `common-docs/projects/data-kits/PLAN.md` § P1.
+ */
+export interface CustomDataBinding {
+  kind: "custom_data";
+  /** The custom table's id. */
+  tableId: string;
+  /** One record of that table. */
+  recordId?: string;
+  /** With `recordId`: one field of that record. */
+  fieldKey?: string;
+  /** Optional equality filter for a whole-table read, keyed by field key. */
+  match?: Record<string, string>;
+  /** Per-row render for a table/record read; `{field_key}` / `{field.name}` / `{field.id}` placeholders. */
+  template?: string;
+  sort?: { field: string; dir: "asc" | "desc" };
+  /** Row cap for a whole-table read; truncation is announced server-side. */
+  limit?: number;
+  onMissing: "empty" | "skip" | "error";
+}
+
+/** What `VariableDefinition.binding` holds. Narrow with `isCustomDataBinding`. */
+export type VariableBinding = ContextItemBinding | CustomDataBinding;
 
 /**
  * Binds a variable to a MODEL CONTROL (controls as first-class variables). The
@@ -229,8 +263,11 @@ export interface VariableDefinition {
   required?: boolean;
   /** Custom UI input component for collecting this variable's value. Ignored when `binding` is set (the component is inherited from the bound context item). */
   customComponent?: VariableCustomComponent;
-  /** When set, this variable is filled from a scope context item and inherits its component. */
-  binding?: ContextItemBinding;
+  /**
+   * When set, this variable is filled at run time — from a scope context item
+   * (inherits its component) or from the author's custom data (`kind: "custom_data"`).
+   */
+  binding?: VariableBinding;
   /** When set, this variable is a model control exposed as a run input. */
   control?: ControlBinding;
 }

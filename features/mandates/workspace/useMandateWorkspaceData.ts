@@ -68,6 +68,27 @@ export interface WorkspaceVersionInfo {
   versionNumber: number | null;
 }
 
+/**
+ * A workflow that holds (or is pinned by) a rung of this mandate — workflow
+ * parity (2026-09-25): a mandate is filled by an agent OR a workflow, so the
+ * workspace reads workflow identities exactly as it reads agents, and no
+ * screen has to print "A workflow" for want of a name.
+ */
+export interface WorkspaceWorkflowInfo {
+  id: string;
+  name: string;
+  isArchived: boolean;
+  /** The live row's counter; published versions are `workflow.definition_version`. */
+  liveCounter: number | null;
+  outputKind: string | null;
+}
+
+export interface WorkspaceWorkflowVersionInfo {
+  id: string;
+  workflowId: string;
+  versionNumber: number | null;
+}
+
 export interface MandateWorkspaceData {
   mandate: MandateRowDb;
   contract: MandateContract;
@@ -79,6 +100,10 @@ export interface MandateWorkspaceData {
   bindings: MandateBindingRowDb[];
   agentsById: Record<string, WorkspaceAgentInfo>;
   versionsById: Record<string, WorkspaceVersionInfo>;
+  /** Workflow holders by id (absent on fixtures that predate workflow parity). */
+  workflowsById?: Record<string, WorkspaceWorkflowInfo>;
+  /** Pinned workflow versions by id. */
+  workflowVersionsById?: Record<string, WorkspaceWorkflowVersionInfo>;
 }
 
 export interface UseMandateWorkspaceData {
@@ -257,6 +282,65 @@ export function useMandateWorkspaceData(
         }
       }
 
+      // 4. Workflow holders — the same by-id read, for the other half of
+      //    "filled by an agent OR a workflow".
+      const workflowHeld = [
+        mandate.default_holder_type === "workflow"
+          ? { id: mandate.default_holder_id, versionId: mandate.default_holder_version_id }
+          : null,
+        ...bindings.map((b) => {
+          const row = b as { holder_type?: string | null; holder_id?: string | null; holder_version_id?: string | null };
+          return row.holder_type === "workflow"
+            ? { id: row.holder_id ?? null, versionId: row.holder_version_id ?? null }
+            : null;
+        }),
+      ].filter((h): h is { id: string | null; versionId: string | null } => h !== null);
+      const workflowIds = [...new Set(workflowHeld.map((h) => h.id).filter((v): v is string => Boolean(v)))];
+      const workflowVersionIds = [...new Set(workflowHeld.map((h) => h.versionId).filter((v): v is string => Boolean(v)))];
+      const workflowsById: Record<string, WorkspaceWorkflowInfo> = {};
+      const workflowVersionsById: Record<string, WorkspaceWorkflowVersionInfo> = {};
+      if (workflowVersionIds.length > 0) {
+        const { data: wfVersionRows, error: wfVersionError } = await supabase
+          .schema("workflow")
+          .from("definition_version")
+          .select("id, definition_id, version_number")
+          .in("id", workflowVersionIds);
+        if (wfVersionError)
+          throw operationFailed(
+            "load the workflow versions this mandate is pinned to",
+            wfVersionError,
+          );
+        for (const row of wfVersionRows ?? []) {
+          workflowVersionsById[row.id] = {
+            id: row.id,
+            workflowId: row.definition_id,
+            versionNumber: row.version_number ?? null,
+          };
+        }
+      }
+      if (workflowIds.length > 0) {
+        // By-id read — explicitly legal under the canonical-selection law.
+        const { data: workflowRows, error: workflowError } = await supabase
+          .schema("workflow")
+          .from("definition")
+          .select("id, name, is_archived, version, output_kind")
+          .in("id", workflowIds);
+        if (workflowError)
+          throw operationFailed(
+            "load the workflows behind this mandate",
+            workflowError,
+          );
+        for (const row of workflowRows ?? []) {
+          workflowsById[row.id] = {
+            id: row.id,
+            name: row.name,
+            isArchived: row.is_archived === true,
+            liveCounter: row.version ?? null,
+            outputKind: row.output_kind ?? null,
+          };
+        }
+      }
+
       return {
         mandate,
         contract: parseMandateContract(contractOfMandate(mandate)),
@@ -267,6 +351,8 @@ export function useMandateWorkspaceData(
         bindings,
         agentsById,
         versionsById,
+        workflowsById,
+        workflowVersionsById,
       } satisfies MandateWorkspaceData;
     })()
       .then((next) => {

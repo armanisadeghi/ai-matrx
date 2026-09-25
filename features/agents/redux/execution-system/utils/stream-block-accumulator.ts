@@ -14,6 +14,7 @@
  * accumulator never re-reads completed blocks.
  */
 
+import { FENCE_META_KEY, splitFenceInfo } from "@/components/markdown-core/fence-meta";
 import {
   classifyInnerFenceLine,
   fenceNestsInnerFences,
@@ -129,6 +130,8 @@ type BlockSubState =
   | {
       kind: "code_fence";
       language: string;
+      /** The fence info string after the language (fence-meta.ts). */
+      meta?: string;
       fenceTicks: number;
       /**
        * Open inner ```lang fences inside a ```markdown fence — the nesting
@@ -252,12 +255,13 @@ const BARE_JSON_OPEN_RE = /^\{\s*"[^"]*"\s*:/;
 
 function extractFenceInfo(
   trimmed: string,
-): { language: string; ticks: number } | null {
+): { language: string; meta?: string; ticks: number } | null {
   let ticks = 0;
   while (ticks < trimmed.length && trimmed[ticks] === "`") ticks++;
   if (ticks < 3) return null;
-  const language = trimmed.slice(ticks).trim().split(/\s/)[0];
-  return { language, ticks };
+  // The ONE info-string reader, shared with the static splitter.
+  const { language, meta } = splitFenceInfo(trimmed.slice(ticks));
+  return { language: language ?? "", meta, ticks };
 }
 
 function extractOpeningXmlTag(trimmed: string): string | null {
@@ -909,6 +913,7 @@ export class StreamBlockAccumulator {
         this.subState = {
           kind: "code_fence",
           language: fence.language,
+          meta: fence.meta,
           fenceTicks: fence.ticks,
           nestedFences: 0,
           earlyTypeResolved: false,
@@ -2037,9 +2042,11 @@ export class StreamBlockAccumulator {
       // upgraded to a JSON sub-type (diagram, quiz, etc.), `data` must be null
       // so BlockRenderer takes the content-parse path, not the serverData path.
       if (this.currentBlockType !== "code") return null;
-      return this.subState.language
-        ? { language: this.subState.language }
-        : null;
+      if (!this.subState.language && !this.subState.meta) return null;
+      return {
+        ...(this.subState.language ? { language: this.subState.language } : {}),
+        ...(this.subState.meta ? { [FENCE_META_KEY]: this.subState.meta } : {}),
+      };
     }
     if (this.subState.kind === "generic_xml") {
       return { language: "xml" };

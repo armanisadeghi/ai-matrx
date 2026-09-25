@@ -372,7 +372,7 @@ export async function buildToolInjection(
   // 🚨 AND WITHHELD ENTIRELY FOR A STRUCTURED-OUTPUT RUN. An agent whose job is
   // to RETURN an object calls `apply_surface_write` instead of answering, and
   // the run pauses forever (see `./output-contract-guard`, and
-  // `common-docs/systems/mandates/RUNTIME.md`). The verdict is resolved ONLY
+  // `common-docs/systems/intelligence/mandates/STATE.md`). The verdict is resolved ONLY
   // when this surface actually has page-write tools to withhold, so the
   // by-id output-schema read never touches a run that was never at risk.
   if (!disableInjection) {

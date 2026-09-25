@@ -587,6 +587,7 @@ export function MarkdownStudio() {
                 sourceActions={loadedSource?.sourceActions}
                 mode={previewMode}
                 onModeChange={setPreviewMode}
+                title={contentLabel}
                 ref={previewScrollRef}
               />
               </div>

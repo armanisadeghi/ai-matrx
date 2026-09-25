@@ -72025,7 +72025,7 @@
           "Mandates"
         ],
         "summary": "Patch Mandate Goal",
-        "description": "Set the goal (grounding becomes 'H'). Works on ANY mandate — the boot\nsync refreshes goals only over grounding 'A', so an 'H' edit is permanent.",
+        "description": "Set the goal (grounding becomes 'H'). A super admin on ANY mandate (the\nboot sync refreshes goals only over grounding 'A', so an 'H' edit is\npermanent); the owner of a soft, non-system mandate on their own.",
         "operationId": "patch_mandate_goal_mandates__mandate_key__goal_patch",
         "parameters": [
           {
@@ -72078,7 +72078,7 @@
           "Mandates"
         ],
         "summary": "Patch Mandate Draft Inputs",
-        "description": "Replace the mandate's descriptive input list (pre-Provision inputs).",
+        "description": "Replace the mandate's descriptive input list (pre-Provision inputs).\nSame gate as the goal: super admin, or the owner of a soft mandate.",
         "operationId": "patch_mandate_draft_inputs_mandates__mandate_key__draft_inputs_patch",
         "parameters": [
           {
@@ -72108,6 +72108,155 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MandateDraftInputsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandates/{mandate_key}/definition-rights": {
+      "get": {
+        "tags": [
+          "Mandates"
+        ],
+        "summary": "Get Mandate Definition Rights",
+        "description": "What THIS caller may do to the mandate's definition (edit / remove), with\nthe reason when not — the one answer the UI's edit affordances read.",
+        "operationId": "get_mandate_definition_rights_mandates__mandate_key__definition_rights_get",
+        "parameters": [
+          {
+            "name": "mandate_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mandate Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefinitionRights"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandates/{mandate_key}/definition": {
+      "patch": {
+        "tags": [
+          "Mandates"
+        ],
+        "summary": "Patch Mandate Definition Fields",
+        "description": "Change the owner-editable definition fields — name, description, output\nformat, output constraints. Same gate as the goal.",
+        "operationId": "patch_mandate_definition_fields_mandates__mandate_key__definition_patch",
+        "parameters": [
+          {
+            "name": "mandate_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mandate Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MandateDefinitionPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MandateDefinitionPatchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandates/{mandate_key}/try": {
+      "post": {
+        "tags": [
+          "Mandates"
+        ],
+        "summary": "Try Mandate",
+        "description": "Run the mandate once, as the caller, with the binding that runs for them\nnow or a named agent/workflow they can see. Paid work charged to the\ncaller; nothing is written onto the mandate. Answers the bench's\n``MandateTestResult`` so one renderer shows both.",
+        "operationId": "try_mandate_mandates__mandate_key__try_post",
+        "parameters": [
+          {
+            "name": "mandate_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mandate Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MandateTryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MandateTestResult"
                 }
               }
             }
@@ -149664,6 +149813,42 @@
         "title": "DefinitionRecord",
         "description": "``workflow.definition`` (or ``workflow.definition_version``) row as\nreturned by the matrx-graph DefinitionStore. Open shape — Pydantic models\nin ``matrx_graph.db.definition_store`` are the source of truth."
       },
+      "DefinitionRights": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "can_edit": {
+            "type": "boolean",
+            "title": "Can Edit"
+          },
+          "can_remove": {
+            "type": "boolean",
+            "title": "Can Remove"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "can_edit",
+          "can_remove"
+        ],
+        "title": "DefinitionRights",
+        "description": "What this viewer may do to the mandate's definition. The UI reads this\ninstead of re-deriving the rule, so the pencil and the server never differ."
+      },
       "DefinitionSlotsResponse": {
         "properties": {
           "definition_id": {
@@ -198070,6 +198255,45 @@
             ],
             "title": "Holder Version Id"
           },
+          "consumption_map": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consumption Map"
+          },
+          "config_overrides": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Overrides"
+          },
+          "auto_run": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Run"
+          },
           "organization_id": {
             "anyOf": [
               {
@@ -198134,6 +198358,53 @@
             "type": "string",
             "title": "Applies In",
             "default": ""
+          },
+          "consumption_map": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consumption Map"
+          },
+          "config_overrides": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Overrides"
+          },
+          "auto_run": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Run"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes",
+            "default": []
           }
         },
         "type": "object",
@@ -198144,6 +198415,79 @@
         ],
         "title": "MandateDefaultHolderResult",
         "description": "What the mandate's BOTTOM RUNG now says — its own default Holder.\n\nThe system rung is not a binding: it is the three ``mandate.definition``\ncolumns ``default_holder_type`` / ``default_holder_id`` /\n``default_holder_version_id``, and per FIX-R1 its principal is the\nmandate's HOME organization (everybody, for a system-homed mandate; that\none organization, for an org-homed one)."
+      },
+      "MandateDefinitionPatch": {
+        "properties": {
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind"
+          },
+          "output_constraints": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Constraints"
+          }
+        },
+        "type": "object",
+        "title": "MandateDefinitionPatch",
+        "description": "The owner-editable definition fields. Absent = unchanged."
+      },
+      "MandateDefinitionPatchResponse": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "changed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Changed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "changed"
+        ],
+        "title": "MandateDefinitionPatchResponse"
       },
       "MandateDraftInputsPatchRequest": {
         "properties": {
@@ -200250,6 +200594,50 @@
         ],
         "title": "MandateTestResult",
         "description": "A persisted result entry stored in agent.exemplar metadata (test_bench_results)."
+      },
+      "MandateTryRequest": {
+        "properties": {
+          "variables": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Variables",
+            "default": {}
+          },
+          "user_input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Input"
+          },
+          "candidate": {
+            "$ref": "#/components/schemas/MemberTryCandidate",
+            "default": {
+              "selection": "current",
+              "label": "Try it"
+            }
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "title": "MandateTryRequest",
+        "description": "One try of a mandate at the caller's own level. There is deliberately NO\nuser field: the run is always AS the caller."
       },
       "MandateUsageFacts": {
         "properties": {
@@ -203743,6 +204131,62 @@
         ],
         "title": "MemberSpaceServiceStatus",
         "description": "Safe aggregate status projection for MemberSpace' fixed status page."
+      },
+      "MemberTryCandidate": {
+        "properties": {
+          "selection": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "current",
+              "workflow"
+            ],
+            "title": "Selection",
+            "default": "current"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "workflow_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Id"
+          },
+          "workflow_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Version Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "default": "Try it"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MemberTryCandidate",
+        "description": "What to run: the binding that runs for you now, or a named agent/workflow."
       },
       "MemberfulServiceStatus": {
         "properties": {

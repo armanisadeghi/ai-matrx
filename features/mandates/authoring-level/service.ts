@@ -3,7 +3,7 @@
 // features/mandates/authoring-level/service.ts
 //
 // Create a SOFT mandate at the user or organization level — the owner's model
-// (common-docs/systems/mandates/MANDATE-SYSTEM.md §3): system creates code-backed
+// (common-docs/systems/intelligence/mandates/MANDATE-SYSTEM.md §3): system creates code-backed
 // and soft mandates; an organization and a user create SOFT mandates only.
 //
 // One door, aidream `POST /mandates/soft` (the super-admin `POST /mandates` is

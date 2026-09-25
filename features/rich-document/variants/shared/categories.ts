@@ -23,6 +23,8 @@ const CATEGORY_META: Record<ActionCategory, CategoryMeta> = {
   feedback: { label: "Feedback", weight: 6 },
   listen: { label: "Listen", weight: 6.2 },
   study: { label: "Study", weight: 6.4 },
+  ask: { label: "Ask in chat", weight: 6.6 },
+  ai: { label: "AI", weight: -1 },
   admin: { label: "Server API (test)", weight: 7 },
   app: { label: "App", weight: 8 },
 };

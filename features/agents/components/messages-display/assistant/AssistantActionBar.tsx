@@ -57,8 +57,8 @@ import { cn } from "@/lib/utils";
 import { buildChatMessageActions } from "@/features/rich-document/chat/chatMessageActions";
 import {
   convertOriginForSource,
-  useConvertContentHost,
-} from "@/features/rich-document/hosts/ConvertContentHost";
+  useDocumentDialogsHost,
+} from "@/features/rich-document/hosts/DocumentDialogsHost";
 import { selectAgentIsConfirmedOwner } from "@/features/agents/redux/agent-definition/selectors";
 import { DeleteMessageDialog } from "../message-options/DeleteMessageDialog";
 import { EditHistoryDialog } from "../message-options/EditHistoryDialog";
@@ -428,8 +428,8 @@ export function AssistantActionBar({
   // The ratified click-to-convert pattern's chat affordance: the turn's
   // markdown converts into study artifacts via the ONE convert-source dialog.
   // Lineage links the artifact back to this conversation.
-  const convertHost = useConvertContentHost({
-    origin: convertOriginForSource(
+  const dialogsHost = useDocumentDialogsHost({
+    convertOrigin: convertOriginForSource(
       { type: "chat-message", conversationId, messageId },
       buildConversationMessageTitle(conversationTitle, messagePosition) ??
         "Chat response",
@@ -458,7 +458,7 @@ export function AssistantActionBar({
       onFullPrint,
       onRequestDelete: () => setDeleteDialogOpen(true),
       onRequestEditHistory: () => setEditHistoryOpen(true),
-      onRequestConvert: convertHost.onRequestConvert,
+      ...dialogsHost.callbacks,
     },
   });
 
@@ -605,7 +605,7 @@ export function AssistantActionBar({
         messageId={messageId}
       />
 
-      {convertHost.dialog}
+      {dialogsHost.dialogs}
     </>
   );
 }

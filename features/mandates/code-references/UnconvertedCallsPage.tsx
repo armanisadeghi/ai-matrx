@@ -6,7 +6,7 @@
 // place in our code that calls an AI provider directly instead of through a
 // mandate (the code scan's `bypass` references). One row per call site, with
 // the exact line one click away on GitHub. Replaces the conversion list on the
-// old /administration/mandates/references page (common-docs/systems/mandates/
+// old /administration/mandates/references page (common-docs/systems/intelligence/mandates/
 // OPTIONS.md §2), which stays untouched beside it until the swap.
 
 import Link from "next/link";

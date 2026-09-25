@@ -5,7 +5,7 @@
 -- the function's SIGNATURE and RETURN SHAPE are untouched (a plain
 -- CREATE OR REPLACE — no DROP, no window, no client type regeneration).
 --
--- Campaign: common-docs/projects/workflow-mandate-program/DESIGN-one-resolution.md
+-- Campaign: common-docs/systems/intelligence/mandates/STATE.md
 -- v2; the defect: V-CORRECTNESS §5(d) / F3.
 --
 -- WHAT WAS WRONG. The `winner` CTE picked the highest rung that CHOSE an agent

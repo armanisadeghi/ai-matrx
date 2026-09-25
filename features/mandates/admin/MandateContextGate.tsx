@@ -20,7 +20,7 @@
  * to *whether at all*.
  *
  * System of record:
- * /Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md
+ * /Users/armanisadeghi/code/common-docs/systems/intelligence/mandates/STATE.md
  *   § "Context passes gates, and a gate may only narrow"
  */
 

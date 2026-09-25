@@ -7,7 +7,7 @@
  * swap and/or settings-only `config_overrides`).
  *
  * Cross-repo system-of-record:
- * /Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md
+ * /Users/armanisadeghi/code/common-docs/systems/intelligence/mandates/STATE.md
  *
  * READS ride RLS directly (mandate definitions are public; RLS scopes bindings
  * to rows the caller can see). WRITES go through the ONE bind path — aidream

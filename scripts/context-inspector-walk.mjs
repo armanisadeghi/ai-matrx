@@ -28,18 +28,20 @@ const OUT = process.argv[2] ?? "/tmp";
 let shot = Number(process.argv[3] ?? 1);
 mkdirSync(OUT, { recursive: true });
 const PATH = "/administration/scopes-context/context-inspector";
+// The steps are the platform's Miller Columns (lane CONTEXT-INSPECTOR-3): one column per step.
 const STEPS = [
-  { step: "org", label: "Organization", choose: "Castellano & Reyes, LLP" },
-  { step: "scopeType", label: "Scope type", choose: "Clients" },
-  { step: "scope", label: "Scope", choose: "Meridian Risk Services", search: "Meridian" },
-  { step: "item", label: "Context item", choose: "Contact Phone" },
+  { step: "org", column: 1, choose: "Castellano & Reyes, LLP" },
+  { step: "scopeType", column: 2, choose: "Clients" },
+  { step: "scope", column: 3, choose: "Meridian Risk Services" },
+  { step: "item", column: 4, choose: "Contact Phone" },
 ];
 
 const browser = await chromium.launch({ headless: true });
 const report = { backend: BACKEND ?? PROD, steps: [], consoleErrors: [] };
 const previews = []; // every compare request body and what the server echoed back
+let page = null;
 try {
-  const page = await (await browser.newContext({ viewport: { width: 1500, height: 1000 } })).newPage();
+  page = await (await browser.newContext({ viewport: { width: 1500, height: 1000 } })).newPage();
   page.on("console", (m) => { if (m.type() === "error") report.consoleErrors.push(m.text().slice(0, 300)); });
   page.on("pageerror", (e) => report.consoleErrors.push(`pageerror: ${String(e).slice(0, 300)}`));
   await page.route(`${PROD}/ai/context/preview**`, async (route) => {
@@ -63,20 +65,19 @@ try {
   });
   report.seat = await signIn(page, ORIGIN, env.AI_ADMIN_USERNAME, env.AI_ADMIN_PASSWORD, "admin");
   await page.goto(`${ORIGIN}${PATH}`, { waitUntil: "domcontentloaded", timeout: 240000 });
-  await page.waitForSelector("[data-inspector-row]", { timeout: 240000 });
+  await page.waitForSelector("[data-context-inspector] button[aria-pressed]", { timeout: 240000 });
   report.consoleErrors.length = 0; // errors from sign-in pages are not this page's
   const dismiss = page.getByRole("button", { name: /Dismiss for today/ });
   if (await dismiss.waitFor({ state: "visible", timeout: 5000 }).then(() => true).catch(() => false)) await dismiss.click();
 
+  const column = (n) => page.locator("[data-context-inspector] .min-w-\\[560px\\] > div").nth(n - 1);
   const compareText = () => page.evaluate(() =>
     [...document.querySelectorAll("[data-compare-side]")].map((el) => el.textContent ?? "").join("\n---\n"));
   let previous = await compareText();
   for (const s of STEPS) {
-    const trigger = page.locator(`[data-inspector-step="${s.step}"] button[role="combobox"]`);
-    await until(`${s.step} enabled`, async () => await trigger.isEnabled(), 60000);
-    await trigger.click();
-    if (s.search) await page.keyboard.type(s.search);
-    await page.getByRole("option", { name: new RegExp(s.choose.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) }).first().click();
+    const row = column(s.column).locator("button[aria-pressed]", { hasText: s.choose }).first();
+    await until(`${s.step} row`, async () => (await row.count()) > 0, 60000);
+    await row.click();
     // The selection this step's address describes — what the compare must have been sent.
     const expected = () => {
       const q = new URL(page.url()).searchParams;
@@ -92,8 +93,16 @@ try {
     };
     const answered = () => previews.findLast((p) => JSON.stringify(p.sentSelection) === expected());
     // The compare remounts (skeleton) and re-resolves; wait for THIS step's answer to be on screen.
+    let retries = 0;
     const { v: settled, ms } = await until(`${s.step} preview`, async () => {
       const err = await page.locator("text=Comparison unavailable").count();
+      // A local server reading the live database can miss the page's 15 s connect wait; the
+      // page's own Refresh is what a person presses then. Twice at most, and reported.
+      if (err && retries < 2) {
+        retries += 1;
+        await page.getByRole("button", { name: "Refresh" }).first().click();
+        return null;
+      }
       if (err) return "error";
       if (!answered() || (await page.locator("[data-compare-side]").count()) < 2) return null;
       const now = await compareText();
@@ -106,6 +115,7 @@ try {
       url: page.url().replace(ORIGIN, ""),
       previewMs: ms,
       previewChanged: typeof text === "string" && text !== previous,
+      refreshes: retries,
       request: answered() ?? null,
       caption: await page.locator("[data-inspector-caption]").first().innerText().catch(() => null),
       value: await page.locator("[data-inspector-value]").getAttribute("data-inspector-value").catch(() => null),
@@ -115,11 +125,8 @@ try {
       preview: typeof text === "string" ? text.slice(0, 400) : null,
     };
     if (s.step === "scopeType") {
-      // The scope step's own list — every Client this person can read — against both sides.
-      const scopeTrigger = page.locator('[data-inspector-step="scope"] button[role="combobox"]');
-      await scopeTrigger.click();
-      entry.scopeOptions = await page.getByRole("option").allInnerTexts();
-      await page.keyboard.press("Escape");
+      // The scope column's own list — every Client this person can read — against both sides.
+      entry.scopeOptions = await column(3).locator("button[aria-pressed]").allInnerTexts();
     }
     report.steps.push(entry);
     await page.screenshot({ path: `${OUT}/${shot++}-${s.step}.png`, fullPage: true });
@@ -152,17 +159,29 @@ try {
   // An old shared link: only ?scope=. The scope names its organization and type.
   await page.goto(`${ORIGIN}${PATH}?scope=2ba5cb52-9530-4682-a12c-3ededff23c2c`, { waitUntil: "domcontentloaded", timeout: 240000 });
   const deepStart = previews.length;
+  let deepRetries = 0;
   const { v: filled } = await until("deep link back-fill", async () => {
+    if ((await page.locator("text=Comparison unavailable").count()) && deepRetries < 2) {
+      deepRetries += 1;
+      await page.getByRole("button", { name: "Refresh" }).first().click();
+      return null;
+    }
     const u = new URL(page.url());
     return u.searchParams.get("org") && u.searchParams.get("scopeType") && (await page.locator("[data-compare-side]").count()) >= 2
       ? u.search : null;
   }, 180000);
   report.deepLink = {
     url: filled,
-    pickers: await page.locator("[data-inspector-step] button[role=combobox]").allInnerTexts(),
+    refreshes: deepRetries,
+    pressed: await page.locator('[data-context-inspector] button[aria-pressed="true"]').allInnerTexts(),
     requests: previews.slice(deepStart),
   };
   await page.screenshot({ path: `${OUT}/${shot++}-deep-link.png`, fullPage: true });
+} catch (error) {
+  if (page) await page.screenshot({ path: `${OUT}/walk-failure.png`, fullPage: true }).catch(() => undefined);
+  report.failure = String(error).slice(0, 600);
+  report.previews = previews;
+  process.exitCode = 1;
 } finally {
   await browser.close();
 }

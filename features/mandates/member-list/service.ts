@@ -47,9 +47,13 @@ export function memberScopeArgs(
   return {
     p_level: options.level,
     // The shell asks counts under a normalized scope (it may say "mine"); the
-    // organization seat has only its own and the system's, so anything that
-    // is not "system" is this organization's own.
-    p_scope: orgLevel ? (scope.kind === "system" ? "system" : "orgs") : scope.kind,
+    // organization seat has its own (homed or shared with it), the published
+    // lane and the system's, so anything else is this organization's own.
+    p_scope: orgLevel
+      ? scope.kind === "system" || scope.kind === "public"
+        ? scope.kind
+        : "orgs"
+      : scope.kind,
     p_org_id: orgLevel
       ? (options.organizationId ?? undefined)
       : scope.kind === "orgs" && scope.organizationId
@@ -72,8 +76,14 @@ export function memberCountsFromAnswer(
   }));
   return {
     byKind: level === "organization"
-      ? { orgs: answer.orgs, system: answer.system }
-      : { mine: answer.mine, orgs: answer.orgs, system: answer.system },
+      ? { orgs: answer.orgs, public: answer.public, system: answer.system }
+      : {
+          mine: answer.mine,
+          shared: answer.shared,
+          orgs: answer.orgs,
+          public: answer.public,
+          system: answer.system,
+        },
     narrow: options.length > 0 ? { orgs: options } : {},
     ...(options.length === 0 && level === "person"
       ? { narrowUnavailable: { orgs: "No organization mandates." } }

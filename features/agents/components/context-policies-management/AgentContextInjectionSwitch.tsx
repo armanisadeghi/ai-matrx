@@ -31,7 +31,7 @@
  *
  * Persisted in `agent.definition.auto_context_disabled` (see
  * `setAgentAutoContextDisabled`). Cross-repo system of record:
- * /Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md § Context.
+ * /Users/armanisadeghi/code/common-docs/systems/intelligence/mandates/STATE.md § Context.
  */
 
 import { Layers } from "lucide-react";

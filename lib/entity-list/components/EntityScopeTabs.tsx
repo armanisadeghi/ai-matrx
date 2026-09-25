@@ -100,7 +100,7 @@ const SCOPE_META: Record<
   system: {
     label: "System",
     icon: Landmark,
-    title: "The platform's own records — visible to Matrx admins",
+    title: "Built into the platform by Matrx",
   },
 };
 

@@ -1793,6 +1793,17 @@
     "is_active": true
   },
   {
+    "resource_type": "mandate",
+    "table_name": "definition",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Mandate",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "mandate_binding",
     "table_name": "binding",
     "id_column": "id",

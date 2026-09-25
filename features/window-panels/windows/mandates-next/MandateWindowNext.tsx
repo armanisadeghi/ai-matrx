@@ -3,7 +3,7 @@
 /**
  * MandateWindowNext — the NEW mandate window, registered beside the old
  * `MandateWindow` (untouched) so the owner can compare them
- * (common-docs/systems/mandates/UI-REGISTER.md item 6b, line by line).
+ * (common-docs/systems/intelligence/mandates/UI-REGISTER.md item 6b, line by line).
  *
  * Shape:
  *   • SIDEBAR (the panel's own) lists EVERY mandate the viewer can see, never

@@ -18,6 +18,7 @@ import {
   Shield,
   Settings,
   GitCompareArrows,
+  MessagesSquare,
   type LucideIcon,
 } from "lucide-react";
 import type { RichDocumentAction } from "../../types";
@@ -43,6 +44,10 @@ export const MENU_STRUCTURE: MenuSection[] = [
     // missing). Every family of near-identical variants is ONE submenu row.
     submenu: null,
     actionIds: [
+      // A text field's own AI powers lead when its host supplies them.
+      "text-cleanup",
+      "text-help",
+      "text-custom-agent",
       "add-to-rulebook",
       "save-to-task",
       "copy",
@@ -57,6 +62,8 @@ export const MENU_STRUCTURE: MenuSection[] = [
     icon: Save,
     actionIds: [
       "save-as-message-template",
+      "save-as-flashcard",
+      "save-table-as-data",
       "save-to-scratch",
       "add-to-docs",
       "save-as-file",
@@ -73,9 +80,15 @@ export const MENU_STRUCTURE: MenuSection[] = [
     submenu: "Copy as",
     icon: Copy,
     actionIds: [
+      "copy-markdown",
+      "copy-plain-text",
+      "copy-rich-text",
       "copy-google-docs",
       "copy-word",
       "copy-with-thinking",
+      "copy-table-tsv",
+      "copy-table-csv",
+      "copy-html-source",
       "copy-html-page",
     ],
   },
@@ -87,10 +100,17 @@ export const MENU_STRUCTURE: MenuSection[] = [
       "share-webpage",
       "send-google-doc",
       "email-to-me",
+      "download-pdf",
+      "download-html",
       "print",
       "full-print",
       "convert-to-broker",
     ],
+  },
+  {
+    submenu: "Ask in chat",
+    icon: MessagesSquare,
+    actionIds: ["ask-followup", "quote-into-chat"],
   },
   {
     submenu: "Compare",

@@ -125,7 +125,9 @@ export function systemRungHealth(facts: SystemRungFacts): SystemRungHealth {
   }
 
   const who = facts.holderIsWorkflow
-    ? "A workflow"
+    ? facts.holderName
+      ? `The workflow "${facts.holderName}"`
+      : "The assigned workflow"
     : (facts.holderName ?? "The assigned agent");
   return {
     sentence: `${who} answers this job for ${scope}.`,

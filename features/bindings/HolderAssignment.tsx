@@ -75,6 +75,7 @@ import {
   type AgentVersionHistoryItem,
 } from "@/features/agents/redux/agent-definition/thunks";
 import { WorkflowListDropdown } from "@/features/workflow-runtime/listings/WorkflowListDropdown";
+import { listWorkflowVersionChoices, type WorkflowVersionChoice } from "./workflow-versions";
 import type { HolderDraft } from "./ScopeHolderBar";
 
 /** "Latest" as a select value. `null` is the stored form; this is the option. */
@@ -209,6 +210,7 @@ export function HolderAssignment({
                       useLatest: true,
                       workflowId:
                         kind === "workflow" ? holder.workflowId : null,
+                      workflowVersionId: null,
                     })
               }
               className={cn(
@@ -246,7 +248,11 @@ export function HolderAssignment({
             wantedOutputKind={outputKind}
             disabled={disabled}
             className={cn(CONFIGURATION_CHOICE_SIZE, "w-full max-w-[22rem]")}
-            onSelect={(id) => onHolderChange({ ...holder, workflowId: id })}
+            // A different workflow's version id means nothing here: a new
+            // pick starts on Latest, exactly as a new agent pick does.
+            onSelect={(id) =>
+              onHolderChange({ ...holder, workflowId: id, workflowVersionId: null })
+            }
           />
         ) : (
           <AgentListDropdown
@@ -293,8 +299,22 @@ export function HolderAssignment({
           </Button>
         ) : null}
 
-        {/* Version shares the assignment row. Workflows remain latest-only. */}
-        {!isWorkflow && holder.agentId ? (
+        {/* Version shares the assignment row — for an agent AND a workflow. */}
+        {isWorkflow && holder.workflowId ? (
+          <div
+            data-holder-control="version"
+            className="flex items-center gap-2"
+          >
+            <WorkflowVersionSelect
+              workflowId={holder.workflowId}
+              workflowVersionId={holder.workflowVersionId ?? null}
+              disabled={disabled}
+              onChange={(versionId) =>
+                onHolderChange({ ...holder, workflowVersionId: versionId })
+              }
+            />
+          </div>
+        ) : !isWorkflow && holder.agentId ? (
           <div
             data-holder-control="version"
             className="flex items-center gap-2"
@@ -333,12 +353,6 @@ export function HolderAssignment({
                 <SelectItem value="unselected">Select Mandate Holder</SelectItem>
               </SelectContent>
             </Select>
-            {isWorkflow ? (
-              <FieldHelp label="Workflow version">
-                Pinned workflow versions are not supported by this assignment
-                control.
-              </FieldHelp>
-            ) : null}
           </div>
         )}
       </Row>
@@ -444,6 +458,82 @@ function VersionSelect({
       {state === "failed" ? (
         <span className="text-[11px] text-destructive">
           This agent&apos;s versions could not be read — reload to choose one.
+        </span>
+      ) : null}
+    </>
+  );
+}
+
+/**
+ * THE WORKFLOW VERSION, as one value — the twin of `VersionSelect`.
+ *
+ * `Latest` stores `holder_version_id = null`; `vN` stores that
+ * `workflow.definition_version` id. Until 2026-09-25 this was a disabled
+ * "Latest" with a note saying pins were unsupported, while the server resolved
+ * and ran pinned workflow bindings — and every save from this screen silently
+ * unpinned one set anywhere else.
+ */
+function WorkflowVersionSelect({
+  workflowId,
+  workflowVersionId,
+  onChange,
+  disabled,
+}: {
+  workflowId: string;
+  workflowVersionId: string | null;
+  onChange: (versionId: string | null) => void;
+  disabled?: boolean;
+}) {
+  const [versions, setVersions] = useState<WorkflowVersionChoice[]>([]);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    setFailed(false);
+    listWorkflowVersionChoices(workflowId)
+      .then((items) => {
+        if (!cancelled) setVersions(items);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [workflowId]);
+
+  const value = workflowVersionId ?? LATEST_VERSION_VALUE;
+  const known =
+    value === LATEST_VERSION_VALUE || versions.some((v) => v.id === value);
+  return (
+    <>
+      <Select
+        value={value}
+        disabled={disabled}
+        onValueChange={(next) =>
+          onChange(next === LATEST_VERSION_VALUE ? null : next)
+        }
+      >
+        <SelectTrigger
+          aria-label="Version"
+          className={cn(CONFIGURATION_CHOICE_SIZE, "w-[9rem]")}
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={LATEST_VERSION_VALUE}>Latest</SelectItem>
+          {versions.map((v) => (
+            <SelectItem key={v.id} value={v.id}>
+              v{v.versionNumber}
+            </SelectItem>
+          ))}
+          {!known ? (
+            <SelectItem value={value}>A version this list cannot name</SelectItem>
+          ) : null}
+        </SelectContent>
+      </Select>
+      {failed ? (
+        <span className="text-[11px] text-destructive">
+          This workflow&apos;s versions could not be read — reload to choose one.
         </span>
       ) : null}
     </>

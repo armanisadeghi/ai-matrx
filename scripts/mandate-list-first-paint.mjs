@@ -1,7 +1,7 @@
 // scripts/mandate-list-first-paint.mjs — headless timing of the admin mandate list's first load.
 //
 // Signs in as admin@admin.com, opens /administration/mandates/list-preview cold, and prints:
-//   * when the first real row painted (a tbody row with a mandate name),
+//   * when the first real row painted (a mandate key shows under the grid header),
 //   * when the Grade cells stopped reading "Grading",
 //   * every aidream report request and every mnd_admin_list / console read, start → end.
 //
@@ -31,7 +31,7 @@ await page.goto(`${ORIGIN}${ROUTE}`, { waitUntil: "domcontentloaded", timeout: 2
 const chooser = page.getByText("Choose an organization");
 await Promise.race([
   chooser.waitFor({ timeout: 240000 }),
-  page.waitForSelector("[data-row-id]", { timeout: 240000 }),
+  page.waitForFunction(() => /\tACTIONS[\s\S]*?\n[a-z0-9_]+\.[a-z0-9_.]+\n/.test(document.body.innerText), null, { timeout: 240000 }),
 ]).catch(() => {});
 const dismiss = page.getByRole("button", { name: "Dismiss for today" });
 if (await dismiss.count()) await dismiss.first().click().catch(() => {});
@@ -43,7 +43,7 @@ if (await chooser.count()) {
     .click();
   await page.waitForTimeout(3000);
 }
-await page.waitForSelector("[data-row-id]", { timeout: 240000 }).catch(() => {});
+await page.waitForFunction(() => /\tACTIONS[\s\S]*?\n[a-z0-9_]+\.[a-z0-9_.]+\n/.test(document.body.innerText), null, { timeout: 240000 }).catch(() => {});
 // Let the warm-up's own report reads finish so none of them is timed below.
 await page.waitForTimeout(Number(process.env.SETTLE_MS ?? 10000));
 
@@ -72,22 +72,24 @@ t0 = performance.now();
 await page.goto(`${ORIGIN}${ROUTE}`, { waitUntil: "domcontentloaded", timeout: 240000 });
 const navDone = at();
 await page.waitForFunction(
-  () => [...document.querySelectorAll("[data-row-id]")].some((row) => row.innerText.trim().length > 10),
+  // Rows are on screen: the pager counts them and a real mandate key is visible.
+  () => /\tACTIONS[\s\S]*?\n[a-z0-9_]+\.[a-z0-9_.]+\n/.test(document.body.innerText),
   null,
-  { timeout: 90000, polling: 50 },
+  { timeout: 120000, polling: 50 },
 );
 const firstRow = at();
+console.log(`first real row at ${firstRow}s`);
 // Cells whose report has not landed say so: "Grading" (impact) and "Checking" (code truth, coverage).
 const pendingText = () =>
   page.evaluate(() =>
-    [...document.querySelectorAll("[data-row-id]")].map((row) => row.innerText).join("\n"),
+    document.body.innerText.split("\tACTIONS")[1] ?? "",
   );
 const atFirstRow = await pendingText();
-const pendingAtFirstRow = ["Grading", "Checking"].filter((word) => atFirstRow.includes(word));
+const pendingAtFirstRow = ["Grading", "Checking…"].filter((word) => atFirstRow.includes(word));
 await page.waitForFunction(
   () => {
-    const text = [...document.querySelectorAll("[data-row-id]")].map((row) => row.innerText).join("\n");
-    return text.length > 0 && !/Grading|Checking/.test(text);
+    const text = document.body.innerText.split("\tACTIONS")[1] ?? "";
+    return text.length > 0 && !/\bGrading\b|Checking…/.test(text);
   },
   null,
   {
@@ -101,7 +103,13 @@ report(`domcontentloaded ${navDone}s · first real row ${firstRow}s (cells still
   printRequests();
 } catch (error) {
   console.log(`FAILED at ${at()}s: ${String(error).split("\n")[0]}`);
+  const tail = await page.evaluate(() => document.body.innerText.split("\tACTIONS")[1] ?? "");
+  const stuck = tail.split("\n").map((l) => l.trim()).filter((l) => /Grading|Checking/.test(l));
+  console.log(`still-reading cells: ${stuck.length} ${JSON.stringify(stuck.slice(0, 5))}`);
   await page.screenshot({ path: process.env.SHOT ?? "/tmp/mandate-list-first-paint-failure.png" }).catch(() => {});
   printRequests();
+  if (process.env.DEBUG_TEXT) {
+    console.log(await page.evaluate(() => JSON.stringify(document.body.innerText.slice(0, 1500))));
+  }
 }
 await browser.close();

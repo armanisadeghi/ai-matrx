@@ -20,6 +20,8 @@ import React, { forwardRef, useEffect, useState } from "react";
 import {
   Boxes,
   Braces,
+  Columns3,
+  Printer,
   Cpu,
   Eye,
   FileText,
@@ -53,6 +55,8 @@ import {
   type BlockProcessingMode,
 } from "./lab/BlockProcessingPanel";
 import { JsonExtractionPanel } from "./lab/JsonExtractionPanel";
+import { LevelCompareView } from "./lab/LevelCompareView";
+import { PrintPreviewView } from "./lab/PrintPreviewView";
 
 export const PREVIEW_MODES = [
   "rendered",
@@ -60,6 +64,8 @@ export const PREVIEW_MODES = [
   "speech",
   "server",
   "json",
+  "levels",
+  "print",
 ] as const;
 export type PreviewMode = (typeof PREVIEW_MODES)[number];
 
@@ -69,6 +75,8 @@ const MODE_META: Record<PreviewMode, { label: string; icon: LucideIcon }> = {
   speech: { label: "Speech", icon: Volume2 },
   server: { label: "Server", icon: Cpu },
   json: { label: "JSON", icon: Braces },
+  levels: { label: "Levels", icon: Columns3 },
+  print: { label: "Print", icon: Printer },
 };
 
 export const STUDIO_ACTION_SURFACE_ID = "markdown-studio-preview";
@@ -85,11 +93,13 @@ interface PreviewPanelProps {
   sourceActions?: RichDocumentActionsProp;
   mode: PreviewMode;
   onModeChange: (mode: PreviewMode) => void;
+  /** Document title for the print preview / print window. */
+  title?: string;
 }
 
 export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
   function PreviewPanel(
-    { content, contentSource, sourceActions, mode, onModeChange },
+    { content, contentSource, sourceActions, mode, onModeChange, title },
     ref,
   ) {
     const [serverMode, setServerMode] = useState<BlockProcessingMode>("stream");
@@ -130,9 +140,9 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
     };
 
     return (
-      <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card/30">
+      <div className="@container flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card/30">
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-1.5">
-          <div className="flex items-center gap-0.5 rounded-md border border-border bg-background/40 p-0.5">
+          <div className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-md border border-border bg-background/40 p-0.5">
             {PREVIEW_MODES.map((m) => {
               const Icon = MODE_META[m].icon;
               return (
@@ -150,8 +160,10 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
                   )}
                 >
                   <Icon className="h-3 w-3 shrink-0" />
-                  {/* Phones: inactive tabs are icon-only; the active one stays named. */}
-                  <span className={cn(mode !== m && "hidden sm:inline")}>
+                  {/* A narrow pane (a phone, or the half-width desktop split):
+                      inactive tabs go icon-only, the active one stays named.
+                      Measured on the PANE (container query), not the screen. */}
+                  <span className={cn(mode !== m && "hidden @xl:inline")}>
                     {MODE_META[m].label}
                   </span>
                 </button>
@@ -306,6 +318,12 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
         )}
 
         {mode === "json" && <JsonExtractionPanel content={content} />}
+
+        {mode === "levels" && <LevelCompareView content={content} />}
+
+        {mode === "print" && (
+          <PrintPreviewView content={content} title={title ?? "Markdown"} />
+        )}
       </div>
     );
   },

@@ -4,8 +4,8 @@
  * MANDATE REFERENCES — the client half of Declaration & Usage Reporting.
  *
  * Cross-repo system-of-record:
- * /Users/armanisadeghi/code/common-docs/projects/mandate-declaration-reporting/DESIGN.md §4.6
- * Ruling D21 (/Users/armanisadeghi/code/common-docs/systems/mandates/DECISIONS.md):
+ * /Users/armanisadeghi/code/common-docs/systems/intelligence/mandates/STATE.md §4.6
+ * Ruling D21 (/Users/armanisadeghi/code/common-docs/systems/intelligence/mandates/DECISIONS.md):
  * unreachable or broken is tracked exactly like real, plus a red flag —
  * nothing here filters a row out for being orphaned, unresolved, or broken.
  *

@@ -75,6 +75,12 @@ export interface HolderDraft {
   agentVersionId: string | null;
   useLatest: boolean;
   workflowId: string | null;
+  /**
+   * A pin to one `workflow.definition_version` — `null`/absent = latest. The
+   * workflow twin of `agentVersionId`: pinned vs latest is a property of every
+   * binding, whoever holds it (MANDATE-SYSTEM §6).
+   */
+  workflowVersionId?: string | null;
 }
 
 export interface ScopeHolderBarProps {

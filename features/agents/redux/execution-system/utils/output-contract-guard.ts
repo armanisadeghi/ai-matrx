@@ -15,7 +15,7 @@
  *
  * Until this module existed the only fix was a human setting
  * `tool_config.auto_tools_disabled` on the agent row — a manual rule written
- * in `common-docs/systems/mandates/RUNTIME.md`, obeyed by whoever happened to
+ * in `common-docs/systems/intelligence/mandates/STATE.md`, obeyed by whoever happened to
  * have read it. That server kill switch stays exactly as it is; this is the
  * code guard beside it, so a run that would pause is never offered the tool
  * in the first place.

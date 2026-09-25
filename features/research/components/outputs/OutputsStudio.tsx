@@ -72,7 +72,7 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 /** Research content-engine generators run through AGENT MANDATES — the mandate is the
  *  identity, never a hardcoded agent id. The system default is managed in the
  *  admin console; each user may bind their own agent via the MandateAgentPicker in
- *  each card header. SoR: common-docs/systems/mandates/FEATURE.md. */
+ *  each card header. SoR: common-docs/systems/intelligence/mandates/STATE.md. */
 const BLOG_MANDATE = MANDATE_KEYS.research_client__output_blog;
 const SLIDES_MANDATE = MANDATE_KEYS.research_client__output_slides;
 const SEO_MANDATE = MANDATE_KEYS.research_client__output_seo;

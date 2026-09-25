@@ -436,18 +436,22 @@ async function selectedOrganizationFor(mandateKey: AnyMandateKey): Promise<strin
   return organizationId;
 }
 
-export function resolveMandate(
+/**
+ * THE ONE ASK — `GET /mandates/{key}/resolution`, bound to the proved
+ * organization. Holder-neutral: it returns whatever the server's ladder chose
+ * (agent OR workflow). `resolveMandate` narrows it to a runnable agent for
+ * launch consumers; `resolveMandateHolder` paints either kind. `null` = the
+ * optional lane's 404 and nothing else.
+ */
+async function fetchResolutionVerdict(
   mandateKey: AnyMandateKey,
-  options: { optional: true },
-): Promise<ResolvedMandate | null>;
-export function resolveMandate(
-  mandateKey: AnyMandateKey,
-  options?: ResolveMandateOptions,
-): Promise<ResolvedMandate>;
-export async function resolveMandate(
-  mandateKey: AnyMandateKey,
-  options: ResolveMandateOptions = {},
-): Promise<ResolvedMandate | null> {
+  options: ResolveMandateOptions,
+  cacheLookup?: (cacheKey: string) => ResolvedMandate | undefined,
+): Promise<
+  | { kind: "verdict"; verdict: MandateResolutionResponse; organizationId: string; cacheKey: string }
+  | { kind: "cached"; value: ResolvedMandate }
+  | null
+> {
   const supabase = createClient();
   // `mandate.definition` is authenticated-only. Establish identity before a
   // protected read or cache lookup so hydration/session drift cannot emit an
@@ -467,8 +471,8 @@ export async function resolveMandate(
   const organizationId = options.organizationId ?? (await selectedOrganizationFor(mandateKey));
 
   const cacheKey = mandateCacheKey(userId, organizationId, mandateKey);
-  const cached = cache.get(cacheKey);
-  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.value;
+  const cachedValue = cacheLookup?.(cacheKey);
+  if (cachedValue) return { kind: "cached", value: cachedValue };
 
   // THE ONE LADDER, ASKED — never walked here. The transport binds the admitted
   // `X-Organization-Id` fail-closed, so the rung the server picks is the rung of
@@ -510,6 +514,29 @@ export async function resolveMandate(
     }
     throw error;
   }
+  return { kind: "verdict", verdict, organizationId, cacheKey };
+}
+
+export function resolveMandate(
+  mandateKey: AnyMandateKey,
+  options: { optional: true },
+): Promise<ResolvedMandate | null>;
+export function resolveMandate(
+  mandateKey: AnyMandateKey,
+  options?: ResolveMandateOptions,
+): Promise<ResolvedMandate>;
+export async function resolveMandate(
+  mandateKey: AnyMandateKey,
+  options: ResolveMandateOptions = {},
+): Promise<ResolvedMandate | null> {
+  const supabase = createClient();
+  const fetched = await fetchResolutionVerdict(mandateKey, options, (cacheKey) => {
+    const cached = cache.get(cacheKey);
+    return cached && Date.now() - cached.at < CACHE_TTL_MS ? cached.value : undefined;
+  });
+  if (fetched === null) return null;
+  if (fetched.kind === "cached") return fetched.value;
+  const { verdict, organizationId, cacheKey } = fetched;
 
   const holder = assertRunnableVerdict(mandateKey, verdict);
   const provenance = verdict.provenance;
@@ -600,6 +627,79 @@ export async function resolveMandate(
   };
   cache.set(cacheKey, { at: Date.now(), value });
   return value;
+}
+
+/**
+ * WHAT RUNS FOR ME — holder-neutral (workflow parity, 2026-09-25).
+ *
+ * A mandate is filled by an agent OR a workflow, equally. `resolveMandate`
+ * narrows the verdict to an agent because its consumers LAUNCH it in the
+ * browser; a screen that only SAYS what runs must not inherit that refusal —
+ * the record page printed "Mandate Holder: Not available · Unavailable" for
+ * every job a workflow holds, although the server resolves and runs it.
+ *
+ * This is the same one ask (`GET /mandates/{key}/resolution`), painted as the
+ * server answered it. Never a run path.
+ */
+export interface ResolvedMandateHolder {
+  mandateKey: AnyMandateKey;
+  holderType: "agent" | "workflow";
+  /** agent.definition id, or workflow.definition id — always the live record. */
+  holderId: string;
+  /** The pinned version id (agent or workflow version), or null for latest. */
+  versionId: string | null;
+  isVersion: boolean;
+  /** The pinned version's number, when the server named it. */
+  versionNumber: number | null;
+  provenance: ResolvedMandate["provenance"];
+  organizationId: string | null;
+  freshness: string;
+  droppedRungs: DroppedRung[];
+}
+
+export async function resolveMandateHolder(
+  mandateKey: AnyMandateKey,
+  options: ResolveMandateOptions = {},
+): Promise<ResolvedMandateHolder | null> {
+  const fetched = await fetchResolutionVerdict(mandateKey, options);
+  if (fetched === null) return null;
+  if (fetched.kind === "cached") {
+    // Unreachable (no cache lookup is passed); kept total for the type.
+    return null;
+  }
+  const { verdict, organizationId } = fetched;
+  const base = {
+    mandateKey,
+    provenance: verdict.provenance,
+    organizationId,
+    freshness: verdict.freshness,
+    droppedRungs: parseDroppedRungs(verdict),
+    versionNumber: verdict.version_number ?? null,
+  };
+  if (verdict.holder_type === "workflow") {
+    if (!verdict.workflow_id) {
+      throw new Error(
+        `mandate "${mandateKey}": the ${verdict.provenance} rung names a workflow, ` +
+          `but the resolution door did not say which one. Retry; if it persists ` +
+          `the door is missing workflow_id.`,
+      );
+    }
+    return {
+      ...base,
+      holderType: "workflow",
+      holderId: verdict.workflow_id,
+      versionId: verdict.workflow_version_id ?? null,
+      isVersion: Boolean(verdict.workflow_version_id),
+    };
+  }
+  const agent = assertRunnableVerdict(mandateKey, verdict);
+  return {
+    ...base,
+    holderType: "agent",
+    holderId: agent.agentId,
+    versionId: agent.versionId,
+    isVersion: agent.isVersion,
+  };
 }
 
 // ── Mandate pin display / fork info ─────────────────────────────────────────────

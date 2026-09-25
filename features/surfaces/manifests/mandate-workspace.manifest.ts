@@ -8,7 +8,7 @@
  * provider) with the goal fields published upward from
  * `features/mandates/workspace/TriadSections.tsx` through
  * `useSurfaceScopeContribution`. Cross-repo system-of-record:
- * common-docs/systems/mandates/STATE.md + CLIENT-SURFACES.md.
+ * common-docs/systems/intelligence/mandates/STATE.md + CLIENT-SURFACES.md.
  *
  * Why this is its own surface and not `matrx-admin/mandates`: the console is
  * a LIST over every mandate (its scope is measured health across the fleet);

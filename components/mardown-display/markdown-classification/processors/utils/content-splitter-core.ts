@@ -49,6 +49,7 @@ import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
 import { isPageBreakLine } from "@ai-matrx/print/directives";
 import { readXmlTag } from "@/components/mardown-display/blocks/xml/readXmlTag";
+import { FENCE_META_KEY, splitFenceInfo } from "@/components/markdown-core/fence-meta";
 import {
   classifyInnerFenceLine,
   fenceNestsInnerFences,
@@ -1475,6 +1476,8 @@ function validateRecipeStreaming(
 function detectCodeBlock(line: string): {
   isCodeBlock: boolean;
   language?: string;
+  /** The info string after the language (`title="x" {1,3}`) — fence-meta.ts. */
+  meta?: string;
   ticks?: number;
 } {
   const trimmed = line.trim();
@@ -1489,9 +1492,9 @@ function detectCodeBlock(line: string): {
     return { isCodeBlock: false };
   }
 
-  const language = trimmed.slice(ticks).trim().split(/\s/)[0] || undefined;
+  const { language, meta } = splitFenceInfo(trimmed.slice(ticks));
 
-  return { isCodeBlock: true, language, ticks };
+  return { isCodeBlock: true, language, meta, ticks };
 }
 
 /**
@@ -2269,11 +2272,15 @@ export const splitContentIntoBlocksWith = (
           });
         }
       } else {
-        // Regular code block
+        // Regular code block — its fence meta (title, highlighted lines, line
+        // numbers) rides along for the code renderer.
         blocks.push({
           type: "code",
           content: extraction.content,
           language: codeCheck.language,
+          ...(codeCheck.meta
+            ? { metadata: { [FENCE_META_KEY]: codeCheck.meta } }
+            : {}),
         });
       }
 

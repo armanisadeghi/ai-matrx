@@ -69,10 +69,14 @@ export function useContextPreview(opts: {
   const conversationScope = useAppSelector(
     selectConversationScopeIds(conversationId ?? ""),
   );
-  const scopeIds = useMemo(
-    () => Object.values(scopeSelections).filter((v): v is string => !!v),
-    [scopeSelections],
-  );
+  // Keyed by VALUE (a string), and empty while a selection is given: the active selections
+  // are not this request's, so their object identity changing must never refetch it.
+  const activeKey = chosen
+    ? ""
+    : Object.values(scopeSelections)
+        .filter((v): v is string => !!v)
+        .join(",");
+  const scopeIds = useMemo(() => activeKey.split(",").filter(Boolean), [activeKey]);
   // One stable key per selection, so a re-render with an equal object never refetches.
   const selectionKey = chosen ? JSON.stringify(chosen) : null;
 

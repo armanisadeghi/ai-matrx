@@ -27,6 +27,7 @@
  */
 
 import { buildChatMessageActions } from "@/features/rich-document/chat/chatMessageActions";
+import { useDocumentDialogsHost } from "@/features/rich-document/hosts/DocumentDialogsHost";
 import React, { useState, lazy, Suspense, useCallback } from "react";
 import { Copy, Check, Edit, Send, MoreHorizontal } from "lucide-react";
 import {
@@ -149,6 +150,9 @@ export function UserActionBar({
   const messagePosition = useAppSelector(
     selectMessagePosition(conversationId, messageId),
   );
+  // Dialogs the registry actions ask for (save table as data, save as
+  // flashcard) — the same host every document surface uses.
+  const dialogsHost = useDocumentDialogsHost({ convertOrigin: null, text: content });
   const showOptions = useAppSelector(
     selectShowUserMessageOptions(conversationId),
   );
@@ -342,12 +346,16 @@ export function UserActionBar({
               contentIsStructuredRaw: structuredRaw,
               metadata,
               surfaceKey: surfaceKey ?? null,
-              callbacks: { onRequestDelete: () => setDeleteDialogOpen(true) },
+              callbacks: {
+                ...dialogsHost.callbacks,
+                onRequestDelete: () => setDeleteDialogOpen(true),
+              },
             })}
           />
         </Suspense>
       )}
 
+      {dialogsHost.dialogs}
       <DeleteMessageDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}

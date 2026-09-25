@@ -30,8 +30,12 @@
  *   microphone, no recorder on the route, or a transcript still finalizing it
  *   returns `{ started: false, reason, message }` and raises the sentence as a
  *   toast + `onTranscriptionError`.
- * - **"…" actions menu** — a hover-revealed top-right menu hosting Copy and
- *   agent actions (Clean up, Help with this…, Custom Agent). Fine pointers float
+ * - **"…" actions menu** — a hover-revealed top-right menu rendering the ONE
+ *   rich-document action registry for the field's text (every copy format,
+ *   save to notes/files, listen, share, rulebook — the same actions a rendered
+ *   document offers) with this field's agent actions (Clean up, Help with
+ *   this…, Custom Agent) registered there too and reached through
+ *   `callbacks.onRequestTextAgentAction` (RC-B6). Fine pointers float
  *   it over the text with no reserved gutter. Touch devices keep the controls
  *   visible in a shallow reserved bottom row so every text line retains the
  *   full editor width and the cursor starts at the natural top. Keyboard users
@@ -108,18 +112,48 @@
 
 "use client";
 
-import React, { useCallback, useState, useRef, useEffect, useId } from "react";
+import React, {
+  useCallback,
+  useState,
+  useRef,
+  useEffect,
+  useId,
+  lazy,
+  Suspense,
+} from "react";
+import type { ContentSource } from "@/features/rich-document/types";
+
+// The ONE action registry rendered as a list inside this field's "…" popover.
+// A React.lazy edge inside the popover (never a new next/dynamic front door —
+// the Fragmentation Law): nothing loads until a person opens the menu.
+const RegistryActionList = lazy(() =>
+  import("@/features/rich-document/variants/RegistryActionList").then((m) => ({
+    default: m.RegistryActionList,
+  })),
+);
+const TEXT_FIELD_SOURCE: ContentSource = { type: "raw" };
+/** Copy rows a host hides with `showCopyButton={false}`. */
+const TEXT_FIELD_COPY_IDS = [
+  "copy",
+  "copy-markdown",
+  "copy-plain-text",
+  "copy-rich-text",
+  "copy-google-docs",
+  "copy-word",
+  "copy-html-source",
+  "copy-html-page",
+  "copy-table-csv",
+  "copy-table-tsv",
+];
+/** Registry id ↔ this field's own agent action id. */
+const TEXT_AGENT_ACTION_IDS = [
+  ["text-cleanup", "cleanup"],
+  ["text-help", "help"],
+  ["text-custom-agent", "customAgent"],
+] as const;
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { useIsInsideContextMenu } from "@/features/context-menu-v3/menu-presence";
-import {
-  Copy,
-  Check,
-  Loader2,
-  Send,
-  MoreHorizontal,
-  BrainCircuit,
-  MessageCircle,
-} from "lucide-react";
+import { Check, Loader2, Send, MoreHorizontal } from "lucide-react";
 import { motion } from "motion/react";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { useMicField } from "@/features/audio/hooks/useMicField";
@@ -450,7 +484,6 @@ export const ProTextarea = React.forwardRef<
   ) => {
     const generatedId = useId();
     const inputId = idProp ?? (floatingLabel ? generatedId : undefined);
-    const [hasCopied, setHasCopied] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const [isAudioAvailable, setIsAudioAvailable] = useState(true);
@@ -726,15 +759,6 @@ export const ProTextarea = React.forwardRef<
       micStopDictation,
       isRecording,
     ]);
-
-    const handleCopy = async () => {
-      const textareaValue = textareaRef?.current?.value || String(value || "");
-      if (textareaValue) {
-        await navigator.clipboard.writeText(textareaValue);
-        setHasCopied(true);
-        setTimeout(() => setHasCopied(false), 450);
-      }
-    };
 
     const valueAsString = String(value ?? "");
     const hasContent = valueAsString.trim().length > 0;
@@ -1233,22 +1257,8 @@ export const ProTextarea = React.forwardRef<
                           : "More options"
                       }
                       tooltip="More"
-                      className={
-                        hasCopied ? "text-green-500" : "text-muted-foreground"
-                      }
-                      icon={
-                        hasCopied ? (
-                          <motion.span
-                            initial={{ scale: 0.8 }}
-                            animate={{ scale: 1 }}
-                            className="inline-flex"
-                          >
-                            <Check className="h-4 w-4" />
-                          </motion.span>
-                        ) : (
-                          <MoreHorizontal className="h-4 w-4" />
-                        )
-                      }
+                      className="text-muted-foreground"
+                      icon={<MoreHorizontal className="h-4 w-4" />}
                     />
                   </PopoverTrigger>
                   <PopoverContent
@@ -1273,27 +1283,36 @@ export const ProTextarea = React.forwardRef<
                   >
                     {menuMode === "menu" ? (
                       <div className="flex flex-col p-1">
-                        {showCopyButton && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              void handleCopy();
-                              setMenuOpen(false);
+                        {/* The ONE action registry — the same actions a
+                            rendered document offers (copy every way, save,
+                            listen, share, rulebook…), plus this field's own
+                            AI powers (Clean up / Help / Custom agent), which
+                            the registry reaches through the callback below. */}
+                        <Suspense fallback={null}>
+                          <RegistryActionList
+                            content={valueAsString}
+                            source={TEXT_FIELD_SOURCE}
+                            onClose={() => setMenuOpen(false)}
+                            actions={{
+                              exclude: [
+                                ...(showCopyButton ? [] : TEXT_FIELD_COPY_IDS),
+                                ...TEXT_AGENT_ACTION_IDS.filter(
+                                  ([, localId]) =>
+                                    !enabledAgentActionIds.includes(localId),
+                                ).map(([registryId]) => registryId),
+                              ],
+                              callbacks: {
+                                onRequestTextAgentAction: openAgentActionView,
+                              },
                             }}
-                            className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                          >
-                            <Copy className="h-4 w-4" />
-                            Copy
-                          </button>
-                        )}
+                          />
+                        </Suspense>
                         {showTextStats && (
                           <>
-                            {showCopyButton && (
-                              <div
-                                className="my-1 h-px bg-border"
-                                role="separator"
-                              />
-                            )}
+                            <div
+                              className="my-1 h-px bg-border"
+                              role="separator"
+                            />
                             <ProTextFieldStatsMenuItems
                               showStatsBar={showTextStatsBar}
                               onToggleStatsBar={() =>
@@ -1303,37 +1322,9 @@ export const ProTextarea = React.forwardRef<
                             />
                           </>
                         )}
-                        {(enabledAgentActionIds.length > 0 ||
-                          showBoundAgentsMenu) &&
-                          (showCopyButton || showTextStats) && (
-                            <div
-                              className="my-1 h-px bg-border"
-                              role="separator"
-                            />
-                          )}
-                        {enabledAgentActionIds.map((actionId) => {
-                          const definition =
-                            PRO_TEXTAREA_AGENT_ACTIONS[actionId];
-                          const icon =
-                            actionId === "cleanup" ? (
-                              <BrainCircuit className="h-4 w-4 text-primary" />
-                            ) : actionId === "help" ? (
-                              <MessageCircle className="h-4 w-4 text-primary" />
-                            ) : (
-                              <BrainCircuit className="h-4 w-4 text-primary" />
-                            );
-                          return (
-                            <button
-                              key={actionId}
-                              type="button"
-                              onClick={() => openAgentActionView(actionId)}
-                              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                            >
-                              {icon}
-                              {definition.menuLabel}
-                            </button>
-                          );
-                        })}
+                        {showBoundAgentsMenu && (
+                          <div className="my-1 h-px bg-border" role="separator" />
+                        )}
                         {showBoundAgentsMenu && (
                           <ProTextareaBoundAgentsMenuItems
                             loading={boundAgentsLoading}

@@ -79,6 +79,18 @@ function facetColumn(
   };
 }
 
+/** A cell whose server report has not landed yet — honest, never blank or guessed. */
+function Checking({ what }: { what: string }) {
+  return (
+    <span
+      className="text-xs text-muted-foreground animate-pulse"
+      title={`Still reading ${what} from the server — this fills in on its own.`}
+    >
+      Checking…
+    </span>
+  );
+}
+
 function HolderCell({ row }: { row: MandateAdminRow }) {
   if (row.holderType !== "agent") {
     return <span className="text-xs">Workflow</span>;
@@ -116,6 +128,9 @@ function HealthCell({ row }: { row: MandateAdminRow }) {
   const lineageIndex = useAppSelector(selectAgentLineageIndex);
   const twin = row.agentId ? (lineageIndex[row.agentId]?.systemTwin ?? null) : null;
   const reload = () => invalidateMandateAdminList(true);
+  // The code declarations decide the worst health a row can have, so until
+  // they land no health is a verdict yet — say so rather than show "ok".
+  if (row.factsPending.codeTruth) return <Checking what="the code declarations" />;
   return (
     <div
       className="flex flex-wrap items-center gap-1"
@@ -259,7 +274,13 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
     </Badge>
   )),
   facetColumn("coverage", "Coverage", 110, (row) => {
-    if (!row.coverage) return <Muted>—</Muted>;
+    if (!row.coverage) {
+      return row.factsPending.coverage ? (
+        <Checking what="coverage" />
+      ) : (
+        <Muted>—</Muted>
+      );
+    }
     const meta = COVERAGE_META[row.coverage];
     return (
       <Badge

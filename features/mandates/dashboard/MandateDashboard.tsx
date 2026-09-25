@@ -5,7 +5,7 @@
 // question, every count that names a set of mandates opens the list filtered
 // to that set. Four independent reads; one failing blanks only its section.
 //
-// Doc: common-docs/systems/mandates/UI-REGISTER.md
+// Doc: common-docs/systems/intelligence/mandates/UI-REGISTER.md
 
 "use client";
 

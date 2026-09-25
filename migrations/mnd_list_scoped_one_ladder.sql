@@ -2,7 +2,7 @@
 -- Supersedes migrations/mnd_list_scoped.sql, which stays on disk as the record
 -- of the previous body (and therefore as the rollback).
 --
--- Campaign: common-docs/projects/workflow-mandate-program/DESIGN-one-resolution.md
+-- Campaign: common-docs/systems/intelligence/mandates/STATE.md
 -- v2 (D-R1/D-R2/D-R3) + REVIEW-one-resolution.md findings 7, 8, 8b.
 --
 -- FOUR THINGS CHANGE, and nothing else:
