@@ -2313,7 +2313,10 @@ export const splitContentIntoBlocksWith = (
             type: "code",
             content: extraction.content,
             language: codeCheck.language,
-            metadata: envelopes.withIrEnvelope(extraction.content, undefined),
+            metadata: envelopes.withIrEnvelope(
+              extraction.content,
+              codeCheck.meta ? { [FENCE_META_KEY]: codeCheck.meta } : undefined,
+            ),
           });
         }
       } else {

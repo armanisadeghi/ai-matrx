@@ -99,3 +99,12 @@ describe("fence meta reaches the code block", () => {
     );
   });
 });
+
+describe("fence meta on a JSON fence", () => {
+  it("the static splitter keeps it beside the kind envelope", () => {
+    const text = 'Route 14 config:\n\n```json title="route-14.json"\n{"route": 14, "capacity": 38}\n```\n';
+    const code = splitContentIntoBlocksV2(text).find((b) => b.type === "code");
+    expect(code?.language).toBe("json");
+    expect(code?.metadata?.[FENCE_META_KEY]).toBe('title="route-14.json"');
+  });
+});

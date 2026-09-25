@@ -906,6 +906,16 @@ const searchKindEntry =
  * BEFORE the size-classified generic code path (see the `code` registration).
  * Keys are lowercase language identifiers.
  */
+/** Sub-table languages whose viewer has no place for fence meta. */
+const META_PREFERS_CODE_BLOCK = new Set([
+  "yaml",
+  "yml",
+  "toml",
+  "csv",
+  "tsv",
+  "xml",
+]);
+
 const CODE_LANGUAGE_DISPATCH: Record<string, BlockRenderFn> = {
   yaml: renderYamlCode,
   yml: renderYamlCode,
@@ -1027,6 +1037,7 @@ function renderJsonCode(ctx: BlockDispatchContext) {
     <BlockComponents.JsonBlock
       key={index}
       content={block.content}
+      meta={readFenceMeta(block.metadata) ?? readFenceMeta(block.serverData)}
       className="my-3"
       isStreamActive={isStreamActive}
       conversationId={conversationId}
@@ -1483,7 +1494,16 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
     }
 
     // Custom renderers for specific languages — the code-language sub-table.
-    const languageRenderer = lang ? CODE_LANGUAGE_DISPATCH[lang] : undefined;
+    // A structured-data viewer (YAML/TOML/CSV/XML tree) cannot draw a fence
+    // title or highlighted lines, so a fence that carries meta takes the code
+    // block below instead (verify-RC-B7: a titled YAML fence lost its title).
+    const hasFenceMeta = !!(
+      readFenceMeta(block.metadata) ?? readFenceMeta(block.serverData)
+    );
+    const languageRenderer =
+      lang && !(hasFenceMeta && META_PREFERS_CODE_BLOCK.has(lang))
+        ? CODE_LANGUAGE_DISPATCH[lang]
+        : undefined;
     if (languageRenderer) {
       return languageRenderer(ctx);
     }

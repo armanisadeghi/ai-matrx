@@ -93,6 +93,8 @@ interface JsonBlockProps {
   allowConvertToShape?: boolean;
   /** Canonical promotion evidence for this JSON region, when one exists. */
   irEnvelope?: CanonicalBlockIR | null;
+  /** The fence meta (title, highlighted lines) — see markdown-core/fence-meta.ts. */
+  meta?: string;
 }
 
 /**
@@ -119,6 +121,7 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
   messageId,
   allowConvertToShape = true,
   irEnvelope = null,
+  meta,
 }) => {
   const openConvertToShape = useOpenConvertToShapeWindow();
   const [mode, setMode] = useState<ViewMode>("code");
@@ -407,6 +410,7 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
           <CodeBlockWithContextAttach
             code={content}
             language="json"
+            meta={meta}
             className={className}
             isStreamActive={isStreamActive}
             allowEdit={allowEdit}
@@ -450,6 +454,7 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
           <CodeBlockWithContextAttach
             code={effectiveContent}
             language="json"
+            meta={meta}
             className={className}
             isStreamActive={isStreamActive}
             allowEdit={allowEdit}
