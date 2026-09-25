@@ -2,6 +2,8 @@
 
 "use client";
 
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
+import { selectTaskMutationStatus } from "../../redux/tasks/selectors";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -26,7 +28,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   deleteScheduledTask,
@@ -57,11 +59,15 @@ export function ScheduleRow({ task, kpis }: Props) {
 
   const trigger = task.triggers[0];
 
+  // Pending, not optimistic (GATES-TAIL, VERIFIER-21 #1n): the switch keeps its position and
+  // shows busy until the server agreed; a refusal is said in words with a remedy.
+  const toggling = useAppSelector((s) => selectTaskMutationStatus(s, task.id)) === "saving";
   const handleToggle = (enabled: boolean) => {
     dispatch(toggleTaskEnabled(task.id, enabled)).catch((err) => {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to toggle schedule",
-      );
+      toastWriteFailure(err, {
+        action: enabled ? "enable this schedule" : "pause this schedule",
+        remedy: "Try again, or open the schedule to see its activity.",
+      });
     });
   };
 
@@ -74,7 +80,7 @@ export function ScheduleRow({ task, kpis }: Props) {
         description: "An executor surface will pick it up.",
       });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to queue run");
+      toastWriteFailure(err, { action: "run this schedule now", remedy: "Try again." });
     } finally {
       setRunning(false);
     }
@@ -92,9 +98,7 @@ export function ScheduleRow({ task, kpis }: Props) {
       await dispatch(deleteScheduledTask(task.id));
       toast.success("Schedule deleted");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to delete schedule",
-      );
+      toastWriteFailure(err, { action: "delete this schedule", remedy: "Try again." });
     }
   };
 
@@ -160,8 +164,17 @@ export function ScheduleRow({ task, kpis }: Props) {
         <Switch
           checked={task.enabled}
           onCheckedChange={handleToggle}
-          aria-label={task.enabled ? "Pause schedule" : "Resume schedule"}
-          disabled={isPending}
+          aria-label={
+            toggling
+              ? task.enabled
+                ? "Pausing schedule"
+                : "Resuming schedule"
+              : task.enabled
+                ? "Pause schedule"
+                : "Resume schedule"
+          }
+          aria-busy={toggling || undefined}
+          disabled={isPending || toggling}
         />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

@@ -8,6 +8,7 @@
 // see cross-user rows via /scheduler/tasks or /scheduler/runs — those
 // remain on direct Supabase via lib/services/scheduling-admin-service.ts.
 
+import { serverMessageFromBody, WriteRefusedError } from "@/lib/errors/writeFailure";
 import { supabase } from "@/utils/supabase/client";
 import type {
   ComputeNextDueRequest,
@@ -108,13 +109,21 @@ async function request<T>(
   });
   if (!res.ok) {
     let detail = "";
+    let body: unknown = null;
     try {
-      const body = (await res.json()) as { detail?: unknown };
-      detail = body.detail ? ` — ${JSON.stringify(body.detail)}` : "";
+      body = await res.json();
+      const d = (body as { detail?: unknown } | null)?.detail;
+      detail = d ? ` — ${JSON.stringify(d)}` : "";
     } catch {
       // body not JSON; fall through
     }
-    throw new Error(`${init.method} ${path} ${res.status}${detail}`);
+    // Words for the person, the method/path/status line for diagnostics (GATES-TAIL): a
+    // caller that shows `err.message` never shows "PATCH /scheduler/tasks/<id> 500".
+    throw new WriteRefusedError({
+      status: res.status,
+      serverMessage: serverMessageFromBody(body),
+      technical: `${init.method} ${path} ${res.status}${detail}`,
+    });
   }
   return (await res.json()) as T;
 }

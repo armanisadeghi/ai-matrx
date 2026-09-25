@@ -213,16 +213,20 @@ export const toggleTaskEnabled =
     const organizationId =
       taskOrganizationId(getState, id) ??
       (await ensureOrganizationForRequest({ method: "PATCH" }));
-    dispatch(patchTask({ id, patch: { enabled } }));
+    // NOT OPTIMISTIC (GATES-TAIL, VERIFIER-21 #1n): with the PATCH held, Pause used to read
+    // Enable before the server had agreed. The row is marked "saving" — the control shows its
+    // pending state — and flips only once the write has landed.
+    dispatch(setMutationStatus({ id, status: "saving" }));
     try {
       await scheduler.patchTask(id, { enabled }, organizationId);
     } catch (err) {
-      dispatch(patchTask({ id, patch: { enabled: !enabled } }));
       dispatch(
         setMutationStatus({ id, status: "error", error: errMessage(err) }),
       );
       throw err;
     }
+    dispatch(patchTask({ id, patch: { enabled } }));
+    dispatch(clearMutationStatus(id));
   };
 
 /**

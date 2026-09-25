@@ -2,6 +2,7 @@
 
 "use client";
 
+import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, Pencil, Plus, PlayCircle, Power, Trash2 } from "lucide-react";
@@ -214,7 +215,7 @@ function ScheduleDetailBody({ taskId }: Props) {
       await dispatch(runTaskNowThunk(task.id));
       toast.success("Queued a run");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to queue run");
+      toastWriteFailure(err, { action: "run this schedule now", remedy: "Try again." });
     } finally {
       setRunning(false);
     }
@@ -291,9 +292,11 @@ function ScheduleDetailBody({ taskId }: Props) {
           : "Schedule paused",
       );
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to change the schedule",
-      );
+      // In words, with a remedy — never the request line (GATES-TAIL, VERIFIER-21 #1n).
+      toastWriteFailure(err, {
+        action: enabled ? "enable this schedule" : "pause this schedule",
+        remedy: "Try again, or open the schedule's activity below.",
+      });
     } finally {
       setFlipping(false);
     }
@@ -312,9 +315,7 @@ function ScheduleDetailBody({ taskId }: Props) {
       toast.success("Schedule deleted");
       router.push("/schedules");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to delete schedule",
-      );
+      toastWriteFailure(err, { action: "delete this schedule", remedy: "Try again." });
     }
   };
 
@@ -355,7 +356,14 @@ function ScheduleDetailBody({ taskId }: Props) {
           ...(canFlip
             ? [
                 {
-                  label: task.enabled ? "Pause" : "Enable",
+                  // Pending, not flipped: the label changes only once the server agreed.
+                  label: flipping
+                    ? task.enabled
+                      ? "Pausing…"
+                      : "Enabling…"
+                    : task.enabled
+                      ? "Pause"
+                      : "Enable",
                   icon: Power,
                   onPress: () => void handleSetEnabled(!task.enabled),
                   disabled: flipping,
