@@ -55,6 +55,16 @@ begin
   select v into v_home from gp where k = 'home'; select v into v_r3 from gp where k = 'r3';
 
   -- ── FIXTURE, as the store's owner (asserts nothing) ─────────────────────────────────────────
+  -- IDEMPOTENT (lane SUITE-HEALTH-3, 2026-09-25). An older dataset's name is unique per person
+  -- among live rows (workbench.udt_datasets_user_id_table_name_live_uniq), so a live "Boarding
+  -- kennel log" or "Controlled substances log" these two seats already hold anywhere — a committed
+  -- leftover on the dev clone was one — made this fixture fail on a duplicate key before it
+  -- asserted anything. Inside this rolled-back transaction the fixture archives any such row
+  -- first (soft, and undone by the rollback), so the suite starts from the same ground every run.
+  update workbench.udt_datasets set deleted_at = now()
+   where deleted_at is null
+     and ((user_id = c_dana and table_name = 'Boarding kennel log')
+       or (user_id = c_admin and table_name = 'Controlled substances log'));
   perform set_config('request.jwt.claims', c_dana_j, true);
   insert into workbench.udt_datasets (table_name, description, user_id, organization_id, created_by, visibility)
   values ('Boarding kennel log', 'Who is boarding, which run, feeding notes', c_dana, v_org, c_dana, 'personal')
