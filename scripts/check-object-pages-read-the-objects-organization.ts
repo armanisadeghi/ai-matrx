@@ -86,7 +86,7 @@ export const ACTION_SURFACES: readonly string[] = [
   "features/sharing/components/RecordStoreShareSurface.tsx",
   "features/sharing/components/ShareModal.tsx",
   "features/sharing/components/tabs/ShareWithUserTab.tsx",
-  "features/sharing/components/tabs/ShareWithOrgTab.tsx",
+  "features/sharing/components/AddEveryoneInOrg.tsx",
   "features/sharing/components/tabs/PublicAccessTab.tsx",
   "utils/permissions/hooks.ts",
   "utils/permissions/service.ts",

@@ -28,9 +28,6 @@ export function SiteConfigurationWorkspace({
 
   if (view === "integrations") return <SiteIntegrationsWorkspace />;
   if (view === "access-users") return <SiteAccessWorkspace view="users" />;
-  if (view === "access-organizations") {
-    return <SiteAccessWorkspace view="organizations" />;
-  }
   if (view === "access-public") return <SiteAccessWorkspace view="public" />;
   if (view === "intake") {
     return (

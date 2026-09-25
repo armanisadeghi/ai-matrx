@@ -48,17 +48,19 @@ const SETTINGS_VIEWS: Record<string, MarketingSiteSettingsView> = {
   integrations: "integrations",
   intake: "intake",
   users: "access-users",
-  organizations: "access-organizations",
+  // SHARE-PEOPLE-ONLY (2026-09-25): organization access is gone — a share names a person.
+  // The old audience lands on the people list, where "Add everyone in <organization>" lives.
+  organizations: "access-users",
   public: "access-public",
   "access-users": "access-users",
-  "access-organizations": "access-organizations",
+  "access-organizations": "access-users",
   "access-public": "access-public",
 };
 
 /** Audience `?view=` on the old site access screen → its settings view. */
 const ACCESS_VIEWS: Record<string, MarketingSiteSettingsView> = {
   users: "access-users",
-  organizations: "access-organizations",
+  organizations: "access-users",
   public: "access-public",
 };
 

@@ -1,17 +1,17 @@
 "use client";
 
 import React, { useState } from "react";
-import { Users, Building2, Globe, Circle } from "lucide-react";
+import { Users, Globe, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSharing } from "@/utils/permissions/hooks";
 import { PermissionsList } from "@/features/sharing/components/PermissionsList";
 import { ShareWithUserTab } from "@/features/sharing/components/tabs/ShareWithUserTab";
-import { ShareWithOrgTab } from "@/features/sharing/components/tabs/ShareWithOrgTab";
+import { OrgAvailabilityNote } from "@/features/sharing/components/OrgAvailabilityNote";
 import { PublicAccessTab } from "@/features/sharing/components/tabs/PublicAccessTab";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 
-type ShareSubTab = "users" | "organizations" | "public";
+type ShareSubTab = "users" | "public";
 
 export interface AgentSharePanelProps {
   agentId: string;
@@ -32,7 +32,6 @@ export function AgentSharePanel({
     loading,
     error,
     shareWithUser,
-    shareWithOrg,
     makePublic,
     revokeAccess,
     updateLevel,
@@ -61,12 +60,6 @@ export function AgentSharePanel({
       label: "Users",
       icon: Users,
       count: userPermissions.length || undefined,
-    },
-    {
-      id: "organizations",
-      label: "Organizations",
-      icon: Building2,
-      count: orgPermissions.length || undefined,
     },
     { id: "public", label: "Public", icon: Globe },
   ];
@@ -129,6 +122,7 @@ export function AgentSharePanel({
                   onRevoke={revokeAccess}
                   loading={loading}
                 />
+                <OrgAvailabilityNote permissions={orgPermissions} />
               </div>
               {isOwner && (
                 <ShareWithUserTab
@@ -136,32 +130,8 @@ export function AgentSharePanel({
                   onSuccess={refresh}
                   resourceType="agent"
                   resourceId={agentId}
-                />
-              )}
-            </>
-          )}
-
-          {activeSubTab === "organizations" && (
-            <>
-              <div>
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                  Current Access
-                </h3>
-                <PermissionsList
-                  permissions={orgPermissions}
-                  isOwner={isOwner}
-                  onUpdateLevel={updateLevel}
-                  onRevoke={revokeAccess}
-                  loading={loading}
-                />
-              </div>
-              {isOwner && (
-                <ShareWithOrgTab
-                  onShare={shareWithOrg}
-                  onSuccess={refresh}
-                  resourceType="agent"
-                  sharedOrgIds={orgPermissions
-                    .map((p) => p.grantedToOrganizationId)
+                  alreadySharedUserIds={userPermissions
+                    .map((p) => p.grantedToUserId)
                     .filter((id): id is string => !!id)}
                 />
               )}

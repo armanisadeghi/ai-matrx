@@ -17,38 +17,84 @@
  * it is never a second editor. On phones the editor opens expanded.
  */
 
-import { useRef, useState, type KeyboardEvent } from "react";
-import { Maximize2, Minimize2, X } from "lucide-react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { Loader2, Maximize2, Minimize2, X } from "lucide-react";
 import { useIsMobile } from "@ai-matrx/design-system";
 import RichEditor from "@/components/rich-editor/RichEditor";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { updateMessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
-import { saveAnswerEdit } from "@/features/agents/redux/execution-system/message-crud/save-answer-edit.thunk";
+import {
+  fetchStoredAnswer,
+  saveAnswerEdit,
+} from "@/features/agents/redux/execution-system/message-crud/save-answer-edit.thunk";
+import { toast } from "@/lib/toast";
 
 interface InPlaceAnswerEditorProps {
   conversationId: string;
   messageId: string;
-  /** The answer text as stored (`projectAnswerText(record.content).text`). */
-  storedText: string;
 }
 
-export function InPlaceAnswerEditor({ conversationId, messageId, storedText }: InPlaceAnswerEditorProps) {
+/**
+ * Opens on the row's STORED content, read from the database — never the
+ * loaded Redux copy, which for an answer streamed this session is the client's
+ * own shape (see `saveAnswerEdit`). The editor mounts once the read lands.
+ */
+export function InPlaceAnswerEditor({ conversationId, messageId }: InPlaceAnswerEditorProps) {
+  const dispatch = useAppDispatch();
+  const [openedOn, setOpenedOn] = useState<string | null>(null);
+
+  const close = () => {
+    dispatch(updateMessageRecord({ conversationId, messageId, patch: { _editingInPlace: false } }));
+  };
+
+  useEffect(() => {
+    let live = true;
+    fetchStoredAnswer(messageId).then(
+      (stored) => {
+        if (live) setOpenedOn(stored.text);
+      },
+      (error: unknown) => {
+        if (!live) return;
+        toast.error(`The answer could not be opened for editing: ${error instanceof Error ? error.message : String(error)}`);
+        dispatch(updateMessageRecord({ conversationId, messageId, patch: { _editingInPlace: false } }));
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [conversationId, messageId, dispatch]);
+
+  if (openedOn === null) {
+    return (
+      <div className="flex min-h-40 items-center justify-center gap-2 rounded-lg border border-border text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> Opening the answer…
+      </div>
+    );
+  }
+  return <LoadedAnswerEditor conversationId={conversationId} messageId={messageId} openedOn={openedOn} close={close} />;
+}
+
+function LoadedAnswerEditor({
+  conversationId,
+  messageId,
+  openedOn,
+  close,
+}: {
+  conversationId: string;
+  messageId: string;
+  openedOn: string;
+  close: () => void;
+}) {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
-  // The text the editor opened on; later store changes never reset a draft.
-  const [openedOn] = useState(storedText);
-  const [draft, setDraft] = useState(storedText);
+  const [draft, setDraft] = useState(openedOn);
   const [expandedChoice, setExpandedChoice] = useState<boolean | null>(null);
   const expanded = expandedChoice ?? isMobile;
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const shellRef = useRef<HTMLDivElement>(null);
   const dirty = draft !== openedOn;
-
-  const close = () => {
-    dispatch(updateMessageRecord({ conversationId, messageId, patch: { _editingInPlace: false } }));
-  };
 
   const cancel = () => {
     if (dirty) setConfirmDiscard(true);
@@ -56,7 +102,7 @@ export function InPlaceAnswerEditor({ conversationId, messageId, storedText }: I
   };
 
   const onSave = async (text: string) => {
-    const result = await dispatch(saveAnswerEdit({ conversationId, messageId, newText: text }));
+    const result = await dispatch(saveAnswerEdit({ conversationId, messageId, newText: text, openedText: openedOn }));
     if (saveAnswerEdit.rejected.match(result)) {
       throw new Error(result.payload?.message ?? result.error.message ?? "The answer was not saved.");
     }

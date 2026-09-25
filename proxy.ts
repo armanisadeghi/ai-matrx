@@ -11,6 +11,7 @@ import {
   type NextRequest,
 } from "next/server";
 import { updateSession } from "@/utils/supabase/middleware";
+import { ADMIN_LANE_HEADER, isAdminLanePath } from "@/utils/supabase/adminLane";
 import { siteConfig } from "@/config/extras/site";
 import {
   applyAcquisitionCookie,
@@ -299,7 +300,32 @@ async function routeRequest(request: NextRequest) {
   return await updateSession(request);
 }
 
+/**
+ * THE ADMIN LANE, server half (rule: utils/supabase/adminLane.ts). Every
+ * request's headers are rewritten here BEFORE anything forwards them: the
+ * admin section gets `x-matrx-admin-lane: 1`, every other path has any copy a
+ * browser sent stripped. `utils/supabase/server.ts` forwards the result onto
+ * the server Supabase client, so Server Components, Server Actions and Route
+ * Handlers ride the lane exactly when they serve the admin section. Every
+ * `NextResponse.next({ request })` / `rewrite(..., { request })` below
+ * forwards these mutated headers downstream.
+ */
+function stampAdminLane(request: NextRequest): void {
+  if (isAdminLanePath(request.nextUrl.pathname)) {
+    request.headers.set(ADMIN_LANE_HEADER, "1");
+  } else {
+    request.headers.delete(ADMIN_LANE_HEADER);
+  }
+}
+
 export async function proxy(request: NextRequest, event: NextFetchEvent) {
+  stampAdminLane(request);
+  // The admin section's Route Handlers are matched ONLY to receive the lane
+  // stamp: API routes gate their own auth, capture nothing, and never run the
+  // session pass here.
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.next({ request });
+  }
   const capture = prepareAcquisitionCapture(request, event);
   const response = await routeRequest(request);
   return applyAcquisitionCookie(response, capture, request);
@@ -307,6 +333,10 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
 
 export const config = {
   matcher: [
+    // The admin section's Route Handlers — matched ONLY for the admin-lane
+    // stamp (see `stampAdminLane`); `proxy` returns before any session work.
+    "/api/admin/:path*",
+    "/api/sms/admin/:path*",
     /*
      * Match all request paths except:
      * - _next/static (static files)

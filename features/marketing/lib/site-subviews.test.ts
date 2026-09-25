@@ -117,9 +117,6 @@ describe("marketing site sub-view registry", () => {
       `${settingsHref}/access?view=users`,
     );
     expect(
-      marketingSubViewHref(settingsHref, "settings", "access-organizations"),
-    ).toBe(`${settingsHref}/access?view=organizations`);
-    expect(
       marketingSubViewHref(settingsHref, "settings", "access-public"),
     ).toBe(`${settingsHref}/access?view=public`);
   });

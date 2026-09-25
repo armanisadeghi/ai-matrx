@@ -105,7 +105,9 @@ export function AnnotationPanel({ className }: { className?: string }) {
           <DropdownMenuTrigger asChild>
             <Button size="sm" variant="outline" className="h-7 shrink-0 px-2 text-xs">Add</Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          {/* The composer this opens takes focus itself; the menu must not hand
+              focus back to its trigger afterwards (it stole the caret mid-typing). */}
+          <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
             <DropdownMenuItem onSelect={() => setComposer("comment")}>
               <MessageSquare className="mr-2 h-3.5 w-3.5" aria-hidden />Comment on the document
             </DropdownMenuItem>
@@ -147,11 +149,18 @@ export function AnnotationPanel({ className }: { className?: string }) {
           </p>
         )}
 
+        {!loading && error && items.length > 0 && (
+          <div role="alert" className="mb-2 rounded-lg border border-destructive/30 p-2 text-xs">
+            <p>Part of this list could not be loaded: {error}</p>
+            <Button className="mt-1 h-7 text-xs" size="sm" variant="outline" onClick={() => void api.reload()}>Try again</Button>
+          </div>
+        )}
+
         {loading ? (
           <div className="grid gap-2" aria-label="Loading annotations">
             {[0, 1, 2].map((n) => <div key={n} className="h-20 animate-pulse rounded-lg border border-border bg-muted" />)}
           </div>
-        ) : error ? (
+        ) : error && items.length === 0 ? (
           <div role="alert" className="rounded-lg border border-destructive/30 p-3 text-sm">
             <p>{error}</p>
             <Button className="mt-2" size="sm" variant="outline" onClick={() => void api.reload()}>Try again</Button>
@@ -392,7 +401,7 @@ function ThreadActions({
                   <MoreHorizontal className="h-3.5 w-3.5" aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
                 <DropdownMenuItem onSelect={() => setEditing(true)}>Edit</DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive" onSelect={() => void run(api.deleteComment(id), "Comment deleted.")}>
                   <Trash2 className="mr-2 h-3.5 w-3.5" aria-hidden />Delete

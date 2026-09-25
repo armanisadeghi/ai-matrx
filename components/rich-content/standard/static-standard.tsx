@@ -199,6 +199,8 @@ function StaticBlock({
           language: block.language,
           src: block.src,
           alt: block.alt,
+          // The fence meta (title, highlighted lines) — fence-meta.ts.
+          metadata: block.metadata,
         }}
       />
     </RichContentDepthProvider>

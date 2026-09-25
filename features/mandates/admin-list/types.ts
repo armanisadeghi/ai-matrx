@@ -15,6 +15,7 @@ import type {
   ImpactVerdict,
 } from "@/features/mandates/admin/impact";
 import type { UngradedReason } from "@/features/mandates/admin/impact-cells";
+import type { WorkflowImpactVerdict } from "@/features/mandates/admin/workflow-impact";
 
 /** Code-backed (declared in repo code) or soft (exists only as a DB row). */
 export type MandateOrigin = "code" | "soft";
@@ -48,6 +49,12 @@ export interface MandateAdminRow extends MandateRow {
   coverageDetail: string | null;
   defaultVerdict: ImpactVerdict | null;
   bindingVerdicts: ImpactVerdict[];
+  /**
+   * Workflow parity: every rung of this job a WORKFLOW holds, graded by
+   * `POST /mandates/impact/workflows` (default rung first). Empty when no
+   * workflow holds it or the read has not answered.
+   */
+  workflowVerdicts: WorkflowImpactVerdict[];
   ungraded: UngradedReason | null;
   impactGrade: ImpactGrade | "ungraded";
   impactBlocker: ImpactBlocker | "none" | "ungraded";

@@ -31,6 +31,11 @@ import {
   ImpactGradeCell,
 } from "@/features/mandates/admin/impact-cells";
 import {
+  WorkflowDriftBadge,
+  WorkflowImpactBlockerCell,
+  WorkflowImpactGradeCell,
+} from "@/features/mandates/admin/workflow-impact-cells";
+import {
   MandateInputsCell,
   MandateOutputCell,
 } from "@/features/mandates/admin/mandate-contract-cells";
@@ -41,6 +46,7 @@ import {
   RebindToTwinButton,
 } from "@/features/mandates/admin/mandate-actions";
 import { ShieldCheck } from "lucide-react";
+import { holderOfMandate } from "@/lib/supabase/mandateStorage";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentLineageIndex } from "@/features/agents/redux/agent-definition/selectors";
 import { invalidateMandateAdminList } from "./store";
@@ -92,8 +98,21 @@ function Checking({ what }: { what: string }) {
 }
 
 function HolderCell({ row }: { row: MandateAdminRow }) {
+  if (row.holderType === "workflow") {
+    // Workflow parity: a workflow holder is a record too — named, and it opens.
+    const workflowId = holderOfMandate(row.mandate).holderId;
+    if (!workflowId) return <Muted>None</Muted>;
+    return (
+      <EntityRef
+        token="workflow"
+        id={workflowId}
+        name={row.agentName}
+        showIcon={false}
+      />
+    );
+  }
   if (row.holderType !== "agent") {
-    return <span className="text-xs">Workflow</span>;
+    return <TextCell value={row.holderType} />;
   }
   if (!row.agentId) return <Muted>None</Muted>;
   return (
@@ -109,6 +128,9 @@ function HolderCell({ row }: { row: MandateAdminRow }) {
 
 function BlockerCell({ row }: { row: MandateAdminRow }) {
   const actions = useMandateAdminListActions();
+  if (!row.defaultVerdict && row.workflowVerdicts.length > 0) {
+    return <WorkflowImpactBlockerCell verdicts={row.workflowVerdicts} />;
+  }
   return (
     <ImpactBlockerCell
       verdict={row.defaultVerdict}
@@ -143,6 +165,8 @@ function HealthCell({ row }: { row: MandateAdminRow }) {
       >
         {row.health === "not a system agent" ? "NOT a system agent" : row.health}
       </Badge>
+      {/* Workflow parity: a workflow holder that no longer fits this job. */}
+      <WorkflowDriftBadge verdicts={row.workflowVerdicts} />
       {row.health === "code ↔ agent drift" && row.codeTruth && (
         <span className="basis-full text-[10px] leading-tight text-rose-600">
           code: {row.codeTruth.code_variables.join(", ") || "none"}
@@ -296,7 +320,13 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
     "impactGrade",
     "Grade",
     120,
-    (row) => (
+    (row) =>
+      !row.defaultVerdict && row.workflowVerdicts.length > 0 ? (
+        <WorkflowImpactGradeCell
+          mandateKey={row.mandateKey}
+          verdicts={row.workflowVerdicts}
+        />
+      ) : (
       <ImpactGradeCell
         mandateKey={row.mandateKey}
         defaultVerdict={row.defaultVerdict}

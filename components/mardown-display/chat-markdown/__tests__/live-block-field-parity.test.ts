@@ -47,7 +47,8 @@ const ROUTE_UPDATE = [
 const INTAKE_NOTE = [
   "Your parking entrance:",
   "",
-  '![Parking entrance on Bay Street](https://harbordental.clinic/img/parking-entrance.png "Second door")',
+  // Untitled on purpose: a TITLED image is a numbered figure in the text block (RC-B8, markdown-core image-figure.ts).
+  "![Parking entrance on Bay Street](https://harbordental.clinic/img/parking-entrance.png)",
   "",
   "See you Tuesday.",
 ].join("\n");

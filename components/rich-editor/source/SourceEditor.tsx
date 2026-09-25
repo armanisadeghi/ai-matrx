@@ -32,7 +32,7 @@ import { findMatches, replaceMatches, type FindOptions } from "../core/find-repl
 import { continueMarkupOnEnter, makeLink, setLinePrefix, toggleWrap, type SourceEditResult } from "../core/source-format";
 import { markdownSourceLanguage } from "./markdown-language";
 import { RICH_EDITOR_SHORTCUTS, TYPED_TRIGGERS } from "../core/shortcuts";
-import { toVariableName } from "../core/variables";
+import { variableNamesInText, variableSuggestions } from "../core/variables";
 import { IslandPreview } from "../islands/IslandPreview";
 import { useRichEditorContext } from "../RichEditorContext";
 import type { EditorViewHandle, ViewFindState } from "../visual/VisualEditor";
@@ -155,18 +155,14 @@ export function SourceEditor({
     const variableCompletion = (completion: CompletionContext): CompletionResult | null => {
       const match = completion.matchBefore(/\{\{[^{}\n]*/);
       if (!match) return null;
-      const declared = getVariables() ?? [];
       const typed = match.text.slice(2);
-      const options = declared.map((variable) => ({
-        label: `{{${variable.name}}}`,
-        detail: variable.type,
-        info: variable.description,
-        apply: `{{${variable.name}}}`,
+      const inDocument = variableNamesInText(completion.state.doc.toString());
+      const options = variableSuggestions(getVariables() ?? [], inDocument, typed).map((suggestion) => ({
+        label: `{{${suggestion.name}}}`,
+        detail: suggestion.source === "new" ? "new variable" : suggestion.source === "document" ? "in this document" : suggestion.type,
+        info: suggestion.description,
+        apply: `{{${suggestion.name}}}`,
       }));
-      const fresh = toVariableName(typed);
-      if (fresh && !declared.some((variable) => variable.name === fresh)) {
-        options.push({ label: `{{${fresh}}}`, detail: "new variable", info: undefined, apply: `{{${fresh}}}` });
-      }
       return { from: match.from, options, validFor: /^\{\{[^{}\n]*$/ };
     };
 

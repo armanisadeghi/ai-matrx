@@ -46,6 +46,10 @@ import {
   sessionStateMarker,
   shouldRecoverSession,
 } from "@/utils/supabase/sessionBarrier";
+import {
+  browserAdminLaneOpen,
+  installAdminLane,
+} from "@/utils/supabase/adminLane";
 
 /** Context threaded through a single query-builder chain. */
 interface ChainContext {
@@ -449,6 +453,12 @@ export function wrapClientForCapture<T>(client: T): T {
   // earliest point `INITIAL_SESSION` can be heard, which is what makes the
   // barrier's wait free on every healthy request. Idempotent and browser-only.
   installSessionBarrier(target);
+
+  // THE ADMIN LANE binds here too, for the same reason: this is the ONE door
+  // every browser client passes through. Each PostgREST request decides at
+  // send time from the current path — /administration/** rides the lane,
+  // every user page does not. Rule and reasons: utils/supabase/adminLane.ts.
+  installAdminLane(target, browserAdminLaneOpen);
 
   return new Proxy(target, {
     get(target, prop, receiver) {

@@ -19,7 +19,7 @@
  *   - Image / Video / Audio — bound to app domain systems (the
  *     `FileViewerControlsProvider` zoom/rotate rail, the unified
  *     playback-session registry, the design-system slider).
- *   - The Prism highlighter for the package's code viewer.
+ *   - The shared Shiki code view for the package's code viewer.
  *
  * Code-splitting doctrine (Fragmentation Law — see .claude/skills/code-splitting):
  * this file still contains ZERO `next/dynamic`. The heavy engines keep the

@@ -5,7 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
   Users,
-  Building2,
   Globe,
   Mail,
   Loader2,
@@ -19,7 +18,7 @@ import {
 import type { ResourceType } from "@/utils/permissions/types";
 import { PermissionsList } from "@/features/sharing/components/PermissionsList";
 import { ShareWithUserTab } from "@/features/sharing/components/tabs/ShareWithUserTab";
-import { ShareWithOrgTab } from "@/features/sharing/components/tabs/ShareWithOrgTab";
+import { OrgAvailabilityNote } from "@/features/sharing/components/OrgAvailabilityNote";
 import { PublicAccessTab } from "@/features/sharing/components/tabs/PublicAccessTab";
 import { useToast } from "@/components/ui/use-toast";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -47,7 +46,7 @@ export default function ShareModalWindow({
   resourceName,
 }: ShareModalWindowProps) {
   const [activeTab, setActiveTab] = useState<
-    "users" | "organizations" | "public"
+    "users" | "public"
   >("users");
   const [emailingLink, setEmailingLink] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -132,7 +131,6 @@ export default function ShareModalWindow({
     loading,
     error,
     shareWithUser,
-    shareWithOrg,
     makePublic,
     revokeAccess,
     updateLevel,
@@ -245,22 +243,13 @@ export default function ShareModalWindow({
           onValueChange={(value) => setActiveTab(value as typeof activeTab)}
           className="flex-1 flex flex-col min-h-0"
         >
-          <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
+          <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
             <TabsTrigger value="users" className="gap-2">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Users</span>
               {userPermissions.length > 0 && (
                 <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/10 rounded-full">
                   {userPermissions.length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="organizations" className="gap-2">
-              <Building2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Organizations</span>
-              {orgPermissions.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/10 rounded-full">
-                  {orgPermissions.length}
                 </span>
               )}
             </TabsTrigger>
@@ -286,6 +275,7 @@ export default function ShareModalWindow({
                   onRevoke={revokeAccess}
                   loading={loading}
                 />
+                <OrgAvailabilityNote permissions={orgPermissions} />
               </div>
 
               {isOwner && !ownerLoading && (
@@ -294,29 +284,8 @@ export default function ShareModalWindow({
                   onSuccess={refresh}
                   resourceType={resourceType}
                   resourceId={resourceId}
-                />
-              )}
-            </TabsContent>
-
-            <TabsContent value="organizations" className="mt-0 space-y-3 pb-4">
-              <div>
-                <h3 className="text-sm font-medium mb-2">Current Access</h3>
-                <PermissionsList
-                  permissions={orgPermissions}
-                  isOwner={isOwner && !ownerLoading}
-                  onUpdateLevel={updateLevel}
-                  onRevoke={revokeAccess}
-                  loading={loading}
-                />
-              </div>
-
-              {isOwner && !ownerLoading && (
-                <ShareWithOrgTab
-                  onShare={shareWithOrg}
-                  onSuccess={refresh}
-                  resourceType={resourceType}
-                  sharedOrgIds={orgPermissions
-                    .map((p) => p.grantedToOrganizationId)
+                  alreadySharedUserIds={userPermissions
+                    .map((p) => p.grantedToUserId)
                     .filter((id): id is string => !!id)}
                 />
               )}

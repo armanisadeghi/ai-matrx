@@ -56,7 +56,6 @@ export type MarketingSiteSettingsView =
   | "site"
   | "integrations"
   | "access-users"
-  | "access-organizations"
   | "access-public"
   | "intake";
 

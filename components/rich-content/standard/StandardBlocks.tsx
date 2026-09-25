@@ -31,6 +31,8 @@ import { InlineCodeSnippet } from "@/components/mardown-display/chat-markdown/In
 import XmlBlock from "@/components/mardown-display/blocks/xml/XmlBlock";
 import MarkdownPreviewBlock from "@/components/mardown-display/blocks/markdown-preview/MarkdownPreviewBlock";
 import { FENCE_META_KEY } from "@/components/markdown-core/fence-meta";
+// Static (not lazy): a CSV table must be in the server HTML of a share page too.
+import CsvBlock from "@/components/mardown-display/blocks/csv/CsvBlock";
 import { fenceNestsInnerFences } from "@ai-matrx/content-ir/source";
 import { NestedRichContent } from "./NestedRichContent";
 import { DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
@@ -45,9 +47,6 @@ import {
 // the full engine's BlockComponentRegistry tiers them.
 const CodeBlock = lazy(
   () => import("@/features/code-editor/components/code-block/CodeBlock"),
-);
-const CsvBlock = lazy(
-  () => import("@/components/mardown-display/blocks/csv/CsvBlock"),
 );
 const MermaidBlock = lazy(
   () => import("@/components/mardown-display/blocks/mermaid/MermaidBlock"),
@@ -174,9 +173,7 @@ export function StandardBlock({
     // ```csv / ```tsv — the same sortable table the full engine renders.
     if (language === "csv" || language === "tsv") {
       return (
-        <Suspense fallback={<PlainCode code={content} />}>
-          <CsvBlock content={content} delimiter={language === "tsv" ? "\t" : ","} className="my-3" />
-        </Suspense>
+        <CsvBlock content={content} delimiter={language === "tsv" ? "\t" : ","} className="my-3" />
       );
     }
     const fenceMeta = block.metadata?.[FENCE_META_KEY];

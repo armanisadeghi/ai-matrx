@@ -258,7 +258,6 @@ describe("no ladder site restates the level union", () => {
  */
 const PERMISSION_PICKERS = [
   "features/sharing/components/tabs/ShareWithUserTab.tsx",
-  "features/sharing/components/tabs/ShareWithOrgTab.tsx",
   "features/sharing/components/PermissionsList.tsx",
   "features/organizations/components/OrgModuleSettings.tsx",
 ] as const;

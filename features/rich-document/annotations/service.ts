@@ -481,7 +481,17 @@ export async function listEdgeItems(
   titleFor: (token: string, ids: string[]) => Promise<Map<string, string>>,
 ): Promise<EdgeItems> {
   const res = await associationsService.listForEntity(source.token, source.id);
-  if (!res.ok) throw sentence("Loading highlights and links", res.error);
+  if (!res.ok) {
+    // The installed @ai-matrx/associations vocabulary lags the live registry
+    // (a token added after its last publish): say what it means, not the guard's words.
+    if (/not a registered entity type/.test(res.error.message)) {
+      console.error("[annotations] association vocabulary lacks this source type", res.error);
+      throw new Error(
+        `Highlights and links cannot load for this kind of record in this version of the app yet (it does not recognise "${source.token}"). Comments still work; this clears with the next app update.`,
+      );
+    }
+    throw sentence("Loading highlights and links", res.error);
+  }
   const incoming = res.data.edges.filter((e) => e.direction === "incoming");
   const annotates = incoming.filter((e) => e.role === ANNOTATES_ROLE && e.otherType === "document");
   const links = incoming.filter((e) => e.role === ANCHORED_TO_ROLE);

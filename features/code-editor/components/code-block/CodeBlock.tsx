@@ -24,7 +24,7 @@ import { codeLanguageToExtension } from "@/utils/file-operations/utils";
 import { agentForPromptKey } from "@/features/code-editor/agent-code-editor/agents";
 import { useOpenSmartCodeEditorWindow } from "@/features/overlays/openers/smartCodeEditorWindow";
 import {
-  mapLanguageForPrism,
+  normalizeViewLanguage,
   mapLanguageForMonaco,
   getMonacoFileExtension,
 } from "@/features/code-editor/config/languages";
@@ -87,7 +87,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 }) => {
   const fence = parseFenceMeta(meta);
   // Map language for respective editors (with additional safety checks)
-  const viewLanguage = mapLanguageForPrism(rawLanguage);
+  const viewLanguage = normalizeViewLanguage(rawLanguage);
   const monacoLanguage = mapLanguageForMonaco(rawLanguage);
   const monacoFileExtension = getMonacoFileExtension(rawLanguage);
 

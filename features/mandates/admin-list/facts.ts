@@ -18,6 +18,11 @@ import {
   type StandingImpact,
 } from "@/features/mandates/admin/impact";
 import type { MandateCoverageResponse } from "@/features/mandates/coverage";
+import {
+  groupWorkflowImpactByMandate,
+  leadWorkflowVerdict,
+  type WorkflowImpactReport,
+} from "@/features/mandates/admin/workflow-impact";
 import type { EntityListQuery } from "@/lib/entity-list/types";
 import { declaredInOf, featureLabelOf } from "./rows";
 
@@ -76,6 +81,8 @@ export interface MandateAdminReports {
   codeTruth: Record<string, MandateCodeTruth> | null;
   coverage: MandateCoverageResponse | null;
   impact: StandingImpact | null;
+  /** Workflow-held rungs, graded (workflow parity). */
+  workflowImpact: WorkflowImpactReport | null;
 }
 
 type KeyLists = Record<string, string[]>;
@@ -100,14 +107,27 @@ export function buildFacts(
     };
   }
 
-  if ((want.has("grade") || want.has("blocker")) && reports.impact) {
+  if ((want.has("grade") || want.has("blocker")) && (reports.impact || reports.workflowImpact)) {
     const grade: KeyLists = {};
     const blocker: KeyLists = {};
-    for (const [key, grouped] of groupImpactByMandate(reports.impact.verdicts)) {
+    const graded = new Set<string>();
+    for (const [key, grouped] of groupImpactByMandate(reports.impact?.verdicts ?? [])) {
       const verdict = grouped.defaultVerdict;
       if (!verdict) continue;
+      graded.add(key);
       push(grade, verdict.grade, key);
       push(blocker, blockerKeyOf(verdict), key);
+    }
+    // Workflow parity: a job with no agent default is graded by its workflow
+    // rungs (the same verdict the row's Grade cell shows).
+    for (const [key, verdicts] of groupWorkflowImpactByMandate(
+      reports.workflowImpact?.verdicts ?? [],
+    )) {
+      if (graded.has(key)) continue;
+      const lead = leadWorkflowVerdict(verdicts);
+      if (!lead) continue;
+      push(grade, lead.grade, key);
+      push(blocker, lead.blocker ?? "none", key);
     }
     if (want.has("grade")) {
       facts.grade = grade;

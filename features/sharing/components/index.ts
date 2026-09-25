@@ -15,6 +15,5 @@ export { PermissionBadge, PublicBadge, PermissionLevelDescription } from './Perm
 
 // Tab components (internal use, but exported for flexibility)
 export { ShareWithUserTab } from './tabs/ShareWithUserTab';
-export { ShareWithOrgTab } from './tabs/ShareWithOrgTab';
 export { PublicAccessTab } from './tabs/PublicAccessTab';
 

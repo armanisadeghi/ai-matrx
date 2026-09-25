@@ -34,7 +34,7 @@ import {
 import { findMatches, replaceMatches } from "../core/find-replace";
 import { outlineOf } from "../core/outline";
 import { measureText } from "../core/text-metrics";
-import { classifyVariable } from "../core/variables";
+import { classifyVariable, variableNamesInText, variableSuggestions } from "../core/variables";
 import { htmlToMarkdown } from "../core/html-to-markdown";
 
 const extensions = createRichEditorExtensions();
@@ -142,18 +142,27 @@ describe("tables", () => {
 describe("callouts, checklists, page breaks, footnotes", () => {
   const CALLOUT = "> [!WARNING]\n> Sharps never ride with e-waste.\n\nNext stop: Main.";
 
-  it("a GFM alert edits as prose and keeps its marker", () => {
+  // content-ir 0.14: a stored GFM alert / Obsidian callout is an ISLAND — the
+  // editor never re-serializes its grammar; it changes only through its own editor.
+  it("a stored GFM alert loads as one protected island with its exact bytes", () => {
     const { editor, save } = open(CALLOUT);
-    cursorAtEndOf(editor, "Sharps never ride");
-    editor.commands.insertContent(" Ever.");
-    expect(save()).toBe(CALLOUT.replace("with e-waste.", "with e-waste. Ever."));
+    const pos = find(editor.state.doc, (node) => node.type.name === "islandBlock");
+    expect(editor.state.doc.nodeAt(pos)?.attrs.raw).toBe("> [!WARNING]\n> Sharps never ride with e-waste.");
+    expect(save()).toBe(CALLOUT);
   });
 
-  it("changing the callout type rewrites only its marker", () => {
+  it("changing a stored callout's type goes through its island edit and rewrites only it", () => {
     const { editor, save } = open(CALLOUT);
-    cursorAtEndOf(editor, "Sharps never ride");
-    setCallout(editor, "CAUTION");
+    const pos = find(editor.state.doc, (node) => node.type.name === "islandBlock");
+    replaceIslandRaw(editor, pos, "> [!CAUTION]\n> Sharps never ride with e-waste.");
     expect(save()).toBe(CALLOUT.replace("[!WARNING]", "[!CAUTION]"));
+  });
+
+  it("turning a new paragraph into a callout writes the GFM alert marker", () => {
+    const { editor, save } = open("Next stop: Main.");
+    cursorAtEndOf(editor, "Next stop");
+    setCallout(editor, "TIP");
+    expect(save()).toBe("> [!TIP]\n> Next stop: Main.");
   });
 
   it("ticking a checklist item flips only its box", () => {
@@ -299,6 +308,31 @@ describe("pure feature modules", () => {
     expect(outlineOf(NOTE).map((entry) => [entry.level, entry.text, entry.slug])).toEqual([
       [1, "Alton pickup", "alton-pickup"],
       [2, "Alton pickup", "alton-pickup-1"],
+    ]);
+  });
+
+  it("the outline keeps {{variables}} and in-word underscores exactly, and still drops emphasis", () => {
+    const text = "# Loading-dock brief — {{site_name}}\n\n## The __first week__ at file_name_here\n\n## *Safety* `rules`";
+    expect(outlineOf(text).map((entry) => entry.text)).toEqual([
+      "Loading-dock brief — {{site_name}}",
+      "The first week at file_name_here",
+      "Safety rules",
+    ]);
+  });
+
+  it("the {{ menu offers the document's own variables after the declared ones, then a new name", () => {
+    expect(variableNamesInText("Hi {{new_hire}}, your lead is {{shift_lead}}; {{new_hire}} again.")).toEqual([
+      "new_hire",
+      "shift_lead",
+    ]);
+    const rows = variableSuggestions([{ name: "site_name", type: "text" }], ["shift_lead", "site_name"], "");
+    expect(rows.map((row) => [row.name, row.source])).toEqual([
+      ["site_name", "declared"],
+      ["shift_lead", "document"],
+    ]);
+    expect(variableSuggestions([], ["shift_lead"], "shi").map((row) => [row.name, row.source])).toEqual([
+      ["shift_lead", "document"],
+      ["shi", "new"],
     ]);
   });
 

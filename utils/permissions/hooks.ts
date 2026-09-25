@@ -22,7 +22,6 @@ import {
   resolveResourceOwnership,
   resolveSharingAuthority,
   shareWithUser,
-  shareWithOrg,
   makePublic,
   revokeAccess,
   revokeOrgAccess,
@@ -350,38 +349,6 @@ export function useSharing(
     [resourceType, resourceId, resourceName, organizationId, refresh],
   );
 
-  const handleShareWithOrg = useCallback(
-    async (organizationId: string, permissionLevel: PermissionLevel) => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const result = await shareWithOrg({
-          resourceType,
-          resourceId,
-          organizationId,
-          permissionLevel,
-        });
-
-        if (!result.success) {
-          setError(result.error || "Failed to share");
-          return result;
-        }
-
-        await refresh();
-        return result;
-      } catch (err) {
-        const errorMessage =
-          extractErrorMessage(err) || "Failed to share with organization";
-        setError(errorMessage);
-        return { success: false, error: errorMessage };
-      } finally {
-        setLoading(false);
-      }
-    },
-    [resourceType, resourceId, refresh],
-  );
-
   const handleMakePublic = useCallback(
     async (permissionLevel: PermissionLevel = "viewer") => {
       setLoading(true);
@@ -541,7 +508,6 @@ export function useSharing(
     loading,
     error,
     shareWithUser: handleShareWithUser,
-    shareWithOrg: handleShareWithOrg,
     makePublic: handleMakePublic,
     setVisibility: handleSetVisibility,
     revokeAccess: handleRevokeAccess,

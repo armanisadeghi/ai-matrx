@@ -38,13 +38,14 @@
  *     entry per editing session, not per keystroke.
  *
  * Callers don't need to await this. Fire-and-forget from React
- * components. Errors surface via toast inside `editMessage`.
+ * components. A failed save toasts (persistInlineEdit).
  */
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { setRequestEditedText } from "../active-requests/active-requests.slice";
 import { updateMessageRecord } from "../messages/messages.slice";
-import { editMessage } from "./edit-message.thunk";
+import { saveAnswerEdit } from "./save-answer-edit.thunk";
+import { toast } from "@/lib/toast";
 import { buildContentBlocksForSave } from "@/features/cx-chat/utils/buildContentBlocksForSave";
 import { stripCitationMarkers } from "../messages/message-citations";
 
@@ -130,29 +131,11 @@ export const commitInlineContentEdit =
       if (!entry) return;
       pendingByMessageId.delete(messageId);
 
-      // Re-read the current message record at flush time so we capture
-      // the latest non-text blocks (tool calls, thinking, media) even
-      // if they changed between the schedule and the fire.
-      const flushRecord =
-        getState().messages.byConversationId[conversationId]?.byId?.[messageId];
-      const flushRawContent = flushRecord && Array.isArray(flushRecord.content)
-        ? (flushRecord.content as unknown[])
-        : undefined;
-      const flushContent = buildContentBlocksForSave(
-        entry.latestText,
-        flushRawContent,
-      );
-
-      // Fire-and-forget; editMessage already toasts on failure and
-      // rolls back the optimistic patch. We don't await because the
-      // caller is a React event handler that returned long ago.
-      void dispatch(
-        editMessage({
-          conversationId,
-          messageId,
-          newContent: flushContent,
-        }),
-      );
+      // The DB write splices against the STORED row (`saveAnswerEdit` re-reads
+      // it), never the loaded Redux copy: for an answer streamed this session
+      // the Redux copy is the client's own shape, and writing it back dropped
+      // the server's thinking / tool parts (RC-B5, 2026-09-25).
+      void persistInlineEdit(dispatch, conversationId, messageId, entry.latestText);
     }, DB_DEBOUNCE_MS);
 
     pendingByMessageId.set(messageId, { timer, latestText: newText });
@@ -181,16 +164,17 @@ export const flushPendingInlineEdit =
     })();
     if (!record) return;
 
-    const rawContent = Array.isArray(record.record.content)
-      ? (record.record.content as unknown[])
-      : undefined;
-    const flushContent = buildContentBlocksForSave(entry.latestText, rawContent);
-
-    void dispatch(
-      editMessage({
-        conversationId: record.conversationId,
-        messageId,
-        newContent: flushContent,
-      }),
-    );
+    void persistInlineEdit(dispatch, record.conversationId, messageId, entry.latestText);
   };
+
+async function persistInlineEdit(
+  dispatch: AppDispatch,
+  conversationId: string,
+  messageId: string,
+  text: string,
+): Promise<void> {
+  const result = await dispatch(saveAnswerEdit({ conversationId, messageId, newText: text }));
+  if (saveAnswerEdit.rejected.match(result)) {
+    toast.error(`Your change to this answer was not saved: ${result.payload?.message ?? result.error.message ?? "unknown error"}`);
+  }
+}

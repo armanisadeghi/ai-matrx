@@ -27,16 +27,18 @@ import {
   type MandateCodeTruth,
 } from "@/features/mandates/admin/service";
 import { fetchStandingImpact } from "@/features/mandates/admin/impact";
+import { fetchWorkflowImpact } from "@/features/mandates/admin/workflow-impact";
 import { fetchMandateCoverage } from "@/features/mandates/coverage";
 import type { MandateAdminReports } from "./facts";
 import { callMandateAdminList } from "./rpc";
 
-export type MandateAdminReportName = "codeTruth" | "coverage" | "impact";
+export type MandateAdminReportName = "codeTruth" | "coverage" | "impact" | "workflowImpact";
 
 const NOTHING_SETTLED: Record<MandateAdminReportName, boolean> = {
   codeTruth: false,
   coverage: false,
   impact: false,
+  workflowImpact: false,
 };
 
 export interface MandateAdminListState {
@@ -60,6 +62,7 @@ const EMPTY_REPORTS: MandateAdminReports = {
   codeTruth: null,
   coverage: null,
   impact: null,
+  workflowImpact: null,
 };
 
 let state: MandateAdminListState = {
@@ -125,7 +128,8 @@ function settle(
 ): void {
   if (myGeneration !== generation) return;
   const settled = { ...state.settled, [source]: true };
-  const allIn = settled.codeTruth && settled.coverage && settled.impact;
+  const allIn =
+    settled.codeTruth && settled.coverage && settled.impact && settled.workflowImpact;
   if ("error" in outcome) {
     publish({
       settled,
@@ -153,7 +157,7 @@ function track<T>(
   );
 }
 
-/** Start all three reports at once. Nothing awaits them. */
+/** Start every report at once. Nothing awaits them. */
 function startReports(dispatch: AppDispatch, myGeneration: number): void {
   track(myGeneration, "codeTruth", fetchMandateCodeTruthReport(dispatch), (report) =>
     Object.fromEntries(
@@ -171,6 +175,9 @@ function startReports(dispatch: AppDispatch, myGeneration: number): void {
     ),
     (impact) => impact,
   );
+  // Workflow parity: the rungs a WORKFLOW holds, graded on the same scale
+  // (aidream `POST /mandates/impact/workflows`). One read, every rung.
+  track(myGeneration, "workflowImpact", fetchWorkflowImpact(dispatch), (report) => report);
 }
 
 /**

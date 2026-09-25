@@ -500,11 +500,12 @@ describe("verify-RC-B8 fix round", () => {
   });
 
   it("author ids are prefixed user-content- and anchors still resolve", async () => {
-    const scope = await render(full(":::aside{#evil}\nx\n:::\n\n## Loading {#__proto__}\n\nSee @sec:loading."));
+    const scope = await render(full(":::aside{#evil}\nx\n:::\n\n:::figure[Shelf]{#__proto__}\ny\n:::\n\n## Loading {#sec:loading}\n\nSee @sec:loading."));
     expect(scope.querySelector("#evil")).toBeNull();
     expect(scope.querySelector("#__proto__")).toBeNull();
     expect(scope.querySelector("#user-content-evil")).not.toBeNull();
     expect(scope.querySelector("#user-content-__proto__")).not.toBeNull();
+    expect(scope.querySelector('a[data-xref="sec:loading"]')?.textContent).toBe("Loading");
   });
 
   it("streaming holds back a half-typed heading id and unclosed math", () => {

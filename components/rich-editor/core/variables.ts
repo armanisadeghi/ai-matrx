@@ -94,3 +94,47 @@ export function toVariableName(input: string): string {
     .replace(/[^\p{L}\p{N}_]+/gu, "_")
     .replace(/^_+|_+$/g, "");
 }
+
+const VARIABLE_IN_TEXT_RE = /\{\{\s*([\p{L}\p{N}_][\p{L}\p{N}_.-]*)\s*\}\}/gu;
+
+/** Every distinct `{{name}}` in a text, in order of first appearance. */
+export function variableNamesInText(text: string): string[] {
+  const seen = new Set<string>();
+  for (const match of text.matchAll(VARIABLE_IN_TEXT_RE)) seen.add(match[1]);
+  return [...seen];
+}
+
+export interface VariableSuggestion {
+  name: string;
+  type?: string;
+  description?: string;
+  /** Declared by the surface, already used in this document, or a new name from what was typed. */
+  source: "declared" | "document" | "new";
+}
+
+/**
+ * THE `{{` menu's rows, for both views: the surface's declared variables, then
+ * the variables this document already uses (so a prompt's own `{{site_name}}`
+ * is one keystroke away even where the host declares nothing), then the typed
+ * name as a new variable.
+ */
+export function variableSuggestions(
+  declared: readonly DeclaredVariable[],
+  documentNames: readonly string[],
+  query: string,
+): VariableSuggestion[] {
+  const q = query.replace(/\}+$/, "").trim().toLowerCase();
+  const matches = (name: string) => !q || name.toLowerCase().includes(q);
+  const out: VariableSuggestion[] = declared
+    .filter((variable) => matches(variable.name))
+    .map((variable) => ({ ...variable, source: "declared" as const }));
+  const known = new Set(declared.map((variable) => variable.name));
+  for (const name of documentNames) {
+    if (known.has(name) || !matches(name)) continue;
+    known.add(name);
+    out.push({ name, source: "document" });
+  }
+  const fresh = toVariableName(query.replace(/\}+$/, ""));
+  if (fresh && !known.has(fresh)) out.push({ name: fresh, source: "new" });
+  return out;
+}

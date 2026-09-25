@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsOwner, useSharing } from "@/utils/permissions/hooks";
 import { PermissionsList } from "@/features/sharing/components/PermissionsList";
 import { ShareWithUserTab } from "@/features/sharing/components/tabs/ShareWithUserTab";
-import { ShareWithOrgTab } from "@/features/sharing/components/tabs/ShareWithOrgTab";
+import { OrgAvailabilityNote } from "@/features/sharing/components/OrgAvailabilityNote";
 import { PublicAccessTab } from "@/features/sharing/components/tabs/PublicAccessTab";
 import {
   AccessSummaryPanel,
@@ -35,7 +35,6 @@ import {
  */
 const SUB_TAB_LABEL: Record<string, string> = {
   users: "Users",
-  organizations: "Organizations",
   public: "Public",
 };
 
@@ -51,7 +50,7 @@ const NOT_OWNER_NOTICE = "Only the site owner can change sharing.";
 export function SiteAccessWorkspace({
   view,
 }: {
-  view: "users" | "organizations" | "public";
+  view: "users" | "public";
 }) {
   const { site } = useMarketingSite();
   // Settings owns switching and passes the normalized sharing mode. Keeping
@@ -65,7 +64,6 @@ export function SiteAccessWorkspace({
     loading,
     error,
     shareWithUser,
-    shareWithOrg,
     makePublic,
     revokeAccess,
     updateLevel,
@@ -330,6 +328,7 @@ export function SiteAccessWorkspace({
                       copy={copyContext}
                       listLabel="Users"
                     />
+                    <OrgAvailabilityNote permissions={orgPermissions} />
                   </div>
                   {isOwner && (
                     <ShareWithUserTab
@@ -338,36 +337,9 @@ export function SiteAccessWorkspace({
                       resourceType="web_site"
                       resourceId={site.id}
                       copy={copyContext}
-                    />
-                  )}
-                </>
-              )}
-
-              {view === "organizations" && (
-                <>
-                  <div>
-                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                      Current Access
-                    </h3>
-                    <PermissionsList
-                      permissions={orgPermissions}
-                      isOwner={isOwner}
-                      onUpdateLevel={updateLevel}
-                      onRevoke={revokeAccess}
-                      loading={loading}
-                      copy={copyContext}
-                      listLabel="Organizations"
-                    />
-                  </div>
-                  {isOwner && (
-                    <ShareWithOrgTab
-                      onShare={shareWithOrg}
-                      onSuccess={refresh}
-                      resourceType="web_site"
-                      sharedOrgIds={orgPermissions
-                        .map((p) => p.grantedToOrganizationId)
+                      alreadySharedUserIds={userPermissions
+                        .map((p) => p.grantedToUserId)
                         .filter((id): id is string => !!id)}
-                      copy={copyContext}
                     />
                   )}
                 </>

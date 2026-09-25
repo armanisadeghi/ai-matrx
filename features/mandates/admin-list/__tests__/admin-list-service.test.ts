@@ -49,6 +49,7 @@ describe("packing the facts", () => {
     },
     coverage: { red: [{ mandate_key: "flashcards.enrich_card" }], orange: [{ mandate_key: "podcast.show_notes" }] } as unknown as MandateCoverageResponse,
     impact: null as StandingImpact | null,
+    workflowImpact: null,
   };
 
   it("sends only the sections asked for", () => {
@@ -61,7 +62,10 @@ describe("packing the facts", () => {
   });
 
   it("an unanswered report sends no section, so the column reads unknown — never a verdict", () => {
-    const facts = buildFacts({ codeTruth: null, coverage: null, impact: null }, ALL_FACT_SECTIONS);
+    const facts = buildFacts(
+      { codeTruth: null, coverage: null, impact: null, workflowImpact: null },
+      ALL_FACT_SECTIONS,
+    );
     expect(facts.coverage).toBeUndefined();
     expect(facts.grade).toBeUndefined();
   });

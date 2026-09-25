@@ -93,20 +93,25 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
     if (!src) return;
     const seq = ++loadSeq.current;
     setError(null);
-    try {
-      const titles = getAssociationsStore().titles;
-      const [threads, edges] = await Promise.all([
-        listCommentThreads(src),
-        listEdgeItems(src, (token, ids) => titles.fetch(token, ids)),
-      ]);
-      if (seq !== loadSeq.current) return;
-      setConfirmed([...threads.items, ...edges.highlights, ...edges.links]);
-      setDoors(threads.collaborationDoors);
-    } catch (e) {
-      if (seq === loadSeq.current) setError(message(e));
-    } finally {
-      if (seq === loadSeq.current) setLoading(false);
-    }
+    // The two halves load independently: a refused edge read must never hide
+    // the comment threads (or the reverse). Each failure is shown by name.
+    const titles = getAssociationsStore().titles;
+    const [threads, edges] = await Promise.allSettled([
+      listCommentThreads(src),
+      listEdgeItems(src, (token, ids) => titles.fetch(token, ids)),
+    ]);
+    if (seq !== loadSeq.current) return;
+    const next: AnnotationItem[] = [];
+    const errors: string[] = [];
+    if (threads.status === "fulfilled") {
+      next.push(...threads.value.items);
+      setDoors(threads.value.collaborationDoors);
+    } else errors.push(message(threads.reason));
+    if (edges.status === "fulfilled") next.push(...edges.value.highlights, ...edges.value.links);
+    else errors.push(message(edges.reason));
+    setConfirmed(next);
+    setError(errors.length ? errors.join(" ") : null);
+    setLoading(false);
   }, []);
 
   useEffect(() => {

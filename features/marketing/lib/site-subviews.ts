@@ -300,11 +300,6 @@ export const MARKETING_SITE_SUBVIEWS = [
       { id: "integrations", label: "Integrations" },
       { id: "access-users", label: "User access", path: "/access?view=users" },
       {
-        id: "access-organizations",
-        label: "Organization access",
-        path: "/access?view=organizations",
-      },
-      {
         id: "access-public",
         label: "Public access",
         path: "/access?view=public",

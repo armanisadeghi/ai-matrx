@@ -113,7 +113,8 @@ export interface ShareWithUserOptions {
   organizationId?: string | null;
 }
 
-export interface ShareWithOrgOptions {
+/** Organization AVAILABILITY (org configuration), never a share — see grantOrgAvailability. */
+export interface OrgAvailabilityOptions {
   resourceType: ResourceType;
   resourceId: string;
   organizationId: string;

@@ -41,7 +41,7 @@ import type {
 import type { Json, Tables } from "@/types/database.types";
 import { createClient } from "@/utils/supabase/client";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import { ensureSharedWithOrg } from "@/utils/permissions/service";
+import { ensureOrgAvailability } from "@/utils/permissions/service";
 // THE ONE PRE-FLIGHT (FIX-11) — one function decides what a person is allowed
 // to store in a mapping, for every system that stores one.
 import { assertMappingsAreAnswerable } from "@/features/mandates/provision-shapes";
@@ -376,7 +376,7 @@ export async function bindAgentToSurface(
     const organizationId = scope.organizationId;
     const grants = await Promise.all(
       (["agent", "agent_card"] as const).map((resourceType) =>
-        ensureSharedWithOrg({
+        ensureOrgAvailability({
           resourceType,
           resourceId: agentId,
           organizationId,

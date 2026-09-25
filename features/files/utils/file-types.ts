@@ -890,7 +890,7 @@ export const FILE_TYPES: readonly FileTypeEntry[] = [
     icon: Code,
   },
   // HTML — `previewKind: "html"` so the previewer can offer a Rendered /
-  // Source toggle (sandboxed iframe vs Prism-highlighted markup). Without
+  // Source toggle (sandboxed iframe vs syntax-highlighted markup). Without
   // the split, opening a saved web page in /files just showed its source,
   // which is the wrong default for almost every consumer. The Edit tab
   // mounts Monaco with `html` language (see CloudFileInlineEditor's

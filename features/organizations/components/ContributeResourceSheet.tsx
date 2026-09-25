@@ -8,8 +8,9 @@
  * Pick a resource kind → search your own items → "Share with team". Every
  * shareable kind comes from the org resource catalogue, so this stays in sync
  * with the rest of the org workspace automatically. The actual grant goes
- * through the existing `shareWithOrg` → `share_resource_with_org` RPC (which
- * validates ownership + org membership server-side).
+ * through `grantOrgAvailability` → `grant_org_availability`, the organization-
+ * availability door (validates ownership + org membership server-side). Contributing is org
+ * configuration with moderation, not a share: share doors name a person (SHARE-PEOPLE-ONLY).
  */
 
 import React from "react";

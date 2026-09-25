@@ -6,10 +6,13 @@
  *
  * Full RPC inventory:
  *   share_resource_with_user()    — grant user access (validates ownership)
- *   share_resource_with_org()     — grant org access (validates ownership + membership)
+ *   grant_org_availability()      — make a thing AVAILABLE to an organization as org configuration
+ *                                   (surface binding, library contribution). Never a share: a share
+ *                                   names a person (SHARE-PEOPLE-ONLY, 2026-09-25); the old
+ *                                   share_resource_with_org refuses.
  *   update_permission_level()     — change user or org permission level (validates ownership)
  *   revoke_resource_access()      — remove a user's grant (validates ownership)
- *   revoke_resource_org_access()  — remove an org's grant (validates ownership)
+ *   revoke_resource_org_access()  — remove an organization's availability row (validates ownership)
  *   make_resource_public()        — set is_public = true on resource row (validates ownership)
  *   make_resource_private()       — set is_public = false on resource row (validates ownership)
  *   get_resource_permissions()    — list all grants with user/org details (owner-only)
@@ -40,7 +43,7 @@ import {
   ResourceType,
   PermissionLevel,
   ShareWithUserOptions,
-  ShareWithOrgOptions,
+  OrgAvailabilityOptions,
   MakePublicOptions,
   UpdatePermissionOptions,
   RevokeAccessOptions,
@@ -439,18 +442,25 @@ export async function shareWithUser(
 }
 
 /**
- * Grant an organization access to a resource.
- * RPC validates: authenticated, valid level, resource exists, caller is owner,
- * caller is a member of the target org, no duplicate.
+ * Make a thing AVAILABLE to an organization, as organization configuration: an agent bound to
+ * the organization's surface, or an item contributed to its library (with moderation). Everyone
+ * in the organization, including people who join later, can use it.
+ *
+ * 🚨 THIS IS NOT SHARING (chair ruling 2026-09-25, owner ruling 2026-09-23 "access is personal").
+ * A share names a person; the store refuses an organization at every share door with
+ * "Shares name a person, not an organization." This door is the only writer of an organization
+ * grantee, and the row it writes carries `granted_via = 'availability'`.
+ * RPC validates: authenticated, resource exists, caller holds Admin on it, caller is a member of
+ * the target organization, the organization's module config (members may add, needs approval).
  */
-export async function shareWithOrg(
-  options: ShareWithOrgOptions,
+export async function grantOrgAvailability(
+  options: OrgAvailabilityOptions,
 ): Promise<ShareActionResult> {
   try {
     const { resourceType, resourceId, organizationId, permissionLevel } =
       options;
 
-    const { data, error } = await supabase.rpc("share_resource_with_org", {
+    const { data, error } = await supabase.rpc("grant_org_availability", {
       p_resource_type: resourceType,
       p_resource_id: resourceId,
       p_target_org_id: organizationId,
@@ -465,34 +475,38 @@ export async function shareWithOrg(
     if (!parsed.success)
       return {
         success: false,
-        error: parsed.error || "Failed to share with organization",
+        error:
+          parsed.error ||
+          "Could not make this available to the organization",
       };
 
     return {
       success: true,
-      message: parsed.message || "Successfully shared with organization",
+      message:
+        parsed.message || "Available to everyone in the organization",
     };
   } catch (error: unknown) {
-    console.error("shareWithOrg error:", error);
+    console.error("grantOrgAvailability error:", error);
     return {
       success: false,
-      error: errMessage(error) || "Failed to share with organization",
+      error:
+        errMessage(error) ||
+        "Could not make this available to the organization",
     };
   }
 }
 
 /**
- * Ensure an organization has the requested resource grant.
+ * Ensure an organization has the requested availability row.
  *
- * The canonical sharing RPC deliberately reports an existing grant instead of
- * inserting a duplicate. Composition workflows need idempotent "ensure"
- * semantics, so centralize that translation here instead of teaching each
- * caller the RPC's duplicate response string.
+ * The availability door reports an existing row instead of inserting a duplicate. Composition
+ * workflows (surface binding) need idempotent "ensure" semantics, so the translation of that
+ * answer lives here instead of in each caller.
  */
-export async function ensureSharedWithOrg(
-  options: ShareWithOrgOptions,
+export async function ensureOrgAvailability(
+  options: OrgAvailabilityOptions,
 ): Promise<ShareActionResult> {
-  const result = await shareWithOrg(options);
+  const result = await grantOrgAvailability(options);
   if (!result.success && result.error === "Organization already has access") {
     return {
       success: true,

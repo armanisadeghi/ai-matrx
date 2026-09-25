@@ -16,7 +16,6 @@ import {
   BookOpen,
   Boxes,
   Briefcase,
-  Building2,
   CircleDollarSign,
   Compass,
   CircleDashed,
@@ -120,7 +119,6 @@ export const MARKETING_SUBVIEW_ICONS: Record<string, LucideIcon> = {
   "settings:site": Settings,
   "settings:integrations": Plug,
   "settings:access-users": Users,
-  "settings:access-organizations": Building2,
   "settings:access-public": Globe,
   "settings:intake": Compass,
 };

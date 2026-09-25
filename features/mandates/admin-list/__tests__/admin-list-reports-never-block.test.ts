@@ -27,6 +27,7 @@ function deferred<T>(): Deferred<T> {
 const truth = deferred<MandateCodeTruthReport>();
 const coverage = deferred<MandateCoverageResponse>();
 const agents = deferred<string[]>();
+const workflowGrades = deferred<unknown>();
 
 jest.mock("@/features/mandates/admin/service", () => ({
   fetchMandateCodeTruthReport: jest.fn(() => truth.promise),
@@ -36,6 +37,9 @@ jest.mock("@/features/mandates/coverage", () => ({
 }));
 jest.mock("@/features/mandates/admin/impact", () => ({
   fetchStandingImpact: jest.fn(() => new Promise(() => {})),
+}));
+jest.mock("@/features/mandates/admin/workflow-impact", () => ({
+  fetchWorkflowImpact: jest.fn(() => workflowGrades.promise),
 }));
 jest.mock("../rpc", () => ({
   callMandateAdminList: jest.fn(() => agents.promise),
@@ -57,8 +61,18 @@ describe("the admin mandate list's server reports", () => {
     ]);
     expect(answer).toBe("answered");
     const state = getMandateAdminListState();
-    expect(state.reports).toEqual({ codeTruth: null, coverage: null, impact: null });
-    expect(state.settled).toEqual({ codeTruth: false, coverage: false, impact: false });
+    expect(state.reports).toEqual({
+      codeTruth: null,
+      coverage: null,
+      impact: null,
+      workflowImpact: null,
+    });
+    expect(state.settled).toEqual({
+      codeTruth: false,
+      coverage: false,
+      impact: false,
+      workflowImpact: false,
+    });
   });
 
   it("each report fills in on its own and asks the list again", async () => {
@@ -66,7 +80,12 @@ describe("the admin mandate list's server reports", () => {
     coverage.resolve({ red: [], orange: [] } as unknown as MandateCoverageResponse);
     await flush();
     const afterCoverage = getMandateAdminListState();
-    expect(afterCoverage.settled).toEqual({ codeTruth: false, coverage: true, impact: false });
+    expect(afterCoverage.settled).toEqual({
+      codeTruth: false,
+      coverage: true,
+      impact: false,
+      workflowImpact: false,
+    });
     expect(afterCoverage.reports.coverage).not.toBeNull();
     expect(afterCoverage.version).toBeGreaterThan(before);
     expect(afterCoverage.status).toBe("loading");
@@ -74,8 +93,17 @@ describe("the admin mandate list's server reports", () => {
     truth.reject(new Error("code truth is down"));
     agents.resolve([]);
     await flush();
+    // Still reading the workflow grades: not ready, and says so per cell.
+    expect(getMandateAdminListState().status).toBe("loading");
+    workflowGrades.resolve({ verdicts: [], computed_at: "2026-09-25T00:00:00Z" });
+    await flush();
     const done = getMandateAdminListState();
-    expect(done.settled).toEqual({ codeTruth: true, coverage: true, impact: true });
+    expect(done.settled).toEqual({
+      codeTruth: true,
+      coverage: true,
+      impact: true,
+      workflowImpact: true,
+    });
     expect(done.reports.codeTruth).toBeNull();
     expect(done.failures.codeTruth).toBe("code truth is down");
     expect(done.status).toBe("ready");

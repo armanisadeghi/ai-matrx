@@ -15,13 +15,22 @@ export interface OutlineEntry {
   offset: number;
 }
 
-/** Plain heading text: inline markdown markers and link targets dropped. */
+/**
+ * Plain heading text: inline markdown markers and link targets dropped.
+ * `{{variables}}` stay exactly as written, and an underscore INSIDE a word
+ * (`site_name`, `file_name_here`) is text, not emphasis.
+ */
 export function headingPlainText(raw: string): string {
+  const kept: string[] = [];
+  const hold = (text: string) => `\u0000${kept.push(text) - 1}\u0000`;
   return raw
+    .replace(/\{\{[^{}\n]*\}\}/g, hold)
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/[*_~`]+/g, "")
+    .replace(/[*~`]+/g, "")
+    .replace(/(?<![\p{L}\p{N}])_+|_+(?![\p{L}\p{N}])/gu, "")
     .replace(/\s+#+\s*$/, "")
+    .replace(/\u0000(\d+)\u0000/g, (_, index: string) => kept[Number(index)] ?? "")
     .trim();
 }
 

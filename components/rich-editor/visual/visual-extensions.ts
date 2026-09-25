@@ -9,13 +9,13 @@
 import { Extension, type Editor, type Extensions } from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import Suggestion from "@tiptap/suggestion";
-import { NodeSelection, Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
+import { NodeSelection, Plugin, PluginKey, TextSelection, type EditorState } from "@tiptap/pm/state";
 import { TrailingNode } from "@tiptap/extensions";
 import { createRichEditorExtensions } from "../core/extensions";
 import { fenceFromParagraph, insertInlineIsland, insertVariable, TASK_OPEN } from "../core/commands";
 import { RICH_EDITOR_SHORTCUTS, TYPED_TRIGGERS } from "../core/shortcuts";
 import { SHORTCUT_HANDLERS, type RichShellActions } from "./shortcut-handlers";
-import { toVariableName } from "../core/variables";
+import { variableName, variableSuggestions } from "../core/variables";
 import { IslandBlockView } from "./nodes/IslandBlockView";
 import { SourceLockedView } from "./nodes/SourceLockedView";
 import { InlineIslandView } from "./nodes/InlineIslandView";
@@ -29,6 +29,12 @@ export type { RichShellActions } from "./shortcut-handlers";
 
 const slashKey = new PluginKey("richEditorSlash");
 const variableKey = new PluginKey("richEditorVariable");
+
+/** True while the `/` or `{{` menu is open. */
+export function suggestionOpen(state: EditorState): boolean {
+  const active = (key: PluginKey) => (key.getState(state) as { active?: boolean } | undefined)?.active === true;
+  return active(slashKey) || active(variableKey);
+}
 
 function listItemDepth(editor: Editor): number {
   const { $from } = editor.state.selection;
@@ -72,6 +78,9 @@ export function createVisualExtensions(options: {
         }
       }
       bindings.Enter = () => {
+        // An open `/` or `{{` menu owns Enter (it picks the highlighted row) —
+        // in a list item too, where the list's own Enter would split the item.
+        if (suggestionOpen(this.editor.state)) return false;
         if (fenceFromParagraph(this.editor)) {
           const { from } = this.editor.state.selection;
           markAutoEdit(this.editor, from);
@@ -90,8 +99,11 @@ export function createVisualExtensions(options: {
     },
   });
 
+  // The menus outrank every keymap (this editor's 1000 and the list's Enter),
+  // so their Enter/arrow handling runs first while they are open.
   const slash = Extension.create({
     name: "richEditorSlash",
+    priority: 1100,
     addProseMirrorPlugins() {
       const host: SlashHost = { pickKind: shell.pickKind, pickImage: shell.pickImage };
       return [
@@ -99,6 +111,8 @@ export function createVisualExtensions(options: {
           pluginKey: slashKey,
           editor: this.editor,
           char: "/",
+          // "/code block" keeps filtering past the space, like Notion.
+          allowSpaces: true,
           items: ({ query }) =>
             filterSlashItems(query).map((item) => ({
               id: item.id,
@@ -112,7 +126,8 @@ export function createVisualExtensions(options: {
             editor.chain().focus().deleteRange(range).run();
             item?.run(editor, host);
           },
-          render: suggestionRenderer({ emptyText: "Nothing matches — keep typing or press Escape.", label: "Insert" }),
+          // With spaces allowed, "/ then prose" that matches nothing must not eat Enter.
+          render: suggestionRenderer({ emptyText: "Nothing matches — keep typing or press Escape.", label: "Insert", holdEnterWhenEmpty: false }),
         }),
       ];
     },
@@ -120,6 +135,7 @@ export function createVisualExtensions(options: {
 
   const variables = Extension.create({
     name: "richEditorVariables",
+    priority: 1100,
     addProseMirrorPlugins() {
       return [
         Suggestion<MenuItem, MenuItem>({
@@ -127,23 +143,25 @@ export function createVisualExtensions(options: {
           editor: this.editor,
           char: "{{",
           allowedPrefixes: null,
-          items: ({ query }) => {
-            const declared = shell.variables() ?? [];
-            const q = query.replace(/\}+$/, "").trim().toLowerCase();
-            const matches: MenuItem[] = declared
-              .filter((variable) => !q || variable.name.toLowerCase().includes(q))
-              .map((variable) => ({
-                id: `var:${variable.name}`,
-                title: variable.name,
-                description: variable.description,
-                hint: variable.type,
-                group: "Declared variables",
-              }));
-            const name = toVariableName(query.replace(/\}+$/, ""));
-            if (name && !declared.some((variable) => variable.name === name)) {
-              matches.push({ id: `new:${name}`, title: `Add “${name}”`, description: "A new variable", group: "New" });
-            }
-            return matches;
+          items: ({ query, editor }) => {
+            const inDocument: string[] = [];
+            editor.state.doc.descendants((node) => {
+              if (node.type.name !== "inlineIsland") return true;
+              const name = variableName(String(node.attrs.raw ?? ""))?.trim();
+              if (name && !inDocument.includes(name)) inDocument.push(name);
+              return false;
+            });
+            return variableSuggestions(shell.variables() ?? [], inDocument, query).map((suggestion) =>
+              suggestion.source === "new"
+                ? { id: `new:${suggestion.name}`, title: `Add “${suggestion.name}”`, description: "A new variable", group: "New" }
+                : {
+                    id: `var:${suggestion.name}`,
+                    title: suggestion.name,
+                    description: suggestion.description,
+                    hint: suggestion.type,
+                    group: suggestion.source === "declared" ? "Declared variables" : "In this document",
+                  },
+            );
           },
           command: ({ editor, range, props }) => {
             const name = props.id.replace(/^(var|new):/, "");

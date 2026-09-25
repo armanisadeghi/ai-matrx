@@ -188,8 +188,8 @@ describe("resolveMarketingSubView", () => {
   });
 
   it("accepts a declared view", () => {
-    expect(resolveMarketingSubView("settings", "access-organizations")).toBe(
-      "access-organizations",
+    expect(resolveMarketingSubView("settings", "access-public")).toBe(
+      "access-public",
     );
   });
 

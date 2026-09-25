@@ -123,6 +123,7 @@ function buildPageRows(
     catalogue: null,
     impact: reports.impact,
     impactFailed: Boolean(failures.impact) || (settled.impact && !reports.impact),
+    workflowImpact: reports.workflowImpact,
     serveLinks: [],
     organizationNames: {},
     pending: { codeTruth: !settled.codeTruth, coverage: !settled.coverage },

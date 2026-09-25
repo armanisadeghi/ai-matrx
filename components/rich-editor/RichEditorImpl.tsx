@@ -28,6 +28,7 @@ import {
   Loader2,
   Mic,
   MicOff,
+  Minimize2,
   Save,
   Search,
   ShieldCheck,
@@ -91,6 +92,24 @@ export interface RichEditorProps {
   className?: string;
   /** Extra controls on the right of the toolbar (host actions). */
   toolbarExtras?: ReactNode;
+  /**
+   * Leave the editor (an in-place editor going back to its reading view). Shows
+   * a Cancel button beside Save; the host decides what to do with unsaved text.
+   */
+  onCancel?: () => void;
+  /** Label for the cancel button. */
+  cancelLabel?: string;
+  /**
+   * Open with the outline beside the text (true) or closed (false). Default:
+   * open on desktop, closed on phones. A narrow host (a chat column) passes false.
+   */
+  defaultOutlineOpen?: boolean;
+  /**
+   * Save was pressed with nothing changed: the stored text is already exactly
+   * this. When given, it replaces the "Nothing changed" notice, so an in-place
+   * host can simply return to its reading view.
+   */
+  onNothingToSave?: () => void;
 }
 
 function describeDelta(delta: IslandDelta): string {
@@ -129,6 +148,10 @@ export default function RichEditorImpl({
   saveLabel = "Save",
   className,
   toolbarExtras,
+  onCancel,
+  cancelLabel = "Cancel",
+  defaultOutlineOpen,
+  onNothingToSave,
 }: RichEditorProps) {
   const isMobile = useIsMobile();
   const [stored, setStored] = useState(value);
@@ -137,7 +160,7 @@ export default function RichEditorImpl({
   const [mountKey, setMountKey] = useState(0);
   const [findMode, setFindMode] = useState<null | "find" | "replace">(null);
   // null = the default for the device: open beside the text on desktop, closed on phones.
-  const [outlineChoice, setOutlineChoice] = useState<boolean | null>(null);
+  const [outlineChoice, setOutlineChoice] = useState<boolean | null>(defaultOutlineOpen ?? null);
   const outlineOpen = outlineChoice ?? !isMobile;
   const setOutlineOpen = (next: boolean | ((open: boolean) => boolean)) =>
     setOutlineChoice(typeof next === "function" ? next(outlineOpen) : next);
@@ -216,7 +239,8 @@ export default function RichEditorImpl({
     const text = flush();
     const plan = planSave(stored, text, { approvedIslands: approved.current });
     if (!plan.changed) {
-      toast.info("Nothing changed — the stored text is already exactly this.");
+      if (onNothingToSave) onNothingToSave();
+      else toast.info("Nothing changed — the stored text is already exactly this.");
       return;
     }
     if (plan.needsConsent.length || plan.error) {
@@ -370,12 +394,68 @@ export default function RichEditorImpl({
       </EditableContextMenu>
     );
 
+  const cancelButton = onCancel ? (
+    <button
+      type="button"
+      onClick={onCancel}
+      disabled={saving}
+      className="flex h-8 items-center rounded-md px-3 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+      title={dirty ? "Leave without saving — your unsaved changes are dropped" : "Close the editor"}
+    >
+      {cancelLabel}
+    </button>
+  ) : null;
+
+  const saveButton =
+    onSave && !readOnly ? (
+      <button
+        type="button"
+        onClick={save}
+        disabled={saving}
+        className={cn(
+          "flex h-8 items-center gap-1.5 rounded-md px-3 text-xs font-medium",
+          dirty ? "bg-primary text-primary-foreground hover:bg-primary/90" : "border border-border text-muted-foreground",
+        )}
+        title="Save (⌘S) — only what you changed is written"
+      >
+        {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+        {dirty ? saveLabel : "Saved"}
+      </button>
+    ) : null;
+
   return (
     <RichEditorContext.Provider value={contextValue}>
-      <div className={cn("flex h-full min-h-0 flex-col bg-textured", className)} data-testid="rich-editor">
+      <div
+        className={cn("relative flex h-full min-h-0 flex-col bg-textured", className)}
+        data-testid="rich-editor"
+        onKeyDown={(event) => {
+          // Escape leaves focus mode — unless a menu, the find bar or a picker used it first.
+          if (event.key === "Escape" && focusMode && !event.defaultPrevented) {
+            event.preventDefault();
+            setFocusMode(false);
+          }
+        }}
+      >
+        {focusMode && (
+          <div className="matrx-touch-targets absolute right-2 top-2 z-20 flex items-center gap-1 rounded-lg border border-border bg-card/90 p-1 shadow-sm backdrop-blur">
+            <button
+              type="button"
+              onClick={() => setFocusMode(false)}
+              className="flex h-8 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+              title="Exit focus mode (Esc or ⌘⇧F)"
+            >
+              <Minimize2 className="h-3.5 w-3.5" />
+              Exit focus
+            </button>
+            {saveButton}
+          </div>
+        )}
         {/* ── Toolbar ─────────────────────────────────────────────────── */}
         {!focusMode && (
-          <div className="matrx-touch-targets flex min-h-10 items-center gap-1 overflow-x-auto border-b border-border bg-card/80 px-2 py-1 backdrop-blur">
+          <div className="matrx-touch-targets flex min-h-10 items-center gap-1 border-b border-border bg-card/80 px-2 py-1 backdrop-blur">
+            {/* The tools scroll sideways on a narrow screen; the host's actions and
+                Save never do — they stay in view at any width. */}
+            <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
             <div role="tablist" aria-label="View" className="flex shrink-0 items-center rounded-md border border-border bg-background/60 p-0.5">
               {VIEWS.map((option) => {
                 const Icon = VIEW_META[option].icon;
@@ -424,23 +504,11 @@ export default function RichEditorImpl({
             <ToolbarButton label="Keyboard shortcuts (⌘/)" onClick={() => setHelpOpen(true)}>
               <Keyboard className="h-4 w-4" />
             </ToolbarButton>
-            <div className="ml-auto flex shrink-0 items-center gap-1">
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
               {toolbarExtras}
-              {onSave && !readOnly && (
-                <button
-                  type="button"
-                  onClick={save}
-                  disabled={saving}
-                  className={cn(
-                    "flex h-8 items-center gap-1.5 rounded-md px-3 text-xs font-medium",
-                    dirty ? "bg-primary text-primary-foreground hover:bg-primary/90" : "border border-border text-muted-foreground",
-                  )}
-                  title="Save (⌘S) — only what you changed is written"
-                >
-                  {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                  {dirty ? saveLabel : "Saved"}
-                </button>
-              )}
+              {cancelButton}
+              {saveButton}
             </div>
           </div>
         )}

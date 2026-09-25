@@ -29,6 +29,16 @@ import {
 import type { AnnotationSource } from "@/features/rich-document/annotations/types";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
+/** A heading, else the first line of prose — never a directive, fence or front-matter line. */
+function titleFrom(bufferTitle: string | null, buffer: string): string {
+  if (bufferTitle && !/^(:::|```|---|<)/.test(bufferTitle.trim())) return bufferTitle.slice(0, 120);
+  const lines = buffer.split("\n").map((l) => l.trim());
+  const heading = lines.find((l) => /^#{1,6}\s+\S/.test(l));
+  if (heading) return heading.replace(/^#+\s*/, "").slice(0, 120);
+  const prose = lines.find((l) => l && !/^(:::|```|~~~|---|<|\||!\[|>)/.test(l));
+  return prose ? prose.slice(0, 80) : "Untitled document";
+}
+
 export function AnnotateView({
   documentId,
   buffer,
@@ -88,7 +98,7 @@ export function AnnotateView({
                 const orgId = await ensureOrgId(null);
                 const id = await createDocument({
                   organizationId: orgId,
-                  title: bufferTitle || buffer.split("\n").find((l) => l.trim())?.replace(/^#+\s*/, "").slice(0, 80) || "Untitled document",
+                  title: titleFrom(bufferTitle, buffer),
                   body: buffer,
                   visibility: "personal",
                 });

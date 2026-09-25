@@ -6,7 +6,8 @@
  * The shared "your own items, ready to share with this org" engine behind both
  * the Contribute sheet and the per-resource org page. Given an org + a catalogue
  * entry, it loads the current user's own items of that kind and exposes a
- * one-call `share` that grants the org access via `shareWithOrg`.
+ * one-call `share` that makes the item AVAILABLE to the org via `grantOrgAvailability`
+ * (organization configuration, never a share — SHARE-PEOPLE-ONLY, chair ruling 2026-09-25).
  *
  * Keyed entirely on the catalogue entry (canonical table + shareKey + title
  * column) so it works for every contributable kind without per-type code.
@@ -15,7 +16,7 @@
 import React from "react";
 import { recordToast, toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
-import { shareWithOrg } from "@/utils/permissions/service";
+import { grantOrgAvailability } from "@/utils/permissions/service";
 import type { ResourceType } from "@/utils/permissions/registry";
 import { listOrgSharedIdsForTable } from "@/utils/permissions/orgModeration";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -134,7 +135,7 @@ export function useOrgContributableItems(
     if (!entry || !orgId || !entry.shareKey) return;
     setSharingId(item.id);
     try {
-      const result = await shareWithOrg({
+      const result = await grantOrgAvailability({
         // shareKey is the canonical entity/shareable-resource token.
         resourceType: entry.shareKey as ResourceType,
         resourceId: item.id,

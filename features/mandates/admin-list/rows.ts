@@ -16,6 +16,11 @@ import {
   type StandingImpact,
 } from "@/features/mandates/admin/impact";
 import type { UngradedReason } from "@/features/mandates/admin/impact-cells";
+import {
+  groupWorkflowImpactByMandate,
+  leadWorkflowVerdict,
+  type WorkflowImpactReport,
+} from "@/features/mandates/admin/workflow-impact";
 import type { MandateCatalogue } from "@/features/mandates/catalogue";
 import {
   buildCoverageIndex,
@@ -48,6 +53,8 @@ export interface MandateAdminSources {
   catalogue: MandateCatalogue | null;
   impact: StandingImpact | null;
   impactFailed: boolean;
+  /** Workflow-held rungs, graded. Absent/null = not read (yet). */
+  workflowImpact?: WorkflowImpactReport | null;
   serveLinks: MandateServeLink[] | null;
   organizationNames: Record<string, string>;
   /**
@@ -178,6 +185,7 @@ export function buildAdminRows(sources: MandateAdminSources): MandateAdminRow[] 
     coverage,
     impact,
     impactFailed,
+    workflowImpact,
     serveLinks,
     organizationNames,
     pending,
@@ -189,6 +197,7 @@ export function buildAdminRows(sources: MandateAdminSources): MandateAdminRow[] 
 
   const coverageIndex = coverage ? buildCoverageIndex(coverage) : null;
   const impactByMandate = impact ? groupImpactByMandate(impact.verdicts) : null;
+  const workflowByMandate = groupWorkflowImpactByMandate(workflowImpact?.verdicts ?? []);
   const newestSnapshotByAgent: Record<string, number | null> = {};
   for (const verdict of impact?.verdicts ?? []) {
     if (verdict.latest_version_number != null) {
@@ -220,7 +229,10 @@ export function buildAdminRows(sources: MandateAdminSources): MandateAdminRow[] 
     );
     const grouped = impactByMandate?.get(base.mandateKey);
     const defaultVerdict = grouped?.defaultVerdict ?? null;
-    const ungraded: UngradedReason | null = defaultVerdict
+    const workflowVerdicts = workflowByMandate.get(base.mandateKey) ?? [];
+    // With no agent default verdict, a workflow rung speaks for the row.
+    const workflowLead = defaultVerdict ? null : leadWorkflowVerdict(workflowVerdicts);
+    const ungraded: UngradedReason | null = defaultVerdict || workflowLead
       ? null
       : !base.agentId
         ? "no_agent"
@@ -272,9 +284,18 @@ export function buildAdminRows(sources: MandateAdminSources): MandateAdminRow[] 
         : null,
       defaultVerdict,
       bindingVerdicts: grouped?.bindingVerdicts ?? [],
+      workflowVerdicts,
       ungraded,
-      impactGrade: defaultVerdict ? defaultVerdict.grade : "ungraded",
-      impactBlocker: defaultVerdict ? blockerKeyOf(defaultVerdict) : "ungraded",
+      impactGrade: defaultVerdict
+        ? defaultVerdict.grade
+        : workflowLead
+          ? workflowLead.grade
+          : "ungraded",
+      impactBlocker: defaultVerdict
+        ? blockerKeyOf(defaultVerdict)
+        : workflowLead
+          ? (workflowLead.blocker ?? "none")
+          : "ungraded",
       holderType: holder.holderType,
       pinText: !hasHolder
         ? "None"

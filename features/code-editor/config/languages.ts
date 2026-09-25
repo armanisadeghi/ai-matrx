@@ -99,11 +99,14 @@ export function mapLanguageForMonaco(lang: string): string {
 }
 
 /**
- * Map language identifiers to Prism.js-compatible language names
+ * Normalize a fence language to the canonical view-language name
+ * (`js` → `javascript`, `sh` → `bash`, …) — used for language checks such as
+ * "is this a complete HTML document". Highlighting itself is Shiki's
+ * (code-block/highlight/shiki-highlighter.ts), which resolves its own grammars.
  * @param lang - The language identifier (may be undefined, null, or invalid)
- * @returns A valid Prism.js language name, defaulting to 'text' if invalid
+ * @returns The canonical language name, defaulting to 'text' if invalid
  */
-export function mapLanguageForPrism(lang: string): string {
+export function normalizeViewLanguage(lang: string): string {
     // Defensive: Handle undefined, null, empty, or non-string values
     if (!lang || typeof lang !== 'string') {
         return 'text';

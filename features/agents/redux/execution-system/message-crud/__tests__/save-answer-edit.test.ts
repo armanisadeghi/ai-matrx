@@ -20,9 +20,14 @@ import { extractFlatText } from "../../messages/messages.selectors";
 import { saveAnswerEdit } from "../save-answer-edit.thunk";
 import { projectAnswerText, spliceAnswerText } from "../answer-text-splice";
 import { removeThinkingContent } from "@ai-matrx/print/markdown";
+import { listIslands, tokenizeSource } from "@ai-matrx/content-ir/source";
+import { planSave } from "@/components/rich-editor/core/save-plan";
 
 const rpc = jest.fn();
 const rpcReturns = jest.fn();
+/** What the DATABASE row holds — the adapter's truth (null = same as the Redux record). */
+let dbContent: unknown = null;
+let reduxContent: unknown = null;
 
 jest.mock("@/utils/supabase/client", () => ({
   supabase: {
@@ -30,6 +35,15 @@ jest.mock("@/utils/supabase/client", () => ({
       rpc(...args);
       return { returns: rpcReturns };
     },
+    schema: () => ({
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({ data: { content: dbContent ?? reduxContent }, error: null }),
+          }),
+        }),
+      }),
+    }),
   },
 }));
 
@@ -84,6 +98,7 @@ function record(content: unknown = STORED): MessageRecord {
 }
 
 function store(content?: unknown) {
+  reduxContent = structuredClone(content ?? STORED);
   const s = configureStore({
     reducer: createSlimRootReducer(),
     middleware: (getDefault) => getDefault({ serializableCheck: false }),
@@ -93,6 +108,7 @@ function store(content?: unknown) {
 }
 
 beforeEach(() => {
+  dbContent = null;
   rpc.mockReset();
   rpcReturns.mockReset();
   rpcReturns.mockImplementation(async () => {
@@ -215,5 +231,87 @@ describe("saveAnswerEdit — a no-op save writes nothing", () => {
     expect(result).toEqual({ written: false, storedText: projectAnswerText(STORED).text });
     const row = s.getState().messages.byConversationId[CONVERSATION_ID].byId[MESSAGE_ID];
     expect(row.status).toBe("active");
+  });
+});
+
+describe("an answer with inline reasoning edits in place — the reasoning is a locked island", () => {
+  const withReasoning = [
+    {
+      type: "text",
+      text: "<thinking>\nThe shop cares about cash flow more than total interest.\n</thinking>\n\nTake the 5-year term if cash is tight.",
+    },
+  ];
+
+  test("the stored reasoning section is an island the editor locks", () => {
+    const stored = projectAnswerText(withReasoning).text;
+    const islands = listIslands(tokenizeSource(stored)).map((island) => island.raw);
+    expect(islands.some((raw) => raw.startsWith("<thinking>") && raw.includes("cash flow"))).toBe(true);
+  });
+
+  test("an edit beside it saves without consent and writes the reasoning back verbatim", async () => {
+    const stored = projectAnswerText(withReasoning).text;
+    const edited = stored.replace("if cash is tight", "if monthly cash is tight");
+    const plan = planSave(stored, edited);
+    expect(plan.changed).toBe(true);
+    expect(plan.needsConsent).toEqual([]);
+    const s = store(withReasoning);
+    await s
+      .dispatch(saveAnswerEdit({ conversationId: CONVERSATION_ID, messageId: MESSAGE_ID, newText: plan.text }))
+      .unwrap();
+    const [, args] = rpc.mock.calls[0] as [string, { p_new_content: Array<{ text: string }> }];
+    expect(args.p_new_content[0].text).toBe(
+      "<thinking>\nThe shop cares about cash flow more than total interest.\n</thinking>\n\nTake the 5-year term if monthly cash is tight.",
+    );
+  });
+});
+
+describe("the database row is the truth, not the loaded Redux copy", () => {
+  // Live 2026-09-25: an answer streamed this session is committed client-side
+  // as ONE text part with inline <reasoning>; the server stored a thinking
+  // part + a text part. Splicing against Redux wrote the client shape over the
+  // row and dropped the thinking part.
+  const serverRow = [
+    { type: "thinking", text: "Checking the scheduler table." },
+    { type: "text", text: "I re-ran the query just now. There are 97 live tasks." },
+  ];
+  const clientCopy = [
+    { type: "text", text: "\n<reasoning>\nChecking the scheduler table.\n</reasoning>\n\nI re-ran the query just now. There are 97 live tasks." },
+  ];
+
+  test("the splice is computed on the stored parts", async () => {
+    const s = store(clientCopy);
+    dbContent = serverRow;
+    const opened = projectAnswerText(serverRow).text;
+    await s
+      .dispatch(
+        saveAnswerEdit({
+          conversationId: CONVERSATION_ID,
+          messageId: MESSAGE_ID,
+          newText: opened.replace("re-ran the query", "ran the query again"),
+          openedText: opened,
+        }),
+      )
+      .unwrap();
+    const [, args] = rpc.mock.calls[0] as [string, { p_new_content: unknown }];
+    expect(args.p_new_content).toEqual([
+      serverRow[0],
+      { type: "text", text: "I ran the query again just now. There are 97 live tasks." },
+    ]);
+  });
+
+  test("a row that changed since the editor opened is refused, nothing written", async () => {
+    const s = store(serverRow);
+    const opened = projectAnswerText(serverRow).text;
+    dbContent = [serverRow[0], { type: "text", text: "Someone else rewrote this answer." }];
+    const result = await s.dispatch(
+      saveAnswerEdit({
+        conversationId: CONVERSATION_ID,
+        messageId: MESSAGE_ID,
+        newText: opened.replace("97", "98"),
+        openedText: opened,
+      }),
+    );
+    expect(saveAnswerEdit.rejected.match(result)).toBe(true);
+    expect(rpc).not.toHaveBeenCalled();
   });
 });

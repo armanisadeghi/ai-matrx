@@ -83299,6 +83299,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      grant_org_availability: {
+        Args: {
+          p_permission_level?: string
+          p_resource_id: string
+          p_resource_type: string
+          p_target_org_id: string
+        }
+        Returns: Json
+      }
       share_resource_with_org: {
         Args: {
           p_permission_level?: string

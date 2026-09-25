@@ -12,7 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
   Users,
-  Building2,
   Globe,
   Mail,
   Loader2,
@@ -33,7 +32,8 @@ import { PermissionsList } from "./PermissionsList";
 import { AccessSummaryPanel } from "./AccessSummaryPanel";
 import { ShareWithUserTab } from "./tabs/ShareWithUserTab";
 import { OutsideSharePanel } from "@/features/sharing/outside/OutsideSharePanel";
-import { ShareWithOrgTab } from "./tabs/ShareWithOrgTab";
+import { shareWithOutsidePerson } from "@/features/sharing/outside/outsideShareService";
+import { OrgAvailabilityNote } from "./OrgAvailabilityNote";
 import { PublicAccessTab } from "./tabs/PublicAccessTab";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -89,7 +89,9 @@ interface ShareModalProps {
  * ShareModal - Main sharing interface
  *
  * Generic modal that works with ANY resource type.
- * Provides tabs for sharing with users, organizations, or making public.
+ * Provides tabs for sharing with people or making public. A share names a PERSON, never an
+ * organization (SHARE-PEOPLE-ONLY, 2026-09-25): the old Organizations tab is gone, and "Add
+ * everyone in <organization>" inside the People tab names each current member instead.
  *
  * This is the ONE sharing dialog in the app. Do not build a feature-specific
  * variant — extend this one. It self-resolves ownership, so every call site is
@@ -116,7 +118,7 @@ export function ShareModal({
   outsideShare,
 }: ShareModalProps) {
   const [activeTab, setActiveTab] = useState<
-    "users" | "organizations" | "public" | "access"
+    "users" | "public" | "access"
   >("users");
   // How many people outside this organization are invited and have not joined.
   // Reported UP by the panel that draws them, so the grant list's empty state
@@ -217,7 +219,6 @@ export function ShareModal({
     loading,
     error,
     shareWithUser,
-    shareWithOrg,
     makePublic,
     revokeAccess,
     updateLevel,
@@ -234,7 +235,6 @@ export function ShareModal({
 
   // Filter permissions by type for each tab
   const userPermissions = permissions.filter((p) => p.grantedToUserId);
-  const orgPermissions = permissions.filter((p) => p.grantedToOrganizationId);
   const publicPermission = permissions.find((p) => p.isPublic);
 
   const resourceLabel = resourceNoun ?? getResourceTypeLabel(resourceType);
@@ -348,22 +348,13 @@ export function ShareModal({
             className="flex-1 flex flex-col min-h-0"
           >
             {/* phone-ok: labels are hidden below sm, icon-only tabs on phone */}
-            <TabsList className="grid w-full grid-cols-4 flex-shrink-0">
+            <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
               <TabsTrigger value="users" className="gap-2">
                 <Users className="w-4 h-4" />
                 <span className="hidden sm:inline">Users</span>
                 {userPermissions.length > 0 && (
                   <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/10 rounded-full">
                     {userPermissions.length}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="organizations" className="gap-2">
-                <Building2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Organizations</span>
-                {orgPermissions.length > 0 && (
-                  <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/10 rounded-full">
-                    {orgPermissions.length}
                   </span>
                 )}
               </TabsTrigger>
@@ -408,6 +399,11 @@ export function ShareModal({
                       many: "people outside this organization",
                     }}
                   />
+                  <OrgAvailabilityNote
+                    permissions={permissions.filter(
+                      (p) => p.grantedToOrganizationId,
+                    )}
+                  />
                 </div>
 
                 {/* Add user form */}
@@ -418,6 +414,42 @@ export function ShareModal({
                     resourceType={resourceType}
                     resourceId={resourceId}
                     {...(organizationId ? { organizationId } : {})}
+                    alreadySharedUserIds={userPermissions
+                      .map((p) => p.grantedToUserId)
+                      .filter((id): id is string => !!id)}
+                    // A record-store TABLE: a listed member may sit outside the table's own
+                    // organization, so each one goes through the outside door, which grants an
+                    // existing account outright whether inside or out.
+                    {...(outsideShare
+                      ? {
+                          grantEveryonePerson: async (person, level) => {
+                            try {
+                              const answer = await shareWithOutsidePerson(
+                                outsideShare.organizationId,
+                                outsideShare.tableId,
+                                person.email,
+                                level,
+                              );
+                              return answer.granted
+                                ? { success: true, message: answer.say }
+                                : {
+                                    success: false,
+                                    error:
+                                      answer.say ||
+                                      "Invited, not yet given access",
+                                  };
+                            } catch (err: unknown) {
+                              return {
+                                success: false,
+                                error:
+                                  err instanceof Error
+                                    ? err.message
+                                    : "Not shared",
+                              };
+                            }
+                          },
+                        }
+                      : {})}
                   />
                 ) : (
                   manageBlockedNotice
@@ -440,34 +472,6 @@ export function ShareModal({
                     onGranted={refresh}
                   />
                 ) : null}
-              </TabsContent>
-
-              <TabsContent value="organizations" className="mt-0 space-y-3">
-                {/* Current org permissions */}
-                <div>
-                  <h3 className="text-sm font-medium mb-2">Current Access</h3>
-                  <PermissionsList
-                    permissions={orgPermissions}
-                    isOwner={isOwner}
-                    onUpdateLevel={updateLevel}
-                    onRevoke={revokeAccess}
-                    loading={loading}
-                  />
-                </div>
-
-                {/* Add org form */}
-                {isOwner ? (
-                  <ShareWithOrgTab
-                    onShare={shareWithOrg}
-                    onSuccess={refresh}
-                    resourceType={resourceType}
-                    sharedOrgIds={orgPermissions
-                      .map((p) => p.grantedToOrganizationId)
-                      .filter((id): id is string => !!id)}
-                  />
-                ) : (
-                  manageBlockedNotice
-                )}
               </TabsContent>
 
               <TabsContent value="access" className="mt-0">

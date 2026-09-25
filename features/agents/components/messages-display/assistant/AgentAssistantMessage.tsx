@@ -86,7 +86,6 @@ import { AssistantNoAnswer } from "./AssistantNoAnswer";
 import { countPersonVisibleParts, isAnswerlessTurn } from "./answerless-turn";
 import { retryConversationTurn } from "@/features/agents/redux/execution-system/message-crud/retry-turn.thunk";
 import { commitInlineContentEdit } from "@/features/agents/redux/execution-system/message-crud/commit-inline-edit.thunk";
-import { projectAnswerText } from "@/features/agents/redux/execution-system/message-crud/answer-text-splice";
 import { InPlaceAnswerEditor } from "./InPlaceAnswerEditor";
 import { toast } from "@/lib/toast";
 import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
@@ -602,11 +601,7 @@ export function AgentAssistantMessage({
             className="mb-2"
           />
           {editingInPlace && messageId ? (
-            <InPlaceAnswerEditor
-              conversationId={conversationId}
-              messageId={messageId}
-              storedText={projectAnswerText(record?.content).text}
-            />
+            <InPlaceAnswerEditor conversationId={conversationId} messageId={messageId} />
           ) : (
           <div data-message-content>
             <MarkdownStream

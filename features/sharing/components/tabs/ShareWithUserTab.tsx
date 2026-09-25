@@ -46,6 +46,10 @@ import type { UserSearchCandidate } from "@/features/user-search/types";
 // A caller with no name passes the email, whose single token yields its
 // first character: exactly what these copies did by hand.
 import { getInitials } from "@ai-matrx/kit/format";
+import {
+  AddEveryoneInOrg,
+  type OrgMemberPerson,
+} from "../AddEveryoneInOrg";
 
 interface ShareWithUserTabProps {
   onShare: (
@@ -64,6 +68,18 @@ interface ShareWithUserTabProps {
   organizationId?: string;
   /** Identity + the page's leading KPIs, mirrored into the failure payload. */
   copy?: SharingCopyContext;
+  /**
+   * "ADD EVERYONE IN <ORGANIZATION>" (SHARE-PEOPLE-ONLY). How ONE listed member is granted.
+   * Omitted → `onShare(person.userId, level)`, the same door as the form above. A record-store
+   * table passes the outside door here, because its members may sit outside the table's own
+   * organization.
+   */
+  grantEveryonePerson?: (
+    person: OrgMemberPerson,
+    level: PermissionLevel,
+  ) => Promise<ShareActionResult>;
+  /** People who already hold a grant; "Add everyone" shows them and skips them. */
+  alreadySharedUserIds?: string[];
 }
 
 type StatusType = "idle" | "loading" | "success" | "error";
@@ -97,6 +113,8 @@ export function ShareWithUserTab({
   resourceId,
   organizationId,
   copy,
+  grantEveryonePerson,
+  alreadySharedUserIds,
 }: ShareWithUserTabProps) {
   const [email, setEmail] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -546,6 +564,19 @@ export function ShareWithUserTab({
             </>
           )}
         </Button>
+
+        {/* SHARE-PEOPLE-ONLY: the whole-team convenience, as people. Replaces the old
+            "Share with Organization" tab, which granted an organization. */}
+        <AddEveryoneInOrg
+          level={permissionLevel}
+          grantPerson={
+            grantEveryonePerson ??
+            ((person, level) => onShare(person.userId, level))
+          }
+          alreadySharedUserIds={alreadySharedUserIds ?? []}
+          onDone={onSuccess}
+          {...(organizationId ? { defaultOrgId: organizationId } : {})}
+        />
       </div>
     </div>
   );

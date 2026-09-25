@@ -14,7 +14,7 @@
  * Contract: `common-docs/projects/data-kits/PLAN.md` § P1.
  */
 
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
 import { Loader2 } from "lucide-react";
 import {
   useFields,
@@ -75,6 +75,7 @@ export function CustomDataBindingPicker({
     pageSize: RECORD_PICKER_PAGE,
   });
   const templateRef = useRef<HTMLTextAreaElement | null>(null);
+  const pendingCaretRef = useRef<number | null>(null);
 
   const fieldList = fields.data ?? [];
   const tableRow = table.data;
@@ -175,13 +176,11 @@ export function CustomDataBindingPicker({
     const start = el?.selectionStart ?? current.length;
     const end = el?.selectionEnd ?? current.length;
     const next = current.slice(0, start) + token + current.slice(end);
+    // The caret is placed once the NEW value has committed to the textarea
+    // (TemplateEditor's layout effect). Placing it before the store round trip
+    // lands was undone by the value write, which left the caret at the start.
+    pendingCaretRef.current = start + token.length;
     setTemplate(next);
-    requestAnimationFrame(() => {
-      if (!el) return;
-      el.focus();
-      const caret = start + token.length;
-      el.setSelectionRange(caret, caret);
-    });
   };
 
   const setLimit = (raw: string) => {
@@ -375,6 +374,7 @@ export function CustomDataBindingPicker({
               fields={fieldList}
               fieldsLoading={fields.loading}
               textareaRef={templateRef}
+              pendingCaretRef={pendingCaretRef}
               readonly={readonly}
               perRow={shape === "collection"}
             />
@@ -445,6 +445,7 @@ function TemplateEditor({
   fields,
   fieldsLoading,
   textareaRef,
+  pendingCaretRef,
   readonly,
   perRow,
 }: {
@@ -454,9 +455,20 @@ function TemplateEditor({
   fields: readonly Field[];
   fieldsLoading: boolean;
   textareaRef: RefObject<HTMLTextAreaElement | null>;
+  pendingCaretRef: RefObject<number | null>;
   readonly?: boolean;
   perRow: boolean;
 }) {
+  // Put the caret right after an inserted placeholder once its value is on screen.
+  useLayoutEffect(() => {
+    const caret = pendingCaretRef.current;
+    const el = textareaRef.current;
+    if (caret === null || !el || el.value !== value) return;
+    pendingCaretRef.current = null;
+    el.focus();
+    el.setSelectionRange(caret, caret);
+  }, [value, pendingCaretRef, textareaRef]);
+
   return (
     <div className="space-y-1.5">
       <Label className="text-xs text-muted-foreground">
@@ -483,6 +495,8 @@ function TemplateEditor({
             <button
               key={p.token}
               type="button"
+              // Keep the textarea's caret/selection: the chip must not take focus.
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => onInsert(p.token)}
               disabled={readonly}
               title={`Insert ${p.token}`}

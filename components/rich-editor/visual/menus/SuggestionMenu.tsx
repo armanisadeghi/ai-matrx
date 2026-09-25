@@ -31,10 +31,12 @@ interface SuggestionListProps {
   command: (item: MenuItem) => void;
   emptyText: string;
   label: string;
+  /** With nothing to pick, Enter still belongs to the menu (a half-typed `{{name`). */
+  holdEnterWhenEmpty: boolean;
 }
 
 export const SuggestionList = forwardRef<SuggestionListHandle, SuggestionListProps>(
-  function SuggestionList({ items, command, emptyText, label }, ref) {
+  function SuggestionList({ items, command, emptyText, label, holdEnterWhenEmpty }, ref) {
     const [active, setActive] = useState(0);
     const list = useRef<HTMLDivElement>(null);
 
@@ -45,7 +47,7 @@ export const SuggestionList = forwardRef<SuggestionListHandle, SuggestionListPro
 
     useImperativeHandle(ref, () => ({
       onKeyDown: ({ event }) => {
-        if (!items.length) return event.key === "Enter";
+        if (!items.length) return holdEnterWhenEmpty && event.key === "Enter";
         if (event.key === "ArrowDown") {
           setActive((index) => (index + 1) % items.length);
           return true;
@@ -120,7 +122,7 @@ export const SuggestionList = forwardRef<SuggestionListHandle, SuggestionListPro
 );
 
 /** The suggestion plugin's render() — one popup per active menu. */
-export function suggestionRenderer(options: { emptyText: string; label: string }) {
+export function suggestionRenderer(options: { emptyText: string; label: string; holdEnterWhenEmpty?: boolean }) {
   return () => {
     let renderer: ReactRenderer<SuggestionListHandle, SuggestionListProps> | null = null;
     let unmount: (() => void) | null = null;
@@ -129,6 +131,7 @@ export function suggestionRenderer(options: { emptyText: string; label: string }
       command: props.command,
       emptyText: options.emptyText,
       label: options.label,
+      holdEnterWhenEmpty: options.holdEnterWhenEmpty ?? true,
     });
     return {
       onStart: (props: SuggestionProps<MenuItem, MenuItem>) => {
