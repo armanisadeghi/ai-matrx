@@ -23,18 +23,30 @@
  */
 
 import { createRecordsClient } from "@ai-matrx/records/core";
-import type { RecordsActor, RecordsDataSource } from "@ai-matrx/records";
+import type { Field, PermissionLevel, RecordDocument, RecordsActor, RecordsDataSource } from "@ai-matrx/records";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
 import type { DataTableRowActionOffer } from "@/types/python-generated/provision-offers";
 
-/** What the package hands the host when an agent button is pressed. */
+/**
+ * What the package hands the host when an agent button is pressed.
+ *
+ * NO SECOND READ (records-ui, lane GRID-TAILS): the grid hands over the table's name, its
+ * columns, the row as this reader sees it and the reader's level, so nothing is read again on
+ * press. 🚨 SWAP ON INSTALL: records-ui 0.85.4 (installed today) does not send them yet, so they
+ * are optional here and `runRowAgentAction` reads only what is missing; once the release that
+ * carries them is installed, make all four required and delete the reads.
+ */
 export interface RowAgentActionTarget {
   tableId: string;
   recordId: string;
   title: string;
   action: string;
   prompt: string;
+  tableName?: string;
+  fields?: readonly Field[];
+  document?: RecordDocument;
+  level?: PermissionLevel | null;
 }
 
 /** One column of the offer, as `data.table_row_action` names it. */
@@ -165,35 +177,46 @@ export async function runRowAgentAction(args: {
   onRefused: (title: string, why: string) => void;
 }): Promise<void> {
   const { target } = args;
-  const client = createRecordsClient({
-    dataSource: args.dataSource,
-    actor: args.actor,
-    organizationId: args.organizationId,
-  });
-  const [tables, fields, record, levels] = await Promise.all([
-    client.tableList(),
-    client.fields({ table_id: target.tableId }),
-    client.recordRead({ record_id: target.recordId }),
-    client.myLevels({ ids: [target.recordId] }),
-  ]);
-  const refusal = [tables, fields, record].find((answer) => !answer.ok);
-  if (refusal && !refusal.ok) {
-    args.onRefused(`Could not start "${target.action}"`, refusal.error.message);
-    return;
+  // Everything the grid handed over is used as it came; only what an older records-ui did not
+  // send is read (see SWAP ON INSTALL above).
+  const carried = target.tableName !== undefined && target.fields !== undefined && target.document !== undefined && target.level !== undefined;
+  let tableName = target.tableName ?? "";
+  let fields: readonly Field[] = target.fields ?? [];
+  let document: Record<string, unknown> = (target.document ?? {}) as Record<string, unknown>;
+  let level: PermissionLevel | null = target.level ?? null;
+  if (!carried) {
+    const client = createRecordsClient({
+      dataSource: args.dataSource,
+      actor: args.actor,
+      organizationId: args.organizationId,
+    });
+    const [tables, read, record, levels] = await Promise.all([
+      client.tableList(),
+      client.fields({ table_id: target.tableId }),
+      client.recordRead({ record_id: target.recordId }),
+      client.myLevels({ ids: [target.recordId] }),
+    ]);
+    const refusal = [tables, read, record].find((answer) => !answer.ok);
+    if (refusal && !refusal.ok) {
+      args.onRefused(`Could not start "${target.action}"`, refusal.error.message);
+      return;
+    }
+    if (!tables.ok || !read.ok || !record.ok) return;
+    tableName = tables.data.find((t) => t.id === target.tableId)?.name ?? "";
+    fields = read.data;
+    document = (record.data.document ?? {}) as Record<string, unknown>;
+    level = levels.ok ? (levels.data.find((l) => l.id === target.recordId)?.level ?? null) : null;
   }
-  if (!tables.ok || !fields.ok || !record.ok) return;
-  const table = tables.data.find((t) => t.id === target.tableId);
-  const level = levels.ok ? (levels.data.find((l) => l.id === target.recordId)?.level ?? null) : null;
   const offer = rowAgentOffer({
     target,
-    tableName: table?.name ?? "this table",
-    columns: fields.data.map((f) => ({
+    tableName: tableName || "this table",
+    columns: fields.map((f) => ({
       display_name: f.label,
       field_name: f.key,
       data_type: f.type,
       sort: f.sort,
     })),
-    document: (record.data.document ?? {}) as Record<string, unknown>,
+    document,
     actingPersonId: args.actingPersonId,
     actingPersonCanEdit: level !== null && WRITES.has(level),
   });

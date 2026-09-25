@@ -75,3 +75,39 @@ describe("an agent button on the new table page", () => {
     expect(launch.runtime?.userInput).not.toContain("Tango");
   });
 });
+
+describe("no second read", () => {
+  it("a target that carries the table, columns, row and level starts the job without asking the store anything", async () => {
+    const { runRowAgentAction } = await import("../rowAgentAction");
+    const rpc = jest.fn();
+    const launches: Array<{ key: string; options: unknown }> = [];
+    await runRowAgentAction({
+      target: {
+        ...target,
+        tableName: "Appointments",
+        fields: [
+          { id: "f1", key: "patient", label: "Patient", type: "text", sort: 0 },
+          { id: "f2", key: "visit_fee", label: "Visit fee", type: "range", sort: 1 },
+        ] as never,
+        document: { patient: "Tango", visit_fee: 185.5 } as never,
+        level: "editor",
+      },
+      dataSource: { rpc } as never,
+      actor: { actor: "user", user_id: "87a6e699-3622-4869-8843-d0867456c0dd", on_behalf_of: null } as never,
+      organizationId: "6069a466-1445-42df-a64e-cf37ecdc1b99",
+      actingPersonId: "87a6e699-3622-4869-8843-d0867456c0dd",
+      launchMandate: async (key, options) => {
+        launches.push({ key, options });
+      },
+      onRefused: () => {
+        throw new Error("refused");
+      },
+    });
+    expect(rpc).not.toHaveBeenCalled();
+    expect(launches).toHaveLength(1);
+    const offer = (launches[0]!.options as { runtime: { variables: Record<string, unknown> } }).runtime.variables;
+    expect(offer.table_name).toBe("Appointments");
+    expect(offer.row_fields_summary).toBe("Patient: Tango\nVisit fee: 185.5");
+    expect(offer.acting_person_can_edit).toBe(true);
+  });
+});
