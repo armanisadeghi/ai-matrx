@@ -11,6 +11,10 @@ import { CrumbTrailHeader } from "@/features/shell/components/header/templates/C
 import { useMandateWorkspaceData } from "@/features/mandates/workspace/useMandateWorkspaceData";
 import { useMandateDisplayName } from "@/features/mandates/useMandateDisplayName";
 import { Button } from "@/components/ui/button";
+import {
+  MANDATE_LIST_PREVIEW_HREF,
+  mandateRecordPreviewHref,
+} from "@/features/mandates/record-next/record-tabs";
 import { MandateOverridesSimple } from "./MandateOverridesSimple";
 
 export function OverridesPreviewPage({ mandateKey }: { mandateKey: string }) {
@@ -20,16 +24,18 @@ export function OverridesPreviewPage({ mandateKey }: { mandateKey: string }) {
     data?.mandate.mandate_key ?? mandateKey,
     data?.mandate.label,
   );
-  const mandateHref = `/administration/mandates/${encodeURIComponent(
+  // The new pages this one sits beside — the list preview and the record
+  // preview — never the old ones.
+  const mandateHref = mandateRecordPreviewHref(
     data?.mandate.mandate_key ?? mandateKey,
-  )}`;
+  );
 
   return (
     <div className="h-full overflow-y-auto">
       <CrumbTrailHeader
-        backHref="/administration/mandates"
+        backHref={MANDATE_LIST_PREVIEW_HREF}
         trail={[
-          { label: "Mandates", href: "/administration/mandates" },
+          { label: "Mandates", href: MANDATE_LIST_PREVIEW_HREF },
           { label: name, href: mandateHref },
           { label: "Overrides" },
         ]}
@@ -49,8 +55,16 @@ export function OverridesPreviewPage({ mandateKey }: { mandateKey: string }) {
           </div>
         ) : (
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-destructive">
-              {failure?.message ?? error ?? "This mandate could not be read."}
+            <span
+              className={
+                failure && failure.kind !== "load-failed"
+                  ? "text-muted-foreground"
+                  : "text-destructive"
+              }
+            >
+              {failure && failure.kind !== "load-failed"
+                ? "Mandate not found"
+                : (failure?.message ?? error ?? "This mandate could not be read.")}
             </span>
             {failure?.retryable ? (
               <Button size="sm" variant="outline" onClick={refresh}>

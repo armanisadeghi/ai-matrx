@@ -40,3 +40,18 @@ export function formatSettingValue(
   const json = JSON.stringify(flat);
   return json.length > 80 ? `${json.slice(0, 77)}…` : json;
 }
+
+/**
+ * What a row says the AGENT sets. When the agent leaves a setting unset, the
+ * model's own default applies — and that number is the model's, not the
+ * agent's, so it is never printed as if the agent had chosen it.
+ */
+export function agentSettingDisplay(
+  agentValue: unknown,
+  control: ControlDefinition | null,
+): { text: string; modelDefault: boolean } {
+  if (agentValue === undefined || agentValue === null) {
+    return { text: "Model default", modelDefault: true };
+  }
+  return { text: formatSettingValue(agentValue, control), modelDefault: false };
+}

@@ -39,7 +39,9 @@ import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { storedMandateKey, splitMandateKey } from "@/features/mandates/mandate-key";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { mandateDisplayName } from "@/features/mandates/mandate-words";
+import { featureLabelOf } from "@/features/mandates/admin-list/rows";
 import { MandateNotesPanel } from "@/features/mandates/components/MandateNotesPanel";
 import { MandateLineageLine } from "@/features/mandates/components/MandateLineageLine";
 import {
@@ -102,7 +104,10 @@ import {
   type WorkspacePerspective,
   type WorkspacePrincipal,
 } from "@/features/mandates/workspace/MandateWorkspace";
-import { MandateOverridesSimple } from "@/features/mandates/overrides-simple/MandateOverridesSimple";
+import {
+  MandateOverridesSimple,
+  type ResolvedHolderForOverrides,
+} from "@/features/mandates/overrides-simple/MandateOverridesSimple";
 import type { MandateWorkspaceTab } from "@/features/mandates/workspace/MandateWorkspace";
 import { RecordAdminPanels } from "./RecordAdminPanels";
 import { visibleRecordTabs, type RecordTabId } from "./record-tabs";
@@ -235,7 +240,9 @@ function OneMandateRecordBody({
               : "text-sm text-muted-foreground"
           }
         >
-          {failed.message}
+          {/* A key nothing answers to is simply not found — never the dotted
+              key read back at the person. */}
+          {failed.kind === "load-failed" ? failed.message : "Mandate not found"}
         </p>
         {failed.retryable ? (
           <Button variant="outline" size="sm" onClick={refresh}>
@@ -263,7 +270,8 @@ function OneMandateRecordBody({
           nameOfOrg,
         )
       : null;
-  const feature = splitMandateKey(data.mandate.mandate_key).feature;
+  // The list's and dashboard's own feature words ("SEO", "Shortcuts").
+  const feature = featureLabelOf(data.mandate.mandate_key, null);
   // The export menu speaks the workspace's tab ids; the simple Overrides tab
   // is this page's addition, so it exports as the Overrides tab it mirrors.
   const tabIds = visibleRecordTabs(showAdmin)
@@ -308,7 +316,9 @@ function OneMandateRecordBody({
   return (
     <>
       {renderChrome?.({
-        name: data.mandate.label?.trim() || "Display name unavailable",
+        // The same name every mandate surface shows (label, else the key's
+        // last segment in words) — the window, the list and the dashboard.
+        name: mandateDisplayName(data.mandate.mandate_key, data.mandate.label),
         data,
         exportMenu,
         refresh,
@@ -443,6 +453,15 @@ function OneMandateRecordBody({
             level={perspective}
             organizationId={principal.kind === "org" ? principal.orgId : null}
             onChanged={refresh}
+            resolvedHolder={
+              perspective === "person"
+                ? resolvedHolderOfVerdict(
+                    verdict.mandate,
+                    verdict.loading,
+                    verdict.error,
+                  )
+                : null
+            }
           />
         ) : null}
       </div>
@@ -489,10 +508,13 @@ function MandateFactsLine({
 }) {
   const [saving, setSaving] = useState(false);
   const home = data.mandate.organization_id;
-  const homeLabel =
-    home && home.toLowerCase() === SYSTEM_ORGANIZATION_ID.toLowerCase()
+  // Say what is true: the platform, a named organization, one the viewer is
+  // not a member of, or no home at all — never a generic "Organization".
+  const homeLabel = !home
+    ? "No home organization"
+    : home.toLowerCase() === SYSTEM_ORGANIZATION_ID.toLowerCase()
       ? "System"
-      : (homeName ?? "Organization");
+      : (homeName ?? "An organization you are not in");
   const enabled = data.mandate.is_enabled !== false;
 
   const toggle = async (next: boolean) => {
@@ -514,7 +536,7 @@ function MandateFactsLine({
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
       <span className="font-medium text-foreground">{homeLabel}</span>
       <span aria-hidden>·</span>
-      <span>{formatVariableDisplayName(feature)}</span>
+      <span>{feature}</span>
       {canToggle ? (
         <label className="ml-auto inline-flex items-center gap-1.5">
           <Switch
@@ -604,6 +626,29 @@ function verdictSentence(
 }
 
 /** THE PERSONAL ANSWER — read off the server verdict, never recomputed. */
+/**
+ * The server's verdict, in the shape the simple Overrides tab reads: who runs
+ * this job for the viewer when their own level names nobody.
+ */
+function resolvedHolderOfVerdict(
+  verdict: ResolvedMandate | null,
+  loading: boolean,
+  error: string | null,
+): ResolvedHolderForOverrides {
+  if (loading) return { status: "loading" };
+  if (!verdict || error || verdict.holderType !== "agent") {
+    return {
+      status: "unavailable",
+      message: "No agent runs this job for you right now.",
+    };
+  }
+  return {
+    status: "ready",
+    agentId: verdict.agentId,
+    versionId: verdict.isVersion ? verdict.versionId : null,
+  };
+}
+
 function viewFromVerdict(
   data: MandateWorkspaceData,
   verdict: ResolvedMandate | null,

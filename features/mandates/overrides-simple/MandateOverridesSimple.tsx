@@ -93,14 +93,17 @@ import {
   defaultHolderDraftOf,
   effectiveAgentId,
   findBinding,
+  holderChoiceForSave,
   holderDraftOf,
+  overridesHolderOf,
   rungForLevel,
   withoutUnpicked,
   type OverridesLevel,
+  type ResolvedHolderForOverrides,
 } from "./binding-lookup";
-import { formatSettingValue } from "./format-setting-value";
+import { agentSettingDisplay } from "./format-setting-value";
 
-export type { OverridesLevel } from "./binding-lookup";
+export type { OverridesLevel, ResolvedHolderForOverrides } from "./binding-lookup";
 
 export interface MandateOverridesSimpleProps {
   data: MandateWorkspaceData;
@@ -110,6 +113,13 @@ export interface MandateOverridesSimpleProps {
   organizationId?: string | null;
   /** Called after a successful save so the host re-reads the mandate. */
   onChanged: () => void;
+  /**
+   * Who runs this job for the viewer today (the server's verdict). Used when
+   * this level names no holder of its own — the usual case for a person — so
+   * the tab shows the settings of the agent that actually runs. Omitted on
+   * the system level, which is the bottom of the ladder.
+   */
+  resolvedHolder?: ResolvedHolderForOverrides | null;
 }
 
 /**
@@ -121,12 +131,17 @@ export function MandateOverridesSimple({
   level,
   organizationId = null,
   onChanged,
+  resolvedHolder = null,
 }: MandateOverridesSimpleProps) {
   const userId = useAppSelector(selectUserId);
   const rung = rungForLevel(level, data);
   const orgId = level === "organization" ? organizationId : null;
   const binding = findBinding(data.bindings, rung, userId, orgId);
-  const identity = `${data.mandate.id}:${rung}:${orgId ?? ""}:${binding?.id ?? "new"}:${binding?.updated_at ?? ""}`;
+  const resolvedKey =
+    resolvedHolder?.status === "ready"
+      ? `${resolvedHolder.agentId}:${resolvedHolder.versionId ?? ""}`
+      : (resolvedHolder?.status ?? "");
+  const identity = `${data.mandate.id}:${rung}:${orgId ?? ""}:${binding?.id ?? "new"}:${binding?.updated_at ?? ""}:${resolvedKey}`;
   return (
     <OverridesBody
       key={identity}
@@ -136,6 +151,7 @@ export function MandateOverridesSimple({
       organizationId={orgId}
       binding={binding}
       onChanged={onChanged}
+      resolvedHolder={resolvedHolder}
     />
   );
 }
@@ -163,6 +179,7 @@ function OverridesBody({
   organizationId,
   binding,
   onChanged,
+  resolvedHolder,
 }: {
   data: MandateWorkspaceData;
   level: OverridesLevel;
@@ -170,6 +187,7 @@ function OverridesBody({
   organizationId: string | null;
   binding: MandateBindingRowDb | null;
   onChanged: () => void;
+  resolvedHolder: ResolvedHolderForOverrides | null;
 }) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -178,11 +196,23 @@ function OverridesBody({
   const builtinAgents = useAppSelector(selectBuiltinAgents);
   const { organizations } = useUserOrganizations();
 
-  const holder =
+  const ownHolder =
     rung === DEFAULT_HOLDER_RUNG
       ? defaultHolderDraftOf(data.mandate)
       : holderDraftOf(binding);
-  const agentId = effectiveAgentId(holder, data);
+  // This level usually names nobody (a person rarely picks their own agent):
+  // then the agent that actually runs — from a lower rung — is the one whose
+  // settings are shown and overridden.
+  const picked = overridesHolderOf(ownHolder, rung, data, resolvedHolder);
+  const holder =
+    picked.source === "own" || picked.source === "resolved"
+      ? picked.holder
+      : ownHolder;
+  const inheritedHolder = picked.source === "resolved";
+  const agentId =
+    picked.source === "own" || picked.source === "resolved"
+      ? effectiveAgentId(holder, data)
+      : null;
   const selectedVersionId = holder.useLatest ? null : holder.agentVersionId;
   const storedOverrides: JsonObject | null = isJsonObject(
     binding?.config_overrides,
@@ -251,8 +281,11 @@ function OverridesBody({
       );
       if (!payload.isReady) throw new Error("The agent's settings could not be read.");
       const own = buildInstanceBaseSettings(payload.settings, payload.modelId);
-      if ((rung === "org" || rung === "user") && !inheritanceOrganizationId) {
-        throw new Error("Select an organization to read its settings.");
+      // The org level reads ITS organization's rung, so it needs one. The
+      // person level never waits on an organization: without one the ladder
+      // simply has no organization rung.
+      if (rung === "org" && !inheritanceOrganizationId) {
+        throw new Error("Pick the organization first.");
       }
       const ladder =
         rung === "org" || rung === "user"
@@ -368,13 +401,14 @@ function OverridesBody({
   const overriddenCount = Object.keys(wire).length;
   const dirty = load.status === "ready" && wireJson !== savedJson;
 
-  const agentValue = (key: string, control: ControlDefinition | null) =>
-    base[key] ?? control?.default;
+  /** What the agent (plus any higher level) sets — never the model default. */
+  const agentValue = (key: string): unknown => base[key] ?? undefined;
   const isOverridden = (key: string) => key in wire;
   const isOpen = (key: string) => opened.has(key) || isOverridden(key);
 
-  function change(key: string, control: ControlDefinition | null, value: unknown) {
-    if (deepEqual(value, agentValue(key, control))) {
+  function change(key: string, value: unknown) {
+    const current = agentValue(key);
+    if (current !== undefined && deepEqual(value, current)) {
       dispatch(resetOverride({ conversationId: instanceId, key }));
       return;
     }
@@ -442,15 +476,8 @@ function OverridesBody({
           return;
         }
       }
-      const overriding = bindAgentId != null && bindAgentId !== agentId;
       const payload = buildBindingSavePayload({
-        holder: overriding
-          ? { agentId: bindAgentId, agentVersionId: null, useLatest: true }
-          : {
-              agentId: holder.useLatest ? agentId : null,
-              agentVersionId: holder.useLatest ? null : holder.agentVersionId,
-              useLatest: holder.useLatest,
-            },
+        holder: holderChoiceForSave({ picked, agentId, bindAgentId }),
         hasOffer,
         consumptionMap,
         autoRun: stored.autoRun,
@@ -509,10 +536,21 @@ function OverridesBody({
       </p>
     );
   }
+  if (picked.source === "loading") {
+    return (
+      <div className="space-y-1 rounded-lg border border-border p-2" aria-busy>
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="h-8 animate-pulse rounded bg-muted/60" />
+        ))}
+      </div>
+    );
+  }
   if (!agentId) {
     return (
       <p className="text-sm text-muted-foreground">
-        No agent is set for this job yet.
+        {picked.source === "none" && picked.message
+          ? picked.message
+          : "No agent is set for this job yet."}
       </p>
     );
   }
@@ -531,6 +569,11 @@ function OverridesBody({
             showIcon={false}
             labelClassName="font-medium text-foreground"
           />
+          {inheritedHolder ? (
+            <span className="shrink-0 text-xs text-muted-foreground/70">
+              (runs for you today)
+            </span>
+          ) : null}
         </div>
         {overriddenCount > 0 ? (
           <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
@@ -572,7 +615,7 @@ function OverridesBody({
             editor={
               <ModelListDropdown
                 value={effectiveModelId || null}
-                onValueChange={(model) => change("model", null, model)}
+                onValueChange={(model) => change("model", model)}
                 onClear={() => reset("model")}
                 emptyOptionLabel="Use the agent's model"
                 placeholder="Use the agent's model"
@@ -593,17 +636,14 @@ function OverridesBody({
                 onReset={() => reset(row.key)}
                 disabled={busy}
                 inheritedFrom={sourceWord(sources[row.key])}
-                display={formatSettingValue(
-                  agentValue(row.key, row.control),
-                  row.control,
-                )}
+                display={<AgentValue value={agentValue(row.key)} control={row.control} />}
                 editor={
                   removals.includes(row.key) ? (
                     <span className="text-sm text-muted-foreground">
-                      {formatSettingValue(
-                        holderSettings[row.key] ?? row.control.default,
-                        row.control,
-                      )}
+                      <AgentValue
+                        value={holderSettings[row.key]}
+                        control={row.control}
+                      />
                     </span>
                   ) : (
                     <SettingControlInput
@@ -612,9 +652,11 @@ function OverridesBody({
                       value={
                         row.key in overrides
                           ? overrides[row.key]
-                          : agentValue(row.key, row.control)
+                          : // The editor needs a starting point; the model's
+                            // default is only that, never shown as the agent's.
+                            (agentValue(row.key) ?? row.control.default)
                       }
-                      onChange={(v) => change(row.key, row.control, v)}
+                      onChange={(v) => change(row.key, v)}
                       disabled={busy}
                       id={`overrides-simple-${row.key}`}
                     />
@@ -662,6 +704,22 @@ function OverridesBody({
         />
       ) : null}
     </div>
+  );
+}
+
+/** The agent's value, or a muted "Model default" when the agent leaves it unset. */
+function AgentValue({
+  value,
+  control,
+}: {
+  value: unknown;
+  control: ControlDefinition | null;
+}) {
+  const shown = agentSettingDisplay(value, control);
+  return shown.modelDefault ? (
+    <span className="text-muted-foreground/60">{shown.text}</span>
+  ) : (
+    <>{shown.text}</>
   );
 }
 
