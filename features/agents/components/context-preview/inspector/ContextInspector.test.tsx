@@ -1,36 +1,102 @@
 /**
- * The guided inspector (lane CONTEXT-INSPECTOR-GUIDED): each step loads from
- * the previous choice only, the compare re-resolves at every depth with the
- * selection the steps describe — the server's `ContextSelection`, the type as
- * the TYPE (lane CONTEXT-INSPECTOR-2: lane 1 sent the type's first 25 scope
- * ids) — and a `?scope=` link back-fills its organization and type from the
- * scope itself before the compare is asked anything.
+ * The inspector (lanes CONTEXT-INSPECTOR-GUIDED, -2, -3): the four steps are
+ * the platform's Miller Columns — Organizations → Scope types → Scopes →
+ * Context items, one pick per column — and the compare re-resolves at every
+ * pick with the selection the columns describe (the server's
+ * `ContextSelection`, the type as the TYPE). A `?scope=` link back-fills its
+ * organization and type from the scope tree, or from the scope row when the
+ * scope is outside the person's tree.
  *
- * Mocked: the scopes chokepoint, the person's organizations and the compare
+ * Mocked: the person's scope tree (useUniverse), the context-items loader under
+ * the items column, the scopes chokepoint (values, scope home) and the compare
  * (whose own request/response suite is ContextCompareView.test.tsx). The
- * inspector and its selection logic are the real code.
+ * inspector, Miller Columns, the drill-path engine and the selection logic are
+ * the real code.
  */
-import React, { act, useEffect, useState } from "react";
+import React, { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
+const CASTELLANO = "7cd12da2-2213-4378-8fba-a9e2dc4ea657";
+const TITANIUM = "f9cb3e35-2a65-4f2a-8525-088d6551071c";
+const CLIENTS = "0b6f1c1e-6a1f-4c55-9d7e-1f2a3b4c5d6e";
+const MATTERS = "2c3d4e5f-6a7b-4c8d-9e0f-1a2b3c4d5e6f";
+const MERIDIAN = "3f0e2d1c-4b5a-4968-8776-5a4b3c2d1e0f";
+const GOLDEN_STATE = "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d";
+const PHONE = "9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d";
+const INDUSTRY = "8b7c6d5e-4f3a-4b2c-9d1e-0f9a8b7c6d5e";
+
+const scopeRow = (id: string, name: string, type: string) => ({
+  id,
+  scope_type_id: type,
+  organization_id: CASTELLANO,
+  name,
+  description: "",
+  parent_scope_id: null,
+  settings: {},
+});
+const typeRow = (id: string, plural: string, scopes: ReturnType<typeof scopeRow>[]) => ({
+  id,
+  organization_id: CASTELLANO,
+  label_singular: plural.replace(/s$/, ""),
+  label_plural: plural,
+  icon: "briefcase",
+  color: "blue",
+  max_assignments_per_entity: null,
+  sort_order: 1,
+  parent_type_id: null,
+  default_variable_keys: [],
+  scopes,
+});
+const TREE = [
+  {
+    id: CASTELLANO,
+    name: "Castellano & Reyes, LLP",
+    scope_types: [
+      typeRow(CLIENTS, "Clients", [
+        scopeRow(GOLDEN_STATE, "Golden State Indemnity Co.", CLIENTS),
+        scopeRow(MERIDIAN, "Meridian Risk Services", CLIENTS),
+      ]),
+      typeRow(MATTERS, "Matters", []),
+    ],
+  },
+  { id: TITANIUM, name: "Titanium", scope_types: [] },
+];
+
+jest.mock("@/features/scopes/components/active-context/quick-pick/engine", () => {
+  const actual = jest.requireActual("@/features/scopes/components/active-context/quick-pick/engine");
+  return {
+    ...actual,
+    useUniverse: () => ({
+      orgs: TREE,
+      projects: [],
+      tasks: [],
+      treeStatus: "ready",
+      treeError: null,
+      retryTree: () => undefined,
+      engagementStatus: "ready",
+      engagementError: null,
+      retryEngagement: () => undefined,
+    }),
+  };
+});
+jest.mock("@/features/scopes/components/context-assignment/data", () => ({
+  fetchTypeItems: jest.fn(async (typeId: string) =>
+    typeId === "0b6f1c1e-6a1f-4c55-9d7e-1f2a3b4c5d6e"
+      ? [
+          { id: "9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d", key: "contact_phone", display_name: "Contact Phone" },
+          { id: "8b7c6d5e-4f3a-4b2c-9d1e-0f9a8b7c6d5e", key: "industry", display_name: "Industry" },
+        ]
+      : [],
+  ),
+  fetchAssignableProjects: jest.fn(async () => []),
+  fetchAssignableTasks: jest.fn(async () => []),
+}));
 jest.mock("@/features/scopes/service/scopesService", () => ({
   scopesService: {
-    listScopeTypesForOrganization: jest.fn(),
-    listScopesOfType: jest.fn(),
     getScopeHome: jest.fn(),
     listContextItems: jest.fn(),
     listContextValues: jest.fn(),
   },
-}));
-jest.mock("@/features/organizations/hooks", () => ({
-  useUserOrganizations: () => ({
-    organizations: [
-      { id: "7cd12da2-2213-4378-8fba-a9e2dc4ea657", name: "Castellano & Reyes, LLP" },
-      { id: "f9cb3e35-2a65-4f2a-8525-088d6551071c", name: "Titanium" },
-    ],
-    loading: false,
-    error: null,
-  }),
 }));
 const compareProps: Array<Record<string, unknown>> = [];
 jest.mock("../ContextCompareView", () => ({
@@ -47,22 +113,10 @@ import { EMPTY_SELECTION, type InspectorSelection } from "./selection";
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const svc = scopesService as unknown as Record<string, jest.Mock>;
-const CASTELLANO = "7cd12da2-2213-4378-8fba-a9e2dc4ea657";
-const CLIENTS = "0b6f1c1e-6a1f-4c55-9d7e-1f2a3b4c5d6e";
-const MATTERS = "2c3d4e5f-6a7b-4c8d-9e0f-1a2b3c4d5e6f";
-const MERIDIAN = "3f0e2d1c-4b5a-4968-8776-5a4b3c2d1e0f";
-const GOLDEN_STATE = "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d";
-const PHONE = "9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d";
-const INDUSTRY = "8b7c6d5e-4f3a-4b2c-9d1e-0f9a8b7c6d5e";
-
-let setSelection: (s: InspectorSelection) => void = () => undefined;
 const writes: Array<{ next: InspectorSelection; replace: boolean }> = [];
 
 function Harness({ initial }: { initial: InspectorSelection }) {
   const [selection, set] = useState(initial);
-  useEffect(() => {
-    setSelection = set;
-  }, []);
   return (
     <ContextInspector
       selection={selection}
@@ -84,34 +138,19 @@ async function mount(initial: InspectorSelection) {
   await act(async () => undefined);
 }
 const lastCompare = () => compareProps[compareProps.length - 1];
-const trigger = (step: string) =>
-  host.querySelector(`[data-inspector-step="${step}"] button`) as HTMLButtonElement | null;
+const rows = () => [...host.querySelectorAll<HTMLButtonElement>("button[aria-pressed]")];
+const pressed = () => rows().filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => b.textContent);
+async function pick(label: string) {
+  const row = rows().find((b) => b.textContent === label);
+  if (!row) throw new Error(`no column row "${label}" in ${rows().map((b) => b.textContent).join(" | ")}`);
+  await act(async () => row.click());
+  await act(async () => undefined);
+}
 
 beforeEach(() => {
   compareProps.length = 0;
   writes.length = 0;
   jest.clearAllMocks();
-  svc.listScopeTypesForOrganization.mockResolvedValue({
-    ok: true,
-    data: {
-      types: [
-        { id: CLIENTS, label_plural: "Clients", label_singular: "Client" },
-        { id: MATTERS, label_plural: "Matters", label_singular: "Matter" },
-      ],
-    },
-  });
-  svc.listScopesOfType.mockImplementation(async (_org: string, type: string) => ({
-    ok: true,
-    data: {
-      scopes:
-        type === CLIENTS
-          ? [
-              { id: GOLDEN_STATE, name: "Golden State Indemnity Co." },
-              { id: MERIDIAN, name: "Meridian Risk Services" },
-            ]
-          : [],
-    },
-  }));
   svc.listContextItems.mockResolvedValue({
     ok: true,
     data: {
@@ -145,30 +184,30 @@ afterEach(async () => {
   host.remove();
 });
 
-it("each step loads from the previous choice only, and the preview narrows at every step", async () => {
+it("is Miller Columns — no hand-rolled pickers, no free-text boxes", async () => {
   await mount(EMPTY_SELECTION);
-  // Nothing chosen: later steps say what they wait for, and nothing is loaded or previewed.
-  expect(trigger("scopeType")?.disabled).toBe(true);
-  expect(trigger("scopeType")?.textContent).toContain("Choose an organization first");
-  expect(svc.listScopeTypesForOrganization).not.toHaveBeenCalled();
+  expect(host.querySelector("[data-inspector-step]")).toBeNull();
+  expect(host.querySelector('[role="combobox"]')).toBeNull();
+  expect(host.textContent).toContain("Organizations");
+  expect(host.textContent).toContain("Scope types");
+  expect(rows().map((b) => b.textContent)).toEqual(
+    expect.arrayContaining(["Castellano & Reyes, LLP", "Titanium"]),
+  );
+  // Short columns carry no search box; nothing is previewed before a pick.
+  expect(host.querySelector("input, textarea")).toBeNull();
   expect(compareProps).toHaveLength(0);
+});
 
-  // 1. Organization → its scope types; preview: the organization with nothing selected.
-  await act(async () => setSelection({ ...EMPTY_SELECTION, org: CASTELLANO }));
-  await act(async () => undefined);
-  expect(svc.listScopeTypesForOrganization).toHaveBeenCalledWith(CASTELLANO);
-  expect(svc.listScopesOfType).not.toHaveBeenCalled();
+it("a pick in each column drives the compare, narrowing at every step", async () => {
+  await mount(EMPTY_SELECTION);
+
+  await pick("Castellano & Reyes, LLP");
+  expect(writes.at(-1)?.next).toEqual({ ...EMPTY_SELECTION, org: CASTELLANO });
   expect(lastCompare()).toMatchObject({
     selection: { organization_id: CASTELLANO, scope_type_id: null, scope_id: null, context_item_id: null },
   });
-  expect(trigger("scope")?.textContent).toContain("Choose a scope type first");
 
-  // 2. Scope type → that type's scopes listed; preview: the TYPE (the server hands both sides
-  //    every scope of it — the page never lists, slices or caps them).
-  await act(async () => setSelection({ ...EMPTY_SELECTION, org: CASTELLANO, scopeType: CLIENTS }));
-  await act(async () => undefined);
-  expect(svc.listScopesOfType).toHaveBeenCalledWith(CASTELLANO, CLIENTS);
-  expect(svc.listContextItems).not.toHaveBeenCalled();
+  await pick("Clients");
   expect(lastCompare()).toMatchObject({
     selection: { organization_id: CASTELLANO, scope_type_id: CLIENTS, scope_id: null, context_item_id: null },
   });
@@ -176,25 +215,16 @@ it("each step loads from the previous choice only, and the preview narrows at ev
   expect(host.querySelector("[data-inspector-caption]")?.textContent).toBe(
     "All 2 Clients selected at once.",
   );
-  expect(host.textContent).not.toMatch(/The first \d+ of/);
 
-  // 3. Scope → that scope's items and values; preview: that one scope.
-  await act(async () =>
-    setSelection({ org: CASTELLANO, scopeType: CLIENTS, scope: MERIDIAN, item: null }),
-  );
-  await act(async () => undefined);
-  expect(svc.listContextItems).toHaveBeenCalledWith(CLIENTS);
+  await pick("Meridian Risk Services");
   expect(svc.listContextValues).toHaveBeenCalledWith(MERIDIAN);
   expect(lastCompare()).toMatchObject({
     selection: { organization_id: CASTELLANO, scope_type_id: CLIENTS, scope_id: MERIDIAN, context_item_id: null },
     focus: undefined,
   });
 
-  // 4. Context item → the value, read-only, and the preview narrowed to the item.
-  await act(async () =>
-    setSelection({ org: CASTELLANO, scopeType: CLIENTS, scope: MERIDIAN, item: PHONE }),
-  );
-  await act(async () => undefined);
+  await pick("Contact Phone");
+  expect(writes.at(-1)?.next).toEqual({ org: CASTELLANO, scopeType: CLIENTS, scope: MERIDIAN, item: PHONE });
   expect(host.querySelector("[data-inspector-value]")?.getAttribute("data-inspector-value")).toBe(
     "(619) 555-0177",
   );
@@ -202,38 +232,33 @@ it("each step loads from the previous choice only, and the preview narrows at ev
     selection: { organization_id: CASTELLANO, scope_type_id: CLIENTS, scope_id: MERIDIAN, context_item_id: PHONE },
     focus: { itemId: PHONE, key: "contact_phone", label: "Contact Phone" },
   });
-  // There is no free-text box anywhere: every step is a choice.
-  expect(host.querySelector("input, textarea")).toBeNull();
+  expect(pressed()).toEqual([
+    "Castellano & Reyes, LLP",
+    "Clients",
+    "Meridian Risk Services",
+    "Contact Phone",
+  ]);
+
+  // Re-picking a column clears every column after it.
+  await pick("Clients");
+  expect(writes.at(-1)?.next).toEqual({ ...EMPTY_SELECTION, org: CASTELLANO });
 });
 
 it("a scope type with no scopes says so and previews nothing past it", async () => {
   await mount({ ...EMPTY_SELECTION, org: CASTELLANO, scopeType: MATTERS });
-  expect(trigger("scope")?.textContent).toContain("This scope type has no scopes yet");
-  expect(trigger("scope")?.disabled).toBe(true);
+  expect(host.textContent).toContain("No scopes under the selected types yet.");
   expect(compareProps).toHaveLength(0);
 });
 
-it("?scope= alone back-fills the organization and type from the scope itself", async () => {
-  svc.getScopeHome.mockResolvedValue({
-    ok: true,
-    data: {
-      scope: {
-        id: MERIDIAN,
-        name: "Meridian Risk Services",
-        organization_id: CASTELLANO,
-        scope_type_id: CLIENTS,
-      },
-    },
-  });
+it("?scope= alone back-fills the organization, type and scope columns from the tree", async () => {
   await mount({ ...EMPTY_SELECTION, scope: MERIDIAN });
-  await act(async () => undefined);
-  expect(svc.getScopeHome).toHaveBeenCalledWith(MERIDIAN);
+  expect(svc.getScopeHome).not.toHaveBeenCalled();
   expect(writes[0]).toEqual({
     next: { org: CASTELLANO, scopeType: CLIENTS, scope: MERIDIAN, item: null },
     replace: true,
   });
-  // Every compare asked was the back-filled scope under its own organization and type —
-  // never an organization-less or type-less half-selection.
+  expect(pressed()).toEqual(["Castellano & Reyes, LLP", "Clients", "Meridian Risk Services"]);
+  // Every compare asked was the back-filled scope under its own organization and type.
   expect(compareProps.length).toBeGreaterThan(0);
   for (const props of compareProps) {
     expect(props.selection).toEqual({
@@ -243,13 +268,13 @@ it("?scope= alone back-fills the organization and type from the scope itself", a
       context_item_id: null,
     });
   }
-  expect(trigger("org")?.textContent).toContain("Castellano & Reyes, LLP");
 });
 
-it("a scope that is not shared with you says so in words", async () => {
-  svc.getScopeHome.mockResolvedValue({ ok: true, data: { scope: null } });
-  await mount({ ...EMPTY_SELECTION, scope: MERIDIAN });
-  await act(async () => undefined);
+it("a scope outside the tree back-fills from the scope row; one not shared says so", async () => {
+  const OUTSIDE = "5e4d3c2b-1a09-4f8e-9d7c-6b5a4f3e2d1c";
+  svc.getScopeHome.mockResolvedValueOnce({ ok: true, data: { scope: null } });
+  await mount({ ...EMPTY_SELECTION, scope: OUTSIDE });
+  expect(svc.getScopeHome).toHaveBeenCalledWith(OUTSIDE);
   expect(host.textContent).toContain("This scope was not found, or it has not been shared with you");
   expect(compareProps).toHaveLength(0);
 });
