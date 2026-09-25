@@ -132,7 +132,13 @@ export async function detectSetup(client: RecordsClient, organizationId: string,
     const head = await client.recordRead({ record_id: id });
     if (!head.ok) throw new Error(`A table the agent reads could not be opened: ${head.error.message}`);
     const doc = head.data.document as Record<string, unknown>;
-    const rows = await client.list({ table_id: id, limit: KIT_SAVE.seedRowCap + 1 });
+    // CREATION ORDER — the order a whole-table variable delivers rows in, and the order
+    // the installer recreates them in (one write per row), so a round trip keeps it.
+    const rows = await client.query({
+      table_id: id,
+      orderBy: { column: "created_at", ascending: true },
+      limit: KIT_SAVE.seedRowCap + 1,
+    });
     if (!rows.ok) throw new Error(`The rows of "${String(doc.name ?? "a table")}" could not be read: ${rows.error.message}`);
     const clean = rows.data.rows.map((r) => {
       const d: Record<string, unknown> = {};

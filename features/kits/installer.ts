@@ -330,7 +330,11 @@ export function stepsFromInstall(manifest: KitManifest, install: KitInstallRecor
       }
       case "records": {
         const ids = key ? s.records?.[key] : undefined;
-        return ids ? { ...step, state: "done", detail: `${ids.length} added` } : step;
+        const want = manifest.tables.find((t) => t.key === key)?.records.length ?? 0;
+        if (!ids) return step;
+        return ids.length >= want
+          ? { ...step, state: "done", detail: `${ids.length} added` }
+          : { ...step, detail: `${ids.length} of ${want} added — finishing picks up at row ${ids.length + 1}` };
       }
       case "agent": {
         const id = key ? s.agents?.[key] : undefined;
@@ -622,25 +626,34 @@ export async function runInstall(ctx: InstallContext): Promise<KitInstallRecord>
         }
         done(tableStep, { links: [{ label: "Open table", href: KIT_ROUTES.table(declared.data) }] });
       }
-      if (table.records.length > 0 && !steps.records?.[table.key]) {
+      const already = steps.records?.[table.key] ?? [];
+      if (table.records.length > 0 && already.length < table.records.length) {
+        // ONE WRITE PER ROW, IN MANIFEST ORDER. A whole-table variable is delivered in
+        // creation order, and a batch write stamps every row with the same moment — so
+        // the kit's order would be lost. Each id is recorded as it lands, so a re-run
+        // continues from the next row instead of writing any row twice.
         const recordsStep = `records:${table.key}`;
         start(recordsStep);
         const tableId = steps.tables![table.key]!;
-        const rows = table.records.map((r) => {
-          const out: Record<string, unknown> = {};
-          for (const [k, v] of Object.entries(r)) out[k] = resolveSeedValue(v, steps);
-          return out;
-        });
-        const written = await client.recordWriteMany({ table_id: tableId, rows });
-        if (!written.ok) {
-          throw refusal(`Could not add the example rows to "${table.name}"`, written.error.message, written.error.hint);
+        const ids = [...already];
+        for (let i = ids.length; i < table.records.length; i++) {
+          view = withState(view, recordsStep, { detail: `row ${i + 1} of ${table.records.length}` });
+          emit();
+          const data: Record<string, unknown> = {};
+          for (const [k, v] of Object.entries(table.records[i]!)) data[k] = resolveSeedValue(v, steps);
+          const written = await client.recordWrite({ table_id: tableId, data });
+          if (!written.ok) {
+            throw refusal(
+              `Could not add example row ${i + 1} of ${table.records.length} to "${table.name}"`,
+              written.error.message,
+              written.error.hint,
+            );
+          }
+          ids.push(written.data);
+          steps.records = { ...(steps.records ?? {}), [table.key]: [...ids] };
+          await record();
         }
-        if (written.data.length !== rows.length) {
-          throw new InstallError(`"${table.name}" was handed ${rows.length} example rows and kept ${written.data.length}.`);
-        }
-        steps.records = { ...(steps.records ?? {}), [table.key]: written.data };
-        await record();
-        done(recordsStep, { detail: `${written.data.length} added` });
+        done(recordsStep, { detail: `${ids.length} added` });
       }
     }
 

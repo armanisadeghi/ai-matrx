@@ -11,7 +11,8 @@ export default async function KitInstalledPage({ params }: { params: Promise<{ k
   const { key } = await params;
   const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect(loginHref(`/kits/${key}/installed`));
-  const { kit, error } = await fetchKit(await createClient(), key);
+  // An installed kit stays reachable after the kit leaves the gallery: what it made is yours.
+  const { kit, error } = await fetchKit(await createClient(), key, { includeInactive: true });
   if (!kit) return <KitMissing kitKey={key} error={error} />;
   return <KitInstalled kit={kit} />;
 }

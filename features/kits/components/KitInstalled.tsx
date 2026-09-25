@@ -220,7 +220,7 @@ function BindingPreviewCard({
 // headless-for-text"). The window renders it through the ONE pipeline, streams
 // live, survives navigation, and the person can keep talking.
 
-function TryItPanel({ agent, agentId }: { agent: KitAgent; agentId: string }) {
+function TryItBody({ agent, agentId }: { agent: KitAgent; agentId: string }) {
   const openRunWindow = useOpenAgentRunWindow();
   const tryIt = agent.try_it ?? {};
   const vars = Object.entries(tryIt.variables ?? {});
@@ -236,17 +236,12 @@ function TryItPanel({ agent, agentId }: { agent: KitAgent; agentId: string }) {
   };
 
   return (
-    <Panel
-      icon={<Play className="h-3.5 w-3.5" />}
-      title={`Try ${agent.name}`}
-      aside={
-        <Link href={KIT_ROUTES.agent(agentId)} className="inline-flex items-center gap-0.5 text-xs font-medium text-primary hover:underline">
-          Open agent
-          <ArrowUpRight className="h-3 w-3" />
-        </Link>
-      }
-    >
+    <div className="border-t border-border">
       <div className="space-y-3 p-4">
+        <p className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+          <Play className="h-3.5 w-3.5 text-muted-foreground" />
+          Try it
+        </p>
         {(tryIt.user_input || vars.length > 0) && (
           <div className="space-y-1.5">
             {tryIt.user_input && (
@@ -270,7 +265,7 @@ function TryItPanel({ agent, agentId }: { agent: KitAgent; agentId: string }) {
           </p>
         </div>
       </div>
-    </Panel>
+    </div>
   );
 }
 
@@ -411,31 +406,48 @@ export function KitInstalled({ kit }: { kit: KitEntry }) {
           </div>
 
           <div className="min-w-0 space-y-6">
-            {m.agents.some((a) => a.bindings.length > 0) && (
-              <Panel icon={<Eye className="h-3.5 w-3.5" />} title="What the agent sees">
-                <p className="border-b border-border px-4 py-2 text-xs text-muted-foreground">
-                  Exactly the text your data turns into when the agent runs. It updates as you edit the table and when you come back to this page.
-                </p>
-                <div className="divide-y divide-border">
-                  {m.agents.flatMap((a) =>
-                    a.bindings.map((b) => (
-                      <BindingPreviewCard
-                        key={`${a.key}:${b.variable}`}
-                        organizationId={orgId}
-                        agent={a}
-                        variable={b.variable}
-                        install={install}
-                        manifest={m}
-                        dataVersion={tableVersions[install.steps.tables?.[b.binding.table_key] ?? ""] ?? 0}
-                      />
-                    )),
-                  )}
-                </div>
-              </Panel>
-            )}
+            {/* ONE PANEL PER AGENT: what it sees (each connected variable, rendered by
+                the server) and Try it. When one table feeds several agents, each panel
+                reads the same rows — the fan the kit teaches. */}
             {m.agents.map((a) => {
               const id = steps.agents?.[a.key];
-              return id ? <TryItPanel key={a.key} agent={a} agentId={id} /> : null;
+              if (!id) return null;
+              return (
+                <Panel
+                  key={a.key}
+                  icon={<BrainCircuit className="h-3.5 w-3.5" />}
+                  title={a.name}
+                  aside={
+                    <Link href={KIT_ROUTES.agent(id)} className="inline-flex items-center gap-0.5 text-xs font-medium text-primary hover:underline">
+                      Open agent
+                      <ArrowUpRight className="h-3 w-3" />
+                    </Link>
+                  }
+                >
+                  {a.bindings.length > 0 && (
+                    <>
+                      <p className="flex items-center gap-1.5 border-b border-border px-4 py-2 text-xs text-muted-foreground">
+                        <Eye className="h-3.5 w-3.5" />
+                        What it sees — exactly the text your data turns into on each run. It updates as you edit the table.
+                      </p>
+                      <div className="divide-y divide-border">
+                        {a.bindings.map((b) => (
+                          <BindingPreviewCard
+                            key={`${a.key}:${b.variable}`}
+                            organizationId={orgId}
+                            agent={a}
+                            variable={b.variable}
+                            install={install}
+                            manifest={m}
+                            dataVersion={tableVersions[install.steps.tables?.[b.binding.table_key] ?? ""] ?? 0}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  <TryItBody agent={a} agentId={id} />
+                </Panel>
+              );
             })}
           </div>
         </div>
