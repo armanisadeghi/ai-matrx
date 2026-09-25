@@ -477,12 +477,13 @@ function OverridesBody({
       }
       onChanged();
     } catch (err) {
+      const failure = describeFailure(err, {
+        action: "saving these settings",
+        retrySafe: true,
+        fallback: "Save failed.",
+      });
       setSaveError(
-        describeFailure(err, {
-          action: "saving these settings",
-          retrySafe: true,
-          fallback: "Save failed.",
-        }).text,
+        failure.remedy ? `${failure.sentence} ${failure.remedy}` : failure.sentence,
       );
     } finally {
       setBusy(false);
@@ -671,6 +672,9 @@ function sourceWord(source: string | undefined): string | null {
   return Object.values(MODEL_OVERRIDE_SOURCE).includes(word) ? word : null;
 }
 
+/** Label · value · action. Inline so the column plan never depends on a CSS rebuild. */
+const ROW_COLUMNS = "minmax(8rem, 14rem) minmax(0, 1fr) auto";
+
 function SettingRow({
   label,
   display,
@@ -695,9 +699,10 @@ function SettingRow({
   return (
     <div
       className={cn(
-        "grid min-h-10 grid-cols-[minmax(7rem,11rem)_minmax(0,1fr)_auto] items-center gap-3 px-3 py-1.5",
+        "grid min-h-10 items-center gap-3 px-3 py-1.5",
         overridden && "border-l-2 border-l-primary bg-primary/5",
       )}
+      style={{ gridTemplateColumns: ROW_COLUMNS }}
     >
       <div className="flex min-w-0 items-center gap-1.5 text-sm text-foreground">
         <span className="truncate">{label}</span>

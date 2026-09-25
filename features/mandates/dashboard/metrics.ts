@@ -11,8 +11,13 @@
 //   truth     GET /mandates/code-truth                        — code ↔ DB drift counts
 //   board     GET /mandates/references/board                  — scan freshness, findings, conversion list
 
-import { splitMandateKey } from "@/features/mandates/mandate-key";
-import type { MandateCoverageResponse } from "@/features/mandates/coverage";
+import { featureLabelOf } from "@/features/mandates/admin-list/rows";
+import {
+  buildCoverageIndex,
+  scopedCoverageOf,
+  type MandateCoverageBucket,
+  type MandateCoverageResponse,
+} from "@/features/mandates/coverage";
 import type {
   MandateCodeTruthReport,
   MandateConsoleData,
@@ -49,13 +54,28 @@ export interface BindingMetrics {
   personalMandates: number;
   personalUsers: number;
   global: number;
+  globalMandates: number;
   disabled: number;
+}
+
+/**
+ * Every section counts the SAME corpus the list's System tab shows (the
+ * console's `system` home) — never the server's whole-registry totals, so a
+ * tile and the filtered list behind it always agree.
+ */
+export function systemKeys(data: MandateConsoleData | null): string[] | null {
+  return data ? data.mandates.map((row) => row.mandate_key) : null;
 }
 
 export function definitionMetrics(
   data: MandateConsoleData | null,
+  truth: MandateCodeTruthReport | null,
 ): DefinitionMetrics | null {
   if (!data) return null;
+  const moduleByKey = new Map<string, string | undefined>();
+  for (const item of truth?.mandates ?? []) {
+    moduleByKey.set(item.mandate_key, item.source?.module);
+  }
   const byFeature = new Map<string, FeatureCount>();
   let codeBacked = 0;
   let disabled = 0;
@@ -71,7 +91,8 @@ export function definitionMetrics(
     if (!row.default_holder_id) defaultsNone += 1;
     else if (row.default_holder_version_id) defaultsPinned += 1;
     else defaultsLatest += 1;
-    const { feature } = splitMandateKey(row.mandate_key);
+    // The list's own Feature label, so a feature row filters to exactly its rows.
+    const feature = featureLabelOf(row.mandate_key, moduleByKey.get(row.mandate_key));
     const entry = byFeature.get(feature) ?? { feature, total: 0, codeBacked: 0 };
     entry.total += 1;
     if (isCode) entry.codeBacked += 1;
@@ -102,6 +123,7 @@ export function bindingMetrics(
   const orgs = new Set<string>();
   const personalMandates = new Set<string>();
   const users = new Set<string>();
+  const globalMandates = new Set<string>();
   let pinned = 0;
   let org = 0;
   let personal = 0;
@@ -120,6 +142,7 @@ export function bindingMetrics(
       if (row.subject_user_id) users.add(row.subject_user_id);
     } else if (row.principal_type === "global") {
       global += 1;
+      globalMandates.add(row.mandate_id);
     }
   }
   return {
@@ -133,6 +156,7 @@ export function bindingMetrics(
     personalMandates: personalMandates.size,
     personalUsers: users.size,
     global,
+    globalMandates: globalMandates.size,
     disabled,
   };
 }
@@ -150,20 +174,35 @@ export interface DriftMetrics {
 
 export function driftMetrics(
   report: MandateCodeTruthReport | null,
+  keys: readonly string[] | null,
 ): DriftMetrics | null {
-  if (!report) return null;
-  const c = report.counts;
-  const n = (key: string) => c[key] ?? 0;
-  return {
-    total: n("total"),
-    match: n("match"),
-    diff: n("diff"),
-    codeOnly: n("code_only"),
-    dbOnly: n("db_only"),
-    undelivered: n("bound_agent_undelivered"),
-    spilled: n("bound_agent_spilled"),
-    importFailed: n("import_failed"),
+  if (!report || !keys) return null;
+  const wanted = new Set(keys);
+  const out: DriftMetrics = {
+    total: 0,
+    match: 0,
+    diff: 0,
+    codeOnly: 0,
+    dbOnly: 0,
+    undelivered: 0,
+    spilled: 0,
+    importFailed: 0,
   };
+  for (const item of report.mandates) {
+    if (!wanted.has(item.mandate_key)) continue;
+    out.total += 1;
+    if (item.drift === "match") out.match += 1;
+    else if (item.drift === "diff") out.diff += 1;
+    else if (item.drift === "code_only") out.codeOnly += 1;
+    else if (item.drift === "db_only") out.dbOnly += 1;
+    if (item.resolution === "code_exists_but_import_failed") out.importFailed += 1;
+    const spilled = new Set(item.bound_agent_spilled_variables ?? []);
+    if (spilled.size > 0) out.spilled += 1;
+    if ((item.bound_agent_missing_variables ?? []).some((name) => !spilled.has(name))) {
+      out.undelivered += 1;
+    }
+  }
+  return out;
 }
 
 export interface ScanMetrics {
@@ -206,6 +245,8 @@ export function scanMetrics(
 
 export function coverageCounts(
   coverage: MandateCoverageResponse | null,
-): MandateCoverageResponse["counts"] | null {
-  return coverage?.counts ?? null;
+  keys: readonly string[] | null,
+): Record<MandateCoverageBucket, number> | null {
+  if (!coverage || !keys) return null;
+  return scopedCoverageOf(buildCoverageIndex(coverage), keys).counts;
 }

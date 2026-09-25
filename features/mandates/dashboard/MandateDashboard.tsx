@@ -28,6 +28,7 @@ import { KpiGrid, KpiTile } from "@/components/official/kpi/KpiTile";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { SYSTEM_HOME } from "@/features/mandates/list-door";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import {
   fetchMandateCodeTruthReport,
   fetchMandateConsoleData,
@@ -48,6 +49,7 @@ import {
   definitionMetrics,
   driftMetrics,
   scanMetrics,
+  systemKeys,
 } from "./metrics";
 import { MANDATE_LIST_COLUMN as COL, mandateListHref } from "./list-link";
 
@@ -125,6 +127,11 @@ const ago = (iso: string | null | undefined) =>
 export function MandateDashboard() {
   const dispatch = useAppDispatch();
   const organizationId = useAppSelector(selectOrganizationId);
+  // The code-scan read carries the active organization. With none chosen it
+  // never starts — say so instead of showing skeletons forever.
+  const { organizationState } = useOrganizationRequired();
+  const organizationUnanswered =
+    organizationState === "required" || organizationState === "unavailable";
   const [reloads, setReloads] = useState(0);
   const [showAllFeatures, setShowAllFeatures] = useState(false);
 
@@ -154,14 +161,19 @@ export function MandateDashboard() {
     };
   }, [dispatch, organizationId, reloads]);
 
-  const defs = definitionMetrics(consoleSlot.data);
+  const keys = systemKeys(consoleSlot.data);
+  const defs = definitionMetrics(consoleSlot.data, truthSlot.data);
   const binds = bindingMetrics(consoleSlot.data);
-  const cov = coverageCounts(coverageSlot.data);
-  const drift = driftMetrics(truthSlot.data);
+  const cov = coverageCounts(coverageSlot.data, keys);
+  const drift = driftMetrics(truthSlot.data, keys);
   const scan = scanMetrics(boardSlot.data);
+  const boardLoading = boardSlot.loading && !organizationUnanswered;
+  const boardError = organizationUnanswered
+    ? "choose an organization in the header to read the code scan."
+    : boardSlot.error;
 
   const anyLoading =
-    consoleSlot.loading || coverageSlot.loading || truthSlot.loading || boardSlot.loading;
+    consoleSlot.loading || coverageSlot.loading || truthSlot.loading || boardLoading;
   const features = defs?.features ?? [];
   const shownFeatures = showAllFeatures
     ? features
@@ -172,6 +184,9 @@ export function MandateDashboard() {
     <div className="flex min-w-0 flex-col gap-5 p-4">
       <header className="flex min-w-0 items-center gap-3">
         <h1 className="text-lg font-semibold">Mandate numbers</h1>
+        <span className="rounded border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground">
+          System
+        </span>
         {coverageSlot.data ? (
           <span className="text-xs text-muted-foreground">
             {ago(coverageSlot.data.computed_at)}
@@ -209,8 +224,8 @@ export function MandateDashboard() {
             label="Soft"
             value={n(defs?.soft)}
             loading={consoleSlot.loading}
-            href={mandateListHref({ [COL.origin]: "user" })}
-            title="No code in our app (origin = user)"
+            href={mandateListHref({ [COL.origin]: "soft" })}
+            title="No code in our app"
           />
           <KpiTile
             label="Disabled"
@@ -223,12 +238,14 @@ export function MandateDashboard() {
             label="Held by workflow"
             value={n(defs?.workflowHeld)}
             loading={consoleSlot.loading}
+            href={mandateListHref({ [COL.holder]: "Workflow" })}
           />
           <KpiTile
             label="No default holder"
             value={n(defs?.defaultsNone)}
             tone={defs && defs.defaultsNone > 0 ? "warn" : "neutral"}
             loading={consoleSlot.loading}
+            href={mandateListHref({ [COL.pin]: "None" })}
           />
         </KpiGrid>
 
@@ -317,27 +334,24 @@ export function MandateDashboard() {
             label="Defaults pinned"
             value={n(defs?.defaultsPinned)}
             loading={consoleSlot.loading}
-            href={mandateListHref({ [COL.pinning]: "default_pinned" })}
           />
           <KpiTile
             label="Defaults on latest"
             value={n(defs?.defaultsLatest)}
             tone={defs && defs.defaultsLatest > 0 ? "warn" : "neutral"}
             loading={consoleSlot.loading}
-            href={mandateListHref({ [COL.pinning]: "default_latest" })}
+            href={mandateListHref({ [COL.pin]: "Latest" })}
           />
           <KpiTile
             label="Customizations pinned"
             value={n(binds?.pinned)}
             loading={consoleSlot.loading}
-            href={mandateListHref({ [COL.pinning]: "binding_pinned" })}
           />
           <KpiTile
             label="Customizations on latest"
             value={n(binds?.latest)}
             tone={binds && binds.latest > 0 ? "warn" : "neutral"}
             loading={consoleSlot.loading}
-            href={mandateListHref({ [COL.pinning]: "binding_latest" })}
           />
         </KpiGrid>
       </Section>
@@ -353,7 +367,6 @@ export function MandateDashboard() {
                 ? `${formatCount(binds.org)} bindings · ${formatCount(binds.orgCount)} orgs`
                 : undefined
             }
-            href={mandateListHref({ [COL.customizedBy]: "org" })}
           />
           <KpiTile
             label="Personal"
@@ -361,15 +374,17 @@ export function MandateDashboard() {
             loading={consoleSlot.loading}
             hint={
               binds
-                ? `${formatCount(binds.personal)} bindings · ${formatCount(binds.personalUsers)} people`
+                ? `${formatCount(binds.personal)} bindings · ${formatCount(binds.personalUsers)} ${binds.personalUsers === 1 ? "person" : "people"}`
                 : undefined
             }
-            href={mandateListHref({ [COL.customizedBy]: "personal" })}
+            href={mandateListHref({ [COL.customizedBy]: "Personal" })}
           />
           <KpiTile
-            label="Global bindings"
-            value={n(binds?.global)}
+            label="Global"
+            value={n(binds?.globalMandates)}
             loading={consoleSlot.loading}
+            hint={binds ? `${formatCount(binds.global)} bindings` : undefined}
+            href={mandateListHref({ [COL.customizedBy]: "Global" })}
           />
           <KpiTile
             label="Disabled bindings"
@@ -387,27 +402,23 @@ export function MandateDashboard() {
             tone="good"
             loading={truthSlot.loading}
             hint={drift ? `of ${formatCount(drift.total)}` : undefined}
-            href={mandateListHref({ [COL.drift]: "match" })}
           />
           <KpiTile
             label="Inputs differ"
             value={n(drift?.diff)}
             tone={drift && drift.diff > 0 ? "warn" : "neutral"}
             loading={truthSlot.loading}
-            href={mandateListHref({ [COL.drift]: "diff" })}
           />
           <KpiTile
             label="Code only"
             value={n(drift?.codeOnly)}
             tone={drift && drift.codeOnly > 0 ? "warn" : "neutral"}
             loading={truthSlot.loading}
-            href={mandateListHref({ [COL.drift]: "code_only" })}
           />
           <KpiTile
             label="DB only"
             value={n(drift?.dbOnly)}
             loading={truthSlot.loading}
-            href={mandateListHref({ [COL.drift]: "db_only" })}
           />
           <KpiTile
             label="Inputs not delivered"
@@ -421,24 +432,25 @@ export function MandateDashboard() {
             value={n(drift?.importFailed)}
             tone={drift && drift.importFailed > 0 ? "bad" : "neutral"}
             loading={truthSlot.loading}
+            href={mandateListHref({ [COL.codeState]: "import_failed" })}
           />
         </KpiGrid>
       </Section>
 
-      <Section icon={Radar} title="Code scan" error={boardSlot.error}>
+      <Section icon={Radar} title="Code scan" error={boardError}>
         <KpiGrid>
           <KpiTile
             label="Last complete scan"
             value={scan ? (ago(scan.lastCompleteScanAt) ?? "Never") : null}
             tone={scan && !scan.lastCompleteScanAt ? "bad" : "neutral"}
-            loading={boardSlot.loading}
+            loading={boardLoading}
             href={REFERENCES_PATH}
           />
           <KpiTile
             label="Repos unscanned"
             value={n(scan?.unverified)}
             tone={scan && scan.unverified > 0 ? "bad" : "good"}
-            loading={boardSlot.loading}
+            loading={boardLoading}
             hint={scan ? `of ${formatCount(scan.repos)}` : undefined}
             href={REFERENCES_PATH}
           />
@@ -446,21 +458,21 @@ export function MandateDashboard() {
             label="Open findings"
             value={n(scan?.openFindings)}
             tone={scan && scan.openFindings > 0 ? "warn" : "neutral"}
-            loading={boardSlot.loading}
+            loading={boardLoading}
             href={REFERENCES_PATH}
           />
           <KpiTile
             label="AI outside mandates"
             value={n(scan?.conversion)}
             tone={scan && scan.conversion > 0 ? "warn" : "neutral"}
-            loading={boardSlot.loading}
+            loading={boardLoading}
             href={REFERENCES_PATH}
           />
           <KpiTile
             label="Patrol last run"
             value={scan ? (ago(scan.patrolLastRunAt) ?? "Never") : null}
             tone={scan && scan.patrolEnabled === false ? "warn" : "neutral"}
-            loading={boardSlot.loading}
+            loading={boardLoading}
             hint={
               scan
                 ? scan.patrolEnabled === null
@@ -475,7 +487,7 @@ export function MandateDashboard() {
             label="Patrol runs failed"
             value={n(scan?.patrolRunsFailed)}
             tone={scan && (scan.patrolRunsFailed ?? 0) > 0 ? "bad" : "neutral"}
-            loading={boardSlot.loading}
+            loading={boardLoading}
             hint={
               scan && scan.patrolRunsCounted !== null
                 ? `of ${formatCount(scan.patrolRunsCounted)}`

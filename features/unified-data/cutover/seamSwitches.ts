@@ -42,6 +42,8 @@ export type Seam = {
   checks: SeamCheck[];
   mayFlip: boolean;
   mayReverse: boolean;
+  /** On the new side only: what must be true before it may go back (nothing left behind). */
+  reverseChecks: SeamCheck[];
   switched: { direction: SeamState; at: string; by: string | null } | null;
   lastPress: {
     direction: SeamState;
@@ -72,6 +74,7 @@ type RawSeam = {
   needs_first: string;
   reverse_does: string;
   readiness: { ready: boolean; checked_at: string; checks: SeamCheck[] };
+  reverse_readiness?: { ready: boolean; checked_at: string; checks: SeamCheck[] } | null;
   may_flip: boolean;
   may_reverse: boolean;
   switched: { direction: SeamState; at: string; by: string | null } | null;
@@ -131,6 +134,7 @@ export async function readSeamBoard(organizationId: string): Promise<SeamBoard> 
       checks: s.readiness.checks ?? [],
       mayFlip: s.may_flip,
       mayReverse: s.may_reverse,
+      reverseChecks: s.reverse_readiness?.checks ?? [],
       switched: s.switched,
       lastPress: s.last_press,
     })),

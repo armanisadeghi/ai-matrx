@@ -185,7 +185,7 @@ function MandateWindowNextInner({
               type="button"
               role="tab"
               aria-selected={scope === s.id}
-              title={rows ? `${counts[s.id]} mandates` : undefined}
+              title={rows ? `${counts[s.id]} ${counts[s.id] === 1 ? "mandate" : "mandates"}` : undefined}
               onClick={() => setScope(s.id)}
               className={cn(
                 "flex-1 whitespace-nowrap rounded px-1 py-0.5 text-[10.5px] font-medium transition-colors",

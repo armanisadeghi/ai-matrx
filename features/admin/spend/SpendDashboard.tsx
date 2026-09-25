@@ -157,6 +157,7 @@ export function SpendDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
+  const [overviewRetryTick, setOverviewRetryTick] = useState(0);
   const [costSourcesExpanded, setCostSourcesExpanded] = useState(false);
   const [printOrdersExpanded, setPrintOrdersExpanded] = useState(false);
 
@@ -199,10 +200,15 @@ export function SpendDashboard() {
       } catch (cause) {
         if (cancelled) return;
         setData(null);
+        const message =
+          typeof cause === "object" &&
+          cause !== null &&
+          "message" in cause &&
+          typeof cause.message === "string"
+            ? cause.message
+            : "The spend read failed for an unknown reason.";
         setError(
-          cause instanceof Error
-            ? cause
-            : new Error("The spend read failed for an unknown reason."),
+          cause instanceof Error ? cause : new Error(message),
         );
       } finally {
         if (!cancelled) setLoading(false);
@@ -211,7 +217,7 @@ export function SpendDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [timezone, reloadTick]);
+  }, [timezone, reloadTick, overviewRetryTick]);
 
   const ledgerColumns: MatrxColumnDef<SpendLedger>[] = [
     {
@@ -331,14 +337,20 @@ export function SpendDashboard() {
       <div className="scroll-page-end-space flex w-full min-w-0 flex-col gap-4 p-4">
       {error ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-          <div className="font-medium">
-            The spend read failed — no numbers are shown.
+          <div className="flex items-center justify-between gap-2">
+            <div className="font-medium">The spend overview read failed.</div>
+            <RefreshCwTapButton
+              variant="transparent"
+              ariaLabel="Retry spend overview"
+              tooltip="Retry spend overview"
+              disabled={loading}
+              onClick={() => setOverviewRetryTick((t) => t + 1)}
+            />
           </div>
           <div className="mt-1 text-xs">
             {error.message}
             {" · "}
-            This page needs a Super Admin account; the read is refused at the
-            database, not hidden in the UI. Use Refresh to try again.
+            The breakdown below has a separate read. Retry the overview here.
           </div>
         </div>
       ) : null}

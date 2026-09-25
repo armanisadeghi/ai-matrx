@@ -1,0 +1,36 @@
+import { chromium } from "@playwright/test";
+const out = "/private/tmp/claude-501/-Users-armanisadeghi-code/824aa9b6-f4de-4b69-b980-93ed86dafe05/scratchpad";
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1600, height: 950 }, deviceScaleFactor: 1 });
+const errors = [];
+page.on("console", (m) => { if (m.type() === "error") errors.push(m.text().slice(0, 200)); });
+await page.goto(process.env.OPEN, { waitUntil: "commit", timeout: 180000 });
+await page.waitForURL(/list-preview/, { timeout: 180000 });
+await page.waitForSelector("tbody tr", { timeout: 180000 });
+await page.waitForFunction(() => !document.body.innerText.includes("Grading"), null, { timeout: 180000 }).catch(() => {});
+await page.waitForTimeout(1500);
+await page.screenshot({ path: out + "/list-preview.png" });
+// Mine scope -> name -> back
+await page.getByRole("button", { name: /^Mine/ }).first().click().catch(async () => { await page.getByText(/^Mine/).first().click(); });
+await page.waitForTimeout(2500);
+const mineUrl = page.url();
+const firstLink = page.locator("tbody tr td a").first();
+const target = await firstLink.getAttribute("href");
+await firstLink.click();
+await page.waitForURL((u) => !u.pathname.endsWith("list-preview"), { timeout: 120000 });
+const detailUrl = page.url();
+await page.goBack();
+await page.waitForSelector("tbody tr", { timeout: 120000 });
+await page.waitForTimeout(2000);
+const backUrl = page.url();
+const activeTabs = await page.evaluate(() => [...document.querySelectorAll("button")].map(b => b.textContent.trim() + (b.getAttribute("aria-pressed") ?? b.getAttribute("data-state") ?? "")).filter(t => /^(Mine|My Orgs|System)\d/.test(t)));
+// Peek on a code mandate
+await page.goto(new URL("/administration/mandates/list-preview?q=flashcards", page.url()).toString());
+await page.waitForSelector("tbody tr", { timeout: 120000 });
+await page.waitForFunction(() => !document.body.innerText.includes("Grading"), null, { timeout: 120000 }).catch(() => {});
+await page.locator("tbody tr").first().locator("td").nth(2).click();
+await page.waitForSelector("[role=dialog][data-state=open]", { timeout: 30000 });
+await page.waitForTimeout(800);
+await page.screenshot({ path: out + "/mandate-peek.png" });
+console.log(JSON.stringify({ mineUrl, target, detailUrl, backUrl, activeTabs, errors }, null, 1));
+await browser.close();

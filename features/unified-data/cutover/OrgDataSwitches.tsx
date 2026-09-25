@@ -130,10 +130,23 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
             </div>
 
             {seam.state === "new" && seam.switched ? (
-              <p className="text-xs text-muted-foreground">
-                Switched {whenText(seam.switched.at)}
-                {seam.switched.by ? ` by ${seam.switched.by}` : ""}. Switching back: {seam.reverseDoes}
-              </p>
+              <>
+                <p className="text-xs text-muted-foreground">
+                  Switched {whenText(seam.switched.at)}
+                  {seam.switched.by ? ` by ${seam.switched.by}` : ""}. Switching back: {seam.reverseDoes}
+                </p>
+                {seam.reverseChecks
+                  .filter((c) => !c.met)
+                  .map((c) => (
+                    <p key={c.key} className="flex items-start gap-2 text-xs">
+                      <CircleDashed className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+                      <span>
+                        <span className="font-medium">Not ready to switch back: {sentence(c.says)}</span>{" "}
+                        {c.detail && <span className="text-muted-foreground">{c.detail}</span>}
+                      </span>
+                    </p>
+                  ))}
+              </>
             ) : (
               <>
                 <ul className="flex flex-col gap-1.5">

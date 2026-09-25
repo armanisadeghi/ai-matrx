@@ -83,7 +83,7 @@ export function KpiTile({
   );
 
   const shell = cn(
-    "flex min-w-0 flex-col justify-between rounded-md border border-border bg-card px-3 py-2",
+    "flex min-w-0 flex-col gap-0.5 rounded-md border border-border bg-card px-3 py-2",
     className,
   );
 

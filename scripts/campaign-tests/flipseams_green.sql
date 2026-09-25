@@ -51,6 +51,7 @@ declare
   v_moved uuid[];
   v_archived uuid[];
   v_before jsonb;
+  v_written uuid;
 begin
   if to_regprocedure('platform.cutover_seams(uuid)') is null
      or to_regprocedure('platform.cutover_seam_press(text, uuid, text, text)') is null then
@@ -190,6 +191,26 @@ begin
     perform set_config('role', 'postgres', true);
     if exists (select 1 from workbench.udt_datasets d where d.organization_id = c_ws and d.deleted_at is null) then raise exception '10d: an older table stayed live'; end if;
     if platform.knob_resolve('data_tables', 'older_tables_moved', c_ws) <> 'true'::jsonb then raise exception '10e: the tables-moved setting is off after the flip'; end if;
+    -- 10.1 LOSSLESS UNDO: a row archived in a copy after the switch holds the switch back until
+    --      it is carried back into the older table.
+    select r.id into v_written from custom.record r
+     where r.organization_id = c_ws and r.table_id = any (v_moved) and r.data_class = 'record' and r.deleted_at is null
+     order by r.id limit 1;
+    update custom.record set deleted_at = clock_timestamp() where organization_id = c_ws and id = v_written;
+    perform set_config('role', 'authenticated', true);
+    v := platform.cutover_seams(c_ws);
+    if (select (s ->> 'may_reverse')::boolean from jsonb_array_elements(v -> 'seams') s where s ->> 'key' = 'older_tables') then
+      raise exception '10.1a: Switch back is offered while a record written after the switch is not carried back';
+    end if;
+    v := platform.cutover_seam_press('older_tables', c_ws, 'old', 'undo too early');
+    if v ->> 'reason' <> 'not_ready' or v ->> 'says' !~ 'written in the new tables since the switch' then
+      raise exception '10.1b: switching back was not refused by name while a write would be left behind: %', v;
+    end if;
+    raise notice '10.1: %', v ->> 'says';
+    -- Stage "nothing left behind" (in real life the mover's --reverse --since carries the write
+    -- into the older table): the archive in the copy is undone, inside the rolled-back part.
+    perform set_config('role', 'postgres', true);
+    update custom.record set deleted_at = null where organization_id = c_ws and id = v_written;
     perform set_config('role', 'authenticated', true);
 
     v := platform.cutover_seam_press('older_tables', c_ws, 'old', 'undo');

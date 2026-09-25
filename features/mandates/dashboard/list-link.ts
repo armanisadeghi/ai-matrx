@@ -4,9 +4,9 @@
 // (/administration/mandates/list-preview) pre-filtered to that set.
 //
 // Encoding: lib/entity-list/urlQuery.ts — one `filters` JSON param keyed by
-// COLUMN ID, each value an EntityFilterValue. The column ids below are the
-// ONE place this dashboard names the list's columns; when the list's own
-// column ids land (features/mandates/admin-list/), align them here.
+// COLUMN ID, each value an EntityFilterValue. The ids and values below are the
+// list's own (features/mandates/admin-list/fields.ts FIELDS + rows.ts) and
+// this is the ONE place the dashboard names them.
 
 import { ENTITY_LIST_URL_PARAMS } from "@/lib/entity-list/urlQuery";
 import type { EntityFilters } from "@/lib/entity-list/types";
@@ -14,13 +14,22 @@ import type { EntityFilters } from "@/lib/entity-list/types";
 export const MANDATE_LIST_PATH = "/administration/mandates/list-preview";
 
 export const MANDATE_LIST_COLUMN = {
+  /** "code" | "soft" */
   origin: "origin",
-  feature: "feature",
+  /** featureLabelOf(key, module) */
+  feature: "featureLabel",
+  /** "green" | "orange" | "red" | "unknown" */
   coverage: "coverage",
-  enabled: "is_enabled",
-  pinning: "pinning",
-  customizedBy: "customized_by",
-  drift: "drift",
+  /** boolean */
+  enabled: "isEnabled",
+  /** "Latest" | "v3" | "None" — the default holder only */
+  pin: "pinText",
+  /** org names | "Personal" | "Global" | "Default" */
+  customizedBy: "customizedBy",
+  /** "declared" | "import_failed" | "not_in_code" | "unknown" */
+  codeState: "codeState",
+  /** agent name | "Workflow" */
+  holder: "agentName",
 } as const;
 
 type Column = (typeof MANDATE_LIST_COLUMN)[keyof typeof MANDATE_LIST_COLUMN];

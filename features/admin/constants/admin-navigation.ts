@@ -230,6 +230,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/mandates/advanced"),
           destination("/administration/mandates", [
             "/administration/mandates/[mandateKey]",
+            "/administration/mandates/dashboard-preview",
           ]),
         ],
       },
