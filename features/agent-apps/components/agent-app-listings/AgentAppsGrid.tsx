@@ -282,7 +282,7 @@ export function AgentAppsGrid({
     async (app: AgentAppCardModel) => {
       const ok = await confirm({
         title: "Delete agent app",
-        description: `Permanently delete "${app.name}"? This cannot be undone.`,
+        description: `This archives "${app.name}". It stops running and disappears from your apps; an admin can restore it.`,
         confirmLabel: "Delete",
         variant: "destructive",
       });
