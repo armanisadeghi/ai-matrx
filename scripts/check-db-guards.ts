@@ -131,6 +131,10 @@ const EXPECTED: ReadonlyArray<{ name: string; why: string }> = [
     why: "gives every table the moment it has row-level security a platform_admin_read policy (our own admin database access — common-docs/policies/our-own-admin-database-access.md), so a table made outside iam.apply_rls never blinds the admin system",
   },
   {
+    name: "admin_door_survives_revoke",
+    why: "re-grants SELECT to service_role on any relation a REVOKE closed — the admin system's server door reads as service_role, so relations_closed_to_the_admin_door stays 0 (common-docs/policies/our-own-admin-database-access.md item 3)",
+  },
+  {
     name: "provision_shape_guard",
     why: "blocks unprovisioned entity shapes and records unsettled FK, tenancy, and function-door debts",
   },

@@ -11,14 +11,14 @@
 import { supabase } from "@/utils/supabase/client";
 import { convertCxContentToDisplay } from "@/features/cx-chat/utils/cx-content-converter";
 import { normalizeDatasetDisplayName } from "@/features/data-tables/resolve-unique-dataset-name";
+import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
 
 const HEADING_RE = /^(#{1,6})[ \t]+(.+?)\s*#*\s*$/;
 
 function cleanHeadingText(text: string): string {
-  return text
+  return unwrapCodeSpans(text)
     .replace(/\*\*(.*?)\*\*/g, "$1")
     .replace(/\*(.*?)\*/g, "$1")
-    .replace(/`([^`]+)`/g, "$1")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .trim();
 }

@@ -1,3 +1,4 @@
+import { replaceFences, unwrapCodeSpans } from "@/lib/markdown/code-ranges";
 export const cleanMarkdown = (text: string): string => {
     if (!text || typeof text !== 'string') return '';
 
@@ -24,7 +25,7 @@ export const cleanMarkdown = (text: string): string => {
         processedLine = processedLine.replace(/(\*|_)(.*?)\1/, '$2');    // Italic
 
         // Remove inline code backticks, keep content
-        processedLine = processedLine.replace(/`([^`]+)`/, '$1');
+        processedLine = unwrapCodeSpans(processedLine);
 
         // Remove link markup, keep link text
         processedLine = processedLine.replace(/\[([^\]]+)\]\(([^)]+)\)/, '$1');
@@ -51,9 +52,8 @@ export const cleanMarkdown = (text: string): string => {
     cleanedText = processedLines.join('\n');
 
     // Handle code blocks separately to preserve their internal whitespace
-    cleanedText = cleanedText.replace(/```[\s\S]*?```/g, (match) => {
-        return match.slice(3, -3); // Keep content between ```, no trimming
-    });
+    // Fences by THE one code-range rule: keep the code, drop the fence lines.
+    cleanedText = replaceFences(cleanedText, ({ body }) => body);
 
     return cleanedText;
 };

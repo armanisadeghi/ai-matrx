@@ -23,6 +23,7 @@ import { ledgerForCapture } from "@/lib/diagnostics/stream-capture/request-ledge
 import { useDebugContext } from "@/hooks/useDebugContext";
 import {
   mergePageCapture,
+  normalizePageCapture,
   pageCaptureDebugEntries,
   type PageCapture,
   type PageCaptureContribution,
@@ -100,7 +101,9 @@ export function getActivePageCapture(_version?: number): PageCapture | null {
     const got = c.get();
     return Array.isArray(got) ? { owner: c.owner, sections: got } : { owner: c.owner, ...got };
   });
-  return mergePageCapture(top.get(), merged);
+  // Plain JSON at registration (V24-TAILS): every consumer — the menu, the Groomer, the debug
+  // context — reads the same plain capture, whatever shapes a surface handed over.
+  return normalizePageCapture(mergePageCapture(top.get(), merged));
 }
 
 /** Re-render when the registry changes (the control appears/disappears, data lands). */

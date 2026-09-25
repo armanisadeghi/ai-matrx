@@ -28,6 +28,7 @@ import type {
   ValueCleanupOperationId,
   ValueCleanupOperationMeta,
 } from "./value-types";
+import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
 
 /** Build a regex character-class body from code points (each point -> its char). */
 function chars(...codePoints: number[]): string {
@@ -239,7 +240,7 @@ export const VALUE_CLEANUP_OPERATIONS: ValueCleanupOperationDef[] = [
       out = out.replace(/__([^_\n]+?)__/g, "$1");
       // 3. Inline code: `text` -> text (interior spans; the whole-value case is
       //    unwrap-code-ticks). Skipped when a value is a lone unbalanced tick.
-      out = out.replace(/`([^`\n]+?)`/g, "$1");
+      out = unwrapCodeSpans(out); // THE one code-range rule
       // 4. Italic: *text* -> text. Underscore italic (_text_) is deliberately
       //    NOT stripped — it would maul snake_case identifiers like
       //    needs_reviewer and python dunders, which are common in this data.

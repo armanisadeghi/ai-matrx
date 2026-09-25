@@ -15,6 +15,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   loadableSections,
   pageCaptureGroomer,
+  pageCaptureJson,
   pageCaptureMarkdown,
   pageCapturePayload,
   resolvePageCapture,
@@ -43,7 +44,8 @@ export function PageCaptureButton({
         size={size}
         label={capture.title}
         human={() => pageCaptureMarkdown(live())}
-        json={() => live()}
+        /* The workspace ("Prepare for AI") clones this strictly: plain JSON, loads as sentences. */
+        json={() => pageCaptureJson(live())}
         agent={() => pageCapturePayload(live(), "everything")}
         agentVariant={{ id: "everything", label: "Everything on this page", position: "first" }}
         aiVariants={[

@@ -70,6 +70,8 @@ export interface AnnotationItem {
   saveState: SaveState;
   /** The sentence shown when saveState is failed. */
   error?: string;
+  /** False when trying the same write again cannot succeed (a switched-off capability, no permission): no Retry is offered. */
+  retryable?: boolean;
   /** Null = the whole document. */
   anchor: TextAnchor | null;
   author: AnnotationAuthor;

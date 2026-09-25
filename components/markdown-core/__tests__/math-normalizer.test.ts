@@ -1,4 +1,4 @@
-import { isEscapedBracketProse, normalizeMathDelimiters } from "../math-normalizer";
+import { isEscapedBracketMath, normalizeMathDelimiters } from "../math-normalizer";
 
 // Source → exact normalized source. Anything not math must come back
 // byte-identical; math comes back in remark-math's `$$` forms.
@@ -23,7 +23,9 @@ const TABLE: Array<[string, string, string]> = [
   ["closing followed by digit", "$x$5", "$x$5"],
   ["space after opening", "$ x^2$", "$ x^2$"],
   ["inline paren", "a \\(x+1\\) b", "a $$x+1$$ b"],
-  ["display bracket", "a\n\\[x\\]\nb", "a\n\n\n$$\nx\n$$\n\n\nb"],
+  ["display bracket", "a\n\\[x^2\\]\nb", "a\n\n\n$$\nx^2\n$$\n\n\nb"],
+  // A lone letter is a task box / escaped brackets, not math (content-ir isEscapedBracketMath).
+  ["lone bracketed letter stays literal", "a\n\\[x\\]\nb", "a\n\\[x\\]\nb"],
   ["existing $$ untouched", "$$a$b$$ and $$c$$", "$$a$b$$ and $$c$$"],
   ["code span untouched", "`$x^2$ \\(y\\)`", "`$x^2$ \\(y\\)`"],
   ["double-backtick span", "``a ` $x^2$``", "``a ` $x^2$``"],
@@ -46,23 +48,34 @@ describe("normalizeMathDelimiters", () => {
   });
 });
 
-describe("escaped brackets around prose are literal, not math (verify-RC-B4 R2-3)", () => {
-  it("leaves \\[word\\] as escaped brackets the markdown renders as [word]", () => {
-    expect(normalizeMathDelimiters("See \\[bracket\\] here.")).toBe("See \\[bracket\\] here.");
-    expect(normalizeMathDelimiters("Call it \\[sic\\], then \\[see note\\].")).toBe("Call it \\[sic\\], then \\[see note\\].");
+describe("escaped brackets are literal unless the content is TeX (verify-RC-B4 R2-3, R3-2)", () => {
+  it("citations, dates, task boxes, indexes, editorial and placeholder brackets stay literal", () => {
+    for (const text of [
+      "See \\[bracket\\] here.",
+      "Chock every trailer \\[1\\] and \\[14\\].",
+      "Inspected \\[2026-09-25\\].",
+      "- \\[x\\] Collect badge",
+      "Read arr\\[i\\] and arr\\[i+1\\].",
+      "He said it \\[was\\] down.",
+      "Replace \\[site name\\].",
+    ]) {
+      expect(normalizeMathDelimiters(text)).toBe(text);
+    }
   });
 
   it("still converts real display math between \\[ \\]", () => {
-    for (const tex of ["x^2 + y^2", "x", "E = mc^2", "\\alpha", "3.14", "\\frac{a}{b}"]) {
+    for (const tex of ["x^2 + y^2", "E = mc^2", "\\alpha", "\\frac{a}{b}", "a + b = c"]) {
       expect(normalizeMathDelimiters(`\\[${tex}\\]`)).toContain(`$$\n${tex}\n$$`);
     }
   });
 
-  it("the one rule, as the editor uses it", () => {
-    expect(isEscapedBracketProse("bracket")).toBe(true);
-    expect(isEscapedBracketProse(" see note ")).toBe(true);
-    expect(isEscapedBracketProse("x")).toBe(false);
-    expect(isEscapedBracketProse("a+b")).toBe(false);
-    expect(isEscapedBracketProse("\\sin x")).toBe(false);
+  it("matches content-ir's shared vectors' predicate cases", () => {
+    expect(isEscapedBracketMath("1", " ")).toBe(false);
+    expect(isEscapedBracketMath("x", " ")).toBe(false);
+    expect(isEscapedBracketMath("i+1", "r")).toBe(false);
+    expect(isEscapedBracketMath("a + b = c", " ")).toBe(true);
+    expect(isEscapedBracketMath("\\alpha", undefined)).toBe(true);
+    expect(isEscapedBracketMath("x_1", " ")).toBe(true);
+    expect(isEscapedBracketMath("file_name", " ")).toBe(false);
   });
 });

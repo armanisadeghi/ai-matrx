@@ -1,4 +1,5 @@
 -- window: trigger/index DDL on platform.associations (hot, supautils-set freeze) — 1-4 AM PT only
+-- chair-step: DROP TRIGGER then CREATE TRIGGER replaces the edge validator trigger with a wider WHEN (text_anchor + text_anchor_set); the function is unchanged and the replacement is in the same transaction
 -- RC-A3 (verification evidence/verify-RC-A1-A3.md F1/F2), the trigger half — APPLY IN THE 1-4 AM PT WINDOW:
 --   * the edge trigger also runs for payload_kind text_anchor_set, so an explicit set is checked
 --     anchor by anchor against its document exactly like a single anchor;

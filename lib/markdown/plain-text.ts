@@ -17,6 +17,7 @@
  */
 
 import { tokenizeSource } from "@ai-matrx/content-ir/source";
+import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
 
 /** Ordered so the greedy double-marker forms resolve before the single ones. */
 const INLINE_PATTERNS: ReadonlyArray<readonly [RegExp, string]> = [
@@ -31,7 +32,6 @@ const INLINE_PATTERNS: ReadonlyArray<readonly [RegExp, string]> = [
   // Underscore italics only between word boundaries: snake_case_names are not
   // emphasis, and mangling an identifier is a worse defect than a stray marker.
   [/(^|[\s(])_(?=\S)([^_\n]*?\S)_(?=[\s).,;:!?]|$)/g, "$1$2"],
-  [/`([^`\n]+)`/g, "$1"],
 ];
 
 /**
@@ -163,6 +163,8 @@ export function markdownToPlainText(value: string | null | undefined): string {
   for (const [pattern, replacement] of INLINE_PATTERNS) {
     text = text.replace(pattern, replacement);
   }
+  // Code spans by THE one code-range rule (@ai-matrx/content-ir/source).
+  text = unwrapCodeSpans(text);
 
   text = text.replace(
     /\uE000MATH(\d+)\uE001/g,

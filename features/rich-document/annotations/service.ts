@@ -35,7 +35,7 @@ import {
   type HighlightColor,
 } from "./constants";
 import { textAnchorProblem, type TextAnchor } from "./anchor";
-import { EditConflictError, humanError, isTransportFailure } from "./errors";
+import { EditConflictError, SidecarError, humanError, isTransportFailure } from "./errors";
 import { readAllRows } from "@ai-matrx/data/db";
 import type {
   AnnotationAuthor,
@@ -44,9 +44,10 @@ import type {
   CommentReply,
 } from "./types";
 
-export class AnchorWritesOffError extends Error {
+/** The passage-write gate: a sentence with its remedy, never retryable (Retry cannot switch it on). */
+export class AnchorWritesOffError extends SidecarError {
   constructor() {
-    super(ANCHOR_WRITES_OFF_SENTENCE);
+    super(ANCHOR_WRITES_OFF_SENTENCE, undefined, false);
     this.name = "AnchorWritesOffError";
   }
 }

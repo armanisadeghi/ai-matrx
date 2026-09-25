@@ -11,8 +11,9 @@ import { SignedOutMeetings } from "@/features/meet/components/SignedOutMeetings"
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { MEET_PLACES } from "@/features/meet/intelligence-places";
 
-// The meeting screen is the @ai-matrx/meet package's stage (no header of ours),
-// so the Intelligence icon for its jobs sits here, at the meetings header.
+// The same jobs are disclosed inside every live meeting too (MeetingSurface →
+// the package's `headerControls` slot); here they sit beside the list where
+// meetings are scheduled.
 const MEETING_JOBS = MEET_PLACES.places.flatMap((place) => place.mandateKeys);
 
 export default async function MeetingsPage() {

@@ -12,7 +12,7 @@ import {
 import { ScopeTypeCard } from "./ScopeTypeCard";
 import { AddScopeTypeCard } from "./AddScopeTypeCard";
 import { AddScopeModal } from "./AddScopeModal";
-import { TemplateGalleryDrawer } from "./TemplateGalleryDrawer";
+import { TemplateGalleryDrawer } from "@/features/scopes/components/management/TemplateGalleryDrawer";
 import {
   selectScopeTypesByOrg,
   selectScopeTypesLoading,

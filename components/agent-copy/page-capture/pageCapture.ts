@@ -92,6 +92,114 @@ export interface PageCaptureContribution {
 
 const COMPACT_CHARS = 6000;
 
+// ── THE CAPTURE IS PLAIN JSON (lane V24-TAILS, VERIFIER-24 item 6). ──
+//
+// A table page's capture carried a `load` function and a declaration read from the store; the
+// Alchemy workspace clones its source through the kit's strict JSON clone, which refused the whole
+// capture with a bare "Unsupported value". Every value a surface registers is made plain here, at
+// registration: dates become ISO text, maps and sets become arrays, functions and symbols are
+// dropped, `undefined` properties are dropped, a repeated reference becomes a named marker. A value
+// that still cannot be represented is refused by `checkedTransferJson` with its path in words.
+
+/** The marker a cycle leaves where the repeated object would have been. */
+export const CIRCULAR_MARKER_PREFIX = "[circular reference to ";
+
+/** A JSON pointer path in words: `/sections/1/load` → `sections › 1 › load`; root is "the capture itself". */
+export function pathInWords(path: string | undefined | null): string {
+  if (!path || path === "/") return "the capture itself";
+  return path
+    .split("/")
+    .filter((p) => p !== "")
+    .map((p) => p.replace(/~1/g, "/").replace(/~0/g, "~"))
+    .join(" › ");
+}
+
+function plainAt(value: unknown, path: string, stack: WeakMap<object, string>): unknown {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return value;
+  if (typeof value === "number") return Number.isFinite(value) ? value : String(value);
+  if (typeof value === "bigint") return value.toString();
+  if (value === undefined || typeof value === "function" || typeof value === "symbol") return undefined;
+  if (typeof value !== "object") return String(value);
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? "Invalid date" : value.toISOString();
+  const seenAt = stack.get(value);
+  if (seenAt !== undefined) return `${CIRCULAR_MARKER_PREFIX}${pathInWords(seenAt)}]`;
+  stack.set(value, path);
+  try {
+    if (Array.isArray(value)) {
+      return Array.from(value, (x, i) => {
+        const v = plainAt(x, `${path}/${i}`, stack);
+        return v === undefined ? null : v;
+      });
+    }
+    if (value instanceof Map) {
+      return Array.from(value.entries(), ([k, v], i) => ({
+        key: plainAt(k, `${path}/${i}/key`, stack) ?? null,
+        value: plainAt(v, `${path}/${i}/value`, stack) ?? null,
+      }));
+    }
+    if (value instanceof Set) {
+      return Array.from(value.values(), (x, i) => plainAt(x, `${path}/${i}`, stack) ?? null);
+    }
+    if (ArrayBuffer.isView(value)) {
+      return Array.from(value as unknown as ArrayLike<number>, (x) => (typeof x === "bigint" ? String(x) : x));
+    }
+    if (value instanceof Error) return { name: value.name, message: value.message };
+    const withJson = value as { toJSON?: () => unknown };
+    if (typeof withJson.toJSON === "function") {
+      return plainAt(withJson.toJSON(), path, stack);
+    }
+    const out: Record<string, unknown> = {};
+    for (const [k, x] of Object.entries(value as Record<string, unknown>)) {
+      const v = plainAt(x, `${path}/${k.replace(/~/g, "~0").replace(/\//g, "~1")}`, stack);
+      if (v !== undefined) out[k] = v;
+    }
+    return out;
+  } finally {
+    stack.delete(value);
+  }
+}
+
+/**
+ * Any value as plain JSON: dates to ISO, maps to `{key, value}` arrays, sets to arrays, class
+ * instances to their own fields (or their `toJSON`), functions / symbols / `undefined` dropped
+ * (`null` inside an array), a cycle broken with "[circular reference to <path>]".
+ */
+export function toPlainJson(value: unknown): unknown {
+  const v = plainAt(value, "", new WeakMap());
+  return v === undefined ? null : v;
+}
+
+/**
+ * The strict check the Alchemy workspace makes, run here first so a refusal names WHERE: a value
+ * the kit's clone refuses throws a sentence with the path in words, never "Unsupported value" alone.
+ */
+export function checkedTransferJson<T>(value: T, what: string): T {
+  const walk = (v: unknown, path: string, seen: Set<object>): void => {
+    if (v === null || typeof v === "string" || typeof v === "boolean") return;
+    const refuse = (why: string): never => {
+      throw new Error(`${what} could not be prepared: ${pathInWords(path)} ${why}.`);
+    };
+    if (typeof v === "number") {
+      if (!Number.isFinite(v)) refuse(`is ${String(v)}, which is not a number JSON can hold`);
+      return;
+    }
+    if (typeof v !== "object") refuse(`is ${v === undefined ? "missing (undefined)" : `a ${typeof v}`}, which is not plain data`);
+    const o = v as object;
+    if (seen.has(o)) refuse("refers back to itself");
+    const proto = Object.getPrototypeOf(o);
+    if (!Array.isArray(o) && proto !== Object.prototype && proto !== null) {
+      refuse(`is a ${(o as { constructor?: { name?: string } }).constructor?.name ?? "class instance"}, not a plain object`);
+    }
+    seen.add(o);
+    if (Array.isArray(o)) o.forEach((x, i) => walk(x, `${path}/${i}`, seen));
+    else for (const [k, x] of Object.entries(o)) if (x !== undefined) walk(x, `${path}/${k}`, seen);
+    seen.delete(o);
+  };
+  walk(value, "", new Set());
+  return value;
+}
+
+
 function isNamed(v: PageCaptureValue): v is PageCaptureNamed {
   return typeof v === "object" && v !== null && "id" in v && "name" in v;
 }
@@ -166,6 +274,51 @@ export function mergePageCapture(
     }
   }
   return { ...base, identity, sections };
+}
+
+function plainNamedRecord(rec: Record<string, PageCaptureValue>): Record<string, PageCaptureValue> {
+  return toPlainJson(rec) as Record<string, PageCaptureValue>;
+}
+
+/**
+ * THE CAPTURE MADE PLAIN AT REGISTRATION (`getActivePageCapture` calls this): identity, selection,
+ * every section's value and brief, and every request body are plain JSON. A section's `load` stays a
+ * function — it is how the "with …" copies read — and is never handed to a transfer (see
+ * `pageCaptureJson`).
+ */
+export function normalizePageCapture(c: PageCapture): PageCapture {
+  return {
+    ...c,
+    identity: plainNamedRecord(c.identity),
+    selection: plainNamedRecord(c.selection),
+    errors: c.errors.map((e) => String(e)),
+    sections: c.sections.map((s) => {
+      const out: PageCaptureSection = { ...s, value: toPlainJson(s.value) };
+      if (s.brief !== undefined) out.brief = toPlainJson(s.brief);
+      else delete out.brief;
+      if (s.description === undefined) delete out.description;
+      if (s.load === undefined) delete out.load;
+      return out;
+    }),
+    requests: c.requests.map((r) => toPlainJson(r) as PageCaptureRequest),
+  };
+}
+
+/**
+ * The capture as the Alchemy menu's JSON source (the "Prepare for AI" workspace clones it): plain,
+ * with each `load` replaced by the sentence saying the section is read at copy time.
+ */
+export function pageCaptureJson(c: PageCapture): Record<string, unknown> {
+  const plain = normalizePageCapture(c);
+  return checkedTransferJson(
+    toPlainJson({
+      ...plain,
+      sections: plain.sections.map(({ load, ...s }) =>
+        load ? { ...s, read_at_copy_time: `Choose a "with ${s.title.toLowerCase()}" copy to read it now.` } : s,
+      ),
+    }) as Record<string, unknown>,
+    `The ${c.title} page`,
+  );
 }
 
 function pageBlock(c: PageCapture) {
@@ -243,11 +396,16 @@ export function pageCaptureGroomer(c: PageCapture): AlchemyGroomerConfig {
       title: s.title,
       description: s.description,
       build: (level: AlchemyDetail) =>
-        level === "full"
-          ? s.value
-          : level === "compact"
-            ? compactValue(s.value)
-            : (s.brief ?? shapeOf(s.value)),
+        checkedTransferJson(
+          toPlainJson(
+            level === "full"
+              ? s.value
+              : level === "compact"
+                ? compactValue(s.value)
+                : (s.brief ?? shapeOf(s.value)),
+          ),
+          `The "${s.title}" section`,
+        ),
     });
   }
   const requestSections = c.sections.filter((s) => s.role === "request");
@@ -265,7 +423,7 @@ export function pageCaptureGroomer(c: PageCapture): AlchemyGroomerConfig {
             level === "full" ? s.value : level === "compact" ? compactValue(s.value) : (s.brief ?? shapeOf(s.value)),
           ]),
         );
-        return { log, ...extra };
+        return checkedTransferJson(toPlainJson({ log, ...extra }), "The request log");
       },
     });
   }
@@ -430,13 +588,14 @@ export async function resolvePageCapture(c: PageCapture): Promise<PageCapture> {
     c.sections.map(async (s) => {
       if (!s.load) return s;
       try {
-        const value = await s.load();
-        return { ...s, value, load: undefined };
+        const value = toPlainJson(await s.load());
+        const { load: _read, ...rest } = s;
+        return { ...rest, value };
       } catch (e) {
+        const { load: _read, ...rest } = s;
         return {
-          ...s,
+          ...rest,
           value: `${s.title} could not be read: ${e instanceof Error ? e.message : String(e)}`,
-          load: undefined,
         };
       }
     }),

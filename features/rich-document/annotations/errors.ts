@@ -8,9 +8,16 @@
 // reached a person).
 
 export class SidecarError extends Error {
-  constructor(message: string, readonly raw?: unknown) {
+  /**
+   * Whether trying the same write again can succeed. False for a refusal the person cannot
+   * change by retrying (a switched-off capability, a missing permission): the panel then
+   * offers no Retry — a button that cannot work is a screen that lies.
+   */
+  readonly retryable: boolean;
+  constructor(message: string, readonly raw?: unknown, retryable = true) {
     super(message);
     this.name = "SidecarError";
+    this.retryable = retryable;
   }
 }
 
@@ -55,18 +62,25 @@ export function humanError(action: string, e: unknown): SidecarError {
   const code = codeOf(e);
   const text = textOf(e);
   let sentence: string;
+  let retryable = true;
   if (code === "42501" || /permission|not allowed|forbidden|cannot comment|may not/i.test(text)) {
     sentence = `You don't have permission for this here, so ${action} did not go through. Ask the owner to share it with you.`;
+    retryable = false;
   } else if (code === "23514" || /invalid text_anchor|passage is invalid/i.test(text)) {
     sentence = `The text changed while you were working, so ${action} did not go through. Select the passage again and retry.`;
   } else if (/not a registered entity type|registered entity/i.test(text)) {
     sentence = `This kind of record can't take links or private notes in this version of the app yet, so ${action} did not go through. It will work after the next app update.`;
   } else if (code === "PGRST202" || code === "42883") {
-    sentence = `This part isn't switched on yet, so ${action} did not go through.`;
+    sentence = `This part isn't switched on yet, so ${action} did not go through. Your text is kept here.`;
+    retryable = false;
   } else if (isTransportFailure(e)) {
     sentence = `We couldn't reach the server while ${action}. It may or may not have been saved — Retry is safe and never makes a second copy.`;
   } else {
-    sentence = `Something went wrong while ${action}. Retry, or reload the page if it keeps happening.`;
+    // Unrecognised: NAME it. "Something went wrong" tells the person nothing and tells whoever
+    // they report it to nothing either (Arman, 2026-09-25, on a gated highlight that said it).
+    const said = text.trim().replace(/\s+/g, " ");
+    const named = said ? ` The server said: "${said.length > 160 ? `${said.slice(0, 157)}…` : said}"${code ? ` (${code})` : ""}.` : code ? ` (error ${code}).` : "";
+    sentence = `${action} did not go through.${named} Retry, or reload the page if it keeps happening.`;
   }
-  return new SidecarError(sentence[0].toUpperCase() + sentence.slice(1), e);
+  return new SidecarError(sentence[0].toUpperCase() + sentence.slice(1), e, retryable);
 }

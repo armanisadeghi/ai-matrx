@@ -1,3 +1,4 @@
+import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
 // features/rich-document/actions/markdownTable.ts
 //
 // The first GitHub-flavoured markdown table in a piece of content, as plain
@@ -35,11 +36,10 @@ function splitRow(line: string): string[] {
 }
 
 export function cleanCell(text: string): string {
-  return text
+  return unwrapCodeSpans(text)
     .replace(/\*\*([^*]+)\*\*/g, "$1")
     .replace(/__([^_]+)__/g, "$1")
     .replace(/\*([^*]+)\*/g, "$1")
-    .replace(/`([^`]+)`/g, "$1")
     .replace(/~~([^~]+)~~/g, "$1")
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1")
     .replace(/<br\s*\/?>/gi, " ")

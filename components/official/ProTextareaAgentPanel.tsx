@@ -26,9 +26,10 @@ import { textInputVariable } from "@/features/agents/utils/text-input-variable";
 import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { setHostVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
-  extractFlatText,
-  selectLatestAssistantMessageId,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+  selectAccumulatedText,
+  selectPrimaryRequest,
+} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
 import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { selectInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
@@ -95,7 +96,6 @@ function ProTextareaAgentRunnerSession({
   onApplySourceText: (text: string) => void;
   onControlsChange: (controls: RunControls) => void;
 }) {
-  const prevStatusRef = useRef<string | undefined>(undefined);
   const dispatch = useAppDispatch();
 
   useConversationDocumentsBridge(conversationId);
@@ -124,22 +124,27 @@ function ProTextareaAgentRunnerSession({
   );
 
   const store = useAppStore();
+  // THE RESULT, read the way Clean up reads it: the run's own answer text
+  // (the request's accumulated text, thinking stripped) — live, so a result
+  // that lands a tick after the status flips is still read. An agent that
+  // edited the working document hands back the document; one that ANSWERED
+  // with the revised text hands back its answer. Reading only the working
+  // document lost every answer-shaped result ("identical", verify-RC-B5 r3).
+  const requestText = useAppSelector((s) => {
+    const request = selectPrimaryRequest(conversationId)(s);
+    return request ? selectAccumulatedText(request.requestId)(s) : "";
+  });
+  const answer = stripThinkingStreaming(requestText).visible;
+  // A run this panel saw start (any live status), not yet handed back.
+  const pendingRun = useRef(false);
   useEffect(() => {
-    const prev = prevStatusRef.current;
-    prevStatusRef.current = status;
-    if (status === "complete" && (prev === "running" || prev === "streaming")) {
-      // THE RESULT, read the way Clean up reads it: an agent that edited the
-      // working document hands back the document; an agent that ANSWERED with
-      // the revised text hands back its final answer. Reading only the working
-      // document lost every answer-shaped result ("identical", verify-RC-B5 r3).
-      const state = store.getState();
-      const answerId = selectLatestAssistantMessageId(conversationId)(state);
-      const answer = answerId
-        ? extractFlatText(state.messages.byConversationId[conversationId]?.byId?.[answerId]).trim()
-        : "";
-      onApplySourceText(agentRunResult(sourceText, workingContent, answer));
-    }
-  }, [status, workingContent, onApplySourceText, store, conversationId, sourceText]);
+    if (status === "running" || status === "streaming") pendingRun.current = true;
+    if (status !== "complete" || !pendingRun.current) return;
+    // Wait for the answer (or a changed document) before handing anything back.
+    if (!answer.trim() && workingContent === sourceText) return;
+    pendingRun.current = false;
+    onApplySourceText(agentRunResult(sourceText, workingContent, answer));
+  }, [status, workingContent, onApplySourceText, sourceText, answer]);
 
   const handleRun = useCallback(() => {
     if (isExecuting) return;

@@ -292,10 +292,18 @@ function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
         <div role="alert" className="mt-1.5 rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-xs">
           <p className="font-medium text-destructive">Not saved</p>
           <p className="mt-0.5 text-foreground">{item.error}</p>
-          <div className="mt-1 flex gap-1">
-            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); void api.retry(item); }}>
-              <RotateCcw className="mr-1 h-3 w-3" aria-hidden />Retry
-            </Button>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {item.retryable !== false && (
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); void api.retry(item); }}>
+                <RotateCcw className="mr-1 h-3 w-3" aria-hidden />Retry
+              </Button>
+            )}
+            {item.retryable === false && item.anchor && (item.kind === "comment" || item.kind === "suggestion") && (
+              // The real remedy when a passage cannot be saved: the same words on the whole document.
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); void api.postOnWholeDocument(item); }}>
+                Post on the whole document
+              </Button>
+            )}
             <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); api.discardDraft(item.key); }}>
               Discard
             </Button>

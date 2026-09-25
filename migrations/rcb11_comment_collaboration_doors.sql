@@ -187,8 +187,7 @@ update platform.client_callable_door d
   from pg_proc p
  where p.oid = 'public.cmt_add(text, uuid, text, uuid, uuid, jsonb, text, uuid)'::regprocedure
    and d.schema_name = 'public' and d.function_name = 'cmt_add';
-revoke all on function public.cmt_add(text, uuid, text, uuid, uuid, jsonb, text, uuid) from public, anon;
-grant execute on function public.cmt_add(text, uuid, text, uuid, uuid, jsonb, text, uuid) to authenticated;
+grant execute on function public.cmt_add(text, uuid, text, uuid, uuid, jsonb, text, uuid) to authenticated, service_role;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 3. cmt_list — same predicate, the passage and resolution come back
@@ -230,8 +229,7 @@ update platform.client_callable_door d
   from pg_proc p
  where p.oid = 'public.cmt_list(text, uuid)'::regprocedure
    and d.schema_name = 'public' and d.function_name = 'cmt_list';
-revoke all on function public.cmt_list(text, uuid) from public, anon;
-grant execute on function public.cmt_list(text, uuid) to authenticated;
+grant execute on function public.cmt_list(text, uuid) to authenticated, service_role;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 3b. cmt_edit — same predicate, plus compare-and-swap on the row version
@@ -281,8 +279,7 @@ update platform.client_callable_door d
   from pg_proc p
  where p.oid = 'public.cmt_edit(uuid, text, integer)'::regprocedure
    and d.schema_name = 'public' and d.function_name = 'cmt_edit';
-revoke all on function public.cmt_edit(uuid, text, integer) from public, anon;
-grant execute on function public.cmt_edit(uuid, text, integer) to authenticated;
+grant execute on function public.cmt_edit(uuid, text, integer) to authenticated, service_role;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 4. WHO MAY I MENTION HERE — people who can view the record
@@ -329,8 +326,7 @@ select 'public', 'cmt_mention_candidates', pg_get_function_identity_arguments(p.
        'RC-B11 @-mention picker: definer so the answer is only people who can VIEW the record, asked by a commenter on it.', true
   from pg_proc p where p.oid = 'public.cmt_mention_candidates(text, uuid, text, integer)'::regprocedure
    and not exists (select 1 from platform.client_callable_door d where d.schema_name = 'public' and d.function_name = 'cmt_mention_candidates');
-revoke all on function public.cmt_mention_candidates(text, uuid, text, integer) from public, anon;
-grant execute on function public.cmt_mention_candidates(text, uuid, text, integer) to authenticated;
+grant execute on function public.cmt_mention_candidates(text, uuid, text, integer) to authenticated, service_role;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 5. TELL THE MENTIONED PEOPLE — one notice each, through the one notification store
@@ -430,8 +426,7 @@ select 'public', 'cmt_mention_notify', pg_get_function_identity_arguments(p.oid)
        'RC-B11 @-mention notices: definer so only the comment author sends them, and only to people who can VIEW the record.', true
   from pg_proc p where p.oid = 'public.cmt_mention_notify(uuid, uuid[], text)'::regprocedure
    and not exists (select 1 from platform.client_callable_door d where d.schema_name = 'public' and d.function_name = 'cmt_mention_notify');
-revoke all on function public.cmt_mention_notify(uuid, uuid[], text) from public, anon;
-grant execute on function public.cmt_mention_notify(uuid, uuid[], text) to authenticated;
+grant execute on function public.cmt_mention_notify(uuid, uuid[], text) to authenticated, service_role;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 6. ANNOTATIONS AND PASSAGE LINKS ON A NOTES SOURCE (non-conveying, like the document pairs)

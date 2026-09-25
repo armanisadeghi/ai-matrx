@@ -64,10 +64,15 @@ const commentsChannel = defineChannelNamespace({
 });
 
 function message(e: unknown): string {
+  return failure(e).error;
+}
+
+function failure(e: unknown): { error: string; retryable: boolean } {
   // The write path resolves the organization (ensureOrgId); a refusal for want of one is said in
   // words with its remedy, never as the transport's error text.
-  if (isOrganizationRequiredError(e)) return organizationRefusalMessage({ act: "saved", subject: "This annotation" });
-  return humanError("saving", e).message;
+  if (isOrganizationRequiredError(e)) return { error: organizationRefusalMessage({ act: "saved", subject: "This annotation" }), retryable: true };
+  const h = humanError("saving", e);
+  return { error: h.message, retryable: h.retryable };
 }
 
 let draftSeq = 0;
@@ -220,7 +225,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
   // ── drafts: pending → confirmed | failed (kept for retry) ──────────────
   const runDraft = useCallback(
     async (draft: AnnotationItem, write: () => Promise<void>) => {
-      setDrafts((d) => [...d.filter((x) => x.key !== draft.key), { ...draft, saveState: "pending", error: undefined }]);
+      setDrafts((d) => [...d.filter((x) => x.key !== draft.key), { ...draft, saveState: "pending", error: undefined, retryable: undefined }]);
       if (draft.clientRequestId) ledger.current.createdRequestIds.add(draft.clientRequestId);
       try {
         await write();
@@ -229,7 +234,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
         return true;
       } catch (e) {
         setDrafts((d) =>
-          d.map((x) => (x.key === draft.key ? { ...x, saveState: "failed", error: message(e) } : x)),
+          d.map((x) => (x.key === draft.key ? { ...x, saveState: "failed", ...failure(e) } : x)),
         );
         return false;
       }
@@ -344,6 +349,19 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
     [addHighlight, runDraft, doors],
   );
 
+  /** A comment whose PASSAGE could not be saved, posted on the whole document instead (same text, new request id). */
+  const postOnWholeDocument = useCallback(
+    async (item: AnnotationItem) => {
+      const src = sourceRef.current;
+      if (!src || (item.kind !== "comment" && item.kind !== "suggestion")) return false;
+      const whole: AnnotationItem = { ...item, kind: "comment", anchor: null, suggestedText: null, clientRequestId: newRequestId(), firstAttemptAt: now() };
+      return runDraft(whole, async () => {
+        await writeComment(src, whole);
+      });
+    },
+    [runDraft, doors],
+  );
+
   const discardDraft = useCallback((key: string) => {
     setDrafts((d) => d.filter((x) => x.key !== key));
   }, []);
@@ -433,6 +451,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
     addHighlight,
     link,
     retry,
+    postOnWholeDocument,
     discardDraft,
     acceptSuggestion,
     rejectSuggestion: (commentId: string) => act(() => deleteComment(commentId)),

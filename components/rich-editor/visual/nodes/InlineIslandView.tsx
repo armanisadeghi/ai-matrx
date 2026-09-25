@@ -16,7 +16,7 @@ import { useRichEditorContext } from "../../RichEditorContext";
 import { IslandCodeEditor } from "../../islands/IslandCodeEditor";
 import { IslandPreview } from "../../islands/IslandPreview";
 import { inlineIslandLabel, texOf } from "../../islands/island-meta";
-import { isEscapedBracketProse } from "@/components/markdown-core/math-normalizer";
+import { isEscapedBracketMath } from "@/components/markdown-core/math-normalizer";
 import {
   VARIABLE_STATE_CLASS,
   classifyVariable,
@@ -114,9 +114,10 @@ export function InlineIslandView({ node, updateAttributes, selected, editor }: N
   if (islandType === "math_inline") {
     const tex = texOf(raw);
     const [open$, close$] = mathDelimiters(raw);
-    // `\[word\]` is escaped brackets around prose, not math — the reader sees
-    // "[word]", as the renderer shows it (isEscapedBracketProse, the one rule).
-    if (open$ === "\\[" && isEscapedBracketProse(tex)) {
+    // `\[1\]`, `\[x\]`, `\[word\]` are escaped brackets, not math — the reader
+    // sees "[1]", as the renderer shows it (isEscapedBracketMath, the one rule).
+    // With content-ir's own rule installed the tokenizer never makes these islands.
+    if (open$ === "\\[" && !isEscapedBracketMath(tex, undefined)) {
       return (
         <NodeViewWrapper as="span" className="rich-editor-inline-island" contentEditable={false}>
           <span title="Escaped brackets — kept exactly as written" className={cn(selected && "rounded ring-2 ring-primary/50")}>

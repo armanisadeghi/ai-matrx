@@ -43,37 +43,66 @@ this directory.
    name, nor a scope RPC whose name falls outside the family grammar.
 
    **Who is exempt, and why:** the allowlist at the bottom of `eslint.config.mjs` (§"features/scopes
-   chokepoint allowlist") names every exempt file with its reason — 10 today. Three are server-side or
-   service-role doors this `"use client"` service cannot serve (`app/(core)/scopes/s/[scopeId]/page.tsx`,
-   `app/api/admin/system-context/route.ts`, `app/api/stripe/class-checkout/route.ts`); five are the
-   retirement queue — live duplicate paths (`features/scope-system/redux/{contextItemsSlice,templatesSlice,scopeValuesSlice}.ts`,
-   `features/agent-context/{service/hierarchyService.ts,redux/hierarchyThunks.ts}`) that still hold a
-   second context-item READ path (`list_scope_type_items` + the only `system_context_item` reader — its
-   writes already go through this service), a second apply-template path, a second set-value RPC, and a
-   third full-context read (`get_user_full_context`). Delete the allowlist entry when the duplicate path
-   goes; it is not a standing exemption.
-   Retired from that duplicate family (2026-09-25, lane SCOPE-PICKER-RETIRE): the bespoke
-   `features/agent-context/components/ScopePicker.tsx` and its companion hook
-   `features/agent-context/hooks/useScopeAssignment.ts` — both consumerless; entity scope tagging is
-   `ContextAssignmentField` / `EntityScopeTagger` only. Neither file was on the allowlist (they reached
-   `context.*` only through the slices), so the allowlist is unchanged.
-   Retired next (2026-09-25, lane HIERARCHY-CASCADE): the whole `agent-context/components/hierarchy-selection/`
-   family (`HierarchyCascade`, `HierarchyPills`, `HierarchyTree`, `useHierarchySelection`,
-   `useReduxBridge`), `agent-apps/.../AgentAppHierarchyCascade`, `agent-shortcuts/.../ShortcutScopePicker`,
-   and from the duplicate tree `agent-context/redux/scope/{scopeAssignmentsSlice,selectors}.ts` plus the
-   `scopeAssignments` reducer key (nothing filled it any more). Their callers use the canonical family:
-   `active-context/engagement/{EngagementPicker,EntityEngagementPicker,useActiveEngagementSelection}` and
-   `active-context/binding-target/BindingTargetPicker`.
-   Retired last (2026-09-25, lane SCOPE-ADMIN-CANONICAL): the rest of the duplicate tree —
-   `agent-context/redux/scope/{scopeTypesSlice,scopesSlice,types}.ts`, the `scopeTypes` / `scopes`
-   reducer keys, their two allowlist entries, and `hierarchyThunks`' fan-out of scopes into them. The
-   canonical nodes carry the console's fields (`ScopeTypeNode.slug/description/created_at/updated_at`,
-   `ScopeNode.slug/sort_order/created_by/created_at/updated_at`), the console reads them through
-   `redux/selectors/admin.ts`, and every console write goes through its door — scope types and scopes
-   via `redux/thunks/scopeTreeMutations.ts`, which patch the tree in place (no refetch; an archive needs
-   only the id), context items via `scope-system/redux/contextItemsSlice`'s thunks, which now call
-   `scopesService` and echo into `contextItemsByTypeId`. Guard: `features/scopes/__tests__/one-scope-tree.test.ts`.
-   What remains on the queue is the five paths named above.
+   chokepoint allowlist") names every exempt file with its reason — 5 today: the service itself, the
+   typed schema handle (`utils/supabase/contextDb.ts`), and three server-side or service-role doors this
+   `"use client"` service cannot serve (`app/(core)/scopes/s/**`, `app/api/admin/system-context/route.ts`,
+   `app/api/stripe/class-checkout/route.ts`). **The retirement queue is EMPTY** (2026-09-25, lane
+   SCOPE-ADMIN-2). A new entry there is a new duplicate path — it needs a reason and a line here, never
+   a standing exemption. Guard: `features/scopes/__tests__/retirement-queue-is-empty.test.ts` (the
+   retired modules, their imports, their reducer keys, their allowlist entries, and any `.rpc()` of
+   `get_user_full_context` / `get_user_nav_tree` / `list_scope_type_items` / `set_scope_context_value` /
+   `get_scope_context` / `list_templates` / `apply_template_by_key`, or a `system_context_item` read,
+   outside the service).
+   Retired (2026-09-25, lane SCOPE-PICKER-RETIRE): the bespoke
+   `features/agent-context/components/ScopePicker.tsx` and `hooks/useScopeAssignment.ts` — consumerless;
+   entity scope tagging is `ContextAssignmentField` / `EntityScopeTagger` only.
+   Retired (2026-09-25, lane HIERARCHY-CASCADE): the `agent-context/components/hierarchy-selection/`
+   family, `AgentAppHierarchyCascade`, `ShortcutScopePicker`, and `agent-context/redux/scope/
+   {scopeAssignmentsSlice,selectors}.ts` + the `scopeAssignments` key. Callers use
+   `active-context/engagement/*` and `active-context/binding-target/BindingTargetPicker`.
+   Retired (2026-09-25, lane SCOPE-ADMIN-CANONICAL): `agent-context/redux/scope/{scopeTypesSlice,
+   scopesSlice,types}.ts` + the `scopeTypes` / `scopes` keys. The console reads the tree through
+   `redux/selectors/admin.ts` and writes through `redux/thunks/scopeTreeMutations.ts` (in-place patch).
+   Guard: `features/scopes/__tests__/one-scope-tree.test.ts`.
+   Retired last (2026-09-25, lane SCOPE-ADMIN-2) — the queue's five paths:
+   - `scope-system/redux/contextItemsSlice.ts` (+ the `contextItems` key) → **`redux/contextItemCatalog.ts`**:
+     the same names over `scopesTree.contextItemsByTypeId`; `listScopeTypeItems` = `ensureScopeTypeItems`
+     (no refetch — every write door folds its row into the catalog); the System Context catalog is the
+     same loader under `SYSTEM_ITEMS_KEY` (`constants/contextItems.ts`) via
+     `scopesService.listSystemContextItems`; create/update/delete keep their `.unwrap()` contract and call
+     the `thunks/contextItemMutations` doors.
+   - `scope-system/redux/scopeValuesSlice.ts` (+ `scopeValues`) → **`redux/scopeContextView.ts`**: a scope's
+     rows are DERIVED (`selectValuesByScope`) from its type's catalog plus the `contextValues` store —
+     loader `getScopeContext` (= `ensureScopeTypeItems` + `ensureContextValues`; `refresh` re-reads the
+     values after an out-of-band write); cell writes (`setScopeContextValue`) go through
+     `thunks/setContextValue` → `set_context_value` with `source_type: "manual"`. The old
+     `set_scope_context_value` second write path and the denormalized definition copy are gone; save
+     state is `contextValues.savingPairs` / `lastSavedAt`.
+   - `scope-system/redux/templatesSlice.ts` (+ `templates`) and its `components/TemplateGalleryDrawer.tsx`
+     → the canonical `components/management/TemplateGalleryDrawer` over `scopeTemplates`
+     (`ensureTemplates`, `applyTemplate`).
+   - `agent-context/{service/hierarchyService,redux/hierarchyThunks}.ts` → the full-context read is
+     `scopesService.fetchUserFullContext` (hierarchyService's twin + the consumerless
+     `get_user_nav_tree` reader deleted).
+   **Still open, not a chokepoint breach:** `hierarchyThunks` still fans that read into
+   `hierarchySlice` / `organizationsSlice` / `projectsSlice` / `tasksSlice` — a parallel cache of the
+   tree's organizations and projects (~25 consumers across tasks/projects/organizations). Converging it
+   is its own campaign.
+
+   **THE ADMIN LANE (2026-09-25, lane SCOPE-ADMIN-2).** The tree holds only the person's own
+   organizations. The platform-admin scope console, `/administration/scopes-context/organizations/<id>`,
+   opens ANY organization through the one loader's admin-lane mode —
+   `ensureScopeTree({ adminOrganizationId })` / `ensureAdminOrganizationTree(id)` →
+   `scopesService.getOrganizationTreeForAdmin` (refused off `/administration/**` before any read; the RLS
+   platform-admin arm decides). The node sits in `organizations` with `admin_lane: true` and in
+   `adminLaneOrganizationIds`, never in `organizationIds` (no picker lists it), is never persisted,
+   survives a membership refresh, and is released on unmount (`adminLaneOrganizationReleased`).
+   `redux/selectors/admin.ts#selectAllScopeTypes` includes it; `ScopeManagerPage` takes `adminLane`, which
+   ONLY the `/administration` route passes. The six structural write RPCs accept
+   `public.is_platform_admin()` (true only on an admin-lane request) —
+   `migrations/campaign/scopeadmin2_the_platform_admin_edits_any_organizations_scopes_from_administration.sql`.
+   On the user page (`/organizations/<id>/settings/scopes`) the admin is an ordinary member: a
+   non-member organization is the honest not-found.
 
    Write an exempt path as a glob, never as a literal dynamic route: ESLint globs are minimatch,
    where `[scopeId]` is a character class, so `app/(core)/scopes/s/[scopeId]/page.tsx` matches
@@ -166,7 +195,9 @@ this directory.
   `ensureScopeTypeItems` — the association/category cache fragments were DELETED in the
   W5 swap; that cache now lives in the package store), `contextValuesSlice.ts` (high-churn values sidecar; writes echo through
   `thunks/setContextValue.ts` → the sanctioned `set_context_value` RPC),
-  `templatesSlice.ts`, plus `thunks/` and `selectors/`. `appContextSlice.ts` lives at
+  `templatesSlice.ts`, `contextItemCatalog.ts` (the catalog surface every scope screen reads),
+  `scopeContextView.ts` (a scope's fields joined to its values — derived, not cached), plus `thunks/`
+  and `selectors/`. `appContextSlice.ts` lives at
   `lib/redux/slices/`. **Structural writes go ONLY through the mutation thunks**
   (`thunks/scopeTreeMutations.ts` — create/update/delete scope type + scope;
   `thunks/contextItemMutations.ts` — create/update/delete context item;
@@ -358,6 +389,18 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   not the same axis.
 
 ## Change Log
+
+- 2026-09-25 — **The retirement queue is empty; the admin lane opens any organization's scopes.** Lane
+  SCOPE-ADMIN-2. Deleted `scope-system/redux/{contextItemsSlice,scopeValuesSlice,templatesSlice}.ts`,
+  `scope-system/components/TemplateGalleryDrawer.tsx`, the `contextItems` / `scopeValues` / `templates`
+  reducer keys, hierarchyService's `fetchFullContext` / `fetchNavTree`, and the five allowlist entries.
+  New: `redux/contextItemCatalog.ts`, `redux/scopeContextView.ts`, `constants/contextItems.ts`,
+  `scopesService.{getOrganizationTreeForAdmin,fetchUserFullContext,listSystemContextItems}`,
+  `ensureAdminOrganizationTree`, `scopesTree.adminLaneOrganizationIds`, `contextValues.savingPairs /
+  lastSavedAt`, `ContextItemValue.value_timestamp / value_time`, the
+  `/administration/scopes-context/organizations/[orgId]` console. DB: the six scope-type/scope write
+  RPCs gain the admin-lane arm (applied direct, ledgered). Guards: `__tests__/retirement-queue-is-empty`,
+  `redux/__tests__/scope-context-view-and-admin-lane`, `service/__tests__/admin-lane-tree-read`.
 
 - 2026-09-25 — **One scope tree: the admin console reads and writes `scopesTree`.** Lane
   SCOPE-ADMIN-CANONICAL. Tree nodes gain the console's fields (read by `getScopeTree` and every write

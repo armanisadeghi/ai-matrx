@@ -38,6 +38,12 @@ import {
   selectIsAuthenticated,
 } from "@/lib/redux/selectors/userSelectors";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
+import { MEET_PLACES } from "@/features/meet/intelligence-places";
+
+// The meeting's AI jobs (live notes, answers, the wrap-up), disclosed IN the
+// room through the package's `headerControls` slot (@ai-matrx/meet 0.7.0).
+const MEETING_JOBS = MEET_PLACES.places.flatMap((place) => place.mandateKeys);
 
 type Resolution =
   | { readonly state: "loading" }
@@ -179,6 +185,14 @@ function MemberRoom({ meeting }: { meeting: MeetingRecord }) {
         meetingId={meeting.id}
         slug={meeting.slug}
         meeting={meeting}
+        // Signed-in lane only: a guest has no account to open the jobs with.
+        headerControls={
+          <IntelligenceIndicator
+            feature="meet"
+            mandateKeys={MEETING_JOBS}
+            label="The AI jobs in this meeting (live notes, answers, the wrap-up)"
+          />
+        }
       />
     </div>
   );

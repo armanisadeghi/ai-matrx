@@ -37,6 +37,7 @@ import {
   deriveDocumentName,
   markdownToUniverDoc,
 } from "@/features/data-tables/markdown-to-univer-doc";
+import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
 
 export interface PushResult {
   ok: boolean;
@@ -137,12 +138,11 @@ export interface TableInput {
 
 /** Strip inline markdown so a cell reads as normal spreadsheet content. */
 function cleanCell(text: string): string {
-  return text
+  return unwrapCodeSpans(text)
     .replace(/\*\*([^*]+)\*\*/g, "$1")
     .replace(/__([^_]+)__/g, "$1")
     .replace(/\*([^*]+)\*/g, "$1")
     .replace(/(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g, "$1")
-    .replace(/`([^`]+)`/g, "$1")
     .replace(/~~([^~]+)~~/g, "$1")
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1")
     .trim();

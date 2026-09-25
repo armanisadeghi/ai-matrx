@@ -73,20 +73,10 @@ export function ScopeManagerPage({
     };
   }, [adminLane, dispatch, organizationId]);
 
-  useEffect(() => {
-    if (!selectedTypeId && scopeTypes.length > 0) {
-      setSelectedTypeId(scopeTypes[0].id);
-    }
-    if (
-      selectedTypeId &&
-      scopeTypes.length > 0 &&
-      !scopeTypes.find((t) => t.id === selectedTypeId)
-    ) {
-      setSelectedTypeId(scopeTypes[0]?.id ?? null);
-    }
-  }, [scopeTypes, selectedTypeId]);
-
-  const selectedType = scopeTypes.find((t) => t.id === selectedTypeId) ?? null;
+  // The chosen type, or the first one when none is chosen (or the chosen one
+  // left the list) — derived, never synced into state by an effect.
+  const selectedType =
+    scopeTypes.find((t) => t.id === selectedTypeId) ?? scopeTypes[0] ?? null;
   const adminPending = adminLane && adminResult === null;
   const isEmpty = !loading && !adminPending && scopeTypes.length === 0;
 
@@ -127,7 +117,7 @@ export function ScopeManagerPage({
         <ScopeTypeList
           organizationId={organizationId}
           scopeTypes={scopeTypes}
-          selectedTypeId={selectedTypeId}
+          selectedTypeId={selectedType?.id ?? null}
           onSelectType={setSelectedTypeId}
           loading={loading}
         />

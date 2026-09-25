@@ -8,7 +8,7 @@
 // is assembled here, because a table opened from a portal or from an agent's
 // link must be the same screen.
 
-import { use, useCallback, useMemo, type ReactNode } from "react";
+import { use, useCallback, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { RecordsMount, TablePage, WhereItLives, personActor, recordsDataSource } from "@ai-matrx/records-ui";
@@ -59,6 +59,7 @@ import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapt
 import { tablePageCapture } from "@/components/agent-copy/page-capture/pageCapture";
 import { PageCaptureButton } from "@/components/agent-copy/page-capture/PageCaptureButton";
 import { useTableCaptureContribution } from "@/features/unified-data/page-capture/useTableCaptureContribution";
+import { shownViewSelection, type ShownViewLike } from "@/features/unified-data/page-capture/shownViewCapture";
 
 /**
  * THE PAGE'S TITLE IS THE TABLE'S OWN NAME (owner, 2026-09-24: a table he knows must look like
@@ -156,6 +157,17 @@ export default function UnifiedDataTableRoute({
   const activeItemId = searchParams.get("item");
   /** Which field the board's columns are, when a dashboard number sent them here. */
   const activeGroupField = searchParams.get("group");
+  /**
+   * THE VIEW AS DRAWN (V24-TAILS): TablePage reports the saved view with the person's look laid
+   * over it, so the capture names "grouped by Trade (your own look)" and never "not chosen".
+   */
+  const [shownView, setShownView] = useState<ShownViewLike | null>(null);
+  // Passed as a named object: `onShownViewChange` is records-ui Unreleased (aidream e7d629b1bb);
+  // a build without it ignores the key and the capture says the grouping is not known yet.
+  // TODO(V24-TAILS): pass it by name once the lockfile carries the published records-ui.
+  const shownViewReport: { onShownViewChange?: (shown: ShownViewLike) => void } = {
+    onShownViewChange: setShownView,
+  };
   /** The number they clicked, so the board can say where they came from. */
   const cameFrom = searchParams.get("from");
   /**
@@ -568,7 +580,7 @@ export default function UnifiedDataTableRoute({
         "Rail item": activeItemId,
         "Open record": activeRecordId,
         Dashboard: activeDashboardId,
-        "Board grouped by": activeGroupField,
+        ...shownViewSelection(shownView, activeGroupField),
         "Came from": cameFrom,
         Filter: filter ? JSON.stringify(filter) : rawFilter ? `ignored (not a JSON object): ${rawFilter}` : null,
       },
@@ -758,6 +770,7 @@ export default function UnifiedDataTableRoute({
               activeRecordId={activeRecordId}
               activeView={activeView}
               activeGroupField={activeGroupField}
+              {...shownViewReport}
               cameFrom={cameFrom}
               filter={filter}
               onViewChanged={onViewChanged}

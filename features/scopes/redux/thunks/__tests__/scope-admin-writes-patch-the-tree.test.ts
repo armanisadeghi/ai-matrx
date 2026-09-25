@@ -12,10 +12,10 @@
  *     once, by the boot load, and never again);
  *   - an archive needs only the row's id — its organization and type are read
  *     from the tree;
- *   - the context-item console thunks (`features/scope-system/redux/
- *     contextItemsSlice`) own no database access: create / edit / archive each
- *     call their `scopesService` door and update BOTH the console cache and the
- *     tree's catalog.
+ *   - the context-item console thunks (`features/scopes/redux/contextItemCatalog`,
+ *     which replaced `scope-system/redux/contextItemsSlice` in lane SCOPE-ADMIN-2)
+ *     own no database access: create / edit / archive each call their
+ *     `scopesService` door and update the ONE catalog on the tree.
  */
 import { configureStore } from "@reduxjs/toolkit";
 import { createSlimRootReducer, type RootState } from "@/lib/redux/rootReducer";
@@ -295,15 +295,17 @@ describe("scope writes patch the tree in place", () => {
   });
 });
 
-describe("context-item console writes go through scopesService and update both caches", () => {
+describe("context-item console writes go through scopesService and update the ONE catalog", () => {
   async function storeWithLoadedCatalogs(items: ContextItemRow[]) {
     const store = await bootedStore([typeNode()]);
-    // The console cache's own read.
-    rpc.mockResolvedValueOnce({ data: items, error: null });
-    await store.dispatch(listScopeTypeItems(typeNode().id));
-    // The tree's catalog read.
+    // The one catalog read (lane SCOPE-ADMIN-2: the console's second cache is
+    // gone; `listScopeTypeItems` IS `ensureScopeTypeItems`, so the second
+    // dispatch reads nothing).
     svc.listContextItems.mockResolvedValueOnce({ ok: true, data: { items } } as never);
+    await store.dispatch(listScopeTypeItems(typeNode().id));
     await store.dispatch(ensureScopeTypeItems(typeNode().id));
+    expect(svc.listContextItems).toHaveBeenCalledTimes(1);
+    expect(rpc).not.toHaveBeenCalled();
     return store;
   }
   const treeItems = (store: { getState: () => unknown }) =>
@@ -359,7 +361,7 @@ describe("context-item console writes go through scopesService and update both c
     expect(treeItems(store)).toEqual([]);
   });
 
-  it("a refused edit rejects with the service's message and changes neither cache", async () => {
+  it("a refused edit rejects with the service's message and leaves the catalog unchanged", async () => {
     const store = await storeWithLoadedCatalogs([contextItem()]);
     svc.updateContextItem.mockResolvedValue({
       ok: false,
