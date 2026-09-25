@@ -7,7 +7,8 @@
 
 import ReactMarkdown from "react-markdown";
 import "katex/dist/katex.min.css";
-import { MARKDOWN_PRESETS, prepareCoreSource } from "./markdown-core-presets";
+import { MARKDOWN_PRESETS, prepareCoreSource, remarkWithNumbering } from "./markdown-core-presets";
+import { useDocumentNumbering } from "./syntax/elements/DocumentNumbering";
 import type { MarkdownCoreProps } from "./markdown-core-types";
 import { withCoreSyntaxElements } from "./syntax/elements/core-syntax-elements";
 
@@ -17,9 +18,11 @@ export default function MarkdownCoreImpl({
   components,
 }: MarkdownCoreProps) {
   const plugins = MARKDOWN_PRESETS[preset];
+  // Document-wide figure / table / equation numbers from the document root.
+  const numbering = useDocumentNumbering();
   return (
     <ReactMarkdown
-      remarkPlugins={plugins.remark}
+      remarkPlugins={remarkWithNumbering(plugins.remark, numbering)}
       rehypePlugins={plugins.rehype}
       components={withCoreSyntaxElements(components)}
     >

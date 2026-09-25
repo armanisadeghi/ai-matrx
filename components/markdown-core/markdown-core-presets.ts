@@ -32,6 +32,7 @@ import "katex/contrib/mhchem";
 import remarkMatrxSyntax from "./syntax/remark-matrx-syntax";
 import rehypeMatrxSyntax from "./syntax/rehype-matrx-syntax";
 import { rewriteContainerSpellings } from "./syntax/prepare-syntax-source";
+import type { DocumentNumbering } from "./syntax/document-numbering";
 import type { Options } from "react-markdown";
 import {
   normalizeMathDelimiters,
@@ -115,6 +116,19 @@ export const MARKDOWN_PRESETS: Record<MarkdownPreset, MarkdownPluginSet> = {
     math: true,
   },
 };
+
+/**
+ * A preset's remark list with the document-wide numbering handed to the
+ * extended-syntax pass, so every block of a split document numbers figures,
+ * tables and equations the same way. No numbering → the module-scope list.
+ */
+export function remarkWithNumbering(
+  remark: Options["remarkPlugins"],
+  numbering: DocumentNumbering | null | undefined,
+): Options["remarkPlugins"] {
+  if (!numbering || !remark) return remark;
+  return remark.map((plugin) => (plugin === remarkMatrxSyntax ? ([remarkMatrxSyntax, { numbering }] as Plugin) : plugin));
+}
 
 /** The source a preset parses: math presets run the one normalizer. */
 export function prepareCoreSource(source: string, preset: MarkdownPreset): string {

@@ -1,4 +1,5 @@
 import type { Components } from "react-markdown";
+import type { DocumentNumbering } from "./syntax/document-numbering";
 
 /**
  * Plugin presets for the ONE shared react-markdown edge (MarkdownCore).
@@ -43,4 +44,10 @@ export interface MarkdownCoreProps {
    * a live stream); finished text is never healed.
    */
   streaming?: boolean;
+  /**
+   * Server renderer only: the document-wide numbering of the whole document
+   * this block belongs to (`computeDocumentNumbering`). Client leaves read it
+   * from the nearest DocumentNumberingProvider instead.
+   */
+  numbering?: DocumentNumbering | null;
 }

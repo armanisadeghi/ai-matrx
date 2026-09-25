@@ -32,6 +32,7 @@ import { acknowledgedPreparedSource, prepareContentEdit, savePreparedContentEdit
 
 registerAction({
   id: "edit",
+  writesSource: true,
   label: (ctx) =>
     chatExtensions(ctx)?.editTarget?.isStructuredRaw
       ? "View raw content"
@@ -129,6 +130,7 @@ registerAction({
 
 registerAction({
   id: "edit-history",
+  writesSource: true,
   label: (ctx) => {
     const ext =
       ctx.extensions?.type === "chat-message" ? ctx.extensions : null;
@@ -155,6 +157,7 @@ registerAction({
 
 registerAction({
   id: "fork-at-message",
+  writesSource: true,
   label: "Fork at this message",
   icon: GitBranch,
   iconColor: "text-violet-500 dark:text-violet-400",
@@ -229,6 +232,7 @@ registerAction({
 
 registerAction({
   id: "delete-message",
+  writesSource: true,
   label: "Delete message",
   icon: Trash2,
   iconColor: "text-red-500 dark:text-red-400",
@@ -252,6 +256,7 @@ registerAction({
  */
 registerAction({
   id: "edit-and-resubmit",
+  writesSource: true,
   label: (ctx) =>
     chatExtensions(ctx)?.contentIsStructuredRaw
       ? "View raw content"
@@ -324,6 +329,7 @@ registerAction({
  */
 registerAction({
   id: "fork-and-regenerate",
+  writesSource: true,
   label: "Fork & regenerate from here",
   icon: GitBranch,
   iconColor: "text-violet-500 dark:text-violet-400",

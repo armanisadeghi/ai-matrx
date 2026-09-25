@@ -11,9 +11,10 @@
  *     actionsVariant="remote"/> that PreviewPanel mounts; the set is what the
  *     studio's header bar receives from the remote-surface registry.
  *
- * The ONLY allowed difference is what the chat host knows and the studio
- * copy cannot: the edit-history count and the full-page print capture —
- * absent there, never dead. Before RC-B6 the studio excluded every write-back action
+ * The studio holds a READ-ONLY copy, so the allowed differences are exactly:
+ * every action that writes the source (edit, delete, fork, pin, regenerate,
+ * apply…) — absent there because the source is read-only — plus what only the
+ * chat host knows (the full-page print capture). Nothing else may differ. Before RC-B6 the studio excluded every write-back action
  * and the chat menu was a separate 2,489-line registry, so the sets diverged
  * by more than a dozen actions.
  */
@@ -66,11 +67,12 @@ import { STUDIO_SOURCES } from "@/components/markdown-studio/lab/content-sources
 import { RichDocument } from "../RichDocument";
 import { RichDocumentActionProvider } from "../RichDocumentActionProvider";
 import { buildChatMessageActions } from "../chat/chatMessageActions";
+import { getAction } from "../actions/registry";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 enableMapSet();
 
-const HOST_ONLY_ACTIONS = ["edit-history", "full-print"];
+const HOST_ONLY_ACTIONS = ["full-print"];
 const CHAT_SURFACE = "chat-parity-test";
 const SURFACE = "studio-parity-test";
 
@@ -149,7 +151,7 @@ it("the chat bar and the studio bar carry the same actions for one assistant mes
         {/* PreviewPanel's exact mount for a loaded source. */}
         <RichDocument
           content={loaded.content}
-          source={loaded.contentSource}
+          source={{ ...loaded.contentSource, readOnly: true }}
           actionsVariant="remote"
           actionsSurfaceId={SURFACE}
           actions={loaded.sourceActions}
@@ -171,20 +173,27 @@ it("the chat bar and the studio bar carry the same actions for one assistant mes
     "summarize-and-listen",
     "save-to-notes",
     "convert-to-study",
-    "edit",
     "thumbs-up",
     "tts-play",
-    "delete-message",
-    "text-cleanup",
+    "copy-table-csv",
   ]) {
     expect(chatSet.has(id)).toBe(true);
     expect(studioSet.has(id)).toBe(true);
+  }
+  // The read-only copy offers NOTHING that writes the source.
+  for (const id of studioSet) expect(getAction(id)?.writesSource ?? false).toBe(false);
+  for (const id of ["edit", "delete-message", "fork-at-message", "text-cleanup"]) {
+    expect(chatSet.has(id)).toBe(true);
+    expect(studioSet.has(id)).toBe(false);
   }
 
   const onlyInChat = [...chatSet].filter((id) => !studioSet.has(id)).sort();
   const onlyInStudio = [...studioSet].filter((id) => !chatSet.has(id)).sort();
   expect(onlyInStudio).toEqual([]);
-  expect(onlyInChat).toEqual([...HOST_ONLY_ACTIONS].sort());
+  const writers = onlyInChat.filter((id) => getAction(id)?.writesSource);
+  expect(onlyInChat.filter((id) => !writers.includes(id))).toEqual(
+    [...HOST_ONLY_ACTIONS].sort(),
+  );
 
   await act(async () => root.unmount());
   container.remove();

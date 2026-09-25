@@ -28,6 +28,7 @@ registerAction({
     // A structured chat payload's JSON view must never be saved back as text.
     const canSave =
       Boolean(ctx.sourceAdapter.edit) &&
+      !ctx.source.readOnly &&
       !(ctx.extensions?.type === "chat-message" && ctx.extensions.contentIsStructuredRaw);
     const prepared = canSave ? await prepareContentEdit(ctx) : { source: ctx.source, content: ctx.content };
     let preparedSource = prepared.source;

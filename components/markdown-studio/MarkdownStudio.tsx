@@ -528,7 +528,7 @@ export function MarkdownStudio() {
             <Badge
               variant="outline"
               className="h-4 px-1.5 text-[10px] font-normal border-primary/40 bg-primary/10"
-              title="A copy — typing here never changes the original. The Edit actions in the ⋯ menu open the original itself."
+              title="A read-only copy — editing here never changes the original"
             >
               {STUDIO_SOURCES[loadedSource.kind].label} · read-only copy
             </Badge>
@@ -622,11 +622,18 @@ export function MarkdownStudio() {
               >
               <PreviewPanel
                 content={content}
-                contentSource={loadedSource?.contentSource ?? RAW_SOURCE}
+                // The studio holds a COPY: the source rides read-only, so the
+                // registry offers nothing that would change the original.
+                contentSource={
+                  loadedSource
+                    ? { ...loadedSource.contentSource, readOnly: true }
+                    : RAW_SOURCE
+                }
                 sourceActions={loadedSource?.sourceActions}
                 mode={previewMode}
                 onModeChange={setPreviewMode}
                 title={contentLabel}
+                onContentChange={handleChange}
                 ref={previewScrollRef}
               />
               </div>

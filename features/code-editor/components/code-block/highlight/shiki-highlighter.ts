@@ -41,7 +41,9 @@ const LANGUAGE_ALIASES: Record<string, string> = {
   json5: "json5",
 };
 
-function jsonScopes(palette: (typeof JSON_SYNTAX_COLORS)["dark"]) {
+type JsonPalette = Record<keyof (typeof JSON_SYNTAX_COLORS)["dark"], string>;
+
+function jsonScopes(palette: JsonPalette) {
   return [
     {
       scope: ["support.type.property-name.json"],
@@ -77,7 +79,7 @@ function jsonScopes(palette: (typeof JSON_SYNTAX_COLORS)["dark"]) {
 async function loadTheme(
   base: Promise<{ default: ThemeRegistration }>,
   name: string,
-  palette: (typeof JSON_SYNTAX_COLORS)["dark"],
+  palette: JsonPalette,
 ): Promise<ThemeRegistration> {
   const theme = (await base).default;
   return {

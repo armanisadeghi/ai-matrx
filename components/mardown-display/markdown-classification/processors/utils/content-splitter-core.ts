@@ -30,6 +30,10 @@
 
 import { RESERVED_PREFIX, tryDecodeDirective } from "@ai-matrx/content-ir";
 import { isJsonObject } from "@/types/json";
+import {
+  DIRECTIVE_CONTAINER_OPEN,
+  DirectiveContainerTracker,
+} from "@/components/markdown-core/directive-container";
 import type {
   TypedRenderBlock,
   ServerOnlyBlockType,
@@ -2208,6 +2212,22 @@ export const splitContentIntoBlocksWith = (
       }
       blocks.push({ type: "heavy-divider", content: trimmedLine });
       i++;
+      continue;
+    }
+
+    // 1c. A directive container (`:::tabs` … `:::`) is ONE text region: its
+    //     fences, tables and images stay inside it (markdown-core
+    //     directive-container.ts — the live accumulator applies the same rule).
+    if (DIRECTIVE_CONTAINER_OPEN.test(processedLine)) {
+      const tracker = new DirectiveContainerTracker(processedLine);
+      let j = i;
+      while (j < lines.length) {
+        const containerLine = normalizeLine(lines[j]);
+        currentText += containerLine + (j < lines.length - 1 ? "\n" : "");
+        j++;
+        if (j - 1 > i && tracker.consume(containerLine)) break;
+      }
+      i = j;
       continue;
     }
 

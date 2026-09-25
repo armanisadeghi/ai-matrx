@@ -27,6 +27,10 @@ import {
 } from "@ai-matrx/content-ir/source";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import {
+  DIRECTIVE_CONTAINER_OPEN,
+  DirectiveContainerTracker,
+} from "@/components/markdown-core/directive-container";
+import {
   classifyLine,
   isPlainText,
   hasCandidate,
@@ -171,6 +175,8 @@ type BlockSubState =
       balance: XmlBalanceState;
     }
   | { kind: "table" }
+  /** Inside a `:::name` directive container — every line stays in the text block. */
+  | { kind: "directive"; tracker: DirectiveContainerTracker }
   | { kind: "generic_xml"; tracker: UnrecognizedXmlContainerTracker }
   | {
       kind: "bare_json";
@@ -846,6 +852,18 @@ export class StreamBlockAccumulator {
       return;
     }
 
+    // A directive container (`:::tabs` … `:::`) is ONE text region, exactly as
+    // the static splitter's step 1c (markdown-core directive-container.ts).
+    if (DIRECTIVE_CONTAINER_OPEN.test(rawLine)) {
+      if (this.currentBlockType !== "text") {
+        this.closeCurrentBlock(dispatch);
+        this.openBlock("text", dispatch);
+      }
+      this.appendToCurrentBlock(rawLine);
+      this.subState = { kind: "directive", tracker: new DirectiveContainerTracker(rawLine) };
+      return;
+    }
+
     // Generic XML is a container, not markdown surrounding independently
     // renderable children. Start it before table/fence/JSON classification so
     // its complete source reaches XmlBlock intact.
@@ -1222,6 +1240,11 @@ export class StreamBlockAccumulator {
     dispatch: DispatchFn,
   ): void {
     switch (this.subState.kind) {
+      case "directive": {
+        this.appendToCurrentBlock(rawLine);
+        if (this.subState.tracker.consume(rawLine)) this.subState = { kind: "none" };
+        return;
+      }
       case "code_fence": {
         const fenceLine = classifyInnerFenceLine(
           trimmed,

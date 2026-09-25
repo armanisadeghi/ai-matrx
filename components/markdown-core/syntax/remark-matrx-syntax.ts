@@ -24,6 +24,7 @@
 
 import { isTocLine } from "@ai-matrx/print/directives";
 import { extractFrontmatter } from "./frontmatter";
+import { captionKey, type DocumentNumbering } from "./document-numbering";
 import { transformContainers } from "./containers";
 import { transformInline, type InlineContext, type XrefTarget } from "./inline-syntax";
 import { el, rawOf, text, toText, walkParents, type MNode, type SyntaxFile } from "./mdast-helpers";
@@ -171,8 +172,11 @@ interface FigureMeta {
   id: string | null;
 }
 
-function numberTargets(tree: MNode): Map<string, XrefTarget> {
-  const xrefs = new Map<string, XrefTarget>();
+function numberTargets(tree: MNode, numbering: DocumentNumbering | null): Map<string, XrefTarget> {
+  // Document-wide numbers first (every block of a split document agrees);
+  // this block's own count is the fallback for a lone render.
+  const xrefs = new Map<string, XrefTarget>(numbering ? numbering.byLabel : []);
+  const captionCursor = new Map<string, number>();
   let figures = 0;
   let tables = 0;
   let equations = 0;
@@ -186,7 +190,17 @@ function numberTargets(tree: MNode): Map<string, XrefTarget> {
       if (meta) {
         const n = meta.kind === "fig" ? ++figures : ++tables;
         const word = meta.kind === "fig" ? "Figure" : "Table";
-        const display = `${word} ${n}`;
+        let display = `${word} ${n}`;
+        if (numbering) {
+          if (meta.id) display = numbering.byLabel.get(meta.id)?.display ?? display;
+          else {
+            const key = captionKey(meta.kind, toText({ type: "root", children: meta.caption }));
+            const seen = captionCursor.get(key) ?? 0;
+            const global = numbering.byCaption.get(key)?.[seen];
+            captionCursor.set(key, seen + 1);
+            if (global) display = global;
+          }
+        }
         if (meta.id) xrefs.set(meta.id, { kind: meta.kind, display });
         const hp = (child.data?.hProperties ?? {}) as Record<string, unknown>;
         child.data = { ...(child.data ?? {}), hProperties: { ...hp, dataXrefLabel: display } };
@@ -214,7 +228,9 @@ function numberTargets(tree: MNode): Map<string, XrefTarget> {
           number = explicit[1] ?? "";
           setMathValue(child, child.value.replace(LABEL_RE, ""));
         } else {
-          number = String(++equations);
+          const local = String(++equations);
+          const global = labels[0] ? numbering?.byLabel.get(labels[0]) : undefined;
+          number = global?.kind === "eq" ? global.display.replace(/[()]/g, "") : local;
           let first = true;
           setMathValue(
             child,
@@ -361,7 +377,13 @@ function unwrapStandaloneEmbeds(tree: MNode): void {
 
 // ── the plugin ──────────────────────────────────────────────────────────
 
-export default function remarkMatrxSyntax() {
+export interface RemarkMatrxSyntaxOptions {
+  /** The whole document's numbering (computeDocumentNumbering), when this tree is one block of it. */
+  numbering?: DocumentNumbering | null;
+}
+
+export default function remarkMatrxSyntax(options: RemarkMatrxSyntaxOptions = {}) {
+  const numbering = options.numbering ?? null;
   return (tree: MNode, file: SyntaxFile) => {
     stripFrontmatter(tree, file);
     transformContainers(tree, file);
@@ -369,7 +391,7 @@ export default function remarkMatrxSyntax() {
     const abbrs = collectAbbreviations(tree, file);
     applyHeadingIds(tree);
     applyTocMarkers(tree, file);
-    const xrefs = numberTargets(tree);
+    const xrefs = numberTargets(tree, numbering);
     resolveMathRefs(tree, xrefs);
     const { defined, referenced } = footnoteIds(tree);
     const ctx: InlineContext = { xrefs, footnotes: defined };

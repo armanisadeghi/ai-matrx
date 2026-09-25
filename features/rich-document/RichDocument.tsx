@@ -208,6 +208,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
     text: content ?? "",
     // Clean up / Help / Custom agent need somewhere to APPLY the result.
     writable:
+      !source.readOnly &&
       Boolean(getSourceAdapter(source.type).edit) &&
       !(
         actionsProp?.extensions?.type === "chat-message" &&
@@ -215,7 +216,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
           actionsProp.extensions.role === "user")
       ),
     chatMessage:
-      source.type === "chat-message"
+      source.type === "chat-message" && !source.readOnly
         ? {
             conversationId: source.conversationId,
             messageId: source.messageId,

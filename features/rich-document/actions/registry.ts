@@ -74,6 +74,8 @@ export function resolveActions(
         return false;
       }
       if (action.requiresAuth && !ctx.isAuthenticated) return false;
+      // A read-only copy offers nothing that would change the record.
+      if (action.writesSource && ctx.source.readOnly) return false;
       if (action.visible && !action.visible(ctx)) return false;
       return true;
     })

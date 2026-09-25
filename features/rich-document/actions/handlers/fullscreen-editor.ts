@@ -25,7 +25,10 @@ registerAction({
   run: async (ctx) => {
     // Chat structured payloads and user turns stay read-only here: a user turn
     // saves through its own three-outcome editor (edit-and-resubmit).
-    const canSave = Boolean(ctx.sourceAdapter.edit) && !chatWriteBackBlocked(ctx);
+    const canSave =
+      Boolean(ctx.sourceAdapter.edit) &&
+      !chatWriteBackBlocked(ctx) &&
+      !ctx.source.readOnly;
     const prepared = canSave ? await prepareContentEdit(ctx) : { source: ctx.source, content: ctx.content };
     let preparedSource = prepared.source;
 

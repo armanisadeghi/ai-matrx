@@ -51,6 +51,7 @@ registerAction({
 // door onto the SAME registry action the ⋯ menu carries (answer-tools.ts).
 registerAction({
   id: "regenerate-latest",
+  writesSource: true,
   label: "Regenerate answer",
   icon: RefreshCw,
   category: "edit",

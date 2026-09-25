@@ -14,6 +14,7 @@ import { registerAction } from "../registry";
 
 registerAction({
   id: "text-cleanup",
+  writesSource: true,
   label: "Clean up",
   icon: Wand2,
   iconColor: "text-primary",
@@ -27,6 +28,7 @@ registerAction({
 
 registerAction({
   id: "text-help",
+  writesSource: true,
   label: "Help with this…",
   icon: MessageCircle,
   iconColor: "text-primary",
@@ -40,6 +42,7 @@ registerAction({
 
 registerAction({
   id: "text-custom-agent",
+  writesSource: true,
   label: "Custom agent…",
   icon: BrainCircuit,
   iconColor: "text-primary",

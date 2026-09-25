@@ -76,7 +76,15 @@ export type NoteEditableContentSource = {
   actingSelection?: string;
 };
 
-export type ContentSource =
+/**
+ * A source can be a READ-ONLY copy (the proving route loads a real record into
+ * a scratch buffer). The flag rides the source itself, so every surface that
+ * shows it — bar, ⋯ menu, right-click, hosted dialogs — honors it: no action
+ * with `writesSource` is offered, and editors open without Save.
+ */
+export type ContentSource = ContentSourceIdentity & { readOnly?: boolean };
+
+type ContentSourceIdentity =
   | {
       type: "chat-message";
       messageId: string;
@@ -396,6 +404,11 @@ export interface RichDocumentAction {
   order?: number;
   /** Action requires authentication. Hidden when isAuthenticated is false. */
   requiresAuth?: boolean;
+  /**
+   * The action changes the SOURCE record (edit, delete, fork, pin, regenerate,
+   * apply an AI result…). Absent on a read-only source.
+   */
+  writesSource?: boolean;
   /**
    * A toggle's live state (a thumb's verdict, read-aloud playing). Renderers
    * paint the action "on" (its iconColor, aria-pressed) only while true; an

@@ -17,6 +17,7 @@ import { splitContentIntoBlocksV2 } from "../markdown-classification/processors/
 import { expandTextBlocksInList } from "../markdown-classification/processors/utils/expand-text-blocks";
 import { RenderBlock } from "./block-registry/BlockRenderer";
 import { renderBlockToContentBlock } from "./render-block-to-content-block";
+import { DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 import { ShimmerText } from "@/components/loaders/ShimmerText";
 import {
@@ -1359,7 +1360,9 @@ export const EnhancedChatMarkdownInternal: React.FC<
       // A live stream heals half-arrived markdown in every MarkdownCore leaf
       // below (links, images, emphasis) — finished messages are untouched.
       <MarkdownStreamingProvider value={!!isStreamActive}>
-        <div className="mb-1 w-full min-w-0 text-left overflow-x-clip">
+        {/* One figure/table/equation numbering for the whole answer, however it splits. */}
+        <DocumentNumberingProvider source={currentContent}>
+        <div className="mb-1 w-full min-w-0 text-left overflow-x-clip" data-matrx-doc-root="">
           <div className={containerStyles}>
             {hasUnifiedSpecial && requestId
               ? workGroupedSlots.map((slot, i) =>
@@ -1452,6 +1455,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
             </MarkdownErrorBoundary>
           )}
         </div>
+        </DocumentNumberingProvider>
       </MarkdownStreamingProvider>
     );
   } catch (error) {

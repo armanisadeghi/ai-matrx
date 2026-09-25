@@ -32,6 +32,7 @@ import XmlBlock from "@/components/mardown-display/blocks/xml/XmlBlock";
 import MarkdownPreviewBlock from "@/components/mardown-display/blocks/markdown-preview/MarkdownPreviewBlock";
 import { fenceNestsInnerFences } from "@ai-matrx/content-ir/source";
 import { NestedRichContent } from "./NestedRichContent";
+import { DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
 import { healStreamingTail } from "./stream-holdback";
 import {
   MarkdownStreamingProvider,
@@ -228,15 +229,18 @@ export function StandardBlocks({
   );
   return (
     <MarkdownStreamingProvider value={live}>
-      <div data-rich-content="standard" className={className ?? "min-w-0"}>
-        {blocks.map((block, index) => (
-          <StandardBlock
-            key={index}
-            block={block}
-            isStreaming={live && index === blocks.length - 1}
-          />
-        ))}
-      </div>
+      {/* One numbering for the whole document, however many blocks it splits into. */}
+      <DocumentNumberingProvider source={source}>
+        <div data-rich-content="standard" data-matrx-doc-root="" className={className ?? "min-w-0"}>
+          {blocks.map((block, index) => (
+            <StandardBlock
+              key={index}
+              block={block}
+              isStreaming={live && index === blocks.length - 1}
+            />
+          ))}
+        </div>
+      </DocumentNumberingProvider>
     </MarkdownStreamingProvider>
   );
 }

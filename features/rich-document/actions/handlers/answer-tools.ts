@@ -48,6 +48,7 @@ import { chartableTypes, parseDelimitedTable } from "@/components/mardown-displa
 
 registerAction({
   id: "pin-message",
+  writesSource: true,
   label: (ctx) => {
     const { messageId } = chatIds(ctx);
     return messageId && isMessagePinned(messageId) ? "Unpin message" : "Pin message";
@@ -102,6 +103,7 @@ export async function confirmAndRegenerate(
 
 registerAction({
   id: "regenerate-response",
+  writesSource: true,
   label: "Regenerate answer",
   icon: RefreshCw,
   iconColor: "text-violet-500 dark:text-violet-400",
