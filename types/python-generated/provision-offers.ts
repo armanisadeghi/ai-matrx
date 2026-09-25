@@ -1481,6 +1481,13 @@ export interface LocalTranscriptPolishOffer {
   transcript: string;
 }
 
+/** Offered shape of provision `local.transcript_polish_custom_style` (kind `local.transcript_polish_custom_style.offer`). */
+export interface LocalTranscriptPolishCustomStyleOffer {
+  __kind?: "local.transcript_polish_custom_style.offer";
+  transcript: string;
+  style_instructions: string;
+}
+
 /** Offered shape of provision `mandate_outcome.goal_text` (kind `mandate_outcome.goal_text.offer`). */
 export interface MandateOutcomeGoalTextOffer {
   __kind?: "mandate_outcome.goal_text.offer";
@@ -2029,6 +2036,12 @@ export interface MasterworkUnfoldingVerdictOffer {
   reference_content?: string;
   reference_metrics?: unknown;
   context?: unknown;
+}
+
+/** Offered shape of provision `masterworks.vanilla_arm` (kind `masterworks.vanilla_arm.offer`). */
+export interface MasterworksVanillaArmOffer {
+  __kind?: "masterworks.vanilla_arm.offer";
+  case: string;
 }
 
 /** Offered shape of provision `media.youtube_transcription` (kind `media.youtube_transcription.offer`). */
@@ -3573,6 +3586,7 @@ export interface ProvisionOffers {
   "local.pipeline_question": LocalPipelineQuestionOffer;
   "local.pipeline_text": LocalPipelineTextOffer;
   "local.transcript_polish": LocalTranscriptPolishOffer;
+  "local.transcript_polish_custom_style": LocalTranscriptPolishCustomStyleOffer;
   "mandate_outcome.goal_text": MandateOutcomeGoalTextOffer;
   "mandate_outcome.judged_run": MandateOutcomeJudgedRunOffer;
   "mandates.holder_draft_brief": MandatesHolderDraftBriefOffer;
@@ -3616,6 +3630,7 @@ export interface ProvisionOffers {
   "masterwork.triad_deal": MasterworkTriadDealOffer;
   "masterwork.understudy_run": MasterworkUnderstudyRunOffer;
   "masterwork.unfolding_verdict": MasterworkUnfoldingVerdictOffer;
+  "masterworks.vanilla_arm": MasterworksVanillaArmOffer;
   "media.youtube_transcription": MediaYoutubeTranscriptionOffer;
   "media_catalog.item_vetting": MediaCatalogItemVettingOffer;
   "meet.meeting_record": MeetMeetingRecordOffer;
@@ -3859,6 +3874,7 @@ export const PROVISION_OFFER_KINDS = {
   "local.pipeline_question": "local.pipeline_question.offer",
   "local.pipeline_text": "local.pipeline_text.offer",
   "local.transcript_polish": "local.transcript_polish.offer",
+  "local.transcript_polish_custom_style": "local.transcript_polish_custom_style.offer",
   "mandate_outcome.goal_text": "mandate_outcome.goal_text.offer",
   "mandate_outcome.judged_run": "mandate_outcome.judged_run.offer",
   "mandates.holder_draft_brief": "mandates.holder_draft_brief.offer",
@@ -3902,6 +3918,7 @@ export const PROVISION_OFFER_KINDS = {
   "masterwork.triad_deal": "masterwork.triad_deal.offer",
   "masterwork.understudy_run": "masterwork.understudy_run.offer",
   "masterwork.unfolding_verdict": "masterwork.unfolding_verdict.offer",
+  "masterworks.vanilla_arm": "masterworks.vanilla_arm.offer",
   "media.youtube_transcription": "media.youtube_transcription.offer",
   "media_catalog.item_vetting": "media_catalog.item_vetting.offer",
   "meet.meeting_record": "meet.meeting_record.offer",
