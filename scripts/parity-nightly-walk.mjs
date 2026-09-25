@@ -8,7 +8,7 @@
 import { chromium } from "playwright";
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { signIn } from "./lib/seat-browser.mjs";
+import { setOrganization, signIn } from "./lib/seat-browser.mjs";
 
 const ROOT = resolve(new URL(".", import.meta.url).pathname, "..");
 const env = Object.fromEntries(
@@ -47,10 +47,19 @@ try {
   await page.setViewportSize({ width: 1440, height: 950 });
 
   await page.goto(`${ORIGIN}/administration/automation/scheduling/system-jobs`, { waitUntil: "domcontentloaded", timeout: 240000 });
-  const job = page.getByText("Context parity guard (nightly)").first();
-  await job.waitFor({ timeout: 240000 });
-  await job.scrollIntoViewIfNeeded();
-  report.jobRow = (await job.locator("xpath=ancestor::tr[1]").innerText().catch(async () => await job.innerText())).replace(/\s+/g, " ").trim();
+  // The console holds the request until the person picks the organization they work in (the org hold).
+  const hold = page.getByText("An organization is needed for system jobs");
+  if (await hold.waitFor({ timeout: 60000 }).then(() => true).catch(() => false)) {
+    await setOrganization(page, "admin's Workspace");
+    report.pickedOrganization = "admin's Workspace";
+  }
+  // The console loads every system job from aidream; wait for its list, then look for the guard.
+  await page.waitForFunction(() => /Release checks|Provider model list refresh/.test(document.body.innerText), null, { timeout: 240000 }).catch(() => null);
+  const text = await page.evaluate(() => document.body.innerText);
+  const at = text.indexOf("Context parity guard");
+  report.jobListed = at >= 0;
+  report.jobText = (at >= 0 ? text.slice(at, at + 400) : text.slice(0, 600)).replace(/\s+/g, " ");
+  if (at >= 0) await page.getByText("Context parity guard (nightly)").first().scrollIntoViewIfNeeded();
   await page.screenshot({ path: `${OUT}/parity-03-system-jobs.png` });
 } catch (error) {
   report.error = String(error).slice(0, 600);
