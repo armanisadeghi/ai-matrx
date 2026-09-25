@@ -351,9 +351,14 @@ export function patchSystemTask(
   );
 }
 
+/**
+ * The System Jobs console's run-now. The ADMIN route (super-admin gated,
+ * opens the admin lane server-side) — the plain `/scheduling/run-now` is the
+ * member door and carries no admin power (utils/supabase/adminLane.ts).
+ */
 export function runSystemTaskNow(taskId: string): Promise<RunNowResponse> {
   return request<RunNowResponse>(
-    `/scheduling/run-now/${encodeURIComponent(taskId)}`,
+    `/scheduling/admin/run-now/${encodeURIComponent(taskId)}`,
     { method: "POST" },
   );
 }
