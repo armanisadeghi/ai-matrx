@@ -78,6 +78,8 @@ const tabNames = (page) =>
 const browser = await chromium.launch({ headless: true });
 try {
   // ── test@test.com ───────────────────────────────────────────────────────────
+  // ADMIN_ONLY=1 re-runs just the admin seat (the shares are already in place).
+  if (!process.env.ADMIN_ONLY) {
   const tctx = await browser.newContext({ viewport: { width: WIDTH, height: 1000 } });
   const t = await tctx.newPage();
   const who = await signIn(t, ORIGIN, TEST_EMAIL, TEST_PW, "test seat");
@@ -127,6 +129,7 @@ try {
   pass("each person granted", !!done.v, after);
   await shot(t, "4-visits-add-everyone-granted");
   await tctx.close();
+  }
 
   // ── admin@admin.com opens both ──────────────────────────────────────────────
   const actx = await browser.newContext({ viewport: { width: WIDTH, height: 1000 } });
