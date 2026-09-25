@@ -83,6 +83,8 @@
     "check:routes-register-page-capture:self-test": "tsx scripts/check-routes-register-page-capture.ts --self-test",
     "check:table-home-reads-the-switch": "tsx scripts/check-table-home-reads-the-switch.ts",
     "check:object-pages-read-the-objects-organization:self-test": "tsx scripts/check-object-pages-read-the-objects-organization.ts --self-test",
+    "check:trash-doors": "tsx scripts/check-trash-doors.ts",
+    "check:trash-answers-fast": "tsx scripts/check-trash-answers-fast.ts",
     "check:not-found-is-honest": "tsx scripts/check-not-found-is-honest.ts",
     "check:not-found-is-honest:self-test": "tsx scripts/check-not-found-is-honest.ts --self-test",
     "check:no-default-organization-sql": "tsx scripts/check-no-default-organization-sql.ts",
