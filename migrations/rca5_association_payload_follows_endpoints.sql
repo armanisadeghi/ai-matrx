@@ -1,4 +1,5 @@
 -- RC-A5 — AN EDGE THAT CARRIES AN ENDPOINT'S CONTENT IS READ ONLY BY SOMEONE WHO CAN READ BOTH ENDS.
+-- chair-step: narrows client reads of platform.associations (restrictive policy) and takes the supautils 23-relation policy lock; applied only when named, in the 1-4 AM PT window, after plan-attack and clone rehearsal.
 -- Design, census and measurements: common-docs/projects/rich-content-unification/ASSOCIATION-VISIBILITY.md
 -- Register: common-docs/projects/rich-content-unification/REGISTER.md row RC-A5.
 --
