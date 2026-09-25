@@ -15,6 +15,14 @@ interface MarkdownPreviewBlockProps {
   className?: string;
   isStreamActive?: boolean;
   onCodeChange?: (newCode: string) => void;
+  /**
+   * The fenced document ALREADY RENDERED by a static root (the server level or
+   * the SSR'd static leaf — standard/static-standard.tsx), so its prose is in
+   * the server HTML. Used for the Preview view while the block is not
+   * streaming; without it the preview renders client-side through
+   * NestedRichContent. Both are the same core at the same depth.
+   */
+  renderedPreview?: React.ReactNode;
 }
 
 const MarkdownPreviewBlock: React.FC<MarkdownPreviewBlockProps> = ({
@@ -22,6 +30,7 @@ const MarkdownPreviewBlock: React.FC<MarkdownPreviewBlockProps> = ({
   className,
   isStreamActive,
   onCodeChange,
+  renderedPreview,
 }) => {
   const [mode, setMode] = useState<"preview" | "source">("preview");
   const [copied, setCopied] = useState(false);
@@ -94,7 +103,11 @@ const MarkdownPreviewBlock: React.FC<MarkdownPreviewBlockProps> = ({
           {/* The fenced document renders through the same core, one level
               deeper — its own ```code fences, tables, math and sections
               render as themselves (depth-bounded; streaming-safe). */}
-          <NestedRichContent source={content} isStreaming={isStreamActive} />
+          {renderedPreview && !isStreamActive ? (
+            renderedPreview
+          ) : (
+            <NestedRichContent source={content} isStreaming={isStreamActive} />
+          )}
         </div>
       ) : (
         <Suspense fallback={<MatrxMiniLoader />}>

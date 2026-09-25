@@ -21,6 +21,8 @@ import {
   type SplitterBlock,
 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-core";
 import { RichContentDepthProvider } from "../depth";
+import { fenceNestsInnerFences } from "@ai-matrx/content-ir/source";
+import MarkdownPreviewBlock from "@/components/mardown-display/blocks/markdown-preview/MarkdownPreviewBlock";
 import { StandardBlock } from "./StandardBlocks";
 
 export type StaticProse = ComponentType<{ content: string }>;
@@ -76,6 +78,27 @@ function StaticBlock({
       >
         <StaticStandard source={content} depth={depth + 1} cap={cap} Prose={Prose} />
       </div>
+    );
+  }
+
+  // A ```markdown / ```md / ```mdx fence: the same card the app draws, with
+  // its document rendered HERE (one level deeper, same routing) so the
+  // nested prose is in the server HTML. Past the cap it falls through to the
+  // client card, whose capped view matches the app's.
+  if (
+    type === "code" &&
+    fenceNestsInnerFences(block.language?.toLowerCase()) &&
+    depth + 1 <= cap
+  ) {
+    return (
+      <RichContentDepthProvider depth={depth} cap={cap}>
+        <MarkdownPreviewBlock
+          content={content}
+          renderedPreview={
+            <StaticStandard source={content} depth={depth + 1} cap={cap} Prose={Prose} />
+          }
+        />
+      </RichContentDepthProvider>
     );
   }
 
