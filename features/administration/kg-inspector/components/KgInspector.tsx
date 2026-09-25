@@ -502,7 +502,7 @@ function EntitiesTab({
           // apply to rows explicitly loaded through the canonical footer.
           sourceProcessing: {
             search: "source",
-            columnFilters: "local",
+            columnFilters: { source: ["kind"] },
             sort: "local",
             sourceTotal: currentTotal,
           },
