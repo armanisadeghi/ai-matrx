@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { toast } from "@/lib/toast";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 export function GoogleOAuthRedirectNotice() {
   useEffect(() => {
@@ -18,7 +19,7 @@ export function GoogleOAuthRedirectNotice() {
     }
     url.searchParams.delete("google_oauth");
     url.searchParams.delete("google_oauth_message");
-    window.history.replaceState(window.history.state, "", url);
+    replaceAddressWithoutNavigating(url);
   }, []);
   return null;
 }

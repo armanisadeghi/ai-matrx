@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { catWriteArgs, categoryRow } from "@/lib/db/category-door";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { replaceAddressWithoutNavigating, currentPathWithSearch } from "@/lib/url-state/addressWithoutNavigating";
 import type { TablesUpdate } from "@/types/database.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -223,8 +224,6 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
   // because `setSelectedBlockId` writes the param and this reads it back. A
   // `?block=` that matches nothing selects nothing; the manager opens on its
   // normal empty state rather than faking a record.
-  const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const deepLinkRef = searchParams.get(CONTENT_BLOCK_PARAM);
   const selectedBlockId = deepLinkRef
@@ -232,17 +231,15 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
         (b) => b.id === deepLinkRef || b.block_id === deepLinkRef,
       )?.id ?? null)
     : null;
-  // `router.replace`, not `window.history.replaceState`: a raw history write
-  // does NOT notify `useSearchParams`, so the click would update the address
-  // bar and nothing else. Same call the bundles and MCP consoles use.
+  // `replaceAddressWithoutNavigating`, not a bare `window.history.replaceState`:
+  // it passes `null` state so Next's patch still notifies `useSearchParams` —
+  // a raw history write with `window.history.state` would update the address
+  // bar and nothing else. Same door every query-only writer uses.
   const setSelectedBlockId = (id: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
     if (id) params.set(CONTENT_BLOCK_PARAM, id);
     else params.delete(CONTENT_BLOCK_PARAM);
-    const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, {
-      scroll: false,
-    });
+    replaceAddressWithoutNavigating(currentPathWithSearch(params));
   };
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");

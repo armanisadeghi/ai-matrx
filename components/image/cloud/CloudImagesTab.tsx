@@ -133,6 +133,7 @@ import {
 } from "@/lib/list-views/useListViewPrefs";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { toast } from "@/lib/toast";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const RECENTS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -508,9 +509,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
     if (forcedLoadError) {
       setForcedLoadError(false);
       if (typeof window !== "undefined") {
-        window.history.replaceState(
-          window.history.state,
-          "",
+        replaceAddressWithoutNavigating(
           clearForcedCloudImagesLoadError(
             window.location.pathname,
             window.location.search,

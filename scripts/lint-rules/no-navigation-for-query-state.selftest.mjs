@@ -21,6 +21,9 @@ const tester = new RuleTester({
 const inFeatures = "/repo/features/example/Example.tsx";
 const inApp = "/repo/app/(core)/data-v2/[tableId]/page.tsx";
 const inLib = "/repo/lib/example/example.ts";
+const inHooks = "/repo/hooks/example/useExample.ts";
+const inComponents = "/repo/components/example/Example.tsx";
+const inProviders = "/repo/providers/example/ExampleProvider.tsx";
 const raw = [{ messageId: "rawHistory" }];
 const query = [{ messageId: "queryOnlyRouter" }];
 
@@ -33,10 +36,10 @@ tester.run("no-navigation-for-query-state", rule, {
     { filename: inFeatures, code: 'router.replace("/data");' },
     // router.push is census-only unless the option is on
     { filename: inFeatures, code: "router.push(`${pathname}?${qs}`);" },
-    // the door itself, tests, and code outside features/app/lib
+    // the door itself, tests, and code outside features/app/lib/hooks/components/providers
     { filename: "/repo/lib/url-state/addressWithoutNavigating.ts", code: 'window.history.replaceState(null, "", next);' },
     { filename: "/repo/features/x/__tests__/a.test.tsx", code: 'window.history.replaceState(null, "", "/a");' },
-    { filename: "/repo/components/x/Y.tsx", code: 'window.history.replaceState(null, "", "/a");' },
+    { filename: "/repo/scripts/x/Y.ts", code: 'window.history.replaceState(null, "", "/a");' },
     // not history / not a router
     { filename: inFeatures, code: "table.replaceState(appendState);" },
     { filename: inFeatures, code: 'text.replace("?", "");' },
@@ -66,5 +69,10 @@ tester.run("no-navigation-for-query-state", rule, {
     { filename: inFeatures, code: 'window.history.replaceState(null, "", href);', errors: raw },
     // app/(dev)/demos/tests/slack/page.dev.tsx
     { filename: inApp, code: "history.replaceState({}, document.title, window.location.pathname);", errors: raw },
+    // hooks/useAnchoredSections.ts, components/ and providers/ — scope widened
+    // to hooks/, components/, providers/ (lane URL-STATE, 2026-09-25)
+    { filename: inHooks, code: 'window.history.replaceState(window.history.state, "", url);', errors: raw },
+    { filename: inComponents, code: "router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });", errors: query },
+    { filename: inProviders, code: 'window.history.replaceState(window.history.state, "", url);', errors: raw },
   ],
 });

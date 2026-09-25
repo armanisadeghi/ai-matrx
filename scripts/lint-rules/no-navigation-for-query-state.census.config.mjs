@@ -1,5 +1,5 @@
 // Census/proof config: runs ONLY matrx/no-navigation-for-query-state over the
-// tree, fast. `node_modules/.bin/eslint -c scripts/lint-rules/no-navigation-for-query-state.census.config.mjs features app lib`
+// tree, fast. `node_modules/.bin/eslint -c scripts/lint-rules/no-navigation-for-query-state.census.config.mjs features app lib hooks components providers`
 // Set URL_STATE_CENSUS_PUSH=1 to extend the router check to router.push.
 import tseslint from "typescript-eslint";
 import { noNavigationForQueryState } from "./no-navigation-for-query-state.mjs";

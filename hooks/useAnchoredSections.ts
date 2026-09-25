@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 /** URL-backed reading position for a sectioned page inside a scroll container. */
 export function useAnchoredSections(pageKey: string) {
@@ -61,7 +62,7 @@ export function useAnchoredSections(pageKey: string) {
         const url = new URL(window.location.href);
         url.hash = "";
         url.searchParams.delete("sectionOffset");
-        window.history.replaceState(window.history.state, "", url);
+        replaceAddressWithoutNavigating(url);
         return;
       }
       const url = new URL(window.location.href);
@@ -72,7 +73,7 @@ export function useAnchoredSections(pageKey: string) {
       );
       if (offset) url.searchParams.set("sectionOffset", String(offset));
       else url.searchParams.delete("sectionOffset");
-      window.history.replaceState(window.history.state, "", url);
+      replaceAddressWithoutNavigating(url);
       setActiveSection(target.id);
     }
 

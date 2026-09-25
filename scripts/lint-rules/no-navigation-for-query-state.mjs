@@ -18,12 +18,13 @@
  * param from `searchParams`, so only a navigation re-renders it — say so on
  * an `// eslint-disable-next-line matrx/no-navigation-for-query-state` line.
  *
- * Scope: features/, app/, lib/ (test files excluded). Option `{ push: true }`
- * extends check 2 to `router.push` (used for the census, not enabled).
+ * Scope: features/, app/, lib/, hooks/, components/, providers/ (test files
+ * excluded). Option `{ push: true }` extends check 2 to `router.push` (used
+ * for the census, not enabled).
  */
 
 const HELPER = "/lib/url-state/addressWithoutNavigating.ts";
-const SCOPED_DIR_RE = /(^|\/)(features|app|lib)\//;
+const SCOPED_DIR_RE = /(^|\/)(features|app|lib|hooks|components|providers)\//;
 const TEST_FILE_RE = /(\.test\.|\.spec\.|\/__tests__\/)/;
 
 function isPathnameish(node) {

@@ -4,9 +4,10 @@
 'use client';
 
 import { useCallback } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import type { ContextScope } from '@/lib/api/types';
 import { SCOPE_URL_PARAMS } from '@/lib/api/types';
+import { currentPathWithSearch, replaceAddressWithoutNavigating } from '@/lib/url-state/addressWithoutNavigating';
 
 /**
  * URL-based context scope hook.
@@ -36,8 +37,6 @@ import { SCOPE_URL_PARAMS } from '@/lib/api/types';
  */
 export function useContextScope() {
     const searchParams = useSearchParams();
-    const router = useRouter();
-    const pathname = usePathname();
 
     // Read current scope from URL params
     const scope: ContextScope = {
@@ -59,11 +58,9 @@ export function useContextScope() {
                 }
             }
 
-            const paramString = params.toString();
-            const newUrl = paramString ? `${pathname}?${paramString}` : pathname;
-            router.replace(newUrl, { scroll: false });
+            replaceAddressWithoutNavigating(currentPathWithSearch(params));
         },
-        [searchParams, pathname, router],
+        [searchParams],
     );
 
     const setOrg = useCallback(

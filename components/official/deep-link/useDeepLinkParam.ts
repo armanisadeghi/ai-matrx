@@ -1,6 +1,11 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import {
+  currentPathWithSearch,
+  pushAddressWithoutNavigating,
+  replaceAddressWithoutNavigating,
+} from "@/lib/url-state/addressWithoutNavigating";
 
 export interface DeepLinkParam {
   /** The raw param value, or null when absent. */
@@ -22,8 +27,9 @@ export interface DeepLinkParam {
  *
  * Every "?user=…" / "?category=…" / "?block=…" surface needs the same URL
  * mutations, and hand-rolling them is where implementations diverge: updates
- * must preserve sibling params and must go through the Next router, because
- * `window.history.replaceState` does NOT update `useSearchParams`, so the UI
+ * must preserve sibling params and must go through the one door
+ * (`addressWithoutNavigating`), because a raw `window.history.replaceState`
+ * passing `window.history.state` does NOT update `useSearchParams`, so the UI
  * keeps rendering the value the user just cleared.
  *
  * Pair with `DeepLinkMissNotice` for the case where the param names a record
@@ -31,8 +37,6 @@ export interface DeepLinkParam {
  */
 export function useDeepLinkParam(key: string): DeepLinkParam {
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
 
   const value = searchParams.get(key);
 
@@ -43,10 +47,9 @@ export function useDeepLinkParam(key: string): DeepLinkParam {
     const params = new URLSearchParams(searchParams.toString());
     if (value === null) params.delete(key);
     else params.set(key, value);
-    const query = params.toString();
-    const href = query ? `${pathname}?${query}` : pathname;
-    if (options?.history === "replace") router.replace(href, { scroll: false });
-    else router.push(href, { scroll: false });
+    const href = currentPathWithSearch(params);
+    if (options?.history === "replace") replaceAddressWithoutNavigating(href);
+    else pushAddressWithoutNavigating(href);
   };
 
   return { value, set, clear: () => set(null) };
