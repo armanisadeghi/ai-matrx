@@ -8,11 +8,37 @@
 
 import { FLASHCARDS_PLACES } from "@/features/flashcards/data/intelligence-places";
 import { RESEARCH_PLACES } from "@/features/research/components/intelligence/places";
+import { CHAT_PLACES } from "@/features/agents/components/chat/intelligence-places";
+import { NOTES_PLACES } from "@/features/notes/intelligence-places";
+import { DATA_PLACES } from "@/features/data-tables/intelligence-places";
+import { SMS_PLACES } from "@/features/sms/intelligence-places";
+import { WAR_ROOM_PLACES } from "@/features/war-room/intelligence-places";
+import { SCRAPER_PLACES } from "@/features/scraper/intelligence-places";
+import { VOICE_PLACES } from "@/features/voice-agent/intelligence-places";
+import { TRANSCRIPT_STUDIO_PLACES } from "@/features/transcript-studio/intelligence-places";
+import { CRM_PLACES } from "@/features/crm/intelligence-places";
+import { CONTENT_PLAN_PLACES } from "@/features/marketing/content-plan/intelligence-places";
+import { MARKETING_PLACES } from "@/features/marketing/intelligence-places";
+import { PODCAST_PLACES } from "@/features/podcasts/intelligence-places";
+import { EDUCATION_PLACES } from "@/features/education/intelligence-places";
 import type { FeaturePlaces } from "./types";
 
 export const DECLARED_FEATURES: readonly FeaturePlaces[] = [
-  FLASHCARDS_PLACES,
+  CHAT_PLACES,
+  NOTES_PLACES,
   RESEARCH_PLACES,
+  FLASHCARDS_PLACES,
+  EDUCATION_PLACES,
+  PODCAST_PLACES,
+  MARKETING_PLACES,
+  CONTENT_PLAN_PLACES,
+  DATA_PLACES,
+  CRM_PLACES,
+  SMS_PLACES,
+  WAR_ROOM_PLACES,
+  SCRAPER_PLACES,
+  VOICE_PLACES,
+  TRANSCRIPT_STUDIO_PLACES,
 ];
 
 export function declaredPlacesFor(feature: string): FeaturePlaces | null {

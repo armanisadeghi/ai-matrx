@@ -18,7 +18,7 @@ export const SMS_PLACES: FeaturePlaces = {
       id: "assistant",
       label: "Settings, Messaging",
       trigger: "Your text-message assistant (answers texts you send it)",
-      urlPattern: "/settings?tab=messaging",
+      urlPattern: "/user-settings/communication/messaging",
       mandateKeys: [MANDATE_KEYS.sms__owner_beta],
       sources: [
         "features/sms/assistant-program.ts",
