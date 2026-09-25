@@ -17,6 +17,7 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 import {
   archiveTermList,
   createTermList,
@@ -69,7 +70,9 @@ export function TermListsWorkspace() {
       const orgId = await ensureOrgId(null);
       setLists(await listTermLists(orgId));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't load term lists");
+      if (!presentOrganizationRefusal(e, { subject: "Term lists", act: "loaded" })) {
+        toast.error(e instanceof Error ? e.message : "Couldn't load term lists");
+      }
       setLists([]);
     }
   };
@@ -92,7 +95,9 @@ export function TermListsWorkspace() {
       await reload();
       select(created.id);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't create the term list");
+      if (!presentOrganizationRefusal(e, { subject: "The term list", act: "created" })) {
+        toast.error(e instanceof Error ? e.message : "Couldn't create the term list");
+      }
     } finally {
       setCreating(false);
     }

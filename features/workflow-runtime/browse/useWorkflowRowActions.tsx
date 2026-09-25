@@ -31,6 +31,7 @@ import {
 import type { WorkflowBrowseRow } from "./types";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { getUserMessage } from "@/lib/api/errors";
+import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 
 export interface WorkflowRowActionsHost {
   /** Build the full menu for one row. Lazy — pass straight to ItemMenu/ItemRow. */
@@ -154,6 +155,7 @@ export function useWorkflowRowActions({
       } catch (err) {
         // Closing the organization picker is "not now", never a failure.
         if (isOrganizationSelectionCancelled(err)) return;
+        if (presentOrganizationRefusal(err, { subject: `"${row.name}"`, act: "duplicated" })) return;
         toast.error("Could not duplicate workflow", {
           description: getUserMessage(err),
         });

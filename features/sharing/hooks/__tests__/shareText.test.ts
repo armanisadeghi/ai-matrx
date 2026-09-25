@@ -49,6 +49,21 @@ describe("safe share-by-text messages", () => {
 describe("canonical link review", () => {
   const now = Date.parse("2026-09-22T12:00:00.000Z");
 
+  // `evaluateShareLinkHandoff` calls `shareLinkUnavailableReason` with no
+  // explicit clock, so it falls through to that function's real-wall-clock
+  // default. The fixture's `expiresAt` is a fixed instant relative to `now`
+  // above — freeze the clock to `now` for this suite so the fixture's
+  // "not yet expired" case stays true no matter what day this test runs on,
+  // instead of drifting into "expired" once real time passes it.
+  beforeAll(() => {
+    jest.useFakeTimers({ doNotFake: ["nextTick"] });
+    jest.setSystemTime(now);
+  });
+
+  afterAll(() => {
+    jest.useRealTimers();
+  });
+
   it("refuses inactive, expired, exhausted, and unverifiable links", () => {
     expect(shareLinkUnavailableReason(link({ isActive: false }), now)).toBe(
       "This link has been turned off.",

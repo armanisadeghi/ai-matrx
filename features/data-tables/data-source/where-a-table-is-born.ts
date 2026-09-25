@@ -28,6 +28,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 import { standInOrganizationId } from "@/features/unified-data/objectOrganization";
 
 import type { RecordStoreHome } from "./table-home";
@@ -51,7 +52,9 @@ export async function signedInUserId(): Promise<string | null> {
  */
 export async function whereANewTableIsBorn(organizationId?: string | null): Promise<BirthStore> {
   // object-org-exempt: a NEW table has no organization of its own yet; it is born where the person chose to make it
-  const org = await ensureOrgId(organizationId ?? null);
+  const org = await withOrganizationRefusalShown("created", () => ensureOrgId(organizationId ?? null), {
+    subject: "The table",
+  });
   const userId = await signedInUserId();
   const answer = await createClient()
     .schema("platform")

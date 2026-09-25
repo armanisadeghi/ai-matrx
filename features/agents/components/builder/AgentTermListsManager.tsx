@@ -17,6 +17,7 @@ import {
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { toast } from "@/lib/toast";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 import {
   attachTermList,
   detachTermList,
@@ -130,7 +131,9 @@ function TermListPicker({
         if (active) setLists(rows);
       })
       .catch((e: unknown) => {
-        toast.error(e instanceof Error ? e.message : "Couldn't load term lists");
+        if (!presentOrganizationRefusal(e, { subject: "Term lists", act: "loaded" })) {
+          toast.error(e instanceof Error ? e.message : "Couldn't load term lists");
+        }
         if (active) setLists([]);
       });
     return () => {

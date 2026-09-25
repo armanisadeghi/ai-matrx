@@ -31,7 +31,6 @@
     "features/agents/components/shared/AgentOptionsMenu.tsx",
     "features/agents/components/tools-management/AgentToolsManager.tsx",
     "features/agents/redux/agent-definition/agent-cache-bust-request.ts",
-    "features/agents/redux/agent-definition/thunks.ts",
     "features/agents/redux/agent-shortcuts/converters.ts",
     "features/agents/redux/execution-system/thunks/smart-execute.thunk.ts",
     "features/agents/services/mcp-oauth/popup.ts",
