@@ -9,6 +9,7 @@
 import { Extension, type Editor, type Extensions } from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import Suggestion from "@tiptap/suggestion";
+import { toast } from "@/lib/toast";
 import { NodeSelection, Plugin, PluginKey, TextSelection, type EditorState } from "@tiptap/pm/state";
 import { TrailingNode } from "@tiptap/extensions";
 import { createRichEditorExtensions } from "../core/extensions";
@@ -50,7 +51,10 @@ export function createVisualExtensions(options: {
   shell: RichShellActions;
 }): Extensions {
   const { shell } = options;
-  const base = createRichEditorExtensions({ placeholder: options.placeholder }).map((extension) => {
+  const base = createRichEditorExtensions({
+    placeholder: options.placeholder,
+    onPasteNotice: (message) => toast.info(message),
+  }).map((extension) => {
     switch (extension.name) {
       case "islandBlock":
         return extension.extend({ addNodeView: () => ReactNodeViewRenderer(IslandBlockView) });

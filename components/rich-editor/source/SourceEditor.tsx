@@ -26,8 +26,10 @@ import {
 import { autocompletion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
 import { getSchema } from "@tiptap/core";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 import { createRichEditorExtensions } from "../core/extensions";
 import { htmlToMarkdown } from "../core/html-to-markdown";
+import { mergedCellsNotice, normalizePastedHtml } from "../core/paste-html";
 import { findMatches, replaceMatches, type FindOptions } from "../core/find-replace";
 import { continueMarkupOnEnter, makeLink, setLinePrefix, toggleWrap, type SourceEditResult } from "../core/source-format";
 import { markdownSourceLanguage } from "./markdown-language";
@@ -215,6 +217,8 @@ export function SourceEditor({
               }
               if (!html || !html.trim()) return false;
               event.preventDefault();
+              const notice = mergedCellsNotice(normalizePastedHtml(html).mergedCellsSplit);
+              if (notice) toast.info(notice);
               const converted = htmlToMarkdown(html, PASTE_SCHEMA);
               const { from, to } = v.state.selection.main;
               v.dispatch({

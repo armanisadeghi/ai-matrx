@@ -271,13 +271,26 @@ function convertBracketDisplayInProse(text: string): string {
   );
 }
 
+/**
+ * `\[word\]` is two ESCAPED BRACKETS around prose — CommonMark's literal
+ * "[word]" — not display math. Math between `\[ \]` always carries something
+ * a sentence does not: a TeX command, a digit, an operator, a sub/superscript,
+ * a brace, or a lone variable. The one rule for every reader: the renderer
+ * (below) and the rich editor's island view (components/rich-editor).
+ */
+export function isEscapedBracketProse(tex: string): boolean {
+  const body = tex.trim();
+  return /^\p{L}[\p{L}\s'’",.!?;:]*$/u.test(body) && /\p{L}{2,}/u.test(body) && !body.includes("\n");
+}
+
 function normalizeText(text: string): string {
   let t = text;
   // \[…\] → display block. Blank lines around it so remark-math sees a flow
   // fence; the TeX goes on its own lines (`$$x$$` alone on a line is INLINE).
+  // Escaped brackets around prose stay literal (isEscapedBracketProse).
   t = t.replace(
     /\\\[((?:(?!\n[ \t]*\n)[\s\S])*?)\\\]/g,
-    (_m, tex: string) => `\n\n$$\n${tex.trim()}\n$$\n\n`,
+    (match: string, tex: string) => (isEscapedBracketProse(tex) ? match : `\n\n$$\n${tex.trim()}\n$$\n\n`),
   );
   // \(…\) → inline. With single-dollar math off, remark-math's inline form is
   // `$$…$$` inside running text — NO paragraph breaks, so a formula inside a

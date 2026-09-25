@@ -337,6 +337,8 @@ export const EscapedText = Mark.create({
 export interface RichEditorExtensionOptions {
   /** Placeholder shown in an empty document. */
   placeholder?: string;
+  /** Told when a paste changed shape on the way in (merged table cells split). */
+  onPasteNotice?: (message: string) => void;
 }
 
 /**
@@ -383,7 +385,7 @@ export function createRichEditorExtensions(
     Gapcursor,
     Dropcursor,
     Placeholder.configure({ placeholder: options.placeholder ?? "Write…" }),
-    MarkdownTextPaste,
+    MarkdownTextPaste.configure({ onNotice: options.onPasteNotice ?? null }),
   ];
   // NO PASTE RULES, anywhere. Tiptap runs every mark's paste rule over the
   // whole changed range of a paste or a DROP — and a block drag's changed range
