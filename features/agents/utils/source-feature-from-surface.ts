@@ -20,6 +20,7 @@ const SURFACE_SLUG_TO_FEATURE: Record<string, SourceFeature> = {
   documents: "documents",
   lists: "files",
   cms: "cms",
+  artifacts: "canvas",
   "cms-page": "cms",
   "cms-site": "cms",
   "cms-component": "cms",

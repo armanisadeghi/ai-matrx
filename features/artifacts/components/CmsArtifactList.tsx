@@ -63,6 +63,14 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { ARTIFACTS_SURFACE_NAME } from "@/features/surfaces/manifests/artifacts.manifest";
+import {
+  selectCanvasIsOpen,
+  selectCurrentCanvasItem,
+} from "@/features/canvas/redux/canvasSlice";
+import { buildArtifactListScope } from "@/features/artifacts/lib/artifacts-scope";
 
 const ARTIFACT_ICONS: Record<ArtifactType, React.FC<{ className?: string }>> = {
   html_page: Globe,
@@ -164,6 +172,8 @@ export function CmsArtifactList() {
   const fetchStatus = useAppSelector(selectArtifactFetchStatus);
   const fetchError = useAppSelector(selectArtifactFetchError);
   const allArtifacts = useAppSelector(selectAllArtifacts);
+  const canvasIsOpen = useAppSelector(selectCanvasIsOpen);
+  const currentCanvasItem = useAppSelector(selectCurrentCanvasItem);
 
   const [filters, setFilters] = useState<FilterState>({
     type: "all",
@@ -267,6 +277,24 @@ export function CmsArtifactList() {
     }
   };
 
+  /**
+   * Live scope for `matrx-user/artifacts` on the list route — the listing
+   * group only. Built from state this component already rendered from; it
+   * never fetches (the Surface Context window polls it every 400ms).
+   */
+  const getArtifactsScope = () =>
+    buildArtifactListScope({
+      typeFilter: filters.type,
+      statusFilter: filters.status,
+      search: filters.search,
+      visible: filtered,
+      fetchStatus,
+      fetchError,
+      openCanvasItemId: canvasIsOpen
+        ? (currentCanvasItem?.savedItemId ?? null)
+        : null,
+    });
+
   const isLoading = fetchStatus === "loading";
   const navigationPending = navigatingId !== null;
   const columns = useMemo<MatrxColumnDef<CxArtifactRecord>[]>(
@@ -322,7 +350,34 @@ export function CmsArtifactList() {
       : ARTIFACT_STATUS_LABELS[filters.status];
 
   return (
-    <div className="flex flex-col gap-3">
+    <SurfaceRuntimeProvider
+      surfaceName={ARTIFACTS_SURFACE_NAME}
+      getScope={getArtifactsScope}
+    >
+    <NonEditableContextMenu
+      sourceFeature="canvas"
+      surfaceName={ARTIFACTS_SURFACE_NAME}
+      menuVersion={1}
+      getApplicationScope={getArtifactsScope}
+      contentSource={{ type: "raw" }}
+      resolveContextOnOpen={(target) => {
+        const row = target?.closest<HTMLElement>("[data-row-id]");
+        const artifact = filtered.find((a) => a.id === row?.dataset.rowId);
+        if (!artifact) return null;
+        return {
+          content: [artifact.title?.trim() || "Untitled", artifact.description]
+            .filter(Boolean)
+            .join("\n\n"),
+          // The row under the pointer, in the surface's own declared terms.
+          artifact_id: artifact.id,
+          artifact_title: artifact.title ?? undefined,
+          artifact_type: artifact.artifactType,
+          artifact_status: artifact.status,
+          source_conversation_id: artifact.conversationId || undefined,
+        };
+      }}
+    >
+    <div className="flex flex-col gap-3" data-surface-value="visible_artifacts">
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto border-b border-border scrollbar-none">
           {TYPE_FILTERS.map((f) => (
@@ -473,5 +528,7 @@ export function CmsArtifactList() {
       )}
 
     </div>
+    </NonEditableContextMenu>
+    </SurfaceRuntimeProvider>
   );
 }

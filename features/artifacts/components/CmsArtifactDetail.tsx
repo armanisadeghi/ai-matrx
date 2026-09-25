@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectArtifactByEitherId } from "@/lib/redux/selectors/artifactSelectors";
 import { fetchUserArtifactsThunk } from "@/lib/redux/thunks/artifactThunks";
@@ -39,6 +39,13 @@ import { hasArtifactRenderer } from "@/features/canvas/artifact-types/artifact-r
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { ARTIFACTS_SURFACE_NAME } from "@/features/surfaces/manifests/artifacts.manifest";
+import {
+  buildArtifactDetailScope,
+  type ArtifactContentSnapshot,
+} from "@/features/artifacts/lib/artifacts-scope";
 
 // ── CanvasItemPreview ─────────────────────────────────────────────────────────
 
@@ -46,7 +53,14 @@ import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
  * Loads a canvas_items row by id and renders it via the unified ArtifactRender.
  * Shown inside CmsArtifactDetail when the artifact has a canvas_item_id.
  */
-function CanvasItemPreview({ canvasItemId }: { canvasItemId: string }) {
+function CanvasItemPreview({
+  canvasItemId,
+  onContent,
+}: {
+  canvasItemId: string;
+  /** Publishes the loaded content to the detail route's surface emitter. */
+  onContent: (snapshot: ArtifactContentSnapshot | null) => void;
+}) {
   // reportUnavailable: false — a missing row must reach <AccessGate> as a
   // null read (an access question), not as the hook's composed message string,
   // which the gate would classify as a fault. The gate does its own capture.
@@ -54,6 +68,24 @@ function CanvasItemPreview({ canvasItemId }: { canvasItemId: string }) {
     resolve: "latest",
     reportUnavailable: false,
   });
+
+  // The preview owns the loaded content; the detail component owns the
+  // surface. Publish into the detail's ref (one slot, one publisher) rather
+  // than mounting a second provider, which would out-depth the detail's and
+  // replace its scope wholesale.
+  useEffect(() => {
+    if (!row) {
+      onContent(null);
+      return;
+    }
+    const stored = row.content as { data?: unknown } | null;
+    onContent({
+      canvasItemId: row.id,
+      canvasType: row.type,
+      data: stored?.data ?? stored,
+    });
+  }, [row, onContent]);
+  useEffect(() => () => onContent(null), [onContent]);
 
   if (loading) {
     return (
@@ -209,12 +241,56 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
     };
   }, [artifact, artifactId, dispatch, store]);
 
+  const contentRef = useRef<ArtifactContentSnapshot | null>(null);
+  const publishContent = (snapshot: ArtifactContentSnapshot | null) => {
+    contentRef.current = snapshot;
+  };
+  const resolvedUnlisted = unlisted?.id === artifactId ? unlisted : null;
+  const loadState: "loading" | "ready" | "canvas_item" | "gate" = artifact
+    ? "ready"
+    : resolvedUnlisted?.kind === "canvas-item"
+      ? "canvas_item"
+      : resolvedUnlisted?.kind === "gate"
+        ? "gate"
+        : "loading";
+
+  /**
+   * Live scope for `matrx-user/artifacts` on the detail route — the artifact
+   * and origin groups. Synchronous over rendered state and the preview's
+   * published content; it never fetches.
+   */
+  const getArtifactsScope = () =>
+    buildArtifactDetailScope({
+      loadState,
+      artifact: artifact ?? null,
+      content: contentRef.current,
+    });
+
+  // Every branch below (loading, gate, loaded) is this surface, so each one
+  // renders inside the provider and the canonical menu.
+  const withSurface = (node: React.ReactNode) => (
+    <SurfaceRuntimeProvider
+      surfaceName={ARTIFACTS_SURFACE_NAME}
+      getScope={getArtifactsScope}
+    >
+      <NonEditableContextMenu
+        sourceFeature="canvas"
+        surfaceName={ARTIFACTS_SURFACE_NAME}
+        menuVersion={1}
+        getApplicationScope={getArtifactsScope}
+        contentSource={{ type: "raw" }}
+      >
+        <div className="contents">{node}</div>
+      </NonEditableContextMenu>
+    </SurfaceRuntimeProvider>
+  );
+
   const handleDelete = async () => {
     if (!artifact) return;
     setIsDeleting(true);
     try {
       await dispatch(deleteArtifactThunk(artifact.id)).unwrap();
-      router.push("/cms");
+      router.push("/artifacts");
     } catch {
       setIsDeleting(false);
     }
@@ -231,7 +307,7 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
   };
 
   if (isRefreshing && !artifact) {
-    return (
+    return withSurface(
       <>
         <RouteHeader
           left={<ChevronLeftTapButton href="/artifacts" ariaLabel="Content Library" />}
@@ -242,13 +318,13 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
             <p className="text-sm">Loading artifact…</p>
           </div>
         </div>
-      </>
+      </>,
     );
   }
 
   if (!artifact) {
-    const resolved = unlisted?.id === artifactId ? unlisted : null;
-    return (
+    const resolved = resolvedUnlisted;
+    return withSurface(
       <>
         <RouteHeader
           left={<ChevronLeftTapButton href="/artifacts" ariaLabel="Content Library" />}
@@ -258,7 +334,10 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
           // library artifact: show the content itself.
           <Card>
             <CardContent className="pt-6">
-              <CanvasItemPreview canvasItemId={artifactId} />
+              <CanvasItemPreview
+                canvasItemId={artifactId}
+                onContent={publishContent}
+              />
             </CardContent>
           </Card>
         ) : resolved?.kind === "gate" ? (
@@ -273,7 +352,7 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         )}
-      </>
+      </>,
     );
   }
 
@@ -318,7 +397,7 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
     },
   ].filter((a): a is NonNullable<typeof a> => a !== null);
 
-  return (
+  return withSurface(
     <>
       <EntityModeHeader
         backHref="/artifacts"
@@ -347,7 +426,12 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <CanvasItemPreview canvasItemId={artifact.canvasItemId} />
+              <div data-surface-value="content">
+                <CanvasItemPreview
+                  canvasItemId={artifact.canvasItemId}
+                  onContent={publishContent}
+                />
+              </div>
             </CardContent>
           </Card>
         )}
@@ -511,7 +595,7 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
         )}
       </div>
       </div>
-    </>
+    </>,
   );
 }
 
